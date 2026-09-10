@@ -41,6 +41,8 @@ const h = vi.hoisted(() => ({
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
   simProximity: 36,
+  // 125% collateralisation ratio (ray).
+  liquidationRatio: 125n * 10n ** 25n,
   minCollateralForDust: 0n,
   debtCeiling: 0n,
   simulationError: null as Error | null,
@@ -147,7 +149,8 @@ vi.mock('@/hooks', async importOriginal => {
           collateral > 0n && collateral !== h.existingCollateral
             ? (h.simLiqPrice * h.existingCollateral) / collateral
             : h.simLiqPrice,
-        delayedPrice: h.simDelayedPrice
+        delayedPrice: h.simDelayedPrice,
+        liquidationRatio: h.liquidationRatio
       },
       isLoading: false,
       error: h.simulationError,
@@ -320,6 +323,7 @@ describe('ManagePositionTakeover', () => {
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
+    h.liquidationRatio = 125n * 10n ** 25n;
     h.minCollateralForDust = 1_440_000n * WAD;
     h.debtCeiling = parseUnits('1000000000', 18);
     h.simulationError = null;
@@ -421,22 +425,24 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('flags the capped-OSM withdraw (liquidation price above the delayed price)', () => {
+  it('flags the capped-OSM withdraw with the Figma numeric bound (liquidation price above the delayed price)', () => {
     h.simLiqPrice = 700n * 10n ** 14n; // above delayedPrice 608
     renderSheet({ stakeCard: 'withdraw' });
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
-    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe(
-      'Liquidation price is higher than the capped OSM SKY price'
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /^Withdrawing 1,000,000 SKY would liquidate your position\. With your 30,000 USDS debt, you can withdraw at most 2,383,22\d SKY\.$/
     );
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('prefers the capped-OSM message when the F8 proximity short-circuit also maxes the risk error', () => {
+  it('falls back to the capped-OSM copy when no safe bound can be derived', () => {
     // Real hook behavior once liq price ≥ delayed price: proximity reports
-    // 100, so BOTH error conditions hold — the specific copy must win.
+    // 100, so BOTH error conditions hold — the specific copy must win over
+    // the generic risk error.
     h.simLiqPrice = 700n * 10n ** 14n;
     h.simProximity = 100;
+    h.liquidationRatio = 0n;
     renderSheet({ stakeCard: 'withdraw' });
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
@@ -515,6 +521,39 @@ describe('ManagePositionTakeover', () => {
 
     expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('30K');
     expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 20K USDS');
+  });
+
+  it('repay: typing the displayed two-decimal debt stages wipeAll instead of a dust error', () => {
+    // Live debt carries accrued sub-cent interest the input can never express.
+    h.existingDebt = 30_000n * WAD + 123_456_789_012_345n;
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '30000' } });
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(confirmButton().disabled).toBe(false);
+
+    // Anything short of the displayed debt is a plain partial repay.
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '29999.99' } });
+    expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
+  it('withdraw: the liquidation bound follows the staged borrow, not the existing debt', () => {
+    h.simProximity = 100;
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'borrow' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2300000' } });
+    // Existing 30k debt at 1.25 / 0.0608: min collateral 616,776 → at most 2,383,223.
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /With your 30,000 USDS debt, you can withdraw at most 2,383,22\d/
+    );
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
+    // Resulting 40k debt: min collateral 822,368 → at most 2,177,631.
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /With your 40,000 USDS debt, you can withdraw at most 2,177,63\d/
+    );
   });
 
   it('repay: the Min chip leaves exactly the dust floor', () => {
