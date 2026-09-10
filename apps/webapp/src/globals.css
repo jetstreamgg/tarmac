@@ -320,6 +320,12 @@
      track is bg-secondary with the fill switched off, i.e. transparent. */
   --color-pageScrollbarTrack: #100c26;
   --color-pageScrollbarThumb: #bcb6ef33; /* colors/bg/bg-quarternary */
+  /* The track seen through a modal scrim: --color-modalOverlay composited
+     over the track (rgba(5,4,17,.6) over #100c26 → #090719). A flat colour
+     because it is the canvas colour under a scroll lock (see the
+     `html:has(body[data-scroll-locked])` rule), and the canvas takes a
+     colour only. Re-derive when either input changes. */
+  --color-pageScrollbarTrackLocked: #090719;
   /* Dark page background (Figma 5010:6624): a bottom fade into the solid
      backdrop over the sky image. The image is pre-baked — sunset sky blended
      (luminosity, 20%) over #090420 — so no runtime blend/opacity is needed.
@@ -705,6 +711,20 @@
     margin-right: 0 !important;
   }
 
+  /* The scrim of a dialog or the takeover is a fixed layer, and a fixed layer
+     ends at the scrollport's edge: the reserved gutter beside it stays the
+     bare canvas colour and reads as a pale stripe next to the tinted page
+     (the same lock attribute react-remove-scroll sets for both). The gutter
+     cannot be painted into, so the canvas colour itself takes the scrim for
+     the lock's lifetime: the track with --color-modalOverlay composited on
+     it, precomputed per theme. It fades in with the scrim (both 300ms); on
+     the way out it snaps, since the lock is released only once the scrim's
+     exit animation has finished — a fade there would lag behind it. */
+  html:has(body[data-scroll-locked]) {
+    background-color: var(--color-pageScrollbarTrackLocked);
+    transition: background-color 300ms var(--ease-out-quint);
+  }
+
   /* Each face declares its real weight. Without the descriptor every face
      defaults to 400, so the browser has a single candidate per family and
      resolves every requested weight to it — font-medium et al. render
@@ -1029,6 +1049,8 @@
        the chart track sidesteps). */
     --color-pageScrollbarTrack: #dcdffc;
     --color-pageScrollbarThumb: rgba(19, 19, 19, 0.12);
+    /* --color-modalOverlay (#504dff at 20%) over the track: #c0c2fd. */
+    --color-pageScrollbarTrackLocked: #c0c2fd;
     /* Light page background (Figma 5124:25430): bottom fade + daytime sky
        image over a pale blue base gradient (visible only while the image
        loads, since the image is opaque and covers the layer). */
@@ -1538,39 +1560,29 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
        the rest frame at scroll 0 in both themes; scrolled, the only remainder
        is the page content the rest-state blur was mixing in.
 
-       Layer list = the tint (scroll, on the bar) + the app-background token's
-       own layers (fixed): dark is fade + image, light is fade + image + base
-       gradient, so the per-layer attachment/size/position lists are written
-       per theme to match `.app-background` exactly. `.app-background` itself
-       is a fixed element rather than `background-attachment: fixed` because
-       iOS treats `fixed` as `scroll` — here that only degrades this stand-in
-       for the ~400ms of a transition on iOS (the layer is then sized to the
-       bar's own 88px box) and is left as is. */
+       Layer list = the app-background token's own layers (fixed): dark is
+       fade + image, light is fade + image + base gradient, so the per-layer
+       attachment/size/position lists are written per theme to match
+       `.app-background` exactly. The bar's gradient tint is not here: it
+       lives on the bar's `::before` (shellLayoutClasses), which is captured
+       with the bar and keeps painting over this stand-in. `.app-background`
+       itself is a fixed element rather than `background-attachment: fixed`
+       because iOS treats `fixed` as `scroll` — here that only degrades this
+       stand-in for the ~400ms of a transition on iOS (the layer is then
+       sized to the bar's own 88px box) and is left as is. */
       background-color: var(--color-pageBackground);
-      background-image:
-        linear-gradient(
-          to bottom in oklab,
-          var(--color-navbarGradientStart),
-          var(--color-navbarGradientEnd) 75%,
-          transparent
-        ),
-        var(--background-image-app-background);
+      background-image: var(--background-image-app-background);
       background-repeat: no-repeat;
-      background-attachment: scroll, fixed, fixed;
-      background-size: auto, auto, cover;
+      background-attachment: fixed, fixed;
+      background-size: auto, cover;
       background-position:
-        0 0,
         center,
         center top;
     }
     [data-theme='light']:active-view-transition-type(page) .vt-shell-header {
-      background-attachment: scroll, fixed, fixed, fixed;
-      background-size: auto, auto, cover, auto;
-      background-position:
-        0 0,
-        center,
-        center,
-        center;
+      background-attachment: fixed, fixed, fixed;
+      background-size: auto, cover, auto;
+      background-position: center;
     }
   }
 }

@@ -52,7 +52,18 @@ export const shellHeaderClasses = () =>
     // line where that 5% met the bare page. So the DS ramp plays out over the
     // first three quarters of the bar and the last quarter carries it to fully
     // transparent: same bar, no edge to see.
-    'bg-linear-to-b from-navbarGradientStart via-navbarGradientEnd via-75% to-transparent backdrop-blur-[6px]',
+    //
+    // The fill is drawn by a ::before under the bar's content (the bar's
+    // backdrop-filter makes it a stacking context, so -z-10 sits between the
+    // backdrop and the children) rather than as the bar's own background, so
+    // it can be masked on its own: from the tablet seam the tint fades out
+    // over the last 64px, the width of the `.app-background::after` edge
+    // strip (globals.css). The page scrollbar's reserved gutter beside the
+    // bar is bare canvas that nothing paints into, so a tint running to the
+    // scrollport's edge left the gutter reading as a paler notch beside the
+    // bar's rows. The bar's backdrop blur stays on the bar itself.
+    'before:absolute before:inset-0 before:-z-10 before:bg-linear-to-b before:from-navbarGradientStart before:via-navbarGradientEnd before:via-75% before:to-transparent lg:before:mask-r-from-[calc(100%-64px)] lg:before:mask-r-to-100%',
+    'backdrop-blur-[6px]',
     // Pages scroll on the document, so the header pins as a sticky, see-through
     // frosted bar. The Earn Opportunities heading's scroll-mt-24 (EarnPage)
     // budgets for this bar's height — revisit it if the bar grows. Note that
