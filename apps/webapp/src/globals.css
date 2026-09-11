@@ -735,7 +735,19 @@
      this token to its own inset instead — in its own utility class, where
      it needs no cascade help; both values flip in the same style update as
      the lock attribute. Defined on body because every one of those layers,
-     portalled or not, lives under it. */
+     portalled or not, lives under it.
+
+     Two rules for consumers, enforced by pageScrollbarGutterConsumers.test:
+     (1) a layer that exists ONLY under its own lock (the dialog card, the
+     connect-checks cover) reads the constant `--page-scrollbar-gutter`
+     instead — this token lands a frame after such a layer mounts, and an
+     inset that changes after mount is what made the dialog rise on a
+     diagonal; (2) a layer that reads either token must not transition its
+     insets: Tailwind's `duration-*`/`ease-*` variants set the transition
+     properties too, and with the UA default `transition-property: all` the
+     inset glides for the length of the entrance instead of snapping with
+     the scrollport — `transition-none` unless the transition property is
+     already narrowed (transition-transform, -colors, …). */
   body {
     --page-released-gutter: 0px;
   }

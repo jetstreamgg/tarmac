@@ -45,10 +45,14 @@ export function ConnectChecksCover({ open }: { open: boolean }) {
             the terms card finishes rising, not linger over it. */}
         <DialogPrimitive.Content
           // The overlay covers the whole window, released scrollbar column
-          // included; the content box backs off by that column
-          // (`--page-released-gutter`, globals.css) so the logomark centres
-          // on the page, where the terms card it hands off to will centre.
-          className="app-loader-cover-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed inset-0 right-[var(--page-released-gutter,0px)] z-50 flex items-center justify-center outline-hidden data-[state=closed]:duration-150 data-[state=open]:duration-300"
+          // included; the content box backs off by that column so the
+          // logomark centres on the page, where the terms card it hands off
+          // to will centre. Like the dialog card it reads the root's constant
+          // `--page-scrollbar-gutter`, not the lock-keyed token (the cover is
+          // its own lock, and the token lands a frame after it mounts), and
+          // wears transition-none: the duration variants also set
+          // transition-duration, and a moving inset would tween.
+          className="app-loader-cover-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed inset-0 right-[var(--page-scrollbar-gutter,0px)] z-50 flex items-center justify-center outline-hidden transition-none data-[state=closed]:duration-150 data-[state=open]:duration-300"
           // Auto-focus is deliberately NOT prevented. The cover has no focusable
           // children, and Radix's FocusScope only arms its trap from whatever it
           // focused on mount: preventing it leaves `lastFocusedElementRef` null,
