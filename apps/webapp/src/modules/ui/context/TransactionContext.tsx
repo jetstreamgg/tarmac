@@ -85,6 +85,25 @@ function notifySignatureRequestAbandoned() {
   );
 }
 
+// The wallet moved to another network after a write was attempted, so the
+// session was ended for it (see the chain-change close below). The
+// network-change toast already names the new chain; this one says what
+// happened to the transaction they were looking at.
+function notifyClosedOnChainChange() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Transaction closed</Trans>}
+        description={
+          <Trans>Your wallet switched networks. Start again on the network you want to use.</Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
 }
@@ -326,6 +345,9 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
+  // The chain the live session's write belongs to: latched at launch, adopted
+  // while the session is still at IDLE (see the chain-change close below).
+  const sessionChainRef = useRef(guardChainId);
   const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
@@ -456,6 +478,7 @@ export function TransactionProvider({
       activeSessionRef.current = config.sessionId ?? null;
       setActiveSessionId(config.sessionId ?? null);
       launchPathnameRef.current = window.location.pathname;
+      sessionChainRef.current = chainIdRef.current;
       minimizedRef.current = false;
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
@@ -605,6 +628,38 @@ export function TransactionProvider({
   useEffect(() => {
     handleCloseRef.current = handleClose;
   });
+
+  // A modal does not survive a wallet chain switch once a write has been
+  // attempted. Everything the session holds past IDLE — the engine's prepared
+  // calls, the failure view's Retry, the receipt it waits on — was built for
+  // the chain the write started on, and nothing re-derives it for another.
+  // The supported-chain guard cannot see this case on a multi-chain flow:
+  // Savings on Base is as supported as Savings on mainnet, so a wallet moved
+  // between them under a failed write showed Retry with nothing behind it
+  // (the engine logged "not ready" and did nothing) or, on Convert, sent the
+  // stale calls on the new chain. So the session ends instead, on every flow:
+  //   - at IDLE the switch is legitimate — the entry rebuilds for the new
+  //     chain (Savings' own network dropdown lives there) and the review is
+  //     the guard's to hold — so the chain is adopted, not acted on;
+  //   - in flight (INITIALIZED / LOADING) nothing closes: the wallet prompt
+  //     or the broadcast must settle first, and this re-runs when it does —
+  //     a success closes itself, a failure lands here and closes;
+  //   - otherwise the session ends now, with a toast that says why.
+  // For a module that is not on the new chain this is also what lets the
+  // route guard redirect: it holds while a modal is open (APP-563 #4), so the
+  // order is always close first, then redirect — never both at once.
+  useEffect(() => {
+    if (!open || !configRef.current) return;
+    if (sessionChainRef.current === guardChainId) return;
+    const status = txStatusRef.current;
+    if (status === TxStatus.IDLE) {
+      sessionChainRef.current = guardChainId;
+      return;
+    }
+    if (status === TxStatus.INITIALIZED || status === TxStatus.LOADING) return;
+    handleCloseRef.current();
+    notifyClosedOnChainChange();
+  }, [open, guardChainId, txStatus]);
 
   // A modal does not survive app navigation (APP-528 follow-up): the provider
   // is mounted above the router, so a route change under an open modal — the
@@ -800,6 +855,9 @@ export function TransactionProvider({
         refuseOffChain(controls);
         return;
       }
+      // The chain the click was made on: a verdict must not fire the action
+      // on any other, supported or not (see the chain-change close above).
+      const chainAtClick = chainIdRef.current;
       const verdict = gate({
         trigger,
         // Read at fire time (like the config callbacks): editable flows keep
@@ -815,8 +873,10 @@ export function TransactionProvider({
               if (gen !== sessionGenRef.current || !v.allow) return;
               // Re-checked: the wallet may have switched while the verdict
               // (a screening call, a signature prompt) was pending, and the
-              // form has since rebuilt its calldata against the new chain.
-              if (!walletOnSupportedChain()) {
+              // form has since rebuilt its calldata against the new chain. A
+              // move between two supported chains is refused the same way:
+              // the first screen re-derives for the chain the wallet is on.
+              if (chainIdRef.current !== chainAtClick || !walletOnSupportedChain()) {
                 refuseOffChain(controls);
                 return;
               }
