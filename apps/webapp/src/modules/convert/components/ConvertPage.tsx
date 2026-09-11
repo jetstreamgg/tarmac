@@ -49,6 +49,8 @@ export function ConvertPage() {
   const { launch, conversion, locked, restore } = useConvertLaunch({
     direction: form.direction,
     amount: form.amount,
+    // The engine self-gates on a zero amount; the balance is the form's to know.
+    enabled: !form.insufficient,
     onSuccess: () => {
       form.mutateBalances();
       form.reset();

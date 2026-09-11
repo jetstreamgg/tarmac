@@ -92,7 +92,13 @@ export function useRewardsTransactionForm({
     setValue(formatUnits(pct >= 100 ? available : (available * BigInt(pct)) / 100n, decimals));
   const clearAmount = () => setValue('');
 
-  const engineParams: RewardsEngineParams = { flow, contractAddress, supplyToken, amount };
+  const engineParams: RewardsEngineParams = {
+    flow,
+    contractAddress,
+    supplyToken,
+    amount,
+    enabled: amountReady
+  };
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${supplyToken.symbol}`;
   // Memoized so the modal-content sync effect in RewardsModalForm has stable deps —

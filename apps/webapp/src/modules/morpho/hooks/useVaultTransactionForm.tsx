@@ -154,7 +154,8 @@ export function useVaultTransactionForm({
     provider,
     amount,
     max,
-    shares: redeemShares
+    shares: redeemShares,
+    enabled: amountReady
   };
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${assetToken.symbol}`;
