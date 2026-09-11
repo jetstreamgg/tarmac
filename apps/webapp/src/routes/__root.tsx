@@ -1,6 +1,7 @@
-import { createRootRouteWithContext, redirect } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, redirect } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
 import { legacySearchToLocation } from '@/lib/legacyRedirects';
+import { usePageScrollbarGutter } from '@/modules/layout/hooks/usePageScrollbarGutter';
 
 export type AppSearchParams = Record<string, string>;
 
@@ -14,7 +15,19 @@ export type AppRouterContext = {
   queryClient: QueryClient;
 };
 
+/**
+ * The one component above every route, Layout or not (the design-system page
+ * has none): document-level effects live here so they run once and never
+ * remount with a page.
+ */
+function RootComponent() {
+  // Publishes the page scrollbar column's width for the scroll-lock rules.
+  usePageScrollbarGutter();
+  return <Outlet />;
+}
+
 export const Route = createRootRouteWithContext<AppRouterContext>()({
+  component: RootComponent,
   // Permissive passthrough: the router's parseSearch already guarantees string values.
   validateSearch: (search): AppSearchParams => search as AppSearchParams,
   // Translate legacy ?widget= deep links so external links and bookmarks keep
