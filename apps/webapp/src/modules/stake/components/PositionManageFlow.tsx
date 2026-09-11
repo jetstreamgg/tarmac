@@ -126,7 +126,10 @@ export function PositionManageFlow({
     lastOpen.current = {
       urnIndex,
       view,
-      isPostMortem: !!position && isLiquidatedStakePosition(position)
+      // Tri-state predicate: an unknown liquidation state (subgraph down) has
+      // no bark to build a post-mortem from, so it falls through to the
+      // ordinary views — the table already flags the history as unavailable.
+      isPostMortem: !!position && isLiquidatedStakePosition(position) === true
     };
   }
   const current = lastOpen.current;

@@ -61,7 +61,16 @@ describe('StakePositionsTab', () => {
 
   it('shows the summary card in the rail when the user has positions', () => {
     mockPositions = {
-      data: [{ index: 0, skyLocked: 1n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }],
+      data: [
+        {
+          index: 0,
+          urnAddress: '0x1111111111111111111111111111111111111111',
+          skyLocked: 1n,
+          usdsDebt: 0n,
+          barks: [],
+          lastMutationTimestamp: undefined
+        }
+      ],
       isLoading: false,
       error: null
     };

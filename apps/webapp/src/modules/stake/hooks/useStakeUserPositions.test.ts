@@ -3,6 +3,7 @@ import {
   isInactiveStakePosition,
   isLiquidatedStakePosition,
   lastStakeUrnBark,
+  mergeStakeUserPositions,
   parseStakeUserPositions
 } from './useStakeUserPositions';
 import type { StakeUrnBark, StakeUserPosition } from './useStakeUserPositions';
@@ -187,6 +188,7 @@ function makeBark(overrides: Partial<StakeUrnBark> = {}): StakeUrnBark {
 function makePosition(overrides: Partial<StakeUserPosition> = {}): StakeUserPosition {
   return {
     index: 0,
+    urnAddress: '0x1111111111111111111111111111111111111111',
     skyLocked: 0n,
     usdsDebt: 0n,
     barks: [],
@@ -210,6 +212,10 @@ describe('lastStakeUrnBark', () => {
 describe('isLiquidatedStakePosition', () => {
   it('is false with no barks', () => {
     expect(isLiquidatedStakePosition(makePosition({ barks: [] }))).toBe(false);
+  });
+
+  it('is undefined (unknown) when the row carries no bark history at all', () => {
+    expect(isLiquidatedStakePosition(makePosition({ barks: undefined }))).toBeUndefined();
   });
 
   it('is true with a bark and no mutating events', () => {
@@ -249,5 +255,114 @@ describe('isLiquidatedStakePosition', () => {
         makePosition({ barks: [olderBark, newerBark], lastMutationTimestamp: 1_650_000_000 })
       )
     ).toBe(true);
+  });
+});
+
+describe('mergeStakeUserPositions', () => {
+  const addr = (index: number) => `0x${String(index).padStart(40, '0')}` as `0x${string}`;
+  const vault = (index: number, skyLocked: bigint, usdsDebt = 0n) => ({
+    index,
+    urnAddress: addr(index),
+    skyLocked,
+    usdsDebt
+  });
+  const bark: StakeUrnBark = {
+    id: 'b',
+    ilk: 'LSEV2-SKY-A',
+    clip: '0xclip',
+    clipperId: '1',
+    ink: 1n,
+    art: 1n,
+    due: 1n,
+    blockTimestamp: 100,
+    transactionHash: '0xtx'
+  };
+
+  it('takes amounts from the chain and event context from the subgraph, per index', () => {
+    const merged = mergeStakeUserPositions(
+      [vault(1, 5n, 2n), vault(0, 553_916n)],
+      [
+        {
+          index: 0,
+          skyLocked: 0n,
+          usdsDebt: 0n,
+          barks: [],
+          lastMutationTimestamp: undefined
+        },
+        {
+          index: 1,
+          skyLocked: 999n,
+          usdsDebt: 999n,
+          barks: [bark],
+          lastMutationTimestamp: 50
+        }
+      ]
+    );
+
+    expect(merged).toEqual([
+      {
+        index: 0,
+        urnAddress: addr(0),
+        skyLocked: 553_916n,
+        usdsDebt: 0n,
+        barks: [],
+        lastMutationTimestamp: undefined
+      },
+      { index: 1, urnAddress: addr(1), skyLocked: 5n, usdsDebt: 2n, barks: [bark], lastMutationTimestamp: 50 }
+    ]);
+  });
+
+  it('keeps an on-chain urn the subgraph has not indexed, with empty context', () => {
+    expect(mergeStakeUserPositions([vault(0, 7n)], [])).toEqual([
+      {
+        index: 0,
+        urnAddress: addr(0),
+        skyLocked: 7n,
+        usdsDebt: 0n,
+        barks: [],
+        lastMutationTimestamp: undefined
+      }
+    ]);
+  });
+
+  it('marks liquidation state unknown (barks undefined) when the subgraph failed', () => {
+    // Review round: an empty bark list reads as "never liquidated" and routes a
+    // barked urn to the regular manage modal — a failed subgraph must not do that.
+    const [position] = mergeStakeUserPositions([vault(0, 0n)], undefined);
+    expect(position).toEqual({
+      index: 0,
+      urnAddress: addr(0),
+      skyLocked: 0n,
+      usdsDebt: 0n,
+      barks: undefined,
+      lastMutationTimestamp: undefined
+    });
+    expect(isLiquidatedStakePosition(position)).toBeUndefined();
+    expect(lastStakeUrnBark(position)).toBeUndefined();
+  });
+
+  it('drops a subgraph row with no on-chain urn and yields nothing for a user with no urns', () => {
+    expect(
+      mergeStakeUserPositions(
+        [],
+        [{ index: 3, skyLocked: 1n, usdsDebt: 0n, barks: [], lastMutationTimestamp: 1 }]
+      )
+    ).toEqual([]);
+  });
+
+  it('a live position the subgraph tallies at zero is no longer inactive', () => {
+    const [position] = mergeStakeUserPositions(
+      [vault(0, 19_110n)],
+      [
+        {
+          index: 0,
+          skyLocked: 0n,
+          usdsDebt: 0n,
+          barks: [],
+          lastMutationTimestamp: undefined
+        }
+      ]
+    );
+    expect(isInactiveStakePosition(position)).toBe(false);
   });
 });

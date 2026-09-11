@@ -17,7 +17,7 @@ export function StakePositionsTab({
   /** Passed straight through to the positions table — see its prop doc. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
 }) {
-  const { data: positions, isLoading, error } = useStakeUserPositions();
+  const { data: positions, isLoading, error, contextError } = useStakeUserPositions();
   const hasPositions = (positions?.length ?? 0) > 0;
 
   // Mobile comp 1222:16771 leads with the rail content (summary hero / promo
@@ -38,6 +38,7 @@ export function StakePositionsTab({
             positions={positions}
             isLoading={isLoading}
             error={error}
+            contextError={contextError}
             onRemediate={onRemediate}
           />
         </div>

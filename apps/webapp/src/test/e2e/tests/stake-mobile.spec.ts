@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { BORROW_SPEC_SKY, openStakePosition, stakeDeepLink } from '../utils/stakeV2.ts';
+import { stageUrns } from '../utils/stakeOnChain.ts';
 
 // M6.5 (APP-404): the open-position takeover at the phone tier, per comp
 // 1222:19733 "Open a position / Full overlay" (Sky App: UI, 393px). The flow
@@ -106,9 +107,10 @@ test('percent chips and optional-card collapse work at the phone tier', async ({
 
 // --- M6.6 (APP-405): the /stake page itself at the phone tier, per comps
 // 1222:16771 (My positions) / 1222:17089 (Statistics) / 1222:17233 (About).
-// The positions/activity surfaces are subgraph-backed and the vnet's urns are
-// invisible to the indexer, so the populated spec route-stubs the two staking
-// queries; on-chain per-row reads still hit the fork and settle to zeroes.
+// Position rows come from the chain (`useStakeUrnVaults`), so the populated
+// spec stages real urns on the fork; the activity surface is subgraph-backed
+// and the vnet's urns are invisible to the indexer, so the two staking
+// queries are still route-stubbed for the event context.
 
 const E18 = '0'.repeat(18);
 
@@ -203,7 +205,16 @@ test('statistics and about tabs lead with the promo card at the phone tier', asy
   expect(governanceBox!.width).toBeGreaterThan(300);
 });
 
-test('populated positions tab stacks per the mobile comp', async ({ isolatedPage }) => {
+test('populated positions tab stacks per the mobile comp', async ({ isolatedPage, testAccount }) => {
+  // Four active urns (two with debt) + one emptied urn behind the Hide
+  // inactive toggle — the comp's card mix, mirrored by the subgraph stub.
+  await stageUrns(testAccount, [
+    { sky: 700_550n, usds: 30_000n },
+    { sky: 780_212n, usds: 30_000n },
+    { sky: 50_000n },
+    { sky: 27_127n },
+    { sky: 0n }
+  ]);
   await stubStakeSubgraph(isolatedPage);
   await stakeDeepLink(isolatedPage, 'tab=positions');
 
@@ -237,9 +248,7 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   await viewMore.first().click();
   const details = isolatedPage.getByTestId('stake-position-details');
   await expect(details).toBeVisible({ timeout: 30_000 });
-  // The stubbed urns are subgraph-only, so the on-chain reads decide whether
-  // the urn resolves active or inactive here — assert the footer-pair shape,
-  // not the specific primary verb.
+  // Assert the footer-pair shape, not the specific primary verb.
   const footerPrimary = isolatedPage
     .getByTestId('stake-details-cta-stake')
     .or(isolatedPage.getByTestId('stake-details-cta-reopen'));
