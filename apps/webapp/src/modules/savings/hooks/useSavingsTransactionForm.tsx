@@ -5,6 +5,7 @@ import { t } from '@lingui/core/macro';
 import {
   getTokenDecimals,
   TOKENS,
+  useDebounce,
   useOverallSkyData,
   usePreviewSwapExactIn,
   usePreviewSwapExactOut,
@@ -68,7 +69,12 @@ export interface SavingsTransactionForm {
 
   // Amount state + gating
   value: string;
+  /** The parsed input, live — drives the immediate validation (`isZero` / `insufficient`). */
   amount: bigint;
+  /** The amount after the 500ms settle — the value every network read, the engine, and the amount displays key on. */
+  debouncedAmount: bigint;
+  /** True while the typed amount is still settling — the confirm holds until the reads catch up. */
+  debouncePending: boolean;
   max: boolean;
   /** Source balance for the active flow (wallet for supply; position / converted sUSDS for withdraw). */
   available: bigint;
@@ -202,6 +208,12 @@ export function useSavingsTransactionForm({
   const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
   const amount = parseAmountInput(value, originDecimals);
+  // Every keystroke that parses re-fired the preview / min-out / fee / pre-send
+  // simulation reads. The reads, the engine, and the amount displays key on the
+  // settled value; validation (`isZero` / `insufficient`) stays on the live one
+  // so the user gets immediate feedback (stUSDS / upgrade pattern).
+  const debouncedAmount = useDebounce(amount);
+  const debouncePending = debouncedAmount !== amount;
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -235,19 +247,23 @@ export function useSavingsTransactionForm({
   // the disabled confirm and the reason rendered under the amount field.
   const usdcGateReady = !isMainnetUsdc || (usdcGate.ready && !usdcGate.blockedReason);
 
-  const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
+  const minAmountOut = useSavingsSupplyMinAmountOut({ amount: debouncedAmount, originToken });
   const convertedBalance = usePreviewSwapExactIn(susdsBalance?.value ?? 0n, TOKENS.susds, originToken);
-  const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(amount, TOKENS.susds, originToken);
+  const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(
+    debouncedAmount,
+    TOKENS.susds,
+    originToken
+  );
 
   // Mainnet supply preview: the USDS that reaches the vault → sUSDS shares via its
   // ERC-4626 convertToShares. USDS/DAI are already wad; a USDC amount is the 6-dec
   // input widened to the wad the PSM mints for it. Read-only; the supply still routes
   // through the engine. Gated off on L2 (its min-out row covers it).
-  const supplyUsdsAmount = isMainnetUsdc ? math.convertUSDCtoWad(amount) : amount;
+  const supplyUsdsAmount = isMainnetUsdc ? math.convertUSDCtoWad(debouncedAmount) : debouncedAmount;
   const { data: previewSharesData } = useReadSavingsUsds({
     functionName: 'convertToShares',
     args: [supplyUsdsAmount],
-    query: { enabled: enablePreview && isSupply && !isL2 && amount > 0n }
+    query: { enabled: enablePreview && isSupply && !isL2 && debouncedAmount > 0n }
   });
   const previewShares = typeof previewSharesData === 'bigint' ? previewSharesData : undefined;
 
@@ -267,12 +283,21 @@ export function useSavingsTransactionForm({
   // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
   // the displayed (rounded) value.
   const insufficient = isConnected && !max && availableKnown && amount > available;
-  const amountReady = isConnected && usdcGateReady && availableKnown && !(!max && (isZero || insufficient));
+  // The typed path also waits for the debounce to settle, so the confirm never
+  // arms on reads keyed to a stale amount. A max withdraw only needs the settled
+  // value to be real (`debouncedAmount > 0n`): right after Max on a fresh form it
+  // is still 0n, and the amount surfaces (hero, toast) read it — but it doesn't
+  // re-gate on drift, since the flag, not the number, drives the redemption.
+  const amountReady =
+    isConnected &&
+    usdcGateReady &&
+    availableKnown &&
+    (max ? debouncedAmount > 0n : !isZero && !insufficient && !debouncePending);
 
   const engineParams: SavingsEngineParams = {
     flow,
     originToken,
-    amount,
+    amount: debouncedAmount,
     // `max` only applies to withdraw — it routes to maxWithdraw(owner) on mainnet
     // or swapExactIn(whole sUSDS balance) on L2.
     max: !isSupply && max,
@@ -286,29 +311,32 @@ export function useSavingsTransactionForm({
 
   // Compact summary for the wallet/status screen (Figma "Confirm in the wallet").
   // Identical across surfaces, so the form owns it; memoised on the amount/token/flow
-  // so the modal's `updateModalContent` sync stays bounded.
-  const transactionScreenContent = useMemo(() => {
-    const display = value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0';
-    // No USD sub-line: the DS hero comps (1310:130565 / 859:36161) draw the
-    // label + amount + badge only.
-    return (
+  // so the modal's `updateModalContent` sync stays bounded. Drawn from the
+  // debounced amount so what is shown is what gets signed.
+  const amountDisplay = formatNumber(parseFloat(formatUnits(debouncedAmount, originDecimals)), {
+    maxDecimals: 2
+  });
+  const transactionScreenContent = useMemo(
+    () => (
+      // No USD sub-line: the DS hero comps (1310:130565 / 859:36161) draw the
+      // label + amount + badge only.
       <SavingsAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
-        amount={display}
+        amount={amountDisplay}
         symbol={originToken.symbol}
         dataTestId="savings-confirm-summary"
       />
-    );
-  }, [isSupply, value, originToken.symbol]);
+    ),
+    [isSupply, amountDisplay, originToken.symbol]
+  );
 
   // Amount-aware titles for the minimized toast (Figma "10,000.00 USDS supplied!").
   const toast = useMemo<SavingsToastTitles>(() => {
-    const display = value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0';
-    const label = `${display} ${originToken.symbol}`;
+    const label = `${amountDisplay} ${originToken.symbol}`;
     return isSupply
       ? { loading: t`Supplying ${label}`, success: t`${label} supplied!`, error: t`Supply failed` }
       : { loading: t`Withdrawing ${label}`, success: t`${label} withdrawn!`, error: t`Withdrawal failed` };
-  }, [isSupply, value, originToken.symbol]);
+  }, [isSupply, amountDisplay, originToken.symbol]);
 
   const rate = overall?.skySavingsRatecRate ? parseFloat(overall.skySavingsRatecRate) : undefined;
   const apyDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
@@ -366,6 +394,8 @@ export function useSavingsTransactionForm({
     originDecimals,
     value,
     amount,
+    debouncedAmount,
+    debouncePending,
     max,
     available,
     availableKnown,

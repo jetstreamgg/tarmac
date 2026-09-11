@@ -8,6 +8,8 @@ i18n.activate('en');
 
 const h = vi.hoisted(() => ({
   launch: vi.fn(),
+  // Captures the params ConvertPage hands the launch hook (amount / enabled).
+  useConvertLaunch: vi.fn(),
   form: {
     direction: 'USDS_TO_USDC',
     originSymbol: 'USDS',
@@ -15,6 +17,8 @@ const h = vi.hoisted(() => ({
     value: '',
     targetValue: '',
     amount: 0n,
+    debouncedAmount: 0n,
+    debouncePending: false,
     targetAmount: 0n,
     originDecimals: 18,
     targetDecimals: 6,
@@ -59,13 +63,16 @@ vi.mock('../hooks/useConvertForm', () => ({
 }));
 
 vi.mock('../hooks/useConvertLaunch', () => ({
-  useConvertLaunch: () => ({
-    launch: h.launch,
-    conversion: h.conversion,
-    steps: [],
-    locked: h.locked,
-    restore: h.restore
-  })
+  useConvertLaunch: (params: unknown) => {
+    h.useConvertLaunch(params);
+    return {
+      launch: h.launch,
+      conversion: h.conversion,
+      steps: [],
+      locked: h.locked,
+      restore: h.restore
+    };
+  }
 }));
 
 // Connect-then-act passes the action through when connected (the real provider
@@ -96,6 +103,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   h.form.isZero = true;
   h.form.insufficient = false;
+  h.form.amount = 0n;
+  h.form.debouncedAmount = 0n;
+  h.form.debouncePending = false;
   h.form.isConnected = true;
   h.conversion.disabledReason = undefined;
   h.locked = false;
@@ -124,6 +134,31 @@ describe('ConvertPage', () => {
     expect(enabled.disabled).toBe(false);
     fireEvent.click(enabled);
     expect(h.launch).toHaveBeenCalledTimes(1);
+  });
+
+  it('hands the launch hook the debounced amount and holds it (and Review) until the settle', () => {
+    // Mid-settle: the typed amount has moved on, the debounced one lags behind.
+    h.form.isZero = false;
+    h.form.amount = 15n * 10n ** 18n;
+    h.form.debouncedAmount = 1n * 10n ** 18n;
+    h.form.debouncePending = true;
+    renderPage();
+
+    expect(h.useConvertLaunch).toHaveBeenLastCalledWith(
+      expect.objectContaining({ amount: 1n * 10n ** 18n, enabled: false })
+    );
+    expect((screen.getByTestId('convert-review-cta') as HTMLButtonElement).disabled).toBe(true);
+
+    // Settled: the live amount reaches the engine and Review opens up.
+    h.form.debouncedAmount = h.form.amount;
+    h.form.debouncePending = false;
+    cleanup();
+    renderPage();
+
+    expect(h.useConvertLaunch).toHaveBeenLastCalledWith(
+      expect.objectContaining({ amount: 15n * 10n ** 18n, enabled: true })
+    );
+    expect((screen.getByTestId('convert-review-cta') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('shows insufficient funds over the engine guard and disables Review', () => {

@@ -2,7 +2,13 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
-import { type Token, getTokenDecimals, useRewardsSuppliedBalance, useTokenBalance } from '@/hooks';
+import {
+  type Token,
+  getTokenDecimals,
+  useDebounce,
+  useRewardsSuppliedBalance,
+  useTokenBalance
+} from '@/hooks';
 import { formatNumber } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
 import { RewardsAmountSummary } from '../components/RewardsAmountSummary';
@@ -20,6 +26,8 @@ export interface RewardsTransactionForm {
   decimals: number;
   value: string;
   amount: bigint;
+  /** Debounce-settled amount driving the engine params + amount-derived display. */
+  debouncedAmount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / staked balance (withdraw). */
   available: bigint;
   /** The `available` read has resolved — display and validation wait on it. */
@@ -30,6 +38,8 @@ export interface RewardsTransactionForm {
   positionKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
+  /** Input typed but the debounced amount hasn't settled yet. */
+  debouncePending: boolean;
   amountReady: boolean;
   engineParams: RewardsEngineParams;
   toast: RewardsToastTitles;
@@ -67,6 +77,10 @@ export function useRewardsTransactionForm({
   const [value, setValue] = useState(preset?.amount ?? '');
 
   const amount = parseAmountInput(value, decimals);
+  // Network reads (fee estimate, batch simulation) and the engine follow the
+  // settled value; validation stays on the raw amount for immediate feedback.
+  const debouncedAmount = useDebounce(amount);
+  const debouncePending = debouncedAmount !== amount;
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -82,7 +96,7 @@ export function useRewardsTransactionForm({
   const positionKnown = suppliedBalance !== undefined;
   const isZero = amount === 0n;
   const insufficient = availableKnown && amount > available;
-  const amountReady = isConnected && !isZero && availableKnown && !insufficient;
+  const amountReady = isConnected && !isZero && availableKnown && !insufficient && !debouncePending;
 
   const onInput = setValue;
   const setMaxAmount = () => setValue(formatUnits(available, decimals));
@@ -96,11 +110,11 @@ export function useRewardsTransactionForm({
     flow,
     contractAddress,
     supplyToken,
-    amount,
+    amount: debouncedAmount,
     enabled: amountReady
   };
 
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${supplyToken.symbol}`;
+  const amountLabel = `${formatNumber(parseFloat(formatUnits(debouncedAmount, decimals)), { maxDecimals: 2 })} ${supplyToken.symbol}`;
   // Memoized so the modal-content sync effect in RewardsModalForm has stable deps —
   // an unmemoized object/element here recreates every render and loops
   // updateModalContent → setActiveConfig → re-render (matches the savings/vault forms).
@@ -125,11 +139,11 @@ export function useRewardsTransactionForm({
       <RewardsAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
         supplyToken={supplyToken}
-        amount={amount}
+        amount={debouncedAmount}
         decimals={decimals}
       />
     ),
-    [isSupply, supplyToken, amount, decimals]
+    [isSupply, supplyToken, debouncedAmount, decimals]
   );
 
   return {
@@ -138,12 +152,14 @@ export function useRewardsTransactionForm({
     decimals,
     value,
     amount,
+    debouncedAmount,
     available,
     availableKnown,
     position,
     positionKnown,
     isZero,
     insufficient,
+    debouncePending,
     amountReady,
     engineParams,
     toast,

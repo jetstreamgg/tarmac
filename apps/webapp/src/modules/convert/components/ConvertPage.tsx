@@ -48,9 +48,13 @@ export function ConvertPage() {
   const form = useConvertForm();
   const { launch, conversion, locked, restore } = useConvertLaunch({
     direction: form.direction,
-    amount: form.amount,
+    // The settled amount: the engine, fee estimate and pre-send simulation all
+    // hang off it, so a keystroke burst fires them once. The modal derives its
+    // figures from this same value, so shown == signed.
+    amount: form.debouncedAmount,
     // The engine self-gates on a zero amount; the balance is the form's to know.
-    enabled: !form.insufficient,
+    // Held while the debounce is mid-settle so the lagged amount isn't simulated.
+    enabled: !form.insufficient && !form.debouncePending,
     onSuccess: () => {
       form.mutateBalances();
       form.reset();
@@ -71,8 +75,11 @@ export function ConvertPage() {
   }, [conversion.disabledReason, chainId, trackConvertBlocked]);
 
   const disabledReasonText = getDisabledReasonText(conversion.disabledReason, conversion.targetToken?.symbol);
+  // Review waits for the debounce to settle (mirrors `amountReady` elsewhere):
+  // the modal would otherwise open on the previous amount.
   const reviewDisabled =
-    form.isConnected && (form.isZero || form.insufficient || !!conversion.disabledReason);
+    form.isConnected &&
+    (form.isZero || form.insufficient || form.debouncePending || !!conversion.disabledReason);
 
   return (
     <div className="flex w-full flex-col items-center gap-8 py-4 md:py-10" data-testid="convert-page">
