@@ -13,8 +13,9 @@ export const PAGE_SCROLLBAR_ATTR = 'data-page-scrollbar';
  * The root reserves the column on every route (`scrollbar-gutter: stable`) and
  * releases it while a dialog or the takeover holds a scroll lock, so the scrim
  * can cover the whole window; the page then has to keep the column's width as
- * a body margin to stay put, and a dialog backs off by half of it to centre on
- * the page. react-remove-scroll measures that width itself, but as
+ * a body margin to stay put, and every fixed layer anchored to the viewport's
+ * right edge or centre backs off by it (`--page-released-gutter`, this value
+ * while a lock is held). react-remove-scroll measures that width itself, but as
  * `innerWidth - documentElement.clientWidth`, which is 0 on a route that does
  * not scroll: the reserved column is not a scrollbar, so the root's
  * `clientWidth` does not exclude it there — only body's does. That left the

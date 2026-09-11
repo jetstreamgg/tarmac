@@ -725,10 +725,23 @@
   html body[data-scroll-locked] {
     margin-right: var(--page-scrollbar-gutter, 0px) !important;
   }
-  /* The fixed layers that must not step right by the released column under
-     the lock are handled beside `.app-background` below (unlayered: they
-     have to outrank `.app-background`'s own inset and the navbar's padding
-     utility, and a layered rule can do neither). */
+  /* `--page-released-gutter`: the column the lock released — the measured
+     gutter while a lock is held, 0 at rest. Fixed layers span the scrollport,
+     which widens by exactly this under the lock while the page holds still,
+     so anything right-anchored or centred on the viewport (the toasts and
+     their close-all, the cookie banner, the announcement banner, the phone
+     navbar, the dialog card, the app background) would step right by the
+     column when a dialog opens and back when it closes. Each of them adds
+     this token to its own inset instead — in its own utility class, where
+     it needs no cascade help; both values flip in the same style update as
+     the lock attribute. Defined on body because every one of those layers,
+     portalled or not, lives under it. */
+  body {
+    --page-released-gutter: 0px;
+  }
+  body[data-scroll-locked] {
+    --page-released-gutter: var(--page-scrollbar-gutter, 0px);
+  }
 
   /* Each face declares its real weight. Without the descriptor every face
      defaults to 400, so the browser has a single candidate per family and
@@ -1120,7 +1133,10 @@ svg.recharts-surface [tabindex]:focus,
    viewports and centers when the viewport is taller than the image's aspect. */
 .app-background {
   position: fixed;
-  inset: 0;
+  /* Keeps the page's box under a scroll lock (`--page-released-gutter`, see
+     the :root scrollbar rule) so the sky and its edge strip don't jump when
+     a scrim-less lock (Select, DropdownMenu) widens the scrollport. */
+  inset: 0 var(--page-released-gutter, 0px) 0 0;
   z-index: -10;
   pointer-events: none;
   background-color: var(--color-pageBackground);
@@ -1134,21 +1150,6 @@ svg.recharts-surface [tabindex]:focus,
 [data-theme='light'] .app-background {
   background-size: auto, cover, auto;
   background-position: center;
-}
-/* Fixed layers span the widened scrollport under a scroll lock (the root
-   releases the scrollbar column so the scrim can cover it — see the :root
-   scrollbar rule), so anything centred or right-anchored on the viewport
-   would step right by the column while the page (body) holds still. The
-   background layer keeps the page's box so the sky and its edge strip don't
-   jump under a scrim-less lock (Select, DropdownMenu); the phone navbar backs
-   its pill off by the column on top of its own `px-3`; a dialog does the
-   same in its own `left` (dialog.tsx). Unlayered on purpose: these must
-   outrank `.app-background`'s inset and the navbar's padding utility. */
-html:has(body[data-scroll-locked]) .app-background {
-  right: var(--page-scrollbar-gutter, 0px);
-}
-body[data-scroll-locked] .vt-shell-navbar {
-  padding-right: calc(0.75rem + var(--page-scrollbar-gutter, 0px));
 }
 /* Edge strip: fades the sky image into the page scrollbar's track colour
    along the right edge of the scrollport, so the reserved scrollbar column

@@ -49,8 +49,10 @@ export function Banner({
     // The viewport's right edge is the page's: the root reserves the
     // scrollbar's column on every route (scrollbar-gutter in globals.css).
     // Under a scroll lock the column is released and the viewport widens by
-    // it; a banner sitting 16px from that edge is not worth compensating.
-    right: 'right-4 md:right-4'
+    // it — `--page-released-gutter` (0 at rest) adds it back so the banner
+    // holds still.
+    right:
+      'right-[calc(1rem+var(--page-released-gutter,0px))] md:right-[calc(1rem+var(--page-released-gutter,0px))]'
   };
 
   return (
