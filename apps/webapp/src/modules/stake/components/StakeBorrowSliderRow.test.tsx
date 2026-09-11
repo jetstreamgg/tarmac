@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 
@@ -30,6 +30,22 @@ describe('StakeBorrowSliderRow', () => {
     expect(slider.markers).toEqual([300]);
     expect(slider.value).toBe(500);
     expect(root.querySelector('[data-slot="slider-range"]')?.className).toContain('hidden');
+  });
+
+  it('borrow: End on an over-typed, pinned thumb still snaps to the headroom', () => {
+    const onAmountChange = vi.fn();
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: usds(30_000),
+      dust: usds(30_000),
+      headroom: usds(11_666),
+      amount: usds(99_999),
+      onAmountChange
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" dataTestId="row" />);
+    expect(slider.value).toBe(1000);
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
+    expect(onAmountChange).toHaveBeenCalledWith(usds(11_666));
   });
 
   it('repay: keeps the fill from the left end', () => {

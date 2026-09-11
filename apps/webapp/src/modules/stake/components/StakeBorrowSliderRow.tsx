@@ -51,6 +51,12 @@ export function StakeBorrowSliderRow({
         rangeStart={fillStart}
         disabled={slider.disabled}
         onValueChange={value => slider.onValueChange(value[0])}
+        // Radix stays silent when End lands on an already-pinned (over-typed) thumb.
+        onKeyDown={event => {
+          if (event.key === 'End' && slider.value >= STAKE_SLIDER_MAX && !slider.disabled) {
+            slider.onValueChange(STAKE_SLIDER_MAX);
+          }
+        }}
         aria-label={mode === 'repay' ? t`Repay amount` : t`Borrow amount`}
         data-testid={dataTestId}
       />
