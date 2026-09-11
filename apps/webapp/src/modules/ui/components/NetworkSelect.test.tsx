@@ -13,7 +13,7 @@ import { renderHook } from '@testing-library/react';
 // this control reaches for router context these renders start throwing — which
 // is the bug where the savings modal never opened and the page just re-rendered.
 
-const mocks = vi.hoisted(() => ({ walletChainId: 1, isSafeApp: false, bpi: 3 }));
+const mocks = vi.hoisted(() => ({ walletChainId: 1, canSwitchChain: true, bpi: 3 }));
 
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
@@ -29,19 +29,18 @@ vi.mock('wagmi', async io => ({
 vi.mock('@/hooks', async () => ({
   // The real enum, so the tier comparison under test is the shipped one.
   BP: (await import('@/hooks/ui/useBreakpoint')).BP,
-  useIsSafeApp: () => mocks.isSafeApp,
   useAppChainId: () => mocks.walletChainId,
   useBreakpointIndex: () => ({ bpi: mocks.bpi })
 }));
 
 const mockHandleSwitchChain = vi.fn();
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: mockHandleSwitchChain })
+  useNetworkSwitch: () => ({ handleSwitchChain: mockHandleSwitchChain, canSwitchChain: mocks.canSwitchChain })
 }));
 
 beforeEach(() => {
   mocks.walletChainId = 1;
-  mocks.isSafeApp = false;
+  mocks.canSwitchChain = true;
   mocks.bpi = BP.desktop;
   mockHandleSwitchChain.mockClear();
 });
@@ -99,8 +98,8 @@ describe('NetworkSelect', () => {
     expect(screen.getByTestId('net').textContent).toContain('Ethereum');
   });
 
-  it('goes static inside the Safe iframe — its chain is fixed by the Safe app', () => {
-    mocks.isSafeApp = true;
+  it('goes static when the dapp must not switch the wallet (a Safe)', () => {
+    mocks.canSwitchChain = false;
 
     render(<NetworkSelect chainIds={[1, 8453]} dataTestId="net" />);
 
@@ -111,10 +110,10 @@ describe('NetworkSelect', () => {
 // The phone-tier stand-in for a static control (1295:20810): the chain named
 // as a title-suffix badge, not a control-shaped pill with nothing to switch.
 describe('NetworkBadge + useIsNetworkSelectStatic', () => {
-  it('is static for one chain or the Safe iframe, interactive otherwise', () => {
+  it('is static for one chain or an unswitchable wallet, interactive otherwise', () => {
     expect(renderHook(() => useIsNetworkSelectStatic([1])).result.current).toBe(true);
     expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(false);
-    mocks.isSafeApp = true;
+    mocks.canSwitchChain = false;
     expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(true);
   });
 

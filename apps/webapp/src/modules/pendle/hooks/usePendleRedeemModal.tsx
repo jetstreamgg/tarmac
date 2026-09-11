@@ -9,7 +9,6 @@ import {
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
-  useIsSafeApp,
   usePendleUserPtBalances,
   useQuotePendleConvert,
   useTokenAllowance,
@@ -273,17 +272,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // explain the change; a rejected switch opens nothing and stays retryable.
   const chains = useChains();
   const onPendleChain = isPendleChain(chainId);
-  const isSafeApp = useIsSafeApp();
   const { switchChainAsync } = useSwitchChain();
-  const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
+  const { setIsAutoSwitching, setAutoSwitchIntent, canSwitchChain } = useNetworkSwitch();
   const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
-  // The Safe iframe can't switch networks from the dapp (APP-486) — the cards
-  // disable Claim and explain instead of offering a click that always fails.
-  const switchBlocked = !onPendleChain && isSafeApp;
+  // A wallet the dapp must not switch (a Safe, APP-486) — the cards disable
+  // Claim and explain instead of offering a click that always fails.
+  const switchBlocked = !onPendleChain && !canSwitchChain;
 
   const openRedeemModal = useCallback(async () => {
     if (!onPendleChain) {
-      if (isSafeApp) return;
+      if (!canSwitchChain) return;
       // The mainnet-family target, preferring the fork in dev configs —
       // auto-switching a dev wallet onto real Ethereum would mean real fees.
       const requiredChainId = chains.find(c => isTestnetId(c.id))?.id ?? mainnet.id;
@@ -332,7 +330,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     });
   }, [
     onPendleChain,
-    isSafeApp,
+    canSwitchChain,
     chains,
     chainId,
     setAutoSwitchIntent,

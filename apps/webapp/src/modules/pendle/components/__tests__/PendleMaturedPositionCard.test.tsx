@@ -27,7 +27,8 @@ const h = vi.hoisted(() => ({
   chainId: 1,
   earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined },
   isPrepared: true,
-  switchBlocked: false
+  switchBlocked: false,
+  isSafeApp: false
 }));
 
 const openRedeemModal = vi.fn();
@@ -42,6 +43,7 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    useIsSafeApp: () => h.isSafeApp,
     usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
     usePendleMaturedPositionEarnings: () => h.earnings
   };
@@ -79,6 +81,7 @@ describe('PendleMaturedPositionCard', () => {
   beforeEach(() => {
     h.chainId = 1;
     h.switchBlocked = false;
+    h.isSafeApp = false;
     h.earnings = { earnings: 184.8, currency: 'USDS' };
     h.isPrepared = true;
   });
@@ -125,13 +128,25 @@ describe('PendleMaturedPositionCard', () => {
 
   it('disables Claim off-chain in a Safe and explains why, leaving View details usable', () => {
     h.chainId = 8453;
-    h.switchBlocked = true; // Safe wallets can't switch from the dapp (APP-486)
+    h.switchBlocked = true; // the dapp must not switch a Safe (APP-486)
     renderCard();
 
     expect((screen.getByTestId('pendle-matured-redeem-button') as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByTestId('pendle-redeem-network-hint').textContent).toContain('Safe app');
+    // Over WalletConnect the Safe app is a separate window that this app follows.
+    expect(screen.getByTestId('pendle-redeem-network-hint').textContent).toContain('this app will follow');
     // Reading the market never depended on the wallet's chain.
     expect((screen.getByTestId('pendle-matured-view-details') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('words the Safe hint for the Safe App iframe, where Safe hosts this app', () => {
+    h.chainId = 8453;
+    h.switchBlocked = true;
+    h.isSafeApp = true;
+    renderCard();
+
+    expect(screen.getByTestId('pendle-redeem-network-hint').textContent).toContain(
+      'managed by your Safe app'
+    );
   });
 
   it('falls back to the deposit-only line when earnings are unavailable', () => {

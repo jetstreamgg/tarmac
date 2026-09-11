@@ -4,7 +4,6 @@ import {
   TOKENS,
   VAULTS,
   useAvailableTokenRewardContractsForChains,
-  useIsSafeApp,
   getPendleMarketByAddress,
   isMarketMatured
 } from '@/hooks';
@@ -54,18 +53,17 @@ function supplyChainFor(position: SuppliedPosition): number {
  * handler: it switches the wallet to the position's chain first (announced by
  * the shell's network toast via the auto-switch flags), then opens the modal.
  * A rejected or failed switch opens nothing — the user stays on Portfolio and
- * the button remains clickable. Safe wallets are the exception: they can never
- * switch from the dapp, so a cross-chain position resolves to `undefined` and
- * the caller navigates to the product page instead, where the network
- * selector renders as a static pill for a Safe — its chain is fixed by the
- * Safe app it runs inside (APP-486).
+ * the button remains clickable. Safe wallets are the exception: the dapp must
+ * not switch them (`canSwitchChain` on NetworkSwitchContext), so a cross-chain
+ * position resolves to `undefined` and the caller navigates to the product
+ * page instead, where the network selector renders as a static pill for a
+ * Safe — the user changes Safe in the Safe app and this app follows (APP-486).
  */
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();
   const { isModuleEnabled } = useGeoConfig();
   const { switchChainAsync } = useSwitchChain();
-  const isSafeApp = useIsSafeApp();
-  const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
+  const { setIsAutoSwitching, setAutoSwitchIntent, canSwitchChain } = useNetworkSwitch();
   const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
   const { openSupply: openSavingsSupply } = useSavingsModal();
   const { openSupply: openStUsdsSupply } = useStUsdsModal();
@@ -154,9 +152,9 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       if (!open) return undefined;
       if (onConnectedChain) return open;
 
-      // The Safe iframe can't switch networks from the dapp, so the auto-switch
-      // below would fail on every click — a permanently dead button (APP-486).
-      if (isSafeApp) return undefined;
+      // The dapp must not switch a Safe (`canSwitchChain`), so the auto-switch
+      // below would be a permanently dead button (APP-486).
+      if (!canSwitchChain) return undefined;
 
       // Wrong chain: move the wallet to the position's chain first. The auto
       // flags make the shell toast explain the change with the owning module's
@@ -197,7 +195,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       connectedChainId,
       isModuleEnabled,
       switchChainAsync,
-      isSafeApp,
+      canSwitchChain,
       setIsAutoSwitching,
       setAutoSwitchIntent,
       openSavingsSupply,

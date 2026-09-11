@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
 import { useSwitchChain, useConnection, useChains, useChainId } from 'wagmi';
+import { useIsSafeWallet } from '@/hooks';
 import { Trans } from '@lingui/react/macro';
 import type { Intent } from '@/lib/enums';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -24,6 +25,9 @@ import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedReques
  * transaction modal's chain guard. A user's own pick is recorded as manual so
  * the shell's network toast stays quiet when it lands (APP-547); the modal's
  * automatic switch on open is not.
+ *
+ * `canSwitchChain` is the one answer to "may the dapp ask this wallet to
+ * switch at all", read by every surface above before it offers a control.
  *
  * (This used to be two contexts: the flags here and the action in a
  * `ChainModalContext` named for the dialog that once held the switcher. The
@@ -63,7 +67,13 @@ interface NetworkSwitchContextValue {
    */
   pendingManualSwitchChainId: number | null;
   setPendingManualSwitchChainId: (chainId: number | null) => void;
-  /** Ask the wallet to switch: wagmi's `switchChain` plus analytics and failure toasts. */
+  /**
+   * Whether an in-app control may ask the wallet to switch. False for a
+   * connector without `switchChain` (wagmi's Safe App connector) and for a
+   * Safe account by any connector; see the provider for why.
+   */
+  canSwitchChain: boolean;
+  /** Ask the wallet to switch: wagmi's `switchChain` plus analytics and failure toasts. No-op when `canSwitchChain` is false. */
   handleSwitchChain: (request: SwitchChainRequest) => void;
   /** wagmi's mutation state for the switch in flight, for a control's "switching" look. */
   isSwitchPending: boolean;
@@ -82,11 +92,24 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
   const { connector } = useConnection();
   const chains = useChains();
   const currentChainId = useChainId();
+  const isSafeWallet = useIsSafeWallet();
+  // Two things say the dapp must not ask for a switch. A connector without
+  // `switchChain`: wagmi's Safe App connector, where the Safe UI fixes the
+  // chain. And a Safe account by any connector: a Safe over WalletConnect does
+  // answer the first request for a chain with its pick-a-Safe prompt, but its
+  // session then keeps every chain it has visited, and the WalletConnect
+  // provider answers a later request for one of those locally without telling
+  // Safe — the app moves, the Safe UI doesn't, and the next transaction fails
+  // at signing. Safe pushes its own switches to us, so the user changes Safe
+  // in the Safe app and this app follows (APP-486, APP-566). Disconnected,
+  // nothing is known, so nothing is withheld.
+  const canSwitchChain = !isSafeWallet && (!connector || typeof connector.switchChain === 'function');
   const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
   const duration = 10000;
 
   const handleSwitchChain = useCallback(
     ({ chainId, source = 'chain_modal', onSuccess, onSettled }: SwitchChainRequest) => {
+      if (!canSwitchChain) return;
       const fromChainId = currentChainId;
       trackNetworkSwitchRequested({ source, fromChainId, toChainId: chainId });
       // Recorded as the user's own pick so the shell toast stays quiet when it
@@ -187,6 +210,7 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
       );
     },
     [
+      canSwitchChain,
       switchChain,
       connector,
       chains,
@@ -208,6 +232,7 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
         setAutoSwitchIntent,
         pendingManualSwitchChainId,
         setPendingManualSwitchChainId,
+        canSwitchChain,
         handleSwitchChain,
         isSwitchPending,
         switchVariables

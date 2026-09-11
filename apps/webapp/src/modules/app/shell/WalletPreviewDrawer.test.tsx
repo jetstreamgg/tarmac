@@ -87,7 +87,9 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
-    useIsSafeWallet: () => mocks.isSafeWallet,
+    // The real hook folds the iframe in (`isSafeApp || <address is a Safe>`),
+    // so an iframe test sets one flag.
+    useIsSafeWallet: () => mocks.isSafeWallet || mocks.isSafeApp,
     useIsSafeApp: () => mocks.isSafeApp,
     // happy-dom evaluates matchMedia at its 1024px default, so the real hook
     // always lands on the desktop drawer; the flag drives the M4.6 mobile panel.
@@ -226,7 +228,6 @@ describe('WalletPreviewDrawer', () => {
   });
 
   it('hides the switch-account and disconnect actions inside the Safe iframe', async () => {
-    mocks.isSafeWallet = true;
     mocks.isSafeApp = true;
     renderDrawer();
     const drawer = await openDrawer();
@@ -239,7 +240,6 @@ describe('WalletPreviewDrawer', () => {
   // Safe tx links) but the app owns the session, so the actions stay.
   it('keeps the switch-account and disconnect actions for a Safe over WalletConnect', async () => {
     mocks.isSafeWallet = true;
-    mocks.isSafeApp = false;
     renderDrawer();
     const drawer = await openDrawer();
 
@@ -375,7 +375,6 @@ describe('WalletPreviewDrawer — mobile panel (M4.6)', () => {
   });
 
   it('still shows the close button for Safe wallets while hiding the account actions', async () => {
-    mocks.isSafeWallet = true;
     mocks.isSafeApp = true;
     renderDrawer();
     const drawer = await openDrawer();
