@@ -173,6 +173,10 @@ describe('useConvertLaunch', () => {
       transactionTitle: 'Review conversion',
       confirmLabel: 'Confirm',
       confirmDisabled: false,
+      // The review is priced for the launch chain (mocked wallet chain 1), so a
+      // wallet-side switch mid-review shows the chain guard (APP-563 #4).
+      supportedChainIds: [1],
+      chainGuardReason: 'launch-chain',
       steps: [
         {
           label: 'Convert',

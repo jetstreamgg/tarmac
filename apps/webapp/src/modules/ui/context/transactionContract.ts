@@ -235,6 +235,18 @@ export type TransactionConfig = {
    * flows only) and must be justified at the call site.
    */
   supportedChainIds: number[];
+  /**
+   * Why `supportedChainIds` is what it is — it picks the guard's copy.
+   *
+   * - `product-unavailable` (default): the set is every chain the product runs
+   *   on, so leaving it means the product itself isn't on the wallet's chain.
+   * - `launch-chain`: the set is `[launch chain]` because the flow's figures
+   *   (quote, allowance, addresses) were resolved for that chain and don't
+   *   re-derive from the modal. The product may well run on the wallet's new
+   *   chain, so the guard says the flow was prepared elsewhere instead of
+   *   claiming the product is unavailable (APP-563 #4, Convert).
+   */
+  chainGuardReason?: 'product-unavailable' | 'launch-chain';
   /** Identity used to gate updateModalContent calls to the active session. */
   sessionId?: string;
 };

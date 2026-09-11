@@ -232,8 +232,9 @@ describe('TransactionModal failure & recovery', () => {
     batch.supported = true;
     renderFailedFlow(supplySteps);
 
-    // Once for the collapsed step row, once for the header chip (Figma 2800:91683).
-    expect(screen.getAllByText('Transaction failed')).toHaveLength(2);
+    // Once for the collapsed step row, once for the header chip (Figma 2800:91683),
+    // and once for the modal title, which drops "Confirm in the wallet" on failure.
+    expect(screen.getAllByText('Transaction failed')).toHaveLength(3);
     expect(
       screen.getByText(
         'The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.'

@@ -383,6 +383,41 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(screen.queryByTestId('transaction-chain-guard-switch')).toBeNull();
   });
 
+  // APP-563 #4: Convert's review is priced for its launch chain (quote,
+  // allowance, PSM addresses come from the page, not the modal), so it pins
+  // `supportedChainIds` to that chain. Switching the wallet under it must then
+  // show the guard — and the copy must not claim Convert is unavailable on the
+  // new chain, because it usually isn't.
+  it('guards a launch-chain-pinned review on a wallet-side switch, with copy that names the launch chain', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    const { refresh } = renderModal(() => ({
+      title: 'Review conversion',
+      usdValue: 100,
+      supportedChainIds: [1],
+      chainGuardReason: 'launch-chain',
+      confirmLabel: 'Confirm',
+      confirmDisabled: false,
+      transactionContent: <div>summary</div>,
+      onConfirm
+    }));
+    expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+
+    mockChainId = 8453; // the user switches to Base from the wallet mid-review
+    act(() => refresh());
+
+    const guard = screen.getByTestId('transaction-chain-guard');
+    expect(guard.textContent).toContain('prepared on Ethereum');
+    expect(guard.textContent).toContain('start again on Base');
+    expect(guard.textContent).not.toContain("isn't available");
+    // The switch action replaces Confirm, so the stale figures cannot fire.
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    expect(onConfirm).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('transaction-chain-guard-switch'));
+    expect(mockHandleSwitchChain).toHaveBeenLastCalledWith({ chainId: 1, source: 'transaction_modal' });
+  });
+
   it('does NOT guard a multi-chain flow while the wallet is on any of its supported chains', () => {
     mockChainId = 8453; // Base
     const onConfirm = vi.fn();

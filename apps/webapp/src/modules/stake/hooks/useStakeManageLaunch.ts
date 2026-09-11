@@ -221,8 +221,12 @@ export function useStakeManageLaunch({
   });
 
   // READ ONLY — labels the Approve steps; the engine derives its own approves.
-  const { data: skyAllowance } = useStakeSkyAllowance();
-  const { data: usdsAllowance } = useStakeUsdsAllowance();
+  const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
+  const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
+  const refetchAllowances = useCallback(() => {
+    mutateSkyAllowance();
+    mutateUsdsAllowance();
+  }, [mutateSkyAllowance, mutateUsdsAllowance]);
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
   const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
 
@@ -241,7 +245,7 @@ export function useStakeManageLaunch({
     enabled: enabled && calldata.length > 0,
     ...txCallbacks
   });
-  useResetPausedRunOnClose(engine.reset);
+  useResetPausedRunOnClose(engine.reset, refetchAllowances);
 
   // Live execute ref: launch() must never snapshot onConfirm state.
   const executeRef = useRef(engine.execute);

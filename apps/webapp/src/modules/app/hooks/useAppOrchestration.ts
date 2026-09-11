@@ -61,7 +61,7 @@ export function useAppOrchestration(): { intent: Intent } {
   // provider decides (in-flight, minimized, or launched by the new page).
   // Keyed on the pathname alone; search-param churn (network=) is not a
   // navigation. Skips the mount, which is not a change.
-  const { closeOnNavigation } = useTransaction();
+  const { closeOnNavigation, isModalOpen } = useTransaction();
   const lastPathnameRef = useRef(pathname);
   useEffect(() => {
     if (lastPathnameRef.current === pathname) return;
@@ -229,6 +229,13 @@ export function useAppOrchestration(): { intent: Intent } {
     // "/" is no longer a synonym — it forwards to the visitor's home
     // (Portfolio or Earn, APP-295), which is the wrong semantic here.
     if (action.kind === 'redirect-home') {
+      // Not from under an open transaction modal. A wallet-side switch off the
+      // module's chains used to redirect at once, and the navigation closed
+      // the modal — so the modal's own chain guard ("Switch to X"), which was
+      // active for exactly this case, was unmounted before it could be seen
+      // (APP-563 #4). The guard holds the flow and offers the way back; the
+      // redirect waits for the modal to close, which re-runs this effect.
+      if (isModalOpen) return;
       trackRouteRedirected({ fromPath: pathname, toPath: ROUTES.PORTFOLIO, reason: 'module_unavailable' });
       void navigate({ to: ROUTES.PORTFOLIO, search: keepSearch, replace: true });
       return;
@@ -259,7 +266,8 @@ export function useAppOrchestration(): { intent: Intent } {
     chainId,
     walletChainId,
     switchChain,
-    status
+    status,
+    isModalOpen
   ]);
 
   // Run validation on the remaining query-driven search params whenever they change

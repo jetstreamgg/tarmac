@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useEnhancedNetworkToast } from './useEnhancedNetworkToast';
+import { NETWORK_TOAST_ID, useEnhancedNetworkToast } from './useEnhancedNetworkToast';
 
 const h = vi.hoisted(() => ({
   toastWithClose: vi.fn()
@@ -56,6 +56,19 @@ describe('useEnhancedNetworkToast', () => {
     act(() => result.current.showNetworkToast({ currentChain: { id: 1, name: 'Ethereum' } }));
     elapseDebounce();
     expect(h.toastWithClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses one toast id across switches, so a later toast replaces the earlier one instead of stacking', () => {
+    const { result } = renderHook(() => useEnhancedNetworkToast());
+    act(() => result.current.showNetworkToast({ currentChain: { id: 1, name: 'Ethereum' } }));
+    elapseDebounce();
+    act(() => result.current.showNetworkToast({ currentChain: { id: 8453, name: 'Base' } }));
+    elapseDebounce();
+    expect(h.toastWithClose).toHaveBeenCalledTimes(2);
+    const ids = h.toastWithClose.mock.calls.map(call => call[1]?.id);
+    expect(ids[0]).toBe(NETWORK_TOAST_ID);
+    expect(ids[1]).toBe(NETWORK_TOAST_ID);
+    expect(h.toastWithClose.mock.calls[1][1]?.duration).toBeLessThan(Infinity);
   });
 
   it('a toast fired under the cover waits and shows at reveal', async () => {

@@ -348,6 +348,14 @@ export function resolveTooltipLabel(
 interface ChartProps {
   data: Data[];
   symbol?: string;
+  /**
+   * Headline prefix. The denomination rule for the detail charts (APP-563 #10):
+   * a series measured in a token (Savings sUSDS, vault assets, stUSDS, rewards
+   * supply) leads its figure with the token mark via `icons` and carries no
+   * prefix; a series measured in USD (Stake, whose TVL is the collateral's
+   * dollar value from BA Labs, Figma 1036:208698) carries `'$'` and no mark.
+   * Never both.
+   */
   prefix?: string;
   isPercentage?: boolean;
   hidePercentChange?: boolean;

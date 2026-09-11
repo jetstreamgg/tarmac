@@ -73,8 +73,11 @@ function SheetContent({
           // `transition-[transform,opacity]` is gone with it. Nothing here
           // transitions — enter and exit are keyframe animations — and having
           // both meant the transform kept moving after the animation ended,
-          // measurably stretching the open past 400ms.
-          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed z-50 flex flex-col gap-4 shadow-lg data-[state=closed]:duration-300 data-[state=open]:duration-300',
+          // measurably stretching the open past 400ms. transition-none makes
+          // that explicit: the `duration-*`/`ease-*` variants also set the
+          // transition properties, which with the UA default `all` would
+          // re-create a blanket 300ms transition (see DialogContent).
+          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed z-50 flex flex-col gap-4 shadow-lg transition-none data-[state=closed]:duration-300 data-[state=open]:duration-300',
           side === 'right' &&
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
           side === 'left' &&

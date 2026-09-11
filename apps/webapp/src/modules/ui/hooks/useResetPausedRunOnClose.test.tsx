@@ -9,8 +9,8 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 
 import { useResetPausedRunOnClose } from './useResetPausedRunOnClose';
 
-function renderWith(reset: () => void) {
-  const { rerender } = renderHook(() => useResetPausedRunOnClose(reset));
+function renderWith(reset: () => void, refetch?: () => void) {
+  const { rerender } = renderHook(() => useResetPausedRunOnClose(reset, refetch));
   return (isModalOpen: boolean, txStatus: TxStatus) => {
     ctx.isModalOpen = isModalOpen;
     ctx.txStatus = txStatus;
@@ -63,5 +63,18 @@ describe('useResetPausedRunOnClose', () => {
     go(true, TxStatus.SUCCESS);
     go(false, TxStatus.IDLE);
     expect(reset).not.toHaveBeenCalled();
+  });
+
+  it('refetches the engine reads with the reset, so a mined approve drops out of the next launch', () => {
+    const reset = vi.fn();
+    const refetch = vi.fn();
+    const go = renderWith(reset, refetch);
+    go(true, TxStatus.INITIALIZED);
+    go(true, TxStatus.ERROR);
+    expect(refetch).not.toHaveBeenCalled();
+
+    go(false, TxStatus.IDLE);
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

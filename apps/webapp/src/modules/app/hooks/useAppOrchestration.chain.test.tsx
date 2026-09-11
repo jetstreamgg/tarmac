@@ -29,6 +29,7 @@ let mockConfigChainId = TENDERLY;
 let mockWalletChainId: number | undefined = TENDERLY;
 let mockRewardContracts: { contractAddress: string }[] | undefined = [];
 let mockConnectionStatus = 'connected';
+let mockIsModalOpen = false;
 
 const mockNavigate = vi.fn();
 const mockSwitchChain = vi.fn();
@@ -93,7 +94,7 @@ vi.mock('@/modules/ui/context/ConnectedContext', () => ({
   useConnectedContext: () => ({ isAuthorized: true })
 }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ closeOnNavigation: vi.fn() })
+  useTransaction: () => ({ closeOnNavigation: vi.fn(), isModalOpen: mockIsModalOpen })
 }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({ setIsSwitchingNetwork: vi.fn(), setIsAutoSwitching: vi.fn() })
@@ -134,6 +135,7 @@ const redirectedHome = () =>
 
 beforeEach(() => {
   mockPathname = '/earn';
+  mockIsModalOpen = false;
   mockConfigChainId = TENDERLY;
   mockWalletChainId = TENDERLY;
   mockRewardContracts = [];
@@ -194,6 +196,22 @@ describe('useAppOrchestration — chain resolution', () => {
     refresh();
 
     expect(redirectedHome()).toBe(false);
+  });
+
+  it('holds the redirect while a transaction modal is open, so its chain guard can show, and redirects once it closes', () => {
+    mockPathname = '/stake';
+    const { refresh } = mount();
+    mockNavigate.mockClear();
+
+    mockIsModalOpen = true;
+    walletEmitsChainChange(POLYGON);
+    refresh();
+    // The modal's own guard offers "Switch to X"; navigating now would close it.
+    expect(redirectedHome()).toBe(false);
+
+    mockIsModalOpen = false;
+    refresh();
+    expect(redirectedHome()).toBe(true);
   });
 
   it('redirects home, without asking for a chain, when the wallet leaves a module mid-visit', () => {

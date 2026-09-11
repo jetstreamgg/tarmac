@@ -1184,7 +1184,8 @@ export function TransactionProvider({
         onSwitch: guardCanSwitch ? onGuardSwitchClick : undefined,
         // The guard's CTA shows the DS loading state while the wallet is
         // answering OUR switch request (not some other surface's).
-        switching: switchPending && switchVariables?.chainId === guardTargetChainId
+        switching: switchPending && switchVariables?.chainId === guardTargetChainId,
+        reason: guardConfig.chainGuardReason
       }
     : null;
 
