@@ -41,11 +41,6 @@ export const shellHeaderClasses = () =>
     // previous 8px sat the bar hard against the top edge). The bar's own
     // padding is the gap to the content now, so the extra 4px margin is gone.
     'w-full py-4 lg:py-6',
-    // Same pad as the page column (Layout.tsx): the bar stays full-bleed so
-    // its frosted gradient reaches the viewport edge, and its content box —
-    // hence the nav row's alignment with the page — ends where the column's
-    // does. 0 whenever there is no pad.
-    'pr-[var(--page-scrollbar-pad,0px)]',
     // The bar's own `bg` layer, straight off the comps: the gradient-navbar
     // fill over background blur-md (Figma radius 12 ⇒ 6px). It lives on the bar
     // itself rather than on a child — `backdrop-filter` filters what is painted
@@ -57,7 +52,19 @@ export const shellHeaderClasses = () =>
     // line where that 5% met the bare page. So the DS ramp plays out over the
     // first three quarters of the bar and the last quarter carries it to fully
     // transparent: same bar, no edge to see.
-    'bg-linear-to-b from-navbarGradientStart via-navbarGradientEnd via-75% to-transparent backdrop-blur-[6px]',
+    //
+    // The fill is drawn by a ::before under the bar's content (the bar's
+    // backdrop-filter makes it a stacking context, so -z-10 sits between the
+    // backdrop and the children) rather than as the bar's own background, so
+    // it can be masked on its own: the tint fades out over the page's edge
+    // fade (`--page-edge-fade`, globals.css — the `.app-background::after`
+    // strip's width beside a classic scrollbar, 0 with overlay bars, where
+    // the mask then does nothing). The page scrollbar's reserved gutter
+    // beside the bar is bare canvas that nothing paints into, so a tint
+    // running to the scrollport's edge left the gutter reading as a paler
+    // notch beside the bar's rows. The bar's backdrop blur stays on the bar.
+    'before:absolute before:inset-0 before:-z-10 before:bg-linear-to-b before:from-navbarGradientStart before:via-navbarGradientEnd before:via-75% before:to-transparent before:mask-r-from-[calc(100%-var(--page-edge-fade,0px))] before:mask-r-to-100%',
+    'backdrop-blur-[6px]',
     // Pages scroll on the document, so the header pins as a sticky, see-through
     // frosted bar. The Earn Opportunities heading's scroll-mt-24 (EarnPage)
     // budgets for this bar's height — revisit it if the bar grows. Note that
