@@ -15,7 +15,6 @@ import { BatchSimulationError, simulateBatch } from './simulateBatch';
 import { BATCH_EXECUTOR_ADDRESS, multicall3Abi } from './networkFee';
 import { resetBatchExecutorCodeCache } from './batchExecutorCode';
 
-const CHAIN_ID = 1;
 const ACCOUNT: Address = '0x0650CAF159C5A49f711e8169D4336ECB9b950275';
 /** Stands in for Multicall3's runtime code, as read from its canonical address. */
 const EXECUTOR_CODE: Hex = '0x60806040deadbeef';
@@ -61,8 +60,8 @@ function makeClient(
   return { client: { call, getCode } as unknown as PublicClient, call, getCode };
 }
 
-const run = (client: PublicClient, callList: readonly Call[] = calls) =>
-  simulateBatch({ client, chainId: CHAIN_ID, account: ACCOUNT, calls: callList });
+const run = (client: PublicClient, callList: readonly Call[] = calls, fallbackClients?: PublicClient[]) =>
+  simulateBatch({ client, account: ACCOUNT, calls: callList, fallbackClients });
 
 beforeEach(resetBatchExecutorCodeCache);
 
@@ -104,7 +103,7 @@ describe('simulateBatch — the request', () => {
     expect(params.data).toContain('0'.repeat(63) + '1'); // allowFailure: true
   });
 
-  it('reads the executor code from its canonical address once per chain', async () => {
+  it('reads the executor code from its canonical address once per session', async () => {
     const { client, getCode } = makeClient(async () => ({
       data: bundle([{ success: true, returnData: TRUE }])
     }));
@@ -217,12 +216,31 @@ describe('simulateBatch — the RPC', () => {
     expect(error.kind).toBe('structural');
   });
 
-  it('classifies a chain with no executor deployed as structural', async () => {
+  it('reads the executor code from another configured chain when this one has none', async () => {
+    // The bytes are chain-agnostic and only ever run inside the simulation, so a chain
+    // without Multicall3 still gets a validated bundle rather than the sequential fallback.
+    const { client, call } = makeClient(
+      async () => ({ data: bundle([{ success: true, returnData: TRUE }]) }),
+      {
+        executorCode: async () => undefined
+      }
+    );
+    const { client: mainnet, getCode: mainnetGetCode } = makeClient(async () => ({}));
+
+    await expect(run(client, [approve], [mainnet])).resolves.toHaveLength(1);
+
+    expect(mainnetGetCode).toHaveBeenCalledWith({ address: BATCH_EXECUTOR_ADDRESS });
+    const [params] = call.mock.calls[0] as unknown as [Record<string, unknown>];
+    expect(params.stateOverride).toEqual([{ address: ACCOUNT, code: EXECUTOR_CODE }]);
+  });
+
+  it('classifies no executor deployed on any reachable chain as structural', async () => {
     const { client, call } = makeClient(async () => ({ data: bundle([]) }), {
       executorCode: async () => undefined
     });
+    const { client: other } = makeClient(async () => ({}), { executorCode: async () => '0x' });
 
-    const error = await failure(run(client));
+    const error = await failure(run(client, calls, [other]));
 
     expect(error.kind).toBe('structural');
     expect(call).not.toHaveBeenCalled();

@@ -4,6 +4,7 @@ import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import type { Call } from 'viem';
 import { reportError } from '@/modules/sentry/reportError';
 import { getCallsKey } from './networkFee';
+import { useBatchExecutorFallbackClients } from './useBatchExecutorFallbackClients';
 import {
   isBatchSimulationError,
   isStructuralBatchSimulationError,
@@ -52,6 +53,7 @@ export function useSimulateBatch({
   const resolvedChainId = chainId ?? connectedChainId;
   const { address } = useAccount();
   const client = usePublicClient({ chainId: resolvedChainId });
+  const fallbackClients = useBatchExecutorFallbackClients(resolvedChainId);
 
   // An engine can hand over a call it can't encode yet (an arg only known after
   // connect). Not simulatable, so not prepared — never a crash.
@@ -65,7 +67,7 @@ export function useSimulateBatch({
 
   const { isSuccess, isLoading, error, refetch } = useQuery({
     queryKey: ['simulate-batch', resolvedChainId, address, callsKey],
-    queryFn: () => simulateBatch({ client: client!, chainId: resolvedChainId, account: address!, calls }),
+    queryFn: () => simulateBatch({ client: client!, account: address!, calls, fallbackClients }),
     enabled: enabled && !!client && !!address && calls.length > 0 && callsKey !== null,
     // A revert or an unsupported RPC won't change on a retry; only a failed request might.
     retry: (failureCount, err) => isTransientBatchSimulationError(err) && failureCount < 3,

@@ -124,7 +124,7 @@ function describeCall(call: Call, index: number): string {
  * Validate a batch before the wallet sees it.
  *
  * One `eth_call` runs the whole bundle atomically: the batch executor's runtime code
- * (Multicall3, read from its canonical deployment on this chain) is placed at the user's
+ * (Multicall3, read from a canonical deployment) is placed at the user's
  * own address through a state override, so every inner call sees
  * `msg.sender == account` — the same thing the wallet's EIP-7702 delegate arranges at
  * send time — and an approve primes the allowance for the deposit that follows it in
@@ -137,28 +137,29 @@ function describeCall(call: Call, index: number): string {
  */
 export async function simulateBatch({
   client,
-  chainId,
   account,
-  calls
+  calls,
+  fallbackClients
 }: {
   client: PublicClient;
-  chainId: number;
   account: Address;
   calls: readonly Call[];
+  /** Other chains to read the executor code from when this one has no deployment. */
+  fallbackClients?: readonly PublicClient[];
 }): Promise<readonly BatchCallResult[]> {
   let executorCode: Hex | undefined;
   try {
-    executorCode = await getBatchExecutorCode(client, chainId);
+    executorCode = await getBatchExecutorCode(client, fallbackClients);
   } catch (error) {
     throw new BatchSimulationError('Batch simulation failed: could not read the batch executor code', {
       kind: 'transient',
       cause: error
     });
   }
-  // No Multicall3 on this chain: nothing to stand in for the delegate, so a bundle can't
-  // be validated here. Says nothing about the calls.
+  // No Multicall3 on any chain we can reach: nothing to stand in for the delegate, so a
+  // bundle can't be validated. Says nothing about the calls.
   if (!executorCode) {
-    throw new BatchSimulationError('Batch simulation unavailable: no batch executor deployed on this chain', {
+    throw new BatchSimulationError('Batch simulation unavailable: no batch executor code found', {
       kind: 'structural'
     });
   }

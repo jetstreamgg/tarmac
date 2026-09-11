@@ -107,13 +107,13 @@ async function simulateSequential(
  */
 async function simulateBundledGas(
   client: PublicClient,
-  chainId: number,
   account: Address,
-  calls: readonly Call[]
+  calls: readonly Call[],
+  fallbackClients?: readonly PublicClient[]
 ): Promise<{ gas: bigint; steadyStateGas: bigint }> {
   const [accountCode, executorCode] = await Promise.all([
     client.getCode({ address: account }),
-    getBatchExecutorCode(client, chainId)
+    getBatchExecutorCode(client, fallbackClients)
   ]);
 
   if (!executorCode) {
@@ -151,20 +151,23 @@ export async function estimateFlowGas({
   chainId,
   account,
   calls,
-  wantsBatch
+  wantsBatch,
+  fallbackClients
 }: {
   client: PublicClient;
   chainId: number;
   account: Address;
   calls: readonly Call[];
   wantsBatch: boolean;
+  /** Other chains to read the executor code from when this one has no deployment. */
+  fallbackClients?: readonly PublicClient[];
 }): Promise<FlowGasEstimate> {
   // The bundled branch catches its own failures: it is the optional figure, and letting
   // it reject the pair blanked the sequential fee too — the one the row falls back to.
   const [perCallGas, simulatedBatchGas] = await Promise.all([
     simulateSequential(client, account, calls),
     wantsBatch
-      ? simulateBundledGas(client, chainId, account, calls).catch(() => undefined)
+      ? simulateBundledGas(client, account, calls, fallbackClients).catch(() => undefined)
       : Promise.resolve(undefined)
   ]);
 

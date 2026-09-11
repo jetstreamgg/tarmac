@@ -40,7 +40,6 @@ describe('simulateBatch on the fork', () => {
     await expect(
       simulateBatch({
         client: client(),
-        chainId: TENDERLY_CHAIN_ID,
         account: TEST_WALLET_ADDRESS,
         calls: [approve, swap]
       })
@@ -52,7 +51,6 @@ describe('simulateBatch on the fork', () => {
 
     const failure = await simulateBatch({
       client: client(),
-      chainId: TENDERLY_CHAIN_ID,
       account: TEST_WALLET_ADDRESS,
       calls: [swap]
     }).catch(error => error);
@@ -70,7 +68,6 @@ describe('simulateBatch on the fork', () => {
 
     const failure = await simulateBatch({
       client: client(),
-      chainId: TENDERLY_CHAIN_ID,
       account: TEST_WALLET_ADDRESS,
       calls: [codeless, swap]
     }).catch(error => error);

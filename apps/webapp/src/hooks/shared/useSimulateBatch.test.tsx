@@ -20,6 +20,7 @@ vi.mock('./simulateBatch', async importOriginal => ({
   simulateBatch
 }));
 vi.mock('@/modules/sentry/reportError', () => ({ reportError }));
+vi.mock('./useBatchExecutorFallbackClients', () => ({ useBatchExecutorFallbackClients: () => [] }));
 
 import { BatchSimulationError } from './simulateBatch';
 import { useSimulateBatch } from './useSimulateBatch';
