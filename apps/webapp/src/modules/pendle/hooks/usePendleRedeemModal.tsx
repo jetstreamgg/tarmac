@@ -97,7 +97,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     },
     onError: (err, hash) => txCallbacks.onError(err, hash)
   });
-  useResetPausedRunOnClose(writeHook.reset);
 
   // Map raw revert messages to user-friendly copy — shared with the buy/sell
   // modal so users see consistent guidance across all three flows. Only while
@@ -116,7 +115,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // Steps mirror the engine's call count ([approve?, claim]), like the
   // buy/sell form — a first-time redeemer signs a PT approval first.
   const { address } = useConnection();
-  const { data: allowance } = useTokenAllowance({
+  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
     chainId: engineChainId,
     contractAddress: market.ptToken,
     owner: address,
@@ -124,6 +123,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   });
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
+  useResetPausedRunOnClose(writeHook.reset, mutateAllowance);
   const steps = useMemo<TransactionStep[]>(() => {
     const claimStep = {
       label: t`Claim`,

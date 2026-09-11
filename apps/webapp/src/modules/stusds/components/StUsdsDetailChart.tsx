@@ -47,10 +47,12 @@ export function StUsdsDetailChart() {
     liveRate !== undefined && parsed.rate.length > 0
       ? [...parsed.rate, { value: liveRate, date: new Date(), tooltipLabel: LIVE_LABEL }]
       : parsed.rate;
-  const tvlData =
-    liveTvl !== undefined && parsed.tvl.length > 0
-      ? [...parsed.tvl, { value: liveTvl, date: new Date(), tooltipLabel: LIVE_LABEL }]
-      : parsed.tvl;
+  // The TVL series gets no live point: BA Labs' daily `stusds_tvl` is not the
+  // module's on-chain `totalAssets` (measured 224.3M vs 209.0M on the same
+  // day), so a trailing on-chain point drew a step off the end of the daily
+  // series that read as a cliff on 1W (APP-563 #11). The headline keeps the
+  // on-chain figure, matching the Details grid.
+  const tvlData = parsed.tvl;
 
   return (
     <ErrorBoundary variant="small">

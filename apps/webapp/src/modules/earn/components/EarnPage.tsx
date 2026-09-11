@@ -529,7 +529,10 @@ export function EarnPage() {
           table right above it, the geo-restricted section below keeps its own
           tally out of it. A filter that hides nothing needs no escape hatch, so
           the control never reads "(0)". */}
-      {hasActiveFilters && hiddenRowCount > 0 && (
+      {/* Held while the geo partition is still deciding which rows the main
+          table owns: before it settles every row counts as available, so the
+          figure read differently between loads (APP-563 #12). */}
+      {hasActiveFilters && !isGeoLoading && hiddenRowCount > 0 && (
         <Button
           variant="secondary"
           size="m"

@@ -31,9 +31,15 @@ vi.mock('@/hooks', async importOriginal => {
 });
 
 // Nothing geo-restricted: the hidden count is about the main table only, and
-// the restricted section has its own coverage.
+// the restricted section has its own coverage. `isLoading` is swappable: the
+// count waits for the partition to settle (APP-563 #12).
+const geo = vi.hoisted(() => ({ current: { isLoading: false } }));
 vi.mock('@/modules/geo-config', () => ({
-  useGeoConfig: () => ({ isModuleEnabled: () => true, isLoading: false, isRegionVerified: true })
+  useGeoConfig: () => ({
+    isModuleEnabled: () => true,
+    isLoading: geo.current.isLoading,
+    isRegionVerified: true
+  })
 }));
 
 // Matured PT drives the "Requires action" section; swappable per test.
@@ -158,6 +164,17 @@ describe('EarnPage clear-filters control', () => {
     renderPage('/earn?token=usdc');
     await screen.findByTestId('earn-opportunities');
     expect(clearButton()?.textContent).toContain('(2)');
+  });
+
+  it('waits for the geo partition to settle before showing a count', async () => {
+    geo.current = { isLoading: true };
+    try {
+      renderPage('/earn?token=usdc');
+      await screen.findByTestId('earn-opportunities');
+      expect(clearButton()).toBeNull();
+    } finally {
+      geo.current = { isLoading: false };
+    }
   });
 
   it('counts every active filter together, not just the last one', async () => {

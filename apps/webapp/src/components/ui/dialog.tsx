@@ -63,6 +63,15 @@ const DialogContent = React.forwardRef<
         // because Tailwind's translate utilities set the `translate` property
         // while the animation drives `transform`.
         //
+        // transition-none: the `duration-*` and `ease-*` variants below set
+        // `transition-duration`/`transition-timing-function` as well as the
+        // animation ones (both utilities share the class names), and with the
+        // UA default `transition-property: all` that is a 300ms transition on
+        // every property — so a `left` that changed after mount tweened while
+        // the `50%` half jumped, and the card rose on a diagonal (APP-563 #2).
+        // Nothing on the card is meant to transition: enter and exit are
+        // keyframes.
+        //
         // The card centres on the page, not the viewport: under the lock the
         // root releases its scrollbar gutter (globals.css) so the scrim can
         // cover the whole window, body keeps the bar's width as a margin, and
@@ -70,7 +79,7 @@ const DialogContent = React.forwardRef<
         // the root's own measurement before any dialog can open, so the
         // offset is there from the first frame) backs the card off by half of
         // it. 0 with overlay bars.
-        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-10 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed top-[50%] left-[calc(50%-var(--page-released-gutter,0px)/2)] z-50 grid max-h-[calc(100dvh-2rem)] w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain rounded-[24px] px-5 py-4 shadow-lg outline-hidden data-[state=closed]:duration-300 data-[state=open]:duration-300 sm:min-w-[640px] sm:px-10 sm:py-8',
+        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-10 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed top-[50%] left-[calc(50%-var(--page-released-gutter,0px)/2)] z-50 grid max-h-[calc(100dvh-2rem)] w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain rounded-[24px] px-5 py-4 shadow-lg outline-hidden transition-none data-[state=closed]:duration-300 data-[state=open]:duration-300 sm:min-w-[640px] sm:px-10 sm:py-8',
         className
       )}
       {...props}

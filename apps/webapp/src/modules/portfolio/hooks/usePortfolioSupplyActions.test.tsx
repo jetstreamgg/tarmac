@@ -179,14 +179,26 @@ describe('usePortfolioSupplyActions', () => {
     );
   });
 
-  it('targets the config Tenderly fork, never real Ethereum, when the build carries one (dev/staging)', async () => {
+  it("switches to the card's own chain, never the Tenderly fork, for a mainnet card in a dev build (APP-563 #1)", async () => {
     h.chainId = 8453; // wallet on Base
     h.chains = [{ id: 1 }, { id: 314310 }, { id: 8453 }]; // dev config: Ethereum + fork + L2s
     const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
-    // Position read from real mainnet, but the auto-switch must land on the
-    // fork — landing a dev wallet on Ethereum means real fees.
-    await result.current(position('stusds', { chainId: 1 }))!();
+    // The card's balance was read from real mainnet; opening on the fork
+    // would show fork state that does not match the card.
+    await result.current(position('savings', { chainId: 1 }))!();
+
+    expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 1 });
+    expect(h.switchChainAsync).not.toHaveBeenCalledWith({ chainId: 314310 });
+    expect(h.openSavingsSupply).toHaveBeenCalledTimes(1);
+  });
+
+  it('switches to the fork for a fork card (a fork session collapses the family to the fork)', async () => {
+    h.chainId = 8453;
+    h.chains = [{ id: 1 }, { id: 314310 }, { id: 8453 }];
+    const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
+
+    await result.current(position('stusds', { chainId: 314310 }))!();
 
     expect(h.switchChainAsync).toHaveBeenCalledWith({ chainId: 314310 });
     expect(h.openStUsdsSupply).toHaveBeenCalledTimes(1);

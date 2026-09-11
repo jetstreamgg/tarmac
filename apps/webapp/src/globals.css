@@ -775,6 +775,18 @@
     cursor: pointer;
   }
 
+  /* iOS Safari treats a long-press on a button as a text selection of its
+     label ("Access sUSDS", "Connect Wallet") and the highlight then sticks
+     (APP-563 #9). Desktop browsers already don't select button text; this
+     brings touch in line. Links are left alone: their text is legitimately
+     selectable. */
+  button,
+  [role='button'] {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
   :root {
     /* Tells the UA which set of built-in widgets to draw: scrollbars, form
        controls, and the document canvas. Without it every browser assumes
