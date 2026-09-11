@@ -34,6 +34,9 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    // Identity debounce: these tests assert synchronously after typing; the
+    // settle window itself is covered at the page seam (ConvertPage.test).
+    useDebounce: <T,>(value: T) => value,
     useTokenBalance: ({ token }: { token?: string }) => {
       const usds = actual.TOKENS.usds.address[h.chainId]?.toLowerCase();
       const value = token?.toLowerCase() === usds ? h.usdsBalance : h.usdcBalance;
@@ -87,6 +90,9 @@ describe('useConvertForm', () => {
     expect(result.current.amount).toBe(parseUnits('1.5', 6));
     expect(result.current.targetAmount).toBe(parseUnits('1.5', 18));
     expect(result.current.targetValue).toBe('1.5');
+    // Settled (identity debounce): the engine-facing amount is the typed one.
+    expect(result.current.debouncedAmount).toBe(parseUnits('1.5', 6));
+    expect(result.current.debouncePending).toBe(false);
   });
 
   it('groups the derived To figure for display while keeping the raw amount exact (APP-553)', () => {

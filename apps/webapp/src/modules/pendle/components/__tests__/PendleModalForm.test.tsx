@@ -53,6 +53,9 @@ const hoisted = vi.hoisted(() => ({
   analyticsSpy: vi.fn(),
   // Router allowance for the input token — 0n means every amount needs approval.
   allowance: 0n,
+  // When set, useDebounce returns this instead of the live amount — simulates
+  // the settle window after a keystroke. Unset = identity passthrough.
+  debounceLagged: undefined as bigint | undefined,
   // Optional hook a test can set to mimic the real provider (every push
   // re-renders the tree) — the loop regression below relies on it.
   onPush: undefined as (() => void) | undefined,
@@ -93,6 +96,7 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    useDebounce: <T,>(value: T) => (hoisted.debounceLagged !== undefined ? hoisted.debounceLagged : value),
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
@@ -230,6 +234,7 @@ describe('PendleModalForm', () => {
     hoisted.batchArgs = undefined;
     hoisted.onPush = undefined;
     hoisted.allowance = 0n;
+    hoisted.debounceLagged = undefined;
   });
 
   it('settles its content pushes when every push re-renders the host (regression: max update depth)', () => {
@@ -317,6 +322,25 @@ describe('PendleModalForm', () => {
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
 
       typeAmount('100');
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
+    });
+
+    it('holds the quote, the engine and confirm on the settled amount while the debounce lags', () => {
+      // The typed 100 hasn't settled yet: the debounce still reports the prior 50.
+      hoisted.debounceLagged = parseUnits('50', 6);
+      renderForm('supply');
+      typeAmount('100');
+
+      expect(hoisted.quoteArgs?.amountIn).toBe(parseUnits('50', 6));
+      expect(hoisted.batchArgs?.amountIn).toBe(parseUnits('50', 6));
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+
+      // Settled: the live amount flows through and confirm re-arms.
+      hoisted.debounceLagged = undefined;
+      typeAmount('100.0');
+
+      expect(hoisted.quoteArgs?.amountIn).toBe(parseUnits('100', 6));
+      expect(hoisted.batchArgs?.amountIn).toBe(parseUnits('100', 6));
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
     });
 
