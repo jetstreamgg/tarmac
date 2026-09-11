@@ -21,15 +21,9 @@ function Slider({
   max = 100,
   variant = 'default',
   valueText,
-  markers,
-  rangeStart,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root> & {
   variant?: SliderVariant;
-  /** Interior tick marks, in the slider's value domain (e.g. the current debt on an amount axis). */
-  markers?: number[];
-  /** Start the fill here instead of at `min` (Figma Progress Steps: only the staged delta is coloured). */
-  rangeStart?: number;
   /** Spoken value for the thumb (aria-valuetext) — e.g. "25%" where the bare
    *  number would be ambiguous. Radix puts role="slider" on the THUMB, so this
    *  cannot be passed through Root's props. */
@@ -40,13 +34,6 @@ function Slider({
     [value, defaultValue, min, max]
   );
   const isRange = variant === 'range';
-  // Thumb-travel projection (8px radius inset at each end), shared by the
-  // markers and the delta fill so they line up with the thumb centre.
-  const travel = (v: number) => (max > min ? Math.min(1, Math.max(0, (v - min) / (max - min))) : 0);
-  const deltaFill =
-    rangeStart !== undefined && _values[0] !== undefined
-      ? { start: travel(rangeStart), end: travel(Math.max(rangeStart, _values[0])) }
-      : undefined;
 
   return (
     <SliderPrimitive.Root
@@ -79,43 +66,10 @@ function Slider({
             'absolute rounded-full bg-linear-to-r data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
             isRange
               ? 'from-slider-yellow-start to-slider-yellow-end'
-              : 'from-slider-brand-start to-slider-brand-end',
-            // Disabled = nothing to stage: a flat grey track, no gradient.
-            'group-data-[disabled]:bg-fgQuaternary group-data-[disabled]:bg-none',
-            deltaFill && 'hidden'
+              : 'from-slider-brand-start to-slider-brand-end'
           )}
         />
-        {deltaFill && (
-          <span
-            aria-hidden
-            data-slot="slider-delta-range"
-            className={cn(
-              'absolute inset-y-0 rounded-full bg-linear-to-r',
-              isRange
-                ? 'from-slider-yellow-start to-slider-yellow-end'
-                : 'from-slider-brand-start to-slider-brand-end',
-              'group-data-[disabled]:bg-fgQuaternary group-data-[disabled]:bg-none'
-            )}
-            style={{
-              left: `calc(8px + ${deltaFill.start} * (100% - 16px))`,
-              right: `calc(100% - (8px + ${deltaFill.end} * (100% - 16px)))`
-            }}
-          />
-        )}
       </SliderPrimitive.Track>
-      {markers?.map(marker => {
-        const fraction = travel(marker);
-        return (
-          <span
-            key={marker}
-            aria-hidden
-            data-slot="slider-marker"
-            // Centered on the thumb's travel: 8px radius inset at each end.
-            className="bg-sliderMarker absolute top-1/2 h-3.5 w-0.5 -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `calc(8px + ${fraction} * (100% - 16px))` }}
-          />
-        );
-      })}
       {isRange && (
         // Min/max markers (2×14) centered on the thumb's end positions — the
         // thumb radius is 8px, so the 2px markers sit 7px in from each edge.
@@ -162,14 +116,11 @@ function Slider({
 // (Standard: 1×4 every 8.2px · Range: 1×8 every 5.6px).
 function SliderTicks({
   progress,
-  progressStart = 0,
   variant = 'default',
   className
 }: {
   /** Colored share of the scale, 0–100 (same domain as the slider value). */
   progress: number;
-  /** Where the coloured share begins, 0–100 (the delta fill's `rangeStart`). */
-  progressStart?: number;
   variant?: SliderVariant;
   className?: string;
 }) {
@@ -213,27 +164,24 @@ function SliderTicks({
     return () => observer.disconnect();
   }, []);
 
-  const toPercent = (share: number) => {
-    const fraction = Math.min(100, Math.max(0, share)) / 100;
-    return geometry && geometry.width > 0
+  const fraction = Math.min(100, Math.max(0, progress)) / 100;
+  const percent =
+    geometry && geometry.width > 0
       ? ((8 + fraction * (geometry.sliderWidth - 16) - geometry.offset) / geometry.width) * 100
       : fraction * 100;
-  };
-  const startPercent = Math.min(100, Math.max(0, toPercent(Math.min(progressStart, progress))));
-  const percent = Math.min(100, Math.max(0, toPercent(progress)));
 
   return (
     <div ref={ref} aria-hidden className={cn('relative overflow-hidden', isRange ? 'h-2' : 'h-1', className)}>
       <div className={cn('bg-glassBadge absolute inset-0', mask)} />
       <div
         className={cn(
-          'absolute inset-y-0 bg-linear-to-r',
+          'absolute inset-y-0 left-0 bg-linear-to-r',
           mask,
           isRange
             ? 'from-slider-yellow-start to-slider-yellow-end'
             : 'from-slider-brand-start to-slider-brand-end'
         )}
-        style={{ left: `${startPercent}%`, width: `${Math.max(0, percent - startPercent)}%` }}
+        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
       />
     </div>
   );

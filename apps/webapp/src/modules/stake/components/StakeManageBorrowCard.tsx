@@ -327,7 +327,6 @@ export function StakeManageBorrowCard({
             mode={isRepay ? 'repay' : 'borrow'}
             minLoading={dust === undefined && (positionLoading || simulationLoading)}
             maxLoading={isRepay ? positionLoading : maxHintLoading}
-            unit="USDS"
             dataTestId="stake-manage-borrow-slider"
           />
         )}

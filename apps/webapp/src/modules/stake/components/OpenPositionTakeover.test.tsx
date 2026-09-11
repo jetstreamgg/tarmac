@@ -474,51 +474,6 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(500n * WAD);
   });
 
-  it('the stake slider tracks the typed share of the balance (1036:209724)', () => {
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-    expect(slider?.getAttribute('aria-valuenow')).toBe('0');
-
-    // Balance is 1000 SKY, so a quarter of it puts the thumb at 25%.
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
-
-    // Typing past the balance pins the thumb rather than running it off-track.
-    typeStakeAmount('5000');
-    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
-  });
-
-  it('the stake slider still reads whole percents on a dust-bearing balance', () => {
-    // Staging floors, so a balance that is not a round multiple of 100 wei used
-    // to read back one percent LOW (25% chip → thumb at 24) when the projection
-    // floored as well. Real balances are all of this shape.
-    h.balance = 1234567891234567891234n;
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
-    expect(slider?.getAttribute('aria-valuetext')).toBe('25%');
-
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-100'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
-  });
-
-  it('dragging the stake slider stages the matching share of the balance', () => {
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-    (slider as HTMLElement).focus();
-    // One keyboard step off zero is 1% of the 1000 SKY balance.
-    fireEvent.keyDown(slider as HTMLElement, { key: 'ArrowRight' });
-
-    expect(slider?.getAttribute('aria-valuenow')).toBe('1');
-    expect((screen.getByTestId('stake-takeover-stake-amount') as HTMLInputElement).value).toBe('10');
-    expect(h.launchParams?.skyToLock).toBe(10n * WAD);
-  });
-
   it('shows the est. annual rewards from the selected farm rate, in USD', () => {
     renderTakeover();
 
@@ -540,10 +495,9 @@ describe('OpenPositionTakeover', () => {
     expect(screen.getByTestId('stake-takeover-risk-pill').textContent).toBe('Medium');
     const slider = screen.getByTestId('stake-takeover-borrow-slider');
     expect(slider).toBeTruthy();
-    // The risk slider uses the design-system range treatment (H7): the
-    // orange→yellow fill instead of the default brand gradient.
-    const range = slider.querySelector('[data-slot=slider-range]');
-    expect(range?.className).toContain('from-slider-yellow-start');
+    // Progress Steps: the borrow fill carries the orange→yellow gradient.
+    const fill = slider.querySelector('[data-slot=slider-fill]');
+    expect(fill?.className).toContain('from-slider-yellow-start');
     // Card 1 now shows the min-stake-to-borrow stat.
     expect(screen.getByTestId('stake-takeover-min-stake')).toBeTruthy();
   });

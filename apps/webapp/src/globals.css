@@ -150,6 +150,9 @@
   --color-slider-brand-end: #757dff;
   --color-slider-yellow-start: #ff8a5c;
   --color-slider-yellow-end: #ffc738;
+  /* gradient-slider-green (repay Progress Steps 3015:62130), theme-invariant. */
+  --color-slider-green-start: #015c4c;
+  --color-slider-green-end: #02c2a1;
   --color-sliderDot: #1a192d;
   --color-sliderRing: rgba(255, 255, 255, 0.2);
   --color-sliderLine: #2a2a40;

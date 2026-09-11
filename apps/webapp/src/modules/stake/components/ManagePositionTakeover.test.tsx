@@ -629,7 +629,7 @@ describe('ManagePositionTakeover', () => {
     // 30k debt on a 30k + 40k axis → tick at 3/7.
     expect(slider.querySelectorAll('[data-slot="slider-marker"]').length).toBe(1);
     expect(screen.getByTestId('stake-manage-borrow-slider-marker-label').textContent).toContain(
-      'Borrowed: 30K'
+      'Borrowed:30,000'
     );
     fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
     expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);

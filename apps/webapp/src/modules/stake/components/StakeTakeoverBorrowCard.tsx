@@ -164,9 +164,6 @@ export function StakeTakeoverBorrowCard({
             mode="borrow"
             minLoading={dust === undefined && simulationLoading}
             maxLoading={maxLoading}
-            unit={
-              <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
-            }
             dataTestId="stake-takeover-borrow-slider"
           />
         )}

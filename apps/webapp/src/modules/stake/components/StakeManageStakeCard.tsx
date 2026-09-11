@@ -3,7 +3,6 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { formatBigInt, formatUsd } from '@/utils';
-import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
@@ -16,8 +15,8 @@ const WAD = 10n ** 18n;
 
 /**
  * Manage card 1 · Stake SKY | Withdraw SKY (UX 1050:21454 / 1104:20574):
- * segmented mode + toggle, amount field, balance/staked line, a 0–100% percent
- * slider over the mode's base amount, and the stacked stat rows (Figma
+ * segmented mode + toggle, amount field, balance/staked line with percent
+ * chips, and the stacked stat rows (Figma
  * 3015:58333: Min. stake to borrow, Staked amount, Est. annual rewards,
  * rewards rate) with before→after deltas (M13/M22). Withdraw validation arrives via `error` (legacy Free.tsx
  * rules, computed in the container).
@@ -76,13 +75,11 @@ export function StakeManageStakeCard({
   const base = (isStake ? walletBalance : stakedAmount) ?? 0n;
   const baseLoading = isStake ? walletBalanceLoading : !!stakedAmountLoading;
 
-  const sliderPercent = base > 0n ? Math.min(100, Number((amount * 100n) / base)) : 0;
-  const onSliderChange = (percent: number) => {
+  const onPercentClick = (percent: number) => {
     if (base === 0n) return;
-    // 100% stages the exact base; intermediate stops round to whole SKY.
+    // 100% stages the exact base; the other chips round to whole SKY.
     onAmountChange(percent === 100 ? base : ((base * BigInt(percent)) / 100n / WAD) * WAD);
   };
-  const onPercentClick = (percent: number) => onSliderChange(percent);
 
   // Staked amount after the staged change (row delta only while an amount is staged).
   const stakedNext =
@@ -111,8 +108,8 @@ export function StakeManageStakeCard({
       onEnabledChange={onEnabledChange}
       dataTestId="stake-manage-stake-card"
     >
-      {/* Design QA 2800:91832 ("More gap"): 32px between the amount block, the
-          slider and the stats from md up — the card's own header→body gap. */}
+      {/* Design QA 2800:91832 ("More gap"): 32px between the amount block and
+          the stats from md up — the card's own header→body gap. */}
       <div className="flex flex-col gap-6 md:gap-8">
         <StakeTakeoverAmountField
           tokenSymbol="SKY"
@@ -134,22 +131,6 @@ export function StakeManageStakeCard({
             </span>
           }
         />
-
-        <div className="flex flex-col gap-2">
-          <Slider
-            value={[sliderPercent]}
-            max={100}
-            step={1}
-            onValueChange={value => onSliderChange(value[0])}
-            aria-label={isStake ? t`Stake percentage` : t`Withdraw percentage`}
-            data-testid="stake-manage-stake-slider"
-          />
-          <div className="text-fgSecondary flex items-center gap-4 text-xs">
-            <span>0%</span>
-            <SliderTicks progress={sliderPercent} className="grow" />
-            <span>100%</span>
-          </div>
-        </div>
 
         <StakeManageStatRows>
           <StakeManageStatRow

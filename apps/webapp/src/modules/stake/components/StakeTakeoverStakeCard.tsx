@@ -4,7 +4,6 @@ import { t } from '@lingui/core/macro';
 import { formatBigInt, formatUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { RateInfo } from '@/components/product/RateInfo';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
@@ -30,7 +29,7 @@ function StatDivider() {
 
 /**
  * Card 1 · Stake SKY (Modal / 12, 1036:209703): amount + balance/percent chips
- * over a hairline, a 0–100%-of-balance slider, then the rewards-rate stats. The
+ * over a hairline, then the rewards-rate stats. The
  * `Min. stake to borrow` stat appears only while Borrow is enabled (UX §A.2).
  * Est. annual rewards shows "–" until an amount is entered.
  */
@@ -72,21 +71,6 @@ export function StakeTakeoverStakeCard({
     onAmountChange(percent === 100 ? balance : (balance * BigInt(percent)) / 100n);
   };
 
-  // Slider ↔ amount share the chips' arithmetic, so dragging to a stop and
-  // clicking the matching chip stage the same wei. Held at whole percents (the
-  // DS Standard slider's step); an amount typed past the balance pins the thumb
-  // at 100 rather than running it off the track.
-  //
-  // The projection back to a percent must ROUND, not floor. Staging floors
-  // (`balance × p / 100`), so on any balance that isn't a round multiple of 100
-  // wei — i.e. essentially every real one — flooring here too reads back p − 1:
-  // the 25% chip would park the thumb at 24, and every drag step would lag the
-  // pointer by one. The extra 1e2 of scale keeps that rounding off the bigint
-  // division, which floors regardless.
-  const sliderBalance = balance ?? 0n;
-  const sliderPercent =
-    sliderBalance > 0n ? Math.min(100, Math.round(Number((amount * 10000n) / sliderBalance) / 100)) : 0;
-
   return (
     <StakeTakeoverCard step={1} title={<Trans>Stake SKY</Trans>} dataTestId="stake-takeover-stake-card">
       <div className="flex flex-col gap-6 md:gap-5">
@@ -106,29 +90,6 @@ export function StakeTakeoverStakeCard({
               )
             }
           />
-        </div>
-
-        {/* Sliders / Standard (I1036:209724): the share of the wallet balance
-            being staked. Inert with no balance to divide by. */}
-        <div className="flex flex-col gap-1.5">
-          <Slider
-            value={[sliderPercent]}
-            max={100}
-            step={1}
-            disabled={sliderBalance === 0n}
-            onValueChange={value => {
-              const percent = value[0];
-              onAmountChange(percent >= 100 ? sliderBalance : (sliderBalance * BigInt(percent)) / 100n);
-            }}
-            aria-label={t`Share of balance to stake`}
-            valueText={`${sliderPercent}%`}
-            data-testid="stake-takeover-stake-slider"
-          />
-          <div className="text-fgSecondary flex items-center gap-4 text-xs leading-[18px]">
-            <span>0%</span>
-            <SliderTicks progress={sliderPercent} className="grow" />
-            <span>100%</span>
-          </div>
         </div>
       </div>
 
