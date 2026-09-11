@@ -1,3 +1,4 @@
+import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
 import { Fragment, ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
@@ -47,8 +48,6 @@ export interface ProductTransactionsTableProps<T> {
   emptyLabel?: ReactNode;
   /** DS empty illustration above `emptyLabel`; defaults to the transactions pair. */
   emptyIllustration?: ReactNode;
-  /** Min table width before horizontal scroll kicks in (px). */
-  minWidth?: number;
   dataTestId?: string;
   /** Rows per page; the control appears once the set exceeds it (C4). */
   pageSize?: number;
@@ -56,6 +55,12 @@ export interface ProductTransactionsTableProps<T> {
   onPageChange?: (page: number, totalPages: number) => void;
   /** Makes rows interactive (button semantics + pointer cursor). */
   onRowClick?: (row: T) => void;
+  /**
+   * Explorer link for a row: the whole row opens it in a new tab, like the
+   * hash cell does (Figma 2800:92277). Rows it returns nothing for stay inert
+   * — no pointer, no hover tint. Ignored on a row `onRowClick` handles.
+   */
+  rowHref?: (row: T) => string | undefined;
   /** Per-row test id, e.g. for row-click specs. */
   rowTestId?: (row: T) => string;
   /** Full-width content rendered as a sibling right after a matching row, outside its click/hover surface. */
@@ -105,16 +110,32 @@ export function ProductTransactionsTable<T>({
   error,
   emptyLabel,
   emptyIllustration = <TransactionsEmpty aria-hidden />,
-  minWidth = 560,
   dataTestId = 'product-transactions',
   pageSize = 7,
   onPageChange,
   onRowClick,
+  rowHref,
   rowTestId,
   renderBelowRow,
   renderCard,
   cardSkeleton = <TransactionCardSkeleton />
 }: ProductTransactionsTableProps<T>) {
+  // One activation per row: the consumer's handler wins, else the explorer
+  // link; undefined leaves the row inert.
+  const rowAction = (row: T): (() => void) | undefined => {
+    if (onRowClick) return () => onRowClick(row);
+    const href = rowHref?.(row);
+    return href ? () => openInNewTab(href) : undefined;
+  };
+  // A click that ends a text-selection drag is the selection, not a request
+  // to open the row; keyboard activation never carries one.
+  const clickAction = (activate: (() => void) | undefined) =>
+    activate
+      ? () => {
+          if (hasTextSelection()) return;
+          activate();
+        }
+      : undefined;
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
@@ -156,35 +177,38 @@ export function ProductTransactionsTable<T>({
               </EmptyState>
             </StateCard>
           ) : (
-            pageRows.map((row, index) => (
-              <Fragment key={rowKey(row)}>
-                <div
-                  data-testid={rowTestId?.(row)}
-                  tabIndex={onRowClick ? 0 : undefined}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  onKeyDown={
-                    onRowClick
-                      ? event => {
-                          if (event.target !== event.currentTarget) return;
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            onRowClick(row);
+            pageRows.map((row, index) => {
+              const activate = rowAction(row);
+              return (
+                <Fragment key={rowKey(row)}>
+                  <div
+                    data-testid={rowTestId?.(row)}
+                    tabIndex={activate ? 0 : undefined}
+                    onClick={clickAction(activate)}
+                    onKeyDown={
+                      activate
+                        ? event => {
+                            if (event.target !== event.currentTarget) return;
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              activate();
+                            }
                           }
-                        }
-                      : undefined
-                  }
-                  className={cn(
-                    'overflow-hidden',
-                    index === 0 && 'rounded-t-[20px]',
-                    index === pageRows.length - 1 && 'rounded-b-[20px]',
-                    onRowClick && 'cursor-pointer'
-                  )}
-                >
-                  {renderCard(row)}
-                </div>
-                {renderBelowRow?.(row)}
-              </Fragment>
-            ))
+                        : undefined
+                    }
+                    className={cn(
+                      'overflow-hidden',
+                      index === 0 && 'rounded-t-[20px]',
+                      index === pageRows.length - 1 && 'rounded-b-[20px]',
+                      activate && 'cursor-pointer'
+                    )}
+                  >
+                    {renderCard(row)}
+                  </div>
+                  {renderBelowRow?.(row)}
+                </Fragment>
+              );
+            })
           )}
         </div>
         {showPagination && (
@@ -200,7 +224,10 @@ export function ProductTransactionsTable<T>({
 
   return (
     <>
-      <Table style={{ minWidth }} data-testid={dataTestId}>
+      {/* No width floor: the cells' own min-content is the only limit before the
+          wrapper scrolls. A fixed floor forced a scroll inside the tablet-seam
+          pane (912 to 1200), where the design fits this table in 587px. */}
+      <Table data-testid={dataTestId}>
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (
@@ -234,29 +261,31 @@ export function ProductTransactionsTable<T>({
           ) : (
             pageRows.map((row, index) => {
               const belowRow = renderBelowRow?.(row);
+              const activate = rowAction(row);
               return (
                 <Fragment key={rowKey(row)}>
                   <TableRow
                     data-testid={rowTestId?.(row)}
+                    data-hover={activate ? undefined : 'off'}
                     // No role="button": overriding the native row role breaks
                     // table navigation for assistive tech (CodeRabbit).
-                    tabIndex={onRowClick ? 0 : undefined}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    tabIndex={activate ? 0 : undefined}
+                    onClick={clickAction(activate)}
                     onKeyDown={
-                      onRowClick
+                      activate
                         ? event => {
                             // Only activate on the row itself — Enter on a
                             // nested link/button must keep its native action.
                             if (event.target !== event.currentTarget) return;
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault();
-                              onRowClick(row);
+                              activate();
                             }
                           }
                         : undefined
                     }
                     className={cn(
-                      onRowClick && 'cursor-pointer',
+                      activate && 'cursor-pointer',
                       // A banner carrier row (below) becomes tbody's real last
                       // <tr> and takes the shared table selectors' bottom
                       // corners with it — visibly squaring the last data row

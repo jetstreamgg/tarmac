@@ -30,14 +30,15 @@ const h = vi.hoisted(() => ({
   mockExecute: vi.fn(),
   launchMock: vi.fn(),
   skyAllowance: 0n as bigint | undefined,
-  usdsAllowance: 0n as bigint | undefined
+  usdsAllowance: 0n as bigint | undefined,
+  chainId: 1
 }));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1,
+    useChainId: () => h.chainId,
     useConnection: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
     useAccount: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
     useBlockNumber: () => ({ data: 0n })
@@ -48,10 +49,12 @@ vi.mock('wagmi', async importOriginal => {
 // channel through which calldata leaves useBatchStakeMulticall. The engine
 // itself is left unmodified (landmine #1: allowance derivation stays inside it).
 vi.mock('@/hooks/shared/useTransactionFlow', () => ({
-  useTransactionFlow: (params: { calls: unknown[]; enabled?: boolean }) => {
+  useTransactionFlow: (params: { calls: unknown[]; enabled?: boolean; shouldUseBatch?: boolean }) => {
     h.capturedCalls = params.calls;
     h.capturedEnabled = params.enabled;
     return {
+      calls: params.calls,
+      isBatch: !!params.shouldUseBatch && params.calls.length > 1,
       error: null,
       isLoading: false,
       prepared: true,
@@ -175,19 +178,66 @@ const expectedCalldata = (usdsToBorrow: bigint, delegate?: `0x${string}`) =>
 
 describe('buildStakeOpenSteps', () => {
   it('derives the step list from the calldata set (A-Q3: delegate shown honestly)', () => {
-    expect(buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: true, hasDelegate: true })).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Stake', tokenSymbol: 'SKY' },
-      { label: 'Borrow', tokenSymbol: 'USDS' },
+    expect(
+      buildStakeOpenSteps({
+        needsSkyAllowance: true,
+        hasBorrow: true,
+        hasReward: true,
+        rewardSymbol: 'SPK',
+        hasDelegate: true
+      })
+    ).toEqual([
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." },
+      // The selectFarm leg is its own step, in engine order (after draw, before
+      // the delegate leg) — QA 2026-09-07.
+      { label: 'Select reward', tokenSymbol: 'SPK' },
       'Delegate voting power'
     ]);
+    // The symbol read may still be unresolved at launch: the step stays a bare label.
+    expect(
+      buildStakeOpenSteps({ needsSkyAllowance: false, hasBorrow: false, hasReward: true, hasDelegate: false })
+    ).toEqual([
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      'Select reward'
+    ]);
     expect(buildStakeOpenSteps({ needsSkyAllowance: false, hasBorrow: false, hasDelegate: false })).toEqual([
-      { label: 'Stake', tokenSymbol: 'SKY' }
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
     ]);
     expect(buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: false, hasDelegate: false })).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Stake', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
     ]);
+  });
+});
+
+describe('buildStakeOpenSteps — write indices', () => {
+  it('bundled: no indices (the bundle is one unit)', () => {
+    const steps = buildStakeOpenSteps({ needsSkyAllowance: true, hasBorrow: true, hasDelegate: true });
+    expect(steps.every(step => typeof step === 'string' || step.write === undefined)).toBe(true);
+  });
+
+  it('sequential: the approval is write 0 and every multicall leg shares write 1', () => {
+    expect(
+      buildStakeOpenSteps({
+        needsSkyAllowance: true,
+        hasBorrow: true,
+        hasReward: true,
+        rewardSymbol: 'SPK',
+        hasDelegate: true,
+        shouldUseBatch: false
+      }).map(step => (typeof step === 'string' ? undefined : step.write))
+    ).toEqual([0, 1, 1, 1, 1]);
+    // No approval: the multicall is the only write.
+    expect(
+      buildStakeOpenSteps({
+        needsSkyAllowance: false,
+        hasBorrow: true,
+        hasDelegate: true,
+        shouldUseBatch: false
+      }).map(step => (typeof step === 'string' ? undefined : step.write))
+    ).toEqual([0, 0, 0]);
   });
 });
 
@@ -199,6 +249,7 @@ describe('useStakeLaunch — calldata parity with the F1 seam', () => {
     h.launchMock.mockClear();
     h.skyAllowance = 0n;
     h.usdsAllowance = HAS_ALLOWANCE;
+    h.chainId = 1;
   });
   afterEach(cleanup);
 
@@ -232,6 +283,18 @@ describe('useStakeLaunch — calldata parity with the F1 seam', () => {
     renderLaunch({ enabled: false });
     expect(h.capturedEnabled).toBe(false);
   });
+
+  // WEBAPP-E4: the stake module is mainnet-only. Reached from an L2 (deep
+  // link, declined auto-switch), the engine used to build approve calls
+  // against an undefined spender, and encoding them for the confirm-content
+  // cache key threw during render.
+  it('builds no calls and stays disabled on a chain without the stake module', () => {
+    h.chainId = 8453;
+    expect(() => renderLaunch()).not.toThrow();
+
+    expect(h.capturedCalls).toEqual([]);
+    expect(h.capturedEnabled).toBe(false);
+  });
 });
 
 describe('useStakeLaunch — launch() config', () => {
@@ -241,6 +304,7 @@ describe('useStakeLaunch — launch() config', () => {
     h.launchMock.mockClear();
     h.skyAllowance = 0n;
     h.usdsAllowance = HAS_ALLOWANCE;
+    h.chainId = 1;
   });
   afterEach(cleanup);
 
@@ -252,11 +316,17 @@ describe('useStakeLaunch — launch() config', () => {
     const config = h.launchMock.mock.calls[0][0];
     expect(config.title).toBe('Confirm');
     expect(config.transactionTitle).toBe('Confirm your transaction');
+    // The takeover is the review (Design QA 2800:91832): no in-modal review.
+    expect(config.skipReview).toBe(true);
+    expect(config.entry).toBeUndefined();
+    // Sequential path (bundling off in this harness): the approval is its own
+    // write, every multicall leg shares the next one.
     expect(config.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Stake', tokenSymbol: 'SKY' },
-      { label: 'Borrow', tokenSymbol: 'USDS' },
-      'Delegate voting power'
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved.", write: 0 },
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked.", write: 1 },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed.", write: 1 },
+      { label: 'Select reward', tokenSymbol: 'SKY', write: 1 },
+      { label: 'Delegate voting power', write: 1 }
     ]);
     expect(config.analytics.widgetName).toBe('stake');
     expect(config.analytics.flow).toBe('open');
@@ -307,17 +377,10 @@ describe('useStakeLaunch — launch() config', () => {
     stakeOnly.unmount();
   });
 
-  it('reuses the legacy getStakeSubtitle msgids for the lifecycle subtitles', () => {
+  it('sets no status subtitles — the step list and toast narrate the transaction', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
-    const subtitles = h.launchMock.mock.calls[0][0].subtitles;
-    expect(subtitles.loading).toBe(
-      'Your transaction is being processed on the blockchain to create your position. Please wait.'
-    );
-    expect(subtitles.success).toBe(
-      "You've borrowed 30,000 USDS by staking 100,000 SKY. Your new position is open."
-    );
-    expect(subtitles.error).toBe('An error occurred while opening your position');
+    expect(h.launchMock.mock.calls[0][0].subtitles).toBeUndefined();
   });
 });

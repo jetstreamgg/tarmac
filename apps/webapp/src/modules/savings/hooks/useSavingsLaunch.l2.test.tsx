@@ -331,7 +331,7 @@ describe('useSavingsLaunch — L2 supply routing + steps', () => {
     // DS Steps chips are token-derived (APP-354), so L2 flows carry the origin token too.
     expect(a.result.current.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
-      { label: 'Supply', tokenSymbol: 'USDS' }
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
     ]);
     a.unmount();
 
@@ -345,7 +345,9 @@ describe('useSavingsLaunch — L2 supply routing + steps', () => {
         referralCode: REF
       })
     );
-    expect(b.result.current.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
+    expect(b.result.current.steps).toEqual([
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
+    ]);
     b.unmount();
   });
 });

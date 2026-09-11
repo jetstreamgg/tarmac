@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useSavingsChartInfo, useSkySavingsRateHistoricData, useOverallSkyData } from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { Chart, TimeFrame, Data } from '@/modules/ui/components/Chart';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -79,7 +80,12 @@ export function SavingsDetailChart() {
         isPercentage={isRate}
         symbol={isRate ? undefined : 'sUSDS'}
         tokenSymbols={isRate ? undefined : ['sUSDS']}
-        label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
+        label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}
+        // The TVL metric leads its figure with the token mark instead of a
+        // trailing ticker and tags it with the period's change, the same
+        // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
+        icons={isRate ? undefined : <TokenIconStack symbols={['sUSDS']} size={32} className="shrink-0" />}
+        showTrend={!isRate}
         displayValue={isRate ? currentRate : undefined}
         metrics={[
           { value: 'rate', label: <Trans>Rate</Trans> },

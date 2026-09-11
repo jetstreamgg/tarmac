@@ -1,18 +1,23 @@
 import { Trans } from '@lingui/react/macro';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { FittedAmount } from '@/components/product/FittedAmount';
 
 function AmountBlock({ label, amount, symbol }: { label: React.ReactNode; amount: bigint; symbol: string }) {
   return (
     <div className="flex items-end justify-between gap-4">
-      <div className="flex flex-col gap-1.5">
+      <div className="flex min-w-0 flex-col gap-1.5">
         <span className="text-fgSecondary text-sm">{label}</span>
-        <span className="text-text font-circle flex items-center gap-2 text-3xl font-medium tracking-tight">
-          <TokenIcon token={{ symbol }} width={28} className="h-7 w-7" showChainIcon={false} />
-          {formatBigInt(amount)}
+        <span className="text-text font-circle flex min-w-0 items-center gap-2 text-3xl font-medium tracking-tight">
+          <TokenIcon token={{ symbol }} width={28} className="h-7 w-7 shrink-0" showChainIcon={false} />
+          <FittedAmount
+            amount={formatBigInt(amount)}
+            maxPx={30}
+            className="text-3xl leading-[1.2] tracking-tight"
+          />
         </span>
       </div>
-      <span className="bg-surfaceAlt text-text font-circle flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
+      <span className="bg-surfaceAlt text-text font-circle flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
         <TokenIcon token={{ symbol }} width={14} className="h-3.5 w-3.5" showChainIcon={false} />
         {symbol}
       </span>

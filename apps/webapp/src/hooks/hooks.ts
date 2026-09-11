@@ -75,6 +75,8 @@ export type UseWriteContractFlowParameters<
  * Send batch transaction flow hook
  */
 export type BatchWriteHook = {
+  /** The hash of the mined batch's first receipt; set once the batch has landed. */
+  data?: WriteContractReturnType | undefined;
   error: Error | null;
   isLoading: boolean;
   prepared: boolean;

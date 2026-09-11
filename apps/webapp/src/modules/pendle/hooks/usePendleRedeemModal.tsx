@@ -25,6 +25,7 @@ import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedReques
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -96,7 +97,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     },
     onError: (err, hash) => txCallbacks.onError(err, hash)
   });
-  useResetPausedRunOnClose(writeHook.reset);
 
   // Map raw revert messages to user-friendly copy — shared with the buy/sell
   // modal so users see consistent guidance across all three flows. Only while
@@ -115,7 +115,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // Steps mirror the engine's call count ([approve?, claim]), like the
   // buy/sell form — a first-time redeemer signs a PT approval first.
   const { address } = useConnection();
-  const { data: allowance } = useTokenAllowance({
+  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
     chainId: engineChainId,
     contractAddress: market.ptToken,
     owner: address,
@@ -123,9 +123,19 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   });
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
+  useResetPausedRunOnClose(writeHook.reset, mutateAllowance);
   const steps = useMemo<TransactionStep[]>(() => {
-    const claimStep = { label: t`Claim`, tokenSymbol: ptSymbol };
-    return needsAllowance ? [{ label: t`Approve`, tokenSymbol: ptSymbol }, claimStep] : [claimStep];
+    const claimStep = {
+      label: t`Claim`,
+      tokenSymbol: ptSymbol,
+      failureDetail: stepFailureDetail.claim(ptSymbol)
+    };
+    return needsAllowance
+      ? [
+          { label: t`Approve`, tokenSymbol: ptSymbol, failureDetail: stepFailureDetail.approve(ptSymbol) },
+          claimStep
+        ]
+      : [claimStep];
   }, [needsAllowance, ptSymbol]);
 
   // Simulate on the engine chain (the calldata is mainnet's even when the
@@ -237,8 +247,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     };
   }, [market, ptToken, ptBalance, selectedOutputToken, quote, slippage, valueUsd]);
 
-  // Toast headlines — without them the toast falls back to the success
-  // SUBTITLE above, a full sentence where the toast wants a label. Success
+  // Toast headlines — without them the toast falls back to the modal title,
+  // which is not an outcome. Success
   // names the quoted receive leg ("Claimed 1,012.30 USDS"), formatted like the
   // review's receive row. Live like `usdValue`/`analytics` (the output token
   // stays changeable after launch) and frozen with them once the tx leaves
@@ -310,11 +320,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
       title: t`Claim matured position`,
       transactionTitle: t`Confirm in the wallet`,
-      subtitles: {
-        loading: t`Your claim is being processed on the blockchain. Please wait.`,
-        success: t`You've successfully claimed your matured position.`,
-        error: t`An error occurred while claiming your matured position.`
-      },
       toast,
       transactionContent,
       errorMessage: prepareErrorMessage,

@@ -99,6 +99,28 @@ export async function getUrnAddress(owner: Address, index: bigint): Promise<Addr
   return pub.readContract({ address: STAKE_ENGINE, abi, functionName: 'ownerUrns', args: [owner, index] });
 }
 
+/** Number of urns the owner has opened on the stake engine. */
+export async function getOwnerUrnsCount(owner: Address): Promise<bigint> {
+  const { pub } = await clients();
+  return pub.readContract({
+    address: STAKE_ENGINE,
+    abi,
+    functionName: 'ownerUrnsCount',
+    args: [owner]
+  });
+}
+
+/**
+ * Index of the most recently opened urn. Use after `openStakePosition` so
+ * manage deep-links still hit the urn just created when `--last-failed`
+ * reclaims a dirty pool account that already had urns.
+ */
+export async function latestUrnIndex(owner: Address): Promise<number> {
+  const count = await getOwnerUrnsCount(owner);
+  if (count === 0n) throw new Error(`latestUrnIndex: ${owner} has no urns`);
+  return Number(count - 1n);
+}
+
 export async function getUrnInkArt(urn: Address): Promise<{ ink: bigint; art: bigint }> {
   const { pub } = await clients();
   const [ink, art] = await pub.readContract({
@@ -173,6 +195,33 @@ export type StagedLiquidation = {
  * bark has to be fabricated by the caller (the e2e vnet has no indexer) — the
  * returned `bark` fields mirror the real transaction.
  */
+/**
+ * Open real urns on the fork for the positions-tab specs. `sky` is locked
+ * (0 = open only → an emptied/inactive row); `usds` is drawn, with the
+ * collateral raised to whatever the live spot needs to cover it, since the
+ * OSM price swings 10× between fork days. Sequential impersonated sends;
+ * returns the urn addresses in index order.
+ */
+export async function stageUrns(owner: Address, urns: { sky: bigint; usds?: bigint }[]): Promise<Address[]> {
+  const { rpcUrl, pub } = await clients();
+  const [, , spot] = await pub.readContract({ address: VAT, abi, functionName: 'ilks', args: [STAKE_ILK] });
+  await sendAs(rpcUrl, owner, SKY_TOKEN, 'approve', [STAKE_ENGINE, 2n ** 256n - 1n]);
+  const created: Address[] = [];
+  for (const { sky, usds } of urns) {
+    const index = await getOwnerUrnsCount(owner);
+    await sendAs(rpcUrl, owner, STAKE_ENGINE, 'open', [index]);
+    let lockWad = sky * WAD;
+    if (usds) {
+      const needed = (((usds * WAD * RAY) / spot / WAD + 1n) * WAD * 11n) / 10n;
+      if (needed > lockWad) lockWad = needed;
+    }
+    if (lockWad > 0n) await sendAs(rpcUrl, owner, STAKE_ENGINE, 'lock', [owner, index, lockWad, 0]);
+    if (usds) await sendAs(rpcUrl, owner, STAKE_ENGINE, 'draw', [owner, index, owner, usds * WAD]);
+    created.push(await getUrnAddress(owner, index));
+  }
+  return created;
+}
+
 export async function stageLiquidatedUrn(owner: Address): Promise<StagedLiquidation> {
   const { rpcUrl, pub } = await clients();
   // Sized off the LIVE vat state, because forks inherit mainnet's OSM and it

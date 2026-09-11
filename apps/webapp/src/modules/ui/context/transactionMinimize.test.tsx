@@ -7,6 +7,12 @@ import type { TransactionContextValue, TxCallbacks } from './transactionContract
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionStepProgression.test).
+// The provider needs a live wagmi tree; these suites exercise the transaction
+// state machine, so the shared chain switch is stubbed inert.
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+}));
+
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
@@ -461,8 +467,7 @@ describe('TransactionModal minimize', () => {
     usdValue: 0,
     supportedChainIds: [1],
     steps: ['Supply'],
-    subtitles: { success: 'Supplied!', error: 'Supply failed' },
-    // Amount-aware title (what the savings host pushes) takes precedence over subtitles.
+    // Amount-aware title (what the savings host pushes).
     toast: { success: '10,000.00 USDS supplied!' },
     onConfirm: () => {}
   };
@@ -485,7 +490,7 @@ describe('TransactionModal minimize', () => {
     act(() => cb.onSuccess('0xhash'));
     expect(toastWithCloseMock).toHaveBeenCalled();
 
-    // The toast carries the amount-aware title (config.toast wins over subtitles).
+    // The toast carries the amount-aware title.
     const { getByText } = renderLastToast();
     expect(getByText('10,000.00 USDS supplied!')).toBeDefined();
   });

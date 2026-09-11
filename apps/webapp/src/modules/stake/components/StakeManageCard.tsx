@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Switch } from '@/components/ui/switch';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
+import { cn } from '@/lib/cn';
 
 /**
  * Manage-sheet card shell (redesign comps 1036:213821+, flows UX 1050:21454):
@@ -11,7 +12,10 @@ import { tabsTriggerVariants } from '@/components/ui/tabs';
  * temporal-states-of-one-screen model as F4. Mode pills are the design-system
  * Tabs chip (Figma 5029:51762) on plain buttons: aria-pressed carries the
  * toggle semantics, data-state drives the recipe's styling contract (same
- * non-Radix reuse as EarnTableFilters).
+ * non-Radix reuse as EarnTableFilters). While the card is toggled off the
+ * pills are disabled (Design QA 2800:91832: "If the section is turned off by
+ * the toggle the tabs should be disabled", Tabs State=Disabled) — switching
+ * mode on a collapsed card would silently reset amounts the user can't see.
  */
 export function StakeManageCard<Mode extends string>({
   modes,
@@ -42,6 +46,7 @@ export function StakeManageCard<Mode extends string>({
               key={mode.value}
               type="button"
               onClick={() => onModeChange(mode.value)}
+              disabled={!enabled}
               aria-pressed={mode.value === activeMode}
               data-state={mode.value === activeMode ? 'active' : 'inactive'}
               data-testid={`${dataTestId}-mode-${mode.value}`}
@@ -78,7 +83,10 @@ export function StakeManageStatCell({
 }) {
   const hasDelta = next !== undefined;
   return (
-    <div data-testid={dataTestId} className="flex flex-col gap-1">
+    // min-w-0 + nowrap from md: the cell yields width to its row rather than
+    // wrapping its value onto a second line (see the borrow card's stat row,
+    // APP-546). Phones keep the 2×2 grid, whose narrow tracks need the wrap.
+    <div data-testid={dataTestId} className="flex min-w-0 flex-col gap-1 md:whitespace-nowrap">
       <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
       <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
         <span className="flex items-center gap-1">{current}</span>
@@ -94,8 +102,8 @@ export function StakeManageStatCell({
 }
 
 /** 32px vertical hairline between hugging stat cells (comps' Vector 461x). */
-export const StakeManageStatDivider = () => (
-  <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
+export const StakeManageStatDivider = ({ className }: { className?: string }) => (
+  <span className={cn('bg-borderPrimary h-8 w-px shrink-0 self-center', className)} aria-hidden />
 );
 
 /** Badges XS neutral "Updated hourly" (comp 1594:43606): no icon, 11px Circular on the glass tint. */

@@ -1,8 +1,7 @@
-import { Intent, FixedIntent } from '@/lib/enums';
-import { FixedIntentMapping, IntentMapping, QueryParams } from '@/lib/constants';
+import { Intent } from '@/lib/enums';
+import { QueryParams } from '@/lib/constants';
 import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
-import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
-import { ROUTES } from '@/lib/routes';
+import { earnProductFilter, ROUTES } from '@/lib/routes';
 
 // Param names of the retired query-param navigation scheme. Kept as local
 // literals: they are intentionally absent from QueryParams.
@@ -17,142 +16,130 @@ const LegacyParams = {
   Reward: 'reward'
 } as const;
 
+/**
+ * `?widget=` values, frozen at the spelling the pre-path app shipped.
+ *
+ * Deliberately string literals rather than reads of `IntentMapping`: these are
+ * historical URLs that can never change, while the mapping tracks the app and
+ * has already drifted once — Expert's value became 'stusds' in D7, which would
+ * have silently broken `?widget=expert` had it been keyed off the mapping.
+ */
+const LegacyWidget = {
+  Balances: 'balances',
+  Savings: 'savings',
+  Rewards: 'rewards',
+  Stake: 'stake',
+  Trade: 'trade',
+  Upgrade: 'upgrade',
+  Convert: 'convert',
+  Expert: 'expert',
+  Vaults: 'vaults',
+  Fixed: 'fixed'
+} as const;
+
+/** The only `fixed_module` value the legacy scheme ever produced. */
+const LEGACY_FIXED_MARKET_MODULE = 'market';
+
+// Retired in the target IA: the widgets that consumed them are gone, so
+// carrying them forward would only pollute the destination's search string.
+const RETIRED_PARAMS = ['input_amount', 'linked_action'];
+
+/**
+ * Everything stripped from the destination's search string: the navigation
+ * params this function consumes, plus the retired ones. `convert_module` and
+ * `expert_module` are read only to be dropped — every value either of them
+ * ever held now collapses into a single destination.
+ */
+const DROPPED_PARAMS = new Set<string>([...Object.values(LegacyParams), ...RETIRED_PARAMS]);
+
 export type LegacyRedirect = { to: string; search: Record<string, string> };
 
-/**
- * Translates pre-path-navigation URLs (?widget=...&convert_module=... etc.)
- * into their path equivalents so external deep links and bookmarks keep
- * working. Returns null when the search params carry no legacy navigation
- * state. Entity values (reward contract, vault, market) are passed through
- * verbatim — the target route's own validation handles invalid ones.
- */
-export function legacySearchToLocation(search: Record<string, string>): LegacyRedirect | null {
-  const {
-    [LegacyParams.Widget]: widget,
-    [LegacyParams.ExpertModule]: expertModule,
-    [LegacyParams.VaultModule]: vaultModule,
-    [LegacyParams.Vault]: vault,
-    [LegacyParams.FixedModule]: fixedModule,
-    [LegacyParams.Market]: market,
-    [LegacyParams.Reward]: reward,
-    ...rest
-  } = search;
-
-  if (widget === undefined) return null;
-
-  // convert_module is consumed but no longer routes anywhere: every legacy
-  // convert module lands on the single E2 page.
-  delete rest[LegacyParams.ConvertModule];
-
-  let to: string;
-  switch (widget.toLowerCase()) {
-    case IntentMapping[Intent.SAVINGS_INTENT]:
-      to = '/savings';
-      break;
-    case IntentMapping[Intent.STAKE_INTENT]:
-      to = '/stake';
-      break;
-    case IntentMapping[Intent.REWARDS_INTENT]:
-      to = reward ? `/rewards/${reward}` : '/rewards';
-      break;
-    // Standalone trade was folded into Convert before this migration; the E2
-    // page-as-widget owns /convert outright (trade/upgrade surfaces are parked),
-    // so both generations land on the page itself — no sub-path hop.
-    case IntentMapping[Intent.TRADE_INTENT]:
-      to = ROUTES.CONVERT;
-      break;
-    // Standalone upgrade only mapped into Convert on mainnet (parity with the
-    // legacy rewrite); on other networks it was stripped, landing on Balances.
-    case IntentMapping[Intent.UPGRADE_INTENT]: {
-      const network = rest[QueryParams.Network];
-      to = !network || normalizeUrlParam(network) === normalizeUrlParam('ethereum') ? ROUTES.CONVERT : '/';
-      break;
-    }
-    case IntentMapping[Intent.CONVERT_INTENT]:
-      to = ROUTES.CONVERT;
-      break;
-    // The historical ?widget= value stays 'expert' (frozen in old links) even
-    // though the module now maps to 'stusds'; both generations land on the
-    // flattened /earn/stusds via V2_REDIRECT_BY_MODULE.
-    case 'expert':
-      to = expertModule?.toLowerCase() === 'stusds' ? '/expert/stusds' : '/expert';
-      break;
-    case IntentMapping[Intent.VAULTS_INTENT]: {
-      const provider = vaultModule ? providerForVaultModule(vaultModule) : undefined;
-      to = provider && vault ? `/vaults/${provider}/${vault}` : '/vaults';
-      break;
-    }
-    case IntentMapping[Intent.FIXED_INTENT]:
-      to =
-        fixedModule?.toLowerCase() === FixedIntentMapping[FixedIntent.MARKET_INTENT] && market
-          ? `/fixed/market/${market}`
-          : '/fixed';
-      break;
-    // balances and unknown widget values both land on the default module,
-    // matching the legacy validator that stripped unrecognised widgets.
-    default:
-      to = '/';
-      break;
-  }
-
-  return { to, search: rest };
+/** The Earn marketplace, filtered to the family the legacy link asked for. */
+function earnList(intent: Intent, search: Record<string, string>): LegacyRedirect {
+  const product = earnProductFilter(intent);
+  return {
+    to: ROUTES.EARN,
+    search: product ? { ...search, [QueryParams.Product]: product } : search
+  };
 }
 
-// Pre-flip module paths → target-IA destinations (plan §4.1). The modules kept
-// their entity path params when they moved under /earn, so `subpath` carries
-// recognised entity segments across; unrecognised ones drop to the overview.
-// Convert needs no entry: its paths survived the flip unchanged.
-type V2Redirect = { to: string; subpath?: (segments: string[]) => string[] };
-
-const V2_REDIRECT_BY_MODULE: Record<string, V2Redirect> = {
-  balances: { to: ROUTES.PORTFOLIO },
-  savings: { to: ROUTES.EARN_SAVINGS },
-  rewards: {
-    to: ROUTES.EARN_REWARDS,
-    subpath: ([reward]): string[] => (reward ? [reward] : [])
-  },
-  vaults: {
-    to: ROUTES.EARN_VAULTS,
-    subpath: ([provider, vault]): string[] =>
-      // The vault detail route needs both segments; a bare provider has no target.
-      provider && vault && providerForVaultModule(provider) ? [provider.toLowerCase(), vault] : []
-  },
-  // Market deep links keep their /earn/fixed/market/:address hop (that route
-  // forwards to the slug page); the bare path chains through /earn/fixed,
-  // whose index forwards to /earn (G6 — no overview screen, like rewards/D6).
-  fixed: {
-    to: ROUTES.EARN_FIXED,
-    subpath: ([module, market]): string[] =>
-      module?.toLowerCase() === FixedIntentMapping[FixedIntent.MARKET_INTENT] && market
-        ? [module.toLowerCase(), market]
-        : []
-  },
-  // Both the old overview (/expert) and the old detail (/expert/stusds) land
-  // on the flattened product page — the Expert module has exactly one product.
-  expert: { to: ROUTES.EARN_STUSDS }
-};
-
 /**
- * Translates pre-flip module paths into their target-IA equivalents. Returns
- * null when the path needs no redirect. Composes after legacySearchToLocation:
- * ?widget= URLs first rewrite to a pre-flip path, then this maps that path
- * forward. Entity values pass through verbatim — the target route's own
- * validation handles invalid ones.
+ * Translates pre-path-navigation URLs (?widget=...&vault_module=... etc.) into
+ * their target-IA equivalents, so external deep links and bookmarks keep
+ * working. Returns null when the search params carry no legacy navigation
+ * state.
+ *
+ * This is the app's only compatibility layer, because it is the only URL scheme
+ * that ever reached production: the intermediate path generations (/savings,
+ * /vaults/:provider/:address, /earn/expert) shipped to prod for the first time
+ * in their final form, so no link in the wild points at them.
+ *
+ * Entity values (reward contract, vault, market) pass through verbatim — the
+ * target route's own validation handles unknown ones, and falls back to the
+ * filtered marketplace the same way the bare widgets here do.
  */
-export function legacyPathToLocation(
-  pathname: string,
-  search: Record<string, string> = {}
-): LegacyRedirect | null {
-  const segments = pathname.split('/').filter(Boolean);
-  const moduleKey = segments[0]?.toLowerCase();
-  const redirect = moduleKey ? V2_REDIRECT_BY_MODULE[moduleKey] : undefined;
-  if (!redirect) return null;
+export function legacySearchToLocation(search: Record<string, string>): LegacyRedirect | null {
+  const widget = search[LegacyParams.Widget];
+  if (widget === undefined) return null;
 
-  const subpath = redirect.subpath?.(segments.slice(1)) ?? [];
-  const to = [redirect.to, ...subpath].join('/');
-  // input_amount/linked_action are retired in the new IA (plan §4.1).
-  const preserved = Object.fromEntries(
-    Object.entries(search).filter(([key]) => key !== 'input_amount' && key !== 'linked_action')
-  );
-  return { to, search: preserved };
+  const vaultModule = search[LegacyParams.VaultModule];
+  const vault = search[LegacyParams.Vault];
+  const fixedModule = search[LegacyParams.FixedModule];
+  const market = search[LegacyParams.Market];
+  const reward = search[LegacyParams.Reward];
+
+  const rest = Object.fromEntries(Object.entries(search).filter(([key]) => !DROPPED_PARAMS.has(key)));
+
+  switch (widget.toLowerCase()) {
+    // The link named the balances module, so it goes straight to its
+    // successor rather than through "/" — whose destination depends on a
+    // cached per-browser hint and could land the visitor on Earn instead.
+    case LegacyWidget.Balances:
+      return { to: ROUTES.PORTFOLIO, search: rest };
+
+    case LegacyWidget.Savings:
+      return { to: ROUTES.EARN_SAVINGS, search: rest };
+
+    case LegacyWidget.Stake:
+      return { to: ROUTES.STAKE, search: rest };
+
+    // Standalone trade and upgrade folded into Convert before this migration,
+    // and every convert_module value (psm/trade/upgrade) collapsed into the E2
+    // page-as-widget, which owns /convert outright. Upgrade's old mainnet-only
+    // carve-out is gone with them: Convert is available on every supported
+    // chain, so an L2 upgrade link lands on the page rather than the homepage.
+    case LegacyWidget.Trade:
+    case LegacyWidget.Upgrade:
+    case LegacyWidget.Convert:
+      return { to: ROUTES.CONVERT, search: rest };
+
+    // The Expert module collapsed into its single product (D7), so its
+    // overview and its only expert_module value share one destination.
+    case LegacyWidget.Expert:
+      return { to: ROUTES.EARN_STUSDS, search: rest };
+
+    case LegacyWidget.Rewards:
+      return reward
+        ? { to: `${ROUTES.EARN_REWARDS}/${reward}`, search: rest }
+        : earnList(Intent.REWARDS_INTENT, rest);
+
+    case LegacyWidget.Vaults: {
+      const provider = vaultModule ? providerForVaultModule(vaultModule) : undefined;
+      return provider && vault
+        ? { to: `${ROUTES.EARN_VAULTS}/${provider}/${vault}`, search: rest }
+        : earnList(Intent.VAULTS_INTENT, rest);
+    }
+
+    // Address-based market links keep their /earn/fixed/market/:address hop —
+    // that route resolves the address to the slug page details now live at.
+    case LegacyWidget.Fixed:
+      return fixedModule?.toLowerCase() === LEGACY_FIXED_MARKET_MODULE && market
+        ? { to: `${ROUTES.EARN_FIXED}/market/${market}`, search: rest }
+        : earnList(Intent.FIXED_INTENT, rest);
+
+    // An unrecognised widget carries no intent worth honouring — the legacy
+    // validator stripped it too. "/" picks the visitor's home from there.
+    default:
+      return { to: '/', search: rest };
+  }
 }

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createFileRoute, Navigate, redirect, useRouterState } from '@tanstack/react-router';
-import { FixedIntent } from '@/lib/enums';
-import { keepSearch } from '@/lib/navigation';
+import { FixedIntent, Intent } from '@/lib/enums';
+import { keepSearchFilteredTo } from '@/lib/navigation';
 import { getPendleMarketBySlug } from '@/hooks';
 import { PendleProductDetail } from '@/modules/pendle/components/PendleProductDetail';
 import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
@@ -12,7 +12,8 @@ import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirect
 // for the claim layout (Figma 2193:73881) and the Maturity section reads 100%
 // — so only unknown slugs fall back to the Earn marketplace. The market stays
 // out of the marketplace rows and every supply entry point; it is reachable
-// from the Earn "Requires action" section and the Portfolio.
+// from the Earn "Requires action" section and the Portfolio. The unknown-slug
+// fallback filters the marketplace to fixed (APP-542).
 export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
   // `!preload` keeps link-hover preloads from emitting phantom redirects.
   beforeLoad: async ({ context, params, location, search, preload }) => {
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/_shell/earn/fixed/$slug')({
       if (!preload) {
         trackRouteRedirected({ fromPath: location.pathname, toPath: '/earn', reason: 'unknown_market' });
       }
-      throw redirect({ to: '/earn', search: keepSearch, replace: true });
+      throw redirect({ to: '/earn', search: keepSearchFilteredTo(Intent.FIXED_INTENT), replace: true });
     }
     // Slug validity resolves first, so an unknown slug still lands on the
     // marketplace rather than implying the market exists but is restricted.
@@ -43,7 +44,7 @@ function PendleMarketDetail() {
     }
   }, [market, pathname]);
   if (!market) {
-    return <Navigate to="/earn" search={keepSearch} replace />;
+    return <Navigate to="/earn" search={keepSearchFilteredTo(Intent.FIXED_INTENT)} replace />;
   }
   return <PendleProductDetail market={market} />;
 }

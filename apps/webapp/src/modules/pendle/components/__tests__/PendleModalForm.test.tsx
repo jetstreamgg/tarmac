@@ -383,8 +383,8 @@ describe('PendleModalForm', () => {
       typeAmount('100');
 
       expect(lastEntryUpdate()?.steps).toEqual([
-        { label: 'Approve', tokenSymbol: 'USDG' },
-        { label: 'Supply', tokenSymbol: 'USDG' }
+        { label: 'Approve', tokenSymbol: 'USDG', failureDetail: "The USDG hasn't been approved." },
+        { label: 'Supply', tokenSymbol: 'USDG', failureDetail: "The USDG hasn't been supplied." }
       ]);
     });
 
@@ -393,7 +393,9 @@ describe('PendleModalForm', () => {
       renderForm('supply');
       typeAmount('100');
 
-      expect(lastEntryUpdate()?.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDG' }]);
+      expect(lastEntryUpdate()?.steps).toEqual([
+        { label: 'Supply', tokenSymbol: 'USDG', failureDetail: "The USDG hasn't been supplied." }
+      ]);
     });
 
     it('pushes an amount-aware success title for the toast — the input leg, not the quoted PT', () => {
@@ -442,8 +444,8 @@ describe('PendleModalForm', () => {
       typeAmount('200');
 
       expect(lastEntryUpdate()?.steps).toEqual([
-        { label: 'Approve', tokenSymbol: 'PT-USDG' },
-        { label: 'Withdraw', tokenSymbol: 'PT-USDG' }
+        { label: 'Approve', tokenSymbol: 'PT-USDG', failureDetail: "The PT-USDG hasn't been approved." },
+        { label: 'Withdraw', tokenSymbol: 'PT-USDG', failureDetail: "The PT-USDG hasn't been withdrawn." }
       ]);
     });
 

@@ -5,6 +5,7 @@ import { useIsTouchDevice } from '@/hooks';
 import { cn } from '@/lib/cn';
 import { formatUsd } from '@/utils';
 import { formatGainMagnitude, GainValue, isGainNegative } from '@/components/ui/GainValue';
+import { RollingValue } from '@/components/ui/rolling-value';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -252,7 +253,7 @@ export function CombinedEarningsStat({
   const usd = field === 'total' ? earnings.combined.totalEarnedUsd : earnings.combined.earnedThisMonthUsd;
   return (
     <span data-testid={testId} className={STAT_ROW}>
-      <GainValue value={usd} signed className={className} />
+      <GainValue value={usd} signed rolling className={className} />
       {showGapGlyph && (missing.length > 0 || untrackedNames.length > 0) && (
         <GapGlyph missing={missing} untrackedNames={untrackedNames} />
       )}
@@ -315,11 +316,11 @@ export function EarningsFigureValue({
 
   const value =
     variant === 'gain' ? (
-      <GainValue value={figure.value.usd} signed className={className} />
+      <GainValue value={figure.value.usd} signed rolling className={className} />
     ) : (
       <span className={className}>
         {isGainNegative(figure.value.usd) ? '-' : ''}
-        {formatGainMagnitude(figure.value.usd)}
+        <RollingValue value={formatGainMagnitude(figure.value.usd)} speed="stat" />
       </span>
     );
 

@@ -123,6 +123,7 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
       columns={COLUMNS}
       rows={rows}
       rowKey={row => row.id}
+      rowHref={row => row.txHref}
       isLoading={isLoading}
       error={error}
       renderCard={renderCard}

@@ -179,6 +179,33 @@ pnpm e2e:parallel:skip-funding
 pnpm e2e:parallel:retry-serial
 ```
 
+### CI pool secrets (`e2e-pool` workflow)
+
+The sharded pool workflow restores pre-funded VNets from repo **secrets** instead of
+forking + funding on every run (Settings → Secrets and variables → Actions → Secrets).
+These payloads embed full Tenderly RPC URLs (bearer credentials) — keep them as secrets,
+never repo variables (fork PRs can read vars; vars are not masked in logs).
+
+- `VNET_POOL_DATA` — contents of `tenderlyTestnetData.json` (RPC URLs + vnet ids)
+- `VNET_SNAPSHOT_DATA` — contents of `persistent-vnet-snapshots.json`
+
+**Regenerate when:** `MAINNET_FORK_CONTAINER_ID` changes, funding/token list changes,
+`TEST_WALLET_COUNT` changes, or pool validation fails in CI (expired vnets). Rotate
+the Tenderly pool after any accidental exposure via variables/logs.
+
+```bash
+# From repo root — needs TENDERLY_API_KEY + MAINNET_FORK_CONTAINER_ID in .env
+pnpm vnet:pool:provision              # fork + fund 400 wallets + validate (~5–10 min)
+pnpm vnet:pool:store --dry-run        # check payload sizes
+pnpm vnet:pool:store                  # gh secret set (repo admin + gh auth)
+
+# Or one shot:
+pnpm vnet:pool:provision:store
+```
+
+Do **not** run `pnpm vnet:delete:all` after provisioning — the pool vnets must
+stay alive on Tenderly. CI only deletes fallback vnets when secrets are missing.
+
 ### When VNets Expire
 
 ```bash

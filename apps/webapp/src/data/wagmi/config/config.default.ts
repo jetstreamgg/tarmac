@@ -6,7 +6,7 @@ import { TENDERLY_CHAIN_ID, TENDERLY_RPC_URL } from './testTenderlyChain';
 import { isTestnetId } from '@/utils';
 import { createProxyTransport } from './proxyTransport';
 
-export const tenderly = {
+const tenderly = {
   ...mainnet,
   id: TENDERLY_CHAIN_ID,
   name: 'Tenderly',

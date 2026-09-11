@@ -152,7 +152,7 @@ function WalletSearchInput({
           onChange={e => onChange(e.target.value)}
           aria-label={t`Search wallets`}
           data-testid="connect-modal-search-input"
-          placeholder={t`Search through ${count} wallets`}
+          placeholder={count === 1 ? t`Search through 1 wallet` : t`Search through ${count} wallets`}
           className="text-fgPrimary placeholder:text-fgTertiary font-graphik w-full bg-transparent text-sm leading-[22px] outline-hidden"
         />
       </div>

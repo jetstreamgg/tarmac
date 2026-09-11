@@ -21,6 +21,6 @@ description: Step-by-step conventions for adding a new smart contract, widget, o
 ## New Webapp Feature
 
 1. Create module in `apps/webapp/src/modules/`.
-2. Add routes in `apps/webapp/src/pages/`.
+2. Add a file route under `apps/webapp/src/routes/` (TanStack Router; `routeTree.gen.ts` is regenerated from the file names, don't edit it by hand).
 3. Use existing hooks and components.
 4. Add i18n messages with `<Trans>` tags.

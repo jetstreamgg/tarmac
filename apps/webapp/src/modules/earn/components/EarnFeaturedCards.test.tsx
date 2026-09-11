@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
 import type { EarnProductRow } from '@/hooks';
@@ -92,7 +92,9 @@ describe('EarnFeaturedCards — mobile featured products (M6.2, comp 486:22051)'
     expect(screen.getByText('Sky Savings')).toBeTruthy();
     expect(screen.getByText('3.75%')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Supply' }));
+    // Both the desktop and phone-tier CTAs read "Supply" (APP-557); jsdom
+    // applies no breakpoint classes, so the vertical card renders both.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Supply' })[0]);
     expect(onSelect).toHaveBeenCalledWith('savings');
   });
 
@@ -100,7 +102,7 @@ describe('EarnFeaturedCards — mobile featured products (M6.2, comp 486:22051)'
     renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: false }));
 
     expect(screen.queryByText('Pendle sUSDS')).toBeNull();
-    expect(screen.getAllByRole('button', { name: 'Supply' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Supply' })).toHaveLength(2);
   });
 
   it('renders the Pendle fixed-yield card with maturity stat when its descriptor is visible', () => {
@@ -111,9 +113,9 @@ describe('EarnFeaturedCards — mobile featured products (M6.2, comp 486:22051)'
     expect(screen.getByText('18 Jun 2026')).toBeTruthy();
     expect(screen.getByText('5.00%')).toBeTruthy();
 
-    const supplyButtons = screen.getAllByRole('button', { name: 'Supply' });
-    expect(supplyButtons).toHaveLength(2);
-    fireEvent.click(supplyButtons[1]);
+    fireEvent.click(
+      within(screen.getByTestId('earn-featured-fixed')).getAllByRole('button', { name: 'Supply' })[0]
+    );
     expect(onSelect).toHaveBeenCalledWith('fixed-0xabc');
   });
 
@@ -141,7 +143,7 @@ describe('EarnFeaturedCards — mobile featured products (M6.2, comp 486:22051)'
 describe('EarnFeaturedCards — desktop (APP-395)', () => {
   afterEach(cleanup);
 
-  it('renders the full-width horizontal savings card with an Earn CTA when it is the only visible card (1036:201301)', () => {
+  it('renders the full-width horizontal savings card with a Supply CTA when it is the only visible card (1036:201301)', () => {
     const onSelect = renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: false }));
 
     expect(screen.getByTestId('earn-featured-savings-wide')).toBeTruthy();
@@ -149,20 +151,22 @@ describe('EarnFeaturedCards — desktop (APP-395)', () => {
     expect(screen.getByText('3.75%')).toBeTruthy();
     expect(screen.getByText('TVL')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Earn' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Supply' }));
     expect(onSelect).toHaveBeenCalledWith('savings');
   });
 
-  it('renders two vertical cards with Earn CTAs when both products are visible (1036:201228)', () => {
+  it('renders two vertical cards with Supply CTAs when both products are visible (1036:201228)', () => {
     const onSelect = renderCards([savingsRow, fixedRow], vi.fn(), withVisibility({ fixed: true }));
 
     expect(screen.queryByTestId('earn-featured-savings-wide')).toBeNull();
     expect(screen.getByTestId('earn-featured-savings')).toBeTruthy();
     expect(screen.getByTestId('earn-featured-fixed')).toBeTruthy();
 
-    const earnButtons = screen.getAllByRole('button', { name: 'Earn' });
-    expect(earnButtons).toHaveLength(2);
-    fireEvent.click(earnButtons[1]);
+    // Each vertical card carries a desktop and a phone-tier Supply button.
+    expect(screen.getAllByRole('button', { name: 'Supply' })).toHaveLength(4);
+    fireEvent.click(
+      within(screen.getByTestId('earn-featured-fixed')).getAllByRole('button', { name: 'Supply' })[0]
+    );
     expect(onSelect).toHaveBeenCalledWith('fixed-0xabc');
   });
 

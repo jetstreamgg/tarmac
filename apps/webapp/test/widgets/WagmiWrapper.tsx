@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router';
-import { MakerHooksProvider } from '../../src/widgets/context/context';
+import { MakerHooksProvider } from '../../src/hooks/context/context';
 import { mock } from 'wagmi/connectors';
 import { createConfig, WagmiProvider, http } from 'wagmi';
 import { mnemonicToAccount } from 'viem/accounts';

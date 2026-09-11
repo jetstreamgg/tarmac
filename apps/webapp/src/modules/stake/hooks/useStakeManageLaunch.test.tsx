@@ -183,9 +183,9 @@ describe('buildStakeManageSteps', () => {
         hasDelegateChange: false
       })
     ).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS' },
-      { label: 'Repay', tokenSymbol: 'USDS' },
-      { label: 'Withdraw', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
+      { label: 'Repay', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been repaid." },
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." }
     ]);
 
     expect(
@@ -200,10 +200,10 @@ describe('buildStakeManageSteps', () => {
         hasDelegateChange: true
       })
     ).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
       'Change delegate',
-      { label: 'Stake', tokenSymbol: 'SKY' },
-      { label: 'Borrow', tokenSymbol: 'USDS' }
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." }
     ]);
 
     expect(
@@ -217,7 +217,38 @@ describe('buildStakeManageSteps', () => {
         hasRewardChange: false,
         hasDelegateChange: false
       })
-    ).toEqual([{ label: 'Borrow', tokenSymbol: 'USDS' }]);
+    ).toEqual([{ label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." }]);
+  });
+
+  it('sequential: each approval is its own write, every other leg shares the multicall write', () => {
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: true,
+        needsUsdsAllowance: true,
+        hasLock: true,
+        hasFree: false,
+        hasWipe: true,
+        hasBorrow: true,
+        hasRewardChange: true,
+        rewardSymbol: 'SPK',
+        hasDelegateChange: true,
+        claimSymbols: ['USDS'],
+        shouldUseBatch: false
+      }).map(step => (typeof step === 'string' ? undefined : step.write))
+    ).toEqual([0, 1, 2, 2, 2, 2, 2, 2]);
+    // Bundled lists carry no indices.
+    expect(
+      buildStakeManageSteps({
+        needsSkyAllowance: true,
+        needsUsdsAllowance: false,
+        hasLock: true,
+        hasFree: false,
+        hasWipe: false,
+        hasBorrow: false,
+        hasRewardChange: false,
+        hasDelegateChange: false
+      }).every(step => typeof step === 'string' || step.write === undefined)
+    ).toBe(true);
   });
 
   it('places Change reward before Change delegate, matching the manage calldata order', () => {
@@ -230,9 +261,14 @@ describe('buildStakeManageSteps', () => {
         hasWipe: false,
         hasBorrow: false,
         hasRewardChange: true,
+        rewardSymbol: 'SPK',
         hasDelegateChange: true
       })
-    ).toEqual(['Change reward', 'Change delegate', { label: 'Stake', tokenSymbol: 'SKY' }]);
+    ).toEqual([
+      { label: 'Change reward', tokenSymbol: 'SPK' },
+      'Change delegate',
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
+    ]);
 
     expect(
       buildStakeManageSteps({
@@ -262,9 +298,9 @@ describe('buildStakeManageSteps', () => {
         claimSymbols: ['SKY', 'SPK']
       })
     ).toEqual([
-      { label: 'Withdraw', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' }
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
 
     // No claimSymbols — untouched (no Claim steps at all).
@@ -279,7 +315,7 @@ describe('buildStakeManageSteps', () => {
         hasRewardChange: false,
         hasDelegateChange: false
       })
-    ).toEqual([{ label: 'Withdraw', tokenSymbol: 'SKY' }]);
+    ).toEqual([{ label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn." }]);
   });
 });
 
@@ -434,6 +470,8 @@ describe('useStakeManageLaunch — launch() config', () => {
     act(() => withdrawRepay.result.current.launch());
     expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm');
     expect(h.launchMock.mock.calls[0][0].transactionTitle).toBe('Confirm the change in your position');
+    // The sheet is the review (Design QA 2800:91832): no in-modal review.
+    expect(h.launchMock.mock.calls[0][0].skipReview).toBe(true);
     withdrawRepay.unmount();
     h.launchMock.mockClear();
 
@@ -456,7 +494,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
     act(() => rewardOnly.result.current.launch());
     expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm reward change');
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Change reward']);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+      { label: 'Change reward', tokenSymbol: 'SKY', write: 0 }
+    ]);
     expect(h.launchMock.mock.calls[0][0].analytics.data.selectedRewardContract).toBe(SKY_REWARD_CONTRACT);
     rewardOnly.unmount();
   });
@@ -465,9 +505,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS' },
-      { label: 'Repay', tokenSymbol: 'USDS' },
-      { label: 'Withdraw', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved.", write: 0 },
+      { label: 'Repay', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been repaid.", write: 1 },
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn.", write: 1 }
     ]);
   });
 
@@ -480,9 +520,9 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
     act(() => result.current.launch());
     expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Withdraw', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' }
+      { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn.", write: 0 },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed.", write: 0 },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed.", write: 0 }
     ]);
   });
 
@@ -508,20 +548,14 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
   });
 
-  it('reuses the legacy MANAGE msgids for subtitles and flags the exit wording', () => {
+  it('sets no status subtitles and carries the manage toast copy', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
     const { subtitles, toast } = h.launchMock.mock.calls[0][0];
-    expect(subtitles.loading).toBe(
-      'Your transaction is being processed on the blockchain to change your position. Please wait.'
-    );
-    // Legacy quirk preserved: the free+wipe success copy says "exit" even for a
-    // partial withdraw+repay (getStakeSubtitle branches on presence, not size).
-    expect(subtitles.success).toBe(
-      "You've unstaked 55,000 SKY and repaid 30,000 USDS to exit your position."
-    );
-    expect(subtitles.error).toBe('An error occurred while changing your position');
+    // The wallet/status screens narrate through the step list and the toast
+    // (Design QA, Sep 2026) — no per-status sentence under the title.
+    expect(subtitles).toBeUndefined();
     expect(toast).toEqual({
       loading: 'Changing position',
       success: 'Your position is updated!',

@@ -105,9 +105,12 @@ export function StakeRateChart() {
           ) : isBorrow ? (
             <Trans>Borrow Rate</Trans>
           ) : (
-            <Trans>TVL</Trans>
+            <Trans>Total value locked</Trans>
           )
         }
+        // TVL tags its figure with the period's change like every other TVL
+        // chart (APP-552); the rate metrics stay plain.
+        showTrend={!isPercentMetric}
         displayValue={displayValue}
         metrics={[
           { value: 'rate', label: <Trans>Staking rate</Trans> },

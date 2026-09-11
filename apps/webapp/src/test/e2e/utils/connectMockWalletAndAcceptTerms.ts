@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { suppressGovernanceMigrationToast } from './suppressGovernanceMigrationToast.ts';
 
 export type ConnectMockWalletOptions = {
   batch?: boolean;
@@ -14,6 +15,8 @@ export const connectMockWalletAndAcceptTerms = async (
   page: Page,
   { batch, expectTerms }: ConnectMockWalletOptions = {}
 ) => {
+  await suppressGovernanceMigrationToast(page);
+
   await page
     .getByRole('button', { name: batch ? 'Connect Batch Mock Wallet' : 'Connect Mock Wallet' })
     .first()

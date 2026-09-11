@@ -19,9 +19,10 @@ import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSucc
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
-import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
+import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
@@ -40,7 +41,8 @@ import {
   type GateStatusCopy,
   type GateTrigger,
   type PreflightHook,
-  type PreTransactionGate
+  type PreTransactionGate,
+  type TransactionPreflight
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 
@@ -116,6 +118,32 @@ export function useEntrySlot() {
   return useContext(EntrySlotContext);
 }
 
+// The injected enhanced-screening preflight hook (see `usePreflight` on the
+// provider), shared with flows whose OWN surface fires the transaction.
+const PreflightHookContext = createContext<PreflightHook>(allowAllPreflight);
+
+/**
+ * The enhanced-screening preflight (APP-517) for a surface that fires the
+ * transaction itself — a `skipReview` flow's page-side Confirm (the stake
+ * takeovers). The modal's first screen normally runs this check, warms the
+ * verdict and holds its CTA; with no first screen the takeover has to: pass
+ * the live USD notional and whether the flow's own gating would let the user
+ * proceed, and hold the Confirm the same way the modal does (pending →
+ * loading, blocked → disabled with the message shown). The gate still
+ * enforces the verdict at fire time through the same query cache; this is
+ * the user-facing half.
+ */
+export function useTransactionPreflight({
+  usdValue,
+  actionable
+}: {
+  usdValue: number | undefined;
+  actionable: boolean;
+}): TransactionPreflight {
+  const usePreflight = useContext(PreflightHookContext);
+  return usePreflight({ usdValue, active: true, actionable });
+}
+
 /** The modal's render inputs, retained across its exit animation. */
 type TransactionModalView = {
   config: TransactionConfig;
@@ -123,6 +151,8 @@ type TransactionModalView = {
   currentStep: number;
   /** A step of this session has mined — see `hasMinedStep` in the provider. */
   hasMinedStep: boolean;
+  /** The ERROR on screen is a wallet Reject — the modal words it as declined, not rolled back. */
+  userRejected: boolean;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -186,6 +216,9 @@ export function TransactionProvider({
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
+  // Written on every ERROR (true/false), so it is always fresh for the failure
+  // the modal is showing; never read outside ERROR.
+  const [userRejected, setUserRejected] = useState(false);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -271,16 +304,29 @@ export function TransactionProvider({
   const flowIdRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
+  const { address, chainId: connectedChainId } = useConnection();
+  const chains = useChains();
+
+  // The chain the guard below judges: the wallet's OWN, not wagmi's.
+  //
+  // `useChainId()` reads `config.state.chainId`, which wagmi refuses to move
+  // onto a chain the app doesn't configure — park a wallet on one and it keeps
+  // reporting the last configured chain. The guard would then see a supported
+  // chain and stay silent while the wallet is somewhere else entirely, which is
+  // exactly the calldata-on-the-wrong-chain case it exists to stop. That hole
+  // used to be unreachable because a blocking dialog covered the app; it isn't
+  // any more, so the guard has to read the truth. Falls back to the config
+  // chain when disconnected, where there is no wallet chain to speak of.
+  const guardChainId = connectedChainId ?? chainId;
+
   // Fire-time read for the gate's chain check (see runGated): a verdict that
   // resolves after a wallet chain switch must see the wallet's CURRENT chain,
   // not the one captured when the click happened.
-  const chainIdRef = useRef(chainId);
+  const chainIdRef = useRef(guardChainId);
   useEffect(() => {
-    chainIdRef.current = chainId;
-  }, [chainId]);
-  const { address } = useConnection();
-  const chains = useChains();
-  const { handleSwitchChain, isPending: switchPending, variables: switchVariables } = useChainModalContext();
+    chainIdRef.current = guardChainId;
+  }, [guardChainId]);
+  const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -302,7 +348,7 @@ export function TransactionProvider({
   // either, so no screening call is spent on a transaction that cannot fire.
   const preflightEntry = activeConfig?.entry;
   const actionable =
-    !(activeConfig && offSupportedChains(activeConfig.supportedChainIds, chainId)) &&
+    !(activeConfig && offSupportedChains(activeConfig.supportedChainIds, guardChainId)) &&
     (preflightEntry
       ? !preflightEntry.confirmDisabled ||
         (!!activeConfig?.onSecondaryConfirm && !preflightEntry.secondaryConfirmDisabled)
@@ -428,10 +474,12 @@ export function TransactionProvider({
       setOpen(true);
 
       // Review-first flows open on the review screen, so launch IS the review
-      // view. Entry-first flows open on the editable entry — their review event
-      // (if the flow has a review stage at all) fires at the entry→review
-      // transition instead (onReviewStage below), and entry-only flows (claims,
-      // upgrade) emit none, matching the legacy widgets.
+      // view — and so is a `skipReview` launch, whose review lived on the
+      // flow's own surface and whose Confirm is what launched this. Entry-first
+      // flows open on the editable entry — their review event (if the flow has
+      // a review stage at all) fires at the entry→review transition instead
+      // (onReviewStage below), and entry-only flows (claims, upgrade) emit
+      // none, matching the legacy widgets.
       if (config.analytics && !config.entry) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
@@ -520,6 +568,7 @@ export function TransactionProvider({
         txStatus: txStatusRef.current,
         currentStep,
         hasMinedStep,
+        userRejected,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -613,9 +662,10 @@ export function TransactionProvider({
     }
     const config = configRef.current;
     if (!config) return;
-    // Amount-aware title when the flow supplied one, else the subtitle sentence, else the title.
-    const titleFor = (state: 'loading' | 'error') =>
-      config.toast?.[state] ?? config.subtitles?.[state] ?? config.title;
+    // Amount-aware title when the flow supplied one, else the flow's title.
+    // (No subtitle fallback: status subtitles no longer exist — every launch
+    // sets its own toast copy.)
+    const titleFor = (state: 'loading' | 'error') => config.toast?.[state] ?? config.title;
 
     // SUCCESS never reaches here: it closes the session (see onSuccess), which
     // clears `minimized` in the same commit and posts its own toast.
@@ -702,7 +752,11 @@ export function TransactionProvider({
           gatePhaseRef.current = null;
           gateCopyRef.current = null;
           setGateCopy(null);
-          returnToFirstScreenRef.current?.();
+          // A skipReview flow has no first screen: the denial hands the user
+          // back to the surface that launched it, which renders the same
+          // hold through useTransactionPreflight.
+          if (configRef.current?.skipReview) handleCloseRef.current();
+          else returnToFirstScreenRef.current?.();
         },
         reportSignatureRejected: () => {
           if (!live()) return;
@@ -932,7 +986,7 @@ export function TransactionProvider({
       // toast first, so the two never sit stacked.
       if (config) {
         toast.dismiss(MINIMIZED_TOAST_ID);
-        const successTitle = config.toast?.success ?? config.subtitles?.success ?? config.title;
+        const successTitle = config.toast?.success ?? config.title;
         const txHash = hash ?? txHashRef.current;
         toastWithClose(
           () => (
@@ -981,6 +1035,7 @@ export function TransactionProvider({
       }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
+      setUserRejected(isUserRejectedRequestError(error));
       if (hash) {
         txHashRef.current = hash;
       }
@@ -1049,7 +1104,7 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, preludeSteps, gateCopy }
+    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, userRejected, preludeSteps, gateCopy }
     : exitingView;
 
   // Chain guard (APP-528): the modal survives a wallet chain switch (the
@@ -1069,7 +1124,7 @@ export function TransactionProvider({
   const guardConfig = modalView?.config;
   const noWriteInFlight = txStatus !== TxStatus.INITIALIZED && txStatus !== TxStatus.LOADING;
   const chainGuardActive =
-    !!guardConfig && noWriteInFlight && offSupportedChains(guardConfig.supportedChainIds, chainId);
+    !!guardConfig && noWriteInFlight && offSupportedChains(guardConfig.supportedChainIds, guardChainId);
   const guardTargetChainId = chainGuardActive
     ? chainSwitchTarget(
         guardConfig.supportedChainIds,
@@ -1080,18 +1135,57 @@ export function TransactionProvider({
   // Safe wallets can't switch networks from the dapp (APP-486) — offer no
   // switch button, only the explanatory block; the guard still disables the CTAs.
   const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
-  const switchGuardChain = useCallback(() => {
-    if (guardTargetChainId === undefined) return;
-    handleSwitchChain({ chainId: guardTargetChainId, source: 'transaction_modal' });
-  }, [guardTargetChainId, handleSwitchChain]);
+  const switchGuardChain = useCallback(
+    (source: NetworkSwitchSource = 'transaction_modal') => {
+      if (guardTargetChainId === undefined) return;
+      handleSwitchChain({ chainId: guardTargetChainId, source });
+    },
+    [guardTargetChainId, handleSwitchChain]
+  );
+  const onGuardSwitchClick = useCallback(() => switchGuardChain(), [switchGuardChain]);
+
+  // Opening a product's modal is asking for that product, so it resolves its
+  // chain the way arriving on its page does — the route guard's rule (c), just
+  // without a URL to change. Portfolio is where this matters: its in-place
+  // actions reach mainnet-only products from a surface that runs anywhere, so
+  // without this the user meets a wall in a modal they opened to transact.
+  //
+  // Latched to the modal session, which is the counterpart of the route guard's
+  // one prompt per module visit. The FIRST evaluation of a session is the only
+  // one that can fire, whether or not it does anything: that is what keeps the
+  // guard turning active LATER — the APP-528 case, where the user switches the
+  // wallet with the modal already open — from yanking them back. That change is
+  // deliberate and gets the CTA, not a prompt. A decline is covered by the same
+  // latch, so the guard block stays put rather than asking twice.
+  const autoSwitchedSessionRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (autoSwitchedSessionRef.current === sessionGen) return;
+    autoSwitchedSessionRef.current = sessionGen;
+    // `activeConfig`, not the guard's own `guardConfig`: closing ALSO bumps the
+    // generation (so late engine callbacks see themselves as stale) while the
+    // view lingers as `exitingView` for its exit animation. The guard is still
+    // live against the closing flow's config through that window, so keying on
+    // the generation alone reads a close as an open and prompts the wallet for
+    // a modal the user just dismissed — including on the route guard's own
+    // redirect, which closes modals as it navigates.
+    if (!activeConfig) return;
+    if (chainGuardActive && guardCanSwitch) switchGuardChain('transaction_modal_auto');
+  }, [sessionGen, activeConfig, chainGuardActive, guardCanSwitch, switchGuardChain]);
   const chainGuard = chainGuardActive
     ? {
-        currentName: chains.find(c => c.id === chainId)?.name,
+        // The chain the guard is judging, not the one wagmi has pinned. Reading
+        // `chainId` here named the config's fallback — so a wallet parked on an
+        // unconfigured network produced "isn't available on Tenderly. Switch to
+        // Tenderly", naming the same chain twice. An unconfigured chain has no
+        // name to give (the config is the only registry the app carries), and
+        // undefined is right: the copy says "this network" instead of guessing.
+        currentName: chains.find(c => c.id === guardChainId)?.name,
         targetName: guardTargetName,
-        onSwitch: guardCanSwitch ? switchGuardChain : undefined,
+        onSwitch: guardCanSwitch ? onGuardSwitchClick : undefined,
         // The guard's CTA shows the DS loading state while the wallet is
         // answering OUR switch request (not some other surface's).
-        switching: switchPending && switchVariables?.chainId === guardTargetChainId
+        switching: switchPending && switchVariables?.chainId === guardTargetChainId,
+        reason: guardConfig.chainGuardReason
       }
     : null;
 
@@ -1138,7 +1232,8 @@ export function TransactionProvider({
   return (
     <TransactionContext.Provider value={contextValue}>
       <EntrySlotContext.Provider value={entrySlotEl}>
-        {children}
+        {/* Only page surfaces read the preflight hook (see useTransactionPreflight). */}
+        <PreflightHookContext.Provider value={usePreflight}>{children}</PreflightHookContext.Provider>
         {/* In-flight hook host: kept mounted (hidden) for the modal's whole lifetime,
             OUTSIDE the Radix dialog, so minimizing (which unmounts the dialog body)
             never tears down a running transaction. It portals its visible inputs into
@@ -1189,9 +1284,11 @@ export function TransactionProvider({
             errorLabel={modalView.config.errorLabel}
             steps={modalSteps}
             currentStep={modalView.currentStep}
+            userRejected={modalView.userRejected}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}
+            skipReview={modalView.config.skipReview}
           />
         )}
       </EntrySlotContext.Provider>

@@ -15,7 +15,8 @@
  *
  * Environment variables:
  *   - USE_ALTERNATE_VNET=true - Use alternate VNet configuration
- *   - ALTERNATE_FORK_CONTAINER_ID - Override default fork container ID
+ *   - ALTERNATE_FORK_CONTAINER_ID - Override alternate fork container (see forkAlternateVnet.js)
+ *   - MAINNET_FORK_CONTAINER_ID - Standard mainnet fork parent (see forkVnet.ts / .env.example)
  */
 
 import { expect, test } from '../fixtures-parallel';

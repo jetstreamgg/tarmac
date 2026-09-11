@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 import { mockWagmiConfig } from '@/data/wagmi/config/config.e2e';
 import { JSX } from 'react';
 
-// Dev/e2e-only. The mock buttons don't fit the mobile Topbar (M2), so below
-// the desktop tier they float above the bottom Navbar instead; they stay
-// visible and clickable there for Playwright's text selectors.
+// Dev/e2e-only. The mock buttons don't fit the mobile Topbar (M2), so on the
+// phone tier they float above the bottom Navbar instead; they stay visible and
+// clickable there for Playwright's text selectors. In the header they stay
+// compact until the desktop tier frees up room beside the pills.
 const mockButtonClasses =
   'max-w-40 truncate rounded-lg bg-white px-2 py-1 text-xs text-black desktop:max-w-none desktop:px-4 desktop:py-2 desktop:text-sm';
 
@@ -47,11 +48,9 @@ export function MockConnectButton(): JSX.Element {
   // resolve against the ~72px bar and park the buttons above the viewport.
   return (
     <>
-      <div className="desktop:flex hidden flex-row items-center gap-3">{buttons}</div>
+      <div className="hidden flex-row items-center gap-3 lg:flex">{buttons}</div>
       {createPortal(
-        <div className="desktop:hidden fixed right-3 bottom-28 z-40 flex flex-col items-end gap-1">
-          {buttons}
-        </div>,
+        <div className="fixed right-3 bottom-28 z-40 flex flex-col items-end gap-1 lg:hidden">{buttons}</div>,
         document.body
       )}
     </>

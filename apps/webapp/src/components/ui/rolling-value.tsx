@@ -37,11 +37,16 @@ type RollState = {
 export function RollingValue({
   value,
   className,
-  speed = 'hero'
+  speed = 'hero',
+  instant = false
 }: {
   value: string | number;
   className?: string;
   speed?: keyof typeof SPEEDS;
+  /** Swap without rolling — for a burst of continuous updates (a slider
+   * drag) where every roll would be interrupted mid-flight; discrete changes
+   * roll again once it's off. */
+  instant?: boolean;
 }) {
   const text = String(value);
   const prefersReducedMotion = useReducedMotion();
@@ -64,7 +69,7 @@ export function RollingValue({
       current: text,
       // Nothing to roll out when motion is reduced — the outgoing glyph is only
       // ever visible while it animates away.
-      previous: prefersReducedMotion ? null : state.current,
+      previous: prefersReducedMotion || instant ? null : state.current,
       outFrom: { y: inY.get(), opacity: inOpacity.get() },
       gen: state.gen + 1
     });
@@ -90,7 +95,7 @@ export function RollingValue({
   useEffect(() => () => observer.current?.disconnect(), []);
 
   const duration = SPEEDS[speed];
-  const animateWidth = box.settled && !prefersReducedMotion;
+  const animateWidth = box.settled && !prefersReducedMotion && !instant;
   const swap = prefersReducedMotion ? 0 : duration;
   const inTransition: Transition = {
     y: { duration: swap, ease: springSettle },
@@ -143,7 +148,7 @@ export function RollingValue({
         data-testid={state.gen > 0 ? 'rolling-value-in' : undefined}
         className="inline-block"
         style={{ y: inY, opacity: inOpacity }}
-        initial={state.gen > 0 && !prefersReducedMotion ? { y: IN_Y, opacity: 0 } : false}
+        initial={state.gen > 0 && !prefersReducedMotion && !instant ? { y: IN_Y, opacity: 0 } : false}
         animate={{ y: REST_Y, opacity: 1 }}
         transition={inTransition}
       >

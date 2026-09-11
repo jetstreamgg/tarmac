@@ -185,19 +185,29 @@ export function StepsItem({
   );
 }
 
+export type StepsBadgeVariant = 'brand' | 'error' | 'default';
+
+const badgeVariantClasses: Record<StepsBadgeVariant, string> = {
+  brand: 'bg-statusBrandBg text-statusBrand',
+  error: 'bg-statusErrorBg text-statusError',
+  default: 'bg-glassBadge text-fgSecondary'
+};
+
 /** Header pill (Figma Badge, h-24): `brand` is the Bundled treatment, `default` the neutral one.
  * `brand` also dresses the transaction-status chip (Figma 2376:225580) — its
  * fill/text are exactly `--color-statusBrandBg`/`--color-statusBrand`, so it
  * rides those tokens rather than literal colors (they theme-swap in light
  * mode; the Bundled chip picks that up too, which is correct — it was only
- * ever drawn on the dark values before). No border in either variant. */
+ * ever drawn on the dark values before). `error` is the same chip on the
+ * components/status error pair once a transaction fails (Figma 2800:91683,
+ * "⚠ Transaction failed"). No border in any variant. */
 export function StepsBadge({
   variant = 'default',
   children,
   className,
   dataTestId
 }: {
-  variant?: 'brand' | 'default';
+  variant?: StepsBadgeVariant;
   children: ReactNode;
   className?: string;
   dataTestId?: string;
@@ -207,7 +217,7 @@ export function StepsBadge({
       data-testid={dataTestId}
       className={cn(
         'font-circle flex h-6 items-center gap-1 rounded-full px-2 text-xs leading-3.5 font-medium tracking-[-0.24px]',
-        variant === 'brand' ? 'bg-statusBrandBg text-statusBrand' : 'bg-glassBadge text-fgSecondary',
+        badgeVariantClasses[variant],
         className
       )}
     >
@@ -232,12 +242,21 @@ export type StepsProps = {
   bundled?: boolean;
   /** Right-aligned header badge content (e.g. "Confirm in the wallet"). */
   badge?: ReactNode;
+  /** Treatment of the header badge: `brand` while in flight, `error` once the transaction failed. */
+  badgeVariant?: Extract<StepsBadgeVariant, 'brand' | 'error'>;
   children: ReactNode;
   className?: string;
 };
 
 /** Assembled Steps Standard container (Figma 5200:30907): header row + item list. */
-export function Steps({ title, bundled = false, badge, children, className }: StepsProps) {
+export function Steps({
+  title,
+  bundled = false,
+  badge,
+  badgeVariant = 'brand',
+  children,
+  className
+}: StepsProps) {
   return (
     <div className={cn('flex w-full flex-col gap-5', className)}>
       <div className="flex items-center justify-between">
@@ -251,10 +270,10 @@ export function Steps({ title, bundled = false, badge, children, className }: St
           )}
         </div>
         {/* The only current caller of `badge` is the transaction-status chip
-            (Figma 2376:225580), always drawn in the brand treatment — see
-            `StepsBadge` above. */}
+            (Figma 2376:225580): brand while the flow runs, error once it
+            failed (2800:91683) — see `StepsBadge` above. */}
         {badge && (
-          <StepsBadge variant="brand" dataTestId="transaction-status-badge">
+          <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
             {badge}
           </StepsBadge>
         )}

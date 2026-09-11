@@ -348,6 +348,14 @@ export function resolveTooltipLabel(
 interface ChartProps {
   data: Data[];
   symbol?: string;
+  /**
+   * Headline prefix. The denomination rule for the detail charts (APP-563 #10):
+   * a series measured in a token (Savings sUSDS, vault assets, stUSDS, rewards
+   * supply) leads its figure with the token mark via `icons` and carries no
+   * prefix; a series measured in USD (Stake, whose TVL is the collateral's
+   * dollar value from BA Labs, Figma 1036:208698) carries `'$'` and no mark.
+   * Never both.
+   */
   prefix?: string;
   isPercentage?: boolean;
   hidePercentChange?: boolean;
@@ -481,6 +489,16 @@ function CardTitleContent({
   );
 }
 
+/**
+ * The detail header figure's line box per tier — Heading 2's 48px on desktop
+ * (Figma 859:35718), the phone tier's Heading 5 at 26px. One source for both
+ * the loaded figure's `leading` and the loading placeholder's height, so the
+ * two can't drift apart and re-open the load-time jump.
+ */
+export function detailFigureLineBox(mobile: boolean): string {
+  return mobile ? 'h-[26px] leading-[26px]' : 'h-12 leading-[48px]';
+}
+
 /** detail-variant headline: just the formatted value (no % change / timestamp). */
 function DetailHeaderValue({
   data,
@@ -513,7 +531,20 @@ function DetailHeaderValue({
   mobile?: boolean;
 }) {
   if (isLoading) {
-    return <Skeleton className="h-9 w-32" />;
+    // The placeholder occupies the exact box the figure will: the figure's own
+    // line box (`detailFigureLineBox`) beside the same leading marks, so the
+    // header — and everything under it — does not move when the value lands.
+    // A bare 36px block used to sit here, and the card grew 12px on desktop
+    // (shrank 10px on the phone tier) at the swap (measured on every detail
+    // chart: portfolio, savings, stUSDS, stake).
+    return (
+      <span className="flex items-center gap-2">
+        {icons}
+        <span className={cn('flex items-center', detailFigureLineBox(mobile))}>
+          <Skeleton className={mobile ? 'h-5 w-24' : 'h-9 w-32'} />
+        </span>
+      </span>
+    );
   }
   const value = displayValue ?? data[data.length - 1]?.value ?? 0;
   // The token mark already names the series, so a figure that carries `icons`
@@ -529,9 +560,8 @@ function DetailHeaderValue({
       // keeps its own Heading 5 from M6.3.
       className={cn(
         'text-text font-circle font-medium',
-        mobile
-          ? 'text-2xl leading-[26px] tracking-[-0.48px]'
-          : 'text-[44px] leading-[48px] tracking-[-0.88px]'
+        detailFigureLineBox(mobile),
+        mobile ? 'text-2xl tracking-[-0.48px]' : 'text-[44px] tracking-[-0.88px]'
       )}
     >
       {/* The figure rolls over when the metric or timeframe swaps it rather
@@ -558,7 +588,11 @@ function DetailHeaderValue({
  */
 function TrendBadge({ percentage, formatted }: { percentage: number; formatted: string }) {
   const isDown = percentage < 0;
-  const label = `${isDown ? '' : '+'}${formatted}`;
+  // Both directions carry their sign: colour alone left a falling series
+  // reading as a bare "4.14%" (APP-552 review). A rise is capped the way the
+  // default header caps it — a series that starts tiny on the All timeframe
+  // would otherwise print a nine-digit pill. A fall cannot pass -100%.
+  const label = percentage > 10000 ? '+10,000+%' : `${isDown ? '-' : '+'}${formatted}`;
   if (!isDown) {
     return <RateBadge data-testid="chart-trend-badge">{label}</RateBadge>;
   }
@@ -759,7 +793,10 @@ export function Chart({
       return 0;
     }
 
-    const offset = isPercentage ? 0.001 : 1;
+    // The nudge exists only to keep a zero start from dividing by zero; off a
+    // real baseline it is noise that skews the figure the trend badge prints
+    // (2 → 4 tokens read +66.67% with a flat +1), so it applies to zero alone.
+    const offset = data[0].value === 0 ? (isPercentage ? 0.001 : 1) : 0;
     const first = data[0].value + offset;
     const last = data[data.length - 1].value + offset;
 

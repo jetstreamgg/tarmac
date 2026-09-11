@@ -76,11 +76,23 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      className={cn('!z-40', className)}
+      // `vt-shell-toaster`: captured alongside the page during a route
+      // transition so the page's snapshots — painted in the top layer, above
+      // every z-index in the document — pass behind the toasts instead of over
+      // them (same mechanism as the mobile navbar, rules in globals.css). Inert
+      // outside a running transition.
+      className={cn('vt-shell-toaster !z-40', className)}
       position="bottom-right"
       visibleToasts={5}
       gap={14}
-      offset={{ bottom: bottomOffset }}
+      // The toaster hangs off the viewport's right edge, which under a scroll
+      // lock is the released scrollbar column's outer edge (globals.css);
+      // adding `--page-released-gutter` (0 at rest) keeps the stack put when
+      // a dialog opens over it. The value lands in sonner's --offset-right.
+      offset={{
+        bottom: bottomOffset,
+        right: `calc(${SONNER_DEFAULT_OFFSET}px + var(--page-released-gutter, 0px))`
+      }}
       mobileOffset={{ bottom: bottomOffset }}
       closeButton={true}
       icons={{

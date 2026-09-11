@@ -23,11 +23,23 @@ export const waitForPreparedExecuteAndMine = async (
   );
   result.current.execute();
 
+  // A Tenderly vnet mines on send, so the hook's `isLoading` can switch on and
+  // back off between two of waitFor's polls — waiting to *see* it on is a race
+  // the suite lost intermittently. The mined hash and the error stick, so wait
+  // for whichever of the three shows first, then for the flag to settle.
   await waitFor(
     () => {
-      expect(result.current.isLoading).toBe(true);
+      const { isLoading, data, error } = result.current;
+      expect(isLoading || data !== undefined || error !== null).toBe(true);
     },
-    { timeout: loadingTimeout }
+    {
+      timeout: 15000,
+      interval: 100,
+      onTimeout: error => {
+        console.log({ writeHookResponse: result.current });
+        return error;
+      }
+    }
   );
   await waitFor(
     () => {

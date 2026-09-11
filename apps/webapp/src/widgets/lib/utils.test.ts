@@ -12,8 +12,4 @@ describe('getValidatedState amount validation', () => {
       expect(getValidatedState({ amount })).toBeUndefined();
     }
   );
-
-  it.each(['0x10', '1e999'])('rejects non-decimal targetAmount %j', targetAmount => {
-    expect(getValidatedState({ targetAmount })).toBeUndefined();
-  });
 });

@@ -75,14 +75,16 @@ jobs:
       - name: Restore pool VNet data from repo secrets
         id: restore-pool
         run: |
-          # VNET_POOL_DATA and VNET_SNAPSHOT_DATA are repo-level secrets (auto-masked in logs)
+          # VNET_POOL_DATA / VNET_SNAPSHOT_DATA are Actions secrets (Settings → Secrets).
+          # Keep as secrets: they embed full Tenderly RPC URLs (bearer credentials).
+          # vars would leak to fork PRs and are not masked in logs.
           if [ -n "$VNET_POOL_DATA" ] && [ -n "$VNET_SNAPSHOT_DATA" ]; then
             echo "Writing VNet data from repo secrets..."
 
             printf '%s' "$VNET_POOL_DATA" > tenderlyTestnetData.json
             printf '%s' "$VNET_SNAPSHOT_DATA" > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
 
-            # Log only metadata (counts), never file contents — the data is credential-bearing.
+            # Log only metadata (counts) — never echo the secret payloads.
             POOL_NETWORKS=$(jq -r '.[].NETWORK' tenderlyTestnetData.json 2>/dev/null | wc -l | tr -d ' ')
             SNAPSHOT_COUNT=$(jq -r 'keys | length' apps/webapp/src/test/e2e/persistent-vnet-snapshots.json 2>/dev/null)
 
@@ -91,7 +93,7 @@ jobs:
           else
             echo "have_pool=false" >> $GITHUB_OUTPUT
             echo "No pool data found in repo secrets."
-            echo "Run: pnpm vnet:pool:provision:store (or the Provision VNet Pool workflow)"
+            echo "Run: pnpm vnet:pool:provision:store"
           fi
         env:
           VNET_POOL_DATA: ${{ secrets.VNET_POOL_DATA }}

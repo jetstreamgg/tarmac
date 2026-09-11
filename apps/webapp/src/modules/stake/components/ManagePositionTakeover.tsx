@@ -23,6 +23,7 @@ import { StakeSky } from '@/modules/icons';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
+import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
@@ -55,13 +56,14 @@ import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorro
 export function ManagePositionTakeover({
   urnIndex,
   init,
-  onBack,
-  onClose
+  onClose,
+  scrimHandoff
 }: {
   urnIndex: number;
   init: StakeManageFlowInit;
-  onBack: () => void;
   onClose: () => void;
+  /** Opened from the details modal, whose scrim is already up — see TakeoverShell. */
+  scrimHandoff?: boolean;
 }) {
   const chainId = useChainId();
   const { address } = useConnection();
@@ -374,6 +376,7 @@ export function ManagePositionTakeover({
     launch,
     locked,
     restore,
+    usdValue,
     prepared,
     isLoading: launchLoading,
     error: launchError
@@ -395,7 +398,6 @@ export function ManagePositionTakeover({
     onSuccess
   });
 
-  const confirmDisabled = !formValid || !prepared || launchLoading;
   // This host outlives the transaction (page-mounted), so pass null while the
   // form is invalid — a stale execution error must not masquerade as a prepare
   // failure once the engine is disabled. Same while the engine is re-simulating
@@ -405,6 +407,11 @@ export function ManagePositionTakeover({
     prepared,
     formValid && !launchLoading ? launchError : null
   );
+  const confirmHold = useStakeConfirmHold({
+    usdValue,
+    actionable: formValid && prepared && !launchLoading,
+    launchErrorMessage
+  });
 
   // Est. annual rewards for card 1 (M22): rate × collateral, in USD. The BA
   // Labs rate is a VALUE APR, so the projection is a SKY-equivalent value
@@ -422,6 +429,7 @@ export function ManagePositionTakeover({
 
   return (
     <TakeoverShell
+      scrimHandoff={scrimHandoff}
       title={<Trans>Manage a position</Trans>}
       badge={
         <>
@@ -429,7 +437,8 @@ export function ManagePositionTakeover({
           <Trans>SKY Staking</Trans>
         </>
       }
-      onBack={onBack}
+      // Design QA 2800:91832: "There's no back arrow, only 'X' icon to close"
+      // — the sheet no longer returns to the details modal.
       onClose={close}
       locked={locked}
       onOpenTransaction={restore}
@@ -439,9 +448,17 @@ export function ManagePositionTakeover({
           {/* An engine prepare failure takes over the slot — the helper copy
               would be a lie next to a dead Confirm. Two elements (not one
               recolored <p>) so the alert mounts fresh for screen readers. */}
-          {launchErrorMessage ? (
-            <p className="text-error max-w-xs text-sm" data-testid="stake-manage-error" role="alert">
-              {launchErrorMessage}
+          {confirmHold.alert ? (
+            <p
+              className="text-error max-w-xs text-sm"
+              data-testid={
+                confirmHold.alert.kind === 'prepare'
+                  ? 'stake-manage-error'
+                  : `stake-manage-${confirmHold.alert.kind}-blocked`
+              }
+              role="alert"
+            >
+              {confirmHold.alert.message}
             </p>
           ) : (
             <p className="text-textSecondary max-w-xs text-sm">
@@ -452,7 +469,8 @@ export function ManagePositionTakeover({
             variant="primary"
             size="xl"
             onClick={launch}
-            disabled={confirmDisabled}
+            disabled={confirmHold.disabled}
+            loading={confirmHold.loading}
             data-testid="stake-manage-confirm"
             className="px-10"
           >
@@ -461,10 +479,12 @@ export function ManagePositionTakeover({
         </>
       }
     >
-      {/* Position summary strip (comp 1036:213826; flows UX 1050:21454) */}
+      {/* Position summary strip (comp 1036:213826; flows UX 1050:21454):
+          32px above and below, 12px inset (Design QA 2800:91832 padding
+          annotation) — the shell's card column adds nothing of its own. */}
       <section
         data-testid="stake-manage-position-summary"
-        className="flex flex-col gap-8 px-2"
+        className="flex flex-col gap-8 px-3 py-8"
         aria-label="Position summary"
       >
         <h3 className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">

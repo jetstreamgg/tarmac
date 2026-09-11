@@ -23,7 +23,7 @@ actions:
       ## File Structure & Naming
       - Components: PascalCase (Button.tsx)
       - Hooks: camelCase (useWallet.ts)
-      - Tests: kebab-case (button-test.tsx)
+      - Tests: `<Name>.test.ts` / `<Name>.test.tsx` next to the source
       - One component per file
       - Co-locate tests with components
       - Group related components in feature folders
@@ -50,7 +50,6 @@ actions:
 
       ## Web3 Integration
       - Use Wagmi hooks
-      - Implement RainbowKit
       - Handle transaction errors
       - Use Viem for low-level operations
 

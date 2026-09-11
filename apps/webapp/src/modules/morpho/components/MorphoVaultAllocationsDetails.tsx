@@ -433,7 +433,7 @@ export function MorphoVaultAllocationsDetails({
                   </Tooltip>
                 </TableCell>
                 <TableCell className="h-auto py-4 text-right">
-                  {market.formattedAbsoluteCap === 'Unlimited' ? (
+                  {market.isAbsoluteCapUnlimited ? (
                     <Text className="text-text text-sm">{market.formattedAbsoluteCap}</Text>
                   ) : (
                     <Tooltip>

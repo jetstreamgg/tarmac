@@ -10,11 +10,13 @@ import { Loader } from './loader';
 const buttonVariants = cva(
   // --tw-gradient-from/to are @property-registered colors, so listing them
   // here lets gradient-stop changes (the primary/secondary state fills)
-  // cross-fade; background-image itself never interpolates.
+  // cross-fade. background-image is not interpolable and must stay out of
+  // this list: WebKit pins a transitioning background-image to its end value,
+  // which snaps the fill instead of fading it (APP-485).
   // font-circle on the base (not only the xl/l/m/s size recipes): defaultVariants
   // sets size='default', so a <Button> with no size prop would otherwise fall
   // through to Graphik. Every button in the comps is Circular.
-  'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-circle text-sm font-medium ring-offset-background transition-[background-color,background-image,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-circle text-sm font-medium ring-offset-background transition-[background-color,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
   {
     variants: {
       variant: {
@@ -29,8 +31,12 @@ const buttonVariants = cva(
         // translucent border must blend over the local gradient color (Figma
         // fill + inner stroke); by default the gradient tiles from the padding
         // box, wrapping the opposite end's color into the border ring.
+        // primary hover/pressed is an ::after overlay (same border box, same
+        // inner stroke) fading opacity rather than a stop swap: Safari
+        // re-rasterizes the button, soft and off-scale, while its stops
+        // transition, which reads as the button shrinking on hover (APP-485).
         primary:
-          'rounded-full border border-glassBorder bg-origin-border bg-linear-to-b from-button-gradient-start to-button-gradient-end text-fgConsistent hover:from-brandHover hover:to-brandHover active:from-brandPressed active:to-brandPressed focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
+          'relative isolate rounded-full border border-glassBorder bg-origin-border bg-linear-to-b from-button-gradient-start to-button-gradient-end text-fgConsistent focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary after:absolute after:-inset-px after:-z-10 after:rounded-full after:border after:border-glassBorder after:bg-brandHover after:opacity-0 after:transition-opacity after:duration-250 after:ease-out-expo hover:after:opacity-100 active:after:bg-brandPressed active:after:opacity-100 disabled:after:opacity-0',
         primaryAlt:
           'bg-radial-(--gradient-position) from-primary-alt-start/100 to-primary-alt-end/100 border text-text hover:from-primary-alt-start/60 hover:to-primary-alt-end/60 active:from-primary-alt-start/45 active:to-primary-alt-end/45 focus:from-primary-alt-start/45 focus:to-primary-alt-end/45 disabled:from-primary-alt-start/35 disabled:to-primary-alt-end/35',
         connectPrimary:
@@ -40,10 +46,6 @@ const buttonVariants = cva(
         pill: 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text rounded-full hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 bg-blend-overlay hover:bg-white/10 focus:border-transparent focus:bg-white/15 active:bg-white/15',
         chip: 'bg-secondary text-text rounded-full hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
         link: 'text-textSecondary no-underline hover:text-white light:hover:text-text active:text-[rgba(198,194,255,0.5)]',
-        pagination:
-          'text-selectActive text-base leading-normal bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 rounded-full hover:from-primary-start/50 hover:to-primary-end/50 hover:text-text focus:border-2 focus:border-primaryActive focus:text-text active:text-text active:from-primary-start/30 active:to-primary-end/30 disabled:bg-radial-(--gradient-position) disabled:from-primary-start/0 disabled:to-primary-end/0 rounded-full! border-0!',
-        paginationActive:
-          'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 rounded-full! text-text border-0!',
         outline:
           'text-text border border-surface hover:bg-surface/50 active:bg-surface/80 focus:bg-surface/80',
         ghost:
@@ -154,17 +156,7 @@ Button.displayName = 'Button';
 // Widget look — relocated under ButtonWidget*; the widgets/button shim aliases it back.
 
 export type ButtonVariant =
-  | 'default'
-  | 'secondary'
-  | 'pill'
-  | 'chip'
-  | 'link'
-  | 'pagination'
-  | 'paginationActive'
-  | 'input'
-  | 'primary'
-  | 'primaryAlt'
-  | 'ghost';
+  'default' | 'secondary' | 'pill' | 'chip' | 'link' | 'input' | 'primary' | 'primaryAlt' | 'ghost';
 
 const buttonWidgetVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-[12px] text-sm font-medium ring-offset-background transition-[background-color,background-image,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none',
@@ -183,10 +175,6 @@ const buttonWidgetVariants = cva(
         chip: 'bg-secondary text-text rounded-full hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
         link: 'text-textSecondary no-underline disabled:text-textMuted',
         purpleLink: 'text-textEmphasis',
-        pagination:
-          'text-selectActive light:text-textSecondary text-base leading-normal bg-radial-(--gradient-position) from-primary-alt-start/0 to-primary-alt-end/0 rounded-full hover:from-primary-alt-start/50 hover:to-primary-alt-end/50 hover:text-text focus:border-2 focus:border-primaryActive focus:text-text active:text-text active:from-primary-alt-start/30 active:to-primary-alt-end/30 disabled:bg-radial-(--gradient-position) disabled:from-primary-alt-start/0 active:to-primary-alt-end/0 rounded-full! border-0!',
-        paginationActive:
-          'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 hover:bg-primaryHover rounded-full! text-text',
         input:
           'bg-black/20 light:bg-surfaceAlt hover:bg-white/10 active:bg-white/7 text-text text-[13px] font-normal leading-4 disabled:pointer-events-auto disabled:cursor-not-allowed font-graphik',
         ghost:

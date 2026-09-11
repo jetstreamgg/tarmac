@@ -4,7 +4,7 @@ globs: *.{ts,tsx}
 ---
 # Web3 Integration Standards
 
-Standards for implementing Web3 functionality using Wagmi, Viem, and RainbowKit.
+Standards for implementing Web3 functionality using Wagmi and Viem.
 
 <rule>
 name: web3_integration_standards
@@ -21,7 +21,7 @@ actions:
       Follow these Web3 integration standards:
 
       ## Wallet Connection
-      - Use RainbowKit for wallet connections
+      - Use the app's existing wagmi connectors and connect modal for wallet connections
       - Implement proper connection state handling
       - Handle wallet switching events
       - Support multiple chains
@@ -36,17 +36,16 @@ actions:
 
       ## Transaction Handling
       ```typescript
-      // Proper transaction handling pattern
-      const { write, isLoading, isSuccess, isError } = useContractWrite({
+      // wagmi v3: reads take TanStack Query options under `query`; writes go
+      // through the app's existing tx hooks (see apps/webapp/src/hooks/) rather
+      // than a bare useWriteContract.
+      const { data, isLoading, error, refetch } = useReadContract({
+        chainId,
         address: CONTRACT_ADDRESS,
         abi: CONTRACT_ABI,
-        functionName: 'function',
-        onSuccess: (data) => {
-          // Handle success
-        },
-        onError: (error) => {
-          // Handle error
-        }
+        functionName: 'getData',
+        args: [owner],
+        query: { enabled: !!owner },
       })
       ```
 
@@ -63,55 +62,6 @@ actions:
       - Validate transaction inputs
       - Handle chain ID mismatches
       - Implement proper signing validation
-
-examples:
-  - input: |
-      // Bad
-      const sendTransaction = async () => {
-        try {
-          await contract.write()
-        } catch (e) {
-          console.error(e)
-        }
-      }
-
-      // Good
-      const { write, isLoading, isSuccess, error } = useContractWrite({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'function',
-        onSuccess: (data) => {
-          toast.success('Transaction successful')
-        },
-        onError: (error) => {
-          toast.error(getErrorMessage(error))
-        }
-      })
-
-      const handleTransaction = async () => {
-        if (!write) return
-        await write()
-      }
-    output: "Properly implemented Web3 transaction handling"
-
-  - input: |
-      // Bad
-      const { data } = useContractRead({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'getData'
-      })
-
-      // Good
-      const { data, isError, isLoading, refetch } = useContractRead({
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: 'getData',
-        enabled: !!address,
-        cacheTime: 30_000,
-        watch: true,
-      })
-    output: "Proper contract read implementation with caching and watching"
 
 metadata:
   priority: high

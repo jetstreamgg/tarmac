@@ -9,6 +9,22 @@ this file records only objective coverage and verdicts.
 
 ## 1. Figma coverage map
 
+**Node ID refresh (2026-08-26):** Legacy hi-fi section `486:31150` (“Core Screens”) was
+reorganized into four live sections under App UI (`386:35313`):
+
+| Section                                            | Node          |
+| -------------------------------------------------- | ------------- |
+| 🟢 Stake SKY - Empty state                         | `1030:133634` |
+| 🟢 Stake SKY - Opening a new position              | `1030:133792` |
+| 🟢 Stake SKY - Active states & position management | `1030:134505` |
+| 🟢 Stake SKY - Edge cases/More states              | `1030:136203` |
+
+Key frame migrations (`486:*` → `1036:*`): My positions `486:31830` → `1036:208665` /
+`1036:214050`; Statistics empty `486:31955` → `1036:208698`; Open takeover `486:32657` →
+`1036:209698`; Position details `486:32506` → `1036:214176`; Bundled confirm
+`486:33469` → `1036:207162`. Rows below retain legacy IDs where unchanged in meaning;
+use the mapping table when linking Figma from contracts.
+
 Swept 2026-07-08 by walking both design files page-by-page (not by following previously shared
 node links). Every stake-related frame in the live pages is listed; nothing else stake-shaped
 exists outside them.
@@ -130,7 +146,7 @@ delta → finding) · **fail** (defect) · **n/e** (not exercisable end-to-end; 
 | B-5  | Borrow below dust (0 < x < 30k) blocked with the dust message                                  | **pass*** | Blocked, confirm disabled; message rendered raw "30000" from the engine hook — remapped module-side this round (`simulationErrorMessage.ts`). |
 | B-6  | Collateral below `minCollateralForDust`: “More SKY needed to borrow” callout, Confirm disabled | **pass**  | Callout title+body exact (100,000/14,400,000 staked), Confirm disabled.                                                                       |
 | B-7  | Delegate ON: search, list, selection highlight, external-link per row                          | **pass**  | Search + live delegate list inside card 3.                                                                                                    |
-| B-8  | Sequential confirm: step list Approve→Stake(→Borrow), per-step copy                            | **pass**  | Review modal (amount+USD) → steps Approve SKY → Stake SKY with per-step copy.                                                                 |
+| B-8  | Sequential confirm: step list Approve→Stake(→Borrow), per-step copy                            | **pass**  | Takeover Confirm → wallet screen (no in-modal review, APP-550) → steps Approve SKY → Stake SKY with per-step copy.                             |
 | B-9  | Batch wallet: `Bundled` presentation, single wallet confirm                                    | **pass**  | Batch wallet: review shows "Bundle transactions" (default on); single confirm; on-chain urn5 created ink 14.5M / art×rate = 30,000.0.         |
 | B-10 | Post-open: table/summary refresh without reload (F9 invalidation fix live)                     | **pass**  | Positions row showed 20,100,000 immediately post-tx without reload (5-key invalidation live).                                                 |
 | B-11 | Reopen from inactive staked-only urn: stake-only takeover                                      | **pass**  | Staked-only inactive urn → reopen with borrow toggle OFF.                                                                                     |
@@ -184,7 +200,7 @@ delta → finding) · **fail** (defect) · **n/e** (not exercisable end-to-end; 
 | #   | Case                                                                                 | Verdict  | Evidence / notes                                                                                                                         |
 | --- | ------------------------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | F-1 | Sequential steps progress with per-step active copy                                  | **pass** | Steps with active-step description and progression (Approve → Stake → Borrow).                                                           |
-| F-2 | In-flight state signals “confirm in the wallet”                                      | **pass** | Review modal → wallet-confirmation state before steps run.                                                                               |
+| F-2 | In-flight state signals “confirm in the wallet”                                      | **pass** | Takeover Confirm → wallet-confirmation state before steps run (the takeover is the review, APP-550).                                     |
 | F-3 | Success screen (“Transaction completed successfully.”)                               | **pass** | Success copy + View on Etherscan + Done.                                                                                                 |
 | F-4 | Wallet rejection → error state with retry, no corrupted staging                      | **n/e**  | Mock wallet auto-approves every request; no rejection hook in the dev harness. Rejection paths are covered by the flow-state unit tests. |
 | F-5 | Post-tx: positions, history, reads, drip simulation all refetch (5-key invalidation) | **pass** | Post-tx: table, summary, claimables, risk cells all refreshed without reload (verified after stake, borrow, recovery).                   |
@@ -203,6 +219,10 @@ delta → finding) · **fail** (defect) · **n/e** (not exercisable end-to-end; 
 ## 3. e2e promotion table
 
 Curated 2026-07-08 (pass 3), extended 2026-07-09 (PR #1710 review round: mixed-flow specs 9–10).
+Gate 4 contracts added 2026-08-26: `stake-product-default`, `stake-open-flow`,
+`stake-manage-flow`, `stake-deep-link` · page object `pages/StakePage.ts` (helpers re-exported
+from `utils/stakeV2.ts` for existing specs).
+
 The suite is **`src/test/e2e/tests/stake-onchain.spec.ts`** — 10 specs
 (2 read smokes + 8 write specs, one per contract-write path plus the two cross combos), backed by
 `src/test/e2e/utils/stakeOnChain.ts` (on-chain oracles + liquidation staging). Registered in
@@ -214,6 +234,20 @@ asserts `vat.urns` ink/art, farm `earned()`, and ERC-20 balances directly. Run i
 All 8 specs green on a fresh vnet, 2026-07-08 (~2–3 min wall-clock, 1 worker). One vnet-RPC flake
 observed across four runs (a dropped HTTP request failed a _setup_ transaction, not an assertion;
 same spec green on re-run) — the class `run-tests-with-retry.sh` absorbs in CI.
+
+**Gate 7 refresh (2026-08-27, local sequential `workers=1`):**
+
+| Spec                         | Result                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `stake.spec.ts`              | **6/6**                                                                      |
+| `stake-onchain.spec.ts`      | **10/10**                                                                    |
+| `stake-mobile.spec.ts`       | **5/5** — footer scrolls with column (TakeoverShell); e2e scrolls to Confirm |
+| `unstake-repay.spec.ts`      | **2/2**                                                                      |
+| `capped-osm-unstake.spec.ts` | **1/1**                                                                      |
+
+Gate 4 contracts: `src/test/e2e/contracts/stake-*.contract.ts` · `pages/StakePage.ts`.
+
+**Module complete (Gates 1–7):** Gold-standard §1 Figma map · §2 matrix · **24/24** stake e2e (incl. onchain oracle suite) · contracts + `StakePage` · partial/deferred rows dispositioned (APP-312, AUD-19) · theming §4.
 
 ### Promotions
 

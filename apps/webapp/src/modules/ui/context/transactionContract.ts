@@ -95,6 +95,12 @@ export type TransactionConfig = {
    * their two screens.
    */
   reviewTitle?: string;
+  /**
+   * Subtitle copy under the title. Flows set only `review` (a first-screen
+   * disclosure); the status entries are unused by design — the step list and
+   * status chip narrate the transaction (Figma 1030:139111), and the toast has
+   * its own `toast` copy below.
+   */
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**
@@ -110,6 +116,24 @@ export type TransactionConfig = {
    * to the same wallet/status screen.
    */
   entry?: TransactionEntry;
+  /**
+   * The flow's own surface already IS the review — the stake takeovers, where
+   * the user builds the configuration and checks it on the page (Design QA
+   * 2800:91832: "We don't have a 'Confirm' modal because this overlay already
+   * serves that purpose"). Launch then behaves as if the review's Confirm had
+   * been pressed: the modal opens straight on the wallet/status screen and the
+   * pre-transaction gate runs at once — screening, the enhanced tier, the terms
+   * signature step, the chain guard — before `onConfirm`. Nothing is skipped
+   * but the in-modal review body. Mutually exclusive with `entry`.
+   *
+   * The review-viewed analytics event still fires at launch, as for every
+   * review-first flow: the Confirm that launched this is the user leaving the
+   * review. A first-screen denial (an enhanced-screening or wrong-chain
+   * refusal) has no first screen to land on, so it closes the modal — the
+   * flow's surface is expected to render the same hold itself, through
+   * `useTransactionPreflight`.
+   */
+  skipReview?: boolean;
   /**
    * Content the provider keeps mounted (hidden) for the whole modal lifetime —
    * independent of which screen is showing and of minimize. This is where a flow
@@ -127,9 +151,10 @@ export type TransactionConfig = {
   /**
    * Per-state titles for the toast shown while the modal is minimized (it's hidden,
    * so the toast notifies progress). Flows set amount-aware titles here (e.g.
-   * "10,000.00 USDS supplied!"); each falls back to the matching `subtitles` entry,
-   * then `title`. An editable flow pushes these live via `updateModalContent` as the
-   * amount changes.
+   * "10,000.00 USDS supplied!"); a missing state falls back to `title` alone.
+   * Every flow sets all three (status subtitles no longer exist, so there is
+   * no sentence to fall back on). An editable flow pushes these live via
+   * `updateModalContent` as the amount changes.
    */
   toast?: {
     loading?: string;
@@ -210,6 +235,18 @@ export type TransactionConfig = {
    * flows only) and must be justified at the call site.
    */
   supportedChainIds: number[];
+  /**
+   * Why `supportedChainIds` is what it is — it picks the guard's copy.
+   *
+   * - `product-unavailable` (default): the set is every chain the product runs
+   *   on, so leaving it means the product itself isn't on the wallet's chain.
+   * - `launch-chain`: the set is `[launch chain]` because the flow's figures
+   *   (quote, allowance, addresses) were resolved for that chain and don't
+   *   re-derive from the modal. The product may well run on the wallet's new
+   *   chain, so the guard says the flow was prepared elsewhere instead of
+   *   claiming the product is unavailable (APP-563 #4, Convert).
+   */
+  chainGuardReason?: 'product-unavailable' | 'launch-chain';
   /** Identity used to gate updateModalContent calls to the active session. */
   sessionId?: string;
 };

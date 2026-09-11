@@ -35,6 +35,7 @@ export function PortfolioTabs({
           data-state={tab === value ? 'active' : 'inactive'}
           onClick={() => onTabChange(value)}
           className={cn(tabsTriggerVariants({ variant: 'pill' }))}
+          data-testid={`portfolio-tab-${value}`}
         >
           {label}
         </button>

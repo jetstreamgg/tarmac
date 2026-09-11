@@ -2,20 +2,33 @@ import { useState } from 'react';
 import { pageWindow } from '@/widgets/shared/components/ui/pagination/pageWindow';
 import {
   Pagination,
+  PaginationContent,
   PaginationItem,
+  PaginationLabel,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
   PaginationEllipsis
-} from '../../../components/ui/pagination';
+} from '@/components/ui/pagination';
 
 type CustomPaginationProps = {
   dataLength: number;
   onPageChange: (page: number) => void;
   itemsPerPage?: number;
+  className?: string;
 };
 
-export const CustomPagination = ({ dataLength, onPageChange, itemsPerPage = 5 }: CustomPaginationProps) => {
+/**
+ * Stateful pager over a live row count. Renders the DS Pagination in both
+ * shapes: the numbered window from `md` up and the "Page x of y" pill below,
+ * where the tables it follows fold into cards.
+ */
+export const CustomPagination = ({
+  dataLength,
+  onPageChange,
+  itemsPerPage = 5,
+  className
+}: CustomPaginationProps) => {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(dataLength / itemsPerPage));
   // Data can shrink between renders; keep the effective page in range.
@@ -30,21 +43,24 @@ export const CustomPagination = ({ dataLength, onPageChange, itemsPerPage = 5 }:
   if (totalPages <= 1) return null;
 
   return (
-    <Pagination>
+    <Pagination className={className}>
       <PaginationPrevious onClick={() => goTo(currentPage - 1)} disabled={currentPage === 1} />
-      {pageWindow(currentPage, totalPages).map((entry, index) =>
-        entry === 'ellipsis' ? (
-          <PaginationItem key={`ellipsis-${index}`}>
-            <PaginationEllipsis />
-          </PaginationItem>
-        ) : (
-          <PaginationItem key={entry}>
-            <PaginationLink isActive={entry === currentPage} onClick={() => goTo(entry)}>
-              {entry}
-            </PaginationLink>
-          </PaginationItem>
-        )
-      )}
+      <PaginationContent className="hidden md:flex">
+        {pageWindow(currentPage, totalPages).map((entry, index) =>
+          entry === 'ellipsis' ? (
+            <PaginationItem key={`ellipsis-${index}`}>
+              <PaginationEllipsis />
+            </PaginationItem>
+          ) : (
+            <PaginationItem key={entry}>
+              <PaginationLink isActive={entry === currentPage} onClick={() => goTo(entry)}>
+                {entry}
+              </PaginationLink>
+            </PaginationItem>
+          )
+        )}
+      </PaginationContent>
+      <PaginationLabel current={currentPage} total={totalPages} className="md:hidden" />
       <PaginationNext onClick={() => goTo(currentPage + 1)} disabled={currentPage === totalPages} />
     </Pagination>
   );
