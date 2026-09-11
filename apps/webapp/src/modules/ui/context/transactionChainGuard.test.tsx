@@ -41,6 +41,7 @@ vi.mock('wagmi', async io => ({
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
   useIsSafeWallet: () => mockIsSafeWallet,
+  useIsSafeApp: () => mockIsSafeApp,
   useIsBatchSupported: () => ({ data: false })
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));
@@ -58,6 +59,7 @@ vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
 // Spy on the chain switch the guard triggers, without a real WagmiProvider.
 const mockHandleSwitchChain = vi.fn();
 let mockIsSafeWallet = false;
+let mockIsSafeApp = false;
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     handleSwitchChain: mockHandleSwitchChain,
@@ -170,6 +172,7 @@ afterEach(() => {
   mockChainId = 1;
   mockConnectedChainId = undefined;
   mockIsSafeWallet = false;
+  mockIsSafeApp = false;
   mockHandleSwitchChain.mockReset();
   vi.clearAllMocks();
 });
@@ -296,9 +299,10 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(mockHandleSwitchChain).not.toHaveBeenCalled();
   });
 
-  it('never asks a Safe wallet, which cannot switch from the dapp', () => {
+  it('never asks the Safe iframe, which cannot switch from the dapp', () => {
     mockChainId = 8453;
     mockIsSafeWallet = true;
+    mockIsSafeApp = true;
     renderModal(() => mainnetOnlyConfig(vi.fn()));
 
     expect(mockHandleSwitchChain).not.toHaveBeenCalled();
@@ -371,9 +375,10 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     });
   });
 
-  it('offers NO switch button for a Safe wallet (it cannot switch from the dapp)', () => {
+  it('offers NO switch button inside the Safe iframe (it cannot switch from the dapp)', () => {
     mockChainId = 8453;
     mockIsSafeWallet = true;
+    mockIsSafeApp = true;
     renderModal(() => mainnetOnlyConfig(vi.fn()));
 
     // The explanatory guard still shows and still disables the CTA...
@@ -381,6 +386,19 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
     // ...but no switch action is offered.
     expect(screen.queryByTestId('transaction-chain-guard-switch')).toBeNull();
+  });
+
+  // APP-566: a Safe paired over WalletConnect is a Safe account but not the
+  // Safe iframe — Safe answers a switch request with its own chain prompt, so
+  // the button is offered like any wallet.
+  it('offers the switch button to a Safe over WalletConnect', () => {
+    mockChainId = 8453;
+    mockIsSafeWallet = true;
+    mockIsSafeApp = false;
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
   });
 
   // APP-563 #4: Convert's review is priced for its launch chain (quote,

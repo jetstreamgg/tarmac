@@ -4,7 +4,7 @@ import {
   TOKENS,
   VAULTS,
   useAvailableTokenRewardContractsForChains,
-  useIsSafeWallet,
+  useIsSafeApp,
   getPendleMarketByAddress,
   isMarketMatured
 } from '@/hooks';
@@ -64,7 +64,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
   const connectedChainId = useChainId();
   const { isModuleEnabled } = useGeoConfig();
   const { switchChainAsync } = useSwitchChain();
-  const isSafeWallet = useIsSafeWallet();
+  const isSafeApp = useIsSafeApp();
   const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
   const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
   const { openSupply: openSavingsSupply } = useSavingsModal();
@@ -154,9 +154,9 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       if (!open) return undefined;
       if (onConnectedChain) return open;
 
-      // A Safe can't switch networks from the dapp, so the auto-switch below
-      // would fail on every click — a permanently dead button (APP-486).
-      if (isSafeWallet) return undefined;
+      // The Safe iframe can't switch networks from the dapp, so the auto-switch
+      // below would fail on every click — a permanently dead button (APP-486).
+      if (isSafeApp) return undefined;
 
       // Wrong chain: move the wallet to the position's chain first. The auto
       // flags make the shell toast explain the change with the owning module's
@@ -197,7 +197,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       connectedChainId,
       isModuleEnabled,
       switchChainAsync,
-      isSafeWallet,
+      isSafeApp,
       setIsAutoSwitching,
       setAutoSwitchIntent,
       openSavingsSupply,

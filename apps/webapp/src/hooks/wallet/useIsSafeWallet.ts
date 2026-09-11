@@ -1,28 +1,24 @@
 import { useConnection, useChainId } from 'wagmi';
-import { chainId } from '../../utils/chainId';
 import { useQuery } from '@tanstack/react-query';
-
-const SAFE_TRANSACTION_SERVICE_URL: Record<number, string> = {
-  [chainId.mainnet]: 'https://safe-transaction-mainnet.safe.global',
-  [chainId.base]: 'https://safe-transaction-base.safe.global',
-  [chainId.arbitrum]: 'https://safe-transaction-arbitrum.safe.global',
-  [chainId.tenderly]: 'https://safe-transaction-mainnet.safe.global',
-  [chainId.optimism]: 'https://safe-transaction-optimism.safe.global',
-  [chainId.unichain]: 'https://safe-transaction-unichain.safe.global'
-};
-
-const SAFE_CONNECTOR_ID = 'safe';
+import { SAFE_TRANSACTION_SERVICE_URL } from '../shared/constants';
+import { useIsSafeApp } from './useIsSafeApp';
 
 const isSafeWalletFound = async (url: URL) => {
   const res = await fetch(url);
   return res.status === 200;
 };
 
+/**
+ * Whether the connected account is a Safe, by any connector: the Safe App
+ * iframe, or a Safe paired over WalletConnect. Drives account-level behaviour
+ * (Safe transaction links, safeTxHash resolution, the `safe:` prefix). For
+ * iframe-only restrictions use `useIsSafeApp`.
+ */
 export const useIsSafeWallet = () => {
-  const { address, connector } = useConnection();
+  const { address } = useConnection();
   const chainId = useChainId();
 
-  const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID && !!address;
+  const isSafeApp = useIsSafeApp() && !!address;
   const baseUrl = SAFE_TRANSACTION_SERVICE_URL[chainId];
   let url: URL | undefined;
   if (baseUrl) {
@@ -33,12 +29,12 @@ export const useIsSafeWallet = () => {
   // Safe-ness of an address doesn't change — cache the answer for the session
   // and skip the call when we already know the wallet is a Safe via the connector.
   const { data: isAddressSafeWallet } = useQuery({
-    enabled: Boolean(url && address) && !isSafeConnector,
+    enabled: Boolean(url && address) && !isSafeApp,
     queryKey: ['is-safe-wallet-found', address, chainId],
     queryFn: () => isSafeWalletFound(url!),
     staleTime: Infinity,
     gcTime: Infinity
   });
 
-  return isSafeConnector || !!isAddressSafeWallet;
+  return isSafeApp || !!isAddressSafeWallet;
 };

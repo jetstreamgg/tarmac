@@ -17,7 +17,7 @@ import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
-import { useIsSafeWallet } from '@/hooks';
+import { useIsSafeApp } from '@/hooks';
 import { WalletIcon } from './WalletIcon';
 import { WALLET_ICONS } from '@/lib/constants';
 import { reportError } from '@/modules/sentry/reportError';
@@ -219,7 +219,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   const { connector: connectedConnector } = useConnection();
   const connections = useConnections();
 
-  const isSafeWallet = useIsSafeWallet();
+  const isSafeApp = useIsSafeApp();
   const { trackWalletConnectAttempted, trackWalletConnectRejected } = useAppAnalytics();
 
   const connect = useConnect({
@@ -327,8 +327,8 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
 
   // Separate installed wallets from suggested
   const installedWallets = connectors.filter(c => {
-    // Don't show Safe wallet if not in Safe context
-    if (c.id === 'safe' && !isSafeWallet) return false;
+    // The Safe connector only works inside the Safe iframe
+    if (c.id === 'safe' && !isSafeApp) return false;
     // Don't show our Binance connector in installed wallets (it's for suggested only)
     if (c.id === 'wallet.binance.com') return false;
 
@@ -343,8 +343,8 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   });
 
   const suggestedWallets = connectors.filter(c => {
-    // Don't show Safe wallet if not in Safe context
-    if (c.id === 'safe' && !isSafeWallet) return false;
+    // The Safe connector only works inside the Safe iframe
+    if (c.id === 'safe' && !isSafeApp) return false;
 
     // Check if this wallet is already in installedWallets
     const isAlreadyInstalled = installedWallets.some(installed => installed.uid === c.uid);

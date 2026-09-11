@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { getChainIcon } from '@/utils';
-import { BP, useAppChainId, useBreakpointIndex, useIsSafeWallet } from '@/hooks';
+import { BP, useAppChainId, useBreakpointIndex, useIsSafeApp } from '@/hooks';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 
 type NetworkSelectProps = {
@@ -42,19 +42,21 @@ type NetworkSelectProps = {
  * chains nothing is selected and picking the shown chain still asks the wallet.
  * That is the escape hatch after a declined automatic switch.
  *
- * `isStatic`: a single-chain product has nothing to offer, and a Safe's chain
- * is fixed by the Safe app it runs inside — either way there is no control.
+ * `isStatic`: a single-chain product has nothing to offer, and inside the Safe
+ * iframe the chain is fixed by the Safe the user opened us from — either way
+ * there is no control. A Safe over WalletConnect switches like any wallet:
+ * Safe answers the request with its own pick-a-Safe-on-that-chain prompt.
  */
 function useNetworkSelectChain(chainIds: number[]) {
   const walletChainId = useAppChainId();
   const chains = useChains();
-  const isSafeWallet = useIsSafeWallet();
+  const isSafeApp = useIsSafeApp();
 
   const onProductChain = chainIds.includes(walletChainId);
   const activeChainId = onProductChain ? walletChainId : (chainIds[0] ?? walletChainId);
   const activeChainName = chains.find(chain => chain.id === activeChainId)?.name ?? 'Ethereum';
   const selectValue = onProductChain ? String(walletChainId) : '';
-  const isStatic = isSafeWallet || chainIds.length <= 1;
+  const isStatic = isSafeApp || chainIds.length <= 1;
 
   return { activeChainId, activeChainName, selectValue, isStatic };
 }

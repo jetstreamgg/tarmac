@@ -1,7 +1,7 @@
-import { useConnection, useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { isRevertedError, toError } from '../helpers';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { SAFE_CONNECTOR_ID } from './constants';
+import { useIsSafeApp } from '../wallet/useIsSafeApp';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
@@ -97,8 +97,7 @@ export function useSequentialTransactionFlow(
   });
 
   // Workaround to get `txHash` from Safe connector
-  const { connector } = useConnection();
-  const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID;
+  const isSafeConnector = useIsSafeApp();
 
   const eventHash = useWaitForSafeTxHash({
     chainId: chainId,

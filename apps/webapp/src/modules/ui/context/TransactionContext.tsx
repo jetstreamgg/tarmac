@@ -16,7 +16,7 @@ import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
 import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSuccessToast';
-import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
+import { useIsSafeApp, useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -328,6 +328,7 @@ export function TransactionProvider({
   }, [guardChainId]);
   const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
+  const isSafeApp = useIsSafeApp();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
   // the live USD value crosses the threshold WHILE the flow's own gating
@@ -1132,9 +1133,10 @@ export function TransactionProvider({
       )
     : undefined;
   const guardTargetName = chains.find(c => c.id === guardTargetChainId)?.name;
-  // Safe wallets can't switch networks from the dapp (APP-486) — offer no
-  // switch button, only the explanatory block; the guard still disables the CTAs.
-  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
+  // Inside the Safe iframe the chain can't be switched from the dapp (APP-486)
+  // — offer no switch button, only the explanatory block; the guard still
+  // disables the CTAs. A Safe over WalletConnect gets the button like any wallet.
+  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeApp;
   const switchGuardChain = useCallback(
     (source: NetworkSwitchSource = 'transaction_modal') => {
       if (guardTargetChainId === undefined) return;

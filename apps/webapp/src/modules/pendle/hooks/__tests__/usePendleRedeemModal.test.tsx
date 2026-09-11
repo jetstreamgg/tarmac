@@ -57,7 +57,7 @@ const hoisted = vi.hoisted(() => ({
   ) => number | undefined,
   // Click-time network switch collaborators.
   chainId: 1,
-  isSafeWallet: false,
+  isSafeApp: false,
   switchChainAsyncMock: vi.fn(async () => undefined as unknown),
   setIsAutoSwitchingMock: vi.fn(),
   setAutoSwitchIntentMock: vi.fn(),
@@ -103,7 +103,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     isMarketMatured: () => hoisted.matured,
-    useIsSafeWallet: () => hoisted.isSafeWallet,
+    useIsSafeApp: () => hoisted.isSafeApp,
     useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: () => {} }),
     useNetworkFee: () => ({
       data: undefined,
@@ -397,7 +397,7 @@ describe('usePendleRedeemModal network switch', () => {
     hoisted.txStatus = 'idle';
     hoisted.matured = true;
     hoisted.chainId = 1;
-    hoisted.isSafeWallet = false;
+    hoisted.isSafeApp = false;
     hoisted.switchChainAsyncMock.mockReset();
     hoisted.switchChainAsyncMock.mockResolvedValue(undefined);
     hoisted.setIsAutoSwitchingMock.mockClear();
@@ -452,7 +452,7 @@ describe('usePendleRedeemModal network switch', () => {
 
   it('does nothing off-chain in a Safe — it cannot switch from the dapp (APP-486)', async () => {
     hoisted.chainId = 8453;
-    hoisted.isSafeWallet = true;
+    hoisted.isSafeApp = true;
     const view = renderComponent(<Capture />);
     await clickOpen(view.container);
     expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
