@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   chainId: 1,
   isMobile: false,
   isSafeWallet: false,
+  isSafeApp: false,
   isRegionRestricted: false,
   walletAssets: {
     assets: [
@@ -86,7 +87,10 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
-    useIsSafeWallet: () => mocks.isSafeWallet,
+    // The real hook folds the iframe in (`isSafeApp || <address is a Safe>`),
+    // so an iframe test sets one flag.
+    useIsSafeWallet: () => mocks.isSafeWallet || mocks.isSafeApp,
+    useIsSafeApp: () => mocks.isSafeApp,
     // happy-dom evaluates matchMedia at its 1024px default, so the real hook
     // always lands on the desktop drawer; the flag drives the M4.6 mobile panel.
     useBreakpointIndex: () => ({ bpi: mocks.isMobile ? actual.BP.sm : actual.BP.desktop })
@@ -123,6 +127,7 @@ beforeEach(() => {
   mocks.chainId = 1;
   mocks.isMobile = false;
   mocks.isSafeWallet = false;
+  mocks.isSafeApp = false;
   mocks.isRegionRestricted = false;
   mocks.disconnect.mockClear();
   mocks.openConnectModal.mockClear();
@@ -222,13 +227,26 @@ describe('WalletPreviewDrawer', () => {
     expect(screen.queryByTestId('wallet-drawer')).toBeNull();
   });
 
-  it('hides the switch-account and disconnect actions for Safe wallets', async () => {
-    mocks.isSafeWallet = true;
+  it('hides the switch-account and disconnect actions inside the Safe iframe', async () => {
+    mocks.isSafeApp = true;
     renderDrawer();
     const drawer = await openDrawer();
 
     expect(drawer.querySelector('[data-testid="wallet-drawer-disconnect"]')).toBeNull();
     expect(drawer.querySelector('[data-testid="wallet-drawer-switch-account"]')).toBeNull();
+  });
+
+  // APP-566: a Safe paired over WalletConnect is still a Safe (safe: prefix,
+  // Safe tx links) but the app owns the session, so the actions stay.
+  it('keeps the switch-account and disconnect actions for a Safe over WalletConnect', async () => {
+    mocks.isSafeWallet = true;
+    renderDrawer();
+    const drawer = await openDrawer();
+
+    expect(drawer.textContent).toContain('safe:');
+    expect(drawer.querySelector('[data-testid="wallet-drawer-switch-account"]')).toBeTruthy();
+    fireEvent.click(drawer.querySelector('[data-testid="wallet-drawer-disconnect"]')!);
+    expect(mocks.disconnect).toHaveBeenCalledTimes(1);
   });
 
   it('lists the wallet assets with rate badges on the Assets tab and switches to Activity', async () => {
@@ -357,7 +375,7 @@ describe('WalletPreviewDrawer — mobile panel (M4.6)', () => {
   });
 
   it('still shows the close button for Safe wallets while hiding the account actions', async () => {
-    mocks.isSafeWallet = true;
+    mocks.isSafeApp = true;
     renderDrawer();
     const drawer = await openDrawer();
 

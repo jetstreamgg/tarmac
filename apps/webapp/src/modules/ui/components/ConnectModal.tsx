@@ -17,7 +17,8 @@ import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
-import { useIsSafeWallet } from '@/hooks';
+import { useIsSafeApp } from '@/hooks';
+import { SAFE_CONNECTOR_ID } from '@/hooks/shared/constants';
 import { WalletIcon } from './WalletIcon';
 import { WALLET_ICONS } from '@/lib/constants';
 import { reportError } from '@/modules/sentry/reportError';
@@ -43,7 +44,7 @@ type ConnectView = 'root' | 'all';
  * Safe only ever appears inside a Safe app, where burying it would strand the
  * one connector that can work.
  */
-const ROOT_OTHER_WALLET_IDS = ['walletConnect', 'safe'];
+const ROOT_OTHER_WALLET_IDS = ['walletConnect', SAFE_CONNECTOR_ID];
 
 /** Height of the sublist's scroll viewport (Figma 1142:44375), so the card
  *  stays the same size whichever level is showing. */
@@ -219,7 +220,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   const { connector: connectedConnector } = useConnection();
   const connections = useConnections();
 
-  const isSafeWallet = useIsSafeWallet();
+  const isSafeApp = useIsSafeApp();
   const { trackWalletConnectAttempted, trackWalletConnectRejected } = useAppAnalytics();
 
   const connect = useConnect({
@@ -308,14 +309,20 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   }, [connectors, open]);
 
   // Categorize wallets
-  const alwaysAvailable = ['walletConnect', 'coinbaseWalletSDK', 'baseAccount', 'safe', 'wallet.binance.com'];
+  const alwaysAvailable = [
+    'walletConnect',
+    'coinbaseWalletSDK',
+    'baseAccount',
+    SAFE_CONNECTOR_ID,
+    'wallet.binance.com'
+  ];
   const suggestedIds = [
     'metaMask',
     'baseAccount',
     'coinbaseWalletSDK',
     'walletConnect',
     'wallet.binance.com',
-    'safe'
+    SAFE_CONNECTOR_ID
   ];
 
   // Binance wallet has two IDs:
@@ -325,10 +332,13 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     c => c.id === 'com.binance.wallet' && ready[c.uid] === true
   );
 
+  // The Safe connector only works inside the Safe iframe; anywhere else it is
+  // a dead entry, so neither list shows it.
+  const isListable = (c: { id: string }) => c.id !== SAFE_CONNECTOR_ID || isSafeApp;
+
   // Separate installed wallets from suggested
   const installedWallets = connectors.filter(c => {
-    // Don't show Safe wallet if not in Safe context
-    if (c.id === 'safe' && !isSafeWallet) return false;
+    if (!isListable(c)) return false;
     // Don't show our Binance connector in installed wallets (it's for suggested only)
     if (c.id === 'wallet.binance.com') return false;
 
@@ -343,8 +353,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   });
 
   const suggestedWallets = connectors.filter(c => {
-    // Don't show Safe wallet if not in Safe context
-    if (c.id === 'safe' && !isSafeWallet) return false;
+    if (!isListable(c)) return false;
 
     // Check if this wallet is already in installedWallets
     const isAlreadyInstalled = installedWallets.some(installed => installed.uid === c.uid);

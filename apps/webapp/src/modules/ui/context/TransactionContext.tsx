@@ -326,7 +326,12 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
-  const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
+  const {
+    handleSwitchChain,
+    isSwitchPending: switchPending,
+    switchVariables,
+    canSwitchChain
+  } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -1132,9 +1137,10 @@ export function TransactionProvider({
       )
     : undefined;
   const guardTargetName = chains.find(c => c.id === guardTargetChainId)?.name;
-  // Safe wallets can't switch networks from the dapp (APP-486) — offer no
-  // switch button, only the explanatory block; the guard still disables the CTAs.
-  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
+  // A wallet the dapp must not switch (a Safe — `canSwitchChain` on
+  // NetworkSwitchContext says why) gets no switch button, only the explanatory
+  // block; the guard still disables the CTAs (APP-486).
+  const guardCanSwitch = guardTargetChainId !== undefined && canSwitchChain;
   const switchGuardChain = useCallback(
     (source: NetworkSwitchSource = 'transaction_modal') => {
       if (guardTargetChainId === undefined) return;
