@@ -123,6 +123,21 @@ describe('StakeBorrowSliderRow', () => {
     expect(screen.queryByTestId('row-marker-label')).toBeNull();
   });
 
+  it('borrow: a debt a few wei over the floor (accrued fee) still reads as the floor', () => {
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: usds(30_000) + 12_345n,
+      dust: usds(30_000),
+      headroom: usds(1_250),
+      amount: 0n,
+      onAmountChange: vi.fn()
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="yellow" dataTestId="row" />);
+    expect(slider.atFloor).toBe(true);
+    expect(slider.markers).toEqual([]);
+    expect(screen.getByTestId('row-min-label').textContent).toBe('Borrowed:30,000 (Min.)');
+  });
+
   it('borrow-more: hides the tick label when it would print over an end label', () => {
     const rects: Record<string, Partial<DOMRect>> = {
       'row-min-label': { left: 0, right: 60 },

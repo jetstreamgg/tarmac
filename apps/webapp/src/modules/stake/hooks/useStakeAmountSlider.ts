@@ -115,13 +115,16 @@ export function useStakeAmountSlider({
   const value =
     disabled || span <= 0n ? STAKE_SLIDER_MAX : toPosition(existingDebt + amount - minBorrow, span);
   const marker = disabled ? undefined : interiorMarker(existingDebt - minBorrow, span);
+  // Accrued fees lift a dust-floor debt a few wei above the floor; treat a
+  // tick that rounds onto the left end as the floor.
+  const onFloor = existingDebt > 0n && toPosition(existingDebt - minBorrow, span) === 0;
   return {
     value,
     markers: marker ? [marker.position] : [],
     progress: disabled ? 0 : value / (STAKE_SLIDER_MAX / 100),
     disabled,
     hidden: false,
-    atFloor: !disabled && existingDebt > 0n && existingDebt <= minBorrow,
+    atFloor: !disabled && onFloor,
     // Nothing borrowable: the ceiling is the current debt (3015:62542).
     axis: { min: minBorrow, max: noHeadroom ? existingDebt : max, marker: marker && existingDebt },
     onValueChange: position => {
