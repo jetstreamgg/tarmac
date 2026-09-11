@@ -107,7 +107,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Toggle } from '@/components/ui/toggle';
-import { Toaster } from '@/components/ui/sonner';
 import {
   Carousel,
   CarouselContent,
@@ -2472,7 +2471,10 @@ function DesignSystem() {
         <FeedbackSection />
         <DataSection />
       </main>
-      <Toaster />
+      {/* No Toaster here: App mounts the shell's one for every route, and sonner's
+          `toast()` reaches it. A second one on this page duplicated the
+          `shell-toaster` view-transition name, which aborts the page transition
+          (InvalidStateError) whenever a toast is up (APP-563 #8). */}
     </div>
   );
 }
