@@ -1,11 +1,9 @@
-import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { RateInfo } from '@/components/product/RateInfo';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
@@ -13,6 +11,7 @@ import { BorrowRequirementNotice } from './BorrowRequirementNotice';
 import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
 import { StakeMoreToBorrowHint } from './StakeCardToggle';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
+import { StakeManageStatRow, StakeManageStatRows, UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeTakeoverAmountField, AmountChip } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
@@ -26,31 +25,10 @@ const RISK_PILL: Record<RiskLevel, string> = {
   [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
 };
 
-function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
-  return (
-    // nowrap from md: the row below never breaks there (APP-546), so a value
-    // must not fold onto a second line inside its cell either. Phones keep
-    // the 2×2 grid, whose narrow tracks need the wrap.
-    <div className="flex min-w-0 flex-col gap-1 md:whitespace-nowrap">
-      <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
-      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
-        {children}
-      </span>
-    </div>
-  );
-}
-
-/** 32px hairline between the stat columns (comp 1036:209771). */
-function StatDivider({ className }: { className?: string }) {
-  return (
-    <span aria-hidden className={cn('bg-borderPrimary h-8 w-px shrink-0 justify-self-center', className)} />
-  );
-}
-
 /**
  * Card 2 · Borrow USDS (Optional, Modal / 10 · 1036:209743): enable toggle,
  * amount + max + percent chips, the amount slider (0 → max, min-dust label),
- * risk/price stats. Below the min collateral the switch is disabled behind a
+ * then the stat rows (3015:59215). Below the min collateral the switch is disabled behind a
  * "Stake more to borrow" hint; a card already on keeps the notice (input
  * pinned, Confirm handled by the container). Risk/price rows show "–" until
  * an amount is entered (UX §A.2).
@@ -189,31 +167,9 @@ export function StakeTakeoverBorrowCard({
           </p>
         )}
 
-        {/* 2×2 on phones (1222:19900), one 4-up row from md (1036:209767). The
-            middle divider only exists in the row: `hidden` drops it out of the
-            grid's flow entirely, so the mobile 2×2 keeps its centre rule. The
-            row never wraps (APP-546): the oracle prices change width as the
-            slider moves, and a wrapping row flipped between one and two
-            lines under the pointer. */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:flex md:flex-nowrap md:gap-4">
-          <StatItem
-            label={
-              <>
-                <Trans>Borrow rate</Trans>
-                <RateInfo type="sbr" size={12} />
-              </>
-            }
-          >
-            {collateralData?.stabilityFee ? (
-              formatPercent(collateralData.stabilityFee)
-            ) : collateralLoading ? (
-              <Skeleton className="h-4 w-14" />
-            ) : (
-              NO_VALUE
-            )}
-          </StatItem>
-          <StatDivider />
-          <StatItem
+        {/* Figma 3015:59215: stacked rows split by hairlines, risk first. */}
+        <StakeManageStatRows>
+          <StakeManageStatRow
             label={
               <>
                 <Trans>Liquidation risk</Trans>
@@ -228,54 +184,76 @@ export function StakeTakeoverBorrowCard({
                 />
               </>
             }
-          >
-            {riskLevel ? (
-              <span
-                data-testid="stake-takeover-risk-pill"
-                className={cn(
-                  'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
-                  RISK_PILL[riskLevel]
-                )}
-              >
-                {capitalizeFirstLetter(riskLevel.toLowerCase())}
-              </span>
-            ) : hasAmount && simulationLoading ? (
-              <Skeleton className="h-4 w-14" />
-            ) : (
-              NO_VALUE
-            )}
-          </StatItem>
-          <StatDivider className="hidden md:block" />
-          <StatItem label={<Trans>Liquidation price</Trans>}>
-            {hasAmount && simulatedVault?.liquidationPrice ? (
-              formatOraclePrice(simulatedVault.liquidationPrice)
-            ) : hasAmount && simulationLoading ? (
-              <Skeleton className="h-4 w-14" />
-            ) : (
-              NO_VALUE
-            )}
-          </StatItem>
-          <StatDivider />
-          <StatItem
+            current={
+              riskLevel ? (
+                <span
+                  data-testid="stake-takeover-risk-pill"
+                  className={cn(
+                    'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+                    RISK_PILL[riskLevel]
+                  )}
+                >
+                  {capitalizeFirstLetter(riskLevel.toLowerCase())}
+                </span>
+              ) : hasAmount && simulationLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+            dataTestId="stake-takeover-risk-row"
+          />
+          <StakeManageStatRow
+            label={<Trans>Liquidation price</Trans>}
+            current={
+              hasAmount && simulatedVault?.liquidationPrice ? (
+                formatOraclePrice(simulatedVault.liquidationPrice)
+              ) : hasAmount && simulationLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+            dataTestId="stake-takeover-liq-price-row"
+          />
+          <StakeManageStatRow
             label={
               <>
                 <Trans>Capped OSM SKY price</Trans>
                 <RateInfo type="cappedOsmSkyPrice" size={12} />
+                <UpdatedHourlyBadge />
               </>
             }
-          >
-            {simulatedVault?.delayedPrice ? (
-              formatOraclePrice(simulatedVault.delayedPrice)
-            ) : simulationLoading ? (
-              <Skeleton className="h-4 w-14" />
-            ) : (
-              NO_VALUE
-            )}
-            <span className="bg-glassBadge text-fgSecondary font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]">
-              <Trans>Updated hourly</Trans>
-            </span>
-          </StatItem>
-        </div>
+            current={
+              simulatedVault?.delayedPrice ? (
+                formatOraclePrice(simulatedVault.delayedPrice)
+              ) : simulationLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+            dataTestId="stake-takeover-osm-price-row"
+          />
+          <StakeManageStatRow
+            label={
+              <>
+                <Trans>Borrow rate</Trans>
+                <RateInfo type="sbr" size={12} />
+              </>
+            }
+            current={
+              collateralData?.stabilityFee ? (
+                formatPercent(collateralData.stabilityFee)
+              ) : collateralLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+            dataTestId="stake-takeover-borrow-rate-row"
+          />
+        </StakeManageStatRows>
       </div>
     </StakeTakeoverCard>
   );

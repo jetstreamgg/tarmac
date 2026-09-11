@@ -502,6 +502,34 @@ describe('OpenPositionTakeover', () => {
     expect(screen.getByTestId('stake-takeover-min-stake')).toBeTruthy();
   });
 
+  it('stat blocks are stacked rows in the Figma order (3015:59161 / 3015:59215)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    const labels = (card: string) =>
+      Array.from(
+        screen.getByTestId(card).querySelectorAll('[class*="divide-y"] > div > span:first-child')
+      ).map(el => el.textContent);
+    expect(labels('stake-takeover-stake-card')).toEqual([
+      'Min. stake to borrow',
+      'Est. annual rewards',
+      'Staking Rewards Rate'
+    ]);
+    expect(labels('stake-takeover-borrow-card')).toEqual([
+      'Liquidation risk',
+      'Liquidation price',
+      'Capped OSM SKY priceUpdated hourly',
+      'Borrow rate'
+    ]);
+    // Reached badge leads the min-stake value; the hourly pill sits in the label, not the value.
+    const minStake = screen.getByTestId('stake-takeover-min-stake');
+    expect(minStake.firstElementChild?.getAttribute('data-testid')).toBe('stake-min-stake-badge');
+    expect(screen.getByTestId('stake-takeover-osm-price-row').lastElementChild?.textContent).not.toContain(
+      'Updated hourly'
+    );
+  });
+
   it('enabling the borrow toggle pre-selects the dust floor (Figma 3015:59185)', () => {
     renderTakeover();
     typeStakeAmount('1000');
