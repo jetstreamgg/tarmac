@@ -51,6 +51,7 @@ export type SavingsEngineParams = Pick<
   | 'sUsdsBalance'
   | 'minAmountOutForWithdrawAll'
   | 'maxAmountInForWithdraw'
+  | 'enabled'
 >;
 
 export interface SavingsTransactionForm {
@@ -279,7 +280,8 @@ export function useSavingsTransactionForm({
     minAmountOut,
     sUsdsBalance: susdsBalance?.value,
     minAmountOutForWithdrawAll: convertedBalance.value,
-    maxAmountInForWithdraw
+    maxAmountInForWithdraw,
+    enabled: amountReady
   };
 
   // Compact summary for the wallet/status screen (Figma "Confirm in the wallet").

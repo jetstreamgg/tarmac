@@ -354,3 +354,38 @@ describe('useRewardsLaunch — step labels', () => {
     unmount();
   });
 });
+
+describe('useRewardsLaunch — form validity gates the engines', () => {
+  beforeEach(() => {
+    h.capturedCalls = [];
+    h.capturedWrite = undefined;
+    h.allowance = 0n;
+  });
+  afterEach(() => cleanup());
+
+  it('never arms an engine while the form says the amount is not ready', () => {
+    const supply = renderHook(() =>
+      useRewardsLaunch({
+        flow: 'supply',
+        contractAddress: SPK_CONTRACT,
+        supplyToken: TOKENS.usds,
+        amount: AMOUNT,
+        enabled: false
+      })
+    );
+    expect(h.capturedCalls).toEqual([]);
+    supply.unmount();
+
+    const withdraw = renderHook(() =>
+      useRewardsLaunch({
+        flow: 'withdraw',
+        contractAddress: SPK_CONTRACT,
+        supplyToken: TOKENS.usds,
+        amount: AMOUNT,
+        enabled: false
+      })
+    );
+    expect(h.capturedWrite).toBeUndefined();
+    withdraw.unmount();
+  });
+});

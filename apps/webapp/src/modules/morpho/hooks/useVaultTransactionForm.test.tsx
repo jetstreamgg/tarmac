@@ -140,6 +140,7 @@ describe('useVaultTransactionForm Max routing (APP-488)', () => {
 
     expect(result.current.engineParams.max).toBe(false);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
   });
 
   it('liquidity figure unknown after settling: input stays open and Max still redeems all', () => {
@@ -207,6 +208,7 @@ describe('useVaultTransactionForm amount gating (APP-492)', () => {
     act(() => result.current.onInput('-5'));
     expect(result.current.amount).toBe(0n);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
   });
 
   it('exponential and multi-dot strings parse to zero and keep the form unready', () => {
@@ -216,10 +218,12 @@ describe('useVaultTransactionForm amount gating (APP-492)', () => {
     act(() => result.current.onInput('1e9'));
     expect(result.current.amount).toBe(0n);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
 
     act(() => result.current.onInput('1.2.3'));
     expect(result.current.amount).toBe(0n);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
   });
 
   it('a plain positive amount within the balance readies the form', () => {
@@ -229,5 +233,6 @@ describe('useVaultTransactionForm amount gating (APP-492)', () => {
     act(() => result.current.onInput('250'));
     expect(result.current.amount).toBe(parseUnits('250', 18));
     expect(result.current.amountReady).toBe(true);
+    expect(result.current.engineParams.enabled).toBe(true);
   });
 });

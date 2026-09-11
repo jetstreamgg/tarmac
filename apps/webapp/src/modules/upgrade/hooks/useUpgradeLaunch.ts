@@ -33,10 +33,17 @@ export type UseUpgradeLaunchResult = EngineLaunchResult;
 export function useUpgradeLaunch({
   token,
   amount,
-  onSuccess
+  onSuccess,
+  enabled = true
 }: {
   token: UpgradeSourceToken;
   amount: bigint;
+  /**
+   * Form validity (amount entered, within balance, any product gate open). Gates the
+   * engines' prepare-time simulation: an input the form already knows is invalid is
+   * never simulated, so no RPC round trip and no Sentry event for a foregone revert.
+   */
+  enabled?: boolean;
   /**
    * Post-success side effect owned by the caller (refetching chain state the
    * engine doesn't). Runs ahead of the provider's own onSuccess, which closes
@@ -83,6 +90,7 @@ export function useUpgradeLaunch({
   const upgrade = useBatchUpgrade({
     token,
     amount,
+    enabled,
     shouldUseBatch,
     ...txCallbacks,
     onSuccess: handleSuccess

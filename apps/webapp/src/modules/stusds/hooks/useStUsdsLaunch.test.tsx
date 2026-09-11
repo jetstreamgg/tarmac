@@ -424,3 +424,28 @@ describe('useStUsdsLaunch — native withdraw params parity (useWriteContractFlo
     unmount();
   });
 });
+
+describe('useStUsdsLaunch — form validity gates the engines', () => {
+  afterEach(() => cleanup());
+
+  it('never arms an engine while the form says the amount is not ready', () => {
+    h.nativeAllowance = 0n;
+    const native = captureOrchestratorCalls({
+      flow: 'supply',
+      amount: AMOUNT,
+      selectedProvider: StUsdsProviderType.NATIVE,
+      expectedOutput: SUPPLY_QUOTE_OUT,
+      enabled: false
+    });
+    expect(native).toEqual([]);
+
+    const curve = captureOrchestratorCalls({
+      flow: 'supply',
+      amount: AMOUNT,
+      selectedProvider: StUsdsProviderType.CURVE,
+      expectedOutput: SUPPLY_QUOTE_OUT,
+      enabled: false
+    });
+    expect(curve).toEqual([]);
+  });
+});
