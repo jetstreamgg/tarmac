@@ -3,12 +3,7 @@ import { useChainId } from 'wagmi';
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { familyMainnetId, formatBigInt, formatNumber, getChainIcon, getChainName } from '@/utils';
-import {
-  type PendleMarketConfig,
-  useIsSafeApp,
-  usePendleMaturedPositionEarnings,
-  usePendleRedeemPreview
-} from '@/hooks';
+import { type PendleMarketConfig, usePendleMaturedPositionEarnings, usePendleRedeemPreview } from '@/hooks';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconboxStatus } from '@/components/ui/iconbox';
@@ -61,11 +56,9 @@ export const PendleMaturedPositionCard = ({
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
   // opens (usePendleRedeemModal) — so isPrepared only gates on the right chain.
   // A Safe can't be switched from the dapp, so its off-chain Claim disables
-  // with the hint below instead (APP-486) — worded for the Safe App iframe, or
-  // for a Safe over WalletConnect, which follows the Safe app.
+  // with the hint below instead (APP-486).
   const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
     usePendleRedeemModal(market);
-  const isSafeApp = useIsSafeApp();
   // Where the claim executes — matches the redeem modal's Network cell (the
   // fork in dev sessions, mainnet otherwise).
   const engineChainId = familyMainnetId(useChainId());
@@ -169,16 +162,9 @@ export const PendleMaturedPositionCard = ({
         </div>
         {switchBlocked && (
           <Text variant="small" className="text-fgSecondary" data-testid="pendle-redeem-network-hint">
-            {isSafeApp ? (
-              <Trans>
-                Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
-              </Trans>
-            ) : (
-              <Trans>
-                Claiming happens on Ethereum mainnet. Switch to your Safe on Ethereum in the Safe app and this
-                app will follow.
-              </Trans>
-            )}
+            <Trans>
+              Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
+            </Trans>
           </Text>
         )}
       </div>

@@ -7,7 +7,6 @@ import { Trans } from '@lingui/react/macro';
 import {
   isMarketMatured,
   TOKENS,
-  useIsSafeApp,
   usePendleMarketsApiData,
   usePendleMaturedPositionEarnings,
   usePendleRedeemPreview,
@@ -262,11 +261,9 @@ function PendleMaturedCard({
 
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
   // opens (usePendleRedeemModal); a Safe can't be switched from the dapp, so it
-  // disables with the hint instead — worded for the Safe App iframe, or for a
-  // Safe over WalletConnect, which follows the Safe app.
+  // disables with the hint instead.
   const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
     usePendleRedeemModal(market);
-  const isSafeApp = useIsSafeApp();
 
   return (
     <ProductPositionCard
@@ -326,16 +323,9 @@ function PendleMaturedCard({
           </ProductActions>
           {switchBlocked && (
             <Text variant="small" className="text-fgSecondary" data-testid="pendle-redeem-network-hint">
-              {isSafeApp ? (
-                <Trans>
-                  Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
-                </Trans>
-              ) : (
-                <Trans>
-                  Claiming happens on Ethereum mainnet. Switch to your Safe on Ethereum in the Safe app and
-                  this app will follow.
-                </Trans>
-              )}
+              <Trans>
+                Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
+              </Trans>
             </Text>
           )}
         </div>
