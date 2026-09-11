@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { base } from 'wagmi/chains';
 import type { Address, Call, Hex, PublicClient } from 'viem';
 import { estimateFlowGas } from './estimateFlowGas';
 import { BATCH_EXECUTOR_ADDRESS, EIP7702_AUTH_COST } from './networkFee';
+import { resetBatchExecutorCodeCache } from './batchExecutorCode';
 
 const ACCOUNT: Address = '0x0650CAF159C5A49f711e8169D4336ECB9b950275';
 const USDS: Address = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
@@ -43,6 +44,8 @@ function makeClient({
 
   return { client: client as unknown as PublicClient, simulateCalls, getCode, estimateL1Fee };
 }
+
+beforeEach(resetBatchExecutorCodeCache);
 
 const success = (...gas: bigint[]): SimulateResult => ({
   results: gas.map(gasUsed => ({ status: 'success', gasUsed }))
@@ -164,7 +167,7 @@ describe('estimateFlowGas — batch', () => {
     expect(result.sequentialGas).toBe(181_833n);
   });
 
-  it('reads the executor code from its canonical address once per chain', async () => {
+  it('reads the executor code from its canonical address once per session', async () => {
     const { client, getCode } = makeClient({
       accountCode: undefined,
       simulate: params => (params.stateOverrides ? success(162_592n) : success(51_086n, 148_136n))
@@ -180,7 +183,26 @@ describe('estimateFlowGas — batch', () => {
     expect(getCode).toHaveBeenCalledWith({ address: ACCOUNT });
   });
 
-  it('keeps the sequential figure on a chain with no executor deployed', async () => {
+  it('prices the bundle on a chain with no executor deployed by reading the code elsewhere', async () => {
+    const { client } = makeClient({
+      simulate: params => (params.stateOverrides ? success(162_592n) : success(51_086n, 148_136n))
+    });
+    const noExecutor = { ...client, getCode: async () => undefined } as unknown as PublicClient;
+    const { client: mainnet } = makeClient({ simulate: () => success() });
+
+    const result = await estimateFlowGas({
+      client: noExecutor,
+      chainId: freshChainId(),
+      account: ACCOUNT,
+      calls,
+      wantsBatch: true,
+      fallbackClients: [mainnet]
+    });
+
+    expect(result.batchGas).toBe(162_592n + EIP7702_AUTH_COST);
+  });
+
+  it('keeps the sequential figure when no reachable chain has the executor deployed', async () => {
     const { client } = makeClient({
       simulate: params => (params.stateOverrides ? success(162_592n) : success(51_086n, 148_136n))
     });

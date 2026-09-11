@@ -10,8 +10,8 @@
  * 1. `eth_call` honours a `code` state override at a codeless address.
  * 2. `eth_call` accepts a sender that HAS code — the override puts code at the user's
  *    own address, which only works because these backends skip EIP-3607 in `eth_call`.
- * 3. The canonical Multicall3 is deployed — it is the stand-in executor, and its code is
- *    read from this address at runtime — and it runs when overridden in at a sender.
+ * 3. The stand-in executor (Multicall3, read from whichever configured chain deploys it —
+ *    it need not be this one) runs when overridden in at a sender.
  * 4. `eth_simulateV1` runs with validation off (the fee estimator's primitive).
  *
  * Runs against the Tenderly vnets by default. Set `PROBE_RPC_URLS` to a comma-separated
@@ -22,7 +22,8 @@ import { describe, expect, it } from 'vitest';
 import { createPublicClient, decodeFunctionResult, encodeFunctionData, http, type Hex } from 'viem';
 import { getTenderlyChains } from '../../../test/hooks/tenderlyChain';
 import { TEST_WALLET_ADDRESS } from '../../../test/hooks';
-import { BATCH_EXECUTOR_ADDRESS, multicall3Abi } from './networkFee';
+import { multicall3Abi } from './networkFee';
+import { getBatchExecutorCode } from './batchExecutorCode';
 
 /** `PUSH1 1; PUSH1 0; MSTORE; PUSH1 32; PUSH1 0; RETURN` — returns the word 1. */
 const RETURNS_ONE: Hex = '0x600160005260206000f3';
@@ -42,10 +43,12 @@ const targets: { name: string; url: string }[] = envUrls.length
 const BROWSER_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 
+const makeClient = (url: string) =>
+  createPublicClient({ transport: http(url, { fetchOptions: { headers: { 'User-Agent': BROWSER_UA } } }) });
+
 describe.each(targets)('batch simulation RPC support — $name', ({ url }) => {
-  const client = createPublicClient({
-    transport: http(url, { fetchOptions: { headers: { 'User-Agent': BROWSER_UA } } })
-  });
+  const client = makeClient(url);
+  const fallbackClients = targets.filter(target => target.url !== url).map(target => makeClient(target.url));
 
   it('honours a code state override on eth_call', async () => {
     const { data } = await client.call({
@@ -68,10 +71,9 @@ describe.each(targets)('batch simulation RPC support — $name', ({ url }) => {
     expect(data?.toLowerCase()).toBe(`0x${'0'.repeat(24)}${TEST_WALLET_ADDRESS.slice(2)}`.toLowerCase());
   });
 
-  it('has the canonical Multicall3 deployed and running as the overridden executor', async () => {
-    const code = await client.getCode({ address: BATCH_EXECUTOR_ADDRESS });
+  it('runs the executor code as the overridden account', async () => {
+    const code = await getBatchExecutorCode(client, fallbackClients);
     expect(code).toBeDefined();
-    expect(code!.length).toBeGreaterThan(2);
 
     // The exact shape the validator issues: aggregate3 on the account itself.
     const { data } = await client.call({
