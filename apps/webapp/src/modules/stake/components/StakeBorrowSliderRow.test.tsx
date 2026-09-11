@@ -21,17 +21,19 @@ describe('StakeBorrowSliderRow', () => {
       amount: usds(20_000),
       onAmountChange: vi.fn()
     });
-    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" dataTestId="row" />);
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="yellow" dataTestId="row" />);
     const root = screen.getByTestId('row');
-    // Hook: tick 300, thumb 500 → borrowed shade 30%, fill from 30% to 50%.
-    expect(slider.markers).toEqual([300]);
-    expect(slider.value).toBe(500);
-    expect((root.querySelector('[data-slot="slider-borrowed"]') as HTMLElement).style.width).toBe('30%');
-    expect((root.querySelector('[data-slot="slider-marker"]') as HTMLElement).style.left).toBe('30%');
+    // Dust axis 30k → 100k: 30k debt sits on the left end (no interior tick),
+    // 20k staged → thumb 2/7 (285); no dots on borrow.
+    expect(slider.markers).toEqual([]);
+    expect(slider.value).toBe(285);
+    expect(root.querySelector('[data-slot="slider-marker"]')).toBeNull();
+    expect(root.querySelector('[data-slot="slider-dots"]')).toBeNull();
+    expect(root.querySelector('[data-slot="slider-end-dot"]')).toBeNull();
     const fill = root.querySelector('[data-slot="slider-fill"]') as HTMLElement;
-    expect(fill.style.left).toBe('30%');
+    expect(fill.style.left).toBe('0%');
     expect(fill.className).toContain('from-slider-yellow-start');
-    expect(screen.getByTestId('row-marker-label').textContent).toBe('Borrowed:30,000');
+    expect(fill.querySelector('[data-slot="slider-fill-marker"]')?.className).toContain('bg-black');
   });
 
   it('borrow: End on an over-typed, pinned thumb still snaps to the headroom', () => {
@@ -44,10 +46,29 @@ describe('StakeBorrowSliderRow', () => {
       amount: usds(99_999),
       onAmountChange
     });
-    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" dataTestId="row" />);
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="yellow" dataTestId="row" />);
     expect(slider.value).toBe(1000);
     fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
     expect(onAmountChange).toHaveBeenCalledWith(usds(11_666));
+  });
+
+  it('borrow-more: tick and shade at the current debt when it clears the dust floor', () => {
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: usds(60_000),
+      dust: usds(30_000),
+      headroom: usds(40_000),
+      amount: usds(20_000),
+      onAmountChange: vi.fn()
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="yellow" dataTestId="row" />);
+    const root = screen.getByTestId('row');
+    // Axis 30k → 100k: tick 3/7 (428), thumb 5/7 (714).
+    expect(slider.markers).toEqual([428]);
+    expect((root.querySelector('[data-slot="slider-borrowed"]') as HTMLElement).style.width).toBe('42.8%');
+    expect((root.querySelector('[data-slot="slider-marker"]') as HTMLElement).style.left).toBe('42.8%');
+    expect((root.querySelector('[data-slot="slider-fill"]') as HTMLElement).style.left).toBe('42.8%');
+    expect(screen.getByTestId('row-marker-label').textContent).toBe('Borrowed:60,000');
   });
 
   it('repay: green fill from the left end, dust-gap tick label, no borrowed shade', () => {
@@ -59,7 +80,7 @@ describe('StakeBorrowSliderRow', () => {
       amount: usds(13_000),
       onAmountChange: vi.fn()
     });
-    renderRow(<StakeBorrowSliderRow slider={slider} mode="repay" dataTestId="row" />);
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="repay" tone="green" dataTestId="row" />);
     const root = screen.getByTestId('row');
     expect(root.querySelector('[data-slot="slider-borrowed"]')).toBeNull();
     expect(root.querySelector('[data-slot="slider-marker"]')).toBeNull();
@@ -67,9 +88,68 @@ describe('StakeBorrowSliderRow', () => {
     expect(fill.style.left).toBe('0%');
     expect(fill.className).toContain('from-slider-green-start');
     expect(screen.getByTestId('row-marker-label').textContent).toBe('Repay:26,000');
+    // Dots only over the partial-repay zone (0 → 26k = 46.4%) plus the end dot.
+    expect((root.querySelector('[data-slot="slider-dots"]') as HTMLElement).style.width).toBe('46.4%');
+    expect(root.querySelector('[data-slot="slider-end-dot"]')).not.toBeNull();
   });
 
-  it('disabled: a flat full-width bar without marker', () => {
+  it('colours the fill by the resulting risk, not by the axis', () => {
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: 0n,
+      dust: usds(30_000),
+      headroom: usds(70_000),
+      amount: usds(30_000),
+      onAmountChange: vi.fn()
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="green" dataTestId="row" />);
+    const fill = screen.getByTestId('row').querySelector('[data-slot="slider-fill"]') as HTMLElement;
+    expect(fill.className).toContain('from-slider-green-start');
+    expect(fill.className).not.toContain('from-slider-yellow-start');
+  });
+
+  it('borrow: a debt on the dust floor is carried by the min label', () => {
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: usds(30_000),
+      dust: usds(30_000),
+      headroom: usds(11_666),
+      amount: 0n,
+      onAmountChange: vi.fn()
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="yellow" dataTestId="row" />);
+    expect(slider.atFloor).toBe(true);
+    expect(screen.getByTestId('row-min-label').textContent).toBe('Borrowed:30,000 (Min.)');
+    expect(screen.queryByTestId('row-marker-label')).toBeNull();
+  });
+
+  it('borrow-more: hides the tick label when it would print over an end label', () => {
+    const rects: Record<string, Partial<DOMRect>> = {
+      'row-min-label': { left: 0, right: 60 },
+      'row-max-label': { left: 480, right: 546 },
+      'row-marker-label': { left: 430, right: 530 }
+    };
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement
+    ) {
+      return { left: 0, right: 0, ...rects[this.dataset.testid ?? ''] } as DOMRect;
+    });
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: usds(56_201),
+      dust: usds(30_000),
+      headroom: usds(6_299),
+      amount: 0n,
+      onAmountChange: vi.fn()
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="yellow" dataTestId="row" />);
+    expect(screen.getByTestId('row-marker-label').className).toContain('invisible');
+    // The tick line itself stays.
+    expect(screen.getByTestId('row').querySelector('[data-slot="slider-marker"]')).not.toBeNull();
+    spy.mockRestore();
+  });
+
+  it('disabled: a flat full-width bar keeping its inverse marker', () => {
     const slider = useStakeAmountSlider({
       mode: 'borrow',
       existingDebt: usds(30_000),
@@ -78,10 +158,10 @@ describe('StakeBorrowSliderRow', () => {
       amount: 0n,
       onAmountChange: vi.fn()
     });
-    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" dataTestId="row" />);
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="yellow" dataTestId="row" />);
     const fill = screen.getByTestId('row').querySelector('[data-slot="slider-fill"]') as HTMLElement;
     expect(fill.style.width).toBe('100%');
     expect(fill.className).toContain('bg-fgQuaternary');
-    expect(fill.querySelector('[data-slot="slider-fill-marker"]')).toBeNull();
+    expect(fill.querySelector('[data-slot="slider-fill-marker"]')?.className).toContain('bg-[#090420]');
   });
 });

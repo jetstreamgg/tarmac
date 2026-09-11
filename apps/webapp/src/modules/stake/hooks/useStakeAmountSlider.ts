@@ -31,6 +31,8 @@ export type StakeAmountSlider = {
   disabled: boolean;
   /** No axis at all (repay on a debt-free position). */
   hidden: boolean;
+  /** Borrow only: the debt sits on the dust floor, so the tick would be the left end. */
+  atFloor: boolean;
   /** Amounts behind the end labels and the interior tick. */
   axis: { min: bigint; max: bigint; marker: bigint | undefined };
 };
@@ -40,9 +42,9 @@ export type StakeAmountSlider = {
  * projection of the staged amount, so typing, chips and dragging can never
  * disagree; over-typed amounts pin at 100%.
  *
- * Borrow axis: total debt, 0 → existingDebt + headroom. Left of the current
- * debt stages 0; on a debt-free position the (0, dust) gap snaps up to dust;
- * the right end stages the exact headroom (debt-ceiling aware).
+ * Borrow axis: total debt, dust → existingDebt + headroom. Left of the current
+ * debt stages 0; on a debt-free position the left end is the dust floor; the
+ * right end stages the exact headroom (debt-ceiling aware).
  *
  * Repay axis: repaid amount, 0 → debt. The (debt − dust, debt) gap snaps to
  * the nearer end; the right end stages the full debt with wipeAll.
@@ -78,6 +80,7 @@ export function useStakeAmountSlider({
       progress: value / (STAKE_SLIDER_MAX / 100),
       disabled: forcedDisabled,
       hidden: max <= 0n,
+      atFloor: false,
       axis: { min: 0n, max, marker: marker?.value },
       onValueChange: position => {
         if (max <= 0n) return;
@@ -102,30 +105,32 @@ export function useStakeAmountSlider({
     };
   }
 
+  // Figma axis runs from the dust floor ("Min.") to the ceiling, so an amount at
+  // the floor sits on the empty stub (3015:59627) and the whole bar is live.
   const max = existingDebt + headroom;
   const noHeadroom = headroom <= 0n;
   const disabled = forcedDisabled || noHeadroom;
-  const value = toPosition(existingDebt + amount, max);
-  const marker = interiorMarker(existingDebt, max);
+  const span = max - minBorrow;
+  // min == max (3015:59201): a full bar with the amount at the floor.
+  const value =
+    disabled || span <= 0n ? STAKE_SLIDER_MAX : toPosition(existingDebt + amount - minBorrow, span);
+  const marker = disabled ? undefined : interiorMarker(existingDebt - minBorrow, span);
   return {
     value,
     markers: marker ? [marker.position] : [],
     progress: disabled ? 0 : value / (STAKE_SLIDER_MAX / 100),
     disabled,
     hidden: false,
-    axis: {
-      // With nothing borrowable the ends collapse onto the current debt.
-      min: noHeadroom ? existingDebt : minBorrow,
-      max,
-      marker: marker?.value
-    },
+    atFloor: !disabled && existingDebt > 0n && existingDebt <= minBorrow,
+    // Nothing borrowable: the ceiling is the current debt (3015:62542).
+    axis: { min: minBorrow, max: noHeadroom ? existingDebt : max, marker: marker && existingDebt },
     onValueChange: position => {
       if (disabled || max <= 0n) return;
-      if (position >= STAKE_SLIDER_MAX) {
+      if (position >= STAKE_SLIDER_MAX || span <= 0n) {
         onAmountChange(headroom);
         return;
       }
-      const total = (max * BigInt(position)) / STEPS;
+      const total = minBorrow + (span * BigInt(position)) / STEPS;
       let next = total - existingDebt;
       if (next <= 0n) {
         onAmountChange(0n);

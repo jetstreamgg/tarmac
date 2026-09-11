@@ -502,6 +502,20 @@ describe('OpenPositionTakeover', () => {
     expect(screen.getByTestId('stake-takeover-min-stake')).toBeTruthy();
   });
 
+  it('enabling the borrow toggle pre-selects the dust floor (Figma 3015:59185)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).value).toBe('30');
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
+    // Toggling off and on again keeps a zeroed leg on the floor, never stacks it.
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
+  });
+
   it('disabling the borrow toggle zeroes the borrow leg', () => {
     renderTakeover();
     typeStakeAmount('1000');

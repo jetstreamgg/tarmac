@@ -186,21 +186,25 @@ export function StakeManageBorrowCard({
     if (maxBorrowable === 0n) return;
     onAmountChange(((maxBorrowable * BigInt(percent)) / 100n / WAD) * WAD);
   };
-  // Figma chips: repay Min (leave exactly dust) / Max (wallet-aware max, wipeAll
-  // when it clears the debt — M11); a debt-free borrow Min (dust) / Max (headroom);
-  // borrow-more keeps 25/50/100 of the headroom.
+  // Figma chips (3015:56730): repay "46%" (leave exactly dust) / "100%" (full
+  // debt, wipeAll; the wallet check surfaces as the amount error); a debt-free
+  // borrow Min (dust) / Max (headroom); borrow-more keeps 25/50/100 of the headroom.
   const repayMin = dust !== undefined && existingDebt > dust ? existingDebt - dust : undefined;
   const labelledChips: AmountChip[] | undefined = isRepay
     ? [
-        ...(repayMin !== undefined && repayMin <= maxRepayable
-          ? [{ key: 'chip-min', label: t`Min`, onClick: () => onAmountChange(repayMin) }]
+        ...(repayMin !== undefined
+          ? [
+              {
+                key: 'chip-min',
+                label: `${Math.round(Number((repayMin * 100n) / existingDebt))}%`,
+                onClick: () => onAmountChange(repayMin)
+              }
+            ]
           : []),
         {
           key: 'chip-max',
-          label: t`Max`,
-          onClick: () =>
-            maxRepayable > 0n &&
-            onAmountChange(maxRepayable, maxRepayable === existingDebt && existingDebt > 0n)
+          label: '100%',
+          onClick: () => existingDebt > 0n && onAmountChange(existingDebt, true)
         }
       ]
     : existingDebt === 0n
@@ -216,6 +220,9 @@ export function StakeManageBorrowCard({
 
   const currentRisk = existingVault?.riskLevel;
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
+  // Figma colours the fill by the resulting risk; a full repay reads as Low.
+  const sliderRisk = isFullRepay ? RiskLevel.LOW : hasAmount ? (nextRisk ?? currentRisk) : currentRisk;
+  const sliderTone = sliderRisk === RiskLevel.LOW ? 'green' : 'yellow';
 
   return (
     <StakeManageCard
@@ -325,6 +332,7 @@ export function StakeManageBorrowCard({
           <StakeBorrowSliderRow
             slider={slider}
             mode={isRepay ? 'repay' : 'borrow'}
+            tone={sliderTone}
             minLoading={dust === undefined && (positionLoading || simulationLoading)}
             maxLoading={isRepay ? positionLoading : maxHintLoading}
             dataTestId="stake-manage-borrow-slider"

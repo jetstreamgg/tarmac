@@ -162,6 +162,7 @@ export function StakeTakeoverBorrowCard({
           <StakeBorrowSliderRow
             slider={slider}
             mode="borrow"
+            tone={riskLevel === RiskLevel.LOW ? 'green' : 'yellow'}
             minLoading={dust === undefined && simulationLoading}
             maxLoading={maxLoading}
             dataTestId="stake-takeover-borrow-slider"

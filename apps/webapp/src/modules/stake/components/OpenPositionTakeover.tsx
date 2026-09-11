@@ -441,7 +441,20 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
 
       <StakeTakeoverBorrowCard
         enabled={state.borrowEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setBorrowEnabled', enabled })}
+        onEnabledChange={enabled => {
+          dispatch({ type: 'setBorrowEnabled', enabled });
+          // Figma 3015:59185: the dust minimum is pre-selected once the stake threshold is met.
+          const dust = simulatedVault?.dust;
+          if (
+            enabled &&
+            dust !== undefined &&
+            !simulationError &&
+            !minCollateralNotMet &&
+            state.usdsToBorrow === 0n
+          ) {
+            dispatch({ type: 'setUsdsToBorrow', amount: dust });
+          }
+        }}
         usdsToBorrow={state.usdsToBorrow}
         onAmountChange={amount => dispatch({ type: 'setUsdsToBorrow', amount })}
         maxBorrowable={availableBorrowBalance}

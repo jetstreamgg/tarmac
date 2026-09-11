@@ -556,10 +556,12 @@ describe('ManagePositionTakeover', () => {
     );
   });
 
-  it('repay: the Min chip leaves exactly the dust floor', () => {
+  it('repay: the partial chip is labelled by share and leaves exactly the dust floor', () => {
     h.dust = 10_000n * WAD;
     renderSheet({ borrowCard: 'repay' });
 
+    expect(screen.getByTestId('stake-manage-borrow-amount-chip-min').textContent).toBe('66%');
+    expect(screen.getByTestId('stake-manage-borrow-amount-chip-max').textContent).toBe('100%');
     fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-min'));
     expect(h.launchParams?.usdsToWipe).toBe(20_000n * WAD);
     expect(h.launchParams?.wipeAll).toBe(false);
@@ -626,11 +628,10 @@ describe('ManagePositionTakeover', () => {
     renderSheet({ borrowCard: 'borrow' });
 
     const slider = screen.getByTestId('stake-manage-borrow-slider');
-    // 30k debt on a 30k + 40k axis → tick at 3/7.
-    expect(slider.querySelectorAll('[data-slot="slider-marker"]').length).toBe(1);
-    expect(screen.getByTestId('stake-manage-borrow-slider-marker-label').textContent).toContain(
-      'Borrowed:30,000'
-    );
+    // Dust axis 30k → 70k: a 30k debt sits on the left end, so no interior tick.
+    expect(slider.querySelectorAll('[data-slot="slider-marker"]').length).toBe(0);
+    expect(screen.getByTestId('stake-manage-borrow-slider-min-label').textContent).toContain('30,000');
+    expect(screen.getByTestId('stake-manage-borrow-slider-max-label').textContent).toContain('70,000');
     fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
     expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
   });

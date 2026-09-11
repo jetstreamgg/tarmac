@@ -15,8 +15,9 @@ describe('useStakeAmountSlider — borrow axis', () => {
       onAmountChange: vi.fn()
     });
     // 80,000 of 100,000
-    expect(slider.value).toBe(800);
-    expect(slider.markers).toEqual([600]);
+    // Axis 30k → 100k: tick 3/7, thumb 5/7.
+    expect(slider.value).toBe(714);
+    expect(slider.markers).toEqual([428]);
     expect(slider.axis).toEqual({ min: usds(30_000), max: usds(100_000), marker: usds(60_000) });
     expect(slider.disabled).toBe(false);
   });
@@ -46,17 +47,20 @@ describe('useStakeAmountSlider — borrow axis', () => {
     slider.onValueChange(STAKE_SLIDER_MAX);
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(40_000) + 123n);
     slider.onValueChange(800);
-    // 80,000 total − 60,000 debt, whole USDS
-    expect(onAmountChange).toHaveBeenLastCalledWith(usds(20_000));
+    // 30,000 + 0.8 × 70,000 = 86,000 total − 60,000 debt, whole USDS
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(26_000));
   });
 
-  it('snaps the (0, dust) gap up to dust on a debt-free position', () => {
+  it('starts a debt-free position at the dust floor (3015:59627)', () => {
     const onAmountChange = vi.fn();
-    const slider = useStakeAmountSlider({ ...base, existingDebt: 0n, amount: 0n, onAmountChange });
-    slider.onValueChange(100); // 4,000 of 40,000
+    const slider = useStakeAmountSlider({ ...base, existingDebt: 0n, amount: usds(30_000), onAmountChange });
+    expect(slider.value).toBe(0);
+    slider.onValueChange(0);
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(30_000));
+    slider.onValueChange(100); // 30,000 + 1,000
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(31_000));
     slider.onValueChange(900);
-    expect(onAmountChange).toHaveBeenLastCalledWith(usds(36_000));
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(39_000));
     expect(slider.markers).toEqual([]);
   });
 
@@ -72,7 +76,8 @@ describe('useStakeAmountSlider — borrow axis', () => {
     expect(slider.disabled).toBe(true);
     expect(slider.value).toBe(STAKE_SLIDER_MAX);
     expect(slider.progress).toBe(0);
-    expect(slider.axis.min).toBe(usds(60_000));
+    // 3015:62542: Min. dust / Max. current debt.
+    expect(slider.axis.min).toBe(usds(30_000));
     expect(slider.axis.max).toBe(usds(60_000));
     slider.onValueChange(500);
     expect(onAmountChange).not.toHaveBeenCalled();
