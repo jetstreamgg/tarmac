@@ -1,11 +1,11 @@
 /*
  * Batch pre-send simulation (APP-537). The mock wallet advertises EIP-5792 atomic
- * batching, so every multi-call flow in this suite already exercises the happy path:
- * the bundle is simulated with `eth_call` + a code state override before
- * `wallet_sendCalls`. These specs cover what the happy path can't — the two failure
- * classes — by intercepting exactly that request. It is the only `eth_call` the app
- * issues with a third (state override) parameter; the per-call sequential simulations
- * and the fee estimate (`eth_simulateV1`) are untouched.
+ * batching, so the bundle is simulated with `eth_call` + a code state override before
+ * `wallet_sendCalls`. The first spec pins that happy path — the simulation ran and the
+ * bundle reached the wallet — and the other two cover the failure classes by intercepting
+ * exactly that request. It is the only `eth_call` the app issues with a third (state
+ * override) parameter; the per-call sequential simulations and the fee estimate
+ * (`eth_simulateV1`) are untouched.
  *
  * Wallet traffic is observed through the mock connector's request log
  * (`extendedMock request: <method>` on the page console), which is the only place a
@@ -53,6 +53,25 @@ const recordWalletRequests = (page: Page) => {
 };
 
 test.describe('Batch simulation before send', () => {
+  test('a bundle that simulates clean is sent to the wallet as one batch', async ({ isolatedPage }) => {
+    const wallet = recordWalletRequests(isolatedPage);
+    const simulations: string[] = [];
+    await isolatedPage.route(RPC_URL, async (route, request) => {
+      if (isBatchSimulation(request.postData())) simulations.push(request.postData()!);
+      return route.fallback();
+    });
+
+    const savings = new SavingsProductPage(isolatedPage);
+    await savings.gotoConnected();
+    await savings.openSupplyModal();
+    await savings.fillAmount('2');
+    await savings.reviewAndConfirm();
+
+    expect(simulations.length).toBeGreaterThan(0);
+    expect(wallet).toContain('wallet_sendCalls');
+    expect(wallet).not.toContain('eth_sendTransaction');
+  });
+
   test('a bundle that reverts in simulation blocks the flow and never reaches the wallet', async ({
     isolatedPage
   }) => {

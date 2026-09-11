@@ -10,7 +10,7 @@ import {
 } from 'viem';
 import { extractErrorCode } from '../helpers';
 import { encodeBatchExecutorData, getCallData, multicall3Abi, totalCallValue } from './networkFee';
-import { MULTICALL3_RUNTIME_CODE } from './multicall3RuntimeCode';
+import { getBatchExecutorCode } from './batchExecutorCode';
 
 /**
  * Why a batch simulation failed.
@@ -24,6 +24,9 @@ import { MULTICALL3_RUNTIME_CODE } from './multicall3RuntimeCode';
  * - `transient`: the request itself failed (network, rate limit, a 5xx). Retry.
  */
 export type BatchSimulationFailureKind = 'reverted' | 'structural' | 'transient';
+
+/** One sub-call's outcome, as Multicall3 reports it. */
+export type BatchCallResult = { success: boolean; returnData: Hex };
 
 export class BatchSimulationError extends Error {
   override readonly name = 'BatchSimulationError';
@@ -120,25 +123,46 @@ function describeCall(call: Call, index: number): string {
 /**
  * Validate a batch before the wallet sees it.
  *
- * One `eth_call` runs the whole bundle atomically: Multicall3's runtime code is placed
- * at the user's own address through a state override, so every inner call sees
+ * One `eth_call` runs the whole bundle atomically: the batch executor's runtime code
+ * (Multicall3, read from its canonical deployment on this chain) is placed at the user's
+ * own address through a state override, so every inner call sees
  * `msg.sender == account` — the same thing the wallet's EIP-7702 delegate arranges at
  * send time — and an approve primes the allowance for the deposit that follows it in
  * the same call. Nothing is sent, and no real delegate is consulted (see networkFee.ts
  * for why the stand-in, not the wallet's delegate).
  *
- * Resolves on a clean bundle. Throws a `BatchSimulationError` otherwise, whose `kind`
- * says whether the calls are wrong, the RPC can't do this, or the request just failed.
+ * Resolves with each sub-call's `(success, returnData)` on a clean bundle. Throws a
+ * `BatchSimulationError` otherwise, whose `kind` says whether the calls are wrong, the
+ * RPC can't do this, or the request just failed.
  */
 export async function simulateBatch({
   client,
+  chainId,
   account,
   calls
 }: {
   client: PublicClient;
+  chainId: number;
   account: Address;
   calls: readonly Call[];
-}): Promise<void> {
+}): Promise<readonly BatchCallResult[]> {
+  let executorCode: Hex | undefined;
+  try {
+    executorCode = await getBatchExecutorCode(client, chainId);
+  } catch (error) {
+    throw new BatchSimulationError('Batch simulation failed: could not read the batch executor code', {
+      kind: 'transient',
+      cause: error
+    });
+  }
+  // No Multicall3 on this chain: nothing to stand in for the delegate, so a bundle can't
+  // be validated here. Says nothing about the calls.
+  if (!executorCode) {
+    throw new BatchSimulationError('Batch simulation unavailable: no batch executor deployed on this chain', {
+      kind: 'structural'
+    });
+  }
+
   let data: Hex | undefined;
   try {
     ({ data } = await client.call({
@@ -146,7 +170,7 @@ export async function simulateBatch({
       to: account,
       data: encodeBatchExecutorData(calls, { allowFailure: true }),
       value: totalCallValue(calls),
-      stateOverride: [{ address: account, code: MULTICALL3_RUNTIME_CODE }]
+      stateOverride: [{ address: account, code: executorCode }]
     }));
   } catch (error) {
     // With failures allowed, the outer call only reverts for bundle-level reasons
@@ -186,6 +210,8 @@ export async function simulateBatch({
       );
     }
   });
+
+  return results;
 }
 
 /** viem reports an `eth_call` revert with JSON-RPC code 3 (`ExecutionRevertedError`). */

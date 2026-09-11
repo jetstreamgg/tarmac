@@ -65,7 +65,7 @@ export function useSimulateBatch({
 
   const { isSuccess, isLoading, error, refetch } = useQuery({
     queryKey: ['simulate-batch', resolvedChainId, address, callsKey],
-    queryFn: () => simulateBatch({ client: client!, account: address!, calls }),
+    queryFn: () => simulateBatch({ client: client!, chainId: resolvedChainId, account: address!, calls }),
     enabled: enabled && !!client && !!address && calls.length > 0 && callsKey !== null,
     // A revert or an unsupported RPC won't change on a retry; only a failed request might.
     retry: (failureCount, err) => isTransientBatchSimulationError(err) && failureCount < 3,

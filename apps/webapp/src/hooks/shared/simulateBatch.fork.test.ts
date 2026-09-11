@@ -38,8 +38,13 @@ describe('simulateBatch on the fork', () => {
     await setErc20Balance(DAI, '100');
 
     await expect(
-      simulateBatch({ client: client(), account: TEST_WALLET_ADDRESS, calls: [approve, swap] })
-    ).resolves.toBeUndefined();
+      simulateBatch({
+        client: client(),
+        chainId: TENDERLY_CHAIN_ID,
+        account: TEST_WALLET_ADDRESS,
+        calls: [approve, swap]
+      })
+    ).resolves.toHaveLength(2);
   });
 
   it('refuses the swap without its approve, naming the inner reason', async () => {
@@ -47,6 +52,7 @@ describe('simulateBatch on the fork', () => {
 
     const failure = await simulateBatch({
       client: client(),
+      chainId: TENDERLY_CHAIN_ID,
       account: TEST_WALLET_ADDRESS,
       calls: [swap]
     }).catch(error => error);
@@ -64,6 +70,7 @@ describe('simulateBatch on the fork', () => {
 
     const failure = await simulateBatch({
       client: client(),
+      chainId: TENDERLY_CHAIN_ID,
       account: TEST_WALLET_ADDRESS,
       calls: [codeless, swap]
     }).catch(error => error);

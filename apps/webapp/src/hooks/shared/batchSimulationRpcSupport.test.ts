@@ -10,7 +10,8 @@
  * 1. `eth_call` honours a `code` state override at a codeless address.
  * 2. `eth_call` accepts a sender that HAS code — the override puts code at the user's
  *    own address, which only works because these backends skip EIP-3607 in `eth_call`.
- * 3. The on-chain Multicall3 runtime code hashes to the embedded constant.
+ * 3. The canonical Multicall3 is deployed — it is the stand-in executor, and its code is
+ *    read from this address at runtime — and it runs when overridden in at a sender.
  * 4. `eth_simulateV1` runs with validation off (the fee estimator's primitive).
  *
  * Runs against the Tenderly vnets by default. Set `PROBE_RPC_URLS` to a comma-separated
@@ -18,11 +19,10 @@
  * WAF rejects non-browser user agents, so the requests carry a browser UA.
  */
 import { describe, expect, it } from 'vitest';
-import { createPublicClient, http, keccak256, type Hex } from 'viem';
+import { createPublicClient, decodeFunctionResult, encodeFunctionData, http, type Hex } from 'viem';
 import { getTenderlyChains } from '../../../test/hooks/tenderlyChain';
 import { TEST_WALLET_ADDRESS } from '../../../test/hooks';
-import { BATCH_EXECUTOR_ADDRESS } from './networkFee';
-import { MULTICALL3_RUNTIME_CODE } from './multicall3RuntimeCode';
+import { BATCH_EXECUTOR_ADDRESS, multicall3Abi } from './networkFee';
 
 /** `PUSH1 1; PUSH1 0; MSTORE; PUSH1 32; PUSH1 0; RETURN` — returns the word 1. */
 const RETURNS_ONE: Hex = '0x600160005260206000f3';
@@ -68,10 +68,24 @@ describe.each(targets)('batch simulation RPC support — $name', ({ url }) => {
     expect(data?.toLowerCase()).toBe(`0x${'0'.repeat(24)}${TEST_WALLET_ADDRESS.slice(2)}`.toLowerCase());
   });
 
-  it('has the canonical Multicall3 deployed, byte-identical to the embedded constant', async () => {
+  it('has the canonical Multicall3 deployed and running as the overridden executor', async () => {
     const code = await client.getCode({ address: BATCH_EXECUTOR_ADDRESS });
     expect(code).toBeDefined();
-    expect(keccak256(code!)).toBe(keccak256(MULTICALL3_RUNTIME_CODE));
+    expect(code!.length).toBeGreaterThan(2);
+
+    // The exact shape the validator issues: aggregate3 on the account itself.
+    const { data } = await client.call({
+      account: TEST_WALLET_ADDRESS,
+      to: TEST_WALLET_ADDRESS,
+      data: encodeFunctionData({
+        abi: multicall3Abi,
+        functionName: 'aggregate3',
+        args: [[{ target: CODELESS, allowFailure: true, callData: '0x' }]]
+      }),
+      stateOverride: [{ address: TEST_WALLET_ADDRESS, code: code! }]
+    });
+    const results = decodeFunctionResult({ abi: multicall3Abi, functionName: 'aggregate3', data: data! });
+    expect(results).toEqual([{ success: true, returnData: '0x' }]);
   });
 
   it('supports eth_simulateV1 with validation off', async () => {

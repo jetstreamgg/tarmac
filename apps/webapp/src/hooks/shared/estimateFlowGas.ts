@@ -9,7 +9,7 @@ import {
   isOpStackChain,
   totalCallValue
 } from './networkFee';
-import { MULTICALL3_RUNTIME_CODE } from './multicall3RuntimeCode';
+import { getBatchExecutorCode } from './batchExecutorCode';
 
 export type FlowGasEstimate = {
   /** Cost of signing the calls one at a time: N intrinsics, N cold-access sets. */
@@ -107,15 +107,23 @@ async function simulateSequential(
  */
 async function simulateBundledGas(
   client: PublicClient,
+  chainId: number,
   account: Address,
   calls: readonly Call[]
 ): Promise<{ gas: bigint; steadyStateGas: bigint }> {
-  const accountCode = await client.getCode({ address: account });
+  const [accountCode, executorCode] = await Promise.all([
+    client.getCode({ address: account }),
+    getBatchExecutorCode(client, chainId)
+  ]);
+
+  if (!executorCode) {
+    throw new Error('Network fee estimation failed: batch executor code unavailable');
+  }
 
   const { results } = await client.simulateCalls({
     account,
     calls: [{ to: account, data: encodeBatchExecutorData(calls), value: totalCallValue(calls) }],
-    stateOverrides: [{ address: account, code: MULTICALL3_RUNTIME_CODE }]
+    stateOverrides: [{ address: account, code: executorCode }]
   });
 
   const [result] = results;
@@ -156,7 +164,7 @@ export async function estimateFlowGas({
   const [perCallGas, simulatedBatchGas] = await Promise.all([
     simulateSequential(client, account, calls),
     wantsBatch
-      ? simulateBundledGas(client, account, calls).catch(() => undefined)
+      ? simulateBundledGas(client, chainId, account, calls).catch(() => undefined)
       : Promise.resolve(undefined)
   ]);
 
