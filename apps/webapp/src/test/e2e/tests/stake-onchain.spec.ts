@@ -261,7 +261,7 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
 
   // Full repay via the 100% chip (wipeAll semantics) zeroes art.
   const usdsBefore = await getTokenBalance(USDS_TOKEN, testAccount);
-  await isolatedPage.getByTestId('stake-manage-borrow-amount-percent-100').click();
+  await isolatedPage.getByTestId('stake-manage-borrow-amount-chip-max').click();
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
   await confirm.click();
   await confirmTransactionModal(isolatedPage);

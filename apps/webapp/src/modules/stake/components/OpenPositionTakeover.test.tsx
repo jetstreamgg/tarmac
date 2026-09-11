@@ -474,51 +474,6 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(500n * WAD);
   });
 
-  it('the stake slider tracks the typed share of the balance (1036:209724)', () => {
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-    expect(slider?.getAttribute('aria-valuenow')).toBe('0');
-
-    // Balance is 1000 SKY, so a quarter of it puts the thumb at 25%.
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
-
-    // Typing past the balance pins the thumb rather than running it off-track.
-    typeStakeAmount('5000');
-    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
-  });
-
-  it('the stake slider still reads whole percents on a dust-bearing balance', () => {
-    // Staging floors, so a balance that is not a round multiple of 100 wei used
-    // to read back one percent LOW (25% chip → thumb at 24) when the projection
-    // floored as well. Real balances are all of this shape.
-    h.balance = 1234567891234567891234n;
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
-    expect(slider?.getAttribute('aria-valuetext')).toBe('25%');
-
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-100'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
-  });
-
-  it('dragging the stake slider stages the matching share of the balance', () => {
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-    (slider as HTMLElement).focus();
-    // One keyboard step off zero is 1% of the 1000 SKY balance.
-    fireEvent.keyDown(slider as HTMLElement, { key: 'ArrowRight' });
-
-    expect(slider?.getAttribute('aria-valuenow')).toBe('1');
-    expect((screen.getByTestId('stake-takeover-stake-amount') as HTMLInputElement).value).toBe('10');
-    expect(h.launchParams?.skyToLock).toBe(10n * WAD);
-  });
-
   it('shows the est. annual rewards from the selected farm rate, in USD', () => {
     renderTakeover();
 
@@ -540,12 +495,53 @@ describe('OpenPositionTakeover', () => {
     expect(screen.getByTestId('stake-takeover-risk-pill').textContent).toBe('Medium');
     const slider = screen.getByTestId('stake-takeover-borrow-slider');
     expect(slider).toBeTruthy();
-    // The risk slider uses the design-system range treatment (H7): the
-    // orange→yellow fill instead of the default brand gradient.
-    const range = slider.querySelector('[data-slot=slider-range]');
-    expect(range?.className).toContain('from-slider-yellow-start');
+    // Progress Steps: the borrow fill carries the orange→yellow gradient.
+    const fill = slider.querySelector('[data-slot=slider-fill]');
+    expect(fill?.className).toContain('from-slider-yellow-start');
     // Card 1 now shows the min-stake-to-borrow stat.
     expect(screen.getByTestId('stake-takeover-min-stake')).toBeTruthy();
+  });
+
+  it('stat blocks are stacked rows in the Figma order (3015:59161 / 3015:59215)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    const labels = (card: string) =>
+      Array.from(
+        screen.getByTestId(card).querySelectorAll('[class*="divide-y"] > div > span:first-child')
+      ).map(el => el.textContent);
+    expect(labels('stake-takeover-stake-card')).toEqual([
+      'Min. stake to borrow',
+      'Est. annual rewards',
+      'Staking Rewards Rate'
+    ]);
+    expect(labels('stake-takeover-borrow-card')).toEqual([
+      'Liquidation risk',
+      'Liquidation price',
+      'Capped OSM SKY priceUpdated hourly',
+      'Borrow rate'
+    ]);
+    // Reached badge leads the min-stake value; the hourly pill sits in the label, not the value.
+    const minStake = screen.getByTestId('stake-takeover-min-stake');
+    expect(minStake.firstElementChild?.getAttribute('data-testid')).toBe('stake-min-stake-badge');
+    expect(screen.getByTestId('stake-takeover-osm-price-row').lastElementChild?.textContent).not.toContain(
+      'Updated hourly'
+    );
+  });
+
+  it('enabling the borrow toggle pre-selects the dust floor (Figma 3015:59185)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).value).toBe('30');
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
+    // Toggling off and on again keeps a zeroed leg on the floor, never stacks it.
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
   });
 
   it('disabling the borrow toggle zeroes the borrow leg', () => {
@@ -560,19 +556,38 @@ describe('OpenPositionTakeover', () => {
     expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
   });
 
-  it('min-collateral constraint: warning box shown, borrow input disabled, Confirm disabled (C.3)', () => {
+  it('min-collateral constraint: Borrow switch disabled behind the "Stake more to borrow" hint (G11)', () => {
     h.minCollateralForDust = 715104n * WAD;
     h.dust = 30000n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
+    const toggle = screen.getByTestId('stake-takeover-borrow-card-toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(screen.getByTestId('stake-takeover-borrow-card-toggle-hint')).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
+    // The stake card's min row carries the Not-reached badge.
+    const badge = screen.getByTestId('stake-min-stake-badge');
+    expect(badge.textContent).toBe('Not reached');
+    expect(badge.getAttribute('data-reached')).toBeNull();
+  });
+
+  it('min-collateral constraint: a card already on keeps the warning when the stake drops (C.3)', () => {
+    h.minCollateralForDust = 715104n * WAD;
+    h.dust = 30000n * WAD;
+    renderTakeover();
+    typeStakeAmount('800000');
+    expect(screen.getByTestId('stake-min-stake-badge').textContent).toBe('Reached');
+
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    typeStakeAmount('1000');
 
     const warning = screen.getByTestId('stake-takeover-min-collateral-warning');
-    expect(warning).toBeTruthy();
     // The callout prose spells the dust floor out in full (UX 1104:19793).
     expect(warning.textContent).toContain('30,000 USDS');
     expect(warning.textContent).not.toContain('30K USDS');
+    expect(screen.queryByTestId('stake-takeover-borrow-slider')).toBeNull();
     expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
@@ -593,16 +608,17 @@ describe('OpenPositionTakeover', () => {
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('borrow: the top chip is 75% and stages three quarters of the max, whole-USDS rounded', () => {
+  it('borrow: the Min chip stages the dust floor and Max the ceiling headroom', () => {
     h.debtCeilingHeadroom = 50n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
-    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-100')).toBeNull();
-    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-75'));
-
-    expect(h.launchParams?.usdsToBorrow).toBe(37n * WAD);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-75')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-chip-max'));
+    expect(h.launchParams?.usdsToBorrow).toBe(50n * WAD);
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-chip-min'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
   });
 
   it('borrow above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {

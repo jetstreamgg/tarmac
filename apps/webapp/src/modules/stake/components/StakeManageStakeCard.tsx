@@ -1,14 +1,13 @@
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
-import { Info } from 'lucide-react';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { formatBigInt, formatUsd } from '@/utils';
-import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { StakeManageCard, StakeManageStatCell, StakeManageStatDivider } from './StakeManageCard';
+import { ReachedBadge, StakeManageCard, StakeManageStatRow, StakeManageStatRows } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -16,9 +15,10 @@ const WAD = 10n ** 18n;
 
 /**
  * Manage card 1 · Stake SKY | Withdraw SKY (UX 1050:21454 / 1104:20574):
- * segmented mode + toggle, amount field, balance/staked line, a 0–100% percent
- * slider over the mode's base amount, and the info rows with before→after
- * deltas (M13/M22). Withdraw validation arrives via `error` (legacy Free.tsx
+ * segmented mode + toggle, amount field, balance/staked line with percent
+ * chips, and the stacked stat rows (Figma
+ * 3015:58333: Min. stake to borrow, Staked amount, Est. annual rewards,
+ * rewards rate) with before→after deltas (M13/M22). Withdraw validation arrives via `error` (legacy Free.tsx
  * rules, computed in the container).
  */
 export function StakeManageStakeCard({
@@ -38,6 +38,7 @@ export function StakeManageStakeCard({
   estNextUsd,
   minStakeToBorrow,
   minStakeToBorrowLoading,
+  minStakeReached,
   error
 }: {
   mode: StakeCardMode;
@@ -66,19 +67,29 @@ export function StakeManageStakeCard({
   minStakeToBorrow: bigint | undefined;
   /** The simulation backing `minStakeToBorrow` is in flight. */
   minStakeToBorrowLoading?: boolean;
+  /** Collateral after the staged change clears `minStakeToBorrow`. */
+  minStakeReached?: boolean;
   error?: string;
 }) {
   const isStake = mode === 'stake';
   const base = (isStake ? walletBalance : stakedAmount) ?? 0n;
   const baseLoading = isStake ? walletBalanceLoading : !!stakedAmountLoading;
 
-  const sliderPercent = base > 0n ? Math.min(100, Number((amount * 100n) / base)) : 0;
-  const onSliderChange = (percent: number) => {
+  const onPercentClick = (percent: number) => {
     if (base === 0n) return;
-    // 100% stages the exact base; intermediate stops round to whole SKY.
+    // 100% stages the exact base; the other chips round to whole SKY.
     onAmountChange(percent === 100 ? base : ((base * BigInt(percent)) / 100n / WAD) * WAD);
   };
-  const onPercentClick = (percent: number) => onSliderChange(percent);
+
+  // Staked amount after the staged change (row delta only while an amount is staged).
+  const stakedNext =
+    amount > 0n && stakedAmount !== undefined
+      ? isStake
+        ? stakedAmount + amount
+        : stakedAmount > amount
+          ? stakedAmount - amount
+          : 0n
+      : undefined;
 
   // Comp values carry a 12px SKY icon instead of the symbol text (1036:213909).
   const skyIcon = (
@@ -97,8 +108,8 @@ export function StakeManageStakeCard({
       onEnabledChange={onEnabledChange}
       dataTestId="stake-manage-stake-card"
     >
-      {/* Design QA 2800:91832 ("More gap"): 32px between the amount block, the
-          slider and the stats from md up — the card's own header→body gap. */}
+      {/* Design QA 2800:91832 ("More gap"): 32px between the amount block and
+          the stats from md up — the card's own header→body gap. */}
       <div className="flex flex-col gap-6 md:gap-8">
         <StakeTakeoverAmountField
           tokenSymbol="SKY"
@@ -121,34 +132,26 @@ export function StakeManageStakeCard({
           }
         />
 
-        <div className="flex flex-col gap-2">
-          <Slider
-            value={[sliderPercent]}
-            max={100}
-            step={1}
-            onValueChange={value => onSliderChange(value[0])}
-            aria-label={isStake ? t`Stake percentage` : t`Withdraw percentage`}
-            data-testid="stake-manage-stake-slider"
-          />
-          <div className="text-fgSecondary flex items-center gap-4 text-xs">
-            <span>0%</span>
-            <SliderTicks progress={sliderPercent} className="grow" />
-            <span>100%</span>
-          </div>
-        </div>
-
-        {/* Comp 1036:213889 stat columns: hugging cells split by hairlines. */}
-        <div className="flex flex-wrap items-start gap-4">
-          <StakeManageStatCell
+        <StakeManageStatRows>
+          <StakeManageStatRow
             label={
               <>
                 <Trans>Min. stake amount to borrow</Trans>
-                <Info className="h-3 w-3" aria-hidden />
+                <InfoTooltip
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={
+                    minStakeToBorrow !== undefined
+                      ? t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`
+                      : t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least the minimum shown here.`
+                  }
+                />
               </>
             }
             current={
               minStakeToBorrow !== undefined ? (
                 <>
+                  {minStakeReached !== undefined && <ReachedBadge reached={minStakeReached} />}
                   {formatBigInt(minStakeToBorrow)}
                   {skyIcon}
                 </>
@@ -160,27 +163,39 @@ export function StakeManageStakeCard({
             }
             dataTestId="stake-manage-min-stake"
           />
-          <StakeManageStatDivider />
-          <StakeManageStatCell
-            label={
-              <>
-                <Trans>Staking Rewards Rate</Trans>
-                <RateInfo type="srr" size={12} />
-              </>
-            }
+          <StakeManageStatRow
+            label={<Trans>Staked amount</Trans>}
             current={
-              rewardsRate !== null ? (
-                formatDecimalPercentage(rewardsRate)
-              ) : rateLoading ? (
+              stakedAmountLoading && stakedAmount === undefined ? (
                 <Skeleton className="h-4 w-14" />
               ) : (
-                NO_VALUE
+                <>
+                  {formatBigInt(stakedAmount ?? 0n)}
+                  {skyIcon}
+                </>
               )
             }
+            next={
+              stakedNext !== undefined ? (
+                <>
+                  {formatBigInt(stakedNext)}
+                  {skyIcon}
+                </>
+              ) : undefined
+            }
+            dataTestId="stake-manage-staked-amount"
           />
-          <StakeManageStatDivider />
-          <StakeManageStatCell
-            label={<Trans>Est. annual rewards</Trans>}
+          <StakeManageStatRow
+            label={
+              <>
+                <Trans>Est. annual rewards</Trans>
+                <InfoTooltip
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={t`Projected yearly rewards at the current Staking Rewards Rate and SKY price. Rates change over time, so the actual amount will differ.`}
+                />
+              </>
+            }
             current={
               estCurrentUsd === null && (rateLoading || stakedAmountLoading) ? (
                 <Skeleton className="h-4 w-14" />
@@ -197,7 +212,24 @@ export function StakeManageStakeCard({
             }
             dataTestId="stake-manage-est-rewards"
           />
-        </div>
+          <StakeManageStatRow
+            label={
+              <>
+                <Trans>Staking Rewards Rate</Trans>
+                <RateInfo type="srr" size={12} />
+              </>
+            }
+            current={
+              rewardsRate !== null ? (
+                formatDecimalPercentage(rewardsRate)
+              ) : rateLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+          />
+        </StakeManageStatRows>
       </div>
     </StakeManageCard>
   );

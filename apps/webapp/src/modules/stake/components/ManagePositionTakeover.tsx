@@ -16,7 +16,7 @@ import {
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd, math } from '@/utils';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
@@ -35,7 +35,7 @@ import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
 import { StakeManageStakeCard } from './StakeManageStakeCard';
-import { StakeManageBorrowCard, RiskBadge } from './StakeManageBorrowCard';
+import { StakeManageBorrowCard, RiskPill } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageRewardCard } from './StakeManageRewardCard';
 import { StakeManageDelegateCard } from './StakeManageDelegateCard';
@@ -108,13 +108,6 @@ export function ManagePositionTakeover({
     existingDebt,
     ilkName
   );
-  // Slider floor/ceiling baseline: same collateral, unchanged debt.
-  const { data: vaultNoBorrow } = useSimulatedVault(
-    liveCollateralAmount > 0n ? liveCollateralAmount : 0n,
-    existingDebt,
-    existingDebt,
-    ilkName
-  );
   // Debounced simulation for validation, so errors wait for typing to settle.
   const {
     data: debouncedVault,
@@ -158,6 +151,33 @@ export function ManagePositionTakeover({
     !!debouncedVault?.liquidationPrice &&
     debouncedVault.liquidationPrice > debouncedVault.delayedPrice
   );
+  // Figma 3015:62253 / 3015:56730 withdraw bounds: the liquidation-safe max
+  // (collateral − minSafeCollateral for the resulting debt) and, while debt
+  // remains, the min-collateral bound (collateral − minCollateralForDust).
+  // The hook's minSafeCollateralAmount is for the existing debt; a staged
+  // borrow/repay moves the bound, so derive it from the resulting debt.
+  const minSafeCollateralForNewDebt =
+    debouncedVault?.liquidationRatio && debouncedVault?.delayedPrice
+      ? math.minSafeCollateralAmount(
+          newDebtValue,
+          debouncedVault.liquidationRatio,
+          debouncedVault.delayedPrice
+        )
+      : undefined;
+  const maxWithdrawSafe =
+    minSafeCollateralForNewDebt !== undefined && existingCollateral > minSafeCollateralForNewDebt
+      ? existingCollateral - minSafeCollateralForNewDebt
+      : 0n;
+  const isMinCollateralWithdrawError =
+    skyToFree > 0n &&
+    newDebtValue > 0n &&
+    debouncedVault?.minCollateralForDust !== undefined &&
+    newCollateralAmount < debouncedVault.minCollateralForDust;
+  const maxWithdrawForMinCollateral =
+    debouncedVault?.minCollateralForDust !== undefined &&
+    existingCollateral > debouncedVault.minCollateralForDust
+      ? existingCollateral - debouncedVault.minCollateralForDust
+      : 0n;
   const stakeError =
     state.stakeMode === 'stake'
       ? skyBalance !== undefined && state.skyAmount > skyBalance.value && state.skyAmount !== 0n
@@ -170,10 +190,14 @@ export function ManagePositionTakeover({
           // short-circuit reports 100 whenever liquidation price ≥ delayed
           // price), so the more specific message must win the tie — after it,
           // the generic risk error is unreachable-shadowed, not the reverse.
-          isCappedOsmError
-          ? t`Liquidation price is higher than the capped OSM SKY price`
-          : isLiquidationError
-            ? t`Liquidation risk too high`
+          isCappedOsmError || isLiquidationError
+          ? minSafeCollateralForNewDebt !== undefined && newDebtValue > 0n
+            ? t`Withdrawing ${formatBigInt(state.skyAmount)} SKY would liquidate your position. With your ${formatBigInt(newDebtValue)} USDS debt, you can withdraw at most ${formatBigInt(maxWithdrawSafe)} SKY.`
+            : isCappedOsmError
+              ? t`Liquidation price is higher than the capped OSM SKY price`
+              : t`Liquidation risk too high`
+          : isMinCollateralWithdrawError
+            ? t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation. You must first repay your position or close it entirely.`
             : undefined;
   const stakeCardValid = !state.stakeEnabled || state.skyAmount === 0n || !stakeError;
 
@@ -209,7 +233,7 @@ export function ManagePositionTakeover({
       : minDebtNotMet
         ? t`Debt must be paid off entirely, or left with a minimum of ${formatBigInt(existingVault?.dust ?? 0n)}`
         : !hasEnoughUsds && usdsToWipe > 0n
-          ? t`Not enough USDS in your wallet`
+          ? t`You'll need USDS in your wallet to repay. Swap or transfer some in first.`
           : newDebtValue < 0n
             ? t`Amount exceeds debt`
             : formatSimulationErrorMessage(simulationError?.message, undefined, usdsToWipe);
@@ -545,7 +569,7 @@ export function ManagePositionTakeover({
               {detail.vaultLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : existingDebt > 0n && existingVault?.riskLevel ? (
-                <RiskBadge riskLevel={existingVault.riskLevel} />
+                <RiskPill riskLevel={existingVault.riskLevel} dataTestId="stake-manage-summary-risk" />
               ) : (
                 NO_VALUE
               )}
@@ -603,6 +627,11 @@ export function ManagePositionTakeover({
         estNextUsd={estNextUsd}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
         minStakeToBorrowLoading={liveSimLoading}
+        minStakeReached={
+          simulatedVault?.minCollateralForDust !== undefined
+            ? liveCollateralAmount >= simulatedVault.minCollateralForDust
+            : undefined
+        }
         error={stakeError}
       />
 
@@ -619,7 +648,6 @@ export function ManagePositionTakeover({
         positionLoading={detail.vaultLoading}
         simulatedVault={simulatedVault}
         simulationLoading={liveSimLoading}
-        vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
         collateralLoading={collateralLoading}
         maxBorrowable={availableBorrowBalance}
@@ -629,6 +657,10 @@ export function ManagePositionTakeover({
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         currentCollateral={newCollateralAmount > 0n ? newCollateralAmount : 0n}
+        hasStagedChange={
+          (state.stakeEnabled && state.skyAmount > 0n) ||
+          (state.borrowEnabled && (state.usdsAmount > 0n || state.wipeAll))
+        }
         error={borrowError}
       />
 
