@@ -2,11 +2,12 @@ import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { erc20Abi, type Call } from 'viem';
 
-// The cross-chain-calldata backstop (APP-528): a batch is sent WITHOUT
-// per-call simulation, so the shared batch flow itself must refuse a batch
-// whose target address resolved to `undefined` — the shape a
-// `Record<chainId, address>` takes when read on a chain the product isn't on.
-// This is the last line of defense behind the modal's chain guard.
+// The cross-chain-calldata backstop (APP-528): the shared batch flow itself
+// must refuse a batch whose target address resolved to `undefined` — the shape
+// a `Record<chainId, address>` takes when read on a chain the product isn't on.
+// This is the last line of defense behind the modal's chain guard. The bundle
+// simulation added in APP-537 runs ahead of it and is stubbed green here so the
+// backstop is what these cases exercise.
 
 const sendCallsSpy = vi.hoisted(() => vi.fn());
 const capabilities = vi.hoisted(() => ({ data: true as boolean | undefined, isLoading: false }));
@@ -24,6 +25,16 @@ vi.mock('wagmi', () => ({
     error: null,
     failureReason: null,
     data: undefined
+  })
+}));
+
+vi.mock('@/hooks/shared/useSimulateBatch', () => ({
+  useSimulateBatch: () => ({
+    prepared: true,
+    isLoading: false,
+    error: null,
+    structuralFailure: false,
+    refetch: vi.fn()
   })
 }));
 

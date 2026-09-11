@@ -89,6 +89,15 @@ export type BatchWriteHook = {
   isBatch?: boolean;
 };
 
+export type BatchTransactionFlowHook = BatchWriteHook & {
+  /**
+   * The chain's RPC cannot simulate a bundle (it rejects the state override or the
+   * method), so this flow can never become `prepared` — the router should send the
+   * calls sequentially instead, where they are still validated one at a time.
+   */
+  batchUnavailable: boolean;
+};
+
 export type BatchWriteHookParams = {
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
@@ -105,6 +114,11 @@ export type UseSendBatchTransactionFlowParameters<
   chainId extends config['chains'][number]['id'] = config['chains'][number]['id']
 > = SendCallsParameters<config, chainId, calls> & {
   enabled?: boolean;
+  /**
+   * Runs the prepare-time simulation independently of `enabled`, so it can start while
+   * the wallet's capability probe is still deciding the route. Defaults to `enabled`.
+   */
+  simulateEnabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
