@@ -63,12 +63,22 @@ const DialogContent = React.forwardRef<
         // because Tailwind's translate utilities set the `translate` property
         // while the animation drives `transform`.
         //
+        // transition-none: the `duration-*` and `ease-*` variants below set
+        // `transition-duration`/`transition-timing-function` as well as the
+        // animation ones (both utilities share the class names), and with the
+        // UA default `transition-property: all` that is a 300ms transition on
+        // every property. `left` is computed from the scroll-lock variables,
+        // which land a frame after the card mounts on classic-scrollbar
+        // machines, so the px half of `left` tweened for 300ms while the `50%`
+        // half jumped — the card rose on a diagonal (APP-563 #2). Nothing on
+        // the card is meant to transition: enter and exit are keyframes.
+        //
         // `left` centres the card on the PAGE, not the viewport: it backs off
         // half of whatever the page has given up on the right — the bar's
         // width while the scroll lock hides it (react-remove-scroll publishes
         // it on body as --removed-body-scroll-bar-size) plus the shell's
         // no-bar pad (--page-scrollbar-pad). Both are 0 with overlay bars.
-        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-10 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed top-[50%] left-[calc(50%-(var(--removed-body-scroll-bar-size,0px)+var(--page-scrollbar-pad,0px))/2)] z-50 grid max-h-[calc(100dvh-2rem)] w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain rounded-[24px] px-5 py-4 shadow-lg outline-hidden data-[state=closed]:duration-300 data-[state=open]:duration-300 sm:min-w-[640px] sm:px-10 sm:py-8',
+        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-10 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed top-[50%] left-[calc(50%-(var(--removed-body-scroll-bar-size,0px)+var(--page-scrollbar-pad,0px))/2)] z-50 grid max-h-[calc(100dvh-2rem)] w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain rounded-[24px] px-5 py-4 shadow-lg outline-hidden transition-none data-[state=closed]:duration-300 data-[state=open]:duration-300 sm:min-w-[640px] sm:px-10 sm:py-8',
         className
       )}
       {...props}

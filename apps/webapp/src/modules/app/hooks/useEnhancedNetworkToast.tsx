@@ -27,6 +27,9 @@ interface NetworkToastProps {
  * the cover replaces the queued toast rather than stacking a stale
  * "Switched to X" on top of it at reveal.
  */
+/** Shared by every network toast so a new switch replaces the one on screen. */
+export const NETWORK_TOAST_ID = 'network-change-toast';
+
 const showWhenUncovered = (show: () => void): MutationObserver | null => {
   const root = document.documentElement;
   if (!root.hasAttribute('data-app-loader-cover')) {
@@ -145,16 +148,19 @@ export function useEnhancedNetworkToast() {
           deferredShowRef.current?.disconnect();
           deferredShowRef.current = showWhenUncovered(() => {
             deferredShowRef.current = null;
-            // Create a unique ID for this toast
-            const toastId = `network-toast-${Date.now()}`;
-
             toastWithClose(
               <div>
                 <Text variant="medium">{title}</Text>
                 {toastContent}
               </div>,
               {
-                id: toastId,
+                // One id for every emission: a later switch replaces the toast
+                // on screen instead of stacking a new one beside it. Stacks
+                // never cleared — sonner pauses every timer while the pointer
+                // is over the pile, and a pile in the corner is easy to hover
+                // (APP-563 #6). Superseding the deferred show above only
+                // covered toasts that had not yet appeared.
+                id: NETWORK_TOAST_ID,
                 duration: hasLongTitle ? 8000 : 5000,
                 classNames: {
                   toast: 'md:min-w-[400px]'
