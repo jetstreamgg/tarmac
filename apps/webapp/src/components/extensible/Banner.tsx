@@ -46,11 +46,13 @@ export function Banner({
 
   const positionStyles = {
     left: 'left-4 md:left-4',
-    // Anchored to the PAGE's right edge: backs off whatever the page has given
-    // up on the right (a hidden bar under a scroll lock, or the shell's
-    // no-bar pad), both 0 with overlay scrollbars.
+    // The viewport's right edge is the page's: the root reserves the
+    // scrollbar's column on every route (scrollbar-gutter in globals.css).
+    // Under a scroll lock the column is released and the viewport widens by
+    // it — `--page-released-gutter` (0 at rest) adds it back so the banner
+    // holds still.
     right:
-      'right-4 md:right-4 mr-[calc(var(--removed-body-scroll-bar-size,0px)+var(--page-scrollbar-pad,0px))]'
+      'right-[calc(1rem+var(--page-released-gutter,0px))] md:right-[calc(1rem+var(--page-released-gutter,0px))]'
   };
 
   return (

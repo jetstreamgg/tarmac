@@ -52,6 +52,8 @@ export function StakeProductPage() {
   // treatment there, which must not be hidden behind Statistics.
   const { address } = useConnection();
   const { data: positions, isLoading: positionsLoading } = useStakeUserPositions();
+  // The one positions read the rail card on every tab draws from.
+  const rail = { positions, isLoading: positionsLoading };
   const knownEmptyPositions = !positionsLoading && positions?.length === 0;
   const defaultTab: StakeTab = !address || knownEmptyPositions ? 'statistics' : 'positions';
   const paramTab = parseStakeTab(searchParams.get(QueryParams.Tab), defaultTab);
@@ -200,13 +202,13 @@ export function StakeProductPage() {
             padding of their own and the tab bodies start flush, so the
             margin IS the gap. */}
         <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-5 md:mt-10">
-          <StakePositionsTab onRemediate={onRemediate} />
+          <StakePositionsTab onRemediate={onRemediate} rail={rail} />
         </TabsContent>
         <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-5 md:mt-10">
-          <StakeStatisticsTab />
+          <StakeStatisticsTab rail={rail} />
         </TabsContent>
         <TabsContent value="about" data-testid="stake-tab-content-about" className="mt-5 md:mt-10">
-          <StakeAboutTab />
+          <StakeAboutTab rail={rail} />
         </TabsContent>
       </Tabs>
 

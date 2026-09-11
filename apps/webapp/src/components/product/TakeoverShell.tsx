@@ -121,14 +121,14 @@ export function TakeoverShell({
   // both portalled — and that also keeps it out of reach of any future
   // transform/filter ancestor.
   // `RemoveScroll` is the lock Radix's dialogs use, from the same singleton:
-  // it hides the page scrollbar and hands its width back to body as a margin
-  // (so nothing under the scrim shifts), reference-counts with the details
-  // dialog that hands off to the manage sheet (that dialog stays mounted a
-  // tick past the switch, so a lock of our own measured a bar that was already
-  // gone), and publishes the width on body for usePageScrollbarCompensation to
-  // subtract — a hand-rolled lock set none of those signals, so the page
-  // column padded itself on top of it. Scrolling stays allowed inside the
-  // shell's own column.
+  // it reference-counts with the details dialog that hands off to the manage
+  // sheet (that dialog stays mounted a tick past the switch, so a lock of our
+  // own measured a bar that was already gone). Its body margin is replaced
+  // globally by the root's own measurement of the bar's column
+  // (`--page-scrollbar-gutter`, globals.css): under the lock the root
+  // releases the reserved column so this scrim covers the whole window, and
+  // that margin is what holds the page still. Scrolling stays allowed inside
+  // the shell's own column.
   return createPortal(
     <RemoveScroll>
       <motion.div
@@ -182,7 +182,16 @@ export function TakeoverShell({
         {/* 610px column, 12px between cards, 64px of air under the header
           (1036:209509). The footer is the column's last row rather than a
           sticky bar — the comps scroll it with the content. */}
-        <div className="flex-1 overflow-y-auto px-3 md:px-4">
+        {/* md:scrollbar-gutter: stable — from the tablet tier the column
+          reserves a bar's width whether or not the content scrolls, which is
+          the page's own reservation (globals.css) re-made inside the
+          takeover: the centred 610px column below then centres on the page
+          either way, instead of on the whole window (the lock released the
+          page's column) when it happens not to scroll. The reserved strip
+          shows the scrim behind it. Not at the phone tier: the column is
+          full-bleed there, so a reservation would only take a classic bar's
+          width off the cards (the mobile e2e measures them edge to edge). */}
+        <div className="flex-1 overflow-y-auto px-3 md:[scrollbar-gutter:stable] md:px-4">
           <motion.div
             className="mx-auto flex w-full max-w-[610px] flex-col gap-3 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] md:pt-16 md:pb-16"
             // On a hand-off the scrim is already up, so the column arrives on

@@ -39,8 +39,18 @@ export const ToastCloseAll = () => {
       className={cn(
         // One above the toaster's z-[60] (set at the App mount) so the
         // close-all control never sinks below the stack it clears.
-        'animate-in fade-in slide-in-from-bottom-2 fixed z-[61] duration-200',
-        bannerHeight > 0 ? 'right-10 pb-1' : 'right-10 bottom-8 pb-1 md:right-8 md:bottom-2 md:pb-0'
+        // transition-none: `duration-200` sets transition-duration as well as
+        // the entrance's animation-duration, and with the UA default of
+        // transitioning every property the `right` below would glide when
+        // the lock token flips — 200ms of sideways drift while the toaster
+        // it sits over snaps. Nothing here is meant to transition.
+        'animate-in fade-in slide-in-from-bottom-2 fixed z-[61] transition-none duration-200',
+        // Right insets carry `--page-released-gutter` (0 at rest) so the
+        // control holds still when a scroll lock widens the viewport
+        // (globals.css), as the toaster it sits over does.
+        bannerHeight > 0
+          ? 'right-[calc(2.5rem+var(--page-released-gutter,0px))] pb-1'
+          : 'right-[calc(2.5rem+var(--page-released-gutter,0px))] bottom-8 pb-1 md:right-[calc(2rem+var(--page-released-gutter,0px))] md:bottom-2 md:pb-0'
       )}
       style={
         bannerHeight > 0 ? { bottom: BANNER_BOTTOM_MARGIN + bannerHeight + BANNER_TOAST_GAP } : undefined

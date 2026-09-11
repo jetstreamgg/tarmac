@@ -13,18 +13,18 @@ vi.mock('./StakeDetailsStrip', () => ({
 vi.mock('./BorrowUtilizationBlock', () => ({
   BorrowUtilizationBlock: () => <div data-testid="stub-borrow-utilization" />
 }));
-vi.mock('./StakeEngineCard', () => ({
-  StakeEngineCard: () => <div data-testid="stub-engine-card" />
+vi.mock('./StakeRailCard', () => ({
+  StakeRailCard: () => <div data-testid="stub-rail-card" />
 }));
 
 describe('StakeStatisticsTab', () => {
-  it('stacks chart, Details and Borrow Utilization in the left column, with the engine card in its own rail', () => {
-    render(<StakeStatisticsTab />);
+  it('stacks chart, Details and Borrow Utilization in the left column, with the rail card in its own rail', () => {
+    render(<StakeStatisticsTab rail={{ positions: [], isLoading: false }} />);
 
     const chart = screen.getByTestId('stub-rate-chart');
     const strip = screen.getByTestId('stub-details-strip');
     const utilization = screen.getByTestId('stub-borrow-utilization');
-    const engineCard = screen.getByTestId('stub-engine-card');
+    const railCard = screen.getByTestId('stub-rail-card');
 
     // Chart, Details and Borrow Utilization all live in the same left-column
     // container, in that DOM order.
@@ -35,18 +35,18 @@ describe('StakeStatisticsTab', () => {
     expect(leftColumnChildren.indexOf(chart)).toBeLessThan(leftColumnChildren.indexOf(strip));
     expect(leftColumnChildren.indexOf(strip)).toBeLessThan(leftColumnChildren.indexOf(utilization));
 
-    // The engine card sits in a separate cell from the left column, as a
+    // The rail card sits in a separate cell from the left column, as a
     // sibling in the same top-level grid — not sharing a row/column with the
     // chart, so it never inherits the left column's (much taller) height.
-    const engineCell = engineCard.parentElement;
-    expect(engineCell).not.toBe(leftColumn);
+    const railCell = railCard.parentElement;
+    expect(railCell).not.toBe(leftColumn);
     const grid = leftColumn?.parentElement;
-    expect(grid).toBe(engineCell?.parentElement);
+    expect(grid).toBe(railCell?.parentElement);
     expect(grid?.className).toContain('items-start');
 
-    // Mobile order (comp 1222:17089): promo card → chart → Details → Borrow
+    // Mobile order (comp 1222:17089): rail card → chart → Details → Borrow
     // Utilization, independent of the desktop grid placement above.
-    expect(engineCell?.className).toContain('order-1');
+    expect(railCell?.className).toContain('order-1');
     expect(leftColumn?.className).toContain('order-2');
   });
 });
