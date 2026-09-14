@@ -126,8 +126,12 @@ export function StakeBorrowSliderRow({
             aria-hidden
             data-slot="slider-fill"
             className={cn(
-              'absolute inset-y-0 rounded-[4px] bg-linear-to-r',
-              snapped && 'ease-out-quint transition-[width] duration-350',
+              // Tailwind registers the gradient stops as <color> properties, so a
+              // tone change crossfades (1s) instead of cutting; the snap glide stays 350ms.
+              'ease-out-quint absolute inset-y-0 rounded-[4px] bg-linear-to-r',
+              snapped
+                ? 'transition-[--tw-gradient-from,--tw-gradient-to,width] [transition-duration:1s,1s,350ms]'
+                : 'transition-[--tw-gradient-from,--tw-gradient-to] duration-1000',
               tone === 'green'
                 ? 'from-slider-green-start to-slider-green-end'
                 : 'from-slider-yellow-start to-slider-yellow-end',
