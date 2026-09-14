@@ -489,6 +489,16 @@ function CardTitleContent({
   );
 }
 
+/**
+ * The detail header figure's line box per tier — Heading 2's 48px on desktop
+ * (Figma 859:35718), the phone tier's Heading 5 at 26px. One source for both
+ * the loaded figure's `leading` and the loading placeholder's height, so the
+ * two can't drift apart and re-open the load-time jump.
+ */
+export function detailFigureLineBox(mobile: boolean): string {
+  return mobile ? 'h-[26px] leading-[26px]' : 'h-12 leading-[48px]';
+}
+
 /** detail-variant headline: just the formatted value (no % change / timestamp). */
 function DetailHeaderValue({
   data,
@@ -521,7 +531,20 @@ function DetailHeaderValue({
   mobile?: boolean;
 }) {
   if (isLoading) {
-    return <Skeleton className="h-9 w-32" />;
+    // The placeholder occupies the exact box the figure will: the figure's own
+    // line box (`detailFigureLineBox`) beside the same leading marks, so the
+    // header — and everything under it — does not move when the value lands.
+    // A bare 36px block used to sit here, and the card grew 12px on desktop
+    // (shrank 10px on the phone tier) at the swap (measured on every detail
+    // chart: portfolio, savings, stUSDS, stake).
+    return (
+      <span className="flex items-center gap-2">
+        {icons}
+        <span className={cn('flex items-center', detailFigureLineBox(mobile))}>
+          <Skeleton className={mobile ? 'h-5 w-24' : 'h-9 w-32'} />
+        </span>
+      </span>
+    );
   }
   const value = displayValue ?? data[data.length - 1]?.value ?? 0;
   // The token mark already names the series, so a figure that carries `icons`
@@ -537,9 +560,8 @@ function DetailHeaderValue({
       // keeps its own Heading 5 from M6.3.
       className={cn(
         'text-text font-circle font-medium',
-        mobile
-          ? 'text-2xl leading-[26px] tracking-[-0.48px]'
-          : 'text-[44px] leading-[48px] tracking-[-0.88px]'
+        detailFigureLineBox(mobile),
+        mobile ? 'text-2xl tracking-[-0.48px]' : 'text-[44px] tracking-[-0.88px]'
       )}
     >
       {/* The figure rolls over when the metric or timeframe swaps it rather

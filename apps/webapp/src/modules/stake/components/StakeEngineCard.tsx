@@ -79,8 +79,8 @@ function Stat({
 }
 
 /**
- * Sky Staking Engine promo card (Statistics + About tabs, later the positions
- * empty state). Read-only stat pair — highest staking reward rate and the
+ * Sky Staking Engine promo card, rendered by `StakeRailCard` as the
+ * no-position rail on every tab. Read-only stat pair — highest staking reward rate and the
  * minimum borrow amount — over a connect-gated "Open a position" CTA. In F2 the
  * CTA only sets `flow=open`; F4 mounts the takeover on that param.
  */

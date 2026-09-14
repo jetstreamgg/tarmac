@@ -29,14 +29,13 @@ vi.mock('./StakePositionsTable', () => ({
     return <div data-testid="stake-positions-table-stub" />;
   }
 }));
-vi.mock('./StakeSummaryCard', () => ({
-  StakeSummaryCard: () => <div data-testid="stake-summary-card-stub" />
-}));
 vi.mock('./StakeActivityTable', () => ({
   StakeActivityTable: () => <div data-testid="stake-activity-table-stub" />
 }));
-vi.mock('./StakeEngineCard', () => ({
-  StakeEngineCard: () => <div data-testid="stake-engine-card-stub" />
+// The rail's three states are pinned in StakeRailCard.test.tsx; here the stub
+// only proves the tab mounts the shared rail card in its rail cell.
+vi.mock('./StakeRailCard', () => ({
+  StakeRailCard: () => <div data-testid="stake-rail-card-stub" />
 }));
 
 import { StakePositionsTab } from './StakePositionsTab';
@@ -44,7 +43,7 @@ import { StakePositionsTab } from './StakePositionsTab';
 const renderTab = (onRemediate = vi.fn()) =>
   render(
     <I18nProvider i18n={i18n}>
-      <StakePositionsTab onRemediate={onRemediate} />
+      <StakePositionsTab onRemediate={onRemediate} rail={{ positions: [], isLoading: false }} />
     </I18nProvider>
   );
 
@@ -59,43 +58,13 @@ describe('StakePositionsTab', () => {
     expect(h.tableProps?.onRemediate).toBe(onRemediate);
   });
 
-  it('shows the summary card in the rail when the user has positions', () => {
-    mockPositions = {
-      data: [
-        {
-          index: 0,
-          urnAddress: '0x1111111111111111111111111111111111111111',
-          skyLocked: 1n,
-          usdsDebt: 0n,
-          barks: [],
-          lastMutationTimestamp: undefined
-        }
-      ],
-      isLoading: false,
-      error: null
-    };
+  it('mounts the tables and the shared rail card', () => {
+    mockPositions = { data: [], isLoading: false, error: null };
     renderTab();
 
     expect(screen.getByTestId('stake-positions-tab')).toBeTruthy();
     expect(screen.getByTestId('stake-positions-table-stub')).toBeTruthy();
     expect(screen.getByTestId('stake-activity-table-stub')).toBeTruthy();
-    expect(screen.getByTestId('stake-summary-card-stub')).toBeTruthy();
-    expect(screen.queryByTestId('stake-engine-card-stub')).toBeNull();
-  });
-
-  it('falls back to the engine promo card when there are no positions', () => {
-    mockPositions = { data: [], isLoading: false, error: null };
-    renderTab();
-
-    expect(screen.getByTestId('stake-engine-card-stub')).toBeTruthy();
-    expect(screen.queryByTestId('stake-summary-card-stub')).toBeNull();
-  });
-
-  it('holds the rail on a skeleton while positions load', () => {
-    mockPositions = { data: undefined, isLoading: true, error: null };
-    renderTab();
-
-    expect(screen.queryByTestId('stake-engine-card-stub')).toBeNull();
-    expect(screen.queryByTestId('stake-summary-card-stub')).toBeNull();
+    expect(screen.getByTestId('stake-rail-card-stub')).toBeTruthy();
   });
 });

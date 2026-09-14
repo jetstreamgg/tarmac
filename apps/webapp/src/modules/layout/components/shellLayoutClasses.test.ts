@@ -23,13 +23,30 @@ describe('shellHeaderClasses', () => {
 
   // APP-456 #6: the bar's `bg` layer per the Navbar comps — the gradient-navbar
   // fill (components/navbar/bg-gradient-start → -end) over background blur-md,
-  // Figma radius 12 ⇒ CSS blur(6px). No mask.
+  // Figma radius 12 ⇒ CSS blur(6px). The fill is a ::before under the content
+  // so it can be masked on its own; the blur stays on the bar.
   it('carries the comp gradient fill over a 6px backdrop blur', () => {
-    const cls = shellHeaderClasses();
-    expect(cls).toContain('bg-linear-to-b');
-    expect(cls).toContain('from-navbarGradientStart');
-    expect(cls).toContain('via-navbarGradientEnd');
+    const cls = shellHeaderClasses().split(/\s+/);
+    expect(cls).toContain('before:bg-linear-to-b');
+    expect(cls).toContain('before:from-navbarGradientStart');
+    expect(cls).toContain('before:via-navbarGradientEnd');
+    expect(cls).toContain('before:-z-10');
     expect(cls).toContain('backdrop-blur-[6px]');
+    expect(cls).not.toContain('bg-linear-to-b');
+  });
+
+  // The page scrollbar's reserved gutter beside the bar is bare canvas that
+  // nothing can paint into, so a tint running to the scrollport edge left the
+  // gutter reading as a paler notch beside the bar's rows. The fill fades out
+  // over the page's edge fade — the `.app-background::after` strip's width,
+  // set by the root only beside a classic bar, so the mask is a no-op with
+  // overlay bars. The mask is on the fill alone, never on the bar (that would
+  // fade the pills too).
+  it('fades the fill out over the page edge fade', () => {
+    const cls = shellHeaderClasses().split(/\s+/);
+    expect(cls).toContain('before:mask-r-from-[calc(100%-var(--page-edge-fade,0px))]');
+    expect(cls).toContain('before:mask-r-to-100%');
+    expect(cls.some(c => c.startsWith('mask-'))).toBe(false);
   });
 
   // The comp's ramp stops at 5% alpha, which left a visible line where the bar

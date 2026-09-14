@@ -611,8 +611,15 @@
      canvas, which made every Circular Medium surface read a weight above the comp
      once the real 500 cut shipped. Affects Graphik too — the comps are the target
      for both families. */
+  /* No background on body. The page is painted by the viewport-fixed
+     .app-background layer, which sits BELOW body in paint order (negative
+     z-index): body's old `bg-background` only ever showed because, with no
+     colour on html, it propagated to the canvas underneath everything. Now
+     that html carries the canvas colour (the scrollbar track, see the :root
+     scrollbar rule) the propagation stops, and a colour left here would paint
+     on body's own box — over the sky image. */
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
   }
 
   /*
@@ -662,17 +669,90 @@
    * The per-theme --color-pageScrollbarTrack tokens are flat stand-ins sampled
    * from the image's own edge. `thin` narrows the bar from 15px to 11px.
    *
-   * The bar's absence on non-scrolling routes is compensated by
-   * usePageScrollbarCompensation (a padding, so the sky shows through), NOT
-   * by `scrollbar-gutter: stable`: the reserved gutter lies outside the
-   * scrollport, nothing can paint into it (measured: not the fixed
-   * .app-background layer, not a body background image, not an element hung
-   * past the edge), and Chrome fills it with the canvas colour — a flat strip
-   * against the sky, which design rejected.
+   * `scrollbar-gutter: stable` keeps the bar's column reserved on routes that
+   * do not scroll (Convert at desktop heights), so the centred content sits in
+   * the same place on every route instead of shifting by the bar's width on
+   * navigation. With overlay scrollbars (phones, a Mac on the trackpad
+   * default) nothing is reserved and nothing changes. The reserved gutter
+   * lies outside the scrollport — nothing can paint into it (measured: not
+   * the fixed .app-background layer, not a body background image, not an
+   * element hung past the edge); Chrome fills it with the canvas colour and
+   * nothing else. So the canvas *is* the track colour: with a bar the gutter
+   * shows the `scrollbar-color` track, without one it shows this same flat
+   * colour, and the edge strip `.app-background::after` draws fades the sky
+   * image into that colour on the last few pixels of the scrollport, so the
+   * column reads as the page's own edge rather than a flat stripe beside it.
+   *
+   * A scroll lock (react-remove-scroll, under Radix dialogs and the takeover)
+   * hides the bar with `overflow: hidden` on body and hands the width back as
+   * a body margin. The reserved gutter would survive `hidden`, and it is bare
+   * canvas nothing can paint into — not the scrim, which is a fixed layer and
+   * ends at the scrollport's edge — so it showed beside every dialog as an
+   * untinted stripe. The rule below releases it for the lock's lifetime.
    */
   :root {
     scrollbar-width: thin;
     scrollbar-color: var(--color-pageScrollbarThumb) var(--color-pageScrollbarTrack);
+    scrollbar-gutter: stable;
+    background-color: var(--color-pageScrollbarTrack);
+    /* Width of the fade from the sky image into the track colour along the
+       page's right edge — the `.app-background::after` strip, the header
+       tint's mask (shellLayoutClasses) and the page-transition stand-in for
+       the header all read it. 0 until usePageScrollbarGutter (the root route)
+       finds a classic bar's column beside the page (`data-page-scrollbar`);
+       with overlay bars there is no column to fade into, and the fade would
+       only darken the edge for nothing. */
+    --page-edge-fade: 0px;
+  }
+  html[data-page-scrollbar='classic'] {
+    --page-edge-fade: 64px;
+  }
+
+  /* Under a scroll lock the gutter goes: with the bar hidden and no column
+     reserved, the scrollport spans the whole window and the scrim covers all
+     of it. The page stays put because body keeps the column's width as a
+     margin — `--page-scrollbar-gutter`, measured by usePageScrollbarGutter
+     (root route). react-remove-scroll injects its own `margin-right` for the
+     same purpose, but its measurement is 0 on a route with no bar (the
+     reserved column is not excluded from the root's clientWidth there), so
+     the page shifted right under a modal on Convert; layered `!important`
+     outranks their unlayered one. The dialog backs off by half the same
+     variable to centre on the page (dialog.tsx). Both rules flip in the same
+     style update as the lock attribute, so there is no frame in between. */
+  html:has(body[data-scroll-locked]) {
+    scrollbar-gutter: auto;
+  }
+  html body[data-scroll-locked] {
+    margin-right: var(--page-scrollbar-gutter, 0px) !important;
+  }
+  /* `--page-released-gutter`: the column the lock released — the measured
+     gutter while a lock is held, 0 at rest. Fixed layers span the scrollport,
+     which widens by exactly this under the lock while the page holds still,
+     so anything right-anchored or centred on the viewport (the toasts and
+     their close-all, the cookie banner, the announcement banner, the phone
+     navbar, the dialog card, the app background) would step right by the
+     column when a dialog opens and back when it closes. Each of them adds
+     this token to its own inset instead — in its own utility class, where
+     it needs no cascade help; both values flip in the same style update as
+     the lock attribute. Defined on body because every one of those layers,
+     portalled or not, lives under it.
+
+     Two rules for consumers, enforced by pageScrollbarGutterConsumers.test:
+     (1) a layer that exists ONLY under its own lock (the dialog card, the
+     connect-checks cover) reads the constant `--page-scrollbar-gutter`
+     instead — this token lands a frame after such a layer mounts, and an
+     inset that changes after mount is what made the dialog rise on a
+     diagonal; (2) a layer that reads either token must not transition its
+     insets: Tailwind's `duration-*`/`ease-*` variants set the transition
+     properties too, and with the UA default `transition-property: all` the
+     inset glides for the length of the entrance instead of snapping with
+     the scrollport — `transition-none` unless the transition property is
+     already narrowed (transition-transform, -colors, …). */
+  body {
+    --page-released-gutter: 0px;
+  }
+  body[data-scroll-locked] {
+    --page-released-gutter: var(--page-scrollbar-gutter, 0px);
   }
 
   /* Each face declares its real weight. Without the descriptor every face
@@ -1077,7 +1157,10 @@ svg.recharts-surface [tabindex]:focus,
    viewports and centers when the viewport is taller than the image's aspect. */
 .app-background {
   position: fixed;
-  inset: 0;
+  /* Keeps the page's box under a scroll lock (`--page-released-gutter`, see
+     the :root scrollbar rule) so the sky and its edge strip don't jump when
+     a scrim-less lock (Select, DropdownMenu) widens the scrollport. */
+  inset: 0 var(--page-released-gutter, 0px) 0 0;
   z-index: -10;
   pointer-events: none;
   background-color: var(--color-pageBackground);
@@ -1091,6 +1174,21 @@ svg.recharts-surface [tabindex]:focus,
 [data-theme='light'] .app-background {
   background-size: auto, cover, auto;
   background-position: center;
+}
+/* Edge strip: fades the sky image into the page scrollbar's track colour
+   along the right edge of the scrollport, so the reserved scrollbar column
+   beside it (the track when the page scrolls, bare canvas when it does not —
+   both --color-pageScrollbarTrack; see the :root scrollbar rule) continues
+   the page instead of standing against it as a flat stripe. The layer is
+   clipped to the scrollport, so `right: 0` is exactly the column's edge.
+   `--page-edge-fade` is 0 without a classic bar (see the :root scrollbar
+   rule), so with overlay bars nothing paints. */
+.app-background::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--page-edge-fade);
+  background: linear-gradient(to right, transparent, var(--color-pageScrollbarTrack));
 }
 
 /* App loader cover (APP-419): surfaces that mount outside Layout (the toast
@@ -1503,39 +1601,40 @@ html[data-app-loader-cover] .app-loader-cover-hidden {
        the rest frame at scroll 0 in both themes; scrolled, the only remainder
        is the page content the rest-state blur was mixing in.
 
-       Layer list = the tint (scroll, on the bar) + the app-background token's
-       own layers (fixed): dark is fade + image, light is fade + image + base
-       gradient, so the per-layer attachment/size/position lists are written
-       per theme to match `.app-background` exactly. `.app-background` itself
-       is a fixed element rather than `background-attachment: fixed` because
-       iOS treats `fixed` as `scroll` — here that only degrades this stand-in
-       for the ~400ms of a transition on iOS (the layer is then sized to the
-       bar's own 88px box) and is left as is. */
+       Layer list = the `.app-background::after` edge strip (fixed, so its
+       `calc(100% - fade)` is the viewport's; the bar's tint is masked out
+       over the same width, so without it the bar's last pixels showed bare
+       sky against the gutter for the length of a transition) + the
+       app-background token's own layers (fixed): dark is fade + image, light
+       is fade + image + base gradient, so the per-layer
+       attachment/size/position lists are written per theme to match
+       `.app-background` exactly. The bar's gradient tint is not here: it
+       lives on the bar's `::before` (shellLayoutClasses), which is captured
+       with the bar and keeps painting over this stand-in. `.app-background`
+       itself is a fixed element rather than `background-attachment: fixed`
+       because iOS treats `fixed` as `scroll` — here that only degrades this
+       stand-in for the ~400ms of a transition on iOS (the layer is then
+       sized to the bar's own 88px box) and is left as is. */
       background-color: var(--color-pageBackground);
       background-image:
         linear-gradient(
-          to bottom in oklab,
-          var(--color-navbarGradientStart),
-          var(--color-navbarGradientEnd) 75%,
-          transparent
+          to right,
+          transparent calc(100% - var(--page-edge-fade)),
+          var(--color-pageScrollbarTrack)
         ),
         var(--background-image-app-background);
       background-repeat: no-repeat;
-      background-attachment: scroll, fixed, fixed;
+      background-attachment: fixed, fixed, fixed;
       background-size: auto, auto, cover;
       background-position:
-        0 0,
+        center,
         center,
         center top;
     }
     [data-theme='light']:active-view-transition-type(page) .vt-shell-header {
-      background-attachment: scroll, fixed, fixed, fixed;
+      background-attachment: fixed, fixed, fixed, fixed;
       background-size: auto, auto, cover, auto;
-      background-position:
-        0 0,
-        center,
-        center,
-        center;
+      background-position: center;
     }
   }
 }
