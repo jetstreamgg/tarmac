@@ -39,12 +39,9 @@ export type {
 
 // Morpho Vaults
 export {
-  useMorphoVaultOnChainData,
   useMorphoVaultMarketApiData,
-  useMorphoVaultRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
-  useAllMorphoVaultsUserAssets,
   useMerklRewards
 } from './morpho';
 export type {
@@ -55,16 +52,13 @@ export type {
   MorphoVaultChartDataPoint
 } from './morpho';
 
-// Provider-neutral vault core (Morpho + Spark)
+// Provider-neutral vault core
 export {
   useBatchVaultDeposit,
   useVaultRedeem,
   useVaultWithdraw,
   useErc4626VaultData,
   useVaultMarketData,
-  useSparkVaultRate,
-  useSparkVaultResolvedRate,
-  useSusdtVaultHistory,
   VAULTS,
   getVaultByAddress,
   type VaultProvider,

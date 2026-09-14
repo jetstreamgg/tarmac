@@ -9,8 +9,6 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { vaultRateInfo } from '@/components/product/RateInfo';
-import type { VaultProvider } from '@/hooks';
 import { estEarningsTrendCell, productCell, rateCell } from '@/components/product/ModalGridCells';
 import {
   buildEarnEntryRows,
@@ -24,16 +22,14 @@ export type VaultModalGridRow = ModalGridCell[];
 
 /** The rate inputs both vault grids share. */
 type VaultRateInput = {
-  /** Vault provider - picks the rate explainer (Morpho vs Spark/Tether copy). */
-  provider?: VaultProvider;
   /** Net rate, formatted (e.g. "4.10%"). */
   rate: string;
   /** Append the morpho stars glyph to the rate (rewards-boosted, per the rate popover). */
   boostedRate: boolean;
 };
 
-const vaultRateCell = ({ provider, rate, boostedRate }: VaultRateInput) =>
-  rateCell('Rate', rate, boostedRate ? 'morpho' : undefined, vaultRateInfo(provider));
+const vaultRateCell = ({ rate, boostedRate }: VaultRateInput) =>
+  rateCell('Rate', rate, boostedRate ? 'morpho' : undefined, 'morpho');
 
 /** Display strings for the vault supply/withdraw entry screens (Figma 859:38105 / 859:38297). */
 export type VaultEntryRowInput = EarnEntryRowInput &

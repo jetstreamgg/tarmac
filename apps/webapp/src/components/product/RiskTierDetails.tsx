@@ -57,8 +57,6 @@ const RISK_TIER_DETAILS: Record<
  *   farm has no sheet row);
  * - 'rewards' is the generic fallback for reward tokens with no profile yet
  *   (deliberately reward-agnostic — points farms don't pay a second token);
- * - 'vault-tether-savings' (flag-gated sUSDT, absent from the sheet) is
- *   PLACEHOLDER copy pending a product assessment;
  * - 'stake' is the sheet's Stake SKY row (added 2026-08-26 for the Portfolio's
  *   Earn-with-Sky card, APP-531).
  */
@@ -135,17 +133,6 @@ const RISK_PROFILE_DETAILS: Record<
   },
   'vault-usdt-savings': {
     description: <Trans>Vault deployed on Morpho with a single exposure to sUSDS collateralized debt.</Trans>,
-    exposureTokens: ['sUSDS'],
-    liquidationRisk: <Trans>None</Trans>
-  },
-  'vault-tether-savings': {
-    // PLACEHOLDER — this vault has no row in the APP-396 risk sheet.
-    description: (
-      <Trans>
-        Supply USDT to access savings powered by Sky Protocol, with instant liquidity. The rate tracks the Sky
-        Savings Rate and is variable.
-      </Trans>
-    ),
     exposureTokens: ['sUSDS'],
     liquidationRisk: <Trans>None</Trans>
   },

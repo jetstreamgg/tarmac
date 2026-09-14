@@ -36,7 +36,7 @@ export function VaultDetailChart({
     useHourlyInterval,
     hourlyWindow
   });
-  const { data: marketData } = useVaultMarketData({ provider: 'morpho', vaultAddress });
+  const { data: marketData } = useVaultMarketData({ vaultAddress });
 
   const decimals = getTokenDecimals(assetToken, chainId);
   const parsed = useParseVaultChartData(timeFrame, chartInfo || [], decimals, useHourlyInterval);

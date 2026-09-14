@@ -2,13 +2,7 @@ import type { ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import {
-  useTokenBalance,
-  getTokenDecimals,
-  type MorphoVaultRateData,
-  type Token,
-  type VaultProvider
-} from '@/hooks';
+import { useTokenBalance, getTokenDecimals, type MorphoVaultRateData, type Token } from '@/hooks';
 import { formatDecimalPercentage } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
@@ -16,7 +10,7 @@ import { ProductSupplyCard } from '@/components/product/ProductCard';
 import { InlineTokenLabel } from '@/components/product/InlineTokenLabel';
 import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { RateInfo, vaultRateInfo } from '@/components/product/RateInfo';
+import { RateInfo } from '@/components/product/RateInfo';
 import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
 import { Morpho } from '@/modules/icons';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
@@ -61,15 +55,12 @@ function VaultDescription({ vaultName }: { vaultName: string }) {
 export function VaultSupplyCard({
   assetToken,
   vaultName,
-  provider,
   netRate,
   rateData,
   onSupply
 }: {
   assetToken: Token;
   vaultName: string;
-  /** Gates the Morpho branding — the sUSDT vault runs on Spark infra. */
-  provider: VaultProvider;
   /** Net APY as a decimal fraction (e.g. 0.0445). */
   netRate?: number;
   /** Full rate breakdown; drives the stars mark and its tooltip. */
@@ -97,13 +88,9 @@ export function VaultSupplyCard({
     <ProductSupplyCard
       data-testid="vault-supply-card"
       badges={
-        // Only Morpho-provided vaults claim the badge; the sUSDT vault runs on
-        // Spark infra and would be mislabelled by it.
-        provider === 'morpho' ? (
-          <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
-            <Trans>Powered by Morpho</Trans>
-          </HeaderBadge>
-        ) : undefined
+        <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
+          <Trans>Powered by Morpho</Trans>
+        </HeaderBadge>
       }
       title={
         <Trans>
@@ -124,13 +111,9 @@ export function VaultSupplyCard({
                   — and never shows a mark the tooltip can't explain. */}
               <VaultRateTooltip rate={rateData}>
                 {rate}
-                {hasRateBreakdown(rateData) && (
-                  <VaultRateMark
-                    className={provider === 'morpho' ? 'text-statusInfoSolid' : 'text-fgSecondary'}
-                  />
-                )}
+                {hasRateBreakdown(rateData) && <VaultRateMark className="text-statusInfoSolid" />}
               </VaultRateTooltip>
-              <RateInfo type={vaultRateInfo(provider)} />
+              <RateInfo type="morpho" />
             </>
           }
           idle={idleBalance}

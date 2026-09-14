@@ -7,8 +7,7 @@ import {
   getTokenDecimals,
   useErc4626VaultData,
   useTokenBalance,
-  useVaultMarketData,
-  type VaultProvider
+  useVaultMarketData
 } from '@/hooks';
 import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
@@ -37,7 +36,7 @@ export interface VaultTransactionForm {
   position: bigint;
   /** Withdraw-relevant: vault liquidity currently caps the input below the position. */
   isLiquidityConstrained: boolean;
-  /** Withdraw-relevant: the provider's liquidity source settled without a figure. */
+  /** Withdraw-relevant: the market liquidity read settled without a figure. */
   isLiquidityDataUnavailable: boolean;
   engineParams: VaultEngineParams;
   toast: VaultToastTitles;
@@ -60,13 +59,11 @@ export function useVaultTransactionForm({
   flow,
   vaultAddress,
   assetToken,
-  provider = 'morpho',
   preset
 }: {
   flow: VaultLaunchFlow;
   vaultAddress: `0x${string}`;
   assetToken: Token;
-  provider?: VaultProvider;
   preset?: VaultModalPreset;
 }): VaultTransactionForm {
   const chainId = useChainId();
@@ -79,15 +76,11 @@ export function useVaultTransactionForm({
     chainId,
     token: assetToken.address[chainId]
   });
-  const { data: vaultData } = useErc4626VaultData({ vaultAddress, provider });
+  const { data: vaultData } = useErc4626VaultData({ vaultAddress });
   // Morpho publishes the vault's withdrawable liquidity through its market API;
   // its on-chain `maxWithdraw`/`maxRedeem` are stubs that read 0 for everyone
-  // (APP-456 #7). `computeVaultLimits` owns that provider split, shared with the
-  // widget's supply/withdraw pane so both surfaces agree per vault.
-  const { data: marketData, isLoading: isMarketDataLoading } = useVaultMarketData({
-    provider,
-    vaultAddress
-  });
+  // (APP-456 #7). `computeVaultLimits` owns that rule.
+  const { data: marketData, isLoading: isMarketDataLoading } = useVaultMarketData({ vaultAddress });
 
   const {
     maxDepositInput,
@@ -97,13 +90,9 @@ export function useVaultTransactionForm({
     isFullPositionWithdrawable,
     isLiquidityDataUnavailable
   } = computeVaultLimits({
-    provider,
     assetBalance: walletBalance?.value,
-    maxDeposit: vaultData?.maxDeposit,
     userAssets: vaultData?.userAssets,
     userShares: vaultData?.userShares,
-    maxWithdraw: vaultData?.maxWithdraw,
-    maxRedeem: vaultData?.maxRedeem,
     availableLiquidity: marketData?.liquidity,
     liquidityKnown: !isMarketDataLoading
   });
@@ -144,7 +133,6 @@ export function useVaultTransactionForm({
     flow,
     vaultAddress,
     assetToken,
-    provider,
     amount,
     max,
     shares: redeemShares

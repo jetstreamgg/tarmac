@@ -56,8 +56,7 @@ vi.mock('@/hooks', () => ({
       name: 'USDC Risk Capital',
       vaultAddress: { 1: '0xABC' },
       assetToken: { symbol: 'USDC' }
-    },
-    { provider: 'sky', name: 'Tether Savings', vaultAddress: { 1: '0xDEF' }, assetToken: { symbol: 'USDT' } }
+    }
   ],
   getPendleMarketByAddress: (address: string) =>
     address.toLowerCase() === h.pendleMarket.marketAddress.toLowerCase() ? h.pendleMarket : undefined,
@@ -239,9 +238,9 @@ describe('usePortfolioSupplyActions', () => {
     });
   });
 
-  it('returns undefined for a Spark (non-Morpho) vault position (no in-place modal)', () => {
+  it('returns undefined for a vault position outside the Morpho registry (no in-place modal)', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
-    expect(result.current(position('vault', { id: 'vault-sky-0xdef' }))).toBeUndefined();
+    expect(result.current(position('vault', { id: 'vault-other-0xdef' }))).toBeUndefined();
   });
 
   it('resolves a rewards position to an opener that launches the rewards modal with its config', () => {

@@ -1,14 +1,9 @@
-import { calculateApyFromStr } from '@/utils/math/calculateApy';
-
 /**
  * One vault's raw rate input, tagged by provider. The pure router below knows how
  * to turn each provider's native form into a net-rate decimal:
  * - Morpho: `netRate` is already a decimal (e.g. 0.05 = 5%) from the Morpho API.
- * - Spark: `vsr` is the on-chain Vault Savings Rate in RAY; APY is derived on-chain.
  */
-export type VaultRateSource =
-  | { provider: 'morpho'; address: `0x${string}`; netRate: number | undefined }
-  | { provider: 'sky'; address: `0x${string}`; vsr: bigint | undefined };
+export type VaultRateSource = { provider: 'morpho'; address: `0x${string}`; netRate: number | undefined };
 
 /**
  * Pure provider-routing core: registry-of-rate-inputs in → rate-by-address out.
@@ -23,14 +18,8 @@ export function buildVaultRatesByAddress(sources: VaultRateSource[]): Map<string
   const map = new Map<string, number>();
   for (const source of sources) {
     const key = source.address.toLowerCase();
-    if (source.provider === 'sky') {
-      if (source.vsr === undefined) continue;
-      // calculateApyFromStr returns a percentage (e.g. 5.2); the map holds decimals.
-      map.set(key, calculateApyFromStr(source.vsr) / 100);
-    } else {
-      if (source.netRate === undefined) continue;
-      map.set(key, source.netRate);
-    }
+    if (source.netRate === undefined) continue;
+    map.set(key, source.netRate);
   }
   return map;
 }

@@ -1,14 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import {
-  type Token,
-  useBatchVaultDeposit,
-  useVaultRedeem,
-  useVaultWithdraw,
-  type VaultProvider
-} from '@/hooks';
-import { REFERRAL_CODE } from '@/lib/constants';
+import { type Token, useBatchVaultDeposit, useVaultRedeem, useVaultWithdraw } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 import { useApproveSteps } from '@/modules/ui/hooks/useApproveSteps';
@@ -20,7 +13,6 @@ export interface VaultEngineParams {
   flow: VaultLaunchFlow;
   vaultAddress: `0x${string}`;
   assetToken: Token;
-  provider?: VaultProvider;
   amount: bigint;
   /** Withdraw Max → redeem the whole share balance (no dust). */
   max?: boolean;
@@ -46,7 +38,6 @@ export function useVaultLaunch({
   flow,
   vaultAddress,
   assetToken,
-  provider = 'morpho',
   amount,
   max = false,
   shares = 0n
@@ -78,8 +69,6 @@ export function useVaultLaunch({
     amount,
     vaultAddress,
     assetAddress: assetAddress!,
-    provider,
-    referral: REFERRAL_CODE,
     enabled: isSupply,
     shouldUseBatch,
     ...txCallbacks

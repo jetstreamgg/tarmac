@@ -1,9 +1,6 @@
 export { type VaultProvider, type VaultConfig } from './types';
 export { VAULTS, getVaultByAddress } from './constants';
 export { useErc4626VaultData } from './useErc4626VaultData';
-export { useSparkVaultRate } from './spark/useSparkVaultRate';
-export { useSparkVaultResolvedRate } from './spark/useSparkVaultResolvedRate';
-export { useSusdtVaultHistory } from './spark/useSusdtVaultHistory';
 export { computeVaultLimits } from './computeVaultLimits';
 export { useBatchVaultDeposit } from './useBatchVaultDeposit';
 export { useVaultRedeem } from './useVaultRedeem';
