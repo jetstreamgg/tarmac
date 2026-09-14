@@ -111,7 +111,7 @@ export function StakeBorrowSliderRow({
       >
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="bg-bgTertiary has-focus-visible:ring-focusRing relative h-3 w-full grow overflow-hidden rounded-[4px] has-focus-visible:ring-1"
+          className="bg-sliderTrack has-focus-visible:ring-focusRing relative h-3 w-full grow overflow-hidden rounded-[4px] has-focus-visible:ring-1"
         >
           {isBorrow && marker !== undefined && !disabled && (
             // Already-borrowed share: raw #090420 at 35% in the comp, no variable.

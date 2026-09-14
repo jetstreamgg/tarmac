@@ -157,6 +157,7 @@
   --color-sliderRing: rgba(255, 255, 255, 0.2);
   --color-sliderLine: #2a2a40;
   --color-sliderMarker: #fe8b5b;
+  --color-sliderTrack: rgba(188, 182, 239, 0.1); /* components/slider/bg-primary */
   --color-sliderAmber: #ffc23b;
   /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
      G2 filled the light value from the same variable; it still equals
@@ -1067,6 +1068,7 @@
     --color-sliderDot: #e8ebfe; /* fg-dot */
     --color-sliderRing: #09042033; /* fg-pointer */
     --color-sliderLine: #c9cdf4; /* fg-line */
+    --color-sliderTrack: #9ca0e566; /* bg-primary */
 
     /* Lighter purple for the legacy widget-look surfaces; dark keeps the deep
        indigo from :root. No DS citation because these have no DS counterpart and
