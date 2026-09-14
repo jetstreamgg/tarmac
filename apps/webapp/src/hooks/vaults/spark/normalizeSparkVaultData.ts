@@ -13,7 +13,7 @@ import type {
 } from './sparkSavingsApi';
 
 /** Asset decimals fallback when the payload omits the `asset` descriptor. */
-const DEFAULT_ASSET_DECIMALS = 18;
+export const DEFAULT_ASSET_DECIMALS = 18;
 
 function formatRate(apy: number): string {
   return `${(apy * 100).toFixed(2)}%`;

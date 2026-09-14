@@ -32,7 +32,7 @@ import { withdrawalWording } from './withdrawalAvailability';
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
 // decision — the comp treats it as editorial content, not product data.
-const RISK_LEARN_MORE_URL = 'https://docs.sky.money/user-risks';
+import { USER_RISKS_URL } from '@/lib/constants';
 
 /**
  * The severity presentation per tier (1036:201215): display name + scale.
@@ -304,7 +304,7 @@ export function RiskTierDetailsCard({
       <RiskTierDetailsBody tier={tier} profile={profile} />
       <div className="border-borderPrimary w-full border-b" />
       <a
-        href={RISK_LEARN_MORE_URL}
+        href={USER_RISKS_URL}
         target="_blank"
         rel="noopener noreferrer"
         className="font-circle text-fgPrimary flex w-full items-center justify-between text-xs leading-3.5 font-medium tracking-[-0.24px]"
@@ -392,7 +392,7 @@ export function RiskTierDetailsTrigger({
             </div>
             <RiskTierDetailsBody tier={tier} profile={profile} />
             <Button variant="secondary" size="m" className="mt-1 w-full" asChild>
-              <a href={RISK_LEARN_MORE_URL} target="_blank" rel="noopener noreferrer">
+              <a href={USER_RISKS_URL} target="_blank" rel="noopener noreferrer">
                 <Trans>Learn more about risk</Trans>
                 <MoveUpRight size={12} aria-hidden />
               </a>

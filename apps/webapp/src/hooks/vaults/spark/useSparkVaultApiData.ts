@@ -4,10 +4,13 @@ import { TRUST_LEVELS, TrustLevelEnum } from '../../constants';
 import type { NormalizedVaultMarketData, VaultMarketDataHook } from '../useVaultMarketData';
 import { SPARK_VAULT_IDENTITY } from './constants';
 import { buildSparkSavingsUrl, fetchSparkSavingsCurrent, fetchSparkSavingsHistoric } from './sparkSavingsApi';
-import { normalizeSparkCurrentData, normalizeSparkHistoricData } from './normalizeSparkVaultData';
+import {
+  DEFAULT_ASSET_DECIMALS,
+  normalizeSparkCurrentData,
+  normalizeSparkHistoricData
+} from './normalizeSparkVaultData';
 
 /** Asset decimals fallback when the current payload omits the `asset` descriptor. */
-const DEFAULT_ASSET_DECIMALS = 18;
 
 async function fetchSparkVaultData(vaultAddress: string): Promise<NormalizedVaultMarketData | undefined> {
   // Current + historic in parallel. The historic series feeds the metrics chart;

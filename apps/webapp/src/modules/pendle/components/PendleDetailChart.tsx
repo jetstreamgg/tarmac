@@ -5,7 +5,7 @@ import { Chart, TimeFrame, type Data } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 
-const SECONDS_PER_DAY = 86_400;
+import { SECONDS_PER_DAY } from '@/utils';
 
 /**
  * The product-detail Rate chart for a Pendle market — injected into

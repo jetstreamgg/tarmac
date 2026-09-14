@@ -3,7 +3,7 @@ import { mainnet } from 'viem/chains';
 import { usePrices, useReadSavingsUsds, sUsdsAddress } from '@/hooks';
 import { pendleUsdValue } from '../lib/pendleUsdValue';
 
-const WAD = 10n ** 18n;
+import { WAD } from '@/utils';
 
 /**
  * Returns a `valueUsd(symbol, amount)` function that converts a token amount

@@ -8,7 +8,7 @@ import {
   VAULT_V2_HISTORICAL_HOURLY_QUERY
 } from './constants';
 
-const HOUR_IN_SECONDS = 3600;
+import { SECONDS_PER_HOUR } from '@/utils';
 const WEEK_IN_SECONDS = 604800;
 const MONTH_IN_SECONDS = 2592000;
 
@@ -85,7 +85,7 @@ async function fetchMorphoVaultChartInfo(
   // Fetch one extra hour of data to ensure the first point isn't excluded
   // by the parser's independently calculated startTimestamp
   const hourlyStartTimestamp =
-    endTimestamp - (hourlyWindow === 'w' ? WEEK_IN_SECONDS : MONTH_IN_SECONDS) - HOUR_IN_SECONDS;
+    endTimestamp - (hourlyWindow === 'w' ? WEEK_IN_SECONDS : MONTH_IN_SECONDS) - SECONDS_PER_HOUR;
 
   const variables = useHourlyInterval
     ? {

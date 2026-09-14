@@ -25,7 +25,7 @@ export enum InitialScreen {
   TRANSACTION = 'transaction'
 }
 
-export const TENDERLY_CHAIN_ID = 314310;
+export { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 
 // Stablecoin values follow the DS chart variables (Components/Charts/bg-* and
 // Components/Charts-Hover/bg-*-hover; Figma 5051:133511 pie chart, 5270:15609

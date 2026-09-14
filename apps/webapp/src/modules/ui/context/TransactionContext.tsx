@@ -196,7 +196,7 @@ type TransactionModalView = {
  * animation can play. Matches the dismissal in `components/ui/dialog.tsx`
  * (and the bottom sheet's, which is the same 300ms).
  */
-const MODAL_EXIT_MS = 300;
+import { MODAL_EXIT_MS } from '@/modules/ui/animation/constants';
 
 export function TransactionProvider({
   children,

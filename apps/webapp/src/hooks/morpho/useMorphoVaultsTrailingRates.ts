@@ -4,7 +4,7 @@ import { ReadHook } from '../hooks';
 import { trailingAverageRate, type DailyRatePoint } from '../shared/trailingRate';
 import { MORPHO_API_CHAIN_ID, MORPHO_API_URL, buildVaultV2ApyWindowQuery } from './constants';
 
-const DAY_IN_SECONDS = 86400;
+import { SECONDS_PER_DAY } from '@/utils';
 
 type ApyWindowResponse = {
   data?: Record<
@@ -26,7 +26,7 @@ async function fetchMorphoVaultsTrailingRates(
 ): Promise<MorphoTrailingRates> {
   const endTimestamp = Math.floor(Date.now() / 1000);
   // One extra day of slack so a partial current-day bucket can't shorten the window.
-  const startTimestamp = endTimestamp - (days + 1) * DAY_IN_SECONDS;
+  const startTimestamp = endTimestamp - (days + 1) * SECONDS_PER_DAY;
 
   const variables: Record<string, unknown> = { chainId, startTimestamp, endTimestamp };
   vaultAddresses.forEach((address, index) => {

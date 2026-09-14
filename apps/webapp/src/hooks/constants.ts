@@ -1,6 +1,6 @@
 import { TrustLevel } from './hooks';
 
-export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+export { ZERO_ADDRESS } from '../utils/constants';
 
 export const TRUST_LEVELS: Record<TrustLevelEnum, TrustLevel> = {
   0: {
@@ -40,7 +40,7 @@ export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/
 
 export const BASE_CHAIN_ID = 8453;
 
-export const TENDERLY_CHAIN_ID = 314310;
+export { TENDERLY_CHAIN_ID } from '../data/wagmi/config/testTenderlyChain';
 
 export enum ModuleEnum {
   SAVINGS = 'SAVINGS',

@@ -1,8 +1,7 @@
 import { useChainId } from 'wagmi';
 import { sUsdsAddress, useOverallSkyData, useReadSavingsUsds, useReadSsrAuthOracleGetSsr } from '@/hooks';
-import { isL2ChainId } from '@/utils';
+import { isL2ChainId, RAY } from '@/utils';
 
-const RAY = 10n ** 27n;
 const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 
 /**

@@ -1,9 +1,11 @@
 import { formatUnits, parseUnits } from 'viem';
 import {
   RAD_PRECISION,
+  RAY,
   RAY_PRECISION,
   SECONDS_PER_YEAR,
   USDC_PRECISION,
+  WAD,
   WAD_PRECISION
 } from './math.constants';
 
@@ -35,9 +37,6 @@ const floatToScaledBigInt = (n: number, decimals: number): bigint => {
   }
   return parseUnits(s as `${number}`, decimals);
 };
-
-const WAD = 10n ** BigInt(WAD_PRECISION);
-const RAY = 10n ** BigInt(RAY_PRECISION);
 
 // Vaults math
 export const annualStabilityFee = (duty: bigint): bigint => {
