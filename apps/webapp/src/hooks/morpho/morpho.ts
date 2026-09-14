@@ -110,8 +110,10 @@ export type MorphoMarketAllocation = {
   lltv: bigint;
   /** Formatted LLTV as a percentage (e.g., "86%") */
   formattedLltv: string;
-  /** Formatted absolute cap (e.g., "50M") */
+  /** Formatted absolute cap (e.g., "50M"), or "Unlimited" when uncapped */
   formattedAbsoluteCap: string;
+  /** True when the absolute cap is the API's "no cap" sentinel (> 1e30) */
+  isAbsoluteCapUnlimited: boolean;
   /** Absolute cap utilization (0-1), allocation / absoluteCap */
   absoluteCapUtilization: number;
   /** Formatted relative cap (e.g., "100%") */

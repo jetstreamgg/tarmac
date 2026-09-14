@@ -1,4 +1,4 @@
-import { MorphoVaultWidget, WidgetStateChangeParams, VaultFlow } from '@/widgets';
+import { VaultWidget, WidgetStateChangeParams, VaultFlow } from '@/widgets';
 import { Token, type VaultProvider } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useNavigate } from '@tanstack/react-router';
@@ -60,7 +60,7 @@ export function MorphoVaultWidgetPane({
   }
 
   return (
-    <MorphoVaultWidget
+    <VaultWidget
       vaultAddress={currentVaultAddress}
       assetAddress={currentAssetAddress}
       assetToken={assetToken}

@@ -7,6 +7,12 @@ import type { TransactionConfig, TxCallbacks } from './transactionContract';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionMinimize.test).
+// The provider needs a live wagmi tree; these suites exercise the transaction
+// state machine, so the shared chain switch is stubbed inert.
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+}));
+
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
@@ -105,7 +111,6 @@ const CONFIG: TransactionConfig = {
   usdValue: 0,
   supportedChainIds: [1],
   steps: ['Supply'],
-  subtitles: { success: "You've successfully supplied to Sky Savings." },
   toast: { success: '10,000.00 USDS supplied!' },
   onConfirm: () => {}
 };
@@ -134,7 +139,7 @@ describe('TransactionModal success handoff', () => {
     expect(link?.getAttribute('href')).toContain(HASH);
   });
 
-  it('falls back to the success subtitle when the flow sets no toast copy', () => {
+  it('falls back to the title when the flow sets no toast copy — there is no subtitle to fall back on', () => {
     const cb = renderFlow({ ...CONFIG, toast: undefined });
 
     act(() => cb.onMutate());
@@ -142,7 +147,7 @@ describe('TransactionModal success handoff', () => {
     act(() => cb.onSuccess(HASH));
 
     const { getByText } = renderLastToast();
-    expect(getByText("You've successfully supplied to Sky Savings.")).toBeDefined();
+    expect(getByText('Supply')).toBeDefined();
   });
 
   it('drops the hash line when a batched transaction settles without one', () => {

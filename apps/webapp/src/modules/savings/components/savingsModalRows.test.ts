@@ -35,6 +35,43 @@ const flat = (rows: SavingsModalGridRow[]) => rows.flat();
 const byLabel = (rows: SavingsModalGridRow[]): Record<string, SavingsModalCell> =>
   Object.fromEntries(flat(rows).map(cell => [cell.label, cell]));
 
+// The Network cell becomes a switch dropdown on a multi-chain flow's ENTRY
+// screen and stays a plain value on the review, whose numbers were all built
+// for one chain — switching underneath them would leave the grid describing a
+// transaction that is no longer the one on offer.
+describe('the Network cell: a control on entry, a value on review', () => {
+  const CHAINS = [1, 8453];
+
+  it('carries the switchable chains on both entry grids', () => {
+    for (const rows of [
+      buildSupplyModalRows({ ...INPUT, networkChainIds: CHAINS }),
+      buildWithdrawModalRows({ ...WITHDRAW_INPUT, networkChainIds: CHAINS })
+    ]) {
+      expect(byLabel(rows)['Network'].networkChainIds).toEqual(CHAINS);
+    }
+  });
+
+  it('leaves them off when the flow names none (every mainnet-only product)', () => {
+    expect(byLabel(buildSupplyModalRows(INPUT))['Network'].networkChainIds).toBeUndefined();
+  });
+
+  it('never carries them on a review grid — the builders take no such input', () => {
+    const review = {
+      youReceive: '908.93 sUSDS',
+      estEarnings: '59.09',
+      product: 'Sky Savings',
+      rate: '3.60%',
+      withdrawal: 'Anytime',
+      network: 'Ethereum',
+      networkFee: '–'
+    } as const;
+    expect(byLabel(buildSupplyReviewRows(review))['Network'].networkChainIds).toBeUndefined();
+    expect(
+      byLabel(buildWithdrawReviewRows({ ...review, receiveToken: 'USDS' }))['Network'].networkChainIds
+    ).toBeUndefined();
+  });
+});
+
 describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry grid', () => {
   it('produces exactly the Figma grid pairing, in order', () => {
     const rows = buildSupplyModalRows(INPUT);

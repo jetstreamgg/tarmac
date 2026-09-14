@@ -49,7 +49,17 @@ export function IconStack({
   const prefersReducedMotion = useReducedMotion();
   const badges = Children.toArray(children);
   const pop = !!animateIn && !prefersReducedMotion;
-  const badgeClass = 'ring-pageBackground relative inline-flex shrink-0 rounded-full ring-[1.5px]';
+  // The page-colored ring exists to cut each badge out of the one it overlaps,
+  // so it only makes sense when there IS a neighbour. A lone badge (one-token
+  // table cells, single-series chart tooltips) used to carry it too, and in
+  // dark mode that read as a black outline around the logo — the review's
+  // "black border on individual token logos" (Figma 2800:92423: a bare
+  // crypto-logo, no ring). Single badges render bare.
+  const ringed = badges.length > 1;
+  const badgeClass = cn(
+    'relative inline-flex shrink-0 rounded-full',
+    ringed && 'ring-pageBackground ring-[1.5px]'
+  );
   const hasFocus = activeIndex !== null && activeIndex !== undefined;
   return (
     <span className={cn('flex items-center', className)} {...props}>

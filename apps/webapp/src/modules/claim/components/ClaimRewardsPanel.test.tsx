@@ -17,6 +17,8 @@ const h = vi.hoisted(() => ({
   screenContents: [] as unknown[],
   analytics: undefined as unknown,
   toast: undefined as { success: string } | undefined,
+  steps: undefined as unknown[] | undefined,
+  merklSingleCall: false,
   restakeSeen: false
 }));
 
@@ -26,10 +28,15 @@ vi.mock('../adapters/merklAdapter', () => ({
   merklAdapter: {
     source: 'merkl',
     useClaimable: () => ({ rewards: h.merkl, isLoading: false }),
-    useClaimCalls: (selected: ClaimableReward[]) => ({
-      calls: selected.filter(r => r.source === 'merkl').map(r => ({ to: r.id })),
-      prepared: true
-    })
+    useClaimCalls: (selected: ClaimableReward[]) => {
+      const mine = selected.filter(r => r.source === 'merkl');
+      // The real adapter claims every Merkl token in ONE distributor call;
+      // the per-reward stand-in below keeps the merged-calls tests readable.
+      return {
+        calls: h.merklSingleCall ? (mine.length ? [{ to: 'merkl' }] : []) : mine.map(r => ({ to: r.id })),
+        prepared: true
+      };
+    }
   }
 }));
 vi.mock('../adapters/skyRewardsAdapter', () => ({
@@ -113,11 +120,13 @@ vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
     transactionScreenContent?: unknown;
     analytics?: unknown;
     toast?: { success: string };
+    steps?: unknown[];
   }) => {
     h.entry = { confirmDisabled: params.confirmDisabled };
     h.screenContents.push(params.transactionScreenContent);
     h.analytics = params.analytics;
     h.toast = params.toast;
+    h.steps = params.steps;
     return (body: unknown) => body;
   }
 }));
@@ -152,6 +161,7 @@ const renderPanel = (scope: ClaimScope = { kind: 'all' }) =>
 
 describe('ClaimRewardsPanel', () => {
   beforeEach(() => {
+    h.merklSingleCall = false;
     h.merkl = [];
     h.sky = [];
     h.stake = [];
@@ -180,6 +190,31 @@ describe('ClaimRewardsPanel', () => {
     expect(h.flowCalls).toHaveLength(3);
     expect(h.entry?.confirmDisabled).toBe(false);
     expect(screen.getAllByTestId('claim-reward-row')).toHaveLength(3);
+  });
+
+  it('pushes one Actions row per call, naming the reward a single-reward call claims', () => {
+    h.merkl = [reward('merkl', '0xa', 'MORPHO')];
+    h.sky = [reward('sky-rewards', '0xb', 'SKY'), reward('sky-rewards', '0xd', 'SPK')];
+    h.stake = [reward('stake', '0:0xc', 'USDS')];
+    renderPanel();
+
+    // One row per forwarded call, in call order (the step model counts writes).
+    expect(h.steps).toHaveLength(h.flowCalls.length);
+    expect(h.steps).toEqual([
+      { label: 'Claim', tokenSymbol: 'MORPHO', failureDetail: "The MORPHO hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been claimed." }
+    ]);
+  });
+
+  it('keeps a multi-token Merkl claim generic — one call, no single symbol to name', () => {
+    h.merklSingleCall = true;
+    h.merkl = [reward('merkl', '0xa', 'MORPHO'), reward('merkl', '0xe', 'USDS')];
+    renderPanel();
+
+    expect(h.flowCalls).toHaveLength(1);
+    expect(h.steps).toEqual([{ label: 'Claim rewards', failureDetail: "The rewards haven't been claimed." }]);
   });
 
   it('renders one hero row per reward — amount, USD in parens, token badge (Figma 1036:190108)', () => {

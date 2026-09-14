@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { RollingDigits } from './rolling-digits';
+import { RollingDigits, splitRollingTail } from './rolling-digits';
 
 afterEach(cleanup);
 
@@ -41,13 +41,61 @@ describe('RollingDigits', () => {
   it('keeps a digit in its own window across a carry that widens the figure', () => {
     const { rerender } = render(<RollingDigits value="999" />);
     rerender(<RollingDigits value="1,000" />);
-    // The three 9s roll to 0s in place; the new leading "1," arrives fresh.
-    expect(screen.getAllByTestId('rolling-digit-out')).toHaveLength(3);
+    // The three 9s roll to 0s in place; the new leading 1 rolls up into a
+    // fresh window with nothing to roll out ahead of it.
+    expect(screen.getAllByTestId('rolling-digit-out').map(el => el.textContent)).toEqual(['9', '9', '9']);
+    expect(screen.getAllByTestId('rolling-digit-in').map(el => el.textContent)).toEqual(['1', '0', '0', '0']);
+  });
+
+  it('never rolls a symbol into a digit when the figure widens', () => {
+    const { rerender } = render(<RollingDigits value="$9.86" />);
+    rerender(<RollingDigits value="$10.85" />);
+    // The $ keeps its place; only the digits whose value changed turn over,
+    // plus the tens digit that carried in.
+    expect(screen.getAllByTestId('rolling-digit-out').map(el => el.textContent)).toEqual(['9', '6']);
+    expect(screen.getAllByTestId('rolling-digit-in').map(el => el.textContent)).toEqual(['1', '0', '5']);
+  });
+
+  it('keeps fraction digits in place when the integer part widens', () => {
+    const { rerender } = render(<RollingDigits value="$990,000.00" />);
+    rerender(<RollingDigits value="$1,000,000.00" />);
+    expect(screen.getAllByTestId('rolling-digit-out').map(el => el.textContent)).toEqual(['9', '9']);
+    expect(screen.getAllByTestId('rolling-digit-in').map(el => el.textContent)).toEqual(['1', '0', '0']);
+  });
+
+  it('shows the initial figure without rolling it in', () => {
+    render(<RollingDigits value="$100,000.00" />);
+    expect(screen.queryAllByTestId('rolling-digit-in')).toHaveLength(0);
   });
 
   it('leaves separators out of the clip windows', () => {
     render(<RollingDigits value="1,000" />);
     // Four digit windows; the comma is a bare span.
     expect(screen.getAllByTestId('rolling-digit')).toHaveLength(4);
+  });
+});
+
+describe('splitRollingTail', () => {
+  it('peels the last two digits off a grouped figure', () => {
+    expect(splitRollingTail('1,234,567')).toEqual({ head: '1,234,5', tail: '67' });
+  });
+
+  it('hands a short figure over whole', () => {
+    expect(splitRollingTail('99')).toEqual({ head: '', tail: '99' });
+    expect(splitRollingTail('5')).toEqual({ head: '', tail: '5' });
+  });
+
+  it('keeps the hundreds digit in the head at exactly 100', () => {
+    expect(splitRollingTail('100')).toEqual({ head: '1', tail: '00' });
+  });
+
+  it('moves the separator into the head when a carry widens the figure', () => {
+    expect(splitRollingTail('999')).toEqual({ head: '9', tail: '99' });
+    expect(splitRollingTail('1,000')).toEqual({ head: '1,0', tail: '00' });
+  });
+
+  it('carries a separator that falls inside the tail along with it', () => {
+    expect(splitRollingTail('1.2', 2)).toEqual({ head: '', tail: '1.2' });
+    expect(splitRollingTail('12 345', 4)).toEqual({ head: '1', tail: '2 345' });
   });
 });

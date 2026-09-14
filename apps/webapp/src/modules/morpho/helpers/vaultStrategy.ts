@@ -2,8 +2,26 @@ import type { MorphoIdleLiquidityAllocation, MorphoMarketAllocation } from '@/ho
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/widgets/shared/constants';
 
-/** Muted fill for the idle-capital segment — visually "parked", not a strategy. */
-export const IDLE_COLOR = '#8A8FA8';
+/**
+ * Fill for the unutilized-liquidity segment — the chart track, i.e. the
+ * "parked capital" tail of the DS bar (Figma 2682:68829). Read from the CSS
+ * variable so it follows the theme like every other surface token.
+ */
+export const IDLE_COLOR = 'var(--color-chartTrack)';
+
+/** Per-market supply caps, surfaced on the hovered legend row. */
+export type StrategyCaps = {
+  /** Compact absolute cap, e.g. "5M" — or "Unlimited" when uncapped. */
+  formattedAbsoluteCap: string;
+  /** Uncapped market (the hook's > 1e30 sentinel) — there is no fill to show. */
+  isAbsoluteCapUnlimited: boolean;
+  /** Absolute cap utilization, 0..1 (0 when uncapped). */
+  absoluteCapUtilization: number;
+  /** Relative cap as a percentage of vault assets, e.g. "15%". */
+  formattedRelativeCap: string;
+  /** Relative cap utilization, 0..1. */
+  relativeCapUtilization: number;
+};
 
 export type StrategySegment = {
   /** Market id (stable key), or `idle-<asset>` for the idle segment. */
@@ -20,6 +38,15 @@ export type StrategySegment = {
   color: string;
   /** Hovered-segment color (DS Components/Charts-Hover). */
   hoverColor: string;
+  /** Which side of the vault this is — caps only exist for markets. */
+  kind: 'market' | 'idle';
+  /** Morpho market id, for the "view on Morpho" link (markets only). */
+  marketId?: string;
+  /** Idle asset symbol, e.g. "USDS" (idle only) — decides whether the row can
+   * claim the Sky Savings Rate. */
+  assetSymbol?: string;
+  /** Supply caps (markets only). */
+  caps?: StrategyCaps;
 };
 
 export type VaultStrategyView = {
@@ -39,6 +66,10 @@ export type VaultStrategyView = {
  * is capital-in-market vs the entire vault — not vs the allocated subset. When
  * the total is unknown (or smaller than the segment sum, e.g. a stale API
  * total), shares fall back to the segment sum so the bar never overflows.
+ *
+ * Segments come back in *bar* order — markets by allocation (the hook sorts
+ * them descending), then the idle tail. The legend re-sorts by amount on its
+ * own, which is why idle leads the list while trailing the bar.
  */
 export function buildVaultStrategy(
   markets: MorphoMarketAllocation[],
@@ -58,7 +89,8 @@ export function buildVaultStrategy(
     id: string,
     label: string,
     usd: number,
-    colors: { color: string; hoverColor: string }
+    colors: { color: string; hoverColor: string },
+    extra: Pick<StrategySegment, 'kind' | 'marketId' | 'caps' | 'assetSymbol'>
   ): StrategySegment => {
     const share = totalUsd > 0 ? usd / totalUsd : 0;
     return {
@@ -67,7 +99,8 @@ export function buildVaultStrategy(
       formattedUsd: `$${formatNumber(usd, { compact: true })}`,
       share,
       formattedShare: formatDecimalPercentage(share, 0),
-      ...colors
+      ...colors,
+      ...extra
     };
   };
 
@@ -81,14 +114,28 @@ export function buildVaultStrategy(
         `${market.collateralAsset}/${market.loanAsset}`,
         market.assetsUsd,
         resolveTokenChartColors(market.collateralAsset) ??
-          CHART_GENERIC_COLORS[index % CHART_GENERIC_COLORS.length]
+          CHART_GENERIC_COLORS[index % CHART_GENERIC_COLORS.length],
+        {
+          kind: 'market',
+          marketId: market.marketId,
+          caps: {
+            formattedAbsoluteCap: market.formattedAbsoluteCap,
+            isAbsoluteCapUnlimited: market.isAbsoluteCapUnlimited,
+            absoluteCapUtilization: market.absoluteCapUtilization,
+            formattedRelativeCap: market.formattedRelativeCap,
+            relativeCapUtilization: market.relativeCapUtilization
+          }
+        }
       )
     ),
     ...idlePositive.map(idle =>
-      toSegment(`idle-${idle.assetSymbol}`, 'Idle', idle.idleAssetsUsd, {
-        color: IDLE_COLOR,
-        hoverColor: IDLE_COLOR
-      })
+      toSegment(
+        `idle-${idle.assetSymbol}`,
+        'Idle',
+        idle.idleAssetsUsd,
+        { color: IDLE_COLOR, hoverColor: IDLE_COLOR },
+        { kind: 'idle', assetSymbol: idle.assetSymbol }
+      )
     )
   ];
 

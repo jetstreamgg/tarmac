@@ -1,7 +1,4 @@
-import { Intent, FixedIntent, VaultsIntent } from './enums';
-import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
-import { msg } from '@lingui/core/macro';
-import { MessageDescriptor } from '@lingui/core';
+import { Intent, FixedIntent } from './enums';
 
 /** The placeholder every product surface shows for a value it cannot source. */
 export const NO_VALUE = '–';
@@ -13,6 +10,12 @@ export enum QueryParams {
   UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',
+  /**
+   * Legacy. `network` was the app's chain — it named the current one and, by
+   * being written, performed the switch. That is the wallet's job now. The key
+   * survives so links minted while it was live still work: an incoming one is
+   * honoured once by `useAppOrchestration` and then stripped. Nothing writes it.
+   */
   Network = 'network',
   Flow = 'flow',
   StakeTab = 'stake_tab',
@@ -57,49 +60,13 @@ export const IntentMapping = {
   [Intent.FIXED_INTENT]: 'fixed'
 };
 
-// Recently launched modules, surfaced with a "new" indicator in the nav and suggested actions.
-export const NEW_INTENTS: Intent[] = [Intent.FIXED_INTENT];
-export const isNewIntent = (intent: Intent): boolean => NEW_INTENTS.includes(intent);
-
-export const VaultsIntentMapping: Record<VaultsIntent, string> = {
-  [VaultsIntent.MORPHO_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.MORPHO_VAULT_INTENT),
-  [VaultsIntent.SKY_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.SKY_VAULT_INTENT)
-};
-
 export const FixedIntentMapping: Record<FixedIntent, string> = {
   [FixedIntent.MARKET_INTENT]: 'market'
 };
 
 // Moved to a Lingui-free module so the engine layer can import them; re-exported
 // here so existing import sites keep working.
-export { CHAIN_WIDGET_MAP, COMING_SOON_MAP } from './chainAvailability';
-
-export const intentTxt: Record<string, MessageDescriptor> = {
-  psm: msg`1:1 conversion`,
-  trade: msg`trade`,
-  upgrade: msg`upgrade`,
-  savings: msg`savings`,
-  stusds: msg`stusds`,
-  rewards: msg`rewards`,
-  balances: msg`balances`,
-  stake: msg`stake`,
-  vaults: msg`vaults`,
-  convert: msg`convert`,
-  pendle: msg`pendle`
-};
-
-export function mapIntentToQueryParam(intent: Intent): string {
-  return IntentMapping[intent] || '';
-}
-
-export function mapQueryParamToIntent(queryParam?: string | null): Intent {
-  const intent = Object.keys(IntentMapping).find(
-    key => IntentMapping[key as keyof typeof IntentMapping] === queryParam
-  );
-  return (intent as Intent) || Intent.BALANCES_INTENT;
-}
-
-export const REFRESH_DELAY = 1000;
+export { COMING_SOON_MAP } from './chainAvailability';
 
 export const ALLOWED_EXTERNAL_DOMAINS = [
   'sky.money',

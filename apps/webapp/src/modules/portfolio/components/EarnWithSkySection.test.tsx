@@ -94,13 +94,12 @@ describe('EarnWithSkySection', () => {
     const [vaultsCall, stakeCall] = h.navigate.mock.calls.map(call => call[0]);
     expect(vaultsCall.to).toBe('/earn');
     expect(vaultsCall.hash).toBe('earn-opportunities');
-    expect(vaultsCall.search({ network: 'ethereum', flow: 'x' })).toEqual({
-      network: 'ethereum',
-      product: 'vault'
-    });
+    // `network` is not retained across a navigation any more — the chain lives
+    // in the wallet and needs nothing from the URL to survive a route change.
+    expect(vaultsCall.search({ network: 'ethereum', flow: 'x' })).toEqual({ product: 'vault' });
     expect(stakeCall.to).toBe('/stake');
     expect(stakeCall.hash).toBeUndefined();
-    expect(stakeCall.search({ network: 'ethereum' })).toEqual({ network: 'ethereum' });
+    expect(stakeCall.search({ network: 'ethereum' })).toEqual({});
   });
 
   it('shows a skeleton (no cards) while loading with no products yet', () => {

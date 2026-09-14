@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, inject } from 'vitest';
 import { connect, disconnect } from '@wagmi/core';
-import { config, testClientMainnet, testClientBase, testClientArbitrum } from './WagmiWrapper';
+import { config, queryClient, testClientMainnet, testClientBase, testClientArbitrum } from './WagmiWrapper';
 
 beforeAll(async () => {
   await connect(config, { connector: config.connectors[0] });
 });
 
 afterAll(async () => {
+  await queryClient.cancelQueries();
+  queryClient.clear();
   await disconnect(config);
 
   const snapshotIdMainnet =

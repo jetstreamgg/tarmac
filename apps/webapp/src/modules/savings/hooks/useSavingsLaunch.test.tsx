@@ -300,7 +300,7 @@ describe('useSavingsLaunch — routing + steps', () => {
     // Figma 527:8273 — the supply steps name their token; step count is unchanged.
     expect(a.result.current.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
-      { label: 'Supply', tokenSymbol: 'USDS' }
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
     ]);
     a.unmount();
 
@@ -308,7 +308,9 @@ describe('useSavingsLaunch — routing + steps', () => {
     const b = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
     );
-    expect(b.result.current.steps).toEqual([{ label: 'Supply', tokenSymbol: 'USDS' }]);
+    expect(b.result.current.steps).toEqual([
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
+    ]);
     b.unmount();
   });
 });

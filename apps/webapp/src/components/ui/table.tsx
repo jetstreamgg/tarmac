@@ -112,7 +112,13 @@ const TableRow = React.forwardRef<HTMLTableRowElement, HTMLMotionProps<'tr'>>(
                 // tint to the resting surface.
                 'data-[hover=off]:has-[td]:hover:[&>td>div>div]:bg-bgSecondary'
               )
-            : 'has-[td]:hover:[&>td]:bg-bgTertiary data-[state=selected]:[&>td]:bg-bgTertiary',
+            : cn(
+                'has-[td]:hover:[&>td]:bg-bgTertiary data-[state=selected]:[&>td]:bg-bgTertiary',
+                // Non-interactive rows (data-hover="off") keep the resting
+                // surface: a hover tint would suggest a click the row can't
+                // honour (Figma 2800:92277 annotation).
+                'data-[hover=off]:has-[td]:hover:[&>td]:bg-bgSecondary'
+              ),
           className
         )}
         variants={fadeAnimations}

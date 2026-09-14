@@ -88,6 +88,54 @@ describe('useHistoryFamilyQuery — filter-scoped history documents', () => {
     });
   });
 
+  it('spans both indexer legs for psmTrades — the mainnet PSM conversions plus the L2 swaps (APP-558)', async () => {
+    vi.mocked(request).mockImplementation(((url: string) => {
+      if (url.endsWith('/1')) {
+        return Promise.resolve({
+          swaps: [
+            {
+              transactionHash: '0xeth',
+              assetIn: TOKENS.usdc.address[1],
+              assetOut: TOKENS.usds.address[1],
+              sender: USER,
+              receiver: USER,
+              amountIn: '1000000',
+              amountOut: '1000000000000000000',
+              blockTimestamp: '1700000300'
+            }
+          ]
+        });
+      }
+      const response: Record<string, unknown[]> = {};
+      for (const chainId of [8453, 42161, 10, 130]) response[`swaps_${chainId}`] = [];
+      return Promise.resolve(response);
+    }) as unknown as typeof request);
+
+    const { result } = renderHook(() => useHistoryFamilyQuery({ family: 'psmTrades' }), {
+      wrapper: makeWrapper()
+    });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(request).toHaveBeenCalledTimes(2);
+    const mainnetQuery = vi.mocked(request).mock.calls.find(call => String(call[0]).endsWith('/1'))![1];
+    expect(String(mainnetQuery)).toContain('swaps: Swap');
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].module).toBe(ModuleEnum.TRADE);
+    expect(result.current.data![0].chainId).toBe(1);
+  });
+
+  it('narrows psmTrades to mainnet alone when the network filter says so', async () => {
+    vi.mocked(request).mockResolvedValueOnce({ swaps: [] });
+
+    const { result } = renderHook(() => useHistoryFamilyQuery({ family: 'psmTrades', chainId: 1 }), {
+      wrapper: makeWrapper()
+    });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(String(vi.mocked(request).mock.calls[0][0])).toMatch(/\/1$/);
+  });
+
   it('returns empty without fetching when the family has no scope on the network', () => {
     const { result } = renderHook(
       () => useHistoryFamilyQuery({ family: 'stake', chainId: chainIdMap.base }),

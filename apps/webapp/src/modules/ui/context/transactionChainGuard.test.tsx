@@ -12,13 +12,21 @@ import type { PreflightHook, PreTransactionGate } from './preTransactionGate';
 // address on a chain it doesn't live on, which sends against a codeless (or
 // attacker-occupied) address. The provider must block every first-screen CTA
 // and offer a switch back whenever the connected wallet leaves a flow's
-// declared `supportedChainIds`. These tests pin that behaviour so it can't
-// regress.
+// declared `supportedChainIds`. Once a write has been attempted the rule is
+// stricter and chain-set-agnostic: everything the session holds past IDLE was
+// built for the chain the write started on, so a switch to ANY other chain —
+// a supported one included, which is the multi-chain Savings/Convert case —
+// ends the session instead of leaving a Retry that no-ops or fires stale
+// calls. These tests pin both behaviours so they can't regress.
 
 // Mutable so each test can place the wallet on any chain before rendering. The
 // wagmi mock reads through these — vi.mock is hoisted, so a plain closure over
 // module-level `let`s is the way to vary a mocked hook per test.
 let mockChainId = 1;
+// The wallet's own chain, which differs from wagmi's `useChainId()` only when
+// the wallet has left the app's configured set. undefined = the two agree.
+let mockConnectedChainId: number | undefined;
+let mockAddress: string | undefined = '0x0000000000000000000000000000000000000001';
 const mockChains = [
   { id: 1, name: 'Ethereum' },
   { id: 8453, name: 'Base' },
@@ -29,7 +37,11 @@ vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => mockChainId,
   useChains: () => mockChains,
-  useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
+  useConnection: () => ({
+    address: mockAddress,
+    chainId: mockConnectedChainId,
+    isConnected: true
+  })
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
@@ -48,14 +60,26 @@ vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
   useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
 }));
 
+// The provider's toasts: the close-on-switch and the refused-verdict notices
+// are asserted by rendering the node handed to toastWithClose.
+const toastWithCloseMock = vi.hoisted(() => vi.fn());
+vi.mock('@/components/ui/use-toast', () => ({
+  toast: { dismiss: vi.fn() },
+  toastWithClose: toastWithCloseMock
+}));
+const lastToastText = () => {
+  const renderFn = toastWithCloseMock.mock.calls.at(-1)![0] as (id: string) => ReactNode;
+  return render(<I18nProvider i18n={i18n}>{renderFn('toast-id')}</I18nProvider>).container.textContent;
+};
+
 // Spy on the chain switch the guard triggers, without a real WagmiProvider.
 const mockHandleSwitchChain = vi.fn();
 let mockIsSafeWallet = false;
-vi.mock('@/modules/ui/context/ChainModalContext', () => ({
-  useChainModalContext: () => ({
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({
     handleSwitchChain: mockHandleSwitchChain,
-    isPending: false,
-    variables: undefined
+    isSwitchPending: false,
+    switchVariables: undefined
   })
 }));
 
@@ -113,16 +137,40 @@ function Harness({
   return null;
 }
 
-function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig) {
-  render(
+function renderModal(
+  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig,
+  onReady?: (api: ReturnType<typeof useTransaction>) => void
+) {
+  let api: ReturnType<typeof useTransaction> | null = null;
+  const tree = () => (
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
-          <Harness build={build} onReady={() => {}} />
+          <Harness
+            build={build}
+            onReady={latest => {
+              api = latest;
+              onReady?.(latest);
+            }}
+          />
         </TransactionProvider>
       </I18nProvider>
     </StrictMode>
   );
+  const result = render(tree());
+  // Re-renders the same tree so the wagmi mocks re-read the module-level chain
+  // lets. That is how a test moves the wallet under an open modal without
+  // remounting it — a remount would start a new modal session. The element has
+  // to be rebuilt: React bails out of a re-render given the same reference.
+  return {
+    ...result,
+    refresh: () => result.rerender(tree()),
+    // The provider owns closing; the reachable public trigger is the shell's
+    // per-navigation close, which is also the path the route guard's own
+    // redirect-home takes. `launchPathnameRef` latches window.location at
+    // launch, so any other pathname ends the session.
+    close: () => act(() => api?.closeOnNavigation('/somewhere-else'))
+  };
 }
 
 // A mainnet-only entry-only flow (the vault/upgrade/rewards shape): one Confirm
@@ -141,6 +189,8 @@ const mainnetOnlyConfig = (onConfirm: () => void): TransactionConfig => ({
 
 afterEach(() => {
   mockChainId = 1;
+  mockConnectedChainId = undefined;
+  mockAddress = '0x0000000000000000000000000000000000000001';
   mockIsSafeWallet = false;
   mockHandleSwitchChain.mockReset();
   vi.clearAllMocks();
@@ -169,9 +219,160 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
     const switchBtn = screen.getByRole('button', { name: 'Switch to Ethereum' });
     expect((switchBtn as HTMLButtonElement).disabled).toBe(false);
-    fireEvent.click(switchBtn);
+    // One attempt was already made automatically when the modal opened; the
+    // press adds the user's own, attributed to them.
     expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+    fireEvent.click(switchBtn);
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(2);
+    expect(mockHandleSwitchChain).toHaveBeenLastCalledWith({
+      chainId: 1,
+      source: 'transaction_modal'
+    });
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('closes on a wallet switch under a single-step inline failure (a write was attempted)', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    let api!: ReturnType<typeof useTransaction>;
+    const { refresh } = renderModal(
+      cb => ({
+        ...mainnetOnlyConfig(onConfirm),
+        // One step: the failure renders inside the step list (no bottom CTA row).
+        steps: [{ label: 'Supply', tokenSymbol: 'USDS' }],
+        onConfirm: () => {
+          onConfirm();
+          cb.onMutate();
+          cb.onStart('0xsupply');
+          cb.onError(new Error('boom'), '0xsupply');
+        }
+      }),
+      a => (api = a)
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.getByText('Supply failed')).toBeTruthy();
+    expect(api.isModalOpen).toBe(true);
+
+    mockChainId = 8453; // the user switches to Base while looking at the failure
+    act(() => refresh());
+
+    // The failed write belongs to mainnet; nothing re-derives it for Base, so
+    // the session ends rather than offering a Try again with nothing behind it.
+    expect(api.isModalOpen).toBe(false);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('guards a wallet on a chain the app does not configure at all', () => {
+    // wagmi REFUSES to move `config.state.chainId` onto an unconfigured chain,
+    // so `useChainId()` keeps naming the last configured one (mainnet here)
+    // while the wallet sits on, say, Polygon. Reading it would show the guard a
+    // supported chain and let a mainnet-addressed transaction fire at whatever
+    // lives at that address on Polygon. Only `useConnection().chainId` tells
+    // the truth. A blocking dialog used to make this unreachable; it is gone,
+    // so this is the pin that keeps the guard honest.
+    mockChainId = 1;
+    mockConnectedChainId = 137;
+    const onConfirm = vi.fn();
+    renderModal(() => mainnetOnlyConfig(onConfirm));
+
+    const guard = screen.getByTestId('transaction-chain-guard');
+    expect(guard).not.toBeNull();
+    // ...and it must not NAME the pinned chain either. Reading `useChainId()`
+    // for the copy produced "isn't available on Ethereum. Switch to Ethereum",
+    // naming the target as the problem. The config is the only chain registry
+    // the app carries, so an unconfigured chain has no name to give — the copy
+    // falls back to "this network" rather than guessing.
+    expect(guard.textContent).not.toContain('available on Ethereum');
+    expect(guard.textContent).toContain('this network');
+    expect(guard.textContent).toContain('Switch to Ethereum');
+
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to Ethereum' }));
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 1, source: 'transaction_modal' });
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  // Opening a product's modal is asking for that product, so it resolves its
+  // chain the way arriving on its page does. Portfolio is where this bites: its
+  // in-place actions reach mainnet-only products from a surface that runs on
+  // any chain.
+  it('asks for the supported chain by itself when the modal opens off it', () => {
+    mockChainId = 8453; // Base
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith({
+      chainId: 1,
+      source: 'transaction_modal_auto'
+    });
+    // Once per modal session — StrictMode double-invokes effects, and a
+    // re-render must not re-ask either.
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+    // The guard stays up until the wallet actually moves: a request is not an
+    // answer, and the CTA is what the user has if they declined it.
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+  });
+
+  it('asks for nothing when the modal opens on a supported chain', () => {
+    mockChainId = 1;
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+  });
+
+  it('never asks a Safe wallet, which cannot switch from the dapp', () => {
+    mockChainId = 8453;
+    mockIsSafeWallet = true;
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+  });
+
+  // The APP-528 case: the modal is already open and the user changes network in
+  // their wallet. That is deliberate, and the app does not argue with it — the
+  // guard appears with its CTA, but nothing asks for the chain back. Same rule
+  // the route guard follows, where only a navigation earns a prompt.
+  it('does NOT ask when the wallet leaves the supported set with the modal already open', () => {
+    mockChainId = 1;
+    const { refresh } = renderModal(() => mainnetOnlyConfig(vi.fn()));
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+
+    mockChainId = 8453; // the user switches to Base themselves
+    act(() => refresh());
+
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+  });
+
+  // Closing is the most ordinary thing a user does with a modal, and it must
+  // not be read as opening a new one. The session generation bumps on close
+  // (so late engine callbacks see themselves as stale) while the view lingers
+  // for its exit animation — which leaves the guard live against the closing
+  // flow's config for a render. A latch keyed on the generation alone fires
+  // there, prompting the wallet for a modal the user just dismissed.
+  it('asks for nothing when the modal is closed', () => {
+    mockChainId = 8453; // Base — the flow is mainnet-only, so it asks on open
+    const { close } = renderModal(() => mainnetOnlyConfig(vi.fn()));
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+
+    close();
+
+    expect(mockHandleSwitchChain).toHaveBeenCalledTimes(1);
+  });
+
+  // The same hole from the other side, and the worse half: here the user got no
+  // prompt on open, changed network deliberately with the modal up, and closing
+  // it would ask them to undo that.
+  it('asks for nothing when a modal the user moved the wallet under is closed', () => {
+    mockChainId = 1;
+    const { refresh, close } = renderModal(() => mainnetOnlyConfig(vi.fn()));
+    mockChainId = 8453;
+    act(() => refresh());
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+
+    close();
+
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
   });
 
   it('names the current and target chains and switches on click', () => {
@@ -184,7 +385,12 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
 
     const switchBtn = screen.getByTestId('transaction-chain-guard-switch');
     fireEvent.click(switchBtn);
-    expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 1, source: 'transaction_modal' });
+    // The user's own press is attributed to them, not to the automatic attempt
+    // that opening the modal already made.
+    expect(mockHandleSwitchChain).toHaveBeenLastCalledWith({
+      chainId: 1,
+      source: 'transaction_modal'
+    });
   });
 
   it('offers NO switch button for a Safe wallet (it cannot switch from the dapp)', () => {
@@ -197,6 +403,41 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect((screen.getByRole('button', { name: 'Confirm' }) as HTMLButtonElement).disabled).toBe(true);
     // ...but no switch action is offered.
     expect(screen.queryByTestId('transaction-chain-guard-switch')).toBeNull();
+  });
+
+  // APP-563 #4: Convert's review is priced for its launch chain (quote,
+  // allowance, PSM addresses come from the page, not the modal), so it pins
+  // `supportedChainIds` to that chain. Switching the wallet under it must then
+  // show the guard — and the copy must not claim Convert is unavailable on the
+  // new chain, because it usually isn't.
+  it('guards a launch-chain-pinned review on a wallet-side switch, with copy that names the launch chain', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    const { refresh } = renderModal(() => ({
+      title: 'Review conversion',
+      usdValue: 100,
+      supportedChainIds: [1],
+      chainGuardReason: 'launch-chain',
+      confirmLabel: 'Confirm',
+      confirmDisabled: false,
+      transactionContent: <div>summary</div>,
+      onConfirm
+    }));
+    expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+
+    mockChainId = 8453; // the user switches to Base from the wallet mid-review
+    act(() => refresh());
+
+    const guard = screen.getByTestId('transaction-chain-guard');
+    expect(guard.textContent).toContain('prepared on Ethereum');
+    expect(guard.textContent).toContain('start again on Base');
+    expect(guard.textContent).not.toContain("isn't available");
+    // The switch action replaces Confirm, so the stale figures cannot fire.
+    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
+    expect(onConfirm).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('transaction-chain-guard-switch'));
+    expect(mockHandleSwitchChain).toHaveBeenLastCalledWith({ chainId: 1, source: 'transaction_modal' });
   });
 
   it('does NOT guard a multi-chain flow while the wallet is on any of its supported chains', () => {
@@ -323,17 +564,21 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('guards the failure view too: after a failed write the wallet switches, so Retry is held and Back lands on a guarded first screen', () => {
+  it('closes the failure view when the wallet switches: Retry never fires against the new chain', () => {
     mockChainId = 1;
     const onConfirm = vi.fn();
     let cb!: TxCallbacks;
-    renderTestTree(liveCb => {
-      cb = liveCb;
-      return mainnetOnlyConfig(onConfirm);
-    });
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return mainnetOnlyConfig(onConfirm);
+      },
+      { onReady: a => (api = a) }
+    );
 
     // The write starts on mainnet and the wallet rejects it — the modal sits on
-    // its failure view (ERROR), the one state the IDLE-keyed guard used to skip.
+    // its failure view (ERROR).
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     act(() => {
@@ -347,20 +592,156 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
       forceRerender();
     });
 
-    // Retry would rebuild the calldata against Base: replaced by the switch,
-    // and the guard says why.
-    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+    // Retry would fire the mainnet calls on Base: the session is gone instead.
+    // (And with it the reason the route guard was holding its redirect — the
+    // module's page is free to leave for Portfolio now.)
+    expect(api.isModalOpen).toBe(false);
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
-    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
 
-    // Back reaches the entry at ERROR (it never resets the status) — still
-    // guarded. The footer's Back is the last one (the header carries its own).
-    fireEvent.click(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
-    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
-    expect(screen.queryByRole('button', { name: 'Confirm' })).toBeNull();
-    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+  // The report that motivated the close: Savings and Convert run on several
+  // chains, so a wallet moved from mainnet to Base under a failed write is on
+  // a SUPPORTED chain and the guard has nothing to say — yet Retry then fired
+  // the mainnet calls (Convert) or a "not ready" no-op (Savings).
+  it('closes a multi-chain flow too when the wallet moves between two of its supported chains after a failure', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    let cb!: TxCallbacks;
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return {
+          title: 'Supply to Savings',
+          usdValue: 0,
+          supportedChainIds: [1, 8453, 42161],
+          entry: { content: <div>fields</div>, confirmLabel: 'Confirm', confirmDisabled: false },
+          onConfirm
+        };
+      },
+      { onReady: a => (api = a) }
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    act(() => {
+      cb.onMutate();
+      cb.onError(new Error('User rejected the request'));
+    });
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined();
+
+    act(() => {
+      mockChainId = 8453; // Base: supported, so the guard stays silent
+      forceRerender();
+    });
+
+    expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
+    expect(api.isModalOpen).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     expect(onConfirm).toHaveBeenCalledTimes(1);
+    // The only thing telling the user why the modal vanished.
+    expect(lastToastText()).toContain('Transaction closed');
+  });
+
+  // A disconnect is not a switch. `guardChainId` falls back to the config
+  // chain without a wallet, which for a wallet parked on an unconfigured chain
+  // reads as a move — the session must not close over it with a toast that
+  // says the wallet switched.
+  it('does NOT close when the wallet disconnects at ERROR', () => {
+    mockChainId = 1;
+    mockConnectedChainId = 137; // Polygon: unconfigured, so the fallback differs
+    let cb!: TxCallbacks;
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return {
+          title: 'Chain-agnostic',
+          usdValue: 0,
+          supportedChainIds: [],
+          entry: { content: <div>fields</div>, confirmLabel: 'Confirm', confirmDisabled: false },
+          onConfirm: vi.fn()
+        };
+      },
+      { onReady: a => (api = a) }
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    act(() => {
+      cb.onMutate();
+      cb.onError(new Error('boom'));
+    });
+    toastWithCloseMock.mockClear();
+
+    act(() => {
+      mockConnectedChainId = undefined;
+      mockAddress = undefined;
+      forceRerender();
+    });
+
+    expect(api.isModalOpen).toBe(true);
+    expect(toastWithCloseMock).not.toHaveBeenCalled();
+  });
+
+  // Before any write the switch is legitimate: the entry rebuilds for the new
+  // chain (Savings' own network dropdown lives there), and a review is the
+  // guard's to hold. Nothing has been built for a chain yet, so nothing closes.
+  it('does NOT close at IDLE: a multi-chain entry follows the wallet to another supported chain', () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(
+      () => ({
+        title: 'Supply to Savings',
+        usdValue: 0,
+        supportedChainIds: [1, 8453, 42161],
+        entry: { content: <div>fields</div>, confirmLabel: 'Confirm', confirmDisabled: false },
+        onConfirm
+      }),
+      { onReady: a => (api = a) }
+    );
+
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+
+    expect(api.isModalOpen).toBe(true);
+    expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  // A switch while the wallet prompt is up cannot close anything: the prompt
+  // must settle. Once it settles as a failure the session ends; a success
+  // closes itself.
+  it('defers the close while a write is in flight, then closes when it settles as a failure', () => {
+    mockChainId = 1;
+    let cb!: TxCallbacks;
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return {
+          title: 'Supply to Savings',
+          usdValue: 0,
+          supportedChainIds: [1, 8453, 42161],
+          entry: { content: <div>fields</div>, confirmLabel: 'Confirm', confirmDisabled: false },
+          onConfirm: vi.fn()
+        };
+      },
+      { onReady: a => (api = a) }
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    act(() => cb.onMutate()); // INITIALIZED: the wallet is showing the request
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+    expect(api.isModalOpen).toBe(true);
+
+    act(() => cb.onError(new Error('User rejected the request')));
+    expect(api.isModalOpen).toBe(false);
   });
 
   it('a gate verdict resolving after the wallet moved to an unsupported chain does NOT start the write', async () => {
@@ -464,14 +845,18 @@ describe('TransactionProvider — chain guard fallbacks', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeDefined();
   });
 
-  it('a multi-step failure\'s inline "Try again" while off-chain returns to the guarded first screen (never a dead click)', () => {
+  it('a multi-step failure closes on a wallet switch (the inline "Try again" is never a dead click)', () => {
     mockChainId = 1;
     const onConfirm = vi.fn();
     let cb!: TxCallbacks;
-    renderTestTree(liveCb => {
-      cb = liveCb;
-      return { ...mainnetOnlyConfig(onConfirm), steps: ['Approve', 'Supply'] };
-    });
+    let api!: ReturnType<typeof useTransaction>;
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return { ...mainnetOnlyConfig(onConfirm), steps: ['Approve', 'Supply'] };
+      },
+      { onReady: a => (api = a) }
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -479,8 +864,6 @@ describe('TransactionProvider — chain guard fallbacks', () => {
       cb.onMutate();
       cb.onError(new Error('boom'));
     });
-    // Multi-step failures render inline, replacing the footer the guard
-    // block lives in — so there is no guard copy on this screen.
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
     expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
 
@@ -488,13 +871,58 @@ describe('TransactionProvider — chain guard fallbacks', () => {
       mockChainId = 8453;
       forceRerender();
     });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-    // Back on the first screen, guarded, with the switch offered.
+    expect(api.isModalOpen).toBe(false);
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
-    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
-    expect(screen.queryByTestId('transaction-chain-guard-switch')).not.toBeNull();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  // The pending-verdict window between two SUPPORTED chains: the guard's
+  // re-check passes (Base is fine for Savings), but the click was made on
+  // mainnet and the form has since rebuilt for Base — the verdict must not
+  // fire the click's action; the first screen re-derives instead.
+  it('a gate verdict resolving after the wallet moved to ANOTHER supported chain does NOT start the write, and says so', async () => {
+    mockChainId = 1;
+    const onConfirm = vi.fn();
+    let resolveVerdict!: (v: { allow: boolean }) => void;
+    // Async on the first click (the screening / signature shape), then a
+    // plain allow so the re-click below is observable.
+    let verdicts = 0;
+    const gate: PreTransactionGate = () =>
+      verdicts++ === 0 ? new Promise(resolve => (resolveVerdict = resolve)) : { allow: true };
+    renderTestTree(
+      () => ({
+        title: 'Supply to Savings',
+        usdValue: 0,
+        supportedChainIds: [1, 8453, 42161],
+        entry: {
+          content: <div data-testid="entry-body">fields</div>,
+          confirmLabel: 'Confirm',
+          confirmDisabled: false
+        },
+        onConfirm
+      }),
+      { gate }
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    toastWithCloseMock.mockClear();
+
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+    await act(async () => {
+      resolveVerdict({ allow: true });
+    });
+    expect(onConfirm).not.toHaveBeenCalled();
+    // The guard has nothing to say (Base is supported), so the toast explains
+    // the click that went nowhere.
+    expect(screen.queryByTestId('transaction-chain-guard')).toBeNull();
+    expect(lastToastText()).toContain('Network changed');
+    // Back on the first screen, whose Confirm now fires for Base.
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 });
 

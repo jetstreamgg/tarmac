@@ -21,7 +21,6 @@ export const AppEvents = {
   NETWORK_SWITCH_REQUESTED: 'app_network_switch_requested',
   NETWORK_SWITCH_COMPLETED: 'app_network_switch_completed',
   NETWORK_AUTO_SWITCHED: 'app_network_auto_switched',
-  UNSUPPORTED_NETWORK_SHOWN: 'app_unsupported_network_shown',
   ERROR_BOUNDARY_TRIGGERED: 'app_error_boundary_triggered',
   ROUTE_ERROR_VIEWED: 'app_route_error_viewed',
   NOT_FOUND_VIEWED: 'app_not_found_viewed',
@@ -72,13 +71,20 @@ export type ConnectMethod = 'connect' | 'switch';
 export type GatedActionOutcome = 'completed' | 'abandoned';
 export type NetworkSwitchSource =
   | 'chain_modal'
-  | 'network_toast'
-  | 'unsupported_network_page'
   | 'portfolio_supply'
   | 'pendle_claim'
-  | 'transaction_modal';
+  | 'transaction_modal'
+  // The guard's switch taken automatically when the modal opened, rather than
+  // by the user pressing its CTA. Kept separate so a portfolio-launched flow
+  // resolving its own chain doesn't read as a user click.
+  | 'transaction_modal_auto';
 export type NetworkSwitchStatus = 'success' | 'rejected' | 'error';
-export type AutoSwitchTrigger = 'connect' | 'url_param' | 'route_guard';
+// 'off_config_chain': the wallet was sitting on a network the app doesn't
+// configure. This used to surface as its own event behind a blocking dialog
+// (app_unsupported_network_shown); the app now just switches the wallet back,
+// so the signal rides the auto-switch it causes — with the chain it came from,
+// which the old event could only report separately.
+export type AutoSwitchTrigger = 'connect' | 'url_param' | 'route_guard' | 'off_config_chain';
 export type PromoId = 'allocate_stablecoins' | 'savings_tvl_simulate' | 'connect_wallet_card';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

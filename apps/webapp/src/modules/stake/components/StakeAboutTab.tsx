@@ -6,7 +6,7 @@ import { getEtherscanLink } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { Button } from '@/components/ui/button';
-import { StakeEngineCard } from './StakeEngineCard';
+import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 // Corpus-fed About copy (PRD Decision 11): never hardcode Figma text — the body
 // arrives pre-authored from the sync pipeline. Where corpus and mock differ,
@@ -33,10 +33,10 @@ const sectionHeading =
  * About tab body (desktop 1036:208624, mobile 1222:17233): the corpus-fed
  * "About the Staking Engine" copy, a numbered How-it-works list, and a Links
  * block — flat sections on the page background at every tier — with the shared
- * Sky Staking Engine promo card in the right rail (first on the phone tier per
+ * rail card (`StakeRailCard`) in the right rail (first on the phone tier per
  * the mobile comp). Read-only.
  */
-export function StakeAboutTab() {
+export function StakeAboutTab({ rail }: { rail: StakeRailCardProps }) {
   const banner = getBannerById(ABOUT_BANNER_ID);
   const chainId = useChainId();
   // Staking is mainnet-only; on a chain without a module deployment (the page
@@ -61,7 +61,10 @@ export function StakeAboutTab() {
   ];
 
   return (
-    <div className="grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
+    // Design QA (2800:91832): 32px between the two columns from lg up, on all
+    // three tabs. Neither side carries an inset of its own (the sections sit
+    // flat, the card is the grid cell), so the column gap IS the measure.
+    <div className="grid items-start gap-10 lg:grid-cols-3 lg:gap-8">
       <div className="order-2 flex flex-col gap-10 md:gap-14 lg:order-none lg:col-span-2">
         <Section testId="stake-about-copy">
           {banner?.title && <h3 className={sectionHeading}>{banner.title}</h3>}
@@ -110,7 +113,7 @@ export function StakeAboutTab() {
       </div>
 
       <div className="order-1 lg:order-none lg:col-span-1">
-        <StakeEngineCard />
+        <StakeRailCard {...rail} />
       </div>
     </div>
   );

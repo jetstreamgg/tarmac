@@ -97,7 +97,9 @@ export function StakeManageStakeCard({
       onEnabledChange={onEnabledChange}
       dataTestId="stake-manage-stake-card"
     >
-      <div className="flex flex-col gap-5">
+      {/* Design QA 2800:91832 ("More gap"): 32px between the amount block, the
+          slider and the stats from md up — the card's own header→body gap. */}
+      <div className="flex flex-col gap-6 md:gap-8">
         <StakeTakeoverAmountField
           tokenSymbol="SKY"
           amount={amount}

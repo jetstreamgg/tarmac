@@ -64,7 +64,8 @@ function useTooltipPlacement(
   useLayoutEffect(() => {
     const panel = panelRef.current;
     if (panel) {
-      const { width, height } = panel.getBoundingClientRect();
+      const width = panel.offsetWidth;
+      const height = panel.offsetHeight;
       setPanelSize(prev => (sameSize(prev, { width, height }) ? prev : { width, height }));
     }
     const host = anchorRef?.current;

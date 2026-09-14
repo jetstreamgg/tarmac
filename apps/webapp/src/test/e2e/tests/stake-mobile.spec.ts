@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { BORROW_SPEC_SKY, openStakePosition, stakeDeepLink } from '../utils/stakeV2.ts';
+import { stageUrns } from '../utils/stakeOnChain.ts';
 
 // M6.5 (APP-404): the open-position takeover at the phone tier, per comp
 // 1222:19733 "Open a position / Full overlay" (Sky App: UI, 393px). The flow
@@ -30,6 +31,9 @@ test.beforeEach(async ({ isolatedPage }) => {
   // visitors (APP-295), where the mock-mode topbar (two extra mock connect
   // buttons) overflows the 393px viewport and the tap can't land.
   await isolatedPage.goto('/portfolio');
+  await isolatedPage.evaluate(() => {
+    localStorage.setItem('governance-migration-notice-shown', 'true');
+  });
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
 });
@@ -60,13 +64,19 @@ test('mobile takeover renders the full-overlay comp presentation', async ({ isol
   await isolatedPage.getByTestId('stake-takeover-borrow-card-toggle').click();
   await expect(isolatedPage.getByTestId('stake-takeover-min-stake')).toBeVisible({ timeout: 30_000 });
 
-  // Enable Delegate so the overlay is at its tallest, then check the footer
-  // stays pinned: Confirm is inside the viewport without scrolling.
+  // Enable Delegate so the overlay is at its tallest. TakeoverShell scrolls the
+  // footer with the card column (not a sticky bar — see TakeoverShell.tsx), so
+  // scroll to the footer before asserting the Confirm CTA is reachable.
   await isolatedPage.getByTestId('stake-takeover-delegate-card-toggle').click();
   await expect(isolatedPage.getByTestId('stake-takeover-delegate-list')).toBeVisible({ timeout: 15_000 });
-  const confirmBox = await isolatedPage.getByTestId('stake-takeover-confirm').boundingBox();
+  const scrollArea = takeover.locator('.flex-1.overflow-y-auto');
+  await scrollArea.evaluate(el => {
+    el.scrollTop = el.scrollHeight;
+  });
+  const confirm = isolatedPage.getByTestId('stake-takeover-confirm');
+  await expect(confirm).toBeInViewport();
+  const confirmBox = await confirm.boundingBox();
   expect(confirmBox).not.toBeNull();
-  expect(confirmBox!.y + confirmBox!.height).toBeLessThanOrEqual(MOBILE_VIEWPORT.height);
   // Comp footer CTA is the 48px L button (desktop keeps the 56px XL).
   expect(confirmBox!.height).toBe(48);
 });
@@ -97,9 +107,10 @@ test('percent chips and optional-card collapse work at the phone tier', async ({
 
 // --- M6.6 (APP-405): the /stake page itself at the phone tier, per comps
 // 1222:16771 (My positions) / 1222:17089 (Statistics) / 1222:17233 (About).
-// The positions/activity surfaces are subgraph-backed and the vnet's urns are
-// invisible to the indexer, so the populated spec route-stubs the two staking
-// queries; on-chain per-row reads still hit the fork and settle to zeroes.
+// Position rows come from the chain (`useStakeUrnVaults`), so the populated
+// spec stages real urns on the fork; the activity surface is subgraph-backed
+// and the vnet's urns are invisible to the indexer, so the two staking
+// queries are still route-stubbed for the event context.
 
 const E18 = '0'.repeat(18);
 
@@ -177,20 +188,33 @@ test('statistics and about tabs lead with the promo card at the phone tier', asy
   const chartBox = await chart.boundingBox();
   expect(engineBox!.y).toBeLessThan(chartBox!.y);
 
-  // Comp 1222:17233 order: promo card above the About copy; links stack as
-  // full-width rows.
+  // Comp 1222:17233 order: promo card above the About copy; the two shipped
+  // links (View contract, Governance) stack as full-width rows — Docs is held
+  // back until staking docs exist (see StakeAboutTab.tsx).
   await stakeDeepLink(isolatedPage, 'tab=about');
   const aboutCopy = isolatedPage.getByTestId('stake-about-copy');
   await expect(aboutCopy).toBeVisible({ timeout: 15_000 });
   const engineBox2 = await isolatedPage.getByTestId('stake-engine-card').boundingBox();
   const aboutBox = await aboutCopy.boundingBox();
   expect(engineBox2!.y).toBeLessThan(aboutBox!.y);
-  const docsLink = isolatedPage.getByRole('link', { name: 'Docs' });
-  const docsBox = await docsLink.boundingBox();
-  expect(docsBox!.width).toBeGreaterThan(300);
+  const governanceLink = isolatedPage.getByTestId('stake-about-links').getByRole('link', {
+    name: 'Governance'
+  });
+  await expect(governanceLink).toBeVisible();
+  const governanceBox = await governanceLink.boundingBox();
+  expect(governanceBox!.width).toBeGreaterThan(300);
 });
 
-test('populated positions tab stacks per the mobile comp', async ({ isolatedPage }) => {
+test('populated positions tab stacks per the mobile comp', async ({ isolatedPage, testAccount }) => {
+  // Four active urns (two with debt) + one emptied urn behind the Hide
+  // inactive toggle — the comp's card mix, mirrored by the subgraph stub.
+  await stageUrns(testAccount, [
+    { sky: 700_550n, usds: 30_000n },
+    { sky: 780_212n, usds: 30_000n },
+    { sky: 50_000n },
+    { sky: 27_127n },
+    { sky: 0n }
+  ]);
   await stubStakeSubgraph(isolatedPage);
   await stakeDeepLink(isolatedPage, 'tab=positions');
 
@@ -224,9 +248,7 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   await viewMore.first().click();
   const details = isolatedPage.getByTestId('stake-position-details');
   await expect(details).toBeVisible({ timeout: 30_000 });
-  // The stubbed urns are subgraph-only, so the on-chain reads decide whether
-  // the urn resolves active or inactive here — assert the footer-pair shape,
-  // not the specific primary verb.
+  // Assert the footer-pair shape, not the specific primary verb.
   const footerPrimary = isolatedPage
     .getByTestId('stake-details-cta-stake')
     .or(isolatedPage.getByTestId('stake-details-cta-reopen'));

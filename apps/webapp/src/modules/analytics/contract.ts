@@ -179,10 +179,6 @@ export interface NetworkAutoSwitchedProps extends CommonEventProps {
   is_reconnect?: boolean;
 }
 
-export interface UnsupportedNetworkShownProps extends CommonEventProps {
-  wallet_chain_id?: number;
-}
-
 export interface ConvertBlockedProps extends CommonEventProps {
   reason: PsmConversionDisabledReason;
   chain_id: number;
@@ -227,7 +223,6 @@ export type AppEventContract = {
   app_network_switch_requested: NetworkSwitchRequestedProps;
   app_network_switch_completed: NetworkSwitchCompletedProps;
   app_network_auto_switched: NetworkAutoSwitchedProps;
-  app_unsupported_network_shown: UnsupportedNetworkShownProps;
   app_error_boundary_triggered: ErrorBoundaryTriggeredProps;
   app_route_error_viewed: PathViewedProps;
   app_not_found_viewed: PathViewedProps;

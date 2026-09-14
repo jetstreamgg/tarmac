@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EarnTable, EarnTableRowItem } from './EarnTable';
 
@@ -89,12 +89,15 @@ describe('EarnTable — mobile accordion cards (M5)', () => {
     expect(screen.getByRole('button', { name: 'View details' })).toBeTruthy();
   });
 
-  it('collapses an expanded card on a second toggle', () => {
+  it('collapses an expanded card on a second toggle', async () => {
     renderEarn();
 
     fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
     fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
-    expect(screen.queryByText('TVL')).toBeNull();
+    // The detail block animates shut (AnimatePresence keeps the exiting node
+    // mounted for the reveal's duration), so it leaves the DOM a beat later.
+    await waitFor(() => expect(screen.queryByText('TVL')).toBeNull());
+    expect(screen.getByTestId('earn-card-toggle-savings').getAttribute('aria-expanded')).toBe('false');
   });
 
   it('applies the M6.2 comp scale: 24px list corners, Label 5 title, Label 6 rate value', () => {

@@ -18,7 +18,7 @@ import { trailingAverageRate, type DailyRatePoint } from '../shared/trailingRate
 import { useMultiChainSavingsBalances } from '../savings/useMultiChainSavingsBalances';
 import { useSkySavingsRateHistoricData } from '../savings/useSkySavingsRateHistoricData';
 import { useAvailableTokenRewardContracts } from '../rewards/useAvailableTokenRewardContracts';
-import { filterDeprecatedRewardContracts } from '../rewards/deprecatedRewards';
+import { filterDeprecatedRewardContracts, isDeprecatedRewardContract } from '../rewards/deprecatedRewards';
 import { useMultipleRewardsChartInfo } from '../rewards/useMultipleRewardsChartInfo';
 import type { RewardsChartInfoParsed } from '../rewards/useRewardsChartInfo';
 import { MORPHO_API_CHAIN_ID, MORPHO_VAULTS } from '../morpho/constants';
@@ -37,6 +37,7 @@ import { useAllPendleUserAssets } from '../pendle/useAllPendleUserAssets';
 import { useStUsdsData } from '../stusds/useStUsdsData';
 import { useStUsdsChartInfo } from '../stusds/useStUsdsChartInfo';
 import { buildEarnProducts } from './earnProducts';
+import { deriveEndedRewardPositions } from './endedRewardPositions';
 import type { EarnMarketplaceResult, EarnProductRow, EarnRate, EarnUsdAmount } from './types';
 
 const NO_RATE = '—';
@@ -98,8 +99,14 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   // --- Rewards: array-taking hooks keep the call count fixed regardless of
   // how many contracts the chain resolves.
   const allRewardContracts = useAvailableTokenRewardContracts(familyMainnetId);
+  // Live farms feed the opportunities rows; deprecated ones are dropped from
+  // there but still read below, for `endedRewardPositions`.
   const rewardContracts = useMemo(
     () => filterDeprecatedRewardContracts(allRewardContracts, familyMainnetId),
+    [allRewardContracts, familyMainnetId]
+  );
+  const deprecatedRewardContracts = useMemo(
+    () => allRewardContracts.filter(c => isDeprecatedRewardContract(c.contractAddress, familyMainnetId)),
     [allRewardContracts, familyMainnetId]
   );
   const {
@@ -109,12 +116,23 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   } = useMultipleRewardsChartInfo({
     rewardContractAddresses: rewardContracts.map(c => c.contractAddress)
   });
+  // A deprecated farm's TVL only needs the series' latest row (newest-first),
+  // so it is its own single-row call rather than 100 rows folded into the one
+  // above — and keyed on the static deprecated list, not on which farms turn
+  // out to be held, so it runs beside the balance read instead of behind it.
+  const { data: deprecatedRewardsCharts } = useMultipleRewardsChartInfo({
+    rewardContractAddresses: deprecatedRewardContracts.map(c => c.contractAddress),
+    limit: 1
+  });
+  // ONE balanceOf batch over every farm, live and deprecated: the ended
+  // positions used to re-read the deprecated ones in a second multicall with
+  // its own query key, refetching independently on focus.
   const {
     data: rewardsBalances,
     isLoading: rewardsBalancesLoading,
     error: rewardsBalancesError
   } = useReadContracts({
-    contracts: rewardContracts.map(c => ({
+    contracts: allRewardContracts.map(c => ({
       address: c.contractAddress as `0x${string}`,
       abi: usdsSkyRewardAbi,
       chainId: familyMainnetId,
@@ -123,6 +141,26 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     })),
     query: { enabled: !!address }
   });
+  const endedRewardPositions = useMemo(
+    () =>
+      address
+        ? deriveEndedRewardPositions({
+            allContracts: allRewardContracts,
+            deprecatedContracts: deprecatedRewardContracts,
+            balances: rewardsBalances,
+            charts: deprecatedRewardsCharts,
+            familyChainIds
+          })
+        : [],
+    [
+      address,
+      allRewardContracts,
+      deprecatedRewardContracts,
+      rewardsBalances,
+      deprecatedRewardsCharts,
+      familyChainIds
+    ]
+  );
 
   // --- Vaults (Morpho + Spark via the unified VAULTS registry)
   const morphoVaultAddresses = useMemo(
@@ -258,7 +296,10 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
           case 'rewards': {
             const index = rewardContracts.findIndex(c => c.contractAddress === product.address);
             const latest = latestChartEntry(rewardsCharts?.[index]);
-            const supplied = rewardsBalances?.[index]?.result as bigint | undefined;
+            // Balances are read over EVERY farm (deprecated included), so they
+            // index by the unfiltered list.
+            const balanceIndex = allRewardContracts.findIndex(c => c.contractAddress === product.address);
+            const supplied = rewardsBalances?.[balanceIndex]?.result as bigint | undefined;
             const suppliedUsd =
               connected && supplied !== undefined ? bigintToUsd(supplied, usdsPrice) : undefined;
             const tvlUsd = latest
@@ -411,6 +452,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     savingsRateHistoric,
     savingsRateHistoricLoading,
     rewardContracts,
+    allRewardContracts,
     rewardsCharts,
     rewardsChartsLoading,
     rewardsChartsError,
@@ -446,6 +488,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
 
   return {
     rows,
+    endedRewardPositions,
     isLoading: rows.some(row => row.isLoading),
     // Every source a row's `position` reads from — balances plus the prices
     // that turn them into USD. Rate/TVL/chart sources (the slow external

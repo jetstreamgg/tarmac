@@ -307,8 +307,10 @@ export { trailingAverageRate, type DailyRatePoint } from './shared/trailingRate'
 
 // Earn marketplace (C1 registry + aggregator)
 export { useEarnMarketplace } from './earn/useEarnMarketplace';
+export { deriveEndedRewardPositions } from './earn/endedRewardPositions';
 export {
   buildEarnProducts,
+  buildRewardsProduct,
   productNetworks,
   rewardsRiskProfile,
   RISK_TIER_BY_PROFILE
@@ -322,7 +324,8 @@ export type {
   EarnProductRow,
   EarnRate,
   EarnRiskTier,
-  EarnUsdAmount
+  EarnUsdAmount,
+  EndedRewardPosition
 } from './earn/types';
 
 // Decentralized Storage
@@ -368,7 +371,6 @@ export { useSkyPrice } from './prices/useSkyPrice';
 export { useLsMkrPrice } from './prices/useLsMkrPrice';
 
 export { useStakeHistory } from './stake/useStakeHistory';
-export { useTotalUserStaked } from './stake/useTotalUserStaked';
 export { useStakeHistoricData } from './stake/useStakeHistoricData';
 
 // Stake Module
@@ -385,7 +387,6 @@ export { useStakeSkyApprove, useStakeUsdsApprove } from './stake/useStakeApprove
 export { useClaimRewards as useStakeClaimRewards } from './stake/useClaimRewards';
 export { useBatchStakeClaimAllRewards } from './stake/useBatchStakeClaimAllRewards';
 export { useStakeRewardsData } from './stake/useStakeRewardsData';
-export { useStakePosition } from './stake/useStakePosition';
 export { useStakeExitFee } from './stake/useStakeExitFee';
 export { useBatchStakeMulticall } from './stake/useBatchStakeMulticall';
 export { useHighestRateFromChartData } from './stake/useHighestRateFromChartData';

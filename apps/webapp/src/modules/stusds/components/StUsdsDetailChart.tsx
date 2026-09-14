@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useStUsdsChartInfo, useStUsdsData } from '@/hooks';
 import { calculateApyFromStr } from '@/utils';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
+import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseStUsdsChartData } from '../hooks/useParseStUsdsChartData';
@@ -46,10 +47,12 @@ export function StUsdsDetailChart() {
     liveRate !== undefined && parsed.rate.length > 0
       ? [...parsed.rate, { value: liveRate, date: new Date(), tooltipLabel: LIVE_LABEL }]
       : parsed.rate;
-  const tvlData =
-    liveTvl !== undefined && parsed.tvl.length > 0
-      ? [...parsed.tvl, { value: liveTvl, date: new Date(), tooltipLabel: LIVE_LABEL }]
-      : parsed.tvl;
+  // The TVL series gets no live point: BA Labs' daily `stusds_tvl` is not the
+  // module's on-chain `totalAssets` (measured 224.3M vs 209.0M on the same
+  // day), so a trailing on-chain point drew a step off the end of the daily
+  // series that read as a cliff on 1W (APP-563 #11). The headline keeps the
+  // on-chain figure, matching the Details grid.
+  const tvlData = parsed.tvl;
 
   return (
     <ErrorBoundary variant="small">
@@ -63,7 +66,12 @@ export function StUsdsDetailChart() {
         hidePercentChange={isRate}
         symbol={isRate ? undefined : 'USDS'}
         tokenSymbols={isRate ? undefined : ['USDS']}
-        label={isRate ? <Trans>Current Rate</Trans> : <Trans>TVL</Trans>}
+        label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}
+        // The TVL metric leads its figure with the token mark instead of a
+        // trailing ticker and tags it with the period's change, the same
+        // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
+        icons={isRate ? undefined : <TokenIconStack symbols={['USDS']} size={32} className="shrink-0" />}
+        showTrend={!isRate}
         displayValue={isRate ? liveRate : liveTvl}
         tooltipLabel="Daily average"
         metrics={[

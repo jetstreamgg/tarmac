@@ -30,7 +30,9 @@ vi.mock('@/hooks', async importOriginal => {
     useSavingsData: () => ({ data: { userSavingsBalance: h.savingsBalance }, error: null, isLoading: false }),
     useOverallSkyData: () => ({ data: undefined }),
     useSkySavingsRateHistoricData: () => ({ data: undefined }),
-    productNetworks: () => [1]
+    // Savings is live on mainnet AND the L2s: the phone header keeps its
+    // full-width dropdown row (a single-chain product gets the title badge).
+    useProductNetworks: () => [1, 8453]
   };
 });
 
@@ -51,10 +53,11 @@ vi.mock('./SavingsTransactionsTable', () => ({
 vi.mock('./SavingsTransactionsFilter', () => ({
   SavingsTransactionsFilter: () => <div data-testid="savings-transactions-filter" />
 }));
-vi.mock('@/modules/ui/components/ChainModal', () => ({
-  ChainModal: ({ triggerClassName }: { triggerClassName?: string }) => (
+vi.mock('@/modules/ui/components/NetworkSelect', () => ({
+  NetworkSelect: ({ triggerClassName }: { triggerClassName?: string }) => (
     <div data-testid="mock-chain-modal" data-trigger-class={triggerClassName ?? ''} />
-  )
+  ),
+  useNetworkTitleBadge: () => null
 }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 

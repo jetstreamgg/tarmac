@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useTokenBalance } from '@/hooks';
+import { formatBigInt } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
@@ -42,8 +43,8 @@ const clampFraction = (value: string, decimals: number) => {
  * `useConvertLaunch` executes it.
  *
  * The URL is the source of truth for the direction: it is *derived* from the
- * legacy `?source_token=` param every render (default USDS → USDC per the Figma
- * default frame), and flips only write the param. Deep links, back/forward and
+ * legacy `?source_token=` param every render (default USDC → USDS, APP-560), and
+ * flips only write the param. Deep links, back/forward and
  * in-page flips therefore can never disagree with the form. The typed amount is
  * kept raw and clamped to the active origin's decimals at read time, so a
  * direction change (whichever way it arrives) needs no state surgery.
@@ -58,7 +59,7 @@ export function useConvertForm() {
   const { address, isConnected } = useConnection();
   const [searchParams, setSearchParams] = useAppSearchParams();
 
-  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDS_TO_USDC';
+  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDC_TO_USDS';
   const [rawValue, setRawValue] = useState('');
 
   const originDecimals = getPsmDecimalsForDirection(direction);
@@ -119,7 +120,8 @@ export function useConvertForm() {
           params.set(QueryParams.SourceToken, originSymbolFor(next));
           return params;
         },
-        { replace: true }
+        // resetScroll: false keeps the viewport on the card when the page overflows
+        { replace: true, resetScroll: false }
       );
     },
     [direction, setSearchParams]
@@ -167,7 +169,13 @@ export function useConvertForm() {
     originSymbol: originSymbolFor(direction),
     targetSymbol: originSymbolFor(OPPOSITE[direction]),
     value,
-    targetValue: value === '' ? '' : formatUnits(targetAmount, targetDecimals),
+    // Display-only: the derived figure is grouped ("189,924,037.3125") per the
+    // Design QA note (APP-553). Six fraction digits covers the PSM — both
+    // directions bottleneck at USDC's 6 decimals — while keeping a wider Intl
+    // cap from printing a double's binary tail (1.1 → 1.1000…089). Like every
+    // formatBigInt caller this rounds through a double, so it is exact to ~16
+    // significant digits; the transacted bigint is untouched.
+    targetValue: value === '' ? '' : formatBigInt(targetAmount, { unit: targetDecimals, maxDecimals: 6 }),
     amount,
     targetAmount,
     originDecimals,

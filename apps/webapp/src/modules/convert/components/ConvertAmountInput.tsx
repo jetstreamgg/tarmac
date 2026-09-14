@@ -5,11 +5,15 @@ import { BP, useBreakpointIndex } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
+import { RollingValue } from '@/components/ui/rolling-value';
 import { Text } from '@/modules/layout/components/Typography';
 import { ConvertTokenSelect, type ConvertTokenSymbol } from './ConvertTokenSelect';
 import { NO_VALUE } from '@/lib/constants';
 
 const PERCENT_OPTIONS = [25, 50, 100] as const;
+
+const amountClassName =
+  'text-text font-circle w-full min-w-0 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]';
 
 const formatBalance = (balance: bigint | undefined, decimals: number) =>
   balance === undefined
@@ -34,6 +38,10 @@ const formatBalance = (balance: bigint | undefined, decimals: number) =>
  * amount, and — because three chips plus the token chip cannot share a 360px
  * row with a typed figure — the percent chips still yield once an amount is
  * entered.
+ *
+ * The target figure is an `<output>` rather than a read-only input so it can
+ * roll over as the origin amount is typed (Design QA 2800:92323). The typed
+ * origin figure stays a plain input.
  */
 export function ConvertAmountInput({
   side,
@@ -96,17 +104,26 @@ export function ConvertAmountInput({
         </Text>
       </div>
       <div className="flex items-center justify-between gap-3">
-        <input
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="0.00"
-          value={value}
-          onChange={isFrom && onInput ? e => onInput(e.target.value) : undefined}
-          readOnly={!isFrom}
-          aria-label={isFrom ? t`Convert amount` : t`Amount received`}
-          data-testid={`convert-${side}-amount`}
-          className="text-text placeholder:text-text font-circle w-full min-w-0 bg-transparent text-2xl leading-[26px] font-medium tracking-[-0.48px] outline-none md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]"
-        />
+        {isFrom ? (
+          <input
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="0.00"
+            value={value}
+            onChange={onInput ? e => onInput(e.target.value) : undefined}
+            aria-label={t`Convert amount`}
+            data-testid="convert-from-amount"
+            className={cn(amountClassName, 'placeholder:text-text bg-transparent outline-none')}
+          />
+        ) : (
+          <output
+            aria-label={t`Amount received`}
+            data-testid="convert-to-amount"
+            className={cn(amountClassName, 'block overflow-hidden whitespace-nowrap')}
+          >
+            <RollingValue value={value === '' ? '0.00' : value} speed="stat" />
+          </output>
+        )}
         <span className="flex shrink-0 items-center gap-1.5">
           {(!isMobile || value === '') && percentButtons}
           <ConvertTokenSelect value={symbol} onChange={onTokenChange} dataTestId={`convert-${side}-token`} />

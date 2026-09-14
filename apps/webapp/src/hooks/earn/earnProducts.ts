@@ -72,6 +72,36 @@ export function productNetworks(
 }
 
 /**
+ * The registry descriptor of one rewards farm. Exported on its own so the
+ * marketplace can describe a DEPRECATED farm the user still holds (the
+ * "Requires action" row) with the same attributes the live rows carry — risk,
+ * networks, supply tokens, detail path — instead of restating them by hand.
+ */
+export function buildRewardsProduct(
+  contract: RewardContract,
+  familyChainIds: number[]
+): EarnProductDescriptor {
+  const riskProfile = rewardsRiskProfile(contract.rewardToken.symbol);
+  return {
+    id: `rewards-${contract.rewardToken.symbol.toLowerCase()}`,
+    kind: 'rewards',
+    intent: Intent.REWARDS_INTENT,
+    // Marketplace rows read "<TOKEN> Rewards" (APP-526); the registry name stays
+    // "Earn <TOKEN>" for analytics parity.
+    name: rewardContractDisplayName(contract),
+    tokenSymbol: contract.supplyToken.symbol,
+    supplyTokens: [contract.supplyToken.symbol],
+    risk: RISK_TIER_BY_PROFILE[riskProfile],
+    riskProfile,
+    networks: productNetworks(Intent.REWARDS_INTENT, familyChainIds),
+    detailPath: intentToPath(Intent.REWARDS_INTENT, contract.contractAddress),
+    // RewardContract types its address as plain string; the values come from
+    // the generated per-chain address maps.
+    address: contract.contractAddress as `0x${string}`
+  };
+}
+
+/**
  * The static-length EarnProduct registry: one descriptor per product instance
  * (savings, each active rewards contract, each vault, each PT market, stUSDS).
  * Pure — callers pass the active chain family and the chain-resolved rewards
@@ -100,26 +130,9 @@ export function buildEarnProducts(
     detailPath: intentToPath(Intent.SAVINGS_INTENT)
   };
 
-  const rewards: EarnProductDescriptor[] = rewardContracts.map(contract => {
-    const riskProfile = rewardsRiskProfile(contract.rewardToken.symbol);
-    return {
-      id: `rewards-${contract.rewardToken.symbol.toLowerCase()}`,
-      kind: 'rewards',
-      intent: Intent.REWARDS_INTENT,
-      // Marketplace rows read "<TOKEN> Rewards" (APP-526); the registry name stays
-      // "Earn <TOKEN>" for analytics parity.
-      name: rewardContractDisplayName(contract),
-      tokenSymbol: contract.supplyToken.symbol,
-      supplyTokens: [contract.supplyToken.symbol],
-      risk: RISK_TIER_BY_PROFILE[riskProfile],
-      riskProfile,
-      networks: productNetworks(Intent.REWARDS_INTENT, familyChainIds),
-      detailPath: intentToPath(Intent.REWARDS_INTENT, contract.contractAddress),
-      // RewardContract types its address as plain string; the values come from
-      // the generated per-chain address maps.
-      address: contract.contractAddress as `0x${string}`
-    };
-  });
+  const rewards: EarnProductDescriptor[] = rewardContracts.map(contract =>
+    buildRewardsProduct(contract, familyChainIds)
+  );
 
   const vaults: EarnProductDescriptor[] = VAULTS.map(vault => {
     const address = vault.vaultAddress[familyMainnetId];

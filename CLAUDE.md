@@ -65,6 +65,7 @@ See the `adding-features` skill (`.claude/skills/adding-features/SKILL.md`) for 
 - pnpm v11.5.0+ required
 - Key environment variables:
   - `TENDERLY_API_KEY` - For test network forking
+  - `MAINNET_FORK_CONTAINER_ID` - Tenderly mainnet parent vnet for `pnpm vnet:fork` (default in `.env.example`)
   - `VITE_PROXY_ORIGIN` - Origin of the Sky RPC/indexer proxy (RPC URLs are built as `${VITE_PROXY_ORIGIN}/rpc/<chainId>`)
   - `VITE_RPC_PROVIDER_TENDERLY` - Tenderly virtual network RPC used as the dev-mode chain across all modules
   - `VITE_WALLETCONNECT_PROJECT_ID` - Wallet connection

@@ -103,6 +103,7 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   id: 'x',
+  rowId: over.id ?? 'x',
   name: 'X',
   tokenSymbol: 'USDS',
   kind: 'vault',
@@ -114,7 +115,8 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   hoverColor: '#000',
   share: 0.5,
   detailPath: '/earn/x',
-  chainIds: [1],
+  chainId: 1,
+  multichain: false,
   ...over
 });
 
@@ -133,8 +135,7 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   avgRate: 0,
   ratesLoading: false,
   activePositions: positions.length,
-  suppliedTokens: [],
-  networksWithPositions: [1]
+  suppliedTokens: []
 });
 
 // APP-450 earnings fixture: literal per-source figures, combined via the real
@@ -246,7 +247,7 @@ describe('PortfolioPositionsSection — supply routing', () => {
       name: 'Sky Savings Rate',
       kind: 'savings',
       detailPath: '/earn/savings',
-      chainIds: [8453]
+      chainId: 8453
     });
     renderSection([savingsOnBase]);
     const savingsCard = screen.getAllByTestId('position-card')[0];
@@ -267,7 +268,7 @@ describe('PortfolioPositionsSection — supply routing', () => {
       name: 'Sky Savings Rate',
       kind: 'savings',
       detailPath: '/earn/savings',
-      chainIds: [8453]
+      chainId: 8453
     });
     renderSection([savingsOnBase]);
     const savingsCard = screen.getAllByTestId('position-card')[0];
@@ -301,15 +302,9 @@ describe('PositionCard — DS comp conformance', () => {
   });
 
   it('shows a single-chain network badge with the chain name', () => {
-    renderSection([VAULT]); // chainIds: [1]
+    renderSection([VAULT]); // chainId: 1
     const card = screen.getAllByTestId('position-card')[0];
     expect(within(card).getByTestId('position-card-networks').textContent).toContain('Ethereum');
-  });
-
-  it('falls back to an "N networks" badge for a multi-chain position', () => {
-    renderSection([position({ id: 'multi', name: 'Multi', chainIds: [1, 8453] })]);
-    const card = screen.getAllByTestId('position-card')[0];
-    expect(within(card).getByTestId('position-card-networks').textContent).toContain('2 networks');
   });
 });
 

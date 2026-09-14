@@ -18,7 +18,6 @@ import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/ut
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import {
   ProductDetailTemplate,
@@ -155,23 +154,12 @@ export function StUsdsProductDetail() {
           <TokenIcon token={{ symbol: 'stUSDS' }} width={48} className="h-12 w-12" showChainIcon={false} />
         )
       }}
-      title={
-        <span className="flex flex-col gap-1">
-          <span>stUSDS</span>
-          {/* The DS line under the title (5120:19542) is Body 6, so it opts
-              back out of the heading's Circular styling. */}
-          <span className="font-graphik text-fgSecondary text-xs leading-[18px] font-normal tracking-normal">
-            <Trans>Access a variable reward rate on USDS by participating in SKY-backed borrowing</Trans>
-          </span>
-        </span>
+      title="stUSDS"
+      // The DS line under the title (5120:19542).
+      titleSubtitle={
+        <Trans>Access a variable reward rate on USDS by participating in SKY-backed borrowing</Trans>
       }
-      networkSelector={
-        <ChainModal
-          chainIds={networks}
-          labelClassName="hidden sm:block"
-          dataTestId="product-detail-network"
-        />
-      }
+      networkChainIds={networks}
       chart={<StUsdsDetailChart />}
       position={<StUsdsPositionCard />}
       details={details}

@@ -2,15 +2,13 @@ require('dotenv').config();
 //@ts-expect-error readFile is already declared
 const { writeFile, readFile } = require('fs/promises');
 
-// Default fork container with Curve pool properly configured for stUSDS provider tests
-// const DEFAULT_MAINNET_FORK_CONTAINER_ID = 'cec455a4-3a8a-4a93-ac66-fc98fa1a8103';
-// const DEFAULT_MAINNET_FORK_CONTAINER_ID = '8c4079a1-61ab-4f95-be10-c7a7cb8017e5';
-const DEFAULT_MAINNET_FORK_CONTAINER_ID = 'bf27af19-1335-404a-9257-18affa774f5a';
-
-// Allow override via environment variable for future alternate fork needs
-// Usage: ALTERNATE_FORK_CONTAINER_ID=<container-id> pnpm vnet:fork
-const MAINNET_FORK_CONTAINER_ID =
-  process.env.ALTERNATE_FORK_CONTAINER_ID || DEFAULT_MAINNET_FORK_CONTAINER_ID;
+const MAINNET_FORK_CONTAINER_ID = process.env.MAINNET_FORK_CONTAINER_ID;
+if (!MAINNET_FORK_CONTAINER_ID) {
+  console.error(
+    'MAINNET_FORK_CONTAINER_ID is required. Copy .env.example to .env or set the variable in CI.'
+  );
+  process.exit(1);
+}
 
 // Allow override via environment variable for alternate vnet naming
 // Usage: VNET_PREFIX=my-prefix pnpm vnet:fork

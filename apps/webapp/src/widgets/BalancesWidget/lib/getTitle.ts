@@ -11,7 +11,7 @@ export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: 
     case TransactionTypeEnum.USDS_TO_DAI:
       return t`Revert`;
     case TransactionTypeEnum.TRADE:
-      return t`Trade`;
+      return t`Convert`;
     case TransactionTypeEnum.SUPPLY:
       if (module === ModuleEnum.REWARDS) {
         return t`Rewards Supply`;

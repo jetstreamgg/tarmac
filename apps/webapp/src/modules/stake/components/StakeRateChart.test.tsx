@@ -89,6 +89,8 @@ describe('StakeRateChart', () => {
 
     // Newest tvl datapoint (1,000,000) with the $ prefix, compacted to $1M.
     expect(screen.getByText('$1M')).toBeTruthy();
+    // The hero reads the full label, not the toggle's short form (APP-552).
+    expect(screen.getByText('Total value locked')).toBeTruthy();
     // The Rate hero label is gone once TVL is selected.
     expect(screen.queryByText('Current Rate')).toBeNull();
   });

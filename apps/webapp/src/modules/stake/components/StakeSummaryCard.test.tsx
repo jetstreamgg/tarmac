@@ -87,12 +87,20 @@ import { StakeSummaryCard, calculateNetApy } from './StakeSummaryCard';
 const POSITIONS: StakeUserPosition[] = [
   {
     index: 0,
+    urnAddress: '0x1111111111111111111111111111111111111111',
     skyLocked: 700550n * 10n ** 18n,
     usdsDebt: 30000n * 10n ** 18n,
     barks: [],
     lastMutationTimestamp: undefined
   },
-  { index: 1, skyLocked: 50000n * 10n ** 18n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }
+  {
+    index: 1,
+    urnAddress: '0x1111111111111111111111111111111111111111',
+    skyLocked: 50000n * 10n ** 18n,
+    usdsDebt: 0n,
+    barks: [],
+    lastMutationTimestamp: undefined
+  }
 ];
 
 const renderCard = () =>
@@ -152,7 +160,16 @@ describe('StakeSummaryCard', () => {
     render(
       <I18nProvider i18n={i18n}>
         <StakeSummaryCard
-          positions={[{ index: 0, skyLocked: 0n, usdsDebt: 0n, barks: [], lastMutationTimestamp: undefined }]}
+          positions={[
+            {
+              index: 0,
+              urnAddress: '0x1111111111111111111111111111111111111111',
+              skyLocked: 0n,
+              usdsDebt: 0n,
+              barks: [],
+              lastMutationTimestamp: undefined
+            }
+          ]}
         />
       </I18nProvider>
     );

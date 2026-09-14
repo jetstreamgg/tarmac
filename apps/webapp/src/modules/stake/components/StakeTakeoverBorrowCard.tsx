@@ -27,7 +27,10 @@ const RISK_PILL: Record<RiskLevel, string> = {
 
 function StatItem({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    // nowrap from md: the row below never breaks there (APP-546), so a value
+    // must not fold onto a second line inside its cell either. Phones keep
+    // the 2×2 grid, whose narrow tracks need the wrap.
+    <div className="flex min-w-0 flex-col gap-1 md:whitespace-nowrap">
       <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
       <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
         {children}
@@ -198,8 +201,11 @@ export function StakeTakeoverBorrowCard({
 
         {/* 2×2 on phones (1222:19900), one 4-up row from md (1036:209767). The
             middle divider only exists in the row: `hidden` drops it out of the
-            grid's flow entirely, so the mobile 2×2 keeps its centre rule. */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:flex md:flex-wrap md:gap-4">
+            grid's flow entirely, so the mobile 2×2 keeps its centre rule. The
+            row never wraps (APP-546): the oracle prices change width as the
+            slider moves, and a wrapping row flipped between one and two
+            lines under the pointer. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:flex md:flex-nowrap md:gap-4">
           <StatItem
             label={
               <>

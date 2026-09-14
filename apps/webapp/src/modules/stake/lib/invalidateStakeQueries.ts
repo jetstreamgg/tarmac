@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { STAKE_URN_VAULTS_KEY } from '../hooks/useStakeUrnVaults';
 
 // Subgraph-backed queries (positions table rows, activity) vs wagmi's
 // on-chain read caches. Allowances / urn state key under 'readContract';
@@ -6,7 +7,12 @@ import type { QueryClient } from '@tanstack/react-query';
 // 'readContracts' (plural, a separate key the singular prefix does not
 // match); the drip simulation has its own key.
 const SUBGRAPH_KEYS = [['stake-user-positions'], ['stake-history']] as const;
-const ONCHAIN_KEYS = [['readContract'], ['readContracts'], ['simulateDrip']] as const;
+const ONCHAIN_KEYS = [[STAKE_URN_VAULTS_KEY], ['readContract'], ['readContracts'], ['simulateDrip']] as const;
+// The positions list itself is an on-chain read, but it must also ride the
+// trail: the receipt is in, yet a load-balanced RPC node can still answer
+// `ownerUrnsCount` from the previous block, and a freshly opened urn would
+// then wait for the next unrelated refetch to appear.
+const TRAIL_KEYS = [...SUBGRAPH_KEYS, [STAKE_URN_VAULTS_KEY]] as const;
 
 // The indexer trails the chain by a few blocks, so the refetch fired at
 // tx-success can land BEFORE the mutation is indexed and re-cache the
@@ -28,7 +34,7 @@ export function invalidateStakeQueries(queryClient: QueryClient) {
   }
   for (const delay of SUBGRAPH_TRAIL_MS) {
     setTimeout(() => {
-      for (const queryKey of SUBGRAPH_KEYS) {
+      for (const queryKey of TRAIL_KEYS) {
         queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
     }, delay);

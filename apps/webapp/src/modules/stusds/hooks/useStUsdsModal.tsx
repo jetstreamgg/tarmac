@@ -29,11 +29,6 @@ export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
       launch({
         title: t`Supply to stUSDS`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your supply is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully supplied to stUSDS.`,
-          error: t`An error occurred while supplying to stUSDS.`
-        },
         sessionId: supplySessionId,
         // Three-screen flow (vault-family recipe): the entry advances to the
         // review; the review's Confirm fires the engine. The body pushes the
@@ -60,11 +55,6 @@ export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
       launch({
         title: t`Withdraw from stUSDS`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully withdrawn from stUSDS.`,
-          error: t`An error occurred while withdrawing from stUSDS.`
-        },
         sessionId: withdrawSessionId,
         reviewTitle: t`Review withdrawal`,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },

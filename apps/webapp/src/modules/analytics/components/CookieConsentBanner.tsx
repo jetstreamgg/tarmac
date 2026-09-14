@@ -119,7 +119,10 @@ export function CookieConsentBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="light:border-border border-text/10 bg-cookieSurface fixed right-4 bottom-4 left-4 z-40 mx-auto max-w-[420px] rounded-xl border p-5 md:right-6 md:left-auto md:z-[999] md:mx-0 md:min-w-[420px]"
+          // Right insets carry `--page-released-gutter` (0 at rest): under a scroll
+          // lock the viewport widens by the scrollbar column (globals.css), and
+          // without it the card would step right when a dialog opens.
+          className="light:border-border border-text/10 bg-cookieSurface fixed right-[calc(1rem+var(--page-released-gutter,0px))] bottom-4 left-4 z-40 mx-auto max-w-[420px] rounded-xl border p-5 md:right-[calc(1.5rem+var(--page-released-gutter,0px))] md:left-auto md:z-[999] md:mx-0 md:min-w-[420px]"
         >
           <AnimatePresence mode="wait" initial={false}>
             {bannerView === 'default' ? (
