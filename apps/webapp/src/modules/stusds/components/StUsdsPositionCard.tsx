@@ -21,7 +21,7 @@ import {
   ProductSupplyCard
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { AccruedToDateStat } from '@/components/product/AccruedToDateStat';
 import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
@@ -187,17 +187,7 @@ export function StUsdsPositionCard() {
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
-            <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <EarningsFigureValue
-                figure={accrued?.totalEarned ?? null}
-                missing={accrued?.missingFromTotal}
-                coverage={accrued?.coverage}
-                variant="plain"
-                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
-                skeletonClassName="h-4 w-14"
-                testId="stusds-accrued-to-date"
-              />
-            </ProductStat>
+            <AccruedToDateStat accrued={accrued} testId="stusds-accrued-to-date" />
             <ProductStat label={<Trans>Current rate</Trans>}>
               <ProductPercent value={currentRate} />
               <RateInfo type="stusds" size={12} />

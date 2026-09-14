@@ -1,16 +1,12 @@
 import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { getTokenDecimals, useTokenBalance, type RewardContract } from '@/hooks';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage } from '@/utils';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
-import {
-  ProductBadge,
-  ProductFigure,
-  ProductStat,
-  ProductStatPair,
-  ProductSupplyCard
-} from '@/components/product/ProductCard';
+import { ProductBadge, ProductSupplyCard } from '@/components/product/ProductCard';
+import { InlineTokenLabel } from '@/components/product/InlineTokenLabel';
+import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo } from '@/components/product/RateInfo';
 import { NO_VALUE } from '@/lib/constants';
@@ -52,12 +48,11 @@ export function RewardsSupplyCard({
     chainId,
     token: contract.supplyToken.address[chainId]
   });
-  const idleBalance = isConnected
-    ? formatNumber(
-        parseFloat(formatUnits(walletBalance?.value ?? 0n, getTokenDecimals(contract.supplyToken, chainId))),
-        { maxDecimals: 2 }
-      )
-    : NO_VALUE;
+  const idleBalance = formatIdleBalance(
+    isConnected
+      ? parseFloat(formatUnits(walletBalance?.value ?? 0n, getTokenDecimals(contract.supplyToken, chainId)))
+      : undefined
+  );
 
   // Per-farm blurb (APP-526): token farms name their reward token, the points
   // farm credits Chronicle with distribution.
@@ -75,19 +70,8 @@ export function RewardsSupplyCard({
 
   // Built outside <Trans> so the icon+symbol cluster is a single message
   // placeholder, middle-aligned to the title's cap-height (savings convention).
-  const inlineToken = (symbol: string) => (
-    <span className="whitespace-nowrap">
-      <TokenIcon
-        token={{ symbol }}
-        width={24}
-        showChainIcon={false}
-        className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
-      />
-      {symbol}
-    </span>
-  );
-  const supplyToken = inlineToken(supplySymbol);
-  const rewardToken = inlineToken(rewardSymbol);
+  const supplyToken = <InlineTokenLabel symbol={supplySymbol} />;
+  const rewardToken = <InlineTokenLabel symbol={rewardSymbol} />;
 
   return (
     <ProductSupplyCard
@@ -121,9 +105,10 @@ export function RewardsSupplyCard({
       }
       description={description}
       stats={
-        <ProductStatPair>
-          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            <ProductFigure value={formattedRate}>
+        <SupplyCardStats
+          rate={formattedRate}
+          rateFigure={
+            <>
               {formattedRate}
               <TokenIcon
                 token={{ symbol: rewardSymbol }}
@@ -132,20 +117,18 @@ export function RewardsSupplyCard({
                 className="h-4 w-4 shrink-0"
               />
               <RateInfo type="str" />
-            </ProductFigure>
-          </ProductStat>
-          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            <ProductFigure value={idleBalance}>
-              {idleBalance}
-              <TokenIcon
-                token={{ symbol: supplySymbol }}
-                width={16}
-                showChainIcon={false}
-                className="h-4 w-4 shrink-0"
-              />
-            </ProductFigure>
-          </ProductStat>
-        </ProductStatPair>
+            </>
+          }
+          idle={idleBalance}
+          idleIcon={
+            <TokenIcon
+              token={{ symbol: supplySymbol }}
+              width={16}
+              showChainIcon={false}
+              className="h-4 w-4 shrink-0"
+            />
+          }
+        />
       }
       cta={
         onSupply && (

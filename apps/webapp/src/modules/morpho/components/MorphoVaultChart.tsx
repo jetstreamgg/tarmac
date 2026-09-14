@@ -1,4 +1,4 @@
-import { useMorphoVaultChartInfo, useVaultMarketData, Token, VaultProvider } from '@/hooks';
+import { getTokenDecimals, useMorphoVaultChartInfo, useVaultMarketData, Token, VaultProvider } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState, useMemo } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -59,8 +59,7 @@ export function MorphoVaultChart({ vaultAddress, assetToken, provider = 'morpho'
   const isLoading = isMorpho ? morphoLoading : marketLoading;
   const error = isMorpho ? morphoError : marketError;
 
-  const decimals =
-    typeof assetToken.decimals === 'number' ? assetToken.decimals : assetToken.decimals[chainId];
+  const decimals = getTokenDecimals(assetToken, chainId);
   const parsedChartData = useParseVaultChartData(timeFrame, chartInfo || [], decimals, useHourlyInterval);
 
   const displayValue = useMemo(() => {

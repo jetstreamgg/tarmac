@@ -1,15 +1,11 @@
 import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { useOverallSkyData, useTokenBalances, type TokenItem } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, isL2ChainId } from '@/utils';
+import { formatDecimalPercentage, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
-import {
-  ProductBadge,
-  ProductFigure,
-  ProductStat,
-  ProductStatPair,
-  ProductSupplyCard
-} from '@/components/product/ProductCard';
+import { ProductBadge, ProductSupplyCard } from '@/components/product/ProductCard';
+import { InlineTokenIcon } from '@/components/product/InlineTokenLabel';
+import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Usds } from '@/modules/icons';
@@ -63,12 +59,11 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
     chainTokenMap: { [chainId]: originTokens },
     enabled: isConnected
   });
-  const idleBalance = isConnected
-    ? formatNumber(
-        (balances ?? []).reduce((sum, balance) => sum + parseFloat(balance.formatted), 0),
-        { maxDecimals: 2 }
-      )
-    : NO_VALUE;
+  const idleBalance = formatIdleBalance(
+    isConnected
+      ? (balances ?? []).reduce((sum, balance) => sum + parseFloat(balance.formatted), 0)
+      : undefined
+  );
 
   // Built outside <Trans> so the dynamic token list is a single message placeholder
   // (Lingui can't extract a .map() inside the macro). Rendered as inline text — the
@@ -79,14 +74,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
       {origins.map((symbol, index) => (
         <span key={symbol} className="whitespace-nowrap">
           {index > 0 && <span className="text-text/40"> / </span>}
-          <TokenIcon
-            token={{ symbol }}
-            width={24}
-            showChainIcon={false}
-            // align-middle centers to the line's x-height; nudge up ~2px so the icon
-            // centers on the uppercase symbol's cap-height instead of sitting low.
-            className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
-          />
+          <InlineTokenIcon symbol={symbol} />
           {symbol}
         </span>
       ))}
@@ -129,9 +117,10 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
         </Trans>
       }
       stats={
-        <ProductStatPair>
-          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            <ProductFigure value={rate}>
+        <SupplyCardStats
+          rate={rate}
+          rateFigure={
+            <>
               {rate}
               <TokenIcon
                 token={{ symbol: 'sUSDS' }}
@@ -140,15 +129,11 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
                 className="h-4 w-4 shrink-0"
               />
               <PopoverRateInfo type="ssr" width={14} height={14} iconClassName="text-fgSecondary" />
-            </ProductFigure>
-          </ProductStat>
-          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            <ProductFigure value={idleBalance}>
-              {idleBalance}
-              <TokenIconStack symbols={origins} size={16} />
-            </ProductFigure>
-          </ProductStat>
-        </ProductStatPair>
+            </>
+          }
+          idle={idleBalance}
+          idleIcon={<TokenIconStack symbols={origins} size={16} />}
+        />
       }
       cta={
         <Button

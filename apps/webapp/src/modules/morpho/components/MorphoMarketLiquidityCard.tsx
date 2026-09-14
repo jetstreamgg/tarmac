@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { formatBigInt } from '@/utils';
-import { Token, VaultProvider } from '@/hooks';
+import { getTokenDecimals, Token, VaultProvider } from '@/hooks';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { useChainId } from 'wagmi';
@@ -31,10 +31,7 @@ export function MorphoMarketLiquidityCard({
       ? `The amount of ${assetToken.symbol} currently available for instant withdrawal.`
       : `The amount of ${assetToken.symbol} currently idle in the Morpho market and available for immediate withdrawal or new borrowing.`;
 
-  const assetDecimals =
-    typeof assetToken.decimals === 'number'
-      ? assetToken.decimals
-      : (assetToken.decimals[chainId as keyof typeof assetToken.decimals] ?? 18);
+  const assetDecimals = getTokenDecimals(assetToken, chainId);
 
   return (
     <StatsCard

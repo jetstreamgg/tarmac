@@ -22,7 +22,7 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { AccruedToDateStat } from '@/components/product/AccruedToDateStat';
 import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { merklAdapter, useClaimRewardsModal } from '@/modules/claim';
@@ -171,17 +171,7 @@ export function VaultPositionCard({
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
-            <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <EarningsFigureValue
-                figure={accrued?.totalEarned ?? null}
-                missing={accrued?.missingFromTotal}
-                coverage={accrued?.coverage}
-                variant="plain"
-                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
-                skeletonClassName="h-4 w-14"
-                testId="vault-accrued-to-date"
-              />
-            </ProductStat>
+            <AccruedToDateStat accrued={accrued} testId="vault-accrued-to-date" />
             <ProductStat label={<Trans>Claimable rewards</Trans>}>
               {reward ? (
                 <>

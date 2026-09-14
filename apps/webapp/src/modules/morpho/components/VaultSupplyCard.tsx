@@ -9,15 +9,12 @@ import {
   type Token,
   type VaultProvider
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
-import {
-  ProductFigure,
-  ProductStat,
-  ProductStatPair,
-  ProductSupplyCard
-} from '@/components/product/ProductCard';
+import { ProductSupplyCard } from '@/components/product/ProductCard';
+import { InlineTokenLabel } from '@/components/product/InlineTokenLabel';
+import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo, vaultRateInfo } from '@/components/product/RateInfo';
 import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
@@ -90,22 +87,11 @@ export function VaultSupplyCard({
   const onSupplyOrConnect = useConnectThenAct(onSupply, 'vault_supply');
 
   const rate = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
-  const idleBalance =
-    isConnected && balance
-      ? formatNumber(parseFloat(formatUnits(balance.value, decimals)), { maxDecimals: 2 })
-      : NO_VALUE;
-
-  const assetIcon = (
-    <span className="whitespace-nowrap">
-      <TokenIcon
-        token={{ symbol: assetToken.symbol }}
-        width={24}
-        showChainIcon={false}
-        className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
-      />
-      {assetToken.symbol}
-    </span>
+  const idleBalance = formatIdleBalance(
+    isConnected && balance ? parseFloat(formatUnits(balance.value, decimals)) : undefined
   );
+
+  const assetIcon = <InlineTokenLabel symbol={assetToken.symbol} />;
 
   return (
     <ProductSupplyCard
@@ -126,9 +112,10 @@ export function VaultSupplyCard({
       }
       description={<VaultDescription vaultName={vaultName} />}
       stats={
-        <ProductStatPair>
-          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            <ProductFigure value={rate}>
+        <SupplyCardStats
+          rate={rate}
+          rateFigure={
+            <>
               {/* The rate carries the DS sparkle rather than a token mark — the
                   vault's yield is not one asset's — and hovering it opens the
                   breakdown (APP-443 item 14; the mark shipped without one).
@@ -144,20 +131,18 @@ export function VaultSupplyCard({
                 )}
               </VaultRateTooltip>
               <RateInfo type={vaultRateInfo(provider)} />
-            </ProductFigure>
-          </ProductStat>
-          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            <ProductFigure value={idleBalance}>
-              {idleBalance}
-              <TokenIcon
-                token={{ symbol: assetToken.symbol }}
-                width={16}
-                showChainIcon={false}
-                className="h-4 w-4 shrink-0"
-              />
-            </ProductFigure>
-          </ProductStat>
-        </ProductStatPair>
+            </>
+          }
+          idle={idleBalance}
+          idleIcon={
+            <TokenIcon
+              token={{ symbol: assetToken.symbol }}
+              width={16}
+              showChainIcon={false}
+              className="h-4 w-4 shrink-0"
+            />
+          }
+        />
       }
       cta={
         <Button
