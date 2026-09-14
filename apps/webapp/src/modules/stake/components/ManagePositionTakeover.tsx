@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -43,6 +42,7 @@ import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
+import { wadToFloat } from '../lib/stakeUsdNotional';
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
@@ -419,7 +419,7 @@ export function ManagePositionTakeover({
   // modal and the confirm grid already use.
   const estRewardsUsd = (staked: bigint) =>
     detail.rewardsRate !== null && detail.skyPriceUsd !== null
-      ? Number(formatUnits(staked, 18)) * detail.rewardsRate * detail.skyPriceUsd
+      ? wadToFloat(staked) * detail.rewardsRate * detail.skyPriceUsd
       : null;
   const estCurrentUsd = estRewardsUsd(existingCollateral);
   const estNextUsd =

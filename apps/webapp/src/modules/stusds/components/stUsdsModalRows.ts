@@ -11,38 +11,23 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { estEarningsTrendCell, productCell, rateCell } from '@/components/product/ModalGridCells';
 import {
-  EST_EARNINGS_LABEL,
-  estEarningsTrendCell,
-  networkCell,
-  networkFeeCell,
-  productCell,
-  rateCell,
-  singleOrDelta,
-  withdrawalCell
-} from '@/components/product/ModalGridCells';
+  buildEarnEntryRows,
+  buildEarnReviewRows,
+  type EarnEntryRowInput,
+  type EarnReviewRowInput
+} from '@/components/product/earnModalRows';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type StUsdsModalGridRow = ModalGridCell[];
 
+const stUsdsRateCell = (rate: string) => rateCell('Rate', rate, undefined, 'stusds');
+
 /** Display strings for the stUSDS supply/withdraw entry screens. */
-type StUsdsEntryRowInput = {
+type StUsdsEntryRowInput = EarnEntryRowInput & {
   /** Current module rate, formatted (e.g. "6.50%"). */
   rate: string;
-  /** Network the transaction runs on (e.g. "Ethereum"). */
-  network: string;
-  /** USDS-denominated position value before the action. */
-  supplyBefore: string;
-  /** USDS-denominated position value after the action. */
-  supplyAfter: string;
-  /** 1Y projected earnings on the position before the action. */
-  earningsBefore: string;
-  /** 1Y projected earnings on the position after the action. */
-  earningsAfter: string;
-  /** When false the Supply / Est. earnings cells collapse to their `before` value (no delta drawn). */
-  hasAmount: boolean;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
-  networkFee: string;
 };
 
 /**
@@ -51,28 +36,15 @@ type StUsdsEntryRowInput = {
  * before→after deltas, then Network fee full-width.
  */
 export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGridRow[] {
-  return [
-    [rateCell('Rate', input.rate, undefined, 'stusds'), networkCell(input.network)],
-    [
-      singleOrDelta(
-        { label: 'Supply', token: 'USDS' },
-        input.supplyBefore,
-        input.supplyAfter,
-        input.hasAmount
-      ),
-      singleOrDelta(
-        { label: EST_EARNINGS_LABEL, token: 'USDS' },
-        input.earningsBefore,
-        input.earningsAfter,
-        input.hasAmount
-      )
-    ],
-    [networkFeeCell(input.networkFee)]
-  ];
+  return buildEarnEntryRows(input, {
+    rate: stUsdsRateCell(input.rate),
+    supplyToken: 'USDS',
+    earningsToken: 'USDS'
+  });
 }
 
 /** Display strings for the stUSDS review stages. */
-type StUsdsReviewRowInput = {
+type StUsdsReviewRowInput = EarnReviewRowInput & {
   /** Entered USDS amount, formatted (the 12px USDS icon carries the denomination). */
   amount: string;
   /** Receive quote, formatted — supply: quoted stUSDS out; withdraw: the entered USDS back. */
@@ -87,10 +59,6 @@ type StUsdsReviewRowInput = {
   routeDetail: string;
   /** Withdrawal availability — "Liquidity based" per the risk sheet (RiskTierDetails); diverges from the vault-family comp's "Anytime"/"Instant". */
   withdrawal: string;
-  /** Network the transaction runs on. */
-  network: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
-  networkFee: string;
 };
 
 /**
@@ -106,7 +74,7 @@ export function buildStUsdsReviewRows(
   flow: 'supply' | 'withdraw',
   input: StUsdsReviewRowInput
 ): StUsdsModalGridRow[] {
-  const firstRow: StUsdsModalGridRow =
+  const leading: StUsdsModalGridRow =
     flow === 'supply'
       ? [
           { kind: 'single', label: "You'll supply", value: input.amount, token: 'USDS' },
@@ -116,13 +84,10 @@ export function buildStUsdsReviewRows(
           { kind: 'single', label: "You'll receive", value: input.receive, token: 'USDS' },
           estEarningsTrendCell(input.estEarnings, 'USDS')
         ];
-  return [
-    firstRow,
-    [productCell('stUSDS', 'stUSDS', 'default'), rateCell('Rate', input.rate, undefined, 'stusds')],
-    [withdrawalCell(input.withdrawal), networkCell(input.network)],
-    [
-      { kind: 'single', label: 'Route', labelBadge: input.route, value: input.routeDetail },
-      networkFeeCell(input.networkFee)
-    ]
-  ];
+  return buildEarnReviewRows(input, {
+    leading,
+    product: productCell('stUSDS', 'stUSDS', 'default'),
+    rate: stUsdsRateCell(input.rate),
+    feeCompanion: { kind: 'single', label: 'Route', labelBadge: input.route, value: input.routeDetail }
+  });
 }

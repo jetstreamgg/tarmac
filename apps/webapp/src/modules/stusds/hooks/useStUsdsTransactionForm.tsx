@@ -1,7 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useConnection } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
-import { t } from '@lingui/core/macro';
 import {
   StUsdsDirection,
   StUsdsProviderType,
@@ -15,6 +14,7 @@ import {
 import { calculateApyFromStr, formatNumber } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useAmountToast, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { MAX_PRICE_IMPACT_BPS_WITHOUT_WARNING } from '../lib/providerNotice';
 import { StUsdsAmountSummary } from '../components/StUsdsAmountSummary';
 import type { StUsdsEngineParams, StUsdsLaunchFlow } from './useStUsdsLaunch';
@@ -23,7 +23,7 @@ import type { StUsdsEngineParams, StUsdsLaunchFlow } from './useStUsdsLaunch';
 export type StUsdsModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
-type StUsdsToastTitles = { loading: string; success: string; error: string };
+type StUsdsToastTitles = AmountToastTitles;
 
 // USDS and stUSDS are both 18-decimal on every deployment.
 const DECIMALS = 18;
@@ -252,24 +252,7 @@ export function useStUsdsTransactionForm({
   };
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(debouncedAmount, DECIMALS)), { maxDecimals: 2 })} USDS`;
-  // Memoized so the modal-content sync effect in StUsdsModalForm has stable deps —
-  // an unmemoized object/element here recreates every render and loops
-  // updateModalContent → setActiveConfig (matches the savings/vault forms).
-  const toast = useMemo<StUsdsToastTitles>(
-    () =>
-      isSupply
-        ? {
-            loading: t`Supplying ${amountLabel}`,
-            success: t`${amountLabel} supplied!`,
-            error: t`Supply failed`
-          }
-        : {
-            loading: t`Withdrawing ${amountLabel}`,
-            success: t`${amountLabel} withdrawn!`,
-            error: t`Withdrawal failed`
-          },
-    [isSupply, amountLabel]
-  );
+  const toast = useAmountToast({ isSupply, amountLabel });
 
   // The from→to hero the review and wallet screens draw: supply is USDS →
   // quoted stUSDS; a withdraw redeems/swaps stUSDS (the quote's input) → USDS.

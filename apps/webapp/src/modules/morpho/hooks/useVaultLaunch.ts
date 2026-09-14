@@ -1,11 +1,9 @@
 import { useMemo } from 'react';
-import { useChainId, useConnection } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
-  TOKENS,
   useBatchVaultDeposit,
-  useTokenAllowance,
   useVaultRedeem,
   useVaultWithdraw,
   type VaultProvider
@@ -13,6 +11,7 @@ import {
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
+import { useApproveSteps } from '@/modules/ui/hooks/useApproveSteps';
 
 export type VaultLaunchFlow = 'supply' | 'withdraw';
 
@@ -53,28 +52,25 @@ export function useVaultLaunch({
   shares = 0n
 }: VaultEngineParams): UseVaultLaunchResult {
   const { txCallbacks } = useTransaction();
-  const { address } = useConnection();
   const chainId = useChainId();
 
   const shouldUseBatch = useShouldUseBatch();
 
   const isSupply = flow === 'supply';
   const assetAddress = assetToken.address[chainId];
-  const isUsdt = assetToken.symbol === TOKENS.usdt.symbol;
   const symbol = assetToken.symbol;
 
-  // READ ONLY — labels the approve steps only. The approve/deposit calls and the
-  // USDT reset derivation live entirely inside useBatchVaultDeposit; TanStack
-  // dedupes this read with the engine's own.
-  const { data: allowance } = useTokenAllowance({
-    chainId,
-    contractAddress: assetAddress,
-    owner: address,
-    spender: vaultAddress
+  // READ ONLY — labels the approve steps only (the USDT reset → approve → supply
+  // triple-step carried forward). The approve/deposit calls and the USDT reset
+  // derivation live entirely inside useBatchVaultDeposit.
+  const supplySteps = useApproveSteps({
+    token: assetToken,
+    spender: vaultAddress,
+    amount,
+    enabled: isSupply,
+    action: t`Supply ${symbol}`,
+    withUsdtReset: true
   });
-  const needsAllowance = isSupply && allowance !== undefined && allowance < amount;
-  // USDT must be reset to 0 before a new approval when a non-zero allowance exists.
-  const needsReset = needsAllowance && isUsdt && (allowance ?? 0n) > 0n;
 
   // All three engines are called unconditionally (hooks rules) and gated by
   // `enabled` to the active flow.
@@ -104,13 +100,11 @@ export function useVaultLaunch({
   const activeHook = isSupply ? depositHook : max ? redeemHook : withdrawHook;
 
   // Step labels mirror the engine's call count so the indicator advances in
-  // lockstep (USDT reset → approve → supply is the triple-step carried forward).
-  const steps = useMemo<string[]>(() => {
-    if (!isSupply) return [t`Withdraw ${symbol}`];
-    if (needsReset) return [t`Reset allowance`, t`Approve ${symbol}`, t`Supply ${symbol}`];
-    if (needsAllowance) return [t`Approve ${symbol}`, t`Supply ${symbol}`];
-    return [t`Supply ${symbol}`];
-  }, [isSupply, needsReset, needsAllowance, symbol]);
+  // lockstep.
+  const steps = useMemo<string[]>(
+    () => (isSupply ? supplySteps : [t`Withdraw ${symbol}`]),
+    [isSupply, supplySteps, symbol]
+  );
 
   return toLaunchResult(activeHook, steps);
 }

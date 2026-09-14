@@ -1,6 +1,5 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
@@ -11,8 +10,7 @@ import {
   useVaultMarketData,
   type VaultProvider
 } from '@/hooks';
-import { formatNumber } from '@/utils';
-import { parseAmountInput } from '@/lib/amountInput';
+import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
 
@@ -20,7 +18,7 @@ import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
 export type VaultModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDC supplied!"). */
-type VaultToastTitles = { loading: string; success: string; error: string };
+type VaultToastTitles = AmountToastTitles;
 
 interface VaultTransactionForm {
   isConnected: boolean;
@@ -76,12 +74,6 @@ export function useVaultTransactionForm({
   const isSupply = flow === 'supply';
   const decimals = getTokenDecimals(assetToken, chainId);
 
-  const [value, setValue] = useState(preset?.amount ?? '');
-  // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
-  const [max, setMax] = useState(false);
-
-  const amount = parseAmountInput(value, decimals);
-
   const { data: walletBalance } = useTokenBalance({
     address,
     chainId,
@@ -122,30 +114,31 @@ export function useVaultTransactionForm({
   const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
   // Never validate against the unresolved balance/position read's 0n fallback.
   const availableKnown = isSupply ? walletBalance !== undefined : vaultData !== undefined;
-  const isZero = amount === 0n;
-  const insufficient = availableKnown && amount > available;
-  const amountReady = isConnected && amount > 0n && availableKnown && !insufficient;
 
-  const onInput = (next: string) => {
-    setMax(false);
-    setValue(next);
-  };
-  const setMaxAmount = () => {
-    setValue(formatUnits(available, decimals));
+  const {
+    value,
+    amount,
+    max,
+    isZero,
+    insufficient,
+    amountReady,
+    toast,
+    onInput,
+    setMaxAmount,
+    setPercentAmount,
+    clearAmount
+  } = useAmountForm({
+    decimals,
+    available,
+    availableKnown,
+    symbol: assetToken.symbol,
+    isSupply,
+    preset,
     // Max redeems the whole share balance (no dust) only when the full position
     // is withdrawable; under a liquidity constraint the engine runs a plain
     // withdraw of the cap instead — a redeem-all would revert (APP-488).
-    setMax(!isSupply && isFullPositionWithdrawable);
-  };
-  const setPercentAmount = (pct: number) => {
-    if (pct >= 100) return setMaxAmount();
-    setMax(false);
-    setValue(formatUnits((available * BigInt(pct)) / 100n, decimals));
-  };
-  const clearAmount = () => {
-    setValue('');
-    setMax(false);
-  };
+    maxRedeems: !isSupply && isFullPositionWithdrawable
+  });
 
   const engineParams: VaultEngineParams = {
     flow,
@@ -156,26 +149,6 @@ export function useVaultTransactionForm({
     max,
     shares: redeemShares
   };
-
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${assetToken.symbol}`;
-  // Memoized so the modal-content sync effect in VaultModalForm has stable deps —
-  // an unmemoized object/element here recreates every render and loops
-  // updateModalContent → setActiveConfig → re-render (matches the savings form).
-  const toast = useMemo<VaultToastTitles>(
-    () =>
-      isSupply
-        ? {
-            loading: t`Supplying ${amountLabel}`,
-            success: t`${amountLabel} supplied!`,
-            error: t`Supply failed`
-          }
-        : {
-            loading: t`Withdrawing ${amountLabel}`,
-            success: t`${amountLabel} withdrawn!`,
-            error: t`Withdrawal failed`
-          },
-    [isSupply, amountLabel]
-  );
 
   const transactionScreenContent = useMemo(
     () => (

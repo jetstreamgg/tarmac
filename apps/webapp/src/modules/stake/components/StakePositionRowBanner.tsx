@@ -1,15 +1,14 @@
 import { MouseEvent } from 'react';
-import { useChainId } from 'wagmi';
-import { formatUnits } from 'viem';
 import { TriangleAlert } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { useStakeRewardContracts, useRewardContractsToClaim, useVault, usePrices, getIlkName } from '@/hooks';
+import { useVault, getIlkName } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { isAtRiskOfLiquidation } from '../lib/liquidation';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { isLiquidatedStakePosition, StakeUserPosition } from '../hooks/useStakeUserPositions';
+import { useUrnClaimableRewardsUsd } from '../hooks/useUrnClaimableRewardsUsd';
 import { NO_VALUE } from '@/lib/constants';
 
 function stopRowClick(event: MouseEvent) {
@@ -33,39 +32,22 @@ export function StakePositionRowBanner({
   onRemediate: (action: 'stake' | 'repay') => void;
   onClaim: () => void;
 }) {
-  const chainId = useChainId();
   const urnAddress = position.urnAddress;
   const { data: vault, isLoading: vaultLoading } = useVault(urnAddress, getIlkName(2));
-  const { data: rewardContracts } = useStakeRewardContracts();
   const {
-    data: toClaim,
+    claimableUsd,
     isLoading: claimableLoading,
-    error: claimableError
-  } = useRewardContractsToClaim({
-    rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
-    addresses: urnAddress ? [urnAddress] : [],
-    chainId,
-    enabled: Boolean(urnAddress && rewardContracts?.length)
-  });
-  const { data: prices, isLoading: pricesLoading } = usePrices();
+    unavailable: claimableUnavailable
+  } = useUrnClaimableRewardsUsd(urnAddress);
 
   if (isLiquidatedStakePosition(position)) {
     // The risk-cell badge already marks the row as liquidated from the pure
     // predicate; hold the banner (which quotes the refund/reward figures) until
     // the reads land so it never flashes a 0.00 refund.
-    if (vaultLoading || claimableLoading || pricesLoading) return null;
+    if (vaultLoading || claimableLoading) return null;
 
-    const claimable = toClaim ?? [];
     // A failed claimables read is "unknown", not $0.00.
-    const rewardsUsd =
-      claimableError && !toClaim
-        ? NO_VALUE
-        : formatUsd(
-            claimable.reduce((total, reward) => {
-              const price = parseFloat(prices?.[reward.rewardSymbol]?.price ?? '0');
-              return total + Number(formatUnits(reward.claimBalance, 18)) * price;
-            }, 0)
-          );
+    const rewardsUsd = claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd);
     const refund = formatStakeAmount(vault?.collateralAmount ?? 0n);
 
     return (
