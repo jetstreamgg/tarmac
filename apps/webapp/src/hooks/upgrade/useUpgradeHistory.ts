@@ -1,5 +1,5 @@
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
-import { historyQueryArgs } from '../shared/historyQueryHelpers';
+import { historyQueryArgs, secondsToDate } from '../shared/historyQueryHelpers';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
 
 export function upgradeHistoryFragments({
@@ -58,7 +58,7 @@ export function mapUpgradeHistoryResponse(
   const daiToUsdsUpgrades: DaiUsdsRow[] = response.daiToUsdsUpgrades.map(
     (d: UpgradeResponse<DaiUsdsRow>) => ({
       wad: BigInt(d.wad),
-      blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
+      blockTimestamp: secondsToDate(d.blockTimestamp),
       transactionHash: d.transactionHash,
       module: ModuleEnum.UPGRADE,
       type: TransactionTypeEnum.DAI_TO_USDS,
@@ -68,7 +68,7 @@ export function mapUpgradeHistoryResponse(
 
   const usdsToDaiReverts: DaiUsdsRow[] = response.usdsToDaiReverts.map((w: UpgradeResponse<DaiUsdsRow>) => ({
     wad: -BigInt(w.wad), //make withdrawals negative
-    blockTimestamp: new Date(parseInt(w.blockTimestamp) * 1000),
+    blockTimestamp: secondsToDate(w.blockTimestamp),
     transactionHash: w.transactionHash,
     module: ModuleEnum.UPGRADE,
     type: TransactionTypeEnum.USDS_TO_DAI,
@@ -78,7 +78,7 @@ export function mapUpgradeHistoryResponse(
   const mkrToSkyUpgrades: MkrSkyRow[] = response.mkrToSkyUpgrades.map((d: UpgradeResponse<MkrSkyRow>) => ({
     mkrAmt: BigInt(d.mkrAmt),
     skyAmt: BigInt(d.skyAmt),
-    blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
+    blockTimestamp: secondsToDate(d.blockTimestamp),
     transactionHash: d.transactionHash,
     module: ModuleEnum.UPGRADE,
     type: TransactionTypeEnum.MKR_TO_SKY,
@@ -89,7 +89,7 @@ export function mapUpgradeHistoryResponse(
     (d: UpgradeResponse<MkrSkyRow>) => ({
       mkrAmt: BigInt(d.mkrAmt),
       skyAmt: BigInt(d.skyAmt),
-      blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
+      blockTimestamp: secondsToDate(d.blockTimestamp),
       transactionHash: d.transactionHash,
       module: ModuleEnum.UPGRADE,
       type: TransactionTypeEnum.MKR_TO_SKY,
@@ -100,7 +100,7 @@ export function mapUpgradeHistoryResponse(
   const skyToMkrReverts: MkrSkyRow[] = response.skyToMkrReverts.map((w: UpgradeResponse<MkrSkyRow>) => ({
     mkrAmt: -BigInt(w.mkrAmt), //make withdrawals negative
     skyAmt: -BigInt(w.skyAmt),
-    blockTimestamp: new Date(parseInt(w.blockTimestamp) * 1000),
+    blockTimestamp: secondsToDate(w.blockTimestamp),
     transactionHash: w.transactionHash,
     module: ModuleEnum.UPGRADE,
     type: TransactionTypeEnum.SKY_TO_MKR,

@@ -4,7 +4,7 @@ import { skyAddress, stakeModuleAbi, stakeModuleAddress, usdsAddress } from '../
 import { useStakeSkyAllowance, useStakeUsdsAllowance } from './useStakeAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { Call, ContractFunctionArgs, ContractFunctionName, decodeFunctionData, erc20Abi } from 'viem';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 
 export function useBatchStakeMulticall({
   skyAmount,
@@ -104,7 +104,7 @@ export function useBatchStakeMulticall({
     usdsAllowance !== undefined &&
     calls.length > 0;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -112,11 +112,7 @@ export function useBatchStakeMulticall({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: skyAllowanceError || usdsAllowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || skyAllowanceError || usdsAllowanceError
-  };
 }

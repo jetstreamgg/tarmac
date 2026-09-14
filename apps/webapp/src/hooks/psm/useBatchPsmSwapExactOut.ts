@@ -2,7 +2,7 @@ import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { psm3L2Abi, psm3L2Address } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { Call, erc20Abi } from 'viem';
 
@@ -60,7 +60,7 @@ export function useBatchPsmSwapExactOut({
 
   const enabled = paramEnabled && isConnected && allowance !== undefined && maxAmountIn !== 0n && !!address;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     shouldUseBatch,
     chainId,
@@ -68,11 +68,7 @@ export function useBatchPsmSwapExactOut({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

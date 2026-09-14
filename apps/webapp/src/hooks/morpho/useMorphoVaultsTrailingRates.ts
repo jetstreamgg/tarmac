@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { trailingAverageRate, type DailyRatePoint } from '../shared/trailingRate';
-import { MORPHO_API_CHAIN_ID, MORPHO_API_URL, buildVaultV2ApyWindowQuery } from './constants';
+import { MORPHO_API_CHAIN_ID, buildVaultV2ApyWindowQuery, morphoDataSource } from './constants';
 
 import { SECONDS_PER_DAY } from '@/utils';
+import { toReadHook } from '../shared/toReadHook';
+import { morphoGraphql } from './morphoGraphql';
 
 type ApyWindowResponse = {
   data?: Record<
@@ -33,17 +34,10 @@ async function fetchMorphoVaultsTrailingRates(
     variables[`a${index}`] = address.toLowerCase();
   });
 
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: buildVaultV2ApyWindowQuery(vaultAddresses.length), variables })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const result: ApyWindowResponse = await response.json();
+  const result = await morphoGraphql<ApyWindowResponse>(
+    buildVaultV2ApyWindowQuery(vaultAddresses.length),
+    variables
+  );
 
   const rates: MorphoTrailingRates = {};
   vaultAddresses.forEach((address, index) => {
@@ -81,12 +75,7 @@ export function useMorphoVaultsTrailingRates({
 }): MorphoVaultsTrailingRatesHook {
   const chainId = MORPHO_API_CHAIN_ID;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     queryKey: ['morpho-vaults-trailing-rates', ...vaultAddresses, chainId, days],
     queryFn: () => fetchMorphoVaultsTrailingRates(vaultAddresses, chainId, days),
     enabled: vaultAddresses.length > 0,
@@ -96,18 +85,5 @@ export function useMorphoVaultsTrailingRates({
     gcTime: 10 * 60_000
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
-    mutate,
-    dataSources: [
-      {
-        title: 'Morpho API',
-        href: MORPHO_API_URL,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [morphoDataSource()]);
 }

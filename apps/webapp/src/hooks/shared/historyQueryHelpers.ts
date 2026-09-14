@@ -66,5 +66,10 @@ export function clampHistoryPage<T extends { blockTimestamp: Date }>(items: T[],
   return items.filter(item => item.blockTimestamp.getTime() >= boundary * 1000);
 }
 
+/** An indexer `blockTimestamp` (unix seconds as a string) as a Date. */
+export function secondsToDate(seconds: string): Date {
+  return new Date(parseInt(seconds) * 1000);
+}
+
 /** One fetched page of a history document. */
 export type HistoryPage<T> = { items: T[]; nextCursor: number | undefined };

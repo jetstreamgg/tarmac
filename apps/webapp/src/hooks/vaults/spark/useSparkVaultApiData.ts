@@ -9,6 +9,7 @@ import {
   normalizeSparkCurrentData,
   normalizeSparkHistoricData
 } from './normalizeSparkVaultData';
+import { toReadHook } from '../../shared/toReadHook';
 
 /** Asset decimals fallback when the current payload omits the `asset` descriptor. */
 
@@ -53,12 +54,7 @@ export function useSparkVaultApiData({
   // across network switches (same rationale as the Morpho hooks).
   const chainId = mainnet.id;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     queryKey: ['spark-vault-market-data', vaultAddress, chainId],
     queryFn: () => {
       if (!vaultAddress) {
@@ -71,18 +67,12 @@ export function useSparkVaultApiData({
     gcTime: 60_000
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
-    mutate,
-    dataSources: [
-      {
-        title: 'Spark API',
-        href: buildSparkSavingsUrl(SPARK_VAULT_IDENTITY),
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [
+    {
+      title: 'Spark API',
+      href: buildSparkSavingsUrl(SPARK_VAULT_IDENTITY),
+      onChain: false,
+      trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
+    }
+  ]);
 }

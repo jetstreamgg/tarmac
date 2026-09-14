@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { mainnet } from 'wagmi/chains';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { pendleDataSource } from '../constants';
 import { ReadHook } from '../hooks';
 import { PENDLE_API_BASE_URL } from './constants';
 
@@ -88,13 +88,6 @@ export function usePendleMarketChartData(
     data,
     error,
     mutate: refetch,
-    dataSources: [
-      {
-        title: 'Pendle Markets API',
-        href: 'https://api-v2.pendle.finance/core/docs',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
+    dataSources: [pendleDataSource()]
   };
 }

@@ -8,8 +8,20 @@ import {
 } from '../generated';
 import { TOKENS } from '../tokens/tokens.constants';
 import { MorphoVaultConfig } from './morpho';
+import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import type { DataSource } from '../hooks';
 
 export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
+
+/** The Morpho GraphQL API as a read hook's data source. */
+export function morphoDataSource(): DataSource {
+  return {
+    title: 'Morpho API',
+    href: MORPHO_API_URL,
+    onChain: false,
+    trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
+  };
+}
 /** Morpho vaults (and their Merkl campaigns) are mainnet-only — always query the APIs with this chainId. */
 export const MORPHO_API_CHAIN_ID = mainnet.id;
 export const MERKL_API_URL = `${import.meta.env?.VITE_PROXY_ORIGIN || 'https://staging-proxy.sky.money'}/merkl/v4`;

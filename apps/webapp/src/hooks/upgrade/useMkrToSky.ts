@@ -2,7 +2,7 @@ import { mkrAddress, mkrSkyAbi, mkrSkyAddress } from '../generated';
 import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useWriteContractFlow } from '../shared/useWriteContractFlow';
+import { useApprovalGatedWriteFlow } from '../shared/useApprovalGatedWriteFlow';
 
 // Calls the join function on the upgrader contract that supplies SKY and returns MKR
 export function useMkrToSky({
@@ -36,7 +36,7 @@ export function useMkrToSky({
     address
   );
 
-  const writeContractFlowResults = useWriteContractFlow({
+  return useApprovalGatedWriteFlow({
     address: mkrSkyAddress[chainId as keyof typeof mkrSkyAddress],
     abi: mkrSkyAbi,
     functionName: 'mkrToSky',
@@ -47,11 +47,7 @@ export function useMkrToSky({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError
   });
-
-  return {
-    ...writeContractFlowResults,
-    prepareError: writeContractFlowResults.prepareError || allowanceError
-  };
 }

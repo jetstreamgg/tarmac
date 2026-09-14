@@ -1,7 +1,7 @@
 import { useChainId, useConnection } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdsAddress } from '../generated';
 import { Call, erc20Abi } from 'viem';
@@ -66,7 +66,7 @@ export function useBatchUsdsPsmWrapperBuyGem({
     usdsAmountInWad !== 0n &&
     !!recipient;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     shouldUseBatch,
     chainId: effectiveChainId,
@@ -74,11 +74,7 @@ export function useBatchUsdsPsmWrapperBuyGem({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

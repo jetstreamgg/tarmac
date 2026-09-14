@@ -1,5 +1,5 @@
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
+import { ZERO_ADDRESS, indexerDataSource } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useUserDelegates } from '../delegates/useUserDelegates';
 import { useDelegates } from '../delegates/useDelegates';
@@ -158,13 +158,6 @@ export function useStakeUserDelegates({
       mutateUserDelegates();
       mutateRestDelegates();
     },
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
+    dataSources: [indexerDataSource(urlIndexer)]
   };
 }

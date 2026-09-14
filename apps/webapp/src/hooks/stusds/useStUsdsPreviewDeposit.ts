@@ -1,42 +1,5 @@
-import { useChainId } from 'wagmi';
-import { ReadHook } from '../hooks';
-import { useMemo } from 'react';
-import { useReadStUsdsProxy } from './useReadStUsdsProxy';
+import { useStUsdsBigIntRead } from './useStUsdsBigIntRead';
 
-type StUsdsPreviewDepositHookResponse = ReadHook & {
-  data?: bigint;
-};
-
-export function useStUsdsPreviewDeposit(assets: bigint): StUsdsPreviewDepositHookResponse {
-  const chainId = useChainId();
-
-  const {
-    data: shares,
-    isLoading,
-    error,
-    refetch
-  } = useReadStUsdsProxy({
-    functionName: 'previewDeposit',
-    args: [assets],
-    chainId: chainId as keyof typeof useReadStUsdsProxy,
-    query: {
-      enabled: !!assets && assets > 0n
-    }
-  });
-
-  const mutate = () => {
-    refetch();
-  };
-
-  const data = useMemo(() => {
-    return shares || 0n;
-  }, [shares]);
-
-  return {
-    isLoading,
-    data,
-    error,
-    mutate,
-    dataSources: []
-  };
+export function useStUsdsPreviewDeposit(assets: bigint) {
+  return useStUsdsBigIntRead('previewDeposit', assets);
 }

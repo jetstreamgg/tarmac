@@ -2,15 +2,17 @@ import { useConnection } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { MorphoVaultHistoryItem, MorphoVaultV2TransactionsApiResponse } from './morpho';
 import { useQuery } from '@tanstack/react-query';
-import { ModuleEnum, TransactionTypeEnum, TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import {
   getMorphoVaultByAddress,
   MORPHO_API_CHAIN_ID,
-  MORPHO_API_URL,
   MORPHO_VAULTS,
   MorphoTransactionType,
-  VAULT_V2_TRANSACTIONS_QUERY
+  VAULT_V2_TRANSACTIONS_QUERY,
+  morphoDataSource
 } from './constants';
+import { toReadHook } from '../shared/toReadHook';
+import { morphoGraphql } from './morphoGraphql';
 
 async function fetchMorphoDepositWithdrawHistory(
   vaultAddress: `0x${string}` | undefined,
@@ -21,26 +23,11 @@ async function fetchMorphoDepositWithdrawHistory(
     ? [vaultAddress]
     : MORPHO_VAULTS.map(({ vaultAddress }) => vaultAddress[chainId]);
 
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query: VAULT_V2_TRANSACTIONS_QUERY,
-      variables: {
-        chainId,
-        userAddress: address,
-        vaultAddresses: vaults
-      }
-    })
+  const result = await morphoGraphql<MorphoVaultV2TransactionsApiResponse>(VAULT_V2_TRANSACTIONS_QUERY, {
+    chainId,
+    userAddress: address,
+    vaultAddresses: vaults
   });
-
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const result: MorphoVaultV2TransactionsApiResponse = await response.json();
 
   return result.data.vaultV2transactions.items.map(transaction => {
     const isSupply = transaction.type === MorphoTransactionType.Deposit;
@@ -74,30 +61,12 @@ export function useMorphoVaultHistory({
 } = {}): MorphoVaultHistoryHook {
   const { address } = useConnection();
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     enabled: enabled && !!address,
     queryKey: ['morpho-vault-history', vaultAddress || 'all', address],
     // Morpho vaults are mainnet-only
     queryFn: () => fetchMorphoDepositWithdrawHistory(vaultAddress, MORPHO_API_CHAIN_ID, address!)
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'Morpho API',
-        href: MORPHO_API_URL,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [morphoDataSource()]);
 }

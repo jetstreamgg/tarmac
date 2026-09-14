@@ -2,7 +2,7 @@ import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { psm3L2Abi, psm3L2Address } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useWriteContractFlow } from '../shared/useWriteContractFlow';
+import { useApprovalGatedWriteFlow } from '../shared/useApprovalGatedWriteFlow';
 
 export function usePsmSwapExactOut({
   assetIn,
@@ -37,7 +37,7 @@ export function usePsmSwapExactOut({
   const enabled =
     paramEnabled && isConnected && !!allowance && maxAmountIn !== 0n && allowance >= maxAmountIn && !!address;
 
-  const writeContractFlowResults = useWriteContractFlow({
+  return useApprovalGatedWriteFlow({
     address: psm3L2Address[chainId as keyof typeof psm3L2Address],
     abi: psm3L2Abi,
     functionName: 'swapExactOut',
@@ -48,11 +48,7 @@ export function usePsmSwapExactOut({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError
   });
-
-  return {
-    ...writeContractFlowResults,
-    prepareError: writeContractFlowResults.prepareError || allowanceError
-  };
 }
