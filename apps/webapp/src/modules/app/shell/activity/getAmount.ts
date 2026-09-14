@@ -41,7 +41,6 @@ export const getRawAmount = ({
     case ModuleEnum.SAVINGS:
     case ModuleEnum.STUSDS:
     case ModuleEnum.MORPHO:
-    case ModuleEnum.SUSDT:
       return {
         value: absBigInt('assets' in item ? item.assets : 0n),
         decimals: getTokenDecimals('token' in item ? item.token : undefined, chainId)

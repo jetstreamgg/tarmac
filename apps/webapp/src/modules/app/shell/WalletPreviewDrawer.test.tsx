@@ -104,14 +104,10 @@ vi.mock('./useWalletDrawerAssets', () => ({
   useWalletDrawerAssets: () => mocks.walletAssets
 }));
 
-// Tab contents are the shared balance widgets; their behavior has its own coverage.
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    BalancesHistory: () => <div data-testid="balances-history-stub" />
-  };
-});
+// The activity tab's list has its own coverage.
+vi.mock('./activity/BalancesHistory', () => ({
+  BalancesHistory: () => <div data-testid="balances-history-stub" />
+}));
 
 vi.mock('@/modules/geo-config', async importOriginal => {
   const actual = await importOriginal<typeof import('@/modules/geo-config')>();

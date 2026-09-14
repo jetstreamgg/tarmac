@@ -1,7 +1,7 @@
 import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { getEtherscanLink, getCowExplorerLink, getChainIcon, formatUsd } from '@/utils';
-import { TokenIcon } from '@/widgets/shared/components/ui/token/TokenIcon';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
   ModuleEnum,
   TransactionTypeEnum,
@@ -10,10 +10,10 @@ import {
   usePrices,
   StUsdsProviderType
 } from '@/hooks';
-import { getTitle } from '../lib/getTitle';
-import { getAmount, getRawAmount } from '../lib/getAmount';
-import { getToken } from '../lib/getToken';
-import { getHistoryRightText } from '../lib/getHistoryRightText';
+import { getTitle } from './getTitle';
+import { getAmount, getRawAmount } from './getAmount';
+import { getToken } from './getToken';
+import { getHistoryRightText } from './getHistoryRightText';
 import { Skeleton } from '@/components/ui/skeleton';
 import { IconboxAction } from '@/components/ui/iconbox';
 import { TransactionActionIcon } from '@/components/product/TransactionActionIcon';
@@ -117,7 +117,12 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
         ) : hasAmount ? (
           <>
             <span className="text-fgPrimary font-circle flex items-center gap-1 text-lg leading-[22px] font-medium tracking-[-0.36px]">
-              <TokenIcon token={{ symbol: tokenSymbol }} className="size-4" width={16} noChain />
+              <TokenIcon
+                token={{ symbol: tokenSymbol }}
+                className="size-4"
+                width={16}
+                showChainIcon={false}
+              />
               {amount}
             </span>
             {usdValue !== undefined && (

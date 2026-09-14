@@ -25,23 +25,9 @@ const positionAnimate: Variant = {
   }
 };
 
-const positionOutExit: Variant = {
-  y: -10,
-  opacity: 0,
-  transition: {
-    y: { duration: 0.83, ease: easeOutExpo },
-    opacity: { duration: 0.5, ease: easeOutExpo }
-  }
-};
-
 export const positionAnimations: Variants = {
   [AnimationLabels.initial]: positionInitial,
   [AnimationLabels.animate]: positionAnimate
-};
-
-export const positionAnimationsWithExit: Variants = {
-  ...positionAnimations,
-  [AnimationLabels.exit]: positionOutExit
 };
 
 const fadeInInitial: Variant = {
@@ -114,48 +100,6 @@ export const cardInAnimate: Variant = {
     staggerChildren: 0.03,
     delayChildren: 0.03
   }
-};
-
-const cardOutExit: Variant = {
-  opacity: 0,
-  y: -20,
-  transition: {
-    y: { duration: 0.83, ease: easeOutExpo },
-    opacity: { duration: 0.35, ease: easeOutExpo }
-  }
-};
-
-export const cardAnimations: Variants = {
-  [AnimationLabels.initial]: cardInInitial,
-  [AnimationLabels.animate]: cardInAnimate,
-  [AnimationLabels.exit]: cardOutExit
-};
-
-const buttonsInInitial: Variant = {
-  scale: 0.93,
-  opacity: 0
-};
-
-const buttonsInAnimate: Variant = {
-  scale: 1,
-  opacity: 1,
-  transition: {
-    scale: { duration: 0.35, ease: easeOutExpo, delay: 0.07 },
-    opacity: { duration: 0.35, ease: easeOutExpo, delay: 0.07 }
-  }
-};
-
-const buttonsOutExit: Variant = {
-  opacity: 0,
-  transition: {
-    opacity: { duration: 0.25, ease: easeOutExpo }
-  }
-};
-
-export const buttonsAnimations: Variants = {
-  [AnimationLabels.initial]: buttonsInInitial,
-  [AnimationLabels.animate]: buttonsInAnimate,
-  [AnimationLabels.exit]: buttonsOutExit
 };
 
 const iconInInitial: Variant = {

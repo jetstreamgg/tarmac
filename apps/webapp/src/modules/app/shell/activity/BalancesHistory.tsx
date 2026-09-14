@@ -2,16 +2,15 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useCombinedHistory, useAllNetworksCombinedHistory } from '@/hooks';
 import { useFormatDates } from '@/hooks';
 import { useLingui } from '@lingui/react';
-import { CustomPagination } from '@/widgets/shared/components/ui/pagination/CustomPagination';
+import { CustomPagination } from '@/modules/ui/components/CustomPagination';
 import { BalancesHistoryItem } from './BalancesHistoryItem';
 import { Skeleton } from '@/components/ui/skeleton';
-import { VStack } from '@/widgets/shared/components/ui/layout/VStack';
-import { Text } from '@/widgets/shared/components/ui/Typography';
+import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { motion } from 'motion/react';
 import { positionAnimations } from '@/modules/ui/animation/presets';
 import { NoResults } from '@/modules/icons/NoResults';
-import { cn } from '@/widgets/lib/utils';
+import { cn } from '@/lib/cn';
 
 export const BalancesHistory = ({
   showAllNetworks,
@@ -103,11 +102,11 @@ export const BalancesHistory = ({
   const hasMore = visibleCount < data.length || hasNextPage;
 
   const loadingCards = (
-    <VStack gap={2} className={cn('mt-6', className)}>
+    <div className={cn('mt-6 flex flex-col space-y-2', className)}>
       {Array.from({ length: itemsPerPage }, (_, i) => (
         <Skeleton key={i} className="h-[84px] w-full rounded-[20px]" />
       ))}
-    </VStack>
+    </div>
   );
 
   const displayItems = useInfiniteScroll ? infiniteScrollItems : itemsToDisplay;
@@ -120,7 +119,7 @@ export const BalancesHistory = ({
     <>{loadingCards}</>
   ) : data.length > 0 ? (
     <>
-      <VStack gap={2} className={cn('mt-6', className)}>
+      <div className={cn('mt-6 flex flex-col space-y-2', className)}>
         {displayItems.map((item, index: number) => {
           const globalIndex = getGlobalIndex(index);
           const formattedDate = formattedDates.length > globalIndex ? formattedDates[globalIndex] : '';
@@ -146,7 +145,7 @@ export const BalancesHistory = ({
             </motion.div>
           );
         })}
-      </VStack>
+      </div>
       {useInfiniteScroll ? (
         hasMore && <div ref={observerTarget} className="h-1" />
       ) : (
@@ -160,11 +159,11 @@ export const BalancesHistory = ({
       </Text>
     </div>
   ) : (
-    <VStack gap={3} className="items-center pt-9 pb-3">
+    <div className="flex flex-col items-center space-y-3 pt-9 pb-3">
       <NoResults />
       <Text className="text-textSecondary text-center">
         <Trans>No history found</Trans>
       </Text>
-    </VStack>
+    </div>
   );
 };
