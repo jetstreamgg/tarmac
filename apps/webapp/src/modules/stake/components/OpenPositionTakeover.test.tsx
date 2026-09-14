@@ -307,16 +307,16 @@ describe('OpenPositionTakeover', () => {
     document.body.style.overflow = '';
   });
 
-  it('renders the four numbered cards with both optional cards off (A-Q1)', () => {
+  it('renders the three numbered cards, the reward field, and both optional cards off (A-Q1)', () => {
     renderTakeover();
 
     expect(screen.getByTestId('stake-takeover-stake-card')).toBeTruthy();
-    expect(screen.getByTestId('stake-takeover-reward-card')).toBeTruthy();
+    expect(screen.getByTestId('stake-takeover-reward-field')).toBeTruthy();
     expect(screen.getByTestId('stake-takeover-borrow-card')).toBeTruthy();
     expect(screen.getByTestId('stake-takeover-delegate-card')).toBeTruthy();
-    // The reward card is always-on (no toggle): the list renders expanded.
+    // The reward field is always-on (no toggle): the tiles render expanded.
     expect(screen.getByTestId('stake-takeover-reward-list')).toBeTruthy();
-    expect(screen.queryByTestId('stake-takeover-reward-card-toggle')).toBeNull();
+    expect(screen.queryByTestId('stake-takeover-reward-field-toggle')).toBeNull();
     // Collapsed bodies: no borrow input, no delegate search.
     expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
     expect(screen.queryByTestId('stake-takeover-delegate-search')).toBeNull();

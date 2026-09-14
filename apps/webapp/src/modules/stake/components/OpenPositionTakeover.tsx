@@ -37,7 +37,7 @@ import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
-import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
+import { StakeTakeoverRewardField } from './StakeTakeoverRewardCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
@@ -431,12 +431,13 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             : undefined
         }
         error={stakeError}
-      />
-
-      <StakeTakeoverRewardCard
-        selectedRewardContract={selectedRewardContract}
-        onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
-        keepAddress={reopenRewardBaseline}
+        rewardPicker={
+          <StakeTakeoverRewardField
+            selectedRewardContract={selectedRewardContract}
+            onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
+            keepAddress={reopenRewardBaseline}
+          />
+        }
       />
 
       <StakeTakeoverBorrowCard

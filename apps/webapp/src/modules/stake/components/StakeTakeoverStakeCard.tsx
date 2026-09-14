@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { formatBigInt, formatUsd } from '@/utils';
@@ -11,9 +12,9 @@ import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 
 /**
- * Card 1 · Stake SKY (Modal / 12, 1036:209703): amount + balance/percent chips
- * over a hairline, then the stat rows (3015:59161: Min. stake to borrow,
- * Est. annual rewards, rewards rate).
+ * Card 1 · Stake SKY (3015:59010): amount + balance/percent chips over a
+ * hairline, the reward token tiles, then the stat rows (3015:59161: Min. stake
+ * to borrow, Est. annual rewards, rewards rate).
  * Est. annual rewards shows "–" until an amount is entered.
  */
 export function StakeTakeoverStakeCard({
@@ -27,7 +28,8 @@ export function StakeTakeoverStakeCard({
   minStakeToBorrow,
   minStakeLoading,
   minStakeReached,
-  error
+  error,
+  rewardPicker
 }: {
   amount: bigint;
   onAmountChange: (amount: bigint) => void;
@@ -48,6 +50,8 @@ export function StakeTakeoverStakeCard({
   minStakeLoading?: boolean;
   minStakeReached?: boolean;
   error?: string;
+  /** The reward token block rendered between the amount and the stat rows. */
+  rewardPicker?: ReactNode;
 }) {
   const onPercentClick = (percent: number) => {
     if (balance === undefined) return;
@@ -74,6 +78,7 @@ export function StakeTakeoverStakeCard({
             }
           />
         </div>
+        {rewardPicker}
       </div>
 
       {/* Figma 3015:59161: stacked rows split by hairlines, Min. stake first. */}
