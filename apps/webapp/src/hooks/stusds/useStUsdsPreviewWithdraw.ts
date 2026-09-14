@@ -2,7 +2,7 @@ import { useChainId } from 'wagmi';
 import { keepPreviousData } from '@tanstack/react-query';
 import { ReadHook } from '../hooks';
 import { useMemo } from 'react';
-import { useReadStUsdsImplementation } from './useReadStUsdsImplementation';
+import { useReadStUsdsProxy } from './useReadStUsdsProxy';
 
 type StUsdsPreviewWithdrawHookResponse = ReadHook & {
   data?: bigint;
@@ -16,10 +16,10 @@ export function useStUsdsPreviewWithdraw(assets: bigint): StUsdsPreviewWithdrawH
     isLoading,
     error,
     refetch
-  } = useReadStUsdsImplementation({
+  } = useReadStUsdsProxy({
     functionName: 'previewWithdraw',
     args: [assets],
-    chainId: chainId as keyof typeof useReadStUsdsImplementation,
+    chainId: chainId as keyof typeof useReadStUsdsProxy,
     query: {
       enabled: !!assets && assets > 0n,
       // The amount re-keys this read on every live-max drift (~15s on a Curve

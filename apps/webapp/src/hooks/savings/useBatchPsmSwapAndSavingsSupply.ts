@@ -6,7 +6,7 @@ import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdcAddress, usdsAddress } from '../generated';
-import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../psm/usdsPsmWrapper';
+import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { useTransactionFlow } from '../shared/useTransactionFlow';
 

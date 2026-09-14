@@ -198,7 +198,7 @@ export { useBatchPsmSwapExactOut } from './psm/useBatchPsmSwapExactOut';
 export { usePsmLiquidity } from './psm/usePsmLiquidity';
 export { usePreviewSwapExactIn } from './psm/usePreviewSwapExactIn';
 export { usePreviewSwapExactOut } from './psm/usePreviewSwapExactOut';
-export { usdsPsmWrapperAddress } from './psm/usdsPsmWrapper';
+export { usdsPsmWrapperAddress } from './generated';
 export { useBatchUsdsPsmWrapperSellGem } from './psm/useBatchUsdsPsmWrapperSellGem';
 export { useBatchUsdsPsmWrapperBuyGem } from './psm/useBatchUsdsPsmWrapperBuyGem';
 export {

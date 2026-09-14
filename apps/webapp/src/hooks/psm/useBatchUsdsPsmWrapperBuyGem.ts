@@ -5,7 +5,7 @@ import { useTransactionFlow } from '../shared/useTransactionFlow';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdsAddress } from '../generated';
 import { Call, erc20Abi } from 'viem';
-import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from './usdsPsmWrapper';
+import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
 
 export function useBatchUsdsPsmWrapperBuyGem({
   gemAmt,
