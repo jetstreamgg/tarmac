@@ -1,6 +1,9 @@
 /** Slider resolution: 1000 stops keeps a drag smooth on a 600px track. */
 export const STAKE_SLIDER_MAX = 1000;
 const STEPS = BigInt(STAKE_SLIDER_MAX);
+/** Overshoot past the dotted repay zone forgiven before snapping to the full repay. */
+const SNAP_BUFFER_STEPS = 40n;
+const min = (a: bigint, b: bigint) => (a < b ? a : b);
 const WAD = 10n ** 18n;
 
 const roundToWholeUsds = (amount: bigint): bigint => (amount / WAD) * WAD;
@@ -46,8 +49,11 @@ export type StakeAmountSlider = {
  * debt stages 0; on a debt-free position the left end is the dust floor; the
  * right end stages the exact headroom (debt-ceiling aware).
  *
- * Repay axis: repaid amount, 0 → debt. The (debt − dust, debt) gap snaps to
- * the nearer end; the right end stages the full debt with wipeAll.
+ * Repay axis: repaid amount, 0 → debt. The dust gap (debt − dust, debt) snaps
+ * to the full repay once the thumb is a short buffer past the dotted zone (4%
+ * of the track, capped at half the gap): far enough to forgive an overshoot,
+ * near enough that the jump reads at once. The right end stages the full debt
+ * with wipeAll.
  */
 export function useStakeAmountSlider({
   mode,
@@ -94,9 +100,9 @@ export function useStakeAmountSlider({
           return;
         }
         if (raw > gapStart) {
-          // Dust gap: nearer end wins; an unreachable partial max means full repay.
-          const nearerFull = gapStart <= 0n || raw - gapStart > max - raw;
-          if (nearerFull) onAmountChange(max, true);
+          const gap = max - gapStart;
+          const buffer = min((max * SNAP_BUFFER_STEPS) / STEPS, gap / 2n);
+          if (raw - gapStart > buffer) onAmountChange(max, true);
           else onAmountChange(gapStart);
           return;
         }

@@ -114,12 +114,16 @@ describe('useStakeAmountSlider — repay axis', () => {
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(56_000), true);
   });
 
-  it('snaps the dust gap to the nearer end', () => {
+  it('forgives a short overshoot past the dotted zone, then snaps to the full repay', () => {
     const onAmountChange = vi.fn();
     const slider = useStakeAmountSlider({ ...base, amount: 0n, onAmountChange });
-    slider.onValueChange(500); // 28,000: 2,000 past the gap start, 28,000 short of full
+    slider.onValueChange(500); // 28,000: 2,000 into the gap, within the 4% buffer (2,240)
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(26_000));
-    slider.onValueChange(950); // 53,200: nearer the full repay
+    slider.onValueChange(510); // 28,560: past the buffer
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(56_000), true);
+    // A gap narrower than twice the buffer caps it at half the gap.
+    const narrow = useStakeAmountSlider({ ...base, dust: usds(2_000), amount: 0n, onAmountChange });
+    narrow.onValueChange(985); // 55,160: 1,160 into a 2,000 gap, past its half
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(56_000), true);
   });
 
