@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/widgets/components/ui/tooltip';
 import { cn } from '@/widgets/lib/utils';
-import { Morpho as MorphoIcon } from '@/widgets/shared/components/icons/Morpho';
+import { Morpho as MorphoIcon } from '@/modules/icons/Morpho';
 import { Sky as SkyIcon } from '@/widgets/shared/components/icons/Sky';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { VaultProvider } from '@/hooks';

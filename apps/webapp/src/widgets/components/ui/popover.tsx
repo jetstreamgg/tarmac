@@ -5,6 +5,5 @@ export {
   PopoverWidgetContent as PopoverContent,
   PopoverPortal,
   PopoverAnchor,
-  PopoverClose,
-  PopoverArrow
+  PopoverClose
 } from '@/components/ui/popover';

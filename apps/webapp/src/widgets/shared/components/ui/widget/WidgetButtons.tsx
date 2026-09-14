@@ -5,7 +5,7 @@ import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { useConnection } from 'wagmi';
 import { ConnectWalletCopy } from '../ConnectWalletCopy';
 import { AnimatePresence } from 'motion/react';
-import { ButtonsAnimationWrapper } from '@/widgets/shared/animation/Wrappers';
+import { ButtonsAnimationWrapper } from '@/modules/ui/animation/Wrappers';
 import { VStack } from '../layout/VStack';
 
 interface WidgetButtonsProps {

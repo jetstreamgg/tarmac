@@ -1,4 +1,4 @@
-import { Icon, IconProps } from './Icon';
+import { Icon, IconProps } from '@/modules/icons/Icon';
 
 export const Gauge = (props: IconProps) => (
   <Icon {...props}>

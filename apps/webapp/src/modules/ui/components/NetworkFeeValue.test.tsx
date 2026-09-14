@@ -1,6 +1,6 @@
 import { render, renderHook, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import type { NetworkFeeData } from '@/hooks';
 import { NetworkFeeValue, useBundleFeeState } from './NetworkFeeValue';
 

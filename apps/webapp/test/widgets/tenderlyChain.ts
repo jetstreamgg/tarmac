@@ -1,6 +1,6 @@
 import { Chain, defineChain } from 'viem';
 import { readFileSync } from 'fs';
-import { TENDERLY_CHAIN_ID } from '../../src/widgets/shared/constants';
+import { TENDERLY_CHAIN_ID } from '../../src/data/wagmi/config/testTenderlyChain';
 import { arbitrum, base, optimism, unichain } from 'viem/chains';
 
 export const getTenderlyChains = () => {

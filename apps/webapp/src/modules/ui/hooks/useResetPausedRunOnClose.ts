@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 
 /**

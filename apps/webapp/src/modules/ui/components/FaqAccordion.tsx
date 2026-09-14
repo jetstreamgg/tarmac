@@ -1,7 +1,9 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SafeMarkdownRenderer } from './markdown/SafeMarkdownRenderer';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { PopoverRateInfo, PopoverInfo, getTooltipById, resolvePopoverTooltipKey } from '@/widgets';
+import { PopoverRateInfo, resolvePopoverTooltipKey } from '@/modules/ui/components/PopoverRateInfo';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { getTooltipById } from '@/modules/ui/data/tooltips';
 
 interface Item {
   question: string;

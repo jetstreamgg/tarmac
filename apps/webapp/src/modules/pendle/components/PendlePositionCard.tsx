@@ -17,7 +17,8 @@ import {
 import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
-import { Pendle, PopoverRateInfo } from '@/widgets';
+import { Pendle } from '@/modules/icons/PendleSymbol';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { RateInfo } from '@/components/product/RateInfo';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';

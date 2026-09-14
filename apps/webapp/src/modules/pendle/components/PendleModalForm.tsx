@@ -20,7 +20,8 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import { getTooltipById, PopoverInfo } from '@/widgets';
+import { getTooltipById } from '@/modules/ui/data/tooltips';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { PENDLE_HISTORY_REFRESH_MS, PendleFlow } from '@/modules/pendle/lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/lib/pendleAnalyticsData';
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
@@ -29,7 +30,7 @@ import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
-import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
+import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/modules/analytics/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { Text } from '@/modules/layout/components/Typography';

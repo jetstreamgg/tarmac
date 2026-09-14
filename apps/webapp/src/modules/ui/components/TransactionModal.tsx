@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { ArrowLeft } from 'lucide-react';
 import {
   ResponsiveModal,

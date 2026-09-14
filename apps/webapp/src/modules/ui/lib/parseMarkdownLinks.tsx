@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
+import { ExternalLink } from '@/modules/ui/components/ExternalLink';
 
 /**
  * Checks if a URL has a safe scheme that can be rendered as a clickable link

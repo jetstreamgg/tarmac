@@ -1,4 +1,4 @@
-import { Icon, IconProps } from './Icon';
+import { Icon, IconProps } from '@/modules/icons/Icon';
 
 export const Close = (props: IconProps) => (
   <Icon {...props} width="12" height="12" viewBox="0 0 12 12" fill="none">

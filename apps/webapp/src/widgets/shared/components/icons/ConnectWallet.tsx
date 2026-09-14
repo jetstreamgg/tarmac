@@ -1,4 +1,4 @@
-import { Icon, IconProps } from './Icon';
+import { Icon, IconProps } from '@/modules/icons/Icon';
 
 export const ConnectWallet = (props: IconProps) => (
   <Icon width="55" height="65" {...props} viewBox="0 0 111 133" fill="none">

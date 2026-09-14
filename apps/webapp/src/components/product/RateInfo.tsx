@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn';
-import { PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
+import { PopoverRateInfo, type PopoverTooltipType } from '@/modules/ui/components/PopoverRateInfo';
 import type { EarnProductKind } from '@/hooks/earn/types';
 import type { VaultProvider } from '@/hooks';
 import { isMorphoVault, type ProductIdentity } from './productVisuals';

@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/widgets/shared/components/ui/Typography';
-import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { useSparkVaultResolvedRate } from '@/hooks';
 
 /**

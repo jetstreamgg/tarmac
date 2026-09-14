@@ -6,11 +6,11 @@ import {
 } from '@/widgets/components/ui/accordion';
 import { HStack } from '../layout/HStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
-import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
+import { ExternalLink } from '@/modules/ui/components/ExternalLink';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getEtherscanLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 import { motion } from 'motion/react';
 import { JSX } from 'react';
 

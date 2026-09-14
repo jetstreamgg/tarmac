@@ -1,22 +1,22 @@
 import React, { useContext } from 'react';
 import { WidgetContext } from '../../../../context/WidgetContext';
-import { TxStatus } from '../../../constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { Trans } from '@lingui/react/macro';
 import { VStack } from '../layout/VStack';
 import { Heading, Text } from '../Typography';
-import { Clock, FailedX, InProgress, SuccessCheck, Cancel } from '../../icons/Icons';
+import { Clock, FailedX, InProgress, SuccessCheck, Cancel } from '@/modules/icons/Icons';
 import { Card, CardContent, CardFooter, CardHeader } from '@/widgets/components/ui/card';
 import { formatBigInt, ExplorerName, getExplorerName } from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { TokenIconWithBalance } from '../token/TokenIconWithBalance';
 import { StepIndicator } from './StepIndicator';
 import { t } from '@lingui/core/macro';
-import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
+import { ExternalLink } from '@/modules/ui/components/ExternalLink';
 import { HStack } from '../layout/HStack';
 import { ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
-import { IconAnimationWrapper, PositionAnimationWithExitWrapper } from '@/widgets/shared/animation/Wrappers';
+import { positionAnimations } from '@/modules/ui/animation/presets';
+import { IconAnimationWrapper, PositionAnimationWithExitWrapper } from '@/modules/ui/animation/Wrappers';
 import { useChainId } from 'wagmi';
 import { getTokenDecimals } from '@/hooks';
 

@@ -1,4 +1,4 @@
-import { Icon, IconProps } from './Icon';
+import { Icon, IconProps } from '@/modules/icons/Icon';
 
 export const Sparkles = (props: IconProps) => (
   <Icon {...props} width={16} height={16} viewBox="0 0 16 16" fill="none">

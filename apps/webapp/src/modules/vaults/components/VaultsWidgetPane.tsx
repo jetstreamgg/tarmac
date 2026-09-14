@@ -1,4 +1,5 @@
-import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
+import { WidgetContainer } from '@/widgets';
+import { CardAnimationWrapper } from '@/modules/ui/animation/Wrappers';
 import { VaultsIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
@@ -12,7 +13,7 @@ import { VaultStatsCard } from './VaultStatsCard';
 import { VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { useMemo } from 'react';
-import { positionAnimations } from '@/widgets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 
 export function VaultsWidgetPane() {
   const navigate = useNavigate();

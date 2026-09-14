@@ -3,7 +3,7 @@ import { useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { PopoverRateInfo } from '@/widgets';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { RateInfo } from '@/components/product/RateInfo';
 import { useStUsdsData } from '@/hooks';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';

@@ -7,7 +7,7 @@ import { mock } from 'wagmi/connectors';
 import { createConfig, WagmiProvider, http } from 'wagmi';
 import { mnemonicToAccount } from 'viem/accounts';
 import { normalize } from 'viem/ens';
-import { I18nWidgetProvider } from '../../src/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '../../src/modules/ui/context/I18nWidgetProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConnectedContext } from '../../src/modules/ui/context/ConnectedContext';
 import { ConnectModalContext } from '../../src/modules/ui/context/ConnectModalContext';

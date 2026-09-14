@@ -1,20 +1,20 @@
 import { motion } from 'motion/react';
 import { Heading, Text } from '@/widgets/shared/components/ui/Typography';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 import { Card, CardContent, CardFooter, CardHeader } from '@/widgets/components/ui/card';
-import { Zap } from '@/widgets/shared/components/icons/Icons';
+import { Zap } from '@/modules/icons/Icons';
 import { TransactionDetail } from '@/widgets/shared/components/ui/transaction/BatchTransactionStatus';
 import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { Switch } from '@/widgets/components/ui/switch';
 import { useContext } from 'react';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
-import { PopoverInfo } from '../PopoverInfo';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { useIsBatchSupported } from '@/hooks';
 import { StepIndicator } from './StepIndicator';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
+import { ExternalLink } from '@/modules/ui/components/ExternalLink';
 import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
 
 export function TransactionReview({

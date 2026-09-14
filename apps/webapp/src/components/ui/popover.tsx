@@ -4,8 +4,8 @@ import { motion } from 'motion/react';
 
 import { cn } from '@/lib/cn';
 // Leaf-safe motion tokens (no app graph) — used only by the widget popover below.
-import { AnimationLabels } from '@/widgets/shared/animation/constants';
-import { cardInAnimate, cardInInitial } from '@/widgets/shared/animation/presets';
+import { AnimationLabels } from '@/modules/ui/animation/constants';
+import { cardInAnimate, cardInInitial } from '@/modules/ui/animation/presets';
 
 // Shared Radix aliases (identical in both trees).
 const Popover = PopoverPrimitive.Root;

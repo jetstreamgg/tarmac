@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
+import type { WidgetAnalyticsEvent } from '@/modules/analytics/analyticsEvents';
 import type { VaultProvider } from '@/hooks/vaults/types';
 
 vi.mock('@/widgets/shared/hooks/useTransactionCallbacks', () => ({

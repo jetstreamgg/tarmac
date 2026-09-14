@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { ConnectWallet } from '../icons/ConnectWallet';
 import { Heading } from './Typography';
-import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
+import { ExternalLink } from '@/modules/ui/components/ExternalLink';
 
 export function ConnectWalletCopy({ className }: { className?: string }) {
   return (

@@ -8,7 +8,7 @@ import {
   OnNotificationCallback,
   OnAnalyticsEventCallback
 } from '@/widgets/shared/types/widgetState';
-import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
+import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/modules/analytics/analyticsEvents';
 import { useMemo, useRef } from 'react';
 import { VaultProvider } from '@/hooks/vaults/types';
 import { VaultAction, VaultFlow } from '../lib/constants';

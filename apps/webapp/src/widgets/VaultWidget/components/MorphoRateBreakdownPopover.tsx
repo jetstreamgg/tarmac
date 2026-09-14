@@ -7,7 +7,7 @@ import { Text } from '@/widgets/shared/components/ui/Typography';
 import { TokenIcon } from '@/widgets/shared/components/ui/token/TokenIcon';
 import { useMorphoVaultMarketApiData } from '@/hooks';
 import { Trans } from '@lingui/react/macro';
-import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { InfoTooltip } from '@/widgets/shared/components/ui/tooltip/InfoTooltip';
 
 export function MorphoRateBreakdownPopover({

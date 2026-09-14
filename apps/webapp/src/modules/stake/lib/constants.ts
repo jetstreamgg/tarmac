@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 // Relocated VERBATIM from `widgets/StakeModuleWidget/lib/constants.ts` when F7
 // deleted the legacy widget. The msgids double as e2e/analytics anchors and the

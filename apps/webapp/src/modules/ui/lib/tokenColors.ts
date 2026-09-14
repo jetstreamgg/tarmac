@@ -1,32 +1,3 @@
-export enum TxStatus {
-  IDLE = 'idle',
-  INITIALIZED = 'initialized',
-  LOADING = 'loading',
-  SUCCESS = 'success',
-  CANCELLED = 'cancelled',
-  ERROR = 'error'
-}
-
-export enum BatchStatus {
-  ENABLED = 'enabled',
-  DISABLED = 'disabled'
-}
-
-export enum InitialFlow {
-  INITIAL = 'initial'
-}
-
-export enum InitialAction {
-  INITIAL = 'initial'
-}
-
-export enum InitialScreen {
-  ACTION = 'action',
-  TRANSACTION = 'transaction'
-}
-
-export { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
-
 // Stablecoin values follow the DS chart variables (Components/Charts/bg-* and
 // Components/Charts-Hover/bg-*-hover; Figma 5051:133511 pie chart, 5270:15609
 // tokens composition — APP-416). Both Figma color modes carry the same values,
@@ -78,15 +49,3 @@ export function resolveTokenChartColors(symbol: string): { color: string; hoverC
   const entry = tokenColors.find(token => token.symbol === symbol.toUpperCase());
   return entry ? { color: entry.color, hoverColor: entry.hoverColor ?? entry.color } : undefined;
 }
-
-export enum NotificationType {
-  INSUFFICIENT_BALANCE = 'insufficient_balance',
-  DAI_RECEIVED = 'dai_received',
-  MKR_RECEIVED = 'mkr_received',
-  USDS_RECEIVED = 'usds_received',
-  SKY_RECEIVED = 'sky_received',
-  USDC_RECEIVED = 'usdc_received',
-  SUSDS_RECEIVED = 'susds_received'
-}
-
-export const EPOCH_LENGTH = 30 * 60; // 30 minutes

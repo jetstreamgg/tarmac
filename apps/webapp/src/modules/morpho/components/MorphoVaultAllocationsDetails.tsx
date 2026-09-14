@@ -11,7 +11,7 @@ import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { PairTokenIcons } from '@/widgets';
+import { PairTokenIcons } from '@/modules/ui/components/PairTokenIcon';
 import { useChainId } from 'wagmi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';

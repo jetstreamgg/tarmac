@@ -13,7 +13,7 @@ import {
   useProductNetworks
 } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
-import { Morpho } from '@/widgets';
+import { Morpho } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';

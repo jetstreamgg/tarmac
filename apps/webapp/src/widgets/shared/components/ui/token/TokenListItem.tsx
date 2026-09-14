@@ -1,6 +1,6 @@
 import { Button } from '@/widgets/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { HStack } from '../layout/HStack';
 import { VStack } from '../layout/VStack';

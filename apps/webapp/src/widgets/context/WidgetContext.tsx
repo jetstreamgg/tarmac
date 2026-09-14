@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { WidgetState } from '@/widgets/shared/types/widgetState';
-import { TxStatus } from '@/widgets/shared/constants';
-import { I18nWidgetProvider } from './I18nWidgetProvider';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import { TooltipProvider } from '@/widgets/components/ui/tooltip';
 import { Token } from '@/hooks';
 

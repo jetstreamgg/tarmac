@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useChainId, useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
-import { Morpho, Pendle } from '@/widgets';
+import { Morpho } from '@/modules/icons';
+import { Pendle } from '@/modules/icons/PendleSymbol';
 import {
   useEarnMarketplace,
   EarnProductKind,

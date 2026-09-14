@@ -1,5 +1,5 @@
 import { MessageDescriptor } from '@lingui/core';
-import { TxStatus } from '../constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 export type TxCardCopyText = {
   [TxStatus.INITIALIZED]: MessageDescriptor;

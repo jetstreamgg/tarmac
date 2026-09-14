@@ -1,4 +1,4 @@
-import { Icon, IconProps } from './Icon';
+import { Icon, IconProps } from '@/modules/icons/Icon';
 
 export const ArrowDown = (props: IconProps) => (
   <Icon {...props} viewBox="0 0 10 14">

@@ -44,6 +44,11 @@ import { TrendingUp } from './TrendingUp';
 import { TrendingUpGradient } from './TrendingUpGradient';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
+import { Morpho } from './Morpho';
+import { NoResults } from './NoResults';
+import { CurveLogo } from './CurveLogo';
+import { Info } from './Info';
+import { InProgress, SuccessCheck, FailedX, Cancel } from './Icons';
 
 export {
   ArrowDown,
@@ -91,5 +96,13 @@ export {
   TrendingUp,
   TrendingUpGradient,
   IllustrationStaked,
-  IllustrationStakingLogomark
+  IllustrationStakingLogomark,
+  Morpho,
+  NoResults,
+  CurveLogo,
+  Info,
+  InProgress,
+  SuccessCheck,
+  FailedX,
+  Cancel
 };

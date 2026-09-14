@@ -1,5 +1,5 @@
 import { msg } from '@lingui/core/macro';
-import { BatchStatus, TxStatus } from '@/widgets/shared/constants';
+import { BatchStatus, TxStatus } from '@/modules/ui/lib/txStatus';
 import { TxCardCopyText } from '@/widgets/shared/types/txCardCopyText';
 import { MessageDescriptor } from '@lingui/core';
 

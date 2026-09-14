@@ -20,9 +20,9 @@ import { t } from '@lingui/core/macro';
 import { Token, getTokenDecimals } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { useChainId } from 'wagmi';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { motion } from 'motion/react';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 
 export const VaultTransactionStatus = ({
   assetToken,

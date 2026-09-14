@@ -30,11 +30,18 @@ const setSearchParamsMock = vi.fn(
 const navigateMock = vi.fn();
 let mockEntityParams: Record<string, string | undefined> = {};
 
+vi.mock('@/modules/ui/animation/Wrappers', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/modules/ui/animation/Wrappers')>();
+  return {
+    ...actual,
+    CardAnimationWrapper: ({ children }: { children: ReactNode }) => <>{children}</>
+  };
+});
+
 vi.mock('@/widgets', async importOriginal => {
   const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
-    CardAnimationWrapper: ({ children }: { children: ReactNode }) => <>{children}</>,
     WidgetContainer: ({ children, header }: { children: ReactNode; header?: ReactNode }) => (
       <div>
         {header}

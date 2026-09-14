@@ -9,7 +9,7 @@ import { useChainId } from 'wagmi';
 import { getBannerById } from '@/data/banners/banners';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { base, arbitrum, optimism, unichain } from 'viem/chains';
-import { Pendle as PendleIcon } from '@/widgets/shared/components/icons/Pendle';
+import { Pendle as PendleIcon } from '@/modules/icons/PendleSymbol';
 
 // Type for banner configuration
 type BannerConfig = {

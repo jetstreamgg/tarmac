@@ -16,7 +16,7 @@ import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
-import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';

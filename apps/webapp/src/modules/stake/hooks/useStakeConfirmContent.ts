@@ -2,7 +2,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import type { Call } from 'viem';
 import { getCallsKey } from '@/hooks/shared/networkFee';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 /** What a `transactionContent` render function receives — the engine's live routing. */
 export interface StakeLaunchContentContext {

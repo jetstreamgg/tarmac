@@ -1,11 +1,11 @@
 import { cn } from '@/lib/cn';
-import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/widgets/components/ui/tooltip';
-import { useClipboard } from '@/widgets/shared/hooks/useClipboard';
-import { Text } from './Typography';
-import { Copy } from '@/widgets/shared/components/icons/Icons';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
+import { useClipboard } from '@/modules/ui/hooks/useClipboard';
+import { Text } from '@/modules/layout/components/Typography';
+import { Copy } from '@/modules/icons/Icons';
 import { motion } from 'motion/react';
-import { iconAnimations } from '@/widgets/shared/animation/presets';
-import { AnimationLabels } from '@/widgets/shared/animation/constants';
+import { iconAnimations } from '@/modules/ui/animation/presets';
+import { AnimationLabels } from '@/modules/ui/animation/constants';
 
 export function CopyToClipboard({ text, iconClassName }: { text: string; iconClassName?: string }) {
   const { hasCopied, onCopy } = useClipboard(text);

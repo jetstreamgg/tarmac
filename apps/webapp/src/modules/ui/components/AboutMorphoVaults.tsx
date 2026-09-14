@@ -4,7 +4,7 @@ import { useConnectedContext } from '../context/ConnectedContext';
 import { AboutCard } from './AboutCard';
 import { TokenIcon } from './TokenIcon';
 import { Trans } from '@lingui/react/macro';
-import { Morpho } from '@/widgets';
+import { Morpho } from '@/modules/icons';
 import { VaultProvider } from '@/hooks';
 
 const getVaultIcon = (bannerId: string) => {

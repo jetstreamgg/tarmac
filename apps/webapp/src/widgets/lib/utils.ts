@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { defaultConfig } from '../config/default-config';
+import { defaultConfig } from '@/modules/config/widgets-default-config';
 import { SavingsFlow } from '../shared/types/widgetState';
 import { ExternalWidgetState } from '@/widgets/shared/types/widgetState';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';

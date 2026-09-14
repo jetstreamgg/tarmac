@@ -1,4 +1,4 @@
-import { WidgetsConfig } from '@/widgets';
+import { WidgetsConfig } from './widgets-config';
 
 export type SiteConfig = WidgetsConfig & {
   name: string;

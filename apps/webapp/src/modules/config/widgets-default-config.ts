@@ -18,7 +18,7 @@ import {
   spkAddress,
   stUsdsAddress
 } from '@/hooks';
-import { TENDERLY_CHAIN_ID } from '@/widgets/shared/constants';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 
 const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk, stusds } = TOKENS;
 

@@ -5,12 +5,12 @@ import {
   OnNotificationCallback,
   OnAnalyticsEventCallback
 } from '../types/widgetState';
-import { WidgetAnalyticsEventType } from '../types/analyticsEvents';
+import { WidgetAnalyticsEventType } from '@/modules/analytics/analyticsEvents';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { getTransactionLink } from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { useConnection, useChainId } from 'wagmi';
-import { InitialScreen, NotificationType, TxStatus } from '../constants';
+import { InitialScreen, NotificationType, TxStatus } from '@/modules/ui/lib/txStatus';
 
 type UseTransactionCallbacksParameters = Pick<WidgetProps, 'onWidgetStateChange'> & {
   onNotification?: OnNotificationCallback;

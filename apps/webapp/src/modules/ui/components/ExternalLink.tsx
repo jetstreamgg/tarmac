@@ -1,5 +1,5 @@
-import { cn } from '@/widgets/lib/utils';
-import { LinkExternal } from '@/widgets/shared/components/icons/LinkExternal';
+import { cn } from '@/lib/cn';
+import { LinkExternal } from '@/modules/icons';
 import React from 'react';
 
 export function ExternalLink({

@@ -18,7 +18,7 @@ import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyC
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo, vaultRateInfo } from '@/components/product/RateInfo';
 import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
-import { Morpho } from '@/widgets';
+import { Morpho } from '@/modules/icons';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { NO_VALUE } from '@/lib/constants';
 

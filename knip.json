@@ -24,7 +24,7 @@
       "ignore": [
         "src/hooks/generated.ts",
         "src/locales/**/*",
-        "src/widgets/data/tooltips/index.ts",
+        "src/modules/ui/data/tooltips/index.ts",
         "src/hooks/trade/cowApiSchema.ts"
       ],
       "ignoreDependencies": [

@@ -11,7 +11,7 @@ import { LoadingErrorWrapper } from './LoadingErrorWrapper';
 import { Text } from '@/modules/layout/components/Typography';
 import { Token } from '@/hooks';
 import { useChainId } from 'wagmi';
-import { PopoverInfo } from '@/widgets';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 
 interface BalanceCardProps {
   balance: bigint | string;

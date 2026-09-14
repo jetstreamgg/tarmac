@@ -36,7 +36,7 @@ Example invocations:
 ### Tooltips
 
 - **Corpus**: `output/webapp/tooltips/tooltips.ts`
-- **Tarmac**: `apps/webapp/src/widgets/data/tooltips/index.ts`
+- **Tarmac**: `apps/webapp/src/modules/ui/data/tooltips/index.ts`
 
 ## Process
 

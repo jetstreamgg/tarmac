@@ -11,11 +11,11 @@ import { VaultFlow } from '../lib/constants';
 import { VaultStatsCard } from './VaultStatsCard';
 import { useConnection, useChainId } from 'wagmi';
 import { motion } from 'motion/react';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack';
 import { formatUnits } from 'viem';
 import { Text } from '@/widgets/shared/components/ui/Typography';
-import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { Checkbox } from '@/widgets/components/ui/checkbox';
 import { cn } from '@/widgets/lib/utils';
 

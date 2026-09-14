@@ -8,7 +8,8 @@ import {
   useRef,
   ReactNode
 } from 'react';
-import { TxStatus, InProgress, Cancel } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { InProgress, Cancel } from '@/modules/icons';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';

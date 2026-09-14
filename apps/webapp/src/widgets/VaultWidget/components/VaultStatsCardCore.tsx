@@ -2,7 +2,7 @@ import { StatsOverviewCardCore } from '@/widgets/shared/components/ui/card/Stats
 import { MotionHStack } from '@/widgets/shared/components/ui/layout/MotionHStack';
 import { TokenIcon } from '@/widgets/shared/components/ui/token/TokenIcon';
 import { Text } from '@/widgets/shared/components/ui/Typography';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 import { JSX } from 'react';
 import { MorphoRateBreakdownPopover } from './MorphoRateBreakdownPopover';
 import { SparkVaultRate } from './SparkVaultRate';

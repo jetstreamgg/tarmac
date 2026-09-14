@@ -4,7 +4,7 @@ import { useLingui } from '@lingui/react';
 import { formatBigInt } from '@/utils';
 import { getTokenDecimals, Token, VaultProvider } from '@/hooks';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
-import { PopoverRateInfo as PopoverInfo } from '@/widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { useChainId } from 'wagmi';
 
 type MorphoMarketLiquidityCardProps = {

@@ -6,7 +6,7 @@ import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatsAccordionCard } from '@/widgets/shared/components/ui/card/StatsAccordionCard';
-import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { positionAnimations } from '@/modules/ui/animation/presets';
 import { VaultStatsCardCore } from './VaultStatsCardCore';
 import type { VaultProvider } from '@/hooks';
 

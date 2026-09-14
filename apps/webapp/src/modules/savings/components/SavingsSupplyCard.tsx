@@ -9,7 +9,7 @@ import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyC
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Usds } from '@/modules/icons';
-import { PopoverRateInfo } from '@/widgets';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import {
   ORIGIN_TOKENS,

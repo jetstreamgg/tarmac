@@ -2,15 +2,14 @@ import {
   Popover,
   PopoverArrow,
   PopoverClose,
-  PopoverContent,
+  PopoverWidgetContent as PopoverContent,
   PopoverTrigger
-} from '@/widgets/components/ui/popover';
-import { Close } from '../icons/Close';
-import { Info } from '../icons/Info';
-import { Heading, Text } from '@/widgets/shared/components/ui/Typography';
-import { getTooltipById } from '@/widgets/data/tooltips';
-import { parseMarkdownLinks } from '@/widgets/shared/utils/parseMarkdownLinks';
-import { cn } from '@/widgets/lib/utils';
+} from '@/components/ui/popover';
+import { Close, Info } from '@/modules/icons';
+import { Heading, Text } from '@/modules/layout/components/Typography';
+import { getTooltipById } from '@/modules/ui/data/tooltips';
+import { parseMarkdownLinks } from '@/modules/ui/lib/parseMarkdownLinks';
+import { cn } from '@/lib/cn';
 
 // Mapping of popover types to tooltip IDs
 const TOOLTIP_ID_MAP = {

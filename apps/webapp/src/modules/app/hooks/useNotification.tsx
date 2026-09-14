@@ -1,4 +1,4 @@
-import { NotificationType, TxStatus } from '@/widgets/shared/constants';
+import { NotificationType, TxStatus } from '@/modules/ui/lib/txStatus';
 import { toast } from '@/components/ui/use-toast';
 import { useCallback, useRef } from 'react';
 

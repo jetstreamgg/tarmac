@@ -7,12 +7,12 @@ import {
 import { Text } from '../Typography';
 import { FetchingSpinner } from '../spinner/FetchingSpinner';
 import { AnimatePresence, motion } from 'motion/react';
-import { positionAnimations, positionAnimationsWithExit } from '@/widgets/shared/animation/presets';
-import { AnimationLabels } from '@/widgets/shared/animation/constants';
-import { PopoverRateInfo } from '../PopoverRateInfo';
+import { positionAnimations, positionAnimationsWithExit } from '@/modules/ui/animation/presets';
+import { AnimationLabels } from '@/modules/ui/animation/constants';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { HStack } from '../layout/HStack';
 import { ArrowDown } from '../../icons/ArrowDown';
-import { PopoverInfo } from '../PopoverInfo';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { cn } from '@/widgets/lib/utils';
 import React from 'react';
 

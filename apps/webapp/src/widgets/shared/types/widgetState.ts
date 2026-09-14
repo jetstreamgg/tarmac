@@ -1,8 +1,14 @@
 import { VaultAction, VaultFlow, VaultScreen } from '@/widgets/VaultWidget/lib/constants';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 import { Token } from '@/hooks';
-import { TxStatus, NotificationType, InitialAction, InitialFlow, InitialScreen } from '../constants';
-import { WidgetAnalyticsEvent } from './analyticsEvents';
+import {
+  TxStatus,
+  NotificationType,
+  InitialAction,
+  InitialFlow,
+  InitialScreen
+} from '@/modules/ui/lib/txStatus';
+import { WidgetAnalyticsEvent } from '@/modules/analytics/analyticsEvents';
 
 // Survivors of the deleted SavingsWidget: only the enums were still referenced
 // (shared unions below and the external-state validator in widgets/lib/utils).

@@ -1,4 +1,4 @@
-import { Icon, IconProps } from './Icon';
+import { Icon, IconProps } from '@/modules/icons/Icon';
 
 export const ChartPaper = (props: IconProps) => (
   <Icon {...props} width={13} height={17} viewBox="0 0 13 17" fill="none">

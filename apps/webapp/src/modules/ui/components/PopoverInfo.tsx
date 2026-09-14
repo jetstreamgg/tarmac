@@ -2,12 +2,11 @@ import {
   Popover,
   PopoverArrow,
   PopoverClose,
-  PopoverContent,
+  PopoverWidgetContent as PopoverContent,
   PopoverTrigger
-} from '@/widgets/components/ui/popover';
-import { Close } from '../icons/Close';
-import { Info } from '../icons/Info';
-import { Heading, Text } from '@/widgets/shared/components/ui/Typography';
+} from '@/components/ui/popover';
+import { Close, Info } from '@/modules/icons';
+import { Heading, Text } from '@/modules/layout/components/Typography';
 import { ReactNode } from 'react';
 
 interface PopoverInfoProps {

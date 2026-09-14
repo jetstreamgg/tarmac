@@ -23,7 +23,7 @@ import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/componen
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
 import { getStakeTitle, StakeFlow } from '../lib/constants';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { toLaunchResult, useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
