@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus } from '@/widgets';
 import { ArrowLeft } from 'lucide-react';
@@ -38,12 +38,24 @@ export type { TransactionStep } from './transactionStepsModel';
 // read-only first screen. Both transition to the shared 'transaction' screen.
 type TransactionModalStep = 'entry' | 'review' | 'transaction';
 
+/**
+ * Subtitle copy under the title. Only `review` is set by any flow today (the
+ * Pendle early-withdrawal disclosure): the status-keyed entries are no longer
+ * used by design — the wallet/status screens narrate through the step list and
+ * the status chip, and a failure lives in the failed step's row (Figma
+ * 1030:139111). The keys stay on the type so the modal keeps rendering one if a
+ * flow ever needs a status-specific disclosure.
+ */
 export type TransactionSubtitles = {
+  /**
+   * Body 6 sentence under the first screen's title — a flow-specific
+   * disclosure the user needs before confirming (Pendle's early-withdrawal
+   * market-price note). Deliberately the ONLY key: the transaction screen
+   * carries no status subtitle by design (Figma 1030:139111 — the step list
+   * and the status chip narrate the write, a failure lives in the failed row),
+   * so a flow cannot bring that treatment back by setting one.
+   */
   review?: string;
-  pending?: string;
-  loading?: string;
-  success?: string;
-  error?: string;
 };
 
 export type TransactionModalProps = {
@@ -120,11 +132,12 @@ export type TransactionModalProps = {
   errorLabel?: string;
   steps?: TransactionStep[];
   currentStep?: number;
+  /** The current ERROR is a wallet Reject (nothing broadcast) — see the step model. */
+  userRejected?: boolean;
   /**
    * Gate-owned status copy (APP-501): while set, replaces the status row's
-   * message and the status-keyed subtitle — the flow's copy narrates on-chain
-   * writes, which is wrong while the gate is screening or collecting the
-   * terms signature.
+   * message — the flow's copy narrates on-chain writes, which is wrong while
+   * the gate is screening or collecting the terms signature.
    */
   gateCopy?: GateStatusCopy | null;
   /**
@@ -142,6 +155,14 @@ export type TransactionModalProps = {
    * so a product address resolved on another chain can never be sent here.
    */
   chainGuard?: ChainGuard | null;
+  /**
+   * No first screen (see `TransactionConfig.skipReview`): the modal mounts on
+   * the wallet/status screen and fires `onConfirm` itself, once, on mount —
+   * the gated path, exactly as a review Confirm would. With nothing to go
+   * back to, the failure view offers Retry alone (the provider closes the
+   * modal on a gate's return-to-first-screen).
+   */
+  skipReview?: boolean;
 };
 
 /** The transaction modal's chain-guard descriptor (see `chainGuard` prop). */
@@ -154,6 +175,8 @@ export type ChainGuard = {
   onSwitch?: () => void;
   /** True while the wallet is answering the guard's own switch request. */
   switching?: boolean;
+  /** Which explanation to show (see `TransactionConfig.chainGuardReason`). */
+  reason?: 'product-unavailable' | 'launch-chain';
 };
 
 // Figma review (badge restyle, "Confirm in the wallet" 2376:225580): the old
@@ -175,7 +198,9 @@ const statusBadgeLabel: Partial<Record<TxStatus, ReactNode>> = {
   [TxStatus.INITIALIZED]: <Trans>Confirm in the wallet</Trans>,
   [TxStatus.LOADING]: <Trans>Processing</Trans>,
   [TxStatus.SUCCESS]: <Trans>Success</Trans>,
-  [TxStatus.ERROR]: <Trans>Failed</Trans>,
+  // The failed chip swaps to the status-error treatment and leads with the
+  // alert triangle (Figma 2800:91683) — see `badgeContent` below.
+  [TxStatus.ERROR]: <Trans>Transaction failed</Trans>,
   [TxStatus.CANCELLED]: <Trans>Cancelled</Trans>
 };
 
@@ -207,15 +232,18 @@ export function TransactionModal({
   errorLabel,
   steps,
   currentStep = 0,
+  userRejected = false,
   gateCopy,
   preflight,
   chainGuard,
-  registerReturnToFirstScreen
+  registerReturnToFirstScreen,
+  skipReview = false
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
-  // read-only review. Initialised per mount (the provider remounts the modal on
-  // each launch, so the initializer sees the launch's `entry`).
-  const firstStep: TransactionModalStep = entry ? 'entry' : 'review';
+  // read-only review — or, for a flow whose own surface was the review, the
+  // wallet/status screen itself. Initialised per mount (the provider remounts
+  // the modal on each launch, so the initializer sees the launch's `entry`).
+  const firstStep: TransactionModalStep = entry ? 'entry' : skipReview ? 'transaction' : 'review';
   // A config carrying BOTH an entry and review content is the three-screen flow
   // (Figma 859:36036 → 859:36154 → 859:36214): entry → review → transaction.
   // Entry-only and review-only configs keep their two screens.
@@ -235,16 +263,24 @@ export function TransactionModal({
   // step (flows like the claim panel launch without a steps array): the step
   // row is where its explanatory copy, links, and inline retry live (APP-501).
   const hasSignatureStep = !!steps?.some(step => typeof step === 'object' && step.kind === 'signature');
-  const showStepList = !!hasMultipleSteps || hasSignatureStep;
+  // A lone on-chain step gets no list while it runs (the status chip carries
+  // the in-flight state), but once it FAILS the list is where the failure is
+  // told: the retitled "Supply failed" row, its rollback sentence and the
+  // inline "Try again" (Figma 1030:139111) — there is no status subtitle any
+  // more (design QA, Sep 2026), so without the list a single-step failure
+  // would name nothing beyond the chip.
+  const failedSingleStep = steps?.length === 1 && step === 'transaction' && txStatus === TxStatus.ERROR;
+  const showStepList = !!hasMultipleSteps || hasSignatureStep || failedSingleStep;
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
   const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
-  // Multi-step failures render inside the step list (retitled step + inline
-  // "Try again", Figma 1030:139111) and drop the bottom status row/buttons —
-  // the header back arrow still returns to the first screen. Single-step flows
-  // have no list, so they keep the bottom treatment.
+  // Failures render inside the step list (retitled step + inline "Try again",
+  // Figma 1030:139111) and drop the bottom status row/buttons — the header
+  // back arrow still returns to the first screen. A single-step flow grows its
+  // list on failure for exactly this (see `failedSingleStep`), so only a flow
+  // launched with NO steps at all keeps the bottom treatment.
   const showInlineFailure = showStepList && isTransaction && txStatus === TxStatus.ERROR;
   // The status chip's content (Figma 2376:225580: leading dots + label). The
   // dots only hop while a status is genuinely in-flight (awaiting signature or
@@ -257,10 +293,29 @@ export function TransactionModal({
   // A gate phase owns the label while it holds the floor: both of its phases
   // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
   // in the wallet" during an HTTP address check (APP-501).
-  const badgeLabel = gateCopy?.badgeLabel ?? statusBadgeLabel[txStatus];
+  const badgeFailed = txStatus === TxStatus.ERROR;
+  // A declined/failed terms signature is not a transaction — nothing reached
+  // the chain — so the chip names the signature rather than claiming a
+  // rolled-back transaction (the failed row below already says as much).
+  const failedStep = steps?.[currentStep];
+  const failedOnSignature =
+    badgeFailed && typeof failedStep === 'object' && failedStep !== null && failedStep.kind === 'signature';
+  // A wallet Reject is not a failed transaction either — nothing was sent —
+  // so the chip says so, matching the declined row the step model draws.
+  const badgeLabel =
+    gateCopy?.badgeLabel ??
+    (failedOnSignature ? (
+      <Trans>Signature failed</Trans>
+    ) : badgeFailed && userRejected ? (
+      <Trans>Request declined</Trans>
+    ) : (
+      statusBadgeLabel[txStatus]
+    ));
+  const badgeVariant = badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
+      {badgeFailed && <TriangleAlert className="size-3 shrink-0" aria-hidden="true" />}
       {badgeLabel}
     </>
   ) : undefined;
@@ -302,7 +357,22 @@ export function TransactionModal({
     <div className="flex items-start gap-2" data-testid="transaction-chain-guard">
       <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
       <Text className="text-error text-sm">
-        {chainGuard.targetName ? (
+        {chainGuard.reason === 'launch-chain' ? (
+          // The flow was prepared for the chain it launched on (APP-563 #4);
+          // the product may run on the wallet's new chain too, so don't claim
+          // it is unavailable there.
+          chainGuard.targetName ? (
+            <Trans>
+              This transaction was prepared on {chainGuard.targetName}. Switch back to {chainGuard.targetName}{' '}
+              to continue, or close and start again on {chainGuard.currentName ?? t`this network`}.
+            </Trans>
+          ) : (
+            <Trans>
+              This transaction was prepared on another network. Switch back to it to continue, or close and
+              start again on {chainGuard.currentName ?? t`this network`}.
+            </Trans>
+          )
+        ) : chainGuard.targetName ? (
           <Trans>
             This product isn&rsquo;t available on {chainGuard.currentName ?? t`this network`}. Switch to{' '}
             {chainGuard.targetName} to continue.
@@ -341,20 +411,41 @@ export function TransactionModal({
   // `transactionContent` keep their previous transaction-screen content.
   const transactionScreenBody = transactionScreenContent ?? (entry ? null : transactionContent);
 
-  const subtitleByStatus: Partial<Record<TxStatus, string | undefined>> = {
-    [TxStatus.INITIALIZED]: subtitles?.pending,
-    [TxStatus.LOADING]: subtitles?.loading,
-    [TxStatus.SUCCESS]: subtitles?.success,
-    [TxStatus.ERROR]: subtitles?.error
-  };
-  const subtitle = isFirstScreen ? subtitles?.review : (gateCopy?.subtitle ?? subtitleByStatus[txStatus]);
+  // A gate phase (screening / terms signature) narrates itself through its
+  // subtitle only where there is no step list: with one, the signature step's
+  // own row already says what is being waited on, and the flow's status
+  // subtitle stays hidden too (it narrates an on-chain write that hasn't
+  // started). Figma review 2829:141029: nothing beyond a step's description.
+  // The gate's copy is redundant only when the signature prelude step is in
+  // the list — that step carries its own description (Figma 2829:141028/9).
+  // Screening has no step of its own, so its "Running a quick check…" /
+  // "Verifying your wallet address…" copy still shows under a step list.
+  const gateCopyInStepList = showStepList && hasSignatureStep;
+  const gateSubtitle = gateCopy && !gateCopyInStepList ? gateCopy.subtitle : undefined;
+  // Off the first screen the only sentence is the gate's own (screening copy);
+  // a flow has no status subtitle to show there (see `TransactionSubtitles`).
+  const subtitle = isFirstScreen ? subtitles?.review : gateSubtitle;
   const firstScreenSubtitle = isFirstScreen ? subtitle : undefined;
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
   // and the three-screen review stage its own (e.g. "Review supply"); both fall back
   // to `title` so single-title configs render unchanged on every screen.
+  //
+  // A failure replaces the wallet-screen title: it names the wait for the
+  // wallet ("Confirm in the wallet"), and kept reading that above the declined
+  // row after a Reject (APP-563 #5). The failed title mirrors the chip's split —
+  // a denied gate signature is not a transaction, a wallet Reject sent nothing,
+  // a revert did — and is the same for every flow, so Convert's "Review
+  // conversion" no longer differs here either.
+  const failedTitle = failedOnSignature
+    ? t`Signature failed`
+    : userRejected
+      ? t`Transaction declined`
+      : t`Transaction failed`;
   const displayTitle = isTransaction
-    ? (transactionTitle ?? title)
+    ? badgeFailed
+      ? failedTitle
+      : (transactionTitle ?? title)
     : isReview && hasReviewStage
       ? (reviewTitle ?? title)
       : title;
@@ -429,11 +520,27 @@ export function TransactionModal({
 
   // Hand the provider the same back-to-first-screen the header arrow uses, so
   // the gate's returnToFirstScreen control (enhanced-screening denials) lands
-  // on an identical screen state — onBack's progress reset included.
+  // on an identical screen state — onBack's progress reset included. (For a
+  // skipReview flow the provider closes the modal instead — there is no first
+  // screen to return to.)
   useEffect(() => {
     registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);
   }, [registerReturnToFirstScreen, handleBack]);
+
+  // A skipReview launch is the review's Confirm: fire once on mount, through
+  // the same gated `onConfirm` the review CTA uses. The ref (not the effect)
+  // is the once-guard — StrictMode replays mount effects on the same
+  // instance, and a second run would be a second transaction under a
+  // synchronous gate.
+  const autoConfirmedRef = useRef(false);
+  useEffect(() => {
+    if (!skipReview || autoConfirmedRef.current) return;
+    autoConfirmedRef.current = true;
+    onConfirm();
+    // Mount-only by design: the launch is the click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Header back arrow (Figma chrome on every screen): on the flow's first screen
   // it closes (there's nothing before it — the inputs live on the page/entry); on
@@ -498,14 +605,20 @@ export function TransactionModal({
                   from the left as the Actions panel arrives (2685:148222 animates
                   the same rule as a path length). */}
               {transactionScreenBody && <ModalStepDivider />}
-              <Steps className="pt-2" bundled={isBundled} badge={badgeContent}>
+              <Steps className="pt-2" bundled={isBundled} badge={badgeContent} badgeVariant={badgeVariant}>
                 {(() => {
                   const items = deriveTransactionStepItems({
                     steps: steps ?? [],
                     currentStep,
                     txStatus,
-                    bundled: isBundled
+                    bundled: isBundled,
+                    userRejected
                   });
+                  // Stays live off the product's chain: the provider refuses a
+                  // wrong-chain fire and returns the flow to its guarded first
+                  // screen, so the press is never dead. The guard's own copy and
+                  // switch action render under the list (below) so the failure
+                  // view explains itself before that round trip.
                   const tryAgain = (
                     <Button variant="primary" size="m" onClick={handleRetry}>
                       {errorLabel ?? <Trans>Try again</Trans>}
@@ -544,6 +657,15 @@ export function TransactionModal({
                   ));
                 })()}
               </Steps>
+              {/* The failure view's cross-chain guard (APP-528) lives here once
+                  the failure renders inline — the bottom CTA row that used to
+                  carry it is gone with the step list showing. */}
+              {showInlineFailure && chainGuarded && (
+                <div className="flex flex-col gap-4 pt-2">
+                  {chainGuardBlock}
+                  {guardCta}
+                </div>
+              )}
             </>
           )}
         </>
@@ -757,19 +879,29 @@ export function TransactionModal({
                     occupy (Figma 2376:225580). The link left with them — a
                     confirmed transaction hands its hash to the success toast, and
                     a mid-flow link to one leg of a multi-step flow was noise. The
-                    gate's own copy is the one thing that survives: it narrates an
-                    off-chain phase (screening, terms signature) that the chip's
-                    txStatus-keyed label cannot describe (APP-501). */}
-                {((!showStepList && badgeContent) || gateCopy?.message) && (
-                  <div className="flex items-center gap-3 pt-4">
-                    {!showStepList && badgeContent && (
-                      <StepsBadge variant="brand" dataTestId="transaction-status-badge">
-                        {badgeContent}
-                      </StepsBadge>
-                    )}
-                    {gateCopy?.message && <Text className="text-textSecondary">{gateCopy.message}</Text>}
-                  </div>
-                )}
+                    gate's own copy narrates an off-chain phase (screening,
+                    terms signature) that the chip's txStatus-keyed label
+                    cannot describe (APP-501). With a step list, the signature
+                    step's own description already carries the terms copy, so
+                    that sentence goes (Figma review 2829:141028/9: nothing
+                    beyond a step's description on this screen) — but the
+                    screening sentence has no step to live in, so it stays,
+                    on its own: the list's header already shows the chip. */}
+                {(() => {
+                  const bottomChip = !showStepList && badgeContent;
+                  const gateMessage = gateCopy?.message && !gateCopyInStepList ? gateCopy.message : undefined;
+                  if (!bottomChip && !gateMessage) return null;
+                  return (
+                    <div className="flex items-center gap-3 pt-4">
+                      {bottomChip && (
+                        <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
+                          {badgeContent}
+                        </StepsBadge>
+                      )}
+                      {gateMessage && <Text className="text-textSecondary">{gateMessage}</Text>}
+                    </div>
+                  );
+                })()}
 
                 {/* Terminal-state actions only — the in-flight states (awaiting
                     signature / processing) are pure loading indicators now
@@ -786,7 +918,9 @@ export function TransactionModal({
                   <>
                     {chainGuardBlock}
                     <div className="flex w-full gap-3">
-                      {!backLocked && (
+                      {/* No Back either once a step has mined (APP-448) or when
+                          there is no first screen to go back to. */}
+                      {!backLocked && !skipReview && (
                         <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
                           <Trans>Back</Trans>
                         </Button>

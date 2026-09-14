@@ -1,4 +1,4 @@
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -57,16 +57,19 @@ describe('TakeoverShell', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('locks document scroll while mounted and restores it on unmount', () => {
+  it('locks document scroll through react-remove-scroll while mounted and releases it on unmount', async () => {
+    // The same lock Radix's dialogs use: it marks body with `data-scroll-locked`
+    // (and publishes the hidden bar's width there for the page column's
+    // compensation to subtract); the sidecar loads async, hence the waits.
     const { unmount } = render(
       <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
         <div />
       </TakeoverShell>
     );
 
-    expect(document.documentElement.style.overflow).toBe('hidden');
+    await waitFor(() => expect(document.body.hasAttribute('data-scroll-locked')).toBe(true));
     unmount();
-    expect(document.documentElement.style.overflow).toBe('');
+    await waitFor(() => expect(document.body.hasAttribute('data-scroll-locked')).toBe(false));
   });
 
   it('names the dialog from its title via aria-labelledby', () => {

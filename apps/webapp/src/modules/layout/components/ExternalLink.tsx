@@ -1,5 +1,4 @@
 import React from 'react';
-import { HStack } from './HStack';
 import { LinkExternal } from '@/modules/icons';
 import { cn } from '@/lib/utils';
 
@@ -38,7 +37,11 @@ export function ExternalLink({
       {['string', 'number'].includes(typeof children) || children === undefined ? (
         content
       ) : (
-        <HStack className={contentClassName}>{content}</HStack>
+        // A span, not HStack's div: the link sits inside <p> copy (the batch
+        // toggle, the bundle explainer, the terms modal), and a div there is
+        // invalid HTML that React logs on every page the TopNav menu opens on
+        // (APP-563 #7). Same flex recipe HStack drew, on an inline element.
+        <span className={cn('flex flex-row space-x-4', contentClassName)}>{content}</span>
       )}
     </a>
   );

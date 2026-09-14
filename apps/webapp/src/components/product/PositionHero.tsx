@@ -3,6 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { splitAmount } from '@/utils';
 import { useAccruingValue } from '@/hooks/ui';
 import { RollingDigits } from '@/components/ui/rolling-digits';
+import { RollingValue } from '@/components/ui/rolling-value';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ProductBadge } from './ProductCard';
 
@@ -14,6 +15,10 @@ import { ProductBadge } from './ProductCard';
  *
  * The figure is Heading 2 (Circular 44/48, -0.88) with a Heading 6 fraction on
  * fg-secondary. The phone tier keeps M6.3's smaller scale (486:20976).
+ *
+ * A discrete change — a supply or withdraw landing, a fresh chain read — rolls
+ * the figure over as a whole (Design QA 2800:92561, comp 1598:76582) rather
+ * than snapping it.
  */
 export function PositionHero({
   pillSymbol,
@@ -84,14 +89,20 @@ export function PositionHero({
           />
           <span className="flex items-baseline gap-px">
             <span className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]">
-              {whole}
+              {/* A live figure is one odometer across the point: when the
+                  fraction carries into the whole dollars, only the units digit
+                  (and whatever it carries into) turns over, not the whole part
+                  as one figure. */}
+              {isAccruing ? <RollingDigits value={whole} /> : <RollingValue value={whole} />}
             </span>
             {fraction && (
               <span className="text-fgSecondary font-circle text-lg leading-5 font-medium tracking-[-0.36px] md:text-xl md:leading-[22px] md:tracking-[-0.4px]">
-                {/* Only the fraction rolls. The whole part turns over once every
-                    few hours at any realistic rate, so a still carry there costs
-                    nothing and keeps the 44px figure out of the clip windows. */}
-                .{isAccruing ? <RollingDigits value={fraction} /> : fraction}
+                .
+                {isAccruing ? (
+                  <RollingDigits value={fraction} />
+                ) : (
+                  <RollingValue value={fraction} speed="stat" />
+                )}
               </span>
             )}
           </span>

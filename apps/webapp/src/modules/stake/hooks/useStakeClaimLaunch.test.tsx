@@ -204,27 +204,27 @@ describe('buildStakeClaimSteps', () => {
     expect(
       buildStakeClaimSteps({ needsSkyAllowance: false, claimSymbols: ['SKY', 'SPK'], restake: false })
     ).toEqual([
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' }
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
 
     expect(
       buildStakeClaimSteps({ needsSkyAllowance: false, claimSymbols: ['SKY', 'SPK'], restake: true })
     ).toEqual([
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' },
-      { label: 'Restake', tokenSymbol: 'SKY' }
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." },
+      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked." }
     ]);
 
     expect(buildStakeClaimSteps({ needsSkyAllowance: true, claimSymbols: ['SKY'], restake: true })).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Restake', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked." }
     ]);
 
     // Plain claim never needs an approval: nothing is pulled from the owner.
     expect(buildStakeClaimSteps({ needsSkyAllowance: true, claimSymbols: ['SPK'], restake: false })).toEqual([
-      { label: 'Claim', tokenSymbol: 'SPK' }
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
   });
 });
@@ -319,8 +319,8 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     act(() => result.current.confirm(false));
 
     expect(lastPush().steps).toEqual([
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' }
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
@@ -330,10 +330,10 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     act(() => result.current.confirm(true));
 
     expect(lastPush().steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SPK' },
-      { label: 'Restake', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." },
+      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked." }
     ]);
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
@@ -373,9 +373,9 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     const push = lastPush();
     expect(push.analytics.action).toBe('claimAndRestake');
     expect(push.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY' },
-      { label: 'Claim', tokenSymbol: 'SKY' },
-      { label: 'Restake', tokenSymbol: 'SKY' }
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked." }
     ]);
   });
 

@@ -21,13 +21,10 @@ export function useUpgradeModal() {
   const open = useCallback(
     (initialToken: UpgradeSourceToken = 'DAI') => {
       launch({
+        // No status subtitles — the step list already narrates the
+        // transaction (Design QA, Sep 2026).
         title: t`Upgrade DAI/MKR`,
         transactionTitle: t`Confirm upgrade`,
-        subtitles: {
-          loading: t`Your upgrade is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully upgraded your tokens.`,
-          error: t`An error occurred while upgrading your tokens.`
-        },
         sessionId,
         entry: { confirmLabel: t`Continue`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).

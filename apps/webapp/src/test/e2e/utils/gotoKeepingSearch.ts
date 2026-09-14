@@ -1,7 +1,7 @@
 import { type Page } from '@playwright/test';
 
 // Deep-link navigation that preserves the current URL's search params
-// (`network=` after switchToL2, `details=`, ...). This replaces clicking the
+// (`details=`, `flow=`, ...). This replaces clicking the
 // legacy module nav (`widget-navigation`), which the B4 chrome retirement
 // removed — see e2e-migration.md. Params already present in `path` win over
 // the current URL's.

@@ -3,17 +3,16 @@ import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import {
-  useStakeUrnAddress,
   useStakeRewardContracts,
   useRewardContractsToClaim,
   useVault,
   usePrices,
   getIlkName,
-  RiskLevel,
-  ZERO_ADDRESS
+  RiskLevel
 } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
+import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky, Liquidated, SuppliedEmpty } from '@/modules/icons';
@@ -77,11 +76,17 @@ function LiquidatedBadge() {
 
 /** Liquidation-risk cell: liquidated badge, vault risk for urns with debt, or an unlit meter. */
 function PositionRiskCell({ position }: { position: StakeUserPosition }) {
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
-  const { data: vault, isLoading, error } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
   const hasDebt = position.usdsDebt > 0n;
+  // The vault read only feeds the risk meter, which is unlit without debt —
+  // an undefined urn disables `useVault`'s Vat read for debt-free rows.
+  const {
+    data: vault,
+    isLoading,
+    error
+  } = useVault(hasDebt ? position.urnAddress : undefined, getIlkName(2));
 
-  if (isLiquidatedStakePosition(position)) return <LiquidatedBadge />;
+  const isLiquidated = isLiquidatedStakePosition(position);
+  if (isLiquidated) return <LiquidatedBadge />;
   if (hasDebt && isLoading) return <Skeleton className="h-5 w-14" />;
   if (hasDebt && error && !vault) {
     // A failed read on a debt-carrying urn must not render the unlit
@@ -92,23 +97,28 @@ function PositionRiskCell({ position }: { position: StakeUserPosition }) {
       </span>
     );
   }
+  if (isLiquidated === undefined && isInactiveStakePosition(position)) {
+    // No bark history (subgraph down) on an emptied urn: it may be a
+    // liquidated one, so neither the badge nor the unlit meter is honest.
+    return (
+      <span data-testid="stake-position-liquidation-unknown" className="text-textSecondary text-sm">
+        –
+      </span>
+    );
+  }
   return <PositionRiskMeter riskLevel={hasDebt ? vault?.riskLevel : undefined} />;
 }
 
 /**
- * Borrowed cell: LIVE debt (principal + accrued interest) from the Vat — the
- * figure the legacy widget shows (`vault.debtValue`). The subgraph's principal
- * stands in only until the on-chain read lands. Shares the risk cell's cached
- * vault read, so this adds no extra RPC.
+ * Borrowed cell: LIVE debt (principal + accrued interest). `position.usdsDebt`
+ * is the Vat's `art × rate` from `useStakeUrnVaults` — the same figure
+ * `useVault` derives — so no per-row read is needed here.
  */
 function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
-  const { data: vault } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
-
   return (
     <CellAmount
       icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-      amount={formatStakeAmount(vault?.debtValue ?? position.usdsDebt)}
+      amount={formatStakeAmount(position.usdsDebt)}
     />
   );
 }
@@ -116,7 +126,7 @@ function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
 /** Claimable-rewards cell: USD value of every reward earned by this urn. */
 function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
   const chainId = useChainId();
-  const { data: urnAddress } = useStakeUrnAddress(BigInt(position.index));
+  const urnAddress = position.urnAddress;
   const { data: rewardContracts } = useStakeRewardContracts();
   const {
     data: toClaim,
@@ -276,11 +286,18 @@ export function StakePositionsTable({
   positions,
   isLoading,
   error,
+  contextError,
   onRemediate
 }: {
   positions?: StakeUserPosition[];
   isLoading: boolean;
   error?: Error | null;
+  /**
+   * Subgraph failure: rows are live but carry no bark history, so liquidated
+   * urns can't be told from emptied ones. Disables the hide-inactive toggle
+   * (with a hint); the filter itself stands down per row via `barks: undefined`.
+   */
+  contextError?: Error | null;
   /** Warning-banner CTA: stage the given remediation action for that position's manage sheet. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
 }) {
@@ -302,11 +319,15 @@ export function StakePositionsTable({
   );
 
   const allPositions = positions ?? [];
+  // An emptied urn only hides when it is known NOT to be liquidated: a
+  // liquidated one stays listed, and so does one whose bark history is
+  // unknown (subgraph down — `isLiquidatedStakePosition` is undefined).
   const visiblePositions = hideInactive
     ? allPositions.filter(
-        position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position)
+        position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position) !== false
       )
     : allPositions;
+  const filterUnavailable = Boolean(contextError);
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
   // Comp 1036:208676: the empty state is a self-contained card — the section
@@ -333,20 +354,39 @@ export function StakePositionsTable({
         {/* Label 5 per comp 1036:214062 (Circular Medium 14/16, -0.28px). The comp
             also puts this on fg-primary; the fgSecondary tint is left as-is. */}
         {allPositions.length > 0 && (
-          <label className="text-textSecondary font-circle flex cursor-pointer items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
-            {/* Comp 1222:16843 shortens the label at the phone tier. */}
-            <span className="md:hidden">
-              <Trans>Hide inactive</Trans>
-            </span>
-            <span className="hidden md:inline">
-              <Trans>Hide inactive positions</Trans>
-            </span>
-            <Switch
-              checked={hideInactive}
-              onCheckedChange={setHideInactive}
-              data-testid="stake-hide-inactive-toggle"
-            />
-          </label>
+          <div className="flex flex-col items-end gap-1">
+            <label
+              className={cn(
+                'text-textSecondary font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]',
+                filterUnavailable ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              )}
+            >
+              {/* Comp 1222:16843 shortens the label at the phone tier. */}
+              <span className="md:hidden">
+                <Trans>Hide inactive</Trans>
+              </span>
+              <span className="hidden md:inline">
+                <Trans>Hide inactive positions</Trans>
+              </span>
+              <Switch
+                checked={hideInactive}
+                onCheckedChange={setHideInactive}
+                disabled={filterUnavailable}
+                data-testid="stake-hide-inactive-toggle"
+              />
+            </label>
+            {/* Without bark history the filter can't tell an emptied urn from a
+                liquidated one, so every position is shown and the switch is
+                inert — say so rather than leave a toggle that does nothing. */}
+            {filterUnavailable && (
+              <span
+                data-testid="stake-hide-inactive-unavailable"
+                className="text-textSecondary font-circle text-xs leading-4"
+              >
+                <Trans>Liquidation history unavailable — showing all positions</Trans>
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -361,7 +401,6 @@ export function StakePositionsTable({
         error={error}
         emptyLabel={<Trans>No active positions.</Trans>}
         emptyIllustration={<SuppliedEmpty aria-hidden />}
-        minWidth={720}
         renderCard={renderCard}
         cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
         renderBelowRow={position => (

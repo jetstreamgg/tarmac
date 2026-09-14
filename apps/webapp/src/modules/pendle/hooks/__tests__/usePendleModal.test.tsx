@@ -102,7 +102,9 @@ describe('usePendleModal', () => {
 
     const config = hoisted.launchMock.mock.calls[0][0];
     expect(config.title).toBe('Early withdrawal');
-    expect(config.subtitles.review).toContain('current market price');
+    // The early-withdrawal disclosure is the only subtitle the modal carries;
+    // no status (loading/success/error) copy rides along.
+    expect(config.subtitles).toEqual({ review: expect.stringContaining('current market price') });
     expect(config.reviewTitle).toBe('Review withdrawal');
     expect(config.entry.confirmLabel).toBe('Review');
     expect(config.entry.confirmDisabled).toBe(true);

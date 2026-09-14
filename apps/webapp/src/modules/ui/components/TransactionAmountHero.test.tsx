@@ -15,7 +15,7 @@ describe('TransactionAmountHero', () => {
         label="Supply amount"
         amount="10,000.00"
         symbol="USDS"
-        usd="10,000.00"
+        usd="$10,000.00"
         dataTestId="hero"
         usdTestId="hero-usd"
       />
@@ -25,6 +25,11 @@ describe('TransactionAmountHero', () => {
     expect(el.textContent).toContain('10,000.00');
     expect(el.textContent).toContain('USDS');
     expect(screen.getByTestId('hero-usd').textContent).toBe('$10,000.00');
+  });
+
+  it('renders the USD line verbatim, so a pre-formatted dust value keeps its shape', () => {
+    render(<TransactionAmountHero amount="0.01" symbol="SKY" usd="$0.00" usdTestId="hero-usd" />);
+    expect(screen.getByTestId('hero-usd').textContent).toBe('$0.00');
   });
 
   it('omits the label and $ subvalue when not provided', () => {

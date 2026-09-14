@@ -17,7 +17,12 @@ import { pageGutterClasses } from '@/modules/layout/components/shellLayoutClasse
  */
 export function AppContainer({ children }: { children: React.ReactNode }): React.ReactElement {
   return (
-    <main className={cn('group flex w-full max-w-[1320px] flex-col overflow-x-hidden', pageGutterClasses)}>
+    // `overflow-x-clip`, not `-hidden`: `hidden` on one axis forces the other
+    // to `auto`, which makes <main> a scroll container and silently disables
+    // `position: sticky` for everything inside it (the product pages' pinned
+    // position card). `clip` clips the same horizontal overflow without
+    // creating a scroll container.
+    <main className={cn('group flex w-full max-w-[1320px] flex-col overflow-x-clip', pageGutterClasses)}>
       {children}
     </main>
   );

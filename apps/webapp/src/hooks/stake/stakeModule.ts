@@ -94,19 +94,3 @@ export type StakeHistoryItem =
   | StakeHistoryKick;
 
 export type StakeHistory = Array<StakeHistoryItem>;
-
-export type Bark = {
-  id: string;
-  ilk: string;
-  clipperId: string;
-};
-
-export type StakePosition = {
-  owner: string;
-  index: number;
-  skyLocked: bigint;
-  usdsDebt: bigint;
-  selectedDelegate: string | undefined;
-  selectedReward: string | undefined;
-  barks: Bark[];
-};

@@ -46,7 +46,7 @@ function parseUrnIndex(value: string | null): number | null {
 
 type ManageView =
   | { name: 'details' }
-  | { name: 'sheet'; init: StakeManageFlowInit }
+  | { name: 'sheet'; init: StakeManageFlowInit; scrimHandoff?: boolean }
   | { name: 'claim' }
   | { name: 'reopen'; borrowExpanded: boolean };
 
@@ -57,7 +57,9 @@ type ManageView =
  * whose × returns to the details modal; an inactive urn's Reopen CTA swaps to
  * the open-position takeover in reopen mode (F6/C17), borrow-expanded when the
  * urn ever had debt — the urn context rides the already-staged `urn_index`.
- * Back returns to the modal; × clears the flow params. A `stake_tab` param
+ * The takeovers have no back arrow (Design QA 2800:91832: only × to close),
+ * and × clears the flow params; the claim modal's × alone returns to the
+ * details modal. A `stake_tab` param
  * (legacy deep-link contract) opens the sheet directly, and so does
  * `initialSheetInit` (a caller-staged pre-toggle, e.g. a remediation CTA
  * clicked before this flow was even mounted) — it takes priority over both.
@@ -98,7 +100,8 @@ export function PositionManageFlow({
   }, [setSearchParams]);
 
   const onAction = useCallback(
-    (action: StakeManageAction) => setView({ name: 'sheet', init: manageActionInit(action) }),
+    (action: StakeManageAction) =>
+      setView({ name: 'sheet', init: manageActionInit(action), scrimHandoff: true }),
     []
   );
   const onClaim = useCallback(() => setView({ name: 'claim' }), []);
@@ -123,7 +126,10 @@ export function PositionManageFlow({
     lastOpen.current = {
       urnIndex,
       view,
-      isPostMortem: !!position && isLiquidatedStakePosition(position)
+      // Tri-state predicate: an unknown liquidation state (subgraph down) has
+      // no bark to build a post-mortem from, so it falls through to the
+      // ordinary views — the table already flags the history as unavailable.
+      isPostMortem: !!position && isLiquidatedStakePosition(position) === true
     };
   }
   const current = lastOpen.current;
@@ -158,7 +164,7 @@ export function PositionManageFlow({
       return isOpen ? (
         <OpenPositionTakeover
           key="reopen"
-          reopen={{ urnIndex: index, borrowExpanded: currentView.borrowExpanded, onBack, onClose: close }}
+          reopen={{ urnIndex: index, borrowExpanded: currentView.borrowExpanded, onClose: close }}
         />
       ) : null;
     }
@@ -177,13 +183,17 @@ export function PositionManageFlow({
       );
     }
 
+    // The details modal is a Radix dialog, not a motion child, so switching
+    // views unmounts it in this same commit — the sheet's scrim must mount
+    // already up, or the page shows through for a beat between the two
+    // (a deep-linked sheet has no scrim to inherit and fades in as usual).
     return isOpen ? (
       <ManagePositionTakeover
         key="manage"
         urnIndex={index}
         init={currentView.init}
-        onBack={onBack}
         onClose={close}
+        scrimHandoff={currentView.scrimHandoff}
       />
     ) : null;
   };

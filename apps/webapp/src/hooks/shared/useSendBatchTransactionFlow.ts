@@ -112,6 +112,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         sendCalls(sendCallsParameters);
       }
     },
+    data: data?.receipts?.[0]?.transactionHash,
     isLoading: isLoadingCapabilities || (isMining && !txReverted),
     prepared: !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError,
     error: sendError || miningError,

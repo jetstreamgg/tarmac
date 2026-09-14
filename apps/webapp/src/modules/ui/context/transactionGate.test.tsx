@@ -8,6 +8,12 @@ import type { PreTransactionGate } from './preTransactionGate';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads.
+// The provider needs a live wagmi tree; these suites exercise the transaction
+// state machine, so the shared chain switch is stubbed inert.
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+}));
+
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
@@ -291,16 +297,15 @@ describe('TransactionProvider pre-transaction gate', () => {
       usdValue: 0,
       supportedChainIds: [1],
       onConfirm: vi.fn(),
-      subtitles: { pending: 'Supplying your tokens...' },
       steps: ['Supply USDS']
     });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
-    expect(screen.getByText('Sign the confirmation in your wallet.')).not.toBeNull();
-    expect(screen.getByText('Signature needed to continue.')).not.toBeNull();
-    // The flow's own pending copy stays hidden while the gate copy is set.
-    expect(screen.queryByText('Supplying your tokens...')).toBeNull();
+    // The gate's message no longer renders under a step list — the signature
+    // step's own description carries that copy (Figma review 2829:141028/9).
+    expect(screen.queryByText('Sign the confirmation in your wallet.')).toBeNull();
+    expect(screen.queryByText('Signature needed to continue.')).toBeNull();
     // The chip is the only other status surface. A sign request really is
     // waiting in the wallet here, so it keeps the INITIALIZED label.
     expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Confirm in the wallet');
@@ -333,6 +338,36 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(badge.textContent).not.toContain('Confirm in the wallet');
   });
 
+  it('screening copy still shows under a step list — only the signature copy is redundant there', async () => {
+    // Screening fires before any prelude step exists, so on a 2+ step flow the
+    // list is already up. The signature step carries its own description; the
+    // address check has no step, so its sentence must survive (review on
+    // #1916) — as a lone sentence, since the list header already has the chip.
+    const gate: PreTransactionGate = ({ controls }) => {
+      controls.setGateStatus('screening', {
+        message: 'Verifying your wallet address…',
+        subtitle: 'Running a quick check before your transaction starts.',
+        badgeLabel: 'Verifying'
+      });
+      return new Promise(() => {});
+    };
+    renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm: vi.fn(),
+      steps: ['Approve USDS', 'Supply USDS']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await flush();
+
+    expect(screen.getByText('Verifying your wallet address…')).not.toBeNull();
+    expect(screen.getByText('Running a quick check before your transaction starts.')).not.toBeNull();
+    expect(screen.getAllByTestId('transaction-status-badge')).toHaveLength(1);
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Verifying');
+  });
+
   it("the engine's first onMutate clears the gate copy — the flow's narration takes over", async () => {
     let resolveSigned!: () => void;
     const gate: PreTransactionGate = ({ controls }) => {
@@ -348,12 +383,13 @@ describe('TransactionProvider pre-transaction gate', () => {
       usdValue: 0,
       supportedChainIds: [1],
       onConfirm: vi.fn(),
-      subtitles: { pending: 'Supplying your tokens...' },
       steps: ['Supply USDS']
     });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    expect(screen.getByText('Signature needed to continue.')).not.toBeNull();
+    // The gate's subtitle does not narrate under the step list — the
+    // signature row does.
+    expect(screen.queryByText('Signature needed to continue.')).toBeNull();
 
     act(() => resolveSigned());
     await flush();
@@ -361,7 +397,9 @@ describe('TransactionProvider pre-transaction gate', () => {
 
     expect(screen.queryByText('Signature needed to continue.')).toBeNull();
     expect(screen.queryByText('Sign the confirmation in your wallet.')).toBeNull();
-    expect(screen.getByText('Supplying your tokens...')).not.toBeNull();
+    // With the gate done the chip narrates the write itself — a flow has no
+    // status subtitle to fall back on (TransactionSubtitles is review-only).
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Confirm in the wallet');
   });
 
   it('controls from a closed session are dead: no ghost prelude or status in the next session', async () => {
@@ -468,6 +506,10 @@ describe('TransactionProvider pre-transaction gate', () => {
     expect(onConfirm).not.toHaveBeenCalled();
     // The signature step failed in place: retitled row + inline retry.
     expect(screen.getByText('Terms signature failed')).not.toBeNull();
+    // Nothing reached the chain, so the chip names the signature, not a
+    // rolled-back transaction.
+    expect(screen.getByTestId('transaction-status-badge').textContent).toBe('Signature failed');
+    expect(screen.queryByText('Transaction failed')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /try again/i }));
     await flush();

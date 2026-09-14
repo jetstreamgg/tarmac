@@ -1,30 +1,29 @@
-import { Skeleton } from '@/components/ui/skeleton';
 import { useStakeUserPositions, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { StakePositionsTable } from './StakePositionsTable';
-import { StakeSummaryCard } from './StakeSummaryCard';
 import { StakeActivityTable } from './StakeActivityTable';
-import { StakeEngineCard } from './StakeEngineCard';
+import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
  * My positions tab body (hi-fi 486:31830): the active-positions table with the
- * aggregate summary card in the right rail, and the activity table below. With
- * no positions (or disconnected) the rail falls back to the Sky Staking Engine
- * promo card — the flow entry point of the empty state (UX 929:11803).
+ * shared rail card (`StakeRailCard`: summary card / promo card / skeleton) in
+ * the right rail, and the activity table below.
  */
 export function StakePositionsTab({
-  onRemediate
+  onRemediate,
+  rail
 }: {
   /** Passed straight through to the positions table — see its prop doc. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
+  /** The page's positions read, for the shared rail card. */
+  rail: StakeRailCardProps;
 }) {
-  const { data: positions, isLoading, error } = useStakeUserPositions();
-  const hasPositions = (positions?.length ?? 0) > 0;
+  const { data: positions, isLoading, error, contextError } = useStakeUserPositions();
 
   // Mobile comp 1222:16771 leads with the rail content (summary hero / promo
   // card) before the tables, so the phone tier reorders via `order-*` while
   // the lg grid keeps its DOM placement.
   return (
-    <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-6">
+    <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-8">
       {/* Two panes at lg (ProductDetailTemplate's pattern): the left pane is a
           real column so positions → activity follow its normal flow beside the
           self-heighted rail. Below lg the pane dissolves (`contents`) and
@@ -38,6 +37,7 @@ export function StakePositionsTab({
             positions={positions}
             isLoading={isLoading}
             error={error}
+            contextError={contextError}
             onRemediate={onRemediate}
           />
         </div>
@@ -45,14 +45,10 @@ export function StakePositionsTab({
           <StakeActivityTable positions={positions} />
         </div>
       </div>
-      <div className="order-1 lg:order-none lg:col-span-1">
-        {isLoading ? (
-          <Skeleton className="rounded-card h-[420px]" />
-        ) : hasPositions ? (
-          <StakeSummaryCard positions={positions} />
-        ) : (
-          <StakeEngineCard />
-        )}
+      {/* The rail pins at the two-pane tier (Figma 2829:138694 — sticky
+          position card); `top-32` mirrors ProductDetailTemplate's offset. */}
+      <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
+        <StakeRailCard {...rail} />
       </div>
     </div>
   );

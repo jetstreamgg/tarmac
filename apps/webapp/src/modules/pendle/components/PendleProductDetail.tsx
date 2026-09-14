@@ -6,7 +6,6 @@ import { Intent } from '@/lib/enums';
 import { type PendleMarketConfig, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import {
@@ -89,9 +88,20 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         <span>
           {maturityDateLabel}{' '}
           <span className="text-textSecondary">
-            {/* A matured market reads "(Matured)" — the elapsed-days figure is 0
-                there, which reads as "matures today". */}
-            {remainingSeconds > 0 ? <Trans>({remainingDays} days)</Trans> : <Trans>(Matured)</Trans>}
+            {/* The day count floors, so the last stretch before expiry lands on
+                0 — stated as "less than a day", since "(0 days)" would claim the
+                market matures today, and a matured one already reads
+                "(Matured)". One day gets its own branch so the plural never
+                reads "1 days", matching FixedYieldTerm. */}
+            {remainingSeconds <= 0 ? (
+              <Trans>(Matured)</Trans>
+            ) : remainingDays === 0 ? (
+              <Trans>(less than a day)</Trans>
+            ) : remainingDays === 1 ? (
+              <Trans>(1 day)</Trans>
+            ) : (
+              <Trans>({remainingDays} days)</Trans>
+            )}
           </span>
         </span>
       )
@@ -138,31 +148,22 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         ),
         status: 'success'
       }}
-      title={
-        <span className="flex flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-2">
-            {market.name}
-            {/* Brand-colored mark from the design system (a bitmap in Figma too) —
-                the monochrome <Pendle /> glyph reads wrong at badge size. */}
-            <HeaderBadge size="s" icon={<img src="/images/pendle_logo.png" alt="" className="size-4" />}>
-              <Trans>Powered by Pendle</Trans>
-            </HeaderBadge>
-          </span>
-          {/* The DS date line under the title (5120:19542) is Body 6, so it
-              opts back out of the heading's Circular styling. */}
-          <span className="font-graphik text-fgSecondary text-xs leading-[18px] font-normal tracking-normal">
-            {maturityDateLabel}
-            {remainingSeconds > 0 && <> · {formatTimeLeft(remainingSeconds)}</>}
-          </span>
-        </span>
+      title={market.name}
+      titleBadges={
+        // Brand-colored mark from the design system (a bitmap in Figma too) —
+        // the monochrome <Pendle /> glyph reads wrong at badge size.
+        <HeaderBadge size="s" icon={<img src="/images/pendle_logo.png" alt="" className="size-4" />}>
+          <Trans>Powered by Pendle</Trans>
+        </HeaderBadge>
       }
-      networkSelector={
-        <ChainModal
-          chainIds={networks}
-          labelClassName="hidden sm:block"
-          dataTestId="product-detail-network"
-        />
+      // The DS date line under the title (5120:19542).
+      titleSubtitle={
+        <>
+          {maturityDateLabel}
+          {remainingSeconds > 0 && <> · {formatTimeLeft(remainingSeconds)}</>}
+        </>
       }
+      networkChainIds={networks}
       chart={<PendleDetailChart market={market} />}
       position={<PendlePositionCard market={market} />}
       details={details}

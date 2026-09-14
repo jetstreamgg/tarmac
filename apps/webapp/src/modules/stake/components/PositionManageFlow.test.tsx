@@ -109,6 +109,7 @@ function makeBark(overrides: Partial<StakeUrnBark> = {}): StakeUrnBark {
 function makePosition(overrides: Partial<StakeUserPosition> = {}): StakeUserPosition {
   return {
     index: 2,
+    urnAddress: '0x1111111111111111111111111111111111111111',
     skyLocked: 0n,
     usdsDebt: 0n,
     barks: [],
@@ -162,6 +163,14 @@ describe('PositionManageFlow', () => {
     expect(screen.queryByTestId('manage-sheet-stub')).toBeNull();
   });
 
+  it('falls through to the ordinary views when liquidation state is unknown (no post-mortem to build)', () => {
+    h.positions = [makePosition({ barks: undefined })];
+    render(<PositionManageFlow />);
+
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    expect(screen.queryByTestId('post-mortem-modal-stub')).toBeNull();
+  });
+
   it('keeps a non-liquidated position on the ordinary details modal', () => {
     h.positions = [makePosition({ skyLocked: 100n, barks: [] })];
     render(<PositionManageFlow />);
@@ -186,15 +195,21 @@ describe('PositionManageFlow', () => {
     expect(second.container.innerHTML).toBe('');
   });
 
-  it('swaps to the sheet on a menu action and back again', () => {
+  it('swaps to the sheet on a menu action; the sheet only closes (no back to the modal)', () => {
     render(<PositionManageFlow />);
 
     act(() => (h.modalProps!.onAction as (a: string) => void)('withdraw'));
     expect(screen.getByTestId('manage-sheet-stub')).toBeTruthy();
     expect(h.sheetProps?.init).toEqual({ stakeCard: 'withdraw' });
+    // The details dialog unmounts in the same commit, so the sheet's scrim
+    // must mount already up rather than fade in over an uncovered page.
+    expect(h.sheetProps?.scrimHandoff).toBe(true);
 
-    act(() => (h.sheetProps!.onBack as () => void)());
-    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    // Design QA 2800:91832: the sheet has no back arrow — it is not handed one.
+    expect(h.sheetProps?.onBack).toBeUndefined();
+    act(() => (h.sheetProps!.onClose as () => void)());
+    expect(mockSearchParams.get('flow')).toBeNull();
+    expect(mockSearchParams.get('urn_index')).toBeNull();
   });
 
   it('swaps to the claim modal and its × returns to the details modal (F6/C11)', () => {
@@ -218,8 +233,10 @@ describe('PositionManageFlow', () => {
     expect(h.reopenProps?.urnIndex).toBe(2);
     expect(h.reopenProps?.borrowExpanded).toBe(true);
 
-    act(() => (h.reopenProps!.onBack as () => void)());
-    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    // No back arrow on the takeover (Design QA 2800:91832): × clears the flow.
+    expect(h.reopenProps?.onBack).toBeUndefined();
+    act(() => (h.reopenProps!.onClose as () => void)());
+    expect(mockSearchParams.get('flow')).toBeNull();
   });
 
   it('opens the sheet directly on a stake_tab deep link', () => {
@@ -228,6 +245,8 @@ describe('PositionManageFlow', () => {
 
     expect(screen.getByTestId('manage-sheet-stub')).toBeTruthy();
     expect(h.sheetProps?.init).toEqual({ stakeCard: 'withdraw', borrowCard: 'repay' });
+    // No dialog to inherit a scrim from: the sheet fades in on its own.
+    expect(h.sheetProps?.scrimHandoff).toBeFalsy();
   });
 
   it('close clears every manage param', () => {

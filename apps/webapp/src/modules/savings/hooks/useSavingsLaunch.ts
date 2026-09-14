@@ -20,6 +20,7 @@ import {
 import { isL2ChainId, math } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { useUsdcSupplyGate } from './useUsdcSupplyGate';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 
@@ -262,36 +263,46 @@ export function useSavingsLaunch({
     const approveStep = (symbol: string): TransactionStep => ({
       label: t`Approve`,
       tokenSymbol: symbol,
-      failureDetail: t`The ${symbol} hasn't been approved.`
+      failureDetail: stepFailureDetail.approve(symbol)
+    });
+    const supplyStep = (symbol: string): TransactionStep => ({
+      label: t`Supply`,
+      tokenSymbol: symbol,
+      failureDetail: stepFailureDetail.supply(symbol)
     });
     if (isSupply) {
       return isL2
         ? needsPsmApproval
-          ? [approveStep(originToken.symbol), { label: t`Supply`, tokenSymbol: originToken.symbol }]
-          : [{ label: t`Supply`, tokenSymbol: originToken.symbol }]
+          ? [approveStep(originToken.symbol), supplyStep(originToken.symbol)]
+          : [supplyStep(originToken.symbol)]
         : isDai
           ? ([
               needsDaiApproval && approveStep('DAI'),
               t`Upgrade DAI to USDS`,
               needsUsdsApproval && approveStep('USDS'),
-              { label: t`Supply`, tokenSymbol: 'USDS' }
+              supplyStep('USDS')
             ].filter(Boolean) as TransactionStep[])
           : isMainnetUsdc
             ? ([
                 needsUsdcWrapperApproval && approveStep('USDC'),
                 t`Convert USDC to USDS`,
                 needsUsdsApproval && approveStep('USDS'),
-                { label: t`Supply`, tokenSymbol: 'USDS' }
+                supplyStep('USDS')
               ].filter(Boolean) as TransactionStep[])
             : needsUsdsApproval
-              ? [approveStep('USDS'), { label: t`Supply`, tokenSymbol: 'USDS' }]
-              : [{ label: t`Supply`, tokenSymbol: 'USDS' }];
+              ? [approveStep('USDS'), supplyStep('USDS')]
+              : [supplyStep('USDS')];
     }
     // The withdraw approval is for the sUSDS share token, not `originToken` —
     // it keeps the bare label rather than a wrong chip.
+    const withdrawStep: TransactionStep = {
+      label: t`Withdraw`,
+      tokenSymbol: originToken.symbol,
+      failureDetail: stepFailureDetail.withdraw(originToken.symbol)
+    };
     return needsPsmWithdrawApproval
-      ? [t`Approve`, { label: t`Withdraw`, tokenSymbol: originToken.symbol }]
-      : [{ label: t`Withdraw`, tokenSymbol: originToken.symbol }];
+      ? [{ label: t`Approve`, failureDetail: stepFailureDetail.approve('sUSDS') }, withdrawStep]
+      : [withdrawStep];
   }, [
     isSupply,
     isL2,

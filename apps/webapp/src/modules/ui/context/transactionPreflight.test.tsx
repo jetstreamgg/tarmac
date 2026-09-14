@@ -8,6 +8,12 @@ import type { PreflightHook, PreTransactionGate, TransactionPreflight } from './
 
 // Same harness as transactionGate.test.tsx: the real TransactionProvider +
 // TransactionModal, with only chain/wallet/batch/analytics reads stubbed.
+// The provider needs a live wagmi tree; these suites exercise the transaction
+// state machine, so the shared chain switch is stubbed inert.
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+}));
+
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,

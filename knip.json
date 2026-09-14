@@ -14,9 +14,6 @@
     },
     "apps/webapp": {
       "entry": [
-        "src/hooks/index.ts",
-        "src/utils/index.ts",
-        "src/widgets/index.ts",
         "wagmi.config.ts",
         "vitest.hooks.config.ts",
         "src/test/e2e/**/*.{ts,tsx}",

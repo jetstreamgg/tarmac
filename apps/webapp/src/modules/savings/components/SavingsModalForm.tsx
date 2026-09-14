@@ -25,6 +25,8 @@ import {
 } from './savingsModalRows';
 import { NO_VALUE } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
+import { useProductNetworks } from '@/hooks';
+import { Intent } from '@/lib/enums';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
 // `SavingsModalPreset` now lives with the shared form model; re-exported here so the
@@ -104,6 +106,11 @@ export function SavingsModalForm({
   const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
 
   const networkName = useNetworkName(chainId);
+  // Savings runs on the whole family, so the entry grid's Network cell is a
+  // switch dropdown rather than a label (Figma 2682:77695). The same set the
+  // flow declares as its `supportedChainIds`, so switching within it is exactly
+  // what the transaction guard treats as legitimate.
+  const networkChainIds = useProductNetworks(Intent.SAVINGS_INTENT);
   // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
   // the sUSDS balance pre-converted to USDS). Express the entered amount as a USDS
   // wad for the before→after delta: USDS/DAI are already 18-dec; a USDC amount
@@ -130,6 +137,7 @@ export function SavingsModalForm({
     ? buildSupplyModalRows({
         savingsRate: apyDisplay,
         network: networkName,
+        networkChainIds,
         supplyBefore: formatUsds(position),
         supplyAfter: formatUsds(positionAfter),
         hasAmount: !isZero,
@@ -145,6 +153,7 @@ export function SavingsModalForm({
     : buildWithdrawModalRows({
         savingsRate: apyDisplay,
         network: networkName,
+        networkChainIds,
         supplyBefore: formatUsds(position),
         supplyAfter: formatUsds(positionAfter),
         hasAmount: !isZero,

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { legacyPathToLocation, legacySearchToLocation } from './legacyRedirects';
+import { legacySearchToLocation } from './legacyRedirects';
 
-const SPARK_VAULT_ADDRESS = '0x74cb54e082411cfCAEADb00a0765625B10410DAa';
+const MORPHO_VAULT_ADDRESS = '0x74cb54e082411cfCAEADb00a0765625B10410DAa';
 const MARKET_ADDRESS = '0x36d3ca43ae7939645c306e26603ce16e39a89192';
 const REWARD_ADDRESS = '0x0650caf159c5a49f711e8169d4336ecb9b950275';
 
@@ -11,91 +11,107 @@ describe('legacySearchToLocation', () => {
     expect(legacySearchToLocation({ network: 'ethereum', details: 'true' })).toBeNull();
   });
 
-  it('maps widget=balances to /', () => {
-    expect(legacySearchToLocation({ widget: 'balances' })).toEqual({ to: '/', search: {} });
+  it('maps widget=balances to the portfolio, not the landing heuristic', () => {
+    expect(legacySearchToLocation({ widget: 'balances' })).toEqual({ to: '/portfolio', search: {} });
   });
 
   it('maps unknown widget values to / (legacy validator stripped them)', () => {
     expect(legacySearchToLocation({ widget: 'bogus' })).toEqual({ to: '/', search: {} });
   });
 
-  it('maps simple module widgets to their paths', () => {
-    expect(legacySearchToLocation({ widget: 'savings' })).toEqual({ to: '/savings', search: {} });
+  it('maps simple module widgets straight to their target-IA paths', () => {
+    expect(legacySearchToLocation({ widget: 'savings' })).toEqual({ to: '/earn/savings', search: {} });
     expect(legacySearchToLocation({ widget: 'stake' })).toEqual({ to: '/stake', search: {} });
   });
 
-  it('maps legacy standalone trade onto the convert page', () => {
+  it('maps every convert generation onto the single convert page', () => {
     expect(legacySearchToLocation({ widget: 'trade' })).toEqual({ to: '/convert', search: {} });
+    expect(legacySearchToLocation({ widget: 'convert' })).toEqual({ to: '/convert', search: {} });
+    for (const convert_module of ['psm', 'trade', 'upgrade', 'bogus']) {
+      expect(legacySearchToLocation({ widget: 'convert', convert_module })).toEqual({
+        to: '/convert',
+        search: {}
+      });
+    }
   });
 
-  it('maps legacy standalone upgrade onto convert only on mainnet', () => {
+  it('maps legacy standalone upgrade onto convert on every network', () => {
+    // Convert is available on the L2s too, so the old mainnet-only carve-out
+    // (which dropped L2 upgrade links on the homepage) no longer applies.
     expect(legacySearchToLocation({ widget: 'upgrade' })).toEqual({ to: '/convert', search: {} });
     expect(legacySearchToLocation({ widget: 'upgrade', network: 'ethereum' })).toEqual({
       to: '/convert',
       search: { network: 'ethereum' }
     });
     expect(legacySearchToLocation({ widget: 'upgrade', network: 'base' })).toEqual({
-      to: '/',
+      to: '/convert',
       search: { network: 'base' }
     });
   });
 
-  it('maps every convert_module value onto the single convert page', () => {
-    expect(legacySearchToLocation({ widget: 'convert', convert_module: 'psm' })).toEqual({
-      to: '/convert',
-      search: {}
-    });
-    expect(legacySearchToLocation({ widget: 'convert', convert_module: 'trade' })).toEqual({
-      to: '/convert',
-      search: {}
-    });
-    expect(legacySearchToLocation({ widget: 'convert' })).toEqual({ to: '/convert', search: {} });
-    expect(legacySearchToLocation({ widget: 'convert', convert_module: 'bogus' })).toEqual({
-      to: '/convert',
-      search: {}
-    });
-  });
-
-  it('maps expert_module=stusds to /expert/stusds', () => {
+  it('collapses both expert URLs onto the flattened stUSDS page', () => {
+    expect(legacySearchToLocation({ widget: 'expert' })).toEqual({ to: '/earn/stusds', search: {} });
     expect(legacySearchToLocation({ widget: 'expert', expert_module: 'stusds' })).toEqual({
-      to: '/expert/stusds',
+      to: '/earn/stusds',
       search: {}
     });
-    expect(legacySearchToLocation({ widget: 'expert' })).toEqual({ to: '/expert', search: {} });
   });
 
-  it('maps vault_module + vault to the vault detail path', () => {
-    expect(
-      legacySearchToLocation({ widget: 'vaults', vault_module: 'sky', vault: SPARK_VAULT_ADDRESS })
-    ).toEqual({ to: `/vaults/sky/${SPARK_VAULT_ADDRESS}`, search: {} });
-  });
-
-  it('falls back to the vaults overview without a vault address or with an unknown provider', () => {
-    expect(legacySearchToLocation({ widget: 'vaults', vault_module: 'morpho' })).toEqual({
-      to: '/vaults',
+  it('keeps entity deep links pointed at their product pages', () => {
+    expect(legacySearchToLocation({ widget: 'rewards', reward: REWARD_ADDRESS })).toEqual({
+      to: `/earn/rewards/${REWARD_ADDRESS}`,
       search: {}
     });
     expect(
-      legacySearchToLocation({ widget: 'vaults', vault_module: 'aave', vault: SPARK_VAULT_ADDRESS })
-    ).toEqual({ to: '/vaults', search: {} });
-  });
-
-  it('maps fixed_module=market + market to the market detail path', () => {
+      legacySearchToLocation({ widget: 'vaults', vault_module: 'morpho', vault: MORPHO_VAULT_ADDRESS })
+    ).toEqual({ to: `/earn/vaults/morpho/${MORPHO_VAULT_ADDRESS}`, search: {} });
     expect(
       legacySearchToLocation({ widget: 'fixed', fixed_module: 'market', market: MARKET_ADDRESS })
-    ).toEqual({ to: `/fixed/market/${MARKET_ADDRESS}`, search: {} });
-    expect(legacySearchToLocation({ widget: 'fixed' })).toEqual({ to: '/fixed', search: {} });
+    ).toEqual({ to: `/earn/fixed/market/${MARKET_ADDRESS}`, search: {} });
   });
 
-  it('maps reward contract to the rewards detail path', () => {
-    expect(legacySearchToLocation({ widget: 'rewards', reward: REWARD_ADDRESS })).toEqual({
-      to: `/rewards/${REWARD_ADDRESS}`,
-      search: {}
+  describe('families with no page of their own land on the filtered marketplace (APP-542)', () => {
+    it('filters the table to the family the link asked for', () => {
+      expect(legacySearchToLocation({ widget: 'rewards' })).toEqual({
+        to: '/earn',
+        search: { product: 'rewards' }
+      });
+      expect(legacySearchToLocation({ widget: 'vaults' })).toEqual({
+        to: '/earn',
+        search: { product: 'vault' }
+      });
+      expect(legacySearchToLocation({ widget: 'fixed' })).toEqual({
+        to: '/earn',
+        search: { product: 'fixed' }
+      });
     });
-    expect(legacySearchToLocation({ widget: 'rewards' })).toEqual({ to: '/rewards', search: {} });
+
+    it('filters rather than drops when the entity params are unusable', () => {
+      // A provider with no vault address, an unknown provider (`spark`, the
+      // pre-rename value), an unknown fixed_module: all still name a family.
+      expect(legacySearchToLocation({ widget: 'vaults', vault_module: 'morpho' })).toEqual({
+        to: '/earn',
+        search: { product: 'vault' }
+      });
+      expect(
+        legacySearchToLocation({ widget: 'vaults', vault_module: 'spark', vault: MORPHO_VAULT_ADDRESS })
+      ).toEqual({ to: '/earn', search: { product: 'vault' } });
+      expect(legacySearchToLocation({ widget: 'fixed', fixed_module: 'bogus' })).toEqual({
+        to: '/earn',
+        search: { product: 'fixed' }
+      });
+    });
+
+    it('keeps the caller network alongside the product filter', () => {
+      // The exact shape the sky.money CTAs are being pointed at.
+      expect(legacySearchToLocation({ widget: 'fixed', network: 'ethereum' })).toEqual({
+        to: '/earn',
+        search: { network: 'ethereum', product: 'fixed' }
+      });
+    });
   });
 
-  it('preserves non-navigation params and drops consumed ones', () => {
+  it('preserves non-navigation params and drops consumed and retired ones', () => {
     expect(
       legacySearchToLocation({
         widget: 'trade',
@@ -108,89 +124,30 @@ describe('legacySearchToLocation', () => {
       to: '/convert',
       search: { network: 'ethereum', flow: 'revert', source_token: 'MKR', details: 'false' }
     });
+
+    // input_amount/linked_action are retired in the target IA, and now drop
+    // for every widget rather than only the ones that changed path.
+    expect(legacySearchToLocation({ widget: 'stake', input_amount: '5', linked_action: 'savings' })).toEqual({
+      to: '/stake',
+      search: {}
+    });
+    expect(legacySearchToLocation({ widget: 'savings', network: 'base', input_amount: '5' })).toEqual({
+      to: '/earn/savings',
+      search: { network: 'base' }
+    });
   });
 
-  it('handles case-insensitive widget values', () => {
+  it('handles case-insensitive widget and module values', () => {
     expect(legacySearchToLocation({ widget: 'Trade' })).toEqual({ to: '/convert', search: {} });
-  });
-});
-
-describe('legacyPathToLocation', () => {
-  it('returns null for paths that survived the IA flip unchanged', () => {
-    expect(legacyPathToLocation('/')).toBeNull();
-    expect(legacyPathToLocation('/stake')).toBeNull();
-    expect(legacyPathToLocation('/convert')).toBeNull();
-    expect(legacyPathToLocation('/convert/psm')).toBeNull();
-    expect(legacyPathToLocation('/convert/trade')).toBeNull();
-    expect(legacyPathToLocation('/convert/upgrade')).toBeNull();
-    expect(legacyPathToLocation('/seal-engine')).toBeNull();
-    expect(legacyPathToLocation('/dev')).toBeNull();
-  });
-
-  it('returns null for target-IA and unknown paths', () => {
-    expect(legacyPathToLocation('/portfolio')).toBeNull();
-    expect(legacyPathToLocation('/earn')).toBeNull();
-    expect(legacyPathToLocation('/earn/savings')).toBeNull();
-    expect(legacyPathToLocation('/bogus')).toBeNull();
-  });
-
-  it('maps pre-flip module paths to their target-IA destinations', () => {
-    expect(legacyPathToLocation('/balances')).toEqual({ to: '/portfolio', search: {} });
-    expect(legacyPathToLocation('/savings')).toEqual({ to: '/earn/savings', search: {} });
-    expect(legacyPathToLocation('/rewards')).toEqual({ to: '/earn/rewards', search: {} });
-    expect(legacyPathToLocation('/vaults')).toEqual({ to: '/earn/vaults', search: {} });
-    expect(legacyPathToLocation('/fixed')).toEqual({ to: '/earn/fixed', search: {} });
-    expect(legacyPathToLocation('/expert')).toEqual({ to: '/earn/stusds', search: {} });
-  });
-
-  it('tolerates trailing slashes', () => {
-    expect(legacyPathToLocation('/savings/')).toEqual({ to: '/earn/savings', search: {} });
-  });
-
-  it('keeps the reward contract as a path segment', () => {
-    expect(legacyPathToLocation(`/rewards/${REWARD_ADDRESS}`)).toEqual({
-      to: `/earn/rewards/${REWARD_ADDRESS}`,
-      search: {}
+    expect(legacySearchToLocation({ widget: 'VAULTS' })).toEqual({
+      to: '/earn',
+      search: { product: 'vault' }
     });
-  });
-
-  it('keeps vault provider and address as path segments when both are present', () => {
-    expect(legacyPathToLocation(`/vaults/sky/${SPARK_VAULT_ADDRESS}`)).toEqual({
-      to: `/earn/vaults/sky/${SPARK_VAULT_ADDRESS}`,
-      search: {}
-    });
-    // A bare provider has no detail route to land on → vaults overview.
-    expect(legacyPathToLocation('/vaults/sky')).toEqual({ to: '/earn/vaults', search: {} });
-  });
-
-  it('keeps the fixed market as path segments', () => {
-    expect(legacyPathToLocation(`/fixed/market/${MARKET_ADDRESS}`)).toEqual({
-      to: `/earn/fixed/market/${MARKET_ADDRESS}`,
-      search: {}
-    });
-  });
-
-  it('collapses both expert paths onto the flattened stUSDS page', () => {
-    expect(legacyPathToLocation('/expert')).toEqual({ to: '/earn/stusds', search: {} });
-    expect(legacyPathToLocation('/expert/stusds')).toEqual({ to: '/earn/stusds', search: {} });
-  });
-
-  it('drops unrecognised trailing segments and lands on the destination', () => {
-    expect(legacyPathToLocation('/fixed/bogus')).toEqual({ to: '/earn/fixed', search: {} });
-    expect(legacyPathToLocation(`/vaults/aave/${SPARK_VAULT_ADDRESS}`)).toEqual({
-      to: '/earn/vaults',
-      search: {}
-    });
-  });
-
-  it('preserves incoming params and drops the retired ones', () => {
     expect(
-      legacyPathToLocation('/savings', {
-        network: 'base',
-        flow: 'withdraw',
-        input_amount: '5',
-        linked_action: 'trade'
-      })
-    ).toEqual({ to: '/earn/savings', search: { network: 'base', flow: 'withdraw' } });
+      legacySearchToLocation({ widget: 'vaults', vault_module: 'MORPHO', vault: MORPHO_VAULT_ADDRESS })
+    ).toEqual({ to: `/earn/vaults/morpho/${MORPHO_VAULT_ADDRESS}`, search: {} });
+    expect(
+      legacySearchToLocation({ widget: 'fixed', fixed_module: 'Market', market: MARKET_ADDRESS })
+    ).toEqual({ to: `/earn/fixed/market/${MARKET_ADDRESS}`, search: {} });
   });
 });

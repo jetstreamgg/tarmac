@@ -296,7 +296,7 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply routing + steps', ()
       { label: 'Approve', tokenSymbol: 'USDC', failureDetail: "The USDC hasn't been approved." },
       'Convert USDC to USDS',
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
-      { label: 'Supply', tokenSymbol: 'USDS' }
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
     ]);
   });
 
@@ -306,7 +306,10 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply routing + steps', ()
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usdc, amount: AMOUNT, referralCode: REF })
     );
-    expect(result.current.steps).toEqual(['Convert USDC to USDS', { label: 'Supply', tokenSymbol: 'USDS' }]);
+    expect(result.current.steps).toEqual([
+      'Convert USDC to USDS',
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
+    ]);
   });
 
   it('routes onConfirm to the enabled USDC engine (not the idle engines, not withdraw)', () => {

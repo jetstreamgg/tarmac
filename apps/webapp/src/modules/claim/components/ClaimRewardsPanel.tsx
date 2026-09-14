@@ -14,12 +14,15 @@ import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCe
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
 import { merklAdapter } from '../adapters/merklAdapter';
 import { skyRewardsAdapter } from '../adapters/skyRewardsAdapter';
 import { stakeAdapter } from '../adapters/stakeAdapter';
 import type { ClaimSource, ClaimableReward, ClaimScope } from '../types';
 import { NO_VALUE } from '@/lib/constants';
+import { FittedAmount } from '@/components/product/FittedAmount';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
 /**
@@ -33,9 +36,7 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
       <div className="flex min-w-0 items-center gap-3">
         {reward.icon}
         <div className="flex min-w-0 items-baseline gap-2">
-          <span className="font-circle text-fgPrimary truncate text-[44px] leading-12 font-medium tracking-[-0.88px]">
-            {reward.formattedAmount}
-          </span>
+          <FittedAmount amount={reward.formattedAmount} />
           <span className="text-fgSecondary text-sm leading-5.5">({formatUsd(reward.amountUsd)})</span>
         </div>
       </div>
@@ -206,11 +207,44 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     };
   }, [allRewards]);
 
+  // The Actions list: one row per CALL, in the order the calls go out, so the
+  // step model's one-row-per-write bookkeeping holds on the sequential path
+  // (Merkl claims every token in one distributor call; the ecosystem farms are
+  // one `getReward` each; the stake urn is one call). Without a list the
+  // modal has no failed row to explain a reverted claim — the status
+  // subtitles that used to carry that sentence are gone by design. A call
+  // that covers exactly one reward names it; a multi-token call stays generic.
+  const steps = useMemo<TransactionStep[]>(() => {
+    const rewardsOf = (source: ClaimSource) => allRewards.filter(reward => reward.source === source);
+    const rowsFor = (source: ClaimSource, callCount: number, label: string): TransactionStep[] => {
+      const rewards = rewardsOf(source);
+      return Array.from({ length: callCount }, (_, i) => {
+        // Per-reward calls (the farms) map row i to reward i; a single call
+        // over several rewards (Merkl, the urn) has no one symbol to name.
+        const reward =
+          callCount === rewards.length ? rewards[i] : rewards.length === 1 ? rewards[0] : undefined;
+        return reward
+          ? {
+              label,
+              tokenSymbol: reward.tokenSymbol,
+              failureDetail: stepFailureDetail.claim(reward.tokenSymbol)
+            }
+          : { label: t`Claim rewards`, failureDetail: stepFailureDetail.claimRewards() };
+      });
+    };
+    return [
+      ...rowsFor('merkl', merklCalls.calls.length, t`Claim`),
+      ...rowsFor('sky-rewards', skyCalls.calls.length, t`Claim`),
+      ...rowsFor('stake', stakeCalls.calls.length, effectiveRestake ? t`Restake` : t`Claim`)
+    ];
+  }, [allRewards, merklCalls.calls.length, skyCalls.calls.length, stakeCalls.calls.length, effectiveRestake]);
+
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: flow.execute,
     confirmDisabled: disabled,
     transactionScreenContent,
+    steps,
     toast,
     // USD notional of the whole claim set for the enhanced-screening
     // threshold (APP-517). Unknown (undefined) while the sources are still

@@ -62,7 +62,6 @@ export type VaultWidgetProps = WidgetProps & {
 };
 
 /** @deprecated Use {@link VaultWidgetProps}. Kept as a thin alias. */
-export type MorphoVaultWidgetProps = VaultWidgetProps;
 
 const VaultWidgetWrapped = ({
   vaultAddress,
@@ -659,6 +658,3 @@ const VaultWidgetWrapped = ({
 };
 
 export const VaultWidget = withWidgetProvider(VaultWidgetWrapped, 'VaultWidget');
-
-/** @deprecated Use {@link VaultWidget}. Kept as a thin alias. */
-export const MorphoVaultWidget = VaultWidget;

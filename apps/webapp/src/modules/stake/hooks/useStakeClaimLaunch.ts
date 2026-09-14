@@ -14,6 +14,7 @@ import {
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { parseStakeId, stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
@@ -37,9 +38,18 @@ export function buildStakeClaimSteps({
   restake: boolean;
 }): TransactionStep[] {
   return [
-    restake && needsSkyAllowance && { label: t`Approve`, tokenSymbol: 'SKY' },
-    ...claimSymbols.map(symbol => ({ label: t`Claim`, tokenSymbol: symbol })),
-    restake && { label: t`Restake`, tokenSymbol: 'SKY' }
+    restake &&
+      needsSkyAllowance && {
+        label: t`Approve`,
+        tokenSymbol: 'SKY',
+        failureDetail: stepFailureDetail.approve('SKY')
+      },
+    ...claimSymbols.map(symbol => ({
+      label: t`Claim`,
+      tokenSymbol: symbol,
+      failureDetail: stepFailureDetail.claim(symbol)
+    })),
+    restake && { label: t`Restake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.restake('SKY') }
   ].filter(Boolean) as TransactionStep[];
 }
 

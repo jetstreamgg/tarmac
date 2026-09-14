@@ -5,6 +5,7 @@ import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from './transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { assignSequentialWrites } from '@/modules/ui/components/transactionStepsModel';
 
 // Flip per-test to exercise the bundled failure treatment (vi.mock factories
 // are hoisted, so the flags live in a hoisted holder).
@@ -12,6 +13,12 @@ const batch = vi.hoisted(() => ({ enabled: false, supported: false }));
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, analytics, and error-reporting reads.
+// The provider needs a live wagmi tree; these suites exercise the transaction
+// state machine, so the shared chain switch is stubbed inert.
+vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
+  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+}));
+
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
@@ -90,7 +97,11 @@ function Harness({
 }
 
 // Opens the modal, advances to the transaction screen, and fails the first step.
-function renderFailedFlow(steps: TransactionStep[], onConfirm: () => void = () => {}): TxCallbacks {
+function renderFailedFlow(
+  steps: TransactionStep[],
+  onConfirm: () => void = () => {},
+  error: Error = new Error('boom')
+): TxCallbacks {
   let cb!: TxCallbacks;
   render(
     <StrictMode>
@@ -104,7 +115,7 @@ function renderFailedFlow(steps: TransactionStep[], onConfirm: () => void = () =
   fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
   act(() => cb.onMutate());
   act(() => cb.onStart('0xapprove'));
-  act(() => cb.onError(new Error('boom'), '0xapprove'));
+  act(() => cb.onError(error, '0xapprove'));
   return cb;
 }
 
@@ -134,6 +145,74 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
+  it('single-step flow: grows the step list on failure so the failed row tells the error, replacing the footer', () => {
+    // A lone step has no list in flight (the chip carries the state) and, since
+    // the status subtitles went (design QA, Sep 2026), nothing else names what
+    // failed — so the failure renders as the same DS Steps row multi-step flows get.
+    renderFailedFlow([
+      { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
+    ]);
+
+    expect(screen.getByText('Supply failed')).toBeDefined();
+    expect(
+      screen.getByText("The network rolled back your transaction. The USDS hasn't been supplied.")
+    ).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Transaction failed');
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('a wallet Reject reads as declined — no rollback sentence, no consequence, chip says so', () => {
+    // EIP-1193 4001 shape, what viem hands back when the user presses Reject.
+    renderFailedFlow(
+      supplySteps,
+      () => {},
+      Object.assign(new Error('User rejected the request.'), { code: 4001 })
+    );
+
+    expect(screen.getByText('Approve declined')).toBeDefined();
+    expect(screen.getByText('You declined the request in your wallet. Nothing was sent.')).toBeDefined();
+    expect(screen.queryByText(/rolled back/)).toBeNull();
+    expect(screen.queryByText(/hasn't been approved/)).toBeNull();
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Request declined');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+  });
+
+  it('grouped writes: failing the multicall fails every row of it, with a single Try again', () => {
+    // Approve mined (write 0), then the multicall (write 1) reverts.
+    let cb!: TxCallbacks;
+    const steps = assignSequentialWrites(
+      [
+        { label: 'Approve', tokenSymbol: 'SKY' },
+        { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+        { label: 'Select reward', tokenSymbol: 'SPK' },
+        'Delegate voting power'
+      ],
+      1
+    );
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness steps={steps} onConfirm={() => {}} onReady={c => (cb = c)} />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xmulticall'));
+    act(() => cb.onError(new Error('boom'), '0xmulticall'));
+
+    expect(screen.getByText('Approve')).toBeDefined();
+    expect(screen.getByText('Stake failed')).toBeDefined();
+    expect(screen.getByText('Select reward failed')).toBeDefined();
+    expect(screen.getByText('Delegate voting power failed')).toBeDefined();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+  });
+
   it('standard flow: Try again re-runs the flow and the failure treatment clears once it restarts', () => {
     const onConfirm = vi.fn();
     const cb = renderFailedFlow(supplySteps, onConfirm);
@@ -153,7 +232,9 @@ describe('TransactionModal failure & recovery', () => {
     batch.supported = true;
     renderFailedFlow(supplySteps);
 
-    expect(screen.getByText('Transaction failed')).toBeDefined();
+    // Once for the collapsed step row, once for the header chip (Figma 2800:91683),
+    // and once for the modal title, which drops "Confirm in the wallet" on failure.
+    expect(screen.getAllByText('Transaction failed')).toHaveLength(3);
     expect(
       screen.getByText(
         'The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.'

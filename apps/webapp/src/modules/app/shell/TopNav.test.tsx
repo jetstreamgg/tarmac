@@ -62,10 +62,6 @@ vi.mock('./WalletChip', () => ({
   WalletChip: () => <div data-testid="wallet-chip" data-stub="wallet-chip-stub" />
 }));
 
-vi.mock('@/modules/ui/components/ChainModal', () => ({
-  ChainModal: ({ dataTestId }: { dataTestId?: string }) => <div data-testid={dataTestId} />
-}));
-
 vi.mock('@/modules/layout/components/MockConnectButton', () => ({
   MockConnectButton: () => <div data-testid="mock-connect-button-stub" />
 }));
@@ -298,14 +294,18 @@ describe('TopNav More menu — mobile bottom panel (M4.5)', () => {
   });
 });
 
-describe('TopNav network override', () => {
-  it('carries network=ethereum on the mainnet-only Stake link when on an L2', async () => {
+// A mainnet-only destination used to carry `?network=ethereum` in its href, and
+// clicking one raised the switching feedback on the spot. `network=` is retired,
+// so a nav link is just a path: the route guard resolves the chain on arrival
+// and raises its own feedback — which also means the click must NOT raise it,
+// since the guard may decide not to switch and only a real chain change clears
+// the flags.
+describe('TopNav destination links carry no chain', () => {
+  it('links Stake plainly from an L2', async () => {
     mocks.chainId = base.id;
     renderTopNav();
 
-    expect((await screen.findByTestId('nav-stake')).getAttribute('href')).toBe(
-      `${ROUTES.STAKE}?network=ethereum`
-    );
+    expect((await screen.findByTestId('nav-stake')).getAttribute('href')).toBe(ROUTES.STAKE);
     expect(screen.getByTestId('nav-convert').getAttribute('href')).toBe(ROUTES.CONVERT);
   });
 
@@ -314,48 +314,14 @@ describe('TopNav network override', () => {
     expect((await screen.findByTestId('nav-stake')).getAttribute('href')).toBe(ROUTES.STAKE);
   });
 
-  it('targets the tenderly fork instead when the config carries one (non-production builds)', async () => {
-    mocks.chainId = base.id;
-    mocks.chains = [
-      { id: 1, name: 'Ethereum' },
-      { id: 314310, name: 'Tenderly' },
-      { id: 8453, name: 'Base' }
-    ];
-    renderTopNav();
-
-    expect((await screen.findByTestId('nav-stake')).getAttribute('href')).toBe(
-      `${ROUTES.STAKE}?network=tenderly`
-    );
-  });
-});
-
-describe('TopNav network switch feedback', () => {
-  it('flags the auto-switch when plainly clicking a mainnet-only destination from an L2', async () => {
+  it('does not flag a switch when clicking a mainnet-only destination from an L2', async () => {
     mocks.chainId = base.id;
     renderTopNav();
 
     fireEvent.click(await screen.findByTestId('nav-stake'));
 
-    expect(mocks.setIsSwitchingNetwork).toHaveBeenCalledWith(true);
-    expect(mocks.setIsAutoSwitching).toHaveBeenCalledWith(true);
-  });
-
-  it('skips the side effect on modified clicks (new tab: this tab does not navigate)', async () => {
-    mocks.chainId = base.id;
-    renderTopNav();
-
-    fireEvent.click(await screen.findByTestId('nav-stake'), { metaKey: true });
-
     expect(mocks.setIsSwitchingNetwork).not.toHaveBeenCalled();
-  });
-
-  it('does not flag switches for multichain destinations', async () => {
-    mocks.chainId = base.id;
-    renderTopNav();
-
-    fireEvent.click(await screen.findByTestId('nav-convert'));
-
-    expect(mocks.setIsSwitchingNetwork).not.toHaveBeenCalled();
+    expect(mocks.setIsAutoSwitching).not.toHaveBeenCalled();
   });
 });
 

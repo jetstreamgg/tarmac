@@ -32,8 +32,10 @@ export function useMediaQuery(query: string): boolean {
 }
 
 // Mirrors the Tailwind breakpoints in globals.css (@theme --breakpoint-*).
-// `desktop` (1200) is the M/L tier of the design-system grid; the other values
-// are the legacy scale kept for pre-redesign screens.
+// `desktop` (1200) is the M/L tier of the design-system grid; `md` (768) is the
+// phone cutoff for overlays and tables (sheets, card tables); `lg` (912) is the
+// tablet seam where the header pills replace the bottom navbar (APP-549). The
+// other values are the legacy scale kept for pre-redesign screens.
 export enum BP {
   sm = 0,
   md = 1,

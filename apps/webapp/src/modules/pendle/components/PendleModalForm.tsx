@@ -48,6 +48,7 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { usePendleSlippageCell } from '../hooks/usePendleSlippageCell';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { parseAmountInput } from '@/lib/amountInput';
 import { NO_VALUE } from '@/lib/constants';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
@@ -156,8 +157,23 @@ export function PendleModalForm({
   // Steps mirror the engine's call count ([approve?, convert]) so the
   // indicator advances in lockstep with the sequential flow's onMutate bumps.
   const steps = useMemo<TransactionStep[]>(() => {
-    const convertStep = { label: isSupply ? t`Supply` : t`Withdraw`, tokenSymbol: inputSymbol };
-    return needsAllowance ? [{ label: t`Approve`, tokenSymbol: inputSymbol }, convertStep] : [convertStep];
+    const convertStep = {
+      label: isSupply ? t`Supply` : t`Withdraw`,
+      tokenSymbol: inputSymbol,
+      failureDetail: isSupply
+        ? stepFailureDetail.supply(inputSymbol)
+        : stepFailureDetail.withdraw(inputSymbol)
+    };
+    return needsAllowance
+      ? [
+          {
+            label: t`Approve`,
+            tokenSymbol: inputSymbol,
+            failureDetail: stepFailureDetail.approve(inputSymbol)
+          },
+          convertStep
+        ]
+      : [convertStep];
   }, [isSupply, needsAllowance, inputSymbol]);
 
   const {

@@ -1,10 +1,11 @@
 import { KeyboardEvent, ReactNode, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { RateInfo } from './RateInfo';
 import { Trans } from '@lingui/react/macro';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { rowCollapseAnimations, rowCollapseContainerAnimations } from '@/modules/ui/animation/presets';
+import { easeInOutQuart } from '@/modules/ui/animation/timingFunctions';
 import {
   ROW_SURFACE_TRANSITION_CLASSES,
   useRowCollapseTransition
@@ -18,6 +19,16 @@ import { CellEmpty, CellPercent, CellToken } from '@/components/ui/table-cells';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TransactionCardFieldGrid } from './TransactionCard';
 import { RiskTierDetailsTrigger } from './RiskTierDetails';
+
+/**
+ * The mobile card's expand/collapse: the same 200ms in-out-quart reveal the
+ * Morpho strategy legend uses for its per-market detail (TokensComposition),
+ * so the two accordions in the app open at one speed. The chevron's rotation
+ * rides the same duration (`duration-200`, kept in sync by hand — Tailwind
+ * only extracts literal classes).
+ */
+const CARD_REVEAL_MS = 200;
+const cardRevealTransition: Transition = { duration: CARD_REVEAL_MS / 1000, ease: easeInOutQuart };
 
 export type EarnTableColumn = 'token' | 'network' | 'risk' | 'rate' | 'rate30d' | 'tvl' | 'position';
 
@@ -203,6 +214,8 @@ function EarnCardList({
 }: Pick<EarnTableProps, 'rows' | 'onRowSelect' | 'onRowsExitComplete' | 'dimmed' | 'testIdPrefix'>) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const collapseTransition = useRowCollapseTransition();
+  const reduceMotion = useReducedMotion();
+  const revealTransition: Transition = reduceMotion ? { duration: 0 } : cardRevealTransition;
 
   // A filtered-out card must not come back expanded (its exiting twin is a
   // frozen element, so it still collapses from whatever was on screen).
@@ -231,7 +244,10 @@ function EarnCardList({
             >
               <div
                 className={cn(
-                  'bg-bgSecondary flex flex-col gap-6 p-5 backdrop-blur-[20px]',
+                  // No `gap`: the expanded block carries the 24px as padding
+                  // INSIDE its clip, so the gap collapses with the content
+                  // instead of leaving a slit under the header while closed.
+                  'bg-bgSecondary flex flex-col p-5 backdrop-blur-[20px]',
                   ROW_SURFACE_TRANSITION_CLASSES,
                   index === 0 ? 'rounded-t-3xl' : 'mt-0.5',
                   index === rows.length - 1 && 'rounded-b-3xl'
@@ -262,89 +278,105 @@ function EarnCardList({
                     </span>
                     <ChevronDown
                       size={16}
-                      className={cn('text-fgSecondary transition-transform', isExpanded && 'rotate-180')}
+                      className={cn(
+                        'text-fgSecondary ease-in-out-quart transition-transform duration-200 motion-reduce:transition-none',
+                        isExpanded && 'rotate-180'
+                      )}
                       aria-hidden
                     />
                   </span>
                 </button>
-                {isExpanded && (
-                  <>
-                    <TransactionCardFieldGrid
-                      // Comp 486:22051 expanded grid: Label 6 values (the M5
-                      // transaction cards keep their Label 5 default).
-                      valueClassName={cn(
-                        'text-xs leading-3.5 tracking-[-0.24px]',
-                        dimmed && 'text-fgTertiary'
-                      )}
-                      fields={[
-                        ...(row.network
-                          ? [
-                              {
-                                label: <Trans>Network</Trans>,
-                                value: <Dim dimmed={dimmed}>{row.network}</Dim>
-                              }
-                            ]
-                          : []),
-                        {
-                          label: <Trans>Risk</Trans>,
-                          value: row.riskProfile ? (
-                            <Dim dimmed={dimmed}>
-                              <RiskTierDetailsTrigger profile={row.riskProfile} />
-                            </Dim>
-                          ) : (
-                            <CellEmpty />
-                          )
-                        },
-                        {
-                          label: (
-                            <span className="flex items-center gap-1">
-                              <Trans>Rate</Trans>
-                              <RateColumnInfo column="rate" />
-                            </span>
-                          ),
-                          value: <NumericValue value={row.rate} isLoading={row.isLoading} />
-                        },
-                        {
-                          label: (
-                            <span className="flex items-center gap-1">
-                              <Trans>30D Rate</Trans>
-                              <RateColumnInfo column="rate30d" />
-                            </span>
-                          ),
-                          value: <NumericValue value={row.rate30d} isLoading={row.isLoading} />
-                        },
-                        {
-                          label: <Trans>TVL</Trans>,
-                          value: <NumericValue value={row.tvl} isLoading={row.isLoading} />
-                        },
-                        {
-                          label: <Trans>My position</Trans>,
-                          value: <NumericValue value={row.position} isLoading={row.isLoading} />
-                        }
-                      ]}
-                    />
-                    {!dimmed && (
-                      <div className="flex w-full items-center gap-3">
-                        <Button
-                          variant="primary"
-                          size="m"
-                          className="flex-1"
-                          onClick={() => onRowSelect?.(row.id)}
-                        >
-                          {row.ctaLabel ?? <Trans>Supply</Trans>}
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="m"
-                          className="flex-1"
-                          onClick={() => onRowSelect?.(row.id)}
-                        >
-                          <Trans>View details</Trans>
-                        </Button>
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      key="detail"
+                      data-testid={`${tid}-card-detail-${row.id}`}
+                      className="overflow-hidden"
+                      variants={rowCollapseAnimations}
+                      initial={AnimationLabels.initial}
+                      animate={AnimationLabels.animate}
+                      exit={AnimationLabels.exit}
+                      transition={revealTransition}
+                    >
+                      <div className="flex flex-col gap-6 pt-6">
+                        <TransactionCardFieldGrid
+                          // Comp 486:22051 expanded grid: Label 6 values (the M5
+                          // transaction cards keep their Label 5 default).
+                          valueClassName={cn(
+                            'text-xs leading-3.5 tracking-[-0.24px]',
+                            dimmed && 'text-fgTertiary'
+                          )}
+                          fields={[
+                            ...(row.network
+                              ? [
+                                  {
+                                    label: <Trans>Network</Trans>,
+                                    value: <Dim dimmed={dimmed}>{row.network}</Dim>
+                                  }
+                                ]
+                              : []),
+                            {
+                              label: <Trans>Risk</Trans>,
+                              value: row.riskProfile ? (
+                                <Dim dimmed={dimmed}>
+                                  <RiskTierDetailsTrigger profile={row.riskProfile} />
+                                </Dim>
+                              ) : (
+                                <CellEmpty />
+                              )
+                            },
+                            {
+                              label: (
+                                <span className="flex items-center gap-1">
+                                  <Trans>Rate</Trans>
+                                  <RateColumnInfo column="rate" />
+                                </span>
+                              ),
+                              value: <NumericValue value={row.rate} isLoading={row.isLoading} />
+                            },
+                            {
+                              label: (
+                                <span className="flex items-center gap-1">
+                                  <Trans>30D Rate</Trans>
+                                  <RateColumnInfo column="rate30d" />
+                                </span>
+                              ),
+                              value: <NumericValue value={row.rate30d} isLoading={row.isLoading} />
+                            },
+                            {
+                              label: <Trans>TVL</Trans>,
+                              value: <NumericValue value={row.tvl} isLoading={row.isLoading} />
+                            },
+                            {
+                              label: <Trans>My position</Trans>,
+                              value: <NumericValue value={row.position} isLoading={row.isLoading} />
+                            }
+                          ]}
+                        />
+                        {!dimmed && (
+                          <div className="flex w-full items-center gap-3">
+                            <Button
+                              variant="primary"
+                              size="m"
+                              className="flex-1"
+                              onClick={() => onRowSelect?.(row.id)}
+                            >
+                              {row.ctaLabel ?? <Trans>Supply</Trans>}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="m"
+                              className="flex-1"
+                              onClick={() => onRowSelect?.(row.id)}
+                            >
+                              <Trans>View details</Trans>
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           );

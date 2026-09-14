@@ -2,11 +2,8 @@ import React, { useContext } from 'react';
 import { ConfigContext } from '../../config/context/ConfigContext';
 import { ErrorBoundary } from './ErrorBoundary';
 import { InsideLayoutContext } from './InsideLayoutContext';
-import { useConnection } from 'wagmi';
 import { AuthWrapper } from './AuthWrapper';
 import { VStack } from './VStack';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { UnsupportedNetworkPage } from './UnsupportedNetworkPage';
 import { Text } from '@/modules/layout/components/Typography';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
@@ -28,8 +25,6 @@ export function Layout({
   metaDescription?: string;
 }): React.ReactElement {
   const { siteConfig } = useContext(ConfigContext);
-  const { chain } = useConnection();
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
   // First-visit loader (APP-419): while it covers, the chrome and content
   // wear opacity-0 and the logomark overlay plays; on reveal they run their
   // one-shot entrances. `off` leaves every className exactly as it was. On a
@@ -64,10 +59,11 @@ export function Layout({
               )}
             >
               <div className={shellHeaderContentClasses()}>
-                {/* justify-self-start: in the desktop header grid the logo sits
-                  in a 1fr flank; without it the anchor stretches across the
-                  whole track and empty header space becomes clickable. */}
-                <AppLink to="/" title="Home page" className="desktop:justify-self-start min-w-[96px]">
+                {/* justify-self-start: in the header grid (tablet seam up) the
+                  logo sits in a 1fr flank; without it the anchor stretches
+                  across the whole track and empty header space becomes
+                  clickable. */}
+                <AppLink to="/" title="Home page" className="min-w-[96px] lg:justify-self-start">
                   {/* Theme-specific logo: dark is the default; light swaps in under
                     [data-theme='light'] (the `light:` variant). */}
                   <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
@@ -92,7 +88,12 @@ export function Layout({
 
             flex-1 so the column fills the surface and the footer's `mt-auto`
             has space to push against; the gap and centering are the ones this
-            box inherited from the surface. */}
+            box inherited from the surface.
+
+            The column never compensates for the page scrollbar: the root
+            reserves the bar's column on every route (scrollbar-gutter in
+            globals.css), so the content sits in the same place with or
+            without a bar. */}
           <div
             className={cn(
               'page-transition flex w-full flex-1 flex-col items-center gap-y-4',
@@ -100,11 +101,14 @@ export function Layout({
             )}
           >
             <ErrorBoundary>
-              {isConnectedAndAcceptedTerms && !chain ? (
-                <UnsupportedNetworkPage>{children}</UnsupportedNetworkPage>
-              ) : (
-                <AuthWrapper>{children}</AuthWrapper>
-              )}
+              {/* A wallet on a chain the app doesn't configure used to raise a
+                blocking dialog here. It no longer does: wagmi pins its chainId
+                to the last configured chain, so every read still resolves and
+                the page renders correctly — and the route's chain resolution
+                (getRouteChainAction rule b) switches the wallet back on the
+                user's behalf. If they decline, the transaction modal's chain
+                guard is what stops a transaction, where it actually matters. */}
+              <AuthWrapper>{children}</AuthWrapper>
             </ErrorBoundary>
 
             <ErrorBoundary variant="small">
@@ -115,10 +119,11 @@ export function Layout({
           {/* Clearance for the fixed bottom MobileNavbar (60px pill + 16px top
             pad + max(16px, safe-area) bottom pad) so the end of the content can
             scroll out from under it. A spacer rather than padding utilities so
-            it stays independent of the surface's own spacing. */}
+            it stays independent of the surface's own spacing. Phone tier only,
+            like the bar itself. */}
           <div
             aria-hidden
-            className="desktop:hidden h-[calc(92px+env(safe-area-inset-bottom,0px))] w-full shrink-0"
+            className="h-[calc(92px+env(safe-area-inset-bottom,0px))] w-full shrink-0 lg:hidden"
           />
         </VStack>
 

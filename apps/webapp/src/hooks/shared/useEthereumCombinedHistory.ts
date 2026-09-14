@@ -8,7 +8,7 @@ import { clampHistoryPage } from './historyQueryHelpers';
 
 /**
  * Mainnet history: one keyset-paginated indexer document (savings, upgrade,
- * stake, rewards, stUSDS, sUSDT) merged with the REST-backed sources (CoW,
+ * stake, rewards, stUSDS, sUSDT, PSM conversions) merged with the REST-backed sources (CoW,
  * Morpho, Pendle). REST items older than the indexer's completeness floor are
  * withheld until `fetchNextPage` advances it, so rows never insert mid-list.
  */

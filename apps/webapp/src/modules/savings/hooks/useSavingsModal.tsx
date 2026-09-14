@@ -35,11 +35,6 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         title: t`Supply to Sky Savings`,
         reviewTitle: t`Review supply`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your supply is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully supplied to Sky Savings.`,
-          error: t`An error occurred while supplying to Sky Savings.`
-        },
         sessionId: supplySessionId,
         // Three-screen flow (Figma 859:36036 → 859:36154 → 859:36214): the entry
         // advances to the review; the review's Confirm fires the engine. The body
@@ -65,11 +60,6 @@ export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
         title: t`Withdraw from Sky Savings`,
         reviewTitle: t`Review withdrawal`,
         transactionTitle: t`Confirm in the wallet`,
-        subtitles: {
-          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-          success: t`You've successfully withdrawn from Sky Savings.`,
-          error: t`An error occurred while withdrawing from Sky Savings.`
-        },
         sessionId: withdrawSessionId,
         entry: { confirmLabel: t`Review`, confirmDisabled: true },
         // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).

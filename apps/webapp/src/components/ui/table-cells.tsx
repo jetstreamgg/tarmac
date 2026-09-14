@@ -231,7 +231,7 @@ export function CellPosition({
   return (
     <span className="flex items-center gap-3">
       <IconboxPosition inactive={inactive}>{icon}</IconboxPosition>
-      <span className={cn(label5, 'text-fgPrimary')}>{label}</span>
+      <span className={cn(label5, 'text-fgPrimary whitespace-nowrap')}>{label}</span>
     </span>
   );
 }
@@ -258,8 +258,14 @@ export function CellAction({
       <IconboxAction>{icon}</IconboxAction>
       <span className="flex flex-col gap-0.5">
         <span className={cn(compact ? label5 : label4, 'text-fgPrimary')}>{label}</span>
+        {/* Each chunk of the subline (a relative time, the stake flavour's
+            `· Position N`) stays whole; a narrow cell breaks between chunks. */}
         {sublabel != null && (
-          <span className={cn(body6, 'text-fgSecondary flex items-center gap-1')}>{sublabel}</span>
+          <span
+            className={cn(body6, 'text-fgSecondary flex flex-wrap items-center gap-x-1 whitespace-nowrap')}
+          >
+            {sublabel}
+          </span>
         )}
       </span>
     </span>

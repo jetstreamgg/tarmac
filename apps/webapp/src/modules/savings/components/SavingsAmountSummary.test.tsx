@@ -15,7 +15,7 @@ describe('SavingsAmountSummary', () => {
         label="Supply amount"
         amount="10,000.00"
         symbol="USDS"
-        usd="10,000.00"
+        usd="$10,000.00"
         dataTestId="summary"
         usdTestId="summary-usd"
       />

@@ -1,6 +1,7 @@
-import { createRootRouteWithContext, redirect } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, redirect } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
-import { legacyPathToLocation, legacySearchToLocation } from '@/lib/legacyRedirects';
+import { legacySearchToLocation } from '@/lib/legacyRedirects';
+import { usePageScrollbarGutter } from '@/modules/layout/hooks/usePageScrollbarGutter';
 
 export type AppSearchParams = Record<string, string>;
 
@@ -14,17 +15,26 @@ export type AppRouterContext = {
   queryClient: QueryClient;
 };
 
+/**
+ * The one component above every route, Layout or not (the design-system page
+ * has none): document-level effects live here so they run once and never
+ * remount with a page.
+ */
+function RootComponent() {
+  // Publishes the page scrollbar column's width for the scroll-lock rules.
+  usePageScrollbarGutter();
+  return <Outlet />;
+}
+
 export const Route = createRootRouteWithContext<AppRouterContext>()({
+  component: RootComponent,
   // Permissive passthrough: the router's parseSearch already guarantees string values.
   validateSearch: (search): AppSearchParams => search as AppSearchParams,
-  // Translate legacy deep links so external links and bookmarks keep working:
-  // ?widget= URLs first rewrite to their pre-flip path, then pre-flip module
-  // paths (/savings, /rewards/0x…) map forward to their /earn destinations —
-  // composed here so either generation lands in a single redirect.
-  beforeLoad: ({ search, location }) => {
-    const legacy = legacySearchToLocation(search);
-    const base = legacy ?? { to: location.pathname, search };
-    const target = legacyPathToLocation(base.to, base.search) ?? legacy;
+  // Translate legacy ?widget= deep links so external links and bookmarks keep
+  // working. One hop, straight to the target IA: the intermediate path
+  // generations never reached production, so there is nothing else to forward.
+  beforeLoad: ({ search }) => {
+    const target = legacySearchToLocation(search);
     if (target) {
       throw redirect({ to: target.to, search: target.search, replace: true });
     }

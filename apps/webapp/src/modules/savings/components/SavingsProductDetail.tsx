@@ -16,7 +16,6 @@ import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import {
   ProductDetailTemplate,
@@ -146,24 +145,7 @@ export function SavingsProductDetail() {
         )
       }}
       title={<Trans>Sky Savings</Trans>}
-      networkSelector={
-        isMobile ? (
-          // M6.3 (486:20732): full-width labelled row under the title — 24px
-          // chain icon + Label 6 name left, chevron flush right.
-          <ChainModal
-            chainIds={networks}
-            dataTestId="product-detail-network"
-            triggerClassName="w-full [&>svg:last-child]:ml-auto"
-            labelClassName="font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]"
-          />
-        ) : (
-          <ChainModal
-            chainIds={networks}
-            labelClassName="hidden sm:block"
-            dataTestId="product-detail-network"
-          />
-        )
-      }
+      networkChainIds={networks}
       chart={<SavingsDetailChart />}
       position={<SavingsPositionCard />}
       details={details}

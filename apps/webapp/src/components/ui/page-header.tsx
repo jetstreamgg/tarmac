@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
  * destination and stays with each page; these primitives pin the shared type
  * scale and badge treatment so they can't drift. The title-icon ring is
  * `IconboxStatus size="l"` (iconbox.tsx) and the network pill is the
- * Button dropdown/dropdownM recipe (ChainModal / FilterSelect).
+ * Button dropdown/dropdownM recipe (NetworkSelect / FilterSelect).
  */
 
 const PAGE_HEADING_SIZES = {
@@ -23,17 +23,44 @@ export function PageHeading({
   size = 'md',
   tag: Tag = 'h1',
   className,
+  badges,
+  subtitle,
   children
 }: {
   size?: keyof typeof PAGE_HEADING_SIZES;
   tag?: 'h1' | 'h2' | 'h3';
   className?: string;
+  /**
+   * Title-suffix badges (`HeaderBadge size="s"`: a provider mark, the phone
+   * tier's network badge) — 12px after the name (Figma 1295:20810), wrapping
+   * under it rather than squeezing a long product name. Rendered as siblings
+   * of the heading element, never inside it, so the heading's accessible name
+   * stays the plain title ("USDS Flagship", not "USDS Flagship Powered by
+   * Morpho Ethereum").
+   */
+  badges?: React.ReactNode;
+  /** The DS Body 6 line under a product title (5120:19542) — a date, a description. */
+  subtitle?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  return (
+  const heading = (
     <Tag className={cn('font-circle text-fgPrimary font-medium', PAGE_HEADING_SIZES[size], className)}>
       {children}
     </Tag>
+  );
+  if (!badges && !subtitle) return heading;
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        {heading}
+        {badges}
+      </div>
+      {subtitle && (
+        <p className="font-graphik text-fgSecondary text-xs leading-[18px] font-normal tracking-normal">
+          {subtitle}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -54,15 +81,17 @@ export function HeaderBadge({
   icon,
   size = 'm',
   className,
-  children
+  children,
+  ...rest
 }: {
   icon?: React.ReactNode;
   size?: keyof typeof HEADER_BADGE_SIZES;
   className?: string;
   children: React.ReactNode;
-}) {
+} & { 'data-testid'?: string }) {
   return (
     <span
+      {...rest}
       className={cn(
         'bg-glassBadge font-circle text-fgPrimary flex w-fit items-center rounded-full font-medium whitespace-nowrap',
         HEADER_BADGE_SIZES[size],
