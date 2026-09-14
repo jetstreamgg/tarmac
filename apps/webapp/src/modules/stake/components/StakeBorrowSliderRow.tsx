@@ -10,6 +10,8 @@ import { StakeAmountSlider, STAKE_SLIDER_MAX } from '../hooks/useStakeAmountSlid
 // Figma draws grouped whole numbers ("56,201"), not compact ("56.2K").
 const fmt = (amount: bigint) => formatBigInt(amount, { maxDecimals: 0 });
 const pct = (position: number) => `${position / (STAKE_SLIDER_MAX / 100)}%`;
+/** A staged value this far from the pointer's position is a snap, not a drag. */
+const SNAP_GLIDE_STEPS = 20;
 
 /** Body 7 prefix + Label 6 value, 3px apart (Figma 3015:62374). */
 function AxisLabel({ prefix, value }: { prefix: ReactNode; value: ReactNode }) {
@@ -73,6 +75,11 @@ export function StakeBorrowSliderRow({
     observer.observe(row);
     return () => observer.disconnect();
   }, [marker, axis.min, axis.max, axis.marker, dataTestId]);
+  // The last position the pointer asked for. When the staged value lands far
+  // from it (the repay dust-gap snap), the fill glides there instead of
+  // jumping; while the value tracks the pointer it follows instantly.
+  const [requested, setRequested] = useState<number | null>(null);
+  const snapped = requested !== null && Math.abs(slider.value - requested) > SNAP_GLIDE_STEPS;
   const fillStart = isBorrow && marker !== undefined ? marker : 0;
   const fillEnd = Math.max(fillStart, slider.value);
   const fillStyle = disabled
@@ -87,7 +94,10 @@ export function StakeBorrowSliderRow({
         max={STAKE_SLIDER_MAX}
         step={1}
         disabled={disabled}
-        onValueChange={value => slider.onValueChange(value[0])}
+        onValueChange={value => {
+          setRequested(value[0]);
+          slider.onValueChange(value[0]);
+        }}
         // Radix stays silent when End lands on an already-pinned (over-typed) thumb.
         onKeyDown={event => {
           if (event.key === 'End' && slider.value >= STAKE_SLIDER_MAX && !disabled) {
@@ -117,6 +127,7 @@ export function StakeBorrowSliderRow({
             data-slot="slider-fill"
             className={cn(
               'absolute inset-y-0 rounded-[4px] bg-linear-to-r',
+              snapped && 'ease-out-quint transition-[width] duration-350',
               tone === 'green'
                 ? 'from-slider-green-start to-slider-green-end'
                 : 'from-slider-yellow-start to-slider-yellow-end',
