@@ -130,7 +130,7 @@ async function fetchMorphoVaultRate(
   };
 }
 
-type MorphoVaultMultipleRateHook = ReadHook & {
+export type MorphoVaultMultipleRateHook = ReadHook & {
   data?: MorphoVaultRateData[];
 };
 

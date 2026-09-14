@@ -55,7 +55,7 @@ const REDACTED_EMAIL_VALUE = 'redacted_email';
 
 const MAX_DEPTH = 6;
 
-type UrlSanitizerOptions = {
+export type UrlSanitizerOptions = {
   /** Extra allowed query param keys (exact match, case-insensitive). */
   allowedParams?: string[];
   /** Extra allowed key prefixes (case-insensitive). */
@@ -68,7 +68,7 @@ type SanitizableEvent = {
   $set_once?: Record<string, unknown>;
 } | null;
 
-function sanitizeUrlString(value: string, allowed: Set<string>, prefixes: string[]): string {
+export function sanitizeUrlString(value: string, allowed: Set<string>, prefixes: string[]): string {
   if (!value.startsWith('http://') && !value.startsWith('https://')) return value;
   let url: URL;
   try {

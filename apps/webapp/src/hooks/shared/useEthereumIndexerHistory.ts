@@ -30,7 +30,7 @@ import { familyMainnetId } from '@/utils';
  * match against, so an embedded leg still lists there. The `Swap` entity
  * carries no origin field; the real fix is an indexer-side discriminator.
  */
-function dropEmbeddedSwaps(items: CombinedHistoryItem[]): CombinedHistoryItem[] {
+export function dropEmbeddedSwaps(items: CombinedHistoryItem[]): CombinedHistoryItem[] {
   const otherHashes = new Set(
     items.filter(item => item.module !== ModuleEnum.TRADE).map(item => item.transactionHash.toLowerCase())
   );

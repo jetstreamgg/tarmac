@@ -1,7 +1,7 @@
 import type { EarnProductRow, EarnRiskTier } from '@/hooks';
 import type { EarnTableColumn, EarnTableSort } from '@/components/product/EarnTable';
 
-const RISK_ORDER: Record<EarnRiskTier, number> = { low: 0, moderate: 1, advanced: 2 };
+export const RISK_ORDER: Record<EarnRiskTier, number> = { low: 0, moderate: 1, advanced: 2 };
 
 const RISK_TIERS = Object.keys(RISK_ORDER) as EarnRiskTier[];
 

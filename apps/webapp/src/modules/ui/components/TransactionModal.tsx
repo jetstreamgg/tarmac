@@ -58,7 +58,7 @@ export type TransactionSubtitles = {
   review?: string;
 };
 
-type TransactionModalProps = {
+export type TransactionModalProps = {
   open: boolean;
   /**
    * Registers the entry-screen portal target (a flow's `backgroundContent` portals
@@ -166,7 +166,7 @@ type TransactionModalProps = {
 };
 
 /** The transaction modal's chain-guard descriptor (see `chainGuard` prop). */
-type ChainGuard = {
+export type ChainGuard = {
   /** Name of the chain the wallet is wrongly on (may be undefined if unknown). */
   currentName?: string;
   /** Name of the chain to switch to; undefined when none is offerable. */

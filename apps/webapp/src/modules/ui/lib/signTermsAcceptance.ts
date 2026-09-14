@@ -1,6 +1,6 @@
 import { sanitizeUrl } from '@/lib/utils';
 
-type TermsSignOutcome = { ok: true } | { ok: false; status?: number; lastError?: unknown };
+export type TermsSignOutcome = { ok: true } | { ok: false; status?: number; lastError?: unknown };
 
 /**
  * Phase B (APP-501): attaches the wallet's off-chain signature to the current

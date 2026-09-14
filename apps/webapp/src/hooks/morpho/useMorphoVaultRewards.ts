@@ -9,7 +9,7 @@ import { fetchJson } from '../shared/fetchJson';
 import type { MerklRewardBreakdown, MerklRewardsApiResponse } from './merklTypes';
 
 /** Processed reward data for a single token */
-type MorphoVaultReward = {
+export type MorphoVaultReward = {
   /** Reward token address */
   tokenAddress: `0x${string}`;
   /** Reward token symbol (e.g., "MORPHO") */
@@ -43,14 +43,14 @@ type MorphoVaultReward = {
   distributionChainId: number;
 };
 
-type MorphoVaultRewardsData = {
+export type MorphoVaultRewardsData = {
   /** List of rewards by token */
   rewards: MorphoVaultReward[];
   /** Whether the user has any claimable rewards */
   hasClaimableRewards: boolean;
 };
 
-type MorphoVaultRewardsHook = ReadHook & {
+export type MorphoVaultRewardsHook = ReadHook & {
   data?: MorphoVaultRewardsData;
 };
 

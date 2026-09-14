@@ -25,7 +25,7 @@ export function ptDiscount(impliedApy: number | undefined, expirySec: number, no
   return Math.pow(1 + impliedApy, -yearsToMaturity);
 }
 
-type ComputePendleAssetValuationsInput = {
+export type ComputePendleAssetValuationsInput = {
   ptBalances: Record<`0x${string}`, bigint> | undefined;
   usdsPrice: number;
   sUsdsPrice: number;

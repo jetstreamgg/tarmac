@@ -11,7 +11,7 @@ import { ConvertAmountInput } from './ConvertAmountInput';
 import type { useConvertForm } from '../hooks/useConvertForm';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
-type ConvertFormModel = ReturnType<typeof useConvertForm>;
+export type ConvertFormModel = ReturnType<typeof useConvertForm>;
 
 /**
  * The centered swap card (Figma 486:31198): Network row → From input → flip

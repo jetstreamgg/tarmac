@@ -41,7 +41,7 @@ export enum QueryParams {
   Upgrade = 'upgrade'
 }
 
-enum Environment {
+export enum Environment {
   Production = 'production',
   Staging = 'staging',
   Development = 'development'

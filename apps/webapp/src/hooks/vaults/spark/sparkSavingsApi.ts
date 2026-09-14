@@ -1,7 +1,7 @@
 import { SPARK_SAVINGS_API_HOST } from './constants';
 
 /** Token descriptor (`vault`/`asset`) as the Spark Savings API returns it. */
-type SparkSavingsTokenInfo = {
+export type SparkSavingsTokenInfo = {
   address: string;
   decimals: number;
   symbol: string;
@@ -65,7 +65,7 @@ export type SparkSavingsHistoricResponse = {
 };
 
 /** Path identity for a Savings vault: `/{protocol}/{chain}/{token}`. */
-type SparkVaultIdentity = {
+export type SparkVaultIdentity = {
   protocol: string;
   chain: string;
   token: string;

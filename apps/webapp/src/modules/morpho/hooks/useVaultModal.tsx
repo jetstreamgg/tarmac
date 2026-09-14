@@ -6,7 +6,7 @@ import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { VaultModalForm, type VaultModalPreset } from '../components/VaultModalForm';
 
 /** Per-vault inputs the launcher needs to open the modal for a specific vault. */
-type VaultModalArgs = {
+export type VaultModalArgs = {
   vaultAddress: `0x${string}`;
   /** The vault's underlying asset (e.g. TOKENS.usdc). */
   assetToken: Token;

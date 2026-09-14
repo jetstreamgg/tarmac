@@ -8,7 +8,7 @@ import type { SelectionMethod } from '../constants';
  * subscriber runs outside the component tree.
  */
 
-type PendingNavIntent = {
+export type PendingNavIntent = {
   method: SelectionMethod;
   /** The pathname the click targets; the subscriber only honors a match. */
   pathname: string;

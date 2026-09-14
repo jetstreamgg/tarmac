@@ -95,7 +95,7 @@ export function buildStakeManageSteps({
   return shouldUseBatch ? steps : assignSequentialWrites(steps, approvals);
 }
 
-interface UseStakeManageLaunchParams {
+export interface UseStakeManageLaunchParams {
   urnIndex: bigint;
   urnAddress: `0x${string}` | undefined;
   skyToLock: bigint;

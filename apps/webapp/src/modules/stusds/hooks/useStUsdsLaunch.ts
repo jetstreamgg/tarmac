@@ -30,7 +30,7 @@ export interface StUsdsEngineParams {
   stUsdsAmount?: bigint;
 }
 
-type UseStUsdsLaunchResult = EngineLaunchResult;
+export type UseStUsdsLaunchResult = EngineLaunchResult;
 
 /**
  * The seam between the redesigned stUSDS modal and the (unmodified) engine

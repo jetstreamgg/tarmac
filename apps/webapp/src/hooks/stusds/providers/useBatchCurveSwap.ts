@@ -16,7 +16,7 @@ import { useCurvePoolData } from './useCurvePoolData';
 import { calculateMinOutputWithSlippage } from './rateComparison';
 import { STUSDS_PROVIDER_CONFIG } from './constants';
 
-type BatchCurveSwapParams = BatchWriteHookParams & {
+export type BatchCurveSwapParams = BatchWriteHookParams & {
   /** Direction of the swap */
   direction: StUsdsDirection;
   /** Amount of input token */

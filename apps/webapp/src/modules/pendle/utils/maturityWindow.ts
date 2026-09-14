@@ -3,7 +3,7 @@ import { SECONDS_PER_DAY } from '@/utils';
 /** Conservative window length when the API hasn't provided a market start. */
 const FALLBACK_WINDOW_SECONDS = 180 * SECONDS_PER_DAY;
 
-type MaturityWindow = {
+export type MaturityWindow = {
   /** Elapsed share of the maturity window, clamped to [0, 100]. */
   pct: number;
   /** Seconds until expiry, floored at 0. */

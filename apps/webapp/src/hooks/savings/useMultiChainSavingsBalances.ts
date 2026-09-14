@@ -9,7 +9,7 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { usePreviewSwapExactIn } from '../psm/usePreviewSwapExactIn';
 import { isMainnetId, isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@/utils';
 
-type MultiChainSavingsBalancesHook = ReadHook & {
+export type MultiChainSavingsBalancesHook = ReadHook & {
   data?: Record<number, bigint>;
 };
 

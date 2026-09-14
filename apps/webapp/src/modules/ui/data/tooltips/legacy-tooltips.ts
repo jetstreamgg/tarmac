@@ -1,4 +1,4 @@
-interface Tooltip {
+export interface Tooltip {
   id: string;
   title: string;
   tooltip: string;

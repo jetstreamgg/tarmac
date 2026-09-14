@@ -15,7 +15,7 @@ import {
   type PendleSplit
 } from './types';
 
-type PendleEarningsInput = {
+export type PendleEarningsInput = {
   /** /v1/pnl/gained positions — ALL chains (the endpoint ignores chainId). */
   gainedPositions: PendlePnlGainedPositionRaw[];
   /** /v1/dashboard/positions/database — per-chain current holdings. */
@@ -28,7 +28,7 @@ type PendleEarningsInput = {
   markets?: PendleMarketConfig[];
 };
 
-type PendleEarnings = {
+export type PendleEarnings = {
   totalEarned: Maybe<EarningsFigure>;
   earnedThisMonth: Maybe<EarningsFigure>;
   /** Present iff totalEarned is ok — the acceptance-criterion split. */

@@ -13,7 +13,7 @@ import { morphoGraphql } from './morphoGraphql';
 const WEEK_IN_SECONDS = 604800;
 const MONTH_IN_SECONDS = 2592000;
 
-type MorphoVaultHourlyWindow = 'w' | 'm';
+export type MorphoVaultHourlyWindow = 'w' | 'm';
 
 /**
  * Raw API response type for Morpho V2 vault historical data.
@@ -114,7 +114,7 @@ async function fetchMorphoVaultChartInfo(
   return transformMorphoChartData(totalAssets, totalAssetsUsd, avgNetApy);
 }
 
-type MorphoVaultChartInfoHook = ReadHook & {
+export type MorphoVaultChartInfoHook = ReadHook & {
   data?: MorphoVaultChartDataPoint[];
 };
 

@@ -22,7 +22,7 @@ import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
-type PendleProductDetailProps = {
+export type PendleProductDetailProps = {
   market: PendleMarketConfig;
 };
 

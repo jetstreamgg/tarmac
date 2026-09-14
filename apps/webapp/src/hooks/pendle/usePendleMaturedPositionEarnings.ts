@@ -20,7 +20,7 @@ const SUSDS_PREVIEW_REDEEM_ABI = [
 // sUSDS shares are 18-decimal regardless of the PT market's underlying — this
 // is the pyIndex/chi precision constant, NOT a claim about PT decimals.
 
-type PendleMaturedPositionEarnings = {
+export type PendleMaturedPositionEarnings = {
   /** Earnings amount (final value − net cost basis), in `currency` units. */
   earnings?: number;
   /** Annualized yield as a decimal (e.g. 0.0521 for 5.21% APY). */

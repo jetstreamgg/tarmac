@@ -53,7 +53,7 @@ export function buildStakeClaimSteps({
   ].filter(Boolean) as TransactionStep[];
 }
 
-interface UseStakeClaimLaunchParams {
+export interface UseStakeClaimLaunchParams {
   urnIndex: bigint;
   /** Stake-source rewards the modal claims (adapter ids carry urn+contract). */
   selected: ClaimableReward[];

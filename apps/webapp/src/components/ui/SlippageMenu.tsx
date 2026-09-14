@@ -46,7 +46,7 @@ function clampPercentString(value: string, min: number, max: number): string {
   return value;
 }
 
-interface SlippageMenuProps {
+export interface SlippageMenuProps {
   /** Current slippage as a decimal (e.g. 0.002 for 0.2%). */
   value: number;
   /** Default slippage for the active flow as a decimal. */

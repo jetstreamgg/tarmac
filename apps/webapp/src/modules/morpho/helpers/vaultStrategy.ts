@@ -23,7 +23,7 @@ export type StrategyCaps = {
   relativeCapUtilization: number;
 };
 
-type StrategySegment = {
+export type StrategySegment = {
   /** Market id (stable key), or `idle-<asset>` for the idle segment. */
   id: string;
   /** Display label, e.g. "stUSDS/USDC" (collateral/loan), or "Idle". */
@@ -49,7 +49,7 @@ type StrategySegment = {
   caps?: StrategyCaps;
 };
 
-type VaultStrategyView = {
+export type VaultStrategyView = {
   /** Total vault capital in USD (falls back to the segment sum when unknown). */
   totalUsd: number;
   /** Compact USD total, e.g. "$39.92M". */

@@ -1,4 +1,4 @@
-interface PaginatedRows<T> {
+export interface PaginatedRows<T> {
   /** The rows visible on the requested page. */
   rows: T[];
   /** Total number of pages for the full row set (always >= 1). */

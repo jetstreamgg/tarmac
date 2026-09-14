@@ -14,7 +14,7 @@ import { filterTriggerClasses } from '@/components/product/FilterSelect';
  */
 export type SavingsTxFilter = 'all' | 'supply' | 'withdraw';
 
-const SAVINGS_TX_FILTERS: SavingsTxFilter[] = ['all', 'supply', 'withdraw'];
+export const SAVINGS_TX_FILTERS: SavingsTxFilter[] = ['all', 'supply', 'withdraw'];
 
 function FilterLabel({ value, mobileTrigger = false }: { value: SavingsTxFilter; mobileTrigger?: boolean }) {
   if (value === 'supply') return <Trans>Supply</Trans>;

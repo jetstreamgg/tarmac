@@ -55,7 +55,7 @@ export type TransactionStep =
       description?: ReactNode;
     };
 
-type TransactionStepItem = {
+export type TransactionStepItem = {
   stepNumber: number;
   label: string;
   tokenSymbol?: string;

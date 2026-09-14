@@ -233,7 +233,7 @@ export function generateStakeCalldata({
 export const WIPE_BUFFER_MULTIPLIER = 100005n;
 export const WIPE_BUFFER_DIVISOR = 100000n;
 
-interface CalculateStakeApprovalAmountsParams {
+export interface CalculateStakeApprovalAmountsParams {
   skyToLock: bigint;
   restakeSkyRewards: boolean;
   restakeSkyAmount: bigint;

@@ -5,7 +5,7 @@ import type { VaultProvider } from './types';
  * asset (deposit/withdraw sides) or shares, as read on-chain. Every field is
  * optional so the caller can pass partial data while reads are still resolving.
  */
-type VaultLimitsInput = {
+export type VaultLimitsInput = {
   /**
    * Which provider operates the vault. Decides whether the on-chain ERC-4626
    * `max*` reads can be trusted — see {@link computeVaultLimits}.
@@ -34,7 +34,7 @@ type VaultLimitsInput = {
 };
 
 /** Effective input caps derived from on-chain limits + wallet balance. */
-type VaultLimits = {
+export type VaultLimits = {
   /** Max underlying the user may supply now: `min(walletBalance, remaining cap)`. */
   maxDepositInput: bigint;
   /**

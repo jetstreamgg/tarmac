@@ -41,7 +41,7 @@ export function useRouteIntent(): Intent {
   return (useDeepestStaticData('intent') as Intent | undefined) ?? Intent.BALANCES_INTENT;
 }
 
-type RouteEntityParams = {
+export type RouteEntityParams = {
   rewardContract?: string;
   provider?: string;
   vaultAddress?: string;
@@ -182,7 +182,7 @@ export function useAppNavigate() {
   );
 }
 
-type AppLinkProps = Omit<ComponentProps<'a'>, 'href'> & {
+export type AppLinkProps = Omit<ComponentProps<'a'>, 'href'> & {
   to: string;
   replace?: boolean;
 };

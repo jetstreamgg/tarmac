@@ -12,7 +12,7 @@ import {
   StUsdsDirection
 } from './types';
 
-type StUsdsProviderSelectionParams = StUsdsQuoteParams & {
+export type StUsdsProviderSelectionParams = StUsdsQuoteParams & {
   /** Reference amount used for rate comparison when actual amount is 0.
    * This prevents UI flicker by allowing provider selection before user input. */
   referenceAmount?: bigint;

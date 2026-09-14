@@ -46,7 +46,7 @@ export type WalletDrawerAsset = {
   canEarn: boolean;
 };
 
-type UseWalletDrawerAssetsResult = {
+export type UseWalletDrawerAssetsResult = {
   /** Every drawer asset, zero balances included, sorted by USD value descending. */
   assets: WalletDrawerAsset[];
   /** Σ of the assets' USD values — the headline figure in the drawer header. */

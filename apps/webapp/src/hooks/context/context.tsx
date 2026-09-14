@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface MakerHooksContextProps {
+export interface MakerHooksContextProps {
   delegates: {
     ens: string;
   };

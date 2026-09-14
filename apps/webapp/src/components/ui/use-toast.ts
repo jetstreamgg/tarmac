@@ -4,7 +4,7 @@ import { ToastWithCloseButton } from '../toast/ToastWithClose';
 
 export const toast = sonnerToast;
 
-type ToastOptions = ExternalToast;
+export type ToastOptions = ExternalToast;
 
 export function toastWithClose(
   content: React.ReactNode | ((toastId: string | number) => React.ReactNode),

@@ -8,7 +8,7 @@ const STABLECOIN_SYMBOLS = IDLE_STABLECOINS.map(s => s.symbol) as readonly strin
 // by symbol so we never couple to TOKENS' internal keys.
 const STABLECOIN_TOKENS = Object.values(TOKENS).filter(token => STABLECOIN_SYMBOLS.includes(token.symbol));
 
-type UseStablecoinBalancesResult = {
+export type UseStablecoinBalancesResult = {
   /** One row per stablecoin per chain it lives on, valued in USD. */
   balances: StablecoinBalance[];
   isLoading: boolean;

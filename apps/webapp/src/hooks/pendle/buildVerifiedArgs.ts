@@ -32,7 +32,7 @@ type VerifiedLimit = {
   optData: `0x${string}`;
 };
 
-type VerifiedBuyArgs = readonly [
+export type VerifiedBuyArgs = readonly [
   receiver: `0x${string}`,
   market: `0x${string}`,
   minPtOut: bigint,
@@ -53,7 +53,7 @@ type VerifiedBuyArgs = readonly [
   limit: VerifiedLimit
 ];
 
-type VerifiedWithdrawArgs = readonly [
+export type VerifiedWithdrawArgs = readonly [
   receiver: `0x${string}`,
   market: `0x${string}`,
   exactPtIn: bigint,
@@ -77,7 +77,7 @@ type VerifiedWithdrawArgs = readonly [
  * swapData routed through KyberSwap / Odos / OKX / Paraswap). Selection
  * happens upstream via the user's output-token choice in the redeem UI.
  */
-type VerifiedExitArgs = readonly [
+export type VerifiedExitArgs = readonly [
   receiver: `0x${string}`,
   market: `0x${string}`,
   netPtIn: bigint,
@@ -91,7 +91,7 @@ type VerifiedExitArgs = readonly [
   }
 ];
 
-type VerifiedCall =
+export type VerifiedCall =
   | { side: PendleConvertSide.BUY; functionName: 'swapExactTokenForPt'; args: VerifiedBuyArgs }
   | {
       side: PendleConvertSide.WITHDRAW;
@@ -108,7 +108,7 @@ type VerifiedCall =
 // Caller-supplied known values
 // ---------------------------------------------------------------------------
 
-type KnownCallValues = {
+export type KnownCallValues = {
   side: PendleConvertSide;
   receiver: `0x${string}`;
   market: `0x${string}`;
@@ -438,7 +438,7 @@ function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): Verif
 // `minTokenOut = 0n` (the redeem path is deterministic — no slippage).
 // ---------------------------------------------------------------------------
 
-type MaturedRedeemContext = {
+export type MaturedRedeemContext = {
   receiver: `0x${string}`;
   market: `0x${string}`;
   /** PT token address — the input being burned for redemption */

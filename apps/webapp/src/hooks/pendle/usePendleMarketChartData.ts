@@ -8,7 +8,7 @@ import { PENDLE_API_BASE_URL } from './constants';
  * One point of the market's daily historical series (E1 detail chart).
  * `impliedApy` is the Fixed APY headline rate as a decimal fraction.
  */
-type PendleMarketChartPoint = {
+export type PendleMarketChartPoint = {
   /** Bucket timestamp in unix seconds */
   timestampSec: number;
   /**
@@ -28,7 +28,7 @@ type PendleMarketChartPoint = {
   liquidity?: number;
 };
 
-type PendleMarketChartDataHook = ReadHook & {
+export type PendleMarketChartDataHook = ReadHook & {
   data?: PendleMarketChartPoint[];
 };
 

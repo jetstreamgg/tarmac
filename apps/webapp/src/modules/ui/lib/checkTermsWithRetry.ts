@@ -42,7 +42,7 @@ export interface TermsCheckData {
   messageToSign?: string;
 }
 
-type TermsCheckOutcome =
+export type TermsCheckOutcome =
   | ({ status: 'ok' } & TermsCheckData)
   /** 403 — a deliberate refusal by region/VPN or address screening, not a failure. */
   | { status: 'access-denied' }

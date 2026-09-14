@@ -6,9 +6,9 @@ import { Text, Heading } from '@/modules/layout/components/Typography';
 
 const SHOW_BANNER = false;
 
-type BannerPosition = 'left' | 'right';
+export type BannerPosition = 'left' | 'right';
 
-interface BannerProps {
+export interface BannerProps {
   position?: BannerPosition;
   className?: string;
   onShow?: () => void;

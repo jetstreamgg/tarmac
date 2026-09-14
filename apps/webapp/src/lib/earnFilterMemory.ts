@@ -19,7 +19,7 @@ const STORAGE_KEY = 'earnFilterSearch';
 /** Only the URL-driven filters; `risk` is a localStorage preference and survives on its own. */
 const FILTER_PARAMS: string[] = [QueryParams.Token, QueryParams.Chain, QueryParams.Product];
 
-type EarnFilterSearch = Record<string, string>;
+export type EarnFilterSearch = Record<string, string>;
 
 const pickFilterParams = (source: Record<string, unknown>): EarnFilterSearch => {
   const picked: EarnFilterSearch = {};

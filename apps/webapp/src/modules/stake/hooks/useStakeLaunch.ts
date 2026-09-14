@@ -125,7 +125,7 @@ export function buildStakeOpenSteps({
   return shouldUseBatch ? steps : assignSequentialWrites(steps, needsSkyAllowance ? 1 : 0);
 }
 
-interface UseStakeLaunchParams {
+export interface UseStakeLaunchParams {
   skyToLock: bigint;
   usdsToBorrow: bigint;
   selectedRewardContract: `0x${string}` | undefined;

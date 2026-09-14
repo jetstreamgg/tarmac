@@ -1,6 +1,6 @@
 import { sanitizeUrl } from '@/lib/utils';
 
-type TermsAddOutcome = { ok: true } | { ok: false; status?: number; lastError?: unknown };
+export type TermsAddOutcome = { ok: true } | { ok: false; status?: number; lastError?: unknown };
 
 /**
  * Phase A (APP-498): records that the terms were presented to, and accepted

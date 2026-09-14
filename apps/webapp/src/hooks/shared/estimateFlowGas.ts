@@ -11,7 +11,7 @@ import {
   totalCallValue
 } from './networkFee';
 
-type FlowGasEstimate = {
+export type FlowGasEstimate = {
   /** Cost of signing the calls one at a time: N intrinsics, N cold-access sets. */
   sequentialGas: bigint;
   /** Cost of the same calls as one bundled transaction, or undefined when not applicable. */

@@ -65,7 +65,7 @@ export function buildRewardsEntryRows(
 }
 
 /** Display strings for the "Review supply" stage. */
-type RewardsSupplyReviewRowInput = EarnReviewRowInput & {
+export type RewardsSupplyReviewRowInput = EarnReviewRowInput & {
   /** 1Y projected earnings after the deposit, `$`-formatted, or "–" for point farms. */
   estEarnings: string;
   /** Product name (e.g. "SPK Rewards"). */
@@ -93,7 +93,7 @@ export function buildRewardsSupplyReviewRows(input: RewardsSupplyReviewRowInput)
 }
 
 /** Display strings for the "Review withdrawal" stage. */
-type RewardsWithdrawReviewRowInput = EarnReviewRowInput & {
+export type RewardsWithdrawReviewRowInput = EarnReviewRowInput & {
   /** Amount you'll receive in the supply token, formatted (e.g. "9,999.99 USDS"). */
   youReceive: string;
   /** Supply-token symbol for the You'll receive icon. */

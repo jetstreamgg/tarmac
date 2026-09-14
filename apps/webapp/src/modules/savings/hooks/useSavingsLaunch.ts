@@ -59,7 +59,7 @@ export interface UseSavingsLaunchParams {
   maxAmountInForWithdraw?: bigint;
 }
 
-type UseSavingsLaunchResult = EngineLaunchResult;
+export type UseSavingsLaunchResult = EngineLaunchResult;
 
 /**
  * The single seam between the redesigned Savings UI and the transaction

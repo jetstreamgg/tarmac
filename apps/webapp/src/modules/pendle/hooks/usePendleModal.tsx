@@ -5,7 +5,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { PendleModalForm } from '../components/PendleModalForm';
 
-type UsePendleModalOptions = {
+export type UsePendleModalOptions = {
   /** Fires after a successful supply/withdraw — refetch the position/balances. */
   onSuccess?: () => void;
 };

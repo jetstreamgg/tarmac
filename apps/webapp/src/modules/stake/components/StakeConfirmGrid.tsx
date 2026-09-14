@@ -21,7 +21,7 @@ import { wadToFloat } from '../lib/stakeUsdNotional';
 import { buildStakeConfirmRows, type StakeDelegateSide, type StakeRewardSide } from './stakeModalRows';
 
 /** A reward-farm endpoint: the farm, plus its reward-token symbol when known. */
-interface StakeRewardEndpoint {
+export interface StakeRewardEndpoint {
   address: `0x${string}`;
   /** Missing = outside the address books with the on-chain symbol unresolved — renders the shortened farm address. */
   symbol?: string;
@@ -52,7 +52,7 @@ const rewardSide = (endpoint: StakeRewardEndpoint | undefined, none: string): St
     ? { symbol: endpoint.symbol, label: endpoint.symbol ?? formatAddress(endpoint.address, 6, 4) }
     : { label: none };
 
-type StakeConfirmGridProps = {
+export type StakeConfirmGridProps = {
   /** The engine's calls, live — prices the Network fee estimate. */
   calls: Call[];
   /**

@@ -24,7 +24,7 @@ export interface EngineLaunchResult {
 }
 
 /** The slice of a routed engine hook's result the launch seam reads. */
-type EngineHookResult = {
+export type EngineHookResult = {
   execute: () => void;
   prepared: boolean;
   isLoading: boolean;

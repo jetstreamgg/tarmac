@@ -10,7 +10,7 @@
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import { networkCell, networkFeeCell } from '@/components/product/ModalGridCells';
 
-type ConvertModalRowInput = {
+export type ConvertModalRowInput = {
   /** Origin token symbol (e.g. "USDS") — icons the Rate pair's left side. */
   originSymbol: string;
   /** Target token symbol (e.g. "USDC") — icons the Rate pair's right side. */

@@ -98,7 +98,7 @@ export function mapStusdsHistoryResponse(response: any, chainId: number) {
   );
 }
 
-type StUsdsHistoryHook = ReadHook &
+export type StUsdsHistoryHook = ReadHook &
   PaginatedHistory & {
     data?: StUsdsHistoryItem[];
   };

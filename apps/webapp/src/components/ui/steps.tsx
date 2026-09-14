@@ -104,7 +104,7 @@ const connectorClasses: Record<StepState, string> = {
   completed: 'bg-linear-to-b from-[#00A186] to-[rgba(188,182,239,0.2)]'
 };
 
-type StepsItemProps = {
+export type StepsItemProps = {
   stepNumber: number;
   label: ReactNode;
   /** Token rendered as a chip after the label (Figma Title's Token slot). */
@@ -185,7 +185,7 @@ export function StepsItem({
   );
 }
 
-type StepsBadgeVariant = 'brand' | 'error' | 'default';
+export type StepsBadgeVariant = 'brand' | 'error' | 'default';
 
 const badgeVariantClasses: Record<StepsBadgeVariant, string> = {
   brand: 'bg-statusBrandBg text-statusBrand',
@@ -235,7 +235,7 @@ function LightningIcon() {
   );
 }
 
-type StepsProps = {
+export type StepsProps = {
   /** Header title; defaults to "Actions". */
   title?: ReactNode;
   /** Show the "⚡ Bundled" badge next to the title (EIP-5792 batched flows). */

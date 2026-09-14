@@ -3,7 +3,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
 import { FittedAmount } from './FittedAmount';
 
-type TokenTransferHeroSide = {
+export type TokenTransferHeroSide = {
   symbol: string;
   /** Formatted display amount (modules pin two decimals per the comps). */
   amount: string;

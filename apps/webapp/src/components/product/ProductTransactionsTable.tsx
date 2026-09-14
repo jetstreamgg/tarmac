@@ -37,7 +37,7 @@ export interface ProductTransactionColumn<T> {
   skeleton?: boolean;
 }
 
-interface ProductTransactionsTableProps<T> {
+export interface ProductTransactionsTableProps<T> {
   columns: ProductTransactionColumn<T>[];
   rows?: T[];
   rowKey: (row: T) => string;

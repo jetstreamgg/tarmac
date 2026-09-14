@@ -14,7 +14,7 @@
  * here so lib stays below the module layer.
  */
 
-type PortfolioDecision = {
+export type PortfolioDecision = {
   outcome: 'none' | 'allocate' | 'simulate';
   tab: 'supplied' | 'idle';
   updatedAt: number;

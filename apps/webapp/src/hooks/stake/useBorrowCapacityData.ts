@@ -5,14 +5,14 @@ import { ReadHook } from '../hooks';
 
 const BORROW_UTILIZATION_SCALE = 10000n;
 
-type BorrowCapacityData = {
+export type BorrowCapacityData = {
   debtCeiling: bigint; // Maximum debt ceiling
   totalDebt: bigint; // Total USDS borrowed
   borrowCapacity: bigint; // Available capacity (debtCeiling - totalDebt)
   borrowUtilization: number; // Utilization percentage
 };
 
-type BorrowCapacityDataHook = ReadHook & {
+export type BorrowCapacityDataHook = ReadHook & {
   data?: BorrowCapacityData;
 };
 

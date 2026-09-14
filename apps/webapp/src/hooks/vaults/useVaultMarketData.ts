@@ -77,7 +77,7 @@ export type VaultMarketDataHook = ReadHook & {
   data?: NormalizedVaultMarketData;
 };
 
-type UseVaultMarketDataParams = {
+export type UseVaultMarketDataParams = {
   provider: VaultProvider;
   vaultAddress?: `0x${string}`;
 };

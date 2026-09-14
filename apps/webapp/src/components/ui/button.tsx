@@ -117,7 +117,7 @@ const buttonVariants = cva(
   }
 );
 
-interface ButtonProps
+export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   /** Design-system loading state: disables the button (the disabled recipe
@@ -194,7 +194,7 @@ const buttonWidgetVariants = cva(
   }
 );
 
-interface ButtonWidgetProps
+export interface ButtonWidgetProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonWidgetVariants> {
   asChild?: boolean;
 }

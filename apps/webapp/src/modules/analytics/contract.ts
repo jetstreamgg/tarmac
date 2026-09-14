@@ -31,7 +31,7 @@ import type { Destination } from './lib/destination';
  */
 
 /** The closed set of widget_name values PostHog insights filter on. */
-type WidgetName = 'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed';
+export type WidgetName = 'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed';
 
 /**
  * Intent → widget_name for route-derived emitters, compiler-enforced against

@@ -13,14 +13,14 @@ import type { AppEventContract, AppEventName } from '@/modules/analytics/contrac
  *   });
  */
 
-interface CapturedEvent<K extends AppEventName = AppEventName> {
+export interface CapturedEvent<K extends AppEventName = AppEventName> {
   name: K;
   properties: Partial<AppEventContract[K]> & Record<string, unknown>;
 }
 
 const captureMock = () => posthog.capture as unknown as Mock;
 
-function capturedEvents(): CapturedEvent[] {
+export function capturedEvents(): CapturedEvent[] {
   return captureMock().mock.calls.map(([name, properties]) => ({
     name: name as AppEventName,
     properties: (properties ?? {}) as CapturedEvent['properties']

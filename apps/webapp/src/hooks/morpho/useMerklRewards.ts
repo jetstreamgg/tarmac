@@ -51,14 +51,14 @@ export type MerklTokenReward = {
   distributionChainId: number;
 };
 
-type MerklRewardsData = {
+export type MerklRewardsData = {
   /** List of rewards grouped by token */
   rewards: MerklTokenReward[];
   /** Whether the user has any claimable rewards */
   hasClaimableRewards: boolean;
 };
 
-type MerklRewardsHook = ReadHook & {
+export type MerklRewardsHook = ReadHook & {
   data?: MerklRewardsData;
 };
 

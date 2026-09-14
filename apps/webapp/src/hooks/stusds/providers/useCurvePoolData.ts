@@ -7,7 +7,7 @@ import { CURVE_POOL_TOKEN_INDICES } from './constants';
 /**
  * Data returned from the Curve pool.
  */
-type CurvePoolData = {
+export type CurvePoolData = {
   /** Reserve of USDS in the pool */
   usdsReserve: bigint;
   /** Reserve of stUSDS in the pool */
@@ -30,7 +30,7 @@ type CurvePoolData = {
 /**
  * Return type for useCurvePoolData hook.
  */
-type CurvePoolDataHookResult = {
+export type CurvePoolDataHookResult = {
   data: CurvePoolData | undefined;
   isLoading: boolean;
   error: Error | null;

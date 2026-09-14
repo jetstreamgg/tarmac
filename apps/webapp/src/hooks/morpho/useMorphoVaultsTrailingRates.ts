@@ -18,7 +18,7 @@ type ApyWindowResponse = {
 };
 
 /** Trailing average net APY (decimal fraction) keyed by lowercased vault address. */
-type MorphoTrailingRates = Record<string, number>;
+export type MorphoTrailingRates = Record<string, number>;
 
 async function fetchMorphoVaultsTrailingRates(
   vaultAddresses: `0x${string}`[],
@@ -53,7 +53,7 @@ async function fetchMorphoVaultsTrailingRates(
   return rates;
 }
 
-type MorphoVaultsTrailingRatesHook = ReadHook & {
+export type MorphoVaultsTrailingRatesHook = ReadHook & {
   data?: MorphoTrailingRates;
 };
 

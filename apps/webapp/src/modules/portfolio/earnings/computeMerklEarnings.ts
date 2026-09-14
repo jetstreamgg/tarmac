@@ -3,10 +3,10 @@ import { reasonContainsVaultAddress } from '../../../hooks/morpho/merklReason';
 import { notAvailable, ok, type EarningsFigure, type Maybe, type TokenAmount } from './types';
 
 /** Named Merkl campaigns attributed to the Flagship product without a vault address in `reason`. */
-const MERKL_AIRDROP_REASONS: readonly string[] = ['usds-flagship-ssr'];
+export const MERKL_AIRDROP_REASONS: readonly string[] = ['usds-flagship-ssr'];
 
 /** A breakdown `reason` counts as Flagship-attributed when it carries the vault address or a known campaign name. */
-const isFlagshipAttributedReason = (reason: string, flagshipVaultAddress: string): boolean =>
+export const isFlagshipAttributedReason = (reason: string, flagshipVaultAddress: string): boolean =>
   reasonContainsVaultAddress(reason, flagshipVaultAddress) || MERKL_AIRDROP_REASONS.includes(reason);
 
 /**
@@ -27,7 +27,7 @@ export function attributedRewardTokenAddresses(
   return [...addresses].sort();
 }
 
-type MerklEarningsInput = {
+export type MerklEarningsInput = {
   rewards: MerklUserRewardRaw[];
   claims: MerklClaimRaw[];
   /** Daily USD price per reward token: lowercased address → ('YYYY-MM-DD' → price). */
@@ -35,7 +35,7 @@ type MerklEarningsInput = {
   flagshipVaultAddress: string;
 };
 
-type MerklEarnings = {
+export type MerklEarnings = {
   totalEarned: Maybe<EarningsFigure>;
   earnedThisMonth: Maybe<EarningsFigure>;
 };

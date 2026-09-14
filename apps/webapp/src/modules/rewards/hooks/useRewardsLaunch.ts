@@ -18,7 +18,7 @@ export interface RewardsEngineParams {
   amount: bigint;
 }
 
-type UseRewardsLaunchResult = EngineLaunchResult;
+export type UseRewardsLaunchResult = EngineLaunchResult;
 
 /**
  * The seam between the redesigned rewards modal and the (unmodified)

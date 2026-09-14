@@ -66,7 +66,7 @@ export function Heading({ variant = 'medium', className, tag = 'h2', ...props }:
 type TextVariant =
   'large' | 'medium' | 'small' | 'captionLg' | 'captionSm' | 'button' | 'chartSecondary' | 'terms';
 
-interface TextProps {
+export interface TextProps {
   children: React.ReactNode;
   tag?: TextElement;
   variant?: TextVariant;
@@ -91,7 +91,7 @@ export function Text({ variant = 'large', className, tag = 'p', ...props }: Text
   return <Typography tag={tag} className={cn(variantClass, className)} {...props} />;
 }
 
-type ListVariant = 'unordered' | 'ordered';
+export type ListVariant = 'unordered' | 'ordered';
 interface ListProps {
   children: React.ReactNode;
   tag?: ListElement;

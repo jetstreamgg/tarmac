@@ -48,7 +48,7 @@ async function fetchMorphoDepositWithdrawHistory(
   });
 }
 
-type MorphoVaultHistoryHook = ReadHook & {
+export type MorphoVaultHistoryHook = ReadHook & {
   data?: MorphoVaultHistoryItem[];
 };
 

@@ -36,7 +36,7 @@ const vaultRateCell = ({ provider, rate, boostedRate }: VaultRateInput) =>
   rateCell('Rate', rate, boostedRate ? 'morpho' : undefined, vaultRateInfo(provider));
 
 /** Display strings for the vault supply/withdraw entry screens (Figma 859:38105 / 859:38297). */
-type VaultEntryRowInput = EarnEntryRowInput &
+export type VaultEntryRowInput = EarnEntryRowInput &
   VaultRateInput & {
     /** The vault's underlying asset symbol for the 12px value icons (e.g. "USDC"). */
     assetSymbol: string;
@@ -57,7 +57,7 @@ export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRo
 }
 
 /** Display strings for the vault review stages (Figma 859:38553 supply / 859:38234 withdrawal). */
-type VaultReviewRowInput = EarnReviewRowInput &
+export type VaultReviewRowInput = EarnReviewRowInput &
   VaultRateInput & {
     /** Entered amount, formatted (the 12px asset icon carries the denomination). */
     amount: string;

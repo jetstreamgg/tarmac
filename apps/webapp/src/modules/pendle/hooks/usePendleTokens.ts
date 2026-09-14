@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { TENDERLY_CHAIN_ID, TOKENS, type PendleMarketConfig, type Token } from '@/hooks';
 import { mainnet } from 'viem/chains';
 
-type PendleTokens = {
+export type PendleTokens = {
   underlyingToken: Token;
   ptToken: Token;
   /** Supply (BUY) tokens: market underlying + USDS + USDC (de-duped). */

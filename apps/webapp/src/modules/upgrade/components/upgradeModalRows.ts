@@ -13,7 +13,7 @@ import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import { networkCell, networkFeeCell } from '@/components/product/ModalGridCells';
 
 /** Display strings for the upgrade entry grid. */
-type UpgradeModalRowInput = {
+export type UpgradeModalRowInput = {
   /** Source token symbol ("DAI" | "MKR") — icons the Rate pair's left side. */
   sourceToken: string;
   /** Target token symbol ("USDS" | "SKY") — icons the Rate pair's right side and You'll receive. */

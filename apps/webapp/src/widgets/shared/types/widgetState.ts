@@ -32,16 +32,16 @@ enum SavingsScreen {
 // Survivors of the deleted PsmConversionWidget (superseded by the E2 /convert
 // page): the flow/action/screen values stay in the shared unions because the
 // legacy widget-state contract is frozen until the remaining widgets migrate.
-enum PsmConversionFlow {
+export enum PsmConversionFlow {
   CONVERT = 'convert'
 }
 
-enum PsmConversionAction {
+export enum PsmConversionAction {
   APPROVE = 'approve',
   CONVERT = 'convert'
 }
 
-enum PsmConversionScreen {
+export enum PsmConversionScreen {
   ACTION = 'action',
   REVIEW = 'review',
   TRANSACTION = 'transaction'

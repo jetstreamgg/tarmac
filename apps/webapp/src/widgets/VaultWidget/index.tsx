@@ -46,7 +46,7 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
-type VaultWidgetProps = WidgetProps & {
+export type VaultWidgetProps = WidgetProps & {
   /** The vault contract address */
   vaultAddress: `0x${string}`;
   /** The underlying asset token address (e.g., USDC) */

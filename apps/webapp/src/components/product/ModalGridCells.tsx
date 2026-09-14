@@ -302,7 +302,7 @@ function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morph
 }
 
 /** Renders one grid cell's value: optional icons, then a single value or the before→after delta. */
-function CellValue({ cell }: { cell: ModalGridCell }) {
+export function CellValue({ cell }: { cell: ModalGridCell }) {
   if (cell.loading) {
     return <Skeleton className="h-4 w-16 rounded" data-testid="cell-loading" />;
   }

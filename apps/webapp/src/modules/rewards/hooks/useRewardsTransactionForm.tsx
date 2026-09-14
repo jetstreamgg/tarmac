@@ -10,9 +10,9 @@ import type { RewardsEngineParams, RewardsLaunchFlow } from './useRewardsLaunch'
 export type RewardsModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
-type RewardsToastTitles = AmountToastTitles;
+export type RewardsToastTitles = AmountToastTitles;
 
-interface RewardsTransactionForm {
+export interface RewardsTransactionForm {
   isConnected: boolean;
   isSupply: boolean;
   decimals: number;

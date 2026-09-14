@@ -18,7 +18,7 @@ import { getPsmDecimalsForDirection, type PsmConversionDirection } from './usePs
 import { ConvertReviewContent } from '../components/ConvertReviewContent';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 
-interface UseConvertLaunchParams {
+export interface UseConvertLaunchParams {
   direction: PsmConversionDirection;
   /** Exact-in amount at the origin token's decimals (USDC 6 / USDS 18). */
   amount: bigint;
@@ -26,7 +26,7 @@ interface UseConvertLaunchParams {
   onSuccess?: () => void;
 }
 
-interface UseConvertLaunchResult {
+export interface UseConvertLaunchResult {
   /** Opens the "Review conversion" modal for the current direction + amount. */
   launch: () => void;
   /** The (unmodified) PSM engine state backing the launch — guards, amounts, tokens. */

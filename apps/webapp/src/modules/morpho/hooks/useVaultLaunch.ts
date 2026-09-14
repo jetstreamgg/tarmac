@@ -28,7 +28,7 @@ export interface VaultEngineParams {
   shares?: bigint;
 }
 
-type UseVaultLaunchResult = EngineLaunchResult;
+export type UseVaultLaunchResult = EngineLaunchResult;
 
 /**
  * The seam between the redesigned vault modal and the (unmodified) ERC-4626

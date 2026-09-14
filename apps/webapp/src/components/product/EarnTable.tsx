@@ -103,7 +103,7 @@ function RateColumnInfo({ column }: { column: 'rate' | 'rate30d' }) {
   return <RateInfo type={column === 'rate' ? 'earnRates' : 'earnRates30d'} size={12} />;
 }
 
-type EarnTableProps = {
+export type EarnTableProps = {
   rows: EarnTableRowItem[];
   /** Omit alongside onSortChange for never-sorted tables. */
   sort?: EarnTableSort;

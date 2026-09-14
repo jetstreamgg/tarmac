@@ -16,7 +16,7 @@ export type MerklUserRewardRaw = Pick<
   breakdowns: MerklRewardBreakdownRaw[];
 };
 
-type MerklUserRewardsApiResponse = {
+export type MerklUserRewardsApiResponse = {
   chain: { id: number };
   rewards: MerklUserRewardRaw[];
 }[];

@@ -104,7 +104,10 @@ function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: 
 }
 
 /** Resolves the combined stat's missing-source ids to their reasons. */
-function missingSourceDetails(earnings: WalletEarnings, field: 'total' | 'month'): MissingSourceDetail[] {
+export function missingSourceDetails(
+  earnings: WalletEarnings,
+  field: 'total' | 'month'
+): MissingSourceDetail[] {
   const ids = field === 'total' ? earnings.combined.missingFromTotal : earnings.combined.missingFromMonth;
   return ids.map(id => {
     const protocol = earnings.protocols.find(p => p.id === id);

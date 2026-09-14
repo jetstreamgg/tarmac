@@ -23,7 +23,7 @@ const FAMILY_BY_MODULE: Partial<Record<ModuleEnum, HistoryFamily>> = {
   [ModuleEnum.TRADE]: 'psmTrades'
 };
 
-type FilteredPortfolioHistory = {
+export type FilteredPortfolioHistory = {
   data: CombinedHistoryItem[];
   isLoading: boolean;
   error: Error | null;

@@ -110,7 +110,7 @@ export function isInactiveStakePosition(position: { skyLocked: bigint; usdsDebt:
 }
 
 /** The subgraph's contribution to a row: everything but the live amounts and the urn address. */
-type StakeSubgraphPosition = Omit<StakeUserPosition, 'urnAddress' | 'barks'> & {
+export type StakeSubgraphPosition = Omit<StakeUserPosition, 'urnAddress' | 'barks'> & {
   barks: StakeUrnBark[];
 };
 

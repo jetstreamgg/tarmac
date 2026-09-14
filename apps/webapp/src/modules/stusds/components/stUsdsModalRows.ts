@@ -25,7 +25,7 @@ export type StUsdsModalGridRow = ModalGridCell[];
 const stUsdsRateCell = (rate: string) => rateCell('Rate', rate, undefined, 'stusds');
 
 /** Display strings for the stUSDS supply/withdraw entry screens. */
-type StUsdsEntryRowInput = EarnEntryRowInput & {
+export type StUsdsEntryRowInput = EarnEntryRowInput & {
   /** Current module rate, formatted (e.g. "6.50%"). */
   rate: string;
 };
@@ -44,7 +44,7 @@ export function buildStUsdsEntryRows(input: StUsdsEntryRowInput): StUsdsModalGri
 }
 
 /** Display strings for the stUSDS review stages. */
-type StUsdsReviewRowInput = EarnReviewRowInput & {
+export type StUsdsReviewRowInput = EarnReviewRowInput & {
   /** Entered USDS amount, formatted (the 12px USDS icon carries the denomination). */
   amount: string;
   /** Receive quote, formatted — supply: quoted stUSDS out; withdraw: the entered USDS back. */

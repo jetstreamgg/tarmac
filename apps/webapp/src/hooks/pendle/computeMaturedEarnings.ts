@@ -62,7 +62,7 @@
 import { PendleHistoryAction } from './constants';
 import type { PendleHistoryRow, PendleMarketConfig } from './pendle';
 
-type ComputeMaturedEarningsInput = {
+export type ComputeMaturedEarningsInput = {
   /** Normalized market-history rows from usePendleMarketHistory, scoped to the user. `undefined` while loading. */
   history: PendleHistoryRow[] | undefined;
   /** On-chain redeem preview amount in the market's underlying-token units. `undefined` while loading. */
@@ -90,7 +90,7 @@ type ComputeMaturedEarningsInput = {
   ptBalanceFloat: number;
 };
 
-type ComputeMaturedEarningsResult = {
+export type ComputeMaturedEarningsResult = {
   /** Earnings amount (final value − net cost basis), in `currency` units. */
   earnings?: number;
   /** Annualized yield as a decimal (e.g. 0.0521 for 5.21% APY). */

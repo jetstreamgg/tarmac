@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { type ServiceConsent, getStoredConsent, saveConsent } from '../consentStorage';
 
-type BannerView = 'default' | 'manage';
+export type BannerView = 'default' | 'manage';
 
 interface CookieConsentContextProps {
   readonly consent: ServiceConsent | null;

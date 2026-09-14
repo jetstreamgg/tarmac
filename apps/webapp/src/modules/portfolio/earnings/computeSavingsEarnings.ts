@@ -4,7 +4,7 @@ import type {
 } from '../../../hooks/vaults/fyi/vaultsFyiClient';
 import { notAvailable, ok, type EarningsFigure, type EarningsWindow, type Maybe } from './types';
 
-type SavingsEarningsInput = {
+export type SavingsEarningsInput = {
   /** /v2/portfolio/total-returns payload (lifetime). */
   totalReturns: VaultsFyiReturnsRaw;
   /** /beta/portfolio/partial-returns payload for the month-to-date window. */
@@ -12,7 +12,7 @@ type SavingsEarningsInput = {
   window: EarningsWindow;
 };
 
-type SavingsEarnings = {
+export type SavingsEarnings = {
   totalEarned: Maybe<EarningsFigure>;
   earnedThisMonth: Maybe<EarningsFigure>;
 };

@@ -57,7 +57,7 @@ import {
   buildPendleWithdrawEntryRows
 } from './pendleModalRows';
 
-type PendleModalFlow = 'supply' | 'withdraw';
+export type PendleModalFlow = 'supply' | 'withdraw';
 
 /**
  * Editable body for the Pendle "Supply to {market}" / "Early withdrawal"

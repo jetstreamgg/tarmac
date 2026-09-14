@@ -13,7 +13,7 @@ export type MorphoEarningsInput = {
   window: EarningsWindow;
 };
 
-type MorphoEarnings = {
+export type MorphoEarnings = {
   totalEarned: Maybe<EarningsFigure>;
   earnedThisMonth: Maybe<EarningsFigure>;
 };

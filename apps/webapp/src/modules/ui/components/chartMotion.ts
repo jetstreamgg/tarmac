@@ -42,7 +42,7 @@ import { useReducedMotion } from 'motion/react';
  * late. 16ms trails ~20px, which reads as attached while still taking ~40ms to
  * settle. It is the FLOOR of the paced band below, not a fixed setting.
  */
-const TRACK_RESPONSE_MIN_MS = 16;
+export const TRACK_RESPONSE_MIN_MS = 16;
 
 /**
  * ...and its ceiling, plus the pace that fills the band between them.
@@ -64,8 +64,8 @@ const TRACK_RESPONSE_MIN_MS = 16;
  * observed step rather than the measured point spacing, because the cursor is
  * a recharts-owned element that never sees the series geometry.
  */
-const TRACK_RESPONSE_MAX_MS = 100;
-const TRACK_PACE_MS_PER_PX = 0.8;
+export const TRACK_RESPONSE_MAX_MS = 100;
+export const TRACK_PACE_MS_PER_PX = 0.8;
 
 /** Spring lag constant for an indicator whose target just moved `step` px. */
 export function trackResponse(step: number): number {
@@ -87,7 +87,7 @@ export function trackResponse(step: number): number {
  * points with `{duration: 0.4, ease: 'easeInOut'}` — a 400ms zero-velocity
  * hop, which is what a ~150ms spring plays.
  */
-const TAIL_RESPONSE_MS = 150;
+export const TAIL_RESPONSE_MS = 150;
 
 /**
  * A time constant alone paces every hop to the same DURATION, so a sparse
@@ -99,8 +99,8 @@ const TAIL_RESPONSE_MS = 150;
  * reference); the cap keeps the sparsest series (portfolio statistics, 7-8
  * points) from crawling and trailing the cursor by half the plot.
  */
-const TAIL_PACE_MS_PER_PX = 2;
-const TAIL_RESPONSE_MAX_MS = 300;
+export const TAIL_PACE_MS_PER_PX = 2;
+export const TAIL_RESPONSE_MAX_MS = 300;
 
 /** Spring lag constant for a series whose points sit `spacingArc` px apart. */
 export function tailResponse(spacingArc: number): number {

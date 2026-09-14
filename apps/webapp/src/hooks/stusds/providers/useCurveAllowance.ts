@@ -5,14 +5,14 @@ import { useTokenAllowance } from '../../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../../constants';
 import { familyMainnetId } from '@/utils';
 
-type CurveAllowanceHookResponse = ReadHook & {
+export type CurveAllowanceHookResponse = ReadHook & {
   data?: bigint;
   /** Whether the current allowance is sufficient for the given amount */
   hasAllowance: boolean;
   mutate: () => void;
 };
 
-type CurveAllowanceParams = {
+export type CurveAllowanceParams = {
   /** Which token to check allowance for */
   token: 'USDS' | 'stUSDS';
   /** Amount to check against (optional, for hasAllowance calculation) */

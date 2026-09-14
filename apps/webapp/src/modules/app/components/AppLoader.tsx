@@ -66,14 +66,14 @@ const COVER_WATCHDOG_MS = 2500;
  * - `cover`  — chrome + content hidden, the logomark timeline playing.
  * - `reveal` — overlay gone; chrome and content run their entrance and rest.
  */
-type AppLoaderPhase = 'off' | 'cover' | 'reveal';
+export type AppLoaderPhase = 'off' | 'cover' | 'reveal';
 
 /**
  * - `timed` — the entry-gate play: a fixed one-shot of the Figma timeline.
  * - `held`  — the manual-connect play: the spin loops until the landing
  *             decision settles (or the cap), then the exit pop releases it.
  */
-type AppLoaderCoverMode = 'timed' | 'held';
+export type AppLoaderCoverMode = 'timed' | 'held';
 
 /** Only these surfaces get sorted; anywhere else the user stays put. */
 const sortableSurface = (pathname: string): string | null =>
