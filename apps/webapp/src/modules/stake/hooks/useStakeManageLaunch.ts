@@ -140,7 +140,15 @@ export interface UseStakeManageLaunchParams {
   transactionContent?: StakeLaunchContent;
   /** Compact wallet/status-screen summary; omitted, the full body carries over. */
   transactionScreenContent?: ReactNode;
+  /** Push `transactionContent` as the wallet-screen summary only (entry-first sessions). */
+  transactionContentAsScreen?: boolean;
   onSuccess?: () => void;
+  /**
+   * Session of an already-launched modal (the change reward / delegate modals
+   * mount their picker as the modal's entry and fire `execute` from its CTA).
+   * Omitted, the hook owns its own session and `launch()` opens the modal.
+   */
+  sessionId?: string;
 }
 
 /**
@@ -172,10 +180,13 @@ export function useStakeManageLaunch({
   claimSymbols,
   transactionContent,
   transactionScreenContent,
-  onSuccess
+  transactionContentAsScreen = false,
+  onSuccess,
+  sessionId: sharedSessionId
 }: UseStakeManageLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
-  const sessionId = useId();
+  const ownSessionId = useId();
+  const sessionId = sharedSessionId ?? ownSessionId;
   const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
@@ -269,7 +280,8 @@ export function useStakeManageLaunch({
     isBatch: !!engine.isBatch,
     legCount,
     content: transactionContent,
-    screenContent: transactionScreenContent
+    screenContent: transactionScreenContent,
+    screenOnly: transactionContentAsScreen
   });
 
   const hasLock = skyToLock > 0n;
@@ -419,6 +431,7 @@ export function useStakeManageLaunch({
     calldata,
     calls: engine.calls ?? [],
     isBatch: !!engine.isBatch,
+    legCount,
     hasRewardChange,
     hasDelegateChange,
     urnSelectedVoteDelegate,

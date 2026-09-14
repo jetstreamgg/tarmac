@@ -29,7 +29,6 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
-import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -37,8 +36,6 @@ import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent'
 import { StakeManageStakeCard } from './StakeManageStakeCard';
 import { StakeManageBorrowCard, RiskPill } from './StakeManageBorrowCard';
 import { UpdatedHourlyBadge } from './StakeManageCard';
-import { StakeManageRewardCard } from './StakeManageRewardCard';
-import { StakeManageDelegateCard } from './StakeManageDelegateCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
@@ -46,7 +43,8 @@ import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorro
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
- * strip and four independently-toggleable cards over one Confirm. All data
+ * strip and two independently-toggleable cards over one Confirm (reward and
+ * delegate changes open their own modals from the details view). All data
  * wiring lives here; the cards render props. Simulation composes the legacy
  * Free/Repay math verbatim (M9): collateral = existing + lock − free, debt =
  * existing + borrow − wipe, both floored at zero, simulated against the
@@ -250,41 +248,13 @@ export function ManagePositionTakeover({
       : (state.usdsAmount === 0n && !state.wipeAll) ||
         (!borrowError && !simulationError && !simulationLoading));
 
-  // ---- Reward change (APP-516) ----------------------------------------------
-  const currentRewardContract =
-    detail.rewardContract && detail.rewardContract !== ZERO_ADDRESS ? detail.rewardContract : undefined;
-  const rewardChanged =
-    state.rewardEnabled &&
-    !!state.selectedRewardContract &&
-    state.selectedRewardContract.toLowerCase() !== detail.rewardContract?.toLowerCase();
-  // Effective reward: staged change, else the urn's current one so the calldata
-  // gating sees "no change" — the delegate recipe (M12).
-  const effectiveRewardContract = rewardChanged ? state.selectedRewardContract : detail.rewardContract;
-  // The staged farm's reward token for the review screen — the picker offers
-  // every indexer farm, including ones the address books don't know yet.
-  const stagedRewardSymbol = useFarmRewardSymbol(rewardChanged ? state.selectedRewardContract : undefined);
-
-  // ---- Delegate change ------------------------------------------------------
+  // Reward/delegate pass through unchanged so the calldata gating sees no change.
   const currentDelegate =
     detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS ? detail.voteDelegate : undefined;
-  const delegateChanged =
-    state.delegateEnabled &&
-    !!state.selectedDelegate &&
-    state.selectedDelegate.toLowerCase() !== detail.voteDelegate?.toLowerCase();
-  // Effective delegate (M12): staged change, else the urn's current one so the
-  // calldata gating sees "no change".
-  const effectiveDelegate = delegateChanged ? state.selectedDelegate : detail.voteDelegate;
 
   // ---- Confirm gating (M20) -------------------------------------------------
   const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
-  const hasChange =
-    skyToLock > 0n ||
-    skyToFree > 0n ||
-    usdsToBorrow > 0n ||
-    usdsToWipe > 0n ||
-    wipeAll ||
-    rewardChanged ||
-    delegateChanged;
+  const hasChange = skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll;
   // Every staged change is relative to the existing position, so nothing may
   // confirm against an unresolved vault read.
   const formValid = hasChange && debounceSettled && stakeCardValid && borrowCardValid && !detail.vaultLoading;
@@ -325,22 +295,6 @@ export function ManagePositionTakeover({
   );
   const hasAmounts = skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n;
 
-  // Memoized so the review body below keeps its identity across renders — it
-  // is a dep of the launch descriptor.
-  const rewardFrom = useMemo(
-    () =>
-      currentRewardContract ? { address: currentRewardContract, symbol: detail.rewardSymbol } : undefined,
-    [currentRewardContract, detail.rewardSymbol]
-  );
-  const rewardTo = useMemo(
-    () =>
-      rewardChanged && state.selectedRewardContract
-        ? { address: state.selectedRewardContract, symbol: stagedRewardSymbol }
-        : undefined,
-    [rewardChanged, state.selectedRewardContract, stagedRewardSymbol]
-  );
-  const delegateTo = delegateChanged ? state.selectedDelegate : undefined;
-
   // The review body is built from the engine's own routing, so the grid can
   // price the live network fee (see `transactionContent` on the launch hook).
   // The launch hook re-pushes it as that routing and these figures change, so
@@ -370,10 +324,7 @@ export function ManagePositionTakeover({
           liquidationBefore={existingVault?.liquidationPrice}
           liquidationAfter={debouncedVault?.liquidationPrice}
           stabilityFee={detail.stabilityFee}
-          rewardFrom={rewardFrom}
-          rewardTo={rewardTo}
           delegateFrom={currentDelegate}
-          delegateTo={delegateTo}
         />
       </div>
     ),
@@ -389,10 +340,7 @@ export function ManagePositionTakeover({
       existingVault?.liquidationPrice,
       debouncedVault?.riskLevel,
       debouncedVault?.liquidationPrice,
-      rewardFrom,
-      rewardTo,
-      currentDelegate,
-      delegateTo
+      currentDelegate
     ]
   );
 
@@ -412,8 +360,8 @@ export function ManagePositionTakeover({
     usdsToBorrow,
     usdsToWipe,
     wipeAll,
-    selectedRewardContract: effectiveRewardContract,
-    selectedDelegate: effectiveDelegate,
+    selectedRewardContract: detail.rewardContract,
+    selectedDelegate: detail.voteDelegate,
     enabled: formValid,
     transactionContent: renderConfirmSummary,
     // No staged amount (a reward- or delegate-only change) leaves no hero to
@@ -662,22 +610,6 @@ export function ManagePositionTakeover({
           (state.borrowEnabled && (state.usdsAmount > 0n || state.wipeAll))
         }
         error={borrowError}
-      />
-
-      <StakeManageRewardCard
-        enabled={state.rewardEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setRewardEnabled', enabled })}
-        currentRewardContract={currentRewardContract}
-        stagedRewardContract={state.selectedRewardContract}
-        onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
-      />
-
-      <StakeManageDelegateCard
-        enabled={state.delegateEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setDelegateEnabled', enabled })}
-        currentDelegate={currentDelegate}
-        stagedDelegate={state.selectedDelegate}
-        onSelect={delegate => dispatch({ type: 'selectDelegate', delegate })}
       />
     </TakeoverShell>
   );

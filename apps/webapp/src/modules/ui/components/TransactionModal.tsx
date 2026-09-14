@@ -7,6 +7,7 @@ import {
   ResponsiveModalContent,
   ResponsiveModalTitle
 } from '@/components/ui/responsive-modal';
+import { SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Steps, StepsItem, StepsBadge } from '@/components/ui/steps';
 import { Loader } from '@/components/ui/loader';
@@ -163,6 +164,8 @@ export type TransactionModalProps = {
    * modal on a gate's return-to-first-screen).
    */
   skipReview?: boolean;
+  /** See `TransactionConfig.scrimHandoff`: the scrim mounts already up. */
+  scrimHandoff?: boolean;
 };
 
 /** The transaction modal's chain-guard descriptor (see `chainGuard` prop). */
@@ -237,7 +240,8 @@ export function TransactionModal({
   preflight,
   chainGuard,
   registerReturnToFirstScreen,
-  skipReview = false
+  skipReview = false,
+  scrimHandoff = false
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
   // read-only review — or, for a flow whose own surface was the review, the
@@ -707,6 +711,7 @@ export function TransactionModal({
           'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
           !isTransaction && 'sm:gap-12'
         )}
+        overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >

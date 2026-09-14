@@ -272,7 +272,7 @@ vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
-import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
+import { lsSkySkyRewardAddress } from '@/hooks';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
@@ -292,15 +292,6 @@ const confirmButton = () => screen.getByTestId('stake-manage-confirm') as HTMLBu
  * live routing so the grid can price the network fee. Nothing here simulates,
  * so an empty routing is enough.
  */
-const renderConfirmSummary = (params: Record<string, unknown> | undefined = h.launchParams) => {
-  const build = params?.transactionContent as (context: {
-    calls: unknown[];
-    isBatch: boolean;
-    legCount: number;
-  }) => React.ReactNode;
-  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false, legCount: 1 })}</I18nProvider>);
-};
-
 describe('ManagePositionTakeover', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('flow=manage&urn_index=0');
@@ -335,16 +326,16 @@ describe('ManagePositionTakeover', () => {
     document.body.style.overflow = '';
   });
 
-  it('renders summary strip + four cards, all off by default, Confirm disabled', () => {
+  it('renders summary strip + two cards, all off by default, Confirm disabled', () => {
     renderSheet();
 
     expect(screen.getByTestId('stake-manage-position-summary')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-stake-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-borrow-card')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-reward-card')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-delegate-card')).toBeTruthy();
+    // Reward and delegate changes open their own modals (Figma 3015:61490 / 3015:61189).
+    expect(screen.queryByTestId('stake-manage-reward-card')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-delegate-card')).toBeNull();
     expect(screen.queryByTestId('stake-manage-stake-amount')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
@@ -681,110 +672,10 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('delegate: picking a different delegate stages the change and enables Confirm', () => {
-    renderSheet({ delegateCard: true });
-    expect(confirmButton().disabled).toBe(true);
-
-    // The current delegate renders pre-selected.
-    expect(
-      screen
-        .getByTestId(`stake-manage-delegate-${CURRENT_DELEGATE.toLowerCase()}`)
-        .getAttribute('aria-pressed')
-    ).toBe('true');
-
-    fireEvent.click(screen.getByTestId(`stake-manage-delegate-${OTHER_DELEGATE.toLowerCase()}`));
-    expect(h.launchParams?.selectedDelegate).toBe(OTHER_DELEGATE);
-    expect(confirmButton().disabled).toBe(false);
-  });
-
-  it('delegate: re-selecting the current delegate stages no change', () => {
-    renderSheet({ delegateCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-delegate-${CURRENT_DELEGATE.toLowerCase()}`));
-    // Click-again-to-deselect on the pre-selected row → staged selection gone,
-    // effective delegate back to current → no change staged.
+  it('passes the urn reward and delegate through unchanged (no reward/delegate cards)', () => {
+    renderSheet({ stakeCard: 'stake' });
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
     expect(h.launchParams?.selectedDelegate).toBe(CURRENT_DELEGATE);
-    expect(confirmButton().disabled).toBe(true);
-  });
-
-  it('reward: picking a different farm stages the change and enables Confirm (APP-516)', () => {
-    renderSheet({ rewardCard: true });
-    expect(confirmButton().disabled).toBe(true);
-
-    // SPK is deprecated and not the urn's farm → hidden; the current SKY farm
-    // renders pre-selected.
-    expect(screen.queryByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`)).toBeNull();
-    expect(
-      screen
-        .getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`)
-        .getAttribute('aria-pressed')
-    ).toBe('true');
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
-    expect(h.launchParams?.selectedRewardContract).toBe(lsSkyUsdsRewardAddress[1]);
-    expect(confirmButton().disabled).toBe(false);
-  });
-
-  it('reward: re-selecting the current farm stages no change', () => {
-    renderSheet({ rewardCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`));
-    // Back on the urn's own farm → effective reward is the current one → no
-    // change staged.
-    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
-    expect(confirmButton().disabled).toBe(true);
-  });
-
-  it('reward: an out-of-address-book farm previews with its on-chain token', () => {
-    // The indexer can list a farm before the webapp ships its generated
-    // addresses. The review body must still preview the change — dropping it
-    // would confirm a reward-only multicall behind an empty summary.
-    const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
-    h.extraFarm = unknownFarm;
-    h.farmTokenSymbols[unknownFarm] = 'FOO';
-    renderSheet({ rewardCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${unknownFarm}`));
-    expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
-    expect(confirmButton().disabled).toBe(false);
-
-    renderConfirmSummary();
-    // From: the urn's current farm token; To: the staged farm's real token.
-    const reward = screen.getByTestId('stake-confirm-grid-reward').textContent!;
-    expect(reward).toContain('SKY');
-    expect(reward).toContain('FOO');
-  });
-
-  it('reward: a deprecated current farm renders pre-selected with its chip and warning (CTA deep-link)', () => {
-    // The details-modal banner CTA arrives with rewardCard: true — no
-    // auto-open in the sheet itself; the card opens via init.
-    h.rewardContract = lsSkySpkRewardAddress[1];
-    h.rewardDeprecated = true;
-    renderSheet({ rewardCard: true });
-
-    const spkRow = screen.getByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`);
-    expect(spkRow.getAttribute('aria-pressed')).toBe('true');
-    expect(spkRow.textContent).toContain('Deprecated');
-    expect(screen.getByTestId('stake-manage-reward-deprecated-warning')).toBeTruthy();
-  });
-
-  it('reward: the card stays collapsed by default, deprecated farm or not', () => {
-    h.rewardContract = lsSkySpkRewardAddress[1];
-    h.rewardDeprecated = true;
-    renderSheet();
-    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
-  });
-
-  it('reward: toggling the card off clears a staged change', () => {
-    renderSheet({ rewardCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
-    expect(confirmButton().disabled).toBe(false);
-
-    fireEvent.click(screen.getByTestId('stake-manage-reward-card-toggle'));
-    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
-    expect(confirmButton().disabled).toBe(true);
   });
 
   it('closes through the controller callback and draws no back arrow (Design QA 2800:91832)', () => {

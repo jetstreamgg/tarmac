@@ -19,21 +19,25 @@ import { farmRewardSymbol } from '../lib/farmRewardSymbol';
  * selected tile takes the brandBorder/brand3 ring. Deprecated farms are hidden
  * EXCEPT `keepAddress` (the position's current farm), which renders with a
  * "Deprecated" chip and the legacy choose-another-reward warning so the holder
- * can switch away without unstaking. Shared with the manage sheet's Change
- * reward card under its own testid prefix.
+ * can switch away without unstaking. Shared with the Change reward modal
+ * (single column) under its own testid prefix.
  */
 export function RewardList({
   selectedRewardContract,
   onSelect,
   keepAddress,
-  dataTestIdPrefix = 'stake-takeover-reward'
+  dataTestIdPrefix = 'stake-takeover-reward',
+  columns = 2
 }: {
   selectedRewardContract: `0x${string}` | undefined;
   onSelect: (rewardContract: `0x${string}`) => void;
   /** Current farm of an existing position — kept visible even when deprecated. */
   keepAddress?: `0x${string}`;
   dataTestIdPrefix?: string;
+  /** 1 = full-width stacked tiles (the Change reward modal, Figma 3015:61490). */
+  columns?: 1 | 2;
 }) {
+  const gridClassName = cn('grid grid-cols-1 gap-3', columns === 2 && 'md:grid-cols-2');
   const chainId = useChainId();
   const { data: rewardContracts, isLoading } = useStakeRewardContracts();
   const farms = filterDeprecatedRewards(rewardContracts ?? [], chainId, keepAddress);
@@ -52,7 +56,7 @@ export function RewardList({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className={gridClassName}>
         {[0, 1].map(tile => (
           <Skeleton key={tile} className="h-[113px] w-full rounded-2xl" />
         ))}
@@ -70,7 +74,7 @@ export function RewardList({
 
   return (
     <div className="flex flex-col gap-4">
-      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2" data-testid={`${dataTestIdPrefix}-list`}>
+      <ul className={gridClassName} data-testid={`${dataTestIdPrefix}-list`}>
         {farms.map((farm, index) => {
           const address = farm.contractAddress;
           const isSelected = selectedRewardContract?.toLowerCase() === address.toLowerCase();

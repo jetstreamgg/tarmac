@@ -18,7 +18,7 @@ import {
 import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -383,7 +383,8 @@ export function PositionDetailsModal({
   onClose,
   onAction,
   onClaim,
-  onReopen
+  onReopen,
+  scrimHandoff = false
 }: {
   urnIndex: number;
   /**
@@ -398,6 +399,8 @@ export function PositionDetailsModal({
   onClaim: () => void;
   /** Reopen CTA on inactive urns (C17): borrow-expanded iff the urn ever had debt. */
   onReopen: (borrowExpanded: boolean) => void;
+  /** Returning from a modal that closes in the same commit: the scrim mounts already up. */
+  scrimHandoff?: boolean;
 }) {
   const detail = useStakePositionDetail(urnIndex);
   const { vault, hasDebt, isInactive } = detail;
@@ -488,6 +491,7 @@ export function PositionDetailsModal({
         <DialogContent
           aria-describedby={undefined}
           data-testid="stake-position-details"
+          overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
           // sm:p-0 kills the shared DialogContent's sm:px-10/sm:py-8 — the
           // comp's subsection panel runs full-bleed to the card edges
           // (1036:214369: x=720 y=0 h=card), so the card itself carries no
