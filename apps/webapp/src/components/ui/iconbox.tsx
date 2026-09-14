@@ -19,7 +19,7 @@ import { cn } from '@/lib/cn';
 
 // --- Iconbox (base) ----------------------------------------------------------
 
-export type IconboxSize = 'l' | 'm' | 's' | 'xs';
+type IconboxSize = 'l' | 'm' | 's' | 'xs';
 
 // Box diameters L/M/S/XS = 40/32/28/24px.
 const iconboxSize: Record<IconboxSize, string> = {

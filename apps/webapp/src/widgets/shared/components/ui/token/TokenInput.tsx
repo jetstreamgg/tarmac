@@ -27,7 +27,7 @@ import { Search } from '../../icons/Search';
 import { Close } from '../../icons/Close';
 import { useIsTouchDevice } from '@/hooks';
 
-export interface TokenInputProps {
+interface TokenInputProps {
   label?: string;
   placeholder?: string;
   token?: Token;

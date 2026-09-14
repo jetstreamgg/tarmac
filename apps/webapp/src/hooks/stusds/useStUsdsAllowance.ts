@@ -4,7 +4,7 @@ import { ReadHook } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../constants';
 
-export type StUsdsAllowanceHookResponse = ReadHook & {
+type StUsdsAllowanceHookResponse = ReadHook & {
   data?: bigint;
 };
 

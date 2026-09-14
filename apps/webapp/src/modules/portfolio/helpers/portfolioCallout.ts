@@ -11,7 +11,7 @@ export const SIGNIFICANT_BALANCE_USD = 10;
  * - `allocate` — no earn position, but idle stablecoins worth supplying.
  * - `simulate` — no earn position and nothing idle; show the Sky Savings pitch.
  */
-export type PortfolioCallout = 'none' | 'allocate' | 'simulate';
+type PortfolioCallout = 'none' | 'allocate' | 'simulate';
 
 export function portfolioCallout(depositedUsd: number, idleUsd: number): PortfolioCallout {
   if (depositedUsd > SIGNIFICANT_BALANCE_USD) return 'none';

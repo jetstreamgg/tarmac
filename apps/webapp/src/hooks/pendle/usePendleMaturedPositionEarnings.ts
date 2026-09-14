@@ -21,7 +21,7 @@ const SUSDS_PREVIEW_REDEEM_ABI = [
 // is the pyIndex/chi precision constant, NOT a claim about PT decimals.
 const ONE = 1_000_000_000_000_000_000n;
 
-export type PendleMaturedPositionEarnings = {
+type PendleMaturedPositionEarnings = {
   /** Earnings amount (final value − net cost basis), in `currency` units. */
   earnings?: number;
   /** Annualized yield as a decimal (e.g. 0.0521 for 5.21% APY). */

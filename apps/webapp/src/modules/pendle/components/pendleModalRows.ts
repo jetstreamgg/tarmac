@@ -14,7 +14,7 @@ import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import { networkCell, networkFeeCell, productCell } from '@/components/product/ModalGridCells';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
-export type PendleModalGridRow = ModalGridCell[];
+type PendleModalGridRow = ModalGridCell[];
 
 // --- Shared cell shapes — every builder draws these identically. ---
 
@@ -73,7 +73,7 @@ const supplyEconomicsRows = (input: SupplyEconomicsInput): PendleModalGridRow[] 
 ];
 
 /** Display strings for the Pendle supply entry screen (Figma 2193:73513). */
-export type PendleSupplyEntryRowInput = {
+type PendleSupplyEntryRowInput = {
   /** Rate this order locks — the quote's effective APY, the market implied rate before an amount. */
   rate: string;
   /** Market expiry, formatted (e.g. "18 Jun 2026"). */
@@ -108,7 +108,7 @@ export function buildPendleSupplyEntryRows(input: PendleSupplyEntryRowInput): Pe
 }
 
 /** Display strings for the "Early withdrawal" entry screen (Figma 2193:73598). */
-export type PendleWithdrawEntryRowInput = {
+type PendleWithdrawEntryRowInput = {
   /** The Withdrawal-token selector (interactive, passed through opaquely). */
   tokenSelector: ReactNode;
   /** Amount received now in the selected token, formatted. */
@@ -171,7 +171,7 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
  * the shape follows the withdraw grids (Figma 2193:73598 / 2193:73807) and the
  * matured-position cards' "Claim" CTA (2306:72334).
  */
-export type PendleRedeemRowInput = {
+type PendleRedeemRowInput = {
   /** Product display name (e.g. "Pendle sUSDS (PT-sUSDS)"). */
   product: string;
   /** Underlying symbol for the Product cell's ringed icon. */

@@ -269,8 +269,6 @@ const cardWidgetFooterVariants = cva('flex items-center pt-0', {
   }
 });
 
-export type CardVariant = VariantProps<typeof cardWidgetVariants>['variant'];
-
 const CardWidget = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardWidgetVariants>
@@ -347,13 +345,5 @@ CardWidgetFooter.displayName = 'CardFooter';
 const MotionCard = motion.create(CardWidget);
 const MotionCardContent = motion.create(CardWidgetContent);
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
-export {
-  CardWidget,
-  CardWidgetHeader,
-  CardWidgetFooter,
-  CardWidgetTitle,
-  CardWidgetContent,
-  MotionCard,
-  MotionCardContent
-};
+export { Card, CardHeader, CardTitle, CardContent };
+export { CardWidget, CardWidgetHeader, CardWidgetFooter, CardWidgetContent, MotionCard, MotionCardContent };

@@ -3,7 +3,7 @@ import { useNetworkFee, type UseNetworkFeeParameters } from '@/hooks';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import type { ModalGridFee } from '@/components/product/ModalGridCells';
 
-export type UseModalFeeCellParameters = UseNetworkFeeParameters & {
+type UseModalFeeCellParameters = UseNetworkFeeParameters & {
   /**
    * How many legs the flow sends when bundled, where that differs from
    * `calls.length`. `calls` is what goes out on the CURRENT route, and one

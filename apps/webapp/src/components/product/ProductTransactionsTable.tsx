@@ -24,8 +24,6 @@ import { paginate } from './paginate';
  * Sections, e.g. 486:20827) — same rows, loading/empty/error and pagination.
  */
 
-export type ProductTransactionStatus = 'pending' | 'completed';
-
 /** Placeholder rows/cards rendered while `isLoading`. */
 const LOADING_ROWS = 4;
 
@@ -39,7 +37,7 @@ export interface ProductTransactionColumn<T> {
   skeleton?: boolean;
 }
 
-export interface ProductTransactionsTableProps<T> {
+interface ProductTransactionsTableProps<T> {
   columns: ProductTransactionColumn<T>[];
   rows?: T[];
   rowKey: (row: T) => string;

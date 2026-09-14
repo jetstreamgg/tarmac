@@ -3,7 +3,7 @@ import { ReadHook } from '../hooks';
 import { useMemo } from 'react';
 import { useReadStUsdsImplementation } from './useReadStUsdsImplementation';
 
-export type StUsdsPreviewDepositHookResponse = ReadHook & {
+type StUsdsPreviewDepositHookResponse = ReadHook & {
   data?: bigint;
 };
 

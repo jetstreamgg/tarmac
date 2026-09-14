@@ -46,7 +46,7 @@ const ALL = 'all';
  * (APP-443 item 21). One entry per product, each owning its module(s), is also
  * the single source of truth for the Product column's label.
  */
-export const PRODUCT_GROUPS: { id: string; modules: ModuleEnum[]; label: () => string }[] = [
+const PRODUCT_GROUPS: { id: string; modules: ModuleEnum[]; label: () => string }[] = [
   { id: 'savings', modules: [ModuleEnum.SAVINGS], label: () => t`Savings` },
   { id: 'stusds', modules: [ModuleEnum.STUSDS], label: () => t`stUSDS` },
   { id: 'vault', modules: [ModuleEnum.MORPHO, ModuleEnum.SUSDT], label: () => t`Vault` },
@@ -128,7 +128,7 @@ const renderCard = (row: PortfolioTxRow) => (
   />
 );
 
-export interface PortfolioTransactionsViewProps {
+interface PortfolioTransactionsViewProps {
   rows: PortfolioTxRow[];
   /**
    * Rows to derive the filter dropdown options from. Defaults to `rows`; the

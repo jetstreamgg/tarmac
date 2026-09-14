@@ -1,35 +1,51 @@
-import { SavingsAction, SavingsFlow, SavingsScreen } from '@/widgets/SavingsWidget/lib/constants';
-import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { VaultAction, VaultFlow, VaultScreen } from '@/widgets/VaultWidget/lib/constants';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 import { Token } from '@/hooks';
 import { TxStatus, NotificationType, InitialAction, InitialFlow, InitialScreen } from '../constants';
 import { WidgetAnalyticsEvent } from './analyticsEvents';
 
-// Survivors of the deleted PsmConversionWidget (superseded by the E2 /convert
-// page): the flow/action/screen values stay in the shared unions because the
-// legacy widget-state contract is frozen until the remaining widgets migrate.
-export enum PsmConversionFlow {
-  CONVERT = 'convert'
+// Survivors of the deleted SavingsWidget: only the enums were still referenced
+// (shared unions below and the external-state validator in widgets/lib/utils).
+export enum SavingsFlow {
+  SUPPLY = 'supply',
+  WITHDRAW = 'withdraw'
 }
 
-export enum PsmConversionAction {
+enum SavingsAction {
   APPROVE = 'approve',
-  CONVERT = 'convert'
+  SUPPLY = 'supply',
+  WITHDRAW = 'withdraw'
 }
 
-export enum PsmConversionScreen {
+enum SavingsScreen {
   ACTION = 'action',
   REVIEW = 'review',
   TRANSACTION = 'transaction'
 }
 
-export type WidgetFlow =
-  InitialFlow | BalancesFlow | SavingsFlow | PsmConversionFlow | VaultFlow | PendleFlow;
+// Survivors of the deleted PsmConversionWidget (superseded by the E2 /convert
+// page): the flow/action/screen values stay in the shared unions because the
+// legacy widget-state contract is frozen until the remaining widgets migrate.
+enum PsmConversionFlow {
+  CONVERT = 'convert'
+}
 
-export type WidgetAction = InitialAction | SavingsAction | PsmConversionAction | VaultAction | PendleAction;
+enum PsmConversionAction {
+  APPROVE = 'approve',
+  CONVERT = 'convert'
+}
 
-export type WidgetScreen = InitialScreen | SavingsScreen | PsmConversionScreen | VaultScreen | PendleScreen;
+enum PsmConversionScreen {
+  ACTION = 'action',
+  REVIEW = 'review',
+  TRANSACTION = 'transaction'
+}
+
+export type WidgetFlow = InitialFlow | BalancesFlow | SavingsFlow | PsmConversionFlow | VaultFlow;
+
+export type WidgetAction = InitialAction | SavingsAction | PsmConversionAction | VaultAction;
+
+export type WidgetScreen = InitialScreen | SavingsScreen | PsmConversionScreen | VaultScreen;
 
 export type WidgetState = {
   flow: WidgetFlow | null;

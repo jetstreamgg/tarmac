@@ -4,7 +4,7 @@ import { getPsmDirectionHalted } from '@/modules/convert/hooks/usePsmConversion.
 /** Why a mainnet USDC supply can't go out right now. */
 export type UsdcSupplyBlockedReason = 'psm_unavailable' | 'direction_halted' | 'non_zero_fee';
 
-export type UsdcSupplyGate = {
+type UsdcSupplyGate = {
   /** Set when the PSM can't take USDC right now; the supply gate blocks on it. */
   blockedReason?: UsdcSupplyBlockedReason;
   /** False until every PSM read has answered — the gate holds the confirm until then. */

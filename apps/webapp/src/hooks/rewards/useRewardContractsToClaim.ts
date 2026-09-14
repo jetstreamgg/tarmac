@@ -4,7 +4,7 @@ import { ReadHook } from '../hooks';
 import { usdsSkyRewardAbi } from '../generated';
 import { erc20Abi } from 'viem';
 
-export type UseRewardContractsToClaimResponse = ReadHook & {
+type UseRewardContractsToClaimResponse = ReadHook & {
   data:
     | {
         contractAddress: `0x${string}`;

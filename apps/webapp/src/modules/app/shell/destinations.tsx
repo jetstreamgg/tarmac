@@ -17,7 +17,7 @@ import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
 // Destination paths must be in the route map AND mounted as routes (B1 placeholders guarantee it).
 type DestinationPath = Extract<AppRoutePath, RoutePath>;
 
-export type Destination = {
+type Destination = {
   path: DestinationPath;
   label: ReactNode;
   icon: ComponentType<{ className?: string }>;

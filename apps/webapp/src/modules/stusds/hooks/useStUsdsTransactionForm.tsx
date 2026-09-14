@@ -23,7 +23,7 @@ import type { StUsdsEngineParams, StUsdsLaunchFlow } from './useStUsdsLaunch';
 export type StUsdsModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
-export type StUsdsToastTitles = { loading: string; success: string; error: string };
+type StUsdsToastTitles = { loading: string; success: string; error: string };
 
 // USDS and stUSDS are both 18-decimal on every deployment.
 const DECIMALS = 18;
@@ -32,7 +32,7 @@ const DECIMALS = 18;
 // the provider before user input to prevent UI flicker (widget behavior).
 const REFERENCE_AMOUNT = parseUnits('1', DECIMALS);
 
-export interface StUsdsTransactionForm {
+interface StUsdsTransactionForm {
   isConnected: boolean;
   isSupply: boolean;
   decimals: number;

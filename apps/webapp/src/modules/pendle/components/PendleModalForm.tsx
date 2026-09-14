@@ -20,17 +20,12 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import {
-  getTooltipById,
-  PENDLE_HISTORY_REFRESH_MS,
-  PendleFlow,
-  pendleAnalyticsData,
-  pendleNonPtLeg,
-  PopoverInfo,
-  usePendleTokens,
-  usePendleUsdValue,
-  type PendleAnalyticsSide
-} from '@/widgets';
+import { getTooltipById, PopoverInfo } from '@/widgets';
+import { PENDLE_HISTORY_REFRESH_MS, PendleFlow } from '@/modules/pendle/lib/constants';
+import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/lib/pendleAnalyticsData';
+import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
+import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
+import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
@@ -61,7 +56,7 @@ import {
   buildPendleWithdrawEntryRows
 } from './pendleModalRows';
 
-export type PendleModalFlow = 'supply' | 'withdraw';
+type PendleModalFlow = 'supply' | 'withdraw';
 
 /**
  * Editable body for the Pendle "Supply to {market}" / "Early withdrawal"

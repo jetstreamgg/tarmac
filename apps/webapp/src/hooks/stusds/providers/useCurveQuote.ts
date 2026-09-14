@@ -9,7 +9,7 @@ import { StUsdsDirection } from './types';
 /**
  * Parameters for the Curve quote hook.
  */
-export type CurveQuoteParams = {
+type CurveQuoteParams = {
   /** Direction of the swap - determines how amount is interpreted */
   direction: StUsdsDirection;
   /**
@@ -32,7 +32,7 @@ export type CurveQuoteParams = {
  * Quote result from Curve pool.
  * All amounts are in their respective token units.
  */
-export type CurveQuoteData = {
+type CurveQuoteData = {
   /** stUSDS amount (output for deposits, input for withdrawals) */
   stUsdsAmount: bigint;
   /** USDS amount (input for deposits, output for withdrawals) */
@@ -46,7 +46,7 @@ export type CurveQuoteData = {
 /**
  * Return type for useCurveQuote hook.
  */
-export type CurveQuoteHookResult = {
+type CurveQuoteHookResult = {
   data: CurveQuoteData | undefined;
   isLoading: boolean;
   error: Error | null;
@@ -254,4 +254,3 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
 }
 
 // Legacy type exports for backwards compatibility with existing code
-export type { CurveQuoteParams as LegacyCurveQuoteParams };

@@ -75,9 +75,6 @@ const getContent = () => {
   );
 };
 
-// Export the valid tooltip types as a runtime constant derived from the map
-export const POPOVER_TOOLTIP_TYPES = Object.keys(TOOLTIP_ID_MAP) as (keyof typeof TOOLTIP_ID_MAP)[];
-
 // Derive the type from the map
 export type PopoverTooltipType = keyof typeof TOOLTIP_ID_MAP;
 

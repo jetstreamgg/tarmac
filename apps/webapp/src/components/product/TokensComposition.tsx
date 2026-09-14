@@ -15,7 +15,7 @@ import { easeInOutQuart } from '@/modules/ui/animation/timingFunctions';
 const DETAIL_REVEAL_MS = 200;
 const detailRevealTransition: Transition = { duration: DETAIL_REVEAL_MS / 1000, ease: easeInOutQuart };
 
-export type CompositionSegment = {
+type CompositionSegment = {
   id: string;
   /** Token name shown in the legend, e.g. "stUSDS". */
   label: ReactNode;

@@ -10,7 +10,7 @@
  * - `onChainFormattedRate` is the on-chain Vault Savings Rate (`vsr`) formatted
  *   as an APY — the fallback when the API has no figure.
  */
-export type SparkRateSources = {
+type SparkRateSources = {
   apiFormattedRate?: string;
   onChainFormattedRate?: string;
 };

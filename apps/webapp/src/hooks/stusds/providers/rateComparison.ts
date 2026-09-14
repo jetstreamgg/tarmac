@@ -5,7 +5,7 @@ import type { StUsdsQuote, StUsdsRateComparisonConfig } from './types';
 /**
  * Result of comparing rates between two providers.
  */
-export type RateComparisonResult = {
+type RateComparisonResult = {
   /** The provider with the better rate (null if both undefined or equal) */
   betterProvider: StUsdsProviderType | null;
   /** Percentage difference between rates (positive = first provider better) */

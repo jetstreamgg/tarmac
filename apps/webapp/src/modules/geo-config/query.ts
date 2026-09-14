@@ -20,7 +20,7 @@ const GEO_CONFIG_URL = import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-a
 
 export const GEO_CONFIG_QUERY_KEY = ['geo-config'] as const;
 
-export async function fetchGeoConfig(): Promise<GeoConfig> {
+async function fetchGeoConfig(): Promise<GeoConfig> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 

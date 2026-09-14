@@ -3,7 +3,7 @@ import { useStUsdsData } from './useStUsdsData';
 import { ReadHook } from '../hooks';
 import { calculateCapacityBuffer } from './helpers';
 
-export type StUsdsCapacityData = {
+type StUsdsCapacityData = {
   currentCapacity: bigint; // Current vault size
   maxCapacity: bigint; // Maximum capacity (cap)
   utilizationRate: number; // Capacity utilization %
@@ -11,7 +11,7 @@ export type StUsdsCapacityData = {
   remainingCapacityBuffered: bigint; // Available capacity with buffer applied
 };
 
-export type StUsdsCapacityDataHook = ReadHook & {
+type StUsdsCapacityDataHook = ReadHook & {
   data?: StUsdsCapacityData;
 };
 

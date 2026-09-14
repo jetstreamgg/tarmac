@@ -12,7 +12,7 @@ const HOUR_IN_SECONDS = 3600;
 const WEEK_IN_SECONDS = 604800;
 const MONTH_IN_SECONDS = 2592000;
 
-export type MorphoVaultHourlyWindow = 'w' | 'm';
+type MorphoVaultHourlyWindow = 'w' | 'm';
 
 /**
  * Raw API response type for Morpho V2 vault historical data.
@@ -125,7 +125,7 @@ async function fetchMorphoVaultChartInfo(
   return transformMorphoChartData(totalAssets, totalAssetsUsd, avgNetApy);
 }
 
-export type MorphoVaultChartInfoHook = ReadHook & {
+type MorphoVaultChartInfoHook = ReadHook & {
   data?: MorphoVaultChartDataPoint[];
 };
 

@@ -11,7 +11,7 @@ export type AppSearchParams = Record<string, string>;
  * routes that need the cache (the geo gate) receive the client through context
  * instead of importing the module instance.
  */
-export type AppRouterContext = {
+type AppRouterContext = {
   queryClient: QueryClient;
 };
 

@@ -57,10 +57,6 @@ export type MorphoVaultRateData = {
   rewards: MorphoRewardData[];
 };
 
-export type MorphoVaultRateHook = ReadHook & {
-  data?: MorphoVaultRateData;
-};
-
 const VAULT_RATE_QUERY = `
   query VaultRate($address: String!, $chainId: Int!) {
     vaultV2ByAddress(address: $address, chainId: $chainId) {
@@ -148,44 +144,7 @@ async function fetchMorphoVaultRate(
   };
 }
 
-export function useMorphoVaultRateApiData({
-  vaultAddress
-}: {
-  vaultAddress?: `0x${string}`;
-}): MorphoVaultRateHook {
-  // This ensures the query is cached across network switches
-  const chainId = MORPHO_API_CHAIN_ID;
-
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    queryKey: ['morpho-vault-rate', vaultAddress, chainId],
-    queryFn: () => fetchMorphoVaultRate(vaultAddress!, chainId),
-    enabled: !!vaultAddress,
-    staleTime: 30_000, // 30 seconds
-    gcTime: 60_000 // 1 minute
-  });
-
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
-    mutate,
-    dataSources: [
-      {
-        title: 'Morpho API',
-        href: 'https://api.morpho.org/graphql',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
-}
-
-export type MorphoVaultMultipleRateHook = ReadHook & {
+type MorphoVaultMultipleRateHook = ReadHook & {
   data?: MorphoVaultRateData[];
 };
 

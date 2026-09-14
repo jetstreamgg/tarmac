@@ -13,7 +13,7 @@ import {
 import { TransactionCard } from '@/components/product/TransactionCard';
 import { CellAction, CellAmount, CellHash } from '@/components/ui/table-cells';
 
-export type VaultTxFilter = 'all' | 'supply' | 'withdraw';
+type VaultTxFilter = 'all' | 'supply' | 'withdraw';
 
 type VaultTxRow = {
   id: string;

@@ -29,7 +29,7 @@ export type MerklUserRewardRaw = {
   breakdowns: MerklRewardBreakdownRaw[];
 };
 
-export type MerklUserRewardsApiResponse = {
+type MerklUserRewardsApiResponse = {
   chain: { id: number };
   rewards: MerklUserRewardRaw[];
 }[];

@@ -6,7 +6,7 @@ import { Text } from '@/widgets/shared/components/ui/Typography';
 import { Warning } from '@/widgets/shared/components/icons/Warning';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from './tooltip';
 import { useState } from 'react';
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   rightElement?: React.ReactNode;
   error?: string;

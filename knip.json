@@ -21,7 +21,12 @@
         "test/**/*.{ts,tsx}"
       ],
       "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,css}!", "test/**/*.{ts,tsx}"],
-      "ignore": ["src/hooks/generated.ts", "src/locales/**/*", "src/widgets/data/tooltips/index.ts"],
+      "ignore": [
+        "src/hooks/generated.ts",
+        "src/locales/**/*",
+        "src/widgets/data/tooltips/index.ts",
+        "src/hooks/trade/cowApiSchema.ts"
+      ],
       "ignoreDependencies": [
         "@base-org/account",
         "@coinbase/wallet-sdk",

@@ -40,7 +40,7 @@ import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/
  * emits atomic per-call events that share a transaction hash, so combined
  * verbs (Stake & Borrow, Unstake & Repay) come from grouping by hash.
  */
-export type StakeActivityVerb =
+type StakeActivityVerb =
   | 'stakeBorrow'
   | 'stake'
   | 'unstakeRepay'
@@ -53,7 +53,7 @@ export type StakeActivityVerb =
   | 'open'
   | 'liquidated';
 
-export type StakeActivityGroup = {
+type StakeActivityGroup = {
   transactionHash: string;
   blockTimestamp: Date;
   urnIndex?: number;

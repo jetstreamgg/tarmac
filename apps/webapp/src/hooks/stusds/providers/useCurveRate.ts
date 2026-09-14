@@ -3,7 +3,7 @@ import { useCurveQuote } from './useCurveQuote';
 import { StUsdsDirection } from './types';
 import { RATE_PRECISION } from './constants';
 
-export type CurveRateResult = {
+type CurveRateResult = {
   curveRate: bigint | undefined;
   isLoading: boolean;
   error: Error | null;

@@ -5,7 +5,7 @@ import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../constants';
 import { sUsdsAddress } from './useReadSavingsUsds';
 
-export type DSRAllowanceHookResponse = ReadHook & {
+type DSRAllowanceHookResponse = ReadHook & {
   data?: bigint;
 };
 

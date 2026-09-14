@@ -66,12 +66,5 @@ export function clampHistoryPage<T extends { blockTimestamp: Date }>(items: T[],
   return items.filter(item => item.blockTimestamp.getTime() >= boundary * 1000);
 }
 
-/** Pagination surface the combined history hooks add on top of ReadHook. */
-export type HistoryPagination = {
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  fetchNextPage: () => void;
-};
-
 /** One fetched page of a history document. */
 export type HistoryPage<T> = { items: T[]; nextCursor: number | undefined };

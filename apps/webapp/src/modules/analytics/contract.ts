@@ -31,7 +31,7 @@ import type { Destination } from './lib/destination';
  */
 
 /** The closed set of widget_name values PostHog insights filter on. */
-export type WidgetName = 'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed';
+type WidgetName = 'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed';
 
 /**
  * Intent → widget_name for route-derived emitters, compiler-enforced against
@@ -235,5 +235,4 @@ export type AppEventName = (typeof AppEvents)[keyof typeof AppEvents];
 
 // Compile-time check: every event in the registry has a contract entry.
 type MissingFromContract = Exclude<AppEventName, keyof AppEventContract>;
-export const CONTRACT_COVERS_REGISTRY: [MissingFromContract] extends [never] ? true : MissingFromContract =
-  true;
+true satisfies [MissingFromContract] extends [never] ? true : MissingFromContract;

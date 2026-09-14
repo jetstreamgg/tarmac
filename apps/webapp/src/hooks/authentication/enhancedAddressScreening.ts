@@ -9,7 +9,7 @@ import type { AddressScreeningResult } from './useRestrictedAddressCheck';
  * the transaction's USD valuation live entirely in the webapp.
  */
 
-export const ENHANCED_SCREENING_THRESHOLD_USD = 250_000;
+const ENHANCED_SCREENING_THRESHOLD_USD = 250_000;
 
 /**
  * Whether a transaction's USD value puts it on the enhanced-screening path.

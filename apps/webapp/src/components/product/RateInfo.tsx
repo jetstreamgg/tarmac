@@ -11,7 +11,7 @@ import { isMorphoVault, type ProductIdentity } from './productVisuals';
 export type RateInfoType = PopoverTooltipType;
 
 /** Earn product family → its rate explainer. */
-export const RATE_INFO_BY_KIND: Record<EarnProductKind, RateInfoType> = {
+const RATE_INFO_BY_KIND: Record<EarnProductKind, RateInfoType> = {
   savings: 'ssr',
   stusds: 'stusds',
   fixed: 'fixedYield',

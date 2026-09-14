@@ -105,7 +105,7 @@ export function CellChevron() {
   return <ChevronRight className="text-fgTertiary size-4" aria-hidden />;
 }
 
-export type CellStatusValue = 'pending' | 'completed' | 'failed';
+type CellStatusValue = 'pending' | 'completed' | 'failed';
 
 const statusStyles: Record<CellStatusValue, { className: string; icon: ReactNode; label: ReactNode }> = {
   pending: {

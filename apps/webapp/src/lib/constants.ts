@@ -1,4 +1,4 @@
-import { Intent, FixedIntent } from './enums';
+import { Intent } from './enums';
 
 /** The placeholder every product surface shows for a value it cannot source. */
 export const NO_VALUE = '–';
@@ -41,7 +41,7 @@ export enum QueryParams {
   Upgrade = 'upgrade'
 }
 
-export enum Environment {
+enum Environment {
   Production = 'production',
   Staging = 'staging',
   Development = 'development'
@@ -58,10 +58,6 @@ export const IntentMapping = {
   [Intent.VAULTS_INTENT]: 'vaults',
   [Intent.CONVERT_INTENT]: 'convert',
   [Intent.FIXED_INTENT]: 'fixed'
-};
-
-export const FixedIntentMapping: Record<FixedIntent, string> = {
-  [FixedIntent.MARKET_INTENT]: 'market'
 };
 
 // Moved to a Lingui-free module so the engine layer can import them; re-exported
@@ -84,10 +80,6 @@ export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
-
-// Feature flag for the sUSDT (Tether Savings) vault. Off in production until
-// launch; flip the Vercel env var to `true` to reveal it without a redeploy.
-export const SUSDT_VAULT_ENABLED = import.meta.env.VITE_SUSDT_VAULT_ENABLED === 'true';
 
 export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) || 0;
 

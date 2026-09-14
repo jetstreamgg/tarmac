@@ -20,9 +20,9 @@ import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
 export type VaultModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDC supplied!"). */
-export type VaultToastTitles = { loading: string; success: string; error: string };
+type VaultToastTitles = { loading: string; success: string; error: string };
 
-export interface VaultTransactionForm {
+interface VaultTransactionForm {
   isConnected: boolean;
   isSupply: boolean;
   decimals: number;

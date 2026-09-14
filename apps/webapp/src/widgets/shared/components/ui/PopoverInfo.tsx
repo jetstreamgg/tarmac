@@ -10,7 +10,7 @@ import { Info } from '../icons/Info';
 import { Heading, Text } from '@/widgets/shared/components/ui/Typography';
 import { ReactNode } from 'react';
 
-export interface PopoverInfoProps {
+interface PopoverInfoProps {
   title: string;
   description: ReactNode;
   iconClassName?: string;

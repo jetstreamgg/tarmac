@@ -30,15 +30,10 @@ import {
   useStakeCalldata
 } from './useStakeCalldata';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
-import {
-  useStakeConfirmContent,
-  type StakeLaunchContent,
-  type StakeLaunchContentContext
-} from './useStakeConfirmContent';
+
+import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
 
 import { stakeUsdNotional } from '../lib/stakeUsdNotional';
-
-export type { StakeLaunchContentContext };
 
 /**
  * Manage confirm-modal step labels, derived from the calldata set in the manage
@@ -105,7 +100,7 @@ export function buildStakeManageSteps({
   return shouldUseBatch ? steps : assignSequentialWrites(steps, approvals);
 }
 
-export interface UseStakeManageLaunchParams {
+interface UseStakeManageLaunchParams {
   urnIndex: bigint;
   urnAddress: `0x${string}` | undefined;
   skyToLock: bigint;

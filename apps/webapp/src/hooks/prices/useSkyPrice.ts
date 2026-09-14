@@ -4,7 +4,7 @@ import { parseUnits } from 'viem';
 import { usePrices } from './usePrices';
 import type { ReadHook } from '../hooks';
 
-export type SkyPriceHook = ReadHook & {
+type SkyPriceHook = ReadHook & {
   data?: bigint;
   priceString?: string;
 };

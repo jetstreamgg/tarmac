@@ -14,11 +14,6 @@ export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
 export const MORPHO_API_CHAIN_ID = mainnet.id;
 export const MERKL_API_URL = `${import.meta.env?.VITE_PROXY_ORIGIN || 'https://staging-proxy.sky.money'}/merkl/v4`;
 
-export enum MorphoAdapterType {
-  MetaMorpho = 'MetaMorpho',
-  MorphoMarketV1 = 'MorphoMarketV1'
-}
-
 export enum MorphoTransactionType {
   Deposit = 'Deposit',
   Withdraw = 'Withdraw'
@@ -75,70 +70,6 @@ export function getMorphoVaultByAddress(
 ): MorphoVaultConfig | undefined {
   return MORPHO_VAULTS.find(vault => vault.vaultAddress[chainId]?.toLowerCase() === address.toLowerCase());
 }
-
-/**
- * Minimal ABI for MorphoVaultV1Adapter to read the underlying V1 vault address and real assets.
- */
-export const MORPHO_VAULT_V1_ADAPTER_ABI = [
-  {
-    inputs: [],
-    name: 'morphoVaultV1',
-    outputs: [{ type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'realAssets',
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  }
-] as const;
-
-/**
- * GraphQL query for Morpho V2 vault adapters.
- * V2 vaults allocate to V1 vaults through adapters.
- */
-export const VAULT_V2_ADAPTERS_QUERY = `
-  query VaultV2Adapters($address: String!, $chainId: Int!) {
-    vaultV2ByAddress(address: $address, chainId: $chainId) {
-      address
-      symbol
-      asset {
-        symbol
-        decimals
-      }
-      totalAssets
-      totalAssetsUsd
-      idleAssetsUsd
-      adapters {
-        items {
-          address
-          assets
-          assetsUsd
-          type
-        }
-      }
-    }
-  }
-`;
-
-/**
- * GraphQL query for Morpho V1 vault basic data (name, symbol, net APY).
- */
-export const VAULT_V1_BASIC_DATA_QUERY = `
-  query VaultV1BasicData($address: String!, $chainId: Int!) {
-    vaultByAddress(address: $address, chainId: $chainId) {
-      address
-      name
-      symbol
-      state {
-        netApy
-      }
-    }
-  }
-`;
 
 /**
  * GraphQL query for Morpho V2 vault transactions (deposits and withdrawals).
@@ -331,25 +262,6 @@ export const VAULT_V2_HISTORICAL_HOURLY_QUERY = `
         avgNetApy(options:{ startTimestamp: $startTimestamp, endTimestamp: $endTimestamp, interval: HOUR }) {
           x
           y
-        }
-      }
-    }
-  }
-`;
-
-/**
- * GraphQL query for Morpho V2 vault positions (depositors) with pagination.
- * Includes shares to filter for active suppliers client-side (API doesn't support where clause).
- */
-export const VAULT_V2_POSITIONS_QUERY = `
-  query VaultV2Positions($address: String!, $chainId: Int!, $first: Int!, $skip: Int!) {
-    vaultV2ByAddress(address: $address, chainId: $chainId) {
-      positions(first: $first, skip: $skip) {
-        items {
-          user {
-            address
-          }
-          shares
         }
       }
     }

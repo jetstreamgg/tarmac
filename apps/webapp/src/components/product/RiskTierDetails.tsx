@@ -32,7 +32,7 @@ import { withdrawalWording } from './withdrawalAvailability';
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
 // decision — the comp treats it as editorial content, not product data.
-export const RISK_LEARN_MORE_URL = 'https://docs.sky.money/user-risks';
+const RISK_LEARN_MORE_URL = 'https://docs.sky.money/user-risks';
 
 /**
  * The severity presentation per tier (1036:201215): display name + scale.

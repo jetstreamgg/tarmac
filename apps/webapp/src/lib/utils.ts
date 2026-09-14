@@ -3,7 +3,7 @@ import { reportError } from '@/modules/sentry/reportError';
 
 export { cn } from './cn';
 
-export type FooterLink = {
+type FooterLink = {
   url: string;
   name: string;
   /**

@@ -22,8 +22,6 @@ import { Close } from './Close';
 import { FilterX } from './FilterX';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
-import { ArbitrumChain } from './ArbitrumChain';
-import { UnichainChain } from './UnichainChain';
 import { OptimismChain } from './OptimismChain';
 import { Stake } from './Stake';
 import { StakeSky } from './StakeSky';
@@ -72,9 +70,7 @@ export {
   FilterX,
   BaseChain,
   MainnetChain,
-  ArbitrumChain,
   OptimismChain,
-  UnichainChain,
   Stake,
   StakeSky,
   Expert,

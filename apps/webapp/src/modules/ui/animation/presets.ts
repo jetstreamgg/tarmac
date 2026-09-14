@@ -2,39 +2,6 @@ import { Transition, Variant, Variants } from 'motion/react';
 import { bezierSkeleton, easeInOutQuart, easeOutExpo } from './timingFunctions';
 import { AnimationLabels } from './constants';
 
-const cardInInitial: Variant = {
-  opacity: 0,
-  y: 20
-};
-
-const cardInAnimate: Variant = {
-  opacity: 1,
-  y: 0,
-  transition: {
-    y: { duration: 0.83, ease: easeOutExpo, delay: 0.1 },
-    opacity: { duration: 0.5, ease: easeOutExpo, delay: 0.1 },
-    // In order to implement the line-by-line animation on children of the card, the children we want to
-    // stagger need to use variants with the same names as the parent (e.g. "initial" and "animate").
-    staggerChildren: 0.03,
-    delayChildren: 0.03
-  }
-};
-
-const cardOutExit: Variant = {
-  opacity: 0,
-  y: -20,
-  transition: {
-    y: { duration: 0.83, ease: easeOutExpo },
-    opacity: { duration: 0.35, ease: easeOutExpo }
-  }
-};
-
-export const cardAnimations: Variants = {
-  [AnimationLabels.initial]: cardInInitial,
-  [AnimationLabels.animate]: cardInAnimate,
-  [AnimationLabels.exit]: cardOutExit
-};
-
 export const skeletonTransition: Transition = {
   duration: 2.5,
   repeat: Infinity,

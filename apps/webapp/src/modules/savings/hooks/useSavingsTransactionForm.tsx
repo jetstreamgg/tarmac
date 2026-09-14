@@ -37,10 +37,10 @@ export type SavingsModalPreset = {
 };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
-export type SavingsToastTitles = { loading: string; success: string; error: string };
+type SavingsToastTitles = { loading: string; success: string; error: string };
 
 /** The subset of `useSavingsLaunch` params the form derives — spread into the engine by each surface. */
-export type SavingsEngineParams = Pick<
+type SavingsEngineParams = Pick<
   UseSavingsLaunchParams,
   | 'flow'
   | 'originToken'
@@ -53,7 +53,7 @@ export type SavingsEngineParams = Pick<
   | 'maxAmountInForWithdraw'
 >;
 
-export interface SavingsTransactionForm {
+interface SavingsTransactionForm {
   // Connection / network / flow
   isConnected: boolean;
   isL2: boolean;

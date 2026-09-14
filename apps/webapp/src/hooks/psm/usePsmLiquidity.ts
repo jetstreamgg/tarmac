@@ -5,7 +5,7 @@ import { useReadPsm3L2Pocket } from '../generated';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { TokenBalance } from '../tokens/useTokenBalance';
 
-export type PsmLiquidityHookResponse = ReadHook & {
+type PsmLiquidityHookResponse = ReadHook & {
   data?: { usdc: TokenBalance | undefined; usds: TokenBalance | undefined; susds: TokenBalance | undefined };
 };
 

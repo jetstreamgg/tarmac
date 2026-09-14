@@ -18,7 +18,7 @@ export interface StakeFlowState {
   selectedRewardContract: `0x${string}` | undefined;
 }
 
-export type StakeFlowAction =
+type StakeFlowAction =
   | { type: 'setSkyToLock'; amount: bigint }
   | { type: 'setBorrowEnabled'; enabled: boolean }
   | { type: 'setUsdsToBorrow'; amount: bigint }
@@ -36,7 +36,7 @@ export const initialStakeFlowState: StakeFlowState = {
 };
 
 /** Mount-time pre-toggles — the reopen deep link (C19, UX 1194:21914). */
-export interface StakeFlowInit {
+interface StakeFlowInit {
   /** Borrow card starts ON (borrowed-history reopen). */
   borrowEnabled?: boolean;
 }

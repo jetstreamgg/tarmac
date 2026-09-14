@@ -23,7 +23,7 @@ const RISK_TIERS: { value: EarnRiskTier; label: ReactNode }[] = [
 // toolbar keeps the compact dropdown-S recipe untouched.
 const MOBILE_TRIGGER = 'h-10 w-full justify-between text-xs leading-3.5 tracking-[-0.24px]';
 
-export type EarnTableFiltersProps = {
+type EarnTableFiltersProps = {
   /** Selected risk tiers; empty = no risk filtering (all tiers shown). */
   selectedRiskTiers: EarnRiskTier[];
   onRiskTierToggle: (tier: EarnRiskTier) => void;

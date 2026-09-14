@@ -3,7 +3,7 @@ import { useLingui } from '@lingui/react';
 import { WidgetProvider } from '@/widgets/context/WidgetContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-export interface WithWidgetProviderProps {
+interface WithWidgetProviderProps {
   onWidgetStateChange?: (data: any) => void;
 }
 

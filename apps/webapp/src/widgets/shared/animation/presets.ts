@@ -99,8 +99,6 @@ export const buttonsAnimations: Variants = {
 
 // Defined once at the app level; re-exported so widgets code can keep importing it
 // from this module.
-export { skeletonTransition } from '@/modules/ui/animation/presets';
-
 const iconInInitial: Variant = {
   scale: 1.12,
   opacity: 0

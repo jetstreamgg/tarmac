@@ -5,7 +5,7 @@ import { I18nWidgetProvider } from './I18nWidgetProvider';
 import { TooltipProvider } from '@/widgets/components/ui/tooltip';
 import { Token } from '@/hooks';
 
-export interface WidgetContextProps {
+interface WidgetContextProps {
   // Button state
   buttonText: string;
   setButtonText: (text: string) => void;

@@ -5,7 +5,7 @@ import { useStakeRewardContracts, useMultipleRewardsChartInfo, type RewardsChart
 // 6-month mean both need more than the endpoint's 100-point default.
 const FULL_HISTORY_LIMIT = 9999;
 
-export type StakeRewardsRate = {
+type StakeRewardsRate = {
   /** Best rate available on each day, ascending by timestamp. */
   series: RewardsChartInfoParsed[];
   /** Latest rate of the winning farm as a decimal fraction (0.0569 = 5.69%). */

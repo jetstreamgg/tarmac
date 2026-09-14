@@ -2,7 +2,7 @@ import { isUserRejection, extractErrorCode } from '@/hooks/helpers';
 
 export type WidgetErrorKind = 'user_rejected' | 'reverted' | 'wallet_error' | 'unknown';
 
-export interface TransactionErrorProperties {
+interface TransactionErrorProperties {
   error_kind: WidgetErrorKind;
   is_user_rejection: boolean;
   error_code?: number;

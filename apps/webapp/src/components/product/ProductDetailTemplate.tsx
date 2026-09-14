@@ -28,7 +28,7 @@ import { NetworkSelect, useNetworkTitleBadge } from '@/modules/ui/components/Net
  * via staticData.fullWidth) — copy its slot wiring for new products.
  */
 
-export interface ProductDetailToken {
+interface ProductDetailToken {
   /** Token image node injected by the module — a bare 48px `<TokenIcon/>`; the template supplies the DS ring. */
   icon: ReactNode;
   /**
@@ -72,13 +72,13 @@ export function DetailValue({ value, loading }: { value?: ReactNode; loading: bo
   return loading ? <Skeleton className="h-4 w-14" /> : <>{'–'}</>;
 }
 
-export interface ProductDetailAbout {
+interface ProductDetailAbout {
   body: ReactNode;
   /** When set, a "Learn more in the User Risk Documentation." link is appended to the body. */
   learnMoreHref?: string;
 }
 
-export interface ProductDetailTemplateProps {
+interface ProductDetailTemplateProps {
   /** Back-link destination (e.g. ROUTES.EARN). */
   backHref: string;
   /** Back-link label; defaults to "Back to products". */

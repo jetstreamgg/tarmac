@@ -32,7 +32,7 @@ const MIN_FRACTION_DIGITS = 2;
  */
 const DRIFT_TOLERANCE_TICKS = 10;
 
-export type AccruingValue = {
+type AccruingValue = {
   /** The projected amount. Equals the input amount when accrual isn't live. */
   value: number;
   /**

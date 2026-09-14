@@ -32,7 +32,7 @@ export const MODAL_CARRIER_S = 0.35;
 export const MODAL_CARRIER_MS = MODAL_CARRIER_S * 1000;
 export const MODAL_LEG_S = 0.2;
 export const MODAL_LABEL_DELAY_S = 0.1;
-export const MODAL_ENTER_DELAY_S = 0.15;
+const MODAL_ENTER_DELAY_S = 0.15;
 
 /**
  * Vertical travel for a body layer. Figma draws the outgoing entry grid at 46px
@@ -58,7 +58,6 @@ export const MODAL_BACK_SHIFT_PX = 20;
 export const MODAL_STEP_EXIT_CLASSES =
   'transition-transform duration-200 ease-accelerate motion-reduce:transition-none';
 
-export const modalCarrierTransition = { duration: MODAL_CARRIER_S, ease: easeStandard };
 export const modalExitTransition = { duration: MODAL_LEG_S, ease: easeAccelerate };
 export const modalEnterTransition = {
   duration: MODAL_LEG_S,

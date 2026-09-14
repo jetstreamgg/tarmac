@@ -17,7 +17,7 @@ import { reportAnalyticsError } from './constants';
  */
 
 /** 'unknown' means the check ran (or failed) without producing a verdict. */
-export type VpnSuperProperties = {
+type VpnSuperProperties = {
   is_vpn: boolean | 'unknown';
   is_restricted_region: boolean | 'unknown';
 };

@@ -48,7 +48,7 @@ const FOOTER_NOTE_CLASSES =
   'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
 
 /** Reopen context (F6, C17): the takeover re-funds an EXISTING emptied urn. */
-export interface ReopenContext {
+interface ReopenContext {
   urnIndex: number;
   /** Borrow card starts ON — the urn's history had debt (UX 1194:21914). */
   borrowExpanded: boolean;

@@ -124,7 +124,7 @@ async function fetchStusdsHistoryPage(
   return { items: clampHistoryPage(mapStusdsHistoryResponse(response, chainId), nextCursor), nextCursor };
 }
 
-export type StUsdsHistoryHook = ReadHook &
+type StUsdsHistoryHook = ReadHook &
   PaginatedHistory & {
     data?: StUsdsHistoryItem[];
   };

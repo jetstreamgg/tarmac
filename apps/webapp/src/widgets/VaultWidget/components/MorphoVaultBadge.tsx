@@ -51,11 +51,3 @@ export const VaultPoweredByBadge = ({ provider, className }: VaultPoweredByBadge
       );
   }
 };
-
-/**
- * Morpho-specific badge. Thin alias of {@link VaultPoweredByBadge} so existing
- * call sites keep rendering identically.
- */
-export const MorphoVaultBadge = ({ className }: { className?: string }) => (
-  <VaultPoweredByBadge provider="morpho" className={className} />
-);

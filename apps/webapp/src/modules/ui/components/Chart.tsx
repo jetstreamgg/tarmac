@@ -495,7 +495,7 @@ function CardTitleContent({
  * the loaded figure's `leading` and the loading placeholder's height, so the
  * two can't drift apart and re-open the load-time jump.
  */
-export function detailFigureLineBox(mobile: boolean): string {
+function detailFigureLineBox(mobile: boolean): string {
   return mobile ? 'h-[26px] leading-[26px]' : 'h-12 leading-[48px]';
 }
 

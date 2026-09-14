@@ -4,7 +4,7 @@ import { ReadHook } from '../hooks';
 import { useMemo } from 'react';
 import { useReadStUsdsImplementation } from './useReadStUsdsImplementation';
 
-export type StUsdsPreviewWithdrawHookResponse = ReadHook & {
+type StUsdsPreviewWithdrawHookResponse = ReadHook & {
   data?: bigint;
 };
 

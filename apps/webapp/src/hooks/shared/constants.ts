@@ -13,6 +13,5 @@ export const SAFE_TRANSACTION_SERVICE_URL: Record<number, string> = {
 
 export enum CapabilitySupportStatus {
   supported = 'supported',
-  ready = 'ready',
-  unsupported = 'unsupported'
+  ready = 'ready'
 }

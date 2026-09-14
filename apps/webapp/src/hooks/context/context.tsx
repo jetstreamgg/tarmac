@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface MakerHooksContextProps {
+interface MakerHooksContextProps {
   delegates: {
     ens: string;
   };
@@ -40,14 +40,3 @@ export const MakerHooksProvider = ({
     </MakerHooksContext.Provider>
   );
 };
-
-export function useMakerHooks() {
-  const { delegates, ipfs } = React.useContext(MakerHooksContext);
-  if (!delegates.ens || !ipfs.gateway) {
-    throw new Error(['`useMakerHooks` must be used within `MakerHooksProvider`.\n'].join('\n'));
-  }
-  return {
-    delegates,
-    ipfs
-  };
-}

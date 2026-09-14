@@ -9,7 +9,7 @@ import { useCollateralData } from '../vaults/useCollateralData';
 import { getIlkName } from '../vaults/helpers';
 import { calculateLiquidityBuffer } from './helpers';
 
-export type StUsdsHookData = {
+type StUsdsHookData = {
   totalAssets: bigint;
   totalSupply: bigint;
   assetPerShare: bigint;
@@ -27,7 +27,7 @@ export type StUsdsHookData = {
   line: bigint;
 };
 
-export type StUsdsHook = ReadHook & {
+type StUsdsHook = ReadHook & {
   data?: StUsdsHookData;
 };
 

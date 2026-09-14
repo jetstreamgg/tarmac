@@ -27,7 +27,7 @@ export interface StakeManageFlowState {
   selectedDelegate: `0x${string}` | undefined;
 }
 
-export type StakeManageFlowAction =
+type StakeManageFlowAction =
   | { type: 'setStakeEnabled'; enabled: boolean }
   | { type: 'setStakeMode'; mode: StakeCardMode }
   | { type: 'setSkyAmount'; amount: bigint }

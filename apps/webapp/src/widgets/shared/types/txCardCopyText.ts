@@ -7,5 +7,3 @@ export type TxCardCopyText = {
   [TxStatus.SUCCESS]: MessageDescriptor;
   [TxStatus.ERROR]: MessageDescriptor;
 };
-
-export type TxCardCopyTextWithCancel = TxCardCopyText & { [TxStatus.CANCELLED]: MessageDescriptor };

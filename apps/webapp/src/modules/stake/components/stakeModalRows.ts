@@ -29,10 +29,10 @@ import {
 } from '@/components/product/ModalGridCells';
 
 /** One labelled grid cell — the shared modal-grid cell model. */
-export type StakeModalCell = ModalGridCell;
+type StakeModalCell = ModalGridCell;
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
-export type StakeModalGridRow = StakeModalCell[];
+type StakeModalGridRow = StakeModalCell[];
 
 /** One side of the Reward cell: the farm's reward-token symbol (icon) and its display label. */
 export type StakeRewardSide = { symbol?: string; label: string };
@@ -48,7 +48,7 @@ const RISK_TONE: Record<RiskLevel, CellTone> = {
   [RiskLevel.LIQUIDATION]: 'error'
 };
 
-export const riskTone = (level: RiskLevel | undefined): CellTone | undefined =>
+const riskTone = (level: RiskLevel | undefined): CellTone | undefined =>
   level ? RISK_TONE[level] : undefined;
 
 /** Display strings for the stake confirm grid. Every figure arrives formatted. */

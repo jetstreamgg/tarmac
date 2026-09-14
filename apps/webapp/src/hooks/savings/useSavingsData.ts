@@ -18,14 +18,14 @@ import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';
 import { usePreviewSwapExactIn } from '../psm/usePreviewSwapExactIn';
 
-export type SavingsHookData = {
+type SavingsHookData = {
   savingsTvl: bigint;
   savingsRate: bigint;
   userSavingsBalance: bigint;
   userNstBalance: bigint;
 };
 
-export type DsrHook = ReadHook & {
+type DsrHook = ReadHook & {
   data?: SavingsHookData;
 };
 

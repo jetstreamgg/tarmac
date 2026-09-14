@@ -21,7 +21,7 @@ export const UPGRADE_TARGET: Record<UpgradeSourceToken, 'USDS' | 'SKY'> = {
   MKR: 'SKY'
 };
 
-export type UseUpgradeLaunchResult = EngineLaunchResult;
+type UseUpgradeLaunchResult = EngineLaunchResult;
 
 /**
  * The seam between the upgrade modal and the (unmodified) `useBatchUpgrade`

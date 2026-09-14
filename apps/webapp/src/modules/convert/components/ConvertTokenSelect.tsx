@@ -7,7 +7,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 export type ConvertTokenSymbol = 'USDS' | 'USDC';
 
-export const CONVERT_TOKEN_SYMBOLS: ConvertTokenSymbol[] = ['USDS', 'USDC'];
+const CONVERT_TOKEN_SYMBOLS: ConvertTokenSymbol[] = ['USDS', 'USDC'];
 
 function TokenOption({ symbol }: { symbol: ConvertTokenSymbol }) {
   return (

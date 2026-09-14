@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  * corners, so the list container owns the radius — same scheme as ui/table.
  */
 
-export type TransactionCardField = { label: ReactNode; value: ReactNode };
+type TransactionCardField = { label: ReactNode; value: ReactNode };
 
 function Field({
   field,

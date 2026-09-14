@@ -17,7 +17,7 @@ type RewardsChartInfo = {
   withdraw_volume: string;
 };
 
-export type RewardsChartInfoParsed = {
+type RewardsChartInfoParsed = {
   blockTimestamp: number;
   price: string;
   suppliers: number;

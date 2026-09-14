@@ -52,7 +52,7 @@ const RETIRED_PARAMS = ['input_amount', 'linked_action'];
  */
 const DROPPED_PARAMS = new Set<string>([...Object.values(LegacyParams), ...RETIRED_PARAMS]);
 
-export type LegacyRedirect = { to: string; search: Record<string, string> };
+type LegacyRedirect = { to: string; search: Record<string, string> };
 
 /** The Earn marketplace, filtered to the family the legacy link asked for. */
 function earnList(intent: Intent, search: Record<string, string>): LegacyRedirect {

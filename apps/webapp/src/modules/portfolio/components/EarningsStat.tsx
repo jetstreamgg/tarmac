@@ -29,8 +29,6 @@ import {
   type WalletEarnings
 } from '../earnings/types';
 
-export type { MissingSourceDetail };
-
 // APP-450 stat rendering, shared by the earnings-card footer and the position
 // cards. Guiding rule carried from the data layer: a wrong number is worse
 // than no number — anything notAvailable renders a dash with an explanation,
@@ -106,10 +104,7 @@ function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: 
 }
 
 /** Resolves the combined stat's missing-source ids to their reasons. */
-export function missingSourceDetails(
-  earnings: WalletEarnings,
-  field: 'total' | 'month'
-): MissingSourceDetail[] {
+function missingSourceDetails(earnings: WalletEarnings, field: 'total' | 'month'): MissingSourceDetail[] {
   const ids = field === 'total' ? earnings.combined.missingFromTotal : earnings.combined.missingFromMonth;
   return ids.map(id => {
     const protocol = earnings.protocols.find(p => p.id === id);

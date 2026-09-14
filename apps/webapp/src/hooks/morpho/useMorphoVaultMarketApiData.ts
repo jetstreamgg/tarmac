@@ -72,7 +72,7 @@ type MorphoVaultMarketApiResponse = {
 /**
  * Vault market data including rate and market state information
  */
-export type MorphoVaultMarketData = {
+type MorphoVaultMarketData = {
   /** Rate data (APY, fees, rewards) */
   rate: MorphoVaultRateData;
   /** Market state data (liquidity, utilization, idle assets) */
@@ -87,7 +87,7 @@ export type MorphoVaultMarketData = {
   totalSupply: bigint;
 };
 
-export type MorphoVaultMarketDataHook = ReadHook & {
+type MorphoVaultMarketDataHook = ReadHook & {
   data?: MorphoVaultMarketData;
 };
 

@@ -136,13 +136,6 @@ function offSupportedChains(supportedChainIds: readonly number[], chainId: numbe
 
 // The transaction-orchestration contract is frozen in ./transactionContract.
 // Re-exported here so existing import sites keep working.
-export type {
-  TransactionAnalytics,
-  TransactionConfig,
-  TransactionEntry,
-  TxCallbacks
-} from './transactionContract';
-
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
 // Internal: the DOM node on the modal's entry screen where an editable flow's

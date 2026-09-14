@@ -1,7 +1,6 @@
 import { TrustLevel } from './hooks';
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 export const TRUST_LEVELS: Record<TrustLevelEnum, TrustLevel> = {
   0: {

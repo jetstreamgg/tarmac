@@ -28,7 +28,7 @@ import {
   type PsmConversionDisabledReason
 } from './usePsmConversion.helpers';
 
-export interface UsePsmConversionParams extends BatchWriteHookParams {
+interface UsePsmConversionParams extends BatchWriteHookParams {
   direction: PsmConversionDirection;
   amount: bigint;
   referralCode?: number;

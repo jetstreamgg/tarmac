@@ -15,7 +15,7 @@ export type StakeUrnVault = {
   usdsDebt: bigint;
 };
 
-export type StakeUrnVaultsResult = {
+type StakeUrnVaultsResult = {
   /** One entry per urn the engine reports for the user, ascending by index. Undefined until the first read lands. */
   data: StakeUrnVault[] | undefined;
   /** First load only — a refetch keeps the previous list on screen. */
@@ -34,7 +34,7 @@ export const STAKE_URN_VAULTS_KEY = 'stake-urn-vaults';
  * multicalls with `allowFailure: false`, so any failed leg rejects the query
  * instead of silently dropping an urn).
  */
-export async function readStakeUrnVaults(
+async function readStakeUrnVaults(
   config: Config,
   chainId: number,
   address: `0x${string}`

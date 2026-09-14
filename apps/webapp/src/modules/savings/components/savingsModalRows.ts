@@ -28,7 +28,7 @@ export type SavingsModalCell = ModalGridCell;
 export type SavingsModalGridRow = SavingsModalCell[];
 
 /** Display strings for the "Supply to Sky Savings" entry screen (Figma 859:36036). */
-export type SupplyModalRowInput = {
+type SupplyModalRowInput = {
   /** Current savings rate, formatted (e.g. "6.50%"). */
   savingsRate: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
@@ -95,7 +95,7 @@ export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalGr
 }
 
 /** Display strings for the "Withdraw from Sky Savings" entry screen. */
-export type WithdrawModalRowInput = {
+type WithdrawModalRowInput = {
   /** Current savings rate, formatted. */
   savingsRate: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
@@ -151,7 +151,7 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
 }
 
 /** Display strings for the "Review supply" stage (Figma 859:36154). */
-export type SupplyReviewRowInput = {
+type SupplyReviewRowInput = {
   /** sUSDS you'll receive, formatted (e.g. "9,999.99 sUSDS"). */
   youReceive: string;
   /** 1Y projected earnings on the position the supply leaves behind, formatted. */
@@ -188,7 +188,7 @@ export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModal
 }
 
 /** Display strings for the "Review withdrawal" stage (Figma 859:36322). */
-export type WithdrawReviewRowInput = {
+type WithdrawReviewRowInput = {
   /** Amount you'll receive in the destination token, formatted (e.g. "9,999.99 USDS"). */
   youReceive: string;
   /** Destination token symbol for the You'll receive icon. */

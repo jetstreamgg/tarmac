@@ -17,7 +17,7 @@ import { TokenIcon } from './TokenIcon';
  * size children with `h-full w-full`. `TokenIconStack` is the Figma set's
  * Type=Tokens flavour, building the stack from plain token symbols.
  */
-export type IconStackEntrance = {
+type IconStackEntrance = {
   /** Seconds before the first badge pops in. */
   delay?: number;
   /** Seconds between consecutive badges (the comp: 0.1). */

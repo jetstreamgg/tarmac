@@ -66,7 +66,7 @@ type MerklRewardsApiResponse = {
 }[];
 
 /** Processed reward data for a single token */
-export type MorphoVaultReward = {
+type MorphoVaultReward = {
   /** Reward token address */
   tokenAddress: `0x${string}`;
   /** Reward token symbol (e.g., "MORPHO") */
@@ -100,14 +100,14 @@ export type MorphoVaultReward = {
   distributionChainId: number;
 };
 
-export type MorphoVaultRewardsData = {
+type MorphoVaultRewardsData = {
   /** List of rewards by token */
   rewards: MorphoVaultReward[];
   /** Whether the user has any claimable rewards */
   hasClaimableRewards: boolean;
 };
 
-export type MorphoVaultRewardsHook = ReadHook & {
+type MorphoVaultRewardsHook = ReadHook & {
   data?: MorphoVaultRewardsData;
 };
 

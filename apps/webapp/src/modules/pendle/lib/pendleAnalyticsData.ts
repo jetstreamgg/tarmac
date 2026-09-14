@@ -4,7 +4,7 @@ import type { PendleConvertQuote, PendleMarketConfig, Token } from '@/hooks';
 
 export type PendleAnalyticsSide = 'buy' | 'sell' | 'redeem';
 
-export type PendleAnalyticsDataInput = {
+type PendleAnalyticsDataInput = {
   market: PendleMarketConfig;
   side: PendleAnalyticsSide;
   originToken: Token;

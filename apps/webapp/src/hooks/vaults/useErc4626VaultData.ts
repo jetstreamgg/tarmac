@@ -16,7 +16,7 @@ const VAULT_CONTRACT_DATA_SOURCE_TITLE: Record<VaultProvider, string> = {
 /**
  * Data returned by the useErc4626VaultData hook
  */
-export type Erc4626VaultData = {
+type Erc4626VaultData = {
   /** Total assets held by the vault */
   totalAssets: bigint;
   /** Total supply of vault shares */
@@ -39,7 +39,7 @@ export type Erc4626VaultData = {
   decimals: number;
 };
 
-export type Erc4626VaultDataHook = ReadHook & {
+type Erc4626VaultDataHook = ReadHook & {
   data?: Erc4626VaultData;
 };
 

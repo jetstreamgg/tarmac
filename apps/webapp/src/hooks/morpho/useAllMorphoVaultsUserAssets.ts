@@ -15,7 +15,7 @@ function getTokenDecimals(decimals: number | Record<number, number>, forChainId:
 }
 
 /** Individual vault balance data */
-export type MorphoVaultBalance = {
+type MorphoVaultBalance = {
   /** Vault configuration */
   vault: MorphoVaultConfig;
   /** Vault contract address */
@@ -29,7 +29,7 @@ export type MorphoVaultBalance = {
 };
 
 /** Return type for useAllMorphoVaultsUserAssets */
-export type AllMorphoVaultsUserAssetsData = {
+type AllMorphoVaultsUserAssetsData = {
   /** Total user assets across all vaults, normalized to 18 decimals (WAD) */
   total: bigint;
   /** Individual vault balances */

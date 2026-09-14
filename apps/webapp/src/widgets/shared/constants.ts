@@ -89,13 +89,4 @@ export enum NotificationType {
   SUSDS_RECEIVED = 'susds_received'
 }
 
-export const notificationTypeMaping: Record<string, NotificationType> = {
-  DAI: NotificationType.DAI_RECEIVED,
-  MKR: NotificationType.MKR_RECEIVED,
-  USDS: NotificationType.USDS_RECEIVED,
-  SKY: NotificationType.SKY_RECEIVED,
-  USDC: NotificationType.USDS_RECEIVED,
-  SUSDS: NotificationType.SUSDS_RECEIVED
-};
-
 export const EPOCH_LENGTH = 30 * 60; // 30 minutes

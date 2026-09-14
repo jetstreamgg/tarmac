@@ -5,7 +5,7 @@ import { SuccessCheckSolidColor } from '../../icons/Icons';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { cn } from '@/widgets/lib/utils';
 
-export interface StepIndicatorProps {
+interface StepIndicatorProps {
   stepNumber: number;
   txStatus: TxStatus;
   currentStep: boolean;

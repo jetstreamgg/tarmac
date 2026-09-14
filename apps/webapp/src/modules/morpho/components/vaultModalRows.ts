@@ -26,7 +26,7 @@ import {
 export type VaultModalGridRow = ModalGridCell[];
 
 /** Display strings for the vault supply/withdraw entry screens (Figma 859:38105 / 859:38297). */
-export type VaultEntryRowInput = {
+type VaultEntryRowInput = {
   /** Vault provider - picks the rate explainer (Morpho vs Spark/Tether copy). */
   provider?: VaultProvider;
   /** Net rate, formatted (e.g. "4.10%"). */
@@ -82,7 +82,7 @@ export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRo
 }
 
 /** Display strings for the vault review stages (Figma 859:38553 supply / 859:38234 withdrawal). */
-export type VaultReviewRowInput = {
+type VaultReviewRowInput = {
   /** Vault provider - picks the rate explainer (Morpho vs Spark/Tether copy). */
   provider?: VaultProvider;
   /** Entered amount, formatted (the 12px asset icon carries the denomination). */

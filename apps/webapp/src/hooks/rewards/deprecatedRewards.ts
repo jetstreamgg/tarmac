@@ -7,7 +7,7 @@ type ChainAddresses = { [chainId: number]: `0x${string}` };
  * These rewards should not be offered to new users, but existing
  * positions with these rewards can still claim and withdraw.
  */
-export const DEPRECATED_REWARD_CONTRACTS: ChainAddresses[] = [usdsSkyRewardAddress];
+const DEPRECATED_REWARD_CONTRACTS: ChainAddresses[] = [usdsSkyRewardAddress];
 
 /**
  * Checks if a given reward contract address is deprecated.

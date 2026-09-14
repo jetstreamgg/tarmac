@@ -28,7 +28,7 @@ export type RewardsModalCell = ModalGridCell;
 export type RewardsModalGridRow = RewardsModalCell[];
 
 /** Display strings for the "Supply to {farm}" entry grid. */
-export type RewardsSupplyModalRowInput = {
+type RewardsSupplyModalRowInput = {
   /** Current reward rate, formatted (e.g. "4.50%"), or "–" for point farms. */
   rate: string;
   /** Network the transaction runs on (e.g. "Ethereum"). */
@@ -85,7 +85,7 @@ export function buildRewardsSupplyModalRows(input: RewardsSupplyModalRowInput): 
 }
 
 /** Display strings for the "Withdraw from {farm}" entry grid. */
-export type RewardsWithdrawModalRowInput = Omit<RewardsSupplyModalRowInput, 'rewardsIn'>;
+type RewardsWithdrawModalRowInput = Omit<RewardsSupplyModalRowInput, 'rewardsIn'>;
 
 /**
  * Grid for the "Withdraw from {farm}" entry screen — the supply grid's mirror
@@ -114,7 +114,7 @@ export function buildRewardsWithdrawModalRows(input: RewardsWithdrawModalRowInpu
 }
 
 /** Display strings for the "Review supply" stage. */
-export type RewardsSupplyReviewRowInput = {
+type RewardsSupplyReviewRowInput = {
   /** 1Y projected earnings after the deposit, `$`-formatted, or "–" for point farms. */
   estEarnings: string;
   /** Product name (e.g. "SPK Rewards"). */
@@ -154,7 +154,7 @@ export function buildRewardsSupplyReviewRows(input: RewardsSupplyReviewRowInput)
 }
 
 /** Display strings for the "Review withdrawal" stage. */
-export type RewardsWithdrawReviewRowInput = {
+type RewardsWithdrawReviewRowInput = {
   /** Amount you'll receive in the supply token, formatted (e.g. "9,999.99 USDS"). */
   youReceive: string;
   /** Supply-token symbol for the You'll receive icon. */

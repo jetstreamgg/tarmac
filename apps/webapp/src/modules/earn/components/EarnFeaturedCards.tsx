@@ -39,7 +39,7 @@ type HighlightedProductContext = {
  * renders the full-width desktop treatment when `wide` is provided, any other
  * combination the vertical cards.
  */
-export type HighlightedProduct = {
+type HighlightedProduct = {
   /** Stable key; also the testid suffix (`earn-featured-{id}`). */
   id: string;
   /** The product switch: flip to feature/unfeature without touching markup. */
