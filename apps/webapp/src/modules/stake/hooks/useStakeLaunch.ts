@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
-import { formatUnits } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
@@ -28,7 +27,7 @@ import { TxStatus } from '@/widgets/shared/constants';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
 import { toLaunchResult, useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
-import { stakeUsdNotional } from '../lib/stakeUsdNotional';
+import { stakeUsdNotional, wadToFloat } from '../lib/stakeUsdNotional';
 
 /** The per-flow half of a stake modal launch — what `launchStakeModal` does not fix. */
 type StakeLaunchOverrides = Pick<
@@ -311,8 +310,8 @@ export function useStakeLaunch({
       selectedRewardSymbol,
       isDelegating: hasDelegate,
       isBatchTx: shouldUseBatch,
-      ...(skyToLock > 0n && { amount: Number(formatUnits(skyToLock, 18)), stakeAction: 'stake' }),
-      ...(hasBorrow && { borrowAmount: Number(formatUnits(usdsToBorrow, 18)), borrowAction: 'borrow' })
+      ...(skyToLock > 0n && { amount: wadToFloat(skyToLock), stakeAction: 'stake' }),
+      ...(hasBorrow && { borrowAmount: wadToFloat(usdsToBorrow), borrowAction: 'borrow' })
     };
 
     launchStakeModal(launchModal, StakeFlow.OPEN, {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { formatUnits } from 'viem';
+import { wadToFloat } from '../lib/stakeUsdNotional';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -217,7 +217,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
         .filter(claim => claim.claimBalance > 0n)
         .map(claim => ({
           tokenSymbol: claim.rewardSymbol,
-          amount: Number(formatUnits(claim.claimBalance, 18)),
+          amount: wadToFloat(claim.claimBalance),
           rewardContractAddress: claim.contractAddress
         }));
       const claimAction =
@@ -242,7 +242,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
         isBatchTx: restake ? shouldUseBatch : true,
         ...(restake &&
           restakeSkyAmount > 0n && {
-            restakeSkyAmount: Number(formatUnits(restakeSkyAmount, 18)),
+            restakeSkyAmount: wadToFloat(restakeSkyAmount),
             restakeSkyRewards: true
           }),
         ...(claimAction != null && { claimAction, claimedRewards })

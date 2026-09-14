@@ -2,7 +2,7 @@ import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { usdtAbi, usdtAddress } from '../generated';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { VaultProvider } from './types';
 import { buildVaultDepositCall } from '@/lib/vaults/buildVaultDepositCall';
@@ -110,7 +110,7 @@ export function useBatchVaultDeposit({
     !!vaultAddress &&
     !!assetAddress;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -118,11 +118,7 @@ export function useBatchVaultDeposit({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }
