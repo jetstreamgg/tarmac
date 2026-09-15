@@ -98,7 +98,7 @@ export interface ProductDetailTemplateProps {
    * The chains the product runs on — drives the header's network control.
    * Several chains: the NetworkSelect dropdown (pill right of the title from
    * md up; a full-width labelled row under it on phones, M6.3 486:20732).
-   * One chain (or a Safe wallet): nothing to switch, so from md up a static
+   * One chain (or a Safe, which follows the Safe app): nothing to switch, so from md up a static
    * pill states the chain, and on phones the DS title-suffix badge takes its
    * place beside the title (1295:20810) — a control-shaped row with just an
    * icon in it read as broken. Omit for no network control at all.

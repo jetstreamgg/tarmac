@@ -171,7 +171,7 @@ export type ChainGuard = {
   currentName?: string;
   /** Name of the chain to switch to; undefined when none is offerable. */
   targetName?: string;
-  /** Switches the wallet to the supported chain; undefined for Safe wallets. */
+  /** Switches the wallet to the supported chain; undefined when the dapp must not switch it (a Safe). */
   onSwitch?: () => void;
   /** True while the wallet is answering the guard's own switch request. */
   switching?: boolean;
@@ -351,8 +351,9 @@ export function TransactionModal({
   // and on the failure view, whose Retry would fire too — and the flow's own
   // primary CTA is REPLACED by the switch action (one button, not a second one
   // beside a disabled Confirm). The switch has no path to the executor, and
-  // the provider refuses a wrong-chain fire at the gate anyway; when the wallet
-  // can't switch (Safe), the flow's CTAs stay, disabled, under the message.
+  // the provider refuses a wrong-chain fire at the gate anyway; when the dapp
+  // must not switch the wallet (a Safe), the flow's CTAs stay, disabled, under
+  // the message.
   const chainGuardBlock = chainGuard && (
     <div className="flex items-start gap-2" data-testid="transaction-chain-guard">
       <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
