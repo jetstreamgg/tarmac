@@ -571,6 +571,21 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.usdsToBorrow).toBe(300_000n * WAD);
   });
 
+  it('borrow: switching on with zero debt pre-selects the dust minimum', () => {
+    h.existingDebt = 0n;
+    renderSheet();
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
+  });
+
+  it('borrow: switching on with existing debt leaves the amount empty', () => {
+    renderSheet();
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(h.launchParams?.usdsToBorrow ?? 0n).toBe(0n);
+  });
+
   it('borrow: below the min collateral the warning owns the state and the max hint hides', () => {
     h.existingDebt = 0n;
     h.existingCollateral = 1_000_000n * WAD;

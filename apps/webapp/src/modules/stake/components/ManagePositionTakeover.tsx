@@ -590,7 +590,22 @@ export function ManagePositionTakeover({
         mode={state.borrowMode}
         onModeChange={mode => dispatch({ type: 'setBorrowMode', mode })}
         enabled={state.borrowEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setBorrowEnabled', enabled })}
+        onEnabledChange={enabled => {
+          dispatch({ type: 'setBorrowEnabled', enabled });
+          // Same as the open flow: a debt-free urn pre-selects the dust minimum on switch-on.
+          const dust = existingVault?.dust ?? simulatedVault?.dust;
+          if (
+            enabled &&
+            existingDebt === 0n &&
+            state.borrowMode === 'borrow' &&
+            dust !== undefined &&
+            !simulationError &&
+            !minCollateralNotMet &&
+            state.usdsAmount === 0n
+          ) {
+            dispatch({ type: 'setUsdsAmount', amount: dust });
+          }
+        }}
         amount={state.usdsAmount}
         onAmountChange={(amount, stagedWipeAll) =>
           dispatch({ type: 'setUsdsAmount', amount, wipeAll: stagedWipeAll })
