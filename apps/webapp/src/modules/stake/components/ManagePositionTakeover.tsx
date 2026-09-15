@@ -112,14 +112,20 @@ export function ManagePositionTakeover({
   // Debounced simulation for validation, so errors wait for typing to settle.
   const {
     data: debouncedVault,
-    isLoading: simulationLoading,
-    error: simulationError
+    isLoading: debouncedSimLoading,
+    error: debouncedSimError
   } = useSimulatedVault(
     newCollateralAmount > 0n ? newCollateralAmount : 0n,
     newDebtValue > 0n ? newDebtValue : 0n,
     existingDebt,
     ilkName
   );
+  // A pending debounce still validates the previous amounts, so its verdict
+  // would flash stale errors; treat that window as loading instead.
+  const simulationSettling =
+    debouncedSkyAmount !== state.skyAmount || debouncedUsdsAmount !== state.usdsAmount;
+  const simulationLoading = debouncedSimLoading || simulationSettling;
+  const simulationError = simulationSettling ? null : debouncedSimError;
   const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
 
   const { data: skyBalance, isLoading: skyBalanceLoading } = useTokenBalance({
@@ -206,7 +212,8 @@ export function ManagePositionTakeover({
   const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =
     calculateAvailableBorrow(collateralData, simulatedVault?.maxSafeBorrowableIntAmount);
 
-  const minCollateralNotMet = state.borrowMode === 'borrow' && isMinCollateralNotMet(debouncedVault);
+  // Live, like the slider axis: a debounced gate lags the bar in both directions.
+  const minCollateralNotMet = state.borrowMode === 'borrow' && isMinCollateralNotMet(simulatedVault);
 
   const maxRepayable = calculateMaxRepayable({
     debtValue: existingDebt,
@@ -622,7 +629,7 @@ export function ManagePositionTakeover({
         wipeAll={state.wipeAll}
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}
-        currentCollateral={newCollateralAmount > 0n ? newCollateralAmount : 0n}
+        currentCollateral={liveCollateralAmount > 0n ? liveCollateralAmount : 0n}
         hasStagedChange={
           (state.stakeEnabled && state.skyAmount > 0n) ||
           (state.borrowEnabled && (state.usdsAmount > 0n || state.wipeAll))
