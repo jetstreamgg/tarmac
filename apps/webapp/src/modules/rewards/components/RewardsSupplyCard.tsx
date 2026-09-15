@@ -9,7 +9,10 @@ import { InlineTokenLabel } from '@/components/product/InlineTokenLabel';
 import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo } from '@/components/product/RateInfo';
+import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { NO_VALUE } from '@/lib/constants';
+
+const noop = () => {};
 
 /**
  * No-position rewards entry card (the rewards analogue of `SavingsSupplyCard`).
@@ -36,6 +39,12 @@ export function RewardsSupplyCard({
 }) {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
+
+  // The CTA stays enabled while disconnected, like every other product's:
+  // clicking routes through the connect flow and continues into the supply
+  // modal once connected. Deprecated farms pass no `onSupply` and render no
+  // CTA at all, so the no-op fallback never reaches a button.
+  const onSupplyOrConnect = useConnectThenAct(onSupply ?? noop, 'rewards_supply');
 
   const supplySymbol = contract.supplyToken.symbol;
   const rewardSymbol = contract.rewardToken.symbol;
@@ -136,8 +145,7 @@ export function RewardsSupplyCard({
             variant="primary"
             size="l"
             className="w-full"
-            onClick={onSupply}
-            disabled={!isConnected}
+            onClick={onSupplyOrConnect}
             data-testid="rewards-supply-cta"
           >
             <Trans>Supply</Trans>
