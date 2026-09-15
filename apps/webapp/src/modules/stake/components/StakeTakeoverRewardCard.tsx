@@ -20,7 +20,8 @@ import { farmRewardSymbol } from '../lib/farmRewardSymbol';
  * EXCEPT `keepAddress` (the position's current farm), which renders with a
  * "Deprecated" chip and the legacy choose-another-reward warning so the holder
  * can switch away without unstaking. Shared with the Change reward modal
- * (single column) under its own testid prefix.
+ * (`columns={1}`, Figma 3015:61498), where each tile is a single 69px row:
+ * icon + name left, Rate | TVL right-aligned.
  */
 export function RewardList({
   selectedRewardContract,
@@ -37,7 +38,8 @@ export function RewardList({
   /** 1 = full-width stacked tiles (the Change reward modal, Figma 3015:61490). */
   columns?: 1 | 2;
 }) {
-  const gridClassName = cn('grid grid-cols-1 gap-3', columns === 2 && 'md:grid-cols-2');
+  const row = columns === 1;
+  const gridClassName = cn('grid grid-cols-1 gap-3', !row && 'md:grid-cols-2');
   const chainId = useChainId();
   const { data: rewardContracts, isLoading } = useStakeRewardContracts();
   const farms = filterDeprecatedRewards(rewardContracts ?? [], chainId, keepAddress);
@@ -53,12 +55,22 @@ export function RewardList({
   };
 
   const currentFarmDeprecated = !!keepAddress && isDeprecatedStakeReward(keepAddress, chainId);
+  // Tiles use Body 7 / Label 6; the row comp steps up to Body 6 / Label 5.
+  const labelClassName = row
+    ? 'text-fgSecondary text-xs leading-[18px]'
+    : 'text-fgSecondary text-[11px] leading-4';
+  const valueClassName = row
+    ? 'text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]'
+    : 'text-text font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]';
 
   if (isLoading) {
     return (
       <div className={gridClassName}>
         {[0, 1].map(tile => (
-          <Skeleton key={tile} className="h-[113px] w-full rounded-2xl" />
+          <Skeleton
+            key={tile}
+            className={cn('w-full', row ? 'h-[69px] rounded-[20px]' : 'h-[113px] rounded-2xl')}
+          />
         ))}
       </div>
     );
@@ -91,7 +103,10 @@ export function RewardList({
                 data-testid={`${dataTestIdPrefix}-${address.toLowerCase()}`}
                 aria-pressed={isSelected}
                 className={cn(
-                  'flex w-full flex-col gap-5 rounded-2xl border p-[19px] text-left transition-colors',
+                  'flex w-full border text-left transition-colors',
+                  row
+                    ? 'items-center justify-between gap-4 rounded-[20px] px-[19px] py-[15px]'
+                    : 'flex-col gap-5 rounded-2xl p-[19px]',
                   isSelected
                     ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
                     : 'border-borderPrimary bg-transparent'
@@ -99,7 +114,12 @@ export function RewardList({
               >
                 <span className="flex min-w-0 items-center gap-2">
                   {symbol && (
-                    <TokenIcon token={{ symbol }} width={20} className="h-5 w-5" showChainIcon={false} />
+                    <TokenIcon
+                      token={{ symbol }}
+                      width={row ? 24 : 20}
+                      className={row ? 'h-6 w-6' : 'h-5 w-5'}
+                      showChainIcon={false}
+                    />
                   )}
                   <span className="text-text font-circle truncate text-base leading-[18px] font-medium tracking-[-0.32px]">
                     {symbol ?? formatAddress(address, 6, 4)}
@@ -110,21 +130,21 @@ export function RewardList({
                     </span>
                   )}
                 </span>
-                <span className="flex items-start gap-4">
-                  <span className="flex w-12 flex-col gap-[3px]">
-                    <span className="text-fgSecondary text-[11px] leading-4">
+                <span className={cn('flex gap-4', row ? 'shrink-0 items-center' : 'items-start')}>
+                  <span className={cn('flex w-12 flex-col gap-[3px]', row && 'items-end')}>
+                    <span className={labelClassName}>
                       <Trans>Rate</Trans>
                     </span>
-                    <span className="text-text font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]">
+                    <span className={valueClassName}>
                       {Number.isFinite(rate) ? formatDecimalPercentage(rate) : NO_VALUE}
                     </span>
                   </span>
                   <span className="bg-borderPrimary h-8 w-px shrink-0" aria-hidden />
-                  <span className="flex w-12 flex-col gap-[3px]">
-                    <span className="text-fgSecondary text-[11px] leading-4">
+                  <span className={cn('flex w-12 flex-col gap-[3px]', row && 'items-end')}>
+                    <span className={labelClassName}>
                       <Trans>TVL</Trans>
                     </span>
-                    <span className="text-text font-circle flex items-center gap-1 text-xs leading-[14px] font-medium tracking-[-0.24px]">
+                    <span className={cn(valueClassName, 'flex items-center gap-1')}>
                       {Number.isFinite(tvl) ? formatNumber(tvl, { compact: true, maxDecimals: 2 }) : NO_VALUE}
                       <TokenIcon
                         token={{ symbol: 'SKY' }}
