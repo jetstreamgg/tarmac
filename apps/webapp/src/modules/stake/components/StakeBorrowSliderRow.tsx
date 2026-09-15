@@ -114,11 +114,11 @@ export function StakeBorrowSliderRow({
           className="bg-sliderTrack has-focus-visible:ring-focusRing relative h-3 w-full grow overflow-hidden rounded-[4px] has-focus-visible:ring-1"
         >
           {isBorrow && marker !== undefined && !disabled && (
-            // Already-borrowed share: raw #090420 at 35% in the comp, no variable.
+            // Already-borrowed share; the comp has no light mode, see globals.css.
             <span
               aria-hidden
               data-slot="slider-borrowed"
-              className="absolute inset-y-0 left-0 bg-[#090420]/35"
+              className="bg-sliderBorrowed absolute inset-y-0 left-0"
               style={{ width: pct(marker) }}
             />
           )}
