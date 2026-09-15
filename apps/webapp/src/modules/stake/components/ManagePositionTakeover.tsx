@@ -78,8 +78,11 @@ export function ManagePositionTakeover({
 
   // Amounts routed through each card's mode; the reducer clears amounts on
   // toggle-off and mode switches, so these stay consistent by construction.
-  const debouncedSkyAmount = useDebounce(state.skyAmount);
-  const debouncedUsdsAmount = useDebounce(state.usdsAmount);
+  // A cleared amount (mode switch, toggle-off, emptied field) settles at once;
+  // otherwise the stale debounced value would validate under the new mode.
+  const settleCleared = (amount: bigint, debounced: bigint) => (amount === 0n ? 0n : debounced);
+  const debouncedSkyAmount = settleCleared(state.skyAmount, useDebounce(state.skyAmount));
+  const debouncedUsdsAmount = settleCleared(state.usdsAmount, useDebounce(state.usdsAmount));
   const skyToLock = state.stakeEnabled && state.stakeMode === 'stake' ? debouncedSkyAmount : 0n;
   const skyToFree = state.stakeEnabled && state.stakeMode === 'withdraw' ? debouncedSkyAmount : 0n;
   const usdsToBorrow = state.borrowEnabled && state.borrowMode === 'borrow' ? debouncedUsdsAmount : 0n;

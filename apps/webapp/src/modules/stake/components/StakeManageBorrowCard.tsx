@@ -330,6 +330,8 @@ export function StakeManageBorrowCard({
 
         {(isRepay ? !slider.hidden : !minCollateralNotMet) && (
           <StakeBorrowSliderRow
+            // Remount on a mode switch so the fill doesn't glide from the other axis.
+            key={mode}
             slider={slider}
             mode={isRepay ? 'repay' : 'borrow'}
             tone={sliderTone}
