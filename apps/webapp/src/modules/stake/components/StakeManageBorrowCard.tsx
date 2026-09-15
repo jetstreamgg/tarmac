@@ -6,6 +6,8 @@ import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RollingValue } from '@/components/ui/rolling-value';
+import { useSliderDrag } from '../hooks/useSliderDrag';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { RiskMeter } from '@/components/product/RiskMeter';
 import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
@@ -43,7 +45,7 @@ const RISK_PILL: Record<RiskLevel, string> = {
   [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
 };
 
-function RiskPill({ riskLevel }: { riskLevel: RiskLevel }) {
+function RiskPill({ riskLevel, instant }: { riskLevel: RiskLevel; instant?: boolean }) {
   return (
     <span
       className={cn(
@@ -51,7 +53,7 @@ function RiskPill({ riskLevel }: { riskLevel: RiskLevel }) {
         RISK_PILL[riskLevel]
       )}
     >
-      {capitalizeFirstLetter(riskLevel.toLowerCase())}
+      <RollingValue value={capitalizeFirstLetter(riskLevel.toLowerCase())} speed="stat" instant={instant} />
     </span>
   );
 }
@@ -161,9 +163,14 @@ export function StakeManageBorrowCard({
   // holds one row on phones; full precision from md up.
   const borrowedValue = (compact: boolean) => {
     const newDebt = simulatedVault?.debtValue;
-    return showDeltas && newDebt !== undefined && newDebt !== existingDebt
-      ? `${formatBigInt(existingDebt, { compact })} → ${formatBigInt(newDebt, { compact })}`
-      : formatBigInt(existingDebt, { compact });
+    return showDeltas && newDebt !== undefined && newDebt !== existingDebt ? (
+      <>
+        {formatBigInt(existingDebt, { compact })} →{' '}
+        <RollingValue value={formatBigInt(newDebt, { compact })} speed="stat" instant={dragging} enter />
+      </>
+    ) : (
+      formatBigInt(existingDebt, { compact })
+    );
   };
 
   const onPercentClick = (percent: number) => {
@@ -184,6 +191,7 @@ export function StakeManageBorrowCard({
 
   const currentRisk = existingVault?.riskLevel;
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
+  const { dragging, dragProps } = useSliderDrag();
 
   return (
     <StakeManageCard
@@ -258,7 +266,7 @@ export function StakeManageBorrowCard({
         />
 
         {(isRepay ? shouldShowSlider && !minCollateralNotMet : !inputDisabled) && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2" {...dragProps}>
             <Slider
               variant="range"
               value={sliderValue}
@@ -376,7 +384,7 @@ export function StakeManageBorrowCard({
                 isFullRepay ? (
                   t`No position`
                 ) : nextRisk && nextRisk !== currentRisk ? (
-                  <RiskPill riskLevel={nextRisk} />
+                  <RiskPill riskLevel={nextRisk} instant={dragging} />
                 ) : undefined
               ) : undefined
             }
@@ -393,14 +401,19 @@ export function StakeManageBorrowCard({
               )
             }
             next={
-              showDeltas
-                ? isFullRepay
-                  ? formatOraclePrice(0n)
-                  : simulatedVault?.liquidationPrice !== undefined &&
-                      simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
-                    ? formatOraclePrice(simulatedVault.liquidationPrice)
-                    : undefined
-                : undefined
+              showDeltas ? (
+                isFullRepay ? (
+                  formatOraclePrice(0n)
+                ) : simulatedVault?.liquidationPrice !== undefined &&
+                  simulatedVault.liquidationPrice !== existingVault?.liquidationPrice ? (
+                  <RollingValue
+                    value={formatOraclePrice(simulatedVault.liquidationPrice)}
+                    speed="stat"
+                    instant={dragging}
+                    enter
+                  />
+                ) : undefined
+              ) : undefined
             }
             dataTestId="stake-manage-liq-price-row"
           />

@@ -5,6 +5,8 @@ import { Info } from 'lucide-react';
 import { formatBigInt, formatUsd, WAD } from '@/utils';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RollingValue } from '@/components/ui/rolling-value';
+import { useSliderDrag } from '../hooks/useSliderDrag';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -77,6 +79,7 @@ export function StakeManageStakeCard({
     onAmountChange(percent === 100 ? base : ((base * BigInt(percent)) / 100n / WAD) * WAD);
   };
   const onPercentClick = (percent: number) => onSliderChange(percent);
+  const { dragging, dragProps } = useSliderDrag();
 
   // Comp values carry a 12px SKY icon instead of the symbol text (1036:213909).
   const skyIcon = (
@@ -119,7 +122,7 @@ export function StakeManageStakeCard({
           }
         />
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2" {...dragProps}>
           <Slider
             value={[sliderPercent]}
             max={100}
@@ -189,9 +192,9 @@ export function StakeManageStakeCard({
               )
             }
             next={
-              estNextUsd !== null && amount > 0n && estNextUsd !== estCurrentUsd
-                ? formatUsd(estNextUsd)
-                : undefined
+              estNextUsd !== null && amount > 0n && estNextUsd !== estCurrentUsd ? (
+                <RollingValue value={formatUsd(estNextUsd)} speed="stat" instant={dragging} enter />
+              ) : undefined
             }
             dataTestId="stake-manage-est-rewards"
           />

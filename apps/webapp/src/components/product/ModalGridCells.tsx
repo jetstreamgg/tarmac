@@ -10,6 +10,7 @@ import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/Ne
 import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/modules/ui/hooks/useChainImage';
+import { RollingValue } from '@/components/ui/rolling-value';
 import { RateInfo, type RateInfoType } from './RateInfo';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
 
@@ -301,6 +302,36 @@ function CellToken({ symbol, ring }: { symbol: string; ring?: 'default' | 'morph
   return icon;
 }
 
+/**
+ * A cell figure that rolls over when it changes (Figma 1598:76582, the stat
+ * clock). Every entry-grid value that follows the typed amount — the position
+ * and yield deltas, You'll receive, the Pendle projections — goes through
+ * here, so the whole modal family rolls from one place. The rate accent is
+ * applied per glyph: the roll is keyed on the text, and the gradient "%"
+ * has to travel with the glyph it colours.
+ */
+function Roll({
+  text,
+  className,
+  accent = value => value,
+  enter
+}: {
+  text: string;
+  className?: string | false;
+  accent?: (value: string) => React.ReactNode;
+  enter?: boolean;
+}) {
+  return (
+    <RollingValue
+      value={accent(text)}
+      rollKey={text}
+      speed="stat"
+      enter={enter}
+      className={className || undefined}
+    />
+  );
+}
+
 /** Renders one grid cell's value: optional icons, then a single value or the before→after delta. */
 export function CellValue({ cell }: { cell: ModalGridCell }) {
   if (cell.loading) {
@@ -360,7 +391,7 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     return (
       <span className="flex items-center gap-1">
         {icon}
-        <span className={toneFor('before')}>{accent(cell.value)}</span>
+        <Roll text={cell.value} className={toneFor('before')} accent={accent} />
         {cell.rateAccent === 'morpho' && (
           <SparklesMorpho boxSize={12} className="size-3 shrink-0" aria-hidden />
         )}
@@ -382,12 +413,12 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
       <span className="flex flex-wrap items-center gap-1.5">
         <span className="flex items-center gap-1">
           {icon}
-          <span>{cell.left}</span>
+          <Roll text={cell.left} />
         </span>
         <span aria-hidden>=</span>
         <span className="flex items-center gap-1">
           <CellToken symbol={cell.rightToken} />
-          <span>{cell.right}</span>
+          <Roll text={cell.right} />
         </span>
       </span>
     );
@@ -396,12 +427,14 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     <span className="flex flex-wrap items-center gap-1.5">
       <span className="flex items-center gap-1">
         {icon}
-        <span className={toneFor('before')}>{accent(cell.before)}</span>
+        <Roll text={cell.before} className={toneFor('before')} accent={accent} />
       </span>
       <ArrowRight className="text-fgPrimary size-3 shrink-0" aria-hidden />
       <span className="flex items-center gap-1">
         {iconFor('after')}
-        <span className={toneFor('after')}>{accent(cell.after)}</span>
+        {/* The after side only exists once an amount is typed, so it rolls in
+            on its first appearance too, not just on later edits. */}
+        <Roll text={cell.after} className={toneFor('after')} accent={accent} enter />
       </span>
     </span>
   );
