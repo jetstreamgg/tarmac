@@ -37,11 +37,17 @@ type RollState = {
 export function RollingValue({
   value,
   className,
+  glyphClassName,
   speed = 'hero',
   instant = false
 }: {
   value: string | number;
   className?: string;
+  /** Classes for the glyph spans themselves (the in-flow one and the one
+   * rolling out). Needed for a `background-clip: text` paint: the glyphs are
+   * transformed, so a gradient clipped on an ancestor never reaches them —
+   * it has to be declared on the glyph that carries the transform. */
+  glyphClassName?: string;
   speed?: keyof typeof SPEEDS;
   /** Swap without rolling — for a burst of continuous updates (a slider
    * drag) where every roll would be interrupted mid-flight; discrete changes
@@ -130,7 +136,7 @@ export function RollingValue({
           data-testid="rolling-value-out"
           // Out of the accessibility tree and the selection, so neither a screen
           // reader nor a copy taken mid-roll picks up the stale figure.
-          className="absolute top-0 left-0 select-none"
+          className={cn('absolute top-0 left-0 select-none', glyphClassName)}
           initial={state.outFrom}
           animate={{ y: OUT_Y, opacity: 0 }}
           transition={outTransition}
@@ -146,7 +152,7 @@ export function RollingValue({
         key={`in-${state.gen}`}
         ref={glyphRef}
         data-testid={state.gen > 0 ? 'rolling-value-in' : undefined}
-        className="inline-block"
+        className={cn('inline-block', glyphClassName)}
         style={{ y: inY, opacity: inOpacity }}
         initial={state.gen > 0 && !prefersReducedMotion && !instant ? { y: IN_Y, opacity: 0 } : false}
         animate={{ y: REST_Y, opacity: 1 }}

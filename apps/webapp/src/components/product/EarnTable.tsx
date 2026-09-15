@@ -1,4 +1,4 @@
-import { KeyboardEvent, ReactNode, useState } from 'react';
+import { KeyboardEvent, ReactNode, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { RateInfo } from './RateInfo';
@@ -70,14 +70,18 @@ export type EarnTableRowItem = {
   isLoading?: boolean;
 };
 
-const COLUMNS: { key: EarnTableColumn; label: ReactNode }[] = [
-  { key: 'token', label: <Trans>Token</Trans> },
-  { key: 'network', label: <Trans>Network</Trans> },
-  { key: 'risk', label: <Trans>Risk profile</Trans> },
-  { key: 'rate', label: <Trans>Rate</Trans> },
-  { key: 'rate30d', label: <Trans>30D Rate</Trans> },
-  { key: 'tvl', label: <Trans>TVL</Trans> },
-  { key: 'position', label: <Trans>My position</Trans> }
+// Every column carries a width: with only the token column pinned, the rest
+// were auto-sized off whichever rows survived a filter, so a Core/Medium chip
+// nudged the header a few px as "$205.05m" gave way to "$4.62b". The shares
+// are the all-rows layout measured at 1320px, summing to 100%.
+const COLUMNS: { key: EarnTableColumn; label: ReactNode; width: string }[] = [
+  { key: 'token', label: <Trans>Token</Trans>, width: 'w-[34%]' },
+  { key: 'network', label: <Trans>Network</Trans>, width: 'w-[10%]' },
+  { key: 'risk', label: <Trans>Risk profile</Trans>, width: 'w-[12%]' },
+  { key: 'rate', label: <Trans>Rate</Trans>, width: 'w-[10%]' },
+  { key: 'rate30d', label: <Trans>30D Rate</Trans>, width: 'w-[13%]' },
+  { key: 'tvl', label: <Trans>TVL</Trans>, width: 'w-[10%]' },
+  { key: 'position', label: <Trans>My position</Trans>, width: 'w-[11%]' }
 ];
 
 /**
@@ -406,6 +410,29 @@ export function EarnTable({
   // the caller passed.
   const handleRowSelect = dimmed ? undefined : onRowSelect;
 
+  // A sort reorders rows in place — nothing collapses — so the 300ms corner
+  // handoff the filter collapse rides (ROW_SURFACE_TRANSITION_CLASSES) has
+  // nothing to glide along: the row landing at the top drew its old bottom
+  // radius fading out under a top radius fading in, reading as a lone pill
+  // for a beat. The re-sorted render settles its edges instantly; the
+  // transition is back two frames later, once the new edges are painted.
+  const [settleEdgesInstantly, setSettleEdgesInstantly] = useState(false);
+  const handleSortChange = (column: EarnTableColumn) => {
+    setSettleEdgesInstantly(true);
+    onSortChange?.(column);
+  };
+  useEffect(() => {
+    if (!settleEdgesInstantly) return;
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setSettleEdgesInstantly(false));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [settleEdgesInstantly]);
+
   const handleRowKeyDown = (event: KeyboardEvent, id: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -425,7 +452,11 @@ export function EarnTable({
     );
 
   return (
-    <Table animateRows data-testid={`${tid}-opportunities-table`}>
+    <Table
+      animateRows
+      data-testid={`${tid}-opportunities-table`}
+      className={cn(settleEdgesInstantly && '[&_td>div>div]:transition-[background-color]')}
+    >
       <TableHeader>
         <TableRow>
           {COLUMNS.map(column => {
@@ -433,7 +464,7 @@ export function EarnTable({
             return (
               <TableHead
                 key={column.key}
-                className={cn(column.key === 'token' && 'w-[34%]')}
+                className={column.width}
                 aria-sort={isSorted ? (sort?.direction === 'asc' ? 'ascending' : 'descending') : undefined}
               >
                 {/* The explainer sits beside the sort button, not inside it:
@@ -444,7 +475,7 @@ export function EarnTable({
                     <button
                       type="button"
                       data-testid={`${tid}-sort-${column.key}`}
-                      onClick={() => onSortChange(column.key)}
+                      onClick={() => handleSortChange(column.key)}
                       className={cn(
                         'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
                         isSorted && 'text-fgPrimary'

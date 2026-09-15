@@ -11,7 +11,16 @@ import { cardInAnimate, cardInInitial } from '@/modules/ui/animation/presets';
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 const PopoverClose = PopoverPrimitive.Close;
-const PopoverArrow = PopoverPrimitive.Arrow;
+// Radix's arrow polygon carries no fill, so it painted UA black under the
+// light theme's #ecf0ff panel. The fill follows the widget surface token the
+// info popovers paint, so a theme swap moves both together.
+const PopoverArrow = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Arrow>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Arrow>
+>(({ className, ...props }, ref) => (
+  <PopoverPrimitive.Arrow ref={ref} className={cn('fill-containerDark', className)} {...props} />
+));
+PopoverArrow.displayName = PopoverPrimitive.Arrow.displayName;
 
 // The stock open/close motion (tailwindcss-animate zoom + fade + slide).
 // Kept separate so a caller can opt out and bring its own `animate-*`
