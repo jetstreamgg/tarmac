@@ -118,7 +118,7 @@ export function StakeBorrowSliderRow({
             <span
               aria-hidden
               data-slot="slider-borrowed"
-              className="absolute inset-y-0 left-0 rounded-[4px] bg-[#090420]/35"
+              className="absolute inset-y-0 left-0 bg-[#090420]/35"
               style={{ width: pct(marker) }}
             />
           )}
@@ -128,7 +128,7 @@ export function StakeBorrowSliderRow({
             className={cn(
               // Tailwind registers the gradient stops as <color> properties, so a
               // tone change crossfades (1s) instead of cutting; the snap glide stays 350ms.
-              'ease-out-quint absolute inset-y-0 rounded-[4px] bg-linear-to-r',
+              'ease-out-quint absolute inset-y-0 rounded-r-[4px] bg-linear-to-r',
               snapped
                 ? 'transition-[--tw-gradient-from,--tw-gradient-to,width] [transition-duration:1s,1s,350ms]'
                 : 'transition-[--tw-gradient-from,--tw-gradient-to] duration-1000',
