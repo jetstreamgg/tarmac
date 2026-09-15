@@ -22,6 +22,9 @@ const stubFlow = {
   reset: () => {}
 };
 
+/** What the batch flow reports about its chain's RPC (see `batchUnavailable`). */
+const batchFlow = vi.hoisted(() => ({ batchUnavailable: false }));
+
 vi.mock('./useSequentialTransactionFlow', () => ({
   useSequentialTransactionFlow: (parameters: { enabled: boolean }) => {
     sequentialSpy(parameters);
@@ -30,9 +33,9 @@ vi.mock('./useSequentialTransactionFlow', () => ({
 }));
 
 vi.mock('./useSendBatchTransactionFlow', () => ({
-  useSendBatchTransactionFlow: (parameters: { enabled: boolean }) => {
+  useSendBatchTransactionFlow: (parameters: { enabled: boolean; simulateEnabled: boolean }) => {
     batchSpy(parameters);
-    return stubFlow;
+    return { ...stubFlow, batchUnavailable: batchFlow.batchUnavailable };
   }
 }));
 
@@ -48,12 +51,14 @@ const call: Call = {
 /** `enabled` most recently handed to the sequential flow. */
 const sequentialEnabled = () => sequentialSpy.mock.lastCall?.[0].enabled;
 const batchEnabled = () => batchSpy.mock.lastCall?.[0].enabled;
+const batchSimulateEnabled = () => batchSpy.mock.lastCall?.[0].simulateEnabled;
 
 beforeEach(() => {
   sequentialSpy.mockClear();
   batchSpy.mockClear();
   capabilities.data = undefined;
   capabilities.isLoading = true;
+  batchFlow.batchUnavailable = false;
 });
 
 afterEach(cleanup);
@@ -84,6 +89,20 @@ describe('useTransactionFlow', () => {
 
       expect(sequentialEnabled()).toBe(false);
       expect(batchEnabled()).toBe(false);
+    });
+
+    it('starts the batch simulation without waiting for the probe', () => {
+      // The simulation is an RPC round trip of its own; serialising it behind the wallet
+      // probe would be the claim-modal latency all over again, on the batch side.
+      renderHook(() => useTransactionFlow({ calls: [call, call] }));
+
+      expect(batchSimulateEnabled()).toBe(true);
+    });
+
+    it('does not simulate a bundle for a single call', () => {
+      renderHook(() => useTransactionFlow({ calls: [call] }));
+
+      expect(batchSimulateEnabled()).toBe(false);
     });
 
     it('honours an explicitly disabled flow', () => {
@@ -123,6 +142,22 @@ describe('useTransactionFlow', () => {
 
       expect(sequentialEnabled()).toBe(true);
       expect(batchEnabled()).toBe(false);
+      // …and stops simulating a bundle that will never be sent.
+      expect(batchSimulateEnabled()).toBe(false);
+    });
+
+    it('falls back to sequential when the RPC cannot simulate a bundle', () => {
+      // The wallet bundles, but this chain's RPC rejects the state override the batch
+      // simulation needs. Fail-closed there would leave Confirm disabled forever; the
+      // sequential path still validates every call, at the cost of N signatures.
+      capabilities.data = true;
+      capabilities.isLoading = false;
+      batchFlow.batchUnavailable = true;
+
+      const { result } = renderHook(() => useTransactionFlow({ calls: [call, call] }));
+
+      expect(sequentialEnabled()).toBe(true);
+      expect(result.current.isBatch).toBe(false);
     });
   });
 });

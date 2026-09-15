@@ -11,6 +11,7 @@ import {
   PendleConvertSide,
   useAllPendleMarketsHistory,
   useBatchPendleConvert,
+  useDebounce,
   useIsBatchSupported,
   usePendleMarketsApiData,
   usePendleUserPtBalances,
@@ -114,6 +115,12 @@ export function PendleModalForm({
 
   const [value, setValue] = useState('');
   const amount = parseAmountInput(value, inputDecimals);
+  // Every keystroke that yields a valid amount would otherwise refire the
+  // Pendle quote (external API), the engine's simulation, the fee estimate and
+  // the pre-send batch simulation; network reads and the engine take the
+  // settled value, validation (`insufficient`) stays on the raw one.
+  const debouncedAmount = useDebounce(amount);
+  const debouncePending = debouncedAmount !== amount;
 
   const { data: walletBalance, refetch: refetchWalletBalance } = useTokenBalance({
     address,
@@ -127,7 +134,7 @@ export function PendleModalForm({
   // Never validate against the unresolved balance's 0n fallback.
   const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
   const insufficient = balanceKnown && amount > available;
-  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
+  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient && !debouncePending;
 
   const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
@@ -152,7 +159,7 @@ export function PendleModalForm({
     owner: address,
     spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
   });
-  const needsAllowance = allowance !== undefined && amount > 0n && allowance < amount;
+  const needsAllowance = allowance !== undefined && debouncedAmount > 0n && allowance < debouncedAmount;
 
   // Steps mirror the engine's call count ([approve?, convert]) so the
   // indicator advances in lockstep with the sequential flow's onMutate bumps.
@@ -187,9 +194,9 @@ export function PendleModalForm({
     outputToken: isSupply ? market.ptToken : selectedAddress,
     underlyingToken: market.underlyingToken,
     syAcceptedTokens: market.syAcceptedTokens,
-    amountIn: amount > 0n ? amount : undefined,
+    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    enabled: amount > 0n
+    enabled: debouncedAmount > 0n
   });
 
   // --- Analytics: the legacy PendleWidget event set, with live amounts. ---
@@ -207,7 +214,7 @@ export function PendleModalForm({
   const leg = pendleNonPtLeg(analyticsSide, {
     originSymbol: originToken.symbol,
     targetSymbol: targetToken.symbol,
-    amountInBigint: amount,
+    amountInBigint: debouncedAmount,
     amountOutBigint: quote?.amountOut ?? 0n,
     fromDecimals,
     toDecimals
@@ -220,7 +227,7 @@ export function PendleModalForm({
       side: analyticsSide,
       originToken,
       targetToken,
-      amountFromBigint: amount,
+      amountFromBigint: debouncedAmount,
       amountToBigint: quote?.amountOut ?? 0n,
       fromDecimals,
       toDecimals,
@@ -263,7 +270,7 @@ export function PendleModalForm({
     outputToken: isSupply ? market.ptToken : selectedAddress,
     underlyingToken: market.underlyingToken,
     syAcceptedTokens: market.syAcceptedTokens,
-    amountIn: amount > 0n ? amount : undefined,
+    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     quote,
     slippage,
     enabled: amountReady && !!quote,
@@ -358,7 +365,7 @@ export function PendleModalForm({
   const ptSymbol = ptToken.symbol;
 
   const fmt = (n: number) => formatNumber(n, { maxDecimals: 2 });
-  const inFloat = parseFloat(formatUnits(amount, inputDecimals));
+  const inFloat = parseFloat(formatUnits(debouncedAmount, inputDecimals));
   const outDecimals = isSupply ? ptDecimals : selectedDecimals;
   const outFloat = quote ? parseFloat(formatUnits(quote.amountOut, outDecimals)) : undefined;
 
@@ -471,7 +478,7 @@ export function PendleModalForm({
     setValue(formatUnits((available * BigInt(pct)) / 100n, inputDecimals));
   };
 
-  const amountDisplay = fmt(parseFloat(formatUnits(amount, inputDecimals)));
+  const amountDisplay = fmt(parseFloat(formatUnits(debouncedAmount, inputDecimals)));
 
   // Amount hero shared by the review + wallet/status screens (Figma 859:41271 /
   // 859:41686), mirroring the savings/vault treatment.

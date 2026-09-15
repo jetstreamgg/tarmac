@@ -16,7 +16,10 @@ const CONTRACT = '0x0650CAF159C5A49f711e8169D4336ECB9b950275' as const;
 // `vi.mock` factories so they can close over it.
 const h = vi.hoisted(() => ({
   walletBalance: undefined as { value: bigint } | undefined,
-  suppliedBalance: undefined as bigint | undefined
+  suppliedBalance: undefined as bigint | undefined,
+  // When set, useDebounce returns this instead of the live value — simulates
+  // the settle window after an amount change.
+  debounceLagged: undefined as bigint | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -32,6 +35,7 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value),
     useTokenBalance: () => ({ data: h.walletBalance }),
     useRewardsSuppliedBalance: () => ({ data: h.suppliedBalance })
   };
@@ -50,6 +54,7 @@ const renderForm = (flow: 'supply' | 'withdraw', amount: string) =>
 beforeEach(() => {
   h.walletBalance = undefined;
   h.suppliedBalance = undefined;
+  h.debounceLagged = undefined;
 });
 
 describe('useRewardsTransactionForm balance gating (APP-491)', () => {
@@ -87,5 +92,30 @@ describe('useRewardsTransactionForm balance gating (APP-491)', () => {
     rerender();
     expect(result.current.positionKnown).toBe(true);
     expect(result.current.insufficient).toBe(true);
+  });
+});
+
+describe('useRewardsTransactionForm amount debounce', () => {
+  it('holds the engine on the lagged amount until the debounce settles', () => {
+    h.walletBalance = { value: parseUnits('200', 18) };
+    h.debounceLagged = parseUnits('10', 18);
+    const { result, rerender } = renderForm('supply', '100');
+
+    // Typed 100, debounce still at 10: validation is live on the raw amount, but
+    // nothing arms until the settled value catches up.
+    expect(result.current.amount).toBe(parseUnits('100', 18));
+    expect(result.current.debouncedAmount).toBe(parseUnits('10', 18));
+    expect(result.current.debouncePending).toBe(true);
+    expect(result.current.insufficient).toBe(false);
+    expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.amount).toBe(parseUnits('10', 18));
+    expect(result.current.engineParams.enabled).toBe(result.current.amountReady);
+
+    h.debounceLagged = undefined;
+    rerender();
+    expect(result.current.debouncePending).toBe(false);
+    expect(result.current.amountReady).toBe(true);
+    expect(result.current.engineParams.amount).toBe(parseUnits('100', 18));
+    expect(result.current.engineParams.enabled).toBe(result.current.amountReady);
   });
 });

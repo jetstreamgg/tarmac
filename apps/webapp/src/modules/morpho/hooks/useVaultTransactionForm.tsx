@@ -7,6 +7,7 @@ import {
   computeVaultLimits,
   getTokenDecimals,
   useErc4626VaultData,
+  useDebounce,
   useTokenBalance,
   useVaultMarketData,
   type VaultProvider
@@ -27,13 +28,18 @@ export interface VaultTransactionForm {
   isSupply: boolean;
   decimals: number;
   value: string;
+  /** The parsed input as typed — validation (`isZero`, `insufficient`) reads this. */
   amount: bigint;
+  /** The settled amount (500ms): drives the engine, the fee/simulation reads, and every amount display. */
+  debouncedAmount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / max withdraw (withdraw). */
   available: bigint;
   /** The `available` read has resolved — display and validation wait on it. */
   availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
+  /** The typed amount hasn't settled yet — `amountReady` holds until it does. */
+  debouncePending: boolean;
   amountReady: boolean;
   /** Supplied position in asset units (ERC-4626 `userAssets`) — feeds the entry deltas. */
   position: bigint;
@@ -81,6 +87,11 @@ export function useVaultTransactionForm({
   const [max, setMax] = useState(false);
 
   const amount = parseAmountInput(value, decimals);
+  // Every keystroke would otherwise refire the fee estimate (2× eth_simulateV1 +
+  // getCode) and the batch pre-send simulation; the engine and the amount
+  // displays follow the settled value so what's shown equals what gets signed.
+  const debouncedAmount = useDebounce(amount);
+  const debouncePending = debouncedAmount !== amount;
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -124,7 +135,16 @@ export function useVaultTransactionForm({
   const availableKnown = isSupply ? walletBalance !== undefined : vaultData !== undefined;
   const isZero = amount === 0n;
   const insufficient = availableKnown && amount > available;
-  const amountReady = isConnected && amount > 0n && availableKnown && !insufficient;
+  // Validation stays on the raw amount for immediate feedback; readiness also
+  // waits for the debounce. A redeem-all Max is flag-driven (the engine burns
+  // the whole share balance, not the typed number), so like the stUSDS form it
+  // only needs the debounce to have settled once rather than re-gating on drift.
+  const amountReady =
+    isConnected &&
+    amount > 0n &&
+    availableKnown &&
+    !insufficient &&
+    (max ? debouncedAmount > 0n : !debouncePending);
 
   const onInput = (next: string) => {
     setMax(false);
@@ -152,12 +172,13 @@ export function useVaultTransactionForm({
     vaultAddress,
     assetToken,
     provider,
-    amount,
+    amount: debouncedAmount,
     max,
-    shares: redeemShares
+    shares: redeemShares,
+    enabled: amountReady
   };
 
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${assetToken.symbol}`;
+  const amountLabel = `${formatNumber(parseFloat(formatUnits(debouncedAmount, decimals)), { maxDecimals: 2 })} ${assetToken.symbol}`;
   // Memoized so the modal-content sync effect in VaultModalForm has stable deps —
   // an unmemoized object/element here recreates every render and loops
   // updateModalContent → setActiveConfig → re-render (matches the savings form).
@@ -182,11 +203,11 @@ export function useVaultTransactionForm({
       <VaultAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
         assetToken={assetToken}
-        amount={amount}
+        amount={debouncedAmount}
         decimals={decimals}
       />
     ),
-    [isSupply, assetToken, amount, decimals]
+    [isSupply, assetToken, debouncedAmount, decimals]
   );
 
   return {
@@ -195,10 +216,12 @@ export function useVaultTransactionForm({
     decimals,
     value,
     amount,
+    debouncedAmount,
     available,
     availableKnown,
     isZero,
     insufficient,
+    debouncePending,
     amountReady,
     position,
     isLiquidityConstrained,

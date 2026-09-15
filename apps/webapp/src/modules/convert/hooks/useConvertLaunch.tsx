@@ -24,6 +24,12 @@ export interface UseConvertLaunchParams {
   amount: bigint;
   /** Refetch balances / reset the form after a successful conversion. */
   onSuccess?: () => void;
+  /**
+   * Form validity (amount entered, within balance, any product gate open). Gates the
+   * engines' prepare-time simulation: an input the form already knows is invalid is
+   * never simulated, so no RPC round trip and no Sentry event for a foregone revert.
+   */
+  enabled?: boolean;
 }
 
 export interface UseConvertLaunchResult {
@@ -55,7 +61,8 @@ export interface UseConvertLaunchResult {
 export function useConvertLaunch({
   direction,
   amount,
-  onSuccess
+  onSuccess,
+  enabled = true
 }: UseConvertLaunchParams): UseConvertLaunchResult {
   const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
   // Per-instance id so the provider ignores live updates from stale launches.
@@ -69,6 +76,7 @@ export function useConvertLaunch({
   const conversion = usePsmConversion({
     direction,
     amount,
+    enabled,
     referralCode: REFERRAL_CODE,
     shouldUseBatch: !!batchEnabled,
     ...txCallbacks
@@ -126,7 +134,7 @@ export function useConvertLaunch({
     calls: conversion.calls,
     chainId,
     shouldUseBatch: conversion.isBatch,
-    enabled: amount > 0n
+    enabled: enabled && amount > 0n
   });
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,

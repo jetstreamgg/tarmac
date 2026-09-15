@@ -314,3 +314,21 @@ describe('useSavingsLaunch — routing + steps', () => {
     b.unmount();
   });
 });
+
+describe('useSavingsLaunch — form validity gates the engines', () => {
+  beforeEach(() => {
+    h.capturedCalls = [];
+    h.allowance = 0n;
+  });
+  afterEach(() => cleanup());
+
+  it('never arms an engine while the form says the amount is not ready', () => {
+    // An over-balance amount would simulate, revert, and report to Sentry for
+    // nothing — the form already knows. `enabled: false` reaches every engine.
+    const { unmount } = renderHook(() =>
+      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, enabled: false })
+    );
+    expect(h.capturedCalls).toEqual([]);
+    unmount();
+  });
+});

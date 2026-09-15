@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
-import { useTokenBalance } from '@/hooks';
+import { useDebounce, useTokenBalance } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -91,6 +91,10 @@ export function useConvertForm() {
       return 0n;
     }
   }, [value, originDecimals]);
+  // The engine, the fee estimate and the pre-send simulation all key off the
+  // amount — settle a keystroke burst before they refire (stUSDS form pattern).
+  const debouncedAmount = useDebounce(amount);
+  const debouncePending = debouncedAmount !== amount;
 
   const targetAmount = useMemo(() => getPsmTargetAmount(direction, amount), [direction, amount]);
 
@@ -161,6 +165,8 @@ export function useConvertForm() {
 
   const reset = useCallback(() => setRawValue(''), []);
 
+  // Validation reads the RAW amount so the feedback is immediate; only the
+  // RPC-backed consumers (engine / fee / simulation) wait on the debounce.
   const isZero = amount === 0n;
   const insufficient = isConnected && !isZero && originBalance !== undefined && amount > originBalance.value;
 
@@ -177,6 +183,10 @@ export function useConvertForm() {
     // significant digits; the transacted bigint is untouched.
     targetValue: value === '' ? '' : formatBigInt(targetAmount, { unit: targetDecimals, maxDecimals: 6 }),
     amount,
+    /** The typed amount after the 500ms settle — what the engine and the modal read. */
+    debouncedAmount,
+    /** True while `amount` has moved and `debouncedAmount` has not caught up yet. */
+    debouncePending,
     targetAmount,
     originDecimals,
     targetDecimals,

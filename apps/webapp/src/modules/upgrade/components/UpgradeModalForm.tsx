@@ -97,6 +97,7 @@ export function UpgradeModalForm({
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
     amount: debouncedAmount,
+    enabled: amountReady,
     // The wallet balance is chain state the engine's success doesn't refetch —
     // sync it so the entry screen shows the post-upgrade balance if revisited.
     // Hung off the engine, not the context's txStatus: a confirmed transaction

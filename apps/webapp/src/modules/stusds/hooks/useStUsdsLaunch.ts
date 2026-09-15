@@ -28,6 +28,12 @@ export interface StUsdsEngineParams {
   expectedOutput: bigint;
   /** Curve withdrawals: the stUSDS input the quote says is needed for `amount` USDS. */
   stUsdsAmount?: bigint;
+  /**
+   * Form validity (amount entered, within balance, any product gate open). Gates the
+   * engines' prepare-time simulation: an input the form already knows is invalid is
+   * never simulated, so no RPC round trip and no Sentry event for a foregone revert.
+   */
+  enabled?: boolean;
 }
 
 export type UseStUsdsLaunchResult = EngineLaunchResult;
@@ -52,7 +58,8 @@ export function useStUsdsLaunch({
   max = false,
   selectedProvider,
   expectedOutput,
-  stUsdsAmount
+  stUsdsAmount,
+  enabled = true
 }: StUsdsEngineParams): UseStUsdsLaunchResult {
   const { txCallbacks } = useTransaction();
 
@@ -83,13 +90,13 @@ export function useStUsdsLaunch({
     amount,
     referral: REFERRAL_CODE,
     shouldUseBatch,
-    enabled: isSupply && !isCurve,
+    enabled: enabled && isSupply && !isCurve,
     ...txCallbacks
   });
   const nativeWithdraw = useStUsdsWithdraw({
     amount,
     max,
-    enabled: !isSupply && !isCurve,
+    enabled: enabled && !isSupply && !isCurve,
     ...txCallbacks
   });
   const curveSupply = useBatchCurveSwap({
@@ -97,7 +104,7 @@ export function useStUsdsLaunch({
     inputAmount: amount,
     expectedOutput,
     shouldUseBatch,
-    enabled: isSupply && isCurve,
+    enabled: enabled && isSupply && isCurve,
     ...txCallbacks
   });
   // minOut must derive from the same quote that produced stUsdsAmount: on a max withdraw the UI
@@ -108,7 +115,7 @@ export function useStUsdsLaunch({
     inputAmount: stUsdsAmount ?? 0n,
     expectedOutput,
     shouldUseBatch,
-    enabled: !isSupply && isCurve && (stUsdsAmount ?? 0n) > 0n && expectedOutput > 0n,
+    enabled: enabled && !isSupply && isCurve && (stUsdsAmount ?? 0n) > 0n && expectedOutput > 0n,
     ...txCallbacks
   });
 

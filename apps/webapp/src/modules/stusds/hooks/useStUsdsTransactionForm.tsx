@@ -248,7 +248,8 @@ export function useStUsdsTransactionForm({
     max,
     selectedProvider: providerSelection.selectedProvider,
     expectedOutput: providerSelection.selectedQuote?.outputAmount ?? 0n,
-    stUsdsAmount: providerSelection.selectedQuote?.stUsdsAmount
+    stUsdsAmount: providerSelection.selectedQuote?.stUsdsAmount,
+    enabled: amountReady
   };
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(debouncedAmount, DECIMALS)), { maxDecimals: 2 })} USDS`;

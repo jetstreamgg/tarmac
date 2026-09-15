@@ -74,7 +74,8 @@ export default defineConfig({
         '**/arbitrum-savings.spec.ts',
         '**/optimism-savings.spec.ts',
         '**/unichain-savings.spec.ts',
-        '**/sequential-tx.spec.ts'
+        '**/sequential-tx.spec.ts',
+        '**/batch-simulation.spec.ts'
         // needs-V2-rewrite / parked (see e2e-migration.md):
         // '**/vaults-spark.spec.ts' — legacy widget UI; enable when fork has sUSDT vault + flag
         //

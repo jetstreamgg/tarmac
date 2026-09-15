@@ -76,7 +76,7 @@ export function VaultModalForm({
     isSupply,
     decimals,
     value,
-    amount,
+    debouncedAmount,
     available,
     availableKnown,
     isZero,
@@ -118,7 +118,11 @@ export function VaultModalForm({
 
   // Position after the action, clamped at zero for over-withdrawals (the
   // insufficient gate blocks submission anyway).
-  const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
+  const positionAfter = isSupply
+    ? position + debouncedAmount
+    : position > debouncedAmount
+      ? position - debouncedAmount
+      : 0n;
 
   // Liquidity copy is provider-specific: Spark/Tether vaults expose instant-withdrawal
   // liquidity, not a Morpho market (same override the widget's SupplyWithdraw applies).
@@ -176,7 +180,7 @@ export function VaultModalForm({
   // Review breakdown (Figma 859:38553 / 859:38234): the amount hero the wallet
   // screen also draws, over the review grid. Scalar deps keep the memo stable
   // across unrelated renders (matches the savings form).
-  const amountDisplay = formatAsset(amount);
+  const amountDisplay = formatAsset(debouncedAmount);
   const earningsAfterDisplay = projectEarnings(positionAfter);
   const transactionContent = useMemo(
     () => (
@@ -232,10 +236,10 @@ export function VaultModalForm({
         assetAddress: assetToken.address[chainId],
         assetSymbol: assetToken.symbol,
         isBatchTx: isBatch,
-        amount: signedAmount(parseFloat(formatUnits(amount, decimals)), flow)
+        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, decimals)), flow)
       }
     }),
-    [flow, provider, vaultName, vaultAddress, assetToken, chainId, isBatch, amount, decimals]
+    [flow, provider, vaultName, vaultAddress, assetToken, chainId, isBatch, debouncedAmount, decimals]
   );
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -253,7 +257,7 @@ export function VaultModalForm({
     // Every current vault asset is a $1-pegged stablecoin (USDC/USDS/USDT),
     // so the entered amount doubles as the USD notional (enhanced screening,
     // APP-517).
-    usdValue: parseFloat(formatUnits(amount, decimals)),
+    usdValue: parseFloat(formatUnits(debouncedAmount, decimals)),
     analytics
   });
 

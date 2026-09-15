@@ -45,6 +45,8 @@ vi.mock('../hooks/useVaultTransactionForm', async importOriginal => {
       decimals: 18,
       value: '15',
       amount: h.amount,
+      debouncedAmount: h.amount,
+      debouncePending: false,
       available: parseUnits('100', 18),
       isZero: h.amount === 0n,
       insufficient: false,
