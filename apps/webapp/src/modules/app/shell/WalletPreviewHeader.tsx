@@ -3,7 +3,7 @@ import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { ArrowLeftRight, Unlink, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { useIsSafeWallet } from '@/hooks';
+import { useIsSafeApp, useIsSafeWallet } from '@/hooks';
 import { WALLET_ICONS } from '@/lib/constants';
 import { formatUsd } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -43,6 +43,9 @@ export function WalletPreviewHeader({
 }: WalletPreviewHeaderProps) {
   const { address, connector } = useConnection();
   const isSafeWallet = useIsSafeWallet();
+  // Inside the Safe iframe the Safe UI owns the session; a Safe over
+  // WalletConnect disconnects and switches like any other wallet.
+  const isSafeApp = useIsSafeApp();
   const { totalUsd, isLoading: totalLoading } = useWalletDrawerAssets();
 
   const truncatedAddress = address ? formatAddress(address, 6, 4) : '';
@@ -100,9 +103,9 @@ export function WalletPreviewHeader({
             </div>
           </div>
         </div>
-        {(!isSafeWallet || mobile) && (
+        {(!isSafeApp || mobile) && (
           <div className="flex items-center gap-2">
-            {!isSafeWallet && (
+            {!isSafeApp && (
               <>
                 <HeaderIconButton
                   label={t`Switch account`}

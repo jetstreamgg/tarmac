@@ -260,7 +260,8 @@ function PendleMaturedCard({
   // pegged market), so it carries the underlying symbol — as on the Portfolio card.
 
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
-  // opens (usePendleRedeemModal); Safe wallets disable with the hint instead.
+  // opens (usePendleRedeemModal); a Safe can't be switched from the dapp, so it
+  // disables with the hint instead.
   const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
     usePendleRedeemModal(market);
 

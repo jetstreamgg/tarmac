@@ -75,11 +75,13 @@ const lastToastText = () => {
 // Spy on the chain switch the guard triggers, without a real WagmiProvider.
 const mockHandleSwitchChain = vi.fn();
 let mockIsSafeWallet = false;
+let mockCanSwitchChain = true;
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     handleSwitchChain: mockHandleSwitchChain,
     isSwitchPending: false,
-    switchVariables: undefined
+    switchVariables: undefined,
+    canSwitchChain: mockCanSwitchChain
   })
 }));
 
@@ -192,6 +194,7 @@ afterEach(() => {
   mockConnectedChainId = undefined;
   mockAddress = '0x0000000000000000000000000000000000000001';
   mockIsSafeWallet = false;
+  mockCanSwitchChain = true;
   mockHandleSwitchChain.mockReset();
   vi.clearAllMocks();
 });
@@ -318,9 +321,10 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(mockHandleSwitchChain).not.toHaveBeenCalled();
   });
 
-  it('never asks a Safe wallet, which cannot switch from the dapp', () => {
+  it('never asks a Safe, which the dapp must not switch', () => {
     mockChainId = 8453;
     mockIsSafeWallet = true;
+    mockCanSwitchChain = false;
     renderModal(() => mainnetOnlyConfig(vi.fn()));
 
     expect(mockHandleSwitchChain).not.toHaveBeenCalled();
@@ -393,9 +397,10 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     });
   });
 
-  it('offers NO switch button for a Safe wallet (it cannot switch from the dapp)', () => {
+  it('offers NO switch button for a Safe (the dapp must not switch it)', () => {
     mockChainId = 8453;
     mockIsSafeWallet = true;
+    mockCanSwitchChain = false;
     renderModal(() => mainnetOnlyConfig(vi.fn()));
 
     // The explanatory guard still shows and still disables the CTA...

@@ -61,7 +61,8 @@ vi.mock('@/hooks', async importOriginal => {
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     setIsAutoSwitching: h.setIsAutoSwitching,
-    setAutoSwitchIntent: h.setAutoSwitchIntent
+    setAutoSwitchIntent: h.setAutoSwitchIntent,
+    canSwitchChain: true
   })
 }));
 
