@@ -150,10 +150,15 @@
   --color-slider-brand-end: #757dff;
   --color-slider-yellow-start: #ff8a5c;
   --color-slider-yellow-end: #ffc738;
+  /* gradient-slider-green (repay Progress Steps 3015:62130), theme-invariant. */
+  --color-slider-green-start: #015c4c;
+  --color-slider-green-end: #02c2a1;
   --color-sliderDot: #1a192d;
   --color-sliderRing: rgba(255, 255, 255, 0.2);
   --color-sliderLine: #2a2a40;
   --color-sliderMarker: #fe8b5b;
+  --color-sliderTrack: rgba(188, 182, 239, 0.1); /* components/slider/bg-primary */
+  --color-sliderBorrowed: rgba(9, 4, 32, 0.35); /* raw #090420 in the comp, no variable */
   --color-sliderAmber: #ffc23b;
   /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
      G2 filled the light value from the same variable; it still equals
@@ -1064,6 +1069,8 @@
     --color-sliderDot: #e8ebfe; /* fg-dot */
     --color-sliderRing: #09042033; /* fg-pointer */
     --color-sliderLine: #c9cdf4; /* fg-line */
+    --color-sliderTrack: #9ca0e566; /* bg-primary */
+    --color-sliderBorrowed: #9ca0e5; /* solid slider bg-primary base; the comp only has a dark mode */
 
     /* Lighter purple for the legacy widget-look surfaces; dark keeps the deep
        indigo from :root. No DS citation because these have no DS counterpart and

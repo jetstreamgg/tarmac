@@ -307,7 +307,8 @@ export function ProductTransactionsTable<T>({
                     <TableRow>
                       <TableCell
                         colSpan={columns.length}
-                        className="h-auto bg-transparent! p-0"
+                        // p-0! also cancels the first column's pl-6 — the banner runs flush (Figma 1036:218966).
+                        className="h-auto bg-transparent! p-0!"
                         onClick={event => event.stopPropagation()}
                       >
                         {belowRow}

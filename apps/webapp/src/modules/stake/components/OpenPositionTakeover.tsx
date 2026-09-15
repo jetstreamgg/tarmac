@@ -36,7 +36,7 @@ import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
-import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
+import { StakeTakeoverRewardField } from './StakeTakeoverRewardCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
@@ -118,8 +118,6 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     0n,
     ilkName
   );
-  // Same simulation with no new debt — feeds the slider's floor math.
-  const { data: vaultNoBorrow } = useSimulatedVault(state.skyToLock, 0n, 0n, ilkName);
   // Debounced simulation for validation, so errors wait for typing to settle.
   const {
     data: debouncedVault,
@@ -425,19 +423,39 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         rewardsRate={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : null}
         rateLoading={rateLoading}
         estAnnualRewardsUsd={estAnnualRewardsUsd}
-        minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
+        minStakeToBorrow={simulatedVault?.minCollateralForDust}
+        minStakeLoading={liveSimLoading}
+        minStakeReached={
+          simulatedVault?.minCollateralForDust !== undefined
+            ? state.skyToLock >= simulatedVault.minCollateralForDust
+            : undefined
+        }
         error={stakeError}
-      />
-
-      <StakeTakeoverRewardCard
-        selectedRewardContract={selectedRewardContract}
-        onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
-        keepAddress={reopenRewardBaseline}
+        rewardPicker={
+          <StakeTakeoverRewardField
+            selectedRewardContract={selectedRewardContract}
+            onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
+            keepAddress={reopenRewardBaseline}
+          />
+        }
       />
 
       <StakeTakeoverBorrowCard
         enabled={state.borrowEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setBorrowEnabled', enabled })}
+        onEnabledChange={enabled => {
+          dispatch({ type: 'setBorrowEnabled', enabled });
+          // Figma 3015:59185: the dust minimum is pre-selected once the stake threshold is met.
+          const dust = simulatedVault?.dust;
+          if (
+            enabled &&
+            dust !== undefined &&
+            !simulationError &&
+            !minCollateralNotMet &&
+            state.usdsToBorrow === 0n
+          ) {
+            dispatch({ type: 'setUsdsToBorrow', amount: dust });
+          }
+        }}
         usdsToBorrow={state.usdsToBorrow}
         onAmountChange={amount => dispatch({ type: 'setUsdsToBorrow', amount })}
         maxBorrowable={availableBorrowBalance}
@@ -447,7 +465,6 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         skyToLock={debouncedSkyToLock}
         simulatedVault={simulatedVault}
         simulationLoading={liveSimLoading}
-        vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
         collateralLoading={collateralLoading}
         error={borrowError}

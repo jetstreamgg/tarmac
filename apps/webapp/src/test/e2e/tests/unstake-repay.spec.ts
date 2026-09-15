@@ -32,7 +32,7 @@ test('repays all debt and the position lands in the no-debt state', async ({ iso
   );
 
   // Stage a full repay via the 100% chip (wipeAll semantics).
-  await isolatedPage.getByTestId('stake-manage-borrow-amount-percent-100').click();
+  await isolatedPage.getByTestId('stake-manage-borrow-amount-chip-max').click();
   const confirm = isolatedPage.getByTestId('stake-manage-confirm');
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
   await confirm.click();

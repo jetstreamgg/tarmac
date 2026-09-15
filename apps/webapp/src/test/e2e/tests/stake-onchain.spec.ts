@@ -261,7 +261,7 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
 
   // Full repay via the 100% chip (wipeAll semantics) zeroes art.
   const usdsBefore = await getTokenBalance(USDS_TOKEN, testAccount);
-  await isolatedPage.getByTestId('stake-manage-borrow-amount-percent-100').click();
+  await isolatedPage.getByTestId('stake-manage-borrow-amount-chip-max').click();
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
   await confirm.click();
   await confirmTransactionModal(isolatedPage);
@@ -356,8 +356,9 @@ test('delegate change rewires the urn vote delegate on-chain', async ({ isolated
   expect(delegateBefore).not.toBe('0x0000000000000000000000000000000000000000');
 
   await gotoManagePosition(isolatedPage, urnIndex);
+  // Change delegate is its own modal (Figma 3015:61189), not the manage sheet.
   await isolatedPage.getByTestId('stake-manage-menu-change-delegate').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toHaveCount(0);
   await expect(isolatedPage.getByTestId('stake-manage-delegate-list')).toBeVisible({ timeout: 15_000 });
 
   // The current delegate arrives pre-selected (aria-pressed) — pick another.
@@ -365,7 +366,7 @@ test('delegate change rewires the urn vote delegate on-chain', async ({ isolated
     .locator('[data-testid^="stake-manage-delegate-0x"][aria-pressed="false"]')
     .first()
     .click();
-  const confirm = isolatedPage.getByTestId('stake-manage-confirm');
+  const confirm = isolatedPage.getByRole('button', { name: 'Change', exact: true });
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
   await confirm.click();
   await confirmTransactionModal(isolatedPage);

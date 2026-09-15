@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Switch } from '@/components/ui/switch';
+import { StakeCardToggle } from './StakeCardToggle';
 import { cn } from '@/lib/cn';
 
 /**
@@ -16,6 +16,8 @@ export function StakeTakeoverCard({
   optional = false,
   enabled = true,
   onEnabledChange,
+  toggleDisabled,
+  toggleDisabledHint,
   dataTestId,
   children
 }: {
@@ -24,6 +26,9 @@ export function StakeTakeoverCard({
   optional?: boolean;
   enabled?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
+  /** The switch can't be turned on yet; `toggleDisabledHint` says why (hover/tap). */
+  toggleDisabled?: boolean;
+  toggleDisabledHint?: ReactNode;
   dataTestId: string;
   children: ReactNode;
 }) {
@@ -57,7 +62,13 @@ export function StakeTakeoverCard({
           </h3>
         </div>
         {optional && (
-          <Switch checked={enabled} onCheckedChange={onEnabledChange} data-testid={`${dataTestId}-toggle`} />
+          <StakeCardToggle
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            disabled={toggleDisabled}
+            disabledHint={toggleDisabledHint}
+            dataTestId={`${dataTestId}-toggle`}
+          />
         )}
       </div>
       {enabled && children}

@@ -91,8 +91,9 @@ function calculateLiquidationProximityPercentage(
     return 100;
   }
 
-  const proximityPercentage = Number(((marketPrice - liquidationPrice) * 100n) / marketPrice);
-  return 100 - proximityPercentage;
+  // Two decimals: whole-percent truncation snapped risk levels a full point early.
+  const proximityPercentage = Number(((marketPrice - liquidationPrice) * 10_000n) / marketPrice) / 100;
+  return Math.round((100 - proximityPercentage) * 100) / 100;
 }
 
 function calculateRiskLevel(liquidationProximityPercentage: number): RiskLevel {

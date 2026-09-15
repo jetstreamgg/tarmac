@@ -1389,6 +1389,7 @@ export function TransactionProvider({
             preflight={preflight}
             chainGuard={chainGuard}
             skipReview={modalView.config.skipReview}
+            scrimHandoff={modalView.config.scrimHandoff}
           />
         )}
       </EntrySlotContext.Provider>

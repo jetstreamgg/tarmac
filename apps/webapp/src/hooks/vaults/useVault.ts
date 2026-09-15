@@ -10,12 +10,13 @@ import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
 import { calculateVaultInfo, rawVaultInfo } from './calculateVaultInfo';
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink, math } from '@/utils';
 import { TRUST_LEVELS } from '../constants';
 import { parseUnits, stringToHex } from 'viem';
 import { COLLATERAL_PRICE_SYMBOL, SupportedCollateralTypes } from './vaults.constants';
 import { getIlkName } from './helpers';
 import { usePrices } from '../prices/usePrices';
+import { useSimulatedDripRate } from './useSimulatedDripRate';
 
 // Get a user's vault
 export function useVault(
@@ -56,7 +57,10 @@ export function useVault(
     scopeKey: `vat-ilk-${ilkName}`
   });
 
-  const [, rate, spot, , dust] = vatIlkData || [];
+  const [, vatRate, spot, , dust] = vatIlkData || [];
+  // Dripped rate: the debt a tx will see, so the max borrow leaves room for the accrued fee.
+  const { data: drippedRate, isLoading: isLoadingDrip, error: errorDrip } = useSimulatedDripRate(ilkHex);
+  const rate = drippedRate ?? vatRate;
 
   const {
     data: urnData,
@@ -105,7 +109,8 @@ export function useVault(
   const [, mat] = spotIlkData || [];
 
   // compute a isLoading, based on all the other isLoading, and error, based on all the other errors
-  const isLoading = isLoadingVatIlk || isLoadingVatUrn || isLoadingSpotPar || isLoadingSpotIlk;
+  const isLoading =
+    isLoadingVatIlk || isLoadingVatUrn || isLoadingSpotPar || isLoadingSpotIlk || isLoadingDrip;
 
   // Once all the values are present we can compute the vault info
   const allLoaded = [spot, rate, ink, art, par, mat, dust].every(value => !!value || value === 0n);
@@ -121,12 +126,17 @@ export function useVault(
   };
   const data = allLoaded ? calculateVaultInfo(vaultParams) : undefined;
   const raw = allLoaded ? rawVaultInfo(vaultParams) : undefined;
+  // Collateral needed to carry the dust debt; below it the urn cannot borrow at all.
+  const minCollateralForDust =
+    data?.dust && mat && data.delayedPrice
+      ? math.minSafeCollateralAmount(data.dust, mat, data.delayedPrice)
+      : undefined;
 
   return {
-    data: data ? { ...data, collateralType: ilkName } : undefined,
+    data: data ? { ...data, collateralType: ilkName, minCollateralForDust } : undefined,
     raw,
     isLoading: !!isLoading,
-    error: errorVatUrn || errorVatIlk || errorSpotPar || errorSpotIlk,
+    error: errorVatUrn || errorVatIlk || errorSpotPar || errorSpotIlk || errorDrip,
     mutate: () => {
       refetchVatUrn();
       refetchVatIlk();
