@@ -4,6 +4,8 @@ import { t } from '@lingui/core/macro';
 import { formatBigInt, formatUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RollingValue } from '@/components/ui/rolling-value';
+import { useSliderDrag } from '../hooks/useSliderDrag';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { RateInfo } from '@/components/product/RateInfo';
@@ -62,6 +64,7 @@ export function StakeTakeoverStakeCard({
   minStakeToBorrow: bigint | undefined;
   error?: string;
 }) {
+  const { dragging, dragProps } = useSliderDrag();
   const onPercentClick = (percent: number) => {
     if (balance === undefined) return;
     onAmountChange(percent === 100 ? balance : (balance * BigInt(percent)) / 100n);
@@ -105,7 +108,7 @@ export function StakeTakeoverStakeCard({
 
         {/* Sliders / Standard (I1036:209724): the share of the wallet balance
             being staked. Inert with no balance to divide by. */}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5" {...dragProps}>
           <Slider
             value={[sliderPercent]}
             max={100}
@@ -143,10 +146,16 @@ export function StakeTakeoverStakeCard({
           <span data-testid="stake-takeover-est-rewards" className="flex items-center gap-1">
             {rateLoading && amount > 0n ? (
               <Skeleton className="h-4 w-14" />
-            ) : estAnnualRewardsUsd !== null && estAnnualRewardsUsd > 0 ? (
-              formatUsd(estAnnualRewardsUsd)
             ) : (
-              NO_VALUE
+              <RollingValue
+                value={
+                  estAnnualRewardsUsd !== null && estAnnualRewardsUsd > 0
+                    ? formatUsd(estAnnualRewardsUsd)
+                    : NO_VALUE
+                }
+                speed="stat"
+                instant={dragging}
+              />
             )}
           </span>
         </StatItem>

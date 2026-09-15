@@ -5,6 +5,8 @@ import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RollingValue } from '@/components/ui/rolling-value';
+import { useSliderDrag } from '../hooks/useSliderDrag';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -103,6 +105,7 @@ export function StakeTakeoverBorrowCard({
   const inputDisabled = minCollateralNotMet || debtCeilingReached;
   const hasAmount = usdsToBorrow > 0n;
   const riskLevel = hasAmount ? simulatedVault?.riskLevel : undefined;
+  const { dragging, dragProps } = useSliderDrag();
   // `maxBorrowable` composes over `?? 0n` fallbacks, so it skeletons while
   // either input read is unresolved.
   const maxLoading = collateralLoading || simulationLoading;
@@ -145,7 +148,7 @@ export function StakeTakeoverBorrowCard({
         </div>
 
         {!inputDisabled && (
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5" {...dragProps}>
             <Slider
               variant="range"
               value={sliderValue}
@@ -247,7 +250,11 @@ export function StakeTakeoverBorrowCard({
                   RISK_PILL[riskLevel]
                 )}
               >
-                {capitalizeFirstLetter(riskLevel.toLowerCase())}
+                <RollingValue
+                  value={capitalizeFirstLetter(riskLevel.toLowerCase())}
+                  speed="stat"
+                  instant={dragging}
+                />
               </span>
             ) : hasAmount && simulationLoading ? (
               <Skeleton className="h-4 w-14" />
@@ -258,7 +265,12 @@ export function StakeTakeoverBorrowCard({
           <StatDivider className="hidden md:block" />
           <StatItem label={<Trans>Liquidation price</Trans>}>
             {hasAmount && simulatedVault?.liquidationPrice ? (
-              formatOraclePrice(simulatedVault.liquidationPrice)
+              <RollingValue
+                value={formatOraclePrice(simulatedVault.liquidationPrice)}
+                speed="stat"
+                instant={dragging}
+                enter
+              />
             ) : hasAmount && simulationLoading ? (
               <Skeleton className="h-4 w-14" />
             ) : (
