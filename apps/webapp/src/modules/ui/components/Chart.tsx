@@ -884,10 +884,6 @@ export function Chart({
     showTrend && !isLoading && !isZeroPercentage && data.length > 1 && hasBaseline ? (
       <TrendBadge percentage={percentage} formatted={formattedPercentage.replace('-', '')} />
     ) : undefined;
-  // The label swaps with the metric, so the metric is what its roll keys on
-  // (a `<Trans>` node has no text to compare). A chart without a metric
-  // toggle never changes its label.
-  const labelRollKey = activeMetric === undefined ? undefined : String(activeMetric);
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>('w');
   const [width, setWidth] = useState<number>(0);
   const dateAxis = formatedXAxis(data, activeTimeframe, bpi);
@@ -939,11 +935,7 @@ export function Chart({
                 />
               )}
               <div className="flex flex-col gap-0.5">
-                {label && (
-                  <span className="text-textSecondary text-xs leading-[18px]">
-                    <RollingValue value={label} rollKey={labelRollKey} speed="stat" />
-                  </span>
-                )}
+                {label && <span className="text-textSecondary text-xs leading-[18px]">{label}</span>}
                 <DetailHeaderValue
                   mobile
                   data={data}
@@ -964,9 +956,7 @@ export function Chart({
                 {/* Body 5 on fg-secondary, flush against the figure (859:35718);
                     it was 13px on the selectActive periwinkle. */}
                 {label && (
-                  <span className="text-fgSecondary font-graphik text-sm leading-[22px]">
-                    <RollingValue value={label} rollKey={labelRollKey} speed="stat" />
-                  </span>
+                  <span className="text-fgSecondary font-graphik text-sm leading-[22px]">{label}</span>
                 )}
                 <DetailHeaderValue
                   data={data}
