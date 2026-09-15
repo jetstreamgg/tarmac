@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Intent } from '@/lib/enums';
 import type { EarnProductRow, EarnUsdAmount } from '@/hooks';
-import { resolveTokenColor } from '@/widgets/shared/constants';
+import { resolveTokenColor } from '@/modules/ui/lib/tokenColors';
 import { buildSuppliedView } from './suppliedView';
 
 const makeRow = (overrides: Partial<EarnProductRow> & Pick<EarnProductRow, 'id'>): EarnProductRow => ({

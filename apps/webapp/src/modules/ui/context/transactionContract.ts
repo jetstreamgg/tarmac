@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
-import type { TxStatus } from '@/widgets';
+import type { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TxMutateVariables } from '@/hooks';
 
 /**

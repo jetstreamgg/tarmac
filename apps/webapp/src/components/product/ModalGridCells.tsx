@@ -9,7 +9,7 @@ import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
-import { useChainImage } from '@/widgets';
+import { useChainImage } from '@/modules/ui/hooks/useChainImage';
 import { RateInfo, type RateInfoType } from './RateInfo';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
 

@@ -1,15 +1,6 @@
 import { useCallback, useState } from 'react';
-import { useChainId } from 'wagmi';
-import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import {
-  useStakeRewardContracts,
-  useRewardContractsToClaim,
-  useVault,
-  usePrices,
-  getIlkName,
-  RiskLevel
-} from '@/hooks';
+import { useVault, getIlkName, RiskLevel } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { cn } from '@/lib/cn';
@@ -38,6 +29,7 @@ import {
   isLiquidatedStakePosition
 } from '../hooks/useStakeUserPositions';
 import { StakePositionRowBanner } from './StakePositionRowBanner';
+import { useUrnClaimableRewardsUsd } from '../hooks/useUrnClaimableRewardsUsd';
 
 // Liquidation-proximity mapping for the shared risk pill: more (and warmer)
 // lit segments = closer to liquidation; rows with no debt render unlit
@@ -125,23 +117,11 @@ function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
 
 /** Claimable-rewards cell: USD value of every reward earned by this urn. */
 function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
-  const chainId = useChainId();
   const urnAddress = position.urnAddress;
-  const { data: rewardContracts } = useStakeRewardContracts();
-  const {
-    data: toClaim,
-    isLoading,
-    error
-  } = useRewardContractsToClaim({
-    rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
-    addresses: urnAddress ? [urnAddress] : [],
-    chainId,
-    enabled: Boolean(urnAddress && rewardContracts?.length)
-  });
-  const { data: prices, isLoading: pricesLoading } = usePrices();
+  const { claimable, claimableUsd, isLoading, unavailable } = useUrnClaimableRewardsUsd(urnAddress);
 
-  if (isLoading || pricesLoading || !urnAddress) return <Skeleton className="h-5 w-16" />;
-  if (error && !toClaim) {
+  if (isLoading || !urnAddress) return <Skeleton className="h-5 w-16" />;
+  if (unavailable) {
     // A failed claimables read is "unknown", not $0.00.
     return (
       <span data-testid="stake-position-claimable-unavailable" className="text-textSecondary text-sm">
@@ -150,15 +130,13 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
     );
   }
 
-  const claimable = toClaim ?? [];
-  const usdValue = claimable.reduce((total, reward) => {
-    const price = parseFloat(prices?.[reward.rewardSymbol]?.price ?? '0');
-    return total + Number(formatUnits(reward.claimBalance, 18)) * price;
-  }, 0);
   const symbols = claimable.length > 0 ? claimable.map(reward => reward.rewardSymbol) : ['SKY'];
 
   return (
-    <CellAmountWithToken amount={formatUsd(usdValue)} icon={<TokenIconStack symbols={symbols} size={12} />} />
+    <CellAmountWithToken
+      amount={formatUsd(claimableUsd)}
+      icon={<TokenIconStack symbols={symbols} size={12} />}
+    />
   );
 }
 

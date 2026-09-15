@@ -12,8 +12,7 @@ import {
 
 // [provider, vault_module value, intent] — the canonical triples.
 const CASES: ReadonlyArray<[VaultProvider, string, VaultsIntent]> = [
-  ['morpho', 'morpho', VaultsIntent.MORPHO_VAULT_INTENT],
-  ['sky', 'sky', VaultsIntent.SKY_VAULT_INTENT]
+  ['morpho', 'morpho', VaultsIntent.MORPHO_VAULT_INTENT]
 ];
 
 describe('vaultProviderMapping', () => {
@@ -31,9 +30,9 @@ describe('vaultProviderMapping', () => {
     });
 
     it('resolves case-insensitively (values are canonically lowercased)', () => {
-      expect(providerForVaultModule('Sky')).toBe('sky');
+      expect(providerForVaultModule('Morpho')).toBe('morpho');
       expect(providerForVaultModule('MORPHO')).toBe('morpho');
-      expect(vaultsIntentForVaultModule('SKY')).toBe(VaultsIntent.SKY_VAULT_INTENT);
+      expect(vaultsIntentForVaultModule('MORPHO')).toBe(VaultsIntent.MORPHO_VAULT_INTENT);
     });
 
     it('returns no provider/intent for an unrecognised value', () => {

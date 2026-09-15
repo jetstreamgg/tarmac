@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { TxStatus, InProgress, SuccessCheck, FailedX } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { InProgress, SuccessCheck, FailedX } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { formatAddress } from '@/utils';
 

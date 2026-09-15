@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 const ctx = vi.hoisted(() => ({ isModalOpen: false, txStatus: 'idle' as string }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({

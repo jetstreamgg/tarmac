@@ -13,20 +13,3 @@ export interface StUsdsHistoryItem {
   /** Provider that executed this transaction (native or curve) */
   provider: StUsdsProviderType;
 }
-
-export interface StUsdsVaultMetrics {
-  totalAssets: bigint;
-  totalSupply: bigint;
-  assetPerShare: bigint;
-  yieldRate: bigint;
-  chi: bigint;
-  cap: bigint;
-  line: bigint;
-}
-
-export interface StUsdsUserMetrics {
-  userStUsdsBalance: bigint;
-  userUsdsBalance: bigint;
-  userMaxDeposit: bigint;
-  userMaxWithdraw: bigint;
-}

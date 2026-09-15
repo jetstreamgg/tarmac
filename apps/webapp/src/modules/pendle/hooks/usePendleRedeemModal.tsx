@@ -9,7 +9,6 @@ import {
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
-  useIsSafeWallet,
   usePendleUserPtBalances,
   useQuotePendleConvert,
   useTokenAllowance,
@@ -27,7 +26,11 @@ import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
-import { pendleAnalyticsData, pendleNonPtLeg, usePendleTokens, usePendleUsdValue, TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { pendleAnalyticsData } from '@/modules/pendle/lib/pendleAnalyticsData';
+import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
+import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
+import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
@@ -273,17 +276,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // explain the change; a rejected switch opens nothing and stays retryable.
   const chains = useChains();
   const onPendleChain = isPendleChain(chainId);
-  const isSafeWallet = useIsSafeWallet();
   const { switchChainAsync } = useSwitchChain();
-  const { setIsAutoSwitching, setAutoSwitchIntent } = useNetworkSwitch();
+  const { setIsAutoSwitching, setAutoSwitchIntent, canSwitchChain } = useNetworkSwitch();
   const { trackNetworkSwitchRequested, trackNetworkSwitchCompleted } = useAppAnalytics();
-  // A Safe can't switch networks from the dapp (APP-486) — the cards disable
+  // A wallet the dapp must not switch (a Safe, APP-486) — the cards disable
   // Claim and explain instead of offering a click that always fails.
-  const switchBlocked = !onPendleChain && isSafeWallet;
+  const switchBlocked = !onPendleChain && !canSwitchChain;
 
   const openRedeemModal = useCallback(async () => {
     if (!onPendleChain) {
-      if (isSafeWallet) return;
+      if (!canSwitchChain) return;
       // The mainnet-family target, preferring the fork in dev configs —
       // auto-switching a dev wallet onto real Ethereum would mean real fees.
       const requiredChainId = chains.find(c => isTestnetId(c.id))?.id ?? mainnet.id;
@@ -332,7 +334,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     });
   }, [
     onPendleChain,
-    isSafeWallet,
+    canSwitchChain,
     chains,
     chainId,
     setAutoSwitchIntent,

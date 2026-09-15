@@ -19,9 +19,8 @@ import { signedAmount } from '@/modules/analytics/constants';
 import { useRewardsLaunch, type RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
 import { useRewardsTransactionForm, type RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
 import {
-  buildRewardsSupplyModalRows,
+  buildRewardsEntryRows,
   buildRewardsSupplyReviewRows,
-  buildRewardsWithdrawModalRows,
   buildRewardsWithdrawReviewRows
 } from './rewardsModalRows';
 import { NO_VALUE } from '@/lib/constants';
@@ -129,9 +128,7 @@ export function RewardsModalForm({
     networkFee: feeCell.fee?.formatted ?? NO_VALUE,
     positionLoading: isConnected && !positionKnown
   };
-  const rows = isSupply
-    ? buildRewardsSupplyModalRows({ ...entryInput, rewardsIn: rewardTokenSymbol })
-    : buildRewardsWithdrawModalRows(entryInput);
+  const rows = buildRewardsEntryRows(flow, { ...entryInput, rewardsIn: rewardTokenSymbol });
 
   // Review breakdown: the amount hero the wallet screen also draws, over the
   // review grid. The Product cell's iconbox carries the reward token (the

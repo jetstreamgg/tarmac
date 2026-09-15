@@ -2,7 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
-import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
+import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD, WAD_PRECISION } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -23,7 +23,6 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { NO_VALUE } from '@/lib/constants';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 
-const WAD = 10n ** 18n;
 /** One unit at the field's 2dp display precision. */
 const DISPLAY_STEP = 10n ** 16n;
 

@@ -1,7 +1,6 @@
 import { JSX } from 'react';
 
 export enum HighlightColor {
-  Bullish = 'bullish',
   Bearish = 'bearish'
 }
 

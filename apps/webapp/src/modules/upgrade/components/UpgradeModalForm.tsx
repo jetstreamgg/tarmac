@@ -12,7 +12,7 @@ import {
   type UpgradeSourceToken
 } from '@/hooks';
 import { formatNumber, math } from '@/utils';
-import { PopoverRateInfo } from '@/widgets';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';

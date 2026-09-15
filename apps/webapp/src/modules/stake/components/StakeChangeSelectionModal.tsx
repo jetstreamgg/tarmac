@@ -6,7 +6,7 @@ import { ZERO_ADDRESS } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
