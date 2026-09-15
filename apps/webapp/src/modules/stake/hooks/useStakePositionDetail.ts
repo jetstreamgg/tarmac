@@ -19,6 +19,7 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { calculateClaimedRewardsUsd, hasStakeBorrowHistory } from '../lib/positionDetail';
+import { isMinCollateralNotMet } from '../lib/maxBorrow';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';
 
 export interface StakePositionDetail {
@@ -26,6 +27,8 @@ export interface StakePositionDetail {
   vault: Vault | undefined;
   vaultLoading: boolean;
   hasDebt: boolean;
+  /** The stake covers the dust minimum, so the borrow flow has something to offer. */
+  canBorrow: boolean;
   /** Emptied urn (C13): the vault loaded with zero collateral. Urns are never deleted. */
   isInactive: boolean;
   /** Whether the urn EVER drew debt (C14, subgraph) — the inactive borrow block + reopen shape. */
@@ -134,6 +137,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     vault,
     vaultLoading,
     hasDebt: (vault?.debtValue ?? 0n) > 0n,
+    canBorrow: !isMinCollateralNotMet(vault),
     isInactive: !!urnAddress && !vaultLoading && vault !== undefined && (vault.collateralAmount ?? 0n) === 0n,
     hasBorrowHistory: hasStakeBorrowHistory(urnHistory),
     rewardContract,

@@ -10,7 +10,7 @@ import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
 import { calculateVaultInfo, rawVaultInfo } from './calculateVaultInfo';
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink, math } from '@/utils';
 import { TRUST_LEVELS } from '../constants';
 import { parseUnits, stringToHex } from 'viem';
 import { COLLATERAL_PRICE_SYMBOL, SupportedCollateralTypes } from './vaults.constants';
@@ -126,9 +126,14 @@ export function useVault(
   };
   const data = allLoaded ? calculateVaultInfo(vaultParams) : undefined;
   const raw = allLoaded ? rawVaultInfo(vaultParams) : undefined;
+  // Collateral needed to carry the dust debt; below it the urn cannot borrow at all.
+  const minCollateralForDust =
+    data?.dust && mat && data.delayedPrice
+      ? math.minSafeCollateralAmount(data.dust, mat, data.delayedPrice)
+      : undefined;
 
   return {
-    data: data ? { ...data, collateralType: ilkName } : undefined,
+    data: data ? { ...data, collateralType: ilkName, minCollateralForDust } : undefined,
     raw,
     isLoading: !!isLoading,
     error: errorVatUrn || errorVatIlk || errorSpotPar || errorSpotIlk || errorDrip,

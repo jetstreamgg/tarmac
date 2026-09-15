@@ -309,6 +309,8 @@ function ManageCtas({
   isInactive,
   hasDebt,
   hasBorrowHistory,
+  canBorrow,
+  minStakeToBorrow,
   onAction,
   onReopen,
   size = 'xl',
@@ -318,6 +320,9 @@ function ManageCtas({
   isInactive: boolean;
   hasDebt: boolean;
   hasBorrowHistory: boolean;
+  /** Below the dust-implied stake the borrow flow is a dead end, so the CTA disables. */
+  canBorrow: boolean;
+  minStakeToBorrow: bigint | undefined;
   onAction: (action: StakeManageAction) => void;
   onReopen: (borrowExpanded: boolean) => void;
   size?: 'xl' | 'l';
@@ -353,11 +358,23 @@ function ManageCtas({
           variant="secondary"
           size={size}
           className="w-full"
+          disabled={!canBorrow}
           onClick={() => onAction('borrow')}
           data-testid={`stake-manage-cta-borrow${idSuffix}`}
         >
           <Trans>Borrow USDS</Trans>
         </Button>
+      )}
+      {!hasDebt && !canBorrow && (
+        <p
+          className="text-textSecondary basis-full text-xs leading-[18px]"
+          data-testid={`stake-manage-cta-borrow-hint${idSuffix}`}
+        >
+          <Trans>
+            Stake at least {minStakeToBorrow !== undefined ? formatBigInt(minStakeToBorrow) : NO_VALUE} SKY to
+            borrow USDS.
+          </Trans>
+        </p>
       )}
     </>
   );
@@ -481,6 +498,8 @@ export function PositionDetailsModal({
     isInactive,
     hasDebt,
     hasBorrowHistory: detail.hasBorrowHistory,
+    canBorrow: detail.canBorrow,
+    minStakeToBorrow: vault?.minCollateralForDust,
     onAction,
     onReopen
   };
@@ -935,7 +954,7 @@ export function PositionDetailsModal({
 
             {/* Side-by-side pair (comp 1036:214314) — equal columns, labels may
                 ellipsize rather than overflow the 322px panel. */}
-            <div className="flex gap-2 [&>button]:min-w-0 [&>button]:flex-1">
+            <div className="flex flex-wrap gap-2 [&>button]:min-w-0 [&>button]:flex-1">
               <ManageCtas {...ctaProps} size="l" />
             </div>
           </div>
