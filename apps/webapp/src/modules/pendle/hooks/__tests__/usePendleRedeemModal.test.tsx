@@ -6,7 +6,7 @@ import { I18nProvider } from '@lingui/react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mainnet } from 'viem/chains';
-import { pendleAnalyticsData } from '@/widgets';
+import { pendleAnalyticsData } from '@/modules/pendle/lib/pendleAnalyticsData';
 import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
@@ -144,22 +144,19 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    // Heavy components inside the modal — render-irrelevant for these assertions.
-    PendleConfigMenu: () => null,
-    usePendleSlippage: () => ({
-      slippage: 0.01,
-      setSlippage: () => undefined,
-      defaultSlippage: 0.01
-    }),
-    // Stub the USD value fn so the test doesn't pull in usePrices()/wagmi reads.
-    // Reads the swappable hoisted fn (default ≈$1/token).
-    usePendleUsdValue: () => hoisted.valueUsd
-  };
-});
+vi.mock('@/modules/pendle/hooks/usePendleSlippage', () => ({
+  usePendleSlippage: () => ({
+    slippage: 0.01,
+    setSlippage: () => undefined,
+    defaultSlippage: 0.01
+  })
+}));
+
+// Stub the USD value fn so the test doesn't pull in usePrices()/wagmi reads.
+// Reads the swappable hoisted fn (default ≈$1/token).
+vi.mock('@/modules/pendle/hooks/usePendleUsdValue', () => ({
+  usePendleUsdValue: () => hoisted.valueUsd
+}));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({

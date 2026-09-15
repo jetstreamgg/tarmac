@@ -107,12 +107,6 @@ export function tailResponse(spacingArc: number): number {
   return Math.min(Math.max(spacingArc * TAIL_PACE_MS_PER_PX, TAIL_RESPONSE_MS), TAIL_RESPONSE_MAX_MS);
 }
 
-/** Quart, the easing the comp carries. Still right for discrete fades. */
-export const HOVER_EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
-
-/** Duration for those discrete fades (the dim mask's on/off). */
-export const HOVER_FADE_MS = 120;
-
 /**
  * Crossfade between the dimmed base series and the bright hover segment — the
  * reference chart runs `{duration: 0.4, ease: 'easeInOut'}` on both sides of

@@ -1,6 +1,5 @@
 import { ReactNode, useCallback, useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import {
   useSkyPrice,
@@ -15,6 +14,7 @@ import {
 import { formatUsd, formatDecimalPercentage } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { calculateClaimedRewardsUsd } from '../lib/positionDetail';
+import { priceOfFromPrices, sumRewardsUsd, wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
@@ -115,11 +115,11 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   // convention the Savings transactions table uses).
   const { priceString: skyPriceString, isLoading: skyPriceLoading } = useSkyPrice();
   const skyPrice = skyPriceString ? parseFloat(skyPriceString) : null;
-  const totalStakedUsd = skyPrice !== null ? Number(formatUnits(totalStaked, 18)) * skyPrice : null;
+  const totalStakedUsd = skyPrice !== null ? wadToUsd(totalStaked, skyPrice) : null;
 
   // Claimable rewards across every urn, valued via the price feed.
   const urnAddresses = useMemo(() => (positions ?? []).map(position => position.urnAddress), [positions]);
-  const totalBorrowedUsd = Number(formatUnits(totalBorrowed, 18));
+  const totalBorrowedUsd = wadToFloat(totalBorrowed);
   const { data: rewardContracts } = useStakeRewardContracts();
   const {
     data: toClaim,
@@ -134,11 +134,8 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   // A failed claimables read is "unknown", not $0.00 — dash both reward stats.
   const claimableUnavailable = Boolean(claimableError && !toClaim);
   const { data: prices, isLoading: pricesLoading } = usePrices();
-  const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
-  const claimableUsd = (toClaim ?? []).reduce(
-    (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
-    0
-  );
+  const priceOf = useMemo(() => priceOfFromPrices(prices), [prices]);
+  const claimableUsd = sumRewardsUsd(toClaim ?? [], priceOf);
 
   // Reward stats carry the icons of what is actually claimable (SKY fallback),
   // e.g. an SPK-earning urn shows the SPK icon — mirrors the table cell.

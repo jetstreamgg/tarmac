@@ -1,18 +1,14 @@
-import { useMemo, useState } from 'react';
-import { Trans } from '@lingui/react/macro';
+import { useState } from 'react';
 import { useRewardsChartInfo, type RewardContract } from '@/hooks';
-import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
-import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { TimeFrame } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
-import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
+import { RateTvlDetailChart } from '@/components/product/RateTvlDetailChart';
 import { useParseRewardsChartData } from '../hooks/useParseRewardsChartData';
-
-type Metric = 'rate' | 'tvl';
 
 /**
  * The product-detail Rate/TVL chart for a reward farm — injected into
- * ProductDetailTemplate's `chart` slot. Owns the metric + timeframe state and
- * feeds the shared Chart's `detail` variant. Both series come from the one
+ * ProductDetailTemplate's `chart` slot. Owns the timeframe state and feeds the
+ * shared `RateTvlDetailChart`. Both series come from the one
  * BA Labs farms endpoint (`useRewardsChartInfo`), parsed through the existing
  * `useParseRewardsChartData` pipeline.
  *
@@ -28,7 +24,6 @@ export function RewardsDetailChart({
   currentRate?: number;
 }) {
   const hasRate = (currentRate ?? 0) > 0;
-  const [metric, setMetric] = useState<Metric>(hasRate ? 'rate' : 'tvl');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
   const {
@@ -41,48 +36,21 @@ export function RewardsDetailChart({
   });
   const { totalSupplied: tvlData, rate: rateData } = useParseRewardsChartData(timeFrame, chartInfo || []);
 
-  // A rate can arrive after mount (async); never leave the toggle on a hidden tab.
-  const isRate = metric === 'rate' && hasRate;
-  const metrics = useMemo(
-    () =>
-      hasRate
-        ? [
-            { value: 'rate', label: <Trans>Rate</Trans> },
-            { value: 'tvl', label: <Trans>TVL</Trans> }
-          ]
-        : [{ value: 'tvl', label: <Trans>TVL</Trans> }],
-    [hasRate]
-  );
-
   return (
-    <ErrorBoundary variant="small">
-      <Chart
-        variant="detail"
-        dataTestId="rewards-detail-chart"
-        data={isRate ? rateData : tvlData}
-        isLoading={isLoading}
-        error={error}
-        isPercentage={isRate}
-        symbol={isRate ? undefined : contract.supplyToken.symbol}
-        tokenSymbols={isRate ? undefined : [contract.supplyToken.symbol]}
-        label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}
-        // The TVL metric leads its figure with the token mark instead of a
-        // trailing ticker and tags it with the period's change, the same
-        // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
-        icons={
-          isRate ? undefined : (
-            <TokenIconStack symbols={[contract.supplyToken.symbol]} size={32} className="shrink-0" />
-          )
-        }
-        showTrend={!isRate}
+    <RateTvlDetailChart
+      dataTestId="rewards-detail-chart"
+      symbol={contract.supplyToken.symbol}
+      rate={{
+        data: rateData,
+        isLoading,
+        error,
         // Headline reads the canonical current rate (matches the Details grid),
         // not the last historic point.
-        displayValue={isRate && currentRate !== undefined ? currentRate * 100 : undefined}
-        metrics={metrics}
-        activeMetric={isRate ? 'rate' : 'tvl'}
-        onMetricChange={value => setMetric(value as Metric)}
-        onTimeFrameChange={setTimeFrame}
-      />
-    </ErrorBoundary>
+        displayValue: currentRate !== undefined ? currentRate * 100 : undefined
+      }}
+      tvl={{ data: tvlData, isLoading, error }}
+      hideRate={!hasRate}
+      onTimeFrameChange={setTimeFrame}
+    />
   );
 }

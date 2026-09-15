@@ -11,7 +11,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ updateModalContent: h.updateModalContent, txStatus: h.txStatus })
 }));
 
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useStakeConfirmContent, type StakeLaunchContentContext } from './useStakeConfirmContent';
 
 const STAKE_MODULE = '0x1111111111111111111111111111111111111111' as const;

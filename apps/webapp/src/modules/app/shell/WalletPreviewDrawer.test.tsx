@@ -10,7 +10,7 @@ import {
   Outlet,
   RouterProvider
 } from '@tanstack/react-router';
-import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
 import type { WalletDrawerAsset } from './useWalletDrawerAssets';
@@ -108,14 +108,10 @@ vi.mock('./useWalletDrawerAssets', () => ({
   useWalletDrawerAssets: () => mocks.walletAssets
 }));
 
-// Tab contents are the shared balance widgets; their behavior has its own coverage.
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    BalancesHistory: () => <div data-testid="balances-history-stub" />
-  };
-});
+// The activity tab's list has its own coverage.
+vi.mock('./activity/BalancesHistory', () => ({
+  BalancesHistory: () => <div data-testid="balances-history-stub" />
+}));
 
 vi.mock('@/modules/geo-config', async importOriginal => {
   const actual = await importOriginal<typeof import('@/modules/geo-config')>();

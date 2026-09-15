@@ -2,7 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd, WAD } from '@/utils';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
@@ -11,8 +11,6 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { StakeManageCard, StakeManageStatCell, StakeManageStatDivider } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
-
-const WAD = 10n ** 18n;
 
 /**
  * Manage card 1 · Stake SKY | Withdraw SKY (UX 1050:21454 / 1104:20574):

@@ -17,8 +17,8 @@ import type { EarnProductDescriptor, EarnRiskProfileId, EarnRiskTier } from './t
  * sheet Kacper posted on APP-396 (initial draft, 2026-07-20): Core →
  * savings + every rewards farm, Medium → USDS Flagship / USDT Savings /
  * Pendle fixed yield, Advanced → stUSDS + the Risk Capital vaults.
- * 'vault-tether-savings' (flag-gated sUSDT) and the generic 'rewards' fallback
- * are not in the sheet — placeholder tiers pending a product assessment.
+ * The generic 'rewards' fallback is not in the sheet — a placeholder tier
+ * pending a product assessment.
  */
 export const RISK_TIER_BY_PROFILE: Record<EarnRiskProfileId, EarnRiskTier> = {
   savings: 'low',
@@ -29,7 +29,6 @@ export const RISK_TIER_BY_PROFILE: Record<EarnRiskProfileId, EarnRiskTier> = {
   'rewards-cle': 'low',
   'vault-flagship': 'moderate',
   'vault-usdt-savings': 'moderate',
-  'vault-tether-savings': 'moderate',
   'vault-risk-capital': 'advanced',
   fixed: 'moderate',
   stusds: 'advanced',

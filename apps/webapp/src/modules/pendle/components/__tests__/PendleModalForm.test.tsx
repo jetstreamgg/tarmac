@@ -158,13 +158,9 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    usePendleUsdValue: () => (_symbol: string, amount: number) => amount
-  };
-});
+vi.mock('@/modules/pendle/hooks/usePendleUsdValue', () => ({
+  usePendleUsdValue: () => (_symbol: string, amount: number) => amount
+}));
 
 vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
   useWidgetAnalytics: () => hoisted.analyticsSpy

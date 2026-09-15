@@ -1,7 +1,5 @@
 import { TimeFrame } from '@/modules/ui/components/Chart';
-
-const DAY = 86400;
-const HOUR = 3600;
+import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from '@/utils';
 
 /**
  * Sampling interval, in seconds, for each timeframe.
@@ -26,10 +24,10 @@ export const getTimeFrameInterval = (timeFrame: TimeFrame): number => {
     case 'w':
     case 'm':
     case 'all':
-      return DAY;
+      return SECONDS_PER_DAY;
     case 'y':
-      return 3 * DAY;
+      return 3 * SECONDS_PER_DAY;
     default:
-      return HOUR;
+      return SECONDS_PER_HOUR;
   }
 };

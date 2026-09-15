@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { MORPHO_API_CHAIN_ID, MORPHO_API_URL, VAULT_MARKET_DATA_QUERY } from './constants';
+import { MORPHO_API_CHAIN_ID, VAULT_MARKET_DATA_QUERY, morphoDataSource } from './constants';
 import { formatBigInt, formatNumber, formatPercent } from '@/utils';
 import type {
   MorphoIdleLiquidityAllocation,
@@ -9,6 +8,8 @@ import type {
   MorphoVaultAllocationsData
 } from './morpho';
 import type { MorphoRewardData, MorphoVaultRateData } from './useMorphoVaultRateApiData';
+import { toReadHook } from '../shared/toReadHook';
+import { morphoGraphql } from './morphoGraphql';
 
 /**
  * Cap item from the Morpho API. For MarketV1 caps, `data.market` contains market info.
@@ -100,25 +101,10 @@ export async function fetchMorphoVaultMarketData(
   vaultAddress: string,
   chainId: number
 ): Promise<MorphoVaultMarketData | undefined> {
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query: VAULT_MARKET_DATA_QUERY,
-      variables: {
-        address: vaultAddress.toLowerCase(),
-        chainId
-      }
-    })
+  const result = await morphoGraphql<MorphoVaultMarketApiResponse>(VAULT_MARKET_DATA_QUERY, {
+    address: vaultAddress.toLowerCase(),
+    chainId
   });
-
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const result: MorphoVaultMarketApiResponse = await response.json();
 
   if (!result.data.vaultV2ByAddress) {
     return undefined;
@@ -288,12 +274,7 @@ export function useMorphoVaultMarketApiData({
 }): MorphoVaultMarketDataHook {
   const chainId = MORPHO_API_CHAIN_ID;
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     queryKey: ['morpho-vault-market-data', vaultAddress, chainId],
     queryFn: () => {
       if (!vaultAddress) {
@@ -306,18 +287,5 @@ export function useMorphoVaultMarketApiData({
     gcTime: 60_000 // 1 minute
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
-    mutate,
-    dataSources: [
-      {
-        title: 'Morpho API',
-        href: MORPHO_API_URL,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [morphoDataSource()]);
 }

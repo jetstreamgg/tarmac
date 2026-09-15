@@ -47,14 +47,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    useTokenImage: () => '',
-    useChainImage: () => ''
-  };
-});
+vi.mock('@/modules/ui/hooks/useTokenImage', () => ({ useTokenImage: () => '' }));
+vi.mock('@/modules/ui/hooks/useChainImage', () => ({ useChainImage: () => '' }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 

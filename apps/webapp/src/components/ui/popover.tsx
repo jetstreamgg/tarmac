@@ -3,15 +3,13 @@ import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { motion } from 'motion/react';
 
 import { cn } from '@/lib/cn';
-// Leaf-safe motion tokens (no app graph) — used only by the widget popover below.
-import { AnimationLabels } from '@/widgets/shared/animation/constants';
-import { cardInAnimate, cardInInitial } from '@/widgets/shared/animation/presets';
+// Leaf-safe motion tokens (no app graph) — used only by the widget-look popover below.
+import { AnimationLabels } from '@/modules/ui/animation/constants';
+import { cardInAnimate, cardInInitial } from '@/modules/ui/animation/presets';
 
 // Shared Radix aliases (identical in both trees).
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
-const PopoverPortal = PopoverPrimitive.Portal;
-const PopoverAnchor = PopoverPrimitive.Anchor;
 const PopoverClose = PopoverPrimitive.Close;
 const PopoverArrow = PopoverPrimitive.Arrow;
 
@@ -49,7 +47,7 @@ const PopoverContent = React.forwardRef<
 
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-// Widget look — relocated as PopoverWidgetContent; the widgets/popover shim aliases it back.
+// Widget look (the info popovers).
 const PopoverWidgetContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
@@ -83,4 +81,4 @@ const PopoverWidgetContent = React.forwardRef<
 PopoverWidgetContent.displayName = PopoverPrimitive.Content.displayName;
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverArrow };
-export { PopoverWidgetContent, PopoverPortal, PopoverAnchor };
+export { PopoverWidgetContent };

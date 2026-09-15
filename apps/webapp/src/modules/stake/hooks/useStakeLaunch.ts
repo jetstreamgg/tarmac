@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
-import { formatUnits } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
@@ -16,6 +15,7 @@ import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import type { TransactionConfig, TransactionContextValue } from '@/modules/ui/context/transactionContract';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
@@ -23,11 +23,57 @@ import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/componen
 // The legacy msgid generators double as e2e anchors — reused, not forked
 // (UI Spec §3). They survive F7 by relocation, not deletion.
 import { getStakeTitle, StakeFlow } from '../lib/constants';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
-import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
+import { toLaunchResult, useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
-import { stakeUsdNotional } from '../lib/stakeUsdNotional';
+import { stakeUsdNotional, wadToFloat } from '../lib/stakeUsdNotional';
+
+/** The per-flow half of a stake modal launch — what `launchStakeModal` does not fix. */
+type StakeLaunchOverrides = Pick<
+  TransactionConfig,
+  | 'usdValue'
+  | 'title'
+  | 'toast'
+  | 'sessionId'
+  | 'transactionContent'
+  | 'transactionScreenContent'
+  | 'steps'
+  | 'onConfirm'
+  | 'onSuccess'
+> & {
+  /** The legacy stakeData analytics payload (useStakeTransactionCallbacks shape). */
+  stakeData: Record<string, unknown>;
+};
+
+/**
+ * `TransactionContext.launch()` for the open and manage seams — the config
+ * both share, with the flow picking the wallet-screen title (the legacy
+ * msgid) and the analytics flow. The launch is `skipReview`: the takeover /
+ * sheet already served as the review (Design QA 2800:91832), so the modal
+ * opens on the wallet screen and the gate runs at once; `title` is the
+ * minimized-toast fallback only. Staking is mainnet-only, so the modal is
+ * guarded off any L2 (APP-528).
+ */
+export function launchStakeModal(
+  launchModal: TransactionContextValue['launch'],
+  flow: StakeFlow,
+  { stakeData, ...overrides }: StakeLaunchOverrides
+) {
+  launchModal({
+    ...overrides,
+    supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+    skipReview: true,
+    transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, flow)),
+    confirmLabel: t`Confirm`,
+    analytics: {
+      widgetName: 'stake',
+      flow,
+      action: 'multicall',
+      data: stakeData
+    }
+  });
+}
 
 /**
  * Confirm-modal step labels, derived from the calldata set — not from tx count
@@ -264,19 +310,13 @@ export function useStakeLaunch({
       selectedRewardSymbol,
       isDelegating: hasDelegate,
       isBatchTx: shouldUseBatch,
-      ...(skyToLock > 0n && { amount: Number(formatUnits(skyToLock, 18)), stakeAction: 'stake' }),
-      ...(hasBorrow && { borrowAmount: Number(formatUnits(usdsToBorrow, 18)), borrowAction: 'borrow' })
+      ...(skyToLock > 0n && { amount: wadToFloat(skyToLock), stakeAction: 'stake' }),
+      ...(hasBorrow && { borrowAmount: wadToFloat(usdsToBorrow), borrowAction: 'borrow' })
     };
 
-    launchModal({
+    launchStakeModal(launchModal, StakeFlow.OPEN, {
       usdValue,
-      // Staking is mainnet-only — guard the modal off any L2 (APP-528).
-      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-      // The takeover is the review (Design QA 2800:91832): open on the wallet
-      // screen, gate first. `title` is the minimized-toast fallback only.
-      skipReview: true,
       title: t`Confirm`,
-      transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.OPEN)),
       // Result toasts per UX A.4: borrow path announces the position, the
       // stake-only path announces the staked amount.
       toast: {
@@ -288,15 +328,9 @@ export function useStakeLaunch({
       transactionContent: confirmContent,
       transactionScreenContent,
       steps,
-      confirmLabel: t`Confirm`,
       onConfirm: () => executeRef.current(),
       onSuccess,
-      analytics: {
-        widgetName: 'stake',
-        flow: 'open',
-        action: 'multicall',
-        data: stakeData
-      }
+      stakeData
     });
   }, [
     launchModal,
@@ -321,15 +355,9 @@ export function useStakeLaunch({
     restore,
     /** Live USD notional of the staged position, for the takeover's own preflight. */
     usdValue,
-    execute: engine.execute,
-    calls: engine.calls ?? [],
-    isBatch: !!engine.isBatch,
-    steps,
     calldata,
     needsSkyAllowance,
     shouldUseBatch,
-    prepared: engine.prepared,
-    isLoading: engine.isLoading,
-    error: engine.error
+    ...toLaunchResult(engine, steps)
   };
 }

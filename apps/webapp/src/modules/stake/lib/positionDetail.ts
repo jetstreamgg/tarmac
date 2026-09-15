@@ -1,4 +1,3 @@
-import { formatUnits } from 'viem';
 import {
   lsSkySkyRewardAddress,
   lsSkySpkRewardAddress,
@@ -6,6 +5,7 @@ import {
   TransactionTypeEnum
 } from '@/hooks';
 import type { StakeHistory } from '@/hooks/stake/stakeModule';
+import { wadToUsd } from './stakeUsdNotional';
 
 /** Known staking-engine reward contracts → reward token symbol, per chain. */
 export function rewardContractSymbols(chainId: number): Record<string, string> {
@@ -41,7 +41,7 @@ export function calculateClaimedRewardsUsd(
       const amount = 'amount' in item ? (item.amount as bigint) : 0n;
       const symbol = contract ? symbols[contract] : undefined;
       if (!symbol) return total;
-      return total + Number(formatUnits(amount, 18)) * priceOf(symbol);
+      return total + wadToUsd(amount, priceOf(symbol));
     }, 0);
 }
 

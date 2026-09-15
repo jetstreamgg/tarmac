@@ -9,7 +9,7 @@ import { formatUsd } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { WalletIcon } from '@/modules/ui/components/WalletIcon';
-import { CopyToClipboard } from '@/widgets/shared/components/ui/CopyToClipboard';
+import { CopyToClipboard } from './CopyToClipboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SheetClose } from '@/components/ui/sheet';
 import { useWalletDrawerAssets } from './useWalletDrawerAssets';

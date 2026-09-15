@@ -3,7 +3,7 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { Info } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
-import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@/utils';
+import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider, SliderTicks } from '@/components/ui/slider';
@@ -20,8 +20,6 @@ import {
 import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
-
-const WAD = 10n ** 18n;
 
 // Badges/Risk dash mapping (comp 1036:213853) — the F3 table-meter levels on
 // the shared RiskMeter pill (dashes only, no text; the level name stays on the

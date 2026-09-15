@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Intent } from '@/lib/enums';
 import type { EarnProductRow } from '@/hooks';
-import { resolveTokenColor } from '@/widgets/shared/constants';
+import { resolveTokenColor } from '@/modules/ui/lib/tokenColors';
 import { buildIdleSupplyInfo, buildIdleView, type StablecoinBalance } from './idleView';
 
 const balances: StablecoinBalance[] = [

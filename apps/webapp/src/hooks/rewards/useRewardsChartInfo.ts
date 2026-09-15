@@ -1,11 +1,7 @@
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
-import { useQuery } from '@tanstack/react-query';
+import { useBaLabsHistoric } from '../shared/useBaLabsHistoric';
 
-import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
-
-type RewardsChartInfo = {
+export type RewardsChartInfo = {
   apr: string;
   cRate: string;
   date: string;
@@ -28,7 +24,7 @@ export type RewardsChartInfoParsed = {
   rate: string;
 };
 
-function transformBaLabsChartData(results: RewardsChartInfo[]): RewardsChartInfoParsed[] {
+export function transformRewardsChartData(results: RewardsChartInfo[]): RewardsChartInfoParsed[] {
   const parsed = results.map((item: RewardsChartInfo) => {
     return {
       blockTimestamp: new Date(item.date).getTime() / 1000,
@@ -44,16 +40,6 @@ function transformBaLabsChartData(results: RewardsChartInfo[]): RewardsChartInfo
   return parsed;
 }
 
-async function fetchRewardsChartInfo(url: URL): Promise<RewardsChartInfoParsed[]> {
-  try {
-    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for.
-    return transformBaLabsChartData(await fetchBaLabsPages<RewardsChartInfo>(url));
-  } catch (error) {
-    console.error('Error fetching BaLabs data:', error);
-    return [];
-  }
-}
-
 export function useRewardsChartInfo({
   rewardContractAddress,
   limit = 100
@@ -61,36 +47,11 @@ export function useRewardsChartInfo({
   rewardContractAddress: string;
   limit?: number;
 }): ReadHook & { data?: RewardsChartInfoParsed[] } {
-  const baseUrl = getBaLabsApiUrl();
-  let url: URL | undefined;
-  if (baseUrl && rewardContractAddress) {
-    const endpoint = `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/?p_size=${limit}`;
-    url = formatBaLabsUrl(new URL(endpoint));
-  }
-
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(rewardContractAddress && baseUrl),
-    queryKey: ['reward-chart', url],
-    queryFn: () => (url ? fetchRewardsChartInfo(url) : Promise.resolve([]))
+  return useBaLabsHistoric<RewardsChartInfo, RewardsChartInfoParsed>({
+    path: `/farms/${rewardContractAddress.toLowerCase()}/historic/`,
+    limit,
+    queryKey: 'reward-chart',
+    transform: transformRewardsChartData,
+    enabled: Boolean(rewardContractAddress)
   });
-
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
 }

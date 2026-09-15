@@ -1,5 +1,4 @@
-import { useCallback, useMemo } from 'react';
-import { formatUnits } from 'viem';
+import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import {
   getIlkName,
@@ -20,6 +19,7 @@ import {
 } from '@/hooks';
 import { calculateClaimedRewardsUsd, hasStakeBorrowHistory } from '../lib/positionDetail';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';
+import { priceOfFromPrices, sumRewardsUsd, wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 
 export interface StakePositionDetail {
   urnAddress: `0x${string}` | undefined;
@@ -97,11 +97,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   // must surface here and in the claim modal alike. SKY-first order.
   const { claimables, isLoading: claimableLoading } = useStakeUrnClaimables(BigInt(urnIndex));
   const { data: prices, isLoading: pricesLoading } = usePrices();
-  const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
-  const claimableUsd = claimables.reduce(
-    (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
-    0
-  );
+  const priceOf = useMemo(() => priceOfFromPrices(prices), [prices]);
+  const claimableUsd = sumRewardsUsd(claimables, priceOf);
   // The chip renders ONE amount next to ONE symbol, so its figure must be that
   // token's own balance — never a sum across different reward tokens (residual
   // claimables from a previous farm can put two tokens on the same urn).
@@ -125,9 +122,9 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
 
   const { priceString: skyPriceString } = useSkyPrice();
   const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
-  const stakedUsd = skyPriceUsd !== null ? Number(formatUnits(skyLocked, 18)) * skyPriceUsd : null;
+  const stakedUsd = skyPriceUsd !== null ? wadToUsd(skyLocked, skyPriceUsd) : null;
   // USDS at parity — the module-wide convention.
-  const borrowedUsd = Number(formatUnits(vault?.debtValue ?? 0n, 18));
+  const borrowedUsd = wadToFloat(vault?.debtValue ?? 0n);
 
   return {
     urnAddress,

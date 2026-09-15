@@ -2,7 +2,7 @@ import { daiUsdsAbi, daiUsdsAddress, mcdDaiAddress } from '../generated';
 import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useWriteContractFlow } from '../shared/useWriteContractFlow';
+import { useApprovalGatedWriteFlow } from '../shared/useApprovalGatedWriteFlow';
 
 // Calls the join function on the upgrader contract that supplies USDS and returns DAI
 export function useDaiToUsds({
@@ -30,7 +30,7 @@ export function useDaiToUsds({
   const enabled =
     paramEnabled && isConnected && !!allowance && amount !== 0n && allowance >= amount && !!address;
 
-  const writeContractFlowResults = useWriteContractFlow({
+  return useApprovalGatedWriteFlow({
     address: daiUsdsAddress[chainId as keyof typeof daiUsdsAddress],
     abi: daiUsdsAbi,
     functionName: 'daiToUsds',
@@ -41,11 +41,7 @@ export function useDaiToUsds({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError
   });
-
-  return {
-    ...writeContractFlowResults,
-    prepareError: writeContractFlowResults.prepareError || allowanceError
-  };
 }

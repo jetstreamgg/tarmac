@@ -91,15 +91,12 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
           case 'savings':
             return () => openSavingsSupply();
           case 'vault': {
-            // Morpho vaults only (Spark/'sky' has no in-place modal). Resolve the
-            // registry vault from the position's structured address, then open
-            // against its address on the position's chain.
+            // Resolve the registry vault from the position's structured address,
+            // then open against its address on the position's chain.
             if (!isMorphoVault(position) || !position.address) return undefined;
             const positionAddress = position.address.toLowerCase();
-            const vault = VAULTS.find(
-              v =>
-                v.provider === 'morpho' &&
-                Object.values(v.vaultAddress).some(address => address?.toLowerCase() === positionAddress)
+            const vault = VAULTS.find(v =>
+              Object.values(v.vaultAddress).some(address => address?.toLowerCase() === positionAddress)
             );
             const vaultAddress = vault?.vaultAddress[requiredChainId];
             if (!vault || !vaultAddress) return undefined;

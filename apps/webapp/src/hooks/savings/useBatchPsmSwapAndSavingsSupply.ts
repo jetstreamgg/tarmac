@@ -6,9 +6,9 @@ import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdcAddress, usdsAddress } from '../generated';
-import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../psm/usdsPsmWrapper';
+import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 
 /**
  * Mainnet USDC → Sky Savings, in one flow. The savings vault only takes USDS, so a
@@ -116,7 +116,7 @@ export function useBatchPsmSwapAndSavingsSupply({
     usdcSwapAllowance !== undefined &&
     usdsSupplyAllowance !== undefined;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -124,11 +124,7 @@ export function useBatchPsmSwapAndSavingsSupply({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

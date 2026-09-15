@@ -1,8 +1,8 @@
 import { Token } from '../tokens/types';
 import type { EarnRiskProfileId } from '../earn/types';
 
-/** Vault data provider. Morpho today; Sky (sUSDT) added in APP-266. */
-export type VaultProvider = 'morpho' | 'sky';
+/** Vault data provider. */
+export type VaultProvider = 'morpho';
 
 /**
  * Provider-neutral vault configuration.
@@ -13,7 +13,7 @@ export type VaultConfig = {
   provider: VaultProvider;
   /** Display name for the vault */
   name: string;
-  /** Optional share-token symbol (e.g. `sUSDT`) for display/disambiguation */
+  /** Optional share-token symbol for display/disambiguation */
   symbol?: string;
   /** The vault contract address mapping by chain ID (also the unique identifier) */
   vaultAddress: Record<number, `0x${string}`>;

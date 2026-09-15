@@ -57,10 +57,9 @@ const ended = vi.hoisted(() => ({
   current: { positions: [] as unknown[] }
 }));
 
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return { ...actual, usePendleUsdValue: () => (_symbol: string, amount: number) => amount };
-});
+vi.mock('@/modules/pendle/hooks/usePendleUsdValue', () => ({
+  usePendleUsdValue: () => (_symbol: string, amount: number) => amount
+}));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();

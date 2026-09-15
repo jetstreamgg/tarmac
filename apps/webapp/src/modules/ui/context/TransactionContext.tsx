@@ -8,7 +8,8 @@ import {
   useRef,
   ReactNode
 } from 'react';
-import { TxStatus, InProgress, Cancel } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { InProgress, Cancel } from '@/modules/icons';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
@@ -136,13 +137,6 @@ function offSupportedChains(supportedChainIds: readonly number[], chainId: numbe
 
 // The transaction-orchestration contract is frozen in ./transactionContract.
 // Re-exported here so existing import sites keep working.
-export type {
-  TransactionAnalytics,
-  TransactionConfig,
-  TransactionEntry,
-  TxCallbacks
-} from './transactionContract';
-
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
 // Internal: the DOM node on the modal's entry screen where an editable flow's
@@ -203,7 +197,7 @@ type TransactionModalView = {
  * animation can play. Matches the dismissal in `components/ui/dialog.tsx`
  * (and the bottom sheet's, which is the same 300ms).
  */
-const MODAL_EXIT_MS = 300;
+import { MODAL_EXIT_MS } from '@/modules/ui/animation/constants';
 
 export function TransactionProvider({
   children,

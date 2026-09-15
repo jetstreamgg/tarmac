@@ -2,9 +2,8 @@ import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { usdtAbi, usdtAddress } from '../generated';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { VaultProvider } from './types';
 import { buildVaultDepositCall } from '@/lib/vaults/buildVaultDepositCall';
 import { Call, erc20Abi } from 'viem';
 
@@ -36,17 +35,11 @@ export function useBatchVaultDeposit({
   onError = () => null,
   onStart = () => null,
   enabled: activeTabEnabled = true,
-  shouldUseBatch = true,
-  provider = 'morpho',
-  referral = 0
+  shouldUseBatch = true
 }: BatchWriteHookParams & {
   amount: bigint;
   vaultAddress: `0x${string}`;
   assetAddress: `0x${string}`;
-  /** Vault provider — only Spark attaches the on-chain referral code. Defaults to Morpho. */
-  provider?: VaultProvider;
-  /** Referral code to attribute the deposit to; ignored unless provider is Spark. */
-  referral?: number;
 }): BatchWriteHook {
   const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
@@ -64,15 +57,12 @@ export function useBatchVaultDeposit({
 
   const hasAllowance = allowance !== undefined && allowance >= amount;
 
-  // Build the deposit call. ERC-4626 deposit(assets, receiver) for Morpho; Spark
-  // additionally carries the on-chain referral code via the 3-arg overload.
-  // receiver is the connected address - they receive the vault shares.
+  // Build the ERC-4626 deposit(assets, receiver) call. receiver is the connected
+  // address - they receive the vault shares.
   const depositCall = buildVaultDepositCall({
-    provider,
     vaultAddress,
     amount,
-    receiver: connectedAddress!,
-    referral
+    receiver: connectedAddress!
   });
 
   // Conditionally include approve calls if allowance is insufficient
@@ -110,7 +100,7 @@ export function useBatchVaultDeposit({
     !!vaultAddress &&
     !!assetAddress;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -118,11 +108,7 @@ export function useBatchVaultDeposit({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

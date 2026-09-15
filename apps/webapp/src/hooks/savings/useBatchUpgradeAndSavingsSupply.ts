@@ -5,7 +5,7 @@ import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { daiUsdsAbi, daiUsdsAddress, mcdDaiAddress, usdsAddress } from '../generated';
 import { Call, erc20Abi } from 'viem';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 
 export function useBatchUpgradeAndSavingsSupply({
@@ -81,7 +81,7 @@ export function useBatchUpgradeAndSavingsSupply({
     paramEnabled &&
     !!connectedAddress;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -89,11 +89,7 @@ export function useBatchUpgradeAndSavingsSupply({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }
