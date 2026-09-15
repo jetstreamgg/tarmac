@@ -25,7 +25,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { easeOutExpo } from '../animation/timingFunctions';
+import { easeInRoll, easeOutExpo, springSettle } from '../animation/timingFunctions';
 import { positionAnimations } from '../animation/presets';
 import { AnimationLabels } from '../animation/constants';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
@@ -499,6 +499,53 @@ export function detailFigureLineBox(mobile: boolean): string {
   return mobile ? 'h-[26px] leading-[26px]' : 'h-12 leading-[48px]';
 }
 
+/** The hero roll's clock (`RollingValue` speed `hero`), shared by the marks
+ *  that slide in and out beside the figure so the whole data point moves as
+ *  one. */
+const HEADER_PIECE_SECONDS = 0.6;
+
+/**
+ * A mark beside the headline figure (the token logo before it, the rate
+ * suffix / trend badge after it) that a metric swap adds or removes: it
+ * unfolds from zero width as it fades in and folds away again on exit, so the
+ * figure and its neighbours glide to their new spots instead of jumping
+ * (Figma 1598:76582 — the data point animates as a whole). The 8px gap to the
+ * figure lives inside the fold, so it collapses with it.
+ */
+function HeaderPiece({
+  show,
+  side,
+  children
+}: {
+  show: boolean;
+  side: 'leading' | 'trailing';
+  children: React.ReactNode;
+}) {
+  const reduceMotion = useReducedMotion();
+  const seconds = reduceMotion ? 0 : HEADER_PIECE_SECONDS;
+  return (
+    <AnimatePresence initial={false}>
+      {show && (
+        <motion.span
+          key="piece"
+          className="inline-flex shrink-0 items-center overflow-hidden"
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: 'auto', opacity: 1 }}
+          exit={{ width: 0, opacity: 0 }}
+          transition={{
+            width: { duration: seconds, ease: springSettle },
+            opacity: { duration: seconds * 0.6, ease: show ? springSettle : easeInRoll }
+          }}
+        >
+          <span className={cn('inline-flex shrink-0 items-center', side === 'leading' ? 'pr-2' : 'pl-2')}>
+            {children}
+          </span>
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /** detail-variant headline: just the formatted value (no % change / timestamp). */
 function DetailHeaderValue({
   data,
@@ -575,13 +622,20 @@ function DetailHeaderValue({
       <RollingValue value={formatted} />
     </span>
   );
-  if (!icons && !valueSuffix && !trend) return figure;
+  // Always the full row, even for a bare figure: the marks a metric swap
+  // brings need a row that stays mounted to fold in and out of.
   return (
-    <span className="flex items-center gap-2">
-      {icons}
+    <span className="flex items-center">
+      <HeaderPiece show={!!icons} side="leading">
+        {icons}
+      </HeaderPiece>
       {figure}
-      {valueSuffix}
-      {trend}
+      <HeaderPiece show={!!valueSuffix} side="trailing">
+        {valueSuffix}
+      </HeaderPiece>
+      <HeaderPiece show={!!trend} side="trailing">
+        {trend}
+      </HeaderPiece>
     </span>
   );
 }
@@ -830,6 +884,10 @@ export function Chart({
     showTrend && !isLoading && !isZeroPercentage && data.length > 1 && hasBaseline ? (
       <TrendBadge percentage={percentage} formatted={formattedPercentage.replace('-', '')} />
     ) : undefined;
+  // The label swaps with the metric, so the metric is what its roll keys on
+  // (a `<Trans>` node has no text to compare). A chart without a metric
+  // toggle never changes its label.
+  const labelRollKey = activeMetric === undefined ? undefined : String(activeMetric);
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>('w');
   const [width, setWidth] = useState<number>(0);
   const dateAxis = formatedXAxis(data, activeTimeframe, bpi);
@@ -881,7 +939,11 @@ export function Chart({
                 />
               )}
               <div className="flex flex-col gap-0.5">
-                {label && <span className="text-textSecondary text-xs leading-[18px]">{label}</span>}
+                {label && (
+                  <span className="text-textSecondary text-xs leading-[18px]">
+                    <RollingValue value={label} rollKey={labelRollKey} speed="stat" />
+                  </span>
+                )}
                 <DetailHeaderValue
                   mobile
                   data={data}
@@ -902,7 +964,9 @@ export function Chart({
                 {/* Body 5 on fg-secondary, flush against the figure (859:35718);
                     it was 13px on the selectActive periwinkle. */}
                 {label && (
-                  <span className="text-fgSecondary font-graphik text-sm leading-[22px]">{label}</span>
+                  <span className="text-fgSecondary font-graphik text-sm leading-[22px]">
+                    <RollingValue value={label} rollKey={labelRollKey} speed="stat" />
+                  </span>
                 )}
                 <DetailHeaderValue
                   data={data}
