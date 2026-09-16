@@ -5,7 +5,7 @@ import { formatBigInt, formatDecimalPercentage, formatPercent, formatUsd, splitA
 describe('Risk parameter math functions using ETH-A risk parameters', () => {
   it('Format a number as a "wad" by default', () => {
     const wad = formatBigInt(1892153672645000000000n, { locale: 'en' });
-    expect(wad).toBe('1,892');
+    expect(wad).toBe('1,892.15');
   });
 
   it('Format a number as a "ray"', () => {
@@ -25,15 +25,18 @@ describe('Risk parameter math functions using ETH-A risk parameters', () => {
 });
 
 describe('formatBigInt magnitude-driven decimals', () => {
-  it('keeps 4 decimals under 10 — sub-cent prices survive', () => {
+  it('keeps 4 decimals under 1 — sub-cent prices survive', () => {
     expect(formatBigInt(parseUnits('0.0025', 18), { locale: 'en' })).toBe('0.0025');
-    expect(formatBigInt(parseUnits('9.1234', 18), { locale: 'en' })).toBe('9.1234');
+    expect(formatBigInt(parseUnits('0.99999', 18), { locale: 'en' })).toBe('1');
   });
 
-  it('drops to 2 decimals between 10 and 1000, and 0 above', () => {
+  it('uses 2 decimals from 1 up, grouped, at every magnitude', () => {
+    expect(formatBigInt(parseUnits('1', 18), { locale: 'en' })).toBe('1');
+    expect(formatBigInt(parseUnits('9.1234', 18), { locale: 'en' })).toBe('9.12');
     expect(formatBigInt(parseUnits('10.1234', 18), { locale: 'en' })).toBe('10.12');
     expect(formatBigInt(parseUnits('999.995', 18), { locale: 'en' })).toBe('1,000');
-    expect(formatBigInt(parseUnits('1234.56', 18), { locale: 'en' })).toBe('1,235');
+    expect(formatBigInt(parseUnits('1234.56', 18), { locale: 'en' })).toBe('1,234.56');
+    expect(formatBigInt(parseUnits('1126587.87', 18), { locale: 'en' })).toBe('1,126,587.87');
   });
 
   it('clamps values under half the smallest step to a "<" indicator', () => {

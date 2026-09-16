@@ -4,11 +4,8 @@ import { getSupportedNumberLocale } from './localization';
 //avoid using 3 decimals (because 1.000 looks like 1 or 1000 depending on language)
 const DEFAULT_DECIMALS = 2;
 const SMALL_NUM_DECIMALS = 4;
-const LARGE_NUM_DECIMALS = 0;
-const COMPACT_LARGE_NUM_DECIMALS = 2;
 
-const SMALL_NUM_CUTOFF = 10;
-const LARGE_NUM_CUTOFF = 1000;
+const SMALL_NUM_CUTOFF = 1;
 
 type FormatOptions = {
   locale?: string;
@@ -29,15 +26,9 @@ export function createNumberFormatter(options?: FormatOptions) {
   const maxDecimals =
     options?.maxDecimals !== undefined
       ? options.maxDecimals
-      : amount === undefined
-        ? DEFAULT_DECIMALS
-        : amount < SMALL_NUM_CUTOFF
-          ? SMALL_NUM_DECIMALS
-          : amount < LARGE_NUM_CUTOFF
-            ? DEFAULT_DECIMALS
-            : options?.compact
-              ? COMPACT_LARGE_NUM_DECIMALS
-              : LARGE_NUM_DECIMALS;
+      : amount !== undefined && amount < SMALL_NUM_CUTOFF
+        ? SMALL_NUM_DECIMALS
+        : DEFAULT_DECIMALS;
   const minDecimals = options?.minDecimals ?? 0;
   return new Intl.NumberFormat(locale, {
     style: 'decimal',
