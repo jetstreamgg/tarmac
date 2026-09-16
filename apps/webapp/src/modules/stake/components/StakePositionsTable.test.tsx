@@ -163,8 +163,8 @@ describe('StakePositionsTable', () => {
     expect(screen.getByText('Position 1')).toBeTruthy();
     expect(screen.getByText('Position 2')).toBeTruthy();
     // Formatted staked/borrowed amounts.
-    expect(screen.getByText('700,550')).toBeTruthy();
-    expect(screen.getAllByText('30,000').length).toBeGreaterThan(0);
+    expect(screen.getByText('700,550.00')).toBeTruthy();
+    expect(screen.getAllByText('30,000.00').length).toBeGreaterThan(0);
   });
 
   it('hides inactive positions by default and shows them when toggled off', () => {

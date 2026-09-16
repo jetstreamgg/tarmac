@@ -92,7 +92,7 @@ describe('SavingsSupplyCard — no-position entry card', () => {
     // Current rate from useOverallSkyData (decimal fraction → percentage).
     expect(screen.getAllByText('3.75%').length).toBeGreaterThan(0);
     // Idle balance = sum of the supply origins' wallet balances (20k + 10k).
-    expect(screen.getByText('30,000')).toBeTruthy();
+    expect(screen.getByText('30,000.00')).toBeTruthy();
     // No inline amount input — entry happens in the modal.
     expect(screen.queryByTestId('savings-amount-input')).toBeNull();
   });

@@ -29,7 +29,10 @@ export function createNumberFormatter(options?: FormatOptions) {
       : amount !== undefined && amount < SMALL_NUM_CUTOFF
         ? SMALL_NUM_DECIMALS
         : DEFAULT_DECIMALS;
-  const minDecimals = options?.minDecimals ?? 0;
+  // Amounts pad to two decimals ("50.00", "1,126,587.87") as the comps do;
+  // compact figures ("$120.7K") and explicit whole-number caps do not.
+  const minDecimals =
+    options?.minDecimals ?? (options?.compact ? 0 : Math.min(DEFAULT_DECIMALS, maxDecimals));
   return new Intl.NumberFormat(locale, {
     style: 'decimal',
     minimumFractionDigits: minDecimals,
