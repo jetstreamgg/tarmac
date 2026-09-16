@@ -13,7 +13,7 @@ import {
   useRewardContractInfo,
   useRewardsChartInfo
 } from '@/hooks';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -127,17 +127,13 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
   const tvl = (
     <DetailValue
       loading={contractInfoLoading}
-      value={
-        contractInfo?.totalSupplied
-          ? `$${formatBigInt(contractInfo.totalSupplied, { maxDecimals: 0 })}`
-          : undefined
-      }
+      value={contractInfo?.totalSupplied ? formatWholeUsd(contractInfo.totalSupplied) : undefined}
     />
   );
   const suppliers = (
     <DetailValue
       loading={chartLoading}
-      value={latest?.suppliers !== undefined ? formatNumber(latest.suppliers) : undefined}
+      value={latest?.suppliers !== undefined ? formatNumber(latest.suppliers, { maxDecimals: 0 }) : undefined}
     />
   );
   const totalRewarded = (

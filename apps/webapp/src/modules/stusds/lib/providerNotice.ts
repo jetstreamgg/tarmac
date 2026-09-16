@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
 import type { I18n } from '@lingui/core';
 import { StUsdsSelectionReason, StUsdsBlockedReason } from '@/hooks';
-import { formatBigInt, formatNumber } from '@/utils';
+import { createNumberFormatter, formatBigInt } from '@/utils';
 import type { StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 
 // Premium thresholds for color changes (percent) — carried over from the
@@ -27,6 +27,10 @@ export function getProviderMessage(
   nativeMaxAmount: bigint | undefined,
   i18n: I18n
 ): string {
+  // Plain fixed-2 text: the copy carries its own sign and prose, so no "<" clamp.
+  const rateText = createNumberFormatter({ minDecimals: 2, maxDecimals: 2 }).format(
+    Math.abs(rateDifferencePercent)
+  );
   switch (selectionReason) {
     //all blocked - this should only happen if the curve pool is unusable and native is blocked
     case StUsdsSelectionReason.ALL_BLOCKED:
@@ -34,7 +38,6 @@ export function getProviderMessage(
 
     //curve better rate
     case StUsdsSelectionReason.CURVE_BETTER_RATE: {
-      const rateText = formatNumber(Math.abs(rateDifferencePercent), { minDecimals: 2, maxDecimals: 2 });
       return `${i18n._(msg`Routing through Curve for a better rate`)} (+${rateText}%)`;
     }
 
@@ -43,7 +46,6 @@ export function getProviderMessage(
       switch (nativeBlockedReason) {
         // Fully exhausted - no native capacity at all
         case StUsdsBlockedReason.SUPPLY_CAPACITY_REACHED: {
-          const rateText = formatNumber(Math.abs(rateDifferencePercent), { minDecimals: 2, maxDecimals: 2 });
           if (rateDifferencePercent < 0) {
             return i18n._(
               msg`Routing through Curve with a ${rateText}% premium, as the supply capacity is reached`
@@ -57,7 +59,6 @@ export function getProviderMessage(
 
         // Amount exceeds capacity - user could reduce amount
         case StUsdsBlockedReason.AMOUNT_EXCEEDS_SUPPLY_CAPACITY: {
-          const rateText = formatNumber(Math.abs(rateDifferencePercent), { minDecimals: 2, maxDecimals: 2 });
           if (rateDifferencePercent > 0) {
             return `${i18n._(msg`Routing through Curve for a better rate`)} (+${rateText}%)`;
           }
@@ -74,7 +75,6 @@ export function getProviderMessage(
 
         // Fully exhausted - no native liquidity at all
         case StUsdsBlockedReason.LIQUIDITY_EXHAUSTED: {
-          const rateText = formatNumber(Math.abs(rateDifferencePercent), { minDecimals: 2, maxDecimals: 2 });
           if (rateDifferencePercent < 0) {
             return i18n._(
               msg`Routing through Curve with a ${rateText}% premium, as the liquidity is exhausted`
@@ -88,7 +88,6 @@ export function getProviderMessage(
 
         // Amount exceeds liquidity - user could reduce amount
         case StUsdsBlockedReason.AMOUNT_EXCEEDS_LIQUIDITY: {
-          const rateText = formatNumber(Math.abs(rateDifferencePercent), { minDecimals: 2, maxDecimals: 2 });
           if (rateDifferencePercent > 0) {
             return `${i18n._(msg`Routing through Curve for a better rate`)} (+${rateText}%)`;
           }

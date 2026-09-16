@@ -2,7 +2,7 @@ import { t } from '@lingui/core/macro';
 import { formatBigInt } from '@/utils';
 
 // The vault simulation surfaces its dust-floor failure as a plain English
-// string ("Minimum borrow amount is 30,000"). The engine hook owns that
+// string ("Minimum borrow amount is 30,000.00"). The engine hook owns that
 // message, so the module remaps it at display time to the localized form.
 const MIN_BORROW_PREFIX = 'Minimum borrow amount is ';
 

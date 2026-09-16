@@ -88,7 +88,7 @@ export function SavingsProductDetail() {
   const users = (
     <DetailValue
       loading={overallLoading}
-      value={overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : undefined}
+      value={overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers, { maxDecimals: 0 }) : undefined}
     />
   );
 

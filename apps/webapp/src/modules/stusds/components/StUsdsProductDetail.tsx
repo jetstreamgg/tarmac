@@ -14,7 +14,7 @@ import {
   useStUsdsChartInfo,
   useStUsdsData
 } from '@/hooks';
-import { calculateApyFromStr, formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
+import { calculateApyFromStr, formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -28,9 +28,6 @@ import { StUsdsDetailChart } from './StUsdsDetailChart';
 import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
 import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
-
-const formatWholeUsd = (value: bigint | undefined): string =>
-  value !== undefined ? `$${formatBigInt(value, { maxDecimals: 0 })}` : NO_VALUE;
 
 /**
  * stUSDS product detail page (D7) — composes the reusable ProductDetailTemplate,
@@ -88,7 +85,7 @@ export function StUsdsProductDetail() {
   const suppliers = (
     <DetailValue
       loading={overallLoading}
-      value={overall?.stusdsSuppliers ? formatNumber(overall.stusdsSuppliers) : undefined}
+      value={overall?.stusdsSuppliers ? formatNumber(overall.stusdsSuppliers, { maxDecimals: 0 }) : undefined}
     />
   );
 
@@ -122,7 +119,7 @@ export function StUsdsProductDetail() {
       id: 'tvl',
       icon: <Vault className="h-3 w-3" />,
       label: <Trans>TVL</Trans>,
-      value: formatWholeUsd(stUsdsData?.totalAssets)
+      value: stUsdsData?.totalAssets !== undefined ? formatWholeUsd(stUsdsData.totalAssets) : NO_VALUE
     },
     {
       id: 'liquidity',
@@ -130,7 +127,10 @@ export function StUsdsProductDetail() {
       label: <Trans>Liquidity</Trans>,
       // Real value (unlike Savings' "Unlimited") — module TVL minus what the
       // staking engine has borrowed; withdrawals above it route through Curve.
-      value: formatWholeUsd(stUsdsData?.availableLiquidity)
+      value:
+        stUsdsData?.availableLiquidity !== undefined
+          ? formatWholeUsd(stUsdsData.availableLiquidity)
+          : NO_VALUE
     },
     {
       id: 'utilization',

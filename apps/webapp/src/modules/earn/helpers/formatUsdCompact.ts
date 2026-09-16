@@ -8,5 +8,5 @@ export function formatUsdCompact(amount: number): string {
   const abs = Math.abs(amount);
   if (abs < 1000) return formatUsd(amount);
   const sign = amount < 0 ? '-' : '';
-  return `${sign}$${formatNumber(abs, { compact: true, amount: abs })}`;
+  return `${sign}$${formatNumber(abs, { compact: true })}`;
 }

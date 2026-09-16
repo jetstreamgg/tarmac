@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { formatBigInt, formatDecimalPercentage, formatPercent, formatUsd, splitAmount } from './formatValue';
+import {
+  formatBigInt,
+  formatDecimalPercentage,
+  formatPercent,
+  formatUsd,
+  formatWholeUsd,
+  splitAmount
+} from './formatValue';
 
 describe('Risk parameter math functions using ETH-A risk parameters', () => {
   it('Format a number as a "wad" by default', () => {
@@ -68,14 +75,25 @@ describe('formatBigInt magnitude-driven decimals', () => {
   });
 });
 
+describe('formatWholeUsd', () => {
+  it('renders whole dollars from floats and wad bigints, never a "<" marker', () => {
+    expect(formatWholeUsd(6610933593.42)).toBe('$6,610,933,593');
+    expect(formatWholeUsd(1n)).toBe('$0');
+    expect(formatWholeUsd(parseUnits('1234.5', 18))).toBe('$1,235');
+    expect(formatWholeUsd(-12.4)).toBe('-$12');
+  });
+});
+
 describe('formatUsd', () => {
   it('always renders exactly 2 decimals with the sign before the symbol', () => {
     expect(formatUsd(1234.5)).toBe('$1,234.50');
     expect(formatUsd(-100)).toBe('-$100.00');
   });
 
-  it('renders sub-cent values as $0.00 with no indicator', () => {
+  it('clamps sub-half-cent values to <$0.01, keeps zero and negative dust at $0.00', () => {
     expect(formatUsd(0.004)).toBe('<$0.01');
+    expect(formatUsd(-0.004)).toBe('$0.00');
+    expect(formatUsd(-0.005)).toBe('-$0.01');
     expect(formatUsd(0.005)).toBe('$0.01');
     expect(formatUsd(0)).toBe('$0.00');
   });

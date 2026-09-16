@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
+import { formatDecimalPercentage, formatWholeUsd, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { trackPromoImpression, trackPromoClicked } from '@/modules/analytics/lib/trackAmbientSurfaces';
@@ -51,7 +51,7 @@ export function AllocateStablecoinsBanner({
             aria-hidden={yearly === undefined || undefined}
             data-testid={yearly === undefined ? 'allocate-banner-skeleton' : undefined}
           >
-            {`$${formatNumber(yearly ?? 1000, { maxDecimals: 0 })}`}
+            {formatWholeUsd(yearly ?? 1000)}
           </span>
           <BannerAccent className="font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
             <Trans>/year</Trans>
