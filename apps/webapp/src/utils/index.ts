@@ -24,7 +24,6 @@ export * from './formatDate';
 export * from './formatValue';
 export * from './projectAnnualEarnings';
 export * from './formatUnits';
-export * from './formatTradeAmount';
 export * from './strings';
 export * from './localization';
 export * from './math.constants';

@@ -9,7 +9,14 @@ import {
   useSkyPrice,
   ZERO_ADDRESS
 } from '@/hooks';
-import { capitalizeFirstLetter, formatAddress, formatBigInt, formatPercent, formatUsd } from '@/utils';
+import {
+  capitalizeFirstLetter,
+  formatAddress,
+  formatBigInt,
+  formatDecimalPercentage,
+  formatPercent,
+  formatUsd
+} from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
@@ -28,7 +35,7 @@ export interface StakeRewardEndpoint {
 }
 
 const formatSky = (amount: bigint) => `${formatBigInt(amount, { maxDecimals: 2 })} SKY`;
-const formatRate = (rate: number | null) => (rate !== null ? `${(rate * 100).toFixed(2)}%` : NO_VALUE);
+const formatRate = (rate: number | null) => (rate !== null ? formatDecimalPercentage(rate) : NO_VALUE);
 
 /**
  * The latest published rate for ONE farm, as a decimal. `useMultipleRewardsChartInfo`

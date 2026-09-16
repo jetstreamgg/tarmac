@@ -3,6 +3,7 @@ import { ReadHook } from '../hooks';
 import { MORPHO_API_CHAIN_ID, morphoDataSource } from './constants';
 import { toReadHook } from '../shared/toReadHook';
 import { morphoGraphql } from './morphoGraphql';
+import { formatDecimalPercentage } from '@/utils';
 
 type MorphoVaultApiResponse = {
   data: {
@@ -111,7 +112,7 @@ async function fetchMorphoVaultRate(
 
   const rewardsData: MorphoRewardData[] = Array.from(rewardsMap.entries()).map(([symbol, data]) => ({
     apy: data.apy,
-    formattedApy: `+${(data.apy * 100).toFixed(2)}%`,
+    formattedApy: `+${formatDecimalPercentage(data.apy)}`,
     symbol,
     logoUri: data.logoUri
   }));
@@ -122,10 +123,10 @@ async function fetchMorphoVaultRate(
     netRate: netApy,
     managementFee,
     performanceFee,
-    formattedRate: `${(apy * 100).toFixed(2)}%`,
-    formattedNetRate: `${(netApy * 100).toFixed(2)}%`,
-    formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
-    formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
+    formattedRate: formatDecimalPercentage(apy),
+    formattedNetRate: formatDecimalPercentage(netApy),
+    formattedManagementFee: formatDecimalPercentage(managementFee, 0),
+    formattedPerformanceFee: formatDecimalPercentage(performanceFee, 0),
     rewards: rewardsData
   };
 }

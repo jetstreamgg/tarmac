@@ -4,6 +4,7 @@ import { pendleDataSource } from '../constants';
 import { PENDLE_MARKETS } from './constants';
 import { PendleMarketsStats, PendleMarketsStatsHook } from './pendle';
 import { fetchPendleMarketsByIds } from './pendleApiClient';
+import { formatNumber } from '@/utils';
 
 /**
  * Hook for fetching headline stats (implied APY, TVL) for every market in
@@ -44,8 +45,7 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
           underlyingApy: summary.details.underlyingApy,
           liquidity: summary.details.liquidity,
           tvl,
-          formattedTvl:
-            tvl !== undefined ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined,
+          formattedTvl: tvl !== undefined ? `$${formatNumber(tvl, { maxDecimals: 0 })}` : undefined,
           expirySec: parseIsoToSec(summary.expiry),
           startTimestampSec: parseIsoToSec(summary.timestamp)
         };

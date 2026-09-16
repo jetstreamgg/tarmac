@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { useBorrowCapacityData } from '@/hooks';
-import { formatBigInt } from '@/utils';
+import { formatBigInt, formatDecimalPercentage } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -73,7 +73,13 @@ export function BorrowUtilizationBlock() {
       </h3>
 
       <div className="text-fgPrimary font-circle mb-5 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:mb-3 md:leading-normal md:tracking-normal">
-        {isLoading ? <Skeleton className="h-8 w-24" /> : error ? NO_VALUE : `${utilization.toFixed(1)}%`}
+        {isLoading ? (
+          <Skeleton className="h-8 w-24" />
+        ) : error ? (
+          NO_VALUE
+        ) : (
+          formatDecimalPercentage(utilization / 100)
+        )}
       </div>
 
       {/* Flat fg-brand-primary fill per 486:31955 — the DS Progress default is

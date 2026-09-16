@@ -128,8 +128,10 @@ export function formatPercent(amount: bigint, options?: FormatOptions): `${numbe
 }
 
 export function formatDecimalPercentage(value: number, decimalPlaces: number = 2): string {
-  const percentage = value * 100;
-  return `${percentage.toFixed(decimalPlaces)}%`;
+  const percentage = createNumberFormatter({ maxDecimals: decimalPlaces, minDecimals: decimalPlaces }).format(
+    value * 100
+  );
+  return `${percentage}%`;
 }
 
 /**
