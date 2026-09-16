@@ -186,21 +186,12 @@ export function StakeManageBorrowCard({
     if (maxBorrowable === 0n) return;
     onAmountChange(((maxBorrowable * BigInt(percent)) / 100n / WAD) * WAD);
   };
-  // Figma chips (3015:56730): repay "46%" (leave exactly dust) / "100%" (full
-  // debt, wipeAll; the wallet check surfaces as the amount error); a debt-free
-  // borrow Min (dust) / Max (headroom); borrow-more keeps 25/50/100 of the headroom.
-  const repayMin = dust !== undefined && existingDebt > dust ? existingDebt - dust : undefined;
+  // Repay keeps only "100%" (full debt, wipeAll; the wallet check surfaces as
+  // the amount error): the comp's share chip (3015:56730) went with the slider's
+  // dust tick. A debt-free borrow has Min (dust) / Max (headroom); borrow-more
+  // keeps 25/50/100 of the headroom.
   const labelledChips: AmountChip[] | undefined = isRepay
     ? [
-        ...(repayMin !== undefined
-          ? [
-              {
-                key: 'chip-min',
-                label: `${Math.round(Number((repayMin * 100n) / existingDebt))}%`,
-                onClick: () => onAmountChange(repayMin)
-              }
-            ]
-          : []),
         {
           key: 'chip-max',
           label: '100%',

@@ -547,15 +547,12 @@ describe('ManagePositionTakeover', () => {
     );
   });
 
-  it('repay: the partial chip is labelled by share and leaves exactly the dust floor', () => {
+  it('repay: only the 100% chip remains; the dust floor is the slider tick', () => {
     h.dust = 10_000n * WAD;
     renderSheet({ borrowCard: 'repay' });
 
-    expect(screen.getByTestId('stake-manage-borrow-amount-chip-min').textContent).toBe('66%');
+    expect(screen.queryByTestId('stake-manage-borrow-amount-chip-min')).toBeNull();
     expect(screen.getByTestId('stake-manage-borrow-amount-chip-max').textContent).toBe('100%');
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-min'));
-    expect(h.launchParams?.usdsToWipe).toBe(20_000n * WAD);
-    expect(h.launchParams?.wipeAll).toBe(false);
   });
 
   it('borrow: a debt-free urn still shows the slider and the max hint', () => {
