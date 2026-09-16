@@ -79,7 +79,9 @@ export function SavingsProductDetail() {
     <DetailValue
       loading={overallLoading}
       value={
-        overall?.skySavingsRateTvl ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}` : undefined
+        overall?.skySavingsRateTvl
+          ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl), { maxDecimals: 0 })}`
+          : undefined
       }
     />
   );

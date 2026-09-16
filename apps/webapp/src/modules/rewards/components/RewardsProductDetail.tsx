@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Vault, UsersRound, Coins } from 'lucide-react';
@@ -14,7 +13,7 @@ import {
   useRewardContractInfo,
   useRewardsChartInfo
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -130,7 +129,7 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
       loading={contractInfoLoading}
       value={
         contractInfo?.totalSupplied
-          ? `$${formatNumber(parseFloat(formatUnits(contractInfo.totalSupplied, 18)))}`
+          ? `$${formatBigInt(contractInfo.totalSupplied, { maxDecimals: 0 })}`
           : undefined
       }
     />

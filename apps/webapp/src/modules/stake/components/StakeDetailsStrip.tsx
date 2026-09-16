@@ -122,7 +122,7 @@ export function StakeDetailsStrip() {
 
         <DetailRow icon={<Vault className="h-4 w-4" />} label={<Trans>TVL</Trans>}>
           <StatValue isLoading={historicLoading} error={historicError}>
-            {mostRecent ? `$${formatNumber(mostRecent.tvl)}` : NO_VALUE}
+            {mostRecent ? `$${formatNumber(mostRecent.tvl, { maxDecimals: 0 })}` : NO_VALUE}
           </StatValue>
         </DetailRow>
 

@@ -71,7 +71,9 @@ describe('formatUsd', () => {
   });
 
   it('renders sub-cent values as $0.00 with no indicator', () => {
-    expect(formatUsd(0.004)).toBe('$0.00');
+    expect(formatUsd(0.004)).toBe('<$0.01');
+    expect(formatUsd(0.005)).toBe('$0.01');
+    expect(formatUsd(0)).toBe('$0.00');
   });
 });
 

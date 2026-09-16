@@ -29,7 +29,7 @@ const ROWS: EarnTableRowItem[] = [
     riskProfile: 'savings',
     rate: '3.75%',
     rate30d: '3.70%',
-    tvl: '$4.23b',
+    tvl: '$4.23B',
     position: '$0.00'
   },
   {
@@ -38,7 +38,7 @@ const ROWS: EarnTableRowItem[] = [
     riskProfile: 'rewards-spk',
     rate: '5.00%',
     rate30d: '4.90%',
-    tvl: '$1.00b',
+    tvl: '$1.00B',
     position: '$10.00'
   }
 ];
@@ -82,7 +82,7 @@ describe('EarnTable — mobile accordion cards (M5)', () => {
     fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
 
     expect(screen.getByText('TVL')).toBeTruthy();
-    expect(screen.getByText('$4.23b')).toBeTruthy();
+    expect(screen.getByText('$4.23B')).toBeTruthy();
     expect(screen.getByText('My position')).toBeTruthy();
     expect(screen.getByText('30D Rate')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Supply' })).toBeTruthy();

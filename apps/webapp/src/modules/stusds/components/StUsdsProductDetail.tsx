@@ -14,7 +14,7 @@ import {
   useStUsdsChartInfo,
   useStUsdsData
 } from '@/hooks';
-import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/utils';
+import { calculateApyFromStr, formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -29,8 +29,8 @@ import { StUsdsPositionCard } from './StUsdsPositionCard';
 import { StUsdsTransactionsTable } from './StUsdsTransactionsTable';
 import { NO_VALUE, USER_RISKS_URL } from '@/lib/constants';
 
-const formatUsd = (value: bigint | undefined): string =>
-  value !== undefined ? `$${formatNumber(parseFloat(formatUnits(value, 18)))}` : NO_VALUE;
+const formatWholeUsd = (value: bigint | undefined): string =>
+  value !== undefined ? `$${formatBigInt(value, { maxDecimals: 0 })}` : NO_VALUE;
 
 /**
  * stUSDS product detail page (D7) — composes the reusable ProductDetailTemplate,
@@ -122,7 +122,7 @@ export function StUsdsProductDetail() {
       id: 'tvl',
       icon: <Vault className="h-3 w-3" />,
       label: <Trans>TVL</Trans>,
-      value: formatUsd(stUsdsData?.totalAssets)
+      value: formatWholeUsd(stUsdsData?.totalAssets)
     },
     {
       id: 'liquidity',
@@ -130,7 +130,7 @@ export function StUsdsProductDetail() {
       label: <Trans>Liquidity</Trans>,
       // Real value (unlike Savings' "Unlimited") — module TVL minus what the
       // staking engine has borrowed; withdrawals above it route through Curve.
-      value: formatUsd(stUsdsData?.availableLiquidity)
+      value: formatWholeUsd(stUsdsData?.availableLiquidity)
     },
     {
       id: 'utilization',

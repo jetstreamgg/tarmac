@@ -134,20 +134,26 @@ export function formatDecimalPercentage(value: number, decimalPlaces: number = 2
   return `${percentage}%`;
 }
 
+const USD_SMALLEST = 0.01;
+
 /**
  * Money figure with a `$` prefix and exactly two fraction digits, grouped
  * (e.g. `$1,000,000.00`). Unlike {@link formatNumber}, decimals are never
- * dropped — the sign is placed before the symbol (`-$100.00`).
+ * dropped — the sign is placed before the symbol (`-$100.00`). A non-zero
+ * amount under half a cent renders as `<$0.01` rather than rounding to a
+ * zero that reads as "free"; an exact zero stays `$0.00`.
  */
 export function formatUsd(amount: number): string {
   const sign = amount < 0 ? '-' : '';
+  const abs = Math.abs(amount);
+  const belowSmallest = abs > 0 && abs < USD_SMALLEST / 2;
   const formatted = new Intl.NumberFormat(getSupportedNumberLocale(), {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     useGrouping: true
-  }).format(Math.abs(amount));
-  return `${sign}$${formatted}`;
+  }).format(belowSmallest ? USD_SMALLEST : abs);
+  return `${sign}${belowSmallest ? '<' : ''}$${formatted}`;
 }
 
 export function formatBigIntAsCeiledAbsoluteWithSymbol(

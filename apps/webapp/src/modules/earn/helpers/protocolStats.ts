@@ -28,11 +28,7 @@ export function yearsOperating(now: Date = new Date()): number {
   return Math.max(years, 0);
 }
 
-/**
- * USD total in the hero badge's style (`$11.02B`). Deliberately *not*
- * `formatUsdCompact` — the earn table comps lowercase the magnitude suffix
- * (`$4.71b`), the hero badge (APP-432 item 3) uppercases it.
- */
+/** USD total in the hero badge's style (`$11.02B`). */
 export function formatCirculation(totalUsd: number): string {
   return `$${formatNumber(totalUsd, { compact: true, amount: totalUsd })}`;
 }
