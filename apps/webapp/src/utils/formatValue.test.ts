@@ -25,9 +25,12 @@ describe('Risk parameter math functions using ETH-A risk parameters', () => {
 });
 
 describe('formatBigInt magnitude-driven decimals', () => {
-  it('keeps 4 decimals under 1 — sub-cent prices survive', () => {
+  it('keeps 4 decimals under 0.1 — sub-cent prices survive', () => {
     expect(formatBigInt(parseUnits('0.0025', 18), { locale: 'en' })).toBe('0.0025');
+    expect(formatBigInt(parseUnits('0.0567', 18), { locale: 'en' })).toBe('0.0567');
+    // From 0.1 up, two decimals like everything else.
     expect(formatBigInt(parseUnits('0.5', 18), { locale: 'en' })).toBe('0.50');
+    expect(formatBigInt(parseUnits('0.5678', 18), { locale: 'en' })).toBe('0.57');
     expect(formatBigInt(parseUnits('0.99999', 18), { locale: 'en' })).toBe('1.00');
   });
 

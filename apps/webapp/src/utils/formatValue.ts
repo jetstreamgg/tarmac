@@ -5,7 +5,7 @@ import { getSupportedNumberLocale } from './localization';
 const DEFAULT_DECIMALS = 2;
 const SMALL_NUM_DECIMALS = 4;
 
-const SMALL_NUM_CUTOFF = 1;
+const SMALL_NUM_CUTOFF = 0.1;
 
 type FormatOptions = {
   locale?: string;
