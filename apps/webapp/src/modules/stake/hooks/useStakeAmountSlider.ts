@@ -3,10 +3,25 @@ export const STAKE_SLIDER_MAX = 1000;
 const STEPS = BigInt(STAKE_SLIDER_MAX);
 /** Overshoot past the dotted repay zone forgiven before snapping to the full repay. */
 const SNAP_BUFFER_STEPS = 40n;
-const min = (a: bigint, b: bigint) => (a < b ? a : b);
+/** Repay: the partial zone never shrinks below this share of the track. */
+const MIN_PARTIAL_STEPS = 300;
+/** Repay: the dust-gap snap zone never shrinks below this share of the track either. */
+const MIN_SNAP_STEPS = 100;
+/** Borrow: the live zone right of the debt tick never shrinks below this share of the track. */
+const MIN_LIVE_STEPS = 300;
+/** Repay: a stretched partial zone stages at least this many distinct amounts. */
+const MIN_ZONE_STOPS = 100n;
 const WAD = 10n ** 18n;
 
-const roundToWholeUsds = (amount: bigint): bigint => (amount / WAD) * WAD;
+/**
+ * Rounding unit for a zone of `span` USDS: whole USDS when that gives at least
+ * MIN_ZONE_STOPS stops, otherwise a decimal (down to cents) that does.
+ */
+const zoneUnit = (span: bigint): bigint => {
+  let unit = WAD;
+  while (unit > WAD / 100n && span / unit < MIN_ZONE_STOPS) unit /= 10n;
+  return unit;
+};
 
 const toPosition = (value: bigint, max: bigint): number => {
   if (max <= 0n) return 0;
@@ -15,17 +30,11 @@ const toPosition = (value: bigint, max: bigint): number => {
   return Number((value * STEPS) / max);
 };
 
-// An interior tick only; one that rounds onto an end would overlap the end label.
-const interiorMarker = (value: bigint | undefined, max: bigint) => {
-  if (value === undefined) return undefined;
-  const position = toPosition(value, max);
-  return position > 0 && position < STAKE_SLIDER_MAX ? { value, position } : undefined;
-};
-
 export type StakeAmountSlider = {
   /** Thumb position in [0, STAKE_SLIDER_MAX], derived from `amount`. */
   value: number;
-  onValueChange: (position: number) => void;
+  /** `previous`: where the pointer last was (the thumb when it was released); the repay gap snaps on crossings. */
+  onValueChange: (position: number, previous?: number) => void;
   /** Interior tick positions (same domain as `value`). */
   markers: number[];
   /** Coloured share of the tick row, 0–100. */
@@ -78,8 +87,26 @@ export function useStakeAmountSlider({
   if (mode === 'repay') {
     const max = existingDebt;
     const gapStart = max - minBorrow;
-    const marker = interiorMarker(gapStart, max);
-    const value = toPosition(amount, max);
+    // The partial-repay zone keeps at least MIN_PARTIAL_STEPS of the track when
+    // there is at least 1 USDS to stage in it, and the dust gap keeps at least
+    // MIN_SNAP_STEPS when there is one; the natural share applies in between.
+    const naturalEnd = toPosition(gapStart, max);
+    const partialEnd =
+      gapStart >= WAD && naturalEnd < MIN_PARTIAL_STEPS && naturalEnd < STAKE_SLIDER_MAX
+        ? MIN_PARTIAL_STEPS
+        : minBorrow > 0n && naturalEnd > STAKE_SLIDER_MAX - MIN_SNAP_STEPS && naturalEnd < STAKE_SLIDER_MAX
+          ? STAKE_SLIDER_MAX - MIN_SNAP_STEPS
+          : naturalEnd;
+    const snapSpan = STAKE_SLIDER_MAX - partialEnd;
+    const toRepayPosition = (value: bigint): number => {
+      if (max <= 0n || value <= 0n) return 0;
+      if (value >= max) return STAKE_SLIDER_MAX;
+      if (value <= gapStart) return Number((value * BigInt(partialEnd)) / gapStart);
+      return partialEnd + Number(((value - gapStart) * BigInt(snapSpan)) / (max - gapStart));
+    };
+    const marker =
+      partialEnd > 0 && partialEnd < STAKE_SLIDER_MAX ? { value: gapStart, position: partialEnd } : undefined;
+    const value = toRepayPosition(amount);
     return {
       value,
       markers: marker ? [marker.position] : [],
@@ -88,25 +115,31 @@ export function useStakeAmountSlider({
       hidden: max <= 0n,
       atFloor: false,
       axis: { min: 0n, max, marker: marker?.value },
-      onValueChange: position => {
+      onValueChange: (position, previous = value) => {
         if (max <= 0n) return;
         if (position >= STAKE_SLIDER_MAX) {
           onAmountChange(max, true);
           return;
         }
-        const raw = (max * BigInt(position)) / STEPS;
-        if (raw <= 0n) {
-          onAmountChange(0n);
-          return;
-        }
-        if (raw > gapStart) {
-          const gap = max - gapStart;
-          const buffer = min((max * SNAP_BUFFER_STEPS) / STEPS, gap / 2n);
-          if (raw - gapStart > buffer) onAmountChange(max, true);
+        if (position > partialEnd) {
+          // Hysteresis: the full repay is entered by crossing a buffer past the
+          // dots from the partial side and left by crossing a buffer short of the
+          // right end from the end side. In between, the gap holds whatever is
+          // staged, so pointer jitter mid-gap never flips it.
+          const buffer = Math.min(Number(SNAP_BUFFER_STEPS), Math.floor(snapSpan / 2));
+          const enterAt = partialEnd + buffer;
+          const leaveAt = STAKE_SLIDER_MAX - buffer;
+          const isFull = amount >= max;
+          const full = isFull
+            ? !(previous >= leaveAt && position < leaveAt)
+            : previous <= enterAt && position > enterAt;
+          if (full) onAmountChange(max, true);
           else onAmountChange(gapStart);
           return;
         }
-        onAmountChange(roundToWholeUsds(raw));
+        const raw = partialEnd > 0 ? (gapStart * BigInt(position)) / BigInt(partialEnd) : 0n;
+        const unit = zoneUnit(gapStart);
+        onAmountChange(raw <= 0n ? 0n : (raw / unit) * unit);
       }
     };
   }
@@ -117,13 +150,31 @@ export function useStakeAmountSlider({
   const noHeadroom = headroom <= 0n;
   const disabled = forcedDisabled || noHeadroom;
   const span = max - minBorrow;
+  const debtOffset = existingDebt - minBorrow;
+  // Left of the tick stages 0, so a debt near the ceiling may squeeze the shaded
+  // share: the live zone (tick → ceiling) keeps at least MIN_LIVE_STEPS.
+  const naturalTick = span > 0n ? toPosition(debtOffset, span) : 0;
+  const tick =
+    debtOffset > 0n && naturalTick > STAKE_SLIDER_MAX - MIN_LIVE_STEPS && headroom >= WAD
+      ? STAKE_SLIDER_MAX - MIN_LIVE_STEPS
+      : naturalTick;
+  const stretched = tick !== naturalTick;
+  const liveSpan = STAKE_SLIDER_MAX - tick;
+  const toBorrowPosition = (total: bigint): number => {
+    if (!stretched) return toPosition(total - minBorrow, span);
+    if (total <= minBorrow) return 0;
+    if (total >= max) return STAKE_SLIDER_MAX;
+    if (total <= existingDebt) return Number(((total - minBorrow) * BigInt(tick)) / debtOffset);
+    return tick + Number(((total - existingDebt) * BigInt(liveSpan)) / headroom);
+  };
   // min == max (3015:59201): a full bar with the amount at the floor.
-  const value =
-    disabled || span <= 0n ? STAKE_SLIDER_MAX : toPosition(existingDebt + amount - minBorrow, span);
-  const marker = disabled ? undefined : interiorMarker(existingDebt - minBorrow, span);
+  const value = disabled || span <= 0n ? STAKE_SLIDER_MAX : toBorrowPosition(existingDebt + amount);
+  // An interior tick only; one that rounds onto an end would overlap the end label.
+  const marker =
+    !disabled && tick > 0 && tick < STAKE_SLIDER_MAX ? { value: existingDebt, position: tick } : undefined;
   // Accrued fees lift a dust-floor debt a few wei above the floor; treat a
   // tick that rounds onto the left end as the floor.
-  const onFloor = existingDebt > 0n && toPosition(existingDebt - minBorrow, span) === 0;
+  const onFloor = existingDebt > 0n && tick === 0;
   return {
     value,
     markers: marker ? [marker.position] : [],
@@ -132,20 +183,22 @@ export function useStakeAmountSlider({
     hidden: false,
     atFloor: !disabled && onFloor,
     // Nothing borrowable: the ceiling is the current debt (3015:62542).
-    axis: { min: minBorrow, max: noHeadroom ? existingDebt : max, marker: marker && existingDebt },
+    axis: { min: minBorrow, max: noHeadroom ? existingDebt : max, marker: marker?.value },
     onValueChange: position => {
       if (disabled || max <= 0n) return;
       if (position >= STAKE_SLIDER_MAX || span <= 0n) {
         onAmountChange(headroom);
         return;
       }
-      const total = minBorrow + (span * BigInt(position)) / STEPS;
-      let next = total - existingDebt;
+      const unit = stretched ? zoneUnit(headroom) : WAD;
+      const raw = stretched
+        ? (headroom * BigInt(position - tick)) / BigInt(liveSpan)
+        : minBorrow + (span * BigInt(position)) / STEPS - existingDebt;
+      let next = raw > 0n ? (raw / unit) * unit : 0n;
       if (next <= 0n) {
         onAmountChange(0n);
         return;
       }
-      next = roundToWholeUsds(next);
       if (existingDebt === 0n && next < minBorrow) next = minBorrow;
       onAmountChange(next > headroom ? headroom : next);
     }

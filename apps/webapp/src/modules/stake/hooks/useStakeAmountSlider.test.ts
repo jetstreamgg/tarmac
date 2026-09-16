@@ -147,3 +147,71 @@ describe('useStakeAmountSlider — repay axis', () => {
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(30_000), true);
   });
 });
+
+describe('useStakeAmountSlider — stretched zones', () => {
+  const useRepay = (existingDebt: bigint, amount = 0n, onAmountChange = vi.fn()) => ({
+    slider: useStakeAmountSlider({
+      mode: 'repay',
+      dust: usds(30_000),
+      headroom: 0n,
+      existingDebt,
+      amount,
+      onAmountChange
+    }),
+    onAmountChange
+  });
+
+  it('repay: a thin partial zone stretches to 30% of the track and rounds to a unit that gives it stops', () => {
+    const { slider, onAmountChange } = useRepay(usds(30_020));
+    expect(slider.markers).toEqual([300]);
+    expect(slider.axis.marker).toBe(usds(20));
+    slider.onValueChange(150);
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(10));
+    slider.onValueChange(3);
+    expect(onAmountChange).toHaveBeenLastCalledWith(WAD / 5n);
+    expect(useRepay(usds(30_020), usds(10)).slider.value).toBe(150);
+  });
+
+  it('repay: a debt within 1 USDS of dust has no partial zone', () => {
+    expect(useRepay(usds(30_000) + 5n).slider.markers).toEqual([]);
+  });
+
+  it('repay: a thin dust gap keeps 10% of the track', () => {
+    const { slider } = useRepay(usds(400_000));
+    expect(slider.markers).toEqual([900]);
+    expect(useRepay(usds(400_000), usds(385_000)).slider.value).toBe(950);
+  });
+
+  it('repay: the gap latches on threshold crossings, not on heading', () => {
+    const { slider, onAmountChange } = useRepay(usds(30_020));
+    slider.onValueChange(341, 340);
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(30_020), true);
+    // Staged full: jitter mid-gap holds, leaving needs to cross 40 short of the end.
+    const full = useRepay(usds(30_020), usds(30_020));
+    full.slider.onValueChange(340, 342);
+    expect(full.onAmountChange).toHaveBeenLastCalledWith(usds(30_020), true);
+    full.slider.onValueChange(959, 960);
+    expect(full.onAmountChange).toHaveBeenLastCalledWith(usds(20));
+    // Staged at the tick: heading right mid-gap holds until the right end.
+    const partial = useRepay(usds(30_020), usds(20));
+    partial.slider.onValueChange(999, 900);
+    expect(partial.onAmountChange).toHaveBeenLastCalledWith(usds(20));
+  });
+
+  it('borrow: a thin live zone stretches to 30% of the track', () => {
+    const onAmountChange = vi.fn();
+    const args = {
+      mode: 'borrow' as const,
+      dust: usds(30_000),
+      existingDebt: usds(56_268),
+      headroom: usds(607)
+    };
+    const slider = useStakeAmountSlider({ ...args, amount: 0n, onAmountChange });
+    expect(slider.markers).toEqual([700]);
+    slider.onValueChange(500);
+    expect(onAmountChange).toHaveBeenLastCalledWith(0n);
+    slider.onValueChange(850);
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(303));
+    expect(useStakeAmountSlider({ ...args, amount: usds(303), onAmountChange }).value).toBe(849);
+  });
+});

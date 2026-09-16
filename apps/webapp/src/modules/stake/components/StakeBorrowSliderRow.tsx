@@ -79,6 +79,8 @@ export function StakeBorrowSliderRow({
   // from it (the repay dust-gap snap), the fill glides there instead of
   // jumping; while the value tracks the pointer it follows instantly.
   const [requested, setRequested] = useState<number | null>(null);
+  // Position of the previous event in the current drag; null between drags.
+  const lastPointer = useRef<number | null>(null);
   const snapped = requested !== null && Math.abs(slider.value - requested) > SNAP_GLIDE_STEPS;
   const fillStart = isBorrow && marker !== undefined ? marker : 0;
   const fillEnd = Math.max(fillStart, slider.value);
@@ -95,8 +97,13 @@ export function StakeBorrowSliderRow({
         step={1}
         disabled={disabled}
         onValueChange={value => {
+          slider.onValueChange(value[0], lastPointer.current ?? slider.value);
+          lastPointer.current = value[0];
           setRequested(value[0]);
-          slider.onValueChange(value[0]);
+        }}
+        // A released pointer has no heading: the next press measures from the thumb.
+        onPointerUp={() => {
+          lastPointer.current = null;
         }}
         // Radix stays silent when End lands on an already-pinned (over-typed) thumb.
         onKeyDown={event => {
