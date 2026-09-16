@@ -153,6 +153,9 @@
   /* gradient-slider-green (repay Progress Steps 3015:62130), theme-invariant. */
   --color-slider-green-start: #015c4c;
   --color-slider-green-end: #02c2a1;
+  /* gradient-slider-red style (liquidation-risk Progress Steps 3015:57305), theme-invariant. */
+  --color-slider-red-start: #f98607;
+  --color-slider-red-end: #e51f1d;
   --color-sliderDot: #1a192d;
   --color-sliderRing: rgba(255, 255, 255, 0.2);
   --color-sliderLine: #2a2a40;

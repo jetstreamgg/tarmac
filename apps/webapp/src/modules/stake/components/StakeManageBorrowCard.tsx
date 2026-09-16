@@ -10,7 +10,7 @@ import { RiskMeter } from '@/components/product/RiskMeter';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
-import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
+import { StakeBorrowSliderRow, sliderToneForRisk } from './StakeBorrowSliderRow';
 import { StakeMoreToBorrowHint } from './StakeCardToggle';
 import {
   StakeManageCard,
@@ -213,7 +213,7 @@ export function StakeManageBorrowCard({
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
   // Figma colours the fill by the resulting risk; a full repay reads as Low.
   const sliderRisk = isFullRepay ? RiskLevel.LOW : hasAmount ? (nextRisk ?? currentRisk) : currentRisk;
-  const sliderTone = sliderRisk === RiskLevel.LOW ? 'green' : 'yellow';
+  const sliderTone = sliderToneForRisk(sliderRisk);
 
   return (
     <StakeManageCard

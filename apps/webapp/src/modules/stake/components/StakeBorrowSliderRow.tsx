@@ -5,7 +5,18 @@ import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
 import { formatBigInt } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RiskLevel } from '@/hooks';
 import { StakeAmountSlider, STAKE_SLIDER_MAX } from '../hooks/useStakeAmountSlider';
+
+export type StakeSliderTone = 'green' | 'yellow' | 'red';
+
+// Figma: green for Low, orange for Medium, red once the position risks liquidation.
+export const sliderToneForRisk = (risk: RiskLevel | undefined): StakeSliderTone =>
+  risk === RiskLevel.LOW
+    ? 'green'
+    : risk === RiskLevel.HIGH || risk === RiskLevel.LIQUIDATION
+      ? 'red'
+      : 'yellow';
 
 // Figma draws grouped whole numbers ("56,201"), not compact ("56.2K").
 const fmt = (amount: bigint) => formatBigInt(amount, { maxDecimals: 0 });
@@ -48,7 +59,7 @@ export function StakeBorrowSliderRow({
   slider: StakeAmountSlider;
   mode: 'borrow' | 'repay';
   /** Resulting risk: green when Low, yellow for everything else. */
-  tone: 'green' | 'yellow';
+  tone: StakeSliderTone;
   minLoading?: boolean;
   maxLoading?: boolean;
   dataTestId: string;
@@ -141,7 +152,9 @@ export function StakeBorrowSliderRow({
                 : 'transition-[--tw-gradient-from,--tw-gradient-to] duration-1000',
               tone === 'green'
                 ? 'from-slider-green-start to-slider-green-end'
-                : 'from-slider-yellow-start to-slider-yellow-end',
+                : tone === 'red'
+                  ? 'from-slider-red-start to-slider-red-end'
+                  : 'from-slider-yellow-start to-slider-yellow-end',
               // Nothing to stage: a flat fg-quaternary bar (3015:62546).
               disabled && 'bg-fgQuaternary bg-none'
             )}

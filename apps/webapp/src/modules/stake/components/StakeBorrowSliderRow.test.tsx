@@ -2,7 +2,8 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
+import { StakeBorrowSliderRow, sliderToneForRisk } from './StakeBorrowSliderRow';
+import { RiskLevel } from '@/hooks';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 
 const WAD = 10n ** 18n;
@@ -106,6 +107,29 @@ describe('StakeBorrowSliderRow', () => {
     const fill = screen.getByTestId('row').querySelector('[data-slot="slider-fill"]') as HTMLElement;
     expect(fill.className).toContain('from-slider-green-start');
     expect(fill.className).not.toContain('from-slider-yellow-start');
+  });
+
+  it('paints the fill red once the resulting risk passes Medium', () => {
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: 0n,
+      dust: usds(30_000),
+      headroom: usds(70_000),
+      amount: usds(65_000),
+      onAmountChange: vi.fn()
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="borrow" tone="red" dataTestId="row" />);
+    const fill = screen.getByTestId('row').querySelector('[data-slot="slider-fill"]') as HTMLElement;
+    expect(fill.className).toContain('from-slider-red-start');
+    expect(fill.className).not.toContain('from-slider-yellow-start');
+  });
+
+  it('maps risk to tone: Low green, Medium orange, High and Liquidation red', () => {
+    expect(sliderToneForRisk(RiskLevel.LOW)).toBe('green');
+    expect(sliderToneForRisk(RiskLevel.MEDIUM)).toBe('yellow');
+    expect(sliderToneForRisk(RiskLevel.HIGH)).toBe('red');
+    expect(sliderToneForRisk(RiskLevel.LIQUIDATION)).toBe('red');
+    expect(sliderToneForRisk(undefined)).toBe('yellow');
   });
 
   it('borrow: a debt on the dust floor is carried by the min label', () => {

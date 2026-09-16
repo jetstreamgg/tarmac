@@ -8,7 +8,7 @@ import { InfoTooltip } from '@/components/InfoTooltip';
 import { RateInfo } from '@/components/product/RateInfo';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
-import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
+import { StakeBorrowSliderRow, sliderToneForRisk } from './StakeBorrowSliderRow';
 import { StakeMoreToBorrowHint } from './StakeCardToggle';
 import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { StakeManageStatRow, StakeManageStatRows, UpdatedHourlyBadge } from './StakeManageCard';
@@ -140,7 +140,7 @@ export function StakeTakeoverBorrowCard({
           <StakeBorrowSliderRow
             slider={slider}
             mode="borrow"
-            tone={riskLevel === RiskLevel.LOW ? 'green' : 'yellow'}
+            tone={sliderToneForRisk(riskLevel)}
             minLoading={dust === undefined && simulationLoading}
             maxLoading={maxLoading}
             dataTestId="stake-takeover-borrow-slider"
