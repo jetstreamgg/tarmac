@@ -41,7 +41,7 @@ describe('formatBigInt magnitude-driven decimals', () => {
     expect(formatBigInt(parseUnits('0.99999', 18), { locale: 'en' })).toBe('1.00');
   });
 
-  it('pads to 2 decimals from 1 up, grouped, at every magnitude', () => {
+  it('pads to 2 decimals with thousands separators from 0.1 up, at every magnitude', () => {
     expect(formatBigInt(parseUnits('1', 18), { locale: 'en' })).toBe('1.00');
     expect(formatBigInt(parseUnits('9.1234', 18), { locale: 'en' })).toBe('9.12');
     expect(formatBigInt(parseUnits('10.1234', 18), { locale: 'en' })).toBe('10.12');
