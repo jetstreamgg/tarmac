@@ -107,6 +107,10 @@ function RateColumnInfo({ column }: { column: 'rate' | 'rate30d' }) {
   return <RateInfo type={column === 'rate' ? 'earnRates' : 'earnRates30d'} size={12} />;
 }
 
+function isSameSort(a: EarnTableSort | undefined, b: EarnTableSort | undefined): boolean {
+  return a?.column === b?.column && a?.direction === b?.direction;
+}
+
 export type EarnTableProps = {
   rows: EarnTableRowItem[];
   /** Omit alongside onSortChange for never-sorted tables. */
@@ -416,11 +420,17 @@ export function EarnTable({
   // radius fading out under a top radius fading in, reading as a lone pill
   // for a beat. The re-sorted render settles its edges instantly; the
   // transition is back two frames later, once the new edges are painted.
+  //
+  // Armed off the `sort` prop rather than the header click: /earn renders two
+  // tables on one page-wide sort, and a click in either has to settle both.
+  // Adjusting state during render keeps the instant class on the very render
+  // that lays the rows out in their new order.
+  const [settledSort, setSettledSort] = useState(sort);
   const [settleEdgesInstantly, setSettleEdgesInstantly] = useState(false);
-  const handleSortChange = (column: EarnTableColumn) => {
+  if (!isSameSort(sort, settledSort)) {
+    setSettledSort(sort);
     setSettleEdgesInstantly(true);
-    onSortChange?.(column);
-  };
+  }
   useEffect(() => {
     if (!settleEdgesInstantly) return;
     let inner = 0;
@@ -475,7 +485,7 @@ export function EarnTable({
                     <button
                       type="button"
                       data-testid={`${tid}-sort-${column.key}`}
-                      onClick={() => handleSortChange(column.key)}
+                      onClick={() => onSortChange(column.key)}
                       className={cn(
                         'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
                         isSorted && 'text-fgPrimary'
