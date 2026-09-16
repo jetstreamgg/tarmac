@@ -78,7 +78,7 @@ export function BorrowUtilizationBlock() {
         ) : error ? (
           NO_VALUE
         ) : (
-          formatDecimalPercentage(utilization / 100)
+          formatDecimalPercentage(utilization / 100, 1)
         )}
       </div>
 

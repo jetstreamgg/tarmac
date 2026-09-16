@@ -44,7 +44,7 @@ describe('BorrowUtilizationBlock', () => {
     renderBlock();
 
     expect(screen.getByTestId('stake-borrow-utilization')).toBeTruthy();
-    expect(screen.getByText('25.00%')).toBeTruthy();
+    expect(screen.getByText('25.0%')).toBeTruthy();
     expect(screen.getByRole('progressbar')).toBeTruthy();
   });
 
