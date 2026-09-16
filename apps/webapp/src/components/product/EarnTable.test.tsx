@@ -290,3 +290,35 @@ describe('EarnTable — NEW badge (APP-395, 1036:201322)', () => {
     breakpoint.isMobile = false;
   });
 });
+
+describe('EarnTable — sort settles the row edges instantly (ind-sep-15 QA #4)', () => {
+  afterEach(cleanup);
+
+  const SETTLE_CLASS = '[&_td>div>div]:transition-[background-color]';
+  const renderSorted = (sort: { column: 'rate' | 'tvl'; direction: 'asc' | 'desc' }) => (
+    <I18nProvider i18n={i18n}>
+      <EarnTable rows={ROWS} sort={sort} onSortChange={vi.fn()} />
+    </I18nProvider>
+  );
+
+  it('arms off the sort prop, so a table that was not clicked settles with the one that was', async () => {
+    // /earn renders two tables on one page-wide sort; the restricted one never
+    // sees the click, only the new `sort`.
+    const { rerender } = render(renderSorted({ column: 'rate', direction: 'desc' }));
+    const table = screen.getByTestId('earn-opportunities-table');
+    expect(table.className).not.toContain(SETTLE_CLASS);
+
+    rerender(renderSorted({ column: 'tvl', direction: 'desc' }));
+    expect(table.className).toContain(SETTLE_CLASS);
+
+    // Back two frames later, once the new edges are painted.
+    await waitFor(() => expect(table.className).not.toContain(SETTLE_CLASS));
+  });
+
+  it('leaves the transition alone when the sort is unchanged', () => {
+    const { rerender } = render(renderSorted({ column: 'rate', direction: 'desc' }));
+    // A fresh object with the same column/direction is not a sort change.
+    rerender(renderSorted({ column: 'rate', direction: 'desc' }));
+    expect(screen.getByTestId('earn-opportunities-table').className).not.toContain(SETTLE_CLASS);
+  });
+});
