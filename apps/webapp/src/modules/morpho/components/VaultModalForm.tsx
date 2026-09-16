@@ -4,7 +4,7 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { getVaultByAddress, type Token, type VaultProvider, useVaultMarketData } from '@/hooks';
+import { getVaultByAddress, type Token, useVaultMarketData } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
@@ -16,7 +16,7 @@ import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
-import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 import { buildVaultEntryRows, buildVaultReviewRows } from './vaultModalRows';
@@ -48,7 +48,6 @@ export function VaultModalForm({
   vaultAddress,
   assetToken,
   vaultName,
-  provider = 'morpho',
   netRate,
   preset
 }: {
@@ -57,7 +56,6 @@ export function VaultModalForm({
   vaultAddress: `0x${string}`;
   assetToken: Token;
   vaultName: string;
-  provider?: VaultProvider;
   /** Net APY as a decimal fraction (e.g. 0.0445) for the rate + projected-earnings cells. */
   netRate?: number;
   preset?: VaultModalPreset;
@@ -65,12 +63,10 @@ export function VaultModalForm({
   const chainId = useChainId();
   const { i18n } = useLingui();
   // Openable vaults come from the registry, so the lookup only misses on an
-  // unsupported chain; the fallback keeps the provider's wording in that case.
-  const riskProfile =
-    getVaultByAddress(vaultAddress, chainId)?.riskProfile ??
-    (provider === 'morpho' ? 'vault-flagship' : 'vault-tether-savings');
+  // unsupported chain; the fallback keeps the flagship wording in that case.
+  const riskProfile = getVaultByAddress(vaultAddress, chainId)?.riskProfile ?? 'vault-flagship';
 
-  const form = useVaultTransactionForm({ flow, vaultAddress, assetToken, provider, preset });
+  const form = useVaultTransactionForm({ flow, vaultAddress, assetToken, preset });
   const {
     isConnected,
     isSupply,
@@ -101,7 +97,7 @@ export function VaultModalForm({
 
   // The stars accent marks an incentive-boosted rate, mirroring the vault rate
   // popover (`MorphoRateBreakdownPopover`) — read from the same market data.
-  const { data: marketData } = useVaultMarketData({ provider, vaultAddress });
+  const { data: marketData } = useVaultMarketData({ vaultAddress });
   const boostedRate = (marketData?.rate?.rewards?.length ?? 0) > 0;
 
   const networkName = useNetworkName(chainId);
@@ -119,13 +115,6 @@ export function VaultModalForm({
   // Position after the action, clamped at zero for over-withdrawals (the
   // insufficient gate blocks submission anyway).
   const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
-
-  // Liquidity copy is provider-specific: Spark/Tether vaults expose instant-withdrawal
-  // liquidity, not a Morpho market (same override the widget's SupplyWithdraw applies).
-  const liquidityTooltipOverride =
-    provider === 'sky'
-      ? { description: t`The amount of ${assetToken.symbol} currently available for instant withdrawal.` }
-      : undefined;
 
   // With zero liquidity the notice alone carries the message — the inline error
   // would repeat it word for word.
@@ -160,7 +149,6 @@ export function VaultModalForm({
     : undefined;
 
   const rows = buildVaultEntryRows({
-    provider,
     rate,
     boostedRate,
     network: networkName,
@@ -185,7 +173,6 @@ export function VaultModalForm({
         <ModalSummaryGrid
           rows={toGridCells(
             buildVaultReviewRows(flow, {
-              provider,
               amount: amountDisplay,
               assetSymbol: assetToken.symbol,
               estEarnings: earningsAfterDisplay,
@@ -218,15 +205,13 @@ export function VaultModalForm({
   );
 
   // Legacy VaultWidget payload shape (APP-444 B7): withdraw amounts negative.
-  // `module` follows the provider — 'morpho' for every legacy vault (parity),
-  // 'sky' for the redesign-only Sky provider vaults.
   const analytics = useMemo<TransactionAnalytics>(
     () => ({
       widgetName: 'vaults',
       flow,
       action: flow,
       data: {
-        module: provider,
+        module: 'morpho',
         product: vaultName,
         productAddress: vaultAddress,
         assetAddress: assetToken.address[chainId],
@@ -235,7 +220,7 @@ export function VaultModalForm({
         amount: signedAmount(parseFloat(formatUnits(amount, decimals)), flow)
       }
     }),
-    [flow, provider, vaultName, vaultAddress, assetToken, chainId, isBatch, amount, decimals]
+    [flow, vaultName, vaultAddress, assetToken, chainId, isBatch, amount, decimals]
   );
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -307,11 +292,7 @@ export function VaultModalForm({
             className={`ml-3 flex items-start ${liquidityNotice.tone}`}
             data-testid={liquidityNotice.testId}
           >
-            <PopoverRateInfo
-              type="morphoLiquidity"
-              tooltipOverride={liquidityTooltipOverride}
-              iconClassName={`mt-1 shrink-0 ${liquidityNotice.tone}`}
-            />
+            <PopoverRateInfo type="morphoLiquidity" iconClassName={`mt-1 shrink-0 ${liquidityNotice.tone}`} />
             <Text variant="small" className="ml-2">
               {liquidityNotice.text}
             </Text>

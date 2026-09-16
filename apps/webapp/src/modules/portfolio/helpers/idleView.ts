@@ -1,5 +1,5 @@
 import type { EarnProductRow } from '@/hooks';
-import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/widgets/shared/constants';
+import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/modules/ui/lib/tokenColors';
 
 /**
  * Stablecoins surfaced in the Portfolio "Idle" tab (wallet holdings sitting

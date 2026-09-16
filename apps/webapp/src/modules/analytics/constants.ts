@@ -41,7 +41,6 @@ export type RedirectReason =
   | 'market_matured'
   | 'not_found';
 export type TxStatus = 'success' | 'error' | 'cancelled';
-export type ErrorContext = string;
 /**
  * How a per-transaction terms signature was declined (APP-501):
  * 'wallet_rejected' = the sign request was rejected in the wallet;

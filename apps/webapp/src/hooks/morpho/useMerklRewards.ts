@@ -8,65 +8,8 @@ import { formatUnits } from 'viem';
 import { MERKL_API_URL, MORPHO_API_CHAIN_ID, MORPHO_VAULTS, getMorphoVaultByAddress } from './constants';
 import { reasonContainsVaultAddress } from './merklReason';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '../generated';
-
-/**
- * Token data from the Merkl API response.
- */
-type MerklTokenData = {
-  address: string;
-  chainId: number;
-  symbol: string;
-  decimals: number;
-  price: number;
-};
-
-/**
- * Breakdown data for a reward (explains where the reward comes from).
- */
-type MerklRewardBreakdown = {
-  root: string;
-  distributionChainId: number;
-  reason: string;
-  amount: string;
-  claimed: string;
-  pending: string;
-  campaignId: string;
-  subCampaignId: string;
-};
-
-/**
- * Individual reward data from the Merkl API.
- */
-type MerklRewardData = {
-  root: string;
-  distributionChainId: number;
-  recipient: string;
-  amount: string;
-  claimed: string;
-  pending: string;
-  proofs: string[];
-  token: MerklTokenData;
-  breakdowns: MerklRewardBreakdown[];
-};
-
-/**
- * Chain data from the Merkl API response.
- */
-type MerklChainData = {
-  endOfDisputePeriod: number;
-  id: number;
-  name: string;
-  icon: string;
-  liveCampaigns: number;
-};
-
-/**
- * API response structure for Merkl rewards endpoint.
- */
-type MerklRewardsApiResponse = {
-  chain: MerklChainData;
-  rewards: MerklRewardData[];
-}[];
+import { fetchJson } from '../shared/fetchJson';
+import type { MerklRewardsApiResponse } from './merklTypes';
 
 /** Source breakdown for a reward token (e.g., a specific vault or other campaigns) */
 export type MerklRewardSource = {
@@ -151,16 +94,7 @@ async function fetchMerklRewards(
   }
   const url = `${MERKL_API_URL}/users/${userAddress}/rewards?${params.toString()}`;
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Merkl API error: ${response.status}`);
-  }
-
-  const result: MerklRewardsApiResponse = await response.json();
+  const result = await fetchJson<MerklRewardsApiResponse>(url, { label: 'Merkl API', requireOk: true });
   const chainRewards = result.find(r => r.chain.id === chainId);
 
   if (!chainRewards || chainRewards.rewards.length === 0) {

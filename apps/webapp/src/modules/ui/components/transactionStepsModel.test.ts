@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { i18n } from '@lingui/core';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { assignSequentialWrites, deriveTransactionStepItems } from './transactionStepsModel';
 
 i18n.load('en', {});

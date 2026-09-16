@@ -1,7 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { TxStatus } from '@/widgets/shared/constants';
-import { TxCardCopyText } from '@/widgets/shared/types/txCardCopyText';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 // Relocated VERBATIM from `widgets/StakeModuleWidget/lib/constants.ts` when F7
 // deleted the legacy widget. The msgids double as e2e/analytics anchors and the
@@ -10,8 +9,7 @@ import { TxCardCopyText } from '@/widgets/shared/types/txCardCopyText';
 
 export enum StakeFlow {
   OPEN = 'open',
-  MANAGE = 'manage',
-  CLAIM = 'claim'
+  MANAGE = 'manage'
 }
 
 export function getStakeTitle(
@@ -32,16 +30,4 @@ export function getStakeTitle(
     default:
       return msg`Error`;
   }
-}
-
-export const claimTitle: TxCardCopyText = {
-  [TxStatus.INITIALIZED]: msg`Claim your rewards`,
-  [TxStatus.LOADING]: msg`In progress`,
-  [TxStatus.SUCCESS]: msg`Successfully claimed your rewards`,
-  [TxStatus.ERROR]: msg`Error`
-};
-
-/** 1-based display index for an urn ("Position 1" is urn index 0). */
-export function formatUrnIndex(index: bigint): string {
-  return (index + 1n).toString();
 }

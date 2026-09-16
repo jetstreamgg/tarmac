@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 
 /**
  * The single JS breakpoint system. See docs/responsive-breakpoints.md for the
@@ -8,28 +8,6 @@ import { useCallback, useSyncExternalStore } from 'react';
  * correct on the first render (no `false` flash) and update only when the
  * media query flips, not on every resize frame.
  */
-
-/**
- * Track an arbitrary CSS media query.
- *
- * @param query - CSS media query string (e.g., '(max-height: 900px)')
- * @returns whether the query currently matches
- *
- * @example
- * const isShortViewport = useMediaQuery('(max-height: 900px)');
- */
-export function useMediaQuery(query: string): boolean {
-  const subscribe = useCallback(
-    (onStoreChange: () => void) => {
-      const mediaQuery = window.matchMedia(query);
-      mediaQuery.addEventListener('change', onStoreChange);
-      return () => mediaQuery.removeEventListener('change', onStoreChange);
-    },
-    [query]
-  );
-
-  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches);
-}
 
 // Mirrors the Tailwind breakpoints in globals.css (@theme --breakpoint-*).
 // `desktop` (1200) is the M/L tier of the design-system grid; `md` (768) is the
@@ -41,8 +19,7 @@ export enum BP {
   md = 1,
   lg = 2,
   desktop = 3,
-  xl = 4,
-  '2xl' = 5
+  xl = 4
 }
 
 // Min-width threshold that upgrades into each tier above `sm`. Note there is

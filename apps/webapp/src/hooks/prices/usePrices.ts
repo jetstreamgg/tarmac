@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useChainId } from 'wagmi';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { formatBaLabsUrl } from '../helpers';
@@ -67,13 +67,6 @@ export function usePrices(): ReadHook & { data?: Record<string, PriceData> } {
     isLoading,
     error,
     mutate,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
+    dataSources: [baLabsDataSource(url)]
   };
 }

@@ -91,7 +91,7 @@ import type { VaultLaunchFlow } from '../hooks/useVaultLaunch';
 
 const VAULT = '0xd63070114470f685b75b74d60eec7c1113d33a3d' as const;
 
-const renderForm = (flow: VaultLaunchFlow, provider?: 'morpho' | 'sky') =>
+const renderForm = (flow: VaultLaunchFlow) =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
@@ -101,7 +101,6 @@ const renderForm = (flow: VaultLaunchFlow, provider?: 'morpho' | 'sky') =>
           vaultAddress={VAULT}
           assetToken={TOKENS.usds}
           vaultName="Sky USDS Vault"
-          provider={provider}
           netRate={0.045}
         />
       </TooltipProvider>
@@ -140,10 +139,10 @@ describe('VaultModalForm — analytics parity blob (APP-444 B7)', () => {
     });
   });
 
-  it('reports the sky provider as its own module and signs the withdraw negative', () => {
-    renderForm('withdraw', 'sky');
+  it('signs the withdraw amount negative', () => {
+    renderForm('withdraw');
     const analytics = lastAnalytics();
-    expect(analytics.data.module).toBe('sky');
+    expect(analytics.data.module).toBe('morpho');
     expect(analytics.data.amount).toBe(-15);
   });
 });

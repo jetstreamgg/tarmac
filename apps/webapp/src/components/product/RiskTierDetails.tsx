@@ -32,7 +32,7 @@ import { withdrawalWording } from './withdrawalAvailability';
 // TODO(BL-07): like the tier assignment in hooks/earn/earnProducts.ts, this
 // per-tier copy is a static front-end config pending the risk-rating source
 // decision — the comp treats it as editorial content, not product data.
-export const RISK_LEARN_MORE_URL = 'https://docs.sky.money/user-risks';
+import { USER_RISKS_URL } from '@/lib/constants';
 
 /**
  * The severity presentation per tier (1036:201215): display name + scale.
@@ -57,8 +57,6 @@ const RISK_TIER_DETAILS: Record<
  *   farm has no sheet row);
  * - 'rewards' is the generic fallback for reward tokens with no profile yet
  *   (deliberately reward-agnostic — points farms don't pay a second token);
- * - 'vault-tether-savings' (flag-gated sUSDT, absent from the sheet) is
- *   PLACEHOLDER copy pending a product assessment;
  * - 'stake' is the sheet's Stake SKY row (added 2026-08-26 for the Portfolio's
  *   Earn-with-Sky card, APP-531).
  */
@@ -135,17 +133,6 @@ const RISK_PROFILE_DETAILS: Record<
   },
   'vault-usdt-savings': {
     description: <Trans>Vault deployed on Morpho with a single exposure to sUSDS collateralized debt.</Trans>,
-    exposureTokens: ['sUSDS'],
-    liquidationRisk: <Trans>None</Trans>
-  },
-  'vault-tether-savings': {
-    // PLACEHOLDER — this vault has no row in the APP-396 risk sheet.
-    description: (
-      <Trans>
-        Supply USDT to access savings powered by Sky Protocol, with instant liquidity. The rate tracks the Sky
-        Savings Rate and is variable.
-      </Trans>
-    ),
     exposureTokens: ['sUSDS'],
     liquidationRisk: <Trans>None</Trans>
   },
@@ -304,7 +291,7 @@ export function RiskTierDetailsCard({
       <RiskTierDetailsBody tier={tier} profile={profile} />
       <div className="border-borderPrimary w-full border-b" />
       <a
-        href={RISK_LEARN_MORE_URL}
+        href={USER_RISKS_URL}
         target="_blank"
         rel="noopener noreferrer"
         className="font-circle text-fgPrimary flex w-full items-center justify-between text-xs leading-3.5 font-medium tracking-[-0.24px]"
@@ -392,7 +379,7 @@ export function RiskTierDetailsTrigger({
             </div>
             <RiskTierDetailsBody tier={tier} profile={profile} />
             <Button variant="secondary" size="m" className="mt-1 w-full" asChild>
-              <a href={RISK_LEARN_MORE_URL} target="_blank" rel="noopener noreferrer">
+              <a href={USER_RISKS_URL} target="_blank" rel="noopener noreferrer">
                 <Trans>Learn more about risk</Trans>
                 <MoveUpRight size={12} aria-hidden />
               </a>

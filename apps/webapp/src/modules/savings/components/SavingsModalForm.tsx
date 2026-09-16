@@ -17,12 +17,7 @@ import { signedAmount } from '@/modules/analytics/constants';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 import { SavingsOriginSelect } from './SavingsOriginSelect';
-import {
-  buildSupplyModalRows,
-  buildSupplyReviewRows,
-  buildWithdrawModalRows,
-  buildWithdrawReviewRows
-} from './savingsModalRows';
+import { buildSavingsEntryRows, buildSupplyReviewRows, buildWithdrawReviewRows } from './savingsModalRows';
 import { NO_VALUE } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { useProductNetworks } from '@/hooks';
@@ -133,34 +128,22 @@ export function SavingsModalForm({
         })
       : NO_VALUE;
 
-  const rows = isSupply
-    ? buildSupplyModalRows({
-        savingsRate: apyDisplay,
-        network: networkName,
-        networkChainIds,
-        supplyBefore: formatUsds(position),
-        supplyAfter: formatUsds(positionAfter),
-        hasAmount: !isZero,
-        // L2 PSM supply: surface the sUSDS slippage floor once an amount is entered.
-        minReceived:
-          isL2 && !isZero
-            ? formatBigInt(engineParams.minAmountOut ?? 0n, { unit: 18, maxDecimals: 2 })
-            : undefined,
-        earningsBefore: projectEarnings(position),
-        earningsAfter: projectEarnings(positionAfter),
-        networkFee: feeCell.fee?.formatted ?? NO_VALUE
-      })
-    : buildWithdrawModalRows({
-        savingsRate: apyDisplay,
-        network: networkName,
-        networkChainIds,
-        supplyBefore: formatUsds(position),
-        supplyAfter: formatUsds(positionAfter),
-        hasAmount: !isZero,
-        earningsBefore: projectEarnings(position),
-        earningsAfter: projectEarnings(positionAfter),
-        networkFee: feeCell.fee?.formatted ?? NO_VALUE
-      });
+  const rows = buildSavingsEntryRows(flow, {
+    savingsRate: apyDisplay,
+    network: networkName,
+    networkChainIds,
+    supplyBefore: formatUsds(position),
+    supplyAfter: formatUsds(positionAfter),
+    hasAmount: !isZero,
+    // L2 PSM supply: surface the sUSDS slippage floor once an amount is entered.
+    minReceived:
+      isL2 && !isZero
+        ? formatBigInt(engineParams.minAmountOut ?? 0n, { unit: 18, maxDecimals: 2 })
+        : undefined,
+    earningsBefore: projectEarnings(position),
+    earningsAfter: projectEarnings(positionAfter),
+    networkFee: feeCell.fee?.formatted ?? NO_VALUE
+  });
 
   // Review breakdown (Figma 859:36154): the amount hero the wallet screen also
   // draws, over the review grid. "You'll receive": mainnet supply previews sUSDS

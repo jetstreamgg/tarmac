@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContract } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { isTestnetId } from '@/utils';
+import { isTestnetId, WAD } from '@/utils';
 import { usePendleMarketHistory } from './usePendleMarketHistory';
 import { usePendleRedeemPreview } from './usePendleRedeemPreview';
 import { computeMaturedEarnings } from './computeMaturedEarnings';
@@ -19,7 +19,6 @@ const SUSDS_PREVIEW_REDEEM_ABI = [
 
 // sUSDS shares are 18-decimal regardless of the PT market's underlying — this
 // is the pyIndex/chi precision constant, NOT a claim about PT decimals.
-const ONE = 1_000_000_000_000_000_000n;
 
 export type PendleMaturedPositionEarnings = {
   /** Earnings amount (final value − net cost basis), in `currency` units. */
@@ -53,7 +52,7 @@ export function usePendleMaturedPositionEarnings(
     abi: SUSDS_PREVIEW_REDEEM_ABI,
     address: market.underlyingToken,
     functionName: 'previewRedeem',
-    args: [ONE],
+    args: [WAD],
     chainId: balanceChainId,
     query: { enabled: market.usdsEquivalence === 'sUSDS' }
   });

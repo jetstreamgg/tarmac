@@ -6,7 +6,7 @@ import { I18nProvider } from '@lingui/react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mainnet } from 'viem/chains';
-import { pendleAnalyticsData } from '@/widgets';
+import { pendleAnalyticsData } from '@/modules/pendle/lib/pendleAnalyticsData';
 import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
@@ -57,7 +57,7 @@ const hoisted = vi.hoisted(() => ({
   ) => number | undefined,
   // Click-time network switch collaborators.
   chainId: 1,
-  isSafeWallet: false,
+  canSwitchChain: true,
   switchChainAsyncMock: vi.fn(async () => undefined as unknown),
   setIsAutoSwitchingMock: vi.fn(),
   setAutoSwitchIntentMock: vi.fn(),
@@ -83,7 +83,8 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
     isAutoSwitching: false,
     setIsAutoSwitching: hoisted.setIsAutoSwitchingMock,
     autoSwitchIntent: null,
-    setAutoSwitchIntent: hoisted.setAutoSwitchIntentMock
+    setAutoSwitchIntent: hoisted.setAutoSwitchIntentMock,
+    canSwitchChain: hoisted.canSwitchChain
   })
 }));
 
@@ -103,7 +104,6 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     isMarketMatured: () => hoisted.matured,
-    useIsSafeWallet: () => hoisted.isSafeWallet,
     useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: () => {} }),
     useNetworkFee: () => ({
       data: undefined,
@@ -144,22 +144,19 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    // Heavy components inside the modal — render-irrelevant for these assertions.
-    PendleConfigMenu: () => null,
-    usePendleSlippage: () => ({
-      slippage: 0.01,
-      setSlippage: () => undefined,
-      defaultSlippage: 0.01
-    }),
-    // Stub the USD value fn so the test doesn't pull in usePrices()/wagmi reads.
-    // Reads the swappable hoisted fn (default ≈$1/token).
-    usePendleUsdValue: () => hoisted.valueUsd
-  };
-});
+vi.mock('@/modules/pendle/hooks/usePendleSlippage', () => ({
+  usePendleSlippage: () => ({
+    slippage: 0.01,
+    setSlippage: () => undefined,
+    defaultSlippage: 0.01
+  })
+}));
+
+// Stub the USD value fn so the test doesn't pull in usePrices()/wagmi reads.
+// Reads the swappable hoisted fn (default ≈$1/token).
+vi.mock('@/modules/pendle/hooks/usePendleUsdValue', () => ({
+  usePendleUsdValue: () => hoisted.valueUsd
+}));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
@@ -397,7 +394,7 @@ describe('usePendleRedeemModal network switch', () => {
     hoisted.txStatus = 'idle';
     hoisted.matured = true;
     hoisted.chainId = 1;
-    hoisted.isSafeWallet = false;
+    hoisted.canSwitchChain = true;
     hoisted.switchChainAsyncMock.mockReset();
     hoisted.switchChainAsyncMock.mockResolvedValue(undefined);
     hoisted.setIsAutoSwitchingMock.mockClear();
@@ -452,7 +449,7 @@ describe('usePendleRedeemModal network switch', () => {
 
   it('does nothing off-chain in a Safe — it cannot switch from the dapp (APP-486)', async () => {
     hoisted.chainId = 8453;
-    hoisted.isSafeWallet = true;
+    hoisted.canSwitchChain = false;
     const view = renderComponent(<Capture />);
     await clickOpen(view.container);
     expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();

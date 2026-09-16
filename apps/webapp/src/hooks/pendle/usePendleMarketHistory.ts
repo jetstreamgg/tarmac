@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { pendleDataSource } from '../constants';
 import type { PendleHistoryRow, PendleMarketHistoryHook } from './pendle';
 import { usePendleAllPnlTransactions } from './usePendleAllPnlTransactions';
 
@@ -38,13 +38,6 @@ export function usePendleMarketHistory(marketAddress: `0x${string}` | undefined)
     data,
     error,
     mutate: refetch,
-    dataSources: [
-      {
-        title: 'Pendle Markets API',
-        href: 'https://api-v2.pendle.finance/core/docs',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
+    dataSources: [pendleDataSource()]
   };
 }

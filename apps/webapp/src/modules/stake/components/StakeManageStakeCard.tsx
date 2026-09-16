@@ -2,7 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { InfoTooltip } from '@/components/InfoTooltip';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd, WAD } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
@@ -10,8 +10,6 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ReachedBadge, StakeManageCard, StakeManageStatRow, StakeManageStatRows } from './StakeManageCard';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
-
-const WAD = 10n ** 18n;
 
 /**
  * Manage card 1 · Stake SKY | Withdraw SKY (UX 1050:21454 / 1104:20574):

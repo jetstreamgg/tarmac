@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -43,6 +42,7 @@ import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
+import { wadToFloat } from '../lib/stakeUsdNotional';
 
 const FOOTER_NOTE_CLASSES =
   'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
@@ -170,7 +170,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
   const estAnnualRewardsUsd =
     rewardsRate !== null && skyPriceUsd !== null && state.skyToLock > 0n
-      ? Number(formatUnits(state.skyToLock, 18)) * rewardsRate * skyPriceUsd
+      ? wadToFloat(state.skyToLock) * rewardsRate * skyPriceUsd
       : null;
 
   const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =

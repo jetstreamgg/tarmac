@@ -6,7 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { getChainIcon } from '@/utils';
-import { BP, useAppChainId, useBreakpointIndex, useIsSafeWallet } from '@/hooks';
+import { BP, useAppChainId, useBreakpointIndex } from '@/hooks';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 
 type NetworkSelectProps = {
@@ -42,19 +42,21 @@ type NetworkSelectProps = {
  * chains nothing is selected and picking the shown chain still asks the wallet.
  * That is the escape hatch after a declined automatic switch.
  *
- * `isStatic`: a single-chain product has nothing to offer, and a Safe's chain
- * is fixed by the Safe app it runs inside — either way there is no control.
+ * `isStatic`: a single-chain product has nothing to offer, and a wallet the
+ * dapp must not switch (a Safe — `canSwitchChain` on NetworkSwitchContext says
+ * why) gets no control either; the user changes Safe in the Safe app and this
+ * app follows.
  */
 function useNetworkSelectChain(chainIds: number[]) {
   const walletChainId = useAppChainId();
   const chains = useChains();
-  const isSafeWallet = useIsSafeWallet();
+  const { canSwitchChain } = useNetworkSwitch();
 
   const onProductChain = chainIds.includes(walletChainId);
   const activeChainId = onProductChain ? walletChainId : (chainIds[0] ?? walletChainId);
   const activeChainName = chains.find(chain => chain.id === activeChainId)?.name ?? 'Ethereum';
   const selectValue = onProductChain ? String(walletChainId) : '';
-  const isStatic = isSafeWallet || chainIds.length <= 1;
+  const isStatic = !canSwitchChain || chainIds.length <= 1;
 
   return { activeChainId, activeChainName, selectValue, isStatic };
 }
@@ -96,7 +98,7 @@ export function NetworkBadge({
 /**
  * The header's network control on the phone tier, or `null` when a real
  * control is warranted. One rule, in one place: a product with nothing to
- * switch (one chain, or a Safe whose chain its host app fixes) draws the
+ * switch (one chain, or a Safe, which follows the Safe app instead) draws the
  * title-suffix badge beside the name on phones instead of a control-shaped
  * row with only an icon in it, which read as broken (1295:20810). Both header
  * builders — `ProductDetailTemplate` and the bespoke `StakeProductPage` one —
@@ -127,8 +129,9 @@ export function useNetworkTitleBadge(chainIds: number[] | undefined, dataTestId?
  *    differ while a switch is in flight or after one was declined, and the old
  *    pill named the wallet's chain — on a page that cannot use it.
  *
- * Safe wallets get the static pill too: a Safe's chain is fixed by the Safe
- * app it runs inside, so there is nothing this control could do.
+ * Safe wallets get the static pill too: the dapp must not switch a Safe
+ * (`canSwitchChain` on NetworkSwitchContext says why); the user changes Safe
+ * in the Safe app and this app follows.
  *
  */
 function NetworkSelectView({

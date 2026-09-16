@@ -17,12 +17,9 @@ import {
 /**
  * Flow selector for {@link generateStakeCalldata}.
  *
- * Module-local by design — do NOT import `StakeFlow` from the legacy
- * `widgets/StakeModuleWidget` (that would invert the strangler-fig direction and
- * break when F7 deletes the widget). The legacy context branches on
- * `widgetState.flow === StakeFlow.OPEN` and treats everything else (MANAGE *and*
- * CLAIM) as the manage ordering, so callers must map legacy CLAIM flows to
- * `'manage'`.
+ * The legacy stake widget branched on `StakeFlow.OPEN` and treated everything
+ * else (MANAGE *and* CLAIM) as the manage ordering, so callers must map CLAIM
+ * flows to `'manage'`.
  */
 export type StakeCalldataFlow = 'open' | 'manage';
 

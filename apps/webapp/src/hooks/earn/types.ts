@@ -30,7 +30,6 @@ export type EarnRiskProfileId =
   | 'rewards-cle'
   | 'vault-flagship'
   | 'vault-usdt-savings'
-  | 'vault-tether-savings'
   | 'vault-risk-capital'
   | 'fixed'
   | 'stusds'

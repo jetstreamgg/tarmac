@@ -29,8 +29,6 @@ const loaderVariants = cva('shrink-0', {
   }
 });
 
-export type LoaderSize = NonNullable<VariantProps<typeof loaderVariants>['size']>;
-
 // Stagger between dots: 100ms of the 1.6s loop (Figma 2238:62221).
 const DOT_STAGGER_MS = 100;
 const DOT_CENTERS = [2.667, 8, 13.333];

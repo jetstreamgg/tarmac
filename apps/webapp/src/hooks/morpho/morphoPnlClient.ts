@@ -1,4 +1,5 @@
-import { MORPHO_API_URL, USER_VAULT_V2_PNL_QUERY, VAULT_V2_TRANSACTIONS_SINCE_QUERY } from './constants';
+import { USER_VAULT_V2_PNL_QUERY, VAULT_V2_TRANSACTIONS_SINCE_QUERY } from './constants';
+import { morphoGraphql } from './morphoGraphql';
 import type {
   MorphoUserVaultV2PnlApiResponse,
   MorphoUserVaultV2Position,
@@ -7,17 +8,7 @@ import type {
 } from './morpho';
 
 async function postGraphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const json = (await response.json()) as T & { errors?: { message?: string }[] };
+  const json = await morphoGraphql<T & { errors?: { message?: string }[] }>(query, variables);
   if (json.errors?.length) {
     throw new Error(`Morpho GraphQL error: ${json.errors[0]?.message ?? 'unknown'}`);
   }

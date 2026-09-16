@@ -12,13 +12,11 @@ import { VaultProvider } from '@/hooks/vaults/types';
  * validator, or detail switch can silently fall behind a new provider.
  */
 const VAULT_MODULE_BY_PROVIDER: Record<VaultProvider, string> = {
-  morpho: 'morpho',
-  sky: 'sky'
+  morpho: 'morpho'
 };
 
 const INTENT_BY_PROVIDER: Record<VaultProvider, VaultsIntent> = {
-  morpho: VaultsIntent.MORPHO_VAULT_INTENT,
-  sky: VaultsIntent.SKY_VAULT_INTENT
+  morpho: VaultsIntent.MORPHO_VAULT_INTENT
 };
 
 const PROVIDERS = Object.keys(VAULT_MODULE_BY_PROVIDER) as VaultProvider[];

@@ -1,5 +1,5 @@
 import { useChainId } from 'wagmi';
-import { formatUnits, type Call } from 'viem';
+import { type Call } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   RiskLevel,
@@ -17,6 +17,7 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
+import { wadToFloat } from '../lib/stakeUsdNotional';
 import { buildStakeConfirmRows, type StakeDelegateSide, type StakeRewardSide } from './stakeModalRows';
 
 /** A reward-farm endpoint: the farm, plus its reward-token symbol when known. */
@@ -159,9 +160,7 @@ export function StakeConfirmGrid({
   // token outright. USD is what the position details modal and the rewards
   // module's own review already quote.
   const estRewards = (staked: bigint, rate: number | null) =>
-    rate !== null && skyPriceUsd !== null
-      ? formatUsd(Number(formatUnits(staked, 18)) * rate * skyPriceUsd)
-      : NO_VALUE;
+    rate !== null && skyPriceUsd !== null ? formatUsd(wadToFloat(staked) * rate * skyPriceUsd) : NO_VALUE;
 
   // The borrow group collapses whole on a position that neither owes nor is
   // taking on debt — four cells, so the pairing stays aligned either way.

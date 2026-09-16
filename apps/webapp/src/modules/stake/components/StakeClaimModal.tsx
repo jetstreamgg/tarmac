@@ -6,7 +6,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { formatUsd } from '@/utils';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';

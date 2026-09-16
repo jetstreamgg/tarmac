@@ -17,7 +17,7 @@ TEMP_DIR=".tmp-content-repo"
 OUTPUT_SOURCE_PATH="output/webapp/faq"
 DESTINATION_PATH="src/data/faqs"
 TOOLTIPS_SOURCE_PATH="output/webapp/tooltips"
-TOOLTIPS_DESTINATION_PATH="src/widgets/data/tooltips"
+TOOLTIPS_DESTINATION_PATH="src/modules/ui/data/tooltips"
 BANNERS_SOURCE_PATH="output/webapp/banner"
 BANNERS_DESTINATION_PATH="src/data/banners"
 EXTRACT_SCRIPT="scripts/extract_webapp_faqs.js"
@@ -489,7 +489,7 @@ fi
 
 # Copy tooltips if they exist
 if [ -d "$TEMP_DIR/$TOOLTIPS_SOURCE_PATH" ]; then
-    print_status "Syncing tooltips to widgets package..."
+    print_status "Syncing tooltips to webapp..."
     
     # Check if tooltips.ts exists in the output
     if [ -f "$TEMP_DIR/$TOOLTIPS_SOURCE_PATH/tooltips.ts" ]; then

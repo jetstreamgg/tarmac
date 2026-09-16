@@ -4,7 +4,7 @@ import { stUsdsAddress, stUsdsImplementationAbi, usdsAddress } from '../generate
 import { Abi, Call, erc20Abi } from 'viem';
 import { useStUsdsAllowance } from './useStUsdsAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 
 export function useBatchStUsdsDeposit({
   amount,
@@ -52,7 +52,7 @@ export function useBatchStUsdsDeposit({
     activeTabEnabled &&
     !!connectedAddress;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -60,11 +60,7 @@ export function useBatchStUsdsDeposit({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

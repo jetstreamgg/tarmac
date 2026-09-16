@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Abi, decodeFunctionData, encodeFunctionData } from 'viem';
 import { buildVaultDepositCall } from './buildVaultDepositCall';
-import { sparkVaultAbi } from '@/hooks/abis/sparkVaultAbi';
 import { usdsRiskCapitalVaultAbi } from '@/hooks/generated';
 
 const VAULT_ADDRESS = '0x74cb54e082411cfCAEADb00a0765625B10410DAa' as const;
@@ -21,53 +20,15 @@ function encodeCall(call: ReturnType<typeof buildVaultDepositCall>) {
 }
 
 describe('buildVaultDepositCall', () => {
-  it('encodes the 3-arg deposit(assets, receiver, referral) for a Spark vault with a referral code', () => {
-    const call = buildVaultDepositCall({
-      provider: 'sky',
-      vaultAddress: VAULT_ADDRESS,
-      amount: AMOUNT,
-      receiver: RECEIVER,
-      referral: 555
-    });
-
-    const decoded = decodeFunctionData({ abi: sparkVaultAbi as Abi, data: encodeCall(call) });
-
-    expect(decoded.functionName).toBe('deposit');
-    expect(decoded.args?.length).toBe(3);
-    expect(decoded.args?.[0]).toBe(AMOUNT);
-    expect((decoded.args?.[1] as string).toLowerCase()).toBe(RECEIVER);
-    expect(decoded.args?.[2]).toBe(555);
-  });
-
-  it('keeps the 2-arg deposit(assets, receiver) for a Morpho vault even when a referral code is present', () => {
-    const call = buildVaultDepositCall({
-      provider: 'morpho',
-      vaultAddress: VAULT_ADDRESS,
-      amount: AMOUNT,
-      receiver: RECEIVER,
-      referral: 555
-    });
+  it('encodes the ERC-4626 deposit(assets, receiver) call', () => {
+    const call = buildVaultDepositCall({ vaultAddress: VAULT_ADDRESS, amount: AMOUNT, receiver: RECEIVER });
 
     const decoded = decodeFunctionData({ abi: usdsRiskCapitalVaultAbi, data: encodeCall(call) });
 
+    expect(call.to).toBe(VAULT_ADDRESS);
     expect(decoded.functionName).toBe('deposit');
     expect(decoded.args?.length).toBe(2);
     expect(decoded.args?.[0]).toBe(AMOUNT);
     expect((decoded.args?.[1] as string).toLowerCase()).toBe(RECEIVER);
-  });
-
-  it('falls back to the 2-arg deposit for a Spark vault when no referral code is configured (0)', () => {
-    const call = buildVaultDepositCall({
-      provider: 'sky',
-      vaultAddress: VAULT_ADDRESS,
-      amount: AMOUNT,
-      receiver: RECEIVER,
-      referral: 0
-    });
-
-    const decoded = decodeFunctionData({ abi: usdsRiskCapitalVaultAbi, data: encodeCall(call) });
-
-    expect(decoded.functionName).toBe('deposit');
-    expect(decoded.args?.length).toBe(2);
   });
 });

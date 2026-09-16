@@ -2,26 +2,17 @@ import type { ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import {
-  useTokenBalance,
-  getTokenDecimals,
-  type MorphoVaultRateData,
-  type Token,
-  type VaultProvider
-} from '@/hooks';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { useTokenBalance, getTokenDecimals, type MorphoVaultRateData, type Token } from '@/hooks';
+import { formatDecimalPercentage } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
-import {
-  ProductFigure,
-  ProductStat,
-  ProductStatPair,
-  ProductSupplyCard
-} from '@/components/product/ProductCard';
+import { ProductSupplyCard } from '@/components/product/ProductCard';
+import { InlineTokenLabel } from '@/components/product/InlineTokenLabel';
+import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { RateInfo, vaultRateInfo } from '@/components/product/RateInfo';
+import { RateInfo } from '@/components/product/RateInfo';
 import { hasRateBreakdown, VaultRateMark, VaultRateTooltip } from './VaultRateBreakdown';
-import { Morpho } from '@/widgets';
+import { Morpho } from '@/modules/icons';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -64,15 +55,12 @@ function VaultDescription({ vaultName }: { vaultName: string }) {
 export function VaultSupplyCard({
   assetToken,
   vaultName,
-  provider,
   netRate,
   rateData,
   onSupply
 }: {
   assetToken: Token;
   vaultName: string;
-  /** Gates the Morpho branding — the sUSDT vault runs on Spark infra. */
-  provider: VaultProvider;
   /** Net APY as a decimal fraction (e.g. 0.0445). */
   netRate?: number;
   /** Full rate breakdown; drives the stars mark and its tooltip. */
@@ -90,34 +78,19 @@ export function VaultSupplyCard({
   const onSupplyOrConnect = useConnectThenAct(onSupply, 'vault_supply');
 
   const rate = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
-  const idleBalance =
-    isConnected && balance
-      ? formatNumber(parseFloat(formatUnits(balance.value, decimals)), { maxDecimals: 2 })
-      : NO_VALUE;
-
-  const assetIcon = (
-    <span className="whitespace-nowrap">
-      <TokenIcon
-        token={{ symbol: assetToken.symbol }}
-        width={24}
-        showChainIcon={false}
-        className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
-      />
-      {assetToken.symbol}
-    </span>
+  const idleBalance = formatIdleBalance(
+    isConnected && balance ? parseFloat(formatUnits(balance.value, decimals)) : undefined
   );
+
+  const assetIcon = <InlineTokenLabel symbol={assetToken.symbol} />;
 
   return (
     <ProductSupplyCard
       data-testid="vault-supply-card"
       badges={
-        // Only Morpho-provided vaults claim the badge; the sUSDT vault runs on
-        // Spark infra and would be mislabelled by it.
-        provider === 'morpho' ? (
-          <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
-            <Trans>Powered by Morpho</Trans>
-          </HeaderBadge>
-        ) : undefined
+        <HeaderBadge size="s" icon={<Morpho className="size-4 rounded-sm" />}>
+          <Trans>Powered by Morpho</Trans>
+        </HeaderBadge>
       }
       title={
         <Trans>
@@ -126,9 +99,10 @@ export function VaultSupplyCard({
       }
       description={<VaultDescription vaultName={vaultName} />}
       stats={
-        <ProductStatPair>
-          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            <ProductFigure value={rate}>
+        <SupplyCardStats
+          rate={rate}
+          rateFigure={
+            <>
               {/* The rate carries the DS sparkle rather than a token mark — the
                   vault's yield is not one asset's — and hovering it opens the
                   breakdown (APP-443 item 14; the mark shipped without one).
@@ -137,27 +111,21 @@ export function VaultSupplyCard({
                   — and never shows a mark the tooltip can't explain. */}
               <VaultRateTooltip rate={rateData}>
                 {rate}
-                {hasRateBreakdown(rateData) && (
-                  <VaultRateMark
-                    className={provider === 'morpho' ? 'text-statusInfoSolid' : 'text-fgSecondary'}
-                  />
-                )}
+                {hasRateBreakdown(rateData) && <VaultRateMark className="text-statusInfoSolid" />}
               </VaultRateTooltip>
-              <RateInfo type={vaultRateInfo(provider)} />
-            </ProductFigure>
-          </ProductStat>
-          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            <ProductFigure value={idleBalance}>
-              {idleBalance}
-              <TokenIcon
-                token={{ symbol: assetToken.symbol }}
-                width={16}
-                showChainIcon={false}
-                className="h-4 w-4 shrink-0"
-              />
-            </ProductFigure>
-          </ProductStat>
-        </ProductStatPair>
+              <RateInfo type="morpho" />
+            </>
+          }
+          idle={idleBalance}
+          idleIcon={
+            <TokenIcon
+              token={{ symbol: assetToken.symbol }}
+              width={16}
+              showChainIcon={false}
+              className="h-4 w-4 shrink-0"
+            />
+          }
+        />
       }
       cta={
         <Button

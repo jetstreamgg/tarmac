@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import type { AsyncOrderConfig, AsyncOrderStatus } from '../transactionContract';
 
