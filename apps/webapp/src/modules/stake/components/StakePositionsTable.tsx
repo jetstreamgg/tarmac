@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { useAccount } from 'wagmi';
 import { useVault, getIlkName, RiskLevel } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
@@ -279,6 +280,7 @@ export function StakePositionsTable({
   /** Warning-banner CTA: stage the given remediation action for that position's manage sheet. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
 }) {
+  const { isConnected } = useAccount();
   const [hideInactive, setHideInactive] = useState(true);
   const [, setSearchParams] = useAppSearchParams();
 
@@ -317,7 +319,11 @@ export function StakePositionsTable({
           <Trans>Active positions</Trans>
         </h3>
         <EmptyState illustration={<SuppliedEmpty aria-hidden />}>
-          <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+          {isConnected ? (
+            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+          ) : (
+            <Trans>Connect your wallet to see your positions.</Trans>
+          )}
         </EmptyState>
       </Card>
     );

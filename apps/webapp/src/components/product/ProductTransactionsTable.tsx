@@ -1,6 +1,7 @@
 import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
 import { Fragment, ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { useAccount } from 'wagmi';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,6 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CustomPagination } from '@/modules/ui/components/CustomPagination';
 import { TransactionCardSkeleton } from './TransactionCard';
 import { paginate } from './paginate';
+
+/**
+ * Empty-state copy: a disconnected user has no history to show, so the
+ * message asks for a wallet instead of claiming they have no transactions.
+ */
+function EmptyLabel({ emptyLabel, isConnected }: { emptyLabel?: ReactNode; isConnected: boolean }) {
+  if (!isConnected) return <Trans>Connect your wallet to see your transactions.</Trans>;
+  return <>{emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}</>;
+}
 
 /**
  * Reusable transactions table for product-detail pages (Figma Table/
@@ -151,6 +161,7 @@ export function ProductTransactionsTable<T>({
   const showPagination = !isLoading && !error && totalPages > 1;
   const widths = columnWidths(columns);
   const { bpi } = useBreakpointIndex();
+  const { isConnected } = useAccount();
 
   if (renderCard && bpi < BP.md) {
     return (
@@ -178,7 +189,7 @@ export function ProductTransactionsTable<T>({
           ) : allRows.length === 0 ? (
             <StateCard>
               <EmptyState illustration={emptyIllustration}>
-                {emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}
+                <EmptyLabel emptyLabel={emptyLabel} isConnected={isConnected} />
               </EmptyState>
             </StateCard>
           ) : (
@@ -260,7 +271,7 @@ export function ProductTransactionsTable<T>({
           ) : allRows.length === 0 ? (
             <StateRow colSpan={columns.length}>
               <EmptyState illustration={emptyIllustration}>
-                {emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}
+                <EmptyLabel emptyLabel={emptyLabel} isConnected={isConnected} />
               </EmptyState>
             </StateRow>
           ) : (
