@@ -41,29 +41,38 @@ function TestWrapper({ children }: { children?: React.ReactNode }) {
 
 const wrapper = TestWrapper;
 
+type RequestArgs = [string, string, Record<string, any>];
+
+const lastRequest = () => {
+  const [call] = (request as Mock).mock.calls as RequestArgs[];
+  return { query: call[1], variables: call[2] };
+};
+
 describe('useDelegates', async () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('Should build the right query with default parameters', async () => {
+  it('Should send the default parameters as variables', async () => {
     const { result } = renderHook(() => useDelegates({ chainId: TENDERLY_CHAIN_ID }), {
       wrapper
     });
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
     expect(request).toHaveBeenCalled();
+    const { query, variables } = lastRequest();
 
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string is correct
-    checkDefaultQueryParameters(query);
+    expect(query).toContain('Delegate(where: $where, limit: $limit, offset: $offset, order_by: $orderBy)');
+    expect(variables).toEqual({
+      where: { _and: [{ chainId: { _eq: TENDERLY_CHAIN_ID } }] },
+      limit: 100,
+      offset: 0,
+      orderBy: null
+    });
   });
 
-  it('Should build the correct query with different page sizes', async () => {
+  it('Should paginate through the variables', async () => {
     const { result } = renderHook(
       () =>
         useDelegates({
@@ -76,41 +85,28 @@ describe('useDelegates', async () => {
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
-    expect(request).toHaveBeenCalled();
-
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string is correct
-    expect(query).toContain('Delegate');
-    expect(query).toContain('limit: 5');
-    expect(query).toContain('offset: 5');
+    expect(lastRequest().variables).toMatchObject({ limit: 5, offset: 5 });
   });
 
-  it('Should build the correct query with search parameter', async () => {
+  it('Should pass the search term as data, not query text', async () => {
+    const search = 'delegate" } }] }) { id } #';
     const { result } = renderHook(
       () =>
         useDelegates({
           chainId: TENDERLY_CHAIN_ID,
           page: 1,
           pageSize: 10,
-          search: 'delegate'
+          search
         }),
       { wrapper }
     );
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
-    expect(request).toHaveBeenCalled();
-
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string contains the search parameter
-    expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
-    checkDefaultQueryParameters(query, 10);
+    const { query, variables } = lastRequest();
+    expect(query).not.toContain(search);
+    expect(variables.where._and).toContainEqual({ address: { _ilike: `%${search}%` } });
+    expect(variables).toMatchObject({ limit: 10, offset: 0 });
   });
 
   it('Should OR name-matched addresses into the search condition', async () => {
@@ -127,16 +123,16 @@ describe('useDelegates', async () => {
     );
 
     await waitFor(() => result.current.isLoading === false);
-    expect(request).toHaveBeenCalled();
 
-    const [[, query]] = (request as Mock).mock.calls;
-    expect(query).toContain(
-      '{ _or: [{ address: { _ilike: "%cloaky%" } }, { address: { _ilike: "0xaaaa000000000000000000000000000000000001" } }] }'
-    );
-    checkDefaultQueryParameters(query, 10);
+    expect(lastRequest().variables.where._and).toContainEqual({
+      _or: [
+        { address: { _ilike: '%cloaky%' } },
+        { address: { _ilike: '0xaaaa000000000000000000000000000000000001' } }
+      ]
+    });
   });
 
-  it('Should build the correct query with exclude parameter', async () => {
+  it('Should exclude addresses through the variables', async () => {
     const { result } = renderHook(
       () =>
         useDelegates({
@@ -150,18 +146,10 @@ describe('useDelegates', async () => {
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
-    expect(request).toHaveBeenCalled();
-
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string contains the exclude parameter
-    expect(query).toContain('{ address: { _nin: ["0x123", "0x456"] } }');
-    checkDefaultQueryParameters(query, 10);
+    expect(lastRequest().variables.where._and).toContainEqual({ address: { _nin: ['0x123', '0x456'] } });
   });
 
-  it('Should build the correct query with random order parameters', async () => {
+  it('Should send a random order_by when random is set', async () => {
     const { result } = renderHook(
       () =>
         useDelegates({
@@ -175,18 +163,12 @@ describe('useDelegates', async () => {
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
-    expect(request).toHaveBeenCalled();
-
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string contains order_by parameter
-    expect(query).toContain('order_by:');
-    checkDefaultQueryParameters(query, 10);
+    const { orderBy } = lastRequest().variables;
+    expect(orderBy).toHaveLength(1);
+    expect(Object.values(orderBy[0])).toEqual([expect.stringMatching(/^(asc|desc)$/)]);
   });
 
-  it('Should build the correct query without order parameters when random is false', async () => {
+  it('Should send no order_by when random is false', async () => {
     const { result } = renderHook(
       () =>
         useDelegates({
@@ -200,15 +182,7 @@ describe('useDelegates', async () => {
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
-    expect(request).toHaveBeenCalled();
-
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string does not contain order_by parameter
-    expect(query).not.toContain('order_by:');
-    checkDefaultQueryParameters(query, 10);
+    expect(lastRequest().variables.orderBy).toBeNull();
   });
 
   it('should handle zero page size correctly', async () => {
@@ -224,19 +198,10 @@ describe('useDelegates', async () => {
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
-    expect(request).toHaveBeenCalled();
-
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string is correct
-    expect(query).toContain('Delegate');
-    expect(query).toContain('limit: 0');
-    expect(query).toContain('offset: 0');
+    expect(lastRequest().variables).toMatchObject({ limit: 0, offset: 0 });
   });
 
-  it('Should build the correct query with all parameters', async () => {
+  it('Should combine every parameter', async () => {
     const { result } = renderHook(
       () =>
         useDelegates({
@@ -245,29 +210,25 @@ describe('useDelegates', async () => {
           page: 2,
           pageSize: 5,
           random: true,
-          search: 'delegate'
+          search: 'delegate',
+          version: 3
         }),
       { wrapper }
     );
 
     await waitFor(() => result.current.isLoading === false);
 
-    // Check that the request function was called
-    expect(request).toHaveBeenCalled();
-
-    // Extract the query string from the request call
-    const [[, query]] = (request as Mock).mock.calls;
-
-    // Check that the query string contains the correct where clause
-    expect(query).toContain('{ address: { _nin: ["0x123", "0x456"] } }');
-    expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
-
-    // Check that the query string contains the correct pagination clause
-    expect(query).toContain('limit: 5');
-    expect(query).toContain('offset: 5');
-
-    // Check that the query string contains order_by parameter
-    expect(query).toContain('order_by:');
+    const { variables } = lastRequest();
+    expect(variables.where).toEqual({
+      _and: [
+        { chainId: { _eq: 1 } },
+        { version: { _eq: '3' } },
+        { address: { _nin: ['0x123', '0x456'] } },
+        { address: { _ilike: '%delegate%' } }
+      ]
+    });
+    expect(variables).toMatchObject({ limit: 5, offset: 5 });
+    expect(variables.orderBy).toHaveLength(1);
   });
 });
 
@@ -276,25 +237,30 @@ describe('useUserDelegates', async () => {
     vi.clearAllMocks();
   });
 
-  it('Should build the right query with default parameters', async () => {
-    const { result } = renderHook(() => useUserDelegates({ chainId: TENDERLY_CHAIN_ID, user: '0xabc' }), {
+  it('Should filter by the lowercased user through the variables', async () => {
+    const { result } = renderHook(() => useUserDelegates({ chainId: TENDERLY_CHAIN_ID, user: '0xABC' }), {
       wrapper
     });
 
     await waitFor(() => result.current.isLoading === false);
 
-    expect(request).toHaveBeenCalled();
-    const [[, query]] = (request as Mock).mock.calls;
-
-    expect(query).toContain('{ delegations: { delegator: { _eq: "0xabc" }, amount: { _gt: "0" } } }');
-    expect(query).toContain(`delegations(
-          limit: 1
-          where: { delegator: { _eq: "0xabc" } }`);
+    const { query, variables } = lastRequest();
+    expect(query).toContain('delegations(limit: 1, where: { delegator: { _eq: $delegator } })');
+    expect(variables).toEqual({
+      where: {
+        _and: [
+          { chainId: { _eq: TENDERLY_CHAIN_ID } },
+          { delegations: { delegator: { _eq: '0xabc' }, amount: { _gt: '0' } } }
+        ]
+      },
+      delegator: '0xabc'
+    });
   });
 
-  it('Should build the correct query with search parameter', async () => {
+  it('Should pass the search term as data, not query text', async () => {
+    const search = 'delegate" } }] }) { id } #';
     const { result } = renderHook(
-      () => useUserDelegates({ chainId: TENDERLY_CHAIN_ID, user: '0xabc', search: 'delegate' }),
+      () => useUserDelegates({ chainId: TENDERLY_CHAIN_ID, user: '0xabc', search }),
       {
         wrapper
       }
@@ -302,20 +268,8 @@ describe('useUserDelegates', async () => {
 
     await waitFor(() => result.current.isLoading === false);
 
-    expect(request).toHaveBeenCalled();
-
-    const [[, query]] = (request as Mock).mock.calls;
-
-    expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
-    expect(query).toContain('{ delegations: { delegator: { _eq: "0xabc" }, amount: { _gt: "0" } } }');
-    expect(query).toContain(`delegations(
-          limit: 1
-          where: { delegator: { _eq: "0xabc" } }`);
+    const { query, variables } = lastRequest();
+    expect(query).not.toContain(search);
+    expect(variables.where._and).toContainEqual({ address: { _ilike: `%${search}%` } });
   });
 });
-
-const checkDefaultQueryParameters = (query: string, expectedLimit = 100) => {
-  expect(query).toContain('Delegate');
-  expect(query).toContain(`limit: ${expectedLimit}`);
-  expect(query).toContain('offset: 0');
-};

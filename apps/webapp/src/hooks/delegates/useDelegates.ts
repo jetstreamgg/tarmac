@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { getRandomItem } from '@/utils';
 import { useMemo } from 'react';
-import { buildDelegateSearchCondition, parseDelegatesFn } from './utils';
+import { buildDelegateSearchCondition, DelegateWhere, parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchDelegates(
@@ -21,22 +21,22 @@ async function fetchDelegates(
   version?: 1 | 2 | 3,
   nameMatches?: `0x${string}`[]
 ): Promise<DelegateInfo[] | undefined> {
-  const whereConditions: string[] = [`{ chainId: { _eq: ${chainId} } }`];
-  if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
-  if (exclude?.length)
-    whereConditions.push(`{ address: { _nin: [${exclude.map(addr => `"${addr}"`).join(', ')}] } }`);
+  const whereConditions: DelegateWhere[] = [{ chainId: { _eq: chainId } }];
+  if (version) whereConditions.push({ version: { _eq: String(version) } });
+  if (exclude?.length) whereConditions.push({ address: { _nin: exclude } });
   const searchCondition = buildDelegateSearchCondition(search, nameMatches);
   if (searchCondition) whereConditions.push(searchCondition);
-  const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
-  const paginationClause =
-    first !== undefined && skip !== undefined ? `limit: ${first}, offset: ${skip}` : '';
-
-  const orderByClause = orderBy && orderDirection ? `order_by: { ${orderBy}: ${orderDirection} }` : '';
+  const variables = {
+    where: { _and: whereConditions },
+    limit: first,
+    offset: skip,
+    orderBy: orderBy && orderDirection ? [{ [orderBy]: orderDirection }] : null
+  };
 
   const query = gql`
-    {
-      delegates: Delegate(${[whereClause, paginationClause, orderByClause].filter(Boolean).join(', ')}) {
+    query Delegates($where: Delegate_bool_exp!, $limit: Int, $offset: Int, $orderBy: [Delegate_order_by!]) {
+      delegates: Delegate(where: $where, limit: $limit, offset: $offset, order_by: $orderBy) {
         blockTimestamp
         blockNumber
         ownerAddress
@@ -47,7 +47,11 @@ async function fetchDelegates(
     }
   `;
 
-  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlIndexer, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(
+    urlIndexer,
+    query,
+    variables
+  );
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
     id: d.address as `0x${string}`

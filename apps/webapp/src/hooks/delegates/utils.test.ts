@@ -30,13 +30,20 @@ describe('buildDelegateSearchCondition', () => {
   });
 
   it('keeps the plain address term when no names matched', () => {
-    expect(buildDelegateSearchCondition('cloak', undefined)).toBe('{ address: { _ilike: "%cloak%" } }');
-    expect(buildDelegateSearchCondition('cloak', [])).toBe('{ address: { _ilike: "%cloak%" } }');
+    expect(buildDelegateSearchCondition('cloak', undefined)).toEqual({ address: { _ilike: '%cloak%' } });
+    expect(buildDelegateSearchCondition('cloak', [])).toEqual({ address: { _ilike: '%cloak%' } });
   });
 
   it('ORs the address term with one _ilike per name-matched address', () => {
-    expect(buildDelegateSearchCondition('cloak', [A, B])).toBe(
-      `{ _or: [{ address: { _ilike: "%cloak%" } }, { address: { _ilike: "${A}" } }, { address: { _ilike: "${B}" } }] }`
-    );
+    expect(buildDelegateSearchCondition('cloak', [A, B])).toEqual({
+      _or: [{ address: { _ilike: '%cloak%' } }, { address: { _ilike: A } }, { address: { _ilike: B } }]
+    });
+  });
+
+  it('carries the raw search text as data, never as query syntax', () => {
+    const injected = '%" } }] }) { id } #';
+    expect(buildDelegateSearchCondition(injected, undefined)).toEqual({
+      address: { _ilike: `%${injected}%` }
+    });
   });
 });

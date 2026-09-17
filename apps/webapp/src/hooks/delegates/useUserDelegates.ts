@@ -4,7 +4,7 @@ import { ZERO_ADDRESS, indexerDataSource } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
-import { buildDelegateSearchCondition, parseDelegatesFn } from './utils';
+import { buildDelegateSearchCondition, DelegateWhere, parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchUserDelegates(
@@ -15,29 +15,26 @@ async function fetchUserDelegates(
   version?: 1 | 2 | 3,
   nameMatches?: `0x${string}`[]
 ): Promise<DelegateInfo[] | undefined> {
-  const whereConditions = [
-    `{ chainId: { _eq: ${chainId} } }`,
-    `{ delegations: { delegator: { _eq: "${user.toLowerCase()}" }, amount: { _gt: "0" } } }`
+  const delegator = user.toLowerCase();
+  const whereConditions: DelegateWhere[] = [
+    { chainId: { _eq: chainId } },
+    { delegations: { delegator: { _eq: delegator }, amount: { _gt: '0' } } }
   ];
-  if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
+  if (version) whereConditions.push({ version: { _eq: String(version) } });
   const searchCondition = buildDelegateSearchCondition(search, nameMatches);
   if (searchCondition) whereConditions.push(searchCondition);
-  const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
+
+  const variables = { where: { _and: whereConditions }, delegator };
 
   const query = gql`
-    {
-      delegates: Delegate(
-        ${whereClause}
-      ) {
+    query UserDelegates($where: Delegate_bool_exp!, $delegator: String!) {
+      delegates: Delegate(where: $where) {
         address
         blockTimestamp
         ownerAddress
         delegators
         totalDelegated
-        delegations(
-          limit: 1
-          where: { delegator: { _eq: "${user.toLowerCase()}" } }
-        ) {
+        delegations(limit: 1, where: { delegator: { _eq: $delegator } }) {
           id
           delegator
           amount
@@ -47,7 +44,11 @@ async function fetchUserDelegates(
     }
   `;
 
-  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlIndexer, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(
+    urlIndexer,
+    query,
+    variables
+  );
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
     id: d.address as `0x${string}`

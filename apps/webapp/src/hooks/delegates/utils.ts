@@ -19,21 +19,24 @@ export function findDelegateNameMatches(
   return matches.length ? matches : undefined;
 }
 
+/** A Hasura `Delegate_bool_exp`, sent as a query variable rather than spliced into the document. */
+export type DelegateWhere = Record<string, unknown>;
+
 /**
- * GraphQL condition for the delegate search box: address text match OR one of
- * the name-matched addresses. Per-address `_ilike` (no wildcards) instead of
+ * Filter for the delegate search box: address text match OR one of the
+ * name-matched addresses. Per-address `_ilike` (no wildcards) instead of
  * `_in` because the metadata keys are lowercased while `_in` compares
  * case-sensitively against whatever casing the indexer stores.
  */
 export function buildDelegateSearchCondition(
   search: string | undefined,
   nameMatches: `0x${string}`[] | undefined
-): string | undefined {
+): DelegateWhere | undefined {
   if (!search) return undefined;
-  const addressTerm = `{ address: { _ilike: "%${search}%" } }`;
+  const addressTerm = { address: { _ilike: `%${search}%` } };
   if (!nameMatches?.length) return addressTerm;
-  const nameTerms = nameMatches.map(address => `{ address: { _ilike: "${address}" } }`);
-  return `{ _or: [${[addressTerm, ...nameTerms].join(', ')}] }`;
+  const nameTerms = nameMatches.map(address => ({ address: { _ilike: address } }));
+  return { _or: [addressTerm, ...nameTerms] };
 }
 
 export function parseDelegatesFn(delegate: DelegateRaw) {
