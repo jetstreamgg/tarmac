@@ -1,7 +1,6 @@
 // Core Data Hook
 export { useStUsdsData } from './useStUsdsData';
 // Write Operation Hooks
-export { useBatchStUsdsDeposit } from './useBatchStUsdsDeposit';
 export { useStUsdsWithdraw } from './useStUsdsWithdraw';
 
 // Permission Management Hooks

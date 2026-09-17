@@ -5,9 +5,8 @@ import type { TransactionConfig, TransactionEntry } from '@/modules/ui/context/t
 
 /**
  * The config fields a flow keeps live after `launch()`. A field is pushed
- * exactly when the caller names it — `{ errorMessage: undefined }` pushes the
- * clear, an omitted `steps` leaves the launch-time steps alone — so each flow
- * states what it owns and never clobbers the rest.
+ * exactly when named: `{ errorMessage: undefined }` pushes the clear, an
+ * omitted `steps` leaves the launch-time steps alone.
  */
 export type LaunchSyncFields = Partial<
   Pick<
@@ -30,39 +29,22 @@ export type LaunchSyncFields = Partial<
 export type UseLaunchSyncParams = LaunchSyncFields & {
   /** Session this flow live-updates — the provider ignores every other session's pushes. */
   sessionId: string;
-  /**
-   * The engine `execute`, rebuilt every render (its calls array is fresh each
-   * time). Read through a ref so the `onConfirm` pushed (and returned, for the
-   * launch config) is stable and never needs re-pushing.
-   */
+  /** The engine `execute` (rebuilt every render); `onConfirm` wraps it through a ref. */
   execute?: () => void;
 };
 
 /**
- * The one place a flow pushes its live state into the open session.
- *
- * Every flow that launches the shared modal has the same problem: `launch()`
- * stores its config statically, but the engine keeps re-rendering (allowance
- * reads, quotes, fee estimates, the user's amount), so the confirm gating, the
- * step list, the review body and the screening value all have to be pushed
- * after the fact through `updateModalContent`. This hook owns the three rules
- * every copy of that push had to restate:
- *
- *  - **Freeze once the tx leaves IDLE.** Mid-flight refetches (the allowance
- *    after an approve, balances after success, a repolled quote) rebuild the
- *    values, and pushing them would collapse the executed step list and
- *    amounts on the wallet/status/failure screens — or drift the `usdValue` a
- *    retry's screening tier is gated on (APP-517). Pushes resume when a
- *    failure returns the status to IDLE.
- *  - **A stable `onConfirm` over a live `execute`.** The stored `onConfirm`
- *    can't be live-updated, and pushing a fresh closure every render would
- *    re-run this effect on every provider re-render — a loop.
- *  - **Bounded deps.** The effect runs on the values, not on a fresh options
- *    object, so a provider re-render alone never triggers a push. Callers pass
- *    MEMOIZED nodes/objects (`transactionContent`, `analytics`, `toast`) for
- *    the same reason.
- *
- * Returns the stable `onConfirm`, for flows that pass it at launch.
+ * The one place a flow pushes its live state into the open session. `launch()`
+ * stores its config statically while the engine keeps re-rendering, so the
+ * gating, steps, review body and screening value are pushed after the fact.
+ * Three rules, once:
+ *  - Freeze once the tx leaves IDLE: mid-flight refetches would collapse the
+ *    executed steps/amounts on the status screens, or drift the `usdValue` a
+ *    retry's screening tier is gated on (APP-517). Pushes resume on a failure
+ *    that returns the status to IDLE.
+ *  - A stable `onConfirm` over a live `execute`: a fresh closure per render
+ *    would loop this effect on every provider re-render.
+ *  - Bounded deps: callers pass MEMOIZED nodes/objects for the same reason.
  */
 export function useLaunchSync(params: UseLaunchSyncParams): { onConfirm: () => void } {
   const { updateModalContent, txStatus } = useTransaction();

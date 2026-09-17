@@ -10,11 +10,7 @@ export interface UseEarnModalOptions<Args, Preset> {
   productName: (args: Args) => string;
   /** Where the product runs; the chain guard fires off any other chain (APP-528). */
   supportedChainIds: TransactionConfig['supportedChainIds'];
-  /**
-   * The editable body. It lives outside the dialog (hidden host) so its
-   * in-flight engine hook survives minimize, and portals its inputs into the
-   * modal's entry slot (`useModalEntryBody`).
-   */
+  /** The editable body: rendered in the hidden host, portalled into the entry slot. */
   form: (props: { sessionId: string; flow: EarnModalFlow; args: Args; preset?: Preset }) => ReactNode;
   /** Per-flow additions to the launch config (a review subtitle, a title override). */
   extra?: (flow: EarnModalFlow, args: Args) => Partial<TransactionConfig>;
@@ -29,19 +25,11 @@ export interface EarnModalOpeners<Args, Preset> {
 
 /**
  * The three-screen supply/withdraw modal every earn product opens (Figma
- * 859:36036 → 859:36154 → 859:36214): the entry advances to the review, the
- * review's Confirm fires the engine, and the body pushes the review breakdown,
- * the confirm gating, the steps and the live USD value through
- * `useModalEntryBody`. A product supplies its name, its chains and its form;
- * this owns the launch config they all shared and mints one session per
- * opener so sibling modals never cross-talk.
- *
- * `onConfirm` is a placeholder by design: the body replaces it with the
- * engine's `execute` as soon as it mounts. `usdValue` starts at 0 for the
- * same reason (nothing entered yet; the body keeps it live — APP-517).
- *
- * Analytics-free by design — attribution for these surfaces live-merges from
- * the body, or is a separate sign-off-gated slice (PRD Out of Scope).
+ * 859:36036 → 859:36154 → 859:36214). A product supplies its name, chains and
+ * form; this owns the shared launch config and one session per opener. The
+ * body replaces the placeholder `onConfirm` and the 0 `usdValue` as soon as it
+ * mounts (`useModalEntryBody`). No `analytics` here by design: attribution
+ * live-merges from the body or is a separate sign-off-gated slice.
  */
 export function useEarnModal<Args = void, Preset = never>({
   productName,

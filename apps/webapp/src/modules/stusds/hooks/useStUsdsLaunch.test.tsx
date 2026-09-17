@@ -156,7 +156,7 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false })
 }));
 
-import { StUsdsDirection, StUsdsProviderType, useBatchCurveSwap, useBatchStUsdsDeposit } from '@/hooks';
+import { StUsdsProviderType } from '@/hooks';
 import { calculateMinOutputWithSlippage } from '@/hooks/stusds/providers/rateComparison';
 import { STUSDS_PROVIDER_CONFIG } from '@/hooks/stusds/providers/constants';
 import { REFERRAL_CODE } from '@/lib/constants';
@@ -208,16 +208,6 @@ describe('useStUsdsLaunch — native supply calldata parity', () => {
     h.nativeAllowance = 0n;
     const orch = captureOrchestratorCalls(params);
 
-    h.capturedCalls = [];
-    h.nativeAllowance = 0n;
-    const engine = renderHook(() =>
-      useBatchStUsdsDeposit({ amount: AMOUNT, referral: REFERRAL_CODE, enabled: true })
-    );
-    const engineCalls = h.capturedCalls;
-    engine.unmount();
-
-    // Byte-for-byte: target, selector + encoded args, value.
-    expect(orch.map(normalize)).toEqual(engineCalls.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'deposit']);
     // deposit(amount, receiver[, referral]) — referral appended only when > 0.
     expect(orch[1].args.slice(0, 2)).toEqual([AMOUNT, TEST_ADDRESS]);
@@ -260,19 +250,6 @@ describe('useStUsdsLaunch — Curve supply calldata parity', () => {
   it('routes byte-identical calldata to the Curve engine (approve + exchange with min-output slippage)', () => {
     const orch = captureOrchestratorCalls(params);
 
-    h.capturedCalls = [];
-    const engine = renderHook(() =>
-      useBatchCurveSwap({
-        direction: StUsdsDirection.SUPPLY,
-        inputAmount: AMOUNT,
-        expectedOutput: SUPPLY_QUOTE_OUT,
-        enabled: true
-      })
-    );
-    const engineCalls = h.capturedCalls;
-    engine.unmount();
-
-    expect(orch.map(normalize)).toEqual(engineCalls.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'exchange']);
 
     // exchange(i=USDS, j=stUSDS, dx=amount, min_dy=quote−0.5%, receiver) — the
@@ -307,19 +284,6 @@ describe('useStUsdsLaunch — Curve withdraw calldata parity', () => {
   it('routes byte-identical calldata to the Curve engine (stUSDS input from the quote)', () => {
     const orch = captureOrchestratorCalls(params);
 
-    h.capturedCalls = [];
-    const engine = renderHook(() =>
-      useBatchCurveSwap({
-        direction: StUsdsDirection.WITHDRAW,
-        inputAmount: WITHDRAW_STUSDS_IN,
-        expectedOutput: AMOUNT,
-        enabled: true
-      })
-    );
-    const engineCalls = h.capturedCalls;
-    engine.unmount();
-
-    expect(orch.map(normalize)).toEqual(engineCalls.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'exchange']);
 
     // exchange(i=stUSDS, j=USDS, dx=quoted stUSDS, min_dy=desired USDS−0.5%, receiver)

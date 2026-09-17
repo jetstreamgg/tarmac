@@ -7,14 +7,10 @@ export { useSavingsHistory } from './savings/useSavingsHistory';
 export { useSavingsChartInfo } from './savings/useSavingsChartInfo';
 export { useSkySavingsRateHistoricData } from './savings/useSkySavingsRateHistoricData';
 export { useReadSavingsUsds, sUsdsAddress } from './savings/useReadSavingsUsds';
-export { useBatchSavingsSupply } from './savings/useBatchSavingsSupply';
-export { useBatchUpgradeAndSavingsSupply } from './savings/useBatchUpgradeAndSavingsSupply';
-export { useBatchPsmSwapAndSavingsSupply } from './savings/useBatchPsmSwapAndSavingsSupply';
 
 // stUSDS
 export {
   useStUsdsData,
-  useBatchStUsdsDeposit,
   useStUsdsWithdraw,
   useStUsdsAllowance,
   useStUsdsCapacityData,
@@ -24,7 +20,6 @@ export {
   // Provider abstraction layer
   useStUsdsProviderSelection,
   useCurveAllowance,
-  useBatchCurveSwap,
   StUsdsProviderType,
   StUsdsSelectionReason,
   StUsdsBlockedReason,
@@ -54,7 +49,6 @@ export type {
 
 // Provider-neutral vault core
 export {
-  useBatchVaultDeposit,
   useVaultRedeem,
   useVaultWithdraw,
   useErc4626VaultData,
@@ -115,7 +109,6 @@ export { useMultipleRewardsChartInfo } from './rewards/useMultipleRewardsChartIn
 export { useRewardContractTokens } from './rewards/useRewardContractTokens';
 export { useUserRewardsBalance } from './rewards/useUserRewardsBalance';
 export { useRewardsWithUserBalance } from './rewards/useRewardsWithUserBalance';
-export { useBatchRewardsSupply } from './rewards/useBatchRewardsSupply';
 // Rewards
 export { useRewardsWithdraw } from './rewards/useRewardsWithdraw';
 export { useRewardsRewardsBalance } from './rewards/useRewardsRewardsBalance';
@@ -153,8 +146,6 @@ export type {
 // Setup
 // Upgrade
 export { useMkrSkyFee } from './upgrade/useMkrSkyFee';
-export { useBatchUpgrade } from './upgrade/useBatchUpgrade';
-export type { UpgradeSourceToken } from './upgrade/useBatchUpgrade';
 
 // Trade
 // Oracles
@@ -172,7 +163,6 @@ export { useUrnAddress as useStakeUrnAddress } from './stake/useUrnAddress';
 export { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from './stake/useUrnSelectedRewardContract';
 export { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from './stake/useUrnSelectedVoteDelegate';
 export { useStakeSkyAllowance, useStakeUsdsAllowance } from './stake/useStakeAllowance';
-export { useBatchStakeMulticall } from './stake/useBatchStakeMulticall';
 export { useHighestRateFromChartData } from './stake/useHighestRateFromChartData';
 export { useBorrowCapacityData } from './stake/useBorrowCapacityData';
 export * from './stake/calldata';
@@ -187,14 +177,10 @@ export { RiskLevel, RISK_LEVEL_THRESHOLDS } from './vaults/vaults.constants';
 //Delegates
 export { useDelegateName } from './delegates/useDelegateName';
 // PSM
-export { useBatchPsmSwapExactIn } from './psm/useBatchPsmSwapExactIn';
-export { useBatchPsmSwapExactOut } from './psm/useBatchPsmSwapExactOut';
 export { usePsmLiquidity } from './psm/usePsmLiquidity';
 export { usePreviewSwapExactIn } from './psm/usePreviewSwapExactIn';
 export { usePreviewSwapExactOut } from './psm/usePreviewSwapExactOut';
 export { usdsPsmWrapperAddress } from './generated';
-export { useBatchUsdsPsmWrapperSellGem } from './psm/useBatchUsdsPsmWrapperSellGem';
-export { useBatchUsdsPsmWrapperBuyGem } from './psm/useBatchUsdsPsmWrapperBuyGem';
 export {
   useUsdsPsmWrapperTin,
   useUsdsPsmWrapperTout,
@@ -250,7 +236,9 @@ export { contracts, l2Contracts } from './contracts';
 
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
+export { useApproveThenAct } from './shared/useApproveThenAct';
 export type { ApproveThenActHook, ApproveThenActLeg, CallPlanEntry } from './shared/useApproveThenAct';
+export { stakeMulticallLegs } from './stake/stakeMulticallLegs';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
 export { useNetworkFee } from './shared/useNetworkFee';
 export type { NetworkFeeData, UseNetworkFeeParameters } from './shared/useNetworkFee';

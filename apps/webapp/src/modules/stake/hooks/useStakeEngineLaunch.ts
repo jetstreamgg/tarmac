@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
-import { useConnection } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import {
-  useBatchStakeMulticall,
+  stakeMulticallLegs,
+  useApproveThenAct,
   useRewardContractTokens,
   useSkyPrice,
   useStakeSkyAllowance,
@@ -62,17 +63,12 @@ export interface UseStakeEngineLaunchParams {
 }
 
 /**
- * The stake engine seam the open and manage flows share: the F1 calldata into
- * the `useBatchStakeMulticall` engine, the approval sizing and the two
- * allowance reads the step labels mirror, the legacy batch condition
- * (`batchEnabled && batchSupported && (needsAllowance || calldata.length > 1)`,
- * `StakeModuleWidget/index.tsx:194-205`), the live review body, the USD
- * notional, and the `skipReview` launch. A flow supplies its calldata inputs,
- * its step labels and the click-time half of the config.
- *
- * Allowance decisions stay INSIDE the engine (landmine #1) — the reads here
- * only label the Approve steps. The USDS approval sizing (wipeAll ×100005/100000
- * buffer) comes from the F1 helper, matching the legacy widget byte-for-byte.
+ * The stake engine seam the open and manage flows share: F1 calldata into the
+ * multicall legs, approval sizing (the wipeAll ×100005/100000 buffer, legacy
+ * byte-for-byte), the legacy batch condition (`StakeModuleWidget/index.tsx:
+ * 194-205`), the live review body, the USD notional and the `skipReview`
+ * launch. A flow supplies its calldata inputs, its step labels and the
+ * click-time half of the config.
  */
 export function useStakeEngineLaunch({
   flow,
@@ -90,6 +86,7 @@ export function useStakeEngineLaunch({
   const sessionId = useId();
   const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { address } = useConnection();
+  const chainId = useChainId();
   const { priceString: skyPriceString } = useSkyPrice();
 
   const { calldata } = useStakeCalldata({
@@ -108,11 +105,12 @@ export function useStakeEngineLaunch({
     wipeAll: calldataInputs.wipeAll
   });
 
-  // READ ONLY — label the Approve steps; the engine derives its own approves.
-  // The engine emits an approve leg while a read is unresolved, so both are
-  // mirrored even where the amount is zero (the open flow's USDS leg).
-  const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
-  const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
+  const { data: skyAllowance, error: skyAllowanceError, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
+  const {
+    data: usdsAllowance,
+    error: usdsAllowanceError,
+    mutate: mutateUsdsAllowance
+  } = useStakeUsdsAllowance();
   const refetchAllowances = useCallback(() => {
     mutateSkyAllowance();
     mutateUsdsAllowance();
@@ -124,26 +122,27 @@ export function useStakeEngineLaunch({
   // ordering), so a bundled claim counts toward the multi-leg condition.
   const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || needsUsdsAllowance || calldata.length > 1);
 
-  const engine = useBatchStakeMulticall({
-    calldata,
-    skyAmount: lockAmount,
-    usdsAmount,
+  const engine = useApproveThenAct({
+    chainId,
+    legs: stakeMulticallLegs({
+      chainId,
+      calldata,
+      skyAmount: lockAmount,
+      usdsAmount,
+      skyAllowance: { allowance: skyAllowance, allowanceError: skyAllowanceError },
+      usdsAllowance: { allowance: usdsAllowance, allowanceError: usdsAllowanceError },
+      shouldUseBatch
+    }),
     shouldUseBatch,
     enabled: enabled && calldata.length > 0,
     ...txCallbacks
   });
   useResetPausedRunOnClose(engine.reset, refetchAllowances);
 
-  // Legs the flow sends when bundled, mirroring the engine's own composition
-  // (approvals, then one call per calldata entry). NOT `calls.length`: with
-  // bundling off the engine collapses the calldata into a single `multicall`,
-  // so the calls it hands back describe the current route rather than the
-  // flow's shape.
+  // Legs the flow sends when bundled. NOT `calls.length`: unbundled, the
+  // calldata collapses into one `multicall`.
   const legCount = (needsSkyAllowance ? 1 : 0) + (needsUsdsAllowance ? 1 : 0) + calldata.length;
 
-  // Keeps the review body live while it is still a review, and hands back the
-  // stable `onConfirm` over the live engine `execute` (landmine #2: the engine
-  // re-renders between launch and the user's Confirm click).
   const { content: confirmContent, onConfirm } = useStakeConfirmContent({
     sessionId,
     execute: engine.execute,
@@ -169,8 +168,7 @@ export function useStakeEngineLaunch({
     [notional.sky, notional.usds, skyPriceString]
   );
 
-  // Read at click time through refs, so a flow's inline `describe` never churns
-  // the launch callback.
+  // Read at click time so an inline `describe` never churns the launch callback.
   const describeRef = useRef(describe);
   const contextRef = useRef(context);
   useEffect(() => {

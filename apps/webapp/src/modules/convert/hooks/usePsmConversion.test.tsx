@@ -4,39 +4,29 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { base } from 'viem/chains';
 
-const captured: { swapExactIn: Record<string, unknown> | undefined } = { swapExactIn: undefined };
+const captured: { swapExactIn: readonly unknown[] | undefined } = { swapExactIn: undefined };
 
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
-    useBatchPsmSwapExactIn: (params: Record<string, unknown>) => {
-      captured.swapExactIn = params;
+    useApproveThenAct: ({
+      legs
+    }: {
+      legs: { calls: { functionName?: string; args?: readonly unknown[] }[] }[];
+    }) => {
+      const swap = legs[0]?.calls.find(call => call.functionName === 'swapExactIn');
+      captured.swapExactIn = swap?.args;
       return {
         prepared: false,
         isLoading: false,
         error: null,
         execute: () => {},
         currentCallIndex: 0,
-        reset: () => {}
+        reset: () => {},
+        plan: []
       };
     },
-    useBatchUsdsPsmWrapperSellGem: () => ({
-      prepared: false,
-      isLoading: false,
-      error: null,
-      execute: () => {},
-      currentCallIndex: 0,
-      reset: () => {}
-    }),
-    useBatchUsdsPsmWrapperBuyGem: () => ({
-      prepared: false,
-      isLoading: false,
-      error: null,
-      execute: () => {},
-      currentCallIndex: 0,
-      reset: () => {}
-    }),
     useTokenAllowance: () => ({ data: 0n, mutate: () => {} }),
     useIsBatchSupported: () => ({ data: false }),
     useUsdsPsmWrapperLive: () => ({ data: 1n, refetch: () => {} }),
@@ -72,8 +62,9 @@ describe('usePsmConversion referralCode contract-arg', () => {
         referralCode: 12345
       })
     );
-    expect(captured.swapExactIn?.referralCode).toBe(12345n);
-    expect(typeof captured.swapExactIn?.referralCode).toBe('bigint');
+    // swapExactIn(assetIn, assetOut, amountIn, minAmountOut, receiver, referralCode)
+    expect(captured.swapExactIn?.[5]).toBe(12345n);
+    expect(typeof captured.swapExactIn?.[5]).toBe('bigint');
   });
 
   it('forwards undefined when referralCode is undefined (truthy gate)', () => {
@@ -84,6 +75,7 @@ describe('usePsmConversion referralCode contract-arg', () => {
         referralCode: undefined
       })
     );
-    expect(captured.swapExactIn?.referralCode).toBeUndefined();
+    // The leg defaults an absent code to 0n on the wire.
+    expect(captured.swapExactIn?.[5]).toBe(0n);
   });
 });

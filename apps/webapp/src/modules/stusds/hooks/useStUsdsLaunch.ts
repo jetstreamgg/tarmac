@@ -1,22 +1,32 @@
 import { useMemo } from 'react';
+import { useChainId, useConnection } from 'wagmi';
+import { Abi } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
-  StUsdsDirection,
   StUsdsProviderType,
-  useBatchCurveSwap,
-  useBatchStUsdsDeposit,
-  useStUsdsWithdraw
+  getWriteContractCall,
+  useApproveThenAct,
+  useCurveAllowance,
+  useStUsdsAllowance,
+  useStUsdsWithdraw,
+  type ApproveThenActLeg
 } from '@/hooks';
+import {
+  curveStUsdsUsdsPoolAbi,
+  curveStUsdsUsdsPoolAddress,
+  stUsdsAddress,
+  stUsdsImplementationAbi,
+  usdsAddress
+} from '@/hooks/generated';
+import { useCurvePoolData } from '@/hooks/stusds/providers/useCurvePoolData';
+import { calculateMinOutputWithSlippage } from '@/hooks/stusds/providers/rateComparison';
+import { STUSDS_PROVIDER_CONFIG } from '@/hooks/stusds/providers/constants';
 import { REFERRAL_CODE } from '@/lib/constants';
+import { familyMainnetId } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepsFromPlan } from '@/modules/ui/components/transactionStepsModel';
-import {
-  planOf,
-  toLaunchResult,
-  useShouldUseBatch,
-  type EngineLaunchResult
-} from '@/modules/ui/hooks/engineLaunch';
+import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 
 export type StUsdsLaunchFlow = 'supply' | 'withdraw';
 
@@ -38,17 +48,15 @@ export interface StUsdsEngineParams {
 export type UseStUsdsLaunchResult = EngineLaunchResult;
 
 /**
- * The seam between the redesigned stUSDS modal and the (unmodified) engine
- * hooks — the stUSDS analogue of `useSavingsLaunch`/`useVaultLaunch`, carrying
- * the retired StUSDSWidget's provider routing verbatim:
- *  - supply, native  → `useBatchStUsdsDeposit` (approve → deposit)
- *  - supply, Curve   → `useBatchCurveSwap` SUPPLY (approve → exchange, min-output
- *                      slippage applied inside the engine at the config default)
+ * The seam between the stUSDS modal and the engines, with the provider routing
+ * the retired StUSDSWidget performed:
+ *  - supply, native   → approve? → `deposit(amount, user[, referral])`
+ *  - supply, Curve    → approve(USDS)? → pool `exchange` at the config slippage
  *  - withdraw, native → `useStUsdsWithdraw` (Max redeems shares to avoid dust)
- *  - withdraw, Curve  → `useBatchCurveSwap` WITHDRAW (stUSDS input from the quote)
+ *  - withdraw, Curve  → approve(stUSDS)? → pool `exchange` (stUSDS input from the quote)
  *
- * The engines own all calldata + their own allowance derivation; the steps are
- * read off the routed engine's plan.
+ * The Curve swap is still "Supply"/"Withdraw" to the user — the route is
+ * communicated by the provider notice, not the step names.
  */
 export function useStUsdsLaunch({
   flow,
@@ -59,66 +67,99 @@ export function useStUsdsLaunch({
   stUsdsAmount
 }: StUsdsEngineParams): UseStUsdsLaunchResult {
   const { txCallbacks } = useTransaction();
-
+  const { address } = useConnection();
+  const connectedChainId = useChainId();
+  // The Curve pool lives on the family's mainnet; the native vault on the connected chain.
+  const curveChainId = familyMainnetId(connectedChainId);
   const shouldUseBatch = useShouldUseBatch();
 
   const isSupply = flow === 'supply';
   const isCurve = selectedProvider === StUsdsProviderType.CURVE;
 
-  // All four engines are called unconditionally (hooks rules) and gated by
-  // `enabled` to the active flow + route — the same routing the widget's
-  // useStUsdsTransactions performed.
-  const nativeDeposit = useBatchStUsdsDeposit({
-    amount,
-    referral: REFERRAL_CODE,
-    shouldUseBatch,
-    enabled: isSupply && !isCurve,
-    ...txCallbacks
-  });
-  const nativeWithdraw = useStUsdsWithdraw({
-    amount,
-    max,
-    enabled: !isSupply && !isCurve,
-    ...txCallbacks
-  });
-  const curveSupply = useBatchCurveSwap({
-    direction: StUsdsDirection.SUPPLY,
-    inputAmount: amount,
-    expectedOutput,
-    shouldUseBatch,
-    enabled: isSupply && isCurve,
-    ...txCallbacks
-  });
-  // minOut must derive from the same quote that produced stUsdsAmount: on a max withdraw the UI
-  // amount and the routed quote are seeded by separate provider selections and can diverge.
-  // The zero check matters because calculateMinOutputWithSlippage has no guard of its own.
-  const curveWithdraw = useBatchCurveSwap({
-    direction: StUsdsDirection.WITHDRAW,
-    inputAmount: stUsdsAmount ?? 0n,
-    expectedOutput,
-    shouldUseBatch,
-    enabled: !isSupply && isCurve && (stUsdsAmount ?? 0n) > 0n && expectedOutput > 0n,
-    ...txCallbacks
-  });
+  const chainId = isCurve ? curveChainId : connectedChainId;
+  const usds = usdsAddress[chainId as keyof typeof usdsAddress];
+  const stUsds = stUsdsAddress[chainId as keyof typeof stUsdsAddress];
+  const pool = curveStUsdsUsdsPoolAddress[curveChainId as keyof typeof curveStUsdsUsdsPoolAddress];
 
-  const activeHook = isSupply
-    ? isCurve
-      ? curveSupply
-      : nativeDeposit
-    : isCurve
-      ? curveWithdraw
-      : nativeWithdraw;
+  const nativeAllowance = useStUsdsAllowance();
+  // Curve input: USDS on supply, the quoted stUSDS on withdraw. minOut must
+  // derive from the same quote that produced stUsdsAmount: on a max withdraw the
+  // UI amount and the routed quote are seeded by separate provider selections
+  // and can diverge.
+  const curveInput = isSupply ? amount : (stUsdsAmount ?? 0n);
+  const curveAllowance = useCurveAllowance({ token: isSupply ? 'USDS' : 'stUSDS', amount: curveInput });
+  const { data: poolData } = useCurvePoolData();
 
-  // Steps come off the routed engine's plan, so an approve shows exactly when
-  // the engine sends one. The Curve swap is still "Supply"/"Withdraw" to the
-  // user — the route is communicated by the provider notice, not the step names.
-  // The native withdraw is a plain write with no plan; its single step is fixed.
-  const activePlan = planOf(activeHook);
+  let legs: ApproveThenActLeg[] = [];
+  if (isSupply && !isCurve) {
+    legs = [
+      {
+        approve: {
+          token: usds,
+          spender: stUsds,
+          amount,
+          allowance: nativeAllowance.data,
+          allowanceError: nativeAllowance.error
+        },
+        calls: [
+          getWriteContractCall({
+            to: stUsds,
+            abi: stUsdsImplementationAbi as Abi,
+            functionName: 'deposit',
+            args: [amount, address!, ...(REFERRAL_CODE > 0 ? [REFERRAL_CODE] : [])] as const
+          })
+        ]
+      }
+    ];
+  } else if (isCurve) {
+    // Token indices come from the pool; the fallbacks are the pool's known order.
+    const usdsIndex = BigInt(poolData?.tokenIndices.usds ?? 0);
+    const stUsdsIndex = BigInt(poolData?.tokenIndices.stUsds ?? 1);
+    const [i, j] = isSupply ? [usdsIndex, stUsdsIndex] : [stUsdsIndex, usdsIndex];
+    legs = [
+      {
+        approve: {
+          token: isSupply ? usds : stUsds,
+          spender: pool,
+          amount: curveInput,
+          allowance: curveAllowance.data,
+          allowanceError: curveAllowance.error
+        },
+        calls: address
+          ? [
+              getWriteContractCall({
+                to: pool,
+                abi: curveStUsdsUsdsPoolAbi as Abi,
+                functionName: 'exchange',
+                args: [
+                  i,
+                  j,
+                  curveInput,
+                  calculateMinOutputWithSlippage(expectedOutput, STUSDS_PROVIDER_CONFIG.maxSlippageBps),
+                  address
+                ]
+              })
+            ]
+          : []
+      }
+    ];
+  }
+
+  const engine = useApproveThenAct({
+    chainId,
+    legs,
+    enabled: legs.length > 0 && curveInput > 0n && (!isCurve || (!!poolData && expectedOutput > 0n)),
+    shouldUseBatch,
+    ...txCallbacks
+  });
+  const nativeWithdraw = useStUsdsWithdraw({ amount, max, enabled: !isSupply && !isCurve, ...txCallbacks });
+
+  const plan = engine.plan;
   const steps = useMemo<TransactionStep[]>(() => {
-    if (isSupply) return stepsFromPlan(activePlan, [{ approve: t`Approve USDS`, action: t`Supply USDS` }]);
+    if (isSupply) return stepsFromPlan(plan, [{ approve: t`Approve USDS`, action: t`Supply USDS` }]);
     if (!isCurve) return [t`Withdraw USDS`];
-    return stepsFromPlan(activePlan, [{ approve: t`Approve stUSDS`, action: t`Withdraw USDS` }]);
-  }, [isSupply, isCurve, activePlan]);
+    return stepsFromPlan(plan, [{ approve: t`Approve stUSDS`, action: t`Withdraw USDS` }]);
+  }, [isSupply, isCurve, plan]);
 
-  return toLaunchResult(activeHook, steps);
+  return toLaunchResult(!isSupply && !isCurve ? nativeWithdraw : engine, steps);
 }

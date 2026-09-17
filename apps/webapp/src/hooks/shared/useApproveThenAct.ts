@@ -7,9 +7,7 @@ import { useTransactionFlow } from './useTransactionFlow';
 
 /**
  * The ERC-20 approve a leg needs before its calls can pull the token. The
- * allowance itself is read by the product hook (each module has its own
- * allowance hook, and the launch tests mock those by path); this only decides
- * what to do with it.
+ * caller reads the allowance (the launch tests mock those reads by path).
  */
 export type ApproveThenActApprove = {
   /** The token pulled. `undefined` (no address on this chain) skips the approve. */
@@ -21,10 +19,7 @@ export type ApproveThenActApprove = {
   /** The current allowance; `undefined` while unresolved (the flow stays disabled). */
   allowance: bigint | undefined;
   allowanceError?: Error | null;
-  /**
-   * USDT-style tokens refuse a nonzero → nonzero approve: send `approve(0)`
-   * first when an allowance already exists.
-   */
+  /** USDT-style tokens refuse a nonzero → nonzero approve: send `approve(0)` first. */
   resetFirst?: boolean;
   /** ABI whose `approve` to encode; viem's erc20Abi by default. */
   abi?: Abi;
@@ -52,29 +47,19 @@ export type ApproveThenActHook = BatchWriteHook & {
 };
 
 export type UseApproveThenActParams = BatchWriteHookParams & {
-  /**
-   * The legs, in send order. Their COUNT must be stable across renders of one
-   * product hook (it is a description, not a hook array, so this is only about
-   * keeping `plan` indices meaningful for the caller).
-   */
+  /** The legs, in send order. */
   legs: ApproveThenActLeg[];
   chainId: number;
 };
 
 /**
- * The one approve-then-act engine every batch hook is a thin binding of.
- *
- * Each leg's approve is elided when its allowance already covers the amount
- * (and prefixed with a reset for USDT-style tokens); the surviving calls go to
- * `useTransactionFlow`, which bundles them under EIP-5792 when `shouldUseBatch`
- * and the wallet allow it and sends them one by one otherwise. The flow is
- * disabled until every allowance has resolved and the wallet is connected, and
- * an allowance read error surfaces behind the flow's own.
- *
- * `plan` mirrors `calls` entry for entry, so the launch hooks derive their
- * step labels from the engine instead of re-reading the allowances and hoping
- * to reach the same answer (the provider advances the step indicator by
- * counting sends, so a mismatch shows the wrong step).
+ * The one approve-then-act engine. Each leg's approve is elided when its
+ * allowance covers the amount (and prefixed with a reset for USDT-style
+ * tokens); the surviving calls go to `useTransactionFlow`. Disabled until every
+ * allowance has resolved and the wallet is connected. `plan` mirrors `calls`
+ * entry for entry so launch hooks label steps off the engine (the provider
+ * advances the step indicator by counting sends, so a mismatch shows the
+ * wrong step).
  */
 export function useApproveThenAct({
   legs,
@@ -126,9 +111,8 @@ export function useApproveThenAct({
 
   const enabled = paramEnabled && isConnected && !!address && allowancesResolved && calls.length > 0;
 
-  // Launch hooks memoize their steps on the plan and hand them to an effect
-  // that writes the open session, so the plan must keep its identity while its
-  // content does not change.
+  // Steps are memoized on the plan and pushed into the session by an effect,
+  // so the plan keeps its identity while its content is unchanged.
   const planKey = plan.map(({ kind, leg, token }) => `${kind}:${leg}:${token ?? ''}`).join('|');
   // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the plan's content, not its per-render array
   const stablePlan = useMemo(() => plan, [planKey]);

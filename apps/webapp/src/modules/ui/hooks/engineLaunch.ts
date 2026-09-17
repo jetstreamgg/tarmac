@@ -1,6 +1,5 @@
 import type { Call } from 'viem';
 import { useIsBatchSupported } from '@/hooks';
-import type { CallPlanEntry } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 
@@ -35,16 +34,6 @@ export type EngineHookResult = {
   /** Plain-write engines report a failed prepare simulation here. */
   prepareError?: Error | null;
 };
-
-const NO_PLAN: CallPlanEntry[] = [];
-
-/**
- * The routed engine's call plan, or a stable empty one for a plain-write engine
- * (a single call with nothing to elide; its one step is fixed by the caller).
- */
-export function planOf(activeHook: EngineHookResult & { plan?: CallPlanEntry[] }): CallPlanEntry[] {
-  return activeHook.plan ?? NO_PLAN;
-}
 
 /**
  * Honour the user's batch toggle: bundle approve+action into one EIP-5792 call
