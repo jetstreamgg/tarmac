@@ -1,6 +1,7 @@
 // Polyfills first — must run before any dependency code (e.g. wagmi's
 // Object.hasOwn use) evaluates. See lib/polyfills.ts.
 import '../lib/polyfills';
+import { installStaleChunkReload } from '../lib/staleChunkReload';
 import { initSentry } from '../modules/sentry/init';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -14,6 +15,7 @@ import { router } from './router';
 import '../modules/analytics/gtag';
 import '../globals.css';
 
+installStaleChunkReload();
 initSentry(router);
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
