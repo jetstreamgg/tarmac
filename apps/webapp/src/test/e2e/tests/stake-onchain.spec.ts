@@ -321,14 +321,13 @@ test('mixed flow: supply + repay in one bundle moves ink up and art down togethe
   const debtBeforeMixed = await getUrnDebt(urn);
   const repayWad = parseUnits('7000', 18);
 
-  // Stake card via the details CTA, then hand-enable the borrow card and flip
-  // it to repay. Partial repay of 7K leaves ~31K debt — above the 30K dust
-  // floor, so the mixed bundle must not trip the dust-gap guard.
+  // Stake card via the details CTA; with debt the borrow card is already open,
+  // so just flip it to repay. Partial repay of 7K leaves ~31K debt — above the
+  // 30K dust floor, so the mixed bundle must not trip the dust-gap guard.
   await gotoManagePosition(isolatedPage, urnIndex);
   await isolatedPage.getByTestId('stake-manage-cta-stake').click();
   await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
   await isolatedPage.getByTestId('stake-manage-stake-amount').fill('200000');
-  await isolatedPage.getByTestId('stake-manage-borrow-card-toggle').click();
   await isolatedPage.getByTestId('stake-manage-borrow-card-mode-repay').click();
   const repayAmount = isolatedPage.getByTestId('stake-manage-borrow-amount');
   await expect(repayAmount).toBeEnabled({ timeout: 60_000 });

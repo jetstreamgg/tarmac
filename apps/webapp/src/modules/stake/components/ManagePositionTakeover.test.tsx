@@ -146,7 +146,7 @@ vi.mock('@/hooks', async importOriginal => {
         minCollateralForDust: h.minCollateralForDust,
         riskLevel: h.simRisk ?? (desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW),
         // Capped collateral value at 200% of the debt → 50% loan-to-value.
-        collateralValue: desiredDebt * 2n,
+        collateralValue: collateral === 0n ? 0n : desiredDebt * 2n,
         liquidationProximityPercentage: desiredDebt > 0n ? h.simProximity : 0,
         // Scales with the collateral so a stake-only change moves the price.
         liquidationPrice:
@@ -522,6 +522,30 @@ describe('ManagePositionTakeover', () => {
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
     expect(screen.getByTestId('stake-manage-ltv-danger').textContent).toBe('50%');
     expect(screen.getByTestId('stake-manage-ltv-danger').className).toContain('text-statusError');
+  });
+
+  it('keeps the projected risk and loan-to-value up while the borrow carries an error (Figma 3015:62772)', () => {
+    h.simulationError = new Error('Insufficient collateral');
+    h.simRisk = 'LIQUIDATION';
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Insufficient collateral'
+    );
+    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('Liquidation');
+    expect(screen.getByTestId('stake-manage-ltv-danger').textContent).toBe('50%');
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('shows >100% loan-to-value when a full withdraw leaves the debt with no collateral', () => {
+    h.simRisk = 'LIQUIDATION';
+    renderSheet({ stakeCard: 'withdraw' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '3000000' } });
+
+    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('Liquidation');
+    expect(screen.getByTestId('stake-manage-ltv-danger').textContent).toBe('>100%');
+    expect(confirmButton().disabled).toBe(true);
   });
 
   // With debt the borrow card is always open, so its errors must gate Confirm

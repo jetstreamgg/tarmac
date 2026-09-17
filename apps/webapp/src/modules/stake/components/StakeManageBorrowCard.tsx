@@ -92,7 +92,8 @@ function RepaidPill() {
  * tick; repay: 0 → debt with a tick at debt − dust) and the stacked stat rows
  * (Figma 3015:58333: Borrowed, risk, liquidation price, OSM price, rate). Deltas
  * follow any staged change on the position (a stake/unstake moves the risk
- * too), blank while the card carries an error. Full repay renders `Repaid` /
+ * too) and stay up through errors; a full withdraw with debt left reads
+ * `>100%` loan-to-value. Full repay renders `Repaid` /
  * `–` / `0.00%`. Repay percent chips stage wipeAll only when the max equals
  * the full debt (M11). Below the min collateral the Borrow switch is disabled
  * behind a "Stake more to borrow" hint; a card already on keeps the notice.
@@ -180,14 +181,21 @@ export function StakeManageBorrowCard({
     ? positionLoading || usdsBalanceLoading
     : positionLoading || collateralLoading || simulationLoading;
 
-  // Delta values (M13): current → simulated, arrow only when they differ.
+  // Delta values (M13): current → simulated, arrow only when they differ. The
+  // projection stays up through errors so an over-withdraw still reads
+  // Medium → Liquidation (Figma 3015:62772); only a repay past the debt has
+  // nothing real to project.
   const isFullRepay = isRepay && (wipeAll || (hasAmount && amount >= existingDebt));
-  const showDeltas = (hasStagedChange ?? (hasAmount || wipeAll)) && !error;
+  const overRepay = isRepay && hasAmount && amount > existingDebt;
+  const showDeltas = (hasStagedChange ?? (hasAmount || wipeAll)) && !overRepay;
   const newDebt = showDeltas ? (isFullRepay ? 0n : simulatedVault?.debtValue) : undefined;
   const currentLtv = loanToValue(existingVault?.debtValue, existingVault?.collateralValue);
   const nextLtv = isFullRepay
     ? undefined
     : loanToValue(simulatedVault?.debtValue, simulatedVault?.collateralValue);
+  // Debt left with no collateral (a full withdraw) has no finite ratio.
+  const nextLtvUnbounded =
+    !isFullRepay && simulatedVault?.collateralValue === 0n && (simulatedVault?.debtValue ?? 0n) > 0n;
   const formatLtv = (ltv: bigint | undefined) =>
     ltv === undefined ? NO_VALUE : formatPercent(ltv, { showPercentageDecimals: false });
   const usdsIcon = (
@@ -458,6 +466,10 @@ export function StakeManageBorrowCard({
               showDeltas ? (
                 isFullRepay ? (
                   NO_VALUE
+                ) : nextLtvUnbounded ? (
+                  <span data-testid="stake-manage-ltv-danger" className="text-statusError">
+                    {'>100%'}
+                  </span>
                 ) : nextLtv !== undefined && nextLtv !== currentLtv ? (
                   // The new value goes red once the move lands in high/liquidation risk (Figma 3297:72534).
                   nextRiskIsDanger ? (
