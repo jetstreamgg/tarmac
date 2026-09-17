@@ -155,11 +155,16 @@ export function StakeManageBorrowCard({
   const dust = existingVault?.dust ?? simulatedVault?.dust;
 
   const debtCeilingReached = collateralData?.debtCeilingUtilization === 1;
+  // With debt, a stake below the min keeps the slider as a dead track topping
+  // out at the current debt (Figma 3015:62431 / 3015:62772); debt-free, the
+  // axis would run Min > Max, so only the notice shows (1036:218776).
+  const borrowDead = !isRepay && minCollateralNotMet && existingDebt > 0n;
   const slider = useStakeAmountSlider({
     mode: isRepay ? 'repay' : 'borrow',
     existingDebt,
     dust,
-    headroom: debtCeilingReached ? 0n : maxBorrowable,
+    headroom: debtCeilingReached || borrowDead ? 0n : maxBorrowable,
+    disabled: borrowDead,
     amount,
     onAmountChange
   });
@@ -168,7 +173,7 @@ export function StakeManageBorrowCard({
 
   // Borrow: "Borrowable: headroom" (Figma 3015:58333). Repay: the wallet- and
   // dust-aware max next to the "Borrowed:" line.
-  const maxHint = isRepay ? maxRepayable : minCollateralNotMet ? undefined : maxBorrowable;
+  const maxHint = isRepay ? maxRepayable : borrowDead ? 0n : minCollateralNotMet ? undefined : maxBorrowable;
   // The hint composes over `?? 0n` fallbacks, so it skeletons while any input
   // read is unresolved.
   const maxHintLoading = isRepay
@@ -335,7 +340,7 @@ export function StakeManageBorrowCard({
           }
         />
 
-        {(isRepay ? !slider.hidden : !minCollateralNotMet) && (
+        {(isRepay ? !slider.hidden : !minCollateralNotMet || borrowDead) && (
           <StakeBorrowSliderRow
             // Remount on a mode switch so the fill doesn't glide from the other axis.
             key={mode}

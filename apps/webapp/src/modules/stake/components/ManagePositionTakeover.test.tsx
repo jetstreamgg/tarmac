@@ -674,6 +674,19 @@ describe('ManagePositionTakeover', () => {
     expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
   });
 
+  it('withdraw below the min stake with debt: the borrow slider stays as a dead track topping out at the debt (Figma 3015:62772)', () => {
+    renderSheet({ stakeCard: 'withdraw' });
+    // 3M staked − 2M leaves 1M, under the 1.44M min collateral.
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2000000' } });
+
+    expect(screen.getByTestId('stake-manage-min-collateral-warning')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('Borrowable: 0 USDS');
+    const slider = screen.getByTestId('stake-manage-borrow-slider');
+    expect(slider.querySelector('[data-slot="slider"]')?.getAttribute('data-disabled')).not.toBeNull();
+    expect(screen.getByTestId('stake-manage-borrow-slider-max-label').textContent).toContain('30,000');
+    expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).disabled).toBe(true);
+  });
+
   it('borrow: below the min collateral the off switch is disabled behind the hint (G11)', () => {
     h.existingDebt = 0n;
     h.existingCollateral = 1_000_000n * WAD;
