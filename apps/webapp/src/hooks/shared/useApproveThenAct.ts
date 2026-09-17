@@ -10,9 +10,14 @@ import { useTransactionFlow } from './useTransactionFlow';
  * caller reads the allowance (the launch tests mock those reads by path).
  */
 export type ApproveThenActApprove = {
-  /** The token pulled. `undefined` (no address on this chain) skips the approve. */
+  /**
+   * The token pulled. `undefined` means the contract has no address on the
+   * connected chain: the flow stays disabled (never "skip the approve"), the
+   * same way an unresolved allowance holds it, so an off-chain launch cannot
+   * send the action alone.
+   */
   token: `0x${string}` | undefined;
-  /** The contract that pulls it. `undefined` skips the approve. */
+  /** The contract that pulls it. `undefined` disables the flow, as for `token`. */
   spender: `0x${string}` | undefined;
   /** What the allowance has to cover. */
   amount: bigint;
@@ -79,11 +84,19 @@ export function useApproveThenAct({
   let allowanceError: Error | null = null;
 
   legs.forEach(({ approve, calls: actions }, leg) => {
-    if (approve && approve.token && approve.spender) {
+    if (approve && (!approve.token || !approve.spender)) {
+      // No address on this chain. Treated like an unresolved allowance so the
+      // action can't go out unapproved (the chain guard closes the modal).
+      allowancesResolved = false;
+    } else if (approve && approve.token && approve.spender) {
       const { token, spender, amount, allowance, resetFirst, abi } = approve;
       if (allowance === undefined) allowancesResolved = false;
       allowanceError ??= approve.allowanceError ?? null;
 
+      // Unresolved counts as "needs approve" so the plan (and the step list
+      // built from it) carries the pessimistic shape; the flow is disabled
+      // until every allowance lands, and the list only renders once the user
+      // can confirm, so the guess is never on screen for entry/review flows.
       const needsApprove = allowance === undefined || allowance < amount;
       if (needsApprove) {
         const approveWith = (value: bigint) =>
