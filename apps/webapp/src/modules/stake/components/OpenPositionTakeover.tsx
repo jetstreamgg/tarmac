@@ -13,6 +13,7 @@ import {
   useMultipleRewardsChartInfo,
   useSimulatedVault,
   useSkyPrice,
+  filterDeprecatedRewards,
   useStakeRewardContracts,
   useStakeUrnAddress,
   useStakeUrnSelectedRewardContract,
@@ -129,11 +130,13 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // The reward picker card stages `selectedRewardContract`; the engine requires
   // a selectFarm call for rewards to accrue, so the card is always-on with the
   // SKY farm pre-selected (A-Q2 resolved by APP-516).
+  // Falls back to the first farm the picker actually shows, never a hidden deprecated one.
   const { data: rewardContracts } = useStakeRewardContracts();
+  const visibleFarms = filterDeprecatedRewards(rewardContracts ?? [], chainId);
   const skyFarm = lsSkySkyRewardAddress[chainId as keyof typeof lsSkySkyRewardAddress];
   const defaultRewardContract =
-    rewardContracts?.find(contract => contract.contractAddress.toLowerCase() === skyFarm?.toLowerCase())
-      ?.contractAddress ?? rewardContracts?.[0]?.contractAddress;
+    visibleFarms.find(contract => contract.contractAddress.toLowerCase() === skyFarm?.toLowerCase())
+      ?.contractAddress ?? visibleFarms[0]?.contractAddress;
   // Reopen (C18): the urn's farm is the selection baseline — an untouched
   // picker passes the raw urn read through so the manage seam emits no
   // selectFarm leg; a never-farmed urn falls back to the SKY default (which

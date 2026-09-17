@@ -14,14 +14,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { farmRewardSymbol } from '../lib/farmRewardSymbol';
 
 /**
- * Single-select farm tiles (Figma 3015:59025): two side-by-side tiles at md+,
- * each an icon + name row over a Rate | TVL pair split by a hairline; the
- * selected tile takes the brandBorder/brand3 ring. Deprecated farms are hidden
- * EXCEPT `keepAddress` (the position's current farm), which renders with a
- * "Deprecated" chip and the legacy choose-another-reward warning so the holder
- * can switch away without unstaking. Shared with the Change reward modal
- * (`columns={1}`, Figma 3015:61498), where each tile is a single 69px row:
- * icon + name left, Rate | TVL right-aligned.
+ * Single-select farm picker. Layout follows the farm count (Figma 3015:59109
+ * vs 3199:69364): exactly two farms render as side-by-side tiles at md+, each
+ * an icon + name row over a Rate | TVL pair split by a hairline; any other
+ * count stacks full-width compact rows (icon + name left, Rate | TVL
+ * right-aligned) so the list scales past two. The selected entry takes the
+ * brandBorder/brand3 ring. Deprecated farms are hidden EXCEPT `keepAddress`
+ * (the position's current farm), which renders with a "Deprecated" chip and
+ * the legacy choose-another-reward warning so the holder can switch away
+ * without unstaking. The Change reward modal forces `columns={1}` (Figma
+ * 3015:61498): taller 69px rows with a 24px icon and Body 6 / Label 5 stats.
  */
 export function RewardList({
   selectedRewardContract,
@@ -35,14 +37,17 @@ export function RewardList({
   /** Current farm of an existing position — kept visible even when deprecated. */
   keepAddress?: `0x${string}`;
   dataTestIdPrefix?: string;
-  /** 1 = full-width stacked tiles (the Change reward modal, Figma 3015:61490). */
+  /** 1 = the Change reward modal's tall rows (Figma 3015:61490); omit to follow the farm count. */
   columns?: 1 | 2;
 }) {
-  const row = columns === 1;
-  const gridClassName = cn('grid grid-cols-1 gap-3', !row && 'md:grid-cols-2');
   const chainId = useChainId();
   const { data: rewardContracts, isLoading } = useStakeRewardContracts();
   const farms = filterDeprecatedRewards(rewardContracts ?? [], chainId, keepAddress);
+  // Tall rows for the Change modal; otherwise tiles for exactly two farms and compact rows past that.
+  const layout = columns === 1 ? 'rows' : farms.length === 2 ? 'tiles' : 'compact';
+  const row = layout !== 'tiles';
+  const tall = layout === 'rows';
+  const gridClassName = cn('grid grid-cols-1 gap-3', !row && 'md:grid-cols-2');
 
   const { data: chartInfo } = useMultipleRewardsChartInfo({
     rewardContractAddresses: farms.map(farm => farm.contractAddress)
@@ -55,11 +60,11 @@ export function RewardList({
   };
 
   const currentFarmDeprecated = !!keepAddress && isDeprecatedStakeReward(keepAddress, chainId);
-  // Tiles use Body 7 / Label 6; the row comp steps up to Body 6 / Label 5.
-  const labelClassName = row
+  // Tiles and compact rows use Body 7 / Label 6; the tall row comp steps up to Body 6 / Label 5.
+  const labelClassName = tall
     ? 'text-fgSecondary text-xs leading-[18px]'
     : 'text-fgSecondary text-[11px] leading-4';
-  const valueClassName = row
+  const valueClassName = tall
     ? 'text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]'
     : 'text-text font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]';
 
@@ -69,7 +74,7 @@ export function RewardList({
         {[0, 1].map(tile => (
           <Skeleton
             key={tile}
-            className={cn('w-full', row ? 'h-[69px] rounded-[20px]' : 'h-[113px] rounded-2xl')}
+            className={cn('w-full', tall ? 'h-[69px] rounded-[20px]' : 'h-[113px] rounded-2xl')}
           />
         ))}
       </div>
@@ -104,9 +109,11 @@ export function RewardList({
                 aria-pressed={isSelected}
                 className={cn(
                   'flex w-full border text-left transition-colors',
-                  row
-                    ? 'items-center justify-between gap-4 rounded-[20px] px-[19px] py-[15px]'
-                    : 'flex-col gap-5 rounded-2xl p-[19px]',
+                  layout === 'rows' &&
+                    'items-center justify-between gap-4 rounded-[20px] px-[19px] py-[15px]',
+                  layout === 'compact' &&
+                    'items-center justify-between gap-5 rounded-2xl px-[19px] py-[15px]',
+                  layout === 'tiles' && 'flex-col gap-5 rounded-2xl p-[19px]',
                   isSelected
                     ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
                     : 'border-borderPrimary bg-transparent'
@@ -116,8 +123,8 @@ export function RewardList({
                   {symbol && (
                     <TokenIcon
                       token={{ symbol }}
-                      width={row ? 24 : 20}
-                      className={row ? 'h-6 w-6' : 'h-5 w-5'}
+                      width={tall ? 24 : 20}
+                      className={tall ? 'h-6 w-6' : 'h-5 w-5'}
                       showChainIcon={false}
                     />
                   )}

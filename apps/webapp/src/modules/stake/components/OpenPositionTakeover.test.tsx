@@ -30,6 +30,8 @@ const h = vi.hoisted(() => ({
   // rewardsToken symbols backing the useRewardContractTokens mock.
   extraFarm: undefined as `0x${string}` | undefined,
   farmTokenSymbols: {} as Record<string, string>,
+  // Replaces the whole indexer farm list (layout/default-selection tests).
+  farms: undefined as `0x${string}`[] | undefined,
   // Simulation knobs (see the useSimulatedVault mock below).
   minCollateralForDust: 0n,
   dust: 0n,
@@ -140,12 +142,14 @@ vi.mock('@/hooks', async importOriginal => {
       dataSources: []
     }),
     useStakeRewardContracts: () => ({
-      data: [
-        { contractAddress: actual.lsSkySpkRewardAddress[1] },
-        { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
-        { contractAddress: actual.lsSkySkyRewardAddress[1] },
-        ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
-      ],
+      data: h.farms
+        ? h.farms.map(contractAddress => ({ contractAddress }))
+        : [
+            { contractAddress: actual.lsSkySpkRewardAddress[1] },
+            { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
+            { contractAddress: actual.lsSkySkyRewardAddress[1] },
+            ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
+          ],
       isLoading: false,
       error: null,
       mutate: () => undefined
@@ -292,6 +296,7 @@ describe('OpenPositionTakeover', () => {
     h.urnRewardContract = undefined;
     h.extraFarm = undefined;
     h.farmTokenSymbols = {};
+    h.farms = undefined;
     h.prepared = true;
     h.balance = 1000n * WAD;
     h.debounceLag = false;
@@ -335,6 +340,50 @@ describe('OpenPositionTakeover', () => {
     const usdsRow = screen.getByTestId(`stake-takeover-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`);
     expect(skyRow.getAttribute('aria-pressed')).toBe('true');
     expect(usdsRow.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('reward picker: two farms render as side-by-side tiles (Figma 3015:59109)', () => {
+    renderTakeover();
+
+    expect(screen.getByTestId('stake-takeover-reward-list').className).toContain('md:grid-cols-2');
+    const skyRow = screen.getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`);
+    expect(skyRow.className).toContain('flex-col');
+    expect(skyRow.className).not.toContain('justify-between');
+  });
+
+  it('reward picker: three or more farms stack as full-width compact rows (Figma 3199:69364)', () => {
+    const extra = '0x9999999999999999999999999999999999999999' as const;
+    h.extraFarm = extra;
+    h.farmTokenSymbols[extra] = 'FOO';
+    renderTakeover();
+
+    expect(screen.getByTestId('stake-takeover-reward-list').className).not.toContain('md:grid-cols-2');
+    const skyRow = screen.getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`);
+    expect(skyRow.className).toContain('justify-between');
+    expect(skyRow.className).not.toContain('flex-col');
+  });
+
+  it('reward picker: a single visible farm is a compact row and comes pre-selected', () => {
+    h.farms = [lsSkySpkRewardAddress[1], lsSkySkyRewardAddress[1]];
+    renderTakeover();
+
+    expect(
+      screen.queryByTestId(`stake-takeover-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`)
+    ).toBeNull();
+    const skyRow = screen.getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`);
+    expect(skyRow.getAttribute('aria-pressed')).toBe('true');
+    expect(skyRow.className).toContain('justify-between');
+    expect(screen.getByTestId('stake-takeover-reward-list').className).not.toContain('md:grid-cols-2');
+  });
+
+  it('reward picker: without SKY, the default is the first farm shown, never a hidden deprecated one', () => {
+    h.farms = [lsSkySpkRewardAddress[1], lsSkyUsdsRewardAddress[1]];
+    renderTakeover();
+    typeStakeAmount('100');
+
+    const usdsRow = screen.getByTestId(`stake-takeover-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`);
+    expect(usdsRow.getAttribute('aria-pressed')).toBe('true');
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkyUsdsRewardAddress[1]);
   });
 
   it('reward picker: a selection reaches the open seam and the confirm summary', () => {
