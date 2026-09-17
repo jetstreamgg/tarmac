@@ -1,5 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installStaleChunkReload } from './staleChunkReload';
+
+const T0 = new Date('2026-09-16T12:00:00Z');
 
 const firePreloadError = () => {
   const event = new Event('vite:preloadError', { cancelable: true });
@@ -8,68 +10,72 @@ const firePreloadError = () => {
 };
 
 describe('installStaleChunkReload', () => {
-  let uninstall = () => {};
-  const install = (deps: Parameters<typeof installStaleChunkReload>[0]) => {
-    uninstall = installStaleChunkReload(deps);
-  };
+  let reload: ReturnType<typeof vi.spyOn>;
 
-  beforeEach(() => sessionStorage.clear());
-  afterEach(() => {
-    uninstall();
-    vi.restoreAllMocks();
+  beforeAll(() => {
+    installStaleChunkReload();
   });
 
-  it('reloads on the first chunk-load failure and marks the rejection handled', () => {
-    const reload = vi.fn();
-    install({ reload, now: () => 1_000_000 });
+  beforeEach(() => {
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+    reload = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
+  });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  afterAll(() => {
+    sessionStorage.clear();
+  });
+
+  it('reloads on the first chunk-load failure and leaves the rejection to its caller', () => {
     const event = firePreloadError();
 
     expect(reload).toHaveBeenCalledTimes(1);
-    expect(event.defaultPrevented).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(sessionStorage.getItem('staleChunkReloadedAt')).toBe(String(T0.getTime()));
   });
 
   it('does not reload again inside the window', () => {
-    const reload = vi.fn();
-    let time = 1_000_000;
-    install({ reload, now: () => time });
-
     firePreloadError();
-    time += 30_000;
-    const event = firePreloadError();
+    vi.advanceTimersByTime(30_000);
+    firePreloadError();
 
     expect(reload).toHaveBeenCalledTimes(1);
-    expect(event.defaultPrevented).toBe(true);
   });
 
   it('reloads again once the window has passed', () => {
-    const reload = vi.fn();
-    let time = 1_000_000;
-    install({ reload, now: () => time });
-
     firePreloadError();
-    time += 61_000;
+    vi.advanceTimersByTime(61_000);
     firePreloadError();
 
     expect(reload).toHaveBeenCalledTimes(2);
   });
 
   it('honours a reload recorded before this page load', () => {
-    sessionStorage.setItem('staleChunkReloadedAt', '1000000');
-    const reload = vi.fn();
-    install({ reload, now: () => 1_010_000 });
+    sessionStorage.setItem('staleChunkReloadedAt', String(T0.getTime() - 10_000));
 
     firePreloadError();
 
     expect(reload).not.toHaveBeenCalled();
   });
 
+  it('stays guarded when the clock steps backwards after a reload', () => {
+    firePreloadError();
+    vi.setSystemTime(new Date(T0.getTime() - 30_000));
+    firePreloadError();
+
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
   it('never reloads when the guard cannot be stored', () => {
-    const reload = vi.fn();
     vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-    install({ reload, now: () => 1_000_000 });
 
     firePreloadError();
 

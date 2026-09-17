@@ -7,9 +7,10 @@ import { localeImports, LocaleModule } from './locale.constants';
 //default to enUS
 export const getDateLocale = async (locale: string): Promise<Locale> => {
   const [code, region] = locale.split('-');
+  const localeFn = localeImports[`${code}${region}`] || localeImports[code];
+  if (!localeFn) return enUS;
   let localeModule: LocaleModule;
   try {
-    const localeFn = localeImports[`${code}${region}`] || localeImports[`${code}`] || localeImports['enUS'];
     localeModule = await localeFn();
   } catch (error) {
     console.error('Error importing locale: ', error);

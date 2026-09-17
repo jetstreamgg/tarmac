@@ -15,6 +15,12 @@ describe('getDateLocale', () => {
     expect(await getDateLocale('fr-FR')).toBe(fr);
   });
 
+  it('resolves an unknown locale to the bundled enUS without importing anything', async () => {
+    const { getDateLocale } = await import('./formatDate');
+    expect(await getDateLocale('en-US')).toBe(enUS);
+    expect(await getDateLocale('')).toBe(enUS);
+  });
+
   it('falls back to the bundled enUS when the locale chunk fails to load', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const { getDateLocale } = await import('./formatDate');

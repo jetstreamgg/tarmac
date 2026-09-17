@@ -1,48 +1,29 @@
 /**
  * A tab left open across a deploy still holds the old build's hashed chunk
- * URLs. Cloudflare Pages answers a missing chunk path with index.html, so the
+ * URLs. Production answers an unknown asset path with index.html, so the
  * dynamic import rejects and Vite dispatches `vite:preloadError`. Reloading
  * fetches the current index.html with the live chunk hashes. The reload is
  * allowed once per window so a real outage cannot loop.
+ *
+ * The event is deliberately not prevented: a prevented event makes Vite
+ * resolve the failed import to `undefined` instead of rejecting, which would
+ * bypass the router's own module-not-found recovery, the catch in
+ * getDateLocale, and Sentry's chunk-load filters.
  */
 
 const STORAGE_KEY = 'staleChunkReloadedAt';
 const RELOAD_WINDOW_MS = 60_000;
 
-type Deps = {
-  reload?: () => void;
-  now?: () => number;
-};
-
-const readReloadedAt = (): number | null => {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    return stored === null ? 0 : Number(stored);
-  } catch {
-    return null;
-  }
-};
-
-const writeReloadedAt = (timestamp: number): boolean => {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, String(timestamp));
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-export function installStaleChunkReload({
-  reload = () => window.location.reload(),
-  now = Date.now
-}: Deps = {}): () => void {
-  const onPreloadError = (event: Event) => {
-    event.preventDefault();
-    const reloadedAt = readReloadedAt();
-    if (reloadedAt === null || now() - reloadedAt < RELOAD_WINDOW_MS) return;
-    if (!writeReloadedAt(now())) return;
-    reload();
-  };
-  window.addEventListener('vite:preloadError', onPreloadError);
-  return () => window.removeEventListener('vite:preloadError', onPreloadError);
+export function installStaleChunkReload(): void {
+  window.addEventListener('vite:preloadError', () => {
+    try {
+      const reloadedAt = Number(sessionStorage.getItem(STORAGE_KEY) ?? 0);
+      const now = Date.now();
+      if (Math.abs(now - reloadedAt) < RELOAD_WINDOW_MS) return;
+      sessionStorage.setItem(STORAGE_KEY, String(now));
+    } catch {
+      return;
+    }
+    window.location.reload();
+  });
 }
