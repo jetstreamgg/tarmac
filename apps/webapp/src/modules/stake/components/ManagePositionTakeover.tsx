@@ -75,6 +75,10 @@ export function ManagePositionTakeover({
   const existingCollateral = existingVault?.collateralAmount ?? 0n;
 
   const [state, dispatch] = useStakeManageFlowState(init);
+  // Only a debt-free position gets a borrow toggle (Figma 3015:60677); with debt the
+  // cards are interlinked, so both stay open (3015:58333). Stake is always on.
+  const borrowOptional = !detail.vaultLoading && existingDebt === 0n;
+  const borrowOn = !borrowOptional || state.borrowEnabled;
 
   // Amounts routed through each card's mode; the reducer clears amounts on
   // toggle-off and mode switches, so these stay consistent by construction.
@@ -83,11 +87,11 @@ export function ManagePositionTakeover({
   const settleCleared = (amount: bigint, debounced: bigint) => (amount === 0n ? 0n : debounced);
   const debouncedSkyAmount = settleCleared(state.skyAmount, useDebounce(state.skyAmount));
   const debouncedUsdsAmount = settleCleared(state.usdsAmount, useDebounce(state.usdsAmount));
-  const skyToLock = state.stakeEnabled && state.stakeMode === 'stake' ? debouncedSkyAmount : 0n;
-  const skyToFree = state.stakeEnabled && state.stakeMode === 'withdraw' ? debouncedSkyAmount : 0n;
-  const usdsToBorrow = state.borrowEnabled && state.borrowMode === 'borrow' ? debouncedUsdsAmount : 0n;
-  const usdsToWipe = state.borrowEnabled && state.borrowMode === 'repay' ? debouncedUsdsAmount : 0n;
-  const wipeAll = state.borrowEnabled && state.borrowMode === 'repay' && state.wipeAll;
+  const skyToLock = state.stakeMode === 'stake' ? debouncedSkyAmount : 0n;
+  const skyToFree = state.stakeMode === 'withdraw' ? debouncedSkyAmount : 0n;
+  const usdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? debouncedUsdsAmount : 0n;
+  const usdsToWipe = borrowOn && state.borrowMode === 'repay' ? debouncedUsdsAmount : 0n;
+  const wipeAll = borrowOn && state.borrowMode === 'repay' && state.wipeAll;
 
   // Legacy Free.tsx/Repay.tsx simulation inputs, composed (M9).
   const newCollateralAmount = existingCollateral + skyToLock - skyToFree;
@@ -97,10 +101,10 @@ export function ManagePositionTakeover({
   // useSimulatedVault's per-amount work is pure math over cached chain reads,
   // so it can track the raw amounts frame-for-frame while the RPC-bound seams
   // and validation stay debounced.
-  const liveSkyToLock = state.stakeEnabled && state.stakeMode === 'stake' ? state.skyAmount : 0n;
-  const liveSkyToFree = state.stakeEnabled && state.stakeMode === 'withdraw' ? state.skyAmount : 0n;
-  const liveUsdsToBorrow = state.borrowEnabled && state.borrowMode === 'borrow' ? state.usdsAmount : 0n;
-  const liveUsdsToWipe = state.borrowEnabled && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
+  const liveSkyToLock = state.stakeMode === 'stake' ? state.skyAmount : 0n;
+  const liveSkyToFree = state.stakeMode === 'withdraw' ? state.skyAmount : 0n;
+  const liveUsdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? state.usdsAmount : 0n;
+  const liveUsdsToWipe = borrowOn && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
   const liveCollateralAmount = existingCollateral + liveSkyToLock - liveSkyToFree;
   const liveDebtValue = existingDebt + liveUsdsToBorrow - liveUsdsToWipe;
   const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
@@ -206,7 +210,7 @@ export function ManagePositionTakeover({
           : isMinCollateralWithdrawError
             ? t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation. You must first repay your position or close it entirely.`
             : undefined;
-  const stakeCardValid = !state.stakeEnabled || state.skyAmount === 0n || !stakeError;
+  const stakeCardValid = state.skyAmount === 0n || !stakeError;
 
   // ---- Card 2 validation ----------------------------------------------------
   const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =
@@ -405,9 +409,23 @@ export function ManagePositionTakeover({
       : null;
   const estCurrentUsd = estRewardsUsd(existingCollateral);
   const estNextUsd =
-    state.stakeEnabled && state.skyAmount > 0n
-      ? estRewardsUsd(newCollateralAmount > 0n ? newCollateralAmount : 0n)
-      : null;
+    state.skyAmount > 0n ? estRewardsUsd(newCollateralAmount > 0n ? newCollateralAmount : 0n) : null;
+
+  const enableBorrow = (enabled: boolean) => {
+    dispatch({ type: 'setBorrowEnabled', enabled });
+    // Same as the open flow: a debt-free urn pre-selects the dust minimum on switch-on.
+    const dust = existingVault?.dust ?? simulatedVault?.dust;
+    if (
+      enabled &&
+      state.borrowMode === 'borrow' &&
+      dust !== undefined &&
+      !simulationError &&
+      !minCollateralNotMet &&
+      state.usdsAmount === 0n
+    ) {
+      dispatch({ type: 'setUsdsAmount', amount: dust });
+    }
+  };
 
   return (
     <TakeoverShell
@@ -571,8 +589,6 @@ export function ManagePositionTakeover({
       <StakeManageStakeCard
         mode={state.stakeMode}
         onModeChange={mode => dispatch({ type: 'setStakeMode', mode })}
-        enabled={state.stakeEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setStakeEnabled', enabled })}
         amount={state.skyAmount}
         onAmountChange={amount => dispatch({ type: 'setSkyAmount', amount })}
         walletBalance={skyBalance?.value}
@@ -596,23 +612,8 @@ export function ManagePositionTakeover({
       <StakeManageBorrowCard
         mode={state.borrowMode}
         onModeChange={mode => dispatch({ type: 'setBorrowMode', mode })}
-        enabled={state.borrowEnabled}
-        onEnabledChange={enabled => {
-          dispatch({ type: 'setBorrowEnabled', enabled });
-          // Same as the open flow: a debt-free urn pre-selects the dust minimum on switch-on.
-          const dust = existingVault?.dust ?? simulatedVault?.dust;
-          if (
-            enabled &&
-            existingDebt === 0n &&
-            state.borrowMode === 'borrow' &&
-            dust !== undefined &&
-            !simulationError &&
-            !minCollateralNotMet &&
-            state.usdsAmount === 0n
-          ) {
-            dispatch({ type: 'setUsdsAmount', amount: dust });
-          }
-        }}
+        enabled={borrowOn}
+        onEnabledChange={borrowOptional ? enableBorrow : undefined}
         amount={state.usdsAmount}
         onAmountChange={(amount, stagedWipeAll) =>
           dispatch({ type: 'setUsdsAmount', amount, wipeAll: stagedWipeAll })
@@ -631,8 +632,7 @@ export function ManagePositionTakeover({
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         currentCollateral={liveCollateralAmount > 0n ? liveCollateralAmount : 0n}
         hasStagedChange={
-          (state.stakeEnabled && state.skyAmount > 0n) ||
-          (state.borrowEnabled && (state.usdsAmount > 0n || state.wipeAll))
+          state.skyAmount > 0n || (state.borrowEnabled && (state.usdsAmount > 0n || state.wipeAll))
         }
         error={borrowError}
       />

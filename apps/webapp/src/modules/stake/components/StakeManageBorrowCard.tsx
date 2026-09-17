@@ -123,7 +123,8 @@ export function StakeManageBorrowCard({
   mode: BorrowCardMode;
   onModeChange: (mode: BorrowCardMode) => void;
   enabled: boolean;
-  onEnabledChange: (enabled: boolean) => void;
+  /** Only a debt-free position gets the toggle; omit to keep the card always on. */
+  onEnabledChange?: (enabled: boolean) => void;
   amount: bigint;
   onAmountChange: (amount: bigint, wipeAll?: boolean) => void;
   existingVault: Vault | undefined;

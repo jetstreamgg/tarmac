@@ -330,7 +330,7 @@ describe('ManagePositionTakeover', () => {
     document.body.style.overflow = '';
   });
 
-  it('renders summary strip + two cards, all off by default, Confirm disabled', () => {
+  it('renders summary strip + two open cards without toggles for a position with debt (Figma 3015:58334)', () => {
     renderSheet();
 
     expect(screen.getByTestId('stake-manage-position-summary')).toBeTruthy();
@@ -339,11 +339,25 @@ describe('ManagePositionTakeover', () => {
     // Reward and delegate changes open their own modals (Figma 3015:61490 / 3015:61189).
     expect(screen.queryByTestId('stake-manage-reward-card')).toBeNull();
     expect(screen.queryByTestId('stake-manage-delegate-card')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-stake-amount')).toBeNull();
+    // Stake and borrow are interlinked once there is debt: both cards stay open, no switches.
+    expect(screen.getByTestId('stake-manage-stake-amount')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-borrow-amount')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-stake-card-toggle')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-borrow-card-toggle')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('pre-toggles cards per the deep-link init', () => {
+  it('a debt-free position collapses the borrow card behind a toggle (Figma 3015:60680)', () => {
+    h.existingDebt = 0n;
+    renderSheet();
+
+    expect(screen.queryByTestId('stake-manage-stake-card-toggle')).toBeNull();
+    expect(screen.getByTestId('stake-manage-stake-amount')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-borrow-card-toggle')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-borrow-amount')).toBeNull();
+  });
+
+  it('pre-selects the card modes per the deep-link init', () => {
     renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay' });
 
     expect(screen.getByTestId('stake-manage-stake-amount')).toBeTruthy();
@@ -591,10 +605,10 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
   });
 
-  it('borrow: switching on with existing debt leaves the amount empty', () => {
+  it('borrow: an open card with existing debt starts with an empty amount', () => {
     renderSheet();
 
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(screen.getByTestId('stake-manage-borrow-amount')).toBeTruthy();
     expect(h.launchParams?.usdsToBorrow ?? 0n).toBe(0n);
   });
 
@@ -713,27 +727,28 @@ describe('ManagePositionTakeover', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('disables the mode pills while a card is toggled off (Design QA 2800:91832)', () => {
+  it('disables the mode pills while the borrow card is toggled off (Design QA 2800:91832)', () => {
+    h.existingDebt = 0n;
     renderSheet();
 
-    // Every card starts off: both stake pills are inert.
-    const stakePill = screen.getByTestId('stake-manage-stake-card-mode-stake') as HTMLButtonElement;
-    const withdrawPill = screen.getByTestId('stake-manage-stake-card-mode-withdraw') as HTMLButtonElement;
-    expect(stakePill.disabled).toBe(true);
-    expect(withdrawPill.disabled).toBe(true);
+    // A debt-free position starts with the borrow card off: both pills are inert.
+    const borrowPill = screen.getByTestId('stake-manage-borrow-card-mode-borrow') as HTMLButtonElement;
+    const repayPill = screen.getByTestId('stake-manage-borrow-card-mode-repay') as HTMLButtonElement;
+    expect(borrowPill.disabled).toBe(true);
+    expect(repayPill.disabled).toBe(true);
     // ...and neither reads selected until the card is on.
-    expect(stakePill.getAttribute('aria-pressed')).toBe('false');
-    expect(stakePill.getAttribute('data-state')).toBe('inactive');
+    expect(borrowPill.getAttribute('aria-pressed')).toBe('false');
+    expect(borrowPill.getAttribute('data-state')).toBe('inactive');
 
-    fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
-    expect(stakePill.disabled).toBe(false);
-    expect(withdrawPill.disabled).toBe(false);
-    expect(stakePill.getAttribute('aria-pressed')).toBe('true');
-    expect(stakePill.getAttribute('data-state')).toBe('active');
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(borrowPill.disabled).toBe(false);
+    expect(repayPill.disabled).toBe(false);
+    expect(borrowPill.getAttribute('aria-pressed')).toBe('true');
+    expect(borrowPill.getAttribute('data-state')).toBe('active');
 
-    fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
-    expect(stakePill.disabled).toBe(true);
-    expect(stakePill.getAttribute('data-state')).toBe('inactive');
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(borrowPill.disabled).toBe(true);
+    expect(borrowPill.getAttribute('data-state')).toBe('inactive');
   });
 
   it('holds Confirm on a pending verdict and blocks it, with the reason, on a denial (APP-550)', () => {

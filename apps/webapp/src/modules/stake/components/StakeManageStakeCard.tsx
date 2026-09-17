@@ -22,8 +22,6 @@ import { NO_VALUE } from '@/lib/constants';
 export function StakeManageStakeCard({
   mode,
   onModeChange,
-  enabled,
-  onEnabledChange,
   amount,
   onAmountChange,
   walletBalance,
@@ -41,8 +39,6 @@ export function StakeManageStakeCard({
 }: {
   mode: StakeCardMode;
   onModeChange: (mode: StakeCardMode) => void;
-  enabled: boolean;
-  onEnabledChange: (enabled: boolean) => void;
   amount: bigint;
   onAmountChange: (amount: bigint) => void;
   walletBalance: bigint | undefined;
@@ -102,8 +98,6 @@ export function StakeManageStakeCard({
       ]}
       activeMode={mode}
       onModeChange={onModeChange}
-      enabled={enabled}
-      onEnabledChange={onEnabledChange}
       dataTestId="stake-manage-stake-card"
     >
       {/* Design QA 2800:91832 ("More gap"): 32px between the amount block and

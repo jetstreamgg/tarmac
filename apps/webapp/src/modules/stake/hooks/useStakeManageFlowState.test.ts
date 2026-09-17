@@ -8,9 +8,8 @@ import {
 const base: StakeManageFlowState = initStakeManageFlowState({});
 
 describe('initStakeManageFlowState', () => {
-  it('starts with every card off by default', () => {
+  it('starts with the borrow card off by default', () => {
     expect(base).toEqual({
-      stakeEnabled: false,
       stakeMode: 'stake',
       skyAmount: 0n,
       borrowEnabled: false,
@@ -21,10 +20,7 @@ describe('initStakeManageFlowState', () => {
   });
 
   it('pre-toggles cards per the menu deep-link mapping', () => {
-    expect(initStakeManageFlowState({ stakeCard: 'withdraw' })).toMatchObject({
-      stakeEnabled: true,
-      stakeMode: 'withdraw'
-    });
+    expect(initStakeManageFlowState({ stakeCard: 'withdraw' })).toMatchObject({ stakeMode: 'withdraw' });
     expect(initStakeManageFlowState({ borrowCard: 'repay' })).toMatchObject({
       borrowEnabled: true,
       borrowMode: 'repay'
@@ -33,13 +29,7 @@ describe('initStakeManageFlowState', () => {
 });
 
 describe('stakeManageFlowReducer', () => {
-  it('clears the card amount when its toggle goes off', () => {
-    const withAmount = stakeManageFlowReducer(
-      { ...base, stakeEnabled: true, skyAmount: 5n },
-      { type: 'setStakeEnabled', enabled: false }
-    );
-    expect(withAmount.skyAmount).toBe(0n);
-
+  it('clears the borrow amount when its toggle goes off', () => {
     const withRepay = stakeManageFlowReducer(
       { ...base, borrowEnabled: true, borrowMode: 'repay', usdsAmount: 5n, wipeAll: true },
       { type: 'setBorrowEnabled', enabled: false }
@@ -51,7 +41,6 @@ describe('stakeManageFlowReducer', () => {
   it('clears only that card amount on a segmented mode switch (M21)', () => {
     const state: StakeManageFlowState = {
       ...base,
-      stakeEnabled: true,
       skyAmount: 7n,
       borrowEnabled: true,
       borrowMode: 'repay',

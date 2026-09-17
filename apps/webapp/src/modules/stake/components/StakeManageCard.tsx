@@ -7,9 +7,10 @@ import { cn } from '@/lib/cn';
 
 /**
  * Manage-sheet card shell (redesign comps 1036:213821+, flows UX 1050:21454):
- * a segmented mode control in place of the takeover's step number, plus the
- * enable toggle. Disabled cards collapse to their header row — same
- * temporal-states-of-one-screen model as F4. Mode pills are the design-system
+ * a segmented mode control in place of the takeover's step number, plus an
+ * optional enable toggle (only the borrow card of a debt-free position has
+ * one, Figma 3015:60677 vs 3015:58333). Disabled cards collapse to their
+ * header row — same temporal-states-of-one-screen model as F4. Mode pills are the design-system
  * Tabs chip (Figma 5029:51762) on plain buttons: aria-pressed carries the
  * toggle semantics, data-state drives the recipe's styling contract (same
  * non-Radix reuse as EarnTableFilters). While the card is toggled off the
@@ -22,7 +23,7 @@ export function StakeManageCard<Mode extends string>({
   modes,
   activeMode,
   onModeChange,
-  enabled,
+  enabled = true,
   onEnabledChange,
   toggleDisabled,
   toggleDisabledHint,
@@ -32,8 +33,9 @@ export function StakeManageCard<Mode extends string>({
   modes: { value: Mode; label: ReactNode }[];
   activeMode: Mode;
   onModeChange: (mode: Mode) => void;
-  enabled: boolean;
-  onEnabledChange: (enabled: boolean) => void;
+  enabled?: boolean;
+  /** Omit to render the card without a toggle (always on). */
+  onEnabledChange?: (enabled: boolean) => void;
   /** The switch can't be turned on yet; `toggleDisabledHint` says why (hover/tap). */
   toggleDisabled?: boolean;
   toggleDisabledHint?: ReactNode;
@@ -65,13 +67,15 @@ export function StakeManageCard<Mode extends string>({
             );
           })}
         </div>
-        <StakeCardToggle
-          checked={enabled}
-          onCheckedChange={onEnabledChange}
-          disabled={toggleDisabled}
-          disabledHint={toggleDisabledHint}
-          dataTestId={`${dataTestId}-toggle`}
-        />
+        {onEnabledChange && (
+          <StakeCardToggle
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            disabled={toggleDisabled}
+            disabledHint={toggleDisabledHint}
+            dataTestId={`${dataTestId}-toggle`}
+          />
+        )}
       </div>
       {enabled && children}
     </section>
