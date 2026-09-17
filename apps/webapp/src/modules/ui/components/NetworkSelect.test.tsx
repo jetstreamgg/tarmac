@@ -1,6 +1,6 @@
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NetworkBadge, NetworkSelect, useIsNetworkSelectStatic, useNetworkTitleBadge } from './NetworkSelect';
+import { NetworkBadge, NetworkSelect, useNetworkTitleBadge } from './NetworkSelect';
 import { BP } from '@/hooks/ui/useBreakpoint';
 import { renderHook } from '@testing-library/react';
 
@@ -109,14 +109,7 @@ describe('NetworkSelect', () => {
 
 // The phone-tier stand-in for a static control (1295:20810): the chain named
 // as a title-suffix badge, not a control-shaped pill with nothing to switch.
-describe('NetworkBadge + useIsNetworkSelectStatic', () => {
-  it('is static for one chain or an unswitchable wallet, interactive otherwise', () => {
-    expect(renderHook(() => useIsNetworkSelectStatic([1])).result.current).toBe(true);
-    expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(false);
-    mocks.canSwitchChain = false;
-    expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(true);
-  });
-
+describe('NetworkBadge', () => {
   it('names the product’s chain as a plain badge, never the wallet’s', () => {
     mocks.walletChainId = 42161;
     render(<NetworkBadge chainIds={[1]} dataTestId="badge" />);
@@ -144,7 +137,7 @@ describe('NetworkSelect — needs no router', () => {
 });
 
 // The tier half of the same rule, now that both header builders ask for it
-// here rather than each pairing the breakpoint with `useIsNetworkSelectStatic`.
+// here rather than each pairing the breakpoint with the static-control check.
 describe('useNetworkTitleBadge', () => {
   it('stands in for the control only on a phone with nothing to switch', () => {
     mocks.bpi = BP.sm;
