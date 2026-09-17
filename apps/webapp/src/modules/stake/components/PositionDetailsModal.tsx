@@ -847,11 +847,11 @@ export function PositionDetailsModal({
                     className="text-textSecondary text-xs leading-[18px]"
                   >
                     <Trans>
-                      If the price of the collateral will go down{' '}
+                      If the price of the collateral goes down{' '}
                       <span className="text-text font-circle font-medium">
                         {dropPercent !== null ? `${dropPercent}%` : NO_VALUE} ({formattedLiqPrice})
                       </span>
-                      , you&apos;ll get liquidated. If you want to reduce these risks, add collateral or repay
+                      , you&apos;ll get liquidated. If you want to reduce this risk, add collateral or repay
                       part of your loan.
                     </Trans>
                   </p>
