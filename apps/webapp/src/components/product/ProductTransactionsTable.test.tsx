@@ -100,7 +100,7 @@ describe('ProductTransactionsTable — renderBelowRow', () => {
     expect(screen.queryByTestId('below-2')).toBeNull();
   });
 
-  it('does not fire onRowClick when the below-row content is clicked', () => {
+  it('activates the row from its below-row carrier, unless the content stops propagation', () => {
     const onRowClick = vi.fn();
     render(
       <I18nProvider i18n={i18n}>
@@ -109,13 +109,25 @@ describe('ProductTransactionsTable — renderBelowRow', () => {
           rows={makeRows(2)}
           rowKey={row => row.id}
           onRowClick={onRowClick}
-          renderBelowRow={row => (row.id === '0' ? <button data-testid="below-cta">CTA</button> : null)}
+          renderBelowRow={row =>
+            row.id === '0' ? (
+              <div data-testid="below-body">
+                <button data-testid="below-cta" onClick={event => event.stopPropagation()}>
+                  CTA
+                </button>
+              </div>
+            ) : null
+          }
         />
       </I18nProvider>
     );
 
     fireEvent.click(screen.getByTestId('below-cta'));
     expect(onRowClick).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('below-body'));
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    expect(onRowClick).toHaveBeenCalledWith(expect.objectContaining({ id: '0' }));
   });
 
   it('leaves existing consumers byte-identical when renderBelowRow is omitted', () => {
@@ -174,6 +186,28 @@ describe('ProductTransactionsTable — mobile cards (M5)', () => {
       'card-12',
       'card-13'
     ]);
+  });
+
+  it('hides empty carrier rows and re-pins the last row corners through :has', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={COLUMNS}
+          rows={makeRows(2)}
+          rowKey={row => row.id}
+          rowTestId={row => `row-${row.id}`}
+          renderBelowRow={row => (row.id === '0' ? <div data-testid="below-0">below</div> : null)}
+        />
+      </I18nProvider>
+    );
+    const carrier = screen.getByTestId('below-0').closest('tr') as HTMLTableRowElement;
+    // Every data row gets a carrier; CSS hides the ones whose banner rendered nothing.
+    expect(carrier.className).toContain('[&:not(:has(td>*))]:hidden');
+    // The last data row only rounds when its carrier is empty (CSS-resolved).
+    expect(screen.getByTestId('row-1').className).toContain(
+      '[&:has(+tr>td:empty)>td:first-child]:rounded-bl-[24px]'
+    );
+    expect(screen.getByTestId('row-0').className).not.toContain('rounded-bl-[24px]');
   });
 
   it('renders below-row content after the matching card', () => {

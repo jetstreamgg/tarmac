@@ -148,7 +148,7 @@ describe('StakePositionRowBanner', () => {
     expect(onClaim).toHaveBeenCalled();
   });
 
-  it('stops the click from bubbling to a parent row handler', () => {
+  it('lets the banner body bubble to the row, but not its CTAs', () => {
     h.vault = {
       debtValue: 50n * 10n ** 18n,
       liquidationProximityPercentage: 65,
@@ -163,7 +163,11 @@ describe('StakePositionRowBanner', () => {
       </I18nProvider>
     );
 
-    fireEvent.click(screen.getByTestId('stake-position-warning-banner'));
+    fireEvent.click(screen.getByTestId('stake-warning-stake-cta'));
+    fireEvent.click(screen.getByTestId('stake-warning-repay-cta'));
     expect(parentClick).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('stake-position-warning-banner'));
+    expect(parentClick).toHaveBeenCalledTimes(1);
   });
 });

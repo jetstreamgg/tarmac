@@ -100,6 +100,13 @@ function StateCard({ children }: { children: ReactNode }) {
   );
 }
 
+// Focused rows outline in fgBrand (pagination precedent) instead of the browser default.
+const ROW_FOCUS_CLASS =
+  'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-fgBrand';
+// Piecewise ring in the same color for a row followed by a rendered banner (see usage).
+const BANNER_ROW_FOCUS_CLASS =
+  '[&:has(+tr>td>*):focus-visible]:outline-hidden [&:has(+tr>td>*):focus-visible>td]:shadow-[inset_0_2px_0_0_var(--color-fgBrand)] [&:has(+tr>td>*):focus-visible>td:first-child]:shadow-[inset_2px_2px_0_0_var(--color-fgBrand)] [&:has(+tr>td>*):focus-visible>td:last-child]:shadow-[inset_-2px_2px_0_0_var(--color-fgBrand)]';
+
 export function ProductTransactionsTable<T>({
   columns,
   rows,
@@ -283,15 +290,23 @@ export function ProductTransactionsTable<T>({
                         : undefined
                     }
                     className={cn(
+                      ROW_FOCUS_CLASS,
                       activate && 'cursor-pointer',
                       // A banner carrier row (below) becomes tbody's real last
                       // <tr> and takes the shared table selectors' bottom
                       // corners with it — visibly squaring the last data row
                       // (worst with a single position). Re-pin the radii to the
-                      // last *data* row whenever carriers are in play.
+                      // last *data* row when its carrier rendered nothing; a
+                      // rendered banner is the visible bottom edge instead.
+                      // Hovering the row's banner tints the row too, so the pair reads as one surface.
+                      renderBelowRow && '[&:has(+tr:hover)>td]:bg-bgTertiary',
+                      // A focus outline can't span two <tr>s, so when the banner
+                      // rendered the ring is drawn in pieces: the row's cells take
+                      // the top and sides, the banner the bottom and sides.
+                      renderBelowRow && BANNER_ROW_FOCUS_CLASS,
                       renderBelowRow &&
                         index === pageRows.length - 1 &&
-                        '[&>td:first-child]:rounded-bl-[24px] [&>td:last-child]:rounded-br-[24px]'
+                        '[&:has(+tr>td:empty)>td:first-child]:rounded-bl-[24px] [&:has(+tr>td:empty)>td:last-child]:rounded-br-[24px]'
                     )}
                   >
                     {columns.map(column => (
@@ -300,16 +315,21 @@ export function ProductTransactionsTable<T>({
                   </TableRow>
                   {belowRow && (
                     // Chrome-less carrier row: transparent (the ! outranks the
-                    // row hover tint) and outside the clickable surface. If it
-                    // lands last it takes the last-row corner slot — banners
-                    // are rare and the radius loss is invisible on a
-                    // transparent cell.
-                    <TableRow>
+                    // row hover tint). It activates like the row above so the
+                    // pair acts as one cell; the banner's own CTAs stop
+                    // propagation to keep priority. The banner paints the row
+                    // surface itself (and rounds its own bottom corners when it
+                    // lands last). The banner decides internally whether to
+                    // render, so an empty carrier is hidden — otherwise it
+                    // would double the 2px row spacing.
+                    <TableRow
+                      className={cn('[&:not(:has(td>*))]:hidden', activate && 'cursor-pointer')}
+                      onClick={clickAction(activate)}
+                    >
                       <TableCell
                         colSpan={columns.length}
                         // p-0! also cancels the first column's pl-6 — the banner runs flush (Figma 1036:218966).
                         className="h-auto bg-transparent! p-0!"
-                        onClick={event => event.stopPropagation()}
                       >
                         {belowRow}
                       </TableCell>
