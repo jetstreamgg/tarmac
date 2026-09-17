@@ -21,7 +21,6 @@ export const AppEvents = {
   NETWORK_SWITCH_REQUESTED: 'app_network_switch_requested',
   NETWORK_SWITCH_COMPLETED: 'app_network_switch_completed',
   NETWORK_AUTO_SWITCHED: 'app_network_auto_switched',
-  ERROR_BOUNDARY_TRIGGERED: 'app_error_boundary_triggered',
   ROUTE_ERROR_VIEWED: 'app_route_error_viewed',
   NOT_FOUND_VIEWED: 'app_not_found_viewed',
   CONVERT_BLOCKED: 'app_convert_blocked',

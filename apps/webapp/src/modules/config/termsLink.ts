@@ -14,7 +14,6 @@ type TermsLinkConfig = {
 let cachedTermsLinkConfig: TermsLinkConfig | undefined;
 
 const reportedTermsLinkConfigErrors = new Set<string>();
-const reportedMissingTermsLinkErrors = new Set<string>();
 
 function getReportKey(ctx: ReportContext): string {
   return [ctx.module, ctx.flow, ctx.action, ctx.type].filter(Boolean).join(':');
@@ -57,15 +56,4 @@ export function reportTermsLinkConfigErrorOnce(ctx: ReportContext): void {
 
   reportedTermsLinkConfigErrors.add(reportKey);
   reportError(parseError, ctx);
-}
-
-export function reportMissingTermsLinkOnce(ctx: ReportContext): void {
-  const { primaryTermsLink } = getTermsLinkConfig();
-  if (primaryTermsLink) return;
-
-  const reportKey = getReportKey(ctx);
-  if (reportedMissingTermsLinkErrors.has(reportKey)) return;
-
-  reportedMissingTermsLinkErrors.add(reportKey);
-  reportError(new Error('No terms link found'), ctx);
 }

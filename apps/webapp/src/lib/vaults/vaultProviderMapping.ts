@@ -24,14 +24,6 @@ const PROVIDERS = Object.keys(VAULT_MODULE_BY_PROVIDER) as VaultProvider[];
 /** provider → `vault_module` URL value (for URL builders). */
 export const vaultModuleForProvider = (provider: VaultProvider): string => VAULT_MODULE_BY_PROVIDER[provider];
 
-/** provider → `VaultsIntent` (for detail routing). */
-export const vaultsIntentForProvider = (provider: VaultProvider): VaultsIntent =>
-  INTENT_BY_PROVIDER[provider];
-
-/** `VaultsIntent` → `vault_module` URL value. */
-export const vaultModuleForVaultsIntent = (intent: VaultsIntent): string =>
-  vaultModuleForProvider(providerForVaultsIntent(intent));
-
 /** `VaultsIntent` → provider. Total over known intents. */
 export const providerForVaultsIntent = (intent: VaultsIntent): VaultProvider =>
   PROVIDERS.find(provider => INTENT_BY_PROVIDER[provider] === intent) as VaultProvider;
@@ -43,12 +35,3 @@ export const providerForVaultsIntent = (intent: VaultsIntent): VaultProvider =>
  */
 export const providerForVaultModule = (value: string): VaultProvider | undefined =>
   PROVIDERS.find(provider => VAULT_MODULE_BY_PROVIDER[provider] === value.toLowerCase());
-
-/**
- * `vault_module` value → `VaultsIntent`, or `undefined` for an unrecognised
- * value (so the validator strips it instead of selecting an option).
- */
-export const vaultsIntentForVaultModule = (value: string): VaultsIntent | undefined => {
-  const provider = providerForVaultModule(value);
-  return provider ? INTENT_BY_PROVIDER[provider] : undefined;
-};
