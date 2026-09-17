@@ -1,67 +1,44 @@
 import { useConnection, useChainId } from 'wagmi';
-import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
+import { BatchWriteHookParams } from '../hooks';
 import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdsAddress } from '../generated';
-import { Call, erc20Abi } from 'viem';
-import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
+import { ApproveThenActHook, useApproveThenAct } from '../shared/useApproveThenAct';
 
+/** Mainnet USDS → sUSDS: optional approve → `deposit(amount, user, ref)`. */
 export function useBatchSavingsSupply({
   amount,
-  onMutate = () => null,
-  onSuccess = () => null,
-  onError = () => null,
-  onStart = () => null,
-  enabled: activeTabEnabled = true,
-  shouldUseBatch = true,
-  ref = 0
+  ref = 0,
+  enabled = true,
+  ...flow
 }: BatchWriteHookParams & {
   amount: bigint;
   ref?: number;
-}): BatchWriteHook {
-  const { address: connectedAddress, isConnected } = useConnection();
+}): ApproveThenActHook {
+  const { address } = useConnection();
   const chainId = useChainId();
   const { data: allowance, error: allowanceError } = useSavingsAllowance();
 
-  const hasAllowance = allowance !== undefined && allowance >= amount;
+  const usds = usdsAddress[chainId as keyof typeof usdsAddress];
+  const sUsds = sUsdsAddress[chainId as keyof typeof sUsdsAddress];
 
-  // Calls for the batch transaction
-  const approveCall = getWriteContractCall({
-    to: usdsAddress[chainId as keyof typeof usdsAddress],
-    abi: erc20Abi,
-    functionName: 'approve',
-    args: [sUsdsAddress[chainId as keyof typeof sUsdsAddress], amount]
-  });
-
-  const supplyCall = getWriteContractCall({
-    to: sUsdsAddress[chainId as keyof typeof sUsdsAddress],
-    abi: sUsdsImplementationAbi,
-    functionName: 'deposit',
-    args: [amount, connectedAddress!, ref]
-  });
-
-  const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
-  calls.push(supplyCall);
-
-  const enabled =
-    isConnected &&
-    !!amount &&
-    amount !== 0n &&
-    allowance !== undefined &&
-    activeTabEnabled &&
-    !!connectedAddress;
-
-  return useBatchWriteFlow({
-    calls,
+  return useApproveThenAct({
+    ...flow,
     chainId,
-    enabled,
-    shouldUseBatch,
-    onMutate,
-    onSuccess,
-    onError,
-    onStart,
-    allowanceError: allowanceError
+    enabled: enabled && amount !== 0n,
+    legs: [
+      {
+        approve: { token: usds, spender: sUsds, amount, allowance, allowanceError },
+        calls: [
+          getWriteContractCall({
+            to: sUsds,
+            abi: sUsdsImplementationAbi,
+            functionName: 'deposit',
+            args: [amount, address!, ref]
+          })
+        ]
+      }
+    ]
   });
 }

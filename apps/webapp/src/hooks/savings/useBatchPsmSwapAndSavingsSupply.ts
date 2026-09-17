@@ -1,14 +1,12 @@
 import { useChainId, useConnection } from 'wagmi';
-import { Call, erc20Abi } from 'viem';
 import { math } from '@/utils';
-import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
+import { BatchWriteHookParams } from '../hooks';
 import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { usdcAddress, usdsAddress } from '../generated';
-import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
+import { usdcAddress, usdsAddress, usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
+import { ApproveThenActHook, useApproveThenAct } from '../shared/useApproveThenAct';
 
 /**
  * Mainnet USDC → Sky Savings, in one flow. The savings vault only takes USDS, so a
@@ -38,93 +36,72 @@ import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
  */
 export function useBatchPsmSwapAndSavingsSupply({
   amount,
-  onMutate = () => null,
-  onSuccess = () => null,
-  onError = () => null,
-  onStart = () => null,
-  enabled: paramEnabled = true,
-  shouldUseBatch = true,
-  ref = 0
+  ref = 0,
+  enabled = true,
+  ...flow
 }: BatchWriteHookParams & {
   /** USDC in, at the token's 6 decimals. */
   amount: bigint;
   ref?: number;
-}): BatchWriteHook {
-  const { address: connectedAddress, isConnected } = useConnection();
+}): ApproveThenActHook {
+  const { address } = useConnection();
   const chainId = useChainId();
 
-  const usdcToken = usdcAddress[chainId as keyof typeof usdcAddress];
-  const wrapperAddress = usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress];
+  const usdc = usdcAddress[chainId as keyof typeof usdcAddress];
+  const wrapper = usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress];
+  const usds = usdsAddress[chainId as keyof typeof usdsAddress];
+  const sUsds = sUsdsAddress[chainId as keyof typeof sUsdsAddress];
   // The USDS the wrapper hands back for `amount` USDC at a zero fee — what steps 3
   // and 4 spend.
   const usdsAmount = math.convertUSDCtoWad(amount);
 
-  const { data: usdcSwapAllowance } = useTokenAllowance({
+  const { data: usdcAllowance, error: usdcAllowanceError } = useTokenAllowance({
     chainId,
-    contractAddress: usdcToken,
-    owner: connectedAddress,
-    spender: wrapperAddress
+    contractAddress: usdc,
+    owner: address,
+    spender: wrapper
   });
-  const { data: usdsSupplyAllowance, error: allowanceError } = useSavingsAllowance();
+  const { data: usdsAllowance, error: usdsAllowanceError } = useSavingsAllowance();
 
-  const hasUsdcSwapAllowance = usdcSwapAllowance !== undefined && usdcSwapAllowance >= amount;
-  const hasUsdsSupplyAllowance = usdsSupplyAllowance !== undefined && usdsSupplyAllowance >= usdsAmount;
-
-  const calls: Call[] = [];
-
-  const approveUsdcCall = getWriteContractCall({
-    to: usdcToken,
-    abi: erc20Abi,
-    functionName: 'approve',
-    args: [wrapperAddress, amount]
-  });
-
-  const sellGemCall = getWriteContractCall({
-    to: wrapperAddress,
-    abi: usdsPsmWrapperAbi,
-    functionName: 'sellGem',
-    args: [connectedAddress!, amount]
-  });
-
-  if (!hasUsdcSwapAllowance) calls.push(approveUsdcCall);
-  calls.push(sellGemCall);
-
-  const approveUsdsCall = getWriteContractCall({
-    to: usdsAddress[chainId as keyof typeof usdsAddress],
-    abi: erc20Abi,
-    functionName: 'approve',
-    args: [sUsdsAddress[chainId as keyof typeof sUsdsAddress], usdsAmount]
-  });
-
-  const supplyCall = getWriteContractCall({
-    to: sUsdsAddress[chainId as keyof typeof sUsdsAddress],
-    abi: sUsdsImplementationAbi,
-    functionName: 'deposit',
-    args: [usdsAmount, connectedAddress!, ref]
-  });
-
-  if (!hasUsdsSupplyAllowance) calls.push(approveUsdsCall);
-  calls.push(supplyCall);
-
-  const enabled =
-    paramEnabled &&
-    isConnected &&
-    !!connectedAddress &&
-    !!usdcToken &&
-    !!wrapperAddress &&
-    amount > 0n &&
-    usdcSwapAllowance !== undefined &&
-    usdsSupplyAllowance !== undefined;
-
-  return useBatchWriteFlow({
-    calls,
+  return useApproveThenAct({
+    ...flow,
     chainId,
-    enabled,
-    shouldUseBatch,
-    onMutate,
-    onSuccess,
-    onError,
-    onStart,
-    allowanceError: allowanceError
+    enabled: enabled && amount > 0n && !!usdc && !!wrapper,
+    legs: [
+      {
+        approve: {
+          token: usdc,
+          spender: wrapper,
+          amount,
+          allowance: usdcAllowance,
+          allowanceError: usdcAllowanceError
+        },
+        calls: [
+          getWriteContractCall({
+            to: wrapper,
+            abi: usdsPsmWrapperAbi,
+            functionName: 'sellGem',
+            args: [address!, amount]
+          })
+        ]
+      },
+      {
+        approve: {
+          token: usds,
+          spender: sUsds,
+          amount: usdsAmount,
+          allowance: usdsAllowance,
+          allowanceError: usdsAllowanceError
+        },
+        calls: [
+          getWriteContractCall({
+            to: sUsds,
+            abi: sUsdsImplementationAbi,
+            functionName: 'deposit',
+            args: [usdsAmount, address!, ref]
+          })
+        ]
+      }
+    ]
   });
 }

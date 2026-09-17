@@ -1,74 +1,53 @@
 import { useConnection, useChainId } from 'wagmi';
-import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
+import { BatchWriteHookParams } from '../hooks';
 import { psm3L2Abi, psm3L2Address } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { Call, erc20Abi } from 'viem';
+import { ApproveThenActHook, useApproveThenAct } from '../shared/useApproveThenAct';
 
+/** L2 PSM3: optional approve(assetIn → psm) → `swapExactIn`. */
 export function useBatchPsmSwapExactIn({
   assetIn,
   assetOut,
   amountIn,
   minAmountOut,
   referralCode = 0n,
-  enabled: paramEnabled = true,
-  shouldUseBatch = true,
-  onMutate = () => null,
-  onSuccess = () => null,
-  onError = () => null,
-  onStart = () => null
+  enabled = true,
+  ...flow
 }: BatchWriteHookParams & {
   assetIn: `0x${string}`;
   assetOut: `0x${string}`;
   amountIn: bigint;
   minAmountOut: bigint;
   referralCode?: bigint;
-}): BatchWriteHook {
+}): ApproveThenActHook {
   const chainId = useChainId();
-  const { address, isConnected } = useConnection();
-  const psmAddress = psm3L2Address[chainId as keyof typeof psm3L2Address];
+  const { address } = useConnection();
+  const psm = psm3L2Address[chainId as keyof typeof psm3L2Address];
 
-  // Get the allowance of the input asset to be used by the PSM contract
   const { data: allowance, error: allowanceError } = useTokenAllowance({
     chainId,
     contractAddress: assetIn,
     owner: address,
-    spender: psmAddress
+    spender: psm
   });
 
-  const hasAllowance = allowance !== undefined && allowance >= amountIn;
-
-  // Calls for the batch transaction
-  const approveCall = getWriteContractCall({
-    to: assetIn,
-    abi: erc20Abi,
-    functionName: 'approve',
-    args: [psmAddress, amountIn]
-  });
-
-  const swapExactInCall = getWriteContractCall({
-    to: psmAddress,
-    abi: psm3L2Abi,
-    functionName: 'swapExactIn',
-    args: [assetIn, assetOut, amountIn, minAmountOut, address!, referralCode]
-  });
-
-  const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
-  calls.push(swapExactInCall);
-
-  const enabled = paramEnabled && isConnected && allowance !== undefined && amountIn !== 0n && !!address;
-
-  return useBatchWriteFlow({
-    calls,
-    shouldUseBatch,
+  return useApproveThenAct({
+    ...flow,
     chainId,
-    enabled,
-    onMutate,
-    onSuccess,
-    onError,
-    onStart,
-    allowanceError: allowanceError
+    enabled: enabled && amountIn !== 0n,
+    legs: [
+      {
+        approve: { token: assetIn, spender: psm, amount: amountIn, allowance, allowanceError },
+        calls: [
+          getWriteContractCall({
+            to: psm,
+            abi: psm3L2Abi,
+            functionName: 'swapExactIn',
+            args: [assetIn, assetOut, amountIn, minAmountOut, address!, referralCode]
+          })
+        ]
+      }
+    ]
   });
 }
