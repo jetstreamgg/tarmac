@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
-import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
+import { useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import type { TransactionAnalytics, TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { useLaunchSync } from './useLaunchSync';
 
 /**
  * The live fields an editable modal body keeps in sync after launch. `confirmDisabled`
@@ -75,11 +75,11 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
 
 /**
  * The shared boilerplate every editable transaction-modal body repeats
- * (SavingsModalForm / VaultModalForm / the claim adapters): a stable `onConfirm`
- * over a live `execute` ref, the `updateModalContent` push that keeps the shared
- * modal's confirm gating + handler + wallet summary in sync, and the entry-slot
- * portal that displays the body inside the dialog while its hook host stays mounted
- * (and minimize-surviving) outside it.
+ * (SavingsModalForm / VaultModalForm / the claim adapters): the `useLaunchSync`
+ * push that keeps the shared modal's confirm gating + handler + wallet summary
+ * in sync (entry descriptor included), and the entry-slot portal that displays
+ * the body inside the dialog while its hook host stays mounted (and
+ * minimize-surviving) outside it.
  *
  * Returns `renderInSlot(body)`: portals `body` into the dialog's entry slot when one
  * is mounted, else renders it inline in the hidden background host.
@@ -98,69 +98,41 @@ export function useModalEntryBody({
   usdValue,
   analytics
 }: UseModalEntryBodyParams): (body: ReactNode) => ReactNode {
-  const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
 
-  // `execute` is rebuilt every render; read the latest from a ref so `onConfirm`
-  // is stable and never needs re-pushing.
-  const executeRef = useRef(execute);
-  useEffect(() => {
-    executeRef.current = execute;
-  }, [execute]);
-  const onConfirm = useCallback(() => executeRef.current(), []);
-
-  // Keep the shared modal's confirm gating + handler + wallet summary (+ optional
-  // step labels / toast titles) live. Merged into the entry (never replacing
-  // `content`), so the body stays mounted; bounded to its listed deps, so it can't
-  // loop on provider re-renders. Frozen once the tx leaves IDLE: mid-flight
-  // refetches (allowance after an approve, balances after success) rebuild the
-  // body's steps/summaries, and pushing that state would collapse the executed
-  // step list and amounts on the wallet/status/failure screens (the convert and
-  // stake-claim precedent). Pushes resume when the status resets to IDLE (back
-  // from a failure returns to an editable entry).
-  useEffect(() => {
-    if (txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, {
-      // `confirmDisabled` and `errorMessage` gate/annotate the entry screen via
-      // the entry descriptor and the review stage via the top-level field — same
-      // value, both screens. `confirmLabel` merges only when supplied (bodies
-      // that don't pass it keep their launch-time label); `confirmAction` and
-      // `errorMessage` are always pushed so clearing them (undefined) reliably
-      // restores the normal confirm / drops a stale error.
-      entry: {
-        confirmDisabled,
-        ...(confirmLabel !== undefined ? { confirmLabel } : {}),
-        confirmAction,
-        errorMessage
-      },
+  // `confirmDisabled` and `errorMessage` gate/annotate the entry screen via the
+  // entry descriptor and the review stage via the top-level field — same value,
+  // both screens. `confirmLabel` merges only when supplied (bodies that don't
+  // pass it keep their launch-time label); `confirmAction` and `errorMessage`
+  // are always pushed so clearing them (undefined) reliably restores the normal
+  // confirm / drops a stale error. Memoized: it is a dep of the sync effect.
+  const entry = useMemo(
+    () => ({
       confirmDisabled,
-      errorMessage,
-      onConfirm,
-      ...(transactionContent !== undefined ? { transactionContent } : {}),
-      ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
-      ...(steps !== undefined ? { steps } : {}),
-      ...(toast !== undefined ? { toast } : {}),
-      // Always pushed: `undefined` means "unknown" and must reach the config
-      // (it flips the enhanced-screening path on).
-      usdValue,
-      ...(analytics !== undefined ? { analytics } : {})
-    });
-  }, [
+      ...(confirmLabel !== undefined ? { confirmLabel } : {}),
+      confirmAction,
+      errorMessage
+    }),
+    [confirmDisabled, confirmLabel, confirmAction, errorMessage]
+  );
+
+  // The optional fields merge only when supplied, so a body that doesn't use
+  // steps/toast never clobbers them with `undefined`. `usdValue` is always
+  // pushed: `undefined` means "unknown" and must reach the config (it flips the
+  // enhanced-screening path on).
+  useLaunchSync({
     sessionId,
-    txStatus,
+    execute,
+    entry,
     confirmDisabled,
-    confirmLabel,
-    confirmAction,
     errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
+    ...(transactionContent !== undefined ? { transactionContent } : {}),
+    ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
+    ...(steps !== undefined ? { steps } : {}),
+    ...(toast !== undefined ? { toast } : {}),
     usdValue,
-    analytics,
-    onConfirm,
-    updateModalContent
-  ]);
+    ...(analytics !== undefined ? { analytics } : {})
+  });
 
   // Display inside the dialog when its entry slot is mounted; otherwise render
   // inline in the hidden host (keeps the body — and its engine hook — mounted).

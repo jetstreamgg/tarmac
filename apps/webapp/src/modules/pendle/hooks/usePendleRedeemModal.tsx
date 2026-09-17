@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
 import { useChainId, useChains, useConnection, useSwitchChain } from 'wagmi';
@@ -26,13 +26,13 @@ import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { pendleAnalyticsData } from '@/modules/pendle/lib/pendleAnalyticsData';
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
 import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useLaunchSync } from '@/modules/ui/hooks/useLaunchSync';
 import { PendleRedeem } from '../components/PendleRedeem';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
@@ -43,7 +43,7 @@ import { usePendleSlippageCell } from './usePendleSlippageCell';
  * USDS, or USDC.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig) {
-  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks } = useTransaction();
+  const { launch, isModalOpen, txCallbacks } = useTransaction();
   // Per-instance id so the provider can ignore live updates from sibling cards.
   const sessionId = useId();
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
@@ -187,11 +187,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
 
-  // Indirect onConfirm through a ref — the stored onConfirm can't be
-  // live-updated, but the ref always points at the latest writeHook.execute.
-  const executeRef = useRef<() => void>(() => undefined);
-  executeRef.current = () => writeHook.execute();
-
   // USD notional for the enhanced-screening threshold (APP-517): the valued
   // output leg, live across output-token/quote changes (pushed by the effect
   // below). A non-empty redeem whose leg can't be valued yet (quote or price
@@ -271,6 +266,22 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     };
   }, [quote, selectedOutputToken]);
 
+  // Live after launch — the output token stays changeable, the quote repolls —
+  // and frozen once the flow leaves IDLE: a repolled quote must not rewrite the
+  // blob the signed tx started with, and a drifted `usdValue` could downgrade
+  // the screening tier a retry is gated on (APP-517).
+  const { onConfirm } = useLaunchSync({
+    sessionId,
+    execute: writeHook.execute,
+    transactionContent,
+    errorMessage: prepareErrorMessage,
+    steps,
+    confirmDisabled,
+    analytics,
+    usdValue,
+    toast
+  });
+
   // Wrong chain: switch on click, then open — the Portfolio supply actions'
   // pattern (usePortfolioSupplyActions). The auto flags make the shell toast
   // explain the change; a rejected switch opens nothing and stays retryable.
@@ -328,7 +339,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       steps,
       confirmLabel: t`Claim`,
       confirmDisabled,
-      onConfirm: () => executeRef.current(),
+      onConfirm,
       sessionId,
       analytics
     });
@@ -343,40 +354,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     trackNetworkSwitchCompleted,
     switchChainAsync,
     launch,
+    onConfirm,
     transactionContent,
     prepareErrorMessage,
     steps,
     confirmDisabled,
     sessionId,
-    analytics,
-    usdValue,
-    toast
-  ]);
-
-  useEffect(() => {
-    // Freeze once the flow leaves IDLE (same as useModalEntryBody): the quote
-    // repolls mid-flight and must not rewrite the blob the signed tx started
-    // with — and a drifted `usdValue` could downgrade the screening tier a
-    // retry is gated on (APP-517). Pushes resume when a failure returns to IDLE.
-    if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, {
-      transactionContent,
-      errorMessage: prepareErrorMessage,
-      steps,
-      confirmDisabled,
-      analytics,
-      usdValue,
-      toast
-    });
-  }, [
-    isModalOpen,
-    txStatus,
-    sessionId,
-    updateModalContent,
-    transactionContent,
-    prepareErrorMessage,
-    steps,
-    confirmDisabled,
     analytics,
     usdValue,
     toast

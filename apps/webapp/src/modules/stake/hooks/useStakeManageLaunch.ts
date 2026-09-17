@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useId, useMemo, type ReactNode } from 'react';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -237,12 +237,6 @@ export function useStakeManageLaunch({
   });
   useResetPausedRunOnClose(engine.reset, refetchAllowances);
 
-  // Live execute ref: launch() must never snapshot onConfirm state.
-  const executeRef = useRef(engine.execute);
-  useEffect(() => {
-    executeRef.current = engine.execute;
-  }, [engine.execute]);
-
   // Legs the flow sends when bundled, mirroring the engine's own composition
   // (approvals, then one call per calldata entry). NOT `calls.length`: with
   // bundling off the engine collapses the calldata into a single `multicall`,
@@ -253,8 +247,12 @@ export function useStakeManageLaunch({
   // Keeps the review body live while it is still a review — the fee estimate
   // follows the in-modal bundle toggle, and the rate/delegate/simulation reads
   // it draws from resolve there rather than freezing at Confirm-press.
-  const confirmContent = useStakeConfirmContent({
+  // The launch's `onConfirm` is the sync's stable wrapper over the live engine
+  // `execute` — launch() must never snapshot it (landmine #2): the engine hook
+  // re-renders between launch and the user's Confirm click.
+  const { content: confirmContent, onConfirm } = useStakeConfirmContent({
     sessionId,
+    execute: engine.execute,
     calls: engine.calls ?? [],
     isBatch: !!engine.isBatch,
     legCount,
@@ -347,7 +345,7 @@ export function useStakeManageLaunch({
       transactionContent: confirmContent,
       transactionScreenContent,
       steps,
-      onConfirm: () => executeRef.current(),
+      onConfirm,
       onSuccess,
       stakeData
     });
@@ -373,6 +371,7 @@ export function useStakeManageLaunch({
     usdValue,
     sessionId,
     confirmContent,
+    onConfirm,
     transactionScreenContent,
     steps,
     onSuccess
