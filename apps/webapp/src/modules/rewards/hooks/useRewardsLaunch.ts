@@ -1,11 +1,20 @@
 import { useMemo } from 'react';
-import { useChainId } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { type Token, useBatchRewardsSupply, useRewardsWithdraw } from '@/hooks';
+import {
+  type Token,
+  getWriteContractCall,
+  useApproveThenAct,
+  useRewardsWithdraw,
+  useTokenAllowance,
+  ZERO_ADDRESS
+} from '@/hooks';
+import { usdsSkyRewardAbi } from '@/hooks/generated';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepsFromPlan } from '@/modules/ui/components/transactionStepsModel';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
-import { useApproveSteps } from '@/modules/ui/hooks/useApproveSteps';
 
 export type RewardsLaunchFlow = 'supply' | 'withdraw';
 
@@ -21,15 +30,9 @@ export interface RewardsEngineParams {
 export type UseRewardsLaunchResult = EngineLaunchResult;
 
 /**
- * The seam between the redesigned rewards modal and the (unmodified)
- * StakingRewards engine hooks — the rewards analogue of `useVaultLaunch`.
- * Routes a flow + amount to the correct engine, spreads the TransactionContext
- * `txCallbacks` in, and derives the step labels:
- *  - supply   → `useBatchRewardsSupply` (optional approve → `stake(amount, ref)`)
- *  - withdraw → `useRewardsWithdraw` (`withdraw(amount)`)
- *
- * The engines own all calldata + the allowance derivation; the allowance read
- * here is READ ONLY and only labels the approve step.
+ * The seam between the rewards modal and the engines:
+ *  - supply   → approve? → `stake(amount, ref)` (every farm shares the ABI)
+ *  - withdraw → `useRewardsWithdraw` (`withdraw(amount)`, a plain write)
  */
 export function useRewardsLaunch({
   flow,
@@ -38,51 +41,53 @@ export function useRewardsLaunch({
   amount
 }: RewardsEngineParams): UseRewardsLaunchResult {
   const { txCallbacks } = useTransaction();
+  const { address } = useConnection();
   const chainId = useChainId();
-
   const shouldUseBatch = useShouldUseBatch();
 
   const isSupply = flow === 'supply';
-  const supplyTokenAddress = supplyToken.address[chainId];
+  const token = supplyToken.address[chainId];
   const symbol = supplyToken.symbol;
 
-  // READ ONLY — labels the approve step only (elided when the allowance already
-  // covers the amount). The approve/stake calls and their allowance derivation
-  // live entirely inside useBatchRewardsSupply.
-  const supplySteps = useApproveSteps({
-    token: supplyToken,
+  const { data: allowance, error: allowanceError } = useTokenAllowance({
+    chainId,
+    contractAddress: token,
     spender: contractAddress,
-    amount,
-    enabled: isSupply,
-    action: t`Supply ${symbol}`
+    owner: address
   });
 
-  // Both engines are called unconditionally (hooks rules) and gated by
-  // `enabled` to the active flow.
-  const supplyHook = useBatchRewardsSupply({
-    contractAddress,
-    supplyTokenAddress,
-    amount,
-    ref: REFERRAL_CODE,
-    enabled: isSupply,
+  const supplyHook = useApproveThenAct({
+    chainId,
+    enabled: isSupply && amount !== 0n && address !== ZERO_ADDRESS,
     shouldUseBatch,
+    legs: [
+      {
+        approve: { token, spender: contractAddress, amount, allowance, allowanceError },
+        calls:
+          token && contractAddress
+            ? [
+                getWriteContractCall({
+                  to: contractAddress,
+                  abi: usdsSkyRewardAbi,
+                  functionName: 'stake',
+                  args: [amount, REFERRAL_CODE]
+                })
+              ]
+            : []
+      }
+    ],
     ...txCallbacks
   });
-  const withdrawHook = useRewardsWithdraw({
-    contractAddress,
-    amount,
-    enabled: !isSupply,
-    ...txCallbacks
-  });
+  const withdrawHook = useRewardsWithdraw({ contractAddress, amount, enabled: !isSupply, ...txCallbacks });
 
-  const activeHook = isSupply ? supplyHook : withdrawHook;
-
-  // Step labels mirror the engine's call count so the indicator advances in
-  // lockstep.
-  const steps = useMemo<string[]>(
-    () => (isSupply ? supplySteps : [t`Withdraw ${symbol}`]),
-    [isSupply, supplySteps, symbol]
+  const plan = supplyHook.plan;
+  const steps = useMemo<TransactionStep[]>(
+    () =>
+      isSupply
+        ? stepsFromPlan(plan, [{ approve: t`Approve ${symbol}`, action: t`Supply ${symbol}` }])
+        : [t`Withdraw ${symbol}`],
+    [isSupply, plan, symbol]
   );
 
-  return toLaunchResult(activeHook, steps);
+  return toLaunchResult(isSupply ? supplyHook : withdrawHook, steps);
 }

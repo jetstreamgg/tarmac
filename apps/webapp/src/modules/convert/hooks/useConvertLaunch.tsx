@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import { useCallback, useId, useMemo } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatNumber } from '@/utils';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
+import { useLaunchSync } from '@/modules/ui/hooks/useLaunchSync';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
@@ -49,15 +49,15 @@ export interface UseConvertLaunchResult {
  *
  * Review-first shape (the Pendle-redeem precedent): the swap form lives on the
  * page and stays mounted under the overlay, so the config carries only the
- * read-only `transactionContent` — no `entry`, no `backgroundContent`. While the
- * modal is open, `updateModalContent` keeps the confirm gating live.
+ * read-only `transactionContent` — no `entry`, no `backgroundContent`.
+ * `useLaunchSync` keeps the confirm gating + preview live until Confirm fires.
  */
 export function useConvertLaunch({
   direction,
   amount,
   onSuccess
 }: UseConvertLaunchParams): UseConvertLaunchResult {
-  const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
+  const { launch: launchModal, txCallbacks } = useTransaction();
   // Per-instance id so the provider ignores live updates from stale launches.
   const sessionId = useId();
   const chainId = useChainId();
@@ -129,11 +129,6 @@ export function useConvertLaunch({
     enabled: amount > 0n
   });
 
-  // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
-  // but the ref always points at the latest engine execute.
-  const executeRef = useRef<() => void>(() => undefined);
-  executeRef.current = () => conversion.execute();
-
   // Engine reads (allowance / liquidity / halted flags) refetch on success before
   // the page-level refetch (balances + form reset) runs.
   const { mutatePocketBalance } = conversion;
@@ -202,6 +197,21 @@ export function useConvertLaunch({
     [originSymbol, targetSymbol, amount, conversion.targetAmount, originDecimals, targetDecimals]
   );
 
+  // Keep the open modal's gating + preview live while it still sits on the
+  // review screen (amounts can't change mid-review — the form is under the
+  // overlay — but prepared/allowance state can). Frozen once Confirm fires: the
+  // post-success form reset must not blank the executed amounts on the
+  // wallet/status screens.
+  const { onConfirm } = useLaunchSync({
+    sessionId,
+    execute: conversion.execute,
+    transactionContent,
+    transactionScreenContent,
+    confirmDisabled,
+    errorMessage,
+    steps
+  });
+
   const launch = useCallback(() => {
     launchModal({
       title: t`Review conversion`,
@@ -219,7 +229,7 @@ export function useConvertLaunch({
       confirmLabel: t`Confirm`,
       confirmDisabled,
       errorMessage,
-      onConfirm: () => executeRef.current(),
+      onConfirm,
       onSuccess: handleSuccess,
       sessionId,
       // Both legs are $1-pegged (USDC/USDS); the amount is fixed at launch
@@ -251,6 +261,7 @@ export function useConvertLaunch({
     });
   }, [
     launchModal,
+    onConfirm,
     chainId,
     amountLabel,
     targetSymbol,
@@ -266,32 +277,6 @@ export function useConvertLaunch({
     amount,
     originDecimals,
     conversion.isBatch
-  ]);
-
-  // Keep the open modal's gating + preview live while it still sits on the
-  // review screen (amounts can't change mid-review — the form is under the
-  // overlay — but prepared/allowance state can). Once Confirm fires the content
-  // freezes: the post-success form reset must not blank the executed amounts
-  // on the wallet/status screens.
-  useEffect(() => {
-    if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, {
-      transactionContent,
-      transactionScreenContent,
-      confirmDisabled,
-      errorMessage,
-      steps
-    });
-  }, [
-    isModalOpen,
-    txStatus,
-    sessionId,
-    updateModalContent,
-    transactionContent,
-    transactionScreenContent,
-    confirmDisabled,
-    errorMessage,
-    steps
   ]);
 
   return { launch, conversion, steps, locked, restore };

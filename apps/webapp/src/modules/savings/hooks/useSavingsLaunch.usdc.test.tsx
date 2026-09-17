@@ -163,7 +163,7 @@ vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
   useUsdsPsmWrapperHalted: () => ({ data: h.halted })
 }));
 
-import { TOKENS, useBatchPsmSwapAndSavingsSupply } from '@/hooks';
+import { TOKENS } from '@/hooks';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
 const AMOUNT = parseUnits('10', 6); // 10 USDC — 6 decimals, everywhere
@@ -192,13 +192,6 @@ function captureOrchestratorCalls(amount: bigint, ref?: number): RawCall[] {
   return calls;
 }
 
-function captureEngineCalls(amount: bigint, ref?: number): RawCall[] {
-  const { unmount } = renderHook(() => useBatchPsmSwapAndSavingsSupply({ amount, ref, enabled: true }));
-  const calls = h.capturedCalls;
-  unmount();
-  return calls;
-}
-
 describe('useSavingsLaunch — mainnet USDC swap-and-supply calldata parity', () => {
   beforeEach(() => {
     h.capturedCalls = [];
@@ -215,9 +208,6 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply calldata parity', ()
 
   it('matches the engine with NO allowances (approve-USDC, sellGem, approve-USDS, deposit)', () => {
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    const engine = captureEngineCalls(AMOUNT, REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'sellGem', 'approve', 'deposit']);
 
     // approve USDC -> the PSM wrapper, at the 6-dec input amount
@@ -239,9 +229,6 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply calldata parity', ()
   it('matches the engine WITH the USDC allowance, NO USDS allowance (sellGem, approve-USDS, deposit)', () => {
     h.usdcAllowance = HAS_ALLOWANCE;
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    const engine = captureEngineCalls(AMOUNT, REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['sellGem', 'approve', 'deposit']);
   });
 
@@ -249,9 +236,6 @@ describe('useSavingsLaunch — mainnet USDC swap-and-supply calldata parity', ()
     h.usdcAllowance = HAS_ALLOWANCE;
     h.usdsAllowance = HAS_ALLOWANCE;
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    const engine = captureEngineCalls(AMOUNT, REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['sellGem', 'deposit']);
   });
 

@@ -3,9 +3,11 @@ import { wadToFloat } from '../lib/stakeUsdNotional';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
-  useBatchStakeMulticall,
+  stakeMulticallLegs,
+  useApproveThenAct,
   useRewardContractTokens,
   useStakeSkyAllowance,
+  useStakeUsdsAllowance,
   useStakeUrnSelectedRewardContract,
   useStakeUrnSelectedVoteDelegate,
   useTransactionFlow,
@@ -169,17 +171,24 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
     wipeAll: false
   });
 
-  // READ ONLY — labels the Approve step; the engine derives its own approve.
-  const { data: skyAllowance } = useStakeSkyAllowance();
+  const { data: skyAllowance, error: skyAllowanceError } = useStakeSkyAllowance();
+  const { data: usdsAllowance, error: usdsAllowanceError } = useStakeUsdsAllowance();
   const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
 
   // Legacy StakeModuleWidget/index.tsx:205 (the USDS leg is always zero here).
   const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);
 
-  const restakeEngine = useBatchStakeMulticall({
-    calldata,
-    skyAmount: lockAmount,
-    usdsAmount,
+  const restakeEngine = useApproveThenAct({
+    chainId,
+    legs: stakeMulticallLegs({
+      chainId,
+      calldata,
+      skyAmount: lockAmount,
+      usdsAmount,
+      skyAllowance: { allowance: skyAllowance, allowanceError: skyAllowanceError },
+      usdsAllowance: { allowance: usdsAllowance, allowanceError: usdsAllowanceError },
+      shouldUseBatch
+    }),
     shouldUseBatch,
     enabled: enabled && restakeAvailable && calldata.length > 0,
     ...txCallbacks

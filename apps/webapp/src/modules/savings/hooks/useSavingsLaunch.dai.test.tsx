@@ -168,7 +168,7 @@ vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
   useUsdsPsmWrapperHalted: () => ({ data: 0n })
 }));
 
-import { TOKENS, useBatchUpgradeAndSavingsSupply } from '@/hooks';
+import { TOKENS } from '@/hooks';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
 const AMOUNT = parseUnits('10', 18);
@@ -196,13 +196,6 @@ function captureOrchestratorCalls(amount: bigint, ref?: number): RawCall[] {
   return calls;
 }
 
-function captureEngineCalls(amount: bigint, ref?: number): RawCall[] {
-  const { unmount } = renderHook(() => useBatchUpgradeAndSavingsSupply({ amount, ref, enabled: true }));
-  const calls = h.capturedCalls;
-  unmount();
-  return calls;
-}
-
 describe('useSavingsLaunch — mainnet DAI upgrade-and-supply calldata parity', () => {
   beforeEach(() => {
     h.capturedCalls = [];
@@ -218,11 +211,6 @@ describe('useSavingsLaunch — mainnet DAI upgrade-and-supply calldata parity', 
     h.daiAllowance = 0n;
     h.usdsAllowance = 0n;
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    h.daiAllowance = 0n;
-    h.usdsAllowance = 0n;
-    const engine = captureEngineCalls(AMOUNT, REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'daiToUsds', 'approve', 'deposit']);
 
     // approve DAI -> daiUsds
@@ -244,11 +232,6 @@ describe('useSavingsLaunch — mainnet DAI upgrade-and-supply calldata parity', 
     h.daiAllowance = HAS_ALLOWANCE;
     h.usdsAllowance = 0n;
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    h.daiAllowance = HAS_ALLOWANCE;
-    h.usdsAllowance = 0n;
-    const engine = captureEngineCalls(AMOUNT, REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['daiToUsds', 'approve', 'deposit']);
   });
 
@@ -256,11 +239,6 @@ describe('useSavingsLaunch — mainnet DAI upgrade-and-supply calldata parity', 
     h.daiAllowance = 0n;
     h.usdsAllowance = HAS_ALLOWANCE;
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    h.daiAllowance = 0n;
-    h.usdsAllowance = HAS_ALLOWANCE;
-    const engine = captureEngineCalls(AMOUNT, REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'daiToUsds', 'deposit']);
   });
 
@@ -268,11 +246,6 @@ describe('useSavingsLaunch — mainnet DAI upgrade-and-supply calldata parity', 
     h.daiAllowance = HAS_ALLOWANCE;
     h.usdsAllowance = HAS_ALLOWANCE;
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    h.daiAllowance = HAS_ALLOWANCE;
-    h.usdsAllowance = HAS_ALLOWANCE;
-    const engine = captureEngineCalls(AMOUNT, REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch.map(c => c.functionName)).toEqual(['daiToUsds', 'deposit']);
   });
 
@@ -307,9 +280,7 @@ describe('useSavingsLaunch — landmine #1: dual allowance derivation stays in t
     h.daiAllowance = 0n;
     h.usdsAllowance = 0n;
     const orch = captureOrchestratorCalls(AMOUNT, REF);
-    const engine = captureEngineCalls(AMOUNT, REF);
-    // The orchestrator never constructs, reorders, or re-derives approve calls.
-    expect(orch.map(c => c.functionName)).toEqual(engine.map(c => c.functionName));
+    expect(orch.map(c => c.functionName)).toEqual(['approve', 'daiToUsds', 'approve', 'deposit']);
   });
 });
 

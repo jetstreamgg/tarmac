@@ -1,8 +1,6 @@
-import { useCallback, useId } from 'react';
-import { t } from '@lingui/core/macro';
 import { type Token } from '@/hooks';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
+import { useEarnModal, type UseEarnModalOptions } from '@/modules/ui/hooks/useEarnModal';
 import { VaultModalForm, type VaultModalPreset } from '../components/VaultModalForm';
 
 /** Per-vault inputs the launcher needs to open the modal for a specific vault. */
@@ -16,89 +14,40 @@ export type VaultModalArgs = {
   netRate?: number;
 };
 
+const productName = (args: VaultModalArgs) => args.vaultName;
+const form: UseEarnModalOptions<VaultModalArgs, VaultModalPreset>['form'] = ({
+  sessionId,
+  flow,
+  args,
+  preset
+}) => (
+  <VaultModalForm
+    sessionId={sessionId}
+    flow={flow}
+    vaultAddress={args.vaultAddress}
+    assetToken={args.assetToken}
+    vaultName={args.vaultName}
+    netRate={args.netRate}
+    preset={preset}
+  />
+);
+
 type UseVaultModalOptions = {
   /** Fires after a successful supply/withdraw — refetch the position/balances. */
   onSuccess?: () => void;
 };
 
 /**
- * Reusable trigger for the editable vault supply/withdraw modal — the vault
- * analogue of `useSavingsModal`. Any surface (the vault position card, the
- * Portfolio cards, …) calls this instead of re-declaring the launch config. Each
- * opener mints its own session so sibling modals never cross-talk.
- *
- * Unlike savings (a singleton product), vaults are many, so the per-vault inputs
- * are passed to `openSupply`/`openWithdraw` at call time (not hook time) — the
- * same launcher can open the modal for any vault.
+ * Reusable trigger for the editable vault supply/withdraw modal. Vaults are
+ * many, so the per-vault inputs are passed to `openSupply`/`openWithdraw` at
+ * call time — the same launcher can open the modal for any vault. Morpho/Sky
+ * vaults are mainnet-only — the modal is guarded off any L2 (APP-528).
  */
 export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
-  const { launch } = useTransaction();
-  const supplySessionId = useId();
-  const withdrawSessionId = useId();
-
-  const openSupply = useCallback(
-    (args: VaultModalArgs, preset?: VaultModalPreset) => {
-      launch({
-        title: t`Supply to ${args.vaultName}`,
-        transactionTitle: t`Confirm in the wallet`,
-        sessionId: supplySessionId,
-        reviewTitle: t`Review supply`,
-        entry: { confirmLabel: t`Review`, confirmDisabled: true },
-        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
-        usdValue: 0,
-        // Morpho/Sky vaults are mainnet-only — guard the modal off any L2 (APP-528).
-        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-        confirmLabel: t`Confirm`,
-        // The editable body lives outside the dialog (hidden host) so its in-flight
-        // hook survives minimize; it portals its inputs into the modal's entry slot.
-        backgroundContent: (
-          <VaultModalForm
-            sessionId={supplySessionId}
-            flow="supply"
-            vaultAddress={args.vaultAddress}
-            assetToken={args.assetToken}
-            vaultName={args.vaultName}
-            netRate={args.netRate}
-            preset={preset}
-          />
-        ),
-        onConfirm: () => {},
-        onSuccess
-      });
-    },
-    [launch, supplySessionId, onSuccess]
-  );
-
-  const openWithdraw = useCallback(
-    (args: VaultModalArgs, preset?: VaultModalPreset) => {
-      launch({
-        title: t`Withdraw from ${args.vaultName}`,
-        transactionTitle: t`Confirm in the wallet`,
-        sessionId: withdrawSessionId,
-        reviewTitle: t`Review withdrawal`,
-        entry: { confirmLabel: t`Review`, confirmDisabled: true },
-        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
-        usdValue: 0,
-        // Morpho/Sky vaults are mainnet-only — guard the modal off any L2 (APP-528).
-        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-        confirmLabel: t`Confirm`,
-        backgroundContent: (
-          <VaultModalForm
-            sessionId={withdrawSessionId}
-            flow="withdraw"
-            vaultAddress={args.vaultAddress}
-            assetToken={args.assetToken}
-            vaultName={args.vaultName}
-            netRate={args.netRate}
-            preset={preset}
-          />
-        ),
-        onConfirm: () => {},
-        onSuccess
-      });
-    },
-    [launch, withdrawSessionId, onSuccess]
-  );
-
-  return { openSupply, openWithdraw };
+  return useEarnModal<VaultModalArgs, VaultModalPreset>({
+    productName,
+    supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+    form,
+    onSuccess
+  });
 }

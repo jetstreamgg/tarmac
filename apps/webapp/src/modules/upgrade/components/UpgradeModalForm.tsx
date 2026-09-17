@@ -3,14 +3,8 @@ import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import {
-  TOKENS,
-  useMkrSkyFee,
-  useDebounce,
-  useSkyPrice,
-  useTokenBalance,
-  type UpgradeSourceToken
-} from '@/hooks';
+import { TOKENS, useMkrSkyFee, useDebounce, useSkyPrice, useTokenBalance } from '@/hooks';
+import type { UpgradeSourceToken } from '../hooks/useUpgradeLaunch';
 import { formatNumber, math } from '@/utils';
 import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { Text } from '@/modules/layout/components/Typography';

@@ -11,7 +11,6 @@ export * from './rateComparison';
 export * from './useCurvePoolData';
 export * from './useCurveQuote';
 export * from './useCurveAllowance';
-export * from './useBatchCurveSwap';
 export * from './useCurveRate';
 
 // Provider implementations

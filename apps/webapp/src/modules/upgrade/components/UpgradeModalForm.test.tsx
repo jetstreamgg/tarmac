@@ -83,7 +83,7 @@ import { UpgradeModalForm } from './UpgradeModalForm';
 import { stampDestination } from '@/modules/analytics/lib/destination';
 import { TOKENS } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import type { UpgradeSourceToken } from '@/hooks';
+import type { UpgradeSourceToken } from '../hooks/useUpgradeLaunch';
 
 const formTree = (initialToken?: UpgradeSourceToken) => (
   <I18nProvider i18n={i18n}>

@@ -155,7 +155,7 @@ vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
   useUsdsPsmWrapperHalted: () => ({ data: 0n })
 }));
 
-import { TOKENS, useBatchPsmSwapExactIn, useBatchPsmSwapExactOut, psm3L2Address } from '@/hooks';
+import { TOKENS, psm3L2Address } from '@/hooks';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
 // Specific-amount withdraw: the user wants AMOUNT_OUT of the origin token out.
@@ -204,22 +204,6 @@ function captureMaxWithdrawOrchestrator(ref?: number): RawCall[] {
   return calls;
 }
 
-function captureMaxWithdrawEngine(ref?: number): RawCall[] {
-  const { unmount } = renderHook(() =>
-    useBatchPsmSwapExactIn({
-      assetIn: TOKENS.susds.address[BASE],
-      assetOut: TOKENS.usds.address[BASE],
-      amountIn: SUSDS_BALANCE,
-      minAmountOut: MIN_OUT_FOR_ALL,
-      referralCode: ref ? BigInt(ref) : undefined,
-      enabled: true
-    })
-  );
-  const calls = h.capturedCalls;
-  unmount();
-  return calls;
-}
-
 // --- specific-amount withdraw (swapExactOut, sUSDS → origin) ----------------
 
 function captureWithdrawOrchestrator(ref?: number): RawCall[] {
@@ -238,22 +222,6 @@ function captureWithdrawOrchestrator(ref?: number): RawCall[] {
   return calls;
 }
 
-function captureWithdrawEngine(ref?: number): RawCall[] {
-  const { unmount } = renderHook(() =>
-    useBatchPsmSwapExactOut({
-      assetIn: TOKENS.susds.address[BASE],
-      assetOut: TOKENS.usds.address[BASE],
-      amountOut: AMOUNT_OUT,
-      maxAmountIn: MAX_AMOUNT_IN,
-      referralCode: ref ? BigInt(ref) : undefined,
-      enabled: true
-    })
-  );
-  const calls = h.capturedCalls;
-  unmount();
-  return calls;
-}
-
 describe('useSavingsLaunch — L2 PSM withdraw calldata parity (max → swapExactIn)', () => {
   beforeEach(() => {
     h.capturedCalls = [];
@@ -265,10 +233,6 @@ describe('useSavingsLaunch — L2 PSM withdraw calldata parity (max → swapExac
   it('routes byte-identical calldata to the engine WITHOUT an existing allowance (approve + swapExactIn)', () => {
     h.allowance = 0n;
     const orch = captureMaxWithdrawOrchestrator(REF);
-    h.allowance = 0n;
-    const engine = captureMaxWithdrawEngine(REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
 
     expect(orch).toHaveLength(2);
     // approve targets sUSDS (the assetIn for a withdraw), spender psm3L2.
@@ -289,10 +253,6 @@ describe('useSavingsLaunch — L2 PSM withdraw calldata parity (max → swapExac
   it('routes byte-identical calldata WITH an existing allowance (swapExactIn only)', () => {
     h.allowance = HAS_ALLOWANCE;
     const orch = captureMaxWithdrawOrchestrator(REF);
-    h.allowance = HAS_ALLOWANCE;
-    const engine = captureMaxWithdrawEngine(REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch).toHaveLength(1);
     expect(orch[0].functionName).toBe('swapExactIn');
     expect(normalize(orch[0]).to).toBe(PSM);
@@ -319,10 +279,6 @@ describe('useSavingsLaunch — L2 PSM withdraw calldata parity (specific → swa
   it('routes byte-identical calldata to the engine WITHOUT an existing allowance (approve + swapExactOut)', () => {
     h.allowance = 0n;
     const orch = captureWithdrawOrchestrator(REF);
-    h.allowance = 0n;
-    const engine = captureWithdrawEngine(REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
 
     expect(orch).toHaveLength(2);
     // approve targets sUSDS (the assetIn), approving the max-in ceiling.
@@ -343,10 +299,6 @@ describe('useSavingsLaunch — L2 PSM withdraw calldata parity (specific → swa
   it('routes byte-identical calldata WITH an existing allowance (swapExactOut only)', () => {
     h.allowance = HAS_ALLOWANCE;
     const orch = captureWithdrawOrchestrator(REF);
-    h.allowance = HAS_ALLOWANCE;
-    const engine = captureWithdrawEngine(REF);
-
-    expect(orch.map(normalize)).toEqual(engine.map(normalize));
     expect(orch).toHaveLength(1);
     expect(orch[0].functionName).toBe('swapExactOut');
     expect(normalize(orch[0]).to).toBe(PSM);
@@ -386,9 +338,7 @@ describe('useSavingsLaunch — L2 withdraw landmine #1: approve/allowance deriva
   it('includes the approve only because the engine derived it, in the engine ordering (specific)', () => {
     h.allowance = 0n;
     const orch = captureWithdrawOrchestrator(REF);
-    const engine = captureWithdrawEngine(REF);
     expect(orch.map(c => c.functionName)).toEqual(['approve', 'swapExactOut']);
-    expect(orch.map(c => c.functionName)).toEqual(engine.map(c => c.functionName));
   });
 });
 

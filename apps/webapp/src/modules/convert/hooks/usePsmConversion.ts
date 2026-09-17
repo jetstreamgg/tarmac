@@ -2,9 +2,7 @@ import type { Call } from 'viem';
 import {
   psm3L2Address,
   usdsPsmWrapperAddress,
-  useBatchPsmSwapExactIn,
-  useBatchUsdsPsmWrapperBuyGem,
-  useBatchUsdsPsmWrapperSellGem,
+  useApproveThenAct,
   useIsBatchSupported,
   usePsmLiquidity,
   usePsmPocketBalance,
@@ -15,6 +13,7 @@ import {
   useUsdsPsmWrapperTout
 } from '@/hooks';
 import type { BatchWriteHookParams } from '@/hooks';
+import { psm3SwapExactInLeg, psmWrapperBuyGemLeg, psmWrapperSellGemLeg } from '@/hooks/psm/psmLegs';
 import { isL2ChainId, math } from '@/utils';
 import { getTokenDecimals } from '@/hooks';
 import { useMemo } from 'react';
@@ -104,7 +103,11 @@ export function usePsmConversion({
     ? psm3L2Address[chainId as keyof typeof psm3L2Address]
     : usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress];
 
-  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
+  const {
+    data: allowance,
+    error: allowanceError,
+    mutate: mutateAllowance
+  } = useTokenAllowance({
     chainId,
     contractAddress: originToken?.address,
     owner: address,
@@ -182,44 +185,47 @@ export function usePsmConversion({
   const hookEnabled =
     paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;
 
-  const l2SwapExactIn = useBatchPsmSwapExactIn({
-    amountIn: execution.l2AmountIn,
-    assetIn: originToken?.address as `0x${string}`,
-    assetOut: targetToken?.address as `0x${string}`,
-    minAmountOut: execution.l2MinAmountOut,
-    referralCode: referralCode ? BigInt(referralCode) : undefined,
+  // One engine, the route picked by chain + direction: L2 psm3 `swapExactIn`,
+  // mainnet wrapper `sellGem` (USDC → USDS) or `buyGem` (USDS → USDC).
+  const read = { allowance, allowanceError };
+  const leg = isL2
+    ? psm3SwapExactInLeg({
+        chainId,
+        address,
+        assetIn: originToken?.address as `0x${string}`,
+        assetOut: targetToken?.address as `0x${string}`,
+        amountIn: execution.l2AmountIn,
+        minAmountOut: execution.l2MinAmountOut,
+        referralCode: referralCode ? BigInt(referralCode) : undefined,
+        ...read
+      })
+    : direction === 'USDC_TO_USDS'
+      ? psmWrapperSellGemLeg({
+          chainId,
+          gem: originToken?.address,
+          recipient: address,
+          gemAmt: execution.mainnetGemAmt,
+          ...read
+        })
+      : psmWrapperBuyGemLeg({
+          chainId,
+          usds: originToken?.address,
+          recipient: address,
+          gemAmt: execution.mainnetGemAmt,
+          usdsAmountInWad: execution.mainnetUsdsAmountInWad,
+          ...read
+        });
+
+  const activeHook = useApproveThenAct({
+    legs: [leg],
+    chainId,
     shouldUseBatch: effectiveShouldUseBatch,
-    enabled: hookEnabled && isL2,
+    enabled: hookEnabled && execution.mainnetGemAmt !== 0n,
     onMutate,
     onSuccess,
     onError,
     onStart
   });
-
-  const mainnetSellGem = useBatchUsdsPsmWrapperSellGem({
-    gemAmt: execution.mainnetGemAmt,
-    chainIdOverride: chainId,
-    shouldUseBatch: effectiveShouldUseBatch,
-    enabled: hookEnabled && !isL2 && direction === 'USDC_TO_USDS',
-    onMutate,
-    onSuccess,
-    onError,
-    onStart
-  });
-
-  const mainnetBuyGem = useBatchUsdsPsmWrapperBuyGem({
-    gemAmt: execution.mainnetGemAmt,
-    usdsAmountInWad: execution.mainnetUsdsAmountInWad,
-    chainIdOverride: chainId,
-    shouldUseBatch: effectiveShouldUseBatch,
-    enabled: hookEnabled && !isL2 && direction === 'USDS_TO_USDC',
-    onMutate,
-    onSuccess,
-    onError,
-    onStart
-  });
-
-  const activeHook = isL2 ? l2SwapExactIn : direction === 'USDC_TO_USDS' ? mainnetSellGem : mainnetBuyGem;
 
   return {
     direction,

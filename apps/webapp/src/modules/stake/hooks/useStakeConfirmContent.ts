@@ -1,8 +1,7 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { Call } from 'viem';
 import { getCallsKey } from '@/hooks/shared/networkFee';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { useLaunchSync } from '@/modules/ui/hooks/useLaunchSync';
 
 /** What a `transactionContent` render function receives — the engine's live routing. */
 export interface StakeLaunchContentContext {
@@ -35,10 +34,11 @@ export type StakeLaunchContent = ReactNode | ((context: StakeLaunchContentContex
  * that actually misinforms — the network fee keeps pricing the route the user
  * has since switched away from with the toggle inside the modal.
  *
- * So the body is re-pushed the way every entry-first module's is (see
- * `useModalEntryBody`), and frozen on the same rule: pushes stop the moment the
+ * So the body is re-pushed the way every entry-first module's is, through
+ * `useLaunchSync`, and frozen on its rule: pushes stop the moment the
  * transaction leaves IDLE, so mid-flight refetches can't rewrite the summary of
- * something already signed.
+ * something already signed. The engine `execute` rides along so the launch's
+ * `onConfirm` is the sync's stable one.
  *
  * Identity is the whole game here. `calls` is a fresh array every render, so
  * the routing is memoized on the calldata's CONTENT — otherwise each push
@@ -46,6 +46,7 @@ export type StakeLaunchContent = ReactNode | ((context: StakeLaunchContentContex
  */
 export function useStakeConfirmContent({
   sessionId,
+  execute,
   calls,
   isBatch,
   legCount,
@@ -54,6 +55,8 @@ export function useStakeConfirmContent({
 }: {
   /** Session this body belongs to — `updateModalContent` ignores stale ones. */
   sessionId: string;
+  /** The engine's `execute`; the returned `onConfirm` is its stable wrapper. */
+  execute: () => void;
   calls: Call[];
   isBatch: boolean;
   legCount: number;
@@ -61,9 +64,7 @@ export function useStakeConfirmContent({
   content?: StakeLaunchContent;
   /** Compact wallet/status-screen summary, pushed alongside it. */
   screenContent?: ReactNode;
-}): ReactNode {
-  const { updateModalContent, txStatus } = useTransaction();
-
+}): { content: ReactNode; onConfirm: () => void } {
   // Same guard as useNetworkFee: a call the engine cannot encode yet must
   // degrade the summary, not take the route down.
   const callsKey = useMemo(() => {
@@ -85,15 +86,14 @@ export function useStakeConfirmContent({
     [content, routing]
   );
 
-  useEffect(() => {
-    // No-op until `launch()` has seeded this session; a no-op again for good
-    // once the user has committed to the calldata.
-    if (txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, {
-      transactionContent: resolved,
-      ...(screenContent !== undefined ? { transactionScreenContent: screenContent } : {})
-    });
-  }, [sessionId, txStatus, resolved, screenContent, updateModalContent]);
+  // No-op until `launch()` has seeded this session; a no-op again for good
+  // once the user has committed to the calldata.
+  const { onConfirm } = useLaunchSync({
+    sessionId,
+    execute,
+    transactionContent: resolved,
+    ...(screenContent !== undefined ? { transactionScreenContent: screenContent } : {})
+  });
 
-  return resolved;
+  return { content: resolved, onConfirm };
 }

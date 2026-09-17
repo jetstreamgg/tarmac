@@ -31,8 +31,9 @@ function Host({
   legCount?: number;
   render: (context: StakeLaunchContentContext) => React.ReactNode;
 }) {
-  const body = useStakeConfirmContent({
+  const { content: body } = useStakeConfirmContent({
     sessionId: 's1',
+    execute: () => undefined,
     calls,
     isBatch,
     legCount,

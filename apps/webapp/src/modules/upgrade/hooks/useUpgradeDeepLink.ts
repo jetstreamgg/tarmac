@@ -3,7 +3,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { useChainId } from 'wagmi';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import type { UpgradeSourceToken } from '@/hooks';
+import type { UpgradeSourceToken } from './useUpgradeLaunch';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { pathnameToPreviousWidget } from '@/modules/analytics/lib/navigationAnalytics';

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { StepState } from '@/components/ui/steps';
+import type { CallPlanEntry } from '@/hooks';
 
 /**
  * One entry of a flow's step list. The plain-string form is a bare label; the
@@ -88,6 +89,37 @@ type DeriveInput = {
  * transaction. The USDS hasn't been approved."). Built per call — lingui's `t`
  * must run after locale activation.
  */
+/** The step labels for one leg of an approve-then-act engine (see `stepsFromPlan`). */
+export type PlanLegSteps = {
+  /** Shown for the leg's approve when the engine includes one. */
+  approve?: TransactionStep;
+  /** Shown for a USDT-style allowance reset; defaults to a bare "Reset allowance". */
+  reset?: TransactionStep;
+  /** Shown for each of the leg's action calls. */
+  action: TransactionStep;
+};
+
+/**
+ * Label an approve-then-act engine's `plan` entry for entry. The engine decides
+ * which approves it sends; this only names them, so the modal's step count is the
+ * engine's call count by construction rather than by a parallel allowance read.
+ */
+export function stepsFromPlan(plan: CallPlanEntry[], legs: PlanLegSteps[]): TransactionStep[] {
+  return plan.map(({ kind, leg }) => {
+    const labels = legs[leg];
+    if (kind === 'action') return labels.action;
+    if (kind === 'reset') return labels.reset ?? t`Reset allowance`;
+    return labels.approve ?? t`Approve`;
+  });
+}
+
+/** The common approve step: "Approve ◉ SYMBOL" with the approve failure sentence. */
+export const approveStep = (symbol: string): TransactionStep => ({
+  label: t`Approve`,
+  tokenSymbol: symbol,
+  failureDetail: stepFailureDetail.approve(symbol)
+});
+
 export const stepFailureDetail = {
   approve: (symbol: string) => t`The ${symbol} hasn't been approved.`,
   supply: (symbol: string) => t`The ${symbol} hasn't been supplied.`,
