@@ -46,6 +46,7 @@ import {
   type TransactionPreflight
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import { createTransactionSession, type TransactionSession } from './transactionSession';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
@@ -229,12 +230,6 @@ export function TransactionProvider({
   // Ref twin of `minimized`, written in the same callbacks that set the state,
   // so closeOnNavigation (called from a route effect) reads the live value.
   const minimizedRef = useRef(false);
-  // Where the session was launched (window.location — the provider sits above
-  // the router). A route change closes an idle session, but never one the
-  // destination page itself just opened: a page that launches on mount does so
-  // in a child effect, i.e. AFTER the router committed the new location and
-  // BEFORE the shell's route effect asks us to close.
-  const launchPathnameRef = useRef<string | null>(null);
   // The entry-screen portal target, registered by the modal (see EntrySlotContext).
   const [entrySlotEl, setEntrySlotEl] = useState<HTMLElement | null>(null);
   // Bumped on every launch and used as the modal + host `key`, so each launch gets a
@@ -277,50 +272,36 @@ export function TransactionProvider({
   // this deliberately does not defer any of it.
   const [exitingView, setExitingView] = useState<TransactionModalView | null>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeSessionRef = useRef<string | null>(null);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  // Session generation: advanced by launch() and handleClose(), so engine
-  // callbacks are bound to the session that rendered them (state) and can spot
-  // that it has since ended (ref). An in-flight write outlives its host — the
-  // wallet can accept in the same instant the user dismisses the modal — and
-  // without this check the orphaned engine's onStart stamped LOADING onto the
-  // torn-down provider (no modal left to restore), bricking every later
-  // launch() on the in-progress guard until a reload; after an
-  // abandon-then-relaunch it would corrupt the NEW session instead.
-  const [sessionGen, setSessionGen] = useState(0);
-  const sessionGenRef = useRef(0);
-  // The generation of the write currently in flight, latched at onMutate.
+  // The live session (see ./transactionSession): created by launch(), marked
+  // closed by handleClose(). State so the engine callbacks are bound to the
+  // session that rendered them; ref for synchronous reads. An in-flight write
+  // outlives its host — the wallet can accept in the same instant the user
+  // dismisses the modal — and a callback from a closed session must drop
+  // itself, or the orphaned engine's onStart would stamp LOADING onto the
+  // torn-down provider (no modal left to restore) and brick every later
+  // launch() on the in-progress guard.
+  const [session, setSession] = useState<TransactionSession | null>(null);
+  const sessionRef = useRef<TransactionSession | null>(null);
+  // The session whose write is in flight, latched at onMutate.
   //
-  // The closure check above only sheds a stale callback when the engine is
+  // The closure check alone only sheds a stale callback when the engine is
   // still HOLDING an old render's closure — true for flows hosted in
-  // `backgroundContent` (savings, stUSDS, rewards, vault, claim, upgrade,
-  // pendle supply/withdraw): close unmounts the host and freezes its closures
-  // at the pre-bump generation. The review-first flows (convert, pendle
-  // redeem, the stake takeovers) keep their engine host mounted on the page,
-  // so it re-renders after teardown and react-query hands the LIVE mutation
-  // the newest options (MutationObserver.setOptions pushes into a pending
-  // Mutation, and useWriteContractFlow's receipt effect closes over the
-  // current render) — a late callback from an abandoned write would arrive
-  // carrying the CURRENT generation and sail through.
-  //
-  // onMutate is the one callback that always fires synchronously from the
-  // user's confirm, so the generation it records is the session that actually
-  // started the write, whatever the host's mount state. The settle callbacks
-  // check that instead of trusting their own closure. Null until the first
-  // write of the page's life, where it falls back to the closure check alone.
-  const writeGenRef = useRef<number | null>(null);
-  // Hash of the write this session is tracking, latched at onStart, so a
-  // settle carrying a DIFFERENT hash is recognisable as another transaction's.
-  const writeHashRef = useRef<string | undefined>(undefined);
+  // `backgroundContent`: close unmounts the host and freezes its closures on
+  // the closed session. The review-first flows (convert, pendle redeem, the
+  // stake takeovers) keep their engine host mounted on the page, so it
+  // re-renders after teardown and react-query hands the LIVE mutation the
+  // newest options — a late callback from an abandoned write would arrive
+  // bound to the CURRENT session and sail through. onMutate always fires
+  // synchronously from the user's confirm, so the session it records is the
+  // one that actually started the write; the settle callbacks check that.
+  const writeSessionRef = useRef<TransactionSession | null>(null);
   // Mirrors txStatus for reads inside callbacks (avoids setState-inside-updater impurity).
   const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
-  // In-flight gate latch: the generation whose verdict is currently pending,
-  // null when idle. While set (for the live session), further gated calls are
+  // In-flight gate latch: the session whose verdict is currently pending, null
+  // when idle. While set (for the live session), further gated calls are
   // ignored — nothing else stops a second click from starting a parallel gate
-  // run, and two allows would mean two onConfirms. Practically shadowed by the
-  // Confirm button unmounting on the first click, but this is legal gating, so
-  // the invariant doesn't ride on the UI.
-  const gateInFlightRef = useRef<number | null>(null);
+  // run, and two allows would mean two onConfirms.
+  const gateInFlightRef = useRef<TransactionSession | null>(null);
   // Which gate phase currently owns an INITIALIZED status (null = the engine
   // does, via onMutate). handleClose and launch read it to tell an abandoned
   // WALLET TRANSACTION (cancelled analytics + the discarded-request toast)
@@ -330,11 +311,6 @@ export function TransactionProvider({
   // (the engine taking over), by the gate driving 'error'/'idle', and on
   // launch/close.
   const gatePhaseRef = useRef<GatePhase | null>(null);
-  // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
-  const txHashRef = useRef<string | undefined>(undefined);
-  // flow_id latched at launch so this session's review/started/completed events
-  // stay joined even if navigation rotates the live flow id mid-transaction.
-  const flowIdRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
   const { address, chainId: connectedChainId } = useConnection();
@@ -359,9 +335,6 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
-  // The chain the live session's write belongs to: latched at launch, adopted
-  // while the session is still at IDLE (see the chain-change close below).
-  const sessionChainRef = useRef(guardChainId);
   const {
     handleSwitchChain,
     isSwitchPending: switchPending,
@@ -420,7 +393,7 @@ export function TransactionProvider({
         widgetName: analytics?.widgetName,
         flow: analytics?.flow,
         action: analytics?.action,
-        flowId: flowIdRef.current
+        flowId: sessionRef.current?.flowId
       });
     },
     [chainId, trackTermsSignatureDeclined]
@@ -451,7 +424,7 @@ export function TransactionProvider({
         action: analytics.action,
         flow: analytics.flow,
         data: analytics.data,
-        flowId: flowIdRef.current
+        flowId: sessionRef.current?.flowId
       });
       startNewFlow();
     }
@@ -489,20 +462,28 @@ export function TransactionProvider({
         handleInitializedAbandon();
       }
 
-      sessionGenRef.current += 1;
-      setSessionGen(sessionGenRef.current);
-      // Latch this session's flow id (after any abandon rotation above).
-      flowIdRef.current = getFlowId();
+      // Replacing a session ends it FIRST: an engine the wallet already
+      // answered may fire callbacks right after, and they must see themselves
+      // as stale.
+      if (sessionRef.current) sessionRef.current.closed = true;
+      const next = createTransactionSession({
+        id: config.sessionId ?? null,
+        chainId: chainIdRef.current,
+        // A route change closes an idle session, but never one the destination
+        // page itself just opened: a page that launches on mount does so in a
+        // child effect, i.e. AFTER the router committed the new location and
+        // BEFORE the shell's route effect asks us to close.
+        launchPathname: window.location.pathname,
+        // Latched after any abandon rotation above.
+        flowId: getFlowId()
+      });
+      sessionRef.current = next;
+      setSession(next);
       configRef.current = config;
-      activeSessionRef.current = config.sessionId ?? null;
-      setActiveSessionId(config.sessionId ?? null);
-      launchPathnameRef.current = window.location.pathname;
-      sessionChainRef.current = chainIdRef.current;
       minimizedRef.current = false;
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
       txStatusRef.current = TxStatus.IDLE;
-      txHashRef.current = undefined;
       setCurrentStep(0);
       setHasMinedStep(false);
       preludeStepsRef.current = null;
@@ -529,7 +510,7 @@ export function TransactionProvider({
           flow: config.analytics.flow,
           action: config.analytics.action,
           data: config.analytics.data,
-          flowId: flowIdRef.current
+          flowId: sessionRef.current?.flowId
         });
       }
     },
@@ -548,14 +529,14 @@ export function TransactionProvider({
         flow: analytics.flow,
         action: analytics.action,
         data: analytics.data,
-        flowId: flowIdRef.current
+        flowId: sessionRef.current?.flowId
       });
     }
   }, [chainId, trackWidgetReviewViewed]);
 
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
     (sessionId, partial) => {
-      if (sessionId !== activeSessionRef.current) return;
+      if (sessionId !== sessionRef.current?.id) return;
       const prev = configRef.current;
       if (!prev) return;
       const { entry: entryPatch, ...rest } = partial;
@@ -618,11 +599,12 @@ export function TransactionProvider({
       exitTimerRef.current = setTimeout(() => setExitingView(null), MODAL_EXIT_MS);
     }
 
-    // End the session generation FIRST: an engine the wallet already answered
-    // may fire callbacks right after this teardown, and they must see
-    // themselves as stale (see sessionGen above).
-    sessionGenRef.current += 1;
-    setSessionGen(sessionGenRef.current);
+    // End the session FIRST: an engine the wallet already answered may fire
+    // callbacks right after this teardown, and they must see themselves as
+    // stale (see `session` above).
+    if (sessionRef.current) sessionRef.current.closed = true;
+    sessionRef.current = null;
+    setSession(null);
     setOpen(false);
     setMinimized(false);
     minimizedRef.current = false;
@@ -638,8 +620,6 @@ export function TransactionProvider({
     gatePhaseRef.current = null;
     setActiveConfig(null);
     configRef.current = null;
-    activeSessionRef.current = null;
-    setActiveSessionId(null);
   }, [handleInitializedAbandon, currentStep, hasMinedStep]);
 
   // The gate calls these from user events, so the ref is always current by then.
@@ -680,11 +660,12 @@ export function TransactionProvider({
   // deferral (the read goes through the ref); drop it and a switch during a
   // wallet prompt is never revisited once the prompt fails.
   useEffect(() => {
-    if (!open || !configRef.current || !address) return;
-    if (sessionChainRef.current === guardChainId) return;
+    const live = sessionRef.current;
+    if (!open || !configRef.current || !address || !live) return;
+    if (live.chainId === guardChainId) return;
     const status = txStatusRef.current;
     if (status === TxStatus.IDLE) {
-      sessionChainRef.current = guardChainId;
+      live.chainId = guardChainId;
       return;
     }
     if (status === TxStatus.INITIALIZED || status === TxStatus.LOADING) return;
@@ -705,7 +686,7 @@ export function TransactionProvider({
   // pathname alone, so this must not change identity as the session does.
   const closeOnNavigation = useCallback((pathname: string) => {
     if (!configRef.current) return;
-    if (launchPathnameRef.current === pathname) return;
+    if (sessionRef.current?.launchPathname === pathname) return;
     if (minimizedRef.current) return;
     const status = txStatusRef.current;
     if (status === TxStatus.INITIALIZED || status === TxStatus.LOADING) return;
@@ -764,7 +745,7 @@ export function TransactionProvider({
         <MinimizedTransactionToast
           status={txStatus}
           title={titleFor(state)}
-          hash={txHashRef.current}
+          hash={sessionRef.current?.hash}
           onView={() => setMinimized(false)}
         />
       ),
@@ -799,8 +780,8 @@ export function TransactionProvider({
   // stop early — before prompting the wallet, the one side effect no-op
   // controls can't absorb.
   const makeGateControls = useCallback(
-    (gen: number): GateControls => {
-      const live = () => gen === sessionGenRef.current;
+    (owner: TransactionSession): GateControls => {
+      const live = () => !owner.closed && owner === sessionRef.current;
       return {
         setGateStatus: (status, copy) => {
           if (!live()) return;
@@ -879,9 +860,9 @@ export function TransactionProvider({
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
-      if (gateInFlightRef.current === sessionGenRef.current) return;
-      const gen = sessionGenRef.current;
-      const controls = makeGateControls(gen);
+      const owner = sessionRef.current;
+      if (!owner || gateInFlightRef.current === owner) return;
+      const controls = makeGateControls(owner);
       if (!walletOnSupportedChain()) {
         refuseOffChain(controls);
         return;
@@ -897,11 +878,11 @@ export function TransactionProvider({
         controls
       });
       if (verdict instanceof Promise) {
-        gateInFlightRef.current = gen;
+        gateInFlightRef.current = owner;
         verdict
           .then(
             v => {
-              if (gen !== sessionGenRef.current || !v.allow) return;
+              if (owner.closed || owner !== sessionRef.current || !v.allow) return;
               // Re-checked: the wallet may have switched while the verdict
               // (a screening call, a signature prompt) was pending, and the
               // form has since rebuilt its calldata against the new chain. A
@@ -924,7 +905,7 @@ export function TransactionProvider({
           .finally(() => {
             // Only release a latch we still own: launch/close reset it, and a
             // NEW session may have latched its own verdict by now.
-            if (gateInFlightRef.current === gen) gateInFlightRef.current = null;
+            if (gateInFlightRef.current === owner) gateInFlightRef.current = null;
           });
         return;
       }
@@ -963,13 +944,15 @@ export function TransactionProvider({
   }, [runGated, resetTransactionProgress]);
 
   // A settle callback belongs to the running session only if BOTH its closure
-  // and the write it reports on were made in the current generation (see
-  // writeGenRef). Either mismatch means the caller is an engine from a session
-  // that was closed or abandoned, and it must drop itself.
+  // and the write it reports on belong to the live session (see
+  // writeSessionRef). Either mismatch means the caller is an engine from a
+  // session that was closed or abandoned, and it must drop itself.
   const isStaleWrite = useCallback(
-    (gen: number) =>
-      gen !== sessionGenRef.current ||
-      (writeGenRef.current !== null && writeGenRef.current !== sessionGenRef.current),
+    (owner: TransactionSession | null) =>
+      !owner ||
+      owner.closed ||
+      owner !== sessionRef.current ||
+      (writeSessionRef.current !== null && writeSessionRef.current !== sessionRef.current),
     []
   );
 
@@ -981,20 +964,24 @@ export function TransactionProvider({
   // Safe address reached through another connector), so this only ever errs
   // towards accepting a settle — never towards dropping a real one.
   const isForeignHash = useCallback(
-    (hash?: string) => !isSafeWallet && !!hash && !!writeHashRef.current && hash !== writeHashRef.current,
+    (hash?: string) => {
+      const tracked = sessionRef.current?.writeHash;
+      return !isSafeWallet && !!hash && !!tracked && hash !== tracked;
+    },
     [isSafeWallet]
   );
 
-  // Each callback closes over the `sessionGen` of the render that created it
-  // and drops itself when the generation has moved on — the caller is an
-  // engine from a session that was closed or abandoned.
+  // Each callback closes over the `session` of the render that created it and
+  // drops itself when that session has ended — the caller is an engine from a
+  // session that was closed or abandoned.
   const onMutate = useCallback(
     (variables?: TxMutateVariables) => {
-      if (sessionGen !== sessionGenRef.current) return;
+      if (!session || session.closed || session !== sessionRef.current) return;
       // Latch the write to this session; the settle callbacks check it. Fires
       // synchronously from the user's confirm, so it can trust its closure.
-      writeGenRef.current = sessionGenRef.current;
-      writeHashRef.current = undefined;
+      // Written through the ref: the check above proved it is this session.
+      writeSessionRef.current = session;
+      sessionRef.current!.writeHash = undefined;
       // The engine taking over ends the gate's turn at the copy and the
       // status: from here the flow's own narration applies (otherwise "sign
       // in your wallet" would hang over the whole transaction), and an
@@ -1011,7 +998,7 @@ export function TransactionProvider({
       if (txStatusRef.current === TxStatus.LOADING) setHasMinedStep(true);
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
-      txHashRef.current = undefined;
+      sessionRef.current!.hash = undefined;
 
       // Track transaction started; approve legs report action 'approve' (dev parity)
       const analytics = configRef.current?.analytics;
@@ -1022,34 +1009,30 @@ export function TransactionProvider({
           action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
           flow: analytics.flow,
           data: analytics.data,
-          flowId: flowIdRef.current
+          flowId: sessionRef.current?.flowId
         });
       }
     },
-    [sessionGen, chainId, trackTransactionStarted]
+    [session, chainId, trackTransactionStarted]
   );
 
   const onStart = useCallback(
     (hash?: string) => {
-      if (isStaleWrite(sessionGen)) return;
-      writeHashRef.current = hash;
+      if (isStaleWrite(session)) return;
+      sessionRef.current!.writeHash = hash;
       setTxStatus(TxStatus.LOADING);
       txStatusRef.current = TxStatus.LOADING;
-      if (hash) {
-        txHashRef.current = hash;
-      }
+      if (hash) sessionRef.current!.hash = hash;
     },
-    [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
+    [session, isStaleWrite]
   );
 
   const onSuccess = useCallback(
     (hash?: string) => {
-      if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
+      if (isStaleWrite(session) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
-      if (hash) {
-        txHashRef.current = hash;
-      }
+      if (hash) sessionRef.current!.hash = hash;
 
       // Track transaction completed (success)
       const analytics = configRef.current?.analytics;
@@ -1062,7 +1045,7 @@ export function TransactionProvider({
           action: analytics.action,
           flow: analytics.flow,
           data: analytics.data,
-          flowId: flowIdRef.current
+          flowId: sessionRef.current?.flowId
         });
       }
 
@@ -1084,7 +1067,7 @@ export function TransactionProvider({
       if (config) {
         toast.dismiss(MINIMIZED_TOAST_ID);
         const successTitle = config.toast?.success ?? config.title;
-        const txHash = hash ?? txHashRef.current;
+        const txHash = hash ?? session!.hash;
         toastWithClose(
           () => (
             <TransactionSuccessToast
@@ -1103,7 +1086,7 @@ export function TransactionProvider({
       handleCloseRef.current();
     },
     [
-      sessionGen,
+      session,
       chainId,
       address,
       isSafeWallet,
@@ -1117,25 +1100,23 @@ export function TransactionProvider({
   const onError = useCallback(
     (error: Error, hash?: string) => {
       // A refusal BEFORE any write (the batch engine's cross-chain backstop,
-      // APP-528) arrives hashless at IDLE: no onMutate latched writeGenRef for
-      // this session, so the stale-write test — which exists to drop a
+      // APP-528) arrives hashless at IDLE: no onMutate latched the write
+      // session for this one, so the stale-write test — which exists to drop a
       // PREVIOUS session's late settle — would drop it on any page that has
       // already sent a transaction, leaving the modal on "Preparing". For a
       // refusal the session generation alone says whether it is ours.
       const preWriteRefusal = !hash && txStatusRef.current === TxStatus.IDLE;
       if (
         preWriteRefusal
-          ? sessionGen !== sessionGenRef.current
-          : isStaleWrite(sessionGen) || isForeignHash(hash)
+          ? !session || session.closed || session !== sessionRef.current
+          : isStaleWrite(session) || isForeignHash(hash)
       ) {
         return;
       }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
       setUserRejected(isUserRejectedRequestError(error));
-      if (hash) {
-        txHashRef.current = hash;
-      }
+      if (hash) sessionRef.current!.hash = hash;
 
       // Track transaction completed (error). Bounded classification props only —
       // never the raw message, which can embed addresses and calldata. A wallet
@@ -1152,7 +1133,7 @@ export function TransactionProvider({
           action: analytics.action,
           flow: analytics.flow,
           data: { ...analytics.data, ...classification },
-          flowId: flowIdRef.current
+          flowId: sessionRef.current?.flowId
         });
       }
 
@@ -1181,16 +1162,7 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [
-      sessionGen,
-      chainId,
-      address,
-      isSafeWallet,
-      trackTransactionCompleted,
-      startNewFlow,
-      isStaleWrite,
-      isForeignHash
-    ]
+    [session, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is
@@ -1257,20 +1229,14 @@ export function TransactionProvider({
   // wallet with the modal already open — from yanking them back. That change is
   // deliberate and gets the CTA, not a prompt. A decline is covered by the same
   // latch, so the guard block stays put rather than asking twice.
-  const autoSwitchedSessionRef = useRef<number | null>(null);
+  const autoSwitchedSessionRef = useRef<TransactionSession | null>(null);
   useEffect(() => {
-    if (autoSwitchedSessionRef.current === sessionGen) return;
-    autoSwitchedSessionRef.current = sessionGen;
-    // `activeConfig`, not the guard's own `guardConfig`: closing ALSO bumps the
-    // generation (so late engine callbacks see themselves as stale) while the
-    // view lingers as `exitingView` for its exit animation. The guard is still
-    // live against the closing flow's config through that window, so keying on
-    // the generation alone reads a close as an open and prompts the wallet for
-    // a modal the user just dismissed — including on the route guard's own
-    // redirect, which closes modals as it navigates.
-    if (!activeConfig) return;
+    // Keyed on the live session, so the exiting view's config (still under the
+    // guard through its exit animation) never reads as a fresh open.
+    if (!session || autoSwitchedSessionRef.current === session) return;
+    autoSwitchedSessionRef.current = session;
     if (chainGuardActive && guardCanSwitch) switchGuardChain('transaction_modal_auto');
-  }, [sessionGen, activeConfig, chainGuardActive, guardCanSwitch, switchGuardChain]);
+  }, [session, chainGuardActive, guardCanSwitch, switchGuardChain]);
   const chainGuard = chainGuardActive
     ? {
         // The chain the guard is judging, not the one wagmi has pinned. Reading
@@ -1310,7 +1276,7 @@ export function TransactionProvider({
       minimize,
       restore,
       isMinimized: minimized,
-      activeSessionId,
+      activeSessionId: session?.id ?? null,
       closeOnNavigation,
       txCallbacks,
       txStatus
@@ -1322,7 +1288,7 @@ export function TransactionProvider({
       minimize,
       restore,
       minimized,
-      activeSessionId,
+      session,
       closeOnNavigation,
       txCallbacks,
       txStatus
