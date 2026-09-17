@@ -3,7 +3,7 @@
 import { i18n } from '@lingui/core';
 import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { encodeFunctionData, parseUnits } from 'viem';
+import { parseUnits } from 'viem';
 
 // The `t` macro resolves against the global i18n singleton (not React context).
 i18n.load('en', {});
@@ -159,7 +159,6 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
 import { StUsdsProviderType } from '@/hooks';
 import { calculateMinOutputWithSlippage } from '@/hooks/stusds/providers/rateComparison';
 import { STUSDS_PROVIDER_CONFIG } from '@/hooks/stusds/providers/constants';
-import { REFERRAL_CODE } from '@/lib/constants';
 import { useStUsdsLaunch, type StUsdsEngineParams } from './useStUsdsLaunch';
 
 const AMOUNT = parseUnits('10', 18);
@@ -167,18 +166,6 @@ const HAS_ALLOWANCE = parseUnits('1000000', 18);
 // Quoted outputs (stUSDS on supply, USDS on withdraw) — arbitrary but distinct.
 const SUPPLY_QUOTE_OUT = parseUnits('9.5', 18);
 const WITHDRAW_STUSDS_IN = parseUnits('10.6', 18);
-
-function normalize(call: RawCall) {
-  return {
-    to: call.to.toLowerCase(),
-    data: encodeFunctionData({
-      abi: call.abi as Parameters<typeof encodeFunctionData>[0]['abi'],
-      functionName: call.functionName,
-      args: call.args
-    }),
-    value: call.value ?? undefined
-  };
-}
 
 function captureOrchestratorCalls(params: StUsdsEngineParams): RawCall[] {
   h.capturedCalls = [];
