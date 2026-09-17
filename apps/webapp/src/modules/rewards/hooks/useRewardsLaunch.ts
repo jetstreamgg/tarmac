@@ -4,8 +4,9 @@ import { t } from '@lingui/core/macro';
 import { type Token, useBatchRewardsSupply, useRewardsWithdraw } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepsFromPlan } from '@/modules/ui/components/transactionStepsModel';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
-import { useApproveSteps } from '@/modules/ui/hooks/useApproveSteps';
 
 export type RewardsLaunchFlow = 'supply' | 'withdraw';
 
@@ -28,8 +29,8 @@ export type UseRewardsLaunchResult = EngineLaunchResult;
  *  - supply   → `useBatchRewardsSupply` (optional approve → `stake(amount, ref)`)
  *  - withdraw → `useRewardsWithdraw` (`withdraw(amount)`)
  *
- * The engines own all calldata + the allowance derivation; the allowance read
- * here is READ ONLY and only labels the approve step.
+ * The engines own all calldata + the allowance derivation; the supply steps are
+ * read off the engine's plan.
  */
 export function useRewardsLaunch({
   flow,
@@ -45,17 +46,6 @@ export function useRewardsLaunch({
   const isSupply = flow === 'supply';
   const supplyTokenAddress = supplyToken.address[chainId];
   const symbol = supplyToken.symbol;
-
-  // READ ONLY — labels the approve step only (elided when the allowance already
-  // covers the amount). The approve/stake calls and their allowance derivation
-  // live entirely inside useBatchRewardsSupply.
-  const supplySteps = useApproveSteps({
-    token: supplyToken,
-    spender: contractAddress,
-    amount,
-    enabled: isSupply,
-    action: t`Supply ${symbol}`
-  });
 
   // Both engines are called unconditionally (hooks rules) and gated by
   // `enabled` to the active flow.
@@ -77,11 +67,15 @@ export function useRewardsLaunch({
 
   const activeHook = isSupply ? supplyHook : withdrawHook;
 
-  // Step labels mirror the engine's call count so the indicator advances in
-  // lockstep.
-  const steps = useMemo<string[]>(
-    () => (isSupply ? supplySteps : [t`Withdraw ${symbol}`]),
-    [isSupply, supplySteps, symbol]
+  // Supply steps come off the engine's plan, so an approve shows exactly when
+  // the engine sends one.
+  const supplyPlan = supplyHook.plan;
+  const steps = useMemo<TransactionStep[]>(
+    () =>
+      isSupply
+        ? stepsFromPlan(supplyPlan, [{ approve: t`Approve ${symbol}`, action: t`Supply ${symbol}` }])
+        : [t`Withdraw ${symbol}`],
+    [isSupply, supplyPlan, symbol]
   );
 
   return toLaunchResult(activeHook, steps);

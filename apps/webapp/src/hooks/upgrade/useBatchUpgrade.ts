@@ -1,6 +1,5 @@
 import { useConnection, useChainId } from 'wagmi';
-import { Call, erc20Abi } from 'viem';
-import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
+import { BatchWriteHookParams } from '../hooks';
 import {
   daiUsdsAbi,
   daiUsdsAddress,
@@ -10,98 +9,74 @@ import {
   mkrSkyAddress
 } from '../generated';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
+import { ApproveThenActHook, useApproveThenAct } from '../shared/useApproveThenAct';
 
 /** The two upgradeable source tokens; each has a fixed upgrader + target. */
 export type UpgradeSourceToken = 'DAI' | 'MKR';
 
 /**
- * Batch/sequential engine for the standalone upgrade flow (DAI→USDS via
- * `daiToUsds`, MKR→SKY via `mkrToSky`) — the upgrade analogue of
- * `useBatchSavingsSupply`: optional approve → upgrade through
- * `useTransactionFlow`, so the pair is one EIP-5792 bundle when
- * `shouldUseBatch` (and the wallet) allow it, and two sequential signatures
- * otherwise. The single-call bare hooks (`useDaiToUsds` / `useMkrToSky`)
- * remain for consumers that orchestrate the approve themselves.
+ * The standalone upgrade flow (DAI→USDS via `daiToUsds`, MKR→SKY via
+ * `mkrToSky`): optional approve → upgrade.
  */
 export function useBatchUpgrade({
   token,
   amount,
-  onMutate = () => null,
-  onSuccess = () => null,
-  onError = () => null,
-  onStart = () => null,
-  enabled: paramEnabled = true,
-  shouldUseBatch = true
+  enabled = true,
+  ...flow
 }: BatchWriteHookParams & {
   token: UpgradeSourceToken;
   amount: bigint;
-}): BatchWriteHook {
-  const { address: connectedAddress, isConnected } = useConnection();
+}): ApproveThenActHook {
+  const { address } = useConnection();
   const chainId = useChainId();
 
   const isDai = token === 'DAI';
-  const sourceAddress = isDai
+  const source = isDai
     ? mcdDaiAddress[chainId as keyof typeof mcdDaiAddress]
     : mkrAddress[chainId as keyof typeof mkrAddress];
-  const upgraderAddress = isDai
+  const upgrader = isDai
     ? daiUsdsAddress[chainId as keyof typeof daiUsdsAddress]
     : mkrSkyAddress[chainId as keyof typeof mkrSkyAddress];
 
   const { data: allowance, error: allowanceError } = useTokenAllowance({
     chainId,
-    contractAddress: sourceAddress,
-    owner: connectedAddress,
-    spender: upgraderAddress
+    contractAddress: source,
+    owner: address,
+    spender: upgrader
   });
-  const hasAllowance = allowance !== undefined && allowance >= amount;
 
-  // Calls for the batch transaction. Built only once an address exists: the
-  // upgrade modal opens while disconnected, and an `undefined` recipient in the
-  // args makes consumers that encode the calldata during render (e.g.
-  // useNetworkFee's calls key) throw viem's InvalidAddressError.
-  const calls: Call[] = [];
-  if (connectedAddress) {
-    if (!hasAllowance) {
-      calls.push(
-        getWriteContractCall({
-          to: sourceAddress,
-          abi: erc20Abi,
-          functionName: 'approve',
-          args: [upgraderAddress, amount]
-        })
-      );
-    }
-    calls.push(
-      isDai
-        ? getWriteContractCall({
-            to: upgraderAddress,
-            abi: daiUsdsAbi,
-            functionName: 'daiToUsds',
-            args: [connectedAddress, amount]
-          })
-        : getWriteContractCall({
-            to: upgraderAddress,
-            abi: mkrSkyAbi,
-            functionName: 'mkrToSky',
-            args: [connectedAddress, amount]
-          })
-    );
-  }
+  // The upgrade call is built only once an address exists: the upgrade modal
+  // opens while disconnected, and an `undefined` recipient in the args makes
+  // consumers that encode the calldata during render (e.g. useNetworkFee's
+  // calls key) throw viem's InvalidAddressError.
+  const upgradeCall = !address
+    ? []
+    : [
+        isDai
+          ? getWriteContractCall({
+              to: upgrader,
+              abi: daiUsdsAbi,
+              functionName: 'daiToUsds',
+              args: [address, amount]
+            })
+          : getWriteContractCall({
+              to: upgrader,
+              abi: mkrSkyAbi,
+              functionName: 'mkrToSky',
+              args: [address, amount]
+            })
+      ];
 
-  const enabled =
-    isConnected && amount !== 0n && allowance !== undefined && paramEnabled && !!connectedAddress;
-
-  return useBatchWriteFlow({
-    calls,
+  return useApproveThenAct({
+    ...flow,
     chainId,
-    enabled,
-    shouldUseBatch,
-    onMutate,
-    onSuccess,
-    onError,
-    onStart,
-    allowanceError: allowanceError
+    enabled: enabled && amount !== 0n,
+    legs: [
+      {
+        approve: { token: source, spender: upgrader, amount, allowance, allowanceError },
+        calls: upgradeCall
+      }
+    ]
   });
 }

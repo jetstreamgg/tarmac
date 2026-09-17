@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useConnection } from 'wagmi';
 import { Abi, Call, erc20Abi } from 'viem';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
@@ -125,6 +126,13 @@ export function useApproveThenAct({
 
   const enabled = paramEnabled && isConnected && !!address && allowancesResolved && calls.length > 0;
 
+  // Launch hooks memoize their steps on the plan and hand them to an effect
+  // that writes the open session, so the plan must keep its identity while its
+  // content does not change.
+  const planKey = plan.map(({ kind, leg, token }) => `${kind}:${leg}:${token ?? ''}`).join('|');
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the plan's content, not its per-render array
+  const stablePlan = useMemo(() => plan, [planKey]);
+
   const flow = useTransactionFlow({
     calls,
     chainId,
@@ -139,6 +147,6 @@ export function useApproveThenAct({
   return {
     ...flow,
     error: flow.error || allowanceError,
-    plan
+    plan: stablePlan
   };
 }

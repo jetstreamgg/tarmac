@@ -21,7 +21,12 @@ import {
   type PlanLegSteps
 } from '@/modules/ui/components/transactionStepsModel';
 import { useUsdcSupplyGate } from './useUsdcSupplyGate';
-import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
+import {
+  planOf,
+  toLaunchResult,
+  useShouldUseBatch,
+  type EngineLaunchResult
+} from '@/modules/ui/hooks/engineLaunch';
 
 export type SavingsLaunchFlow = 'supply' | 'withdraw';
 
@@ -197,8 +202,7 @@ export function useSavingsLaunch({
         : psmWithdrawHook
       : withdrawHook;
   const execute = activeHook.execute;
-  // The mainnet withdraw is a plain write with no plan; its single step is fixed.
-  const activePlan = 'plan' in activeHook ? activeHook.plan : [];
+  const activePlan = planOf(activeHook);
 
   // Step labels come off the routed engine's plan (one entry per call it will
   // send), so an approve shows exactly when the engine sends one:

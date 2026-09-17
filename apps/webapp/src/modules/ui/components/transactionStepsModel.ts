@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { StepState } from '@/components/ui/steps';
-import type { CallPlanEntry } from '@/hooks/shared/useApproveThenAct';
+import type { CallPlanEntry } from '@/hooks';
 
 /**
  * One entry of a flow's step list. The plain-string form is a bare label; the

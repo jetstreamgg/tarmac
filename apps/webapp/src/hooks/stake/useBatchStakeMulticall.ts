@@ -1,34 +1,33 @@
-import { useConnection, useChainId } from 'wagmi';
-import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
+import { useChainId } from 'wagmi';
+import { BatchWriteHookParams } from '../hooks';
 import { skyAddress, stakeModuleAbi, stakeModuleAddress, usdsAddress } from '../generated';
 import { useStakeSkyAllowance, useStakeUsdsAllowance } from './useStakeAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { Call, ContractFunctionArgs, ContractFunctionName, decodeFunctionData, erc20Abi } from 'viem';
-import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
+import { Call, ContractFunctionArgs, ContractFunctionName, decodeFunctionData } from 'viem';
+import { ApproveThenActHook, ApproveThenActLeg, useApproveThenAct } from '../shared/useApproveThenAct';
 
+/**
+ * The stake module's write: optional approve(SKY) → optional approve(USDS) →
+ * the calldata. A single calldata entry is decoded and sent as a direct call;
+ * several go out as individual calls inside one EIP-5792 bundle (cheaper and
+ * more readable in the wallet) or, sequentially, as one `multicall`.
+ */
 export function useBatchStakeMulticall({
   skyAmount,
   usdsAmount,
-  enabled: paramEnabled = true,
+  calldata,
+  enabled = true,
   shouldUseBatch = true,
-  onMutate = () => null,
-  onStart = () => null,
-  onError = () => null,
-  onSuccess = () => null,
-  calldata
+  ...flow
 }: BatchWriteHookParams & {
   calldata: `0x${string}`[] | undefined;
   skyAmount: bigint;
   usdsAmount: bigint;
-}): BatchWriteHook {
+}): ApproveThenActHook {
   const chainId = useChainId();
-  const { isConnected } = useConnection();
 
   const { data: skyAllowance, error: skyAllowanceError } = useStakeSkyAllowance();
   const { data: usdsAllowance, error: usdsAllowanceError } = useStakeUsdsAllowance();
-
-  const hasSkyAllowance = skyAllowance !== undefined && skyAllowance >= skyAmount;
-  const hasUsdsAllowance = usdsAllowance !== undefined && usdsAllowance >= usdsAmount;
 
   // The stake module is mainnet-only. A wallet on another chain can still reach
   // this hook (deep link, declined auto-switch, chain changed from the wallet
@@ -36,83 +35,62 @@ export function useBatchStakeMulticall({
   // moment anything encodes the calls (Sentry WEBAPP-E4).
   const stakeModule = stakeModuleAddress[chainId as keyof typeof stakeModuleAddress];
 
-  // Calls for the batch transaction
-  const calls: Call[] = [];
+  let legs: ApproveThenActLeg[] = [];
   if (calldata?.length && stakeModule) {
-    const approveSkyCall = getWriteContractCall({
-      to: skyAddress[chainId as keyof typeof skyAddress],
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [stakeModule, skyAmount]
-    });
-
-    const approveUsdsCall = getWriteContractCall({
-      to: usdsAddress[chainId as keyof typeof usdsAddress],
-      abi: erc20Abi,
-      functionName: 'approve',
-      args: [stakeModule, usdsAmount]
-    });
-
-    // Individual transaction using `multicall`
-    const multicallCall = getWriteContractCall({
-      to: stakeModule,
-      abi: stakeModuleAbi,
-      functionName: 'multicall',
-      args: [calldata]
-    });
-
-    // Array of individual transactions, intended to be used in a batch transaction
-    const individualCalls: Call[] = calldata.map(data => ({
-      to: stakeModule,
-      data
-    }));
-
-    if (!hasSkyAllowance) calls.push(approveSkyCall);
-    if (!hasUsdsAllowance) calls.push(approveUsdsCall);
-
-    // If the calldata array only has 1 element, decode that call and send it individually
+    let actions: Call[];
     if (calldata.length === 1) {
-      const decodedSingleCalldata = decodeFunctionData({
-        abi: stakeModuleAbi,
-        data: calldata[0]
-      });
-      const singleCall = getWriteContractCall({
-        to: stakeModule,
-        abi: stakeModuleAbi,
-        functionName: decodedSingleCalldata.functionName as ContractFunctionName<
-          typeof stakeModuleAbi,
-          'nonpayable' | 'payable'
-        >,
-        args: decodedSingleCalldata.args as ContractFunctionArgs<
-          typeof stakeModuleAbi,
-          'nonpayable' | 'payable',
-          ContractFunctionName<typeof stakeModuleAbi, 'nonpayable' | 'payable'>
-        >
-      });
-      calls.push(singleCall);
-      // If the user wallet supports it and user has batch tx enabled, send the calls individually
-      // in a batch tx for optimized gas consumption and improved transaction readability
+      const decoded = decodeFunctionData({ abi: stakeModuleAbi, data: calldata[0] });
+      actions = [
+        getWriteContractCall({
+          to: stakeModule,
+          abi: stakeModuleAbi,
+          functionName: decoded.functionName as ContractFunctionName<
+            typeof stakeModuleAbi,
+            'nonpayable' | 'payable'
+          >,
+          args: decoded.args as ContractFunctionArgs<
+            typeof stakeModuleAbi,
+            'nonpayable' | 'payable',
+            ContractFunctionName<typeof stakeModuleAbi, 'nonpayable' | 'payable'>
+          >
+        })
+      ];
     } else if (shouldUseBatch) {
-      calls.push(...individualCalls);
-    } else calls.push(multicallCall);
+      actions = calldata.map(data => ({ to: stakeModule, data }));
+    } else {
+      actions = [
+        getWriteContractCall({
+          to: stakeModule,
+          abi: stakeModuleAbi,
+          functionName: 'multicall',
+          args: [calldata]
+        })
+      ];
+    }
+
+    legs = [
+      {
+        approve: {
+          token: skyAddress[chainId as keyof typeof skyAddress],
+          spender: stakeModule,
+          amount: skyAmount,
+          allowance: skyAllowance,
+          allowanceError: skyAllowanceError
+        },
+        calls: []
+      },
+      {
+        approve: {
+          token: usdsAddress[chainId as keyof typeof usdsAddress],
+          spender: stakeModule,
+          amount: usdsAmount,
+          allowance: usdsAllowance,
+          allowanceError: usdsAllowanceError
+        },
+        calls: actions
+      }
+    ];
   }
 
-  const enabled =
-    isConnected &&
-    paramEnabled &&
-    skyAllowance !== undefined &&
-    usdsAllowance !== undefined &&
-    calls.length > 0;
-
-  return useBatchWriteFlow({
-    calls,
-    chainId,
-    enabled,
-    shouldUseBatch,
-    onMutate,
-    onSuccess,
-    onError,
-    onStart,
-    allowanceError: skyAllowanceError || usdsAllowanceError
-  });
+  return useApproveThenAct({ ...flow, chainId, enabled, shouldUseBatch, legs });
 }

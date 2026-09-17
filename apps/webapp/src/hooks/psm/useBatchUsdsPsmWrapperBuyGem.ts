@@ -1,80 +1,54 @@
 import { useChainId, useConnection } from 'wagmi';
-import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
+import { BatchWriteHookParams } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { usdsAddress } from '../generated';
-import { Call, erc20Abi } from 'viem';
-import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
+import { usdsAddress, usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
+import { ApproveThenActHook, useApproveThenAct } from '../shared/useApproveThenAct';
 
+/** Mainnet USDS → USDC through the PSM wrapper: optional approve(USDS) → `buyGem`. */
 export function useBatchUsdsPsmWrapperBuyGem({
   gemAmt,
   usdsAmountInWad,
   usr,
   chainIdOverride,
-  enabled: paramEnabled = true,
-  shouldUseBatch = true,
-  onMutate = () => null,
-  onSuccess = () => null,
-  onError = () => null,
-  onStart = () => null
+  enabled = true,
+  ...flow
 }: BatchWriteHookParams & {
   gemAmt: bigint;
   usdsAmountInWad: bigint;
   usr?: `0x${string}`;
   chainIdOverride?: number;
-}): BatchWriteHook {
-  const chainId = useChainId();
-  const { address, isConnected } = useConnection();
-  const effectiveChainId = chainIdOverride ?? chainId;
-  const wrapperAddress = usdsPsmWrapperAddress[effectiveChainId as keyof typeof usdsPsmWrapperAddress];
+}): ApproveThenActHook {
+  const connectedChainId = useChainId();
+  const { address } = useConnection();
+  const chainId = chainIdOverride ?? connectedChainId;
+  const wrapper = usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress];
+  const usds = usdsAddress[chainId as keyof typeof usdsAddress];
   const recipient = usr ?? address;
-  const usdsToken = usdsAddress[effectiveChainId as keyof typeof usdsAddress];
 
   const { data: allowance, error: allowanceError } = useTokenAllowance({
-    chainId: effectiveChainId,
-    contractAddress: usdsToken,
+    chainId,
+    contractAddress: usds,
     owner: address,
-    spender: wrapperAddress
+    spender: wrapper
   });
 
-  const hasAllowance = allowance !== undefined && allowance >= usdsAmountInWad;
-
-  const approveCall = getWriteContractCall({
-    to: usdsToken,
-    abi: erc20Abi,
-    functionName: 'approve',
-    args: [wrapperAddress, usdsAmountInWad]
-  });
-
-  const buyGemCall = getWriteContractCall({
-    to: wrapperAddress,
-    abi: usdsPsmWrapperAbi,
-    functionName: 'buyGem',
-    args: [recipient!, gemAmt]
-  });
-
-  const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
-  calls.push(buyGemCall);
-
-  const enabled =
-    paramEnabled &&
-    isConnected &&
-    allowance !== undefined &&
-    gemAmt !== 0n &&
-    usdsAmountInWad !== 0n &&
-    !!recipient;
-
-  return useBatchWriteFlow({
-    calls,
-    shouldUseBatch,
-    chainId: effectiveChainId,
-    enabled,
-    onMutate,
-    onSuccess,
-    onError,
-    onStart,
-    allowanceError: allowanceError
+  return useApproveThenAct({
+    ...flow,
+    chainId,
+    enabled: enabled && gemAmt !== 0n && usdsAmountInWad !== 0n && !!recipient,
+    legs: [
+      {
+        approve: { token: usds, spender: wrapper, amount: usdsAmountInWad, allowance, allowanceError },
+        calls: [
+          getWriteContractCall({
+            to: wrapper,
+            abi: usdsPsmWrapperAbi,
+            functionName: 'buyGem',
+            args: [recipient!, gemAmt]
+          })
+        ]
+      }
+    ]
   });
 }

@@ -3,8 +3,9 @@ import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { type Token, useBatchVaultDeposit, useVaultRedeem, useVaultWithdraw } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepsFromPlan } from '@/modules/ui/components/transactionStepsModel';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
-import { useApproveSteps } from '@/modules/ui/hooks/useApproveSteps';
 
 export type VaultLaunchFlow = 'supply' | 'withdraw';
 
@@ -32,7 +33,7 @@ export type UseVaultLaunchResult = EngineLaunchResult;
  *  - withdraw (Max)      → `useVaultRedeem` (redeem all shares, no dust)
  *
  * The engines own all calldata + the USDT reset-allowance derivation; the
- * allowance read here is READ ONLY and only labels the approve steps.
+ * supply steps are read off the engine's plan.
  */
 export function useVaultLaunch({
   flow,
@@ -50,18 +51,6 @@ export function useVaultLaunch({
   const isSupply = flow === 'supply';
   const assetAddress = assetToken.address[chainId];
   const symbol = assetToken.symbol;
-
-  // READ ONLY — labels the approve steps only (the USDT reset → approve → supply
-  // triple-step carried forward). The approve/deposit calls and the USDT reset
-  // derivation live entirely inside useBatchVaultDeposit.
-  const supplySteps = useApproveSteps({
-    token: assetToken,
-    spender: vaultAddress,
-    amount,
-    enabled: isSupply,
-    action: t`Supply ${symbol}`,
-    withUsdtReset: true
-  });
 
   // All three engines are called unconditionally (hooks rules) and gated by
   // `enabled` to the active flow.
@@ -88,11 +77,17 @@ export function useVaultLaunch({
 
   const activeHook = isSupply ? depositHook : max ? redeemHook : withdrawHook;
 
-  // Step labels mirror the engine's call count so the indicator advances in
-  // lockstep.
-  const steps = useMemo<string[]>(
-    () => (isSupply ? supplySteps : [t`Withdraw ${symbol}`]),
-    [isSupply, supplySteps, symbol]
+  // Supply steps come off the engine's plan (the USDT reset → approve → supply
+  // triple-step included), so an approve shows exactly when the engine sends one.
+  const supplyPlan = depositHook.plan;
+  const steps = useMemo<TransactionStep[]>(
+    () =>
+      isSupply
+        ? stepsFromPlan(supplyPlan, [
+            { reset: t`Reset allowance`, approve: t`Approve ${symbol}`, action: t`Supply ${symbol}` }
+          ])
+        : [t`Withdraw ${symbol}`],
+    [isSupply, supplyPlan, symbol]
   );
 
   return toLaunchResult(activeHook, steps);

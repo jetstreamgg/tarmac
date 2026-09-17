@@ -5,13 +5,18 @@ import {
   StUsdsProviderType,
   useBatchCurveSwap,
   useBatchStUsdsDeposit,
-  useCurveAllowance,
-  useStUsdsAllowance,
   useStUsdsWithdraw
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
+import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import { stepsFromPlan } from '@/modules/ui/components/transactionStepsModel';
+import {
+  planOf,
+  toLaunchResult,
+  useShouldUseBatch,
+  type EngineLaunchResult
+} from '@/modules/ui/hooks/engineLaunch';
 
 export type StUsdsLaunchFlow = 'supply' | 'withdraw';
 
@@ -42,9 +47,8 @@ export type UseStUsdsLaunchResult = EngineLaunchResult;
  *  - withdraw, native → `useStUsdsWithdraw` (Max redeems shares to avoid dust)
  *  - withdraw, Curve  → `useBatchCurveSwap` WITHDRAW (stUSDS input from the quote)
  *
- * The engines own all calldata + their own allowance derivation; the allowance
- * reads here are READ ONLY and only label the approve steps (TanStack dedupes
- * them with the engines' own reads).
+ * The engines own all calldata + their own allowance derivation; the steps are
+ * read off the routed engine's plan.
  */
 export function useStUsdsLaunch({
   flow,
@@ -60,21 +64,6 @@ export function useStUsdsLaunch({
 
   const isSupply = flow === 'supply';
   const isCurve = selectedProvider === StUsdsProviderType.CURVE;
-
-  // READ ONLY — label the approve steps only. Same reads as the engines' own.
-  const { data: nativeSupplyAllowance } = useStUsdsAllowance();
-  const { hasAllowance: hasCurveUsdsAllowance } = useCurveAllowance({ token: 'USDS', amount });
-  const { hasAllowance: hasCurveStUsdsAllowance } = useCurveAllowance({
-    token: 'stUSDS',
-    amount: stUsdsAmount ?? 0n
-  });
-  const needsAllowance = isSupply
-    ? isCurve
-      ? !hasCurveUsdsAllowance
-      : nativeSupplyAllowance === undefined || nativeSupplyAllowance < amount
-    : isCurve
-      ? !hasCurveStUsdsAllowance
-      : false;
 
   // All four engines are called unconditionally (hooks rules) and gated by
   // `enabled` to the active flow + route — the same routing the widget's
@@ -120,13 +109,16 @@ export function useStUsdsLaunch({
       ? curveWithdraw
       : nativeWithdraw;
 
-  // Step labels mirror the engine's call count so the indicator advances in
-  // lockstep. The Curve swap is still "Supply"/"Withdraw" to the user — the
-  // route is communicated by the provider notice, not the step names.
-  const steps = useMemo<string[]>(() => {
-    if (isSupply) return needsAllowance ? [t`Approve USDS`, t`Supply USDS`] : [t`Supply USDS`];
-    return needsAllowance ? [t`Approve stUSDS`, t`Withdraw USDS`] : [t`Withdraw USDS`];
-  }, [isSupply, needsAllowance]);
+  // Steps come off the routed engine's plan, so an approve shows exactly when
+  // the engine sends one. The Curve swap is still "Supply"/"Withdraw" to the
+  // user — the route is communicated by the provider notice, not the step names.
+  // The native withdraw is a plain write with no plan; its single step is fixed.
+  const activePlan = planOf(activeHook);
+  const steps = useMemo<TransactionStep[]>(() => {
+    if (isSupply) return stepsFromPlan(activePlan, [{ approve: t`Approve USDS`, action: t`Supply USDS` }]);
+    if (!isCurve) return [t`Withdraw USDS`];
+    return stepsFromPlan(activePlan, [{ approve: t`Approve stUSDS`, action: t`Withdraw USDS` }]);
+  }, [isSupply, isCurve, activePlan]);
 
   return toLaunchResult(activeHook, steps);
 }
