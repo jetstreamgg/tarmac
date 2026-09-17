@@ -1,8 +1,12 @@
-import { useCallback, useId } from 'react';
-import { t } from '@lingui/core/macro';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useCallback } from 'react';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
+import { useEarnModal, type UseEarnModalOptions } from '@/modules/ui/hooks/useEarnModal';
 import { StUsdsModalForm, type StUsdsModalPreset } from '../components/StUsdsModalForm';
+
+const productName = () => 'stUSDS';
+const form: UseEarnModalOptions<void, StUsdsModalPreset>['form'] = ({ sessionId, flow, preset }) => (
+  <StUsdsModalForm sessionId={sessionId} flow={flow} preset={preset} />
+);
 
 type UseStUsdsModalOptions = {
   /** Fires after a successful supply/withdraw — refetch the position/balances. */
@@ -10,66 +14,24 @@ type UseStUsdsModalOptions = {
 };
 
 /**
- * Reusable trigger for the editable stUSDS supply/withdraw modal — the stUSDS
- * analogue of `useSavingsModal` (stUSDS is a singleton product, so there are no
- * call-time args). Any surface (the position card, Portfolio quick-deposit, …)
- * calls this instead of re-declaring the launch config. Each opener mints its
- * own session so sibling modals never cross-talk.
- *
- * Analytics-free by design — attribution for these surfaces is a separate
- * sign-off-gated slice, following the savings-modal precedent.
+ * Reusable trigger for the editable stUSDS supply/withdraw modal (a singleton
+ * product, so there are no call-time args). stUSDS is mainnet-only — the modal
+ * is guarded off any L2 (APP-528).
  */
 export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
-  const { launch } = useTransaction();
-  const supplySessionId = useId();
-  const withdrawSessionId = useId();
-
+  const modal = useEarnModal<void, StUsdsModalPreset>({
+    productName,
+    supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+    form,
+    onSuccess
+  });
   const openSupply = useCallback(
-    (preset?: StUsdsModalPreset) => {
-      launch({
-        title: t`Supply to stUSDS`,
-        transactionTitle: t`Confirm in the wallet`,
-        sessionId: supplySessionId,
-        // Three-screen flow (vault-family recipe): the entry advances to the
-        // review; the review's Confirm fires the engine. The body pushes the
-        // review breakdown (`transactionContent`) live.
-        reviewTitle: t`Review supply`,
-        entry: { confirmLabel: t`Review`, confirmDisabled: true },
-        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
-        usdValue: 0,
-        // stUSDS is a mainnet-only product — guard the modal off any L2 (APP-528).
-        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-        confirmLabel: t`Confirm`,
-        // The editable body lives outside the dialog (hidden host) so its in-flight
-        // hook survives minimize; it portals its inputs into the modal's entry slot.
-        backgroundContent: <StUsdsModalForm sessionId={supplySessionId} flow="supply" preset={preset} />,
-        onConfirm: () => {},
-        onSuccess
-      });
-    },
-    [launch, supplySessionId, onSuccess]
+    (preset?: StUsdsModalPreset) => modal.openSupply(undefined, preset),
+    [modal]
   );
-
   const openWithdraw = useCallback(
-    (preset?: StUsdsModalPreset) => {
-      launch({
-        title: t`Withdraw from stUSDS`,
-        transactionTitle: t`Confirm in the wallet`,
-        sessionId: withdrawSessionId,
-        reviewTitle: t`Review withdrawal`,
-        entry: { confirmLabel: t`Review`, confirmDisabled: true },
-        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
-        usdValue: 0,
-        // stUSDS is a mainnet-only product — guard the modal off any L2 (APP-528).
-        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-        confirmLabel: t`Confirm`,
-        backgroundContent: <StUsdsModalForm sessionId={withdrawSessionId} flow="withdraw" preset={preset} />,
-        onConfirm: () => {},
-        onSuccess
-      });
-    },
-    [launch, withdrawSessionId, onSuccess]
+    (preset?: StUsdsModalPreset) => modal.openWithdraw(undefined, preset),
+    [modal]
   );
-
   return { openSupply, openWithdraw };
 }
