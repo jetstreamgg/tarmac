@@ -21,7 +21,7 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
-  return { ...actual, useChainId: () => 1 };
+  return { ...actual, useChainId: () => 1, useAccount: () => ({ isConnected: true }) };
 });
 
 vi.mock('@/hooks', async importOriginal => {

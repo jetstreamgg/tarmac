@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useChainId } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 import { wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { t } from '@lingui/core/macro';
@@ -308,6 +308,7 @@ const renderCard = (row: ActivityRow) => (
  */
 export function StakeActivityTable({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
+  const { isConnected } = useAccount();
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const [filter, setFilter] = useState<'all' | number>('all');
@@ -333,7 +334,11 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
           <Trans>My activity</Trans>
         </h3>
         <EmptyState illustration={<TransactionsEmpty aria-hidden />}>
-          <Trans>You don&apos;t have any transactions made yet.</Trans>
+          {isConnected ? (
+            <Trans>You don&apos;t have any transactions made yet.</Trans>
+          ) : (
+            <Trans>Connect your wallet to see your activity.</Trans>
+          )}
         </EmptyState>
       </Card>
     );
