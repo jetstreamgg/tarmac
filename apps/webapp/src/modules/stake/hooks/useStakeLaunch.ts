@@ -1,79 +1,13 @@
-import { useCallback, useId, useMemo, type ReactNode } from 'react';
-import { useConnection } from 'wagmi';
+import { useCallback, type ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
-import { i18n } from '@lingui/core';
-import {
-  useBatchStakeMulticall,
-  useCurrentUrnIndex,
-  useRewardContractTokens,
-  useSkyPrice,
-  useStakeSkyAllowance,
-  useStakeUsdsAllowance,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { useCurrentUrnIndex, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt } from '@/utils';
-import { REFERRAL_CODE } from '@/lib/constants';
-import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import type { TransactionConfig, TransactionContextValue } from '@/modules/ui/context/transactionContract';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
-import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
-// The legacy msgid generators double as e2e anchors — reused, not forked
-// (UI Spec §3). They survive F7 by relocation, not deletion.
-import { getStakeTitle, StakeFlow } from '../lib/constants';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
-import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
-import { toLaunchResult, useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
-import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
-import { stakeUsdNotional, wadToFloat } from '../lib/stakeUsdNotional';
-
-/** The per-flow half of a stake modal launch — what `launchStakeModal` does not fix. */
-type StakeLaunchOverrides = Pick<
-  TransactionConfig,
-  | 'usdValue'
-  | 'title'
-  | 'toast'
-  | 'sessionId'
-  | 'transactionContent'
-  | 'transactionScreenContent'
-  | 'steps'
-  | 'onConfirm'
-  | 'onSuccess'
-> & {
-  /** The legacy stakeData analytics payload (useStakeTransactionCallbacks shape). */
-  stakeData: Record<string, unknown>;
-};
-
-/**
- * `TransactionContext.launch()` for the open and manage seams — the config
- * both share, with the flow picking the wallet-screen title (the legacy
- * msgid) and the analytics flow. The launch is `skipReview`: the takeover /
- * sheet already served as the review (Design QA 2800:91832), so the modal
- * opens on the wallet screen and the gate runs at once; `title` is the
- * minimized-toast fallback only. Staking is mainnet-only, so the modal is
- * guarded off any L2 (APP-528).
- */
-export function launchStakeModal(
-  launchModal: TransactionContextValue['launch'],
-  flow: StakeFlow,
-  { stakeData, ...overrides }: StakeLaunchOverrides
-) {
-  launchModal({
-    ...overrides,
-    supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-    skipReview: true,
-    transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, flow)),
-    confirmLabel: t`Confirm`,
-    analytics: {
-      widgetName: 'stake',
-      flow,
-      action: 'multicall',
-      data: stakeData
-    }
-  });
-}
+import { StakeFlow } from '../lib/constants';
+import { wadToFloat } from '../lib/stakeUsdNotional';
+import { useStakeEngineLaunch, type StakeEngineContext } from './useStakeEngineLaunch';
+import type { StakeLaunchContent } from './useStakeConfirmContent';
 
 /**
  * Confirm-modal step labels, derived from the calldata set — not from tx count
@@ -150,18 +84,10 @@ export interface UseStakeLaunchParams {
 }
 
 /**
- * The open-position seam (Architecture Proposal §5): wires the F1 calldata
- * (`useStakeCalldata`, flow `'open'`) into the unmodified
- * `useBatchStakeMulticall` engine, spreads the context `txCallbacks`, and
- * describes the transaction modal for `TransactionContext.launch()`. The
- * launch is `skipReview`: the takeover already served as the review, so the
- * modal opens on the wallet screen and the gate runs at once.
- *
- * Allowance decisions stay INSIDE the engine (landmine #1) — the read here only
- * labels the Approve step. Batching follows the legacy widget exactly:
- * `batchEnabled && batchSupported && (needsAllowance || calldata.length > 1)`
- * (`StakeModuleWidget/index.tsx:205`); the open flow's USDS approval leg is
- * always zero, so SKY is the only allowance that can gate.
+ * The open-position seam (Architecture Proposal §5): the F1 calldata (flow
+ * `'open'`) through `useStakeEngineLaunch`, with this flow's step labels and
+ * launch copy. The launch is `skipReview`: the takeover already served as the
+ * review, so the modal opens on the wallet screen and the gate runs at once.
  *
  * Per-step explainer copy (hi-fi shows it under the active step) is NOT
  * implemented: it needs an extension of the frozen transaction contract and
@@ -177,94 +103,8 @@ export function useStakeLaunch({
   transactionScreenContent,
   onSuccess
 }: UseStakeLaunchParams) {
-  const { launch: launchModal, txCallbacks } = useTransaction();
-  const sessionId = useId();
-  const { locked, restore } = useMinimizedSessionLock(sessionId);
-  const { address } = useConnection();
-  const { priceString: skyPriceString } = useSkyPrice();
-
   // The urn index a brand-new position will take.
   const { data: currentUrnIndex } = useCurrentUrnIndex();
-
-  const { calldata } = useStakeCalldata({
-    flow: 'open',
-    ownerAddress: address ?? ZERO_ADDRESS,
-    urnIndex: currentUrnIndex ?? 0n,
-    urnAddress: undefined,
-    skyToLock,
-    skyToFree: 0n,
-    usdsToWipe: 0n,
-    wipeAll: false,
-    usdsToBorrow,
-    selectedRewardContract,
-    selectedDelegate,
-    rewardContractsToClaim: undefined,
-    restakeSkyRewards: false,
-    restakeSkyAmount: 0n,
-    referralCode: REFERRAL_CODE
-  });
-
-  // F1's approval math: for the open flow this is lockAmount = skyToLock,
-  // usdsAmount = 0n (no wipe leg) — kept on the shared helper for parity.
-  const { lockAmount, usdsAmount } = calculateStakeApprovalAmounts({
-    skyToLock,
-    restakeSkyRewards: false,
-    restakeSkyAmount: 0n,
-    isSkyRewardPosition: false,
-    usdsToWipe: 0n,
-    wipeAll: false
-  });
-
-  // READ ONLY — labels the Approve step; the engine derives its own approve call.
-  const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
-  const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
-  // Nothing to approve on the open flow (`usdsAmount` is 0), but the engine
-  // still emits an approve leg while the read is unresolved — mirrored so the
-  // leg count below can't disagree with the calls it actually builds.
-  const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
-  const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
-  const refetchAllowances = useCallback(() => {
-    mutateSkyAllowance();
-    mutateUsdsAllowance();
-  }, [mutateSkyAllowance, mutateUsdsAllowance]);
-
-  const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);
-
-  const engine = useBatchStakeMulticall({
-    calldata,
-    skyAmount: lockAmount,
-    usdsAmount,
-    shouldUseBatch,
-    // The urn-index read must have resolved: calldata built on the 0n fallback
-    // targets urn 0 — an existing user's live position. The engine's open()
-    // index assertion would revert it in simulation, but don't rely on that.
-    enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
-    ...txCallbacks
-  });
-  useResetPausedRunOnClose(engine.reset, refetchAllowances);
-
-  // Legs the flow sends when bundled, mirroring the engine's own composition
-  // (approvals, then one call per calldata entry). NOT `calls.length`: with
-  // bundling off the engine collapses the calldata into a single `multicall`,
-  // so the calls it hands back describe the current route rather than the
-  // flow's shape.
-  const legCount = (needsSkyAllowance ? 1 : 0) + (needsUsdsAllowance ? 1 : 0) + calldata.length;
-
-  // Keeps the review body live while it is still a review — the fee estimate
-  // follows the in-modal bundle toggle, and the rate/delegate reads it draws
-  // from resolve there rather than freezing at Confirm-press.
-  // The launch's `onConfirm` is the sync's stable wrapper over the live engine
-  // `execute` — launch() must never snapshot it (landmine #2): the engine hook
-  // re-renders between launch and the user's Confirm click.
-  const { content: confirmContent, onConfirm } = useStakeConfirmContent({
-    sessionId,
-    execute: engine.execute,
-    calls: engine.calls ?? [],
-    isBatch: !!engine.isBatch,
-    legCount,
-    content: transactionContent,
-    screenContent: transactionScreenContent
-  });
 
   const hasBorrow = usdsToBorrow > 0n;
   // Same predicate the calldata builder uses for a NEW urn (`needsRewardUpdate`
@@ -272,90 +112,71 @@ export function useStakeLaunch({
   const hasReward = !!selectedRewardContract && selectedRewardContract !== ZERO_ADDRESS;
   const hasDelegate = !!selectedDelegate && selectedDelegate !== ZERO_ADDRESS;
 
-  // Labels the Select reward step's chip, and the legacy stakeData analytics
-  // shape (useStakeTransactionCallbacks) — event payloads are diffed against
-  // the legacy widget's before F7 deletes it. `urnIndex` stays undefined on
-  // the open flow (legacy passes activeUrn only).
-  const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
-  const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
-
-  const steps = buildStakeOpenSteps({
-    needsSkyAllowance,
-    hasBorrow,
-    hasReward,
-    rewardSymbol: selectedRewardSymbol,
-    hasDelegate,
-    shouldUseBatch
-  });
-
-  // Live (not computed at launch) because the takeover runs the enhanced-
-  // screening preflight on it while the user is still editing.
-  const usdValue = useMemo(
-    () => stakeUsdNotional(skyToLock, usdsToBorrow, skyPriceString),
-    [skyToLock, usdsToBorrow, skyPriceString]
+  const buildSteps = useCallback(
+    ({ needsSkyAllowance, shouldUseBatch, rewardSymbol }: StakeEngineContext) =>
+      buildStakeOpenSteps({
+        needsSkyAllowance,
+        hasBorrow,
+        hasReward,
+        rewardSymbol,
+        hasDelegate,
+        shouldUseBatch
+      }),
+    [hasBorrow, hasReward, hasDelegate]
   );
 
-  const launch = useCallback(() => {
-    const formattedSky = formatBigInt(skyToLock);
-
-    const stakeData: Record<string, unknown> = {
-      module: 'stake',
-      assetSymbol: 'SKY',
-      borrowSymbol: 'USDS',
-      urnIndex: undefined,
+  const engine = useStakeEngineLaunch({
+    flow: StakeFlow.OPEN,
+    calldata: {
+      urnIndex: currentUrnIndex ?? 0n,
+      urnAddress: undefined,
+      skyToLock,
+      skyToFree: 0n,
+      usdsToWipe: 0n,
+      wipeAll: false,
+      usdsToBorrow,
       selectedRewardContract,
-      selectedRewardSymbol,
-      isDelegating: hasDelegate,
-      isBatchTx: shouldUseBatch,
-      ...(skyToLock > 0n && { amount: wadToFloat(skyToLock), stakeAction: 'stake' }),
-      ...(hasBorrow && { borrowAmount: wadToFloat(usdsToBorrow), borrowAction: 'borrow' })
-    };
-
-    launchStakeModal(launchModal, StakeFlow.OPEN, {
-      usdValue,
+      selectedDelegate,
+      rewardContractsToClaim: undefined,
+      restakeSkyRewards: false,
+      restakeSkyAmount: 0n
+    },
+    rewardContract: selectedRewardContract,
+    // The urn-index read must have resolved: calldata built on the 0n fallback
+    // targets urn 0 — an existing user's live position. The engine's open()
+    // index assertion would revert it in simulation, but don't rely on that.
+    enabled: enabled && currentUrnIndex !== undefined,
+    notional: { sky: skyToLock, usds: usdsToBorrow },
+    buildSteps,
+    // Labels + the legacy stakeData analytics shape (useStakeTransactionCallbacks)
+    // — event payloads are diffed against the legacy widget's before F7 deletes
+    // it. `urnIndex` stays undefined on the open flow (legacy passes activeUrn only).
+    describe: ({ shouldUseBatch, rewardSymbol }) => ({
       title: t`Confirm`,
       // Result toasts per UX A.4: borrow path announces the position, the
       // stake-only path announces the staked amount.
       toast: {
         loading: t`Opening position`,
-        success: hasBorrow ? t`The position is now open!` : t`${formattedSky} SKY staked!`,
+        success: hasBorrow ? t`The position is now open!` : t`${formatBigInt(skyToLock)} SKY staked!`,
         error: t`Failed to open the position`
       },
-      sessionId,
-      transactionContent: confirmContent,
-      transactionScreenContent,
-      steps,
-      onConfirm,
-      onSuccess,
-      stakeData
-    });
-  }, [
-    launchModal,
-    skyToLock,
-    usdsToBorrow,
-    selectedRewardContract,
-    selectedRewardSymbol,
-    hasBorrow,
-    hasDelegate,
-    shouldUseBatch,
-    usdValue,
-    sessionId,
-    confirmContent,
-    onConfirm,
+      stakeData: {
+        module: 'stake',
+        assetSymbol: 'SKY',
+        borrowSymbol: 'USDS',
+        urnIndex: undefined,
+        selectedRewardContract,
+        selectedRewardSymbol: rewardSymbol,
+        isDelegating: hasDelegate,
+        isBatchTx: shouldUseBatch,
+        ...(skyToLock > 0n && { amount: wadToFloat(skyToLock), stakeAction: 'stake' }),
+        ...(hasBorrow && { borrowAmount: wadToFloat(usdsToBorrow), borrowAction: 'borrow' })
+      }
+    }),
+    transactionContent,
     transactionScreenContent,
-    steps,
     onSuccess
-  ]);
+  });
 
-  return {
-    launch,
-    locked,
-    restore,
-    /** Live USD notional of the staged position, for the takeover's own preflight. */
-    usdValue,
-    calldata,
-    needsSkyAllowance,
-    shouldUseBatch,
-    ...toLaunchResult(engine, steps)
-  };
+  return engine;
 }
