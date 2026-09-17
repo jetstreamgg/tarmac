@@ -143,6 +143,8 @@ vi.mock('@/hooks', async importOriginal => {
         dust: h.dust,
         minCollateralForDust: h.minCollateralForDust,
         riskLevel: desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW,
+        // Capped collateral value at 200% of the debt → 50% loan-to-value.
+        collateralValue: desiredDebt * 2n,
         liquidationProximityPercentage: desiredDebt > 0n ? h.simProximity : 0,
         // Scales with the collateral so a stake-only change moves the price.
         liquidationPrice:
@@ -206,6 +208,8 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
             debtValue: h.existingDebt,
             dust: h.dust,
             riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
+            // Capped collateral value at 150% of the debt → 67% loan-to-value.
+            collateralValue: (h.existingDebt * 3n) / 2n,
             liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
             liquidationPrice: h.simLiqPrice,
             delayedPrice: h.simDelayedPrice
@@ -476,6 +480,17 @@ describe('ManagePositionTakeover', () => {
       'Debt must be paid off entirely'
     );
     expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('loan-to-value row: current → simulated, `–` after a full repay, no rate info icon (Figma 3015:59185)', () => {
+    renderSheet({ borrowCard: 'repay' });
+    const ltv = () => screen.getByTestId('stake-manage-ltv-row').textContent ?? '';
+
+    expect(ltv()).toContain('67%');
+    expect(screen.getByTestId('stake-manage-borrow-rate-row').querySelector('svg')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+    expect(ltv()).toMatch(/–$/);
   });
 
   it('full repay renders the Repaid delta row (M13)', () => {

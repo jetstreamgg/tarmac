@@ -551,7 +551,7 @@ export function ManagePositionTakeover({
           <span className="bg-borderPrimary h-8 w-px shrink-0 self-center" aria-hidden />
           <div className="flex flex-col gap-1">
             <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">
-              <Trans>Capped OSM SKY price</Trans>
+              <Trans>Protocol SKY Price</Trans>
               <RateInfo type="cappedOsmSkyPrice" size={12} />
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">

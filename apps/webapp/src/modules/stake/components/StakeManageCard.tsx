@@ -132,9 +132,9 @@ export function ReachedBadge({ reached }: { reached: boolean }) {
   );
 }
 
-/** Badges XS neutral "Updated hourly" (comp 1594:43606): no icon, 11px Circular on the glass tint. */
+/** Badges XS neutral "Hourly updates" (comp 1594:43606, copy per 3015:59185): no icon, 11px Circular on the glass tint. */
 export const UpdatedHourlyBadge = () => (
   <span className="bg-glassBadge text-textSecondary font-circle flex h-[18px] items-center rounded-full px-2 text-[11px] leading-none font-medium whitespace-nowrap">
-    <Trans>Updated hourly</Trans>
+    <Trans>Hourly updates</Trans>
   </span>
 );

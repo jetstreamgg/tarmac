@@ -132,6 +132,8 @@ vi.mock('@/hooks', async importOriginal => {
         dust: h.dust,
         minCollateralForDust: h.minCollateralForDust,
         riskLevel: desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW,
+        // Capped collateral value at 150% of the debt → 67% loan-to-value.
+        collateralValue: (desiredDebt * 3n) / 2n,
         liquidationProximityPercentage: desiredDebt > 0n ? 36 : 0,
         liquidationPrice: 432n * 10n ** 14n,
         delayedPrice: 608n * 10n ** 14n
@@ -567,16 +569,28 @@ describe('OpenPositionTakeover', () => {
     ]);
     expect(labels('stake-takeover-borrow-card')).toEqual([
       'Liquidation risk',
+      'Loan-to-value',
       'Liquidation price',
-      'Capped OSM SKY priceUpdated hourly',
+      'Protocol SKY PriceHourly updates',
       'Borrow rate'
     ]);
     // Reached badge leads the min-stake value; the hourly pill sits in the label, not the value.
     const minStake = screen.getByTestId('stake-takeover-min-stake');
     expect(minStake.firstElementChild?.getAttribute('data-testid')).toBe('stake-min-stake-badge');
     expect(screen.getByTestId('stake-takeover-osm-price-row').lastElementChild?.textContent).not.toContain(
-      'Updated hourly'
+      'Hourly updates'
     );
+  });
+
+  it('shows loan-to-value as debt over the capped collateral value (Figma 3015:59185)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    // Toggling on stages the dust floor, so the simulation carries debt.
+    expect(screen.getByTestId('stake-takeover-ltv-row').textContent).toContain('67%');
+    // The rate row carries no info icon (Figma 3015:59236).
+    expect(screen.getByTestId('stake-takeover-borrow-rate-row').querySelector('svg')).toBeNull();
   });
 
   it('enabling the borrow toggle pre-selects the dust floor (Figma 3015:59185)', () => {

@@ -2,6 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
+import { loanToValue as computeLoanToValue } from '../lib/loanToValue';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -79,6 +80,9 @@ export function StakeTakeoverBorrowCard({
   const inputDisabled = minCollateralNotMet || slider.disabled;
   const hasAmount = usdsToBorrow > 0n;
   const riskLevel = hasAmount ? simulatedVault?.riskLevel : undefined;
+  const loanToValue = hasAmount
+    ? computeLoanToValue(simulatedVault?.debtValue, simulatedVault?.collateralValue)
+    : undefined;
   // `maxBorrowable` composes over `?? 0n` fallbacks, so it skeletons while
   // either input read is unresolved.
   const maxLoading = collateralLoading || simulationLoading;
@@ -175,7 +179,7 @@ export function StakeTakeoverBorrowCard({
           </p>
         )}
 
-        {/* Figma 3015:59215: stacked rows split by hairlines, risk first. */}
+        {/* Figma 3015:59215: stacked rows split by hairlines, risk first; no info icon on the rate row. */}
         <StakeManageStatRows>
           <StakeManageStatRow
             label={
@@ -212,6 +216,28 @@ export function StakeTakeoverBorrowCard({
             dataTestId="stake-takeover-risk-row"
           />
           <StakeManageStatRow
+            label={
+              <>
+                <Trans>Loan-to-value</Trans>
+                <InfoTooltip
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
+                />
+              </>
+            }
+            current={
+              loanToValue !== undefined ? (
+                formatPercent(loanToValue, { showPercentageDecimals: false })
+              ) : hasAmount && simulationLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+            dataTestId="stake-takeover-ltv-row"
+          />
+          <StakeManageStatRow
             label={<Trans>Liquidation price</Trans>}
             current={
               hasAmount && simulatedVault?.liquidationPrice ? (
@@ -227,7 +253,7 @@ export function StakeTakeoverBorrowCard({
           <StakeManageStatRow
             label={
               <>
-                <Trans>Capped OSM SKY price</Trans>
+                <Trans>Protocol SKY Price</Trans>
                 <RateInfo type="cappedOsmSkyPrice" size={12} />
                 <UpdatedHourlyBadge />
               </>
@@ -244,12 +270,7 @@ export function StakeTakeoverBorrowCard({
             dataTestId="stake-takeover-osm-price-row"
           />
           <StakeManageStatRow
-            label={
-              <>
-                <Trans>Borrow rate</Trans>
-                <RateInfo type="sbr" size={12} />
-              </>
-            }
+            label={<Trans>Borrow rate</Trans>}
             current={
               collateralData?.stabilityFee ? (
                 formatPercent(collateralData.stabilityFee)

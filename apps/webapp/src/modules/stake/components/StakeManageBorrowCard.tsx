@@ -3,6 +3,7 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD, WAD_PRECISION } from '@/utils';
+import { loanToValue } from '../lib/loanToValue';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfoTooltip } from '@/components/InfoTooltip';
@@ -177,6 +178,12 @@ export function StakeManageBorrowCard({
   const isFullRepay = isRepay && (wipeAll || (hasAmount && amount >= existingDebt));
   const showDeltas = (hasStagedChange ?? (hasAmount || wipeAll)) && !error;
   const newDebt = showDeltas ? (isFullRepay ? 0n : simulatedVault?.debtValue) : undefined;
+  const currentLtv = loanToValue(existingVault?.debtValue, existingVault?.collateralValue);
+  const nextLtv = isFullRepay
+    ? undefined
+    : loanToValue(simulatedVault?.debtValue, simulatedVault?.collateralValue);
+  const formatLtv = (ltv: bigint | undefined) =>
+    ltv === undefined ? NO_VALUE : formatPercent(ltv, { showPercentageDecimals: false });
   const usdsIcon = (
     <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
   );
@@ -423,6 +430,35 @@ export function StakeManageBorrowCard({
             dataTestId="stake-manage-risk-row"
           />
           <StakeManageStatRow
+            label={
+              <>
+                <Trans>Loan-to-value</Trans>
+                <InfoTooltip
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
+                />
+              </>
+            }
+            current={
+              positionLoading && existingVault?.collateralValue === undefined ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                formatLtv(currentLtv)
+              )
+            }
+            next={
+              showDeltas
+                ? isFullRepay
+                  ? NO_VALUE
+                  : nextLtv !== undefined && nextLtv !== currentLtv
+                    ? formatLtv(nextLtv)
+                    : undefined
+                : undefined
+            }
+            dataTestId="stake-manage-ltv-row"
+          />
+          <StakeManageStatRow
             label={<Trans>Liquidation price</Trans>}
             current={
               positionLoading && existingVault?.liquidationPrice === undefined ? (
@@ -446,7 +482,7 @@ export function StakeManageBorrowCard({
           <StakeManageStatRow
             label={
               <>
-                <Trans>Capped OSM SKY price</Trans>
+                <Trans>Protocol SKY Price</Trans>
                 <RateInfo type="cappedOsmSkyPrice" size={12} />
                 <UpdatedHourlyBadge />
               </>
@@ -462,12 +498,7 @@ export function StakeManageBorrowCard({
             }
           />
           <StakeManageStatRow
-            label={
-              <>
-                <Trans>Borrow rate</Trans>
-                <RateInfo type="sbr" size={12} />
-              </>
-            }
+            label={<Trans>Borrow rate</Trans>}
             current={
               collateralData?.stabilityFee ? (
                 formatPercent(collateralData.stabilityFee)
