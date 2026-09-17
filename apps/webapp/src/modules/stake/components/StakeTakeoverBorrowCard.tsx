@@ -102,14 +102,22 @@ export function StakeTakeoverBorrowCard({
           title={<Trans>Stake more to borrow</Trans>}
           current={skyToLock}
           required={minCollateralForDust ?? 0n}
-          currentLabel={
-            <Trans>
-              {formatBigInt(skyToLock, { compact: true })} /{' '}
-              {minCollateralForDust !== undefined
-                ? formatBigInt(minCollateralForDust, { compact: true })
-                : NO_VALUE}{' '}
-              SKY staked
-            </Trans>
+          description={
+            skyToLock > 0n ? (
+              <Trans>
+                To borrow, you&apos;ll need to stake a minimum of{' '}
+                {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
+                collateral. You have {formatBigInt(skyToLock)} SKY staked, so make sure to add more collateral
+                to qualify for borrowing USDS.
+              </Trans>
+            ) : (
+              <Trans>
+                To borrow, you&apos;ll need to stake a minimum of{' '}
+                {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
+                collateral. Since you haven&apos;t staked any SKY yet, make sure to add more collateral to
+                qualify for borrowing USDS.
+              </Trans>
+            )
           }
         />
       }
