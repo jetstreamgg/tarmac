@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import type { Locale } from 'date-fns';
+import { enUS } from 'date-fns/locale/en-US';
 import { localeImports, LocaleModule } from './locale.constants';
 
 //map lingui locale strings to date-fns locales
@@ -12,7 +13,7 @@ export const getDateLocale = async (locale: string): Promise<Locale> => {
     localeModule = await localeFn();
   } catch (error) {
     console.error('Error importing locale: ', error);
-    localeModule = await import('date-fns/locale/en-US');
+    return enUS;
   }
   // Locale modules may expose both 'default' and a named export; the named export is the locale object we need.
   const localeKey = Object.keys(localeModule).find(

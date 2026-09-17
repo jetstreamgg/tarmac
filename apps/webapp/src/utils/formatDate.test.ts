@@ -1,0 +1,23 @@
+import { describe, expect, it, vi } from 'vitest';
+import { enUS } from 'date-fns/locale/en-US';
+import { fr } from 'date-fns/locale/fr';
+
+vi.mock('./locale.constants', () => ({
+  localeImports: {
+    fr: () => Promise.resolve({ fr }),
+    de: () => Promise.reject(new Error("'text/html' is not a valid JavaScript MIME type."))
+  }
+}));
+
+describe('getDateLocale', () => {
+  it('resolves a locale that loads', async () => {
+    const { getDateLocale } = await import('./formatDate');
+    expect(await getDateLocale('fr-FR')).toBe(fr);
+  });
+
+  it('falls back to the bundled enUS when the locale chunk fails to load', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { getDateLocale } = await import('./formatDate');
+    expect(await getDateLocale('de-DE')).toBe(enUS);
+  });
+});
