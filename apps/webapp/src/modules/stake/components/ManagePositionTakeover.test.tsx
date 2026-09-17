@@ -41,6 +41,8 @@ const h = vi.hoisted(() => ({
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
   simProximity: 36,
+  // Overrides the debt-derived simulated risk level when set.
+  simRisk: undefined as string | undefined,
   // 125% collateralisation ratio (ray).
   liquidationRatio: 125n * 10n ** 25n,
   minCollateralForDust: 0n,
@@ -142,7 +144,7 @@ vi.mock('@/hooks', async importOriginal => {
         maxSafeBorrowableIntAmountNoCap: collateral / 10n,
         dust: h.dust,
         minCollateralForDust: h.minCollateralForDust,
-        riskLevel: desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW,
+        riskLevel: h.simRisk ?? (desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW),
         // Capped collateral value at 200% of the debt → 50% loan-to-value.
         collateralValue: desiredDebt * 2n,
         liquidationProximityPercentage: desiredDebt > 0n ? h.simProximity : 0,
@@ -318,6 +320,7 @@ describe('ManagePositionTakeover', () => {
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
+    h.simRisk = undefined;
     h.liquidationRatio = 125n * 10n ** 25n;
     h.minCollateralForDust = 1_440_000n * WAD;
     h.debtCeiling = parseUnits('1000000000', 18);
@@ -506,6 +509,56 @@ describe('ManagePositionTakeover', () => {
     fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
     expect(ltv()).toMatch(/–$/);
   });
+
+  it('paints the new loan-to-value red only when the move lands in high or liquidation risk (Figma 3297:72534)', () => {
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+    expect(screen.getByTestId('stake-manage-ltv-row').textContent).toContain('50%');
+    expect(screen.queryByTestId('stake-manage-ltv-danger')).toBeNull();
+
+    cleanup();
+    h.simRisk = 'HIGH';
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+    expect(screen.getByTestId('stake-manage-ltv-danger').textContent).toBe('50%');
+    expect(screen.getByTestId('stake-manage-ltv-danger').className).toContain('text-statusError');
+  });
+
+  // With debt the borrow card is always open, so its errors must gate Confirm
+  // regardless of which card the deep link pre-selected.
+  it.each([
+    { name: 'repay above the debt', mode: 'repay', amount: '100000', error: 'Amount exceeds debt' },
+    { name: 'sub-dust repay remainder', mode: 'repay', amount: '15000', error: 'Debt must be paid off' },
+    { name: 'repay without USDS', mode: 'repay', amount: '30000', error: 'need USDS', usdsBalance: 0n },
+    {
+      name: 'borrow above the ceiling',
+      mode: 'borrow',
+      amount: '40001',
+      error: 'debt ceiling',
+      ceiling: true
+    },
+    {
+      name: 'borrow simulation failure',
+      mode: 'borrow',
+      amount: '1000',
+      error: 'Insufficient collateral',
+      sim: true
+    }
+  ] as const)(
+    'blocks Confirm on $name when the sheet opened from the stake side',
+    ({ mode, amount, error, ...knobs }) => {
+      h.usdsBalance =
+        'usdsBalance' in knobs && knobs.usdsBalance !== undefined ? knobs.usdsBalance : 200_000n * WAD;
+      if ('ceiling' in knobs) h.debtCeiling = 40_000n * WAD;
+      if ('sim' in knobs) h.simulationError = new Error('Insufficient collateral');
+      renderSheet({ stakeCard: 'withdraw' });
+
+      fireEvent.click(screen.getByTestId(`stake-manage-borrow-card-mode-${mode}`));
+      fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: amount } });
+      expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toContain(error);
+      expect(confirmButton().disabled).toBe(true);
+    }
+  );
 
   it('full repay renders the Repaid delta row (M13)', () => {
     renderSheet({ borrowCard: 'repay' });

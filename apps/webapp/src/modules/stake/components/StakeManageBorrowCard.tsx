@@ -218,6 +218,7 @@ export function StakeManageBorrowCard({
 
   const currentRisk = existingVault?.riskLevel;
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
+  const nextRiskIsDanger = nextRisk === RiskLevel.HIGH || nextRisk === RiskLevel.LIQUIDATION;
   // Figma colours the fill by the resulting risk; a full repay reads as Low.
   const sliderRisk = isFullRepay ? RiskLevel.LOW : hasAmount ? (nextRisk ?? currentRisk) : currentRisk;
   const sliderTone = sliderToneForRisk(sliderRisk);
@@ -449,13 +450,20 @@ export function StakeManageBorrowCard({
               )
             }
             next={
-              showDeltas
-                ? isFullRepay
-                  ? NO_VALUE
-                  : nextLtv !== undefined && nextLtv !== currentLtv
-                    ? formatLtv(nextLtv)
-                    : undefined
-                : undefined
+              showDeltas ? (
+                isFullRepay ? (
+                  NO_VALUE
+                ) : nextLtv !== undefined && nextLtv !== currentLtv ? (
+                  // The new value goes red once the move lands in high/liquidation risk (Figma 3297:72534).
+                  nextRiskIsDanger ? (
+                    <span data-testid="stake-manage-ltv-danger" className="text-statusError">
+                      {formatLtv(nextLtv)}
+                    </span>
+                  ) : (
+                    formatLtv(nextLtv)
+                  )
+                ) : undefined
+              ) : undefined
             }
             dataTestId="stake-manage-ltv-row"
           />

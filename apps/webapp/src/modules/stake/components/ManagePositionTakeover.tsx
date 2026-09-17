@@ -251,7 +251,7 @@ export function ManagePositionTakeover({
             : formatSimulationErrorMessage(simulationError?.message, undefined, usdsToWipe);
 
   const borrowCardValid =
-    !state.borrowEnabled ||
+    !borrowOn ||
     (state.borrowMode === 'borrow'
       ? !minCollateralNotMet &&
         // <= so the exact ceiling headroom (what the 100% chip stages when the
@@ -631,9 +631,7 @@ export function ManagePositionTakeover({
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}
         currentCollateral={liveCollateralAmount > 0n ? liveCollateralAmount : 0n}
-        hasStagedChange={
-          state.skyAmount > 0n || (state.borrowEnabled && (state.usdsAmount > 0n || state.wipeAll))
-        }
+        hasStagedChange={state.skyAmount > 0n || (borrowOn && (state.usdsAmount > 0n || state.wipeAll))}
         error={borrowError}
       />
     </TakeoverShell>
