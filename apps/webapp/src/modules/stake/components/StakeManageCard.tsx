@@ -15,7 +15,8 @@ import { cn } from '@/lib/cn';
  * non-Radix reuse as EarnTableFilters). While the card is toggled off the
  * pills are disabled (Design QA 2800:91832: "If the section is turned off by
  * the toggle the tabs should be disabled", Tabs State=Disabled) — switching
- * mode on a collapsed card would silently reset amounts the user can't see.
+ * mode on a collapsed card would silently reset amounts the user can't see,
+ * and no pill reads selected until the card is on.
  */
 export function StakeManageCard<Mode extends string>({
   modes,
@@ -46,20 +47,23 @@ export function StakeManageCard<Mode extends string>({
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-1.5" role="group">
-          {modes.map(mode => (
-            <button
-              key={mode.value}
-              type="button"
-              onClick={() => onModeChange(mode.value)}
-              disabled={!enabled}
-              aria-pressed={mode.value === activeMode}
-              data-state={mode.value === activeMode ? 'active' : 'inactive'}
-              data-testid={`${dataTestId}-mode-${mode.value}`}
-              className={tabsTriggerVariants({ variant: 'pill' })}
-            >
-              {mode.label}
-            </button>
-          ))}
+          {modes.map(mode => {
+            const selected = enabled && mode.value === activeMode;
+            return (
+              <button
+                key={mode.value}
+                type="button"
+                onClick={() => onModeChange(mode.value)}
+                disabled={!enabled}
+                aria-pressed={selected}
+                data-state={selected ? 'active' : 'inactive'}
+                data-testid={`${dataTestId}-mode-${mode.value}`}
+                className={tabsTriggerVariants({ variant: 'pill' })}
+              >
+                {mode.label}
+              </button>
+            );
+          })}
         </div>
         <StakeCardToggle
           checked={enabled}

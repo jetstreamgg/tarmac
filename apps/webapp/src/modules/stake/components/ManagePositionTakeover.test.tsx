@@ -706,13 +706,19 @@ describe('ManagePositionTakeover', () => {
     const withdrawPill = screen.getByTestId('stake-manage-stake-card-mode-withdraw') as HTMLButtonElement;
     expect(stakePill.disabled).toBe(true);
     expect(withdrawPill.disabled).toBe(true);
+    // ...and neither reads selected until the card is on.
+    expect(stakePill.getAttribute('aria-pressed')).toBe('false');
+    expect(stakePill.getAttribute('data-state')).toBe('inactive');
 
     fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
     expect(stakePill.disabled).toBe(false);
     expect(withdrawPill.disabled).toBe(false);
+    expect(stakePill.getAttribute('aria-pressed')).toBe('true');
+    expect(stakePill.getAttribute('data-state')).toBe('active');
 
     fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
     expect(stakePill.disabled).toBe(true);
+    expect(stakePill.getAttribute('data-state')).toBe('inactive');
   });
 
   it('holds Confirm on a pending verdict and blocks it, with the reason, on a denial (APP-550)', () => {
