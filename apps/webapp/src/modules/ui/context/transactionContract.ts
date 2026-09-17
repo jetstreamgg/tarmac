@@ -296,10 +296,51 @@ export type TxCallbacks = {
   onError: (error: Error, hash?: string) => void;
 };
 
+/**
+ * A launch that hands the provider a COMPONENT instead of a config: the flow
+ * renders `TransactionModal` itself, from its own hooks, on every render, so
+ * nothing has to be pushed after launch. The provider mounts `render()` once
+ * per session in a host that survives minimize, and keeps only what it must
+ * know before the flow mounts.
+ */
+export type FlowLaunch = {
+  render: () => ReactNode;
+  /** Identity of the flow, for `activeSessionId` consumers. */
+  sessionId?: string;
+  /** See `TransactionConfig.supportedChainIds`. */
+  supportedChainIds: number[];
+  /** See `TransactionConfig.chainGuardReason`. */
+  chainGuardReason?: 'product-unavailable' | 'launch-chain';
+  /** See `TransactionConfig.skipReview`. */
+  skipReview?: boolean;
+};
+
+export type LaunchInput = TransactionConfig | FlowLaunch;
+
+export function isFlowLaunch(input: LaunchInput): input is FlowLaunch {
+  return 'render' in input;
+}
+
+/**
+ * What the provider reads off the rendered modal after launch: the callbacks
+ * it fires on settle, and the copy/attribution its own toasts and analytics
+ * events carry. `TransactionModal` registers these every render.
+ */
+export type LiveFlowProps = {
+  title: string;
+  usdValue: number | undefined;
+  analytics?: TransactionAnalytics;
+  toast?: TransactionConfig['toast'];
+  onSuccess?: () => void;
+  onError?: () => void;
+  /** The flow opens on an editable entry (its review-viewed event fires at entry → review). */
+  hasEntry: boolean;
+};
+
 /** The value exposed by the transaction context. */
 export type TransactionContextValue = {
-  /** Open the transaction modal with a review screen. */
-  launch: (config: TransactionConfig) => void;
+  /** Open the transaction modal: a config (the static shape) or a flow component (`FlowLaunch`). */
+  launch: (input: LaunchInput) => void;
   /** Live-update body / right-header / confirm-disabled. Gated on sessionId. */
   updateModalContent: (sessionId: string, partial: LiveModalUpdate) => void;
   isModalOpen: boolean;

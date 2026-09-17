@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 /**
  * One launch of the transaction modal. Created by `launch()`, marked `closed`
  * by the close that ends it, and never reused: everything the provider used
@@ -8,6 +10,16 @@
 export type TransactionSession = {
   /** The config's `sessionId`, for gating live updates to the flow that launched. */
   id: string | null;
+  /** Mount key: each launch gets a FRESH host and modal (screen back to first, inputs cleared). */
+  key: number;
+  /** What the provider needs before the flow mounts. */
+  launch: {
+    supportedChainIds: number[];
+    chainGuardReason?: 'product-unavailable' | 'launch-chain';
+    skipReview: boolean;
+  };
+  /** The flow component (a config launch renders the `ConfigFlow` adapter). */
+  render: () => ReactNode;
   /** Set by the close (or the launch that replaces this session); read by every callback. */
   closed: boolean;
   /**
@@ -30,6 +42,9 @@ export type TransactionSession = {
 
 export function createTransactionSession(init: {
   id: string | null;
+  key: number;
+  launch: TransactionSession['launch'];
+  render: () => ReactNode;
   chainId: number;
   launchPathname: string;
   flowId: string | undefined;

@@ -261,6 +261,7 @@ export function useSequentialTransactionFlow(
     prepared,
     error: writeError || miningError || simulationError,
     currentCallIndex: currentIndex,
+    minedCount: transactionHashes.filter(Boolean).length,
     reset
   };
 }

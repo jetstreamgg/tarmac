@@ -81,6 +81,8 @@ export type BatchWriteHook = {
   prepared: boolean;
   execute: () => void;
   currentCallIndex: number;
+  /** Calls of the current run that have mined (a bundle mines as one, at success). */
+  minedCount?: number;
   reset: () => void;
   /** The calls this hook will send — read-only, for estimating the flow's network fee. */
   calls?: Call[];
@@ -153,6 +155,9 @@ export type SequentialTransactionHook = {
   isLoading: boolean;
   execute: () => void;
   prepared: boolean;
+  /** The call the engine is on — the step the modal highlights. */
   currentCallIndex: number;
+  /** Calls of the current run that have mined; > 0 means a failure must resume, not reopen the inputs. */
+  minedCount: number;
   reset: () => void;
 };
