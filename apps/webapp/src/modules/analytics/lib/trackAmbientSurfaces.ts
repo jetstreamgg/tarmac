@@ -22,6 +22,13 @@ function captureAmbient(event: string, properties: Record<string, unknown>): voi
   safeCapture(posthog, event, { ...properties, viewport: getViewport() });
 }
 
+export function trackErrorBoundaryTriggered({ boundaryName }: { boundaryName: string }): void {
+  captureAmbient(AppEvents.ERROR_BOUNDARY_TRIGGERED, {
+    boundary_name: boundaryName,
+    path: typeof window === 'undefined' ? '' : window.location.pathname
+  });
+}
+
 export function trackRouteErrorViewed({ path }: { path: string }): void {
   captureAmbient(AppEvents.ROUTE_ERROR_VIEWED, { path });
 }

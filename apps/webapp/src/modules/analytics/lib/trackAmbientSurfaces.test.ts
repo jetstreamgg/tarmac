@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  trackErrorBoundaryTriggered,
   trackNotFoundViewed,
   trackPromoClicked,
   trackPromoImpression,
@@ -36,9 +37,14 @@ describe('trackAmbientSurfaces', () => {
   it('captures error surfaces with their path', () => {
     trackRouteErrorViewed({ path: '/earn' });
     trackNotFoundViewed({ path: '/bogus' });
+    trackErrorBoundaryTriggered({ boundaryName: 'SavingsCard' });
 
     expect(capturedEventsNamed('app_route_error_viewed')[0].properties).toMatchObject({ path: '/earn' });
     expect(capturedEventsNamed('app_not_found_viewed')[0].properties).toMatchObject({ path: '/bogus' });
+    expect(capturedEventsNamed('app_error_boundary_triggered')[0].properties).toMatchObject({
+      boundary_name: 'SavingsCard',
+      path: expect.any(String)
+    });
   });
 
   it('dedupes identical emissions inside the window (StrictMode double-run)', () => {
