@@ -12,7 +12,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -48,7 +48,6 @@ const formatUsd = (value: number) => `$${formatNumber(value, { maxDecimals: 2 })
  * the engine `execute` from `useRewardsLaunch`.
  */
 export function RewardsModalForm({
-  sessionId,
   flow,
   contractAddress,
   supplyToken,
@@ -56,9 +55,9 @@ export function RewardsModalForm({
   productName,
   rewardTokenSymbol,
   rate,
-  preset
+  preset,
+  onSuccess
 }: {
-  sessionId: string;
   flow: RewardsLaunchFlow;
   contractAddress: `0x${string}`;
   supplyToken: Token;
@@ -71,6 +70,8 @@ export function RewardsModalForm({
   /** Reward rate as a decimal fraction (e.g. 0.045) for the Rate + projected-earnings cells. */
   rate?: number;
   preset?: RewardsModalPreset;
+  /** Fires after a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -198,24 +199,6 @@ export function RewardsModalForm({
     [flow, productName, contractAddress, supplyToken, chainId, isBatch, amount, decimals]
   );
 
-  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / review breakdown / step labels /
-  // wallet summary / toast titles in sync, and the entry-slot portal.
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    confirmDisabled: disabled,
-    errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // The supply token is $1-pegged USDS (see amountUsd above) — enhanced
-    // screening, APP-517.
-    usdValue: amountUsd,
-    analytics
-  });
-
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`rewards-modal-${flow}-form`}>
       <ModalAmountField
@@ -253,5 +236,25 @@ export function RewardsModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  return (
+    <TransactionModal
+      title={flow === 'supply' ? t`Supply to ${displayName}` : t`Withdraw from ${displayName}`}
+      reviewTitle={flow === 'supply' ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled: disabled, errorMessage }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={disabled}
+      errorMessage={errorMessage}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // The supply token is $1-pegged USDS (see amountUsd above) — enhanced
+      // screening, APP-517.
+      usdValue={amountUsd}
+      analytics={analytics}
+      onConfirm={execute}
+      onSuccess={onSuccess}
+    />
+  );
 }

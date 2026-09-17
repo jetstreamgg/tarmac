@@ -10,7 +10,7 @@ import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -51,13 +51,14 @@ const formatUsds = (value: bigint) =>
  * `execute` from `useSavingsLaunch` — calldata is identical to the inline path.
  */
 export function SavingsModalForm({
-  sessionId,
   flow,
-  preset
+  preset,
+  onSuccess
 }: {
-  sessionId: string;
   flow: SavingsLaunchFlow;
   preset?: SavingsModalPreset;
+  /** Fires after a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -221,24 +222,6 @@ export function SavingsModalForm({
     [flow, engineParams.originToken, chainId, originSymbol, isBatch, amount, originDecimals]
   );
 
-  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / review breakdown / step labels /
-  // wallet summary / toast titles in sync, and the entry-slot portal.
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    confirmDisabled: disabled,
-    errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // All supply/withdraw origins are $1-pegged (USDS/DAI/USDC), so the
-    // entered amount doubles as the USD notional (enhanced screening, APP-517).
-    usdValue: parseFloat(formatUnits(amount, originDecimals)),
-    analytics
-  });
-
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`savings-modal-${flow}-form`}>
       <ModalAmountField
@@ -290,5 +273,27 @@ export function SavingsModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  // Three-screen flow (Figma 859:36036 → 859:36154 → 859:36214): the entry
+  // advances to the review; the review's Confirm fires the engine.
+  return (
+    <TransactionModal
+      title={isSupply ? t`Supply to Sky Savings` : t`Withdraw from Sky Savings`}
+      reviewTitle={isSupply ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled: disabled, errorMessage }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={disabled}
+      errorMessage={errorMessage}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // All supply/withdraw origins are $1-pegged (USDS/DAI/USDC), so the
+      // entered amount doubles as the USD notional (enhanced screening, APP-517).
+      usdValue={parseFloat(formatUnits(amount, originDecimals))}
+      analytics={analytics}
+      onConfirm={execute}
+      onSuccess={onSuccess}
+    />
+  );
 }

@@ -14,16 +14,15 @@ export type VaultModalArgs = {
   netRate?: number;
 };
 
-const productName = (args: VaultModalArgs) => args.vaultName;
 const form: UseEarnModalOptions<VaultModalArgs, VaultModalPreset>['form'] = ({
-  sessionId,
   flow,
   args,
-  preset
+  preset,
+  onSuccess
 }) => (
   <VaultModalForm
-    sessionId={sessionId}
     flow={flow}
+    onSuccess={onSuccess}
     vaultAddress={args.vaultAddress}
     assetToken={args.assetToken}
     vaultName={args.vaultName}
@@ -45,7 +44,6 @@ type UseVaultModalOptions = {
  */
 export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
   return useEarnModal<VaultModalArgs, VaultModalPreset>({
-    productName,
     supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
     form,
     onSuccess

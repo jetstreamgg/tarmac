@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
@@ -53,21 +53,17 @@ const hoisted = vi.hoisted(() => ({
   analyticsSpy: vi.fn(),
   // Router allowance for the input token — 0n means every amount needs approval.
   allowance: 0n,
-  // Optional hook a test can set to mimic the real provider (every push
-  // re-renders the tree) — the loop regression below relies on it.
-  onPush: undefined as (() => void) | undefined,
-  updateModalContent: vi.fn<
-    (
-      sessionId: string,
-      partial: {
-        entry?: { confirmDisabled?: boolean };
+  // The latest props the form rendered the shared modal with.
+  modalProps: undefined as
+    | {
+        entry?: { content?: ReactNode; confirmDisabled?: boolean };
         steps?: string[];
         rightHeaderComponent?: unknown;
         transactionContent?: ReactNode;
         toast?: { loading: string; success: string; error: string };
       }
-    ) => void
-  >(() => hoisted.onPush?.()),
+    | undefined,
+  renders: 0,
   txCallbacks: {
     onMutate: vi.fn(),
     onStart: vi.fn(),
@@ -171,15 +167,20 @@ vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: () => undefined,
-    updateModalContent: hoisted.updateModalContent,
-    isModalOpen: true,
-    txCallbacks: hoisted.txCallbacks,
-    txStatus: 'idle'
-  }),
-  useEntrySlot: () => null
+  useTransaction: () => ({ txCallbacks: hoisted.txCallbacks })
 }));
+
+// The flow renders the shared modal from its own props; stand it in with a spy
+// that records the latest props, counts renders and draws the entry body inline.
+vi.mock('@/modules/ui/components/TransactionModal', () => {
+  return {
+    TransactionModal: (props: NonNullable<typeof hoisted.modalProps>) => {
+      hoisted.modalProps = props;
+      hoisted.renders += 1;
+      return <>{props.entry?.content}</>;
+    }
+  };
+});
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
@@ -190,7 +191,7 @@ const renderForm = (flow: 'supply' | 'withdraw') =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <PendleModalForm sessionId="session-1" flow={flow} market={MARKET} />
+        <PendleModalForm flow={flow} market={MARKET} />
       </TooltipProvider>
     </I18nProvider>
   );
@@ -198,44 +199,35 @@ const renderForm = (flow: 'supply' | 'withdraw') =>
 const typeAmount = (value: string) =>
   fireEvent.change(screen.getByTestId('pendle-modal-amount-input'), { target: { value } });
 
-const lastEntryUpdate = () => {
-  const calls = hoisted.updateModalContent.mock.calls.filter(([, partial]) => partial.entry !== undefined);
-  return calls.at(-1)?.[1];
-};
+const lastEntryUpdate = () => hoisted.modalProps;
 
-/** The last toast titles the form pushed to the shared modal. */
-const lastToastUpdate = () =>
-  hoisted.updateModalContent.mock.calls.filter(([, partial]) => partial.toast !== undefined).at(-1)?.[1]
-    .toast;
+/** The toast titles the form last rendered the shared modal with. */
+const lastToastUpdate = () => hoisted.modalProps?.toast;
 
-/** Renders the review-stage grid the form pushed to the shared modal. */
-const renderLastReviewContent = () => {
-  const calls = hoisted.updateModalContent.mock.calls.filter(
-    ([, partial]) => partial.transactionContent !== undefined
-  );
-  return render(
+/** Renders the review-stage grid the form last rendered the shared modal with. */
+const renderLastReviewContent = () =>
+  render(
     <I18nProvider i18n={i18n}>
-      <TooltipProvider>{calls.at(-1)?.[1].transactionContent}</TooltipProvider>
+      <TooltipProvider>{hoisted.modalProps?.transactionContent}</TooltipProvider>
     </I18nProvider>
   );
-};
 
 describe('PendleModalForm', () => {
   beforeEach(() => {
     hoisted.quoteArgs = undefined;
     hoisted.batchArgs = undefined;
-    hoisted.onPush = undefined;
+    hoisted.modalProps = undefined;
+    hoisted.renders = 0;
     hoisted.allowance = 0n;
   });
 
-  it('settles its content pushes when every push re-renders the host (regression: max update depth)', () => {
-    // Mimic the real TransactionContext: updateModalContent always sets fresh
-    // provider state, so every push re-renders the subscribed tree. Unstable
-    // effect deps (e.g. an unmemoized transactionScreenContent) loop here.
+  it('settles after a host re-render (regression: max update depth)', () => {
+    // The provider re-renders the host after registration; a form whose render
+    // is not settled would keep re-rendering the modal here.
     const Host = () => {
       const [, setTick] = useState(0);
-      hoisted.onPush = () => setTick(tick => tick + 1);
-      return <PendleModalForm sessionId="session-1" flow="supply" market={MARKET} />;
+      useEffect(() => setTick(1), []);
+      return <PendleModalForm flow="supply" market={MARKET} />;
     };
 
     render(
@@ -246,9 +238,9 @@ describe('PendleModalForm', () => {
       </I18nProvider>
     );
 
-    // A settled form pushes a handful of times on mount — a loop hits React's
-    // update-depth limit (~50) and throws before this assertion.
-    expect(hoisted.updateModalContent.mock.calls.length).toBeLessThan(10);
+    // A settled form renders the modal a handful of times on mount — a loop
+    // hits React's update-depth limit (~50) and throws before this assertion.
+    expect(hoisted.renders).toBeLessThan(10);
   });
 
   afterEach(() => {
@@ -408,10 +400,7 @@ describe('PendleModalForm', () => {
     it('keeps the slippage control out of the modal header — it lives in the review grid now', () => {
       renderForm('supply');
 
-      const headerPush = hoisted.updateModalContent.mock.calls.find(
-        ([, partial]) => partial.rightHeaderComponent !== undefined
-      );
-      expect(headerPush).toBeUndefined();
+      expect(hoisted.modalProps?.rightHeaderComponent).toBeUndefined();
     });
   });
 

@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -24,7 +25,8 @@ const h = vi.hoisted(() => ({
   psmHalted: 0n as bigint | undefined,
   prepared: true,
   execute: vi.fn(),
-  update: vi.fn(),
+  // The latest props the form rendered the shared modal with.
+  modalProps: undefined as Record<string, any> | undefined,
   // Latest params the form passed to useSavingsLaunch (flow / max / amount / origin +
   // the L2 PSM bounds, so the L2 routing can be asserted).
   launchParams: undefined as
@@ -132,12 +134,13 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
   }
 }));
 
-vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  // txStatus stays IDLE: these tests exercise the live entry pushes, which the
-  // shared hook freezes once a tx is in flight.
-  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
-  // No entry slot in these standalone renders → the form renders its body inline.
-  useEntrySlot: () => null
+// The flow renders the shared modal from its own props; stand it in with a spy
+// that records the latest props and draws the entry body inline.
+vi.mock('@/modules/ui/components/TransactionModal', () => ({
+  TransactionModal: (props: Record<string, unknown> & { entry?: { content?: ReactNode } }) => {
+    h.modalProps = props;
+    return <>{props.entry?.content}</>;
+  }
 }));
 
 // Stub the origin dropdown as plain option buttons (Radix Select interaction is
@@ -192,7 +195,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const formTree = (flow: SavingsLaunchFlow) => (
   <I18nProvider i18n={i18n}>
     <TooltipProvider>
-      <SavingsModalForm sessionId="s1" flow={flow} />
+      <SavingsModalForm flow={flow} />
     </TooltipProvider>
   </I18nProvider>
 );
@@ -206,17 +209,11 @@ const renderForm = (flow: SavingsLaunchFlow) => {
   return { ...result, refresh: () => result.rerender(formTree(flow)) };
 };
 
-// The last entry.confirmDisabled pushed to the modal.
-const lastDisabled = () => {
-  const withEntry = h.update.mock.calls.filter(([, patch]) => patch?.entry?.confirmDisabled !== undefined);
-  return withEntry.at(-1)?.[1].entry.confirmDisabled;
-};
+// The entry's confirmDisabled as the form last rendered it.
+const lastDisabled = () => h.modalProps?.entry?.confirmDisabled;
 
-// The last minimized-toast titles pushed to the modal.
-const lastToast = () => {
-  const withToast = h.update.mock.calls.filter(([, patch]) => patch?.toast !== undefined);
-  return withToast.at(-1)?.[1].toast;
-};
+// The minimized-toast titles as the form last rendered them.
+const lastToast = () => h.modalProps?.toast;
 
 const FIGMA_ROWS = ['Savings rate', 'Network', 'Supply', 'Est. 1Y yield (at current rate)', 'Network fee'];
 
@@ -232,7 +229,7 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
-    h.update.mockClear();
+    h.modalProps = undefined;
   });
   afterEach(() => cleanup());
 
@@ -260,12 +257,12 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(h.launchParams?.flow).toBe('supply');
   });
 
-  it('syncs confirmDisabled=true to the modal while the amount is zero', () => {
+  it('renders confirmDisabled=true while the amount is zero', () => {
     renderForm('supply');
     expect(lastDisabled()).toBe(true);
   });
 
-  it('pushes an amount-aware success title for the minimized toast', () => {
+  it('renders an amount-aware success title for the minimized toast', () => {
     renderForm('supply');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10000' } });
     expect(lastToast()?.success).toBe('10,000 USDS supplied!');
@@ -414,7 +411,7 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
-    h.update.mockClear();
+    h.modalProps = undefined;
   });
   afterEach(() => cleanup());
 
@@ -445,16 +442,15 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     expect(screen.queryByTestId('savings-modal-amount-error')).toBeNull();
   });
 
-  // The review grid is pushed to the modal, not rendered inline — assert the
+  // The review grid is a modal prop, not rendered inline — assert the
   // projection on the position the withdrawal leaves behind.
-  it('pushes the post-withdrawal 1Y projection into the review breakdown', () => {
+  it('projects the post-withdrawal 1Y earnings in the review breakdown', () => {
     renderForm('withdraw');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
 
-    const review = h.update.mock.calls.filter(([, patch]) => patch?.transactionContent).at(-1);
     const { container } = render(
       <I18nProvider i18n={i18n}>
-        <TooltipProvider>{review?.[1].transactionContent}</TooltipProvider>
+        <TooltipProvider>{h.modalProps?.transactionContent}</TooltipProvider>
       </I18nProvider>
     );
     // Scoped to this render — the entry body still on screen carries the same test id.
@@ -506,7 +502,7 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
-    h.update.mockClear();
+    h.modalProps = undefined;
     h.launchParams = undefined;
   });
   afterEach(() => cleanup());
@@ -581,11 +577,8 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
   });
 });
 
-// The last analytics blob live-merged to the modal (what the provider will emit from).
-const lastAnalytics = () => {
-  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
-  return withAnalytics.at(-1)?.[1].analytics;
-};
+// The analytics blob as the form last rendered it (what the provider will emit from).
+const lastAnalytics = () => h.modalProps?.analytics;
 
 describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
   beforeEach(() => {
@@ -599,11 +592,11 @@ describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
     h.psmHalted = 0n;
     h.prepared = true;
     h.execute.mockClear();
-    h.update.mockClear();
+    h.modalProps = undefined;
   });
   afterEach(() => cleanup());
 
-  it('pushes the legacy SavingsWidget supply blob: module/assetAddress/assetSymbol/isBatchTx + positive amount', () => {
+  it('renders the legacy SavingsWidget supply blob: module/assetAddress/assetSymbol/isBatchTx + positive amount', () => {
     renderForm('supply');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
     expect(lastAnalytics()).toEqual({
@@ -644,7 +637,7 @@ describe('SavingsModalForm — a chain switch under the open modal', () => {
   beforeEach(() => {
     h.chainId = 1;
     h.walletBalance = 100n * 10n ** 18n;
-    h.update.mockClear();
+    h.modalProps = undefined;
   });
   afterEach(() => cleanup());
 

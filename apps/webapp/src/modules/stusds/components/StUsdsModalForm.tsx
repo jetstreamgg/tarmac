@@ -14,7 +14,7 @@ import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
@@ -52,13 +52,14 @@ const formatUsds = (units: bigint) =>
  * design, following the savings-modal precedent.
  */
 export function StUsdsModalForm({
-  sessionId,
   flow,
-  preset
+  preset,
+  onSuccess
 }: {
-  sessionId: string;
   flow: StUsdsLaunchFlow;
   preset?: StUsdsModalPreset;
+  /** Fires after a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -222,23 +223,6 @@ export function StUsdsModalForm({
     [flow, chainId, isBatch, isCurveRoute, amount]
   );
 
-  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / review breakdown / step labels /
-  // wallet summary / toast titles in sync, and the entry-slot portal.
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    confirmDisabled: disabled,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // Amounts are USDS-denominated in both flows ($1-pegged) — enhanced
-    // screening, APP-517.
-    usdValue: parseFloat(formatUnits(amount, DECIMALS)),
-    analytics
-  });
-
   const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
 
   const impactColor =
@@ -343,5 +327,24 @@ export function StUsdsModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  return (
+    <TransactionModal
+      title={flow === 'supply' ? t`Supply to stUSDS` : t`Withdraw from stUSDS`}
+      reviewTitle={flow === 'supply' ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled: disabled }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={disabled}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // Amounts are USDS-denominated in both flows ($1-pegged) — enhanced
+      // screening, APP-517.
+      usdValue={parseFloat(formatUnits(amount, DECIMALS))}
+      analytics={analytics}
+      onConfirm={execute}
+      onSuccess={onSuccess}
+    />
+  );
 }

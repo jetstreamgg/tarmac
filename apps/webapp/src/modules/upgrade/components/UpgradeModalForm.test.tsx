@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -10,7 +11,7 @@ const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 
 const h = vi.hoisted(() => ({
   execute: vi.fn(),
-  update: vi.fn(),
+  modalProps: undefined as Record<string, any> | undefined,
   isBatch: false,
   isModalOpen: true,
   isMinimized: false,
@@ -65,12 +66,18 @@ vi.mock('../hooks/useUpgradeLaunch', async importOriginal => {
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
-    updateModalContent: h.update,
-    txStatus: 'idle',
+    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() },
     isModalOpen: h.isModalOpen,
     isMinimized: h.isMinimized
-  }),
-  useEntrySlot: () => null
+  })
+}));
+// The flow renders the shared modal from its own props; stand it in with a spy
+// that records the latest props and draws the entry body inline.
+vi.mock('@/modules/ui/components/TransactionModal', () => ({
+  TransactionModal: (props: Record<string, unknown> & { entry?: { content?: ReactNode } }) => {
+    h.modalProps = props;
+    return <>{props.entry?.content}</>;
+  }
 }));
 
 vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
@@ -88,30 +95,24 @@ import type { UpgradeSourceToken } from '../hooks/useUpgradeLaunch';
 const formTree = (initialToken?: UpgradeSourceToken) => (
   <I18nProvider i18n={i18n}>
     <TooltipProvider>
-      <UpgradeModalForm sessionId="s1" initialToken={initialToken} />
+      <UpgradeModalForm initialToken={initialToken} />
     </TooltipProvider>
   </I18nProvider>
 );
 
 const renderForm = (initialToken?: UpgradeSourceToken) => render(formTree(initialToken));
 
-// The last analytics blob live-merged to the modal (what the provider will emit from).
-const lastAnalytics = () => {
-  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
-  return withAnalytics.at(-1)?.[1].analytics;
-};
+// The analytics blob as the form last rendered it (what the provider will emit from).
+const lastAnalytics = () => h.modalProps?.analytics;
 
-// The last entry.confirmDisabled pushed to the modal.
-const lastDisabled = () => {
-  const withEntry = h.update.mock.calls.filter(([, patch]) => patch?.entry?.confirmDisabled !== undefined);
-  return withEntry.at(-1)?.[1].entry.confirmDisabled;
-};
+// The entry's confirmDisabled as the form last rendered it.
+const lastDisabled = () => h.modalProps?.entry?.confirmDisabled;
 
 describe('UpgradeModalForm — MKR→SKY fee read states (APP-491)', () => {
   beforeEach(() => {
     h.isBatch = false;
     h.execute.mockClear();
-    h.update.mockClear();
+    h.modalProps = undefined;
     h.isModalOpen = true;
     h.isMinimized = false;
     h.mkrSkyFee = 0n;
@@ -155,7 +156,7 @@ describe('UpgradeModalForm — analytics parity blob (APP-444 B6)', () => {
   beforeEach(() => {
     h.isBatch = false;
     h.execute.mockClear();
-    h.update.mockClear();
+    h.modalProps = undefined;
     h.isModalOpen = true;
     h.isMinimized = false;
     h.mkrSkyFee = 0n;

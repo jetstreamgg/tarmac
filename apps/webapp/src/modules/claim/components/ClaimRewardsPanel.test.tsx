@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import type { ClaimableReward, ClaimSource } from '../types';
 
 i18n.load('en', {});
@@ -114,20 +115,22 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   })
 }));
 
-vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
-  useModalEntryBody: (params: {
-    confirmDisabled: boolean;
+// The panel renders the shared modal from its own props; stand it in with a
+// spy that records them and draws the entry body inline.
+vi.mock('@/modules/ui/components/TransactionModal', () => ({
+  TransactionModal: (props: {
+    entry: { content?: ReactNode; confirmDisabled?: boolean };
     transactionScreenContent?: unknown;
     analytics?: unknown;
     toast?: { success: string };
     steps?: unknown[];
   }) => {
-    h.entry = { confirmDisabled: params.confirmDisabled };
-    h.screenContents.push(params.transactionScreenContent);
-    h.analytics = params.analytics;
-    h.toast = params.toast;
-    h.steps = params.steps;
-    return (body: unknown) => body;
+    h.entry = { confirmDisabled: !!props.entry.confirmDisabled };
+    h.screenContents.push(props.transactionScreenContent);
+    h.analytics = props.analytics;
+    h.toast = props.toast;
+    h.steps = props.steps;
+    return <>{props.entry.content}</>;
   }
 }));
 
@@ -154,7 +157,7 @@ const renderPanel = (scope: ClaimScope = { kind: 'all' }) =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <ClaimRewardsPanel sessionId="s1" scope={scope} />
+        <ClaimRewardsPanel scope={scope} />
       </TooltipProvider>
     </I18nProvider>
   );
@@ -311,15 +314,14 @@ describe('ClaimRewardsPanel', () => {
   });
 
   it('keeps the wallet-screen summary referentially stable across re-renders (loop guard)', () => {
-    // A fresh element per render feeds useModalEntryBody's sync effect a new dep
-    // each time, looping updateModalContent → re-render → "Maximum update depth"
-    // (crashes the page when the modal opens — the D4 vault-form failure mode).
+    // The modal snapshots this at confirm; a fresh element per render would
+    // also defeat any memo downstream.
     h.sky = [reward('sky-rewards', '0xb', 'SKY')];
     const { rerender } = renderPanel({ kind: 'reward-contract', address: '0xb' });
     rerender(
       <I18nProvider i18n={i18n}>
         <TooltipProvider>
-          <ClaimRewardsPanel sessionId="s1" scope={{ kind: 'reward-contract', address: '0xb' }} />
+          <ClaimRewardsPanel scope={{ kind: 'reward-contract', address: '0xb' }} />
         </TooltipProvider>
       </I18nProvider>
     );

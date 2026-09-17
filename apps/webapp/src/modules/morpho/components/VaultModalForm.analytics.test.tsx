@@ -2,13 +2,14 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import { parseUnits } from 'viem';
 
 i18n.load('en', {});
 i18n.activate('en');
 
 const h = vi.hoisted(() => ({
-  update: vi.fn(),
+  modalProps: undefined as Record<string, any> | undefined,
   isBatch: false,
   amount: 0n as bigint
 }));
@@ -78,8 +79,17 @@ vi.mock('../hooks/useVaultLaunch', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
-  useEntrySlot: () => null
+  useTransaction: () => ({
+    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() }
+  })
+}));
+// The flow renders the shared modal from its own props; stand it in with a spy
+// that records the latest props and draws the entry body inline.
+vi.mock('@/modules/ui/components/TransactionModal', () => ({
+  TransactionModal: (props: Record<string, unknown> & { entry?: { content?: ReactNode } }) => {
+    h.modalProps = props;
+    return <>{props.entry?.content}</>;
+  }
 }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
@@ -96,7 +106,6 @@ const renderForm = (flow: VaultLaunchFlow) =>
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
         <VaultModalForm
-          sessionId="s1"
           flow={flow}
           vaultAddress={VAULT}
           assetToken={TOKENS.usds}
@@ -108,14 +117,11 @@ const renderForm = (flow: VaultLaunchFlow) =>
   );
 
 // The last analytics blob live-merged to the modal (what the provider will emit from).
-const lastAnalytics = () => {
-  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
-  return withAnalytics.at(-1)?.[1].analytics;
-};
+const lastAnalytics = () => h.modalProps?.analytics;
 
 describe('VaultModalForm — analytics parity blob (APP-444 B7)', () => {
   beforeEach(() => {
-    h.update.mockClear();
+    h.modalProps = undefined;
     h.isBatch = false;
     h.amount = parseUnits('15', 18);
   });

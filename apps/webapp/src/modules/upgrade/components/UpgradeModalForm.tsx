@@ -15,7 +15,7 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -49,13 +49,7 @@ const formatAmount = (amount: bigint) =>
  * the governance fee (`useMkrSkyFee`) — the engine's calldata takes the raw
  * amount, so the preview math (`math.calculateConversion`) is display-only.
  */
-export function UpgradeModalForm({
-  sessionId,
-  initialToken = 'DAI'
-}: {
-  sessionId: string;
-  initialToken?: UpgradeSourceToken;
-}) {
+export function UpgradeModalForm({ initialToken = 'DAI' }: { initialToken?: UpgradeSourceToken }) {
   const { address, isConnected } = useConnection();
   const chainId = useChainId();
 
@@ -123,8 +117,6 @@ export function UpgradeModalForm({
 
   const amountLabel = `${formatAmount(debouncedAmount)} ${token}`;
 
-  // Memoized on their data so the useModalEntryBody sync effect has stable
-  // deps (the savings/stUSDS forms' convention).
   const toast = useMemo(
     () => ({
       loading: t`Upgrading ${amountLabel}`,
@@ -183,22 +175,7 @@ export function UpgradeModalForm({
     [sourceToken, chainId, token, target, isBatch, debouncedAmount]
   );
 
-  // Stable identity — an inline arrow here re-triggers useModalEntryBody's sync effect every render.
   const connectAction = useCallback(() => openConnectModal('upgrade_modal'), [openConnectModal]);
-
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    confirmDisabled: disabled,
-    confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
-    confirmAction: isConnected ? undefined : connectAction,
-    errorMessage,
-    steps,
-    transactionScreenContent,
-    toast,
-    usdValue,
-    analytics
-  });
 
   const networkName = useNetworkName(chainId);
 
@@ -271,5 +248,29 @@ export function UpgradeModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  // Single-screen entry: "Continue" goes straight to the wallet screen. No
+  // status subtitles — the step list narrates the transaction (Design QA, Sep
+  // 2026). Disconnected (APP-446), the CTA becomes an enabled "Connect wallet"
+  // that opens the connect modal in place (`confirmAction`).
+  return (
+    <TransactionModal
+      title={t`Upgrade DAI/MKR`}
+      transactionTitle={t`Confirm upgrade`}
+      entry={{
+        content: body,
+        confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
+        confirmAction: isConnected ? undefined : connectAction,
+        confirmDisabled: disabled,
+        errorMessage
+      }}
+      confirmDisabled={disabled}
+      errorMessage={errorMessage}
+      steps={steps}
+      transactionScreenContent={transactionScreenContent}
+      toast={toast}
+      usdValue={usdValue}
+      analytics={analytics}
+      onConfirm={execute}
+    />
+  );
 }

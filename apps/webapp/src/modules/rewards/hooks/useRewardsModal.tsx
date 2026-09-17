@@ -18,16 +18,15 @@ export type RewardsModalArgs = {
   rate?: number;
 };
 
-const productName = (args: RewardsModalArgs) => args.displayName;
 const form: UseEarnModalOptions<RewardsModalArgs, RewardsModalPreset>['form'] = ({
-  sessionId,
   flow,
   args,
-  preset
+  preset,
+  onSuccess
 }) => (
   <RewardsModalForm
-    sessionId={sessionId}
     flow={flow}
+    onSuccess={onSuccess}
     contractAddress={args.contractAddress}
     supplyToken={args.supplyToken}
     displayName={args.displayName}
@@ -52,7 +51,6 @@ type UseRewardsModalOptions = {
  */
 export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
   return useEarnModal<RewardsModalArgs, RewardsModalPreset>({
-    productName,
     supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
     form,
     onSuccess

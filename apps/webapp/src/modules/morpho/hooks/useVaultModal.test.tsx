@@ -1,25 +1,22 @@
-import { i18n } from '@lingui/core';
-import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { renderHook, act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactElement } from 'react';
 import type { Token } from '@/hooks';
-
-i18n.load('en', {});
-i18n.activate('en');
 
 const h = vi.hoisted(() => ({ launch: vi.fn() }));
 
-// Capture the launch() config — the launcher is the unit under test.
+// Capture what launch() is handed — the launcher is the unit under test.
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ launch: h.launch })
 }));
 
-// Stub the editable body — only its props (flow) are asserted via backgroundContent.
+// Stub the flow component — only its props are asserted.
 vi.mock('../components/VaultModalForm', () => ({
-  VaultModalForm: ({ flow }: { flow: string }) => <div data-testid={`mock-vault-form-${flow}`} />
+  VaultModalForm: () => null
 }));
 
 import { useVaultModal } from './useVaultModal';
+import { VaultModalForm } from '../components/VaultModalForm';
 
 const ASSET = { symbol: 'USDC', address: { 1: '0xusdc' } } as unknown as Token;
 const ARGS = {
@@ -29,62 +26,42 @@ const ARGS = {
   netRate: 0.0445
 };
 
-function Harness() {
-  const { openSupply, openWithdraw } = useVaultModal();
-  return (
-    <>
-      <button data-testid="open-supply" onClick={() => openSupply(ARGS)} />
-      <button data-testid="open-withdraw" onClick={() => openWithdraw(ARGS)} />
-    </>
-  );
-}
-
-const renderHarness = () =>
-  render(
-    <I18nProvider i18n={i18n}>
-      <Harness />
-    </I18nProvider>
-  );
+type Launch = { sessionId?: string; supportedChainIds: number[]; render: () => ReactElement };
+type FormElement = ReactElement<{
+  flow: string;
+  vaultName: string;
+  netRate?: number;
+  onSuccess?: () => void;
+}>;
+const launched = (n = 0) => h.launch.mock.calls[n][0] as Launch;
+const formOf = (launch: Launch) => launch.render() as FormElement;
 
 describe('useVaultModal', () => {
   beforeEach(() => h.launch.mockClear());
   afterEach(() => cleanup());
 
-  it('opens the "Supply to {vault}" editable modal on openSupply', () => {
-    renderHarness();
-    fireEvent.click(screen.getByTestId('open-supply'));
+  it('launches the supply form for the vault on openSupply', () => {
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() => useVaultModal({ onSuccess }));
+    act(() => result.current.openSupply(ARGS));
 
     expect(h.launch).toHaveBeenCalledTimes(1);
-    const config = h.launch.mock.calls[0][0];
-    expect(config.title).toBe('Supply to USDC Risk Capital');
-    expect(config.reviewTitle).toBe('Review supply');
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-    // Three-screen sequence: entry advances to the review ("Review"), whose CTA
-    // is the transaction confirm ("Confirm").
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.confirmLabel).toBe('Confirm');
-    expect(config.entry.confirmDisabled).toBe(true);
-    // The editable body is hosted OUTSIDE the dialog (backgroundContent) so its
-    // in-flight hook survives minimize — not inside entry.content.
-    expect(config.entry.content).toBeUndefined();
-    expect(config.backgroundContent).toBeDefined();
-    expect(config.backgroundContent.props.flow).toBe('supply');
-    expect(config.backgroundContent.props.vaultName).toBe('USDC Risk Capital');
+    const launch = launched();
+    expect(launch.supportedChainIds).toContain(1);
+    const form = formOf(launch);
+    expect(form.type).toBe(VaultModalForm);
+    expect(form.props.flow).toBe('supply');
+    expect(form.props.vaultName).toBe('USDC Risk Capital');
+    expect(form.props.netRate).toBe(0.0445);
+    expect(form.props.onSuccess).toBe(onSuccess);
   });
 
-  it('opens the "Withdraw from {vault}" editable modal on openWithdraw', () => {
-    renderHarness();
-    fireEvent.click(screen.getByTestId('open-withdraw'));
+  it('launches the withdraw form for the vault on openWithdraw, in its own session', () => {
+    const { result } = renderHook(() => useVaultModal());
+    act(() => result.current.openSupply(ARGS));
+    act(() => result.current.openWithdraw(ARGS));
 
-    expect(h.launch).toHaveBeenCalledTimes(1);
-    const config = h.launch.mock.calls[0][0];
-    expect(config.title).toBe('Withdraw from USDC Risk Capital');
-    expect(config.reviewTitle).toBe('Review withdrawal');
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.confirmLabel).toBe('Confirm');
-    expect(config.entry.confirmDisabled).toBe(true);
-    expect(config.entry.content).toBeUndefined();
-    expect(config.backgroundContent.props.flow).toBe('withdraw');
+    expect(formOf(launched(1)).props.flow).toBe('withdraw');
+    expect(launched(1).sessionId).not.toBe(launched(0).sessionId);
   });
 });

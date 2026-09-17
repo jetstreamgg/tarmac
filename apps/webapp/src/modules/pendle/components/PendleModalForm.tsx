@@ -42,7 +42,7 @@ import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmount
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { usePendleSlippageCell } from '../hooks/usePendleSlippageCell';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { parseAmountInput } from '@/lib/amountInput';
@@ -81,13 +81,14 @@ export type PendleModalFlow = 'supply' | 'withdraw';
  * outputs don't mis-subtract.
  */
 export function PendleModalForm({
-  sessionId,
   flow,
-  market
+  market,
+  onSuccess
 }: {
-  sessionId: string;
   flow: PendleModalFlow;
   market: PendleMarketConfig;
+  /** Fires after a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -577,22 +578,6 @@ export function PendleModalForm({
     ]
   );
 
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute: writeHook.execute,
-    confirmDisabled,
-    errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // USD value of the non-PT leg (same number the analytics use). Zero
-    // amount is $0 even when prices haven't loaded — an empty input owes no
-    // check; `undefined` (unpriceable non-zero amount) is treated as
-    // above-threshold (enhanced screening, APP-517).
-    usdValue: leg.amount === 0 ? 0 : formattedAmount
-  });
-
   const balanceDisplay = formatBigInt(available, { unit: inputDecimals, maxDecimals: 2 });
 
   const body = (
@@ -641,5 +626,40 @@ export function PendleModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  // Figma titles the modals by the PT naming convention ("Supply to PT-sUSDS",
+  // 859:41120), not the market's marketing name. Pre-maturity the only
+  // withdrawal IS an early one (matured positions go through the redeem
+  // flow); its `review` subtitle renders on both first screens (Figma
+  // 2193:73598 / 2193:73807) — the one disclosure the modal carries as a
+  // subtitle. No `analytics` here: the form fires the legacy widget event set
+  // itself with live amounts (see above).
+  return (
+    <TransactionModal
+      title={isSupply ? t`Supply to ${ptSymbol}` : t`Early withdrawal`}
+      reviewTitle={isSupply ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      subtitles={
+        isSupply
+          ? undefined
+          : {
+              review: t`Early withdrawal is settled at the current market price, not your locked-in rate. Your final amount may be lower than shown if market conditions change before the transaction confirms.`
+            }
+      }
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled, errorMessage }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={confirmDisabled}
+      errorMessage={errorMessage}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // USD value of the non-PT leg (same number the analytics use). Zero
+      // amount is $0 even when prices haven't loaded — an empty input owes no
+      // check; `undefined` (unpriceable non-zero amount) is treated as
+      // above-threshold (enhanced screening, APP-517).
+      usdValue={leg.amount === 0 ? 0 : formattedAmount}
+      onConfirm={writeHook.execute}
+      onSuccess={onSuccess}
+    />
+  );
 }

@@ -12,7 +12,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCells';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -65,7 +65,7 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
  * card passes `{kind:'vault'}`. Per-reward checkboxes were dropped with the redesigned
  * modal (Figma 1036:190105 shows none) — everything in scope is always claimed.
  */
-export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; scope: ClaimScope }) {
+export function ClaimRewardsPanel({ scope, onSuccess }: { scope: ClaimScope; onSuccess?: () => void }) {
   const { txCallbacks } = useTransaction();
   const chainId = useChainId();
 
@@ -126,10 +126,6 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     (hasRewardsIn('stake') && !stakeCalls.prepared);
   const disabled = calls.length === 0 || preparing || !flow.prepared;
 
-  // Memoized so the useModalEntryBody sync effect has stable deps — an inline
-  // element here recreates every render and loops updateModalContent →
-  // setActiveConfig → re-render ("Maximum update depth", crashes the page; the
-  // same failure mode the vault form fixed in D4).
   const transactionScreenContent = useMemo(
     () => (
       <div className="flex flex-col gap-8" data-testid="claim-rewards-summary">
@@ -239,21 +235,6 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     ];
   }, [allRewards, merklCalls.calls.length, skyCalls.calls.length, stakeCalls.calls.length, effectiveRestake]);
 
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute: flow.execute,
-    confirmDisabled: disabled,
-    transactionScreenContent,
-    steps,
-    toast,
-    // USD notional of the whole claim set for the enhanced-screening
-    // threshold (APP-517). Unknown (undefined) while the sources are still
-    // resolving — the launch config carries no value either, so the check
-    // stays conservative until the amounts land.
-    usdValue: isLoading ? undefined : allRewards.reduce((sum, reward) => sum + reward.amountUsd, 0),
-    analytics
-  });
-
   // All three engines are mainnet, so the network is the connected chain.
   const networkName = useNetworkName(chainId, NO_VALUE);
 
@@ -298,7 +279,33 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     </div>
   );
 
-  return renderInSlot(body);
+  // The Sky `getReward` farms are branded "ecosystem rewards" (SPK / GROVE /
+  // CLE), and their modal says so (Figma 1036:190321); every other source
+  // claims under the generic title. Entry-only: "Claim" goes straight to the
+  // wallet screen.
+  return (
+    <TransactionModal
+      title={
+        scope.kind === 'sky-rewards' || scope.kind === 'reward-contract'
+          ? t`Claim ecosystem rewards`
+          : t`Claim rewards`
+      }
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Claim`, confirmDisabled: disabled }}
+      confirmDisabled={disabled}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // USD notional of the whole claim set for the enhanced-screening
+      // threshold (APP-517). Unknown (undefined) while the sources are still
+      // resolving — treated as above-threshold, so the check stays
+      // conservative until the amounts land.
+      usdValue={isLoading ? undefined : allRewards.reduce((sum, reward) => sum + reward.amountUsd, 0)}
+      analytics={analytics}
+      onConfirm={flow.execute}
+      onSuccess={onSuccess}
+    />
+  );
 }
 
 // Re-exported for the wallet-screen summary reuse / tests.

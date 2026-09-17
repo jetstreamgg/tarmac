@@ -3,9 +3,8 @@ import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useEarnModal, type UseEarnModalOptions } from '@/modules/ui/hooks/useEarnModal';
 import { StUsdsModalForm, type StUsdsModalPreset } from '../components/StUsdsModalForm';
 
-const productName = () => 'stUSDS';
-const form: UseEarnModalOptions<void, StUsdsModalPreset>['form'] = ({ sessionId, flow, preset }) => (
-  <StUsdsModalForm sessionId={sessionId} flow={flow} preset={preset} />
+const form: UseEarnModalOptions<void, StUsdsModalPreset>['form'] = ({ flow, preset, onSuccess }) => (
+  <StUsdsModalForm flow={flow} preset={preset} onSuccess={onSuccess} />
 );
 
 type UseStUsdsModalOptions = {
@@ -20,7 +19,6 @@ type UseStUsdsModalOptions = {
  */
 export function useStUsdsModal({ onSuccess }: UseStUsdsModalOptions = {}) {
   const modal = useEarnModal<void, StUsdsModalPreset>({
-    productName,
     supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
     form,
     onSuccess

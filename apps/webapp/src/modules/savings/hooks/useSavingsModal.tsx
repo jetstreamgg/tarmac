@@ -9,9 +9,8 @@ import { SavingsModalForm, type SavingsModalPreset } from '../components/Savings
 // fires if the wallet reaches a chain that offers no Savings at all (APP-528).
 const SAVINGS_SUPPORTED_CHAIN_IDS = chainIdsForIntent(Intent.SAVINGS_INTENT);
 
-const productName = () => 'Sky Savings';
-const form: UseEarnModalOptions<void, SavingsModalPreset>['form'] = ({ sessionId, flow, preset }) => (
-  <SavingsModalForm sessionId={sessionId} flow={flow} preset={preset} />
+const form: UseEarnModalOptions<void, SavingsModalPreset>['form'] = ({ flow, preset, onSuccess }) => (
+  <SavingsModalForm flow={flow} preset={preset} onSuccess={onSuccess} />
 );
 
 type UseSavingsModalOptions = {
@@ -27,7 +26,6 @@ type UseSavingsModalOptions = {
  */
 export function useSavingsModal({ onSuccess }: UseSavingsModalOptions = {}) {
   const modal = useEarnModal<void, SavingsModalPreset>({
-    productName,
     supportedChainIds: SAVINGS_SUPPORTED_CHAIN_IDS,
     form,
     onSuccess
