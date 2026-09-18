@@ -19,7 +19,8 @@ export const useChainImage = (chainId?: number) => {
               ? 'optimism'
               : undefined;
 
-    // All chains use .svg format
-    return `/networks/${chainName}.svg`;
+    // All chains use .svg format; an unconfigured chain gets no badge rather
+    // than a guaranteed 404 at /networks/undefined.svg.
+    return chainName ? `/networks/${chainName}.svg` : undefined;
   }, [chainIdToUse]);
 };

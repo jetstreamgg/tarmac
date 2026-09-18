@@ -11,6 +11,7 @@ import {
   SavingsWithdrawalResponse
 } from './savings';
 import { TOKENS } from '../tokens/tokens.constants';
+import { mapIndexerRows, safeBigInt } from '@/utils/indexerRows';
 
 export function savingsHistoryFragments({
   owner,
@@ -37,25 +38,36 @@ export function savingsHistoryFragments({
 }
 
 export function mapSavingsHistoryResponse(response: any, chainId: number): SavingsHistory {
-  const supplies: SavingsSupply[] = response.savingsSupplies.map((d: SavingsSupplyResponse) => ({
-    assets: BigInt(d.assets),
-    blockTimestamp: secondsToDate(d.blockTimestamp),
-    transactionHash: d.transactionHash,
-    module: ModuleEnum.SAVINGS,
-    type: TransactionTypeEnum.SUPPLY,
-    token: TOKENS.usds,
-    chainId
-  }));
+  const supplies = mapIndexerRows<SavingsSupplyResponse, SavingsSupply>(response?.savingsSupplies, d => {
+    const assets = safeBigInt(d.assets);
+    if (assets === undefined) return undefined;
+    return {
+      assets,
+      blockTimestamp: secondsToDate(d.blockTimestamp),
+      transactionHash: d.transactionHash,
+      module: ModuleEnum.SAVINGS,
+      type: TransactionTypeEnum.SUPPLY,
+      token: TOKENS.usds,
+      chainId
+    };
+  });
 
-  const withdraws: SavingsWithdrawal[] = response.savingsWithdraws.map((w: SavingsWithdrawalResponse) => ({
-    assets: -BigInt(w.assets), //make withdrawals negative
-    blockTimestamp: secondsToDate(w.blockTimestamp),
-    transactionHash: w.transactionHash,
-    module: ModuleEnum.SAVINGS,
-    type: TransactionTypeEnum.WITHDRAW,
-    token: TOKENS.usds,
-    chainId
-  }));
+  const withdraws = mapIndexerRows<SavingsWithdrawalResponse, SavingsWithdrawal>(
+    response?.savingsWithdraws,
+    w => {
+      const assets = safeBigInt(w.assets);
+      if (assets === undefined) return undefined;
+      return {
+        assets: -assets, //make withdrawals negative
+        blockTimestamp: secondsToDate(w.blockTimestamp),
+        transactionHash: w.transactionHash,
+        module: ModuleEnum.SAVINGS,
+        type: TransactionTypeEnum.WITHDRAW,
+        token: TOKENS.usds,
+        chainId
+      };
+    }
+  );
 
   const combined = [...supplies, ...withdraws];
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
