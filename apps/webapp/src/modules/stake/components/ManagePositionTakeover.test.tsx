@@ -488,15 +488,48 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.wipeAll).toBe(true);
   });
 
-  it('repay: sub-dust remainder is rejected with the legacy message', () => {
+  // Dust-gap copy names the exact ways out (Figma 3297:71046).
+  it('repay: a debt at the dust floor only offers closing', () => {
     renderSheet({ borrowCard: 'repay' });
 
-    // 30k debt − 15k repay = 15k < 30k dust → minDebtNotMet.
+    // 30k debt − 15k repay = 15k < 30k dust → minDebtNotMet; debt == dust, no partial.
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '15000' } });
-    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toContain(
-      'Debt must be paid off entirely'
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. Repay the full 30,000 to close it.'
     );
     expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('repay: offers the partial max and the full close when the wallet covers the debt', () => {
+    h.existingDebt = 50_000n * WAD;
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 20,000 and keep it, or repay the full 50,000 to close it.'
+    );
+  });
+
+  it('repay: drops the close option when the wallet is short of the full debt', () => {
+    h.existingDebt = 50_000n * WAD;
+    h.usdsBalance = 40_000n * WAD;
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 20,000 and keep it.'
+    );
+  });
+
+  it('repay: caps the partial figure at the wallet balance', () => {
+    h.existingDebt = 50_000n * WAD;
+    h.usdsBalance = 15_000n * WAD;
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 15,000 and keep it.'
+    );
   });
 
   it('loan-to-value row: current → simulated, 0% after a full repay, no rate info icon (Figma 3015:57426)', () => {
@@ -552,7 +585,7 @@ describe('ManagePositionTakeover', () => {
   // regardless of which card the deep link pre-selected.
   it.each([
     { name: 'repay above the debt', mode: 'repay', amount: '100000', error: 'Amount exceeds debt' },
-    { name: 'sub-dust repay remainder', mode: 'repay', amount: '15000', error: 'Debt must be paid off' },
+    { name: 'sub-dust repay remainder', mode: 'repay', amount: '15000', error: 'needs at least 30,000 USDS' },
     { name: 'repay without USDS', mode: 'repay', amount: '30000', error: 'need USDS', usdsBalance: 0n },
     {
       name: 'borrow above the ceiling',

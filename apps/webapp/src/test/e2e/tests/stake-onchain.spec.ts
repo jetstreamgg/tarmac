@@ -256,7 +256,9 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
   await isolatedPage.getByTestId('stake-manage-menu-repay').click();
   await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
   await isolatedPage.getByTestId('stake-manage-borrow-amount').fill('20000');
-  await expect(isolatedPage.getByText(/Debt must be paid off entirely/)).toBeVisible({ timeout: 15_000 });
+  await expect(isolatedPage.getByText(/needs at least .* USDS of debt to stay open/)).toBeVisible({
+    timeout: 15_000
+  });
   await expect(confirm).toBeDisabled();
 
   // Full repay via the 100% chip (wipeAll semantics) zeroes art.

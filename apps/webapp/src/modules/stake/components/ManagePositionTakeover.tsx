@@ -25,7 +25,7 @@ import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { calculateMaxRepayable } from '../lib/manageRepay';
+import { calculateMaxRepayable, repayGapOptions } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeManageFlowInit, useStakeManageFlowState } from '../hooks/useStakeManageFlowState';
@@ -230,6 +230,25 @@ export function ManagePositionTakeover({
   const hasEnoughUsds =
     !!usdsBalance?.value && usdsBalance.value > 0n && usdsBalance.value >= debouncedUsdsAmount;
 
+  // Dust-gap copy names the exact ways out (Figma 3297:71046): repay up to
+  // debt − dust (capped at the wallet) and keep the position, or repay all to
+  // close it. A wallet short of the full debt drops the close option; a debt
+  // already at or under dust has no partial option and only closing left.
+  const gap = repayGapOptions({
+    debtValue: existingDebt,
+    dust: existingVault?.dust ?? 0n,
+    balance: usdsBalance?.value
+  });
+  const gapFloor = formatBigInt(existingVault?.dust ?? 0n);
+  const gapPartial = formatBigInt(gap.partialMax);
+  const gapFull = formatBigInt(existingDebt);
+  const gapError =
+    gap.partial && gap.full
+      ? t`Your position needs at least ${gapFloor} USDS of debt to stay open. You can repay up to ${gapPartial} and keep it, or repay the full ${gapFull} to close it.`
+      : gap.partial
+        ? t`Your position needs at least ${gapFloor} USDS of debt to stay open. You can repay up to ${gapPartial} and keep it.`
+        : t`Your position needs at least ${gapFloor} USDS of debt to stay open. Repay the full ${gapFull} to close it.`;
+
   // No amount gates on the simulation branches: a lock/free-only simulation
   // failure must still say why Confirm is dead. minCollateralNotMet keeps its
   // own warning card instead; at a staged amount of 0 the mapper swaps in
@@ -243,7 +262,7 @@ export function ManagePositionTakeover({
           ? undefined
           : formatSimulationErrorMessage(simulationError?.message, existingVault?.dust, usdsToBorrow)
       : minDebtNotMet
-        ? t`Debt must be paid off entirely, or left with a minimum of ${formatBigInt(existingVault?.dust ?? 0n)}`
+        ? gapError
         : !hasEnoughUsds && usdsToWipe > 0n
           ? t`You'll need USDS in your wallet to repay. Swap or transfer some in first.`
           : newDebtValue < 0n
