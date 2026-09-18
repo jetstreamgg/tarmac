@@ -29,7 +29,6 @@ interface PoolFileState {
 
 export class AccountPoolManager {
   private readonly lockFilePath: string;
-  private readonly lockTimeout = 30000; // 30 seconds timeout for stuck accounts
   private readonly maxRetries = 10;
   private readonly retryDelay = 100; // ms
 
@@ -406,31 +405,6 @@ export class AccountPoolManager {
       await fs.rename(tmpPath, this.lockFilePath);
     } finally {
       await this.releaseLock();
-    }
-  }
-
-  private cleanupTimedOutAccounts(state: PoolFileState): void {
-    const now = Date.now();
-    const timedOut: number[] = [];
-
-    for (const [indexStr, holderInfo] of Object.entries(state.inUse)) {
-      const timestamp = parseInt(holderInfo.split('-').pop() || '0');
-      if (now - timestamp > this.lockTimeout) {
-        timedOut.push(parseInt(indexStr));
-        console.warn(`Account ${indexStr} timed out, releasing from ${holderInfo}`);
-      }
-    }
-
-    // Release timed out accounts
-    for (const index of timedOut) {
-      delete state.inUse[index.toString()];
-      if (!state.available.includes(index)) {
-        state.available.push(index);
-      }
-    }
-
-    if (timedOut.length > 0) {
-      state.available.sort((a, b) => a - b);
     }
   }
 

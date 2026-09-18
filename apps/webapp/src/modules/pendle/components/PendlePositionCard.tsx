@@ -7,6 +7,7 @@ import { Trans } from '@lingui/react/macro';
 import {
   isMarketMatured,
   TOKENS,
+  useNow,
   usePendleMarketsApiData,
   usePendleMaturedPositionEarnings,
   usePendleRedeemPreview,
@@ -337,7 +338,8 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   const stats = marketsApi?.[market.marketAddress];
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
+  const nowMs = useNow(60_000);
+  const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const claimDateLabel = formatMaturity(expirySec);
 
   const refresh = useCallback(() => {

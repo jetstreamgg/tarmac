@@ -59,7 +59,7 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (isConnectedAndAcceptedTerms) {
-      closeModal();
+      setIsModalOpen(false);
     }
   }, [isConnectedAndAcceptedTerms]);
 

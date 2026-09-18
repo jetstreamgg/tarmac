@@ -1,6 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { Progress } from '@/components/ui/progress';
-import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { useNow, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { computeMaturityWindow } from '../utils/maturityWindow';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
@@ -20,10 +20,13 @@ export function PendleMaturityProgress({ market }: { market: PendleMarketConfig 
   const apiData = marketsApi?.[market.marketAddress];
 
   const expirySec = apiData?.expirySec ?? market.expiry;
+  // `formatTimeLeft` never shows seconds (days → hours → minutes), so a minute
+  // tick keeps the label and the bar current.
+  const nowMs = useNow(60_000);
   const { pct, remainingSeconds } = computeMaturityWindow({
     expirySec,
     startSec: apiData?.startTimestampSec,
-    nowSec: Math.floor(Date.now() / 1000)
+    nowSec: Math.floor(nowMs / 1000)
   });
 
   const maturityDateLabel = formatMaturity(expirySec);

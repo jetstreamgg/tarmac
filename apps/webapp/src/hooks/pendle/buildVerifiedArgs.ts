@@ -167,7 +167,6 @@ const verifiedEmptyLimit: VerifiedLimit = PENDLE_EMPTY_LIMIT;
  */
 function resolveAggregatorFields(
   userSideToken: `0x${string}`,
-  underlyingToken: `0x${string}`,
   syAcceptedTokens: `0x${string}`[],
   pinnedPendleSwap: `0x${string}`,
   aggregatorRoute: PendleAggregatorRoute | undefined,
@@ -343,7 +342,6 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
   const guessPtOut = extractGuessPtOut(quote.apiContractParams);
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.inputToken, // BUY's user-picked side is the input
-    known.underlyingToken,
     known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
@@ -375,7 +373,6 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
 function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.outputToken, // WITHDRAW's user-picked side is the output
-    known.underlyingToken,
     known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
@@ -406,7 +403,6 @@ function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): V
 function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.outputToken, // EXIT's user-picked side is the output, same as WITHDRAW
-    known.underlyingToken,
     known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,

@@ -47,7 +47,7 @@ export function useCollateralData(
   } = useReadMcdVatIlks({
     chainId: chainId as any,
     args: [ilkHex],
-    scopeKey: `vat-ilk-${name}`
+    scopeKey: `vat-ilk-${ilkName}`
   });
 
   const [ilkArt, , spot, line, dust] = vatIlkData || [];
