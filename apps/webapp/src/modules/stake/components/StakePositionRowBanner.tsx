@@ -1,12 +1,12 @@
-import { MouseEvent } from 'react';
-import { Info } from 'lucide-react';
+import { MouseEvent, ReactNode } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { useVault, getIlkName } from '@/hooks';
+import { useVault, getIlkName, RiskLevel, RISK_LEVEL_THRESHOLDS } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { isAtRiskOfLiquidation } from '../lib/liquidation';
-import { liquidationDropPercent } from '../lib/positionDetail';
 import { isLiquidatedStakePosition, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { useUrnClaimableRewardsUsd } from '../hooks/useUrnClaimableRewardsUsd';
 import { NO_VALUE } from '@/lib/constants';
@@ -21,12 +21,40 @@ function ownAction(action: () => void) {
 }
 
 // -mt-0.5 covers the table's 2px row slit; the last carrier takes the table's bottom corners.
-// The banner shares its row's hover tint and completes its focus ring (see ProductTransactionsTable).
-const BANNER_CLASS =
-  'bg-bgSecondary -mt-0.5 flex w-full items-center gap-4 px-6 pb-6 transition-colors [tr:last-child>td>&]:rounded-b-[24px] [tr:hover+tr>td>&]:bg-bgTertiary [tr:hover>td>&]:bg-bgTertiary [tr:focus-visible+tr>td>&]:shadow-[inset_2px_0_0_0_var(--color-fgBrand),inset_-2px_0_0_0_var(--color-fgBrand),inset_0_-2px_0_0_var(--color-fgBrand)]';
-const ICON_CLASS = 'text-fgSystemWarning mt-0.5 h-3 w-3 shrink-0 self-start';
+// The carrier shares its row's hover tint and completes its focus ring (see ProductTransactionsTable).
+const CARRIER_CLASS =
+  'bg-bgSecondary -mt-0.5 w-full px-6 pb-6 transition-colors [tr:last-child>td>&]:rounded-b-[24px] [tr:hover+tr>td>&]:bg-bgTertiary [tr:hover>td>&]:bg-bgTertiary [tr:focus-visible+tr>td>&]:shadow-[inset_2px_0_0_0_var(--color-fgBrand),inset_-2px_0_0_0_var(--color-fgBrand),inset_0_-2px_0_0_var(--color-fgBrand)]';
+// Status infobox inside the cell (Design QA 3324:136821): the tint follows the tier.
+const INFOBOX_CLASS = 'flex w-full items-center gap-4 rounded-xl px-5 py-4';
+const TIER_CLASS = {
+  warning: { box: 'bg-statusWarningBg', icon: 'text-fgSystemWarning' },
+  error: { box: 'bg-statusErrorBg', icon: 'text-statusError' }
+};
+const ICON_CLASS = 'mt-0.5 h-4 w-4 shrink-0 self-start';
 const TITLE_CLASS = 'text-fgPrimary font-circle text-sm leading-4 font-medium';
 const BODY_CLASS = 'text-fgSecondary font-graphik text-xs leading-[18px]';
+
+const LIQUIDATION_TIER_THRESHOLD =
+  RISK_LEVEL_THRESHOLDS.find(t => t.level === RiskLevel.LIQUIDATION)?.threshold ?? 80;
+
+function Infobox({
+  tier,
+  dataTestId,
+  children
+}: {
+  tier: keyof typeof TIER_CLASS;
+  dataTestId: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={CARRIER_CLASS}>
+      <div data-testid={dataTestId} data-tier={tier} className={cn(INFOBOX_CLASS, TIER_CLASS[tier].box)}>
+        <TriangleAlert className={cn(ICON_CLASS, TIER_CLASS[tier].icon)} aria-hidden />
+        {children}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Below-row banner for an at-risk or liquidated staking position (Figma
@@ -66,8 +94,7 @@ export function StakePositionRowBanner({
     const refund = formatStakeAmount(vault?.collateralAmount ?? 0n);
 
     return (
-      <div data-testid="stake-position-liquidated-banner" className={BANNER_CLASS}>
-        <Info className={ICON_CLASS} aria-hidden />
+      <Infobox tier="error" dataTestId="stake-position-liquidated-banner">
         <div className="flex flex-1 flex-col gap-2">
           <p className={TITLE_CLASS}>
             <Trans>This position was liquidated</Trans>
@@ -82,22 +109,25 @@ export function StakePositionRowBanner({
         <Button variant="primary" onClick={ownAction(onClaim)} data-testid="stake-liquidated-claim-cta">
           <Trans>Claim</Trans>
         </Button>
-      </div>
+      </Infobox>
     );
   }
 
   if (vaultLoading) return null;
   if (!isAtRiskOfLiquidation(vault)) return null;
 
-  const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
   const formattedLiqPrice = formatOraclePrice(vault?.liquidationPrice);
+  const critical = (vault?.liquidationProximityPercentage ?? 0) >= LIQUIDATION_TIER_THRESHOLD;
 
   return (
-    <div data-testid="stake-position-warning-banner" className={BANNER_CLASS}>
-      <Info className={ICON_CLASS} aria-hidden />
+    <Infobox tier={critical ? 'error' : 'warning'} dataTestId="stake-position-warning-banner">
       <div className="flex flex-1 flex-col gap-2">
         <p className={TITLE_CLASS}>
-          <Trans>Your liquidation buffer dropped to {dropPercent}%</Trans>
+          {critical ? (
+            <Trans>Your position is about to be liquidated</Trans>
+          ) : (
+            <Trans>Your liquidation risk is very high</Trans>
+          )}
         </p>
         <p className={BODY_CLASS}>
           <Trans>
@@ -124,6 +154,6 @@ export function StakePositionRowBanner({
           <Trans>Repay debt</Trans>
         </Button>
       </div>
-    </div>
+    </Infobox>
   );
 }
