@@ -122,7 +122,11 @@ export function StakeManageStatRow({
   );
 }
 
-/** Min-stake-to-borrow status (Figma "Reached" / "Not reached" badge on every manage frame). */
+/**
+ * Min-stake-to-borrow status (Figma "Reached" / "Not reached" badge on every
+ * manage frame). Not reached is the neutral badge, not warning: borrowing is
+ * optional, so an unmet minimum is not an error (Design QA 3314:134356).
+ */
 export function ReachedBadge({ reached }: { reached: boolean }) {
   return (
     <span
@@ -130,7 +134,7 @@ export function ReachedBadge({ reached }: { reached: boolean }) {
       data-reached={reached || undefined}
       className={cn(
         'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
-        reached ? 'bg-statusSuccess/10 text-statusSuccess' : 'bg-statusWarning/10 text-statusWarning'
+        reached ? 'bg-statusSuccessBg text-statusSuccess' : 'bg-glassBadge text-fgSecondary'
       )}
     >
       {reached ? <Trans>Reached</Trans> : <Trans>Not reached</Trans>}
