@@ -10,7 +10,6 @@ import {
   DoorClosed,
   ExternalLink,
   Gem,
-  Info,
   TriangleAlert,
   UserRound,
   X
@@ -26,6 +25,7 @@ import { TrendingUpGradient } from '@/modules/icons';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { RateInfo } from '@/components/product/RateInfo';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
@@ -73,10 +73,6 @@ const StatPairDivider = ({ className }: { className?: string }) => (
 const StatDesktopDivider = () => (
   <span className="bg-borderPrimary hidden h-8 w-px shrink-0 self-center md:block" aria-hidden />
 );
-
-// Info glyphs the mobile comp adds next to two bottom-strip labels; purely
-// decorative (StakeTakeoverBorrowCard precedent), absent from the desktop comp.
-const StatInfoIcon = () => <Info className="h-3 w-3 md:hidden" aria-hidden />;
 
 function MenuRow({
   icon,
@@ -899,7 +895,18 @@ export function PositionDetailsModal({
                       label={
                         <>
                           <Trans>Liquidation risk</Trans>
-                          <StatInfoIcon />
+                          {/* Same explainer as the manage sheet row; the mobile
+                              comp draws the glyph (1292:63278), desktop keeps it
+                              so both breakpoints answer the question. */}
+                          <InfoTooltip
+                            iconSize={12}
+                            iconClassName="shrink-0"
+                            content={
+                              vault?.liquidationPrice
+                                ? t`Sky closes your position if SKY's price drops to your liquidation price (${formattedLiqPrice}). Your collateral is sold to repay the debt plus a penalty.`
+                                : t`Sky closes your position if SKY's price drops to your liquidation price. Your collateral is sold to repay the debt plus a penalty.`
+                            }
+                          />
                         </>
                       }
                     >
