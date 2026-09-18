@@ -48,10 +48,7 @@
     "pr:desc": "bash ./scripts/generate_pr_description.sh"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "prettier --write --cache",
-      "eslint --cache --fix"
-    ]
+    "*": "prettier --write --cache --ignore-unknown"
   },
   "directories": {
     "doc": "docs"
