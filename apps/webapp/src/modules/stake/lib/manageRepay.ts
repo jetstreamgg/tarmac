@@ -39,3 +39,25 @@ export function calculateMaxRepayable({
     return userBalance;
   }
 }
+
+/**
+ * Which ways out of the dust gap a typed repay can offer (Figma 3297:71046):
+ * `partial` when debt − dust (capped at the wallet) leaves something to repay
+ * and keep the position open, `full` when the wallet covers the whole debt. Both false only when the
+ * debt is already at or under dust with no wallet to close it.
+ */
+export function repayGapOptions({
+  debtValue,
+  dust,
+  balance
+}: {
+  debtValue: bigint;
+  dust: bigint;
+  balance: bigint | undefined;
+}): { partialMax: bigint; partial: boolean; full: boolean } {
+  const wallet = balance ?? 0n;
+  const gapMax = debtValue - dust;
+  // Never quote a figure the wallet can't cover.
+  const partialMax = wallet < gapMax ? wallet : gapMax;
+  return { partialMax, partial: partialMax > 0n, full: wallet >= debtValue };
+}

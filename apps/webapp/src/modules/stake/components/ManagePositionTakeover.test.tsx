@@ -41,6 +41,10 @@ const h = vi.hoisted(() => ({
   simLiqPrice: 432n * 10n ** 14n,
   simDelayedPrice: 608n * 10n ** 14n,
   simProximity: 36,
+  // Overrides the debt-derived simulated risk level when set.
+  simRisk: undefined as string | undefined,
+  // 125% collateralisation ratio (ray).
+  liquidationRatio: 125n * 10n ** 25n,
   minCollateralForDust: 0n,
   debtCeiling: 0n,
   simulationError: null as Error | null,
@@ -140,10 +144,17 @@ vi.mock('@/hooks', async importOriginal => {
         maxSafeBorrowableIntAmountNoCap: collateral / 10n,
         dust: h.dust,
         minCollateralForDust: h.minCollateralForDust,
-        riskLevel: desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW,
+        riskLevel: h.simRisk ?? (desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW),
+        // Capped collateral value at 200% of the debt → 50% loan-to-value.
+        collateralValue: collateral === 0n ? 0n : desiredDebt * 2n,
         liquidationProximityPercentage: desiredDebt > 0n ? h.simProximity : 0,
-        liquidationPrice: h.simLiqPrice,
-        delayedPrice: h.simDelayedPrice
+        // Scales with the collateral so a stake-only change moves the price.
+        liquidationPrice:
+          collateral > 0n && collateral !== h.existingCollateral
+            ? (h.simLiqPrice * h.existingCollateral) / collateral
+            : h.simLiqPrice,
+        delayedPrice: h.simDelayedPrice,
+        liquidationRatio: h.liquidationRatio
       },
       isLoading: false,
       error: h.simulationError,
@@ -199,6 +210,8 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
             debtValue: h.existingDebt,
             dust: h.dust,
             riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
+            // Capped collateral value at 150% of the debt → 67% loan-to-value.
+            collateralValue: (h.existingDebt * 3n) / 2n,
             liquidationProximityPercentage: h.existingDebt > 0n ? 30 : 0,
             liquidationPrice: h.simLiqPrice,
             delayedPrice: h.simDelayedPrice
@@ -265,7 +278,7 @@ vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
-import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
+import { lsSkySkyRewardAddress } from '@/hooks';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
@@ -285,15 +298,6 @@ const confirmButton = () => screen.getByTestId('stake-manage-confirm') as HTMLBu
  * live routing so the grid can price the network fee. Nothing here simulates,
  * so an empty routing is enough.
  */
-const renderConfirmSummary = (params: Record<string, unknown> | undefined = h.launchParams) => {
-  const build = params?.transactionContent as (context: {
-    calls: unknown[];
-    isBatch: boolean;
-    legCount: number;
-  }) => React.ReactNode;
-  return render(<I18nProvider i18n={i18n}>{build({ calls: [], isBatch: false, legCount: 1 })}</I18nProvider>);
-};
-
 describe('ManagePositionTakeover', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('flow=manage&urn_index=0');
@@ -316,6 +320,8 @@ describe('ManagePositionTakeover', () => {
     h.simLiqPrice = 432n * 10n ** 14n;
     h.simDelayedPrice = 608n * 10n ** 14n;
     h.simProximity = 36;
+    h.simRisk = undefined;
+    h.liquidationRatio = 125n * 10n ** 25n;
     h.minCollateralForDust = 1_440_000n * WAD;
     h.debtCeiling = parseUnits('1000000000', 18);
     h.simulationError = null;
@@ -327,20 +333,34 @@ describe('ManagePositionTakeover', () => {
     document.body.style.overflow = '';
   });
 
-  it('renders summary strip + four cards, all off by default, Confirm disabled', () => {
+  it('renders summary strip + two open cards without toggles for a position with debt (Figma 3015:58334)', () => {
     renderSheet();
 
     expect(screen.getByTestId('stake-manage-position-summary')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-stake-card')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-borrow-card')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-reward-card')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-delegate-card')).toBeTruthy();
-    expect(screen.queryByTestId('stake-manage-stake-amount')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
+    // Reward and delegate changes open their own modals (Figma 3015:61490 / 3015:61189).
+    expect(screen.queryByTestId('stake-manage-reward-card')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-delegate-card')).toBeNull();
+    // Stake and borrow are interlinked once there is debt: both cards stay open, no switches.
+    expect(screen.getByTestId('stake-manage-stake-amount')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-borrow-amount')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-stake-card-toggle')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-borrow-card-toggle')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('pre-toggles cards per the deep-link init', () => {
+  it('a debt-free position collapses the borrow card behind a toggle (Figma 3015:60680)', () => {
+    h.existingDebt = 0n;
+    renderSheet();
+
+    expect(screen.queryByTestId('stake-manage-stake-card-toggle')).toBeNull();
+    expect(screen.getByTestId('stake-manage-stake-amount')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-borrow-card-toggle')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-borrow-amount')).toBeNull();
+  });
+
+  it('pre-selects the card modes per the deep-link init', () => {
     renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay' });
 
     expect(screen.getByTestId('stake-manage-stake-amount')).toBeTruthy();
@@ -417,22 +437,24 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('flags the capped-OSM withdraw (liquidation price above the delayed price)', () => {
+  it('flags the capped-OSM withdraw with the Figma numeric bound (liquidation price above the delayed price)', () => {
     h.simLiqPrice = 700n * 10n ** 14n; // above delayedPrice 608
     renderSheet({ stakeCard: 'withdraw' });
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
-    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe(
-      'Liquidation price is higher than the capped OSM SKY price'
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /^Withdrawing 1,000,000 SKY would liquidate your position\. With your 30,000 USDS debt, you can withdraw at most 2,383,22\d SKY\.$/
     );
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('prefers the capped-OSM message when the F8 proximity short-circuit also maxes the risk error', () => {
+  it('falls back to the capped-OSM copy when no safe bound can be derived', () => {
     // Real hook behavior once liq price ≥ delayed price: proximity reports
-    // 100, so BOTH error conditions hold — the specific copy must win.
+    // 100, so BOTH error conditions hold — the specific copy must win over
+    // the generic risk error.
     h.simLiqPrice = 700n * 10n ** 14n;
     h.simProximity = 100;
+    h.liquidationRatio = 0n;
     renderSheet({ stakeCard: 'withdraw' });
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
@@ -442,10 +464,10 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('repay: the 100% chip stages wipeAll when the balance covers the debt (M11)', () => {
+  it('repay: the Max chip stages wipeAll when the balance covers the debt (M11)', () => {
     renderSheet({ borrowCard: 'repay' });
 
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
     expect(h.launchParams?.usdsToWipe).toBe(30_000n * WAD);
     expect(h.launchParams?.wipeAll).toBe(true);
 
@@ -454,34 +476,157 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.wipeAll).toBe(false);
   });
 
-  it('repay: a full-left slider drag stages wipeAll like the 100% chip (M11)', () => {
+  it('repay: a full-right slider drag stages wipeAll like the 100% chip (M11)', () => {
     renderSheet({ borrowCard: 'repay' });
 
-    // Radix slider: Home jumps to the minimum → stages the exact full debt.
+    // Radix slider: End jumps to the maximum → stages the exact full debt.
     // Without wipeAll this would launch a plain wipe that strands sub-dust
     // accrued interest (vat dust revert).
-    fireEvent.keyDown(screen.getByRole('slider'), { key: 'Home' });
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
 
     expect(h.launchParams?.usdsToWipe).toBe(30_000n * WAD);
     expect(h.launchParams?.wipeAll).toBe(true);
   });
 
-  it('repay: sub-dust remainder is rejected with the legacy message', () => {
+  // Dust-gap copy names the exact ways out (Figma 3297:71046).
+  it('repay: a debt at the dust floor only offers closing', () => {
     renderSheet({ borrowCard: 'repay' });
 
-    // 30k debt − 15k repay = 15k < 30k dust → minDebtNotMet.
+    // 30k debt − 15k repay = 15k < 30k dust → minDebtNotMet; debt == dust, no partial.
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '15000' } });
-    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toContain(
-      'Debt must be paid off entirely'
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. Repay the full 30,000 to close it.'
     );
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('full repay renders the No-position delta row (M13)', () => {
+  it('repay: offers the partial max and the full close when the wallet covers the debt', () => {
+    h.existingDebt = 50_000n * WAD;
     renderSheet({ borrowCard: 'repay' });
 
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
-    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('No position');
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 20,000 and keep it, or repay the full 50,000 to close it.'
+    );
+  });
+
+  it('repay: drops the close option when the wallet is short of the full debt', () => {
+    h.existingDebt = 50_000n * WAD;
+    h.usdsBalance = 40_000n * WAD;
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 20,000 and keep it.'
+    );
+  });
+
+  it('repay: caps the partial figure at the wallet balance', () => {
+    h.existingDebt = 50_000n * WAD;
+    h.usdsBalance = 15_000n * WAD;
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 15,000 and keep it.'
+    );
+  });
+
+  it('loan-to-value row: current → simulated, 0% after a full repay, no rate info icon (Figma 3015:57426)', () => {
+    renderSheet({ borrowCard: 'repay' });
+    const ltv = () => screen.getByTestId('stake-manage-ltv-row').textContent ?? '';
+
+    expect(ltv()).toContain('67%');
+    expect(screen.getByTestId('stake-manage-borrow-rate-row').querySelector('svg')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+    expect(ltv()).toMatch(/67%.*0%$/);
+  });
+
+  it('paints the new loan-to-value red only when the move lands in high or liquidation risk (Figma 3297:72534)', () => {
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+    expect(screen.getByTestId('stake-manage-ltv-row').textContent).toContain('50%');
+    expect(screen.queryByTestId('stake-manage-ltv-danger')).toBeNull();
+
+    cleanup();
+    h.simRisk = 'HIGH';
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+    expect(screen.getByTestId('stake-manage-ltv-danger').textContent).toBe('50%');
+    expect(screen.getByTestId('stake-manage-ltv-danger').className).toContain('text-statusError');
+  });
+
+  it('keeps the projected risk and loan-to-value up while the borrow carries an error (Figma 3015:62772)', () => {
+    h.simulationError = new Error('Insufficient collateral');
+    h.simRisk = 'LIQUIDATION';
+    renderSheet({ borrowCard: 'borrow' });
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Insufficient collateral'
+    );
+    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('Liquidation');
+    expect(screen.getByTestId('stake-manage-ltv-danger').textContent).toBe('50%');
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  it('shows >100% loan-to-value when a full withdraw leaves the debt with no collateral', () => {
+    h.simRisk = 'LIQUIDATION';
+    renderSheet({ stakeCard: 'withdraw' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '3000000' } });
+
+    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('Liquidation');
+    expect(screen.getByTestId('stake-manage-ltv-danger').textContent).toBe('>100%');
+    expect(confirmButton().disabled).toBe(true);
+  });
+
+  // With debt the borrow card is always open, so its errors must gate Confirm
+  // regardless of which card the deep link pre-selected.
+  it.each([
+    { name: 'repay above the debt', mode: 'repay', amount: '100000', error: 'Amount exceeds debt' },
+    { name: 'sub-dust repay remainder', mode: 'repay', amount: '15000', error: 'needs at least 30,000 USDS' },
+    { name: 'repay without USDS', mode: 'repay', amount: '30000', error: 'need USDS', usdsBalance: 0n },
+    {
+      name: 'borrow above the ceiling',
+      mode: 'borrow',
+      amount: '40001',
+      error: 'debt ceiling',
+      ceiling: true
+    },
+    {
+      name: 'borrow simulation failure',
+      mode: 'borrow',
+      amount: '1000',
+      error: 'Insufficient collateral',
+      sim: true
+    }
+  ] as const)(
+    'blocks Confirm on $name when the sheet opened from the stake side',
+    ({ mode, amount, error, ...knobs }) => {
+      h.usdsBalance =
+        'usdsBalance' in knobs && knobs.usdsBalance !== undefined ? knobs.usdsBalance : 200_000n * WAD;
+      if ('ceiling' in knobs) h.debtCeiling = 40_000n * WAD;
+      if ('sim' in knobs) h.simulationError = new Error('Insufficient collateral');
+      renderSheet({ stakeCard: 'withdraw' });
+
+      fireEvent.click(screen.getByTestId(`stake-manage-borrow-card-mode-${mode}`));
+      fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: amount } });
+      expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toContain(error);
+      expect(confirmButton().disabled).toBe(true);
+    }
+  );
+
+  it('full repay renders the Repaid delta row (M13)', () => {
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+    expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('Repaid');
+    expect(screen.getByTestId('stake-manage-borrowed-row').textContent).toContain('30,000');
+    expect(screen.getByTestId('stake-manage-borrowed-row').textContent).toMatch(/0$/);
+    // Full repay zeroes the price and ratio (Figma 3015:57426).
+    expect(screen.getByTestId('stake-manage-liq-price-row').textContent).toMatch(/\$0\.00$/);
+    expect(screen.getByTestId('stake-manage-ltv-row').textContent).toMatch(/0%$/);
     expect(screen.getByTestId('stake-manage-borrow-rate-row').textContent).toContain('0.00%');
   });
 
@@ -493,23 +638,60 @@ describe('ManagePositionTakeover', () => {
 
     expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).disabled).toBe(true);
     expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('Borrowed: 0');
-    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 0 USDS');
+    expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('repay: the max hint is wallet-aware, not the debt (Repay maxRepayable port)', () => {
-    // 30k debt but only 20k USDS in the wallet; the 10k remainder clears the
-    // dust floor, so the real cap is the balance — the "Borrowed:" line alone
-    // would overstate it by 10k.
+  it('repay: the header shows only the borrowed figure (Design QA 3312:76634)', () => {
+    // 30k debt with 20k in the wallet: the wallet cap is left to the amount
+    // error and the slider end, not the header.
     h.usdsBalance = 20_000n * WAD;
     h.dust = 10_000n * WAD;
     renderSheet({ borrowCard: 'repay' });
 
-    // Both responsive variants render (CSS hides one per breakpoint): compact
-    // below md, full from md up.
-    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('30K');
-    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('30,000');
-    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 20K USDS');
+    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toBe('Borrowed: 30K');
+    expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
+  });
+
+  it('repay: typing the displayed two-decimal debt stages wipeAll instead of a dust error', () => {
+    // Live debt carries accrued sub-cent interest the input can never express.
+    h.existingDebt = 30_000n * WAD + 123_456_789_012_345n;
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '30000' } });
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(confirmButton().disabled).toBe(false);
+
+    // Anything short of the displayed debt is a plain partial repay.
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '29999.99' } });
+    expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
+  it('withdraw: the liquidation bound follows the staged borrow, not the existing debt', () => {
+    h.simProximity = 100;
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'borrow' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2300000' } });
+    // Existing 30k debt at 1.25 / 0.0608: min collateral 616,776 → at most 2,383,223.
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /With your 30,000 USDS debt, you can withdraw at most 2,383,22\d/
+    );
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
+    // Resulting 40k debt: min collateral 822,368 → at most 2,177,631.
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /With your 40,000 USDS debt, you can withdraw at most 2,177,63\d/
+    );
+  });
+
+  it('repay: only the 100% chip remains; the dust floor is the slider tick', () => {
+    h.dust = 10_000n * WAD;
+    renderSheet({ borrowCard: 'repay' });
+
+    expect(screen.queryByTestId('stake-manage-borrow-amount-chip-min')).toBeNull();
+    expect(screen.getByTestId('stake-manage-borrow-amount-chip-max').textContent).toBe('100%');
   });
 
   it('borrow: a debt-free urn still shows the slider and the max hint', () => {
@@ -517,7 +699,27 @@ describe('ManagePositionTakeover', () => {
     renderSheet({ borrowCard: 'borrow' });
 
     expect(screen.getByTestId('stake-manage-borrow-slider')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 300K USDS');
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('Borrowable: 300K USDS');
+    // Debt-free borrow chips are Min (dust) / Max (headroom).
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-min'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+    expect(h.launchParams?.usdsToBorrow).toBe(300_000n * WAD);
+  });
+
+  it('borrow: switching on with zero debt pre-selects the dust minimum', () => {
+    h.existingDebt = 0n;
+    renderSheet();
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
+  });
+
+  it('borrow: an open card with existing debt starts with an empty amount', () => {
+    renderSheet();
+
+    expect(screen.getByTestId('stake-manage-borrow-amount')).toBeTruthy();
+    expect(h.launchParams?.usdsToBorrow ?? 0n).toBe(0n);
   });
 
   it('borrow: below the min collateral the warning owns the state and the max hint hides', () => {
@@ -529,12 +731,72 @@ describe('ManagePositionTakeover', () => {
     expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
   });
 
+  it('withdraw below the min stake with debt: the borrow slider stays as a dead track topping out at the debt (Figma 3015:62772)', () => {
+    renderSheet({ stakeCard: 'withdraw' });
+    // 3M staked − 2M leaves 1M, under the 1.44M min collateral.
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2000000' } });
+
+    expect(screen.getByTestId('stake-manage-min-collateral-warning')).toBeTruthy();
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('Borrowable: 0 USDS');
+    const slider = screen.getByTestId('stake-manage-borrow-slider');
+    expect(slider.querySelector('[data-slot="slider"]')?.getAttribute('data-disabled')).not.toBeNull();
+    expect(screen.getByTestId('stake-manage-borrow-slider-max-label').textContent).toContain('30,000');
+    expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it('borrow: below the min collateral the off switch is disabled behind the hint (G11)', () => {
+    h.existingDebt = 0n;
+    h.existingCollateral = 1_000_000n * WAD;
+    renderSheet();
+
+    const toggle = screen.getByTestId('stake-manage-borrow-card-toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(screen.getByTestId('stake-manage-borrow-card-toggle-hint')).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId('stake-manage-borrow-amount')).toBeNull();
+  });
+
+  it('stake: the min-stake row flips to Reached once the staged stake clears it (G2)', () => {
+    h.existingDebt = 0n;
+    h.existingCollateral = 1_000_000n * WAD;
+    renderSheet({ stakeCard: 'stake' });
+
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).toContain('Not reached');
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '500000' } });
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).toContain('Reached');
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).not.toContain('Not reached');
+  });
+
+  it('stake-only change surfaces the borrow card price delta (G3)', () => {
+    renderSheet({ stakeCard: 'stake', borrowCard: 'borrow' });
+
+    const row = () => screen.getByTestId('stake-manage-liq-price-row').textContent;
+    // Nothing staged: single value.
+    expect(row()).toBe('Liquidation price$0.0432');
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '500000' } });
+    // 3M → 3.5M collateral: 0.0432 × 3 / 3.5
+    expect(row()).toBe('Liquidation price$0.0432$0.0370');
+  });
+
+  it('borrow: the slider runs on total debt with a tick at the current debt (Progress Steps)', () => {
+    h.debtCeiling = 40_000n * WAD;
+    renderSheet({ borrowCard: 'borrow' });
+
+    const slider = screen.getByTestId('stake-manage-borrow-slider');
+    // Dust axis 30k → 70k: a 30k debt sits on the left end, so no interior tick.
+    expect(slider.querySelectorAll('[data-slot="slider-marker"]').length).toBe(0);
+    expect(screen.getByTestId('stake-manage-borrow-slider-min-label').textContent).toContain('30,000');
+    expect(screen.getByTestId('stake-manage-borrow-slider-max-label').textContent).toContain('70,000');
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
+    expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
+  });
+
   it('borrow: amount reaches the seam and the borrowed line shows the delta', () => {
     renderSheet({ borrowCard: 'borrow' });
 
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
     expect(h.launchParams?.usdsToBorrow).toBe(10_000n * WAD);
-    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('→');
+    expect(screen.getByTestId('stake-manage-borrowed-row').textContent).toContain('40,000');
   });
 
   it('borrow: staging exactly the ceiling headroom keeps Confirm enabled (boundary)', () => {
@@ -551,14 +813,15 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(false);
   });
 
-  it('borrow: the top chip is 75% and stages three quarters of the max', () => {
+  it('borrow: the chips are 25/50/100 of the headroom', () => {
     h.debtCeiling = 40_000n * WAD;
     renderSheet({ borrowCard: 'borrow' });
 
-    expect(screen.queryByTestId('stake-manage-borrow-amount-percent-100')).toBeNull();
-    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-75'));
-
-    expect(h.launchParams?.usdsToBorrow).toBe(30_000n * WAD);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-percent-75')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-50'));
+    expect(h.launchParams?.usdsToBorrow).toBe(20_000n * WAD);
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-percent-100'));
+    expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
   });
 
   it('borrow: above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {
@@ -573,110 +836,10 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('delegate: picking a different delegate stages the change and enables Confirm', () => {
-    renderSheet({ delegateCard: true });
-    expect(confirmButton().disabled).toBe(true);
-
-    // The current delegate renders pre-selected.
-    expect(
-      screen
-        .getByTestId(`stake-manage-delegate-${CURRENT_DELEGATE.toLowerCase()}`)
-        .getAttribute('aria-pressed')
-    ).toBe('true');
-
-    fireEvent.click(screen.getByTestId(`stake-manage-delegate-${OTHER_DELEGATE.toLowerCase()}`));
-    expect(h.launchParams?.selectedDelegate).toBe(OTHER_DELEGATE);
-    expect(confirmButton().disabled).toBe(false);
-  });
-
-  it('delegate: re-selecting the current delegate stages no change', () => {
-    renderSheet({ delegateCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-delegate-${CURRENT_DELEGATE.toLowerCase()}`));
-    // Click-again-to-deselect on the pre-selected row → staged selection gone,
-    // effective delegate back to current → no change staged.
+  it('passes the urn reward and delegate through unchanged (no reward/delegate cards)', () => {
+    renderSheet({ stakeCard: 'stake' });
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
     expect(h.launchParams?.selectedDelegate).toBe(CURRENT_DELEGATE);
-    expect(confirmButton().disabled).toBe(true);
-  });
-
-  it('reward: picking a different farm stages the change and enables Confirm (APP-516)', () => {
-    renderSheet({ rewardCard: true });
-    expect(confirmButton().disabled).toBe(true);
-
-    // SPK is deprecated and not the urn's farm → hidden; the current SKY farm
-    // renders pre-selected.
-    expect(screen.queryByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`)).toBeNull();
-    expect(
-      screen
-        .getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`)
-        .getAttribute('aria-pressed')
-    ).toBe('true');
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
-    expect(h.launchParams?.selectedRewardContract).toBe(lsSkyUsdsRewardAddress[1]);
-    expect(confirmButton().disabled).toBe(false);
-  });
-
-  it('reward: re-selecting the current farm stages no change', () => {
-    renderSheet({ rewardCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`));
-    // Back on the urn's own farm → effective reward is the current one → no
-    // change staged.
-    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
-    expect(confirmButton().disabled).toBe(true);
-  });
-
-  it('reward: an out-of-address-book farm previews with its on-chain token', () => {
-    // The indexer can list a farm before the webapp ships its generated
-    // addresses. The review body must still preview the change — dropping it
-    // would confirm a reward-only multicall behind an empty summary.
-    const unknownFarm = '0x9999999999999999999999999999999999999999' as const;
-    h.extraFarm = unknownFarm;
-    h.farmTokenSymbols[unknownFarm] = 'FOO';
-    renderSheet({ rewardCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${unknownFarm}`));
-    expect(h.launchParams?.selectedRewardContract).toBe(unknownFarm);
-    expect(confirmButton().disabled).toBe(false);
-
-    renderConfirmSummary();
-    // From: the urn's current farm token; To: the staged farm's real token.
-    const reward = screen.getByTestId('stake-confirm-grid-reward').textContent!;
-    expect(reward).toContain('SKY');
-    expect(reward).toContain('FOO');
-  });
-
-  it('reward: a deprecated current farm renders pre-selected with its chip and warning (CTA deep-link)', () => {
-    // The details-modal banner CTA arrives with rewardCard: true — no
-    // auto-open in the sheet itself; the card opens via init.
-    h.rewardContract = lsSkySpkRewardAddress[1];
-    h.rewardDeprecated = true;
-    renderSheet({ rewardCard: true });
-
-    const spkRow = screen.getByTestId(`stake-manage-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`);
-    expect(spkRow.getAttribute('aria-pressed')).toBe('true');
-    expect(spkRow.textContent).toContain('Deprecated');
-    expect(screen.getByTestId('stake-manage-reward-deprecated-warning')).toBeTruthy();
-  });
-
-  it('reward: the card stays collapsed by default, deprecated farm or not', () => {
-    h.rewardContract = lsSkySpkRewardAddress[1];
-    h.rewardDeprecated = true;
-    renderSheet();
-    expect(screen.queryByTestId('stake-manage-reward-list')).toBeNull();
-  });
-
-  it('reward: toggling the card off clears a staged change', () => {
-    renderSheet({ rewardCard: true });
-
-    fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
-    expect(confirmButton().disabled).toBe(false);
-
-    fireEvent.click(screen.getByTestId('stake-manage-reward-card-toggle'));
-    expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
-    expect(confirmButton().disabled).toBe(true);
   });
 
   it('closes through the controller callback and draws no back arrow (Design QA 2800:91832)', () => {
@@ -687,21 +850,29 @@ describe('ManagePositionTakeover', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('disables the mode pills while a card is toggled off (Design QA 2800:91832)', () => {
+  it('disables the mode pills while the borrow card is toggled off (Design QA 2800:91832)', () => {
+    h.existingDebt = 0n;
     renderSheet();
 
-    // Every card starts off: both stake pills are inert.
-    const stakePill = screen.getByTestId('stake-manage-stake-card-mode-stake') as HTMLButtonElement;
-    const withdrawPill = screen.getByTestId('stake-manage-stake-card-mode-withdraw') as HTMLButtonElement;
-    expect(stakePill.disabled).toBe(true);
-    expect(withdrawPill.disabled).toBe(true);
+    // A debt-free position starts with the borrow card off: both pills are inert.
+    const borrowPill = screen.getByTestId('stake-manage-borrow-card-mode-borrow') as HTMLButtonElement;
+    const repayPill = screen.getByTestId('stake-manage-borrow-card-mode-repay') as HTMLButtonElement;
+    expect(borrowPill.disabled).toBe(true);
+    expect(repayPill.disabled).toBe(true);
+    // ...and the default mode keeps its mark (Figma Tabs Item "Disabled Active").
+    expect(borrowPill.getAttribute('aria-pressed')).toBe('true');
+    expect(borrowPill.getAttribute('data-state')).toBe('active');
+    expect(repayPill.getAttribute('data-state')).toBe('inactive');
 
-    fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
-    expect(stakePill.disabled).toBe(false);
-    expect(withdrawPill.disabled).toBe(false);
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(borrowPill.disabled).toBe(false);
+    expect(repayPill.disabled).toBe(false);
+    expect(borrowPill.getAttribute('aria-pressed')).toBe('true');
+    expect(borrowPill.getAttribute('data-state')).toBe('active');
 
-    fireEvent.click(screen.getByTestId('stake-manage-stake-card-toggle'));
-    expect(stakePill.disabled).toBe(true);
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
+    expect(borrowPill.disabled).toBe(true);
+    expect(borrowPill.getAttribute('data-state')).toBe('active');
   });
 
   it('holds Confirm on a pending verdict and blocks it, with the reason, on a denial (APP-550)', () => {

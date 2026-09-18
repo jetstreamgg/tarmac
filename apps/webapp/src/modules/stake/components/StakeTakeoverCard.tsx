@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Switch } from '@/components/ui/switch';
+import { StakeCardBody } from './StakeCardBody';
+import { StakeCardToggle } from './StakeCardToggle';
 import { cn } from '@/lib/cn';
 
 /**
@@ -16,6 +17,8 @@ export function StakeTakeoverCard({
   optional = false,
   enabled = true,
   onEnabledChange,
+  toggleDisabled,
+  toggleDisabledHint,
   dataTestId,
   children
 }: {
@@ -24,6 +27,9 @@ export function StakeTakeoverCard({
   optional?: boolean;
   enabled?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
+  /** The switch can't be turned on yet; `toggleDisabledHint` says why (hover/tap). */
+  toggleDisabled?: boolean;
+  toggleDisabledHint?: ReactNode;
   dataTestId: string;
   children: ReactNode;
 }) {
@@ -38,7 +44,7 @@ export function StakeTakeoverCard({
         // against the pale light-mode page background. So the swap is scoped to
         // dark; light keeps the pre-existing glassSurface value. Don't collapse
         // this back to one token.
-        'bg-bgTertiary rounded-card flex flex-col gap-6 p-5 backdrop-blur-[20px] md:gap-8 md:p-8',
+        'bg-bgTertiary rounded-card flex flex-col p-5 backdrop-blur-[20px] md:p-8',
         'light:bg-glassSurface'
       )}
     >
@@ -57,10 +63,16 @@ export function StakeTakeoverCard({
           </h3>
         </div>
         {optional && (
-          <Switch checked={enabled} onCheckedChange={onEnabledChange} data-testid={`${dataTestId}-toggle`} />
+          <StakeCardToggle
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            disabled={toggleDisabled}
+            disabledHint={toggleDisabledHint}
+            dataTestId={`${dataTestId}-toggle`}
+          />
         )}
       </div>
-      {enabled && children}
+      <StakeCardBody open={enabled}>{children}</StakeCardBody>
     </section>
   );
 }

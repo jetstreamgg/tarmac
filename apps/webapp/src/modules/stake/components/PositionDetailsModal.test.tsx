@@ -37,7 +37,9 @@ const baseDetail: StakePositionDetail = {
     dust: parseUnits('30000', 18)
   },
   vaultLoading: false,
+  shapeLoading: false,
   hasDebt: true,
+  canBorrow: true,
   isInactive: false,
   hasBorrowHistory: true,
   rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
@@ -150,6 +152,24 @@ describe('PositionDetailsModal', () => {
     expect(screen.getByTestId('stake-manage-menu-withdraw')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-cta-stake')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-cta-borrow').textContent).toContain('Borrow USDS');
+  });
+
+  it('disables Borrow USDS below the minimum stake and says how much is needed', () => {
+    renderModal({
+      hasDebt: false,
+      canBorrow: false,
+      vault: {
+        ...baseDetail.vault!,
+        collateralAmount: parseUnits('74999', 18),
+        debtValue: 0n,
+        minCollateralForDust: parseUnits('1440000', 18)
+      },
+      borrowedUsd: 0
+    });
+
+    const borrow = screen.getByTestId('stake-manage-cta-borrow') as HTMLButtonElement;
+    expect(borrow.disabled).toBe(true);
+    expect(screen.getByTestId('stake-manage-cta-borrow-hint').textContent).toContain('1,440,000 SKY');
   });
 
   it('derives the warning sentence from the liquidation proximity (M14)', () => {
@@ -279,7 +299,13 @@ describe('PositionDetailsModal', () => {
   });
 
   it('skeletons the menu and CTAs while the vault state is unknown (no wrong-variant flash)', () => {
-    renderModal({ vault: undefined, vaultLoading: true, hasDebt: false, isInactive: false });
+    renderModal({
+      vault: undefined,
+      vaultLoading: true,
+      shapeLoading: true,
+      hasDebt: false,
+      isInactive: false
+    });
 
     expect(screen.getByTestId('stake-manage-menu-loading')).toBeTruthy();
     expect(screen.queryAllByTestId(/^stake-manage-menu-(claim|borrow|repay|withdraw)/)).toHaveLength(0);

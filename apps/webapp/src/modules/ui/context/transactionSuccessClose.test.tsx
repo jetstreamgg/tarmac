@@ -128,7 +128,7 @@ describe('TransactionModal success handoff', () => {
 
     act(() => cb.onMutate());
     act(() => cb.onStart(HASH));
-    expect(screen.queryByText('Supply')).not.toBeNull();
+    expect(screen.queryAllByText('Supply').length).toBeGreaterThan(0);
 
     act(() => cb.onSuccess(HASH));
 

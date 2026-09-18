@@ -18,14 +18,26 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { calculateClaimedRewardsUsd, hasStakeBorrowHistory } from '../lib/positionDetail';
+import { isMinCollateralNotMet } from '../lib/maxBorrow';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';
+import { useStakeUrnVaults } from './useStakeUrnVaults';
+import { isInactiveStakePosition } from './useStakeUserPositions';
 import { priceOfFromPrices, sumRewardsUsd, wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 
 export interface StakePositionDetail {
   urnAddress: `0x${string}` | undefined;
   vault: Vault | undefined;
   vaultLoading: boolean;
+  /**
+   * Active/inactive and debt/no-debt are still unknown, so the menu and CTA
+   * shape can't be committed. Falls back to the positions table's warm Vat read
+   * (`useStakeUrnVaults`) while `useVault` is cold, so the modal opens at its
+   * final height on the first visit instead of growing when the vault lands.
+   */
+  shapeLoading: boolean;
   hasDebt: boolean;
+  /** The stake covers the dust minimum, so the borrow flow has something to offer. */
+  canBorrow: boolean;
   /** Emptied urn (C13): the vault loaded with zero collateral. Urns are never deleted. */
   isInactive: boolean;
   /** Whether the urn EVER drew debt (C14, subgraph) — the inactive borrow block + reopen shape. */
@@ -71,6 +83,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
 
   const { data: urnAddress } = useStakeUrnAddress(BigInt(urnIndex));
   const { data: vault, isLoading: vaultLoading } = useVault(urnAddress || ZERO_ADDRESS, ilkName);
+  const { data: urnVaults } = useStakeUrnVaults();
+  const urnVault = urnVaults?.find(entry => entry.index === urnIndex);
   const { data: collateralData } = useCollateralData(ilkName);
 
   const { data: rewardContract } = useStakeUrnSelectedRewardContract({ urn: urnAddress || ZERO_ADDRESS });
@@ -130,8 +144,12 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     urnAddress,
     vault,
     vaultLoading,
-    hasDebt: (vault?.debtValue ?? 0n) > 0n,
-    isInactive: !!urnAddress && !vaultLoading && vault !== undefined && (vault.collateralAmount ?? 0n) === 0n,
+    shapeLoading: vaultLoading && urnVault === undefined,
+    hasDebt: vault ? (vault.debtValue ?? 0n) > 0n : (urnVault?.usdsDebt ?? 0n) > 0n,
+    canBorrow: !isMinCollateralNotMet(vault),
+    isInactive: vault
+      ? !!urnAddress && !vaultLoading && (vault.collateralAmount ?? 0n) === 0n
+      : urnVault !== undefined && isInactiveStakePosition(urnVault),
     hasBorrowHistory: hasStakeBorrowHistory(urnHistory),
     rewardContract,
     rewardSymbol: rewardContractTokens?.rewardsToken?.symbol,
