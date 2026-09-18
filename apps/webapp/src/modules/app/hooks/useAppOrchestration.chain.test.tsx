@@ -96,7 +96,7 @@ vi.mock('@/hooks', () => ({
 }));
 
 // Everything below is orchestration the chain rules don't touch.
-const mockValidateSearchParams = vi.fn((p: URLSearchParams, _intent: unknown) => p);
+const mockValidateSearchParams = vi.fn<(p: URLSearchParams, intent: unknown) => URLSearchParams>(p => p);
 vi.mock('@/modules/utils/validateSearchParams', () => ({
   validateSearchParams: (p: URLSearchParams, intent: unknown) => mockValidateSearchParams(p, intent)
 }));
