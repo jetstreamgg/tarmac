@@ -46,8 +46,6 @@ export const annualStabilityFee = (duty: bigint): bigint => {
   return floatToScaledBigInt(rate, WAD_PRECISION);
 };
 
-export const liquidationPenalty = (chop: bigint): bigint => chop - WAD;
-
 export const delayedPrice = (par: bigint, spot: bigint, mat: bigint): bigint => {
   // Three RAY values multiplied via ethers FixedNumber at fixed256x27 truncate
   // by 10^27 after each mul, then round-half-up to wad.
@@ -108,10 +106,6 @@ export const minSafeCollateralAmount = (debtValue: bigint, mat: bigint, price: b
   return rescaleHalfUp(rayValue, RAY_PRECISION, WAD_PRECISION);
 };
 
-export const maxCollateralAvailable = (ink: bigint, minSafeCollateralAmount: bigint): bigint => {
-  return ink - minSafeCollateralAmount;
-};
-
 export const daiAvailable = (collateralValue: bigint, debtValue: bigint, mat: bigint): bigint => {
   if (mat === 0n) return 0n;
   // At fixed256x27: colValue (wad → ×10^9) divided by mat (ray) = colValue*10^36/mat.
@@ -149,38 +143,10 @@ export const annualDaiSavingsRate = (dsr: bigint): bigint => {
 };
 
 // Rewards Math
-// Returns a token amount multiplied by price to get value
-export const tokenValue = (amount: bigint, price: bigint, precision = WAD_PRECISION): bigint => {
-  return (amount * price) / 10n ** BigInt(precision);
-};
-
-export const getRewardsRate = (rewardsRateValue: bigint, totalSuppliedValue: bigint): bigint => {
-  const rewardsValuePerYear = rewardsRateValue * BigInt(SECONDS_PER_YEAR);
-  return calculateRewardsRate(rewardsValuePerYear, totalSuppliedValue);
-};
-
 // Both inputs to this function should be normalized by a common denominator, eg. DAI value
 export const calculateRewardsRate = (yearlyRewardsValue: bigint, totalSuppliedValue: bigint): bigint => {
   if (totalSuppliedValue === 0n) return 0n;
   return (yearlyRewardsValue * WAD) / totalSuppliedValue;
-};
-
-// Calculate Rate
-export const calculateSavingsRate = (rate: bigint): bigint => {
-  const compoundingPeriods = BigInt(12); // Example compounding periods per year (monthly)
-
-  const scaleFactor = BigInt(10) ** BigInt(WAD_PRECISION);
-
-  const onePlusRatePerPeriod = (rate * scaleFactor) / compoundingPeriods + scaleFactor;
-  let rateBn = onePlusRatePerPeriod;
-
-  for (let i = 1; i < compoundingPeriods; i++) {
-    rateBn = (rateBn * onePlusRatePerPeriod) / scaleFactor;
-  }
-
-  const calculatedRate = rateBn - scaleFactor;
-
-  return calculatedRate;
 };
 
 // Seal Module-specific math
@@ -200,25 +166,6 @@ export const softDebtCeiling = (surplusBuffer: bigint, assetsOwned: bigint, elix
   const assetsPart = (assetsOwned * POINT_SIX_SIX_WAD) / WAD;
   const elixirPart = (elixirOwned * POINT_FOUR_WAD) / WAD;
   return surplusBuffer + assetsPart + elixirPart;
-};
-
-// Equal to DSR if the total SE debt is below the SE Soft Debt Ceiling, and increases exponentially, with the SF doubling every 20% that the Soft Debt Ceiling is exceeded
-export const mkrVaultStabilityFee = (dsr: bigint, totalSEDebt: bigint, softDebtCeiling: bigint): bigint => {
-  if (totalSEDebt < softDebtCeiling) return dsr;
-
-  const debtDelta = totalSEDebt - softDebtCeiling;
-  // 20% of softDebtCeiling. Bigint floor div by 5 is identical to ethers's
-  // (sdc * 2*10^17) / 10^18 path for non-negative inputs.
-  const stepSize = softDebtCeiling / 5n;
-  // The ethers code does .div().floor() at fixed128x18, which collapses to
-  // integer floor division for positive inputs.
-  const steps = stepSize === 0n ? 0n : debtDelta / stepSize;
-
-  let stabilityFee = dsr;
-  for (let i = 0n; i < steps; i++) {
-    stabilityFee = stabilityFee * 2n;
-  }
-  return stabilityFee;
 };
 
 // Removes the decimal part of a wad value
@@ -249,16 +196,6 @@ export const calculateConversion = (
   return amount / MKR_TO_SKY_RATE;
 };
 
-export const calculateMKRtoSKYPrice = (mkrPrice: bigint, fee: bigint): bigint => {
-  const skyPrice = mkrPrice / MKR_TO_SKY_RATE;
-  if (fee > 0n) {
-    // Adjust price for fee
-    const adjustment = parseUnits('1', 18) - fee;
-    return (skyPrice * adjustment) / parseUnits('1', 18);
-  }
-  return skyPrice;
-};
-
 export const calculateUpgradePenalty = (fee: bigint | undefined): string => {
   if (!fee || fee === 0n) return '0';
 
@@ -273,21 +210,6 @@ export const calculateUpgradePenalty = (fee: bigint | undefined): string => {
 
   const fracStr = fracPart.toString().padStart(2, '0');
   return fracStr.endsWith('0') ? `${intPart}.${fracStr[0]}` : `${intPart}.${fracStr}`;
-};
-
-export const calculateEffectiveSkyRate = (fee: bigint | undefined): string => {
-  // Base rate is 1 MKR = 24,000 SKY
-  const baseRate = MKR_TO_SKY_RATE;
-
-  if (!fee || fee === 0n) {
-    return baseRate.toLocaleString();
-  }
-
-  // Calculate effective rate after fee (fee is WAD scaled, 1e18 = 100%)
-  const oneWad = parseUnits('1', 18);
-  const effectiveRate = (baseRate * (oneWad - fee)) / oneWad;
-
-  return effectiveRate.toLocaleString();
 };
 
 export const convertUSDCtoWad = (usdcAmount: bigint): bigint => {
@@ -315,30 +237,11 @@ export const roundDownLastTwelveDigits = (value: bigint | undefined | null): big
   return BigInt(zeroedString);
 };
 
-//rounds up to the nearest 12 digits
-export const roundUpLastTwelveDigits = (value: bigint | undefined | null): bigint => {
-  if (!value) return 0n;
-  const roundedDown = roundDownLastTwelveDigits(value);
-  if (roundedDown === value) return value;
-  return roundedDown + BigInt('1' + '0'.repeat(18 - 6));
-};
-
 export const calculateSharesFromAssets = (usdsAmount: bigint, chi: bigint): bigint => {
   if (chi === 0n) return 0n;
   // At fixed256x27: amt (wad ×10^9) / chi (ray) = (usdsAmount * 10^36) / chi.
   return rescaleHalfUp((usdsAmount * 10n ** 36n) / chi, RAY_PRECISION, WAD_PRECISION);
 };
-
-// This is the same as dsrBalance() but named for consistency with calculateSharesFromAssets()
-export const calculateAssetsFromShares = (susdsAmount: bigint, chi: bigint): bigint => {
-  return rescaleHalfUp((susdsAmount * chi) / WAD, RAY_PRECISION, WAD_PRECISION);
-};
-
-// Conversions
-/** Resolve token decimals which can be a plain number or a chain-keyed object */
-export function resolveDecimals(decimals: number | { [key: number]: number }, chainId: number): number {
-  return typeof decimals === 'number' ? decimals : decimals[chainId];
-}
 
 /** Scale an amount from its native decimals to a target base decimals (defaults to 18) */
 export function scaleToBaseDecimals(amount: bigint, tokenDecimals: number, baseDecimals = 18): bigint {

@@ -61,11 +61,6 @@ function useNetworkSelectChain(chainIds: number[]) {
   return { activeChainId, activeChainName, selectValue, isStatic };
 }
 
-/** Whether `NetworkSelect` would render static (no switch to offer) for these chains. */
-export function useIsNetworkSelectStatic(chainIds: number[]): boolean {
-  return useNetworkSelectChain(chainIds).isStatic;
-}
-
 /**
  * The phone-tier stand-in for a static network control: the DS Badges /
  * Illustration title-suffix pill (Figma 1295:20810 — "SKY Staking ⟠ Ethereum")
