@@ -310,6 +310,11 @@ export function useAppOrchestration(): { intent: Intent } {
   useEffect(() => {
     if (networkParamHonoured.current) return;
     if (status === 'connecting' || status === 'reconnecting') return;
+    // Same skew as the validation above: mid-transition `searchParams` is
+    // still the outgoing page's set. A wallet settling inside that window
+    // must not spend a `network=` the current URL never carried, and the
+    // strip below would no-op against the location anyway.
+    if (intent !== committedIntent) return;
 
     const param = searchParams.get(QueryParams.Network);
     if (!param) return;
@@ -336,7 +341,17 @@ export function useAppOrchestration(): { intent: Intent } {
     trackNetworkAutoSwitched({ trigger: 'url_param', fromChainId: chainId, toChainId: target });
     if (walletChainId !== undefined) setPendingSwitch({ from: walletChainId, to: target });
     switchChain({ chainId: target });
-  }, [status, searchParams, chains, chainId, walletChainId, intent, setSearchParams, switchChain]);
+  }, [
+    status,
+    searchParams,
+    chains,
+    chainId,
+    walletChainId,
+    intent,
+    committedIntent,
+    setSearchParams,
+    switchChain
+  ]);
 
   // The wallet arrives after a cold-loaded link was honoured against the
   // config chain alone: ask it once for the link's chain, then forget the link.

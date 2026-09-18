@@ -1,3 +1,4 @@
+import { Intent } from '@/lib/enums';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chainId as chainIdMap } from '@/utils/chainId';
@@ -25,6 +26,9 @@ const CHAINS = [
 // Mutable per-test state the mocked hooks read through. vi.mock is hoisted, so
 // module-level lets are the way to vary a mocked hook between renders.
 let mockPathname = '/earn';
+// The route the outlet is showing. Undefined = in step with the pathname (the
+// settled state); set it to stage a transition mid-flight.
+let mockCommittedPathname: string | undefined;
 let mockConfigChainId = TENDERLY;
 let mockWalletChainId: number | undefined = TENDERLY;
 let mockRewardContracts: { contractAddress: string }[] | undefined = [];
@@ -69,9 +73,7 @@ vi.mock('@/lib/navigation', async () => {
     keepSearch: (prev: Record<string, string>) => prev,
     useAppSearchParams: () => [search, setSearchParams],
     useRouteEntityParams: () => ({ rewardContract: undefined }),
-    // The committed route agrees with the pathname in these tests: no
-    // transition is ever mid-flight here.
-    useRouteIntent: () => pathToIntent(mockPathname) ?? Intent.BALANCES_INTENT
+    useRouteIntent: () => pathToIntent(mockCommittedPathname ?? mockPathname) ?? Intent.BALANCES_INTENT
   };
 });
 vi.mock('wagmi', () => ({
@@ -94,8 +96,9 @@ vi.mock('@/hooks', () => ({
 }));
 
 // Everything below is orchestration the chain rules don't touch.
+const mockValidateSearchParams = vi.fn((p: URLSearchParams, _intent: unknown) => p);
 vi.mock('@/modules/utils/validateSearchParams', () => ({
-  validateSearchParams: (p: URLSearchParams) => p
+  validateSearchParams: (p: URLSearchParams, intent: unknown) => mockValidateSearchParams(p, intent)
 }));
 vi.mock('@/modules/ui/context/ConnectedContext', () => ({
   useConnectedContext: () => ({ isAuthorized: true })
@@ -142,6 +145,7 @@ const redirectedHome = () =>
 
 beforeEach(() => {
   mockPathname = '/earn';
+  mockCommittedPathname = undefined;
   mockIsModalOpen = false;
   mockConfigChainId = TENDERLY;
   mockWalletChainId = TENDERLY;
@@ -431,5 +435,52 @@ describe('useAppOrchestration — reload with a persisted L2 session', () => {
     expect(mockSwitchChain).toHaveBeenCalledTimes(1);
     expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
     expect(redirectedHome()).toBe(false);
+  });
+});
+
+// A page transition writes the location a render before the outlet swaps, and
+// `useAppSearchParams` reads the COMMITTED match (APP-562): for that render the
+// pathname (and the intent derived from it) belongs to the incoming page while
+// the search params still belong to the outgoing one.
+describe('useAppOrchestration — search params mid-transition', () => {
+  it('validates the search only once the outlet has caught up with the pathname', () => {
+    const { refresh } = mount();
+    expect(mockValidateSearchParams).toHaveBeenCalledWith(expect.anything(), Intent.BALANCES_INTENT);
+    mockValidateSearchParams.mockClear();
+
+    // /earn -> /stake, outlet still on /earn: the old page's params must not
+    // be validated under the new intent (and written onto the new URL).
+    mockPathname = '/stake';
+    mockCommittedPathname = '/earn';
+    refresh();
+    expect(mockValidateSearchParams).not.toHaveBeenCalled();
+
+    // The commit swaps the outlet and hands the hook the new page's search.
+    mockCommittedPathname = undefined;
+    search = new URLSearchParams();
+    refresh();
+    expect(mockValidateSearchParams).toHaveBeenCalledWith(expect.anything(), Intent.STAKE_INTENT);
+  });
+
+  it('does not spend a network param the outgoing page carried once the wallet settles mid-transition', () => {
+    mockConnectionStatus = 'reconnecting';
+    search = new URLSearchParams('network=tenderlybase');
+    const { refresh } = mount();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+
+    // The wallet connects while /earn?network=tenderlybase is on its way out
+    // to /stake: the param is not on /stake's URL, so it is not honoured here.
+    mockConnectionStatus = 'connected';
+    mockPathname = '/stake';
+    mockCommittedPathname = '/earn';
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(search.get('network')).toBe('tenderlybase');
+
+    // Settled on /stake with its own (empty) search: nothing to honour.
+    mockCommittedPathname = undefined;
+    search = new URLSearchParams();
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
   });
 });

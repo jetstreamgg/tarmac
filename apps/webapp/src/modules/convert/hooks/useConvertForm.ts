@@ -59,9 +59,9 @@ export function useConvertForm() {
   const { address, isConnected } = useConnection();
   const [searchParams, setSearchParams] = useAppSearchParams();
 
-  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDC_TO_USDS';
   // `searchParams` comes from the committed route match, so this reads the
   // page's own `source_token` through its exit frame — no latch needed.
+  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDC_TO_USDS';
   const [rawValue, setRawValue] = useState('');
 
   const originDecimals = getPsmDecimalsForDirection(direction);
