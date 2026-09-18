@@ -50,7 +50,9 @@ export function StakeManageCard<Mode extends string>({
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-1.5" role="group">
           {modes.map(mode => {
-            const selected = enabled && mode.value === activeMode;
+            // The last selection stays marked while the card is off (Figma
+            // Tabs Item "Disabled Active", 3015:60680).
+            const selected = mode.value === activeMode;
             return (
               <button
                 key={mode.value}

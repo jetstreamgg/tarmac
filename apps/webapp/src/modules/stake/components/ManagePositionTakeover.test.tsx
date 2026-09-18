@@ -860,9 +860,10 @@ describe('ManagePositionTakeover', () => {
     const repayPill = screen.getByTestId('stake-manage-borrow-card-mode-repay') as HTMLButtonElement;
     expect(borrowPill.disabled).toBe(true);
     expect(repayPill.disabled).toBe(true);
-    // ...and neither reads selected until the card is on.
-    expect(borrowPill.getAttribute('aria-pressed')).toBe('false');
-    expect(borrowPill.getAttribute('data-state')).toBe('inactive');
+    // ...and the default mode keeps its mark (Figma Tabs Item "Disabled Active").
+    expect(borrowPill.getAttribute('aria-pressed')).toBe('true');
+    expect(borrowPill.getAttribute('data-state')).toBe('active');
+    expect(repayPill.getAttribute('data-state')).toBe('inactive');
 
     fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
     expect(borrowPill.disabled).toBe(false);
@@ -872,7 +873,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.click(screen.getByTestId('stake-manage-borrow-card-toggle'));
     expect(borrowPill.disabled).toBe(true);
-    expect(borrowPill.getAttribute('data-state')).toBe('inactive');
+    expect(borrowPill.getAttribute('data-state')).toBe('active');
   });
 
   it('holds Confirm on a pending verdict and blocks it, with the reason, on a denial (APP-550)', () => {
