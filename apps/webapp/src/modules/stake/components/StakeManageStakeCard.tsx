@@ -4,6 +4,7 @@ import { t } from '@lingui/core/macro';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { formatBigInt, formatUsd, WAD } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RollingDigits } from '@/components/ui/rolling-digits';
 import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -170,7 +171,7 @@ export function StakeManageStakeCard({
             next={
               stakedNext !== undefined ? (
                 <>
-                  {formatBigInt(stakedNext)}
+                  <RollingDigits value={formatBigInt(stakedNext)} />
                   {skyIcon}
                 </>
               ) : undefined
@@ -198,9 +199,9 @@ export function StakeManageStakeCard({
               )
             }
             next={
-              estNextUsd !== null && amount > 0n && estNextUsd !== estCurrentUsd
-                ? formatUsd(estNextUsd)
-                : undefined
+              estNextUsd !== null && amount > 0n && estNextUsd !== estCurrentUsd ? (
+                <RollingDigits value={formatUsd(estNextUsd)} />
+              ) : undefined
             }
             dataTestId="stake-manage-est-rewards"
           />

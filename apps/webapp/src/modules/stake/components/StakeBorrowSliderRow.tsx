@@ -140,6 +140,24 @@ export function StakeBorrowSliderRow({
               style={{ width: pct(marker) }}
             />
           )}
+          {/* Under the fill: the staged share paints over the dots (Design QA 3314:135843). */}
+          {!isBorrow && (
+            <>
+              {marker !== undefined && (
+                <span
+                  aria-hidden
+                  data-slot="slider-dots"
+                  className="absolute top-[5px] left-[3px] h-0.5 [background-image:radial-gradient(circle_at_1px_1px,var(--color-bgTertiary)_1px,transparent_1px)] [background-size:6.64px_2px]"
+                  style={{ width: pct(marker) }}
+                />
+              )}
+              <span
+                aria-hidden
+                data-slot="slider-end-dot"
+                className="bg-bgTertiary absolute top-[5px] right-[3px] size-0.5 rounded-full"
+              />
+            </>
+          )}
           <span
             aria-hidden
             data-slot="slider-fill"
@@ -169,23 +187,6 @@ export function StakeBorrowSliderRow({
               )}
             />
           </span>
-          {!isBorrow && (
-            <>
-              {marker !== undefined && (
-                <span
-                  aria-hidden
-                  data-slot="slider-dots"
-                  className="absolute top-[5px] left-[3px] h-0.5 [background-image:radial-gradient(circle_at_1px_1px,var(--color-bgTertiary)_1px,transparent_1px)] [background-size:6.64px_2px]"
-                  style={{ width: pct(marker) }}
-                />
-              )}
-              <span
-                aria-hidden
-                data-slot="slider-end-dot"
-                className="bg-bgTertiary absolute top-[5px] right-[3px] size-0.5 rounded-full"
-              />
-            </>
-          )}
         </SliderPrimitive.Track>
         {isBorrow && marker !== undefined && !disabled && (
           <span

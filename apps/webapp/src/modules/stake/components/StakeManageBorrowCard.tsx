@@ -6,6 +6,7 @@ import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD, WAD_PRECISION 
 import { loanToValue } from '../lib/loanToValue';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RollingDigits } from '@/components/ui/rolling-digits';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { RiskMeter } from '@/components/product/RiskMeter';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
@@ -94,7 +95,8 @@ function RepaidPill() {
  * follow any staged change on the position (a stake/unstake moves the risk
  * too) and stay up through errors; a full withdraw with debt left reads
  * `>100%` loan-to-value. Full repay renders `Repaid` / `0%` / `$0.00` /
- * `0.00%` (Figma 3015:57426). Repay percent chips stage wipeAll only when the
+ * `0.00%` (Figma 3015:57426). The `next` figures roll digit by digit as the
+ * input moves (Design QA 3314:135843). Repay percent chips stage wipeAll only when the
  * max equals the full debt (M11). Below the min collateral the Borrow switch is disabled
  * behind a "Stake more to borrow" hint; a card already on keeps the notice.
  */
@@ -377,7 +379,7 @@ export function StakeManageBorrowCard({
             next={
               newDebt !== undefined && newDebt !== existingDebt ? (
                 <>
-                  {formatBigInt(newDebt)}
+                  <RollingDigits value={formatBigInt(newDebt)} />
                   {usdsIcon}
                 </>
               ) : undefined
@@ -440,7 +442,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas ? (
                 isFullRepay ? (
-                  '0%'
+                  <RollingDigits value="0%" />
                 ) : nextLtvUnbounded ? (
                   <span data-testid="stake-manage-ltv-danger" className="text-statusError">
                     {'>100%'}
@@ -449,10 +451,10 @@ export function StakeManageBorrowCard({
                   // The new value goes red once the move lands in high/liquidation risk (Figma 3297:72534).
                   nextRiskIsDanger ? (
                     <span data-testid="stake-manage-ltv-danger" className="text-statusError">
-                      {formatLtv(nextLtv)}
+                      <RollingDigits value={formatLtv(nextLtv)} />
                     </span>
                   ) : (
-                    formatLtv(nextLtv)
+                    <RollingDigits value={formatLtv(nextLtv)} />
                   )
                 ) : undefined
               ) : undefined
@@ -469,14 +471,14 @@ export function StakeManageBorrowCard({
               )
             }
             next={
-              showDeltas
-                ? isFullRepay
-                  ? formatOraclePrice(0n)
-                  : simulatedVault?.liquidationPrice !== undefined &&
-                      simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
-                    ? formatOraclePrice(simulatedVault.liquidationPrice)
-                    : undefined
-                : undefined
+              showDeltas ? (
+                isFullRepay ? (
+                  <RollingDigits value={formatOraclePrice(0n)} />
+                ) : simulatedVault?.liquidationPrice !== undefined &&
+                  simulatedVault.liquidationPrice !== existingVault?.liquidationPrice ? (
+                  <RollingDigits value={formatOraclePrice(simulatedVault.liquidationPrice)} />
+                ) : undefined
+              ) : undefined
             }
             dataTestId="stake-manage-liq-price-row"
           />
