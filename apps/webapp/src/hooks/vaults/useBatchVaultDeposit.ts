@@ -44,7 +44,10 @@ export function useBatchVaultDeposit({
   const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
 
-  const isUsdt = assetAddress === usdtAddress[chainId as keyof typeof usdtAddress];
+  // Case-insensitive: callers may pass a lowercased address while the generated
+  // constant is checksummed, and USDT's non-standard approve needs its own ABI.
+  const usdtOnChain = usdtAddress[chainId as keyof typeof usdtAddress];
+  const isUsdt = usdtOnChain !== undefined && assetAddress.toLowerCase() === usdtOnChain.toLowerCase();
   const approveAbi = isUsdt ? usdtAbi : erc20Abi;
 
   // Check current allowance for the underlying asset

@@ -7,6 +7,7 @@ import { PaginatedHistory } from '../shared/useHistoryPagination';
 import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
 import { CURVE_POOL_TOKEN_INDICES } from './providers/constants';
 import { StUsdsProviderType } from './providers/types';
+import { mapIndexerRows, safeBigInt } from '@/utils/indexerRows';
 
 // Native stUSDS deposits/withdrawals plus Curve pool swaps in/out of stUSDS.
 export function stusdsHistoryFragments({
@@ -49,38 +50,48 @@ export function stusdsHistoryFragments({
 }
 
 export function mapStusdsHistoryResponse(response: any, chainId: number) {
-  const supplies = (response.stusdsDeposits || []).map((d: any) => ({
-    assets: BigInt(d.assets),
-    blockTimestamp: secondsToDate(d.blockTimestamp),
-    transactionHash: d.transactionHash,
-    module: ModuleEnum.STUSDS,
-    type: TransactionTypeEnum.SUPPLY,
-    token: TOKENS.usds,
-    chainId,
-    provider: StUsdsProviderType.NATIVE
-  }));
+  const supplies = mapIndexerRows(response?.stusdsDeposits, (d: any) => {
+    const assets = safeBigInt(d.assets);
+    if (assets === undefined) return undefined;
+    return {
+      assets,
+      blockTimestamp: secondsToDate(d.blockTimestamp),
+      transactionHash: d.transactionHash,
+      module: ModuleEnum.STUSDS,
+      type: TransactionTypeEnum.SUPPLY,
+      token: TOKENS.usds,
+      chainId,
+      provider: StUsdsProviderType.NATIVE
+    };
+  });
 
-  const withdraws = (response.stusdsWithdraws || []).map((w: any) => ({
-    assets: -BigInt(w.assets),
-    blockTimestamp: secondsToDate(w.blockTimestamp),
-    transactionHash: w.transactionHash,
-    module: ModuleEnum.STUSDS,
-    type: TransactionTypeEnum.WITHDRAW,
-    token: TOKENS.usds,
-    chainId,
-    provider: StUsdsProviderType.NATIVE
-  }));
+  const withdraws = mapIndexerRows(response?.stusdsWithdraws, (w: any) => {
+    const assets = safeBigInt(w.assets);
+    if (assets === undefined) return undefined;
+    return {
+      assets: -assets,
+      blockTimestamp: secondsToDate(w.blockTimestamp),
+      transactionHash: w.transactionHash,
+      module: ModuleEnum.STUSDS,
+      type: TransactionTypeEnum.WITHDRAW,
+      token: TOKENS.usds,
+      chainId,
+      provider: StUsdsProviderType.NATIVE
+    };
+  });
 
-  const curveSwaps = (response.curveTokenExchanges || []).map((c: any) => {
+  const curveSwaps = mapIndexerRows(response?.curveTokenExchanges, (c: any) => {
     const soldId = parseInt(c.soldId);
     // If user sold USDS (index 0), it's a supply (USDS → stUSDS)
     // If user sold stUSDS (index 1), it's a withdraw (stUSDS → USDS)
     const isSupply = soldId === CURVE_POOL_TOKEN_INDICES.USDS;
+    const usdsAmount = safeBigInt(isSupply ? c.amountSold : c.amountBought);
+    if (usdsAmount === undefined) return undefined;
 
     return {
       // For supply: positive USDS amount sold
       // For withdraw: negative USDS amount received
-      assets: isSupply ? BigInt(c.amountSold) : -BigInt(c.amountBought),
+      assets: isSupply ? usdsAmount : -usdsAmount,
       blockTimestamp: secondsToDate(c.blockTimestamp),
       transactionHash: c.transactionHash,
       module: ModuleEnum.STUSDS,

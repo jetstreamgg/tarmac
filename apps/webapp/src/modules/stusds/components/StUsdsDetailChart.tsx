@@ -49,7 +49,6 @@ export function StUsdsDetailChart() {
       symbol="USDS"
       rate={{ data: rateData, isLoading, error, displayValue: liveRate }}
       tvl={{ data: tvlData, isLoading, error, displayValue: liveTvl }}
-      hideRatePercentChange
       tooltipLabel="Daily average"
       onTimeFrameChange={setTimeFrame}
     />
