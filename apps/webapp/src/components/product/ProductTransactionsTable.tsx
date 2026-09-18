@@ -63,6 +63,8 @@ export interface ProductTransactionsTableProps<T> {
   onPageChange?: (page: number, totalPages: number) => void;
   /** Makes rows interactive (button semantics + pointer cursor). */
   onRowClick?: (row: T) => void;
+  /** The user is about to open a row (hover, focus, touch) — a hook for warming what the click will need. */
+  onRowIntent?: (row: T) => void;
   /**
    * Explorer link for a row: the whole row opens it in a new tab, like the
    * hash cell does (Figma 2800:92277). Rows it returns nothing for stay inert
@@ -77,6 +79,8 @@ export interface ProductTransactionsTableProps<T> {
   renderCard?: (row: T) => ReactNode;
   /** Loading stand-in matching the consumer's card shape; defaults to a 1-field-row TransactionCardSkeleton. */
   cardSkeleton?: ReactNode;
+  /** Skeleton rows while loading; pass the expected row count when known so the table does not resize on data. */
+  loadingRows?: number;
 }
 
 // The legacy grid API declared tracks ('1.5fr', '140px'); a <table> wants
@@ -129,11 +133,13 @@ export function ProductTransactionsTable<T>({
   pageSize = 7,
   onPageChange,
   onRowClick,
+  onRowIntent,
   rowHref,
   rowTestId,
   renderBelowRow,
   renderCard,
-  cardSkeleton = <TransactionCardSkeleton />
+  cardSkeleton = <TransactionCardSkeleton />,
+  loadingRows = LOADING_ROWS
 }: ProductTransactionsTableProps<T>) {
   // One activation per row: the consumer's handler wins, else the explorer
   // link; undefined leaves the row inert.
@@ -144,6 +150,14 @@ export function ProductTransactionsTable<T>({
   };
   // A click that ends a text-selection drag is the selection, not a request
   // to open the row; keyboard activation never carries one.
+  const intentProps = (row: T) =>
+    onRowIntent
+      ? {
+          onPointerEnter: () => onRowIntent(row),
+          onTouchStart: () => onRowIntent(row),
+          onFocus: () => onRowIntent(row)
+        }
+      : undefined;
   const clickAction = (activate: (() => void) | undefined) =>
     activate
       ? () => {
@@ -170,13 +184,13 @@ export function ProductTransactionsTable<T>({
             surface (border-spacing-y + first/last cell radii). */}
         <div data-testid={dataTestId} className="flex w-full flex-col gap-0.5">
           {isLoading ? (
-            Array.from({ length: LOADING_ROWS }).map((_, index) => (
+            Array.from({ length: loadingRows }).map((_, index) => (
               <div
                 key={index}
                 className={cn(
                   'overflow-hidden',
                   index === 0 && 'rounded-t-[20px]',
-                  index === LOADING_ROWS - 1 && 'rounded-b-[20px]'
+                  index === loadingRows - 1 && 'rounded-b-[20px]'
                 )}
               >
                 {cardSkeleton}
@@ -200,6 +214,7 @@ export function ProductTransactionsTable<T>({
                   <div
                     data-testid={rowTestId?.(row)}
                     tabIndex={activate ? 0 : undefined}
+                    {...intentProps(row)}
                     onClick={clickAction(activate)}
                     onKeyDown={
                       activate
@@ -255,7 +270,7 @@ export function ProductTransactionsTable<T>({
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            Array.from({ length: LOADING_ROWS }).map((_, index) => (
+            Array.from({ length: loadingRows }).map((_, index) => (
               <TableRow key={index} className="pointer-events-none">
                 {columns.map(column => (
                   <TableCell key={column.id}>
@@ -286,6 +301,7 @@ export function ProductTransactionsTable<T>({
                     // No role="button": overriding the native row role breaks
                     // table navigation for assistive tech (CodeRabbit).
                     tabIndex={activate ? 0 : undefined}
+                    {...intentProps(row)}
                     onClick={clickAction(activate)}
                     onKeyDown={
                       activate

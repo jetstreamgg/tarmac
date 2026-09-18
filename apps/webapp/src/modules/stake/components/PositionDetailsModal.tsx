@@ -145,11 +145,20 @@ function ManageMenuRows({
 }) {
   if (loading) {
     // Active vs inactive is unknown until the vault resolves — a premature
-    // active menu would offer the wrong flow for an emptied urn.
+    // active menu would offer the wrong flow for an emptied urn. The rows
+    // keep MenuRow's geometry so the card doesn't grow when the menu lands.
     return (
-      <div className="flex flex-col gap-4 py-2" data-testid={`stake-manage-menu-loading${idSuffix}`}>
+      <div className="flex flex-col" data-testid={`stake-manage-menu-loading${idSuffix}`}>
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-9 w-full" />
+          <div
+            key={i}
+            className={cn(
+              'flex items-center',
+              variant === 'panel' ? 'border-borderPrimary border-b py-8' : 'h-14'
+            )}
+          >
+            <Skeleton className="h-4 w-40" />
+          </div>
         ))}
       </div>
     );
@@ -480,7 +489,7 @@ export function PositionDetailsModal({
     ) : undefined;
 
   const menuRowsProps = {
-    loading: detail.vaultLoading,
+    loading: detail.shapeLoading,
     isInactive,
     hasDebt,
     showInactiveBorrowBlock,
@@ -490,7 +499,7 @@ export function PositionDetailsModal({
     onClaim
   };
   const ctaProps = {
-    loading: detail.vaultLoading,
+    loading: detail.shapeLoading,
     isInactive,
     hasDebt,
     hasBorrowHistory: detail.hasBorrowHistory,

@@ -37,6 +37,7 @@ const baseDetail: StakePositionDetail = {
     dust: parseUnits('30000', 18)
   },
   vaultLoading: false,
+  shapeLoading: false,
   hasDebt: true,
   canBorrow: true,
   isInactive: false,
@@ -298,7 +299,13 @@ describe('PositionDetailsModal', () => {
   });
 
   it('skeletons the menu and CTAs while the vault state is unknown (no wrong-variant flash)', () => {
-    renderModal({ vault: undefined, vaultLoading: true, hasDebt: false, isInactive: false });
+    renderModal({
+      vault: undefined,
+      vaultLoading: true,
+      shapeLoading: true,
+      hasDebt: false,
+      isInactive: false
+    });
 
     expect(screen.getByTestId('stake-manage-menu-loading')).toBeTruthy();
     expect(screen.queryAllByTestId(/^stake-manage-menu-(claim|borrow|repay|withdraw)/)).toHaveLength(0);

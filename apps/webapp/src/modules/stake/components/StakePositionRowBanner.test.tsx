@@ -17,12 +17,14 @@ const h = vi.hoisted(() => ({
   vaultLoading: false
 }));
 
+vi.mock('../hooks/useStakeRowVault', () => ({
+  useStakeRowVault: () => ({ data: h.vault, isLoading: h.vaultLoading, error: null })
+}));
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111', isLoading: false }),
-    useVault: () => ({ data: h.vault, isLoading: h.vaultLoading, error: null }),
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0x2222222222222222222222222222222222222222' }],
       isLoading: false
@@ -136,6 +138,21 @@ describe('StakePositionRowBanner', () => {
     );
     expect(screen.getByTestId('stake-position-warning-banner').getAttribute('data-tier')).toBe('error');
     expect(screen.getByText(/about to be liquidated/)).toBeTruthy();
+  });
+
+  it('holds a same-height placeholder for a liquidated position while its figures load', () => {
+    h.vaultLoading = true;
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakePositionRowBanner
+          position={makePosition({ barks: [makeBark()] })}
+          onRemediate={vi.fn()}
+          onClaim={vi.fn()}
+        />
+      </I18nProvider>
+    );
+    expect(screen.getByTestId('stake-position-liquidated-banner-loading')).toBeTruthy();
+    expect(screen.queryByTestId('stake-position-liquidated-banner')).toBeNull();
   });
 
   it('renders the liquidated banner in preference to the warning banner, with refund + rewards', () => {
