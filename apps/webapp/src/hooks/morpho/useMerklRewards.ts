@@ -9,6 +9,7 @@ import { MERKL_API_URL, MORPHO_API_CHAIN_ID, MORPHO_VAULTS, getMorphoVaultByAddr
 import { reasonContainsVaultAddress } from './merklReason';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '../generated';
 import { fetchJson } from '../shared/fetchJson';
+import { useNow } from '../ui/useNow';
 import type { MerklRewardsApiResponse } from './merklTypes';
 
 /** Source breakdown for a reward token (e.g., a specific vault or other campaigns) */
@@ -259,12 +260,13 @@ export function useMerklRewards({ enabled = true }: { enabled?: boolean } = {}):
     }
   });
 
-  // Filter out tokens that were recently claimed on-chain but still show in the API
+  // Filter out tokens that were recently claimed on-chain but still show in the API.
+  // The recency window is minutes wide, so a minute tick keeps the verdict live.
+  const now = useNow(60_000);
   const data = useMemo(() => {
     if (!apiData) return undefined;
     if (!claimedData || claimedData.length === 0) return apiData;
 
-    const now = Date.now();
     const filteredRewards = apiData.rewards.filter((_reward, index) => {
       const result = claimedData[index];
       if (!result || result.status === 'failure') return true;
@@ -280,7 +282,7 @@ export function useMerklRewards({ enabled = true }: { enabled?: boolean } = {}):
       rewards: filteredRewards,
       hasClaimableRewards: filteredRewards.length > 0
     };
-  }, [apiData, claimedData]);
+  }, [apiData, claimedData, now]);
 
   const mutate = useCallback(() => {
     if (!userAddress) return;

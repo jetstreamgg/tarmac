@@ -47,13 +47,10 @@ export default [
     // (delete its line below) as the existing violations are fixed across the
     // monorepo. `exhaustive-deps` is already `warn` in the recommended preset.
     rules: {
-      'react-hooks/rules-of-hooks': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/refs': 'warn',
       'react-hooks/static-components': 'warn',
-      'react-hooks/preserve-manual-memoization': 'warn',
-      'react-hooks/immutability': 'warn',
-      'react-hooks/purity': 'warn'
+      'react-hooks/preserve-manual-memoization': 'warn'
     }
   },
   {

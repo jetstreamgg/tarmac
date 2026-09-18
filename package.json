@@ -10,7 +10,7 @@
     "preinstall": "pnpm dlx only-allow pnpm",
     "prettier": "prettier --write --cache .",
     "prettier:check": "prettier --check --cache .",
-    "lint": "eslint --cache --max-warnings 126",
+    "lint": "eslint --cache --max-warnings 114",
     "build": "pnpm messages && pnpm -F webapp build",
     "dev": "pnpm messages && pnpm -F webapp dev",
     "preview": "pnpm --filter='./apps/webapp' preview",

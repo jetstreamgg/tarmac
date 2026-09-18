@@ -12,6 +12,7 @@ import {
   useAllPendleMarketsHistory,
   useBatchPendleConvert,
   useIsBatchSupported,
+  useNow,
   usePendleMarketsApiData,
   usePendleUserPtBalances,
   useQuotePendleConvert,
@@ -346,7 +347,8 @@ export function PendleModalForm({
   const impliedApy = stats?.impliedApy;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const daysToMaturity = remainingDaysToMaturity(expirySec, Date.now());
+  const nowMs = useNow(60_000);
+  const daysToMaturity = remainingDaysToMaturity(expirySec, nowMs);
   const claimDate = formatMaturity(expirySec);
 
   // Pegged markets (1 PT → 1 USDS at expiry) display position values as USDS.
