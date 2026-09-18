@@ -638,20 +638,19 @@ describe('ManagePositionTakeover', () => {
 
     expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).disabled).toBe(true);
     expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('Borrowed: 0');
-    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 0 USDS');
+    expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('repay: the max hint is wallet-aware, not the debt (Repay maxRepayable port)', () => {
-    // 30k debt but only 20k USDS in the wallet; the 10k remainder clears the
-    // dust floor, so the real cap is the balance — the "Borrowed:" line alone
-    // would overstate it by 10k.
+  it('repay: the header shows only the borrowed figure (Design QA 3312:76634)', () => {
+    // 30k debt with 20k in the wallet: the wallet cap is left to the amount
+    // error and the slider end, not the header.
     h.usdsBalance = 20_000n * WAD;
     h.dust = 10_000n * WAD;
     renderSheet({ borrowCard: 'repay' });
 
-    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toContain('30K');
-    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('max. 20K USDS');
+    expect(screen.getByTestId('stake-manage-borrowed-line').textContent).toBe('Borrowed: 30K');
+    expect(screen.queryByTestId('stake-manage-max-hint')).toBeNull();
   });
 
   it('repay: typing the displayed two-decimal debt stages wipeAll instead of a dust error', () => {

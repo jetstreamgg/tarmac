@@ -137,7 +137,7 @@ export function ManagePositionTakeover({
     token: TOKENS.sky.address[chainId as keyof typeof TOKENS.sky.address],
     chainId
   });
-  const { data: usdsBalance, isLoading: usdsBalanceLoading } = useTokenBalance({
+  const { data: usdsBalance } = useTokenBalance({
     address,
     token: TOKENS.usds.address[chainId as keyof typeof TOKENS.usds.address],
     chainId
@@ -645,7 +645,6 @@ export function ManagePositionTakeover({
         collateralLoading={collateralLoading}
         maxBorrowable={availableBorrowBalance}
         maxRepayable={maxRepayable}
-        usdsBalanceLoading={usdsBalanceLoading}
         wipeAll={state.wipeAll}
         minCollateralNotMet={minCollateralNotMet}
         minCollateralForDust={simulatedVault?.minCollateralForDust}

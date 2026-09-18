@@ -113,7 +113,6 @@ export function StakeManageBorrowCard({
   collateralLoading,
   maxBorrowable,
   maxRepayable,
-  usdsBalanceLoading,
   wipeAll,
   minCollateralNotMet,
   minCollateralForDust,
@@ -141,8 +140,6 @@ export function StakeManageBorrowCard({
   maxBorrowable: bigint;
   /** Legacy calculateMaxRepayable output (dust-gap aware). */
   maxRepayable: bigint;
-  /** The USDS balance feeding `maxRepayable` is in flight. */
-  usdsBalanceLoading?: boolean;
   wipeAll: boolean;
   minCollateralNotMet: boolean;
   minCollateralForDust: bigint | undefined;
@@ -172,14 +169,13 @@ export function StakeManageBorrowCard({
   const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || slider.disabled;
   const hasAmount = amount > 0n;
 
-  // Borrow: "Borrowable: headroom" (Figma 3015:58333). Repay: the wallet- and
-  // dust-aware max next to the "Borrowed:" line.
-  const maxHint = isRepay ? maxRepayable : borrowDead ? 0n : minCollateralNotMet ? undefined : maxBorrowable;
+  // Borrow only: "Borrowable: headroom" (Figma 3015:58333). Repay shows just
+  // "Borrowed:" (Design QA 3312:76634); the wallet cap surfaces as the amount
+  // error and the slider end.
+  const maxHint = isRepay ? undefined : borrowDead ? 0n : minCollateralNotMet ? undefined : maxBorrowable;
   // The hint composes over `?? 0n` fallbacks, so it skeletons while any input
   // read is unresolved.
-  const maxHintLoading = isRepay
-    ? positionLoading || usdsBalanceLoading
-    : positionLoading || collateralLoading || simulationLoading;
+  const maxHintLoading = !isRepay && (positionLoading || collateralLoading || simulationLoading);
 
   // Delta values (M13): current → simulated, arrow only when they differ. The
   // projection stays up through errors so an over-withdraw still reads
@@ -302,39 +298,18 @@ export function StakeManageBorrowCard({
           // DISPLAY (the staged value stays exact for wipeAll/buffer math).
           maxDisplayDecimals={2}
           dataTestId="stake-manage-borrow-amount"
-          // Comp 1036:213928 draws the position line above the chips; the max
-          // rides along after it so the cap stays visible in the states the
-          // slider's right label can't cover (zero-debt borrow, all of repay).
+          // Comp 1036:213928 draws the position line above the chips; borrow
+          // adds the headroom so the cap stays visible with no slider (zero debt).
           topRight={
             isRepay ? (
-              <>
-                <span className="whitespace-nowrap" data-testid="stake-manage-borrowed-line">
-                  <Trans>Borrowed:</Trans>{' '}
-                  {positionLoading ? (
-                    <Skeleton className="inline-block h-3.5 w-16 align-middle" />
-                  ) : (
-                    formatBigInt(existingDebt, { compact: true })
-                  )}
-                </span>
-                {maxHintLoading && !positionLoading ? (
-                  <>
-                    {' '}
-                    <Skeleton
-                      className="inline-block h-3.5 w-20 align-middle"
-                      data-testid="stake-manage-max-hint-loading"
-                    />
-                  </>
-                ) : null}
-                {!maxHintLoading && maxHint !== undefined && (
-                  <>
-                    {' '}
-                    <span className="whitespace-nowrap" data-testid="stake-manage-max-hint">
-                      {'· '}
-                      <Trans>max. {formatBigInt(maxHint, { compact: true })} USDS</Trans>
-                    </span>
-                  </>
+              <span className="whitespace-nowrap" data-testid="stake-manage-borrowed-line">
+                <Trans>Borrowed:</Trans>{' '}
+                {positionLoading ? (
+                  <Skeleton className="inline-block h-3.5 w-16 align-middle" />
+                ) : (
+                  formatBigInt(existingDebt, { compact: true })
                 )}
-              </>
+              </span>
             ) : maxHintLoading ? (
               <Skeleton
                 className="inline-block h-3.5 w-24 align-middle"
