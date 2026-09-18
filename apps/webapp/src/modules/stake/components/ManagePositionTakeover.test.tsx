@@ -499,7 +499,7 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
-  it('loan-to-value row: current → simulated, `–` after a full repay, no rate info icon (Figma 3015:59185)', () => {
+  it('loan-to-value row: current → simulated, 0% after a full repay, no rate info icon (Figma 3015:57426)', () => {
     renderSheet({ borrowCard: 'repay' });
     const ltv = () => screen.getByTestId('stake-manage-ltv-row').textContent ?? '';
 
@@ -507,7 +507,7 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-borrow-rate-row').querySelector('svg')).toBeNull();
 
     fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
-    expect(ltv()).toMatch(/–$/);
+    expect(ltv()).toMatch(/67%.*0%$/);
   });
 
   it('paints the new loan-to-value red only when the move lands in high or liquidation risk (Figma 3297:72534)', () => {
@@ -591,8 +591,9 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-risk-row').textContent).toContain('Repaid');
     expect(screen.getByTestId('stake-manage-borrowed-row').textContent).toContain('30,000');
     expect(screen.getByTestId('stake-manage-borrowed-row').textContent).toMatch(/0$/);
-    // Liquidation price after a full repay is `–`, not `$0.0`.
-    expect(screen.getByTestId('stake-manage-liq-price-row').textContent).toMatch(/–$/);
+    // Full repay zeroes the price and ratio (Figma 3015:57426).
+    expect(screen.getByTestId('stake-manage-liq-price-row').textContent).toMatch(/\$0\.00$/);
+    expect(screen.getByTestId('stake-manage-ltv-row').textContent).toMatch(/0%$/);
     expect(screen.getByTestId('stake-manage-borrow-rate-row').textContent).toContain('0.00%');
   });
 

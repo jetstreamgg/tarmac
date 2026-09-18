@@ -93,9 +93,9 @@ function RepaidPill() {
  * (Figma 3015:58333: Borrowed, risk, liquidation price, OSM price, rate). Deltas
  * follow any staged change on the position (a stake/unstake moves the risk
  * too) and stay up through errors; a full withdraw with debt left reads
- * `>100%` loan-to-value. Full repay renders `Repaid` /
- * `–` / `0.00%`. Repay percent chips stage wipeAll only when the max equals
- * the full debt (M11). Below the min collateral the Borrow switch is disabled
+ * `>100%` loan-to-value. Full repay renders `Repaid` / `0%` / `$0.00` /
+ * `0.00%` (Figma 3015:57426). Repay percent chips stage wipeAll only when the
+ * max equals the full debt (M11). Below the min collateral the Borrow switch is disabled
  * behind a "Stake more to borrow" hint; a card already on keeps the notice.
  */
 export function StakeManageBorrowCard({
@@ -465,7 +465,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas ? (
                 isFullRepay ? (
-                  NO_VALUE
+                  '0%'
                 ) : nextLtvUnbounded ? (
                   <span data-testid="stake-manage-ltv-danger" className="text-statusError">
                     {'>100%'}
@@ -496,7 +496,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas
                 ? isFullRepay
-                  ? NO_VALUE
+                  ? formatOraclePrice(0n)
                   : simulatedVault?.liquidationPrice !== undefined &&
                       simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
                     ? formatOraclePrice(simulatedVault.liquidationPrice)
