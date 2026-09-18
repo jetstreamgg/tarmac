@@ -30,6 +30,11 @@ export default [
       'apps/webapp/src/routeTree.gen.ts'
     ]
   },
+  {
+    // A disable comment that no longer suppresses anything is an error: it
+    // hides the day its rule was turned off or its violation was fixed.
+    linterOptions: { reportUnusedDisableDirectives: 'error' }
+  },
   ...compat.extends(
     'eslint:recommended',
     'plugin:react/recommended',
@@ -50,6 +55,12 @@ export default [
       'react-hooks/immutability': 'warn',
       'react-hooks/purity': 'warn'
     }
+  },
+  {
+    // Playwright fixtures, not React: their `use` callback is the fixture
+    // hand-off, which the plugin reads as the React `use()` hook.
+    files: ['apps/webapp/src/test/e2e/**/*.{ts,tsx}'],
+    rules: Object.fromEntries(Object.keys(reactHooks.rules).map(rule => [`react-hooks/${rule}`, 'off']))
   },
   {
     plugins: {
@@ -89,7 +100,10 @@ export default [
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+      ],
       '@typescript-eslint/no-var-requires': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       'no-unused-vars': 'off',
@@ -118,6 +132,34 @@ export default [
     files: ['apps/webapp/src/**/*.{ts,tsx}'],
     rules: {
       'no-console': ['warn', { allow: ['warn', 'info', 'debug'] }],
+      // Browser globals that read like ordinary identifiers. A typo or a
+      // missing local silently resolves to `window.name`, `window.status`, ...
+      // instead of failing to compile (a `${name}` query scope key once did).
+      'no-restricted-globals': [
+        'error',
+        'name',
+        'event',
+        'length',
+        'status',
+        'top',
+        'parent',
+        'self',
+        'origin',
+        'history',
+        'location',
+        'screen',
+        'scroll',
+        'close',
+        'closed',
+        'open',
+        'stop',
+        'print',
+        'find',
+        'external',
+        'frames',
+        'toolbar',
+        'menubar'
+      ],
       'no-restricted-properties': [
         'error',
         {
