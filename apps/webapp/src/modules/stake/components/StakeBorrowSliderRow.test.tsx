@@ -72,6 +72,28 @@ describe('StakeBorrowSliderRow', () => {
     expect(screen.getByTestId('row-marker-label').textContent).toBe('Borrowed:60,000');
   });
 
+  it('borrow: the marker line takes the fill tone (Design QA 3324:144524)', () => {
+    const slider = useStakeAmountSlider({
+      mode: 'borrow',
+      existingDebt: usds(60_000),
+      dust: usds(30_000),
+      headroom: usds(40_000),
+      amount: usds(20_000),
+      onAmountChange: vi.fn()
+    });
+    const { rerender } = renderRow(
+      <StakeBorrowSliderRow slider={slider} mode="borrow" tone="green" dataTestId="row" />
+    );
+    const line = () => screen.getByTestId('row').querySelector('[data-slot="slider-marker"]') as HTMLElement;
+    expect(line().className).toContain('bg-slider-green-start');
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <StakeBorrowSliderRow slider={slider} mode="borrow" tone="red" dataTestId="row" />
+      </I18nProvider>
+    );
+    expect(line().className).toContain('bg-slider-red-start');
+  });
+
   it('repay: green fill from the left end, dust-gap tick label, no borrowed shade', () => {
     const slider = useStakeAmountSlider({
       mode: 'repay',

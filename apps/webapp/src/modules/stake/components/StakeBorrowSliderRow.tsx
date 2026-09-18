@@ -192,7 +192,16 @@ export function StakeBorrowSliderRow({
           <span
             aria-hidden
             data-slot="slider-marker"
-            className="bg-sliderMarker absolute -inset-y-[3px] w-px -translate-x-1/2"
+            // The line takes the fill gradient's start colour, so a green slider
+            // gets a green line (Design QA 3324:144524); it crossfades with the fill.
+            className={cn(
+              'absolute -inset-y-[3px] w-px -translate-x-1/2 transition-colors duration-1000',
+              tone === 'green'
+                ? 'bg-slider-green-start'
+                : tone === 'red'
+                  ? 'bg-slider-red-start'
+                  : 'bg-slider-yellow-start'
+            )}
             style={{ left: pct(marker) }}
           />
         )}
