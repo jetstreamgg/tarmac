@@ -13,20 +13,14 @@ import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { delegateProfileUrl } from '../lib/delegateProfileUrl';
 
 /**
- * The card body — search + single-select list. Lives in its own component so
- * the subgraph fetch only runs while the card is enabled (the card shell only
- * mounts children when open). Exported for the F5 manage sheet's Change
- * delegate card, which shares the exact list under its own testid prefix.
+ * Search state + subgraph fetch behind the delegate list. Called by the
+ * always-mounted owner (the takeover card shell, the change-delegate modal)
+ * rather than the list itself, so the delegates are in memory before the card
+ * body opens and the expansion lands at its final height (Design QA
+ * 3335:161897 follow-up). The query's random sort order is picked per hook
+ * instance, so a separate prefetch would never hit this cache.
  */
-export function DelegateList({
-  selectedDelegate,
-  onSelect,
-  dataTestIdPrefix = 'stake-takeover-delegate'
-}: {
-  selectedDelegate: `0x${string}` | undefined;
-  onSelect: (delegate: `0x${string}`) => void;
-  dataTestIdPrefix?: string;
-}) {
+export function useDelegateList(selectedDelegate: `0x${string}` | undefined) {
   const { address } = useConnection();
   const chainId = useChainId();
   const [search, setSearch] = useState('');
@@ -44,6 +38,27 @@ export function DelegateList({
     shouldSortDelegates: true
   });
 
+  return { delegates, isLoading, search, setSearch };
+}
+
+/**
+ * The card body — search + single-select list, fed by `useDelegateList`.
+ * Exported for the F5 manage sheet's Change delegate modal, which shares the
+ * exact list under its own testid prefix.
+ */
+export function DelegateList({
+  delegates,
+  isLoading,
+  search,
+  setSearch,
+  selectedDelegate,
+  onSelect,
+  dataTestIdPrefix = 'stake-takeover-delegate'
+}: ReturnType<typeof useDelegateList> & {
+  selectedDelegate: `0x${string}` | undefined;
+  onSelect: (delegate: `0x${string}`) => void;
+  dataTestIdPrefix?: string;
+}) {
   return (
     <div className="flex flex-col gap-6 md:gap-8">
       {/* Search row over its hairline (Frame 2087328600, 1036:209801). */}
@@ -60,8 +75,9 @@ export function DelegateList({
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col gap-2">
-          {[0, 1, 2].map(row => (
+        // Same height as the list's cap so the card never resizes once data lands.
+        <div className="flex h-96 flex-col gap-2 overflow-hidden">
+          {[0, 1, 2, 3, 4, 5].map(row => (
             <Skeleton key={row} className="h-16 w-full rounded-2xl md:rounded-xl" />
           ))}
         </div>
@@ -149,16 +165,31 @@ export function StakeTakeoverDelegateCard({
   selectedDelegate: `0x${string}` | undefined;
   onSelect: (delegate: `0x${string}`) => void;
 }) {
+  const list = useDelegateList(selectedDelegate);
   return (
     <StakeTakeoverCard
       step={3}
       title={<Trans>Delegate Voting Power</Trans>}
       optional
       enabled={enabled}
-      onEnabledChange={onEnabledChange}
+      onEnabledChange={next => {
+        // Toggling off used to unmount the search with the body; keep that reset.
+        if (!next) list.setSearch('');
+        onEnabledChange(next);
+      }}
       dataTestId="stake-takeover-delegate-card"
     >
-      <DelegateList selectedDelegate={selectedDelegate} onSelect={onSelect} />
+      <DelegateList {...list} selectedDelegate={selectedDelegate} onSelect={onSelect} />
     </StakeTakeoverCard>
   );
+}
+
+/** The change-delegate modal's picker: owns the fetch for as long as the modal is open. */
+export function DelegatePicker(props: {
+  selectedDelegate: `0x${string}` | undefined;
+  onSelect: (delegate: `0x${string}`) => void;
+  dataTestIdPrefix?: string;
+}) {
+  const list = useDelegateList(props.selectedDelegate);
+  return <DelegateList {...list} {...props} />;
 }

@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
+import { StakeCardBody } from './StakeCardBody';
 import { StakeCardToggle } from './StakeCardToggle';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
@@ -45,7 +46,7 @@ export function StakeManageCard<Mode extends string>({
   return (
     <section
       data-testid={dataTestId}
-      className="bg-glassSurface rounded-card flex flex-col gap-6 p-5 backdrop-blur-[20px] md:gap-8 md:p-8"
+      className="bg-glassSurface rounded-card flex flex-col p-5 backdrop-blur-[20px] md:p-8"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-1.5" role="group">
@@ -79,7 +80,7 @@ export function StakeManageCard<Mode extends string>({
           />
         )}
       </div>
-      {enabled && children}
+      <StakeCardBody open={enabled}>{children}</StakeCardBody>
     </section>
   );
 }

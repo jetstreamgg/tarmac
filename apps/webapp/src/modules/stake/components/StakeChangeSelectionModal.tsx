@@ -16,7 +16,7 @@ import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { RewardList } from './StakeTakeoverRewardCard';
-import { DelegateList } from './StakeTakeoverDelegateCard';
+import { DelegatePicker } from './StakeTakeoverDelegateCard';
 
 type ChangeKind = 'reward' | 'delegate';
 
@@ -177,7 +177,7 @@ function StakeChangeSelectionPanel({
         columns={1}
       />
     ) : (
-      <DelegateList
+      <DelegatePicker
         selectedDelegate={selected ?? currentDelegate}
         onSelect={onSelectDelegate}
         dataTestIdPrefix="stake-manage-delegate"

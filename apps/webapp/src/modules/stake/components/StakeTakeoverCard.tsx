@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { StakeCardBody } from './StakeCardBody';
 import { StakeCardToggle } from './StakeCardToggle';
 import { cn } from '@/lib/cn';
 
@@ -43,7 +44,7 @@ export function StakeTakeoverCard({
         // against the pale light-mode page background. So the swap is scoped to
         // dark; light keeps the pre-existing glassSurface value. Don't collapse
         // this back to one token.
-        'bg-bgTertiary rounded-card flex flex-col gap-6 p-5 backdrop-blur-[20px] md:gap-8 md:p-8',
+        'bg-bgTertiary rounded-card flex flex-col p-5 backdrop-blur-[20px] md:p-8',
         'light:bg-glassSurface'
       )}
     >
@@ -71,7 +72,7 @@ export function StakeTakeoverCard({
           />
         )}
       </div>
-      {enabled && children}
+      <StakeCardBody open={enabled}>{children}</StakeCardBody>
     </section>
   );
 }
