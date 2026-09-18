@@ -257,8 +257,12 @@ describe('EarnPage deep-link anchor scroll', () => {
     expect(scrollSpy).toHaveBeenCalledTimes(arrivalScrolls);
     // The filter write passes resetScroll: false, so the router's usual
     // scroll-to-top on the replace never runs — the viewport stays at the
-    // table.
-    expect(scrollToSpy).not.toHaveBeenCalled();
+    // table. The router resets with an options object; motion's height
+    // measurement for the collapsing rows also calls `scrollTo`, positionally
+    // and with the CURRENT offset (a restore, not a move), once its frame
+    // runs — which it does now that the search commits asynchronously.
+    const resets = scrollToSpy.mock.calls.filter(([first]) => typeof first === 'object');
+    expect(resets).toEqual([]);
   });
 
   it('scrolls again when a new deep link pushes onto an already-open /earn', async () => {

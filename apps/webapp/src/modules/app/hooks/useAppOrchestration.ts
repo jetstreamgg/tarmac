@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useRouterState } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navigation';
+import { keepSearch, useAppSearchParams, useRouteEntityParams, useRouteIntent } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { getRouteChainAction } from '@/lib/widget-network-map';
@@ -48,6 +48,12 @@ export function useAppOrchestration(): { intent: Intent } {
   // (the TRADE/UPGRADE alias routes redirect before rendering).
   const pathname = useRouterState({ select: s => s.location.pathname });
   const intent = pathToIntent(pathname) ?? Intent.BALANCES_INTENT;
+  // The intent of the route the outlet is actually showing. `searchParams`
+  // below reads from the committed match (APP-562), so during a page
+  // transition it lags `intent` by a render; the search validation waits for
+  // the two to agree rather than validating the OLD page's params under the
+  // NEW page's intent.
+  const committedIntent = useRouteIntent();
   const { rewardContract } = useRouteEntityParams();
 
   const chainId = useChainId();
@@ -270,12 +276,19 @@ export function useAppOrchestration(): { intent: Intent } {
     isModalOpen
   ]);
 
-  // Run validation on the remaining query-driven search params whenever they change
+  // Run validation on the remaining query-driven search params whenever they
+  // change. Skipped while the location has moved on but the outlet has not:
+  // `searchParams` is still the outgoing page's set then, and validating it
+  // under the incoming intent could write those params onto the new URL (an
+  // Earn filter leaking onto /stake) and fire a second navigation into the
+  // running transition. The commit that swaps the page changes `searchParams`
+  // and re-runs this with both in step.
   useEffect(() => {
+    if (intent !== committedIntent) return;
     setSearchParams(params => validateSearchParams(params, intent), {
       replace: true
     });
-  }, [searchParams, intent, newChainId]);
+  }, [searchParams, intent, committedIntent, newChainId]);
 
   // `?network=` is retired as app state. It is still HONOURED once, so the
   // bookmarks, support links and shared URLs minted while it was live keep

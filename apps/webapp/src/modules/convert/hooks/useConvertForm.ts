@@ -5,9 +5,6 @@ import { useTokenBalance } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { useRouterState } from '@tanstack/react-router';
-import { Intent } from '@/lib/enums';
-import { pathToIntent } from '@/lib/routes';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
 import {
   getPsmConversionTokens,
@@ -62,22 +59,9 @@ export function useConvertForm() {
   const { address, isConnected } = useConnection();
   const [searchParams, setSearchParams] = useAppSearchParams();
 
-  const paramDirection =
-    directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDC_TO_USDS';
-  // The direction shown while the page is on its way OUT. The router commits
-  // the next location (pathname AND search) a render before the route matches
-  // swap, so this form renders once more against the destination's search —
-  // which has no `source_token` — and fell back to USDC→USDS in that render.
-  // That frame is what the view transition captures as the outgoing snapshot,
-  // so leaving with USDS on top showed the tokens flipping back before the
-  // page slid away. Same latch as the stake tabs (`StakeProductPage`): keep
-  // the last direction read while the path was still ours. `pathToIntent`,
-  // not a raw compare, so `/Convert` still counts as ours.
-  const pathname = useRouterState({ select: s => s.location.pathname });
-  const leaving = pathToIntent(pathname) !== Intent.CONVERT_INTENT;
-  const [heldDirection, setHeldDirection] = useState<PsmConversionDirection>(paramDirection);
-  if (!leaving && heldDirection !== paramDirection) setHeldDirection(paramDirection);
-  const direction = leaving ? heldDirection : paramDirection;
+  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDC_TO_USDS';
+  // `searchParams` comes from the committed route match, so this reads the
+  // page's own `source_token` through its exit frame — no latch needed.
   const [rawValue, setRawValue] = useState('');
 
   const originDecimals = getPsmDecimalsForDirection(direction);

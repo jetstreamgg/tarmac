@@ -62,11 +62,18 @@ vi.mock('@tanstack/react-router', () => ({
   useRouterState: ({ select }: { select: (s: unknown) => unknown }) =>
     select({ location: { pathname: mockPathname } })
 }));
-vi.mock('@/lib/navigation', () => ({
-  keepSearch: (prev: Record<string, string>) => prev,
-  useAppSearchParams: () => [search, setSearchParams],
-  useRouteEntityParams: () => ({ rewardContract: undefined })
-}));
+vi.mock('@/lib/navigation', async () => {
+  const { pathToIntent } = await import('@/lib/routes');
+  const { Intent } = await import('@/lib/enums');
+  return {
+    keepSearch: (prev: Record<string, string>) => prev,
+    useAppSearchParams: () => [search, setSearchParams],
+    useRouteEntityParams: () => ({ rewardContract: undefined }),
+    // The committed route agrees with the pathname in these tests: no
+    // transition is ever mid-flight here.
+    useRouteIntent: () => pathToIntent(mockPathname) ?? Intent.BALANCES_INTENT
+  };
+});
 vi.mock('wagmi', () => ({
   useChainId: () => mockConfigChainId,
   useChains: () => CHAINS,
