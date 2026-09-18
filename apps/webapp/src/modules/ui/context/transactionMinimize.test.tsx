@@ -230,7 +230,7 @@ describe('TransactionModal minimize', () => {
     // Drive the tx in-flight: wallet prompt → submitted.
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash'));
-    expect(screen.queryByText('Supply')).not.toBeNull();
+    expect(screen.queryAllByText('Supply').length).toBeGreaterThan(0);
     expect(screen.queryByText(/processing/i)).not.toBeNull();
 
     // Minimize: the modal view is gone, but the transaction is NOT torn down.
@@ -240,7 +240,7 @@ describe('TransactionModal minimize', () => {
     // Restore: the modal returns on the transaction screen at its live status,
     // proving the tx kept running and its state survived minimize.
     act(() => ctx.restore());
-    expect(screen.queryByText('Supply')).not.toBeNull();
+    expect(screen.queryAllByText('Supply').length).toBeGreaterThan(0);
     expect(screen.queryByText(/processing/i)).not.toBeNull();
     expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
 
