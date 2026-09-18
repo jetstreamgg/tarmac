@@ -104,7 +104,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
       await isolatedPage.getByTestId('convert-from-amount').fill('225');
 
-      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveText('225');
+      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveText('225.00');
     });
 
     test('Percentage buttons set correct amounts', async ({ isolatedPage }) => {
@@ -168,7 +168,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await openConvert(isolatedPage, networkName);
 
       await isolatedPage.getByTestId('convert-from-amount').fill('50');
-      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveText('50');
+      await expect(isolatedPage.getByTestId('convert-to-amount')).toHaveText('50.00');
 
       await isolatedPage.getByTestId('convert-flip').click();
 

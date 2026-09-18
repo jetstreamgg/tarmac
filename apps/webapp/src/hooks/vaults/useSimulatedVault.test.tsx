@@ -6,8 +6,8 @@ import { parseEther } from 'viem';
 
 describe('Hook should return error messages for incorrect vault parameters', async () => {
   // TODO: We should move error messages to a constants file for reuse
-  const DUST_ERROR = 'Minimum borrow amount is 30000';
-  const DUST_REPAY_ERROR = 'Debt must be payed off entirely, or left with a minimum of 30000';
+  const DUST_ERROR = 'Minimum borrow amount is 30,000.00';
+  const DUST_REPAY_ERROR = 'Debt must be payed off entirely, or left with a minimum of 30,000.00';
   const INSUFFICIENT_COLLATERAL_ERROR = 'Insufficient collateral';
 
   const wrapper = WagmiWrapper;

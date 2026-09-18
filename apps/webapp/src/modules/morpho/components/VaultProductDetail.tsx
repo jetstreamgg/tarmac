@@ -12,7 +12,7 @@ import {
   useMorphoVaultMarketApiData,
   useProductNetworks
 } from '@/hooks';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
 import { Morpho } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';
@@ -116,19 +116,13 @@ export function VaultProductDetail({
       id: 'tvl',
       icon: <Vault className="h-3 w-3" />,
       label: <Trans>TVL</Trans>,
-      value:
-        marketData?.totalAssetsUsd !== undefined
-          ? `$${formatNumber(marketData.totalAssetsUsd, { maxDecimals: 0 })}`
-          : NO_VALUE
+      value: marketData?.totalAssetsUsd !== undefined ? formatWholeUsd(marketData.totalAssetsUsd) : NO_VALUE
     },
     {
       id: 'liquidity',
       icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
-      value:
-        marketData?.liquidity !== undefined
-          ? `$${formatBigInt(marketData.liquidity, { unit: decimals, maxDecimals: 0 })}`
-          : NO_VALUE
+      value: marketData?.liquidity !== undefined ? formatWholeUsd(marketData.liquidity, decimals) : NO_VALUE
     },
     {
       id: 'management-fee',

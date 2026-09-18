@@ -250,7 +250,7 @@ describe('usePendleRedeemModal analytics', () => {
     // QUOTE.amountOut = 1_499_500n at 6dp → 1.5 of the default output (the underlying).
     const expected = {
       loading: 'Claiming your matured position',
-      success: 'Claimed 1.5 USDG',
+      success: 'Claimed 1.50 USDG',
       error: 'Claim failed'
     };
     expect(hoisted.launchMock.mock.calls[0][0].toast).toEqual(expected);

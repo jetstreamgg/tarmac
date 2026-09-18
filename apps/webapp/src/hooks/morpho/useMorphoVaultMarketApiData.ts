@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_CHAIN_ID, VAULT_MARKET_DATA_QUERY, morphoDataSource } from './constants';
-import { formatBigInt, formatNumber, formatPercent } from '@/utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber, formatPercent } from '@/utils';
 import type {
   MorphoIdleLiquidityAllocation,
   MorphoMarketAllocation,
@@ -132,7 +132,7 @@ export async function fetchMorphoVaultMarketData(
 
   const rewardsData: MorphoRewardData[] = Array.from(rewardsMap.entries()).map(([symbol, data]) => ({
     apy: data.apy,
-    formattedApy: `+${(data.apy * 100).toFixed(2)}%`,
+    formattedApy: `+${formatDecimalPercentage(data.apy)}`,
     symbol,
     logoUri: data.logoUri
   }));
@@ -143,10 +143,10 @@ export async function fetchMorphoVaultMarketData(
     netRate: netApy,
     managementFee,
     performanceFee,
-    formattedRate: `${(apy * 100).toFixed(2)}%`,
-    formattedNetRate: `${(netApy * 100).toFixed(2)}%`,
-    formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
-    formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
+    formattedRate: formatDecimalPercentage(apy),
+    formattedNetRate: formatDecimalPercentage(netApy),
+    formattedManagementFee: formatDecimalPercentage(managementFee, 0),
+    formattedPerformanceFee: formatDecimalPercentage(performanceFee, 0),
     rewards: rewardsData
   };
 
@@ -214,7 +214,7 @@ export async function fetchMorphoVaultMarketData(
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
       formattedAssetsUsd: `$${formatNumber(vaultAssetsUsd, { compact: true })}`,
       assetsUsd: vaultAssetsUsd,
-      formattedNetApy: `${(market.state.netSupplyApy * 100).toFixed(2)}%`,
+      formattedNetApy: formatDecimalPercentage(market.state.netSupplyApy),
       totalSupplyAssets,
       totalBorrowAssets,
       liquidity,

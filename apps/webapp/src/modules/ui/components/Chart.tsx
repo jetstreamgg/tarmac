@@ -390,7 +390,7 @@ interface ChartProps {
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
-  const formatted = `${formatNumber(percentage, { maxDecimals: 2, compact: isLarge ? false : true })}%`;
+  const formatted = `${formatNumber(percentage, { minDecimals: 0, maxDecimals: 2, compact: isLarge ? false : true })}%`;
   if (formatted === '-0%') {
     return '0%';
   }

@@ -1,4 +1,4 @@
-import { formatUnits, parseUnits, stringToHex } from 'viem';
+import { parseUnits, stringToHex } from 'viem';
 import {
   mcdSpotAddress,
   mcdVatAddress,
@@ -10,7 +10,7 @@ import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
 import { calculateVaultInfo } from './calculateVaultInfo';
-import { getEtherscanLink, math } from '@/utils';
+import { formatBigInt, getEtherscanLink, math } from '@/utils';
 import { TRUST_LEVELS } from '../constants';
 import { COLLATERAL_PRICE_SYMBOL, SupportedCollateralTypes } from './vaults.constants';
 import { getIlkName } from './helpers';
@@ -112,8 +112,8 @@ export function useSimulatedVault(
       : data?.dust && desiredDebtAmount < data.dust && desiredDebtAmount !== 0n
         ? new Error(
             isPayingDebt
-              ? `Debt must be payed off entirely, or left with a minimum of ${formatUnits(data.dust, 18)}`
-              : `Minimum borrow amount is ${formatUnits(data.dust, 18)}`
+              ? `Debt must be payed off entirely, or left with a minimum of ${formatBigInt(data.dust)}`
+              : `Minimum borrow amount is ${formatBigInt(data.dust)}`
           )
         : null;
 

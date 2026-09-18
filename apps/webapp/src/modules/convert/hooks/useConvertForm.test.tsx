@@ -99,7 +99,7 @@ describe('useConvertForm', () => {
     expect(result.current.value).toBe('1.5');
     expect(result.current.amount).toBe(parseUnits('1.5', 6));
     expect(result.current.targetAmount).toBe(parseUnits('1.5', 18));
-    expect(result.current.targetValue).toBe('1.5');
+    expect(result.current.targetValue).toBe('1.50');
   });
 
   it('groups the derived To figure for display while keeping the raw amount exact (APP-553)', () => {
