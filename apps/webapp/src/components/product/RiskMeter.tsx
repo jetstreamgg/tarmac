@@ -58,15 +58,14 @@ const RISK_ZONE_BOUNDS = Object.fromEntries(
   ])
 ) as Record<RiskLevel, [number, number]>;
 
-// The fill takes the DS Badges/Risk palette (components/badges/bg-risk-*) so
-// the bar and the risk pill beside it name the same level in the same colour
-// (APP-545: the pill read Medium in amber over a blue bar). Liquidation is
-// the one step past High: the status error red.
+// The fill is the DS gradient-slider of the zone (Progress Steps 5246:24677:
+// green for Low, yellow for Medium, red for High and Liquidation), so the bar
+// reads like the borrow slider beside it (Design QA 3324:143419).
 const RISK_ZONE_FILL: Record<RiskLevel, string> = {
-  [RiskLevel.LOW]: 'bg-riskLow',
-  [RiskLevel.MEDIUM]: 'bg-riskMedium',
-  [RiskLevel.HIGH]: 'bg-riskHigh',
-  [RiskLevel.LIQUIDATION]: 'bg-statusError'
+  [RiskLevel.LOW]: 'from-slider-green-start to-slider-green-end',
+  [RiskLevel.MEDIUM]: 'from-slider-yellow-start to-slider-yellow-end',
+  [RiskLevel.HIGH]: 'from-slider-red-start to-slider-red-end',
+  [RiskLevel.LIQUIDATION]: 'from-slider-red-start to-slider-red-end'
 };
 
 const RISK_ZONE_LABEL: Record<RiskLevel, ReactNode> = {
@@ -81,8 +80,8 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 /**
  * DS "Charts / Progress Steps" (Figma 5246:24677): a value-driven risk bar -
  * a rounded track split into four zones (Low → Liquidation) at the real risk
- * thresholds, with a fill whose length encodes the risk and whose colour is
- * the zone's DS risk colour, dot-markers at the zone boundaries, and a tick at
+ * thresholds, with a fill whose length encodes the risk and whose gradient is
+ * the zone's slider colour, a faint 2px dot centred in each zone and a tick at
  * the liquidation threshold. Distinct from the compact table-cell `RiskMeter`
  * pill above.
  *
@@ -130,42 +129,51 @@ export function RiskScaleMeter({
       aria-hidden={label ? undefined : true}
       className={cn('flex w-full flex-col gap-1.5', className)}
     >
-      <div className="bg-fgQuaternary/30 relative h-1 w-full rounded-full">
+      <div className="bg-sliderTrack relative h-1 w-full rounded-full">
+        {/* Design QA 3324:143419 "Dots styling": the DS bar draws no boundary
+            markers, only a 2px dot in the track's own tint centred in each
+            zone (under its label) and a 2×14 fg-line tick at the liquidation
+            threshold. The dots come first in the DOM so
+            the fill covers them; the tick draws over both. */}
+        {RISK_ZONES.map(zone => (
+          <span
+            key={zone}
+            data-testid="risk-scale-dot"
+            className="bg-sliderTrack absolute top-1/2 size-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ left: `${(RISK_ZONE_BOUNDS[zone][0] * 100 + RISK_ZONE_BOUNDS[zone][1] * 100) / 2}%` }}
+          />
+        ))}
         {activeZone && fillFraction > 0 && (
           <span
             data-testid="risk-scale-fill"
             data-zone={activeZone}
-            className={cn('absolute inset-y-0 left-0 rounded-full', RISK_ZONE_FILL[activeZone])}
+            className={cn(
+              'absolute inset-y-0 left-0 rounded-full bg-linear-to-r',
+              RISK_ZONE_FILL[activeZone]
+            )}
             style={{ width: `${fillFraction * 100}%` }}
           />
         )}
-        {/* Zone boundary markers at the real thresholds (25 / 40 / 80% — the
-            last one IS the liquidation threshold, so there is no separate
-            tick), drawn OVER the fill so they read as notches on the covered
-            stretch too — a Medium position must still show where Low ended
-            (APP-545 follow-up). The ring is the opaque page colour: the card
-            tokens are translucent and vanish over the fill. */}
-        {RISK_ZONES.slice(1).map(zone => (
-          <span
-            key={zone}
-            data-testid="risk-scale-marker"
-            className="bg-fgSecondary ring-pageBackground absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2"
-            style={{ left: `${RISK_ZONE_BOUNDS[zone][0] * 100}%` }}
-          />
-        ))}
+        <span
+          data-testid="risk-scale-liquidation-tick"
+          className="bg-sliderLine absolute -inset-y-[5px] w-0.5 -translate-x-1/2"
+          style={{ left: `${RISK_ZONE_BOUNDS[RiskLevel.LIQUIDATION][0] * 100}%` }}
+        />
       </div>
       {/* Each label spans its own zone, so it sits over the stretch of bar it
           names — the Medium label over 25–40%, not over the second quarter. */}
       <div className="flex">
-        {RISK_ZONES.map((zone, i) => (
+        {RISK_ZONES.map(zone => (
           <span
             key={zone}
             // min-w-0: a narrow zone (Medium is 15% of the bar) must not grow
             // its box past its share and push the labels after it off their
             // zones — the word may overhang its box, centred, instead.
+            // Only the Liquidation label is dimmed (fg-tertiary) in the DS
+            // comp; the others stay fg-secondary whatever the fill reaches.
             className={cn(
               'min-w-0 text-center text-xs whitespace-nowrap',
-              i <= activeIndex ? 'text-fgSecondary' : 'text-fgQuaternary'
+              zone === RiskLevel.LIQUIDATION ? 'text-fgTertiary' : 'text-fgSecondary'
             )}
             style={{ width: `${(RISK_ZONE_BOUNDS[zone][1] - RISK_ZONE_BOUNDS[zone][0]) * 100}%` }}
           >
