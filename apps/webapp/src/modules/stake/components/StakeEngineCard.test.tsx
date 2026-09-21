@@ -82,7 +82,7 @@ describe('StakeEngineCard', () => {
     expect(screen.getByText('7.50%')).toBeTruthy();
     // Min. borrow amount: dust (RAD) converted to WAD. The comp tags the
     // figure with the USDS mark instead of spelling the symbol out.
-    expect(screen.getByText('10,000')).toBeTruthy();
+    expect(screen.getByText('10,000.00')).toBeTruthy();
   });
 
   it('routes the CTA through connect-then-act and sets flow=open with replace', () => {

@@ -268,7 +268,7 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   it('pushes an amount-aware success title for the minimized toast', () => {
     renderForm('supply');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10000' } });
-    expect(lastToast()?.success).toBe('10,000 USDS supplied!');
+    expect(lastToast()?.success).toBe('10,000.00 USDS supplied!');
   });
 
   it('enables the confirm (confirmDisabled=false) once a valid amount is entered', () => {

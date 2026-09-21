@@ -399,8 +399,8 @@ describe('PendleModalForm', () => {
       typeAmount('100');
 
       expect(lastToastUpdate()).toEqual({
-        loading: 'Supplying 100 USDG',
-        success: '100 USDG supplied!',
+        loading: 'Supplying 100.00 USDG',
+        success: '100.00 USDG supplied!',
         error: 'Supply failed'
       });
     });
@@ -450,8 +450,8 @@ describe('PendleModalForm', () => {
       typeAmount('200');
 
       expect(lastToastUpdate()).toEqual({
-        loading: 'Withdrawing 200 PT-USDG',
-        success: '200 PT-USDG withdrawn!',
+        loading: 'Withdrawing 200.00 PT-USDG',
+        success: '200.00 PT-USDG withdrawn!',
         error: 'Withdrawal failed'
       });
     });

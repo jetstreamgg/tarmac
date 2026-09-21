@@ -340,8 +340,8 @@ describe('EarnPage requires-action section', () => {
     const row = screen.getByTestId('earn-requires-action-row-matured-0x9c56');
     expect(row.textContent).toContain('Pendle sUSDS');
     expect(row.textContent).toContain('Matured');
-    // 1,200 PT at par → $1.2k compact, like the opportunities table's positions.
-    expect(row.textContent).toContain('$1.2k');
+    // 1,200 PT at par → $1.2K compact, like the opportunities table's positions.
+    expect(row.textContent).toContain('$1.2K');
     // No live market data: rate/30d/tvl and the risk cell are dashes.
     expect(row.textContent).not.toContain('%');
   });

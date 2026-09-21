@@ -4,7 +4,7 @@ import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import { type PendleMarketConfig, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
@@ -113,7 +113,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       value: (
         <DetailValue
           loading={statsLoading}
-          value={stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { maxDecimals: 0 })}` : undefined}
+          value={stats?.tvl !== undefined ? formatWholeUsd(stats.tvl) : undefined}
         />
       )
     },
@@ -124,11 +124,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       value: (
         <DetailValue
           loading={statsLoading}
-          value={
-            stats?.liquidity !== undefined
-              ? `$${formatNumber(stats.liquidity, { maxDecimals: 0 })}`
-              : undefined
-          }
+          value={stats?.liquidity !== undefined ? formatWholeUsd(stats.liquidity) : undefined}
         />
       )
     }

@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { useStakeHistoricData } from '@/hooks';
-import { formatNumber, formatDecimalPercentage } from '@/utils';
+import { formatNumber, formatDecimalPercentage, formatWholeUsd } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo } from '@/components/product/RateInfo';
@@ -122,7 +122,7 @@ export function StakeDetailsStrip() {
 
         <DetailRow icon={<Vault className="h-4 w-4" />} label={<Trans>TVL</Trans>}>
           <StatValue isLoading={historicLoading} error={historicError}>
-            {mostRecent ? `$${formatNumber(mostRecent.tvl)}` : NO_VALUE}
+            {mostRecent ? formatWholeUsd(mostRecent.tvl) : NO_VALUE}
           </StatValue>
         </DetailRow>
 

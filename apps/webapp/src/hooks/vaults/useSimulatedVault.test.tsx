@@ -6,11 +6,11 @@ import { parseEther } from 'viem';
 
 describe('Hook should return error messages for incorrect vault parameters', async () => {
   // TODO: We should move error messages to a constants file for reuse
-  const DUST_ERROR = 'Minimum borrow amount is 30000';
+  const DUST_ERROR = 'Minimum borrow amount is 30,000.00';
   // The hook's ilk/spot/jug/price reads hit a freshly forked vnet cold; testing-library's
   // 1s default routinely lapses before the first response lands (CI and local alike).
   const COLD_READ_TIMEOUT_MS = 30_000;
-  const DUST_REPAY_ERROR = 'Debt must be payed off entirely, or left with a minimum of 30000';
+  const DUST_REPAY_ERROR = 'Debt must be payed off entirely, or left with a minimum of 30,000.00';
   const INSUFFICIENT_COLLATERAL_ERROR = 'Insufficient collateral';
 
   const wrapper = WagmiWrapper;
