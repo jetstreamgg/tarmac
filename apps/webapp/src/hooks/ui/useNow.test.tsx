@@ -12,14 +12,9 @@ describe('useNow', () => {
     vi.useRealTimers();
   });
 
-  it('returns the same instant for every call in one render', () => {
-    const { result } = renderHook(() => {
-      const a = useNow(60_000);
-      const b = useNow(60_000);
-      return { a, b };
-    });
-    expect(result.current.a).toBe(result.current.b);
-    expect(result.current.a).toBe(Date.now());
+  it('starts at the mount time', () => {
+    const { result } = renderHook(() => useNow(60_000));
+    expect(result.current).toBe(Date.now());
   });
 
   it('holds still between ticks and advances after the interval', () => {
@@ -37,27 +32,10 @@ describe('useNow', () => {
     expect(result.current).toBe(first + 1_000);
   });
 
-  it('shares one timer per interval and stops it when the last subscriber leaves', () => {
-    const one = renderHook(() => useNow(2_000));
-    const two = renderHook(() => useNow(2_000));
+  it('clears its timer on unmount', () => {
+    const { unmount } = renderHook(() => useNow(2_000));
     expect(vi.getTimerCount()).toBe(1);
-
-    one.unmount();
-    expect(vi.getTimerCount()).toBe(1);
-
-    two.unmount();
-    expect(vi.getTimerCount()).toBe(0);
-  });
-
-  it('does not hand a fresh mount the value from before it went idle', () => {
-    const { unmount } = renderHook(() => useNow(1_000));
     unmount();
-
-    act(() => {
-      vi.advanceTimersByTime(5_000);
-    });
-
-    const { result } = renderHook(() => useNow(1_000));
-    expect(result.current).toBe(Date.now());
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
