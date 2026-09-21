@@ -494,7 +494,6 @@ export function PositionDetailsModal({
           // (1036:214369: x=720 y=0 h=card), so the card itself carries no
           // padding at any tier; each column brings its own p-8.
           className="bg-containerDark md:bg-bgSecondary flex h-[calc(100dvh-24px)] max-h-none w-[calc(100vw-24px)] flex-col gap-0 overflow-y-auto rounded-[20px] p-0 sm:min-w-0 sm:p-0 md:h-auto md:max-h-[90vh] md:w-full md:rounded-[28px] lg:max-w-[1042px] lg:flex-row"
-          onOpenAutoFocus={event => event.preventDefault()}
           // The manage sheet portals outside this content, so its pointer
           // interactions read as backdrop dismissals here (some only landing
           // AFTER the sheet has closed, via Radix's deferred dispatch) and
@@ -985,7 +984,6 @@ export function PositionDetailsModal({
         <DialogContent
           aria-describedby={undefined}
           data-testid="stake-manage-sheet"
-          onOpenAutoFocus={event => event.preventDefault()}
           className="bg-containerDark data-[state=closed]:slide-out-to-bottom-8 data-[state=open]:slide-in-from-bottom-8 top-auto right-3 bottom-3 left-3 flex w-auto max-w-none min-w-0 translate-x-0 translate-y-0 flex-col gap-0 rounded-[20px] p-5 sm:min-w-0 sm:px-5 sm:py-5 md:hidden"
         >
           <div className="flex items-center justify-between">

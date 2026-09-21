@@ -72,6 +72,53 @@ describe('TakeoverShell', () => {
     await waitFor(() => expect(document.body.hasAttribute('data-scroll-locked')).toBe(false));
   });
 
+  it('makes the app root inert while mounted and restores focus to the trigger on close', () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    const trigger = document.createElement('button');
+    root.appendChild(trigger);
+    document.body.appendChild(root);
+    trigger.focus();
+
+    const { unmount } = render(
+      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
+        <div />
+      </TakeoverShell>
+    );
+
+    expect(root.hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).toBe(screen.getByTestId('stake-takeover'));
+
+    unmount();
+
+    expect(root.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    root.remove();
+  });
+
+  it('keeps the app root inert until the last overlapping takeover unmounts', () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    document.body.appendChild(root);
+
+    const first = render(
+      <TakeoverShell title="a" onClose={vi.fn()} dataTestId="first">
+        <div />
+      </TakeoverShell>
+    );
+    const second = render(
+      <TakeoverShell title="b" onClose={vi.fn()} dataTestId="second">
+        <div />
+      </TakeoverShell>
+    );
+
+    first.unmount();
+    expect(root.hasAttribute('inert')).toBe(true);
+    second.unmount();
+    expect(root.hasAttribute('inert')).toBe(false);
+    root.remove();
+  });
+
   it('names the dialog from its title via aria-labelledby', () => {
     renderShell();
 

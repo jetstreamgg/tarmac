@@ -379,7 +379,6 @@ export function TermsModal() {
               ? 'bg-bgSecondary flex flex-col p-6 sm:max-w-[300px] sm:min-w-[300px] md:rounded-[28px]'
               : 'bg-bgSecondary flex flex-col gap-6 p-5 sm:max-w-152.5 sm:min-w-152.5 sm:gap-8 sm:p-8 md:rounded-[28px]'
           )}
-          onOpenAutoFocus={e => e.preventDefault()}
           data-testid="terms-modal"
         >
           {termsCheckDenied
