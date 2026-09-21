@@ -42,16 +42,50 @@ describe('RollingDigits', () => {
     expect(arriving[0].getAttribute('data-transition')).toBe('pop');
   });
 
-  it('pop: a deleted digit fades out after the figure', () => {
+  it('pop: a deleted digit and its comma fade out where they were', () => {
     const { rerender } = render(<RollingDigits value="1,234" transition="pop" />);
     rerender(<RollingDigits value="123" transition="pop" />);
     const leaving = screen.getAllByTestId('rolling-digit-out');
-    expect(leaving.map(el => el.textContent)).toEqual(['4']);
-    expect(leaving[0].getAttribute('data-transition')).toBe('pop');
-    expect(leaving[0].getAttribute('aria-hidden')).toBe('true');
-    expect(screen.getByTestId('rolling-digits').textContent).toBe('1234');
-    fireEvent.animationEnd(leaving[0]);
+    expect(leaving.map(el => el.textContent)).toEqual([',', '4']);
+    expect(leaving.every(el => el.getAttribute('data-transition') === 'pop')).toBe(true);
+    expect(leaving.every(el => el.getAttribute('aria-hidden') === 'true')).toBe(true);
+    // Out of flow, so the figure reflows underneath them.
+    expect(leaving.every(el => el.className.includes('absolute'))).toBe(true);
+    expect(screen.queryAllByTestId('rolling-digit-in')).toHaveLength(0);
+    leaving.forEach(el => fireEvent.animationEnd(el));
     expect(screen.queryAllByTestId('rolling-digit-out')).toHaveLength(0);
+  });
+
+  it('pop: a comma a new group brings pops in; one that only shifts holds', () => {
+    const { rerender } = render(<RollingDigits value="123" transition="pop" />);
+    rerender(<RollingDigits value="1,234" transition="pop" />);
+    const arriving = screen.getAllByTestId('rolling-separator-in');
+    expect(arriving.map(el => el.textContent)).toEqual([',']);
+    expect(arriving[0].getAttribute('data-transition')).toBe('pop');
+    expect(screen.getAllByTestId('rolling-digit-in').map(el => el.textContent)).toEqual(['4']);
+    rerender(<RollingDigits value="12,345" transition="pop" />);
+    // Same comma, one place further right: it neither leaves nor re-enters.
+    expect(screen.queryAllByTestId('rolling-digit-out')).toHaveLength(0);
+    expect(screen.getAllByTestId('rolling-separator-in')).toHaveLength(1);
+  });
+
+  it('pop: a mid-string delete fades only the removed digits; the rest shift over', () => {
+    const { rerender } = render(<RollingDigits value="123,456,789" transition="pop" />);
+    rerender(<RollingDigits value="1,236,789" transition="pop" />);
+    expect(screen.getAllByTestId('rolling-digit-out').map(el => el.textContent)).toEqual(['4', '5']);
+    expect(screen.queryAllByTestId('rolling-digit-in')).toHaveLength(0);
+    expect(screen.queryAllByTestId('rolling-separator-in')).toHaveLength(0);
+    // Digits keep their identity across edits, so a later insert in the middle pops only itself.
+    rerender(<RollingDigits value="12,306,789" transition="pop" />);
+    expect(screen.getAllByTestId('rolling-digit-in').map(el => el.textContent)).toEqual(['0']);
+  });
+
+  it('pop: the decimal point pops in and fades out like a comma', () => {
+    const { rerender } = render(<RollingDigits value="124" transition="pop" />);
+    rerender(<RollingDigits value="124.9" transition="pop" />);
+    expect(screen.getAllByTestId('rolling-separator-in').map(el => el.textContent)).toEqual(['.']);
+    rerender(<RollingDigits value="124" transition="pop" />);
+    expect(screen.getAllByTestId('rolling-digit-out').map(el => el.textContent)).toEqual(['.', '9']);
   });
 
   it('uses tabular figures unless asked for proportional ones', () => {

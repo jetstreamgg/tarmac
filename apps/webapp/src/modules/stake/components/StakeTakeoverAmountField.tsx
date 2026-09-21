@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { cn } from '@/lib/cn';
@@ -6,7 +6,12 @@ import { buttonVariants } from '@/components/ui/button';
 import { AmountFieldHairline } from '@/components/product/amountFieldHairline';
 import { parseAmountInput, sanitizeAmountInput } from '@/lib/amountInput';
 import { RollingDigits } from '@/components/ui/rolling-digits';
-import { formatAmountForInput, groupAmountInput, ungroupAmountInput } from '../lib/amountInput';
+import {
+  caretAfterCharacters,
+  formatAmountForInput,
+  groupAmountInput,
+  ungroupAmountInput
+} from '../lib/amountInput';
 
 // SKY and USDS are 18-decimal on every deployment the stake module runs on.
 const DECIMALS = 18;
@@ -66,16 +71,46 @@ export function StakeTakeoverAmountField({
   dataTestId: string;
 }) {
   const [text, setText] = useState('');
+  // The amount the last keystroke set out from: the parent may deliver the
+  // typed amount a render later, and until then the field is still typing.
+  const [typedFrom, setTypedFrom] = useState<bigint | null>(null);
   const errorId = `${dataTestId}-error`;
   // Controlled from outside: when the prop no longer matches the typed text
   // (chip click, slider drag, toggle reset), re-derive the text from the amount.
-  const typed = parseAmountInput(text, DECIMALS) === amount;
+  const settled = parseAmountInput(text, DECIMALS) === amount;
+  if (settled && typedFrom !== null) setTypedFrom(null);
+  const typed = settled || amount === typedFrom;
   const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals);
   const displayText = groupAmountInput(maskedText);
 
-  const onChange = (raw: string) => {
-    const sanitized = sanitizeAmountInput(ungroupAmountInput(raw), DECIMALS);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Caret to restore after the edit regroups the text (a mid-string delete or
+  // replace changes the length, which would drop the caret to the end).
+  const pendingCaret = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (pendingCaret.current === null) return;
+    inputRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current);
+    pendingCaret.current = null;
+  });
+
+  const onChange = (input: HTMLInputElement) => {
+    const raw = input.value;
+    const ungrouped = ungroupAmountInput(raw, displayText);
+    // A delete that takes the last decimal takes the point with it ("124.9" →
+    // "124"); a freshly typed point stays, decimals are on their way.
+    const deleting = raw.length < displayText.length;
+    const sanitized = sanitizeAmountInput(
+      deleting && ungrouped.endsWith('.') ? ungrouped.slice(0, -1) : ungrouped,
+      DECIMALS
+    );
+    const caret = input.selectionStart ?? raw.length;
+    pendingCaret.current = caretAfterCharacters(
+      groupAmountInput(sanitized),
+      raw.slice(0, caret).replace(/,/g, '').length,
+      raw[caret - 1] === ','
+    );
     setText(sanitized);
+    setTypedFrom(amount);
     onAmountChange(parseAmountInput(sanitized, DECIMALS));
   };
 
@@ -99,7 +134,8 @@ export function StakeTakeoverAmountField({
                 inputMode="decimal"
                 placeholder="0.00"
                 value={displayText}
-                onChange={event => onChange(event.target.value)}
+                ref={inputRef}
+                onChange={event => onChange(event.target)}
                 disabled={disabled}
                 data-testid={dataTestId}
                 aria-invalid={!!error}
@@ -111,22 +147,21 @@ export function StakeTakeoverAmountField({
                   'caret-text placeholder:text-fgSecondary w-full min-w-0 bg-transparent text-transparent outline-none [font-kerning:none] disabled:opacity-50'
                 )}
               />
-              {displayText && (
-                <span
-                  aria-hidden
-                  data-testid={`${dataTestId}-display`}
-                  className={cn(
-                    AMOUNT_TYPE,
-                    'text-text pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap [font-kerning:none]',
-                    disabled && 'opacity-50'
-                  )}
-                >
-                  {/* Typed digits pop in where they land; chips and the slider roll (Design QA 3450:121929).
-                      Proportional figures keep the overlay's metrics identical to the
-                      input's, so the native caret lands after the last glyph. */}
-                  <RollingDigits value={displayText} transition={typed ? 'pop' : 'roll'} proportional />
-                </span>
-              )}
+              {/* Stays mounted on an empty value so the last digit can fade out over the placeholder. */}
+              <span
+                aria-hidden
+                data-testid={`${dataTestId}-display`}
+                className={cn(
+                  AMOUNT_TYPE,
+                  'text-text pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap [font-kerning:none]',
+                  disabled && 'opacity-50'
+                )}
+              >
+                {/* Typed digits pop in where they land; chips and the slider roll (Design QA 3450:121929).
+                    Proportional figures keep the overlay's metrics identical to the
+                    input's, so the native caret lands after the last glyph. */}
+                <RollingDigits value={displayText} transition={typed ? 'pop' : 'roll'} proportional />
+              </span>
             </span>
           </div>
           {(chips || onPercentClick) && (

@@ -29,13 +29,42 @@ export function groupAmountInput(text: string): string {
 }
 
 /**
- * Strips the group separators from what the user hands back so the mask sees
- * plain digits. A comma with three or more digits after it is grouping (the
- * field's own, possibly with a digit just typed after it); a shorter one stays
- * for the mask to read as a decimal point (the EU keypad case, APP-518) — the
- * mask turns that comma into a dot on the same keystroke, so it never grows a
- * three-digit fraction behind it.
+ * Strips the field's own group separators from what the user hands back so the
+ * mask sees plain digits. An edit replaces one contiguous run of the text the
+ * field showed, so everything outside that run (the unchanged prefix and
+ * suffix) is the field's grouping and drops, whatever digit count now follows
+ * it. Only a comma inside the edited run was typed, and the mask reads that one
+ * as a decimal point (the EU keypad case, APP-518) — or, with several in a
+ * paste, as grouping again.
  */
-export function ungroupAmountInput(raw: string): string {
-  return raw.replace(/,(?=\d{3})/g, '');
+export function ungroupAmountInput(raw: string, shown: string): string {
+  let prefix = 0;
+  while (prefix < raw.length && prefix < shown.length && raw[prefix] === shown[prefix]) prefix += 1;
+  let suffix = 0;
+  while (
+    suffix < raw.length - prefix &&
+    suffix < shown.length - prefix &&
+    raw[raw.length - 1 - suffix] === shown[shown.length - 1 - suffix]
+  ) {
+    suffix += 1;
+  }
+  const edited = raw.slice(prefix, raw.length - suffix);
+  return `${raw.slice(0, prefix).replace(/,/g, '')}${edited}${raw.slice(raw.length - suffix).replace(/,/g, '')}`;
+}
+
+/**
+ * Where the caret lands in the regrouped `text` after `count` non-separator
+ * characters: the field regroups on every edit, which changes the length and
+ * would otherwise drop the caret to the end. A caret that sat just after a
+ * separator stays after the one now in that spot, including a typed decimal
+ * comma the mask turned into the point.
+ */
+export function caretAfterCharacters(text: string, count: number, afterSeparator = false): number {
+  let index = 0;
+  let seen = 0;
+  while (index < text.length && seen < count) {
+    if (text[index] !== ',') seen += 1;
+    index += 1;
+  }
+  return afterSeparator && (text[index] === ',' || text[index] === '.') ? index + 1 : index;
 }
