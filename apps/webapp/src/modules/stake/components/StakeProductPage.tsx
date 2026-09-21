@@ -1,12 +1,10 @@
 import { useCallback, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useRouterState } from '@tanstack/react-router';
 import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Intent } from '@/lib/enums';
 import { BP, useBreakpointIndex, useProductNetworks } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
-import { pathToIntent } from '@/lib/routes';
 import { useAppSearchParams } from '@/lib/navigation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { NetworkSelect, useNetworkTitleBadge } from '@/modules/ui/components/NetworkSelect';
@@ -56,27 +54,7 @@ export function StakeProductPage() {
   const rail = { positions, isLoading: positionsLoading };
   const knownEmptyPositions = !positionsLoading && positions?.length === 0;
   const defaultTab: StakeTab = !address || knownEmptyPositions ? 'statistics' : 'positions';
-  const paramTab = parseStakeTab(searchParams.get(QueryParams.Tab), defaultTab);
-  // The tab shown while the page is on its way OUT. The router commits the next
-  // location (pathname AND search) a render before the route matches swap, so
-  // this page renders once more against the destination's search — which has
-  // no `tab` — and fell back to the default tab in that render. That frame is
-  // what the view transition captures as the outgoing snapshot, so leaving
-  // from About showed the page snapping to Statistics/My positions before it
-  // slid away (measured: ~40ms of default-tab frames between the pushState
-  // and startViewTransition). Latch the last tab picked while the path was
-  // still ours and keep drawing it once it isn't. Held in state, adjusted
-  // during render (react.dev's previous-value pattern), not a ref — the value
-  // is read in this same render.
-  // `pathToIntent`, not a raw compare: the router matches `/Stake` or
-  // `/STAKE/` to this route but reports the pathname verbatim, and a raw
-  // compare read those as "leaving" for the page's whole life — the latch
-  // froze on its first tab and clicks moved the URL but never the view.
-  const pathname = useRouterState({ select: s => s.location.pathname });
-  const leaving = pathToIntent(pathname) !== Intent.STAKE_INTENT;
-  const [heldTab, setHeldTab] = useState<StakeTab>(paramTab);
-  if (!leaving && heldTab !== paramTab) setHeldTab(paramTab);
-  const tab = leaving ? heldTab : paramTab;
+  const tab = parseStakeTab(searchParams.get(QueryParams.Tab), defaultTab);
   // Route-driven overlays (Architecture §2.1): the F4 takeover mounts on
   // `flow=open`, the F5 manage flow (details modal ⇄ manage sheet) on
   // `flow=manage&urn_index=N`; closing returns to a clean URL.
