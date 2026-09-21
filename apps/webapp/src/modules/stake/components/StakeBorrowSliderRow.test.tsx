@@ -210,6 +210,25 @@ describe('StakeBorrowSliderRow', () => {
     spy.mockRestore();
   });
 
+  it('out of range: parks an inert 8px stub at the left and keeps the dots and labels', () => {
+    const slider = useStakeAmountSlider({
+      mode: 'repay',
+      existingDebt: usds(56_000),
+      dust: usds(30_000),
+      headroom: 0n,
+      amount: usds(40_000),
+      onAmountChange: vi.fn()
+    });
+    renderRow(<StakeBorrowSliderRow slider={slider} mode="repay" tone="green" dataTestId="row" />);
+    const root = screen.getByTestId('row');
+    expect(root.querySelector('[data-disabled]')).not.toBeNull();
+    const fill = root.querySelector('[data-slot="slider-fill"]') as HTMLElement;
+    expect(fill.style.width).toBe('8px');
+    expect(fill.className).toContain('bg-fgQuaternary');
+    expect(root.querySelector('[data-slot="slider-dots"]')).not.toBeNull();
+    expect(screen.getByTestId('row-marker-label').textContent).toBe('Repay:26,000');
+  });
+
   it('disabled: a flat full-width bar keeping its inverse marker', () => {
     const slider = useStakeAmountSlider({
       mode: 'borrow',

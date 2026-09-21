@@ -64,7 +64,10 @@ export function StakeBorrowSliderRow({
   maxLoading?: boolean;
   dataTestId: string;
 }) {
-  const { axis, disabled } = slider;
+  // Out of range (a typed repay in the dust gap) parks the slider: inert like
+  // disabled, but the fill is the 8px stub, not the full bar (Figma 3444:58304).
+  const disabled = slider.disabled || slider.outOfRange;
+  const { axis } = slider;
   const isBorrow = mode === 'borrow';
   const marker = slider.markers[0];
   const labelRow = useRef<HTMLDivElement>(null);
@@ -95,9 +98,11 @@ export function StakeBorrowSliderRow({
   const snapped = requested !== null && Math.abs(slider.value - requested) > SNAP_GLIDE_STEPS;
   const fillStart = isBorrow && marker !== undefined ? marker : 0;
   const fillEnd = Math.max(fillStart, slider.value);
-  const fillStyle = disabled
-    ? { left: 0, width: '100%' }
-    : { left: pct(fillStart), width: `max(8px, ${pct(fillEnd - fillStart)})` };
+  const fillStyle = slider.outOfRange
+    ? { left: 0, width: 8 }
+    : disabled
+      ? { left: 0, width: '100%' }
+      : { left: pct(fillStart), width: `max(8px, ${pct(fillEnd - fillStart)})` };
 
   return (
     <div className="flex flex-col gap-3">

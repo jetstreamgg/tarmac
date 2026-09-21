@@ -127,6 +127,21 @@ describe('useStakeAmountSlider — repay axis', () => {
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(56_000), true);
   });
 
+  it('flags a typed amount strictly inside the dust gap as out of range', () => {
+    const flags = [usds(40_000), usds(26_000), usds(56_000), 0n].map(
+      amount => useStakeAmountSlider({ ...base, amount, onAmountChange: vi.fn() }).outOfRange
+    );
+    expect(flags).toEqual([true, false, false, false]);
+    const borrow = useStakeAmountSlider({
+      ...base,
+      mode: 'borrow',
+      headroom: usds(10_000),
+      amount: usds(5_000),
+      onAmountChange: vi.fn()
+    });
+    expect(borrow.outOfRange).toBe(false);
+  });
+
   it('pins an over-typed repay at 100% and hides the axis on a debt-free position', () => {
     const over = useStakeAmountSlider({ ...base, amount: usds(70_000), onAmountChange: vi.fn() });
     expect(over.value).toBe(STAKE_SLIDER_MAX);

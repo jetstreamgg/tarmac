@@ -41,6 +41,8 @@ export type StakeAmountSlider = {
   progress: number;
   /** Nothing to stage on this axis: flat grey track, input and chips off. */
   disabled: boolean;
+  /** Repay only: a typed amount inside the dust gap; the slider parks at the left until it is fixed. */
+  outOfRange: boolean;
   /** No axis at all (repay on a debt-free position). */
   hidden: boolean;
   /** Borrow only: the debt sits on the dust floor, so the tick would be the left end. */
@@ -112,6 +114,7 @@ export function useStakeAmountSlider({
       markers: marker ? [marker.position] : [],
       progress: value / (STAKE_SLIDER_MAX / 100),
       disabled: forcedDisabled,
+      outOfRange: amount > gapStart && amount < max,
       hidden: max <= 0n,
       atFloor: false,
       axis: { min: 0n, max, marker: marker?.value },
@@ -180,6 +183,7 @@ export function useStakeAmountSlider({
     markers: marker ? [marker.position] : [],
     progress: disabled ? 0 : value / (STAKE_SLIDER_MAX / 100),
     disabled,
+    outOfRange: false,
     hidden: false,
     atFloor: !disabled && onFloor,
     // Nothing borrowable: the ceiling is the current debt (3015:62542).
