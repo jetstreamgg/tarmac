@@ -45,10 +45,12 @@ export default [
     // TODO(APP-227): Demoted react-hooks rules from `error` to `warn` to land the
     // plugin without a large up-front triage. Promote each rule back to `error`
     // (delete its line below) as the existing violations are fixed across the
-    // monorepo. `exhaustive-deps` is already `warn` in the recommended preset.
+    // monorepo. `exhaustive-deps` is `warn` in the recommended preset and is
+    // raised to `error` here: the warn-demotion hid real bugs (a stale close
+    // snapshot, dates stuck in the old locale, an L2 savings balance stuck at 0).
     rules: {
+      'react-hooks/exhaustive-deps': 'error',
       'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/refs': 'warn',
       'react-hooks/static-components': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn'
     }
@@ -128,7 +130,7 @@ export default [
   {
     files: ['apps/webapp/src/**/*.{ts,tsx}'],
     rules: {
-      'no-console': ['warn', { allow: ['warn', 'info', 'debug'] }],
+      'no-console': ['error', { allow: ['warn', 'info', 'debug'] }],
       // Browser globals that read like ordinary identifiers. A typo or a
       // missing local silently resolves to `window.name`, `window.status`, ...
       // instead of failing to compile (a `${name}` query scope key once did).
