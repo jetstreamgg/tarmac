@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -132,7 +132,8 @@ export function useConvertLaunch({
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
   const executeRef = useRef<() => void>(() => undefined);
-  useEffect(() => {
+  // A layout effect, so a confirm click can never run the previous render's execute.
+  useLayoutEffect(() => {
     executeRef.current = () => conversion.execute();
   });
 

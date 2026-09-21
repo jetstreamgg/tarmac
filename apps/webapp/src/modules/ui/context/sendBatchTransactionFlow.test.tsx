@@ -78,7 +78,7 @@ describe('useSendBatchTransactionFlow — cross-chain backstop (APP-528)', () =>
 
   it('refuses a batch whose target address is undefined (wrong-chain resolution miss) and reports it through onError', () => {
     const calls = [nullTargetCall(), goodCall('0x6B175474E89094C44Da98b954EedeAC495271d0F')];
-    const errorSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const onError = vi.fn();
     const { result } = renderHook(() =>
       useSendBatchTransactionFlow({ calls, enabled: true, chainId: 8453, onError } as never)

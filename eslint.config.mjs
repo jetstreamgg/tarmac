@@ -130,7 +130,7 @@ export default [
   {
     files: ['apps/webapp/src/**/*.{ts,tsx}'],
     rules: {
-      'no-console': ['error', { allow: ['warn', 'info', 'debug'] }],
+      'no-console': ['error', { allow: ['error', 'warn', 'info', 'debug'] }],
       // Browser globals that read like ordinary identifiers. A typo or a
       // missing local silently resolves to `window.name`, `window.status`, ...
       // instead of failing to compile (a `${name}` query scope key once did).

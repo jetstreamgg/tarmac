@@ -87,7 +87,7 @@ async function fetchOverallSkyData(url: URL): Promise<OverallSkyData> {
     const data = await fetchJson<OverallSkyApiResponse[]>(url, { label: 'Overall Sky data' });
     return transformOverallSkyData(data);
   } catch (error) {
-    console.warn('Error fetching Overall Sky data:', error);
+    console.error('Error fetching Overall Sky data:', error);
     throw error;
   }
 }

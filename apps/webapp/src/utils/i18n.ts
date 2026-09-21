@@ -33,7 +33,7 @@ async function loadLocale(locale?: string) {
     console.debug(`Locale file for ${locale} loaded.`);
     return messages;
   } catch (error) {
-    console.warn(`Locale file for ${locale} not found: `, error);
+    console.error(`Locale file for ${locale} not found: `, error);
     return null;
   }
 }

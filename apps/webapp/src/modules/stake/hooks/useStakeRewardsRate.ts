@@ -117,7 +117,9 @@ function sameResolved(
   a: { series: RewardsChartInfoParsed[]; currentRate: number | null },
   b: { series: RewardsChartInfoParsed[]; currentRate: number | null } | null
 ): boolean {
-  if (!b || a.currentRate !== b.currentRate || a.series.length !== b.series.length) return false;
+  if (!b || a.currentRate !== b.currentRate) return false;
+  if (a.series === b.series) return true;
+  if (a.series.length !== b.series.length) return false;
   return a.series.every(
     (point, i) => point.blockTimestamp === b.series[i].blockTimestamp && point.rate === b.series[i].rate
   );

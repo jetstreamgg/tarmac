@@ -31,7 +31,7 @@ async function fetchRewardsData(url: URL): Promise<RewardsData> {
       rewardTokensPerSecond: data?.reward_tokens_per_second || ''
     };
   } catch (error) {
-    console.warn('Error fetching BaLabs data:', error);
+    console.error('Error fetching BaLabs data:', error);
     return {
       walletAddress: '',
       balance: '',

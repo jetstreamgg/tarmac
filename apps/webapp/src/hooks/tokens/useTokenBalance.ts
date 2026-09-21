@@ -178,7 +178,7 @@ async function fetchTokenBalances({
           });
         })
         .catch(error => {
-          console.warn(`Failed to fetch native balance for chain ${numericChainId}:`, error);
+          console.error(`Failed to fetch native balance for chain ${numericChainId}:`, error);
         });
 
       promises.push(nativePromise);
@@ -226,7 +226,7 @@ async function fetchTokenBalances({
             }
           }
         } catch (error) {
-          console.warn(`Failed to fetch ERC20 balances for chain ${numericChainId}:`, error);
+          console.error(`Failed to fetch ERC20 balances for chain ${numericChainId}:`, error);
         }
       })();
 

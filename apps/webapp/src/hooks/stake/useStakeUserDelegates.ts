@@ -147,7 +147,8 @@ export function useStakeUserDelegates({
       setDisplayedDelegates(orderedDelegates);
     } else {
       // No pre-selected delegate, just sort by total delegated amount
-      const sortedDelegates = delegatesWithTotals.sort(sortDelegatesFn);
+      // Copy first: the memoized array must not be sorted in place.
+      const sortedDelegates = [...delegatesWithTotals].sort(sortDelegatesFn);
       setDisplayedDelegates(sortedDelegates);
     }
   }, [delegatesWithTotals, shouldSortDelegates, sortDelegatesFn, selectedDelegate]);

@@ -48,7 +48,7 @@ const fetchStakeHistoricData = async (url: URL): Promise<StakeHistoricData[] | u
       skyPrice: parseFloat(item.sky_price)
     }));
   } catch (error) {
-    console.warn('Error fetching Stake historic data:', error);
+    console.error('Error fetching Stake historic data:', error);
     return undefined;
   }
 };

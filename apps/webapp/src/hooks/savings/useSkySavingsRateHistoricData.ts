@@ -36,7 +36,7 @@ async function fetchSkySavingsRateHistoric(url: URL): Promise<SkySavingsRateHist
     });
     return transformBaLabsData(data?.historic || []);
   } catch (error) {
-    console.warn('Error fetching Sky Savings Rate historic data:', error);
+    console.error('Error fetching Sky Savings Rate historic data:', error);
     return [];
   }
 }
