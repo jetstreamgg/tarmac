@@ -159,11 +159,11 @@ export function mapStakeHistoryResponse(response: any, chainId: number): StakeHi
   });
 
   const kicks = mapIndexerRows<
-    BaseStakeHistoryItemResponse & { wad: string; urn: { address: string } },
+    BaseStakeHistoryItemResponse & { wad: string; urn: { address: string } | null },
     StakeHistoryKick
   >(response?.stakingOnKicks, e => {
     const amount = safeBigInt(e.wad);
-    if (amount === undefined) return undefined;
+    if (amount === undefined || !e.urn?.address) return undefined;
     return {
       amount,
       urnAddress: e.urn.address,
