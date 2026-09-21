@@ -15,6 +15,7 @@ import {
   StakeSelectRewardResponse,
   StakeHistoryKick
 } from './stakeModule';
+import { mapIndexerRows, safeBigInt } from '@/utils/indexerRows';
 
 export function stakeHistoryFragments({
   owner,
@@ -101,111 +102,78 @@ export function stakeHistoryFragments({
 }
 
 export function mapStakeHistoryResponse(response: any, chainId: number): StakeHistory {
-  const opens: BaseStakeHistoryItem[] = response.stakingOpens.map((e: BaseStakeHistoryItemResponse) => ({
+  const base = (e: BaseStakeHistoryItemResponse) => ({
     urnIndex: +e.index,
     blockTimestamp: secondsToDate(e.blockTimestamp),
     transactionHash: e.transactionHash,
     module: ModuleEnum.STAKE,
-    type: TransactionTypeEnum.STAKE_OPEN,
     chainId
-  }));
+  });
 
-  const selectVoteDelegates: StakeSelectDelegate[] = response.stakingSelectVoteDelegates.map(
-    (e: StakeSelectDelegateResponse) => ({
-      urnIndex: +e.index,
+  const withAmount =
+    (type: StakeHistoryItemWithAmount['type']) =>
+    (e: BaseStakeHistoryItemResponse & { wad: string }): StakeHistoryItemWithAmount | undefined => {
+      const amount = safeBigInt(e.wad);
+      if (amount === undefined) return undefined;
+      return { ...base(e), amount, type };
+    };
+
+  const opens = mapIndexerRows<BaseStakeHistoryItemResponse, BaseStakeHistoryItem>(
+    response?.stakingOpens,
+    e => ({
+      ...base(e),
+      type: TransactionTypeEnum.STAKE_OPEN
+    })
+  );
+
+  const selectVoteDelegates = mapIndexerRows<StakeSelectDelegateResponse, StakeSelectDelegate>(
+    response?.stakingSelectVoteDelegates,
+    e => ({
+      ...base(e),
       delegate: e.voteDelegate?.address || '',
-      blockTimestamp: secondsToDate(e.blockTimestamp),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_SELECT_DELEGATE,
-      chainId
+      type: TransactionTypeEnum.STAKE_SELECT_DELEGATE
     })
   );
 
-  const selectRewards: StakeSelectReward[] = response.stakingSelectRewards.map(
-    (e: StakeSelectRewardResponse) => ({
-      urnIndex: +e.index,
+  const selectRewards = mapIndexerRows<StakeSelectRewardResponse, StakeSelectReward>(
+    response?.stakingSelectRewards,
+    e => ({
+      ...base(e),
       rewardContract: e.reward?.address || '',
-      blockTimestamp: secondsToDate(e.blockTimestamp),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_SELECT_REWARD,
-      chainId
+      type: TransactionTypeEnum.STAKE_SELECT_REWARD
     })
   );
 
-  const stakes: StakeHistoryItemWithAmount[] = response.stakingLocks.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: secondsToDate(e.blockTimestamp),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE,
-      chainId
-    })
-  );
+  const stakes = mapIndexerRows(response?.stakingLocks, withAmount(TransactionTypeEnum.STAKE));
+  const unstakes = mapIndexerRows(response?.stakingFrees, withAmount(TransactionTypeEnum.UNSTAKE));
+  const borrows = mapIndexerRows(response?.stakingDraws, withAmount(TransactionTypeEnum.STAKE_BORROW));
+  const repays = mapIndexerRows(response?.stakingWipes, withAmount(TransactionTypeEnum.STAKE_REPAY));
 
-  const unstakes: StakeHistoryItemWithAmount[] = response.stakingFrees.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: secondsToDate(e.blockTimestamp),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.UNSTAKE,
-      chainId
-    })
-  );
+  const rewards = mapIndexerRows<
+    BaseStakeHistoryItemResponse & { reward: string; amt: string },
+    StakeClaimReward
+  >(response?.stakingGetRewards, e => {
+    const amount = safeBigInt(e.amt);
+    if (amount === undefined) return undefined;
+    return { ...base(e), rewardContract: e.reward, amount, type: TransactionTypeEnum.STAKE_REWARD };
+  });
 
-  const borrows: StakeHistoryItemWithAmount[] = response.stakingDraws.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: secondsToDate(e.blockTimestamp),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_BORROW,
-      chainId
-    })
-  );
-
-  const repays: StakeHistoryItemWithAmount[] = response.stakingWipes.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: secondsToDate(e.blockTimestamp),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_REPAY,
-      chainId
-    })
-  );
-
-  const rewards: StakeClaimReward[] = response.stakingGetRewards.map(
-    (e: BaseStakeHistoryItemResponse & { reward: string; amt: string }) => ({
-      urnIndex: +e.index,
-      rewardContract: e.reward,
-      amount: BigInt(e.amt),
-      blockTimestamp: secondsToDate(e.blockTimestamp),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_REWARD,
-      chainId
-    })
-  );
-
-  const kicks: StakeHistoryKick[] = response.stakingOnKicks.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string; urn: { address: string } }) => ({
-      amount: BigInt(e.wad),
+  const kicks = mapIndexerRows<
+    BaseStakeHistoryItemResponse & { wad: string; urn: { address: string } | null },
+    StakeHistoryKick
+  >(response?.stakingOnKicks, e => {
+    const amount = safeBigInt(e.wad);
+    if (amount === undefined || !e.urn?.address) return undefined;
+    return {
+      amount,
       urnAddress: e.urn.address,
       blockTimestamp: secondsToDate(e.blockTimestamp),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,
       type: TransactionTypeEnum.UNSTAKE_KICK,
       chainId
-    })
-  );
+    };
+  });
 
   const combined = [
     ...opens,

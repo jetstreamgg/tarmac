@@ -1,4 +1,4 @@
-import { Link, useParams, useRouter, useRouterState } from '@tanstack/react-router';
+import { Link, useMatch, useParams, useRouter, useRouterState } from '@tanstack/react-router';
 // Type-only: erased at runtime, so this does not pull the page graph into the
 // navigation helpers (see modules/sentry/init.ts for why that matters).
 import type { FileRouteTypes } from '@/routeTree.gen';
@@ -135,11 +135,30 @@ const sortedSearchString = (input: string | Record<string, string>): string => {
 
 export function useAppSearchParams(): [URLSearchParams, SetSearchParams] {
   const router = useRouter();
-  const searchStr = useRouterState({ select: s => s.location.searchStr });
+  // Read from the committed route match, not `state.location`. The router
+  // writes the location store when a load STARTS and swaps the match stores in
+  // the same commit that swaps the outlet, so a location read hands the
+  // outgoing page the destination's search for one render — the render the
+  // view transition captures as its outgoing snapshot (the stake tab snapped
+  // to its default, the manage sheet started closing, Earn filters collapsed
+  // rows, all a frame early). The nearest match's `search` is every parent's
+  // validated search merged in (the root passes the whole record through), so
+  // it is the same set the location carried, minus the early frame: the
+  // outgoing page keeps its own params until it is gone, and the incoming one
+  // has its own from its first render. Same-route param changes (tab clicks,
+  // filter edits) land one commit later than the location update; without
+  // loaders on those routes that is the same frame (APP-562).
+  const searchStr = useMatch({
+    strict: false,
+    select: match => new URLSearchParams(match.search as Record<string, string>).toString()
+  });
   const searchParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
 
   const setSearchParams = useCallback<SetSearchParams>(
     (init, opts) => {
+      // The setter stays on the location: it must compare against the search
+      // the URL carries RIGHT NOW (the latest navigation, committed or not) to
+      // bail on no-ops, and navigate against the current pathname.
       const currentSearchStr = router.state.location.searchStr;
       const next = typeof init === 'function' ? init(new URLSearchParams(currentSearchStr)) : init;
       const search = Object.fromEntries(next);

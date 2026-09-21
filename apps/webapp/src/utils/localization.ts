@@ -1,6 +1,13 @@
 const LOCALE_KEY = 'tarmacLocale';
 
-export const getLocaleFromLocalStorage = (): string | null => window.localStorage.getItem(LOCALE_KEY);
+export const getLocaleFromLocalStorage = (): string | null => {
+  try {
+    return window.localStorage.getItem(LOCALE_KEY);
+  } catch {
+    // Some browsers throw on any storage access; this runs at boot, so never let it surface.
+    return null;
+  }
+};
 
 export const getSupportedNumberLocale = (_paramLocale?: string): string => {
   return 'en-US'; //hardcoding number locale to en-US for now
