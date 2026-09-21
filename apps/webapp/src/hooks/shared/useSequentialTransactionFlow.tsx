@@ -1,6 +1,6 @@
 import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { isRevertedError, toError } from '../helpers';
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
@@ -25,7 +25,7 @@ export function useSequentialTransactionFlow(
 
   // Snapshot of `calls` frozen at execute() time — keeps a refetching quote
   // from swapping in different args after the user clicked Confirm.
-  const transactionsRef = useRef(calls);
+  const [frozenCalls, setFrozenCalls] = useState(calls);
   // Frozen call count for the completion check; the live `calls` length shrinks after an approve.
   const totalCallsRef = useRef(0);
   // The call index most recently handed to the wallet. `transactionHashes[i]` cannot
@@ -38,7 +38,7 @@ export function useSequentialTransactionFlow(
   const dispatchedIndexRef = useRef(-1);
 
   // Use the stored transactions during execution
-  const stableTransactions = isExecuting ? transactionsRef.current : calls;
+  const stableTransactions = isExecuting ? frozenCalls : calls;
 
   // Get current transaction with memoization
   const currentTransaction = useMemo(
@@ -148,6 +148,11 @@ export function useSequentialTransactionFlow(
     };
   }, []);
 
+  // The consumer's callbacks are read through effect events: the completion
+  // effect must not re-run because a caller passed a new inline function.
+  const emitSuccess = useEffectEvent((hash: string) => onSuccess(hash));
+  const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
+
   // Handle transaction completion
   useEffect(() => {
     // Only process if we're executing
@@ -163,7 +168,7 @@ export function useSequentialTransactionFlow(
       // Done only when every expected call has produced a hash, not merely when the index reaches the count.
       if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
-        onSuccess(txHash);
+        emitSuccess(txHash);
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
@@ -180,7 +185,7 @@ export function useSequentialTransactionFlow(
     ) {
       lastProcessedTxHash.current = txHash;
       // Transaction failed
-      onError(toError(miningError || failureReason), txHash);
+      emitError(toError(miningError || failureReason), txHash);
       setIsExecuting(false);
     }
   }, [
@@ -212,7 +217,7 @@ export function useSequentialTransactionFlow(
     // as soon as its allowance lands. Bounds-check against the sequence frozen at the
     // start of this run instead, or the retry is silently swallowed here.
     const isResume = isExecuting && currentIndex > 0;
-    const sequence = isResume ? transactionsRef.current : calls;
+    const sequence = isResume ? frozenCalls : calls;
 
     if (currentIndex >= sequence.length) {
       console.warn('ERROR: All transactions have been executed');
@@ -226,7 +231,7 @@ export function useSequentialTransactionFlow(
 
     if (simulationData?.request) {
       if (!isResume) {
-        transactionsRef.current = calls; // freeze args for the whole sequence
+        setFrozenCalls(calls); // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check
       }
       // This call is dispatched here, so claim its index before the auto-execute
@@ -248,6 +253,7 @@ export function useSequentialTransactionFlow(
     currentIndex,
     isExecuting,
     calls,
+    frozenCalls,
     currentTransaction,
     simulationData,
     writeContract,

@@ -5,7 +5,7 @@ import {
   useWriteContract
 } from 'wagmi';
 import { isRevertedError, toError } from '../helpers';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useEffectEvent, useMemo } from 'react';
 import { Config, ResolvedRegister } from '@wagmi/core';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
@@ -84,14 +84,18 @@ export function useWriteContractFlow<
   });
   const txReverted = isRevertedError(failureReason);
 
+  // The consumer's callbacks are read through effect events: the settle effect
+  // must not re-run because a caller passed a new inline function.
+  const emitSuccess = useEffectEvent((hash: string) => onSuccess(hash));
+  const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
   useEffect(() => {
     if (txHash) {
       if (isSuccess) {
-        onSuccess(txHash);
+        emitSuccess(txHash);
       } else if (miningError) {
-        onError(miningError, txHash);
+        emitError(miningError, txHash);
       } else if (failureReason && txReverted) {
-        onError(toError(failureReason), txHash);
+        emitError(toError(failureReason), txHash);
       }
     }
   }, [isSuccess, miningError, failureReason, txHash, txReverted]);

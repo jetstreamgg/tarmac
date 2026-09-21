@@ -61,6 +61,10 @@ function useTooltipPlacement(
   // `useFollow` owns `transform`; it must stay out of the style prop below.
   const panelRef = useFollow<HTMLDivElement>(x, y);
 
+  // Deliberately without a dependency list: the boxes are re-measured after
+  // every render (see the hook comment), and both setters return the previous
+  // value when nothing changed, so this cannot loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- measured every render by design
   useLayoutEffect(() => {
     const panel = panelRef.current;
     if (panel) {

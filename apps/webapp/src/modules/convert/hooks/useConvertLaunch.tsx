@@ -132,7 +132,9 @@ export function useConvertLaunch({
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
   const executeRef = useRef<() => void>(() => undefined);
-  executeRef.current = () => conversion.execute();
+  useEffect(() => {
+    executeRef.current = () => conversion.execute();
+  });
 
   // Engine reads (allowance / liquidity / halted flags) refetch on success before
   // the page-level refetch (balances + form reset) runs.

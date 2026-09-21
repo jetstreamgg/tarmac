@@ -1,4 +1,4 @@
-import { ReactElement, ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactElement, ReactNode, useEffect, useState } from 'react';
 import { UserConfig } from '../types/user-config';
 import { USER_SETTINGS_KEY } from '@/lib/constants';
 import { dynamicActivate } from '@/utils';
@@ -23,8 +23,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
       //throws an error if settings don't match the zod schema
       // const parsedAndValidated = userSettingsSchema.parse(parsed);
       // const localeFromConfig = parsedAndValidated.locale;
-      setUserConfig({
-        ...userConfig,
+      setUserConfig(prev => ({
+        ...prev,
         ...parsed,
         // locale: localeFromUrl || localeFromConfig || backupLocale
         locale: 'en',
@@ -36,7 +36,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false,
         expertRiskDisclaimerDismissed: parsed.expertRiskDisclaimerDismissed ?? false,
         stakingSpkDisclaimerDismissed: parsed.stakingSpkDisclaimerDismissed ?? false
-      });
+      }));
     } catch (e) {
       reportError(e, {
         module: 'config',
@@ -44,7 +44,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         action: 'parse-local-storage',
         type: 'local_storage_parse_error'
       });
-      window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userConfig));
+      window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(defaultUserConfig));
     }
     setLoaded(true);
   }, []);
@@ -61,12 +61,11 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(config));
   };
 
-  const locale = useMemo(() => {
-    // const locale = userConfig.locale || 'en';
-    const locale = 'en';
-    dynamicActivate(i18n, locale);
-    return locale;
-  }, [userConfig]);
+  // const locale = userConfig.locale || 'en';
+  const locale = 'en';
+  useEffect(() => {
+    void dynamicActivate(i18n, locale);
+  }, [locale]);
 
   const setExpertRiskDisclaimerShown = (shown: boolean) => {
     updateUserConfig({
