@@ -19,6 +19,7 @@ const SCRIM_IN = { duration: 0.3, ease: [0.23, 1, 0.32, 1] } as const;
 const SCRIM_OUT = { duration: 0.3, ease: [0.77, 0, 0.175, 1] } as const;
 
 // The takeover portals to the body, so the app root can go inert around it.
+// The toast stack portals to the body too (App.tsx) and stays live.
 // Counted because a closing takeover can overlap the one that replaces it.
 let inertRootHolds = 0;
 
