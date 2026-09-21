@@ -3,7 +3,7 @@ import { renderHook, cleanup, waitFor } from '@testing-library/react';
 import { GAS, WagmiWrapper } from '../../../test/hooks';
 import { useSavingsAllowance } from './useSavingsAllowance';
 import { useConnection } from 'wagmi';
-import { useApproveToken } from '../tokens/useApproveToken';
+import { useApproveToken } from '../../../test/hooks/useApproveToken';
 import { usdsAddress } from '../generated';
 import { parseEther } from 'viem';
 import { TENDERLY_CHAIN_ID } from '../constants';

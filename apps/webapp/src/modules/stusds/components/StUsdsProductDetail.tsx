@@ -155,10 +155,6 @@ export function StUsdsProductDetail() {
         )
       }}
       title="stUSDS"
-      // The DS line under the title (5120:19542).
-      titleSubtitle={
-        <Trans>Access a variable reward rate on USDS by participating in SKY-backed borrowing</Trans>
-      }
       networkChainIds={networks}
       chart={<StUsdsDetailChart />}
       position={<StUsdsPositionCard />}

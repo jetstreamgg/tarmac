@@ -16,7 +16,8 @@ vi.mock('wagmi', async importOriginal => {
     useChains: () => [
       { id: 1, name: 'Ethereum' },
       { id: 8453, name: 'Base' }
-    ]
+    ],
+    useAccount: () => ({ isConnected: true })
   };
 });
 

@@ -62,6 +62,7 @@ export type ConnectReason =
   | 'upgrade_modal'
   | 'stake_open'
   | 'savings_supply'
+  | 'rewards_supply'
   | 'vault_supply'
   | 'stusds_supply'
   | 'pendle_supply'

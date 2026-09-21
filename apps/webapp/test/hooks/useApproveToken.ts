@@ -1,9 +1,9 @@
 import { useChainId } from 'wagmi';
 import { erc20Abi } from 'viem';
-import { WriteHook, WriteHookParams } from '../hooks';
+import { WriteHook, WriteHookParams } from '../../src/hooks/hooks';
 import { useConnection } from 'wagmi';
-import { usdtAbi, usdtAddress } from '../generated';
-import { useWriteContractFlow } from '../shared/useWriteContractFlow';
+import { usdtAbi, usdtAddress } from '../../src/hooks/generated';
+import { useWriteContractFlow } from '../../src/hooks/shared/useWriteContractFlow';
 
 // Returns the tx hash
 type ApproveHookParams = WriteHookParams & {
