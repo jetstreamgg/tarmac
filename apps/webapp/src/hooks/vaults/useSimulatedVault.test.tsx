@@ -7,6 +7,9 @@ import { parseEther } from 'viem';
 describe('Hook should return error messages for incorrect vault parameters', async () => {
   // TODO: We should move error messages to a constants file for reuse
   const DUST_ERROR = 'Minimum borrow amount is 30,000.00';
+  // The hook's ilk/spot/jug/price reads hit a freshly forked vnet cold; testing-library's
+  // 1s default routinely lapses before the first response lands (CI and local alike).
+  const COLD_READ_TIMEOUT_MS = 30_000;
   const DUST_REPAY_ERROR = 'Debt must be payed off entirely, or left with a minimum of 30,000.00';
   const INSUFFICIENT_COLLATERAL_ERROR = 'Insufficient collateral';
 
@@ -19,10 +22,13 @@ describe('Hook should return error messages for incorrect vault parameters', asy
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.error).toEqual(new Error(DUST_ERROR));
-      return;
-    });
+    await waitFor(
+      () => {
+        expect(result.current.error).toEqual(new Error(DUST_ERROR));
+        return;
+      },
+      { timeout: COLD_READ_TIMEOUT_MS }
+    );
   });
 
   it('shows dust limit error when repaying some debt', async () => {
@@ -32,10 +38,13 @@ describe('Hook should return error messages for incorrect vault parameters', asy
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.error).toEqual(new Error(DUST_REPAY_ERROR));
-      return;
-    });
+    await waitFor(
+      () => {
+        expect(result.current.error).toEqual(new Error(DUST_REPAY_ERROR));
+        return;
+      },
+      { timeout: COLD_READ_TIMEOUT_MS }
+    );
   });
 
   it('shows insufficient collateral when trying to draw more than the collateral value', async () => {
@@ -45,10 +54,13 @@ describe('Hook should return error messages for incorrect vault parameters', asy
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.error).toEqual(new Error(INSUFFICIENT_COLLATERAL_ERROR));
-      return;
-    });
+    await waitFor(
+      () => {
+        expect(result.current.error).toEqual(new Error(INSUFFICIENT_COLLATERAL_ERROR));
+        return;
+      },
+      { timeout: COLD_READ_TIMEOUT_MS }
+    );
   });
 
   it('shows insufficient collateral when trying to draw more than the collateral value from a position with existing debt', async () => {
@@ -58,10 +70,13 @@ describe('Hook should return error messages for incorrect vault parameters', asy
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.error).toEqual(new Error(INSUFFICIENT_COLLATERAL_ERROR));
-      return;
-    });
+    await waitFor(
+      () => {
+        expect(result.current.error).toEqual(new Error(INSUFFICIENT_COLLATERAL_ERROR));
+        return;
+      },
+      { timeout: COLD_READ_TIMEOUT_MS }
+    );
   });
 
   it('can draw a small additional amount of debt from a position with existing debt', async () => {
@@ -71,10 +86,13 @@ describe('Hook should return error messages for incorrect vault parameters', asy
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
-    await waitFor(() => {
-      expect(result.current.error).toEqual(null);
-      return;
-    });
+    await waitFor(
+      () => {
+        expect(result.current.error).toEqual(null);
+        return;
+      },
+      { timeout: COLD_READ_TIMEOUT_MS }
+    );
   });
 
   it('drawing more debt from a position does not show an error as long as there is enough collateral to cover it', async () => {
@@ -84,14 +102,20 @@ describe('Hook should return error messages for incorrect vault parameters', asy
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
-    await waitFor(() => {
-      expect(['MEDIUM', 'LOW']).toContain(result.current.data?.riskLevel);
-      return;
-    });
+    await waitFor(
+      () => {
+        expect(['MEDIUM', 'LOW']).toContain(result.current.data?.riskLevel);
+        return;
+      },
+      { timeout: COLD_READ_TIMEOUT_MS }
+    );
 
-    await waitFor(() => {
-      expect(result.current.error).toEqual(null);
-      return;
-    });
+    await waitFor(
+      () => {
+        expect(result.current.error).toEqual(null);
+        return;
+      },
+      { timeout: COLD_READ_TIMEOUT_MS }
+    );
   });
 });
