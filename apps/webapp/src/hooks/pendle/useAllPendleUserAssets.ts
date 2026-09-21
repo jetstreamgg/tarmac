@@ -30,7 +30,7 @@ export function useAllPendleUserAssets(): AllPendleUserAssetsHook {
   const { data: marketsApi } = usePendleMarketsApiData();
   // The valuation discounts by time-to-maturity, so it drifts with the clock;
   // a minute is far finer than the discount moves.
-  const nowMs = useNow(60_000);
+  const nowMs = useNow();
 
   const data = useMemo<AllPendleUserAssetsData>(
     () =>

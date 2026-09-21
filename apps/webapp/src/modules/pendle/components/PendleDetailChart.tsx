@@ -26,7 +26,7 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
 
   // The window's cutoff moves with the clock; the series is daily, so a minute
   // tick is plenty.
-  const nowMs = useNow(60_000);
+  const nowMs = useNow();
   const data = useMemo<Data[]>(() => {
     if (!points) return [];
     const cutoffSec = Math.floor(nowMs / 1000) - getDayCountFromTimeFrame(timeFrame) * SECONDS_PER_DAY;

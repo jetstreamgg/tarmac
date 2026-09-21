@@ -347,7 +347,7 @@ export function PendleModalForm({
   const impliedApy = stats?.impliedApy;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const nowMs = useNow(60_000);
+  const nowMs = useNow();
   const daysToMaturity = remainingDaysToMaturity(expirySec, nowMs);
   const claimDate = formatMaturity(expirySec);
 

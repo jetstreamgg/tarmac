@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 /**
  * The current epoch time in milliseconds, as state that ticks every
- * `intervalMs`.
+ * `intervalMs` (default one minute).
  *
  * Calling `Date.now()` during render is impure (`react-hooks/purity`): two
  * renders of the same props produce different output and a memo can't tell
@@ -10,11 +10,11 @@ import { useEffect, useState } from 'react';
  * something React can see, so a countdown or a staleness check re-renders on
  * a schedule instead of whenever the component happens to render.
  *
- * Choose the interval by the coarsest unit the UI actually displays: 60s for
- * a days/hours/minutes countdown, finer only when a seconds figure is on
- * screen or a time-based guard has to flip close to on time.
+ * The default suits a days/hours/minutes countdown. Pass a finer interval
+ * only when a seconds figure is on screen or a time-based guard has to flip
+ * close to on time.
  */
-export function useNow(intervalMs: number): number {
+export function useNow(intervalMs = 60_000): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), intervalMs);

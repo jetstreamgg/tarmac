@@ -22,7 +22,7 @@ export function PendleMaturityProgress({ market }: { market: PendleMarketConfig 
   const expirySec = apiData?.expirySec ?? market.expiry;
   // `formatTimeLeft` never shows seconds (days → hours → minutes), so a minute
   // tick keeps the label and the bar current.
-  const nowMs = useNow(60_000);
+  const nowMs = useNow();
   const { pct, remainingSeconds } = computeMaturityWindow({
     expirySec,
     startSec: apiData?.startTimestampSec,

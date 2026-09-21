@@ -262,7 +262,7 @@ export function useMerklRewards({ enabled = true }: { enabled?: boolean } = {}):
 
   // Filter out tokens that were recently claimed on-chain but still show in the API.
   // The recency window is minutes wide, so a minute tick keeps the verdict live.
-  const now = useNow(60_000);
+  const now = useNow();
   const data = useMemo(() => {
     if (!apiData) return undefined;
     if (!claimedData || claimedData.length === 0) return apiData;

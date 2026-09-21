@@ -28,7 +28,7 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
   const ptSymbol = `PT-${market.underlyingSymbol}`;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const nowMs = useNow(60_000);
+  const nowMs = useNow();
   const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const apy = stats?.impliedApy;
   // Worked example: what 100 underlying redeems for at maturity, compounding

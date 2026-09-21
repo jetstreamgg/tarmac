@@ -42,7 +42,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
   // One instant for both, so the countdown and the day count can't straddle a
   // second boundary and disagree. `formatTimeLeft` bottoms out at minutes, so
   // a minute tick is as fine as the copy can show.
-  const nowMs = useNow(60_000);
+  const nowMs = useNow();
   const remainingSeconds = Math.max(0, expirySec - Math.floor(nowMs / 1000));
   const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const maturityDateLabel = formatMaturity(expirySec);
