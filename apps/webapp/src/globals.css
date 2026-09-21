@@ -358,6 +358,10 @@
      for a frame. */
   --animate-digit-roll-in: digit-roll-in 200ms cubic-bezier(0, 0, 0.58, 1);
   --animate-digit-roll-out: digit-roll-out 200ms cubic-bezier(0, 0, 0.58, 1) forwards;
+  /* A typed digit (Design QA 3450:121929) fades and scales in where it lands
+     instead of rolling: 300ms on the standard curve, nothing rolls out. */
+  --animate-digit-pop-in: digit-pop-in 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-digit-pop-out: digit-pop-out 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 
   /* Loader dots (Figma 2238:62221): each dot hops up 1.5 diameters on the
      overshoot curve, holds a beat, drops back, then rests for the remainder
@@ -563,6 +567,26 @@
     }
     to {
       transform: translateY(-100%);
+    }
+  }
+  @keyframes digit-pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes digit-pop-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.8);
     }
   }
   @keyframes card-expand {

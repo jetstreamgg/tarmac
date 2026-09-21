@@ -14,15 +14,22 @@ const DIGIT = /\d/;
  * turning over. Separators get their own namespace so one can never inherit a
  * digit's window either.
  */
-function keyCharacters(value: string) {
+function keyCharacters(value: string, transition: DigitTransition) {
   const characters = [...value];
   const point = characters.lastIndexOf('.');
   const integerEnd = point === -1 ? characters.length : point;
   let place = characters.slice(0, integerEnd).filter(character => DIGIT.test(character)).length;
+  // Typing appends, so a popped figure keys its digits from the left: the
+  // digits already there keep their windows and only the new one pops in.
+  let ordinal = 0;
 
   return characters.map((character, index) => {
     if (!DIGIT.test(character)) {
       return { key: `s${index}`, character };
+    }
+    if (transition === 'pop') {
+      ordinal += 1;
+      return { key: `o${ordinal}`, character };
     }
     // Counts down through the integer part to the units (0), then on through
     // the fraction (-1, -2 …), so the point never has to be special-cased.
@@ -30,6 +37,11 @@ function keyCharacters(value: string) {
     return { key: `d${place}`, character };
   });
 }
+
+/** `roll`: odometer (external changes). `pop`: a changed digit fades and scales in where it lands (typing). */
+export type DigitTransition = 'roll' | 'pop';
+
+const digitsOf = (value: string) => [...value].filter(character => DIGIT.test(character));
 
 /**
  * Odometer digits (Figma 1598:76444). Each character sits in its own one-line
@@ -41,14 +53,29 @@ function keyCharacters(value: string) {
  * margin edge, which would drop the figure off the baseline it shares with the
  * rest of the number. `clip-path` clips the paint and leaves the baseline alone.
  */
-export function RollingDigits({ value, className }: { value: string; className?: string }) {
-  const characters = keyCharacters(value);
+export function RollingDigits({
+  value,
+  className,
+  transition = 'roll',
+  proportional = false
+}: {
+  value: string;
+  className?: string;
+  transition?: DigitTransition;
+  /** Proportional figures instead of tabular: for an overlay that must share metrics with a native input. */
+  proportional?: boolean;
+}) {
+  const prefersReducedMotion = useReducedMotion();
+  const characters = keyCharacters(value, transition);
   // A digit that mounts on a change is a carry and rolls up into its window;
   // the opening figure just shows. Derived during render, like the digits'
   // own roll state, so the carry rolls on the very commit that widens the figure.
-  const [seen, setSeen] = useState({ value, changed: false });
+  // `leaving`: digits a shorter popped figure dropped; they fade out in place
+  // after the figure (a backspace), then go once the animation ends.
+  const [seen, setSeen] = useState({ value, changed: false, leaving: [] as string[], gen: 0 });
   if (seen.value !== value) {
-    setSeen({ value, changed: true });
+    const kept = transition === 'pop' && !prefersReducedMotion ? digitsOf(value).length : Infinity;
+    setSeen({ value, changed: true, leaving: digitsOf(seen.value).slice(kept), gen: seen.gen + 1 });
   }
 
   return (
@@ -60,13 +87,41 @@ export function RollingDigits({ value, className }: { value: string; className?:
           number. Only the glyph on its way out is hidden, so a roll in flight
           can't wedge a stale digit into the middle of it. */}
       {characters.map(({ key, character }) => (
-        <RollingCharacter key={key} character={character} arrives={seen.changed} />
+        <RollingCharacter
+          key={key}
+          character={character}
+          arrives={seen.changed}
+          transition={transition}
+          proportional={proportional}
+        />
+      ))}
+      {seen.leaving.map((character, index) => (
+        <span
+          key={`leave-${seen.gen}-${index}`}
+          aria-hidden
+          data-testid="rolling-digit-out"
+          data-transition="pop"
+          className="motion-safe:animate-digit-pop-out inline-block select-none"
+          onAnimationEnd={() => setSeen(current => ({ ...current, leaving: [] }))}
+        >
+          {character}
+        </span>
       ))}
     </span>
   );
 }
 
-function RollingCharacter({ character, arrives }: { character: string; arrives: boolean }) {
+function RollingCharacter({
+  character,
+  arrives,
+  transition,
+  proportional
+}: {
+  character: string;
+  arrives: boolean;
+  transition: DigitTransition;
+  proportional: boolean;
+}) {
   const prefersReducedMotion = useReducedMotion();
   const [state, setState] = useState({
     current: character,
@@ -84,7 +139,7 @@ function RollingCharacter({ character, arrives }: { character: string; arrives: 
       // Nothing to roll out when motion is reduced — the outgoing glyph is only
       // ever visible while it animates away, so rendering it would leave it
       // stacked on top of its replacement.
-      previous: prefersReducedMotion ? null : state.current,
+      previous: prefersReducedMotion || transition === 'pop' ? null : state.current,
       gen: state.gen + 1
     });
   }
@@ -99,7 +154,10 @@ function RollingCharacter({ character, arrives }: { character: string; arrives: 
     // sideways as digits turn over. It goes on the digit windows, not the whole
     // figure: Circular's tabular feature also pads "$", "," and "." out to a
     // digit's width, which spaces a currency figure out like a spreadsheet.
-    <span data-testid="rolling-digit" className="relative inline-block tabular-nums [clip-path:inset(0)]">
+    <span
+      data-testid="rolling-digit"
+      className={cn('relative inline-block [clip-path:inset(0)]', !proportional && 'tabular-nums')}
+    >
       {state.previous !== null && (
         <span
           key={`out-${state.gen}`}
@@ -121,7 +179,12 @@ function RollingCharacter({ character, arrives }: { character: string; arrives: 
       <span
         key={`in-${state.gen}`}
         data-testid={state.gen > 0 ? 'rolling-digit-in' : undefined}
-        className={cn('inline-block', state.gen > 0 && 'motion-safe:animate-digit-roll-in')}
+        data-transition={state.gen > 0 ? transition : undefined}
+        className={cn(
+          'inline-block',
+          state.gen > 0 &&
+            (transition === 'pop' ? 'motion-safe:animate-digit-pop-in' : 'motion-safe:animate-digit-roll-in')
+        )}
       >
         {state.current}
       </span>

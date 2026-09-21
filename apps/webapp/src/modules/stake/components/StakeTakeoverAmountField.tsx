@@ -30,7 +30,8 @@ export type AmountChip = { key: string; label: ReactNode; onClick: () => void };
  *
  * The figure reads grouped (`17,640.49`) and turns over digit by digit as the
  * slider or a chip moves it (Design QA 3314:135843, the global number
- * animation). A native input can't animate its own text, so the input paints
+ * animation); a typed digit pops in instead (3450:121929). A native input
+ * can't animate its own text, so the input paints
  * its value transparent (keeping caret, selection and the keyboard) and a
  * pointer-transparent RollingDigits copy in the same type sits over it.
  */
@@ -68,8 +69,8 @@ export function StakeTakeoverAmountField({
   const errorId = `${dataTestId}-error`;
   // Controlled from outside: when the prop no longer matches the typed text
   // (chip click, slider drag, toggle reset), re-derive the text from the amount.
-  const maskedText =
-    parseAmountInput(text, DECIMALS) === amount ? text : formatAmountForInput(amount, maxDisplayDecimals);
+  const typed = parseAmountInput(text, DECIMALS) === amount;
+  const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals);
   const displayText = groupAmountInput(maskedText);
 
   const onChange = (raw: string) => {
@@ -105,7 +106,9 @@ export function StakeTakeoverAmountField({
                 aria-describedby={error ? errorId : undefined}
                 className={cn(
                   AMOUNT_TYPE,
-                  'caret-text placeholder:text-fgSecondary w-full min-w-0 bg-transparent text-transparent outline-none disabled:opacity-50'
+                  // No kerning: the overlay draws each digit in its own box, where
+                  // pairs can't kern, so the input must not kern either.
+                  'caret-text placeholder:text-fgSecondary w-full min-w-0 bg-transparent text-transparent outline-none [font-kerning:none] disabled:opacity-50'
                 )}
               />
               {displayText && (
@@ -114,11 +117,14 @@ export function StakeTakeoverAmountField({
                   data-testid={`${dataTestId}-display`}
                   className={cn(
                     AMOUNT_TYPE,
-                    'text-text pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap',
+                    'text-text pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap [font-kerning:none]',
                     disabled && 'opacity-50'
                   )}
                 >
-                  <RollingDigits value={displayText} />
+                  {/* Typed digits pop in where they land; chips and the slider roll (Design QA 3450:121929).
+                      Proportional figures keep the overlay's metrics identical to the
+                      input's, so the native caret lands after the last glyph. */}
+                  <RollingDigits value={displayText} transition={typed ? 'pop' : 'roll'} proportional />
                 </span>
               )}
             </span>
