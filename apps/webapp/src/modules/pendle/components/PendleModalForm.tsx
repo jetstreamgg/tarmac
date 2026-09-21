@@ -507,6 +507,8 @@ export function PendleModalForm({
       ? { loading: t`Supplying ${label}`, success: t`${label} supplied!`, error: t`Supply failed` }
       : { loading: t`Withdrawing ${label}`, success: t`${label} withdrawn!`, error: t`Withdrawal failed` };
   }, [inFloat, inputSymbol, isSupply]);
+  // Resolved outside the memo so it keys on the string, not the i18n object.
+  const withdrawalLabel = i18n._(withdrawalWording('fixed', flow));
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`pendle-modal-${flow}-review`}>
@@ -537,7 +539,7 @@ export function PendleModalForm({
               // convention, not the market's marketing name ("Fixed Yield").
               product: `Pendle ${market.underlyingSymbol} (PT-${market.underlyingSymbol})`,
               productSymbol: market.underlyingSymbol,
-              withdrawal: i18n._(withdrawalWording('fixed', flow)),
+              withdrawal: withdrawalLabel,
               slippage: slippageDisplay,
               slippageMode,
               priceImpact: priceImpactDisplay,
@@ -575,7 +577,8 @@ export function PendleModalForm({
       priceImpactDisplay,
       networkName,
       engineChainId,
-      feeCell
+      feeCell,
+      withdrawalLabel
     ]
   );
 

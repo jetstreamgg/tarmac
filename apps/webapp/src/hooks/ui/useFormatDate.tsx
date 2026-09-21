@@ -20,7 +20,7 @@ export const useFormatDates = (dates?: Date[], locale?: string, format?: string)
     };
 
     fetchFormattedDates();
-  }, [dates]);
+  }, [dates, locale, format]);
 
   return formatted;
 };
