@@ -58,7 +58,6 @@ export function VaultDetailChart({
       symbol={assetToken.symbol}
       rate={{ data: rateData, isLoading, error, displayValue: liveRate }}
       tvl={{ data: tvlData, isLoading, error, displayValue: liveTvl }}
-      hideRatePercentChange
       // The headline plots the same net rate the card and Details row show,
       // so it wears the same stars mark and breakdown tooltip (APP-443 item
       // 14). TVL is not a rate — no mark on that metric. The mark is 16px
