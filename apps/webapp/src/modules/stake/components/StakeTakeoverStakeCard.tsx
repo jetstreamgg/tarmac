@@ -88,6 +88,7 @@ export function StakeTakeoverStakeCard({
             <>
               <Trans>Min. stake to borrow</Trans>
               <InfoTooltip
+                title={t`Minimum stake to borrow`}
                 iconSize={12}
                 iconClassName="shrink-0"
                 content={

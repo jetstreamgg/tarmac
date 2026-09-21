@@ -2,6 +2,11 @@ import { Info, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useIsTouchDevice } from '@/hooks';
+import { cn } from '@/lib/cn';
+
+// The glyph's focus ring is the DS ring, not the browser outline (Design QA 3314:135504).
+const TRIGGER_CLASS =
+  'focus-visible:ring-focusRing rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
 
 /**
  * Info glyph opening the design-system Tooltip (Figma 5043:58210). Desktop
@@ -39,7 +44,7 @@ export function InfoTooltip({
     <Popover>
       <PopoverTrigger
         onClick={e => e.stopPropagation()}
-        className="z-10"
+        className={cn(TRIGGER_CLASS, 'z-10')}
         aria-label="Show additional information"
       >
         <Info size={iconSize} className={iconClassName} />
@@ -71,7 +76,7 @@ export function InfoTooltip({
     // RiskTierDetailsTrigger.
     <TooltipProvider delayDuration={300}>
       <Tooltip>
-        <TooltipTrigger aria-label="Show additional information">
+        <TooltipTrigger className={TRIGGER_CLASS} aria-label="Show additional information">
           <Info size={iconSize} className={iconClassName} />
         </TooltipTrigger>
         <TooltipPortal>

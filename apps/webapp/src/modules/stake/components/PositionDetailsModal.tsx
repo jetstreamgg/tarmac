@@ -908,6 +908,7 @@ export function PositionDetailsModal({
                               comp draws the glyph (1292:63278), desktop keeps it
                               so both breakpoints answer the question. */}
                           <InfoTooltip
+                            title={t`Liquidation risk`}
                             iconSize={12}
                             iconClassName="shrink-0"
                             content={

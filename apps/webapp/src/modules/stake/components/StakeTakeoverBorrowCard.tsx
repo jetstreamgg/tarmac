@@ -186,6 +186,7 @@ export function StakeTakeoverBorrowCard({
               <>
                 <Trans>Liquidation risk</Trans>
                 <InfoTooltip
+                  title={t`Liquidation risk`}
                   iconSize={12}
                   iconClassName="shrink-0"
                   content={
@@ -220,6 +221,7 @@ export function StakeTakeoverBorrowCard({
               <>
                 <Trans>Loan-to-value</Trans>
                 <InfoTooltip
+                  title={t`Loan-to-value (LTV)`}
                   iconSize={12}
                   iconClassName="shrink-0"
                   content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
@@ -253,7 +255,7 @@ export function StakeTakeoverBorrowCard({
           <StakeManageStatRow
             label={
               <>
-                <Trans>Protocol SKY Price</Trans>
+                <Trans>Capped OSM SKY price</Trans>
                 <RateInfo type="cappedOsmSkyPrice" size={12} />
                 <UpdatedHourlyBadge />
               </>

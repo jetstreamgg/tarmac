@@ -131,6 +131,7 @@ export function StakeManageStakeCard({
               <>
                 <Trans>Min. stake amount to borrow</Trans>
                 <InfoTooltip
+                  title={t`Minimum stake to borrow`}
                   iconSize={12}
                   iconClassName="shrink-0"
                   content={
@@ -183,6 +184,7 @@ export function StakeManageStakeCard({
               <>
                 <Trans>Est. annual rewards</Trans>
                 <InfoTooltip
+                  title={t`Estimated annual rewards`}
                   iconSize={12}
                   iconClassName="shrink-0"
                   content={t`Projected yearly rewards at the current Staking Rewards Rate and SKY price. Rates change over time, so the actual amount will differ.`}

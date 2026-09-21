@@ -571,7 +571,7 @@ describe('OpenPositionTakeover', () => {
       'Liquidation risk',
       'Loan-to-value',
       'Liquidation price',
-      'Protocol SKY PriceHourly updates',
+      'Capped OSM SKY priceHourly updates',
       'Borrow rate'
     ]);
     // Reached badge leads the min-stake value; the hourly pill sits in the label, not the value.
