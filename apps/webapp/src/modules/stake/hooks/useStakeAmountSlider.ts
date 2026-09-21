@@ -88,7 +88,8 @@ export function useStakeAmountSlider({
 
   if (mode === 'repay') {
     const max = existingDebt;
-    const gapStart = max - minBorrow;
+    // Debt under dust (dust raised after the draw): no partial zone, only the full repay.
+    const gapStart = max > minBorrow ? max - minBorrow : 0n;
     // The partial-repay zone keeps at least MIN_PARTIAL_STEPS of the track when
     // there is at least 1 USDS to stage in it, and the dust gap keeps at least
     // MIN_SNAP_STEPS when there is one; the natural share applies in between.
@@ -138,13 +139,12 @@ export function useStakeAmountSlider({
           const isFull = amount >= max;
           const third = snapSpan / 3;
           const full =
-            previous === undefined
-              ? partialEnd === 0 ||
-                position >= STAKE_SLIDER_MAX - third ||
-                (isFull && position > partialEnd + third)
+            partialEnd === 0 ||
+            (previous === undefined
+              ? position >= STAKE_SLIDER_MAX - third || (isFull && position > partialEnd + third)
               : isFull
                 ? !(previous >= leaveAt && position < leaveAt)
-                : previous <= enterAt && position > enterAt;
+                : previous <= enterAt && position > enterAt);
           if (full) onAmountChange(max, true);
           else onAmountChange(gapStart);
           return;

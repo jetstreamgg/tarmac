@@ -161,6 +161,19 @@ describe('useStakeAmountSlider — repay axis', () => {
     slider.onValueChange(200);
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(30_000), true);
   });
+
+  it('never stages a negative amount when the debt is below dust', () => {
+    const onAmountChange = vi.fn();
+    const args = { ...base, existingDebt: usds(25_000), amount: 0n, onAmountChange };
+    const slider = useStakeAmountSlider(args);
+    expect(slider.outOfRange).toBe(false);
+    expect(slider.axis.marker).toBeUndefined();
+    slider.onValueChange(20, 10);
+    expect(onAmountChange).toHaveBeenLastCalledWith(usds(25_000), true);
+    slider.onValueChange(0, 20);
+    expect(onAmountChange).toHaveBeenLastCalledWith(0n);
+    expect(useStakeAmountSlider({ ...args, amount: usds(10_000) }).outOfRange).toBe(true);
+  });
 });
 
 describe('useStakeAmountSlider — stretched zones', () => {
