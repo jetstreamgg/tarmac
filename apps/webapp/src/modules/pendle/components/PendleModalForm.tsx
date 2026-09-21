@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
@@ -234,21 +234,24 @@ export function PendleModalForm({
       // swallow
     }
   };
-  const fireAnalyticsRef = useRef(fireAnalytics);
-  fireAnalyticsRef.current = fireAnalytics;
 
   // Review-viewed parity: fired once when the modal body mounts, matching the
   // shipped two-screen behavior (the legacy widget fired it entering review).
-  const reviewFiredRef = useRef(false);
-  useEffect(() => {
-    if (reviewFiredRef.current) return;
-    reviewFiredRef.current = true;
-    fireAnalyticsRef.current({
+  // An effect event, so the mount effect reads the latest callback and action
+  // without depending on them.
+  const fireReviewViewed = useEffectEvent(() => {
+    fireAnalytics({
       event: WidgetAnalyticsEventType.REVIEW_VIEWED,
       action: mainAction,
       flow: mainAction
     });
-  }, [mainAction]);
+  });
+  const reviewFiredRef = useRef(false);
+  useEffect(() => {
+    if (reviewFiredRef.current) return;
+    reviewFiredRef.current = true;
+    fireReviewViewed();
+  }, []);
 
   const { txCallbacks } = useTransaction();
   const { mutate: refreshPendleHistory } = useAllPendleMarketsHistory();

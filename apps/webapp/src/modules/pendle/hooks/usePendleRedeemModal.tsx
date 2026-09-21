@@ -190,7 +190,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // Indirect onConfirm through a ref — the stored onConfirm can't be
   // live-updated, but the ref always points at the latest writeHook.execute.
   const executeRef = useRef<() => void>(() => undefined);
-  executeRef.current = () => writeHook.execute();
+  useEffect(() => {
+    executeRef.current = () => writeHook.execute();
+  });
 
   // USD notional for the enhanced-screening threshold (APP-517): the valued
   // output leg, live across output-token/quote changes (pushed by the effect
