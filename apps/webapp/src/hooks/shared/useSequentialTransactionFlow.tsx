@@ -215,12 +215,12 @@ export function useSequentialTransactionFlow(
     const sequence = isResume ? transactionsRef.current : calls;
 
     if (currentIndex >= sequence.length) {
-      console.log('ERROR: All transactions have been executed');
+      console.warn('ERROR: All transactions have been executed');
       return;
     }
 
     if (!currentTransaction) {
-      console.log('ERROR: No current transaction to execute');
+      console.warn('ERROR: No current transaction to execute');
       return;
     }
 
@@ -235,7 +235,7 @@ export function useSequentialTransactionFlow(
       setIsExecuting(true);
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     } else {
-      console.log(`ERROR: Transaction ${currentIndex} is not ready to execute.
+      console.warn(`ERROR: Transaction ${currentIndex} is not ready to execute.
       contract address: ${currentTransaction.to}
       function name: ${currentTransaction.functionName}
       function arguments: ${currentTransaction.args}

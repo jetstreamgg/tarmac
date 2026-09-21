@@ -15,7 +15,7 @@ export function copyToClipboard(
       onSuccess?.();
     })
     .catch(err => {
-      console.error('Failed to copy text to clipboard', err);
+      console.warn('Failed to copy text to clipboard', err);
       onError?.(err);
     });
 }

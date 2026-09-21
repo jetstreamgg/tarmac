@@ -30,10 +30,10 @@ async function loadLocale(locale?: string) {
 
   try {
     const { messages } = await import(`../locales/${locale}.ts`);
-    console.log(`Locale file for ${locale} loaded.`);
+    console.debug(`Locale file for ${locale} loaded.`);
     return messages;
   } catch (error) {
-    console.error(`Locale file for ${locale} not found: `, error);
+    console.warn(`Locale file for ${locale} not found: `, error);
     return null;
   }
 }

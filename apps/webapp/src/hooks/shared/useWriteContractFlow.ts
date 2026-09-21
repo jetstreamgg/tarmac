@@ -110,7 +110,7 @@ export function useWriteContractFlow<
       if (simulationData?.request) {
         writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
       } else {
-        console.log(`ERROR: the contract interaction was triggered before the call was ready.
+        console.warn(`ERROR: the contract interaction was triggered before the call was ready.
           contract address: ${useSimulateContractParamters.address}
           function name: ${useSimulateContractParamters.functionName}
           function arguments: ${useSimulateContractParamters.args}

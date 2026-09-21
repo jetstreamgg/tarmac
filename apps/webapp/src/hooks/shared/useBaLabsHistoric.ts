@@ -38,7 +38,7 @@ export function useBaLabsHistoric<TRaw, TParsed>({
     try {
       return transform(await fetchBaLabsPages<TRaw>(target));
     } catch (error) {
-      console.error('Error fetching BaLabs data:', error);
+      console.warn('Error fetching BaLabs data:', error);
       return [];
     }
   };

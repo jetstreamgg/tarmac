@@ -78,15 +78,15 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     execute: () => {
       // Sanity checks before sending the transaction
       if (!enabled) {
-        console.log(`ERROR: A batch transaction was triggered before the transaction was enabled.
+        console.warn(`ERROR: A batch transaction was triggered before the transaction was enabled.
           Contract calls: ${JSON.stringify(parameters.calls, (_, value) => (typeof value === 'bigint' ? value.toString() : value))}
           `);
       } else if (!batchSupported) {
-        console.log(
+        console.warn(
           'ERROR: A batch transaction was triggered but it looks like the connected wallet does not support it'
         );
       } else if (parameters.calls.length < 2) {
-        console.log(
+        console.warn(
           'ERROR: You are attempting to send a single transaction as a batch transaction. It may be more gas efficient to send the transaction individually'
         );
       } else if (parameters.calls.some(call => !(call as { to?: unknown }).to)) {
@@ -105,7 +105,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         const error = new Error(
           'A batch transaction has a call with no target address — refusing to send (likely a cross-chain address resolution miss).'
         );
-        console.error(error);
+        console.warn(error);
         onError(error, undefined);
       } else {
         // Call is legit, proceed to send the transaction

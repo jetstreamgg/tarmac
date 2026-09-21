@@ -56,7 +56,7 @@ async function fetchCowswapTradeHistory(
           appCode = appData.appCode;
         } catch (e) {
           // If parsing fails, leave appCode undefined
-          console.error('Error parsing appData', e);
+          console.warn('Error parsing appData', e);
         }
       }
 

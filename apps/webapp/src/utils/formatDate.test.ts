@@ -22,7 +22,7 @@ describe('getDateLocale', () => {
   });
 
   it('falls back to the bundled enUS when the locale chunk fails to load', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { getDateLocale } = await import('./formatDate');
     expect(await getDateLocale('de-DE')).toBe(enUS);
   });

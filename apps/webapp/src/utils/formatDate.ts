@@ -13,7 +13,7 @@ export const getDateLocale = async (locale: string): Promise<Locale> => {
   try {
     localeModule = await localeFn();
   } catch (error) {
-    console.error('Error importing locale: ', error);
+    console.warn('Error importing locale: ', error);
     return enUS;
   }
   // Locale modules may expose both 'default' and a named export; the named export is the locale object we need.
