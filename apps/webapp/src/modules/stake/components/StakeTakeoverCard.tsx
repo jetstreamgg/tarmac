@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { StakeCardBody } from './StakeCardBody';
 import { StakeCardToggle } from './StakeCardToggle';
-import { cn } from '@/lib/cn';
 
 /**
  * Numbered takeover card (Modal / 10 · 12 · 17, 1036:209510+): circled step
@@ -36,17 +35,8 @@ export function StakeTakeoverCard({
   return (
     <section
       data-testid={dataTestId}
-      className={cn(
-        // The C1 annotation ("bg-secondary looks very dark") is a dark-mode-only
-        // complaint: bgTertiary (10% dark / 40% light) reads correctly against
-        // the dark page, but its 40% light value is noticeably thinner than the
-        // 60% white glassSurface/card/bgSecondary already share, and washes out
-        // against the pale light-mode page background. So the swap is scoped to
-        // dark; light keeps the pre-existing glassSurface value. Don't collapse
-        // this back to one token.
-        'bg-bgTertiary rounded-card flex flex-col p-5 backdrop-blur-[20px] md:p-8',
-        'light:bg-glassSurface'
-      )}
+      // Design QA 3445:58550: every card fills with bg-secondary in both themes.
+      className="bg-bgSecondary rounded-card flex flex-col p-5 backdrop-blur-[20px] md:p-8"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
