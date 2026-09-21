@@ -58,6 +58,7 @@ export function calculateVaultInfo({
     maxSafeBorrowableAmount,
     maxSafeBorrowableIntAmount: math.removeDecimalPartOfWad(maxSafeBorrowableAmount), // wad
     liquidationProximityPercentage,
+    riskPrice: marketPrice || delayedPrice,
     riskLevel,
     maxSafeBorrowableIntAmountNoCap
   };

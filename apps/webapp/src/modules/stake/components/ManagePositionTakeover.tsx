@@ -15,7 +15,7 @@ import {
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
-import { formatBigInt, formatUsd, math } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';
@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import { maxWithdrawWithinRisk } from '../lib/liquidation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable, repayGapOptions } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
@@ -163,22 +164,21 @@ export function ManagePositionTakeover({
     debouncedVault.liquidationPrice > debouncedVault.delayedPrice
   );
   // Figma 3015:62253 / 3015:56730 withdraw bounds: the liquidation-safe max
-  // (collateral − minSafeCollateral for the resulting debt) and, while debt
-  // remains, the min-collateral bound (collateral − minCollateralForDust).
-  // The hook's minSafeCollateralAmount is for the existing debt; a staged
-  // borrow/repay moves the bound, so derive it from the resulting debt.
-  const minSafeCollateralForNewDebt =
-    debouncedVault?.liquidationRatio && debouncedVault?.delayedPrice
-      ? math.minSafeCollateralAmount(
-          newDebtValue,
-          debouncedVault.liquidationRatio,
-          debouncedVault.delayedPrice
-        )
-      : undefined;
+  // and, while debt remains, the min-collateral bound (collateral −
+  // minCollateralForDust). The safe max is the most that keeps the resulting
+  // debt under the proximity threshold gating the field, not the bare
+  // liquidation-ratio bound, which the field would reject as well.
   const maxWithdrawSafe =
-    minSafeCollateralForNewDebt !== undefined && existingCollateral > minSafeCollateralForNewDebt
-      ? existingCollateral - minSafeCollateralForNewDebt
-      : 0n;
+    debouncedVault?.liquidationRatio && debouncedVault?.delayedPrice && liquidationThreshold
+      ? maxWithdrawWithinRisk({
+          collateral: existingCollateral,
+          debtValue: newDebtValue,
+          liquidationRatio: debouncedVault.liquidationRatio,
+          delayedPrice: debouncedVault.delayedPrice,
+          riskPrice: debouncedVault.riskPrice ?? debouncedVault.delayedPrice,
+          threshold: liquidationThreshold
+        })
+      : undefined;
   const isMinCollateralWithdrawError =
     skyToFree > 0n &&
     newDebtValue > 0n &&
@@ -202,7 +202,7 @@ export function ManagePositionTakeover({
           // price), so the more specific message must win the tie — after it,
           // the generic risk error is unreachable-shadowed, not the reverse.
           isCappedOsmError || isLiquidationError
-          ? minSafeCollateralForNewDebt !== undefined && newDebtValue > 0n
+          ? maxWithdrawSafe !== undefined && newDebtValue > 0n
             ? t`Withdrawing ${formatBigInt(state.skyAmount)} SKY would liquidate your position. With your ${formatBigInt(newDebtValue)} USDS debt, you can withdraw at most ${formatBigInt(maxWithdrawSafe)} SKY.`
             : isCappedOsmError
               ? t`Liquidation price is higher than the capped OSM SKY price`

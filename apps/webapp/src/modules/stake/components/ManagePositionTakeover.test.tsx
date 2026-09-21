@@ -443,7 +443,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /^Withdrawing 1,000,000 SKY would liquidate your position\. With your 30,000 USDS debt, you can withdraw at most 2,383,22\d SKY\.$/
+      /^Withdrawing 1,000,000 SKY would liquidate your position\. With your 30,000 USDS debt, you can withdraw at most 2,229,029 SKY\.$/
     );
     expect(confirmButton().disabled).toBe(true);
   });
@@ -674,15 +674,16 @@ describe('ManagePositionTakeover', () => {
     renderSheet({ stakeCard: 'withdraw', borrowCard: 'borrow' });
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2300000' } });
-    // Existing 30k debt at 1.25 / 0.0608: min collateral 616,776 → at most 2,383,223.
+    // Existing 30k debt at 1.25 / 0.0608, quoted at 80% proximity (0.04864):
+    // min collateral 770,970.x → at most 2,229,029, floored to whole SKY.
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /With your 30,000 USDS debt, you can withdraw at most 2,383,22\d/
+      /With your 30,000 USDS debt, you can withdraw at most 2,229,029/
     );
 
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
-    // Resulting 40k debt: min collateral 822,368 → at most 2,177,631.
+    // Resulting 40k debt: min collateral 1,027,960 → at most 1,972,040.
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /With your 40,000 USDS debt, you can withdraw at most 2,177,63\d/
+      /With your 40,000 USDS debt, you can withdraw at most 1,972,0\d\d/
     );
   });
 
