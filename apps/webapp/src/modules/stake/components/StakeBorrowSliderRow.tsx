@@ -113,7 +113,7 @@ export function StakeBorrowSliderRow({
         step={1}
         disabled={disabled}
         onValueChange={value => {
-          slider.onValueChange(value[0], lastPointer.current ?? slider.value);
+          slider.onValueChange(value[0], lastPointer.current ?? undefined);
           lastPointer.current = value[0];
           setRequested(value[0]);
         }}

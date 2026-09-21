@@ -33,7 +33,7 @@ const toPosition = (value: bigint, max: bigint): number => {
 export type StakeAmountSlider = {
   /** Thumb position in [0, STAKE_SLIDER_MAX], derived from `amount`. */
   value: number;
-  /** `previous`: where the pointer last was (the thumb when it was released); the repay gap snaps on crossings. */
+  /** `previous`: where the pointer last was in this drag; absent on a press, and the repay gap then picks the nearer end. */
   onValueChange: (position: number, previous?: number) => void;
   /** Interior tick positions (same domain as `value`). */
   markers: number[];
@@ -118,7 +118,7 @@ export function useStakeAmountSlider({
       hidden: max <= 0n,
       atFloor: false,
       axis: { min: 0n, max, marker: marker?.value },
-      onValueChange: (position, previous = value) => {
+      onValueChange: (position, previous) => {
         if (max <= 0n) return;
         if (position >= STAKE_SLIDER_MAX) {
           onAmountChange(max, true);
@@ -129,13 +129,22 @@ export function useStakeAmountSlider({
           // dots from the partial side and left by crossing a buffer short of the
           // right end from the end side. In between, the gap holds whatever is
           // staged, so pointer jitter mid-gap never flips it.
+          // A press (no heading) snaps only in the outer thirds of the gap: near
+          // the dots to the max partial, near the end to the full repay; the
+          // middle third holds. With no partial zone any press is the full repay.
           const buffer = Math.min(Number(SNAP_BUFFER_STEPS), Math.floor(snapSpan / 2));
           const enterAt = partialEnd + buffer;
           const leaveAt = STAKE_SLIDER_MAX - buffer;
           const isFull = amount >= max;
-          const full = isFull
-            ? !(previous >= leaveAt && position < leaveAt)
-            : previous <= enterAt && position > enterAt;
+          const third = snapSpan / 3;
+          const full =
+            previous === undefined
+              ? partialEnd === 0 ||
+                position >= STAKE_SLIDER_MAX - third ||
+                (isFull && position > partialEnd + third)
+              : isFull
+                ? !(previous >= leaveAt && position < leaveAt)
+                : previous <= enterAt && position > enterAt;
           if (full) onAmountChange(max, true);
           else onAmountChange(gapStart);
           return;

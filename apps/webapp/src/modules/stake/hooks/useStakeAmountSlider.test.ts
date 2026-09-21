@@ -117,9 +117,9 @@ describe('useStakeAmountSlider — repay axis', () => {
   it('forgives a short overshoot past the dotted zone, then snaps to the full repay', () => {
     const onAmountChange = vi.fn();
     const slider = useStakeAmountSlider({ ...base, amount: 0n, onAmountChange });
-    slider.onValueChange(500); // 28,000: 2,000 into the gap, within the 4% buffer (2,240)
+    slider.onValueChange(500, 464); // 28,000: 2,000 into the gap, within the 4% buffer (2,240)
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(26_000));
-    slider.onValueChange(510); // 28,560: past the buffer
+    slider.onValueChange(510, 500); // 28,560: past the buffer
     expect(onAmountChange).toHaveBeenLastCalledWith(usds(56_000), true);
     // A gap narrower than twice the buffer caps it at half the gap.
     const narrow = useStakeAmountSlider({ ...base, dust: usds(2_000), amount: 0n, onAmountChange });
@@ -195,6 +195,24 @@ describe('useStakeAmountSlider — stretched zones', () => {
     const { slider } = useRepay(usds(400_000));
     expect(slider.markers).toEqual([900]);
     expect(useRepay(usds(400_000), usds(385_000)).slider.value).toBe(950);
+  });
+
+  it('repay: a press snaps in the outer thirds of the gap and holds in the middle', () => {
+    // Gap 340 → 1000, thirds at 560 and 780.
+    const partial = useRepay(usds(30_020), usds(20));
+    partial.slider.onValueChange(500);
+    expect(partial.onAmountChange).toHaveBeenLastCalledWith(usds(20));
+    partial.slider.onValueChange(700);
+    expect(partial.onAmountChange).toHaveBeenLastCalledWith(usds(20));
+    partial.slider.onValueChange(800);
+    expect(partial.onAmountChange).toHaveBeenLastCalledWith(usds(30_020), true);
+    const full = useRepay(usds(30_020), usds(30_020));
+    full.slider.onValueChange(800);
+    expect(full.onAmountChange).toHaveBeenLastCalledWith(usds(30_020), true);
+    full.slider.onValueChange(700);
+    expect(full.onAmountChange).toHaveBeenLastCalledWith(usds(30_020), true);
+    full.slider.onValueChange(500);
+    expect(full.onAmountChange).toHaveBeenLastCalledWith(usds(20));
   });
 
   it('repay: the gap latches on threshold crossings, not on heading', () => {
