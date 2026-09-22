@@ -130,6 +130,26 @@ describe('StakeTakeoverAmountField', () => {
     expect(screen.getByTestId('field-display').textContent).toBe('1.5');
   });
 
+  it('reads a pasted grouped figure as grouping and refuses a paste it cannot show', () => {
+    render(<Harness />);
+    const input = screen.getByTestId('field') as HTMLInputElement;
+    const paste = (text: string) => fireEvent.paste(input, { clipboardData: { getData: () => text } });
+    paste('100,000');
+    expect(input.value).toBe('100,000');
+    edit(input, '');
+    paste('1,5');
+    expect(input.value).toBe('1.5');
+    edit(input, '');
+    paste('1e5');
+    expect(input.value).toBe('');
+    // Pasting into a selection replaces it and lands the caret after the paste.
+    edit(input, '12');
+    input.setSelectionRange(1, 2);
+    paste('9,000');
+    expect(input.value).toBe('19,000');
+    expect(input.selectionStart).toBe(6);
+  });
+
   it('pops a typed digit and rolls a chip-driven change (Design QA 3450:121929)', () => {
     render(<Harness />);
     const input = screen.getByTestId('field');

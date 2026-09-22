@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { normalizeDecimalSeparator, parseAmountInput, sanitizeAmountInput } from './amountInput';
+import {
+  normalizeDecimalSeparator,
+  parseAmountInput,
+  readPastedAmount,
+  sanitizeAmountInput
+} from './amountInput';
 
 describe('sanitizeAmountInput', () => {
   it('strips signs (negative amounts are unrepresentable)', () => {
@@ -95,5 +100,28 @@ describe('parseAmountInput', () => {
     expect(parseAmountInput('1.2.3', 18)).toBe(0n);
     expect(parseAmountInput('1.9999999', 6)).toBe(0n);
     expect(parseAmountInput('1,000', 18)).toBe(0n);
+  });
+});
+
+describe('readPastedAmount', () => {
+  it('reads an en-US grouped paste as grouping, not as the keypad decimal comma', () => {
+    expect(readPastedAmount('100,000')).toBe('100000');
+    expect(readPastedAmount('1,234.5')).toBe('1234.5');
+    expect(readPastedAmount(' 123,456,789.999 ')).toBe('123456789.999');
+  });
+
+  it('leaves a paste that is not grouped for the mask, so a decimal comma still reads as the point', () => {
+    expect(readPastedAmount('1,5')).toBe('1,5');
+    expect(readPastedAmount('0,125')).toBe('0,125');
+    expect(readPastedAmount('12.5')).toBe('12.5');
+    expect(readPastedAmount('1000')).toBe('1000');
+  });
+
+  it('refuses a paste the mask would have to mangle', () => {
+    expect(readPastedAmount('1e5')).toBeNull();
+    expect(readPastedAmount('-5')).toBeNull();
+    expect(readPastedAmount('$100')).toBeNull();
+    expect(readPastedAmount('12abc')).toBeNull();
+    expect(readPastedAmount('1_000')).toBeNull();
   });
 });

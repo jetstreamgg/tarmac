@@ -32,6 +32,22 @@ export function normalizeDecimalSeparator(raw: string): string {
 }
 
 /**
+ * What a paste contributes to an amount field, or `null` to refuse it. A paste
+ * is the one edit where a comma-grouped figure realistically arrives, so an
+ * en-US grouped number (`100,000`, `1,234.5`) loses its commas here rather
+ * than reading its lone comma as the keypad decimal point (PR #1938 review).
+ * Anything the mask would have to mangle to accept — an exponent, a sign, a
+ * currency symbol — is refused whole: `1e5` silently becoming `15` is worse
+ * than nothing happening. The EU keypad rule for a typed comma is unchanged.
+ */
+export function readPastedAmount(text: string): string | null {
+  const trimmed = text.trim();
+  if (!/^[0-9.,]*$/.test(trimmed)) return null;
+  if (/^[1-9]\d{0,2}(,\d{3})+(\.\d*)?$/.test(trimmed)) return trimmed.replace(/,/g, '');
+  return trimmed;
+}
+
+/**
  * Mask for the amount fields (APP-492): digits plus at most one decimal dot,
  * the fraction capped at `decimals` digits. A decimal comma is read as a dot
  * (see above); everything else — sign, exponent, group separators, whitespace

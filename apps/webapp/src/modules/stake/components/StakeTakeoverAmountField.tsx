@@ -1,10 +1,10 @@
-import { ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import { ClipboardEvent, ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountFieldHairline } from '@/components/product/amountFieldHairline';
-import { parseAmountInput, sanitizeAmountInput } from '@/lib/amountInput';
+import { parseAmountInput, readPastedAmount, sanitizeAmountInput } from '@/lib/amountInput';
 import { RollingDigits } from '@/components/ui/rolling-digits';
 import {
   caretAfterCharacters,
@@ -93,8 +93,7 @@ export function StakeTakeoverAmountField({
     pendingCaret.current = null;
   });
 
-  const onChange = (input: HTMLInputElement) => {
-    const raw = input.value;
+  const applyEdit = (raw: string, caret: number) => {
     const ungrouped = ungroupAmountInput(raw, displayText);
     // A delete that takes the last decimal takes the point with it ("124.9" →
     // "124"); a freshly typed point stays, decimals are on their way.
@@ -103,7 +102,6 @@ export function StakeTakeoverAmountField({
       deleting && ungrouped.endsWith('.') ? ungrouped.slice(0, -1) : ungrouped,
       DECIMALS
     );
-    const caret = input.selectionStart ?? raw.length;
     pendingCaret.current = caretAfterCharacters(
       groupAmountInput(sanitized),
       raw.slice(0, caret).replace(/,/g, '').length,
@@ -112,6 +110,19 @@ export function StakeTakeoverAmountField({
     setText(sanitized);
     setTypedFrom(amount);
     onAmountChange(parseAmountInput(sanitized, DECIMALS));
+  };
+  const onChange = (input: HTMLInputElement) =>
+    applyEdit(input.value, input.selectionStart ?? input.value.length);
+  // A paste is handled here, not by the browser: a grouped figure keeps its
+  // value and anything the mask could not show is refused outright.
+  const onPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pasted = readPastedAmount(event.clipboardData.getData('text'));
+    if (pasted === null) return;
+    const input = event.currentTarget;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? start;
+    applyEdit(`${input.value.slice(0, start)}${pasted}${input.value.slice(end)}`, start + pasted.length);
   };
 
   return (
@@ -136,6 +147,7 @@ export function StakeTakeoverAmountField({
                 value={displayText}
                 ref={inputRef}
                 onChange={event => onChange(event.target)}
+                onPaste={onPaste}
                 disabled={disabled}
                 data-testid={dataTestId}
                 aria-invalid={!!error}
