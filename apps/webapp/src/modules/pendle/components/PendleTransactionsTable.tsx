@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { mainnet } from 'wagmi/chains';
 import { usePendleMarketHistory, PendleHistoryAction, type PendleMarketConfig } from '@/hooks';
-import { formatNumber, getEtherscanLink, formatAddress } from '@/utils';
+import { formatNumber, formatUsd, getEtherscanLink, formatAddress } from '@/utils';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import {
   ProductTransactionsTable,
@@ -107,7 +107,7 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
       id: tx.id,
       action: tx.action,
       amount: formatNumber(tx.ptAmount, { maxDecimals: 2 }),
-      usd: `$${formatNumber(Math.abs(tx.valueUsd), { maxDecimals: 2 })}`,
+      usd: formatUsd(Math.abs(tx.valueUsd)),
       // Amounts are PT-denominated; `market.name` is the product display name
       // ("Fixed Yield"), so derive the ticker from the underlying.
       marketName: `PT-${market.underlyingSymbol}`,

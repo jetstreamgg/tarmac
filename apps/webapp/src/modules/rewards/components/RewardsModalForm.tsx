@@ -5,7 +5,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { type Token } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
+import { formatDecimalPercentage, formatNumber, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -28,8 +28,6 @@ import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
 export type { RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
-
-const formatUsd = (value: number) => `$${formatNumber(value, { maxDecimals: 2 })}`;
 
 /**
  * Editable body for the rewards "Supply to / Withdraw from {farm}" modals,

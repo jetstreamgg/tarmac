@@ -9,7 +9,6 @@ const h = vi.hoisted(() => {
     usdsBalance: 0n as bigint,
     usdcBalance: 0n as bigint,
     searchInit: '' as string,
-    pathname: '/convert' as string,
     setSearchParams: undefined as unknown as ReturnType<typeof vi.fn>
   };
   state.setSearchParams = vi.fn((init: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => {
@@ -50,17 +49,6 @@ vi.mock('@/lib/navigation', () => ({
   useAppSearchParams: () => [new URLSearchParams(h.searchInit), h.setSearchParams]
 }));
 
-// The hook reads only the location pathname off the router (to tell an
-// outgoing render from a live one); no router is stood up here.
-vi.mock('@tanstack/react-router', async importOriginal => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
-  return {
-    ...actual,
-    useRouterState: ({ select }: { select: (s: { location: { pathname: string } }) => unknown }) =>
-      select({ location: { pathname: h.pathname } })
-  };
-});
-
 import { useConvertForm } from './useConvertForm';
 
 beforeEach(() => {
@@ -70,7 +58,6 @@ beforeEach(() => {
   h.usdsBalance = 0n;
   h.usdcBalance = 0n;
   h.searchInit = '';
-  h.pathname = '/convert';
 });
 
 afterEach(cleanup);
@@ -99,7 +86,7 @@ describe('useConvertForm', () => {
     expect(result.current.value).toBe('1.5');
     expect(result.current.amount).toBe(parseUnits('1.5', 6));
     expect(result.current.targetAmount).toBe(parseUnits('1.5', 18));
-    expect(result.current.targetValue).toBe('1.5');
+    expect(result.current.targetValue).toBe('1.50');
   });
 
   it('groups the derived To figure for display while keeping the raw amount exact (APP-553)', () => {
@@ -164,22 +151,6 @@ describe('useConvertForm', () => {
       replace: true,
       resetScroll: false
     });
-  });
-
-  it('keeps the direction while the page renders against the next route', () => {
-    // A navigation away commits the destination's pathname + search (no
-    // `source_token`) one render before the page unmounts; the view
-    // transition snapshots that render, so it must still show USDS on top.
-    h.searchInit = 'source_token=USDS';
-    const { result, rerender } = renderHook(() => useConvertForm());
-    expect(result.current.direction).toBe('USDS_TO_USDC');
-
-    h.searchInit = '';
-    h.pathname = '/portfolio';
-    rerender();
-
-    expect(result.current.direction).toBe('USDS_TO_USDC');
-    expect(result.current.originSymbol).toBe('USDS');
   });
 
   it('follows external ?source_token= changes (browser back/forward)', () => {

@@ -39,7 +39,6 @@ export function RateTvlDetailChart({
   rate,
   tvl,
   hideRate = false,
-  hideRatePercentChange = false,
   rateValueSuffix,
   tooltipLabel,
   onTimeFrameChange
@@ -51,8 +50,6 @@ export function RateTvlDetailChart({
   tvl: DetailChartSeries;
   /** Drops the Rate tab and renders TVL only (farms without a live rate). */
   hideRate?: boolean;
-  /** Hides the period's % change under the rate headline. */
-  hideRatePercentChange?: boolean;
   /** Rendered after the rate headline (e.g. a rate-breakdown mark). */
   rateValueSuffix?: ReactNode;
   tooltipLabel?: ReactNode;
@@ -84,7 +81,6 @@ export function RateTvlDetailChart({
         isLoading={series.isLoading}
         error={series.error}
         isPercentage={isRate}
-        hidePercentChange={isRate && hideRatePercentChange}
         symbol={isRate ? undefined : symbol}
         tokenSymbols={isRate ? undefined : [symbol]}
         label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useRouterState } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navigation';
+import { keepSearch, useAppSearchParams, useRouteEntityParams, useRouteIntent } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { getRouteChainAction } from '@/lib/widget-network-map';
@@ -48,6 +48,11 @@ export function useAppOrchestration(): { intent: Intent } {
   // (the TRADE/UPGRADE alias routes redirect before rendering).
   const pathname = useRouterState({ select: s => s.location.pathname });
   const intent = pathToIntent(pathname) ?? Intent.BALANCES_INTENT;
+  // The intent of the route the outlet is actually showing. `searchParams`
+  // below reads from the committed match (APP-562), so during a page
+  // transition it lags `intent` by a render; the search validation skips the
+  // render where the two disagree (see there).
+  const committedIntent = useRouteIntent();
   const { rewardContract } = useRouteEntityParams();
 
   const chainId = useChainId();
@@ -270,12 +275,20 @@ export function useAppOrchestration(): { intent: Intent } {
     isModalOpen
   ]);
 
-  // Run validation on the remaining query-driven search params whenever they change
+  // Run validation on the remaining query-driven search params whenever they
+  // change. `searchParams` is only the trigger here: the functional setter is
+  // handed the LIVE location search, so the outgoing page's params are never an
+  // input to the write and cannot leak onto the new URL. The guard just skips
+  // the redundant pass a transition would otherwise queue — the render where
+  // the location (and `intent`) has moved on but the outlet has not — since
+  // the commit that swaps the page changes `searchParams` and re-runs this
+  // anyway.
   useEffect(() => {
+    if (intent !== committedIntent) return;
     setSearchParams(params => validateSearchParams(params, intent), {
       replace: true
     });
-  }, [searchParams, intent, newChainId]);
+  }, [searchParams, intent, committedIntent, newChainId]);
 
   // `?network=` is retired as app state. It is still HONOURED once, so the
   // bookmarks, support links and shared URLs minted while it was live keep
@@ -294,12 +307,21 @@ export function useAppOrchestration(): { intent: Intent } {
   // old `onConnect` handler existed for. Kept until the first connection lands
   // so it can be asked for once more, against the wallet this time.
   const honouredParamTargetRef = useRef<number | null>(null);
+  // Read off the LOCATION, not the committed match the page-facing
+  // `searchParams` follows: this is a question about the URL the user opened,
+  // not state the page displays. A wallet settling mid-transition would
+  // otherwise find the outgoing page's `network=` on the committed match and
+  // spend it against a URL that no longer carries it — and an intent guard
+  // cannot catch that between routes that share an intent (one reward
+  // contract to another). The strip below already targets the location.
+  const networkParam = useRouterState({
+    select: s => (s.location.search as Record<string, string>)[QueryParams.Network] as string | undefined
+  });
   useEffect(() => {
     if (networkParamHonoured.current) return;
     if (status === 'connecting' || status === 'reconnecting') return;
 
-    const param = searchParams.get(QueryParams.Network);
-    if (!param) return;
+    if (!networkParam) return;
     networkParamHonoured.current = true;
 
     // Spent either way: an unknown or garbage value has had its one chance and
@@ -312,7 +334,9 @@ export function useAppOrchestration(): { intent: Intent } {
       { replace: true }
     );
 
-    const target = chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(param))?.id;
+    const target = chains.find(
+      chain => normalizeUrlParam(chain.name) === normalizeUrlParam(networkParam)
+    )?.id;
     if (target === undefined || target === chainId) return;
     // Only a chain the module at this route can run on. Otherwise the switch
     // would land and the route guard would switch straight back one render
@@ -323,7 +347,7 @@ export function useAppOrchestration(): { intent: Intent } {
     trackNetworkAutoSwitched({ trigger: 'url_param', fromChainId: chainId, toChainId: target });
     if (walletChainId !== undefined) setPendingSwitch({ from: walletChainId, to: target });
     switchChain({ chainId: target });
-  }, [status, searchParams, chains, chainId, walletChainId, intent, setSearchParams, switchChain]);
+  }, [status, networkParam, chains, chainId, walletChainId, intent, setSearchParams, switchChain]);
 
   // The wallet arrives after a cold-loaded link was honoured against the
   // config chain alone: ask it once for the link's chain, then forget the link.

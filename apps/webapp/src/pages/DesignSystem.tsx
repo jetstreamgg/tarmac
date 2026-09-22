@@ -987,7 +987,7 @@ function TablesSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <CellSpecimenRow name="Text (TableCell default)">$4.23b</CellSpecimenRow>
+            <CellSpecimenRow name="Text (TableCell default)">$4.23B</CellSpecimenRow>
             <CellSpecimenRow name="Percent">
               <CellPercent value="3.75" />
             </CellSpecimenRow>
@@ -1223,7 +1223,7 @@ function TablesSection() {
               <TableCell>
                 <CellPercent value="3.81" />
               </TableCell>
-              <TableCell>$4.23b</TableCell>
+              <TableCell>$4.23B</TableCell>
               <TableCell>$2,500.00</TableCell>
             </TableRow>
             <TableRow className="cursor-pointer">

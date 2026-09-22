@@ -37,12 +37,13 @@ const CLAIM_DUST_WAD = 10n ** 16n;
 /** The manage actions F5 implements — rows/CTAs route these to the sheet. */
 export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'reward' | 'delegate';
 
-// F4 risk pill palette (StakeTakeoverBorrowCard parity).
+// F4 risk pill palette — the components/status colours the borrow cards
+// (StakeTakeoverBorrowCard, StakeManageBorrowCard) render the same pill with.
 const RISK_PILL_COLOR: Record<RiskLevel, string> = {
-  [RiskLevel.LOW]: 'bg-bullish/15 text-bullish',
-  [RiskLevel.MEDIUM]: 'bg-orange-400/15 text-orange-400',
-  [RiskLevel.HIGH]: 'bg-error/15 text-error',
-  [RiskLevel.LIQUIDATION]: 'bg-error/15 text-error'
+  [RiskLevel.LOW]: 'bg-statusSuccess/10 text-statusSuccess',
+  [RiskLevel.MEDIUM]: 'bg-statusWarning/10 text-statusWarning',
+  [RiskLevel.HIGH]: 'bg-statusError/10 text-statusError',
+  [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
 };
 
 // Stat cell (comps 1036:214176 desktop / 1292:63278 phone — same recipe at

@@ -174,7 +174,7 @@ describe('StakePositionRowBanner', () => {
 
     expect(screen.getByTestId('stake-position-liquidated-banner')).toBeTruthy();
     expect(screen.queryByTestId('stake-position-warning-banner')).toBeNull();
-    expect(screen.getByText(/Your 12 SKY refund/)).toBeTruthy(); // refund amount
+    expect(screen.getByText(/Your 12.00 SKY refund/)).toBeTruthy(); // refund amount
     expect(screen.getByText(/\$100\.00/)).toBeTruthy(); // 50 SKY claimable * $2
 
     fireEvent.click(screen.getByTestId('stake-liquidated-claim-cta'));

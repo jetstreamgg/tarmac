@@ -41,7 +41,7 @@ export type StakeClaimReward = BaseStakeHistoryItem & {
 };
 
 export type StakeHistoryKick = BaseStakeHistoryItem & {
-  wad: bigint;
+  amount: bigint;
   urnAddress: string;
 };
 

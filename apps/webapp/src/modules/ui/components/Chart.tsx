@@ -358,7 +358,6 @@ interface ChartProps {
    */
   prefix?: string;
   isPercentage?: boolean;
-  hidePercentChange?: boolean;
   onTimeFrameChange?: (tf: TimeFrame) => void;
   isLoading?: boolean;
   error?: Error | null;
@@ -390,7 +389,7 @@ interface ChartProps {
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
-  const formatted = `${formatNumber(percentage, { maxDecimals: 2, compact: isLarge ? false : true })}%`;
+  const formatted = `${formatNumber(percentage, { minDecimals: 0, maxDecimals: 2, compact: isLarge ? false : true })}%`;
   if (formatted === '-0%') {
     return '0%';
   }
@@ -407,7 +406,6 @@ function CardTitleContent({
   formattedPercentage,
   isZeroPercentage,
   isLoading,
-  hidePercentChange,
   displayValue,
   icons
 }: {
@@ -420,7 +418,6 @@ function CardTitleContent({
   formattedPercentage: string;
   isZeroPercentage: boolean;
   isLoading: boolean;
-  hidePercentChange?: boolean;
   displayValue?: number;
   icons?: React.ReactNode;
 }) {
@@ -457,31 +454,29 @@ function CardTitleContent({
                 compact: true
               })}${isLarge && !isPercentage && symbol ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
             </Text>
-            {!hidePercentChange && (
-              <HStack
-                gap={1}
-                className={`items-center justify-center overflow-clip lg:max-w-none ${isZeroPercentage ? '' : percentage >= 0 ? 'text-bullish' : 'text-error'}`}
-              >
-                <Text className="max-w-28 text-base text-ellipsis lg:max-w-none lg:text-lg">
-                  {percentage > 10000 ? (
-                    <>
-                      <span className="align-middle text-[0.6em]">▲</span> 10,000+%
-                    </>
-                  ) : percentage > 0 && !isZeroPercentage ? (
-                    <>
-                      <span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}
-                    </>
-                  ) : percentage < 0 && !isZeroPercentage ? (
-                    <>
-                      <span className="align-middle text-[0.6em]">▼</span>{' '}
-                      {formattedPercentage.replace('-', '')}
-                    </>
-                  ) : (
-                    formattedPercentage
-                  )}
-                </Text>
-              </HStack>
-            )}
+            <HStack
+              gap={1}
+              className={`items-center justify-center overflow-clip lg:max-w-none ${isZeroPercentage ? '' : percentage >= 0 ? 'text-bullish' : 'text-error'}`}
+            >
+              <Text className="max-w-28 text-base text-ellipsis lg:max-w-none lg:text-lg">
+                {percentage > 10000 ? (
+                  <>
+                    <span className="align-middle text-[0.6em]">▲</span> 10,000+%
+                  </>
+                ) : percentage > 0 && !isZeroPercentage ? (
+                  <>
+                    <span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}
+                  </>
+                ) : percentage < 0 && !isZeroPercentage ? (
+                  <>
+                    <span className="align-middle text-[0.6em]">▼</span>{' '}
+                    {formattedPercentage.replace('-', '')}
+                  </>
+                ) : (
+                  formattedPercentage
+                )}
+              </Text>
+            </HStack>
           </HStack>
         </motion.div>
       </AnimatePresence>
@@ -830,7 +825,6 @@ export function Chart({
   prefix,
   onTimeFrameChange,
   isPercentage = false,
-  hidePercentChange = false,
   isLoading = false,
   error,
   dataTestId,
@@ -1003,7 +997,6 @@ export function Chart({
                   formattedPercentage={formattedPercentage}
                   isZeroPercentage={isZeroPercentage}
                   isLoading={isLoading}
-                  hidePercentChange={hidePercentChange}
                   displayValue={displayValue}
                   icons={icons}
                 />

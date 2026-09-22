@@ -648,7 +648,7 @@ describe('OpenPositionTakeover', () => {
 
     const warning = screen.getByTestId('stake-takeover-min-collateral-warning');
     // The callout prose spells the dust floor out in full (UX 1104:19793).
-    expect(warning.textContent).toContain('30,000 USDS');
+    expect(warning.textContent).toContain('30,000.00 USDS');
     expect(warning.textContent).not.toContain('30K USDS');
     expect(screen.queryByTestId('stake-takeover-borrow-slider')).toBeNull();
     expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).disabled).toBe(true);
