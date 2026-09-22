@@ -42,17 +42,15 @@ export default [
   ),
   reactHooks.configs.flat.recommended,
   {
-    // TODO(APP-227): Demoted react-hooks rules from `error` to `warn` to land the
-    // plugin without a large up-front triage. Promote each rule back to `error`
-    // (delete its line below) as the existing violations are fixed across the
-    // monorepo. `exhaustive-deps` is `warn` in the recommended preset and is
-    // raised to `error` here: the warn-demotion hid real bugs (a stale close
-    // snapshot, dates stuck in the old locale, an L2 savings balance stuck at 0).
     rules: {
+      // `warn` in the recommended preset, raised to `error`: the warn-demotion
+      // hid real bugs (a stale close snapshot, dates stuck in the old locale,
+      // an L2 savings balance stuck at 0).
       'react-hooks/exhaustive-deps': 'error',
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/static-components': 'warn',
-      'react-hooks/preserve-manual-memoization': 'warn'
+      // The React Compiler is not in the build (plugin-react-swc), so a memo
+      // the compiler could not preserve changes nothing at runtime. Turn this
+      // back on when the compiler lands.
+      'react-hooks/preserve-manual-memoization': 'off'
     }
   },
   {
