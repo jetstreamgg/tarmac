@@ -327,7 +327,7 @@ describe('PendleModalForm', () => {
       renderForm('supply');
       fireEvent.click(screen.getByTestId('pendle-modal-max'));
 
-      expect((screen.getByTestId('pendle-modal-amount-input') as HTMLInputElement).value).toBe('1000');
+      expect((screen.getByTestId('pendle-modal-amount-input') as HTMLInputElement).value).toBe('1,000');
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
     });
 

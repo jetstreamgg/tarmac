@@ -3,6 +3,8 @@ import { I18nProvider } from '@lingui/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
+import { StakeBorrowSliderRow } from './StakeBorrowSliderRow';
+import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
@@ -171,6 +173,40 @@ describe('StakeTakeoverAmountField', () => {
     fireEvent.click(screen.getByTestId('field-percent-50'));
     expect(screen.getByTestId('field-display').textContent).toBe('500');
     const rolled = screen.getAllByTestId('rolling-digit-in');
+    expect(rolled.every(el => el.getAttribute('data-transition') === 'roll')).toBe(true);
+  });
+
+  it('rolls the figure the slider moves', () => {
+    function WithSlider() {
+      const [amount, setAmount] = useState(0n);
+      const slider = useStakeAmountSlider({
+        mode: 'borrow',
+        existingDebt: 0n,
+        dust: 30_000n * WAD,
+        headroom: 100_000n * WAD,
+        amount,
+        onAmountChange: setAmount
+      });
+      return (
+        <I18nProvider i18n={i18n}>
+          <StakeTakeoverAmountField
+            tokenSymbol="USDS"
+            amount={amount}
+            onAmountChange={setAmount}
+            dataTestId="field"
+          />
+          <StakeBorrowSliderRow slider={slider} mode="borrow" tone="green" dataTestId="row" />
+        </I18nProvider>
+      );
+    }
+    render(<WithSlider />);
+    const input = screen.getByTestId('field') as HTMLInputElement;
+    edit(input, '5');
+    screen.getAllByTestId('rolling-digit-in').forEach(el => fireEvent.animationEnd(el));
+    fireEvent.keyDown(screen.getByRole('slider'), { key: 'End' });
+    expect(input.value).toBe('100,000');
+    const rolled = screen.getAllByTestId('rolling-digit-in');
+    expect(rolled.length).toBeGreaterThan(0);
     expect(rolled.every(el => el.getAttribute('data-transition') === 'roll')).toBe(true);
   });
 });

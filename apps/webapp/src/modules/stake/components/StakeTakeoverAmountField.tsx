@@ -1,17 +1,12 @@
-import { ClipboardEvent, ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountFieldHairline } from '@/components/product/amountFieldHairline';
-import { parseAmountInput, readPastedAmount, sanitizeAmountInput } from '@/lib/amountInput';
-import { RollingDigits } from '@/components/ui/rolling-digits';
-import {
-  caretAfterCharacters,
-  formatAmountForInput,
-  groupAmountInput,
-  ungroupAmountInput
-} from '../lib/amountInput';
+import { AmountInput } from '@/components/product/AmountInput';
+import { parseAmountInput } from '@/lib/amountInput';
+import { formatAmountForInput } from '../lib/amountInput';
 
 // SKY and USDS are 18-decimal on every deployment the stake module runs on.
 const DECIMALS = 18;
@@ -20,9 +15,8 @@ const PERCENT_CHIPS = [25, 50, 100] as const;
 // Borrow-more chips (Figma 3015:58333): 25/50/100 of the remaining headroom.
 export const BORROW_PERCENT_CHIPS = [25, 50, 100] as const;
 
-// Shared by the input and its visible copy so the caret lands on the glyphs.
 const AMOUNT_TYPE =
-  'font-circle text-[22px] leading-6 font-medium tracking-[-0.44px] md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]';
+  'font-circle text-text placeholder:text-fgSecondary text-[22px] leading-6 font-medium tracking-[-0.44px] md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]';
 
 /** Labelled chip (Figma "Min" / "Max"): renders in place of the percent chips. */
 export type AmountChip = { key: string; label: ReactNode; onClick: () => void };
@@ -35,10 +29,8 @@ export type AmountChip = { key: string; label: ReactNode; onClick: () => void };
  *
  * The figure reads grouped (`17,640.49`) and turns over digit by digit as the
  * slider or a chip moves it (Design QA 3314:135843, the global number
- * animation); a typed digit pops in instead (3450:121929). A native input
- * can't animate its own text, so the input paints
- * its value transparent (keeping caret, selection and the keyboard) and a
- * pointer-transparent RollingDigits copy in the same type sits over it.
+ * animation); a typed digit pops in instead (3450:121929). Both come from the
+ * shared AmountInput; this wrapper only owns the bigint round trip.
  */
 export function StakeTakeoverAmountField({
   tokenSymbol,
@@ -81,48 +73,11 @@ export function StakeTakeoverAmountField({
   if (settled && typedFrom !== null) setTypedFrom(null);
   const typed = settled || amount === typedFrom;
   const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals);
-  const displayText = groupAmountInput(maskedText);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  // Caret to restore after the edit regroups the text (a mid-string delete or
-  // replace changes the length, which would drop the caret to the end).
-  const pendingCaret = useRef<number | null>(null);
-  useLayoutEffect(() => {
-    if (pendingCaret.current === null) return;
-    inputRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current);
-    pendingCaret.current = null;
-  });
-
-  const applyEdit = (raw: string, caret: number) => {
-    const ungrouped = ungroupAmountInput(raw, displayText);
-    // A delete that takes the last decimal takes the point with it ("124.9" →
-    // "124"); a freshly typed point stays, decimals are on their way.
-    const deleting = raw.length < displayText.length;
-    const sanitized = sanitizeAmountInput(
-      deleting && ungrouped.endsWith('.') ? ungrouped.slice(0, -1) : ungrouped,
-      DECIMALS
-    );
-    pendingCaret.current = caretAfterCharacters(
-      groupAmountInput(sanitized),
-      raw.slice(0, caret).replace(/,/g, '').length,
-      raw[caret - 1] === ','
-    );
+  const onChange = (sanitized: string) => {
     setText(sanitized);
     setTypedFrom(amount);
     onAmountChange(parseAmountInput(sanitized, DECIMALS));
-  };
-  const onChange = (input: HTMLInputElement) =>
-    applyEdit(input.value, input.selectionStart ?? input.value.length);
-  // A paste is handled here, not by the browser: a grouped figure keeps its
-  // value and anything the mask could not show is refused outright.
-  const onPaste = (event: ClipboardEvent<HTMLInputElement>) => {
-    event.preventDefault();
-    const pasted = readPastedAmount(event.clipboardData.getData('text'));
-    if (pasted === null) return;
-    const input = event.currentTarget;
-    const start = input.selectionStart ?? input.value.length;
-    const end = input.selectionEnd ?? start;
-    applyEdit(`${input.value.slice(0, start)}${pasted}${input.value.slice(end)}`, start + pasted.length);
   };
 
   return (
@@ -139,42 +94,16 @@ export function StakeTakeoverAmountField({
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <TokenIcon token={{ symbol: tokenSymbol }} width={24} className="h-6 w-6" showChainIcon={false} />
-            <span className="relative min-w-0 flex-1">
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0.00"
-                value={displayText}
-                ref={inputRef}
-                onChange={event => onChange(event.target)}
-                onPaste={onPaste}
-                disabled={disabled}
-                data-testid={dataTestId}
-                aria-invalid={!!error}
-                aria-describedby={error ? errorId : undefined}
-                className={cn(
-                  AMOUNT_TYPE,
-                  // No kerning: the overlay draws each digit in its own box, where
-                  // pairs can't kern, so the input must not kern either.
-                  'caret-text placeholder:text-fgSecondary w-full min-w-0 bg-transparent text-transparent outline-none [font-kerning:none] disabled:opacity-50'
-                )}
-              />
-              {/* Stays mounted on an empty value so the last digit can fade out over the placeholder. */}
-              <span
-                aria-hidden
-                data-testid={`${dataTestId}-display`}
-                className={cn(
-                  AMOUNT_TYPE,
-                  'text-text pointer-events-none absolute inset-0 overflow-hidden whitespace-nowrap [font-kerning:none]',
-                  disabled && 'opacity-50'
-                )}
-              >
-                {/* Typed digits pop in where they land; chips and the slider roll (Design QA 3450:121929).
-                    Proportional figures keep the overlay's metrics identical to the
-                    input's, so the native caret lands after the last glyph. */}
-                <RollingDigits value={displayText} transition={typed ? 'pop' : 'roll'} proportional />
-              </span>
-            </span>
+            <AmountInput
+              value={maskedText}
+              onChange={onChange}
+              decimals={DECIMALS}
+              disabled={disabled}
+              ariaInvalid={!!error}
+              ariaDescribedBy={error ? errorId : undefined}
+              className={AMOUNT_TYPE}
+              dataTestId={dataTestId}
+            />
           </div>
           {(chips || onPercentClick) && (
             <div className="flex shrink-0 items-center gap-1">
