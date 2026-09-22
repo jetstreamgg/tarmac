@@ -57,6 +57,18 @@ describe('TakeoverShell', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('leaves Escape to a layer on top that already handled it', () => {
+    const onClose = renderShell();
+    // What a Radix popover or dialog does: claim the key in the capture phase.
+    const layer = (event: Event) => event.preventDefault();
+    document.addEventListener('keydown', layer, { capture: true });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    document.removeEventListener('keydown', layer, { capture: true });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('locks document scroll through react-remove-scroll while mounted and releases it on unmount', async () => {
     // The same lock Radix's dialogs use: it marks body with `data-scroll-locked`
     // (and publishes the hidden bar's width there for the page column's
@@ -70,6 +82,53 @@ describe('TakeoverShell', () => {
     await waitFor(() => expect(document.body.hasAttribute('data-scroll-locked')).toBe(true));
     unmount();
     await waitFor(() => expect(document.body.hasAttribute('data-scroll-locked')).toBe(false));
+  });
+
+  it('makes the app root inert while mounted and restores focus to the trigger on close', () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    const trigger = document.createElement('button');
+    root.appendChild(trigger);
+    document.body.appendChild(root);
+    trigger.focus();
+
+    const { unmount } = render(
+      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
+        <div />
+      </TakeoverShell>
+    );
+
+    expect(root.hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).toBe(screen.getByTestId('stake-takeover'));
+
+    unmount();
+
+    expect(root.hasAttribute('inert')).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    root.remove();
+  });
+
+  it('keeps the app root inert until the last overlapping takeover unmounts', () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    document.body.appendChild(root);
+
+    const first = render(
+      <TakeoverShell title="a" onClose={vi.fn()} dataTestId="first">
+        <div />
+      </TakeoverShell>
+    );
+    const second = render(
+      <TakeoverShell title="b" onClose={vi.fn()} dataTestId="second">
+        <div />
+      </TakeoverShell>
+    );
+
+    first.unmount();
+    expect(root.hasAttribute('inert')).toBe(true);
+    second.unmount();
+    expect(root.hasAttribute('inert')).toBe(false);
+    root.remove();
   });
 
   it('names the dialog from its title via aria-labelledby', () => {

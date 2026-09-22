@@ -477,8 +477,6 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
         // color"); the frosting comes from DialogOverlay's blur-full scrim, so
         // the opaque containerDark it used to paint hid it.
         className="app-loader-cover-hidden bg-bgSecondary max-h-[calc(100dvh-32px)] gap-8 overflow-auto p-8 sm:max-w-[490px] sm:min-w-[490px]"
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">

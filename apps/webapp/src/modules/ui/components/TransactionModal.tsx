@@ -708,8 +708,6 @@ export function TransactionModal({
           'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
           !isTransaction && 'sm:gap-12'
         )}
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
           <div className="flex min-w-0 flex-1 flex-col gap-4">

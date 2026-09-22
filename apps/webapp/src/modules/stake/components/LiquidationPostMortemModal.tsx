@@ -211,7 +211,6 @@ export function LiquidationPostMortemModal({
         aria-describedby={undefined}
         data-testid="stake-postmortem-modal"
         className="bg-containerDark flex max-h-[90vh] w-full flex-col gap-0 overflow-y-auto p-0 sm:min-w-0 lg:max-w-[1042px] lg:flex-row"
-        onOpenAutoFocus={event => event.preventDefault()}
       >
         {/* Left panel — refunded/claimable heroes + the historical stat grid. */}
         <div className="flex flex-1 flex-col gap-6 p-8">

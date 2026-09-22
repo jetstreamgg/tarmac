@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 import { cn } from '@/lib/cn';
+import { useRestoreFocusOnClose } from '@/hooks/ui/useRestoreFocusOnClose';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -45,53 +46,57 @@ const DialogContent = React.forwardRef<
      */
     overlayClassName?: string;
   }
->(({ className, overlayClassName, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay className={overlayClassName} />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        // outline-hidden: Radix focuses the content container when nothing
-        // inside autofocuses, and a non-pointer open (deep link, keyboard)
-        // makes that focus :focus-visible — suppress the panel's UA ring, as
-        // PopoverContent does; interactive children keep their own rings.
-        // Motion (Figma: Sky App: UI 1598:75901): the card fades while rising
-        // 40px — `slide-*-bottom-10` is exactly that 2.5rem — over 300ms,
-        // arriving on quint and leaving on quart. It replaces a zoom-95 at
-        // 200ms, which the comp does not do: there is no scale anywhere in it.
-        // The rise composes with the centering offset rather than fighting it,
-        // because Tailwind's translate utilities set the `translate` property
-        // while the animation drives `transform`.
-        //
-        // transition-none: the `duration-*` and `ease-*` variants below set
-        // `transition-duration`/`transition-timing-function` as well as the
-        // animation ones (both utilities share the class names), and with the
-        // UA default `transition-property: all` that is a 300ms transition on
-        // every property — so a `left` that changed after mount tweened while
-        // the `50%` half jumped, and the card rose on a diagonal (APP-563 #2).
-        // Nothing on the card is meant to transition: enter and exit are
-        // keyframes.
-        //
-        // The card centres on the page, not the viewport: under the lock the
-        // root releases its scrollbar gutter (globals.css) so the scrim can
-        // cover the whole window, body keeps the bar's width as a margin, and
-        // the card backs off by half of it. It reads `--page-scrollbar-gutter`
-        // — the root's constant measurement, there before any dialog can
-        // open — and NOT the lock-keyed `--page-released-gutter`: that one
-        // flips a frame after the card mounts (react-remove-scroll sets the
-        // lock attribute from an effect), and a `left` that changes after
-        // mount is exactly what rose on a diagonal. A dialog only exists
-        // under its own lock, so the constant is the right value for it
-        // from the first frame. 0 with overlay bars.
-        'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-10 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed top-[50%] left-[calc(50%-var(--page-scrollbar-gutter,0px)/2)] z-50 grid max-h-[calc(100dvh-2rem)] w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain rounded-[24px] px-5 py-4 shadow-lg outline-hidden transition-none data-[state=closed]:duration-300 data-[state=open]:duration-300 sm:min-w-[640px] sm:px-10 sm:py-8',
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+>(({ className, overlayClassName, children, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+  const restoreFocus = useRestoreFocusOnClose({ onOpenAutoFocus, onCloseAutoFocus });
+  return (
+    <DialogPortal>
+      <DialogOverlay className={overlayClassName} />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          // outline-hidden: Radix focuses the content container when nothing
+          // inside autofocuses, and a non-pointer open (deep link, keyboard)
+          // makes that focus :focus-visible — suppress the panel's UA ring, as
+          // PopoverContent does; interactive children keep their own rings.
+          // Motion (Figma: Sky App: UI 1598:75901): the card fades while rising
+          // 40px — `slide-*-bottom-10` is exactly that 2.5rem — over 300ms,
+          // arriving on quint and leaving on quart. It replaces a zoom-95 at
+          // 200ms, which the comp does not do: there is no scale anywhere in it.
+          // The rise composes with the centering offset rather than fighting it,
+          // because Tailwind's translate utilities set the `translate` property
+          // while the animation drives `transform`.
+          //
+          // transition-none: the `duration-*` and `ease-*` variants below set
+          // `transition-duration`/`transition-timing-function` as well as the
+          // animation ones (both utilities share the class names), and with the
+          // UA default `transition-property: all` that is a 300ms transition on
+          // every property — so a `left` that changed after mount tweened while
+          // the `50%` half jumped, and the card rose on a diagonal (APP-563 #2).
+          // Nothing on the card is meant to transition: enter and exit are
+          // keyframes.
+          //
+          // The card centres on the page, not the viewport: under the lock the
+          // root releases its scrollbar gutter (globals.css) so the scrim can
+          // cover the whole window, body keeps the bar's width as a margin, and
+          // the card backs off by half of it. It reads `--page-scrollbar-gutter`
+          // — the root's constant measurement, there before any dialog can
+          // open — and NOT the lock-keyed `--page-released-gutter`: that one
+          // flips a frame after the card mounts (react-remove-scroll sets the
+          // lock attribute from an effect), and a `left` that changes after
+          // mount is exactly what rose on a diagonal. A dialog only exists
+          // under its own lock, so the constant is the right value for it
+          // from the first frame. 0 with overlay bars.
+          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-10 data-[state=open]:slide-in-from-bottom-10 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed top-[50%] left-[calc(50%-var(--page-scrollbar-gutter,0px)/2)] z-50 grid max-h-[calc(100dvh-2rem)] w-auto min-w-[90%] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain rounded-[24px] px-5 py-4 shadow-lg outline-hidden transition-none data-[state=closed]:duration-300 data-[state=open]:duration-300 sm:min-w-[640px] sm:px-10 sm:py-8',
+          className
+        )}
+        {...restoreFocus}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({
