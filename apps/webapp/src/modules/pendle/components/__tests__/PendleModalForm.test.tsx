@@ -284,7 +284,10 @@ describe('PendleModalForm', () => {
       // Market implied rate before an amount, the quote's effective rate after.
       expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.20%');
       typeAmount('100');
-      expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.90%');
+      // The old digits are still rolling out of the cell; read only what stays.
+      const cell = screen.getByTestId('pendle-modal-row-Fixed rate').cloneNode(true) as HTMLElement;
+      cell.querySelectorAll('[data-testid="rolling-digit-out"]').forEach(el => el.remove());
+      expect(cell.textContent).toContain('4.90%');
       expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
       expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
     });
