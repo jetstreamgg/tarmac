@@ -72,10 +72,13 @@ export function TakeoverShell({
   const reduceMotion = useReducedMotion();
 
   // Escape-to-close: syncing with the DOM outside React. (The document scroll
-  // lock is `RemoveScroll` around the portal below.)
+  // lock is `RemoveScroll` around the portal below.) Radix layers (popovers,
+  // selects, the transaction modal) handle Escape in the capture phase and
+  // mark it defaultPrevented, so a layer on top takes the key and the takeover
+  // stays open.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape' && !event.defaultPrevented) onClose();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);

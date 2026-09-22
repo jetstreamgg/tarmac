@@ -57,6 +57,18 @@ describe('TakeoverShell', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('leaves Escape to a layer on top that already handled it', () => {
+    const onClose = renderShell();
+    // What a Radix popover or dialog does: claim the key in the capture phase.
+    const layer = (event: Event) => event.preventDefault();
+    document.addEventListener('keydown', layer, { capture: true });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    document.removeEventListener('keydown', layer, { capture: true });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it('locks document scroll through react-remove-scroll while mounted and releases it on unmount', async () => {
     // The same lock Radix's dialogs use: it marks body with `data-scroll-locked`
     // (and publishes the hidden bar's width there for the page column's
