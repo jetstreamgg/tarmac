@@ -1,4 +1,13 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useMemo
+} from 'react';
 import { useConnection, useSignMessage } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
@@ -233,11 +242,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [isConnected, address, checkTermsAcceptance]);
 
   // The address changing (including to undefined on disconnect) invalidates
-  // any terms verdict already held — it belongs to the previous address. The
-  // ref moves with it so a continuation still in flight for the previous
-  // address (a check, or an acceptance POST) can tell it has been overtaken.
-  useEffect(() => {
-    activeAddressRef.current = address ?? null;
+  // any terms verdict already held — it belongs to the previous address, so it
+  // is dropped in the render that brings the new one.
+  const [verdictAddress, setVerdictAddress] = useState(address);
+  if (verdictAddress !== address) {
+    setVerdictAddress(address);
     setTermsCheck(undefined);
     setTermsCheckError(false);
     setTermsCheckDenied(false);
@@ -249,6 +258,13 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // next address may already have set it, and clearing it there would drop
     // the cover for a check that is genuinely running.
     setIsCheckingTerms(false);
+  }
+  // The ref moves with the address so a continuation still in flight for the
+  // previous one (a check, or an acceptance POST) can tell it has been
+  // overtaken. A layout effect: it lands in the same commit as the reset
+  // above, so no result can slip in between the two.
+  useLayoutEffect(() => {
+    activeAddressRef.current = address ?? null;
   }, [address]);
 
   // The flow puts address screening between wallet selection and the T&C gate
@@ -260,6 +276,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     if (skipAuthCheck) return;
     if (isConnected && address && addressScreeningPassed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- a fetch keyed on the address: the check raises its in-flight flag synchronously so the cover shows in the same paint, and its ref guard discards an overtaken result
       checkTermsAcceptance(address);
     }
   }, [isConnected, address, addressScreeningPassed, skipAuthCheck, checkTermsAcceptance]);

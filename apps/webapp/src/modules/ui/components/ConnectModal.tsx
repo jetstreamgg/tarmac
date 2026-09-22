@@ -428,13 +428,18 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   const [query, setQuery] = useState('');
 
   // A reopened modal always starts at the root — a stale drill-down (or a stale
-  // query) would be the first thing the next visitor sees.
-  useEffect(() => {
+  // query) would be the first thing the next visitor sees. Reset in the render
+  // that closes it, along with the overlay flag the observer below owns while
+  // open.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (!open) {
       setView('root');
       setQuery('');
+      setHasWalletOverlay(false);
     }
-  }, [open]);
+  }
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredSublist = normalizedQuery
@@ -442,10 +447,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     : sublistWallets;
 
   useEffect(() => {
-    if (!open) {
-      setHasWalletOverlay(false);
-      return;
-    }
+    if (!open) return;
 
     const check = () => setHasWalletOverlay(isWalletOverlayVisible());
 

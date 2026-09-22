@@ -150,11 +150,8 @@ export function SeriesMotionLayer({
     const total = curve.getTotalLength();
     if (!total) return; // the measure effect's retry loop re-renders us
     revealedKey.current = key;
-    setRevealDone(false);
-    if (reduceMotion) {
-      setRevealDone(true);
-      return;
-    }
+    setRevealDone(!!reduceMotion);
+    if (reduceMotion) return;
     const duration = hasRevealedOnce.current ? RE_REVEAL_DURATION_MS : REVEAL_DURATION_MS;
     hasRevealedOnce.current = true;
     const rect = clipRectRef.current;

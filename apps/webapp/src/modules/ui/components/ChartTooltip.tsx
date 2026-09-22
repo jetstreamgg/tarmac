@@ -228,19 +228,17 @@ export function ChartTooltip({
   // unmounting the panel each time blinked the card and its token icon. The
   // lift releases the hold — an inactive tooltip then hides as before.
   const [held, setHeld] = useState<typeof live>(null);
-  useEffect(() => {
-    if (!live) return;
-    // Same datum → keep the previous snapshot, so this cannot loop on the new
-    // object recharts hands over every render.
-    setHeld(prev =>
-      prev &&
-      prev.label.getTime() === live.label.getTime() &&
-      prev.coordinate?.x === live.coordinate?.x &&
-      prev.coordinate?.y === live.coordinate?.y
-        ? prev
-        : live
-    );
-  }, [live]);
+  // Same datum → keep the previous snapshot, so this cannot loop on the new
+  // object recharts hands over every render.
+  const holdsLive =
+    !!live &&
+    !!held &&
+    held.label.getTime() === live.label.getTime() &&
+    held.coordinate?.x === live.coordinate?.x &&
+    held.coordinate?.y === live.coordinate?.y;
+  if (live && !holdsLive) {
+    setHeld(live);
+  }
   const shown = live ?? (pressedInside ? held : null);
 
   const { panelRef, style } = useTooltipPlacement(shown?.coordinate, anchorRef);

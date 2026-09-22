@@ -6,7 +6,7 @@ import { useDelegates } from '../delegates/useDelegates';
 import { useDelegateMetadataMapping } from '../delegates/useDelegateMetadataMapping';
 import { findDelegateNameMatches } from '../delegates/utils';
 import { DelegateInfo } from '../delegates/delegate';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { formatEther, getAddress } from 'viem';
 
 type DelegateInfoWithTotal = DelegateInfo & {
@@ -61,7 +61,6 @@ export function useStakeUserDelegates({
   shouldSortDelegates?: boolean;
   sortType?: 'totalDelegated' | 'aligned';
 }): ReadHook & { data?: DelegateInfoWithTotal[] } {
-  const hasInitiallyOrdered = useRef(false);
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
   // Search matches delegate names too: names live only in the governance-portal
@@ -109,16 +108,8 @@ export function useStakeUserDelegates({
   const isLoading = isLoadingUserDelegates || isLoadingRestDelegates;
   const isDataReady = user && user !== ZERO_ADDRESS && !isLoading && (userDelegatesData || restDelegates);
 
-  const [displayedDelegates, setDisplayedDelegates] = useState<DelegateInfoWithTotal[]>();
-
   const sortDelegatesFn =
     sortType === 'totalDelegated' ? sortDelegatesByTotalDelegatedFn : sortDelegatesByAlignedFn;
-
-  // Reset hasInitiallyOrdered when the search (or its resolved name matches,
-  // which can land after the metadata fetch) changes
-  useEffect(() => {
-    hasInitiallyOrdered.current = false;
-  }, [search, nameMatches]);
 
   // Memoize the delegates transformation to prevent unnecessary re-computations
   const delegatesWithTotals = useMemo(() => {
@@ -130,28 +121,30 @@ export function useStakeUserDelegates({
     }));
   }, [isDataReady, userDelegatesPage, restDelegates]);
 
-  // One-time setup of delegate list order when data first loads
-  // Runs independently of the selected delegate changing
-  useEffect(() => {
-    if (!delegatesWithTotals || hasInitiallyOrdered.current || !shouldSortDelegates) return;
-
-    hasInitiallyOrdered.current = true;
-
-    if (selectedDelegate && selectedDelegate !== ZERO_ADDRESS) {
-      // If there's a pre-selected delegate, put it first in the list
-      const orderedDelegates = sortDelegatesWithSelectedFirst(
-        delegatesWithTotals,
-        selectedDelegate,
-        sortDelegatesFn
-      );
-      setDisplayedDelegates(orderedDelegates);
-    } else {
-      // No pre-selected delegate, just sort by total delegated amount
-      // Copy first: the memoized array must not be sorted in place.
-      const sortedDelegates = [...delegatesWithTotals].sort(sortDelegatesFn);
-      setDisplayedDelegates(sortedDelegates);
-    }
-  }, [delegatesWithTotals, shouldSortDelegates, sortDelegatesFn, selectedDelegate]);
+  // The display order is fixed the first time a search's results arrive and
+  // held for that search, so selecting a delegate does not reshuffle the list
+  // under the pointer. The next search (or its resolved name matches, which
+  // can land after the metadata fetch) orders afresh. Set during render.
+  const [ordered, setOrdered] = useState<{
+    search?: string;
+    nameMatches?: `0x${string}`[];
+    list: DelegateInfoWithTotal[];
+  }>();
+  const orderedForThisSearch =
+    ordered !== undefined && ordered.search === search && ordered.nameMatches === nameMatches;
+  if (shouldSortDelegates && delegatesWithTotals && !orderedForThisSearch) {
+    setOrdered({
+      search,
+      nameMatches,
+      list:
+        selectedDelegate && selectedDelegate !== ZERO_ADDRESS
+          ? // A pre-selected delegate goes first in the list
+            sortDelegatesWithSelectedFirst(delegatesWithTotals, selectedDelegate, sortDelegatesFn)
+          : // Copy first: the memoized array must not be sorted in place.
+            [...delegatesWithTotals].sort(sortDelegatesFn)
+    });
+  }
+  const displayedDelegates = orderedForThisSearch ? ordered.list : undefined;
 
   return {
     isLoading,
