@@ -44,10 +44,7 @@ export function StakeManageCard<Mode extends string>({
   children: ReactNode;
 }) {
   return (
-    <section
-      data-testid={dataTestId}
-      className="bg-bgSecondary rounded-card flex flex-col p-5 backdrop-blur-[20px] md:p-8"
-    >
+    <section data-testid={dataTestId} className="bg-bgSecondary rounded-card flex flex-col p-5 md:p-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-1.5" role="group">
           {modes.map(mode => {

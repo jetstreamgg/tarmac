@@ -36,7 +36,7 @@ export function StakeTakeoverCard({
     <section
       data-testid={dataTestId}
       // Design QA 3445:58550: every card fills with bg-secondary in both themes.
-      className="bg-bgSecondary rounded-card flex flex-col p-5 backdrop-blur-[20px] md:p-8"
+      className="bg-bgSecondary rounded-card flex flex-col p-5 md:p-8"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
