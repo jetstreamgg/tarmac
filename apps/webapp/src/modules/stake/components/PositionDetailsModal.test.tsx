@@ -169,7 +169,7 @@ describe('PositionDetailsModal', () => {
 
     const borrow = screen.getByTestId('stake-manage-cta-borrow') as HTMLButtonElement;
     expect(borrow.disabled).toBe(true);
-    expect(screen.getByTestId('stake-manage-cta-borrow-hint').textContent).toContain('1,440,000 SKY');
+    expect(screen.getByTestId('stake-manage-cta-borrow-hint').textContent).toContain('1,440,000.00 SKY');
   });
 
   it('derives the warning sentence from the liquidation proximity (M14)', () => {

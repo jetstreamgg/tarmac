@@ -443,7 +443,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /^Withdrawing 1,000,000 SKY would liquidate your position\. With your 30,000 USDS debt, you can withdraw at most 2,229,029 SKY\.$/
+      /^Withdrawing 1,000,000\.00 SKY would liquidate your position\. With your 30,000\.00 USDS debt, you can withdraw at most 2,229,029\.00 SKY\.$/
     );
     expect(confirmButton().disabled).toBe(true);
   });
@@ -495,7 +495,7 @@ describe('ManagePositionTakeover', () => {
     // 30k debt − 15k repay = 15k < 30k dust → minDebtNotMet; debt == dust, no partial.
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '15000' } });
     expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
-      'Your position needs at least 30,000 USDS of debt to stay open. Repay the full 30,000 to close it.'
+      'Your position needs at least 30,000.00 USDS of debt to stay open. Repay the full 30,000.00 to close it.'
     );
     expect(confirmButton().disabled).toBe(true);
   });
@@ -506,7 +506,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
     expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
-      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 20,000 and keep it, or repay the full 50,000 to close it.'
+      'Your position needs at least 30,000.00 USDS of debt to stay open. You can repay up to 20,000.00 and keep it, or repay the full 50,000.00 to close it.'
     );
   });
 
@@ -517,7 +517,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
     expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
-      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 20,000 and keep it.'
+      'Your position needs at least 30,000.00 USDS of debt to stay open. You can repay up to 20,000.00 and keep it.'
     );
   });
 
@@ -528,7 +528,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '25000' } });
     expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
-      'Your position needs at least 30,000 USDS of debt to stay open. You can repay up to 15,000 and keep it.'
+      'Your position needs at least 30,000.00 USDS of debt to stay open. You can repay up to 15,000.00 and keep it.'
     );
   });
 
@@ -585,7 +585,12 @@ describe('ManagePositionTakeover', () => {
   // regardless of which card the deep link pre-selected.
   it.each([
     { name: 'repay above the debt', mode: 'repay', amount: '100000', error: 'Amount exceeds debt' },
-    { name: 'sub-dust repay remainder', mode: 'repay', amount: '15000', error: 'needs at least 30,000 USDS' },
+    {
+      name: 'sub-dust repay remainder',
+      mode: 'repay',
+      amount: '15000',
+      error: 'needs at least 30,000.00 USDS'
+    },
     { name: 'repay without USDS', mode: 'repay', amount: '30000', error: 'need USDS', usdsBalance: 0n },
     {
       name: 'borrow above the ceiling',
@@ -677,13 +682,13 @@ describe('ManagePositionTakeover', () => {
     // Existing 30k debt at 1.25 / 0.0608, quoted at 80% proximity (0.04864):
     // min collateral 770,970.x → at most 2,229,029, floored to whole SKY.
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /With your 30,000 USDS debt, you can withdraw at most 2,229,029/
+      /With your 30,000\.00 USDS debt, you can withdraw at most 2,229,029\.00/
     );
 
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
     // Resulting 40k debt: min collateral 1,027,960 → at most 1,972,040.
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /With your 40,000 USDS debt, you can withdraw at most 1,972,0\d\d/
+      /With your 40,000\.00 USDS debt, you can withdraw at most 1,972,0\d\d\.00/
     );
   });
 
