@@ -171,7 +171,8 @@ export function RollingDigits({
       glyphs.current
         .get(key)
         ?.animate([{ transform: `translateX(${from - left}px)` }, { transform: 'none' }], {
-          duration: 300,
+          // In step with the pop-out fade, so the gap closes as the glyph goes.
+          duration: 200,
           easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
         });
     }
