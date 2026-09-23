@@ -3,12 +3,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { TermsModalProvider, useTermsModal } from './TermsModalContext';
 
 /**
- * The auto-open policy lives in TermsModalProvider's effects. The error effect
- * must be connection-guarded: `termsCheckError` can land on a DISCONNECTED app
- * when the failing /check resolves in the gap between wagmi's disconnect and
- * ConnectedContext's address effect (which moves the discard ref only after
- * paint) — an unguarded open would strand the terms modal over a disconnected
- * page, where nothing ever closes it again.
+ * The auto-open policy is decided during TermsModalProvider's render. The
+ * error transition stays connection-guarded: ConnectedContext now resets its
+ * verdict in the render that carries the new address and moves the discard ref
+ * in a layout effect, so a late /check result no longer lands after a
+ * disconnect — the guard is belt-and-braces, and an unguarded open would still
+ * strand the terms modal over a disconnected page, where nothing closes it.
  */
 
 const mocks = vi.hoisted(() => ({
