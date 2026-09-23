@@ -6,10 +6,18 @@ export type AddressScreeningResult = {
 };
 
 /**
- * One cache entry per address, shared between the connect-time hook below and
- * the pre-transaction gate (APP-501), so both read and write the same verdict:
- * a risky result found at Confirm flips the app-level blocked dialog through
- * this key, and a fresh connect-time verdict spares Confirm a refetch.
+ * How old a screening verdict may be and still clear a transaction without a
+ * re-check (APP-501; the edge caches 12h, so this is the tighter bound). Also
+ * the hook's staleness, so a verdict fetched before the terms serves the
+ * transactions that follow them instead of being re-fetched on focus.
+ */
+export const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
+
+/**
+ * One cache entry per address, shared between the hook below and the
+ * pre-transaction gate (APP-501), so both read and write the same verdict: a
+ * risky result found at Confirm flips the app-level blocked dialog through
+ * this key, and a fresh pre-terms verdict spares Confirm a refetch.
  */
 export const addressScreeningQueryKey = (address?: string) => ['auth', address];
 
@@ -45,8 +53,10 @@ export const useRestrictedAddressCheck = ({
   address,
   authUrl,
   enabled,
-  staleTime = 60000, // a verdict stays fresh for 60 seconds, so tab focus doesn't refetch on every switch
-  refetchInterval = 60000, // re-check every 60 seconds, matching useVpnCheck, so an error state can recover
+  // No polling: every screening is a billed provider call once the worker's
+  // edge cache expires, and a verdict only matters at the moments that gate on
+  // it (before the terms, and at Confirm — the gate re-checks a stale one).
+  staleTime = SCREENING_MAX_AGE_MS,
   ...options
 }: Props): {
   data: AddressScreeningResult | undefined;
@@ -59,7 +69,6 @@ export const useRestrictedAddressCheck = ({
     enabled: !!address && enabled,
     queryFn: () => fetchAddressScreening(address, authUrl),
     staleTime,
-    refetchInterval,
     ...options
   });
 

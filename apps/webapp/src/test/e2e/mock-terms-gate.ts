@@ -34,7 +34,7 @@ export const mockIpStatus = async (page: Page, { countryCode = 'US', isVpn }: Ip
   await page.route('**/ip/status', mockIpStatusHandler({ countryCode, isVpn }));
 };
 
-/** /address/status: connect-time and pre-transaction screening both read this. */
+/** /address/status: pre-terms and pre-transaction screening both read this. */
 export const mockAddressScreening = async (page: Page, { allowed = true }: { allowed?: boolean } = {}) => {
   await page.route('**/address/status*', route =>
     route.fulfill({

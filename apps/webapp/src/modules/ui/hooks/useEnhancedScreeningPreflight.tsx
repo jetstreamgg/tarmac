@@ -5,10 +5,10 @@ import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import {
   enhancedAddressScreeningQueryKey,
   fetchEnhancedAddressScreening,
-  requiresEnhancedScreening
+  requiresEnhancedScreening,
+  SCREENING_MAX_AGE_MS
 } from '@/hooks';
 import type { PreflightHook, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
-import { SCREENING_MAX_AGE_MS } from './useTermsSignatureGate';
 
 const CLEAR: TransactionPreflight = { kind: 'clear' };
 const PENDING: TransactionPreflight = { kind: 'pending' };
@@ -31,9 +31,9 @@ const PENDING: TransactionPreflight = { kind: 'pending' };
  * from the standard screening: a standard "clean" can never satisfy the
  * enhanced path.
  *
- * Fail closed: an errored check blocks. The query keeps retrying on a
- * 60s interval (matching the connect-time screening cadence) so a transient
- * outage recovers without the user having to relaunch the flow. A RISKY
+ * Fail closed: an errored check blocks. The query keeps retrying on a 60s
+ * interval so a transient outage recovers without the user having to relaunch
+ * the flow. A RISKY
  * verdict re-polls too, on a gentler 5-minute cadence: false positives are
  * expected most on this tier and the backend ships an admin purge for them
  * (api-workers #114) — without the re-poll a purged wallet would keep

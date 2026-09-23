@@ -300,6 +300,31 @@ describe('useTermsSignatureGate', () => {
     expect(mocks.signTerms).not.toHaveBeenCalled();
   });
 
+  // Nothing screens on connect, so for a returning wallet an empty cache is
+  // the common case at Confirm — and the app-level wall only covers the
+  // pre-terms check, so the gate's dialog is the surface here too.
+  it('a failed screening with no cached verdict surfaces the gate-owned dialog', async () => {
+    queryClient.removeQueries();
+    mocks.fetchAddressScreening.mockRejectedValue(new Error('screening down'));
+
+    let gateRef!: ReturnType<typeof useTermsSignatureGate>;
+    const Host = () => {
+      gateRef = useTermsSignatureGate();
+      return <>{gateRef.screeningDialog}</>;
+    };
+    render(<Host />, { wrapper });
+    const controls = makeControls();
+
+    await act(async () => {
+      await expect(gateRef.gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+        allow: false
+      });
+    });
+
+    expect(controls.closeModal).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/unable to verify this wallet/i)).not.toBeNull();
+  });
+
   it('a failed re-screen over a stale cached verdict surfaces the gate-owned dialog', async () => {
     seedScreening(true, FOUR_HOURS + 1);
     mocks.fetchAddressScreening.mockRejectedValue(new Error('screening down'));

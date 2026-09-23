@@ -92,6 +92,7 @@ export type { PendleMarketConfig, PendleConvertQuote } from './pendle/pendle';
 export {
   useRestrictedAddressCheck,
   addressScreeningQueryKey,
+  SCREENING_MAX_AGE_MS,
   fetchAddressScreening,
   type AddressScreeningResult
 } from './authentication/useRestrictedAddressCheck';

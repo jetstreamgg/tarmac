@@ -40,7 +40,10 @@ const mocks = vi.hoisted(() => ({
     error: undefined as Error | undefined
   },
   refetchAddressCheck: vi.fn(),
-  refetchVpnCheck: vi.fn()
+  refetchVpnCheck: vi.fn(),
+  // Every render's `enabled` for the screening query — whether the provider
+  // asked for a fetch, as opposed to observing whatever the cache holds.
+  screeningEnabled: vi.fn()
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -60,7 +63,12 @@ vi.mock('wagmi', async importOriginal => {
 });
 
 vi.mock('@/hooks', () => ({
-  useRestrictedAddressCheck: () => ({ ...mocks.authCheck, refetch: mocks.refetchAddressCheck }),
+  // The mock hands back `authCheck` whether or not the query is enabled, the
+  // way a disabled useQuery still observes its cache entry.
+  useRestrictedAddressCheck: ({ enabled }: { enabled: boolean }) => {
+    mocks.screeningEnabled(enabled);
+    return { ...mocks.authCheck, refetch: mocks.refetchAddressCheck };
+  },
   useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 }));
@@ -369,6 +377,17 @@ describe('ConnectedContext — the terms AND gate', () => {
   });
 
   describe('bypasses', () => {
+    it('skipAuthCheck never screens the address (dev and e2e runs)', () => {
+      vi.stubEnv('VITE_SKIP_AUTH_CHECK', 'true');
+      vi.stubEnv('VITE_ENV_NAME', 'development');
+
+      renderProvider();
+
+      expect(mocks.screeningEnabled.mock.calls.some(([enabled]) => enabled)).toBe(false);
+      fireEvent.click(screen.getByTestId('retry-access'));
+      expect(mocks.refetchAddressCheck).not.toHaveBeenCalled();
+    });
+
     it('skipAuthCheck opens both halves without a check', async () => {
       vi.stubEnv('VITE_SKIP_AUTH_CHECK', 'true');
       vi.stubEnv('VITE_ENV_NAME', 'development');
@@ -435,54 +454,100 @@ describe('ConnectedContext — the terms AND gate', () => {
       expect(blockReason()).toBe('region-restricted');
     });
 
-    it('blocks a screened-out wallet and never asks it for terms', async () => {
+    const screenedAtAnyPoint = () => mocks.screeningEnabled.mock.calls.some(([enabled]) => enabled);
+
+    // Screening sits between the terms check and the terms modal: only an
+    // address that has to be shown the terms is screened on connect.
+    it('screens an address that must accept the terms, and blocks a screened-out one', async () => {
       mocks.authCheck.data = { addressAllowed: false };
 
       renderProvider();
 
+      await waitFor(() => expect(blockReason()).toBe('wallet-blocked'));
       expect(authorized()).toBe('false');
-      expect(blockReason()).toBe('wallet-blocked');
-      // The flow puts screening before the T&C gate: a blocked wallet gets the
-      // blocked screen, so nothing here should reach the terms endpoint.
-      await waitFor(() => expect(mocks.trackVpnCheckCompleted).toHaveBeenCalled());
-      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
+      expect(mocks.checkTermsWithRetry).toHaveBeenCalledWith(ADDRESS_A);
+      expect(screenedAtAnyPoint()).toBe(true);
     });
 
-    it('holds the gate closed, without a block reason, while screening is in flight', () => {
+    it('does not screen a wallet that has already accepted the terms', async () => {
+      localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
+      mocks.authCheck = { data: undefined, isLoading: false, error: undefined };
+
+      renderProvider();
+
+      await waitFor(() => expect(accepted()).toBe('true'));
+      expect(authorized()).toBe('true');
+      expect(screenedAtAnyPoint()).toBe(false);
+    });
+
+    it('does not screen while the terms check is still in flight', () => {
+      mocks.checkTermsWithRetry.mockReturnValue(new Promise(() => {}));
+      mocks.authCheck = { data: undefined, isLoading: false, error: undefined };
+
+      renderProvider();
+
+      expect(screen.getByTestId('checking').textContent).toBe('true');
+      expect(authorized()).toBe('true');
+      expect(screenedAtAnyPoint()).toBe(false);
+    });
+
+    // The terms modal must not open on the render the terms verdict lands,
+    // before screening has even started.
+    it('holds the gate closed, without a block reason, while a required screening is in flight', async () => {
       mocks.authCheck = { data: undefined, isLoading: true, error: undefined };
 
       renderProvider();
 
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
       expect(authorized()).toBe('false');
       expect(blockReason()).toBe('none');
-      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
     });
 
-    it('runs the terms check only after screening resolves in favor', async () => {
-      mocks.authCheck = { data: undefined, isLoading: true, error: undefined };
+    it('screens after a worker-side /check refusal, so a screened-out wallet gets the blocked screen', async () => {
+      localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
+      mocks.checkTermsWithRetry.mockResolvedValue({ status: 'access-denied' });
+      mocks.authCheck.data = { addressAllowed: false };
 
-      const { rerender } = renderProvider();
-      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
+      renderProvider();
 
-      mocks.authCheck = { data: { addressAllowed: true }, isLoading: false, error: undefined };
-      rerender(
-        <ConnectedProvider>
-          <Consumer />
-        </ConnectedProvider>
-      );
-
-      await waitFor(() => expect(mocks.checkTermsWithRetry).toHaveBeenCalledWith(ADDRESS_A));
-      expect(authorized()).toBe('true');
+      await waitFor(() => expect(screen.getByTestId('denied').textContent).toBe('true'));
+      expect(screenedAtAnyPoint()).toBe(true);
+      expect(blockReason()).toBe('wallet-blocked');
     });
 
-    it('fails closed with a distinct state when screening is unavailable', () => {
+    // The pre-transaction gate writes the same cache entry the provider
+    // observes: a risky verdict found at Confirm blocks the app.
+    it('blocks an accepted wallet when a risky verdict lands in the shared cache', async () => {
+      localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
+      mocks.authCheck.data = { addressAllowed: false };
+
+      renderProvider();
+
+      await waitFor(() => expect(accepted()).toBe('true'));
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('wallet-blocked');
+      expect(screenedAtAnyPoint()).toBe(false);
+    });
+
+    it('fails closed with a distinct state when screening before the terms is unavailable', async () => {
       mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
 
       renderProvider();
 
+      await waitFor(() => expect(blockReason()).toBe('screening-unavailable'));
       expect(authorized()).toBe('false');
-      expect(blockReason()).toBe('screening-unavailable');
-      expect(mocks.checkTermsWithRetry).not.toHaveBeenCalled();
+    });
+
+    // At Confirm the gate owns a failed screening with its own dialog.
+    it('does not wall off an accepted wallet over a screening failure outside the terms flow', async () => {
+      localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
+      mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
+
+      renderProvider();
+
+      await waitFor(() => expect(accepted()).toBe('true'));
+      expect(authorized()).toBe('true');
+      expect(blockReason()).toBe('none');
     });
 
     it('keeps a cached screening approval through a failed refetch', () => {
