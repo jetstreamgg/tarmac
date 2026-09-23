@@ -36,10 +36,11 @@ const ADDRESS_A = '0x1111111111111111111111111111111111111111';
 const ADDRESS_B = '0x2222222222222222222222222222222222222222';
 
 const ModalState = () => {
-  const { isModalOpen, closeModal } = useTermsModal();
+  const { isModalOpen, openModal, closeModal } = useTermsModal();
   return (
     <>
       <div data-testid="modal-open">{String(isModalOpen)}</div>
+      <button data-testid="open-modal" onClick={openModal} />
       <button data-testid="close-modal" onClick={closeModal} />
     </>
   );
@@ -143,5 +144,81 @@ describe('TermsModalProvider account switching', () => {
       </TermsModalProvider>
     );
     expect(screen.getByTestId('modal-open').textContent).toBe('false');
+  });
+});
+
+/**
+ * The remaining render-time transitions: each one is an edge the provider
+ * observes between two renders, so every test drives the edge and reads the
+ * open state the same render answers with.
+ */
+describe('TermsModalProvider transitions', () => {
+  const rerenderProvider = (rerender: ReturnType<typeof renderProvider>['rerender']) =>
+    rerender(
+      <TermsModalProvider>
+        <ModalState />
+      </TermsModalProvider>
+    );
+
+  it('closes on disconnect and greets the same address again on reconnect', () => {
+    mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
+    mocks.connected = { isConnectedAndAcceptedTerms: false, termsCheckError: false, isAuthorized: true };
+    const { rerender } = renderProvider();
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+
+    mocks.isConnected = false;
+    mocks.address = undefined;
+    mocks.connected = { ...mocks.connected, isAuthorized: false };
+    rerenderProvider(rerender);
+    expect(screen.getByTestId('modal-open').textContent).toBe('false');
+
+    // The latch went with the connection: the next one is prompted afresh,
+    // even for the address that was already prompted before.
+    mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
+    mocks.connected = { ...mocks.connected, isAuthorized: true };
+    rerenderProvider(rerender);
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+  });
+
+  it('closes when acceptance lands, and only then', () => {
+    mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
+    mocks.connected = { isConnectedAndAcceptedTerms: false, termsCheckError: false, isAuthorized: true };
+    const { rerender } = renderProvider();
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+
+    mocks.connected = { ...mocks.connected, isConnectedAndAcceptedTerms: true };
+    rerenderProvider(rerender);
+    expect(screen.getByTestId('modal-open').textContent).toBe('false');
+
+    // Reading the terms again while accepted is a manual open: no transition
+    // fires, so it stays open across renders.
+    fireEvent.click(screen.getByTestId('open-modal'));
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+    rerenderProvider(rerender);
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+  });
+
+  it('re-opens when a retried check fails again', () => {
+    mocks.isConnected = true;
+    mocks.address = ADDRESS_A;
+    mocks.connected = { isConnectedAndAcceptedTerms: false, termsCheckError: true, isAuthorized: false };
+    const { rerender } = renderProvider();
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
+
+    fireEvent.click(screen.getByTestId('close-modal'));
+    expect(screen.getByTestId('modal-open').textContent).toBe('false');
+
+    // Retry clears the flag (the check is back in flight)...
+    mocks.connected = { ...mocks.connected, termsCheckError: false };
+    rerenderProvider(rerender);
+    expect(screen.getByTestId('modal-open').textContent).toBe('false');
+
+    // ...and a second failure is a fresh edge, so the error state shows again.
+    mocks.connected = { ...mocks.connected, termsCheckError: true };
+    rerenderProvider(rerender);
+    expect(screen.getByTestId('modal-open').textContent).toBe('true');
   });
 });

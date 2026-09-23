@@ -49,9 +49,6 @@ const loadUserConfig = (): UserConfig => {
 
 export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const [userConfig, setUserConfig] = useState<UserConfig>(loadUserConfig);
-  // Read before the first render, so there is no loading phase; the flag stays
-  // in the context for its consumers' sake.
-  const loaded = true;
 
   // Sync `data-theme` with the user's theme (index.html sets the initial value).
   useEffect(() => {
@@ -98,7 +95,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         siteConfig,
         userConfig,
         updateUserConfig,
-        loaded,
         locale,
         expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,
         setExpertRiskDisclaimerShown,
