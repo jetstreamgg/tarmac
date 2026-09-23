@@ -7,6 +7,8 @@ const h = vi.hoisted(() => ({
   modalProps: undefined as Record<string, unknown> | undefined,
   sheetProps: undefined as Record<string, unknown> | undefined,
   claimProps: undefined as Record<string, unknown> | undefined,
+  rewardProps: undefined as Record<string, unknown> | undefined,
+  delegateProps: undefined as Record<string, unknown> | undefined,
   reopenProps: undefined as Record<string, unknown> | undefined,
   postMortemProps: undefined as Record<string, unknown> | undefined,
   positions: undefined as unknown[] | undefined
@@ -62,6 +64,17 @@ vi.mock('./StakeClaimModal', () => ({
   }
 }));
 
+vi.mock('./StakeChangeSelectionModal', () => ({
+  StakeChangeRewardModal: (props: Record<string, unknown>) => {
+    h.rewardProps = props;
+    return <div data-testid="reward-modal-stub" />;
+  },
+  StakeChangeDelegateModal: (props: Record<string, unknown>) => {
+    h.delegateProps = props;
+    return <div data-testid="delegate-modal-stub" />;
+  }
+}));
+
 vi.mock('./OpenPositionTakeover', () => ({
   OpenPositionTakeover: (props: Record<string, unknown>) => {
     h.reopenProps = props.reopen as Record<string, unknown>;
@@ -77,8 +90,9 @@ describe('manageActionInit', () => {
     expect(manageActionInit('withdraw')).toEqual({ stakeCard: 'withdraw' });
     expect(manageActionInit('borrow')).toEqual({ borrowCard: 'borrow' });
     expect(manageActionInit('repay')).toEqual({ borrowCard: 'repay' });
-    expect(manageActionInit('reward')).toEqual({ rewardCard: true });
-    expect(manageActionInit('delegate')).toEqual({ delegateCard: true });
+    // Reward/delegate open their own modals, not the sheet.
+    expect(manageActionInit('reward')).toBeNull();
+    expect(manageActionInit('delegate')).toBeNull();
   });
 });
 
@@ -125,6 +139,8 @@ describe('PositionManageFlow', () => {
     h.modalProps = undefined;
     h.sheetProps = undefined;
     h.claimProps = undefined;
+    h.rewardProps = undefined;
+    h.delegateProps = undefined;
     h.reopenProps = undefined;
     h.postMortemProps = undefined;
     h.positions = [makePosition()];
@@ -214,6 +230,7 @@ describe('PositionManageFlow', () => {
 
   it('swaps to the claim modal and its × returns to the details modal (F6/C11)', () => {
     render(<PositionManageFlow />);
+    expect(h.modalProps?.scrimHandoff).toBeFalsy();
 
     act(() => (h.modalProps!.onClaim as () => void)());
     expect(screen.getByTestId('claim-modal-stub')).toBeTruthy();
@@ -221,7 +238,27 @@ describe('PositionManageFlow', () => {
 
     act(() => (h.claimProps!.onClose as () => void)());
     expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+    // The claim modal is still fading out, so the details scrim mounts already up.
+    expect(h.modalProps?.scrimHandoff).toBe(true);
     // The flow params stay staged — only a successful claim clears them.
+    expect(mockSearchParams.get('flow')).toBe('manage');
+  });
+
+  it('opens the Change reward / Change delegate modals from the menu; × returns to details', () => {
+    render(<PositionManageFlow />);
+
+    act(() => (h.modalProps!.onAction as (a: string) => void)('reward'));
+    expect(screen.getByTestId('reward-modal-stub')).toBeTruthy();
+    expect(screen.queryByTestId('manage-sheet-stub')).toBeNull();
+    expect(h.rewardProps?.urnIndex).toBe(2);
+    act(() => (h.rewardProps!.onClose as () => void)());
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
+
+    act(() => (h.modalProps!.onAction as (a: string) => void)('delegate'));
+    expect(screen.getByTestId('delegate-modal-stub')).toBeTruthy();
+    expect(h.delegateProps?.urnIndex).toBe(2);
+    act(() => (h.delegateProps!.onClose as () => void)());
+    expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
     expect(mockSearchParams.get('flow')).toBe('manage');
   });
 

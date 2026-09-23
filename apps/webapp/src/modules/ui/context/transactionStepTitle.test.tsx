@@ -154,8 +154,7 @@ describe('TransactionModal — per-step title', () => {
 
     // Wallet/status screen: the title swaps to the transaction-screen title. The
     // INITIALIZED status chip echoes the same copy in its own pill (Figma
-    // review) — this single-step flow has no Steps header to hold it, so it
-    // renders inline, alongside the modal title.
+    // review), in the Steps header alongside the modal title.
     expect(screen.queryByText('Review supply')).toBeNull();
     expect(screen.getAllByText('Confirm in the wallet').length).toBeGreaterThan(0);
   });

@@ -6,7 +6,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { getVaultByAddress, type Token, useVaultMarketData } from '@/hooks';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
-import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -274,11 +274,11 @@ export function VaultModalForm({
                 {isSupply ? (
                   <Trans>Insufficient balance</Trans>
                 ) : isLiquidityConstrained ? (
-                  // Full precision: a rounded-up cap would name a maximum that itself
-                  // fails the gate.
+                  // Floored: a rounded-up cap would name a maximum that itself fails
+                  // the gate.
                   <Trans>
-                    Insufficient liquidity. Maximum available is {formatUnits(available, decimals)}{' '}
-                    {assetToken.symbol}.
+                    Insufficient liquidity. Maximum available is{' '}
+                    {formatBigInt(available, { unit: decimals, roundingMode: 'floor' })} {assetToken.symbol}.
                   </Trans>
                 ) : (
                   <Trans>Amount exceeds your position</Trans>

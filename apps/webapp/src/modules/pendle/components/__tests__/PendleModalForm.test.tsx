@@ -284,7 +284,10 @@ describe('PendleModalForm', () => {
       // Market implied rate before an amount, the quote's effective rate after.
       expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.20%');
       typeAmount('100');
-      expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.90%');
+      // The old digits are still rolling out of the cell; read only what stays.
+      const cell = screen.getByTestId('pendle-modal-row-Fixed rate').cloneNode(true) as HTMLElement;
+      cell.querySelectorAll('[data-testid="rolling-digit-out"]').forEach(el => el.remove());
+      expect(cell.textContent).toContain('4.90%');
       expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
       expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
     });
@@ -327,7 +330,7 @@ describe('PendleModalForm', () => {
       renderForm('supply');
       fireEvent.click(screen.getByTestId('pendle-modal-max'));
 
-      expect((screen.getByTestId('pendle-modal-amount-input') as HTMLInputElement).value).toBe('1000');
+      expect((screen.getByTestId('pendle-modal-amount-input') as HTMLInputElement).value).toBe('1,000');
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
     });
 
@@ -399,8 +402,8 @@ describe('PendleModalForm', () => {
       typeAmount('100');
 
       expect(lastToastUpdate()).toEqual({
-        loading: 'Supplying 100 USDG',
-        success: '100 USDG supplied!',
+        loading: 'Supplying 100.00 USDG',
+        success: '100.00 USDG supplied!',
         error: 'Supply failed'
       });
     });
@@ -450,8 +453,8 @@ describe('PendleModalForm', () => {
       typeAmount('200');
 
       expect(lastToastUpdate()).toEqual({
-        loading: 'Withdrawing 200 PT-USDG',
-        success: '200 PT-USDG withdrawn!',
+        loading: 'Withdrawing 200.00 PT-USDG',
+        success: '200.00 PT-USDG withdrawn!',
         error: 'Withdrawal failed'
       });
     });

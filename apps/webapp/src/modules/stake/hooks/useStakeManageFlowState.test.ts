@@ -5,49 +5,31 @@ import {
   StakeManageFlowState
 } from './useStakeManageFlowState';
 
-const DELEGATE = '0x4444444444444444444444444444444444444444' as const;
-
 const base: StakeManageFlowState = initStakeManageFlowState({});
 
 describe('initStakeManageFlowState', () => {
-  it('starts with every card off by default', () => {
+  it('starts with the borrow card off by default', () => {
     expect(base).toEqual({
-      stakeEnabled: false,
       stakeMode: 'stake',
       skyAmount: 0n,
       borrowEnabled: false,
       borrowMode: 'borrow',
       usdsAmount: 0n,
-      wipeAll: false,
-      rewardEnabled: false,
-      selectedRewardContract: undefined,
-      delegateEnabled: false,
-      selectedDelegate: undefined
+      wipeAll: false
     });
   });
 
   it('pre-toggles cards per the menu deep-link mapping', () => {
-    expect(initStakeManageFlowState({ stakeCard: 'withdraw' })).toMatchObject({
-      stakeEnabled: true,
-      stakeMode: 'withdraw'
-    });
+    expect(initStakeManageFlowState({ stakeCard: 'withdraw' })).toMatchObject({ stakeMode: 'withdraw' });
     expect(initStakeManageFlowState({ borrowCard: 'repay' })).toMatchObject({
       borrowEnabled: true,
       borrowMode: 'repay'
     });
-    expect(initStakeManageFlowState({ rewardCard: true })).toMatchObject({ rewardEnabled: true });
-    expect(initStakeManageFlowState({ delegateCard: true })).toMatchObject({ delegateEnabled: true });
   });
 });
 
 describe('stakeManageFlowReducer', () => {
-  it('clears the card amount when its toggle goes off', () => {
-    const withAmount = stakeManageFlowReducer(
-      { ...base, stakeEnabled: true, skyAmount: 5n },
-      { type: 'setStakeEnabled', enabled: false }
-    );
-    expect(withAmount.skyAmount).toBe(0n);
-
+  it('clears the borrow amount when its toggle goes off', () => {
     const withRepay = stakeManageFlowReducer(
       { ...base, borrowEnabled: true, borrowMode: 'repay', usdsAmount: 5n, wipeAll: true },
       { type: 'setBorrowEnabled', enabled: false }
@@ -59,7 +41,6 @@ describe('stakeManageFlowReducer', () => {
   it('clears only that card amount on a segmented mode switch (M21)', () => {
     const state: StakeManageFlowState = {
       ...base,
-      stakeEnabled: true,
       skyAmount: 7n,
       borrowEnabled: true,
       borrowMode: 'repay',
@@ -85,35 +66,5 @@ describe('stakeManageFlowReducer', () => {
 
     const typed = stakeManageFlowReducer(staged, { type: 'setUsdsAmount', amount: 50n });
     expect(typed.wipeAll).toBe(false);
-  });
-
-  it('reward selection is plain-set (no deselect) and cleared by the toggle', () => {
-    const REWARD = '0x5555555555555555555555555555555555555555' as const;
-    const on = stakeManageFlowReducer(base, { type: 'setRewardEnabled', enabled: true });
-    const selected = stakeManageFlowReducer(on, { type: 'selectRewardContract', rewardContract: REWARD });
-    expect(selected.selectedRewardContract).toBe(REWARD);
-
-    // Re-clicking keeps the selection — a position always has a farm, so
-    // "unstage" is re-picking the current one, not deselecting.
-    const reclicked = stakeManageFlowReducer(selected, {
-      type: 'selectRewardContract',
-      rewardContract: REWARD
-    });
-    expect(reclicked.selectedRewardContract).toBe(REWARD);
-
-    const off = stakeManageFlowReducer(selected, { type: 'setRewardEnabled', enabled: false });
-    expect(off.selectedRewardContract).toBeUndefined();
-  });
-
-  it('delegate selection is click-again-to-deselect and cleared by the toggle', () => {
-    const on = stakeManageFlowReducer(base, { type: 'setDelegateEnabled', enabled: true });
-    const selected = stakeManageFlowReducer(on, { type: 'selectDelegate', delegate: DELEGATE });
-    expect(selected.selectedDelegate).toBe(DELEGATE);
-
-    const deselected = stakeManageFlowReducer(selected, { type: 'selectDelegate', delegate: DELEGATE });
-    expect(deselected.selectedDelegate).toBeUndefined();
-
-    const off = stakeManageFlowReducer(selected, { type: 'setDelegateEnabled', enabled: false });
-    expect(off.selectedDelegate).toBeUndefined();
   });
 });

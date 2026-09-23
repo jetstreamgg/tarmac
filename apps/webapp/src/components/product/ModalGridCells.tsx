@@ -10,6 +10,7 @@ import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/Ne
 import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
 import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/modules/ui/hooks/useChainImage';
+import { CellFigure } from '@/components/product/CellFigure';
 import { RateInfo, type RateInfoType } from './RateInfo';
 import type { ModalSummaryCell } from './ModalSummaryGrid';
 
@@ -218,12 +219,20 @@ export const estEarningsTrendCell = (value: string, trailingToken?: string): Mod
  * not carry the healthy-green accent.
  */
 function RatePercent({ value }: { value: string }) {
-  if (!value.endsWith('%') || value.startsWith('-')) return <>{value}</>;
+  if (value.startsWith('-')) return <CellFigure value={value} />;
   return (
-    <>
-      {value.slice(0, -1)}
-      <span className="bg-gradient-to-b from-[#02c2a1] to-[#9fde88] bg-clip-text text-transparent">%</span>
-    </>
+    <CellFigure
+      value={value}
+      renderUnit={unit =>
+        unit === '%' ? (
+          <span className="bg-gradient-to-b from-[#02c2a1] to-[#9fde88] bg-clip-text text-transparent">
+            %
+          </span>
+        ) : (
+          unit
+        )
+      }
+    />
   );
 }
 
@@ -355,7 +364,10 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
     (side === 'after' ? (cell.afterTone ?? cell.tone) : cell.tone) &&
     TONE_CLASS[(side === 'after' ? (cell.afterTone ?? cell.tone) : cell.tone)!];
 
-  const accent = (value: string) => (cell.rateAccent === 'savings' ? <RatePercent value={value} /> : value);
+  // Every figure rolls as the amount drives it (Design QA 3314:135843, as the
+  // stake cards do); a value that doesn't change never animates.
+  const accent = (value: string) =>
+    cell.rateAccent === 'savings' ? <RatePercent value={value} /> : <CellFigure value={value} />;
   if (cell.kind === 'single') {
     return (
       <span className="flex items-center gap-1">

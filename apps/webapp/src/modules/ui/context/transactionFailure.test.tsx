@@ -150,10 +150,9 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
   });
 
-  it('single-step flow: grows the step list on failure so the failed row tells the error, replacing the footer', () => {
-    // A lone step has no list in flight (the chip carries the state) and, since
-    // the status subtitles went (design QA, Sep 2026), nothing else names what
-    // failed — so the failure renders as the same DS Steps row multi-step flows get.
+  it('single-step flow: the failed row tells the error in the step list, replacing the footer', () => {
+    // Since the status subtitles went (design QA, Sep 2026), nothing else names
+    // what failed — the failure renders as the same DS Steps row multi-step flows get.
     renderFailedFlow([
       { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
     ]);
