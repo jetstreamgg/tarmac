@@ -10,7 +10,6 @@ import {
   DoorClosed,
   ExternalLink,
   Gem,
-  Info,
   TriangleAlert,
   UserRound,
   X
@@ -18,7 +17,7 @@ import {
 import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -26,6 +25,7 @@ import { TrendingUpGradient } from '@/modules/icons';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { RateInfo } from '@/components/product/RateInfo';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { liquidationDropPercent } from '../lib/positionDetail';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
@@ -74,10 +74,6 @@ const StatPairDivider = ({ className }: { className?: string }) => (
 const StatDesktopDivider = () => (
   <span className="bg-borderPrimary hidden h-8 w-px shrink-0 self-center md:block" aria-hidden />
 );
-
-// Info glyphs the mobile comp adds next to two bottom-strip labels; purely
-// decorative (StakeTakeoverBorrowCard precedent), absent from the desktop comp.
-const StatInfoIcon = () => <Info className="h-3 w-3 md:hidden" aria-hidden />;
 
 function MenuRow({
   icon,
@@ -150,11 +146,20 @@ function ManageMenuRows({
 }) {
   if (loading) {
     // Active vs inactive is unknown until the vault resolves — a premature
-    // active menu would offer the wrong flow for an emptied urn.
+    // active menu would offer the wrong flow for an emptied urn. The rows
+    // keep MenuRow's geometry so the card doesn't grow when the menu lands.
     return (
-      <div className="flex flex-col gap-4 py-2" data-testid={`stake-manage-menu-loading${idSuffix}`}>
+      <div className="flex flex-col" data-testid={`stake-manage-menu-loading${idSuffix}`}>
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-9 w-full" />
+          <div
+            key={i}
+            className={cn(
+              'flex items-center',
+              variant === 'panel' ? 'border-borderPrimary border-b py-8' : 'h-14'
+            )}
+          >
+            <Skeleton className="h-4 w-40" />
+          </div>
         ))}
       </div>
     );
@@ -310,6 +315,8 @@ function ManageCtas({
   isInactive,
   hasDebt,
   hasBorrowHistory,
+  canBorrow,
+  minStakeToBorrow,
   onAction,
   onReopen,
   size = 'xl',
@@ -319,6 +326,9 @@ function ManageCtas({
   isInactive: boolean;
   hasDebt: boolean;
   hasBorrowHistory: boolean;
+  /** Below the dust-implied stake the borrow flow is a dead end, so the CTA disables. */
+  canBorrow: boolean;
+  minStakeToBorrow: bigint | undefined;
   onAction: (action: StakeManageAction) => void;
   onReopen: (borrowExpanded: boolean) => void;
   size?: 'xl' | 'l';
@@ -354,11 +364,23 @@ function ManageCtas({
           variant="secondary"
           size={size}
           className="w-full"
+          disabled={!canBorrow}
           onClick={() => onAction('borrow')}
           data-testid={`stake-manage-cta-borrow${idSuffix}`}
         >
           <Trans>Borrow USDS</Trans>
         </Button>
+      )}
+      {!hasDebt && !canBorrow && (
+        <p
+          className="text-textSecondary basis-full text-xs leading-[18px]"
+          data-testid={`stake-manage-cta-borrow-hint${idSuffix}`}
+        >
+          <Trans>
+            Stake at least {minStakeToBorrow !== undefined ? formatBigInt(minStakeToBorrow) : NO_VALUE} SKY to
+            borrow USDS.
+          </Trans>
+        </p>
       )}
     </>
   );
@@ -384,7 +406,8 @@ export function PositionDetailsModal({
   onClose,
   onAction,
   onClaim,
-  onReopen
+  onReopen,
+  scrimHandoff = false
 }: {
   urnIndex: number;
   /**
@@ -399,6 +422,8 @@ export function PositionDetailsModal({
   onClaim: () => void;
   /** Reopen CTA on inactive urns (C17): borrow-expanded iff the urn ever had debt. */
   onReopen: (borrowExpanded: boolean) => void;
+  /** Returning from a modal that closes in the same commit: the scrim mounts already up. */
+  scrimHandoff?: boolean;
 }) {
   const detail = useStakePositionDetail(urnIndex);
   const { vault, hasDebt, isInactive } = detail;
@@ -465,7 +490,7 @@ export function PositionDetailsModal({
     ) : undefined;
 
   const menuRowsProps = {
-    loading: detail.vaultLoading,
+    loading: detail.shapeLoading,
     isInactive,
     hasDebt,
     showInactiveBorrowBlock,
@@ -475,10 +500,12 @@ export function PositionDetailsModal({
     onClaim
   };
   const ctaProps = {
-    loading: detail.vaultLoading,
+    loading: detail.shapeLoading,
     isInactive,
     hasDebt,
     hasBorrowHistory: detail.hasBorrowHistory,
+    canBorrow: detail.canBorrow,
+    minStakeToBorrow: vault?.minCollateralForDust,
     onAction,
     onReopen
   };
@@ -489,6 +516,7 @@ export function PositionDetailsModal({
         <DialogContent
           aria-describedby={undefined}
           data-testid="stake-position-details"
+          overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
           // sm:p-0 kills the shared DialogContent's sm:px-10/sm:py-8 — the
           // comp's subsection panel runs full-bleed to the card edges
           // (1036:214369: x=720 y=0 h=card), so the card itself carries no
@@ -877,7 +905,19 @@ export function PositionDetailsModal({
                       label={
                         <>
                           <Trans>Liquidation risk</Trans>
-                          <StatInfoIcon />
+                          {/* Same explainer as the manage sheet row; the mobile
+                              comp draws the glyph (1292:63278), desktop keeps it
+                              so both breakpoints answer the question. */}
+                          <InfoTooltip
+                            title={t`Liquidation risk`}
+                            iconSize={12}
+                            iconClassName="shrink-0"
+                            content={
+                              vault?.liquidationPrice
+                                ? t`Sky closes your position if SKY's price drops to your liquidation price (${formattedLiqPrice}). Your collateral is sold to repay the debt plus a penalty.`
+                                : t`Sky closes your position if SKY's price drops to your liquidation price. Your collateral is sold to repay the debt plus a penalty.`
+                            }
+                          />
                         </>
                       }
                     >
@@ -932,7 +972,7 @@ export function PositionDetailsModal({
 
             {/* Side-by-side pair (comp 1036:214314) — equal columns, labels may
                 ellipsize rather than overflow the 322px panel. */}
-            <div className="flex gap-2 [&>button]:min-w-0 [&>button]:flex-1">
+            <div className="flex flex-wrap gap-2 [&>button]:min-w-0 [&>button]:flex-1">
               <ManageCtas {...ctaProps} size="l" />
             </div>
           </div>

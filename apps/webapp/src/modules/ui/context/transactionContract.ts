@@ -135,6 +135,12 @@ export type TransactionConfig = {
    */
   skipReview?: boolean;
   /**
+   * The modal replaces another modal that unmounts in the same commit (the
+   * stake change/claim modals over the details modal): its scrim mounts
+   * already up instead of fading in over the uncovered page.
+   */
+  scrimHandoff?: boolean;
+  /**
    * Content the provider keeps mounted (hidden) for the whole modal lifetime —
    * independent of which screen is showing and of minimize. This is where a flow
    * hosts the in-flight engine hook whose receipt-watcher must survive a minimize:

@@ -298,6 +298,26 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(cell().textContent).toContain('7.5');
   });
 
+  it('rolls the projection figures as the amount changes (Design QA 3314:135843)', () => {
+    renderForm('supply');
+    const cell = () => screen.getByTestId('savings-modal-row-Est. 1Y yield (at current rate)');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '100' } });
+    within(cell())
+      .queryAllByTestId('rolling-digit-in')
+      .forEach(el => fireEvent.animationEnd(el));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '300' } });
+    // 400 USDS × 3.75% = 15: the delta's right side turns over digit by digit,
+    // the left side (the position today) stays still.
+    const moving = within(cell()).getAllByTestId('rolling-digit-in');
+    expect(moving.length).toBeGreaterThan(0);
+    expect(moving.every(el => el.getAttribute('data-transition') === 'roll')).toBe(true);
+    const shown = cell().cloneNode(true) as HTMLElement;
+    shown.querySelectorAll('[data-testid="rolling-digit-out"]').forEach(el => el.remove());
+    expect(shown.textContent).toContain('3.7515.00');
+    const [before] = within(cell()).getAllByTestId('rolling-digits');
+    expect(within(before).queryAllByTestId('rolling-digit-in')).toHaveLength(0);
+  });
+
   it('offers USDS, DAI and USDC origin options on mainnet supply', () => {
     renderForm('supply');
     expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();

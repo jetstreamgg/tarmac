@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { NetworkFeeData } from '@/hooks';
 import { BundleTogglePanel } from './BundleTogglePanel';
 import { NO_VALUE } from '@/lib/constants';
+import { CellFigure } from '@/components/product/CellFigure';
 
 export type BundleFeeState = {
   /** Every input the row depends on has landed. */
@@ -101,7 +102,8 @@ export function NetworkFeeValue({
   ) : loading && !state.ready ? (
     <Skeleton className="h-4 w-10 rounded" data-testid="network-fee-loading" />
   ) : (
-    <>{fee?.formatted ?? NO_VALUE}</>
+    // The estimate rolls as it refreshes, like every other figure in the grid.
+    <CellFigure value={fee?.formatted ?? NO_VALUE} />
   );
 
   const showBadge = state.settled && state.canBundle;

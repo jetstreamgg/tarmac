@@ -15,6 +15,7 @@ import { TRUST_LEVELS } from '../constants';
 import { COLLATERAL_PRICE_SYMBOL, SupportedCollateralTypes } from './vaults.constants';
 import { getIlkName } from './helpers';
 import { usePrices } from '../prices/usePrices';
+import { useSimulatedDripRate } from './useSimulatedDripRate';
 
 export function useSimulatedVault(
   collateralAmount: bigint,
@@ -48,7 +49,10 @@ export function useSimulatedVault(
     scopeKey: `vat-ilk-${ilkName}`
   });
 
-  const [, rate, spot, , dust] = vatIlkData || [];
+  const [, vatRate, spot, , dust] = vatIlkData || [];
+  // Use the dripped rate so the max borrow leaves room for the fee the tx itself accrues.
+  const { data: drippedRate, isLoading: isLoadingDrip, error: errorDrip } = useSimulatedDripRate(ilkHex);
+  const rate = drippedRate ?? vatRate;
 
   // MCD Spot
   const {
@@ -75,8 +79,8 @@ export function useSimulatedVault(
 
   const [, mat] = spotIlkData || [];
 
-  const isLoading = isLoadingVatIlk || isLoadingSpotPar || isLoadingSpotIlk;
-  const error = errorVatIlk || errorSpotPar || errorSpotIlk;
+  const isLoading = isLoadingVatIlk || isLoadingSpotPar || isLoadingSpotIlk || isLoadingDrip;
+  const error = errorVatIlk || errorSpotPar || errorSpotIlk || errorDrip;
 
   // Once all the values are present we can compute the vault info
   const allLoaded = [spot, rate, par, mat, dust].every(value => !!value || value === 0n);

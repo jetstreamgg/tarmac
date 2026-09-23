@@ -2,10 +2,10 @@ import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { BP, useBreakpointIndex } from '@/hooks';
-import { sanitizeAmountInput } from '@/lib/amountInput';
 import { cn } from '@/lib/cn';
 import { MODAL_STEP_EXIT_CLASSES } from '@/modules/ui/animation/modalStepMotion';
 import { AmountFieldHairline } from './amountFieldHairline';
+import { AmountInput } from './AmountInput';
 
 const PERCENT_PRESETS = [25, 50, 100] as const;
 export type PercentPreset = (typeof PERCENT_PRESETS)[number];
@@ -121,15 +121,14 @@ export function ModalAmountField({
               width={24}
               showChainIcon={false}
             />
-            <input
-              inputMode="decimal"
-              placeholder="0"
+            <AmountInput
               value={value}
-              onChange={e => onInput(sanitizeAmountInput(e.target.value, decimals))}
+              onChange={onInput}
+              decimals={decimals}
               disabled={disabled}
-              aria-label={inputAriaLabel}
-              data-testid={inputTestId}
-              className="font-circle text-fgPrimary placeholder:text-fgSecondary w-full min-w-0 bg-transparent text-[32px] leading-[35px] font-medium tracking-[-0.64px] outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              ariaLabel={inputAriaLabel}
+              dataTestId={inputTestId}
+              className="font-circle text-fgPrimary placeholder:text-fgSecondary text-[32px] leading-[35px] font-medium tracking-[-0.64px]"
             />
           </div>
         </div>

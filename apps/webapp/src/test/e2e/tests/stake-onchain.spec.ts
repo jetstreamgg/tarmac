@@ -256,12 +256,14 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
   await isolatedPage.getByTestId('stake-manage-menu-repay').click();
   await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
   await isolatedPage.getByTestId('stake-manage-borrow-amount').fill('20000');
-  await expect(isolatedPage.getByText(/Debt must be paid off entirely/)).toBeVisible({ timeout: 15_000 });
+  await expect(isolatedPage.getByText(/needs at least .* USDS of debt to stay open/)).toBeVisible({
+    timeout: 15_000
+  });
   await expect(confirm).toBeDisabled();
 
   // Full repay via the 100% chip (wipeAll semantics) zeroes art.
   const usdsBefore = await getTokenBalance(USDS_TOKEN, testAccount);
-  await isolatedPage.getByTestId('stake-manage-borrow-amount-percent-100').click();
+  await isolatedPage.getByTestId('stake-manage-borrow-amount-chip-max').click();
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
   await confirm.click();
   await confirmTransactionModal(isolatedPage);
@@ -321,14 +323,13 @@ test('mixed flow: supply + repay in one bundle moves ink up and art down togethe
   const debtBeforeMixed = await getUrnDebt(urn);
   const repayWad = parseUnits('7000', 18);
 
-  // Stake card via the details CTA, then hand-enable the borrow card and flip
-  // it to repay. Partial repay of 7K leaves ~31K debt — above the 30K dust
-  // floor, so the mixed bundle must not trip the dust-gap guard.
+  // Stake card via the details CTA; with debt the borrow card is already open,
+  // so just flip it to repay. Partial repay of 7K leaves ~31K debt — above the
+  // 30K dust floor, so the mixed bundle must not trip the dust-gap guard.
   await gotoManagePosition(isolatedPage, urnIndex);
   await isolatedPage.getByTestId('stake-manage-cta-stake').click();
   await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
   await isolatedPage.getByTestId('stake-manage-stake-amount').fill('200000');
-  await isolatedPage.getByTestId('stake-manage-borrow-card-toggle').click();
   await isolatedPage.getByTestId('stake-manage-borrow-card-mode-repay').click();
   const repayAmount = isolatedPage.getByTestId('stake-manage-borrow-amount');
   await expect(repayAmount).toBeEnabled({ timeout: 60_000 });
@@ -356,8 +357,9 @@ test('delegate change rewires the urn vote delegate on-chain', async ({ isolated
   expect(delegateBefore).not.toBe('0x0000000000000000000000000000000000000000');
 
   await gotoManagePosition(isolatedPage, urnIndex);
+  // Change delegate is its own modal (Figma 3015:61189), not the manage sheet.
   await isolatedPage.getByTestId('stake-manage-menu-change-delegate').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toHaveCount(0);
   await expect(isolatedPage.getByTestId('stake-manage-delegate-list')).toBeVisible({ timeout: 15_000 });
 
   // The current delegate arrives pre-selected (aria-pressed) — pick another.
@@ -365,7 +367,7 @@ test('delegate change rewires the urn vote delegate on-chain', async ({ isolated
     .locator('[data-testid^="stake-manage-delegate-0x"][aria-pressed="false"]')
     .first()
     .click();
-  const confirm = isolatedPage.getByTestId('stake-manage-confirm');
+  const confirm = isolatedPage.getByRole('button', { name: 'Change', exact: true });
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
   await confirm.click();
   await confirmTransactionModal(isolatedPage);
