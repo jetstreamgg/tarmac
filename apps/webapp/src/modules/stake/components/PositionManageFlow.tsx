@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -130,18 +130,29 @@ export function PositionManageFlow({
   // dismissal entirely. The motion takeovers are the reverse: their exit runs
   // by being REMOVED from the AnimatePresence below, so they must go to null.
   const isOpen = urnIndex !== null;
-  const lastOpen = useRef<{ urnIndex: number; view: ManageView; isPostMortem: boolean } | null>(null);
-  if (urnIndex !== null) {
-    lastOpen.current = {
-      urnIndex,
-      view,
-      // Tri-state predicate: an unknown liquidation state (subgraph down) has
-      // no bark to build a post-mortem from, so it falls through to the
-      // ordinary views — the table already flags the history as unavailable.
-      isPostMortem: !!position && isLiquidatedStakePosition(position) === true
-    };
+  // The open configuration, derived while open and remembered in state so the
+  // closing views still have one to render from after `urnIndex` goes null.
+  const openNow: { urnIndex: number; view: ManageView; isPostMortem: boolean } | null =
+    urnIndex !== null
+      ? {
+          urnIndex,
+          view,
+          // Tri-state predicate: an unknown liquidation state (subgraph down) has
+          // no bark to build a post-mortem from, so it falls through to the
+          // ordinary views — the table already flags the history as unavailable.
+          isPostMortem: !!position && isLiquidatedStakePosition(position) === true
+        }
+      : null;
+  const [lastOpen, setLastOpen] = useState(openNow);
+  if (
+    openNow &&
+    (openNow.urnIndex !== lastOpen?.urnIndex ||
+      openNow.view !== lastOpen.view ||
+      openNow.isPostMortem !== lastOpen.isPostMortem)
+  ) {
+    setLastOpen(openNow);
   }
-  const current = lastOpen.current;
+  const current = openNow ?? lastOpen;
 
   // The views are resolved into one element and handed to a single
   // AnimatePresence, rather than returned early. One boundary only: nesting a

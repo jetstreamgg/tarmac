@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
 import { useChainId, useChains, useConnection, useSwitchChain } from 'wagmi';
@@ -190,7 +190,10 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // Indirect onConfirm through a ref — the stored onConfirm can't be
   // live-updated, but the ref always points at the latest writeHook.execute.
   const executeRef = useRef<() => void>(() => undefined);
-  executeRef.current = () => writeHook.execute();
+  // A layout effect, so a confirm click can never run the previous render's execute.
+  useLayoutEffect(() => {
+    executeRef.current = () => writeHook.execute();
+  });
 
   // USD notional for the enhanced-screening threshold (APP-517): the valued
   // output leg, live across output-token/quote changes (pushed by the effect

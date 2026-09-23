@@ -14,7 +14,6 @@ export function CookieConsentBanner() {
     useCookieConsent();
   const { isCookieBannerRequired } = useGeoConfig();
   const autoAcceptedRef = useRef(false);
-  const prevBannerVisibleRef = useRef(bannerVisible);
   const [manuallyOpened, setManuallyOpened] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
   const [delayComplete, setDelayComplete] = useState(false);
@@ -23,25 +22,34 @@ export function CookieConsentBanner() {
   const [posthogEnabled, setPosthogEnabled] = useState(() => consent?.posthog ?? true);
   const [gaEnabled, setGaEnabled] = useState(() => consent?.google_analytics ?? true);
 
-  // Sync toggle when banner reopens OR consent changes while banner is open
-  // (e.g. user changed consent on another subdomain and switched back to this tab)
-  const prevVisibleRef = useRef(bannerVisible);
-  const prevConsentRef = useRef(consent);
+  // The previous render's visibility and consent, held in state so the
+  // transitions below are derived during render (React's "adjust state when a
+  // prop changes" pattern) instead of read off refs.
+  const [prevVisible, setPrevVisible] = useState(bannerVisible);
+  const [prevConsent, setPrevConsent] = useState(consent);
+  const bannerJustOpened = bannerVisible && !prevVisible;
+  const bannerJustClosed = !bannerVisible && prevVisible;
+  const consentChanged =
+    consent?.posthog !== prevConsent?.posthog || consent?.google_analytics !== prevConsent?.google_analytics;
+  if (prevVisible !== bannerVisible) setPrevVisible(bannerVisible);
+  if (consentChanged) setPrevConsent(consent);
 
-  const bannerJustOpened = bannerVisible && !prevVisibleRef.current;
-  const consentChangedWhileOpen =
-    bannerVisible &&
-    (consent?.posthog !== prevConsentRef.current?.posthog ||
-      consent?.google_analytics !== prevConsentRef.current?.google_analytics);
-
-  if (bannerJustOpened || consentChangedWhileOpen) {
+  // Sync the toggles when the banner reopens OR consent changes while it is
+  // open (e.g. the user changed consent on another subdomain and switched
+  // back to this tab).
+  if (bannerJustOpened || (bannerVisible && consentChanged)) {
     const syncedPosthog = consent?.posthog ?? true;
     const syncedGa = consent?.google_analytics ?? true;
     if (syncedPosthog !== posthogEnabled) setPosthogEnabled(syncedPosthog);
     if (syncedGa !== gaEnabled) setGaEnabled(syncedGa);
   }
-  prevVisibleRef.current = bannerVisible;
-  prevConsentRef.current = consent;
+
+  // Manual open: bannerVisible went false → true (the footer "Cookie Settings" link).
+  if (bannerJustOpened) {
+    setManuallyOpened(true);
+  } else if (bannerJustClosed) {
+    setManuallyOpened(false);
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => setDelayComplete(true), 3_500);
@@ -79,14 +87,6 @@ export function CookieConsentBanner() {
   const privacyLink = useMemo(() => {
     return getFooterLinks().find(l => /privacy/i.test(l.name));
   }, []);
-
-  // Detect manual open: bannerVisible went from false → true (user clicked "Cookie Settings")
-  if (bannerVisible && !prevBannerVisibleRef.current) {
-    setManuallyOpened(true);
-  } else if (!bannerVisible && prevBannerVisibleRef.current) {
-    setManuallyOpened(false);
-  }
-  prevBannerVisibleRef.current = bannerVisible;
 
   // Auto-show only when geo requires it; always allow manual open from footer link
   const visible =

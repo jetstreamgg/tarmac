@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Settings } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -84,23 +84,19 @@ export function SlippageMenu({
     value !== defaultValue ? decimalToPercentString(value) : ''
   );
 
-  // Ref mirror so the resync effect can read the latest text without listing
-  // it as a dependency (which would re-fire per keystroke and clobber edits).
-  const rawInputRef = useRef(rawInput);
-  rawInputRef.current = rawInput;
-
-  // Re-sync the input when the value changes from outside the menu
-  // (e.g. flow change resets the default; Auto click sets to default).
-  useEffect(() => {
+  // Re-sync the input when the value changes from outside the menu (a flow
+  // change resets the default; Auto sets it to the default). Done in the
+  // render that carries the change, against the text as it is then, so an
+  // edit that already means the new value is left alone.
+  const [synced, setSynced] = useState({ value, defaultValue });
+  if (synced.value !== value || synced.defaultValue !== defaultValue) {
+    setSynced({ value, defaultValue });
     if (value === defaultValue) {
       setRawInput('');
-      return;
-    }
-    const currentNumeric = percentStringToDecimal(rawInputRef.current);
-    if (Math.abs(currentNumeric - value) > 1e-9) {
+    } else if (Math.abs(percentStringToDecimal(rawInput) - value) > 1e-9) {
       setRawInput(decimalToPercentString(value));
     }
-  }, [value, defaultValue]);
+  }
 
   const isCustom = value !== defaultValue;
 

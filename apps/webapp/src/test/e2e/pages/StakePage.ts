@@ -79,7 +79,7 @@ export class StakePage {
       const network = params.get('network');
       const target = new URLSearchParams(qs);
       if (network && !target.has('network')) target.set('network', network);
-      history.pushState({}, '', `/stake${target.size ? `?${target.toString()}` : ''}`);
+      window.history.pushState({}, '', `/stake${target.size ? `?${target.toString()}` : ''}`);
       window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
     }, search);
     await expect(this.productPage()).toBeVisible({ timeout: 15_000 });

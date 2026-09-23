@@ -28,7 +28,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     trackErrorBoundaryTriggered({ boundaryName: this.componentName });
     reportError(error, {
       module: 'ui',
@@ -46,7 +46,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     });
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return <ErrorView variant={this.variant} />;

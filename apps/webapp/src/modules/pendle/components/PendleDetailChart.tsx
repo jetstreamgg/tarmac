@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { usePendleMarketChartData, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { useNow, usePendleMarketChartData, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { Chart, TimeFrame, type Data } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -24,9 +24,12 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
   const { data: marketsApi } = usePendleMarketsApiData();
   const stats = marketsApi?.[market.marketAddress];
 
+  // The window's cutoff moves with the clock; the series is daily, so a minute
+  // tick is plenty.
+  const nowMs = useNow();
   const data = useMemo<Data[]>(() => {
     if (!points) return [];
-    const cutoffSec = Math.floor(Date.now() / 1000) - getDayCountFromTimeFrame(timeFrame) * SECONDS_PER_DAY;
+    const cutoffSec = Math.floor(nowMs / 1000) - getDayCountFromTimeFrame(timeFrame) * SECONDS_PER_DAY;
     return points
       .filter(point => point.timestampSec >= cutoffSec)
       .flatMap(point => {
@@ -36,7 +39,7 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
         // Percent units (0.045 → 4.5).
         return [{ value: point.impliedApy * 100, date: new Date(point.timestampSec * 1000) }];
       });
-  }, [points, timeFrame]);
+  }, [points, timeFrame, nowMs]);
 
   // Headline reads the canonical current figure (matching the Details grid),
   // not the last historic bucket.

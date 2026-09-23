@@ -1,4 +1,13 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useMemo
+} from 'react';
 import { useConnection, useSignMessage } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
@@ -137,7 +146,6 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { isConnected, address, chainId, connector } = useConnection();
   const { signMessageAsync } = useSignMessage();
   const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
-  const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
   const [termsCheckDenied, setTermsCheckDenied] = useState(false);
   // Derived, not state: an effect-synced copy lags `address` by a render, and
@@ -191,64 +199,63 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Guard against stale responses when the address changes mid-flight
   const activeAddressRef = useRef<string | null>(null);
 
-  // Terms acceptance check with retry
-  const checkTermsAcceptance = useCallback(async (addr: string) => {
-    activeAddressRef.current = addr;
-    setIsCheckingTerms(true);
-    setTermsCheckError(false);
-    setTermsCheckDenied(false);
+  // Lands a terms-check result for `addr`, unless the address moved on while
+  // the check was in flight — that result belongs to nobody and is dropped.
+  const settleTermsCheck = useCallback(
+    (addr: string, result: Awaited<ReturnType<typeof checkTermsWithRetry>>) => {
+      if (activeAddressRef.current !== addr) return;
 
-    const result = await checkTermsWithRetry(addr);
-
-    // Discard result if the address changed while the check was in flight
-    if (activeAddressRef.current !== addr) return;
-
-    setIsCheckingTerms(false);
-
-    if (result.status === 'error') {
-      reportError(result.lastError ?? new Error('Terms check failed after retries'), {
-        module: 'auth',
-        flow: 'terms-check',
-        action: 'fetch',
-        type: 'terms_check_error'
-      });
-      setTermsCheck(undefined);
-      setTermsCheckError(true);
-    } else if (result.status === 'access-denied') {
-      // 403 is an intentional refusal by the worker's own gate. Screening runs
-      // before this check ever fires (APP-497), so reaching here means the
-      // worker disagreed with the client-side verdict — the modal must show a
-      // dead end rather than terms whose accept can never succeed.
-      setTermsCheck(undefined);
-      setTermsCheckDenied(true);
-    } else {
-      setTermsCheck(result);
-    }
-  }, []);
+      if (result.status === 'error') {
+        reportError(result.lastError ?? new Error('Terms check failed after retries'), {
+          module: 'auth',
+          flow: 'terms-check',
+          action: 'fetch',
+          type: 'terms_check_error'
+        });
+        setTermsCheck(undefined);
+        setTermsCheckError(true);
+      } else if (result.status === 'access-denied') {
+        // 403 is an intentional refusal by the worker's own gate. Screening runs
+        // before this check ever fires (APP-497), so reaching here means the
+        // worker disagreed with the client-side verdict — the modal must show a
+        // dead end rather than terms whose accept can never succeed.
+        setTermsCheck(undefined);
+        setTermsCheckDenied(true);
+      } else {
+        setTermsCheck(result);
+      }
+    },
+    []
+  );
 
   const retryTermsCheck = useCallback(() => {
     if (isConnected && address) {
-      checkTermsAcceptance(address);
+      // Clearing the outcome is what puts the check back in flight (see
+      // `isCheckingTerms`); the automatic kick-off never needs it, since the
+      // address reset below has already cleared it for a new address.
+      setTermsCheckError(false);
+      setTermsCheckDenied(false);
+      activeAddressRef.current = address;
+      checkTermsWithRetry(address).then(result => settleTermsCheck(address, result));
     }
-  }, [isConnected, address, checkTermsAcceptance]);
+  }, [isConnected, address, settleTermsCheck]);
 
   // The address changing (including to undefined on disconnect) invalidates
-  // any terms verdict already held — it belongs to the previous address. The
-  // ref moves with it so a continuation still in flight for the previous
-  // address (a check, or an acceptance POST) can tell it has been overtaken.
-  useEffect(() => {
-    activeAddressRef.current = address ?? null;
+  // any terms verdict already held — it belongs to the previous address, so it
+  // is dropped in the render that brings the new one.
+  const [verdictAddress, setVerdictAddress] = useState(address);
+  if (verdictAddress !== address) {
+    setVerdictAddress(address);
     setTermsCheck(undefined);
     setTermsCheckError(false);
     setTermsCheckDenied(false);
-    // The in-flight flag has to be dropped here too. An overtaken check returns
-    // at the ref guard above, *before* it can clear the flag itself, so a
-    // disconnect (or a wallet lock) mid-check would otherwise leave it stuck on
-    // — and WalletChip's cover is modal, so the app locks up until a reload.
-    // It cannot be cleared in the check's own `finally` instead: by then the
-    // next address may already have set it, and clearing it there would drop
-    // the cover for a check that is genuinely running.
-    setIsCheckingTerms(false);
+  }
+  // The ref moves with the address so a continuation still in flight for the
+  // previous one (a check, or an acceptance POST) can tell it has been
+  // overtaken. A layout effect: it lands in the same commit as the reset
+  // above, so no result can slip in between the two.
+  useLayoutEffect(() => {
+    activeAddressRef.current = address ?? null;
   }, [address]);
 
   // The flow puts address screening between wallet selection and the T&C gate
@@ -256,13 +263,20 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // address, so a blocked wallet sees the blocked screen, never the terms
   // modal — and the ordering is guaranteed rather than incidental.
   const addressScreeningPassed = authData?.addressAllowed === true;
+  const termsCheckDue = !skipAuthCheck && isConnected && !!address && addressScreeningPassed;
 
   useEffect(() => {
-    if (skipAuthCheck) return;
-    if (isConnected && address && addressScreeningPassed) {
-      checkTermsAcceptance(address);
+    if (termsCheckDue) {
+      checkTermsWithRetry(address).then(result => settleTermsCheck(address, result));
     }
-  }, [isConnected, address, addressScreeningPassed, skipAuthCheck, checkTermsAcceptance]);
+  }, [termsCheckDue, address, settleTermsCheck]);
+
+  // In flight is what is left once the check is due and has not answered: it
+  // ends in a verdict, an error or a denial, and the address reset above drops
+  // all three. Derived rather than latched, so a check overtaken by a
+  // disconnect (which returns at the ref guard, before any flag of its own)
+  // cannot leave WalletChip's modal cover up until a reload (APP-534).
+  const isCheckingTerms = termsCheckDue && termsCheck === undefined && !termsCheckError && !termsCheckDenied;
 
   const { hasLocalAcceptance, recordLocalAcceptance } = useTermsAcceptance({
     address,

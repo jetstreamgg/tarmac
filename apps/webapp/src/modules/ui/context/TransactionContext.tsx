@@ -640,7 +640,7 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -1039,7 +1039,7 @@ export function TransactionProvider({
         txHashRef.current = hash;
       }
     },
-    [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
+    [sessionGen, isStaleWrite]
   );
 
   const onSuccess = useCallback(
@@ -1181,16 +1181,7 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [
-      sessionGen,
-      chainId,
-      address,
-      isSafeWallet,
-      trackTransactionCompleted,
-      startNewFlow,
-      isStaleWrite,
-      isForeignHash
-    ]
+    [sessionGen, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useConnection } from 'wagmi';
 import { useConnectModal } from '../context/ConnectModalContext';
 import { useConnectedContext } from './ConnectedContext';
@@ -23,6 +23,23 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
   const { isConnected, address } = useConnection();
   const { openConnectModal } = useConnectModal();
 
+  // The open state is adjusted during render (React's "adjusting state when a
+  // prop changes"): each block sets state on a transition it can observe, so
+  // the render that carries the change also carries the answer.
+  const connectedAddress = isConnected && address ? address : undefined;
+
+  // A connection ending drops any open state: a modal latched open during a
+  // connection must not greet the next one (found in APP-497 QA — a blocked
+  // wallet's disconnect surfaced the terms modal it was never supposed to see).
+  const [prevConnectedAddress, setPrevConnectedAddress] = useState(connectedAddress);
+  if (connectedAddress !== prevConnectedAddress) {
+    setPrevConnectedAddress(connectedAddress);
+    if (!connectedAddress) {
+      setAutoOpenedForAddress(undefined);
+      setIsModalOpen(false);
+    }
+  }
+
   // Derived from state rather than the connect event: the flow puts address
   // screening between wallet selection and the T&C gate (APP-497), and
   // `isAuthorized` stays false until screening resolves — so a blocked wallet
@@ -30,49 +47,39 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
   // this cover the account switch for free: ConnectedContext drops the terms
   // verdict and re-runs screening on every address change, so the switched-in
   // address arrives here in exactly the state a fresh connection would.
-  useEffect(() => {
-    if (!isConnected || !address) {
-      // Also drop any open state: a modal latched open during a connection
-      // must not greet the next one (found in APP-497 QA — a blocked wallet's
-      // disconnect surfaced the terms modal it was never supposed to see).
-      setAutoOpenedForAddress(undefined);
-      setIsModalOpen(false);
-      return;
-    }
-    if (
-      autoOpenedForAddress !== address &&
-      isAuthorized &&
-      !isConnectedAndAcceptedTerms &&
-      !termsCheckError
-    ) {
-      setAutoOpenedForAddress(address);
-      setIsModalOpen(true);
-    }
-  }, [
-    isConnected,
-    address,
-    isAuthorized,
-    isConnectedAndAcceptedTerms,
-    termsCheckError,
-    autoOpenedForAddress
-  ]);
+  if (
+    connectedAddress &&
+    autoOpenedForAddress !== connectedAddress &&
+    isAuthorized &&
+    !isConnectedAndAcceptedTerms &&
+    !termsCheckError
+  ) {
+    setAutoOpenedForAddress(connectedAddress);
+    setIsModalOpen(true);
+  }
 
-  useEffect(() => {
+  // Acceptance landing closes the modal. Only the transition closes it: a
+  // manual open while already accepted (reading the terms) stays open.
+  const [prevAccepted, setPrevAccepted] = useState(isConnectedAndAcceptedTerms);
+  if (isConnectedAndAcceptedTerms !== prevAccepted) {
+    setPrevAccepted(isConnectedAndAcceptedTerms);
     if (isConnectedAndAcceptedTerms) {
-      closeModal();
+      setIsModalOpen(false);
     }
-  }, [isConnectedAndAcceptedTerms]);
+  }
 
-  useEffect(() => {
-    // Guarded on the connection: the error flag can land on a disconnected app
-    // when the failing /check resolves in the gap between wagmi's disconnect
-    // and the address effect that would have discarded it (the ref moves in a
-    // passive effect, after paint) — and an unguarded open here would strand
-    // the modal over a disconnected page.
-    if (termsCheckError && isConnected) {
+  // Guarded on the connection: the error flag can land on a disconnected app
+  // when the failing /check resolves in the gap between wagmi's disconnect and
+  // the address reset that would have discarded it — and an unguarded open
+  // here would strand the modal over a disconnected page.
+  const errorNeedsModal = termsCheckError && isConnected;
+  const [prevErrorNeedsModal, setPrevErrorNeedsModal] = useState(false);
+  if (errorNeedsModal !== prevErrorNeedsModal) {
+    setPrevErrorNeedsModal(errorNeedsModal);
+    if (errorNeedsModal) {
       setIsModalOpen(true);
     }
-  }, [termsCheckError, isConnected]);
+  }
 
   const openModal = () => {
     if (!isConnectedAndAcceptedTerms && openConnectModal) {

@@ -166,6 +166,8 @@ export function VaultModalForm({
   // across unrelated renders (matches the savings form).
   const amountDisplay = formatAsset(amount);
   const earningsAfterDisplay = projectEarnings(positionAfter);
+  // Resolved outside the memo so it keys on the string, not the i18n object.
+  const withdrawalLabel = i18n._(withdrawalWording(riskProfile, flow));
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`vault-modal-${flow}-review`}>
@@ -179,7 +181,7 @@ export function VaultModalForm({
               product: vaultName,
               rate,
               boostedRate,
-              withdrawal: i18n._(withdrawalWording(riskProfile, flow)),
+              withdrawal: withdrawalLabel,
               network: networkName,
               networkFee: feeCell.fee?.formatted ?? NO_VALUE
             }),
@@ -200,7 +202,8 @@ export function VaultModalForm({
       rate,
       boostedRate,
       networkName,
-      feeCell
+      feeCell,
+      withdrawalLabel
     ]
   );
 

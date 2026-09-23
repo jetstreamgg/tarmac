@@ -405,9 +405,7 @@ export function TransactionModal({
   // A three-screen flow guarded on its review goes back to the entry: the
   // review's summary (amounts, product address, fee) was built for the chain
   // the wallet just left, and the entry is where the form re-resolves.
-  useEffect(() => {
-    if (chainGuarded && isReview && hasReviewStage) setStep('entry');
-  }, [chainGuarded, isReview, hasReviewStage]);
+  if (chainGuarded && isReview && hasReviewStage) setStep('entry');
   const firstScreenErrorMessage = isEntry ? entry?.errorMessage : errorMessage;
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only

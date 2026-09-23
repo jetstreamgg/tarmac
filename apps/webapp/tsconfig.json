@@ -9,6 +9,5 @@
     // ...
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }],
-  "types": ["vitest/globals"]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

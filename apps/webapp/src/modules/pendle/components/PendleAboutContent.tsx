@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Activity, ArrowUpFromLine, AudioLines } from 'lucide-react';
-import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { useNow, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { IconboxAction } from '@/components/ui/iconbox';
@@ -28,7 +28,8 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
   const ptSymbol = `PT-${market.underlyingSymbol}`;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
+  const nowMs = useNow();
+  const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const apy = stats?.impliedApy;
   // Worked example: what 100 underlying redeems for at maturity, compounding
   // the current implied APY over the remaining term. The floored day count
