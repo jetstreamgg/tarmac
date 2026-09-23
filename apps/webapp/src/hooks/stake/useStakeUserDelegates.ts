@@ -84,7 +84,10 @@ export function useStakeUserDelegates({
   const startIndex = (page - 1) * pageSize;
   const endIndex = startIndex + pageSize;
 
-  const userDelegatesPage = userDelegatesData?.slice(startIndex, endIndex) || [];
+  const userDelegatesPage = useMemo(
+    () => userDelegatesData?.slice(startIndex, endIndex) || [],
+    [userDelegatesData, startIndex, endIndex]
+  );
   const remainingSlots = pageSize - userDelegatesPage.length;
 
   const excludeDelegates = userDelegatesData?.map(delegate => delegate.id);
@@ -106,7 +109,6 @@ export function useStakeUserDelegates({
   const isLoading = isLoadingUserDelegates || isLoadingRestDelegates;
   const isDataReady = user && user !== ZERO_ADDRESS && !isLoading && (userDelegatesData || restDelegates);
 
-  const delegates = isDataReady ? [...userDelegatesPage, ...(restDelegates || [])] : undefined;
   const [displayedDelegates, setDisplayedDelegates] = useState<DelegateInfoWithTotal[]>();
 
   const sortDelegatesFn =
@@ -120,13 +122,13 @@ export function useStakeUserDelegates({
 
   // Memoize the delegates transformation to prevent unnecessary re-computations
   const delegatesWithTotals = useMemo(() => {
-    if (!delegates) return undefined;
+    if (!isDataReady) return undefined;
 
-    return delegates.map(delegate => ({
+    return [...userDelegatesPage, ...(restDelegates || [])].map(delegate => ({
       ...delegate,
       totalDelegatedEther: delegate.totalDelegated ? Number(formatEther(delegate.totalDelegated)) : 0
     }));
-  }, [delegates]);
+  }, [isDataReady, userDelegatesPage, restDelegates]);
 
   // One-time setup of delegate list order when data first loads
   // Runs independently of the selected delegate changing
@@ -145,7 +147,8 @@ export function useStakeUserDelegates({
       setDisplayedDelegates(orderedDelegates);
     } else {
       // No pre-selected delegate, just sort by total delegated amount
-      const sortedDelegates = delegatesWithTotals.sort(sortDelegatesFn);
+      // Copy first: the memoized array must not be sorted in place.
+      const sortedDelegates = [...delegatesWithTotals].sort(sortDelegatesFn);
       setDisplayedDelegates(sortedDelegates);
     }
   }, [delegatesWithTotals, shouldSortDelegates, sortDelegatesFn, selectedDelegate]);

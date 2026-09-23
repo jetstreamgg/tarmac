@@ -40,7 +40,7 @@ export function useParseTvlChartData(
     );
 
     return dataPoints;
-  }, [timeFrame, tvl, intervalOverride]);
+  }, [timeFrame, tvl, decimals, intervalOverride]);
 }
 
 function determineTimeframeBounds(

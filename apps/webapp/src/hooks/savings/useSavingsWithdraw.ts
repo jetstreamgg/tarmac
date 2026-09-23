@@ -2,7 +2,7 @@ import { useConnection, useBlockNumber, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useSavingsData } from './useSavingsData';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import {
   useReadSavingsUsds,
   sUsdsAddress,
@@ -40,9 +40,13 @@ export function useSavingsWithdraw({
     }
   });
 
-  // Since the `watch` property of wagmi hooks is deprecated, we need to manually invalidate the query
-  useEffect(() => {
+  // Since the `watch` property of wagmi hooks is deprecated, we need to manually invalidate the query.
+  // An effect event: the key is rebuilt every render, so listing it would invalidate on every render.
+  const invalidate = useEffectEvent(() => {
     queryClient.invalidateQueries({ queryKey });
+  });
+  useEffect(() => {
+    invalidate();
   }, [blockNumber]);
 
   const withdrawAmount = max ? (maxWithdraw ?? amount) : amount;

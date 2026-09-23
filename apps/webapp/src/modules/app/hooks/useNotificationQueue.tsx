@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 
 export interface NotificationConfig {
   id: string;
@@ -14,16 +14,12 @@ interface UseNotificationQueueResult {
 }
 
 export const useNotificationQueue = (notifications: NotificationConfig[]): UseNotificationQueueResult => {
-  // Track if we've already selected a notification for this session
-  const selectedNotificationRef = useRef<string | null>(null);
+  // Once a notification has been picked for this session it stays picked,
+  // even if the candidates change underneath it.
+  const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
 
-  // Determine which notification to show based on priority and conditions
-  const activeNotificationId = useMemo(() => {
-    // If we've already selected a notification for this session, stick with it
-    if (selectedNotificationRef.current !== null) {
-      return selectedNotificationRef.current;
-    }
-
+  // The notification that would show now, by priority and conditions.
+  const candidateId = useMemo(() => {
     const sorted = [...notifications].sort((a, b) => a.priority - b.priority);
 
     const waitingForData = sorted.some(n => {
@@ -52,14 +48,13 @@ export const useNotificationQueue = (notifications: NotificationConfig[]): UseNo
       return !hasBeenShown && isReady && meetsConditions;
     });
 
-    const notificationId = activeNotification?.id || null;
-
-    if (notificationId) {
-      selectedNotificationRef.current = notificationId;
-    }
-
-    return notificationId;
+    return activeNotification?.id || null;
   }, [notifications]);
+
+  if (selectedNotificationId === null && candidateId !== null) {
+    setSelectedNotificationId(candidateId);
+  }
+  const activeNotificationId = selectedNotificationId ?? candidateId;
 
   const shouldShowNotification = (id: string): boolean => {
     return activeNotificationId === id;
