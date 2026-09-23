@@ -8,7 +8,8 @@ import {
   useRef,
   ReactNode
 } from 'react';
-import { TxStatus, InProgress, Cancel } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { InProgress, Cancel } from '@/modules/icons';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
@@ -136,13 +137,6 @@ function offSupportedChains(supportedChainIds: readonly number[], chainId: numbe
 
 // The transaction-orchestration contract is frozen in ./transactionContract.
 // Re-exported here so existing import sites keep working.
-export type {
-  TransactionAnalytics,
-  TransactionConfig,
-  TransactionEntry,
-  TxCallbacks
-} from './transactionContract';
-
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
 // Internal: the DOM node on the modal's entry screen where an editable flow's
@@ -203,7 +197,7 @@ type TransactionModalView = {
  * animation can play. Matches the dismissal in `components/ui/dialog.tsx`
  * (and the bottom sheet's, which is the same 300ms).
  */
-const MODAL_EXIT_MS = 300;
+import { MODAL_EXIT_MS } from '@/modules/ui/animation/constants';
 
 export function TransactionProvider({
   children,
@@ -368,7 +362,12 @@ export function TransactionProvider({
   // The chain the live session's write belongs to: latched at launch, adopted
   // while the session is still at IDLE (see the chain-change close below).
   const sessionChainRef = useRef(guardChainId);
-  const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
+  const {
+    handleSwitchChain,
+    isSwitchPending: switchPending,
+    switchVariables,
+    canSwitchChain
+  } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -1232,9 +1231,10 @@ export function TransactionProvider({
       )
     : undefined;
   const guardTargetName = chains.find(c => c.id === guardTargetChainId)?.name;
-  // Safe wallets can't switch networks from the dapp (APP-486) — offer no
-  // switch button, only the explanatory block; the guard still disables the CTAs.
-  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
+  // A wallet the dapp must not switch (a Safe — `canSwitchChain` on
+  // NetworkSwitchContext says why) gets no switch button, only the explanatory
+  // block; the guard still disables the CTAs (APP-486).
+  const guardCanSwitch = guardTargetChainId !== undefined && canSwitchChain;
   const switchGuardChain = useCallback(
     (source: NetworkSwitchSource = 'transaction_modal') => {
       if (guardTargetChainId === undefined) return;
@@ -1389,6 +1389,7 @@ export function TransactionProvider({
             preflight={preflight}
             chainGuard={chainGuard}
             skipReview={modalView.config.skipReview}
+            scrimHandoff={modalView.config.scrimHandoff}
           />
         )}
       </EntrySlotContext.Provider>

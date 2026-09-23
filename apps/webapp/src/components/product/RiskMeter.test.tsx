@@ -51,21 +51,29 @@ describe('RiskScaleMeter', () => {
     const fill = screen.getByTestId('risk-scale-fill');
     // Fill length follows the continuous value (50%), not the HIGH zone end (80%).
     expect(fill.style.width).toBe('50%');
-    // The tint still comes from the level: the DS risk-high colour.
+    // The tint still comes from the level: the red slider gradient.
     expect(fill.dataset.zone).toBe(RiskLevel.HIGH);
-    expect(fill.className).toContain('bg-riskHigh');
+    expect(fill.className).toContain('from-slider-red-start');
   });
 
-  it('places the zone markers at the real risk thresholds, not even quarters (APP-545)', () => {
+  it('centres a faint dot in each threshold zone and ticks the liquidation threshold (Design QA 3324:143419)', () => {
     renderMeter({ level: RiskLevel.LOW });
-    expect(screen.getAllByTestId('risk-scale-marker').map(m => m.style.left)).toEqual(['25%', '40%', '80%']);
+    // Zone midpoints of 0–25 / 25–40 / 40–80 / 80–100, not quarter centres.
+    expect(screen.getAllByTestId('risk-scale-dot').map(m => m.style.left)).toEqual([
+      '12.5%',
+      '32.5%',
+      '60%',
+      '90%'
+    ]);
+    expect(screen.getByTestId('risk-scale-liquidation-tick').style.left).toBe('80%');
+    expect(screen.queryByTestId('risk-scale-marker')).toBeNull();
   });
 
   it('a continuous value lands in the zone its threshold says — 33% is Medium, in the medium colour', () => {
     renderMeter({ value: 0.33 });
     const fill = screen.getByTestId('risk-scale-fill');
     expect(fill.dataset.zone).toBe(RiskLevel.MEDIUM);
-    expect(fill.className).toContain('bg-riskMedium');
+    expect(fill.className).toContain('from-slider-yellow-start');
     expect(fill.style.width).toBe('33%');
   });
 

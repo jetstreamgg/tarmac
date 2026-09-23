@@ -11,34 +11,43 @@ import { cn } from '@/lib/cn';
 import { NO_VALUE } from '@/lib/constants';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RateInfo } from '@/components/product/RateInfo';
-import { StakeTakeoverCard } from './StakeTakeoverCard';
 import { farmRewardSymbol } from '../lib/farmRewardSymbol';
 
 /**
- * The card body — single-select farm list, mirroring `DelegateList`'s row
- * recipe with per-farm rate/TVL stats in place of "Total delegated" (2–3 farms,
- * so no search row). Deprecated farms are hidden EXCEPT `keepAddress` (the
- * position's current farm), which renders with a "Deprecated" chip and the
- * legacy choose-another-reward warning so the holder can switch away without
- * unstaking. Exported for the F5 manage sheet's Change reward card, which
- * shares the exact list under its own testid prefix.
+ * Single-select farm picker. Layout follows the farm count (Figma 3015:59109
+ * vs 3199:69364): exactly two farms render as side-by-side tiles at md+, each
+ * an icon + name row over a Rate | TVL pair split by a hairline; any other
+ * count stacks full-width compact rows (icon + name left, Rate | TVL
+ * right-aligned) so the list scales past two. The selected entry takes the
+ * brandBorder/brand3 ring. Deprecated farms are hidden EXCEPT `keepAddress`
+ * (the position's current farm), which renders with a "Deprecated" chip and
+ * the legacy choose-another-reward warning so the holder can switch away
+ * without unstaking. The Change reward modal forces `columns={1}` (Figma
+ * 3015:61498): taller 69px rows with a 24px icon and Body 6 / Label 5 stats.
  */
 export function RewardList({
   selectedRewardContract,
   onSelect,
   keepAddress,
-  dataTestIdPrefix = 'stake-takeover-reward'
+  dataTestIdPrefix = 'stake-takeover-reward',
+  columns = 2
 }: {
   selectedRewardContract: `0x${string}` | undefined;
   onSelect: (rewardContract: `0x${string}`) => void;
   /** Current farm of an existing position — kept visible even when deprecated. */
   keepAddress?: `0x${string}`;
   dataTestIdPrefix?: string;
+  /** 1 = the Change reward modal's tall rows (Figma 3015:61490); omit to follow the farm count. */
+  columns?: 1 | 2;
 }) {
   const chainId = useChainId();
   const { data: rewardContracts, isLoading } = useStakeRewardContracts();
   const farms = filterDeprecatedRewards(rewardContracts ?? [], chainId, keepAddress);
+  // Tall rows for the Change modal; otherwise tiles for exactly two farms and compact rows past that.
+  const layout = columns === 1 ? 'rows' : farms.length === 2 ? 'tiles' : 'compact';
+  const row = layout !== 'tiles';
+  const tall = layout === 'rows';
+  const gridClassName = cn('grid grid-cols-1 gap-3', !row && 'md:grid-cols-2');
 
   const { data: chartInfo } = useMultipleRewardsChartInfo({
     rewardContractAddresses: farms.map(farm => farm.contractAddress)
@@ -51,12 +60,22 @@ export function RewardList({
   };
 
   const currentFarmDeprecated = !!keepAddress && isDeprecatedStakeReward(keepAddress, chainId);
+  // Tiles and compact rows use Body 7 / Label 6; the tall row comp steps up to Body 6 / Label 5.
+  const labelClassName = tall
+    ? 'text-fgSecondary text-xs leading-[18px]'
+    : 'text-fgSecondary text-[11px] leading-4';
+  const valueClassName = tall
+    ? 'text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]'
+    : 'text-text font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]';
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-2">
-        {[0, 1].map(row => (
-          <Skeleton key={row} className="h-16 w-full rounded-2xl md:rounded-xl" />
+      <div className={gridClassName}>
+        {[0, 1].map(tile => (
+          <Skeleton
+            key={tile}
+            className={cn('w-full', tall ? 'h-[69px] rounded-[20px]' : 'h-[113px] rounded-2xl')}
+          />
         ))}
       </div>
     );
@@ -72,7 +91,7 @@ export function RewardList({
 
   return (
     <div className="flex flex-col gap-4">
-      <ul className="flex flex-col gap-2" data-testid={`${dataTestIdPrefix}-list`}>
+      <ul className={gridClassName} data-testid={`${dataTestIdPrefix}-list`}>
         {farms.map((farm, index) => {
           const address = farm.contractAddress;
           const isSelected = selectedRewardContract?.toLowerCase() === address.toLowerCase();
@@ -89,17 +108,27 @@ export function RewardList({
                 data-testid={`${dataTestIdPrefix}-${address.toLowerCase()}`}
                 aria-pressed={isSelected}
                 className={cn(
-                  'flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition-colors md:rounded-[20px] md:px-5 md:py-4',
+                  'flex w-full border text-left transition-colors',
+                  layout === 'rows' &&
+                    'items-center justify-between gap-4 rounded-[20px] px-[19px] py-[15px]',
+                  layout === 'compact' &&
+                    'items-center justify-between gap-5 rounded-2xl px-[19px] py-[15px]',
+                  layout === 'tiles' && 'flex-col gap-5 rounded-2xl p-[19px]',
                   isSelected
                     ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
                     : 'border-borderPrimary bg-transparent'
                 )}
               >
-                <span className="flex min-w-0 items-center gap-3">
+                <span className="flex min-w-0 items-center gap-2">
                   {symbol && (
-                    <TokenIcon token={{ symbol }} width={24} className="h-6 w-6" showChainIcon={false} />
+                    <TokenIcon
+                      token={{ symbol }}
+                      width={tall ? 24 : 20}
+                      className={tall ? 'h-6 w-6' : 'h-5 w-5'}
+                      showChainIcon={false}
+                    />
                   )}
-                  <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] md:text-base md:leading-[18px] md:tracking-[-0.32px]">
+                  <span className="text-text font-circle truncate text-base leading-[18px] font-medium tracking-[-0.32px]">
                     {symbol ?? formatAddress(address, 6, 4)}
                   </span>
                   {deprecated && (
@@ -108,21 +137,21 @@ export function RewardList({
                     </span>
                   )}
                 </span>
-                <span className="flex shrink-0 items-center gap-4 md:gap-6">
-                  <span className="flex flex-col items-end gap-0.5">
-                    <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">
-                      <Trans>Staking Rewards Rate</Trans>
-                      <RateInfo type="srr" size={12} />
+                <span className={cn('flex gap-4', row ? 'shrink-0 items-center' : 'items-start')}>
+                  <span className={cn('flex w-12 flex-col gap-[3px]', row && 'items-end')}>
+                    <span className={labelClassName}>
+                      <Trans>Rate</Trans>
                     </span>
-                    <span className="text-text font-circle text-sm leading-4 font-medium tracking-[-0.28px]">
+                    <span className={valueClassName}>
                       {Number.isFinite(rate) ? formatDecimalPercentage(rate) : NO_VALUE}
                     </span>
                   </span>
-                  <span className="flex flex-col items-end gap-0.5">
-                    <span className="text-fgSecondary text-xs leading-[18px]">
+                  <span className="bg-borderPrimary h-8 w-px shrink-0" aria-hidden />
+                  <span className={cn('flex w-12 flex-col gap-[3px]', row && 'items-end')}>
+                    <span className={labelClassName}>
                       <Trans>TVL</Trans>
                     </span>
-                    <span className="text-text font-circle flex items-center gap-1 text-sm leading-4 font-medium tracking-[-0.28px]">
+                    <span className={cn(valueClassName, 'flex items-center gap-1')}>
                       {Number.isFinite(tvl) ? formatNumber(tvl, { compact: true, maxDecimals: 2 }) : NO_VALUE}
                       <TokenIcon
                         token={{ symbol: 'SKY' }}
@@ -157,12 +186,12 @@ export function RewardList({
 }
 
 /**
- * Card 2 · Choose your reward token (APP-516, resolving A-Q2): always-on
- * single-select farm list — unlike the optional borrow/delegate cards there is
- * no toggle, because the engine requires a `selectFarm` call for rewards to
+ * "Reward token" block inside card 1 (Figma 3015:59023): muted label over the
+ * farm tiles, between the amount field and the stat rows. Always-on with no
+ * toggle, because the engine requires a `selectFarm` call for rewards to
  * accrue; the SKY farm arrives pre-selected by the container.
  */
-export function StakeTakeoverRewardCard({
+export function StakeTakeoverRewardField({
   selectedRewardContract,
   onSelect,
   keepAddress
@@ -172,16 +201,15 @@ export function StakeTakeoverRewardCard({
   keepAddress?: `0x${string}`;
 }) {
   return (
-    <StakeTakeoverCard
-      step={2}
-      title={<Trans>Choose your reward token</Trans>}
-      dataTestId="stake-takeover-reward-card"
-    >
+    <div className="flex flex-col gap-3" data-testid="stake-takeover-reward-field">
+      <span className="text-fgSecondary text-xs leading-[18px]">
+        <Trans>Reward token</Trans>
+      </span>
       <RewardList
         selectedRewardContract={selectedRewardContract}
         onSelect={onSelect}
         keepAddress={keepAddress}
       />
-    </StakeTakeoverCard>
+    </div>
   );
 }

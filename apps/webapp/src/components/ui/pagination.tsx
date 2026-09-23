@@ -160,11 +160,3 @@ export {
 // The widget look used to be a second set of primitives (PaginationWidget*);
 // the DS has one Pagination, so those names now alias the app parts. The
 // widgets/pagination shim re-exports them under the plain names.
-export {
-  Pagination as PaginationWidget,
-  PaginationEllipsis as PaginationWidgetEllipsis,
-  PaginationItem as PaginationWidgetItem,
-  PaginationLink as PaginationWidgetLink,
-  PaginationNext as PaginationWidgetNext,
-  PaginationPrevious as PaginationWidgetPrevious
-};

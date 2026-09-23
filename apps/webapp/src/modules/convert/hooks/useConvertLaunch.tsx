@@ -4,7 +4,7 @@ import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatNumber } from '@/utils';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';

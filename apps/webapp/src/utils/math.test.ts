@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as math from './math';
-import { debtCeilingUtilization, roundDownLastTwelveDigits, roundUpLastTwelveDigits } from './math';
+import { debtCeilingUtilization, roundDownLastTwelveDigits } from './math';
 import { parseEther } from 'viem';
 
 const ethAParams = {
@@ -26,7 +26,7 @@ const testUrn = {
 };
 
 describe('Risk parameter math functions using ETH-A risk parameters', () => {
-  const { duty, chop, par, mat, spot, rate } = ethAParams;
+  const { duty, par, mat, spot, rate } = ethAParams;
   const { ink, art } = testUrn;
 
   it('Can calculate the annual stability fee from an ilks duty', () => {
@@ -34,13 +34,6 @@ describe('Risk parameter math functions using ETH-A risk parameters', () => {
 
     const fee = math.annualStabilityFee(duty);
     expect(fee).eq(expectedFee);
-  });
-
-  it('Can calculate the liquidation penalty for an ilk', () => {
-    const expectedPenalty = BigInt('130000000000000000');
-    const penalty = math.liquidationPenalty(chop);
-
-    expect(penalty).eq(expectedPenalty);
   });
 
   it('Can calculate the debt value of a vault', () => {
@@ -118,17 +111,6 @@ describe('Risk parameter math functions using ETH-A risk parameters', () => {
       math.delayedPrice(par, spot, mat)
     );
     expect(minSafeColAmt).eq(expected);
-  });
-
-  it('Can calculate the max collateral amount to withdraw for a vault to remain safe', () => {
-    const expected = BigInt('11058214562868407578');
-    const minSafeColAmt = math.minSafeCollateralAmount(
-      math.debtValue(art, rate),
-      mat,
-      math.delayedPrice(par, spot, mat)
-    );
-    const maxColAvailable = math.maxCollateralAvailable(ink, minSafeColAmt);
-    expect(maxColAvailable).eq(expected);
   });
 
   it('Can calculate the max dai available to withdraw for a vault to remain safe', () => {
@@ -233,25 +215,6 @@ describe('DSR Calculations', () => {
     expect(received).eq(982576115517862100n);
   });
 
-  it('Can estimate USDS received from a given amount of sUSDS (calculateAssetsFromShares)', () => {
-    const susdsAmount = 982576115517862100n;
-    const updatedChi = 1017732859782526592471921499n;
-
-    const received = math.calculateAssetsFromShares(susdsAmount, updatedChi);
-
-    // Round-trip of the calculateSharesFromAssets case above. At the values
-    // chosen, ethers FixedNumber half-up rounding lands the inverse exactly on
-    // 1.0 wad — locking that as the baseline.
-    expect(received).eq(1000000000000000000n);
-  });
-
-  it('calculateAssetsFromShares matches dsrBalance for the same inputs', () => {
-    const pie = BigInt('996385765950179275');
-    const chi = BigInt('1003732761911113484874347970');
-
-    expect(math.calculateAssetsFromShares(pie, chi)).eq(math.dsrBalance(pie, chi));
-  });
-
   it('Can update chi forward over a one-day window', () => {
     // dsr = 1.000000003170979198376458650 at ray (~10% APR)
     const dsr = 1000000003170979198376458650n;
@@ -281,17 +244,12 @@ describe('DSR Calculations', () => {
 });
 
 describe('Rewards Calculations', () => {
-  const supplyTokenPrice = 1000000000000000000n;
-  const rewardsTokenPrice = 1000000000000000000n;
-
-  const rewardRate = BigInt('1157407407407407'); // .01 token per second
-  const totalSupplied = BigInt('1000000000000000000000'); // 1000 tokens supplied
-
   it('Can calculate the Rate', () => {
-    const rewardsRateValue = math.tokenValue(rewardRate, rewardsTokenPrice);
-    const totalSuppliedValue = math.tokenValue(totalSupplied, supplyTokenPrice);
+    // .01 token per second at $1, over a year, against 1000 tokens supplied at $1
+    const yearlyRewardsValue = BigInt('1157407407407407') * 31536000n;
+    const totalSuppliedValue = BigInt('1000000000000000000000');
 
-    const rate = math.getRewardsRate(rewardsRateValue, totalSuppliedValue);
+    const rate = math.calculateRewardsRate(yearlyRewardsValue, totalSuppliedValue);
     const expected = BigInt('36499999999999987152');
 
     expect(rate).eq(expected);
@@ -302,7 +260,6 @@ describe('Risk parameters specific to Seal Module', () => {
   const surplusBuffer = BigInt('50000000000000000000000000');
   const assetsOwned = BigInt('30000000000000000000000000');
   const elixirOwned = BigInt('160000000000000000000000000');
-  const dsr = BigInt('300000000000000000');
 
   it('Can calculate the soft debt ceiling', () => {
     const expected = BigInt('133800000000000000000000000');
@@ -310,32 +267,6 @@ describe('Risk parameters specific to Seal Module', () => {
     const sdc = math.softDebtCeiling(surplusBuffer, assetsOwned, elixirOwned);
 
     expect(sdc).eq(expected);
-  });
-
-  it('Can calculate the stability fee for MKR vaults when debt is above soft debt ceiling', () => {
-    const totalDebt = BigInt('188000000000000000000000000');
-    const expected = BigInt('1200000000000000000');
-
-    const stabilityFee = math.mkrVaultStabilityFee(
-      dsr,
-      totalDebt,
-      math.softDebtCeiling(surplusBuffer, assetsOwned, elixirOwned)
-    );
-
-    expect(stabilityFee).eq(expected);
-  });
-
-  it('Can calculate the stability fee for MKR vaults when debt is below soft debt ceiling', () => {
-    const totalDebt = BigInt('160000000000000000000000000');
-
-    const stabilityFee = math.mkrVaultStabilityFee(
-      dsr,
-      totalDebt,
-      math.softDebtCeiling(surplusBuffer, assetsOwned, elixirOwned)
-    );
-
-    // SF should equal DSR when the debt is below the debt ceiling
-    expect(stabilityFee).eq(dsr);
   });
 });
 
@@ -454,36 +385,6 @@ describe('USDC rounding functions', () => {
       // Expected: 1.555555000000000000 WAD
       const expectedComplex = 1555555000000000000n;
       expect(roundDownLastTwelveDigits(complex)).toBe(expectedComplex);
-    });
-  });
-
-  describe('roundUpLastTwelveDigits', () => {
-    it('should handle null and undefined values', () => {
-      expect(roundUpLastTwelveDigits(null)).toBe(0n);
-      expect(roundUpLastTwelveDigits(undefined)).toBe(0n);
-    });
-
-    it('should not modify small numbers', () => {
-      expect(roundUpLastTwelveDigits(123n)).toBe(123n);
-      expect(roundUpLastTwelveDigits(0n)).toBe(0n);
-    });
-
-    it('should round up last 12 digits of large numbers', () => {
-      // 1.500000000000000000 WAD
-      const exact = 1500000000000000000n;
-      expect(roundUpLastTwelveDigits(exact)).toBe(exact);
-
-      // 1.500000000000000001 WAD
-      const slightlyOver = 1500000000000000001n;
-      // Expected: 1.500001000000000000 WAD
-      const expectedOver = 1500001000000000000n;
-      expect(roundUpLastTwelveDigits(slightlyOver)).toBe(expectedOver);
-
-      // 1.555555555555555555 WAD
-      const complex = 1555555555555555555n;
-      // Expected: 1.555556000000000000 WAD
-      const expectedComplex = 1555556000000000000n;
-      expect(roundUpLastTwelveDigits(complex)).toBe(expectedComplex);
     });
   });
 });

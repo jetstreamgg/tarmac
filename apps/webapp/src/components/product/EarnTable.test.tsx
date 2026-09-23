@@ -29,7 +29,7 @@ const ROWS: EarnTableRowItem[] = [
     riskProfile: 'savings',
     rate: '3.75%',
     rate30d: '3.70%',
-    tvl: '$4.23b',
+    tvl: '$4.23B',
     position: '$0.00'
   },
   {
@@ -38,7 +38,7 @@ const ROWS: EarnTableRowItem[] = [
     riskProfile: 'rewards-spk',
     rate: '5.00%',
     rate30d: '4.90%',
-    tvl: '$1.00b',
+    tvl: '$1.00B',
     position: '$10.00'
   }
 ];
@@ -82,7 +82,7 @@ describe('EarnTable — mobile accordion cards (M5)', () => {
     fireEvent.click(screen.getByTestId('earn-card-toggle-savings'));
 
     expect(screen.getByText('TVL')).toBeTruthy();
-    expect(screen.getByText('$4.23b')).toBeTruthy();
+    expect(screen.getByText('$4.23B')).toBeTruthy();
     expect(screen.getByText('My position')).toBeTruthy();
     expect(screen.getByText('30D Rate')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Supply' })).toBeTruthy();
@@ -288,5 +288,37 @@ describe('EarnTable — NEW badge (APP-395, 1036:201322)', () => {
     renderEarn();
     expect(screen.getByTestId('earn-new-badge-savings')).toBeTruthy();
     breakpoint.isMobile = false;
+  });
+});
+
+describe('EarnTable — sort settles the row edges instantly (ind-sep-15 QA #4)', () => {
+  afterEach(cleanup);
+
+  const SETTLE_CLASS = '[&_td>div>div]:transition-[background-color]';
+  const renderSorted = (sort: { column: 'rate' | 'tvl'; direction: 'asc' | 'desc' }) => (
+    <I18nProvider i18n={i18n}>
+      <EarnTable rows={ROWS} sort={sort} onSortChange={vi.fn()} />
+    </I18nProvider>
+  );
+
+  it('arms off the sort prop, so a table that was not clicked settles with the one that was', async () => {
+    // /earn renders two tables on one page-wide sort; the restricted one never
+    // sees the click, only the new `sort`.
+    const { rerender } = render(renderSorted({ column: 'rate', direction: 'desc' }));
+    const table = screen.getByTestId('earn-opportunities-table');
+    expect(table.className).not.toContain(SETTLE_CLASS);
+
+    rerender(renderSorted({ column: 'tvl', direction: 'desc' }));
+    expect(table.className).toContain(SETTLE_CLASS);
+
+    // Back two frames later, once the new edges are painted.
+    await waitFor(() => expect(table.className).not.toContain(SETTLE_CLASS));
+  });
+
+  it('leaves the transition alone when the sort is unchanged', () => {
+    const { rerender } = render(renderSorted({ column: 'rate', direction: 'desc' }));
+    // A fresh object with the same column/direction is not a sort change.
+    rerender(renderSorted({ column: 'rate', direction: 'desc' }));
+    expect(screen.getByTestId('earn-opportunities-table').className).not.toContain(SETTLE_CLASS);
   });
 });

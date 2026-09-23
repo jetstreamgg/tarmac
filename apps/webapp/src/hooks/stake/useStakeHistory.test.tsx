@@ -81,6 +81,22 @@ describe('useStakeHistory — keyset-paginated module document', () => {
     expect(result.current.nextCursor).toBeUndefined();
   });
 
+  it('drops a kick row with a null urn instead of throwing', async () => {
+    vi.mocked(request).mockResolvedValueOnce({
+      ...EMPTY_RESPONSE,
+      stakingOnKicks: [
+        { wad: '5', blockTimestamp: '1700000300', transactionHash: '0xkick-null-urn', urn: null },
+        { wad: '7', blockTimestamp: '1700000200', transactionHash: '0xkick', urn: { address: '0xurn' } }
+      ]
+    });
+
+    const { result } = renderHook(() => useStakeHistory(), { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0]).toMatchObject({ transactionHash: '0xkick', urnAddress: '0xurn' });
+  });
+
   it('clamps a full page at its boundary and fetches the next one with _lt', async () => {
     const newest = 1700000000;
     const frontier = newest - HISTORY_QUERY_LIMIT + 1;

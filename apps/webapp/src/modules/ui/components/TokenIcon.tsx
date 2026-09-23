@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Token } from '@/hooks';
-import { useChainImage, useTokenImage } from '@/widgets';
+import { useChainImage } from '@/modules/ui/hooks/useChainImage';
+import { useTokenImage } from '@/modules/ui/hooks/useTokenImage';
 
 export function TokenIcon({
   token,

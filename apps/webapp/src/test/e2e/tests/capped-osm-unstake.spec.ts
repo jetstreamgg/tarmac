@@ -45,9 +45,7 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
 
     await isolatedPage.getByTestId('stake-manage-stake-amount').fill('100000');
-    await expect(
-      isolatedPage.getByText('Liquidation price is higher than the capped OSM SKY price')
-    ).not.toBeVisible();
+    await expect(isolatedPage.getByTestId('stake-manage-stake-amount-error')).not.toBeVisible();
     await expect(isolatedPage.getByTestId('stake-manage-confirm')).toBeEnabled({ timeout: 30_000 });
 
     // Step 3: lower the OSM spot price so the cap binds (LSEV2-SKY-A is the
@@ -68,10 +66,13 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
     await isolatedPage.getByTestId('stake-manage-stake-amount').fill('100000');
 
-    // Step 5: the capped OSM guard blocks the withdrawal.
-    await expect(
-      isolatedPage.getByText('Liquidation price is higher than the capped OSM SKY price')
-    ).toBeVisible({ timeout: 10_000 });
+    // Step 5: the capped OSM guard blocks the withdrawal. With the cap binding
+    // the safe bound is derivable, so the Figma numeric copy wins over the
+    // legacy capped-OSM line (see ManagePositionTakeover's stakeError).
+    await expect(isolatedPage.getByTestId('stake-manage-stake-amount-error')).toContainText(
+      'would liquidate your position',
+      { timeout: 10_000 }
+    );
     await expect(isolatedPage.getByTestId('stake-manage-confirm')).toBeDisabled();
   });
 });

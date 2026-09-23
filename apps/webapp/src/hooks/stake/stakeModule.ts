@@ -1,44 +1,4 @@
-import { WriteHookParams, WriteHook } from '../hooks';
 import { HistoryItem } from '../shared/shared';
-
-export type StakeWriteHookParams = WriteHookParams & {
-  calldata?: `0x${string}`;
-};
-
-export type StakeWriteHookReturnType = WriteHook & {
-  calldata?: `0x${string}`;
-};
-
-export type UrnInfoRaw = {
-  address: `0x${string}`;
-  blockTimestamp: number;
-  rewardContract: {
-    address: `0x${string}`;
-  };
-  mkrLocked: string;
-  nstDebt: string;
-  owner: `0x${string}`;
-  voteDelegate: {
-    address: `0x${string}`;
-    ownerAddress: `0x${string}`;
-    totalDelegated: string;
-    metadata: {
-      name: string;
-      description: string;
-    };
-  };
-  index: number;
-};
-
-export type UrnInfo = Omit<UrnInfoRaw, 'mkrLocked' | 'nstDebt' | 'voteDelegate'> & {
-  mkrLocked: bigint;
-  nstDebt: bigint;
-  voteDelegate:
-    | (Omit<UrnInfoRaw['voteDelegate'], 'totalDelegated'> & {
-        totalDelegated: bigint;
-      })
-    | null;
-};
 
 export type BaseStakeHistoryItemResponse = {
   index: string;
@@ -81,7 +41,7 @@ export type StakeClaimReward = BaseStakeHistoryItem & {
 };
 
 export type StakeHistoryKick = BaseStakeHistoryItem & {
-  wad: bigint;
+  amount: bigint;
   urnAddress: string;
 };
 

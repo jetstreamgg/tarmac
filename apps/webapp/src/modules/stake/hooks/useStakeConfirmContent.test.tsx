@@ -11,7 +11,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ updateModalContent: h.updateModalContent, txStatus: h.txStatus })
 }));
 
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useStakeConfirmContent, type StakeLaunchContentContext } from './useStakeConfirmContent';
 
 const STAKE_MODULE = '0x1111111111111111111111111111111111111111' as const;
@@ -24,11 +24,13 @@ function Host({
   calls,
   isBatch = false,
   legCount = 2,
+  screenOnly,
   render: renderBody
 }: {
   calls: Call[];
   isBatch?: boolean;
   legCount?: number;
+  screenOnly?: boolean;
   render: (context: StakeLaunchContentContext) => React.ReactNode;
 }) {
   const body = useStakeConfirmContent({
@@ -36,7 +38,8 @@ function Host({
     calls,
     isBatch,
     legCount,
-    content: renderBody
+    content: renderBody,
+    screenOnly
   });
   return <>{body}</>;
 }
@@ -65,6 +68,14 @@ describe('useStakeConfirmContent', () => {
       's1',
       expect.objectContaining({ transactionContent: expect.anything() })
     );
+  });
+
+  it('screenOnly pushes the body as the wallet-screen summary, never as review content', () => {
+    const { build } = spyBody();
+    render(<Host calls={[LOCK]} screenOnly render={build} />);
+    const pushed = h.updateModalContent.mock.calls.at(-1)![1];
+    expect(pushed.transactionScreenContent).toBeDefined();
+    expect(pushed).not.toHaveProperty('transactionContent');
   });
 
   it('re-pushes when the engine reshapes its calls — the bundle toggle re-prices', () => {

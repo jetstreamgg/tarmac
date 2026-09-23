@@ -148,7 +148,7 @@ describe('StakeSummaryCard', () => {
 
     expect(screen.getByTestId('stake-summary-card')).toBeTruthy();
     // Hero: 750,550 SKY staked, ~$750,550.00 at the mocked $1 price.
-    expect(screen.getByText('750,550')).toBeTruthy();
+    expect(screen.getByText('750,550.00')).toBeTruthy();
     expect(screen.getByText('~$750,550.00')).toBeTruthy();
     // Total borrowed: 30,000 USDS ≈ $30,000.00.
     expect(screen.getByText('$30,000.00')).toBeTruthy();

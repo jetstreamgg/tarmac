@@ -83,15 +83,12 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-jazzicon": "catalog:",
-    "react-markdown": "catalog:",
     "react-remove-scroll": "catalog:",
     "recharts": "catalog:",
-    "rehype-sanitize": "catalog:",
     "sonner": "catalog:",
     "viem": "catalog:",
     "vite": "catalog:",
-    "wagmi": "catalog:",
-    "zod": "catalog:"
+    "wagmi": "catalog:"
   },
   "devDependencies": {
     "@lingui/core": "catalog:",

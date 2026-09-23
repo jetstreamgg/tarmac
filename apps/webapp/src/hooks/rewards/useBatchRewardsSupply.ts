@@ -5,7 +5,7 @@ import { ZERO_ADDRESS } from '../constants';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { Call, erc20Abi } from 'viem';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 
 // Allows user to supply in a rewards contract
 // We need to provide the contract address of the rewards contract since there are many of them
@@ -69,7 +69,7 @@ export function useBatchRewardsSupply({
     !!supplyTokenAddress &&
     allowance !== undefined;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -77,11 +77,7 @@ export function useBatchRewardsSupply({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

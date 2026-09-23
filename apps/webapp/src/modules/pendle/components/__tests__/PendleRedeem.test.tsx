@@ -47,14 +47,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    useTokenImage: () => '',
-    useChainImage: () => ''
-  };
-});
+vi.mock('@/modules/ui/hooks/useTokenImage', () => ({ useTokenImage: () => '' }));
+vi.mock('@/modules/ui/hooks/useChainImage', () => ({ useChainImage: () => '' }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
@@ -162,7 +156,7 @@ describe('PendleRedeem', () => {
 
   it('formats the Pendle fee in dollars when the quote carries one', () => {
     renderRedeem({ quote: { ...baseQuote, feeUsd: 0.0363 } });
-    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$0.0363');
+    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$0.04');
 
     cleanup();
     renderRedeem({ quote: { ...baseQuote, feeUsd: 12.345 } });

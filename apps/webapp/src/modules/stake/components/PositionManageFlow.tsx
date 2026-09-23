@@ -8,10 +8,15 @@ import { PositionDetailsModal, StakeManageAction } from './PositionDetailsModal'
 import { LiquidationPostMortemModal } from './LiquidationPostMortemModal';
 import { ManagePositionTakeover } from './ManagePositionTakeover';
 import { StakeClaimModal } from './StakeClaimModal';
+import { StakeChangeRewardModal, StakeChangeDelegateModal } from './StakeChangeSelectionModal';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
 
-/** Menu action → sheet pre-toggle mapping (UX B.3 deep links). */
-export function manageActionInit(action: StakeManageAction): StakeManageFlowInit {
+/**
+ * Menu action → sheet pre-toggle mapping (UX B.3 deep links). Reward and
+ * delegate changes open their own modals (Figma 3015:61490 / 3015:61189)
+ * rather than the sheet, so they map to null.
+ */
+export function manageActionInit(action: StakeManageAction): StakeManageFlowInit | null {
   switch (action) {
     case 'stake':
       return { stakeCard: 'stake' };
@@ -22,9 +27,8 @@ export function manageActionInit(action: StakeManageAction): StakeManageFlowInit
     case 'repay':
       return { borrowCard: 'repay' };
     case 'reward':
-      return { rewardCard: true };
     case 'delegate':
-      return { delegateCard: true };
+      return null;
   }
 }
 
@@ -45,15 +49,18 @@ function parseUrnIndex(value: string | null): number | null {
 }
 
 type ManageView =
-  | { name: 'details' }
+  | { name: 'details'; scrimHandoff?: boolean }
   | { name: 'sheet'; init: StakeManageFlowInit; scrimHandoff?: boolean }
   | { name: 'claim' }
+  | { name: 'reward' }
+  | { name: 'delegate' }
   | { name: 'reopen'; borrowExpanded: boolean };
 
 /**
  * The manage-flow controller, mounted on `flow=manage&urn_index=N` (M1):
  * details modal first; menu rows/CTAs swap to the "Manage a position" sheet
- * with cards pre-toggled; the Claim row swaps to the claim-rewards modal (F6),
+ * with cards pre-toggled; the Claim row swaps to the claim-rewards modal (F6)
+ * and the Change reward / Change delegate rows to their own picker modals,
  * whose × returns to the details modal; an inactive urn's Reopen CTA swaps to
  * the open-position takeover in reopen mode (F6/C17), borrow-expanded when the
  * urn ever had debt — the urn context rides the already-staged `urn_index`.
@@ -99,14 +106,16 @@ export function PositionManageFlow({
     );
   }, [setSearchParams]);
 
-  const onAction = useCallback(
-    (action: StakeManageAction) =>
-      setView({ name: 'sheet', init: manageActionInit(action), scrimHandoff: true }),
-    []
-  );
+  const onAction = useCallback((action: StakeManageAction) => {
+    if (action === 'reward') return setView({ name: 'reward' });
+    if (action === 'delegate') return setView({ name: 'delegate' });
+    const init = manageActionInit(action);
+    if (init) setView({ name: 'sheet', init, scrimHandoff: true });
+  }, []);
   const onClaim = useCallback(() => setView({ name: 'claim' }), []);
   const onReopen = useCallback((borrowExpanded: boolean) => setView({ name: 'reopen', borrowExpanded }), []);
-  const onBack = useCallback(() => setView({ name: 'details' }), []);
+  // The change/claim modal is still fading out when this mounts: hand the scrim over.
+  const onBack = useCallback(() => setView({ name: 'details', scrimHandoff: true }), []);
 
   const { data: positions } = useStakeUserPositions();
   const position = urnIndex !== null ? positions?.find(p => p.index === urnIndex) : undefined;
@@ -160,6 +169,14 @@ export function PositionManageFlow({
       return isOpen ? <StakeClaimModal key="claim" urnIndex={index} onClose={onBack} /> : null;
     }
 
+    if (currentView.name === 'reward') {
+      return isOpen ? <StakeChangeRewardModal key="reward" urnIndex={index} onClose={onBack} /> : null;
+    }
+
+    if (currentView.name === 'delegate') {
+      return isOpen ? <StakeChangeDelegateModal key="delegate" urnIndex={index} onClose={onBack} /> : null;
+    }
+
     if (currentView.name === 'reopen') {
       return isOpen ? (
         <OpenPositionTakeover
@@ -179,6 +196,7 @@ export function PositionManageFlow({
           onAction={onAction}
           onClaim={onClaim}
           onReopen={onReopen}
+          scrimHandoff={currentView.scrimHandoff}
         />
       );
     }

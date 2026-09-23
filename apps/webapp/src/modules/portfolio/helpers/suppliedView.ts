@@ -1,7 +1,7 @@
 import type { EarnProductKind, EarnProductRow } from '@/hooks';
 import type { Intent } from '@/lib/enums';
 import { projectAnnualEarnings } from '@/utils';
-import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/widgets/shared/constants';
+import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/modules/ui/lib/tokenColors';
 
 /**
  * One supplied position, decorated for the Portfolio "Supplied" tab. A product

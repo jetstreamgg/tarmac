@@ -1,6 +1,5 @@
 import { UseQueryOptions } from '@tanstack/react-query';
 import {
-  type SendTransactionReturnType,
   type WriteContractReturnType,
   type SimulateContractErrorType,
   type Config,
@@ -109,10 +108,6 @@ export type UseSendBatchTransactionFlowParameters<
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
-};
-
-export type TransactionHook = WriteHook & {
-  data: SendTransactionReturnType | undefined;
 };
 
 export type ReadHookParams<TData = unknown> = Omit<UseQueryOptions<TData>, 'queryKey' | 'queryFn'>;

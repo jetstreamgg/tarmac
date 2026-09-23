@@ -264,6 +264,7 @@ describe('mergeStakeUserPositions', () => {
     index,
     urnAddress: addr(index),
     skyLocked,
+    art: usdsDebt,
     usdsDebt
   });
   const bark: StakeUrnBark = {

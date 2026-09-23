@@ -4,11 +4,8 @@ import { getSupportedNumberLocale } from './localization';
 //avoid using 3 decimals (because 1.000 looks like 1 or 1000 depending on language)
 const DEFAULT_DECIMALS = 2;
 const SMALL_NUM_DECIMALS = 4;
-const LARGE_NUM_DECIMALS = 0;
-const COMPACT_LARGE_NUM_DECIMALS = 2;
 
-const SMALL_NUM_CUTOFF = 10;
-const LARGE_NUM_CUTOFF = 1000;
+const SMALL_NUM_CUTOFF = 0.1;
 
 type FormatOptions = {
   locale?: string;
@@ -29,16 +26,13 @@ export function createNumberFormatter(options?: FormatOptions) {
   const maxDecimals =
     options?.maxDecimals !== undefined
       ? options.maxDecimals
-      : amount === undefined
-        ? DEFAULT_DECIMALS
-        : amount < SMALL_NUM_CUTOFF
-          ? SMALL_NUM_DECIMALS
-          : amount < LARGE_NUM_CUTOFF
-            ? DEFAULT_DECIMALS
-            : options?.compact
-              ? COMPACT_LARGE_NUM_DECIMALS
-              : LARGE_NUM_DECIMALS;
-  const minDecimals = options?.minDecimals ?? 0;
+      : amount !== undefined && amount < SMALL_NUM_CUTOFF
+        ? SMALL_NUM_DECIMALS
+        : DEFAULT_DECIMALS;
+  // Amounts pad to two decimals ("50.00", "1,126,587.87") as the comps do;
+  // compact figures ("$120.7K") and explicit whole-number caps do not.
+  const minDecimals =
+    options?.minDecimals ?? (options?.compact ? 0 : Math.min(DEFAULT_DECIMALS, maxDecimals));
   return new Intl.NumberFormat(locale, {
     style: 'decimal',
     minimumFractionDigits: minDecimals,
@@ -73,9 +67,11 @@ export function formatBigInt(amount: bigint, options?: FormatOptions): string {
 
 export function formatNumber(amount: number, options?: FormatOptions): string {
   const absAmount = Math.abs(amount);
-  // If the maxDecimals is provided, set the smallestNumber with that amount of decimals
-  const smallestNumber = 1 / Math.pow(10, options?.maxDecimals || SMALL_NUM_DECIMALS); //0.0001 if SMALL_NUM_DECIMALS is 4
-  const lessThanSmallest = absAmount > 0 && absAmount < smallestNumber / 2;
+  // The "<" clamp steps at the requested precision (0.0001 by default). A
+  // whole-number cap has no sub-unit step to clamp to, so it just rounds.
+  const clampDecimals = options?.maxDecimals ?? SMALL_NUM_DECIMALS;
+  const smallestNumber = 1 / Math.pow(10, clampDecimals);
+  const lessThanSmallest = clampDecimals > 0 && absAmount > 0 && absAmount < smallestNumber / 2;
   const amountToFormat = lessThanSmallest ? smallestNumber : amount;
   const result = createNumberFormatter({ ...options, amount: amountToFormat }).format(
     amountToFormat
@@ -137,42 +133,42 @@ export function formatPercent(amount: bigint, options?: FormatOptions): `${numbe
 }
 
 export function formatDecimalPercentage(value: number, decimalPlaces: number = 2): string {
-  const percentage = value * 100;
-  return `${percentage.toFixed(decimalPlaces)}%`;
+  const percentage = createNumberFormatter({ maxDecimals: decimalPlaces, minDecimals: decimalPlaces }).format(
+    value * 100
+  );
+  return `${percentage}%`;
 }
+
+const USD_SMALLEST = 0.01;
 
 /**
  * Money figure with a `$` prefix and exactly two fraction digits, grouped
  * (e.g. `$1,000,000.00`). Unlike {@link formatNumber}, decimals are never
- * dropped — the sign is placed before the symbol (`-$100.00`).
+ * dropped — the sign is placed before the symbol (`-$100.00`). A positive
+ * amount under half a cent renders as `<$0.01` rather than rounding to a
+ * zero that reads as "free"; an exact zero stays `$0.00`, and a negative
+ * amount under half a cent rounds to `$0.00` too (no "-<$0.01").
  */
 export function formatUsd(amount: number): string {
-  const sign = amount < 0 ? '-' : '';
+  const abs = Math.abs(amount);
+  const belowSmallest = amount > 0 && abs < USD_SMALLEST / 2;
+  const sign = amount <= -USD_SMALLEST / 2 ? '-' : '';
   const formatted = new Intl.NumberFormat(getSupportedNumberLocale(), {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     useGrouping: true
-  }).format(Math.abs(amount));
-  return `${sign}$${formatted}`;
+  }).format(belowSmallest ? USD_SMALLEST : abs);
+  return `${sign}${belowSmallest ? '<' : ''}$${formatted}`;
 }
 
-export function formatBigIntAsCeiledAbsoluteWithSymbol(
-  amount: bigint,
-  unit: number,
-  symbol?: string
-): string {
-  const formattedRoundedDebtValue = formatBigInt(amount, {
-    unit,
-    useGrouping: false
-  });
-  const parsedRoundedDebtValue = parseFloat(formattedRoundedDebtValue);
-  const regex = /\.[0-9]*[1-9]/;
-  const hasDecimalPart = regex.test(formattedRoundedDebtValue);
-  const nearestWholeNumber = hasDecimalPart
-    ? Math.floor(Math.abs(parsedRoundedDebtValue)) + 1
-    : Math.abs(parsedRoundedDebtValue);
-  const formattedNumber = formatNumber(nearestWholeNumber);
-
-  return `${formattedNumber}${symbol ? ` ${symbol}` : ''}`;
+/**
+ * Protocol-scale money (TVL, liquidity, total supplied) in whole dollars
+ * (`$6,610,933,593`): cents on a nine-figure aggregate are noise. Accepts a
+ * float or a bigint in `unit` decimals (wad by default).
+ */
+export function formatWholeUsd(amount: number | bigint, unit: number = 18): string {
+  const value = typeof amount === 'bigint' ? parseFloat(formatCustomDecimals(amount, unit)) : amount;
+  const sign = value < 0 ? '-' : '';
+  return `${sign}$${formatNumber(Math.abs(value), { maxDecimals: 0 })}`;
 }

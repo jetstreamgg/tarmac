@@ -1,6 +1,6 @@
 import React from 'react';
 import { Intent } from '@/lib/enums';
-import { IconProps } from '@/widgets/shared/components/icons/Icon';
+import { IconProps } from '@/modules/icons/Icon';
 
 export type WidgetSubItem = {
   label: string;

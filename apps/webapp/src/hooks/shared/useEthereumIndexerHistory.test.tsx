@@ -53,8 +53,6 @@ const EMPTY_RESPONSE = {
   stusdsDeposits: [],
   stusdsWithdraws: [],
   curveTokenExchanges: [],
-  susdtDeposits: [],
-  susdtWithdraws: [],
   swaps: []
 };
 
@@ -123,7 +121,6 @@ describe('useEthereumIndexerHistory — merged mainnet indexer document', () => 
       'rewards: Reward',
       'stusdsDeposits: StusdsDeposit',
       'curveTokenExchanges: CurveTokenExchange',
-      'susdtDeposits: SusdtDeposit',
       // The mainnet PSM conversions (APP-558) ride the same document.
       'swaps: Swap'
     ]) {

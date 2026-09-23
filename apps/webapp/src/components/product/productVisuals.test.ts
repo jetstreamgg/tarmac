@@ -7,7 +7,7 @@ describe('productVisuals', () => {
     expect(productStatusType({ id: 'vault-morpho-0x1', kind: 'vault' })).toBe('info');
   });
 
-  it('leaves non-Morpho vaults (Sky/Spark) on the default ring', () => {
+  it('leaves vault ids outside the Morpho family on the default ring', () => {
     expect(isMorphoVault({ id: 'vault-sky-0x1', kind: 'vault' })).toBe(false);
     expect(productStatusType({ id: 'vault-sky-0x1', kind: 'vault' })).toBeUndefined();
   });

@@ -1,5 +1,4 @@
 import { ReactNode, useCallback, useMemo } from 'react';
-import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -7,10 +6,7 @@ import { t } from '@lingui/core/macro';
 import { ExternalLink, X } from 'lucide-react';
 import {
   getIlkName,
-  usePrices,
-  useRewardContractsToClaim,
   useSkyPrice,
-  useStakeRewardContracts,
   useStakeUrnAddress,
   useStakeUrnSelectedVoteDelegate,
   useVault,
@@ -25,6 +21,8 @@ import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
+import { useUrnClaimableRewardsUsd } from '../hooks/useUrnClaimableRewardsUsd';
+import { wadToUsd } from '../lib/stakeUsdNotional';
 import { lastStakeUrnBark, useStakeUserPositions } from '../hooks/useStakeUserPositions';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -151,37 +149,27 @@ export function LiquidationPostMortemModal({
     urn: urnAddress || ZERO_ADDRESS
   });
 
-  const { data: rewardContracts } = useStakeRewardContracts();
-  const { data: toClaim, isLoading: claimableLoading } = useRewardContractsToClaim({
-    rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
-    addresses: urnAddress ? [urnAddress] : [],
-    chainId,
-    enabled: Boolean(urnAddress && rewardContracts?.length)
-  });
-  const { data: prices, isLoading: pricesLoading } = usePrices();
+  const { toClaim, priceOf, claimableLoading, pricesLoading } = useUrnClaimableRewardsUsd(urnAddress);
   const { priceString: skyPriceString } = useSkyPrice();
   const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
 
   const claims = useMemo<RecoveryClaim[]>(() => {
     return (toClaim ?? [])
       .filter(reward => reward.claimBalance > 0n)
-      .map(reward => {
-        const price = parseFloat(prices?.[reward.rewardSymbol]?.price ?? '0');
-        return {
-          contractAddress: reward.contractAddress,
-          symbol: reward.rewardSymbol,
-          amount: reward.claimBalance,
-          amountUsd: Number(formatUnits(reward.claimBalance, 18)) * price
-        };
-      });
-  }, [toClaim, prices]);
+      .map(reward => ({
+        contractAddress: reward.contractAddress,
+        symbol: reward.rewardSymbol,
+        amount: reward.claimBalance,
+        amountUsd: wadToUsd(reward.claimBalance, priceOf(reward.rewardSymbol))
+      }));
+  }, [toClaim, priceOf]);
 
   const claimableUsd = claims.reduce((total, claim) => total + claim.amountUsd, 0);
   const rewardContractsToClaim = useMemo(() => claims.map(claim => claim.contractAddress), [claims]);
   const claimSymbols = useMemo(() => claims.map(claim => claim.symbol), [claims]);
 
   const skyToFree = vault?.collateralAmount ?? 0n;
-  const skyToFreeUsd = skyPriceUsd !== null ? Number(formatUnits(skyToFree, 18)) * skyPriceUsd : null;
+  const skyToFreeUsd = skyPriceUsd !== null ? wadToUsd(skyToFree, skyPriceUsd) : null;
   const hasRecovery = skyToFree > 0n || claims.length > 0;
 
   const onSuccess = useCallback(() => {

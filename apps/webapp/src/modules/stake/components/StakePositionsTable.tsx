@@ -1,15 +1,7 @@
-import { useCallback, useState } from 'react';
-import { useChainId } from 'wagmi';
-import { formatUnits } from 'viem';
+import { useCallback, useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
-import {
-  useStakeRewardContracts,
-  useRewardContractsToClaim,
-  useVault,
-  usePrices,
-  getIlkName,
-  RiskLevel
-} from '@/hooks';
+import { useAccount, useChainId } from 'wagmi';
+import { RiskLevel } from '@/hooks';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { cn } from '@/lib/cn';
@@ -38,6 +30,10 @@ import {
   isLiquidatedStakePosition
 } from '../hooks/useStakeUserPositions';
 import { StakePositionRowBanner } from './StakePositionRowBanner';
+import { StakePositionDetailWarmer } from './StakePositionDetailWarmer';
+import { useUrnClaimableRewardsUsd } from '../hooks/useUrnClaimableRewardsUsd';
+import { useStakeRowVault } from '../hooks/useStakeRowVault';
+import { recallStakePositionCount, rememberStakePositionCount } from '../lib/positionCountMemory';
 
 // Liquidation-proximity mapping for the shared risk pill: more (and warmer)
 // lit segments = closer to liquidation; rows with no debt render unlit
@@ -77,13 +73,9 @@ function LiquidatedBadge() {
 /** Liquidation-risk cell: liquidated badge, vault risk for urns with debt, or an unlit meter. */
 function PositionRiskCell({ position }: { position: StakeUserPosition }) {
   const hasDebt = position.usdsDebt > 0n;
-  // The vault read only feeds the risk meter, which is unlit without debt —
-  // an undefined urn disables `useVault`'s Vat read for debt-free rows.
-  const {
-    data: vault,
-    isLoading,
-    error
-  } = useVault(hasDebt ? position.urnAddress : undefined, getIlkName(2));
+  // Computed from the list's own Vat snapshot: no per-row read, so the meter
+  // lands with the amounts instead of after them.
+  const { data: vault, isLoading, error } = useStakeRowVault(position);
 
   const isLiquidated = isLiquidatedStakePosition(position);
   if (isLiquidated) return <LiquidatedBadge />;
@@ -125,23 +117,11 @@ function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
 
 /** Claimable-rewards cell: USD value of every reward earned by this urn. */
 function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
-  const chainId = useChainId();
   const urnAddress = position.urnAddress;
-  const { data: rewardContracts } = useStakeRewardContracts();
-  const {
-    data: toClaim,
-    isLoading,
-    error
-  } = useRewardContractsToClaim({
-    rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
-    addresses: urnAddress ? [urnAddress] : [],
-    chainId,
-    enabled: Boolean(urnAddress && rewardContracts?.length)
-  });
-  const { data: prices, isLoading: pricesLoading } = usePrices();
+  const { claimable, claimableUsd, isLoading, unavailable } = useUrnClaimableRewardsUsd(urnAddress);
 
-  if (isLoading || pricesLoading || !urnAddress) return <Skeleton className="h-5 w-16" />;
-  if (error && !toClaim) {
+  if (isLoading || !urnAddress) return <Skeleton className="h-5 w-16" />;
+  if (unavailable) {
     // A failed claimables read is "unknown", not $0.00.
     return (
       <span data-testid="stake-position-claimable-unavailable" className="text-textSecondary text-sm">
@@ -150,15 +130,13 @@ function PositionClaimableCell({ position }: { position: StakeUserPosition }) {
     );
   }
 
-  const claimable = toClaim ?? [];
-  const usdValue = claimable.reduce((total, reward) => {
-    const price = parseFloat(prices?.[reward.rewardSymbol]?.price ?? '0');
-    return total + Number(formatUnits(reward.claimBalance, 18)) * price;
-  }, 0);
   const symbols = claimable.length > 0 ? claimable.map(reward => reward.rewardSymbol) : ['SKY'];
 
   return (
-    <CellAmountWithToken amount={formatUsd(usdValue)} icon={<TokenIconStack symbols={symbols} size={12} />} />
+    <CellAmountWithToken
+      amount={formatUsd(claimableUsd)}
+      icon={<TokenIconStack symbols={symbols} size={12} />}
+    />
   );
 }
 
@@ -184,6 +162,11 @@ const stakedCell = (position: StakeUserPosition) => (
     amount={formatStakeAmount(position.skyLocked)}
   />
 );
+
+/** Rows whose details-modal reads warm on load; the rest warm on hover/focus/touch. */
+export const STAKE_PREFETCH_ROWS = 3;
+// ProductTransactionsTable's default page size; the skeleton never exceeds one page.
+const STAKE_PAGE_SIZE = 7;
 
 const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
   {
@@ -301,7 +284,10 @@ export function StakePositionsTable({
   /** Warning-banner CTA: stage the given remediation action for that position's manage sheet. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
 }) {
+  const { isConnected, address } = useAccount();
+  const chainId = useChainId();
   const [hideInactive, setHideInactive] = useState(true);
+  const [intentIndices, setIntentIndices] = useState<Set<number>>(() => new Set());
   const [, setSearchParams] = useAppSearchParams();
 
   const onRowClick = useCallback(
@@ -330,6 +316,23 @@ export function StakePositionsTable({
   const filterUnavailable = Boolean(contextError);
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
+  // The skeleton is sized to this wallet's last known row count so the table
+  // does not resize when the live rows land; the count is stored once they do.
+  const rememberedCount = recallStakePositionCount(chainId, address);
+  const visibleCount = visiblePositions.length;
+  useEffect(() => {
+    if (isLoading || error || !address || visibleCount === 0) return;
+    rememberStakePositionCount(chainId, address, visibleCount);
+  }, [isLoading, error, address, chainId, visibleCount]);
+
+  // Details-modal prefetch: the first rows warm on load (most owners have 1–2
+  // positions), the rest when the pointer/focus lands on them. Everything is
+  // keyed on the urn index so a re-sort or filter never re-warms.
+  const warmIndices = new Set([
+    ...visiblePositions.slice(0, STAKE_PREFETCH_ROWS).map(position => position.index),
+    ...intentIndices
+  ]);
+
   // Comp 1036:208676: the empty state is a self-contained card — the section
   // title moves inside it and there is no table chrome.
   if (isEmpty) {
@@ -339,7 +342,11 @@ export function StakePositionsTable({
           <Trans>Active positions</Trans>
         </h3>
         <EmptyState illustration={<SuppliedEmpty aria-hidden />}>
-          <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+          {isConnected ? (
+            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+          ) : (
+            <Trans>Connect your wallet to see your positions.</Trans>
+          )}
         </EmptyState>
       </Card>
     );
@@ -347,6 +354,9 @@ export function StakePositionsTable({
 
   return (
     <div className="flex flex-col gap-4">
+      {[...warmIndices].map(index => (
+        <StakePositionDetailWarmer key={index} urnIndex={index} />
+      ))}
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <Trans>Active positions</Trans>
@@ -397,12 +407,18 @@ export function StakePositionsTable({
         rowKey={position => String(position.index)}
         rowTestId={position => `stake-position-row-${position.index}`}
         onRowClick={onRowClick}
+        onRowIntent={position =>
+          setIntentIndices(previous =>
+            previous.has(position.index) ? previous : new Set(previous).add(position.index)
+          )
+        }
         isLoading={isLoading}
         error={error}
         emptyLabel={<Trans>No active positions.</Trans>}
         emptyIllustration={<SuppliedEmpty aria-hidden />}
         renderCard={renderCard}
         cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
+        loadingRows={rememberedCount ? Math.min(rememberedCount, STAKE_PAGE_SIZE) : undefined}
         renderBelowRow={position => (
           <StakePositionRowBanner
             position={position}

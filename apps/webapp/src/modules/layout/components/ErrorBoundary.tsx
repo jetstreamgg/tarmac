@@ -1,6 +1,7 @@
 import React from 'react';
 import { Error as ErrorView } from './Error';
 import { reportError } from '@/modules/sentry/reportError';
+import { trackErrorBoundaryTriggered } from '@/modules/analytics/lib/trackAmbientSurfaces';
 interface Props {
   componentName?: string;
   children: React.ReactNode;
@@ -28,6 +29,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    trackErrorBoundaryTriggered({ boundaryName: this.componentName });
     reportError(error, {
       module: 'ui',
       flow: 'render',

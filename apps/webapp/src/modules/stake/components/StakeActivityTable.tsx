@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useChainId } from 'wagmi';
-import { formatUnits } from 'viem';
+import { useAccount, useChainId } from 'wagmi';
+import { wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
@@ -212,7 +212,7 @@ const skyCell = (row: ActivityRow) => (
   <CellAmount
     icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
     amount={formatStakeAmount(row.skyAmount)}
-    usd={row.skyPrice !== null ? formatUsd(Number(formatUnits(row.skyAmount, 18)) * row.skyPrice) : undefined}
+    usd={row.skyPrice !== null ? formatUsd(wadToUsd(row.skyAmount, row.skyPrice)) : undefined}
   />
 );
 
@@ -220,7 +220,7 @@ const usdsCell = (row: ActivityRow) => (
   <CellAmount
     icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
     amount={formatStakeAmount(row.usdsAmount)}
-    usd={formatUsd(Number(formatUnits(row.usdsAmount, 18)))}
+    usd={formatUsd(wadToFloat(row.usdsAmount))}
   />
 );
 
@@ -308,6 +308,7 @@ const renderCard = (row: ActivityRow) => (
  */
 export function StakeActivityTable({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
+  const { isConnected } = useAccount();
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const [filter, setFilter] = useState<'all' | number>('all');
@@ -333,7 +334,11 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
           <Trans>My activity</Trans>
         </h3>
         <EmptyState illustration={<TransactionsEmpty aria-hidden />}>
-          <Trans>You don&apos;t have any transactions made yet.</Trans>
+          {isConnected ? (
+            <Trans>You don&apos;t have any transactions made yet.</Trans>
+          ) : (
+            <Trans>Connect your wallet to see your activity.</Trans>
+          )}
         </EmptyState>
       </Card>
     );

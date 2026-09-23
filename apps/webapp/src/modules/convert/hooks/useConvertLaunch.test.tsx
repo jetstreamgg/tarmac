@@ -186,8 +186,8 @@ describe('useConvertLaunch', () => {
         }
       ],
       toast: {
-        loading: 'Converting 100 USDS',
-        success: '100 USDS converted to USDC!',
+        loading: 'Converting 100.00 USDS',
+        success: '100.00 USDS converted to USDC!',
         error: 'Conversion failed'
       },
       analytics: {

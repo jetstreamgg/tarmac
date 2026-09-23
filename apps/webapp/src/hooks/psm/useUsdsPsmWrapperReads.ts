@@ -1,5 +1,5 @@
 import { useChainId, useReadContract } from 'wagmi';
-import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from './usdsPsmWrapper';
+import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
 
 function useUsdsPsmWrapperRead(functionName: 'tin' | 'tout' | 'live' | 'HALTED', chainIdOverride?: number) {
   const chainId = useChainId();

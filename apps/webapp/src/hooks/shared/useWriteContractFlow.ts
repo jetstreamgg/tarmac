@@ -1,6 +1,5 @@
 import {
   UseSimulateContractParameters,
-  useConnection,
   useSimulateContract,
   useWaitForTransactionReceipt,
   useWriteContract
@@ -8,7 +7,6 @@ import {
 import { isRevertedError, toError } from '../helpers';
 import { useEffect, useMemo } from 'react';
 import { Config, ResolvedRegister } from '@wagmi/core';
-import { SAFE_CONNECTOR_ID } from './constants';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
 import type { Abi, Call, ContractFunctionArgs, ContractFunctionName } from 'viem';
@@ -62,13 +60,9 @@ export function useWriteContractFlow<
   });
 
   // Workaround to get `txHash` from Safe connector
-  const { connector } = useConnection();
-  const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID;
-
-  const eventHash = useWaitForSafeTxHash({
+  const { transactionHash: eventHash, isSafeApp: isSafeConnector } = useWaitForSafeTxHash({
     chainId: parameters.chainId,
-    safeTxHash: mutationHash,
-    isSafeConnector
+    safeTxHash: mutationHash
   });
 
   // If the user is currently connected through the Safe connector, the txHash will only
