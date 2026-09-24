@@ -1,6 +1,8 @@
 // Polyfills first — must run before any dependency code (e.g. wagmi's
 // Object.hasOwn use) evaluates. See lib/polyfills.ts.
 import '../lib/polyfills';
+// Next, so the image is requested as soon as the entry's scripts are in.
+import '../lib/preloadPageBackground';
 import { installStaleChunkReload } from '../lib/staleChunkReload';
 import { initSentry } from '../modules/sentry/init';
 import React from 'react';
