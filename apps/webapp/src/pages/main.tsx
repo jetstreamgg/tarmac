@@ -8,6 +8,7 @@ import ReactDOM from 'react-dom/client';
 import { ConfigProvider } from '../modules/config/context/ConfigProvider';
 import { App } from './App';
 import { ErrorBoundary } from '../modules/layout/components/ErrorBoundary';
+import { publishPageScrollbarGutter } from '../modules/layout/hooks/usePageScrollbarGutter';
 // Keep the router import after App: the page graph must not be evaluated ahead
 // of the config modules (circular-init TDZ, see modules/sentry/init.ts).
 import { router } from './router';
@@ -17,6 +18,8 @@ import '../globals.css';
 
 installStaleChunkReload();
 initSentry(router);
+// Before the first render, while measuring lays out an empty page.
+publishPageScrollbarGutter();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
