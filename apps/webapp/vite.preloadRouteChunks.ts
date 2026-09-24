@@ -11,7 +11,7 @@ type OutputChunk = {
 const ROUTE_FILE = /\/src\/routes\/([^/?]+)\.tsx(?:\?|$)/;
 
 /** A route file name segment, matched literally inside the URL pattern. */
-const escapeRegExp = (text: string) => text.replace(/[\\^$.*+?()[\]{}|\/-]/g, '\\$&');
+const escapeRegExp = (text: string) => text.replace(/[\\^$.*+?()[\]{}|/-]/g, '\\$&');
 
 /**
  * JSON for an inline <script>: characters that could end the element (`</`)
@@ -19,7 +19,7 @@ const escapeRegExp = (text: string) => text.replace(/[\\^$.*+?()[\]{}|\/-]/g, '\
  */
 const toScriptLiteral = (value: unknown) =>
   JSON.stringify(value).replace(
-    /[<>\/\u2028\u2029]/g,
+    /[<>/\u2028\u2029]/g,
     char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
   );
 
