@@ -58,6 +58,18 @@ export function segmentLength(spacingArc: number): number {
 /** Bounded retries for reading a path that hasn't laid out yet (length 0). */
 const MAX_MEASURE_TRIES = 30;
 
+/**
+ * Set on the chart's <svg> from the commit that brings a series in until its
+ * entrance takes it over; globals.css hides the series layer while it is on.
+ * recharts fills its z-index portals a commit after ours, so the entrance
+ * can't find the new paths in that first commit — it waits for the measure
+ * retry, whose re-render only lands after the browser has painted. Without
+ * the hold, the fully drawn series showed for a frame or two, blanked, and
+ * drew itself in: a double flash on every mount and every metric/timeframe
+ * swap.
+ */
+const REVEAL_PENDING_ATTR = 'data-series-reveal-pending';
+
 const findSeriesPaths = (probe: SVGGElement | null) => {
   const svg = probe?.ownerSVGElement;
   return {
@@ -120,6 +132,8 @@ export function SeriesMotionLayer({
     let tries = 0;
     const retry = () => {
       if (tries++ < MAX_MEASURE_TRIES) raf = requestAnimationFrame(measure);
+      // No path to reveal: don't leave whatever does render held hidden.
+      else probeRef.current?.ownerSVGElement?.removeAttribute(REVEAL_PENDING_ATTR);
     };
     const measure = () => {
       raf = null;
@@ -141,6 +155,11 @@ export function SeriesMotionLayer({
   const revealedKey = useRef<string | null>(null);
   const hasRevealedOnce = useRef(false);
   const revealTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Declared ahead of the entrance so it runs first in the same commit.
+  useLayoutEffect(() => {
+    if (reduceMotion || revealedKey.current === (seriesKey ?? '')) return;
+    probeRef.current?.ownerSVGElement?.setAttribute(REVEAL_PENDING_ATTR, '');
+  }, [seriesKey, reduceMotion]);
   useLayoutEffect(() => {
     const key = seriesKey ?? '';
     // A resize re-measures geom but must not replay the entrance.
@@ -151,7 +170,11 @@ export function SeriesMotionLayer({
     if (!total) return; // the measure effect's retry loop re-renders us
     revealedKey.current = key;
     setRevealDone(!!reduceMotion);
-    if (reduceMotion) return;
+    const svg = curve.ownerSVGElement;
+    if (reduceMotion) {
+      svg?.removeAttribute(REVEAL_PENDING_ATTR);
+      return;
+    }
     const duration = hasRevealedOnce.current ? RE_REVEAL_DURATION_MS : REVEAL_DURATION_MS;
     hasRevealedOnce.current = true;
     const rect = clipRectRef.current;
@@ -172,6 +195,8 @@ export function SeriesMotionLayer({
       rect.style.transition = `transform ${duration}ms ${REVEAL_EASING}`;
       rect.style.transform = 'scaleX(1)';
     }
+    // The entrance holds the series hidden from here on.
+    svg?.removeAttribute(REVEAL_PENDING_ATTR);
     clearTimeout(revealTimer.current);
     revealTimer.current = setTimeout(() => {
       if (revealedKey.current !== key) return;
