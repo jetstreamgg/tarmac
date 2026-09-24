@@ -278,16 +278,20 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const hasSignedCurrentTerms = skipAuthCheck || !!termsCheck?.signedForCurrentVersion;
 
   // Address screening runs only where a verdict gates something: before the
-  // terms are shown (here), and before a transaction (the pre-transaction
-  // gate, through the same query key). Every screening is a billed provider
-  // call once the worker's edge cache expires, so a wallet that has already
-  // accepted the terms is not screened on connect — a blocked one finds out at
-  // Confirm instead. Screening is due once `/check` has answered and the terms
-  // modal has something to show: the terms themselves, or the dead end of a
+  // terms are shown (here), and before a transaction (the modal's preflight
+  // and the pre-transaction gate, through the same query key). Every
+  // screening is a billed provider call once the worker's edge cache expires,
+  // so a wallet that has already accepted the terms is not screened on
+  // connect — a blocked one finds out on its first transaction screen
+  // instead. Screening is due once `/check` has answered and the terms modal
+  // has something to show: the terms themselves, or the dead end of a
   // worker-side refusal (which the blocked screen explains better, when
-  // screening is what refused it).
+  // screening is what refused it). Never in a restricted region: that block
+  // wins over any verdict, so the call would be paid for nothing.
   const screeningRequired =
-    termsCheckDue && ((termsCheck !== undefined && !hasAcceptedTerms) || termsCheckDenied);
+    termsCheckDue &&
+    !vpnData?.isRestrictedRegion &&
+    ((termsCheck !== undefined && !hasAcceptedTerms) || termsCheckDenied);
 
   // Disabled, the query still observes the shared cache entry: a risky verdict
   // the pre-transaction gate lands flips `wallet-blocked` below.

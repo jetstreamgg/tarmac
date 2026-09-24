@@ -564,7 +564,9 @@ describe('ConnectedContext — the terms AND gate', () => {
       expect(mocks.refetchAddressCheck).not.toHaveBeenCalled();
     });
 
-    it('keeps a cached screening approval through a failed refetch', () => {
+    // Waits for the terms verdict so screening is actually required — before
+    // it lands, nothing reads the screening state at all.
+    it('keeps a cached screening approval through a failed refetch', async () => {
       mocks.authCheck = {
         data: { addressAllowed: true },
         isLoading: false,
@@ -572,9 +574,21 @@ describe('ConnectedContext — the terms AND gate', () => {
       };
 
       renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
 
+      expect(mocks.screeningEnabled).toHaveBeenLastCalledWith(true);
       expect(authorized()).toBe('true');
       expect(blockReason()).toBe('none');
+    });
+
+    it('never screens in a restricted region — that block wins over any verdict', async () => {
+      mocks.vpnCheck.data = { isConnectedToVpn: false, isRestrictedRegion: true, countryCode: 'XX' };
+
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      expect(mocks.screeningEnabled.mock.calls.some(([enabled]) => enabled)).toBe(false);
+      expect(blockReason()).toBe('region-restricted');
     });
 
     it('fails closed when /ip/status is unavailable with no cached verdict', () => {

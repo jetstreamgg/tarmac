@@ -240,7 +240,7 @@ vi.mock('../hooks/useStakeLaunch', async importOriginal => {
   };
 });
 
-// The takeover's own enhanced-screening hold (APP-517 via APP-550): the
+// The takeover's own screening hold (APP-517 via APP-550): the
 // provider's injected preflight, read through the context helper.
 const preflight = vi.hoisted(() => ({
   state: { kind: 'clear' } as { kind: 'clear' } | { kind: 'pending' } | { kind: 'blocked'; message: string },
@@ -452,7 +452,7 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.enabled).toBe(true);
   });
 
-  it('runs the enhanced-screening preflight itself — the takeover is the review (APP-550)', () => {
+  it('runs the screening preflight itself — the takeover is the review (APP-550)', () => {
     preflight.contexts = [];
     renderTakeover();
     // Nothing staged → not actionable: a user playing with the form never
