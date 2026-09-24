@@ -313,7 +313,21 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
   const handleCheckAgain = useCallback(() => {
     setScreeningUnavailableFor(null);
     retryAccessChecks();
-  }, [retryAccessChecks]);
+    // The access-check retry only re-screens ahead of the terms. This failure
+    // happened at Confirm, so re-run that screening here: a success lands in
+    // the shared cache and the next Confirm clears synchronously; another
+    // failure stays quiet until that Confirm surfaces it again.
+    if (address) {
+      queryClient
+        .fetchQuery({
+          queryKey: addressScreeningQueryKey(address),
+          queryFn: () => fetchAddressScreening(address, getAuthUrl()),
+          staleTime: 0,
+          retry: 1
+        })
+        .catch(() => {});
+    }
+  }, [retryAccessChecks, queryClient, address]);
 
   // Styled on the APP-497 blocked/unavailable states (UnauthorizedPage) —
   // Bartek's real designs for these don't exist yet either.

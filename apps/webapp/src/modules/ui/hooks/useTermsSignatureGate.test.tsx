@@ -1,4 +1,4 @@
-import { renderHook, render, act, screen, fireEvent } from '@testing-library/react';
+import { renderHook, render, act, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -345,10 +345,17 @@ describe('useTermsSignatureGate', () => {
     });
 
     expect(screen.getByText(/unable to verify this wallet/i)).not.toBeNull();
-    // "Check again" re-runs the access checks and dismisses.
+    // "Check again" re-runs the access checks — screening included, since the
+    // access-check retry alone only re-screens ahead of the terms — and dismisses.
+    const screeningsBefore = mocks.fetchAddressScreening.mock.calls.length;
+    mocks.fetchAddressScreening.mockResolvedValue({ addressAllowed: true });
     fireEvent.click(screen.getByRole('button', { name: /check again/i }));
     expect(mocks.retryAccessChecks).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(/unable to verify this wallet/i)).toBeNull();
+    await waitFor(() =>
+      expect(queryClient.getQueryData(addressScreeningQueryKey(ADDRESS))).toEqual({ addressAllowed: true })
+    );
+    expect(mocks.fetchAddressScreening.mock.calls.length).toBe(screeningsBefore + 1);
   });
 
   it('the screening-failure dialog clears when the address changes', async () => {

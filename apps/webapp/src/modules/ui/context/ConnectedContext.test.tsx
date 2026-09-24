@@ -550,6 +550,20 @@ describe('ConnectedContext — the terms AND gate', () => {
       expect(blockReason()).toBe('none');
     });
 
+    // `refetch` ignores `enabled`, so an unscoped retry would bill a screening
+    // to a wallet that doesn't need one.
+    it('retrying the IP check does not re-screen a wallet that already accepted the terms', async () => {
+      localStorage.setItem(termsAcceptanceKey(ADDRESS_A, VERSION), 'true');
+      mocks.vpnCheck = { data: undefined, isLoading: false, error: new Error('ip status down') };
+
+      renderProvider();
+      await waitFor(() => expect(accepted()).toBe('true'));
+      fireEvent.click(screen.getByTestId('retry-access'));
+
+      expect(mocks.refetchVpnCheck).toHaveBeenCalled();
+      expect(mocks.refetchAddressCheck).not.toHaveBeenCalled();
+    });
+
     it('keeps a cached screening approval through a failed refetch', () => {
       mocks.authCheck = {
         data: { addressAllowed: true },
@@ -581,10 +595,11 @@ describe('ConnectedContext — the terms AND gate', () => {
       expect(blockReason()).toBe('none');
     });
 
-    it('retryAccessChecks re-runs both checks', () => {
+    it('retryAccessChecks re-runs both checks when screening before the terms is unavailable', async () => {
       mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
 
       renderProvider();
+      await waitFor(() => expect(blockReason()).toBe('screening-unavailable'));
       fireEvent.click(screen.getByTestId('retry-access'));
 
       expect(mocks.refetchVpnCheck).toHaveBeenCalled();

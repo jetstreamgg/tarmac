@@ -48,7 +48,10 @@ interface ConnectedContextType {
    * consumer decides how to treat an unknown location.
    */
   isUsUser?: boolean;
-  /** Re-runs the /ip/status and address-screening checks (the "check again" path). */
+  /**
+   * Re-runs the /ip/status check, and address screening when it is what gates
+   * the terms (the "check again" path on the unavailable states).
+   */
   retryAccessChecks: () => void;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
@@ -241,6 +244,9 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // The terms check runs on every connection, ahead of any screening: its
   // answer is what tells us whether this address needs screening at all (see
   // `screeningRequired` below).
+  // `!skipAuthCheck` also keeps dev and e2e builds (VITE_SKIP_AUTH_CHECK) from
+  // ever screening: `screeningRequired` below hangs off this flag, and those
+  // runs used to screen their test wallets against the real staging worker.
   const termsCheckDue = !skipAuthCheck && isConnected && !!address;
 
   useEffect(() => {
@@ -471,10 +477,14 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // as `isConnectedToVpn`, so the pair shares one loading state and verdict.
   const isUsUser = vpnData ? vpnData.countryCode === 'US' : undefined;
 
+  // Screening is only re-run when it is what stands in the way (the check
+  // before the terms, including its unavailable state): `refetch` ignores
+  // `enabled`, so an unconditional call would bill a screening to, say, an
+  // accepted wallet retrying the network-error screen.
   const retryAccessChecks = useCallback(() => {
     refetchVpnCheck();
-    if (address && !skipAuthCheck) refetchAddressCheck();
-  }, [refetchVpnCheck, refetchAddressCheck, address, skipAuthCheck]);
+    if (screeningRequired) refetchAddressCheck();
+  }, [refetchVpnCheck, refetchAddressCheck, screeningRequired]);
 
   // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
   // PostHog event carries them. Unlike the fire-once tracking below, this re-runs

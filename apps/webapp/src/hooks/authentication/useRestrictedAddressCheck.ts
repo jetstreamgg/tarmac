@@ -14,6 +14,17 @@ export type AddressScreeningResult = {
 export const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
 /**
+ * How often a RISKY verdict is re-checked while the tab is focused. A block is
+ * the one verdict the app can't be waited out of (the blocked screen only
+ * offers Disconnect), and false positives get cleared by the worker's admin
+ * purge — so it is re-asked, gently. The worker caches blocked verdicts at
+ * the edge for 12h like allowed ones, so these polls are cache hits: the paid
+ * provider is only reached once that entry expires or is purged, which is
+ * exactly when a re-screen can change the answer.
+ */
+export const RISKY_SCREENING_REPOLL_MS = 5 * 60 * 1000;
+
+/**
  * One cache entry per address, shared between the hook below and the
  * pre-transaction gate (APP-501), so both read and write the same verdict: a
  * risky result found at Confirm flips the app-level blocked dialog through
@@ -66,9 +77,14 @@ export const useRestrictedAddressCheck = ({
 } => {
   const { data, error, isLoading, refetch } = useQuery({
     queryKey: addressScreeningQueryKey(address),
-    enabled: !!address && enabled,
+    // A cached risky verdict keeps the query live even when the caller didn't
+    // ask for a fetch, so the re-poll below runs wherever the block came from
+    // (the pre-transaction gate writes this key too).
+    enabled: query => !!address && (enabled || query.state.data?.addressAllowed === false),
     queryFn: () => fetchAddressScreening(address, authUrl),
     staleTime,
+    refetchInterval: query =>
+      query.state.data?.addressAllowed === false ? RISKY_SCREENING_REPOLL_MS : false,
     ...options
   });
 
