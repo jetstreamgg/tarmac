@@ -10,6 +10,19 @@ type OutputChunk = {
 
 const ROUTE_FILE = /\/src\/routes\/([^/?]+)\.tsx(?:\?|$)/;
 
+/** A route file name segment, matched literally inside the URL pattern. */
+const escapeRegExp = (text: string) => text.replace(/[\\^$.*+?()[\]{}|\/-]/g, '\\$&');
+
+/**
+ * JSON for an inline <script>: characters that could end the element (`</`)
+ * or a string literal (U+2028/U+2029 in older engines) are written as escapes.
+ */
+const toScriptLiteral = (value: unknown) =>
+  JSON.stringify(value).replace(
+    /[<>\/\u2028\u2029]/g,
+    char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`
+  );
+
 /**
  * Preloads the code of the page being opened, from index.html.
  *
@@ -62,7 +75,7 @@ export function preloadRouteChunks(): Plugin {
           const segments = id
             .split('.')
             .filter(segment => !segment.startsWith('_') && segment !== 'index')
-            .map(segment => (segment.startsWith('$') ? '[^/]+' : segment.replace(/[-]/g, '\\-')));
+            .map(segment => (segment.startsWith('$') ? '[^/]+' : escapeRegExp(segment)));
           return `^/${segments.join('/')}$`;
         };
         // A route's chain: every route id that is a dot-prefix of it, itself included.
@@ -80,7 +93,7 @@ export function preloadRouteChunks(): Plugin {
           .filter(id => !isLayout(id))
           .map(id => [pathPattern(id), closure(chain(id)).map(fileIndex)] as const);
 
-        const script = `(function(){var f=${JSON.stringify(files)},r=${JSON.stringify(routes)},p=location.pathname.replace(/\\/+$/,'')||'/';for(var i=0;i<r.length;i++)if(new RegExp(r[i][0]).test(p)){r[i][1].forEach(function(n){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href='/'+f[n];document.head.appendChild(l)});break}})()`;
+        const script = `(function(){var f=${toScriptLiteral(files)},r=${toScriptLiteral(routes)},p=location.pathname.replace(/\\/+$/,'')||'/';for(var i=0;i<r.length;i++)if(new RegExp(r[i][0]).test(p)){r[i][1].forEach(function(n){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href='/'+f[n];document.head.appendChild(l)});break}})()`;
 
         return {
           html,
