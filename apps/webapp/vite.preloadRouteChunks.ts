@@ -93,7 +93,11 @@ export function preloadRouteChunks(): Plugin {
           .filter(id => !isLayout(id))
           .map(id => [pathPattern(id), closure(chain(id)).map(fileIndex)] as const);
 
-        const script = `(function(){var f=${toScriptLiteral(files)},r=${toScriptLiteral(routes)},p=location.pathname.replace(/\\/+$/,'')||'/';for(var i=0;i<r.length;i++)if(new RegExp(r[i][0]).test(p)){r[i][1].forEach(function(n){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href='/'+f[n];document.head.appendChild(l)});break}})()`;
+        // The URL path is the only outside input. It is only ever tested
+        // against the anchored patterns above (linear time) and never becomes
+        // a pattern or an href. Trailing slashes are trimmed with a loop: the
+        // regex /\/+$/ backtracks quadratically on a long run of slashes.
+        const script = `(function(){var f=${toScriptLiteral(files)},r=${toScriptLiteral(routes)},p=location.pathname,e=p.length;while(e>1&&p.charCodeAt(e-1)===47)e--;p=p.slice(0,e);for(var i=0;i<r.length;i++)if(new RegExp(r[i][0]).test(p)){r[i][1].forEach(function(n){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href='/'+f[n];document.head.appendChild(l)});break}})()`;
 
         // Right after `<meta charset>`, which must stay in the first 1024 bytes,
         // and ahead of the stylesheet: an inline script after a pending
