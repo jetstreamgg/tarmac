@@ -95,6 +95,13 @@ export function preloadRouteChunks(): Plugin {
 
         const script = `(function(){var f=${toScriptLiteral(files)},r=${toScriptLiteral(routes)},p=location.pathname.replace(/\\/+$/,'')||'/';for(var i=0;i<r.length;i++)if(new RegExp(r[i][0]).test(p)){r[i][1].forEach(function(n){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href='/'+f[n];document.head.appendChild(l)});break}})()`;
 
+        // Right after `<meta charset>`, which must stay in the first 1024 bytes,
+        // and ahead of the stylesheet: an inline script after a pending
+        // stylesheet waits for it to load.
+        const charset = /<meta charset=[^>]*>/i;
+        if (charset.test(html)) {
+          return html.replace(charset, meta => `${meta}\n    <script>${script}</script>`);
+        }
         return {
           html,
           tags: [{ tag: 'script', children: script, injectTo: 'head-prepend' as const }]
