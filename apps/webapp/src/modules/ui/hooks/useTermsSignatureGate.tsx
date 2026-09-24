@@ -48,8 +48,9 @@ const termsSignatureStep = (): TransactionStep => ({
  *
  *  1. Address screening — the same query the pre-terms check uses, so the
  *     two share one cached verdict per address (`SCREENING_MAX_AGE_MS`).
- *     Nothing screens on connect, so for a returning wallet this is usually
- *     the first check of the session and runs async. Fresh-and-allowed passes
+ *     Nothing screens on connect; the modal-side preflight
+ *     (`useScreeningPreflight`) warms the verdict on the first screen, so
+ *     this normally passes without a fetch. Fresh-and-allowed passes
  *     synchronously (preserving the same-tick onConfirm contract); risky
  *     closes the transaction modal and denies, and the app-level blocked
  *     dialog takes over through the shared query cache. A failed check fails
@@ -69,7 +70,7 @@ const termsSignatureStep = (): TransactionStep => ({
  * is screened via the enhanced endpoint (stricter provider settings, its own
  * cache key) instead of the standard one. A denial returns the modal to its
  * FIRST screen, where the modal-side preflight
- * (`useEnhancedScreeningPreflight`) — reading the very query this gate just
+ * (`useScreeningPreflight`) — reading the very query this gate just
  * settled — renders the blocked/unavailable message above the disabled CTAs;
  * it never closes into the app-level blocked dialog. The preflight also warms
  * the query on the way in, so this usually passes synchronously.
