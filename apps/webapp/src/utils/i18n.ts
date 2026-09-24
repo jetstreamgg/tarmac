@@ -5,7 +5,16 @@ import { I18n, type Messages } from '@lingui/core';
 // round trip in front of first paint. The catalogs are compiled at build time
 // (`pnpm messages`), so a glob rather than an import: a checkout that hasn't
 // compiled them (CI lint and tests) gets an empty map and the fetch below.
-const bundledCatalogs = import.meta.glob<Messages>('../locales/en.ts', { eager: true, import: 'messages' });
+// `import.meta.glob` exists only under Vite, which rewrites the call; scripts
+// that run this module under plain Node (tsx, the e2e VNet tooling via the
+// utils barrel) get the empty map too instead of a TypeError at import.
+const bundledCatalogs = ((): Record<string, Messages> => {
+  try {
+    return import.meta.glob<Messages>('../locales/en.ts', { eager: true, import: 'messages' });
+  } catch {
+    return {};
+  }
+})();
 
 /**
  * Dynamically imports and activates the required language catalog based on the provided locale.
