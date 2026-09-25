@@ -14,7 +14,7 @@
  * the RPC boundary, which is also how a spec drives the rejection path
  * deterministically.
  */
-import { type Page } from '@playwright/test';
+import { type Page, type Route } from '@playwright/test';
 import { mockIpStatusHandler, type IpStatusMockOptions } from './mock-vpn-check';
 
 const RPC_URL = 'https://virtual.**.rpc.tenderly.co/**';
@@ -34,15 +34,66 @@ export const mockIpStatus = async (page: Page, { countryCode = 'US', isVpn }: Ip
   await page.route('**/ip/status', mockIpStatusHandler({ countryCode, isVpn }));
 };
 
-/** /address/status: connect-time and pre-transaction screening both read this. */
-export const mockAddressScreening = async (page: Page, { allowed = true }: { allowed?: boolean } = {}) => {
-  await page.route('**/address/status*', route =>
-    route.fulfill({
+/** The terms version `mockTermsCheck` reports — the local acceptance flag is keyed by it. */
+const TERMS_VERSION = '1.0';
+
+/** A handle on the standard screening mock: how many screenings reached it. */
+export type AddressScreeningMock = { requests: number };
+
+/**
+ * /address/status: pre-terms and pre-transaction screening both read this.
+ * Standard tier only — `*` stops at `/`, so `/address/status/enhanced` still
+ * falls through to the fixture's unmocked handler. `until` holds every answer
+ * until it settles, for asserting what the app does while a verdict is pending.
+ */
+export const mockAddressScreening = async (
+  page: Page,
+  { allowed = true, until }: { allowed?: boolean; until?: Promise<unknown> } = {}
+): Promise<AddressScreeningMock> => {
+  const handle: AddressScreeningMock = { requests: 0 };
+  await page.route('**/address/status*', async route => {
+    handle.requests += 1;
+    await until;
+    await route.fulfill({
       status: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       contentType: 'application/json',
       body: JSON.stringify({ addressAllowed: allowed })
+    });
+  });
+  return handle;
+};
+
+/**
+ * The fixture default for every screening endpoint. The skip-auth e2e build
+ * must never screen — each screening can bill the provider, and CI's wallets
+ * used to be screened on every run — so a request here means the build
+ * screened anyway, or a spec forced the checks on without mocking the tier it
+ * hit. The fixture fails the test on any such request.
+ */
+export const unmockedAddressScreeningHandler = async (route: Route) => {
+  await route.fulfill({
+    status: 500,
+    headers: { 'Access-Control-Allow-Origin': '*' },
+    contentType: 'application/json',
+    body: JSON.stringify({
+      error:
+        'address screening is not mocked — register mockAddressScreening (mock-terms-gate.ts) in this spec'
     })
+  });
+};
+
+/**
+ * The browser half of an accepted terms gate for `address` — with
+ * `mockTermsCheck({ accepted: true })` as the DB half, a returning wallet. The
+ * mock wallet's config clears localStorage on every load, so call this after
+ * the page's goto and before connecting.
+ */
+export const seedLocalTermsAcceptance = async (page: Page, address: string) => {
+  await page.evaluate(
+    ({ address, version }) =>
+      localStorage.setItem(`sky.termsAccepted:${address.toLowerCase()}:${version}`, 'true'),
+    { address, version: TERMS_VERSION }
   );
 };
 
@@ -63,7 +114,7 @@ export const mockTermsCheck = async (
       body: JSON.stringify({
         accepted,
         signedForCurrentVersion: signed,
-        latestVersion: '1.0',
+        latestVersion: TERMS_VERSION,
         effectiveDate: '2026-08-01',
         messageToSign:
           'By signing this message I confirm that I have read and agree to the sky.money Terms of Use and Privacy Policy.'

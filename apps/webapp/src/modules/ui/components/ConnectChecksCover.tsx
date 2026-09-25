@@ -13,9 +13,9 @@ let recentlyVisibleTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
  * The gap between "wallet connected" and "we know what to ask you". Two checks
- * run back to back there — address screening (`/address/status` + `/ip/status`,
- * behind UnauthorizedPage) and then the terms `/check` — and neither has
- * anything to put in a card yet.
+ * run back to back there — the terms `/check`, then, when the terms must be
+ * shown, address screening (`/address/status`, behind UnauthorizedPage, with
+ * `/ip/status` alongside) — and neither has anything to put in a card yet.
  *
  * Both used to raise their own 300px "Please wait" card, so a connect showed
  * two of them in sequence and then grew into the 610px terms card.

@@ -7,7 +7,7 @@ import { useTransactionPreflight } from '@/modules/ui/context/TransactionContext
  * The Confirm hold shared by the open-position takeover and the manage sheet.
  * Both surfaces ARE the review (Design QA 2800:91832), so the two holds the
  * modal's first screen would otherwise apply run here instead:
- *  - the enhanced-screening preflight for a $250k+ transaction (APP-517):
+ *  - the screening preflight (standard, or enhanced for $250k+, APP-517):
  *    Confirm waits on a pending verdict (loading) and is held, with the
  *    reason, on a blocked one;
  *  - the chain guard (APP-528): staking is mainnet-only, and a wallet that
