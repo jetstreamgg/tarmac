@@ -11,6 +11,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { preloadRouteChunks } from './vite.preloadRouteChunks';
 
 enum modeEnum {
   development = 'development',
@@ -214,6 +215,7 @@ export default ({ mode }: { mode: modeEnum }) => {
         plugins: [['@lingui/swc-plugin', {}]]
       }),
       tailwindcss(),
+      preloadRouteChunks(),
       lingui(),
       sentryVitePlugin({
         applicationKey: 'sky-webapp',

@@ -1,6 +1,5 @@
-import { useConnect, useConnection } from 'wagmi';
+import { useConfig, useConnect, useConnection } from 'wagmi';
 import { createPortal } from 'react-dom';
-import { mockWagmiConfig } from '@/data/wagmi/config/config.e2e';
 import { JSX } from 'react';
 
 // Dev/e2e-only. The mock buttons don't fit the mobile Topbar (M2), so on the
@@ -11,6 +10,8 @@ const mockButtonClasses =
   'max-w-40 truncate rounded-lg bg-white px-2 py-1 text-xs text-black desktop:max-w-none desktop:px-4 desktop:py-2 desktop:text-sm';
 
 export function MockConnectButton(): JSX.Element {
+  // In mock builds the app's config is the mock one.
+  const { connectors } = useConfig();
   const { connect } = useConnect();
   const { isConnected, address } = useConnection();
 
@@ -20,7 +21,7 @@ export function MockConnectButton(): JSX.Element {
         className={mockButtonClasses}
         onClick={() =>
           connect({
-            connector: mockWagmiConfig.connectors[0]
+            connector: connectors[0]
           })
         }
       >
@@ -30,7 +31,7 @@ export function MockConnectButton(): JSX.Element {
         className={mockButtonClasses}
         onClick={() =>
           connect({
-            connector: mockWagmiConfig.connectors[1]
+            connector: connectors[1]
           })
         }
       >

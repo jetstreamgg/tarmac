@@ -1,6 +1,8 @@
 // Polyfills first — must run before any dependency code (e.g. wagmi's
 // Object.hasOwn use) evaluates. See lib/polyfills.ts.
 import '../lib/polyfills';
+// Next, so the image is requested as soon as the entry's scripts are in.
+import '../lib/preloadPageBackground';
 import { installStaleChunkReload } from '../lib/staleChunkReload';
 import { initSentry } from '../modules/sentry/init';
 import React from 'react';
@@ -8,6 +10,7 @@ import ReactDOM from 'react-dom/client';
 import { ConfigProvider } from '../modules/config/context/ConfigProvider';
 import { App } from './App';
 import { ErrorBoundary } from '../modules/layout/components/ErrorBoundary';
+import { publishPageScrollbarGutter } from '../modules/layout/hooks/usePageScrollbarGutter';
 // Keep the router import after App: the page graph must not be evaluated ahead
 // of the config modules (circular-init TDZ, see modules/sentry/init.ts).
 import { router } from './router';
@@ -17,6 +20,8 @@ import '../globals.css';
 
 installStaleChunkReload();
 initSentry(router);
+// Before the first render, while measuring lays out an empty page.
+publishPageScrollbarGutter();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

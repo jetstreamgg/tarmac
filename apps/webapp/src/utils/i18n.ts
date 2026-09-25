@@ -1,4 +1,20 @@
-import { I18n } from '@lingui/core';
+import { I18n, type Messages } from '@lingui/core';
+
+// English, the locale the app runs in, ships in the entry bundle: I18nProvider
+// renders nothing until a catalog is active, so fetching it would put a network
+// round trip in front of first paint. The catalogs are compiled at build time
+// (`pnpm messages`), so a glob rather than an import: a checkout that hasn't
+// compiled them (CI lint and tests) gets an empty map and the fetch below.
+// `import.meta.glob` exists only under Vite, which rewrites the call; scripts
+// that run this module under plain Node (tsx, the e2e VNet tooling via the
+// utils barrel) get the empty map too instead of a TypeError at import.
+const bundledCatalogs = ((): Record<string, Messages> => {
+  try {
+    return import.meta.glob<Messages>('../locales/en.ts', { eager: true, import: 'messages' });
+  } catch {
+    return {};
+  }
+})();
 
 /**
  * Dynamically imports and activates the required language catalog based on the provided locale.
@@ -13,6 +29,13 @@ import { I18n } from '@lingui/core';
  * @param locale A string representing the desired locale (e.g., 'en-US', 'fr-CA').
  */
 export async function dynamicActivate(i18n: I18n, locale: string) {
+  // Synchronous, so a render that activates the bundled locale renders translated.
+  const bundled = bundledCatalogs[`../locales/${locale}.ts`];
+  if (bundled) {
+    i18n.loadAndActivate({ locale, messages: bundled });
+    return;
+  }
+
   const baseLocale = locale.split('-').shift();
 
   const messages = (await loadLocale(locale)) || (await loadLocale(baseLocale)) || (await loadLocale('en'));
