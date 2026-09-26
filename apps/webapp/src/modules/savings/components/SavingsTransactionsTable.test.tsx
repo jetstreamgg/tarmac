@@ -21,7 +21,7 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
-  return { ...actual, useChainId: () => 1 };
+  return { ...actual, useChainId: () => 1, useAccount: () => ({ isConnected: true }) };
 });
 
 vi.mock('@/hooks', async importOriginal => {
@@ -120,7 +120,7 @@ describe('SavingsTransactionsTable — mobile cards (M5)', () => {
     expect(screen.getByText('Supply')).toBeTruthy();
     expect(screen.getByText('Completed')).toBeTruthy();
     expect(screen.getByText('Amount')).toBeTruthy();
-    expect(screen.getByText('100')).toBeTruthy();
+    expect(screen.getByText('100.00')).toBeTruthy();
     const link = screen.getByRole('link', { name: /View transaction/ });
     expect(link.getAttribute('href')).toContain('0xaaa1');
   });

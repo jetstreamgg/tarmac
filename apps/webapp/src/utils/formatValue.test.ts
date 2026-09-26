@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { formatBigInt, formatDecimalPercentage, formatPercent, formatUsd, splitAmount } from './formatValue';
+import {
+  formatBigInt,
+  formatDecimalPercentage,
+  formatPercent,
+  formatUsd,
+  formatWholeUsd,
+  splitAmount
+} from './formatValue';
 
 describe('Risk parameter math functions using ETH-A risk parameters', () => {
   it('Format a number as a "wad" by default', () => {
     const wad = formatBigInt(1892153672645000000000n, { locale: 'en' });
-    expect(wad).toBe('1,892');
+    expect(wad).toBe('1,892.15');
   });
 
   it('Format a number as a "ray"', () => {
@@ -25,15 +32,22 @@ describe('Risk parameter math functions using ETH-A risk parameters', () => {
 });
 
 describe('formatBigInt magnitude-driven decimals', () => {
-  it('keeps 4 decimals under 10 — sub-cent prices survive', () => {
+  it('keeps 4 decimals under 0.1 — sub-cent prices survive', () => {
     expect(formatBigInt(parseUnits('0.0025', 18), { locale: 'en' })).toBe('0.0025');
-    expect(formatBigInt(parseUnits('9.1234', 18), { locale: 'en' })).toBe('9.1234');
+    expect(formatBigInt(parseUnits('0.0567', 18), { locale: 'en' })).toBe('0.0567');
+    // From 0.1 up, two decimals like everything else.
+    expect(formatBigInt(parseUnits('0.5', 18), { locale: 'en' })).toBe('0.50');
+    expect(formatBigInt(parseUnits('0.5678', 18), { locale: 'en' })).toBe('0.57');
+    expect(formatBigInt(parseUnits('0.99999', 18), { locale: 'en' })).toBe('1.00');
   });
 
-  it('drops to 2 decimals between 10 and 1000, and 0 above', () => {
+  it('pads to 2 decimals with thousands separators from 0.1 up, at every magnitude', () => {
+    expect(formatBigInt(parseUnits('1', 18), { locale: 'en' })).toBe('1.00');
+    expect(formatBigInt(parseUnits('9.1234', 18), { locale: 'en' })).toBe('9.12');
     expect(formatBigInt(parseUnits('10.1234', 18), { locale: 'en' })).toBe('10.12');
-    expect(formatBigInt(parseUnits('999.995', 18), { locale: 'en' })).toBe('1,000');
-    expect(formatBigInt(parseUnits('1234.56', 18), { locale: 'en' })).toBe('1,235');
+    expect(formatBigInt(parseUnits('999.995', 18), { locale: 'en' })).toBe('1,000.00');
+    expect(formatBigInt(parseUnits('1234.56', 18), { locale: 'en' })).toBe('1,234.56');
+    expect(formatBigInt(parseUnits('1126587.87', 18), { locale: 'en' })).toBe('1,126,587.87');
   });
 
   it('clamps values under half the smallest step to a "<" indicator', () => {
@@ -61,14 +75,27 @@ describe('formatBigInt magnitude-driven decimals', () => {
   });
 });
 
+describe('formatWholeUsd', () => {
+  it('renders whole dollars from floats and wad bigints, never a "<" marker', () => {
+    expect(formatWholeUsd(6610933593.42)).toBe('$6,610,933,593');
+    expect(formatWholeUsd(1n)).toBe('$0');
+    expect(formatWholeUsd(parseUnits('1234.5', 18))).toBe('$1,235');
+    expect(formatWholeUsd(-12.4)).toBe('-$12');
+  });
+});
+
 describe('formatUsd', () => {
   it('always renders exactly 2 decimals with the sign before the symbol', () => {
     expect(formatUsd(1234.5)).toBe('$1,234.50');
     expect(formatUsd(-100)).toBe('-$100.00');
   });
 
-  it('renders sub-cent values as $0.00 with no indicator', () => {
-    expect(formatUsd(0.004)).toBe('$0.00');
+  it('clamps sub-half-cent values to <$0.01, keeps zero and negative dust at $0.00', () => {
+    expect(formatUsd(0.004)).toBe('<$0.01');
+    expect(formatUsd(-0.004)).toBe('$0.00');
+    expect(formatUsd(-0.005)).toBe('-$0.01');
+    expect(formatUsd(0.005)).toBe('$0.01');
+    expect(formatUsd(0)).toBe('$0.00');
   });
 });
 

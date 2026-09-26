@@ -130,8 +130,10 @@ test('risk slider two-way sync in the takeover borrow card', async ({ isolatedPa
   await isolatedPage.getByTestId('stake-takeover-borrow-card-toggle').click();
   await isolatedPage.getByTestId('stake-takeover-borrow-amount').fill('20000');
 
+  // The thumb is a zero-size focus anchor (the bar is the visual), so it is
+  // attached and carries the aria value without being visible.
   const slider = isolatedPage.getByTestId('stake-takeover-borrow-slider').locator('[role="slider"]');
-  await expect(slider).toBeVisible();
+  await expect(slider).toBeAttached();
   await isolatedPage.waitForTimeout(500);
   const initial = Number(await slider.getAttribute('aria-valuenow'));
 

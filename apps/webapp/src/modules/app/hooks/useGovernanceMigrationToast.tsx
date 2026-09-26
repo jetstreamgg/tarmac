@@ -77,5 +77,5 @@ export const useGovernanceMigrationToast = (isAuthorized: boolean) => {
     return () => {
       clearTimeout(timer);
     };
-  }, [isAuthorized]);
+  }, [isAuthorized, onClose]);
 };

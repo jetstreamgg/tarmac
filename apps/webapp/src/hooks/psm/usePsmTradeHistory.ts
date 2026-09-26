@@ -1,15 +1,9 @@
-import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import {
-  historyQueryArgs,
-  historyPageBoundary,
-  clampHistoryPage,
-  HistoryPage
-} from '../shared/historyQueryHelpers';
-import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
-import { useConnection, useChainId } from 'wagmi';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { historyQueryArgs, secondsToDate } from '../shared/historyQueryHelpers';
+import { PaginatedHistory } from '../shared/useHistoryPagination';
+import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
+import { useChainId } from 'wagmi';
 import { HistoryItem } from '../shared/shared';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
@@ -101,7 +95,7 @@ export function mapPsmTradeRows(
       }
 
       return {
-        blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+        blockTimestamp: secondsToDate(e.blockTimestamp),
         transactionHash: e.transactionHash,
         module: ModuleEnum.TRADE,
         type: TransactionTypeEnum.TRADE,
@@ -114,42 +108,6 @@ export function mapPsmTradeRows(
       };
     })
     .filter((swap: PsmTradeHistoryItem | null) => swap !== null);
-}
-
-async function fetchPsmTradeHistoryPage(
-  urlIndexer: string,
-  chainId: number,
-  tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
-  address?: string,
-  excludeSUsds: boolean = false,
-  maxBlockTimestamp?: number,
-  beforeTimestamp?: number
-): Promise<HistoryPage<PsmTradeHistoryItem>> {
-  if (!address || !tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
-    return { items: [], nextCursor: undefined };
-  }
-
-  const query = gql`
-  {
-    ${psmTradeFragment({
-      alias: 'swaps',
-      wallet: address.toLowerCase(),
-      chainId,
-      excludeSUsds,
-      maxBlockTimestamp,
-      beforeTimestamp
-    })}
-  }
-  `;
-
-  const response = (await request(urlIndexer, query)) as any;
-
-  const nextCursor = historyPageBoundary(response);
-  // Already ordered blockTimestamp desc by the indexer.
-  return {
-    items: clampHistoryPage(mapPsmTradeRows(response.swaps, chainId, tokenAddressMap), nextCursor),
-    nextCursor
-  };
 }
 
 export function usePsmTradeHistory({
@@ -165,44 +123,34 @@ export function usePsmTradeHistory({
   chainId?: number;
   maxBlockTimestamp?: number;
 } = {}): ReadHook & PaginatedHistory & { data?: PsmTradeHistory } {
-  const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId || currentChainId;
-  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainIdToUse) || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
 
-  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useHistoryPagination({
-      enabled: Boolean(urlIndexer) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
-      queryKey: ['psm-trade-history', urlIndexer, address, excludeSUsds, chainIdToUse, maxBlockTimestamp],
-      fetchPage: beforeTimestamp =>
-        fetchPsmTradeHistoryPage(
-          urlIndexer,
-          chainIdToUse,
-          tokenAddressMap,
-          address,
-          excludeSUsds,
-          maxBlockTimestamp,
-          beforeTimestamp
-        )
-    });
-
-  return {
-    data,
-    isLoading,
-    error: error as Error,
-    mutate,
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
-  };
+  return useIndexerFamilyHistory<PsmTradeHistoryItem>({
+    indexerUrl,
+    chainId: chainIdToUse,
+    enabled: enabledProp && Boolean(tokenAddressMap),
+    requireAddress: true,
+    ready: Boolean(tokenAddressMap) && Object.keys(tokenAddressMap).length > 0,
+    queryKey: ({ urlIndexer, address, chainId }) => [
+      'psm-trade-history',
+      urlIndexer,
+      address,
+      excludeSUsds,
+      chainId,
+      maxBlockTimestamp
+    ],
+    fragments: ({ owner, chainId, beforeTimestamp }) =>
+      psmTradeFragment({
+        alias: 'swaps',
+        wallet: owner,
+        chainId,
+        excludeSUsds,
+        maxBlockTimestamp,
+        beforeTimestamp
+      }),
+    // Already ordered blockTimestamp desc by the indexer.
+    mapPage: (response, chainId) => mapPsmTradeRows(response.swaps, chainId, tokenAddressMap)
+  });
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import type { Call } from 'viem';
 import { getCallsKey } from '@/hooks/shared/networkFee';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 /** What a `transactionContent` render function receives — the engine's live routing. */
 export interface StakeLaunchContentContext {
@@ -50,7 +50,8 @@ export function useStakeConfirmContent({
   isBatch,
   legCount,
   content,
-  screenContent
+  screenContent,
+  screenOnly = false
 }: {
   /** Session this body belongs to — `updateModalContent` ignores stale ones. */
   sessionId: string;
@@ -61,6 +62,12 @@ export function useStakeConfirmContent({
   content?: StakeLaunchContent;
   /** Compact wallet/status-screen summary, pushed alongside it. */
   screenContent?: ReactNode;
+  /**
+   * Push `content` as the wallet-screen summary only. For a session that
+   * already carries an `entry` (the change reward / delegate modals): a
+   * `transactionContent` beside an entry makes the modal a three-screen flow.
+   */
+  screenOnly?: boolean;
 }): ReactNode {
   const { updateModalContent, txStatus } = useTransaction();
 
@@ -89,11 +96,15 @@ export function useStakeConfirmContent({
     // No-op until `launch()` has seeded this session; a no-op again for good
     // once the user has committed to the calldata.
     if (txStatus !== TxStatus.IDLE) return;
+    if (screenOnly) {
+      updateModalContent(sessionId, { transactionScreenContent: resolved });
+      return;
+    }
     updateModalContent(sessionId, {
       transactionContent: resolved,
       ...(screenContent !== undefined ? { transactionScreenContent: screenContent } : {})
     });
-  }, [sessionId, txStatus, resolved, screenContent, updateModalContent]);
+  }, [sessionId, txStatus, resolved, screenContent, screenOnly, updateModalContent]);
 
   return resolved;
 }

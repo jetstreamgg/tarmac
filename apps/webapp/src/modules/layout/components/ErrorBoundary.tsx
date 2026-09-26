@@ -1,6 +1,7 @@
 import React from 'react';
 import { Error as ErrorView } from './Error';
 import { reportError } from '@/modules/sentry/reportError';
+import { trackErrorBoundaryTriggered } from '@/modules/analytics/lib/trackAmbientSurfaces';
 interface Props {
   componentName?: string;
   children: React.ReactNode;
@@ -27,7 +28,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    trackErrorBoundaryTriggered({ boundaryName: this.componentName });
     reportError(error, {
       module: 'ui',
       flow: 'render',
@@ -44,7 +46,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     });
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return <ErrorView variant={this.variant} />;

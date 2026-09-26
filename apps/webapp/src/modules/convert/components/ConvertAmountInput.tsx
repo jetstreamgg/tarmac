@@ -6,6 +6,7 @@ import { formatNumber } from '@/utils';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { RollingValue } from '@/components/ui/rolling-value';
+import { AmountInput } from '@/components/product/AmountInput';
 import { Text } from '@/modules/layout/components/Typography';
 import { ConvertTokenSelect, type ConvertTokenSymbol } from './ConvertTokenSelect';
 import { NO_VALUE } from '@/lib/constants';
@@ -40,8 +41,9 @@ const formatBalance = (balance: bigint | undefined, decimals: number) =>
  * entered.
  *
  * The target figure is an `<output>` rather than a read-only input so it can
- * roll over as the origin amount is typed (Design QA 2800:92323). The typed
- * origin figure stays a plain input.
+ * roll over as the origin amount is typed (Design QA 2800:92323). The origin
+ * figure is the shared AmountInput: grouped, typed digits pop, percent-set
+ * ones roll (3314:135843 · 3450:121929).
  */
 export function ConvertAmountInput({
   side,
@@ -105,15 +107,13 @@ export function ConvertAmountInput({
       </div>
       <div className="flex items-center justify-between gap-3">
         {isFrom ? (
-          <input
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="0.00"
+          <AmountInput
             value={value}
-            onChange={onInput ? e => onInput(e.target.value) : undefined}
-            aria-label={t`Convert amount`}
-            data-testid="convert-from-amount"
-            className={cn(amountClassName, 'placeholder:text-text bg-transparent outline-none')}
+            onChange={onInput ?? (() => {})}
+            decimals={decimals}
+            ariaLabel={t`Convert amount`}
+            dataTestId="convert-from-amount"
+            className={cn(amountClassName, 'placeholder:text-text')}
           />
         ) : (
           <output

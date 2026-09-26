@@ -10,7 +10,12 @@ import type { TransactionConfig } from './transactionContract';
 // The provider needs a live wagmi tree; these suites exercise the transaction
 // state machine, so the shared chain switch is stubbed inert.
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+  useNetworkSwitch: () => ({
+    handleSwitchChain: vi.fn(),
+    isSwitchPending: false,
+    switchVariables: undefined,
+    canSwitchChain: true
+  })
 }));
 
 vi.mock('wagmi', async io => ({
@@ -149,8 +154,7 @@ describe('TransactionModal — per-step title', () => {
 
     // Wallet/status screen: the title swaps to the transaction-screen title. The
     // INITIALIZED status chip echoes the same copy in its own pill (Figma
-    // review) — this single-step flow has no Steps header to hold it, so it
-    // renders inline, alongside the modal title.
+    // review), in the Steps header alongside the modal title.
     expect(screen.queryByText('Review supply')).toBeNull();
     expect(screen.getAllByText('Confirm in the wallet').length).toBeGreaterThan(0);
   });

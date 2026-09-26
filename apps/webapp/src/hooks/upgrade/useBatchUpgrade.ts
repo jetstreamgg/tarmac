@@ -10,7 +10,7 @@ import {
   mkrSkyAddress
 } from '../generated';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 
 /** The two upgradeable source tokens; each has a fixed upgrader + target. */
@@ -93,7 +93,7 @@ export function useBatchUpgrade({
   const enabled =
     isConnected && amount !== 0n && allowance !== undefined && paramEnabled && !!connectedAddress;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -101,11 +101,7 @@ export function useBatchUpgrade({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

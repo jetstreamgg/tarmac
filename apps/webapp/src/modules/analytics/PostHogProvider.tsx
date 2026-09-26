@@ -15,6 +15,13 @@ const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST;
 const POSTHOG_UI_HOST = import.meta.env.VITE_POSTHOG_UI_HOST || 'https://eu.posthog.com';
 export const POSTHOG_ENABLED = import.meta.env.VITE_POSTHOG_ENABLED === 'true';
 
+// Playwright, Puppeteer and Selenium set navigator.webdriver; no consumer browser does.
+// Automated clients take the same no-PostHog path as the VITE_POSTHOG_ENABLED kill switch.
+const isAutomatedBrowser = () => typeof navigator !== 'undefined' && navigator.webdriver === true;
+
+// Crawlers missing from posthog-js's built-in user-agent blocklist (matched case-insensitively).
+const BLOCKED_USER_AGENTS = ['aiwebindex', 'sogou web spider'];
+
 let hasInitializedPostHog = false;
 
 /**
@@ -87,7 +94,13 @@ function getBootstrapConfig(): { distinctID?: string; sessionID?: string } | und
 }
 
 function initializePostHogIfNeeded(forceAccepted = false) {
-  if (typeof window === 'undefined' || !POSTHOG_ENABLED || !POSTHOG_KEY || hasInitializedPostHog) {
+  if (
+    typeof window === 'undefined' ||
+    !POSTHOG_ENABLED ||
+    !POSTHOG_KEY ||
+    isAutomatedBrowser() ||
+    hasInitializedPostHog
+  ) {
     return;
   }
 
@@ -114,6 +127,7 @@ function initializePostHogIfNeeded(forceAccepted = false) {
     disable_surveys: true,
     disable_web_experiments: true,
     respect_dnt: true,
+    custom_blocked_useragents: BLOCKED_USER_AGENTS,
     ip: false,
     property_denylist: ['$ip'],
     cross_subdomain_cookie: true,
@@ -190,7 +204,7 @@ export function applyPostHogConsent(enabled: boolean) {
  * PostHog React provider. Kill switch: renders children without PostHog when disabled.
  */
 export function PostHogProvider({ children }: { children: ReactNode }) {
-  if (!POSTHOG_ENABLED || !POSTHOG_KEY) {
+  if (!POSTHOG_ENABLED || !POSTHOG_KEY || isAutomatedBrowser()) {
     return <>{children}</>;
   }
 

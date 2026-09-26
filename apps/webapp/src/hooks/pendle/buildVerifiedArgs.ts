@@ -167,7 +167,6 @@ const verifiedEmptyLimit: VerifiedLimit = PENDLE_EMPTY_LIMIT;
  */
 function resolveAggregatorFields(
   userSideToken: `0x${string}`,
-  underlyingToken: `0x${string}`,
   syAcceptedTokens: `0x${string}`[],
   pinnedPendleSwap: `0x${string}`,
   aggregatorRoute: PendleAggregatorRoute | undefined,
@@ -343,7 +342,6 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
   const guessPtOut = extractGuessPtOut(quote.apiContractParams);
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.inputToken, // BUY's user-picked side is the input
-    known.underlyingToken,
     known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
@@ -375,7 +373,6 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
 function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.outputToken, // WITHDRAW's user-picked side is the output
-    known.underlyingToken,
     known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
@@ -406,7 +403,6 @@ function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): V
 function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.outputToken, // EXIT's user-picked side is the output, same as WITHDRAW
-    known.underlyingToken,
     known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
@@ -424,62 +420,6 @@ function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): Verif
       tokenRedeemSy: tokenMintSyOrRedeem,
       pendleSwap,
       swapData
-    }
-  ] as const;
-
-  return { side: PendleConvertSide.WITHDRAW, functionName: 'exitPostExpToToken', args };
-}
-
-// ---------------------------------------------------------------------------
-// Matured redeem (quote-less) — produces a VerifiedExitArgs without an API
-// call. Post-expiry redemption is contractually 1:1 (PT → SY → underlying),
-// so we don't need the API to compute amountOut or guess hints. We construct
-// the same struct buildVerifiedArgs would produce for an exit, with
-// `minTokenOut = 0n` (the redeem path is deterministic — no slippage).
-// ---------------------------------------------------------------------------
-
-export type MaturedRedeemContext = {
-  receiver: `0x${string}`;
-  market: `0x${string}`;
-  /** PT token address — the input being burned for redemption */
-  ptToken: `0x${string}`;
-  /** Underlying asset to receive — must match `tokenRedeemSy` of the SY */
-  underlyingToken: `0x${string}`;
-  /** PT amount to redeem (raw wei) */
-  amountIn: bigint;
-};
-
-/**
- * Build a verified `exitPostExpToToken` call without an API quote. Use only
- * for matured markets. Output struct is byte-equivalent to what
- * buildVerifiedArgs() produces for the exit path with apiMinOut = 0.
- *
- * Why no quote: the exit path is deterministic post-expiry — the contract
- * burns PT 1:1 for SY then redeems SY for the underlying at the configured
- * rate. There's no slippage, no aggregator routing, no price impact. The
- * API would just confirm what we already know.
- *
- * Pinning context: this still respects the no-aggregator invariant
- * (`pendleSwap = 0`, empty `swapData`) and the locked-router invariant
- * (caller submits to PENDLE_ROUTER_V4_ADDRESS, never anything else).
- */
-export function buildMaturedRedeemVerifiedArgs(ctx: MaturedRedeemContext): VerifiedCall & {
-  functionName: 'exitPostExpToToken';
-} {
-  if (ctx.amountIn === 0n) {
-    throw new Error('Pendle: refusing to build redeem args — amountIn is zero');
-  }
-  const args: VerifiedExitArgs = [
-    ctx.receiver,
-    ctx.market,
-    ctx.amountIn,
-    0n, // netLpIn — v1 does not expose LP
-    {
-      tokenOut: ctx.underlyingToken,
-      minTokenOut: 0n, // matured redeem is deterministic 1:1, no slippage
-      tokenRedeemSy: ctx.underlyingToken, // no-aggregator invariant
-      pendleSwap: ZERO_ADDRESS,
-      swapData: verifiedEmptySwapData
     }
   ] as const;
 

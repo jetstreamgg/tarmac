@@ -17,8 +17,14 @@ const SELL_GEM_HALTED = 2n;
 const KNOWN_DIRECTION_HALT_FLAGS = BUY_GEM_HALTED | SELL_GEM_HALTED;
 const DECIMAL_AMOUNT_PATTERN = /^(?:\d+\.?\d*|\.\d+)$/;
 
+/** Decimals of the token being sold in each direction (USDC 6, USDS 18). */
+export const PSM_ORIGIN_DECIMALS: Record<PsmConversionDirection, number> = {
+  USDC_TO_USDS: 6,
+  USDS_TO_USDC: 18
+};
+
 export function getPsmDecimalsForDirection(direction: PsmConversionDirection) {
-  return direction === 'USDC_TO_USDS' ? 6 : 18;
+  return PSM_ORIGIN_DECIMALS[direction];
 }
 
 export function getValidatedPsmExternalAmount(

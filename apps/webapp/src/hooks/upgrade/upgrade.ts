@@ -10,18 +10,6 @@ export type UpgradeResponse<T> = Omit<T, 'blockTimestamp'> & {
 
 export type UpgradeResponses<T extends DaiUsdsRow | MkrSkyRow> = Array<UpgradeResponse<T>>;
 
-export type UpgradeTotalResponses = {
-  total: bigint;
-};
-
-export type UpgradeTotals = {
-  totalDaiUpgraded: bigint;
-  totalMkrUpgraded: bigint;
-  skyUpgraded: bigint;
-  skyUpgradeFees: bigint;
-  totalSkyUpgraded: bigint;
-};
-
 export type DaiUsdsRow = HistoryItem & {
   wad: bigint;
 };

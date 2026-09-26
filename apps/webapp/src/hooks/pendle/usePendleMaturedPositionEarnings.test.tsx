@@ -24,7 +24,8 @@ vi.mock('wagmi', () => ({
 }));
 
 vi.mock('@/utils', () => ({
-  isTestnetId: vi.fn(() => false)
+  isTestnetId: vi.fn(() => false),
+  WAD: 10n ** 18n
 }));
 
 import { usePendleMarketHistory } from './usePendleMarketHistory';

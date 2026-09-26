@@ -3,15 +3,8 @@ import { useReadContracts, useConnection, useChainId } from 'wagmi';
 import { usdsRiskCapitalVaultAbi } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { VaultProvider } from './types';
 import { sharesToAssets } from './sharesToAssets';
 import { getEtherscanLink, familyMainnetId } from '@/utils';
-
-/** Human-readable data-source label per provider for the on-chain vault contract. */
-const VAULT_CONTRACT_DATA_SOURCE_TITLE: Record<VaultProvider, string> = {
-  morpho: 'Morpho Vault Contract',
-  sky: 'Sky Vault Contract'
-};
 
 /**
  * Data returned by the useErc4626VaultData hook
@@ -55,15 +48,11 @@ export type Erc4626VaultDataHook = ReadHook & {
  * 2. User-specific data (fetched when user is connected)
  *
  * @param vaultAddress - The vault contract address (required)
- * @param provider - Which provider operates the vault (defaults to `morpho`);
- *   only affects the data-source label shown for transparency.
  */
 export function useErc4626VaultData({
-  vaultAddress,
-  provider = 'morpho'
+  vaultAddress
 }: {
   vaultAddress?: `0x${string}`;
-  provider?: VaultProvider;
 }): Erc4626VaultDataHook {
   const { address: userAddress } = useConnection();
   const connectedChainId = useChainId();
@@ -170,11 +159,11 @@ export function useErc4626VaultData({
     };
   }, [vaultData, userData]);
 
-  // Data sources for transparency — labelled per provider.
+  // Data sources for transparency.
   const dataSources: DataSource[] = vaultAddress
     ? [
         {
-          title: VAULT_CONTRACT_DATA_SOURCE_TITLE[provider],
+          title: 'Morpho Vault Contract',
           onChain: true,
           href: getEtherscanLink(chainIdToUse, vaultAddress, 'address'),
           trustLevel: TRUST_LEVELS[TrustLevelEnum.ZERO]

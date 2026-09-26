@@ -31,6 +31,8 @@ pnpm prettier:check  # Check formatting without writing. Same caveat: always che
 # pnpm exec prettier --write <path>
 ```
 
+Before committing, format the files you changed: `pnpm exec prettier --write <changed files>`. The pre-commit hook and the CI check both run prettier, so unformatted files either get rewritten under you at commit time or fail the PR.
+
 ### Security audit
 
 ```bash

@@ -3,8 +3,8 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import { type PendleMarketConfig, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { type PendleMarketConfig, useNow, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
+import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
@@ -40,8 +40,9 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
 
   const expirySec = stats?.expirySec ?? market.expiry;
   // One instant for both, so the countdown and the day count can't straddle a
-  // second boundary and disagree.
-  const nowMs = Date.now();
+  // second boundary and disagree. `formatTimeLeft` bottoms out at minutes, so
+  // a minute tick is as fine as the copy can show.
+  const nowMs = useNow();
   const remainingSeconds = Math.max(0, expirySec - Math.floor(nowMs / 1000));
   const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const maturityDateLabel = formatMaturity(expirySec);
@@ -113,7 +114,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       value: (
         <DetailValue
           loading={statsLoading}
-          value={stats?.tvl !== undefined ? `$${formatNumber(stats.tvl, { maxDecimals: 0 })}` : undefined}
+          value={stats?.tvl !== undefined ? formatWholeUsd(stats.tvl) : undefined}
         />
       )
     },
@@ -124,11 +125,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       value: (
         <DetailValue
           loading={statsLoading}
-          value={
-            stats?.liquidity !== undefined
-              ? `$${formatNumber(stats.liquidity, { maxDecimals: 0 })}`
-              : undefined
-          }
+          value={stats?.liquidity !== undefined ? formatWholeUsd(stats.liquidity) : undefined}
         />
       )
     }

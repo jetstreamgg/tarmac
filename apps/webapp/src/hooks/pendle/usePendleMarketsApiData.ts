@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { mainnet } from 'wagmi/chains';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { pendleDataSource } from '../constants';
 import { PENDLE_MARKETS } from './constants';
 import { PendleMarketsStats, PendleMarketsStatsHook } from './pendle';
 import { fetchPendleMarketsByIds } from './pendleApiClient';
+import { formatWholeUsd } from '@/utils';
 
 /**
  * Hook for fetching headline stats (implied APY, TVL) for every market in
@@ -44,8 +45,7 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
           underlyingApy: summary.details.underlyingApy,
           liquidity: summary.details.liquidity,
           tvl,
-          formattedTvl:
-            tvl !== undefined ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined,
+          formattedTvl: tvl !== undefined ? formatWholeUsd(tvl) : undefined,
           expirySec: parseIsoToSec(summary.expiry),
           startTimestampSec: parseIsoToSec(summary.timestamp)
         };
@@ -61,13 +61,6 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
     data,
     error,
     mutate: refetch,
-    dataSources: [
-      {
-        title: 'Pendle Markets API',
-        href: 'https://api-v2.pendle.finance/core/docs',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
+    dataSources: [pendleDataSource()]
   };
 }

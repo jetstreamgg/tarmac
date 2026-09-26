@@ -47,7 +47,6 @@
   --color-bgHover: transparent; /* nav/menu row hover — no-op in dark (parity); tinted in the light scope */
   --color-surfaceAlt: var(--transparent-white-20);
   --color-panel: var(--transparent-black-20);
-  --color-widget: transparent;
   --color-selectBackground: var(--transparent-white-25);
   --color-selectActive: var(--transparent-white-40);
   --color-primary: transparent;
@@ -150,10 +149,18 @@
   --color-slider-brand-end: #757dff;
   --color-slider-yellow-start: #ff8a5c;
   --color-slider-yellow-end: #ffc738;
+  /* gradient-slider-green (repay Progress Steps 3015:62130), theme-invariant. */
+  --color-slider-green-start: #015c4c;
+  --color-slider-green-end: #02c2a1;
+  /* gradient-slider-red style (liquidation-risk Progress Steps 3015:57305), theme-invariant. */
+  --color-slider-red-start: #f98607;
+  --color-slider-red-end: #e51f1d;
   --color-sliderDot: #1a192d;
   --color-sliderRing: rgba(255, 255, 255, 0.2);
   --color-sliderLine: #2a2a40;
   --color-sliderMarker: #fe8b5b;
+  --color-sliderTrack: rgba(188, 182, 239, 0.1); /* components/slider/bg-primary */
+  --color-sliderBorrowed: rgba(9, 4, 32, 0.35); /* raw #090420 in the comp, no variable */
   --color-sliderAmber: #ffc23b;
   /* colors/fg/fg-primary (navbar label + hovered nav icon, Figma 5010:29059).
      G2 filled the light value from the same variable; it still equals
@@ -206,6 +213,9 @@
      tier). Distinct from the legacy `--color-error` (--service-red #ff6d6d),
      which the pre-redesign widgets still read for validation copy. */
   --color-statusError: #f83c3b;
+  /* components/status/bg-warning — the at-risk position infobox fill (Figma
+     3324:136868). */
+  --color-statusWarningBg: rgba(255, 170, 32, 0.1);
   /* components/status/bg-error — the "Transaction failed" chip's fill (Figma
      2800:91683). */
   --color-statusErrorBg: rgba(248, 60, 59, 0.1);
@@ -265,7 +275,6 @@
   --color-skeletonTrace: #ffffff;
   /* The /stake mobile summary-card "Cover" wash (comp 1222:16799): Figma types
      the gradient's bottom stop as a raw hex; same value in both themes. */
-  --color-brandCover: #756fec;
   /* DS "gradient-success", the wash the product position cards paint the "%"
      unit with (Figma 859:41055). The top stop is colors/system/success, i.e.
      the same value as statusSuccessSolid; only the bottom stop is new. Figma
@@ -303,7 +312,6 @@
   --background-image-primaryDisabled: var(--service-purple-0);
   --background-image-primaryActive: var(--service-purple-5);
   --background-image-primaryFocus: var(--primary-purple-40);
-  --background-image-primaryTransparent: var(--service-purple-transparent);
   /* Page background color (Figma colors/bg/bg-primary). Backs .app-background
      and rings the stacked-badge icons (IconStack), which must match the page —
      not the surface they sit on — to read as punched-out circles. Changing the
@@ -327,7 +335,6 @@
   --background-image-app-background:
     linear-gradient(to bottom, rgba(9, 4, 32, 0) 58%, #090420 100%), url('/images/background-dark.webp');
   --background-image-nav-light: var(--service-nav-light);
-  --background-image-nav-light-vertical: var(--service-nav-light-vertical);
 
   --radius-lg: 10px;
   --radius-md: 8px;
@@ -340,8 +347,10 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-slide-down: slide-down 0.2s ease-out;
   --animate-slide-up: slide-up 0.2s ease-out;
-  --animate-slide-down-fade: slide-down-fade 0.2s ease-out;
-  --animate-slide-up-fade: slide-up-fade 0.2s ease-out;
+  /* Stake card body toggle (Figma Motion 3335:162694): 350ms grow on the comp's
+     slightly overshooting curve; the collapse is the shorter return leg. */
+  --animate-card-expand: card-expand 350ms cubic-bezier(0.4, 0, 0.1, 1.05);
+  --animate-card-collapse: card-collapse 250ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Odometer roll for a live-accruing figure (Figma 1598:76444): one line-height
      of travel over 200ms on the comp's easeOut. The outgoing glyph holds its end
@@ -349,6 +358,10 @@
      for a frame. */
   --animate-digit-roll-in: digit-roll-in 200ms cubic-bezier(0, 0, 0.58, 1);
   --animate-digit-roll-out: digit-roll-out 200ms cubic-bezier(0, 0, 0.58, 1) forwards;
+  /* A typed digit (Design QA 3450:121929) fades and scales in where it lands
+     instead of rolling: 200ms on the standard curve, nothing rolls out. */
+  --animate-digit-pop-in: digit-pop-in 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-digit-pop-out: digit-pop-out 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 
   /* Loader dots (Figma 2238:62221): each dot hops up 1.5 diameters on the
      overshoot curve, holds a beat, drops back, then rests for the remainder
@@ -409,10 +422,7 @@
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1400px;
 
-  --ease-in-expo: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.03, 1);
-  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
-  --ease-bezier-mouse: cubic-bezier(0.4, 0, 0.2, 1);
   /* The two curves the motion comps are drawn on. Across every comp the
      pairing is consistent: a surface ARRIVES on quint (decisive, front-loaded)
      and LEAVES on quart (even), while anything that merely crossfades or
@@ -426,7 +436,6 @@
      (the rolling number's width). The settle is the textbook easeOutExpo;
      `--ease-out-expo` above is the steeper house variant. */
   --ease-out-overshoot: cubic-bezier(0.45, 1.45, 0.8, 1);
-  --ease-out-settle: cubic-bezier(0.16, 1, 0.3, 1);
   /* The transaction modal's step timeline (Figma 2685:148222) is drawn on a
      trio rather than the quint/quart pairing above: size and position carry on
      the standard curve for 350ms while, inside them, exits accelerate away and
@@ -560,11 +569,31 @@
       transform: translateY(-100%);
     }
   }
-  @keyframes slide-down-fade {
+  @keyframes digit-pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes digit-pop-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+  @keyframes card-expand {
     from {
       height: 0;
       opacity: 0;
-      transform: translateY(-4px);
+      transform: translateY(20px);
     }
     to {
       height: var(--radix-collapsible-content-height);
@@ -572,7 +601,7 @@
       transform: translateY(0);
     }
   }
-  @keyframes slide-up-fade {
+  @keyframes card-collapse {
     from {
       height: var(--radix-collapsible-content-height);
       opacity: 1;
@@ -581,7 +610,7 @@
     to {
       height: 0;
       opacity: 0;
-      transform: translateY(-4px);
+      transform: translateY(20px);
     }
   }
 }
@@ -889,12 +918,6 @@
       #9580ff 48.55%,
       rgba(54, 13, 255, 0) 100%
     );
-    --service-nav-light-vertical: linear-gradient(
-      180deg,
-      rgba(71, 34, 255, 0) 2.2%,
-      #9580ff 48.55%,
-      rgba(54, 13, 255, 0) 100%
-    );
 
     --transparent-white-20-gradient: linear-gradient(
       0deg,
@@ -1054,6 +1077,7 @@
     --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */
     --color-statusWarning: #dd6102; /* components/status/fg-warning */
     --color-statusError: #e51f1d; /* components/status/fg-error */
+    --color-statusWarningBg: #dd61021a; /* components/status/bg-warning */
     --color-statusErrorBg: #e51f1d1a; /* components/status/bg-error */
     --color-riskLow: #02c2a1; /* components/badges/bg-risk-low */
     --color-riskMedium: #ffaa20; /* components/badges/bg-risk-medium */
@@ -1064,6 +1088,8 @@
     --color-sliderDot: #e8ebfe; /* fg-dot */
     --color-sliderRing: #09042033; /* fg-pointer */
     --color-sliderLine: #c9cdf4; /* fg-line */
+    --color-sliderTrack: #9ca0e566; /* bg-primary */
+    --color-sliderBorrowed: #9ca0e5; /* solid slider bg-primary base; the comp only has a dark mode */
 
     /* Lighter purple for the legacy widget-look surfaces; dark keeps the deep
        indigo from :root. No DS citation because these have no DS counterpart and
@@ -1112,23 +1138,6 @@
   }
 }
 
-@keyframes scroll-hint-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translateY(6px);
-    opacity: 1;
-  }
-}
-
-@utility scroll-hint-indicator {
-  animation: scroll-hint-bounce 1.5s ease-in-out infinite;
-  pointer-events: none;
-}
-
 /* Recharts' accessibility layer (v3, on by default) makes the chart surface
    focusable (tabindex 0, role application) and its z-index groups
    click-focusable (tabindex -1), so clicking the plot or the series drew the
@@ -1145,6 +1154,13 @@ svg.recharts-surface:focus,
 svg.recharts-surface [tabindex]:focus,
 .recharts-wrapper [tabindex='-1']:focus {
   outline: none;
+}
+
+/* A series waiting on its entrance draw stays hidden until the draw takes it
+   over (SeriesMotionLayer's REVEAL_PENDING_ATTR) — otherwise it paints fully
+   drawn for a frame first, then blanks and draws itself in. */
+svg[data-series-reveal-pending] g.recharts-area {
+  visibility: hidden;
 }
 
 /* App page background (Figma: Backgrounds 5177:37170) ----------------------

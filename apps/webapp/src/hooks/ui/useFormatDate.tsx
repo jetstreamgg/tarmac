@@ -1,22 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatDate, getDateLocale } from '../../utils/formatDate';
 
-export const useFormatDate = (date: Date, locale?: string, format?: string) => {
-  const [formattedDate, setFormattedDate] = useState<string>('');
-
-  useEffect(() => {
-    const formatAndSetDate = async () => {
-      const dateLocale = await getDateLocale(locale || '');
-      const result = formatDate(date, dateLocale, format);
-      setFormattedDate(result);
-    };
-
-    formatAndSetDate();
-  }, [date, locale, format]);
-
-  return formattedDate;
-};
-
 const formatDatesArray = async (dates: Date[], locale?: string, format?: string) => {
   const dateLocale = await getDateLocale(locale || '');
 
@@ -29,14 +13,21 @@ export const useFormatDates = (dates?: Date[], locale?: string, format?: string)
   const [formatted, setFormatted] = useState<string[]>([]);
 
   useEffect(() => {
+    // A locale whose chunk is cached can resolve before an earlier uncached
+    // one, so a superseded run must not write its result.
+    let ignore = false;
     const fetchFormattedDates = async () => {
       if (dates) {
-        setFormatted(await formatDatesArray(dates, locale, format));
+        const next = await formatDatesArray(dates, locale, format);
+        if (!ignore) setFormatted(next);
       }
     };
 
     fetchFormattedDates();
-  }, [dates]);
+    return () => {
+      ignore = true;
+    };
+  }, [dates, locale, format]);
 
   return formatted;
 };

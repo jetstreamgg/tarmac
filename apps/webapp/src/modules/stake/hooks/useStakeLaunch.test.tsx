@@ -373,7 +373,7 @@ describe('useStakeLaunch — launch() config', () => {
 
     const stakeOnly = renderLaunch({ usdsToBorrow: 0n, selectedDelegate: undefined });
     act(() => stakeOnly.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].toast.success).toBe('100,000 SKY staked!');
+    expect(h.launchMock.mock.calls[0][0].toast.success).toBe('100,000.00 SKY staked!');
     stakeOnly.unmount();
   });
 

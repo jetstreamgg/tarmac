@@ -10,7 +10,12 @@ import type { TransactionContextValue, TxCallbacks } from './transactionContract
 // The provider needs a live wagmi tree; these suites exercise the transaction
 // state machine, so the shared chain switch is stubbed inert.
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+  useNetworkSwitch: () => ({
+    handleSwitchChain: vi.fn(),
+    isSwitchPending: false,
+    switchVariables: undefined,
+    canSwitchChain: true
+  })
 }));
 
 vi.mock('wagmi', async io => ({
@@ -225,7 +230,7 @@ describe('TransactionModal minimize', () => {
     // Drive the tx in-flight: wallet prompt → submitted.
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash'));
-    expect(screen.queryByText('Supply')).not.toBeNull();
+    expect(screen.queryAllByText('Supply').length).toBeGreaterThan(0);
     expect(screen.queryByText(/processing/i)).not.toBeNull();
 
     // Minimize: the modal view is gone, but the transaction is NOT torn down.
@@ -235,7 +240,7 @@ describe('TransactionModal minimize', () => {
     // Restore: the modal returns on the transaction screen at its live status,
     // proving the tx kept running and its state survived minimize.
     act(() => ctx.restore());
-    expect(screen.queryByText('Supply')).not.toBeNull();
+    expect(screen.queryAllByText('Supply').length).toBeGreaterThan(0);
     expect(screen.queryByText(/processing/i)).not.toBeNull();
     expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
 

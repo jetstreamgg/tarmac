@@ -10,14 +10,14 @@ vi.mock('wagmi', () => ({
   useChainId: () => 1
 }));
 
-vi.mock('./useReadStUsdsImplementation', () => ({
-  useReadStUsdsImplementation: vi.fn()
+vi.mock('./useReadStUsdsProxy', () => ({
+  useReadStUsdsProxy: vi.fn()
 }));
 
-import { useReadStUsdsImplementation } from './useReadStUsdsImplementation';
+import { useReadStUsdsProxy } from './useReadStUsdsProxy';
 import { useStUsdsPreviewWithdraw } from './useStUsdsPreviewWithdraw';
 
-const mockRead = useReadStUsdsImplementation as unknown as ReturnType<typeof vi.fn>;
+const mockRead = useReadStUsdsProxy as unknown as ReturnType<typeof vi.fn>;
 
 describe('useStUsdsPreviewWithdraw', () => {
   beforeEach(() => {

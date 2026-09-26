@@ -70,14 +70,12 @@ export default defineConfig({
         '**/pendle.spec.ts',
         '**/stusds.spec.ts',
         '**/terms-signature-gate.spec.ts',
+        '**/address-screening.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
         '**/optimism-savings.spec.ts',
         '**/unichain-savings.spec.ts',
         '**/sequential-tx.spec.ts'
-        // needs-V2-rewrite / parked (see e2e-migration.md):
-        // '**/vaults-spark.spec.ts' — legacy widget UI; enable when fork has sUSDT vault + flag
-        //
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]
@@ -96,9 +94,7 @@ export default defineConfig({
 
   webServer: {
     // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
-    // VITE_SUSDT_VAULT_ENABLED unhides the Spark Tether Savings vault so
-    // vaults-spark.spec.ts has a surface to drive once it is re-enabled.
-    command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true VITE_SUSDT_VAULT_ENABLED=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
+    command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,

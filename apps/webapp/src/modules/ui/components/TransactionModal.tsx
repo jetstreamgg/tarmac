@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { ArrowLeft } from 'lucide-react';
 import {
   ResponsiveModal,
   ResponsiveModalContent,
   ResponsiveModalTitle
 } from '@/components/ui/responsive-modal';
+import { SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Steps, StepsItem, StepsBadge } from '@/components/ui/steps';
 import { Loader } from '@/components/ui/loader';
@@ -141,7 +142,7 @@ export type TransactionModalProps = {
    */
   gateCopy?: GateStatusCopy | null;
   /**
-   * Enhanced-screening preflight for $250k+ transactions (APP-517). While not
+   * Address-screening preflight (standard, or enhanced for $250k+). While not
    * 'clear', the CTAs that would FIRE the transaction are held (pending →
    * loading, blocked → disabled with the message rendered above them); CTAs
    * that only advance screens (a three-screen entry's Review) stay live.
@@ -163,6 +164,8 @@ export type TransactionModalProps = {
    * modal on a gate's return-to-first-screen).
    */
   skipReview?: boolean;
+  /** See `TransactionConfig.scrimHandoff`: the scrim mounts already up. */
+  scrimHandoff?: boolean;
 };
 
 /** The transaction modal's chain-guard descriptor (see `chainGuard` prop). */
@@ -171,7 +174,7 @@ export type ChainGuard = {
   currentName?: string;
   /** Name of the chain to switch to; undefined when none is offerable. */
   targetName?: string;
-  /** Switches the wallet to the supported chain; undefined for Safe wallets. */
+  /** Switches the wallet to the supported chain; undefined when the dapp must not switch it (a Safe). */
   onSwitch?: () => void;
   /** True while the wallet is answering the guard's own switch request. */
   switching?: boolean;
@@ -237,7 +240,8 @@ export function TransactionModal({
   preflight,
   chainGuard,
   registerReturnToFirstScreen,
-  skipReview = false
+  skipReview = false,
+  scrimHandoff = false
 }: TransactionModalProps) {
   // The first screen is the editable entry when a config supplies one, else the
   // read-only review — or, for a flow whose own surface was the review, the
@@ -263,14 +267,13 @@ export function TransactionModal({
   // step (flows like the claim panel launch without a steps array): the step
   // row is where its explanatory copy, links, and inline retry live (APP-501).
   const hasSignatureStep = !!steps?.some(step => typeof step === 'object' && step.kind === 'signature');
-  // A lone on-chain step gets no list while it runs (the status chip carries
-  // the in-flight state), but once it FAILS the list is where the failure is
-  // told: the retitled "Supply failed" row, its rollback sentence and the
-  // inline "Try again" (Figma 1030:139111) — there is no status subtitle any
-  // more (design QA, Sep 2026), so without the list a single-step failure
-  // would name nothing beyond the chip.
-  const failedSingleStep = steps?.length === 1 && step === 'transaction' && txStatus === TxStatus.ERROR;
-  const showStepList = !!hasMultipleSteps || hasSignatureStep || failedSingleStep;
+  // Every flow launched with steps draws the Actions list, a lone on-chain step
+  // included (Design QA 3314:135024; the App UI confirm comps show one-row
+  // lists): the row names the action and, on failure, carries the retitled
+  // "Supply failed" row, its rollback sentence and the inline "Try again"
+  // (Figma 1030:139111). Only a flow launched with NO steps array keeps the
+  // chip-only bottom.
+  const showStepList = !!steps?.length || hasSignatureStep;
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
@@ -278,9 +281,8 @@ export function TransactionModal({
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
   // Failures render inside the step list (retitled step + inline "Try again",
   // Figma 1030:139111) and drop the bottom status row/buttons — the header
-  // back arrow still returns to the first screen. A single-step flow grows its
-  // list on failure for exactly this (see `failedSingleStep`), so only a flow
-  // launched with NO steps at all keeps the bottom treatment.
+  // back arrow still returns to the first screen. Only a flow launched with NO
+  // steps at all keeps the bottom treatment.
   const showInlineFailure = showStepList && isTransaction && txStatus === TxStatus.ERROR;
   // The status chip's content (Figma 2376:225580: leading dots + label). The
   // dots only hop while a status is genuinely in-flight (awaiting signature or
@@ -341,7 +343,7 @@ export function TransactionModal({
   // only advances to the review (and a `confirmAction` override runs in
   // place), so neither is held by the preflight — the review's confirm is.
   const primaryConfirmFiresTx = isReview || (isEntry && !entry?.confirmAction && !hasReviewStage);
-  // Enhanced-screening hold (APP-517): blocked disables the firing CTAs (the
+  // Screening hold: blocked disables the firing CTAs (the
   // message renders above them); pending renders them in the DS loading state
   // unless something else already disables them.
   const preflightBlocked = preflight?.kind === 'blocked';
@@ -351,8 +353,9 @@ export function TransactionModal({
   // and on the failure view, whose Retry would fire too — and the flow's own
   // primary CTA is REPLACED by the switch action (one button, not a second one
   // beside a disabled Confirm). The switch has no path to the executor, and
-  // the provider refuses a wrong-chain fire at the gate anyway; when the wallet
-  // can't switch (Safe), the flow's CTAs stay, disabled, under the message.
+  // the provider refuses a wrong-chain fire at the gate anyway; when the dapp
+  // must not switch the wallet (a Safe), the flow's CTAs stay, disabled, under
+  // the message.
   const chainGuardBlock = chainGuard && (
     <div className="flex items-start gap-2" data-testid="transaction-chain-guard">
       <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
@@ -402,9 +405,7 @@ export function TransactionModal({
   // A three-screen flow guarded on its review goes back to the entry: the
   // review's summary (amounts, product address, fee) was built for the chain
   // the wallet just left, and the entry is where the form re-resolves.
-  useEffect(() => {
-    if (chainGuarded && isReview && hasReviewStage) setStep('entry');
-  }, [chainGuarded, isReview, hasReviewStage]);
+  if (chainGuarded && isReview && hasReviewStage) setStep('entry');
   const firstScreenErrorMessage = isEntry ? entry?.errorMessage : errorMessage;
   // The wallet/status screen shows a compact summary when supplied; otherwise it
   // falls back to the review body (review path only), so consumers that pass only
@@ -707,6 +708,7 @@ export function TransactionModal({
           'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
           !isTransaction && 'sm:gap-12'
         )}
+        overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
@@ -807,7 +809,7 @@ export function TransactionModal({
                 {/* Precedes the screening block — a wrong chain is the more
                     fundamental block. */}
                 {chainGuardBlock}
-                {/* Enhanced-screening failure (APP-517): rendered above the CTAs,
+                {/* Screening failure: rendered above the CTAs,
                     which stay visible but disabled — the transaction is blocked. */}
                 {preflight?.kind === 'blocked' && (
                   <div className="flex items-start gap-2" data-testid="transaction-preflight-blocked">

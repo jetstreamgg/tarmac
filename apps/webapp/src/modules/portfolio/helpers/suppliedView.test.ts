@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Intent } from '@/lib/enums';
 import type { EarnProductRow, EarnUsdAmount } from '@/hooks';
-import { resolveTokenColor } from '@/widgets/shared/constants';
 import { buildSuppliedView } from './suppliedView';
 
 const makeRow = (overrides: Partial<EarnProductRow> & Pick<EarnProductRow, 'id'>): EarnProductRow => ({
@@ -81,7 +80,7 @@ describe('buildSuppliedView', () => {
 
   it('derives each segment color from its display token', () => {
     const view = buildSuppliedView(rows);
-    expect(view.positions[0].color).toBe(resolveTokenColor('sUSDS'));
+    expect(view.positions[0].color).toBe('#47b2a0');
     expect(view.positions[3].color).toBe('#deb3b5'); // DS Components/Charts/bg-stUSDS (APP-416)
   });
 
