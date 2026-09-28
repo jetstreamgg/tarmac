@@ -1,19 +1,15 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
   computeVaultLimits,
   getTokenDecimals,
   useErc4626VaultData,
-  useDebounce,
   useTokenBalance,
-  useVaultMarketData,
-  type VaultProvider
+  useVaultMarketData
 } from '@/hooks';
-import { formatNumber } from '@/utils';
-import { parseAmountInput } from '@/lib/amountInput';
+import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
 
@@ -21,7 +17,7 @@ import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
 export type VaultModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDC supplied!"). */
-export type VaultToastTitles = { loading: string; success: string; error: string };
+export type VaultToastTitles = AmountToastTitles;
 
 export interface VaultTransactionForm {
   isConnected: boolean;
@@ -45,7 +41,7 @@ export interface VaultTransactionForm {
   position: bigint;
   /** Withdraw-relevant: vault liquidity currently caps the input below the position. */
   isLiquidityConstrained: boolean;
-  /** Withdraw-relevant: the provider's liquidity source settled without a figure. */
+  /** Withdraw-relevant: the market liquidity read settled without a figure. */
   isLiquidityDataUnavailable: boolean;
   engineParams: VaultEngineParams;
   toast: VaultToastTitles;
@@ -68,13 +64,11 @@ export function useVaultTransactionForm({
   flow,
   vaultAddress,
   assetToken,
-  provider = 'morpho',
   preset
 }: {
   flow: VaultLaunchFlow;
   vaultAddress: `0x${string}`;
   assetToken: Token;
-  provider?: VaultProvider;
   preset?: VaultModalPreset;
 }): VaultTransactionForm {
   const chainId = useChainId();
@@ -82,31 +76,16 @@ export function useVaultTransactionForm({
   const isSupply = flow === 'supply';
   const decimals = getTokenDecimals(assetToken, chainId);
 
-  const [value, setValue] = useState(preset?.amount ?? '');
-  // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
-  const [max, setMax] = useState(false);
-
-  const amount = parseAmountInput(value, decimals);
-  // Every keystroke would otherwise refire the fee estimate (2× eth_simulateV1 +
-  // getCode) and the batch pre-send simulation; the engine and the amount
-  // displays follow the settled value so what's shown equals what gets signed.
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
-
   const { data: walletBalance } = useTokenBalance({
     address,
     chainId,
     token: assetToken.address[chainId]
   });
-  const { data: vaultData } = useErc4626VaultData({ vaultAddress, provider });
+  const { data: vaultData } = useErc4626VaultData({ vaultAddress });
   // Morpho publishes the vault's withdrawable liquidity through its market API;
   // its on-chain `maxWithdraw`/`maxRedeem` are stubs that read 0 for everyone
-  // (APP-456 #7). `computeVaultLimits` owns that provider split, shared with the
-  // widget's supply/withdraw pane so both surfaces agree per vault.
-  const { data: marketData, isLoading: isMarketDataLoading } = useVaultMarketData({
-    provider,
-    vaultAddress
-  });
+  // (APP-456 #7). `computeVaultLimits` owns that rule.
+  const { data: marketData, isLoading: isMarketDataLoading } = useVaultMarketData({ vaultAddress });
 
   const {
     maxDepositInput,
@@ -116,13 +95,9 @@ export function useVaultTransactionForm({
     isFullPositionWithdrawable,
     isLiquidityDataUnavailable
   } = computeVaultLimits({
-    provider,
     assetBalance: walletBalance?.value,
-    maxDeposit: vaultData?.maxDeposit,
     userAssets: vaultData?.userAssets,
     userShares: vaultData?.userShares,
-    maxWithdraw: vaultData?.maxWithdraw,
-    maxRedeem: vaultData?.maxRedeem,
     availableLiquidity: marketData?.liquidity,
     liquidityKnown: !isMarketDataLoading
   });
@@ -133,70 +108,43 @@ export function useVaultTransactionForm({
   const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
   // Never validate against the unresolved balance/position read's 0n fallback.
   const availableKnown = isSupply ? walletBalance !== undefined : vaultData !== undefined;
-  const isZero = amount === 0n;
-  const insufficient = availableKnown && amount > available;
-  // Validation stays on the raw amount for immediate feedback; readiness also
-  // waits for the debounce. A redeem-all Max is flag-driven (the engine burns
-  // the whole share balance, not the typed number), so like the stUSDS form it
-  // only needs the debounce to have settled once rather than re-gating on drift.
-  const amountReady =
-    isConnected &&
-    amount > 0n &&
-    availableKnown &&
-    !insufficient &&
-    (max ? debouncedAmount > 0n : !debouncePending);
 
-  const onInput = (next: string) => {
-    setMax(false);
-    setValue(next);
-  };
-  const setMaxAmount = () => {
-    setValue(formatUnits(available, decimals));
+  const {
+    value,
+    amount,
+    debouncedAmount,
+    debouncePending,
+    max,
+    isZero,
+    insufficient,
+    amountReady,
+    toast,
+    onInput,
+    setMaxAmount,
+    setPercentAmount,
+    clearAmount
+  } = useAmountForm({
+    decimals,
+    available,
+    availableKnown,
+    symbol: assetToken.symbol,
+    isSupply,
+    preset,
     // Max redeems the whole share balance (no dust) only when the full position
     // is withdrawable; under a liquidity constraint the engine runs a plain
     // withdraw of the cap instead — a redeem-all would revert (APP-488).
-    setMax(!isSupply && isFullPositionWithdrawable);
-  };
-  const setPercentAmount = (pct: number) => {
-    if (pct >= 100) return setMaxAmount();
-    setMax(false);
-    setValue(formatUnits((available * BigInt(pct)) / 100n, decimals));
-  };
-  const clearAmount = () => {
-    setValue('');
-    setMax(false);
-  };
+    maxRedeems: !isSupply && isFullPositionWithdrawable
+  });
 
   const engineParams: VaultEngineParams = {
     flow,
     vaultAddress,
     assetToken,
-    provider,
     amount: debouncedAmount,
     max,
     shares: redeemShares,
     enabled: amountReady
   };
-
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(debouncedAmount, decimals)), { maxDecimals: 2 })} ${assetToken.symbol}`;
-  // Memoized so the modal-content sync effect in VaultModalForm has stable deps —
-  // an unmemoized object/element here recreates every render and loops
-  // updateModalContent → setActiveConfig → re-render (matches the savings form).
-  const toast = useMemo<VaultToastTitles>(
-    () =>
-      isSupply
-        ? {
-            loading: t`Supplying ${amountLabel}`,
-            success: t`${amountLabel} supplied!`,
-            error: t`Supply failed`
-          }
-        : {
-            loading: t`Withdrawing ${amountLabel}`,
-            success: t`${amountLabel} withdrawn!`,
-            error: t`Withdrawal failed`
-          },
-    [isSupply, amountLabel]
-  );
 
   const transactionScreenContent = useMemo(
     () => (

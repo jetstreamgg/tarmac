@@ -8,15 +8,6 @@ import { StarsFilled } from '@/modules/icons';
 import type { MorphoVaultRateData } from '@/hooks';
 
 /**
- * Whether a vault's rate is boosted by reward incentives — i.e. whether there
- * is anything to mark and to break down. A vault without them has net ==
- * native, so every surface renders the bare figure.
- */
-export function hasRateIncentives(rate?: MorphoVaultRateData): rate is MorphoVaultRateData {
-  return !!rate && rate.rewards.length > 0;
-}
-
-/**
  * Whether there is anything to break a rate down INTO: reward incentives, or a
  * net rate that differs from the native one (a fee). The Risk Capital vaults
  * have neither — net equals native — so their Details row shows the bare

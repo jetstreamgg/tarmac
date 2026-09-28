@@ -1,7 +1,6 @@
-import { TrustLevel } from './hooks';
+import { DataSource, TrustLevel } from './hooks';
 
-export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+export { ZERO_ADDRESS } from '../utils/constants';
 
 export const TRUST_LEVELS: Record<TrustLevelEnum, TrustLevel> = {
   0: {
@@ -32,6 +31,38 @@ export enum TrustLevelEnum {
 
 export const URL_SKY_INDEXER = 'https://proxy.sky.money/indexer';
 
+const URL_PENDLE_API_DOCS = 'https://api-v2.pendle.finance/core/docs';
+
+/** The Sky Ecosystem indexer as a read hook's data source. */
+export function indexerDataSource(urlIndexer: string): DataSource {
+  return {
+    title: 'Sky Ecosystem indexer',
+    href: urlIndexer,
+    onChain: false,
+    trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
+  };
+}
+
+/** A BA Labs endpoint as a data source; the site root stands in while no URL is built. */
+export function baLabsDataSource(url?: URL): DataSource {
+  return {
+    title: 'BA Labs API',
+    href: url?.href || 'https://blockanalitica.com/',
+    onChain: false,
+    trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
+  };
+}
+
+/** The Pendle markets API as a data source. */
+export function pendleDataSource(): DataSource {
+  return {
+    title: 'Pendle Markets API',
+    href: URL_PENDLE_API_DOCS,
+    onChain: false,
+    trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
+  };
+}
+
 // Server-side cap per history entity query; the indexer stores addresses lowercase,
 // so history queries filter with _eq on lowercased addresses (ILIKE defeats the DB indexes).
 export const HISTORY_QUERY_LIMIT = 100;
@@ -41,7 +72,7 @@ export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/
 
 export const BASE_CHAIN_ID = 8453;
 
-export const TENDERLY_CHAIN_ID = 314310;
+export { TENDERLY_CHAIN_ID } from '../data/wagmi/config/testTenderlyChain';
 
 export enum ModuleEnum {
   SAVINGS = 'SAVINGS',
@@ -51,7 +82,6 @@ export enum ModuleEnum {
   STAKE = 'STAKE',
   STUSDS = 'STUSDS',
   MORPHO = 'MORPHO',
-  SUSDT = 'SUSDT',
   PENDLE = 'PENDLE'
 }
 

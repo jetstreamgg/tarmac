@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
-import { formatBigInt, formatNumber } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import {
   formatPendleAggregatorName,
   getTokenDecimals,
@@ -92,10 +92,7 @@ export const PendleRedeem = ({
     receiveSymbol: selectedOutputToken.symbol,
     priceImpact: formatPriceImpact(quote?.priceImpact) ?? NO_VALUE,
     routedVia: aggregatorName ? `Pendle redeem → ${aggregatorName}` : NO_VALUE,
-    pendleFee:
-      quote?.feeUsd !== undefined
-        ? `$${formatNumber(quote.feeUsd, { maxDecimals: quote.feeUsd >= 1 ? 2 : 4 })}`
-        : t`Included in quote`,
+    pendleFee: quote?.feeUsd !== undefined ? formatUsd(quote.feeUsd) : t`Included in quote`,
     network,
     networkChainId,
     networkFee: NO_VALUE

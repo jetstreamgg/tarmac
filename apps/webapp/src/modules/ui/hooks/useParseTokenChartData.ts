@@ -13,14 +13,13 @@ export function useParseTokenChartData(timeFrame: TimeFrame, tvl: TokenChartTvl[
     const { startTimestamp, endTimestamp } = determineTimeframeBounds(timeFrame, sortedTvl);
 
     // Filter TVL changes within the determined timeframe
-    let prevItem: TokenChartTvl | undefined;
-    const relevantChanges = sortedTvl.filter((item, index) => {
-      const found = item.blockTimestamp >= startTimestamp && item.blockTimestamp <= endTimestamp;
-      if (found && !prevItem && index > 0) {
-        prevItem = sortedTvl[index - 1];
-      }
-      return found;
-    });
+    const inRange = (item: TokenChartTvl) =>
+      item.blockTimestamp >= startTimestamp && item.blockTimestamp <= endTimestamp;
+    const relevantChanges = sortedTvl.filter(inRange);
+    // The record just before the window, so the series opens at the value
+    // that was current at `startTimestamp` rather than at zero.
+    const firstInRangeAfterHead = sortedTvl.findIndex((item, index) => index > 0 && inRange(item));
+    const prevItem = firstInRangeAfterHead > 0 ? sortedTvl[firstInRangeAfterHead - 1] : undefined;
 
     const firstItem = prevItem ? [prevItem] : [];
     const lastItem = sortedTvl.length > 0 ? [sortedTvl[sortedTvl.length - 1]] : [];

@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
+import { toReadHook } from '../shared/toReadHook';
+import { fetchJson } from '../shared/fetchJson';
 
 type SkySavingsRateHistoricApiResponse = {
   date: string;
@@ -29,14 +31,9 @@ function transformBaLabsData(results: SkySavingsRateHistoricApiResponse[]): SkyS
 
 async function fetchSkySavingsRateHistoric(url: URL): Promise<SkySavingsRateHistoricData[]> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    const data = await fetchJson<{ historic: SkySavingsRateHistoricApiResponse[] }>(url, {
+      label: 'Sky Savings Rate historic data'
     });
-
-    const data: { historic: SkySavingsRateHistoricApiResponse[] } = await response.json();
     return transformBaLabsData(data?.historic || []);
   } catch (error) {
     console.error('Error fetching Sky Savings Rate historic data:', error);
@@ -56,29 +53,11 @@ export function useSkySavingsRateHistoricData(
     url = new URL(`${rootBase}/save/ssr/historic/?days_ago=${daysAgo}`);
   }
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     enabled: Boolean(rootBase),
     queryKey: ['sky-savings-rate-historic', url?.href],
     queryFn: () => (url ? fetchSkySavingsRateHistoric(url) : Promise.resolve([]))
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [baLabsDataSource(url)]);
 }

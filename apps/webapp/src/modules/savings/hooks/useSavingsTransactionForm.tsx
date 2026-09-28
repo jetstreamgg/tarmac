@@ -5,7 +5,6 @@ import { t } from '@lingui/core/macro';
 import {
   getTokenDecimals,
   TOKENS,
-  useDebounce,
   useOverallSkyData,
   usePreviewSwapExactIn,
   usePreviewSwapExactOut,
@@ -15,8 +14,8 @@ import {
   type Token
 } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, isL2ChainId, math } from '@/utils';
-import { parseAmountInput } from '@/lib/amountInput';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
+import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { SavingsAmountSummary } from '../components/SavingsAmountSummary';
 import {
   ORIGIN_TOKENS,
@@ -38,7 +37,7 @@ export type SavingsModalPreset = {
 };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
-export type SavingsToastTitles = { loading: string; success: string; error: string };
+export type SavingsToastTitles = AmountToastTitles;
 
 /** The subset of `useSavingsLaunch` params the form derives — spread into the engine by each surface. */
 export type SavingsEngineParams = Pick<
@@ -167,28 +166,6 @@ export function useSavingsTransactionForm({
   const { data: overall } = useOverallSkyData();
   const isL2 = isL2ChainId(chainId);
 
-  // The entered amount, seeded from `preset` on mount, together with the chain
-  // it was entered ON. `max` is withdraw-only: set by Max so the engine redeems
-  // the whole position (no dust), cleared the moment the user edits the amount.
-  //
-  // The chain can change under the open modal (the entry grid's Network
-  // dropdown), and an amount is only meaningful on the chain it was entered
-  // for: a Max carried across a switch would redeem the OTHER chain's whole
-  // position while the hero still showed the old one, and a typed figure was
-  // sized against the old chain's balance. So the read is clamped to the
-  // entering chain — anything from another chain reads as empty — the same
-  // way the origin pick below is clamped rather than reset.
-  const [entered, setEntered] = useState<{ chainId: number; value: string; max: boolean }>({
-    chainId,
-    value: preset?.amount ?? '',
-    max: false
-  });
-  const value = entered.chainId === chainId ? entered.value : '';
-  const max = entered.chainId === chainId && entered.max;
-  const setAmount = useCallback(
-    (nextValue: string, nextMax = false) => setEntered({ chainId, value: nextValue, max: nextMax }),
-    [chainId]
-  );
   const [pickedOrigin, setPickedOrigin] = useState<OriginSymbol>(preset?.token ?? 'USDS');
 
   // Supply always offers an origin choice (USDS/DAI mainnet, USDS/USDC L2); withdraw
@@ -207,13 +184,6 @@ export function useSavingsTransactionForm({
   const originSymbol = originOptions.includes(pickedOrigin) ? pickedOrigin : originOptions[0];
   const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
-  const amount = parseAmountInput(value, originDecimals);
-  // Every keystroke that parses re-fired the preview / min-out / fee / pre-send
-  // simulation reads. The reads, the engine, and the amount displays key on the
-  // settled value; validation (`isZero` / `insufficient`) stays on the live one
-  // so the user gets immediate feedback (stUSDS / upgrade pattern).
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
 
   const { data: walletBalance } = useTokenBalance({
     address,
@@ -247,8 +217,57 @@ export function useSavingsTransactionForm({
   // the disabled confirm and the reason rendered under the amount field.
   const usdcGateReady = !isMainnetUsdc || (usdcGate.ready && !usdcGate.blockedReason);
 
-  const minAmountOut = useSavingsSupplyMinAmountOut({ amount: debouncedAmount, originToken });
   const convertedBalance = usePreviewSwapExactIn(susdsBalance?.value ?? 0n, TOKENS.susds, originToken);
+
+  // Supply is capped by the wallet balance of the origin token; withdraw by the
+  // position (mainnet: the USDS savings balance; L2: sUSDS converted to the
+  // destination token).
+  const available = isSupply ? (walletBalance?.value ?? 0n) : isL2 ? convertedBalance.value : position;
+  // Never validate against the unresolved balance's 0n fallback. The L2 withdraw
+  // balance is the sUSDS balance seen through the PSM preview — two reads, so it
+  // waits on both (a 0n balance previews to 0n by definition and never loads).
+  const availableKnown = isSupply
+    ? walletBalance !== undefined
+    : isL2
+      ? susdsBalance !== undefined && !convertedBalance.isLoading
+      : savingsData?.userSavingsBalance !== undefined;
+
+  // The entered amount, seeded from `preset` on mount, keyed to the chain it
+  // was entered ON. `max` is withdraw-only: set by Max so the engine redeems
+  // the whole position (no dust), cleared the moment the user edits the amount.
+  //
+  // The chain can change under the open modal (the entry grid's Network
+  // dropdown), and an amount is only meaningful on the chain it was entered
+  // for: a Max carried across a switch would redeem the OTHER chain's whole
+  // position while the hero still showed the old one, and a typed figure was
+  // sized against the old chain's balance. So the read is clamped to the
+  // entering chain (`entryKey`) — anything from another chain reads as empty —
+  // the same way the origin pick above is clamped rather than reset.
+  const {
+    value,
+    amount,
+    debouncedAmount,
+    debouncePending,
+    max,
+    isZero,
+    toast,
+    onInput,
+    setMaxAmount,
+    setPercentAmount,
+    clearAmount: clearEnteredAmount
+  } = useAmountForm({
+    decimals: originDecimals,
+    available,
+    availableKnown,
+    symbol: originToken.symbol,
+    isSupply,
+    preset,
+    // Flag a max only for withdraw; supply just deposits exactly the input.
+    maxRedeems: !isSupply,
+    entryKey: chainId
+  });
+
+  const minAmountOut = useSavingsSupplyMinAmountOut({ amount: debouncedAmount, originToken });
   const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(
     debouncedAmount,
     TOKENS.susds,
@@ -267,32 +286,15 @@ export function useSavingsTransactionForm({
   });
   const previewShares = typeof previewSharesData === 'bigint' ? previewSharesData : undefined;
 
-  // Supply is capped by the wallet balance of the origin token; withdraw by the
-  // position (mainnet: the USDS savings balance; L2: sUSDS converted to the
-  // destination token).
-  const available = isSupply ? (walletBalance?.value ?? 0n) : isL2 ? convertedBalance.value : position;
-  // Never validate against the unresolved balance's 0n fallback. The L2 withdraw
-  // balance is the sUSDS balance seen through the PSM preview — two reads, so it
-  // waits on both (a 0n balance previews to 0n by definition and never loads).
-  const availableKnown = isSupply
-    ? walletBalance !== undefined
-    : isL2
-      ? susdsBalance !== undefined && !convertedBalance.isLoading
-      : savingsData?.userSavingsBalance !== undefined;
-  const isZero = amount === 0n;
-  // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
-  // the displayed (rounded) value.
+  // The savings gate is wider than the shared one (`useAmountForm` computes
+  // the plain rule): a max withdraw bypasses the amount check — the redeem is
+  // driven by the flag, not the displayed (rounded) value — and a mainnet USDC
+  // supply also waits on the PSM gate above.
   const insufficient = isConnected && !max && availableKnown && amount > available;
-  // The typed path also waits for the debounce to settle, so the confirm never
-  // arms on reads keyed to a stale amount. A max withdraw only needs the settled
-  // value to be real (`debouncedAmount > 0n`): right after Max on a fresh form it
-  // is still 0n, and the amount surfaces (hero, toast) read it — but it doesn't
-  // re-gate on drift, since the flag, not the number, drives the redemption.
+  // Like the shared gate, it waits for the amount to settle so the confirm never
+  // arms on reads keyed to a stale amount.
   const amountReady =
-    isConnected &&
-    usdcGateReady &&
-    availableKnown &&
-    (max ? debouncedAmount > 0n : !isZero && !insufficient && !debouncePending);
+    isConnected && usdcGateReady && availableKnown && !isZero && !insufficient && !debouncePending;
 
   const engineParams: SavingsEngineParams = {
     flow,
@@ -330,59 +332,25 @@ export function useSavingsTransactionForm({
     [isSupply, amountDisplay, originToken.symbol]
   );
 
-  // Amount-aware titles for the minimized toast (Figma "10,000.00 USDS supplied!").
-  const toast = useMemo<SavingsToastTitles>(() => {
-    const label = `${amountDisplay} ${originToken.symbol}`;
-    return isSupply
-      ? { loading: t`Supplying ${label}`, success: t`${label} supplied!`, error: t`Supply failed` }
-      : { loading: t`Withdrawing ${label}`, success: t`${label} withdrawn!`, error: t`Withdrawal failed` };
-  }, [isSupply, amountDisplay, originToken.symbol]);
-
   const rate = overall?.skySavingsRatecRate ? parseFloat(overall.skySavingsRatecRate) : undefined;
   const apyDisplay = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
-
-  const onInput = useCallback(
-    (raw: string) => {
-      // Typing overrides a previous Max selection.
-      setAmount(raw);
-    },
-    [setAmount]
-  );
-
-  const setMaxAmount = useCallback(() => {
-    // Flag a max only for withdraw; supply just deposits exactly the input.
-    setAmount(formatUnits(available, originDecimals), !isSupply);
-  }, [isSupply, available, originDecimals, setAmount]);
-
-  // The 25/50/100% chips (Figma 859:36036). 100% is the old Max — same no-dust
-  // withdraw semantics; the partial presets are plain amounts.
-  const setPercentAmount = useCallback(
-    (pct: number) => {
-      if (pct >= 100) {
-        setMaxAmount();
-        return;
-      }
-      setAmount(formatUnits((available * BigInt(pct)) / 100n, originDecimals));
-    },
-    [setMaxAmount, available, originDecimals, setAmount]
-  );
 
   // Switching the origin token resets the amount + Max (the previous amount was
   // denominated in the old token's balance/decimals).
   const switchOrigin = useCallback(
     (next: OriginSymbol) => {
       setPickedOrigin(next);
-      setAmount('');
+      clearEnteredAmount();
     },
-    [setAmount]
+    [clearEnteredAmount]
   );
 
-  const clearAmount = useCallback(() => setAmount(''), [setAmount]);
+  const clearAmount = clearEnteredAmount;
 
   const resetToUsds = useCallback(() => {
     setPickedOrigin('USDS');
-    setAmount('');
-  }, [setAmount]);
+    clearEnteredAmount();
+  }, [clearEnteredAmount]);
 
   return {
     isConnected,

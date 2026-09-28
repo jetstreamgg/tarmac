@@ -15,7 +15,7 @@ import { ConnectedProvider } from '@/modules/ui/context/ConnectedContext';
 import { TermsModalProvider } from '@/modules/ui/context/TermsModalContext';
 import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { useTermsSignatureGate } from '@/modules/ui/hooks/useTermsSignatureGate';
-import { useEnhancedScreeningPreflight } from '@/modules/ui/hooks/useEnhancedScreeningPreflight';
+import { useScreeningPreflight } from '@/modules/ui/hooks/useScreeningPreflight';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { ConnectThenActProvider } from '@/modules/ui/context/ConnectThenActContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
@@ -47,12 +47,12 @@ const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : w
 // TransactionProvider with the real pre-transaction gate (APP-501) mounted:
 // screening + the conditional terms signature run on every Confirm. Its own
 // dialog (the screening-unavailable state) rides alongside the children.
-// The enhanced-screening preflight (APP-517) gates the modal's CTAs for
-// $250k+ transactions through the same provider seam.
+// The screening preflight gates the modal's firing CTAs through the same
+// provider seam: standard screening, or enhanced for $250k+ (APP-517).
 const GatedTransactionProvider = ({ children }: { children: React.ReactNode }) => {
   const { gate, screeningDialog } = useTermsSignatureGate();
   return (
-    <TransactionProvider gate={gate} usePreflight={useEnhancedScreeningPreflight}>
+    <TransactionProvider gate={gate} usePreflight={useScreeningPreflight}>
       {children}
       {screeningDialog}
     </TransactionProvider>

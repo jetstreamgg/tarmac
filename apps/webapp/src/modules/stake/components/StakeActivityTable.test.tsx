@@ -11,7 +11,8 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1
+    useChainId: () => 1,
+    useAccount: () => ({ isConnected: true })
   };
 });
 

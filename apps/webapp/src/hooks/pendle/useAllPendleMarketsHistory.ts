@@ -1,4 +1,4 @@
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { pendleDataSource } from '../constants';
 import type { PendleCombinedMarketHistoryHook } from './pendle';
 import { usePendleAllPnlTransactions } from './usePendleAllPnlTransactions';
 
@@ -21,13 +21,6 @@ export function useAllPendleMarketsHistory(): PendleCombinedMarketHistoryHook {
     data,
     error,
     mutate: refetch,
-    dataSources: [
-      {
-        title: 'Pendle Markets API',
-        href: 'https://api-v2.pendle.finance/core/docs',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
+    dataSources: [pendleDataSource()]
   };
 }

@@ -7,6 +7,11 @@ import { ProductTransactionsTable, ProductTransactionColumn } from './ProductTra
 // Pin the JS breakpoint per test (happy-dom's viewport is 1024, i.e. table
 // mode) — same pattern as responsive-modal.test.tsx.
 const breakpoint = vi.hoisted(() => ({ isMobile: false }));
+const wallet = vi.hoisted(() => ({ isConnected: true }));
+vi.mock('wagmi', async importOriginal => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return { ...actual, useAccount: () => ({ isConnected: wallet.isConnected }) };
+});
 vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
   return {
@@ -100,7 +105,7 @@ describe('ProductTransactionsTable — renderBelowRow', () => {
     expect(screen.queryByTestId('below-2')).toBeNull();
   });
 
-  it('does not fire onRowClick when the below-row content is clicked', () => {
+  it('activates the row from its below-row carrier, unless the content stops propagation', () => {
     const onRowClick = vi.fn();
     render(
       <I18nProvider i18n={i18n}>
@@ -109,13 +114,25 @@ describe('ProductTransactionsTable — renderBelowRow', () => {
           rows={makeRows(2)}
           rowKey={row => row.id}
           onRowClick={onRowClick}
-          renderBelowRow={row => (row.id === '0' ? <button data-testid="below-cta">CTA</button> : null)}
+          renderBelowRow={row =>
+            row.id === '0' ? (
+              <div data-testid="below-body">
+                <button data-testid="below-cta" onClick={event => event.stopPropagation()}>
+                  CTA
+                </button>
+              </div>
+            ) : null
+          }
         />
       </I18nProvider>
     );
 
     fireEvent.click(screen.getByTestId('below-cta'));
     expect(onRowClick).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('below-body'));
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    expect(onRowClick).toHaveBeenCalledWith(expect.objectContaining({ id: '0' }));
   });
 
   it('leaves existing consumers byte-identical when renderBelowRow is omitted', () => {
@@ -176,6 +193,28 @@ describe('ProductTransactionsTable — mobile cards (M5)', () => {
     ]);
   });
 
+  it('hides empty carrier rows and re-pins the last row corners through :has', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={COLUMNS}
+          rows={makeRows(2)}
+          rowKey={row => row.id}
+          rowTestId={row => `row-${row.id}`}
+          renderBelowRow={row => (row.id === '0' ? <div data-testid="below-0">below</div> : null)}
+        />
+      </I18nProvider>
+    );
+    const carrier = screen.getByTestId('below-0').closest('tr') as HTMLTableRowElement;
+    // Every data row gets a carrier; CSS hides the ones whose banner rendered nothing.
+    expect(carrier.className).toContain('[&:not(:has(td>*))]:hidden');
+    // The last data row only rounds when its carrier is empty (CSS-resolved).
+    expect(screen.getByTestId('row-1').className).toContain(
+      '[&:has(+tr>td:empty)>td:first-child]:rounded-bl-[24px]'
+    );
+    expect(screen.getByTestId('row-0').className).not.toContain('rounded-bl-[24px]');
+  });
+
   it('renders below-row content after the matching card', () => {
     render(
       <I18nProvider i18n={i18n}>
@@ -195,6 +234,48 @@ describe('ProductTransactionsTable — mobile cards (M5)', () => {
     renderWithCards([]);
     expect(screen.getByText("You don't have any transactions made yet.")).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
+  });
+});
+
+describe('ProductTransactionsTable — empty state copy', () => {
+  afterEach(() => {
+    cleanup();
+    wallet.isConnected = true;
+    breakpoint.isMobile = false;
+  });
+
+  it('asks for a wallet instead of claiming no history when disconnected', () => {
+    wallet.isConnected = false;
+    renderTable([]);
+    expect(screen.getByText('Connect your wallet to see your transactions.')).toBeTruthy();
+    expect(screen.queryByText("You don't have any transactions made yet.")).toBeNull();
+  });
+
+  it('prefers the connect prompt over a consumer emptyLabel when disconnected', () => {
+    wallet.isConnected = false;
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable columns={COLUMNS} rows={[]} rowKey={row => row.id} emptyLabel="Nothing" />
+      </I18nProvider>
+    );
+    expect(screen.getByText('Connect your wallet to see your transactions.')).toBeTruthy();
+    expect(screen.queryByText('Nothing')).toBeNull();
+  });
+
+  it('shows the connect prompt on the card surface too', () => {
+    wallet.isConnected = false;
+    breakpoint.isMobile = true;
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProductTransactionsTable
+          columns={COLUMNS}
+          rows={[]}
+          rowKey={row => row.id}
+          renderCard={row => <div>{`card-${row.id}`}</div>}
+        />
+      </I18nProvider>
+    );
+    expect(screen.getByText('Connect your wallet to see your transactions.')).toBeTruthy();
   });
 });
 

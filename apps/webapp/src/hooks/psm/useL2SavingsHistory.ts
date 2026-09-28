@@ -1,15 +1,9 @@
-import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import {
-  historyQueryArgs,
-  historyPageBoundary,
-  clampHistoryPage,
-  HistoryPage
-} from '../shared/historyQueryHelpers';
-import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
-import { useConnection, useChainId } from 'wagmi';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { historyQueryArgs, secondsToDate } from '../shared/historyQueryHelpers';
+import { PaginatedHistory } from '../shared/useHistoryPagination';
+import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
+import { useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { SavingsHistory } from '../savings/savings';
@@ -75,7 +69,7 @@ export function mapL2SavingsRows(
       }
 
       return {
-        blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+        blockTimestamp: secondsToDate(e.blockTimestamp),
         transactionHash: e.transactionHash,
         module: ModuleEnum.SAVINGS,
         type: TransactionTypeEnum.WITHDRAW,
@@ -102,7 +96,7 @@ export function mapL2SavingsRows(
       }
 
       return {
-        blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+        blockTimestamp: secondsToDate(e.blockTimestamp),
         transactionHash: e.transactionHash,
         module: ModuleEnum.SAVINGS,
         type: TransactionTypeEnum.SUPPLY,
@@ -120,34 +114,6 @@ export function mapL2SavingsRows(
   );
 }
 
-async function fetchL2SavingsHistoryPage(
-  urlIndexer: string,
-  chainId: number,
-  address?: string,
-  tokenAddressMap?: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
-  beforeTimestamp?: number
-): Promise<HistoryPage<SavingsHistory[number]>> {
-  if (!address || !tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
-    return { items: [], nextCursor: undefined };
-  }
-
-  const query = gql`
-  {
-    ${l2SavingsHistoryFragments({ wallet: address.toLowerCase(), chainId, beforeTimestamp })}
-  }
-  `;
-
-  const response = (await request(urlIndexer, query)) as any;
-  const nextCursor = historyPageBoundary(response);
-  return {
-    items: clampHistoryPage(
-      mapL2SavingsRows(response.usdsIn, response.usdsOut, chainId, tokenAddressMap),
-      nextCursor
-    ),
-    nextCursor
-  };
-}
-
 export function useL2SavingsHistory({
   indexerUrl,
   enabled = true,
@@ -157,35 +123,20 @@ export function useL2SavingsHistory({
   enabled?: boolean;
   chainId?: number;
 } = {}): ReadHook & PaginatedHistory & { data?: SavingsHistory } {
-  const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId ?? currentChainId;
-  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainIdToUse) || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
-  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useHistoryPagination({
-      enabled: Boolean(urlIndexer) && enabled && Boolean(tokenAddressMap) && Boolean(address),
-      queryKey: ['L2-savings-history', urlIndexer, address, chainIdToUse],
-      fetchPage: beforeTimestamp =>
-        fetchL2SavingsHistoryPage(urlIndexer, chainIdToUse, address, tokenAddressMap, beforeTimestamp)
-    });
 
-  return {
-    data,
-    isLoading,
-    error: error as Error,
-    mutate,
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
-  };
+  return useIndexerFamilyHistory<SavingsHistory[number]>({
+    indexerUrl,
+    chainId: chainIdToUse,
+    enabled: enabled && Boolean(tokenAddressMap),
+    requireAddress: true,
+    ready: Boolean(tokenAddressMap) && Object.keys(tokenAddressMap).length > 0,
+    queryKey: ({ urlIndexer, address, chainId }) => ['L2-savings-history', urlIndexer, address, chainId],
+    fragments: ({ owner, chainId, beforeTimestamp }) =>
+      l2SavingsHistoryFragments({ wallet: owner, chainId, beforeTimestamp }),
+    mapPage: (response, chainId) =>
+      mapL2SavingsRows(response.usdsIn, response.usdsOut, chainId, tokenAddressMap)
+  });
 }

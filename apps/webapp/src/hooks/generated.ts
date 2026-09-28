@@ -8245,56 +8245,6 @@ export const skyAddress = {
 export const skyConfig = { address: skyAddress, abi: skyAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// sparkUsdtVault
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x74cb54e082411cfCAEADb00a0765625B10410DAa)
- */
-export const sparkUsdtVaultAbi = [
-  {
-    type: 'constructor',
-    inputs: [
-      { name: 'implementation', internalType: 'address', type: 'address' },
-      { name: '_data', internalType: 'bytes', type: 'bytes' }
-    ],
-    stateMutability: 'payable'
-  },
-  {
-    type: 'error',
-    inputs: [{ name: 'target', internalType: 'address', type: 'address' }],
-    name: 'AddressEmptyCode'
-  },
-  {
-    type: 'error',
-    inputs: [{ name: 'implementation', internalType: 'address', type: 'address' }],
-    name: 'ERC1967InvalidImplementation'
-  },
-  { type: 'error', inputs: [], name: 'ERC1967NonPayable' },
-  { type: 'error', inputs: [], name: 'FailedCall' },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: true }],
-    name: 'Upgraded'
-  },
-  { type: 'fallback', stateMutability: 'payable' }
-] as const;
-
-/**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x74cb54e082411cfCAEADb00a0765625B10410DAa)
- */
-export const sparkUsdtVaultAddress = {
-  1: '0x74cb54e082411cfCAEADb00a0765625B10410DAa',
-  314310: '0x74cb54e082411cfCAEADb00a0765625B10410DAa'
-} as const;
-
-/**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x74cb54e082411cfCAEADb00a0765625B10410DAa)
- */
-export const sparkUsdtVaultConfig = { address: sparkUsdtVaultAddress, abi: sparkUsdtVaultAbi } as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // spk
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31293,27 +31243,6 @@ export const useWatchSkyTransfer = /*#__PURE__*/ createUseWatchContractEvent({
   abi: skyAbi,
   address: skyAddress,
   eventName: 'Transfer'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link sparkUsdtVaultAbi}__
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x74cb54e082411cfCAEADb00a0765625B10410DAa)
- */
-export const useWatchSparkUsdtVault = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: sparkUsdtVaultAbi,
-  address: sparkUsdtVaultAddress
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link sparkUsdtVaultAbi}__ and `eventName` set to `"Upgraded"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x74cb54e082411cfCAEADb00a0765625B10410DAa)
- */
-export const useWatchSparkUsdtVaultUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: sparkUsdtVaultAbi,
-  address: sparkUsdtVaultAddress,
-  eventName: 'Upgraded'
 });
 
 /**

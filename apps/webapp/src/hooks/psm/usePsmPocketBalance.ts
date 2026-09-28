@@ -1,7 +1,7 @@
 import { useChainId } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { usdcAddress } from '../generated';
-import { psmPocketAddress } from './usdsPsmWrapper';
+import { psmPocketAddress } from './psmPocket';
 
 export function usePsmPocketBalance({ chainIdOverride }: { chainIdOverride?: number } = {}) {
   const chainId = useChainId();

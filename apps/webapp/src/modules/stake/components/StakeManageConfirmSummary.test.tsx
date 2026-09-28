@@ -74,12 +74,12 @@ describe('StakeManageConfirmSummary', () => {
     expect(amountColumn.className).toContain('flex-col');
   });
 
-  it('formats a dust USD value as $0.00, not $<0.01 (formatUsd, not a bare number)', () => {
-    // 0.01 SKY at $0.05 = half a cent — formatNumber marks that "<0.01" and the
-    // hero used to prepend "$" to it.
+  it('formats a dust USD value as <$0.01 (formatUsd, not a bare number)', () => {
+    // 0.01 SKY at $0.05 = half a cent — money never rounds a real amount to
+    // "$0.00", and the sign sits before the symbol, not "$<0.01".
     renderSummary({ skyToLock: WAD / 100n });
-    expect(screen.getByTestId('stake-manage-summary-stake').textContent).toContain('$0.00');
-    expect(screen.getByTestId('stake-manage-summary-stake').textContent).not.toContain('<');
+    expect(screen.getByTestId('stake-manage-summary-stake').textContent).toContain('<$0.01');
+    expect(screen.getByTestId('stake-manage-summary-stake').textContent).not.toContain('$<');
   });
 
   it('renders nothing for a selection-only change', () => {

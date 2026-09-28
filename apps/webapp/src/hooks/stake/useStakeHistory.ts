@@ -1,14 +1,8 @@
-import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import {
-  historyQueryArgs,
-  historyPageBoundary,
-  clampHistoryPage,
-  HistoryPage
-} from '../shared/historyQueryHelpers';
-import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { historyQueryArgs, secondsToDate } from '../shared/historyQueryHelpers';
+import { PaginatedHistory } from '../shared/useHistoryPagination';
+import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
 import {
   BaseStakeHistoryItem,
   StakeHistoryItemWithAmount,
@@ -21,8 +15,7 @@ import {
   StakeSelectRewardResponse,
   StakeHistoryKick
 } from './stakeModule';
-import { useConnection, useChainId } from 'wagmi';
-import { familyMainnetId } from '@/utils';
+import { mapIndexerRows, safeBigInt } from '@/utils/indexerRows';
 
 export function stakeHistoryFragments({
   owner,
@@ -109,111 +102,78 @@ export function stakeHistoryFragments({
 }
 
 export function mapStakeHistoryResponse(response: any, chainId: number): StakeHistory {
-  const opens: BaseStakeHistoryItem[] = response.stakingOpens.map((e: BaseStakeHistoryItemResponse) => ({
+  const base = (e: BaseStakeHistoryItemResponse) => ({
     urnIndex: +e.index,
-    blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+    blockTimestamp: secondsToDate(e.blockTimestamp),
     transactionHash: e.transactionHash,
     module: ModuleEnum.STAKE,
-    type: TransactionTypeEnum.STAKE_OPEN,
     chainId
-  }));
+  });
 
-  const selectVoteDelegates: StakeSelectDelegate[] = response.stakingSelectVoteDelegates.map(
-    (e: StakeSelectDelegateResponse) => ({
-      urnIndex: +e.index,
+  const withAmount =
+    (type: StakeHistoryItemWithAmount['type']) =>
+    (e: BaseStakeHistoryItemResponse & { wad: string }): StakeHistoryItemWithAmount | undefined => {
+      const amount = safeBigInt(e.wad);
+      if (amount === undefined) return undefined;
+      return { ...base(e), amount, type };
+    };
+
+  const opens = mapIndexerRows<BaseStakeHistoryItemResponse, BaseStakeHistoryItem>(
+    response?.stakingOpens,
+    e => ({
+      ...base(e),
+      type: TransactionTypeEnum.STAKE_OPEN
+    })
+  );
+
+  const selectVoteDelegates = mapIndexerRows<StakeSelectDelegateResponse, StakeSelectDelegate>(
+    response?.stakingSelectVoteDelegates,
+    e => ({
+      ...base(e),
       delegate: e.voteDelegate?.address || '',
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_SELECT_DELEGATE,
-      chainId
+      type: TransactionTypeEnum.STAKE_SELECT_DELEGATE
     })
   );
 
-  const selectRewards: StakeSelectReward[] = response.stakingSelectRewards.map(
-    (e: StakeSelectRewardResponse) => ({
-      urnIndex: +e.index,
+  const selectRewards = mapIndexerRows<StakeSelectRewardResponse, StakeSelectReward>(
+    response?.stakingSelectRewards,
+    e => ({
+      ...base(e),
       rewardContract: e.reward?.address || '',
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_SELECT_REWARD,
-      chainId
+      type: TransactionTypeEnum.STAKE_SELECT_REWARD
     })
   );
 
-  const stakes: StakeHistoryItemWithAmount[] = response.stakingLocks.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE,
-      chainId
-    })
-  );
+  const stakes = mapIndexerRows(response?.stakingLocks, withAmount(TransactionTypeEnum.STAKE));
+  const unstakes = mapIndexerRows(response?.stakingFrees, withAmount(TransactionTypeEnum.UNSTAKE));
+  const borrows = mapIndexerRows(response?.stakingDraws, withAmount(TransactionTypeEnum.STAKE_BORROW));
+  const repays = mapIndexerRows(response?.stakingWipes, withAmount(TransactionTypeEnum.STAKE_REPAY));
 
-  const unstakes: StakeHistoryItemWithAmount[] = response.stakingFrees.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.UNSTAKE,
-      chainId
-    })
-  );
+  const rewards = mapIndexerRows<
+    BaseStakeHistoryItemResponse & { reward: string; amt: string },
+    StakeClaimReward
+  >(response?.stakingGetRewards, e => {
+    const amount = safeBigInt(e.amt);
+    if (amount === undefined) return undefined;
+    return { ...base(e), rewardContract: e.reward, amount, type: TransactionTypeEnum.STAKE_REWARD };
+  });
 
-  const borrows: StakeHistoryItemWithAmount[] = response.stakingDraws.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_BORROW,
-      chainId
-    })
-  );
-
-  const repays: StakeHistoryItemWithAmount[] = response.stakingWipes.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string }) => ({
-      urnIndex: +e.index,
-      amount: BigInt(e.wad),
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_REPAY,
-      chainId
-    })
-  );
-
-  const rewards: StakeClaimReward[] = response.stakingGetRewards.map(
-    (e: BaseStakeHistoryItemResponse & { reward: string; amt: string }) => ({
-      urnIndex: +e.index,
-      rewardContract: e.reward,
-      amount: BigInt(e.amt),
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
-      transactionHash: e.transactionHash,
-      module: ModuleEnum.STAKE,
-      type: TransactionTypeEnum.STAKE_REWARD,
-      chainId
-    })
-  );
-
-  const kicks: StakeHistoryKick[] = response.stakingOnKicks.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string; urn: { address: string } }) => ({
-      amount: BigInt(e.wad),
+  const kicks = mapIndexerRows<
+    BaseStakeHistoryItemResponse & { wad: string; urn: { address: string } | null },
+    StakeHistoryKick
+  >(response?.stakingOnKicks, e => {
+    const amount = safeBigInt(e.wad);
+    if (amount === undefined || !e.urn?.address) return undefined;
+    return {
+      amount,
       urnAddress: e.urn.address,
-      blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
+      blockTimestamp: secondsToDate(e.blockTimestamp),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,
       type: TransactionTypeEnum.UNSTAKE_KICK,
       chainId
-    })
-  );
+    };
+  });
 
   const combined = [
     ...opens,
@@ -229,24 +189,6 @@ export function mapStakeHistoryResponse(response: any, chainId: number): StakeHi
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
 }
 
-async function fetchStakeHistoryPage(
-  urlIndexer: string,
-  chainId: number,
-  address?: string,
-  index?: number,
-  beforeTimestamp?: number
-): Promise<HistoryPage<StakeHistory[number]>> {
-  if (!address) return { items: [], nextCursor: undefined };
-  const query = gql`
-    {
-      ${stakeHistoryFragments({ owner: address.toLowerCase(), chainId, index, beforeTimestamp })}
-    }
-  `;
-  const response = (await request(urlIndexer, query)) as any;
-  const nextCursor = historyPageBoundary(response);
-  return { items: clampHistoryPage(mapStakeHistoryResponse(response, chainId), nextCursor), nextCursor };
-}
-
 export function useStakeHistory({
   indexerUrl,
   index
@@ -254,35 +196,11 @@ export function useStakeHistory({
   indexerUrl?: string;
   index?: number;
 } = {}): ReadHook & PaginatedHistory & { data?: StakeHistory } {
-  const { address } = useConnection();
-  const currentChainId = useChainId();
-  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
-  const chainIdToUse = familyMainnetId(currentChainId);
-
-  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useHistoryPagination({
-      enabled: Boolean(urlIndexer),
-      queryKey: ['stake-history', urlIndexer, address, index, chainIdToUse],
-      fetchPage: beforeTimestamp =>
-        fetchStakeHistoryPage(urlIndexer, chainIdToUse, address, index, beforeTimestamp)
-    });
-
-  return {
-    data,
-    isLoading,
-    error: error as Error,
-    mutate,
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
-  };
+  return useIndexerFamilyHistory<StakeHistory[number]>({
+    indexerUrl,
+    familyMainnet: true,
+    queryKey: ({ urlIndexer, address, chainId }) => ['stake-history', urlIndexer, address, index, chainId],
+    fragments: args => stakeHistoryFragments({ ...args, index }),
+    mapPage: mapStakeHistoryResponse
+  });
 }

@@ -235,5 +235,4 @@ export type AppEventName = (typeof AppEvents)[keyof typeof AppEvents];
 
 // Compile-time check: every event in the registry has a contract entry.
 type MissingFromContract = Exclude<AppEventName, keyof AppEventContract>;
-export const CONTRACT_COVERS_REGISTRY: [MissingFromContract] extends [never] ? true : MissingFromContract =
-  true;
+true satisfies [MissingFromContract] extends [never] ? true : MissingFromContract;

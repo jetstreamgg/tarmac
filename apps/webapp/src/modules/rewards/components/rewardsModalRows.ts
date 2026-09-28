@@ -10,16 +10,13 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
+import { estEarningsTrendCell, productCell, rateCell } from '@/components/product/ModalGridCells';
 import {
-  EST_EARNINGS_LABEL,
-  estEarningsTrendCell,
-  networkCell,
-  networkFeeCell,
-  productCell,
-  rateCell,
-  singleOrDelta,
-  withdrawalCell
-} from '@/components/product/ModalGridCells';
+  buildEarnEntryRows,
+  buildEarnReviewRows,
+  type EarnEntryRowInput,
+  type EarnReviewRowInput
+} from '@/components/product/earnModalRows';
 
 /** One labelled grid cell — the shared modal-grid cell model (single or before→after delta). */
 export type RewardsModalCell = ModalGridCell;
@@ -27,94 +24,48 @@ export type RewardsModalCell = ModalGridCell;
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type RewardsModalGridRow = RewardsModalCell[];
 
-/** Display strings for the "Supply to {farm}" entry grid. */
-export type RewardsSupplyModalRowInput = {
+const rewardsRateCell = (rate: string) => rateCell('Rate', rate, 'savings', 'str');
+
+/** The "Rewards in" cell — the reward token's symbol, iconed. */
+const rewardsInCell = (rewardsIn: string): ModalGridCell => ({
+  kind: 'single',
+  label: 'Rewards in',
+  value: rewardsIn,
+  token: rewardsIn
+});
+
+/** Display strings for the "Supply to {farm}" / "Withdraw from {farm}" entry grids. */
+type RewardsEntryRowInput = EarnEntryRowInput & {
   /** Current reward rate, formatted (e.g. "4.50%"), or "–" for point farms. */
   rate: string;
-  /** Network the transaction runs on (e.g. "Ethereum"). */
-  network: string;
   /** Symbol of the staked token for the Supply cell icon (USDS for every current farm). */
   supplyToken: string;
-  /** Supplied (staked) position before the deposit. */
-  supplyBefore: string;
-  /** Supplied (staked) position after the deposit. */
-  supplyAfter: string;
-  /** When false the Supply / Est. earnings cells collapse to their `before` value (no delta drawn). */
-  hasAmount: boolean;
-  /** 1Y projected earnings before, `$`-formatted (position × rate), or "–" for point farms. */
-  earningsBefore: string;
-  /** 1Y projected earnings after, `$`-formatted, or "–" for point farms. */
-  earningsAfter: string;
-  /** Reward-token symbol for the "Rewards in" cell; omit for point farms (CLE). */
+  /** Supply only: reward-token symbol for the "Rewards in" cell; omit for point farms (CLE). Ignored on withdraw. */
   rewardsIn?: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
-  networkFee: string;
-  /** The staked-position read is unresolved — the Supply and Est. earnings cells render skeletons. */
-  positionLoading?: boolean;
 };
 
 /**
- * Grid for the "Supply to {farm}" entry screen — the Savings entry shape with
- * the farm's data points: [Rate | Network], [Supply | Est. earnings (1Y)],
- * then Rewards in paired with Network fee (or Network fee full-width on point
- * farms). With no amount entered the delta cells collapse to their current
- * value; entering one draws the before→after arrows.
+ * Grid for the "Supply to {farm}" / "Withdraw from {farm}" entry screens — the
+ * Savings entry shape with the farm's data points: [Rate | Network],
+ * [Supply | Est. earnings (1Y)], then Network fee — paired with Rewards in on a
+ * supply to a token farm, full-width otherwise. With no amount entered the
+ * delta cells collapse to their current value; entering one draws the
+ * before→after arrows. The rate is unchanged by a withdrawal, so it stays single.
  */
-export function buildRewardsSupplyModalRows(input: RewardsSupplyModalRowInput): RewardsModalGridRow[] {
-  const networkFee = networkFeeCell(input.networkFee);
-  return [
-    [rateCell('Rate', input.rate, 'savings', 'str'), networkCell(input.network)],
-    [
-      singleOrDelta(
-        { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
-        input.supplyBefore,
-        input.supplyAfter,
-        input.hasAmount
-      ),
-      singleOrDelta(
-        { label: EST_EARNINGS_LABEL, loading: input.positionLoading },
-        input.earningsBefore,
-        input.earningsAfter,
-        input.hasAmount
-      )
-    ],
-    input.rewardsIn
-      ? [{ kind: 'single', label: 'Rewards in', value: input.rewardsIn, token: input.rewardsIn }, networkFee]
-      : [networkFee]
-  ];
-}
-
-/** Display strings for the "Withdraw from {farm}" entry grid. */
-export type RewardsWithdrawModalRowInput = Omit<RewardsSupplyModalRowInput, 'rewardsIn'>;
-
-/**
- * Grid for the "Withdraw from {farm}" entry screen — the supply grid's mirror
- * without the Rewards in cell: [Rate | Network], [Supply | Est. earnings (1Y)],
- * Network fee. The rate is unchanged by a withdrawal, so it stays single.
- */
-export function buildRewardsWithdrawModalRows(input: RewardsWithdrawModalRowInput): RewardsModalGridRow[] {
-  return [
-    [rateCell('Rate', input.rate, 'savings', 'str'), networkCell(input.network)],
-    [
-      singleOrDelta(
-        { label: 'Supply', token: input.supplyToken, loading: input.positionLoading },
-        input.supplyBefore,
-        input.supplyAfter,
-        input.hasAmount
-      ),
-      singleOrDelta(
-        { label: EST_EARNINGS_LABEL, loading: input.positionLoading },
-        input.earningsBefore,
-        input.earningsAfter,
-        input.hasAmount
-      )
-    ],
-    [networkFeeCell(input.networkFee)]
-  ];
+export function buildRewardsEntryRows(
+  flow: 'supply' | 'withdraw',
+  input: RewardsEntryRowInput
+): RewardsModalGridRow[] {
+  const rewardsIn = flow === 'supply' ? input.rewardsIn : undefined;
+  return buildEarnEntryRows(input, {
+    rate: rewardsRateCell(input.rate),
+    supplyToken: input.supplyToken,
+    feeCompanion: rewardsIn ? rewardsInCell(rewardsIn) : undefined
+  });
 }
 
 /** Display strings for the "Review supply" stage. */
-export type RewardsSupplyReviewRowInput = {
+export type RewardsSupplyReviewRowInput = EarnReviewRowInput & {
   /** 1Y projected earnings after the deposit, `$`-formatted, or "–" for point farms. */
   estEarnings: string;
   /** Product name (e.g. "SPK Rewards"). */
@@ -123,14 +74,8 @@ export type RewardsSupplyReviewRowInput = {
   productToken: string;
   /** Current reward rate, formatted, or "–". */
   rate: string;
-  /** Withdrawal availability (reads "Anytime"). */
-  withdrawal: string;
-  /** Network the transaction runs on. */
-  network: string;
   /** Reward-token symbol for the "Rewards in" cell; omit for point farms. */
   rewardsIn?: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
-  networkFee: string;
 };
 
 /**
@@ -140,21 +85,15 @@ export type RewardsSupplyReviewRowInput = {
  */
 export function buildRewardsSupplyReviewRows(input: RewardsSupplyReviewRowInput): RewardsModalGridRow[] {
   const estEarnings = estEarningsTrendCell(input.estEarnings);
-  return [
-    input.rewardsIn
-      ? [{ kind: 'single', label: 'Rewards in', value: input.rewardsIn, token: input.rewardsIn }, estEarnings]
-      : [estEarnings],
-    [
-      productCell(input.product, input.productToken, 'default'),
-      rateCell('Rate', input.rate, 'savings', 'str')
-    ],
-    [withdrawalCell(input.withdrawal), networkCell(input.network)],
-    [networkFeeCell(input.networkFee)]
-  ];
+  return buildEarnReviewRows(input, {
+    leading: input.rewardsIn ? [rewardsInCell(input.rewardsIn), estEarnings] : [estEarnings],
+    product: productCell(input.product, input.productToken, 'default'),
+    rate: rewardsRateCell(input.rate)
+  });
 }
 
 /** Display strings for the "Review withdrawal" stage. */
-export type RewardsWithdrawReviewRowInput = {
+export type RewardsWithdrawReviewRowInput = EarnReviewRowInput & {
   /** Amount you'll receive in the supply token, formatted (e.g. "9,999.99 USDS"). */
   youReceive: string;
   /** Supply-token symbol for the You'll receive icon. */
@@ -167,12 +106,6 @@ export type RewardsWithdrawReviewRowInput = {
   productToken: string;
   /** Current reward rate, formatted, or "–". */
   rate: string;
-  /** Withdrawal availability (reads "Instant" — `withdraw(amount)` is immediate). */
-  withdrawal: string;
-  /** Network the transaction runs on. */
-  network: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
-  networkFee: string;
 };
 
 /**
@@ -181,16 +114,12 @@ export type RewardsWithdrawReviewRowInput = {
  * [Withdrawal | Network], Network fee.
  */
 export function buildRewardsWithdrawReviewRows(input: RewardsWithdrawReviewRowInput): RewardsModalGridRow[] {
-  return [
-    [
+  return buildEarnReviewRows(input, {
+    leading: [
       { kind: 'single', label: "You'll receive", value: input.youReceive, token: input.receiveToken },
       estEarningsTrendCell(input.estEarnings)
     ],
-    [
-      productCell(input.product, input.productToken, 'default'),
-      rateCell('Rate', input.rate, 'savings', 'str')
-    ],
-    [withdrawalCell(input.withdrawal), networkCell(input.network)],
-    [networkFeeCell(input.networkFee)]
-  ];
+    product: productCell(input.product, input.productToken, 'default'),
+    rate: rewardsRateCell(input.rate)
+  });
 }

@@ -19,7 +19,6 @@ export const defaultUserConfig: UserConfig = {
 export interface ConfigContextProps {
   siteConfig: SiteConfig;
   userConfig: UserConfig;
-  loaded: boolean;
   locale: string;
   updateUserConfig: (config: UserConfig) => void;
   expertRiskDisclaimerShown: boolean;
@@ -39,7 +38,6 @@ export interface ConfigContextProps {
 export const ConfigContext = createContext<ConfigContextProps>({
   siteConfig: siteConfig,
   userConfig: defaultUserConfig,
-  loaded: false,
   locale: 'en',
   updateUserConfig: () => {
     // do nothing.

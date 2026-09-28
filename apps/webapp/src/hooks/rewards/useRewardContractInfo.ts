@@ -1,9 +1,10 @@
 import { request, gql } from 'graphql-request';
 import { RewardContractInfo, RewardContractInfoRaw } from './rewards';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { indexerDataSource } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
+import { toReadHook } from '../shared/toReadHook';
 
 async function fetchRewardContractInfo(
   urlIndexer: string,
@@ -47,29 +48,11 @@ export function useRewardContractInfo({
 }): ReadHook & { data?: RewardContractInfo | null } {
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     enabled: Boolean(urlIndexer && rewardContractAddress),
     queryKey: ['reward-contract-info', urlIndexer, rewardContractAddress, chainId],
     queryFn: () => fetchRewardContractInfo(urlIndexer, rewardContractAddress, chainId)
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
-  };
+  return toReadHook(query, [indexerDataSource(urlIndexer)]);
 }

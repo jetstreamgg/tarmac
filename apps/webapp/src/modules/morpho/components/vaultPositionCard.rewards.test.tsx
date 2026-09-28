@@ -146,12 +146,7 @@ const renderCard = () => {
   render(
     <QueryClientProvider client={client}>
       <I18nProvider i18n={i18n}>
-        <VaultPositionCard
-          vaultAddress={VAULT}
-          assetToken={usds}
-          vaultName="USDS Flagship"
-          provider="morpho"
-        />
+        <VaultPositionCard vaultAddress={VAULT} assetToken={usds} vaultName="USDS Flagship" />
       </I18nProvider>
     </QueryClientProvider>
   );

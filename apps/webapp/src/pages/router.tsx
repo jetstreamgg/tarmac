@@ -7,8 +7,6 @@ import { queryClient as appQueryClient } from '@/lib/queryClient';
 import { isEarnDrilldown, isReverseNavigation } from '@/lib/routes';
 import type { AppSearchParams } from '../routes/__root';
 
-export type { AppSearchParams } from '../routes/__root';
-
 // Keep search params as plain strings (URLSearchParams semantics) instead of
 // TanStack's default JSON encoding, so values like `network=ethereum` or token
 // symbols round-trip byte-for-byte with the URLs the app produced before the

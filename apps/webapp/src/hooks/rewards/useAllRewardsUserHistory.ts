@@ -1,17 +1,11 @@
-import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import {
-  historyQueryArgs,
-  historyPageBoundary,
-  clampHistoryPage,
-  HistoryPage
-} from '../shared/historyQueryHelpers';
-import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { historyQueryArgs, secondsToDate } from '../shared/historyQueryHelpers';
+import { PaginatedHistory } from '../shared/useHistoryPagination';
+import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
-import { useConnection, useChainId } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { familyMainnetId } from '@/utils';
 
 export function rewardsHistoryFragments({
@@ -63,7 +57,7 @@ export function mapRewardsHistoryResponse(
 
   const allRewardsHistoryItems = rewardsData.map(f => {
     const supplyInstances = f.supplyInstances.map(e => ({
-      blockTimestamp: new Date(parseInt(e.blockTimestamp, 10) * 1000),
+      blockTimestamp: secondsToDate(e.blockTimestamp),
       transactionHash: e.transactionHash,
       amount: BigInt(e.amount),
       rewardsClaim: false,
@@ -73,7 +67,7 @@ export function mapRewardsHistoryResponse(
       chainId
     }));
     const withdrawals = f.withdrawals.map(e => ({
-      blockTimestamp: new Date(parseInt(e.blockTimestamp, 10) * 1000),
+      blockTimestamp: secondsToDate(e.blockTimestamp),
       transactionHash: e.transactionHash,
       amount: BigInt(-e.amount), //negative for withdrawals
       rewardsClaim: false,
@@ -83,7 +77,7 @@ export function mapRewardsHistoryResponse(
       chainId
     }));
     const rewardClaims = f.rewardClaims.map(e => ({
-      blockTimestamp: new Date(parseInt(e.blockTimestamp, 10) * 1000),
+      blockTimestamp: secondsToDate(e.blockTimestamp),
       transactionHash: e.transactionHash,
       amount: BigInt(e.amount),
       rewardsClaim: true,
@@ -102,69 +96,31 @@ export function mapRewardsHistoryResponse(
   return allRewardsHistoryItems.flat();
 }
 
-async function fetchAllRewardsUserHistoryPage(
-  urlIndexer: string,
-  userAddress: string,
-  rewardContracts: RewardContract[],
-  chainId: number,
-  beforeTimestamp?: number
-): Promise<HistoryPage<RewardUserHistoryItem>> {
-  const query = gql`
-    {
-      ${rewardsHistoryFragments({ user: userAddress.toLowerCase(), rewardContracts, chainId, beforeTimestamp })}
-    }
-  `;
-  const response = (await request(urlIndexer, query)) as AllRewardsUserHistoryResponse;
-  // The mapper interleaves per-contract lists unsorted; sort so concatenated
-  // pages stay globally ordered.
-  const items = (mapRewardsHistoryResponse(response, chainId) ?? []).sort(
-    (a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
-  );
-  const nextCursor = historyPageBoundary(response);
-  return { items: clampHistoryPage(items, nextCursor), nextCursor };
-}
-
 export function useAllRewardsUserHistory({
   indexerUrl
 }: {
   indexerUrl?: string;
 } = {}): ReadHook & PaginatedHistory & { data?: RewardUserHistoryItem[] } {
-  const { address: userAddress } = useConnection();
-  const currentChainId = useChainId();
-  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
   //this hook is only used for mainnet, update this if this ever changes
-  const chainIdToUse = familyMainnetId(currentChainId);
+  const chainIdToUse = familyMainnetId(useChainId());
   const rewardContracts = useAvailableTokenRewardContracts(chainIdToUse);
-  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useHistoryPagination({
-      enabled: Boolean(urlIndexer && userAddress),
-      queryKey: ['all-rewards-user-history', urlIndexer, userAddress, chainIdToUse],
-      fetchPage: beforeTimestamp =>
-        fetchAllRewardsUserHistoryPage(
-          urlIndexer,
-          userAddress || '',
-          rewardContracts,
-          chainIdToUse,
-          beforeTimestamp
-        )
-    });
 
-  return {
-    data,
-    isLoading,
-    error: error as Error,
-    mutate,
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
-  };
+  return useIndexerFamilyHistory<RewardUserHistoryItem>({
+    indexerUrl,
+    familyMainnet: true,
+    requireAddress: true,
+    queryKey: ({ urlIndexer, address, chainId }) => [
+      'all-rewards-user-history',
+      urlIndexer,
+      address,
+      chainId
+    ],
+    fragments: ({ owner, chainId, beforeTimestamp }) =>
+      rewardsHistoryFragments({ user: owner, rewardContracts, chainId, beforeTimestamp }),
+    mapPage: (response: AllRewardsUserHistoryResponse, chainId) =>
+      mapRewardsHistoryResponse(response, chainId) ?? [],
+    // The mapper interleaves per-contract lists unsorted; sort so concatenated
+    // pages stay globally ordered.
+    sortDesc: true
+  });
 }

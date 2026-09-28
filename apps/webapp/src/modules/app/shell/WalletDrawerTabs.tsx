@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trans } from '@lingui/react/macro';
-import { BalancesHistory } from '@/widgets';
+import { BalancesHistory } from './activity/BalancesHistory';
 import { WalletDrawerAssets } from './WalletDrawerAssets';
 
 enum WalletDrawerTab {

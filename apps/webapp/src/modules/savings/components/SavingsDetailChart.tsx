@@ -1,15 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useChainId } from 'wagmi';
-import { Trans } from '@lingui/react/macro';
 import { useSavingsChartInfo, useSkySavingsRateHistoricData, useOverallSkyData } from '@/hooks';
 import { isL2ChainId } from '@/utils';
-import { Chart, TimeFrame, Data } from '@/modules/ui/components/Chart';
-import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { TimeFrame, Data } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
-import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
-
-type Metric = 'rate' | 'tvl';
+import { RateTvlDetailChart } from '@/components/product/RateTvlDetailChart';
 
 // BA Labs /save/ssr/historic/ only accepts specific day buckets for days_ago.
 const ssrDaysAgoFromTimeFrame = (tf: TimeFrame): number => {
@@ -28,11 +24,10 @@ const ssrDaysAgoFromTimeFrame = (tf: TimeFrame): number => {
 
 /**
  * The product-detail Rate/TVL chart for Savings — injected into
- * ProductDetailTemplate's `chart` slot. Owns the metric + timeframe state and
- * feeds the shared Chart's `detail` variant.
+ * ProductDetailTemplate's `chart` slot. Owns the timeframe state (it drives the
+ * row budget of both series) and feeds the shared `RateTvlDetailChart`.
  */
 export function SavingsDetailChart() {
-  const [metric, setMetric] = useState<Metric>('rate');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
   const chainId = useChainId();
   const chartChainId = isL2ChainId(chainId) ? 1 : chainId; // L2s read mainnet history
@@ -62,7 +57,6 @@ export function SavingsDetailChart() {
     [rateInfo]
   );
 
-  const isRate = metric === 'rate';
   // Headline reads the canonical current rate (matches the Details grid), not
   // the last historic point.
   const currentRate = overall?.skySavingsRatecRate
@@ -70,31 +64,12 @@ export function SavingsDetailChart() {
     : undefined;
 
   return (
-    <ErrorBoundary variant="small">
-      <Chart
-        variant="detail"
-        dataTestId="savings-detail-chart"
-        data={isRate ? rateData : tvlData}
-        isLoading={isRate ? rateLoading : tvlLoading}
-        error={isRate ? rateError : tvlError}
-        isPercentage={isRate}
-        symbol={isRate ? undefined : 'sUSDS'}
-        tokenSymbols={isRate ? undefined : ['sUSDS']}
-        label={isRate ? <Trans>Current Rate</Trans> : <Trans>Total value locked</Trans>}
-        // The TVL metric leads its figure with the token mark instead of a
-        // trailing ticker and tags it with the period's change, the same
-        // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
-        icons={isRate ? undefined : <TokenIconStack symbols={['sUSDS']} size={32} className="shrink-0" />}
-        showTrend={!isRate}
-        displayValue={isRate ? currentRate : undefined}
-        metrics={[
-          { value: 'rate', label: <Trans>Rate</Trans> },
-          { value: 'tvl', label: <Trans>TVL</Trans> }
-        ]}
-        activeMetric={metric}
-        onMetricChange={value => setMetric(value as Metric)}
-        onTimeFrameChange={setTimeFrame}
-      />
-    </ErrorBoundary>
+    <RateTvlDetailChart
+      dataTestId="savings-detail-chart"
+      symbol="sUSDS"
+      rate={{ data: rateData, isLoading: rateLoading, error: rateError, displayValue: currentRate }}
+      tvl={{ data: tvlData, isLoading: tvlLoading, error: tvlError }}
+      onTimeFrameChange={setTimeFrame}
+    />
   );
 }

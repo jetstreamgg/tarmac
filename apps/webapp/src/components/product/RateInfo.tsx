@@ -1,11 +1,13 @@
 import { cn } from '@/lib/cn';
-import { PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
+import { InfoTooltip } from '@/components/InfoTooltip';
+import { getTooltipById } from '@/modules/ui/data/tooltips';
+import { parseMarkdownLinks } from '@/modules/ui/lib/parseMarkdownLinks';
+import { type PopoverTooltipType, resolveTooltipId } from '@/modules/ui/components/PopoverRateInfo';
 import type { EarnProductKind } from '@/hooks/earn/types';
-import type { VaultProvider } from '@/hooks';
-import { isMorphoVault, type ProductIdentity } from './productVisuals';
+import type { ProductIdentity } from './productVisuals';
 
 /**
- * Keys into the centralized rate copy (`widgets/data/tooltips`): every rate
+ * Keys into the centralized rate copy (`modules/ui/data/tooltips`): every rate
  * figure across the app opens the same explainer for its product (APP-540).
  */
 export type RateInfoType = PopoverTooltipType;
@@ -19,23 +21,15 @@ export const RATE_INFO_BY_KIND: Record<EarnProductKind, RateInfoType> = {
   rewards: 'str'
 };
 
-/** Vault provider → its rate explainer (Spark/Tether vaults carry their own copy). */
-export const vaultRateInfo = (provider: VaultProvider | undefined): RateInfoType =>
-  provider === 'sky' ? 'sky' : 'morpho';
+/** Rate explainer for a product row (Earn rows, supplied positions). */
+export const rateInfoFor = (product: ProductIdentity): RateInfoType => RATE_INFO_BY_KIND[product.kind];
 
 /**
- * Rate explainer for a product row (Earn rows, supplied positions): the family
- * map, except vaults split by provider the same way the product marks do.
- */
-export const rateInfoFor = (product: ProductIdentity): RateInfoType =>
-  product.kind === 'vault'
-    ? vaultRateInfo(isMorphoVault(product) ? 'morpho' : 'sky')
-    : RATE_INFO_BY_KIND[product.kind];
-
-/**
- * The info glyph beside a rate figure. Thin wrapper over the widget
- * `PopoverRateInfo` (tap/click popover, works on touch) pinning the app-side
- * defaults - 14px fg-secondary glyph, the size the supply cards already use.
+ * The info glyph beside a rate figure: the same centralized copy the widget
+ * `PopoverRateInfo` shows, on the design-system Tooltip (Default type, title
+ * over body; Design QA 3314:135504) via `InfoTooltip`, so it hovers on
+ * desktop and taps on touch like every other info glyph in the app. Glyph
+ * defaults to 14px fg-secondary, the size the supply cards already use.
  */
 export function RateInfo({
   type,
@@ -47,11 +41,13 @@ export function RateInfo({
   size?: number;
   className?: string;
 }) {
+  const tooltip = getTooltipById(resolveTooltipId(type));
+  if (!tooltip) return null;
   return (
-    <PopoverRateInfo
-      type={type}
-      width={size}
-      height={size}
+    <InfoTooltip
+      title={tooltip.title}
+      content={parseMarkdownLinks(tooltip.tooltip)}
+      iconSize={size}
       iconClassName={cn('text-fgSecondary shrink-0', className)}
     />
   );

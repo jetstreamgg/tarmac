@@ -159,7 +159,7 @@ describe('LiquidationPostMortemModal', () => {
 
   it('derives Collateral before liquidation from the last bark ink', () => {
     renderModal();
-    expect(screen.getByText('Collateral before liquidation').nextSibling?.textContent).toBe('40 SKY');
+    expect(screen.getByText('Collateral before liquidation').nextSibling?.textContent).toBe('40.00 SKY');
   });
 
   it('renders the liquidated-on heading in UTC and the explorer link', () => {

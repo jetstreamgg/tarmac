@@ -10,7 +10,12 @@ import type { TransactionConfig, TxCallbacks } from './transactionContract';
 // The provider needs a live wagmi tree; these suites exercise the transaction
 // state machine, so the shared chain switch is stubbed inert.
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+  useNetworkSwitch: () => ({
+    handleSwitchChain: vi.fn(),
+    isSwitchPending: false,
+    switchVariables: undefined,
+    canSwitchChain: true
+  })
 }));
 
 vi.mock('wagmi', async io => ({
@@ -123,7 +128,7 @@ describe('TransactionModal success handoff', () => {
 
     act(() => cb.onMutate());
     act(() => cb.onStart(HASH));
-    expect(screen.queryByText('Supply')).not.toBeNull();
+    expect(screen.queryAllByText('Supply').length).toBeGreaterThan(0);
 
     act(() => cb.onSuccess(HASH));
 

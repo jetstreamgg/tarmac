@@ -89,7 +89,7 @@ describe('useConvertForm', () => {
     expect(result.current.value).toBe('1.5');
     expect(result.current.amount).toBe(parseUnits('1.5', 6));
     expect(result.current.targetAmount).toBe(parseUnits('1.5', 18));
-    expect(result.current.targetValue).toBe('1.5');
+    expect(result.current.targetValue).toBe('1.50');
     // Settled (identity debounce): the engine-facing amount is the typed one.
     expect(result.current.debouncedAmount).toBe(parseUnits('1.5', 6));
     expect(result.current.debouncePending).toBe(false);

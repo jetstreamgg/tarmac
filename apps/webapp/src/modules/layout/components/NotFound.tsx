@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Layout } from './Layout';
 import { Heading, Text } from './Typography';
 import { Button } from '@/components/ui/button';
-import { NoResults } from '@/widgets';
+import { NoResults } from '@/modules/icons';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 import { trackNotFoundViewed } from '@/modules/analytics/lib/trackAmbientSurfaces';
 

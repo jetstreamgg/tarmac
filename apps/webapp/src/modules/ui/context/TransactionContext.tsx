@@ -8,7 +8,8 @@ import {
   useRef,
   ReactNode
 } from 'react';
-import { TxStatus, InProgress, Cancel } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { InProgress, Cancel } from '@/modules/icons';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
@@ -85,6 +86,45 @@ function notifySignatureRequestAbandoned() {
   );
 }
 
+// The wallet moved to another network after a write was attempted, so the
+// session was ended for it (see the chain-change close below). The
+// network-change toast already names the new chain; this one says what
+// happened to the transaction they were looking at.
+function notifyClosedOnChainChange() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Transaction closed</Trans>}
+        description={
+          <Trans>Your wallet switched networks. Start again on the network you want to use.</Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
+// A gate verdict (screening, terms signature) resolved after the wallet moved
+// to another chain the flow supports, so the click's action was refused and
+// the first screen re-derived for the new chain. The chain guard is silent
+// there (the chain is fine), so this is the only thing that says why the click
+// went nowhere.
+function notifyReviewAgainOnChainChange() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Network changed</Trans>}
+        description={
+          <Trans>Your wallet switched networks while confirming. Review the details and confirm again.</Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
 }
@@ -97,13 +137,6 @@ function offSupportedChains(supportedChainIds: readonly number[], chainId: numbe
 
 // The transaction-orchestration contract is frozen in ./transactionContract.
 // Re-exported here so existing import sites keep working.
-export type {
-  TransactionAnalytics,
-  TransactionConfig,
-  TransactionEntry,
-  TxCallbacks
-} from './transactionContract';
-
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
 // Internal: the DOM node on the modal's entry screen where an editable flow's
@@ -118,12 +151,12 @@ export function useEntrySlot() {
   return useContext(EntrySlotContext);
 }
 
-// The injected enhanced-screening preflight hook (see `usePreflight` on the
+// The injected screening preflight hook (see `usePreflight` on the
 // provider), shared with flows whose OWN surface fires the transaction.
 const PreflightHookContext = createContext<PreflightHook>(allowAllPreflight);
 
 /**
- * The enhanced-screening preflight (APP-517) for a surface that fires the
+ * The screening preflight (standard, or enhanced at $250k+) for a surface that fires the
  * transaction itself — a `skipReview` flow's page-side Confirm (the stake
  * takeovers). The modal's first screen normally runs this check, warms the
  * verdict and holds its CTA; with no first screen the takeover has to: pass
@@ -164,7 +197,7 @@ type TransactionModalView = {
  * animation can play. Matches the dismissal in `components/ui/dialog.tsx`
  * (and the bottom sheet's, which is the same 300ms).
  */
-const MODAL_EXIT_MS = 300;
+import { MODAL_EXIT_MS } from '@/modules/ui/animation/constants';
 
 export function TransactionProvider({
   children,
@@ -172,7 +205,7 @@ export function TransactionProvider({
   // can exercise the deny/async paths; the app mounts the allow-all stub until
   // the signature verdict lands (APP-501).
   gate = allowAllGate,
-  // The enhanced-screening preflight (APP-517), a HOOK called unconditionally
+  // The screening preflight (standard, or enhanced at $250k+), a HOOK called unconditionally
   // every render — its identity must be stable for the life of the provider
   // (the app passes a module-level hook; tests pass stable fakes).
   usePreflight = allowAllPreflight
@@ -326,7 +359,15 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
-  const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
+  // The chain the live session's write belongs to: latched at launch, adopted
+  // while the session is still at IDLE (see the chain-change close below).
+  const sessionChainRef = useRef(guardChainId);
+  const {
+    handleSwitchChain,
+    isSwitchPending: switchPending,
+    switchVariables,
+    canSwitchChain
+  } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -456,6 +497,7 @@ export function TransactionProvider({
       activeSessionRef.current = config.sessionId ?? null;
       setActiveSessionId(config.sessionId ?? null);
       launchPathnameRef.current = window.location.pathname;
+      sessionChainRef.current = chainIdRef.current;
       minimizedRef.current = false;
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
@@ -598,13 +640,57 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
   useEffect(() => {
     handleCloseRef.current = handleClose;
   });
+
+  // A modal does not survive a wallet chain switch once a write has been
+  // attempted. Everything the session holds past IDLE — the engine's prepared
+  // calls, the failure view's Retry, the receipt it waits on — was built for
+  // the chain the write started on, and nothing re-derives it for another.
+  // The supported-chain guard cannot see this case on a multi-chain flow:
+  // Savings on Base is as supported as Savings on mainnet, so a wallet moved
+  // between them under a failed write showed Retry with nothing behind it
+  // (the engine logged "not ready" and did nothing) or, on Convert, sent the
+  // stale calls on the new chain. So the session ends instead, on every flow:
+  //   - at IDLE the switch is legitimate — the entry rebuilds for the new
+  //     chain (Savings' own network dropdown lives there) and the review is
+  //     the guard's to hold — so the chain is adopted, not acted on;
+  //   - in flight (INITIALIZED / LOADING) nothing closes: the wallet prompt
+  //     or the broadcast must settle first, and this re-runs when it does —
+  //     a success closes itself, a failure lands here and closes;
+  //   - otherwise the session ends now, with a toast that says why. That
+  //     includes a minimized session: its Retry is just as broken, and unlike
+  //     navigation (closeOnNavigation keeps minimized sessions) a chain switch
+  //     leaves nothing worth coming back to.
+  // For a module that is not on the new chain this is also what lets the
+  // route guard redirect: it holds while a modal is open (APP-563 #4), so the
+  // order is always close first, then redirect — never both at once.
+  //
+  // Only while a wallet is attached: `guardChainId` falls back to the config
+  // chain when the connection drops, and a wallet parked on a chain the app
+  // doesn't configure would read that as a switch — it disconnected, and the
+  // toast would say otherwise.
+  //
+  // `txStatus` is in the deps as the re-run trigger for the in-flight
+  // deferral (the read goes through the ref); drop it and a switch during a
+  // wallet prompt is never revisited once the prompt fails.
+  useEffect(() => {
+    if (!open || !configRef.current || !address) return;
+    if (sessionChainRef.current === guardChainId) return;
+    const status = txStatusRef.current;
+    if (status === TxStatus.IDLE) {
+      sessionChainRef.current = guardChainId;
+      return;
+    }
+    if (status === TxStatus.INITIALIZED || status === TxStatus.LOADING) return;
+    handleCloseRef.current();
+    notifyClosedOnChainChange();
+  }, [open, address, guardChainId, txStatus]);
 
   // A modal does not survive app navigation (APP-528 follow-up): the provider
   // is mounted above the router, so a route change under an open modal — the
@@ -800,6 +886,9 @@ export function TransactionProvider({
         refuseOffChain(controls);
         return;
       }
+      // The chain the click was made on: a verdict must not fire the action
+      // on any other, supported or not (see the chain-change close above).
+      const chainAtClick = chainIdRef.current;
       const verdict = gate({
         trigger,
         // Read at fire time (like the config callbacks): editable flows keep
@@ -815,9 +904,17 @@ export function TransactionProvider({
               if (gen !== sessionGenRef.current || !v.allow) return;
               // Re-checked: the wallet may have switched while the verdict
               // (a screening call, a signature prompt) was pending, and the
-              // form has since rebuilt its calldata against the new chain.
+              // form has since rebuilt its calldata against the new chain. A
+              // move between two supported chains is refused the same way:
+              // the first screen re-derives for the chain the wallet is on —
+              // and since the guard has nothing to say there, a toast does.
               if (!walletOnSupportedChain()) {
                 refuseOffChain(controls);
+                return;
+              }
+              if (chainIdRef.current !== chainAtClick) {
+                refuseOffChain(controls);
+                notifyReviewAgainOnChainChange();
                 return;
               }
               action();
@@ -942,7 +1039,7 @@ export function TransactionProvider({
         txHashRef.current = hash;
       }
     },
-    [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
+    [sessionGen, isStaleWrite]
   );
 
   const onSuccess = useCallback(
@@ -1084,16 +1181,7 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [
-      sessionGen,
-      chainId,
-      address,
-      isSafeWallet,
-      trackTransactionCompleted,
-      startNewFlow,
-      isStaleWrite,
-      isForeignHash
-    ]
+    [sessionGen, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is
@@ -1116,11 +1204,13 @@ export function TransactionProvider({
   // the connected wallet has left it, block every first-screen CTA and offer a
   // switch back. Read off `modalView.config` (not `activeConfig`) so a modal
   // animating away doesn't flash the guard as it leaves. Applies whenever no
-  // write is in flight — IDLE, but also ERROR (Retry, or Back to the first
-  // screen, would fire against the new chain) and the terminal states — and
+  // write is in flight — IDLE, but also ERROR and the terminal states — and
   // is off only while INITIALIZED/LOADING, when the calldata is already in the
-  // wallet's hands. `runGated` enforces the same check at fire time; this is
-  // the user-facing half.
+  // wallet's hands. At ERROR it is a backstop only: a wallet switch after a
+  // write closes the session (see the chain-change close above) before the
+  // guard could render, and a modal opened off-chain never gets past IDLE.
+  // `runGated` enforces the same check at fire time; this is the user-facing
+  // half.
   const guardConfig = modalView?.config;
   const noWriteInFlight = txStatus !== TxStatus.INITIALIZED && txStatus !== TxStatus.LOADING;
   const chainGuardActive =
@@ -1132,9 +1222,10 @@ export function TransactionProvider({
       )
     : undefined;
   const guardTargetName = chains.find(c => c.id === guardTargetChainId)?.name;
-  // Safe wallets can't switch networks from the dapp (APP-486) — offer no
-  // switch button, only the explanatory block; the guard still disables the CTAs.
-  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
+  // A wallet the dapp must not switch (a Safe — `canSwitchChain` on
+  // NetworkSwitchContext says why) gets no switch button, only the explanatory
+  // block; the guard still disables the CTAs (APP-486).
+  const guardCanSwitch = guardTargetChainId !== undefined && canSwitchChain;
   const switchGuardChain = useCallback(
     (source: NetworkSwitchSource = 'transaction_modal') => {
       if (guardTargetChainId === undefined) return;
@@ -1289,6 +1380,7 @@ export function TransactionProvider({
             preflight={preflight}
             chainGuard={chainGuard}
             skipReview={modalView.config.skipReview}
+            scrimHandoff={modalView.config.scrimHandoff}
           />
         )}
       </EntrySlotContext.Provider>

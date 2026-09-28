@@ -1,9 +1,4 @@
-import { WidgetsConfig } from '@/widgets';
-
-export type ThemeColor = {
-  default: string;
-  _dark?: string;
-};
+import { WidgetsConfig } from './widgets-config';
 
 export type SiteConfig = WidgetsConfig & {
   name: string;

@@ -88,11 +88,13 @@ export function useEarnTableState(validOptions: EarnFilterOptionValues) {
   // What "Back to products" restores. Written on every change, empty object
   // included — landing on a clean /earn is what wipes a stale memory.
   //
-  // The pathname guard is load-bearing: `useAppSearchParams` reads the router's
-  // *global* location, so on the way out of the marketplace this component
-  // re-renders once with the destination's search before it unmounts. Without
-  // the guard that render records the product page's (filter-less) search, and
-  // the back link it feeds lands on an unfiltered /earn.
+  // The pathname guard is load-bearing. `searchParams` reads the committed
+  // route match (APP-562) while `pathname` reads the location, which moves a
+  // render earlier — so the two still skew across a navigation, just the
+  // other way round: on the way IN, this hook can render once with the
+  // marketplace pathname and the product page's search (overwritten at the
+  // commit, harmless); and wherever the hook is mounted above the marketplace
+  // route, only that route's search may be recorded.
   useEffect(() => {
     if (!isEarnMarketplacePath(pathname)) return;
     rememberEarnFilterSearch(Object.fromEntries(searchParams));

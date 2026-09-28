@@ -42,13 +42,13 @@ Key paths:
 
 ### 2. Classify
 
-| Kind | Signal | Action |
-| ---- | ------ | ------ |
-| Harness flake | toast overlay, account pool, expired vnet, geo/Network modal | Fix harness helper / env; do **not** weaken product assertions |
-| Locator drift | renamed/moved testid or role | Update **page object** only |
-| Flow / IA change | step gone, new screen, deep-link changed | Update contract + page object + `QA-CASES.md` §1/§2 |
-| Product bug | UI wrong vs Figma / oracle | File bug; keep red (or `test.fixme` + ticket only if intentional deferral) |
-| Known deferral | Pendle quote, subgraph-blind, E3 CoW | Confirm disposition in QA-CASES §3; do not invent coverage |
+| Kind             | Signal                                                       | Action                                                                     |
+| ---------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Harness flake    | toast overlay, account pool, expired vnet, geo/Network modal | Fix harness helper / env; do **not** weaken product assertions             |
+| Locator drift    | renamed/moved testid or role                                 | Update **page object** only                                                |
+| Flow / IA change | step gone, new screen, deep-link changed                     | Update contract + page object + `QA-CASES.md` §1/§2                        |
+| Product bug      | UI wrong vs Figma / oracle                                   | File bug; keep red (or `test.fixme` + ticket only if intentional deferral) |
+| Known deferral   | Pendle quote, subgraph-blind, E3 CoW                         | Confirm disposition in QA-CASES §3; do not invent coverage                 |
 
 Harness reminders:
 
@@ -94,10 +94,10 @@ CI=true pnpm exec playwright test --config playwright-parallel.config.ts --worke
 
 ## Quick map: fail → owner
 
-| Symptom | First file to open |
-| ------- | ------------------ |
-| `[contract:…]` in error | Matching `contracts/*.contract.ts` then page object |
-| Toast blocks click | `utils/suppressGovernanceMigrationToast.ts` / connect helper |
-| L2 balance 0 / wrong chain | `utils/switchWalletNetwork.ts` + page `gotoConnected` |
-| Success copy missing | Page object confirm helper → status badge |
-| Spec still `blocked-on-nav-rewrite` | Rewrite per Gate 3; update `e2e-migration.md` |
+| Symptom                             | First file to open                                           |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `[contract:…]` in error             | Matching `contracts/*.contract.ts` then page object          |
+| Toast blocks click                  | `utils/suppressGovernanceMigrationToast.ts` / connect helper |
+| L2 balance 0 / wrong chain          | `utils/switchWalletNetwork.ts` + page `gotoConnected`        |
+| Success copy missing                | Page object confirm helper → status badge                    |
+| Spec still `blocked-on-nav-rewrite` | Rewrite per Gate 3; update `e2e-migration.md`                |

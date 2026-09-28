@@ -3,7 +3,9 @@ import { cleanup, waitFor, renderHook } from '@testing-library/react';
 import { WagmiWrapper, TEST_WALLET_ADDRESS, GAS } from '../../../test/hooks';
 import { parseEther } from 'viem';
 import { useStUsdsAllowance } from './useStUsdsAllowance';
-import { useStUsdsApprove } from './useStUsdsApprove';
+import { useApproveToken } from '../../../test/hooks/useApproveToken';
+import { usdsAddress, stUsdsAddress } from '../generated';
+import { TENDERLY_CHAIN_ID } from '../constants';
 import { waitForPreparedExecuteAndMine } from '../../../test/hooks/helpers';
 
 describe('useStUsdsAllowance', () => {
@@ -41,8 +43,10 @@ describe('useStUsdsAllowance', () => {
     const approvalAmount = parseEther('100');
     const { result: resultApprove } = renderHook(
       () =>
-        useStUsdsApprove({
+        useApproveToken({
           amount: approvalAmount,
+          contractAddress: usdsAddress[TENDERLY_CHAIN_ID],
+          spender: stUsdsAddress[TENDERLY_CHAIN_ID],
           gas: GAS
         }),
       {

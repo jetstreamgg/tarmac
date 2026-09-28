@@ -64,7 +64,7 @@ vi.mock('wagmi', () => ({
 
 // Safe-connector hash workaround is irrelevant here (connector is undefined).
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
-  useWaitForSafeTxHash: () => undefined
+  useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })
 }));
 
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';

@@ -1,6 +1,6 @@
 import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
-import { type Token, type VaultProvider } from '@/hooks';
+import { type Token } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { VaultModalForm, type VaultModalPreset } from '../components/VaultModalForm';
@@ -12,7 +12,6 @@ export type VaultModalArgs = {
   assetToken: Token;
   /** Display name shown in titles + the review "Product" row (e.g. "USDC Risk Capital"). */
   vaultName: string;
-  provider?: VaultProvider;
   /** Net APY (decimal fraction) for the modal's APY + 1Y projected-earnings rows. */
   netRate?: number;
 };
@@ -59,7 +58,6 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
             vaultAddress={args.vaultAddress}
             assetToken={args.assetToken}
             vaultName={args.vaultName}
-            provider={args.provider}
             netRate={args.netRate}
             preset={preset}
           />
@@ -91,7 +89,6 @@ export function useVaultModal({ onSuccess }: UseVaultModalOptions = {}) {
             vaultAddress={args.vaultAddress}
             assetToken={args.assetToken}
             vaultName={args.vaultName}
-            provider={args.provider}
             netRate={args.netRate}
             preset={preset}
           />
