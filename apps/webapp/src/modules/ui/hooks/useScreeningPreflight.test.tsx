@@ -10,7 +10,8 @@ const ADDRESS = '0x1234567890123456789012345678901234567890';
 const mocks = vi.hoisted(() => ({
   shouldSkipAuthChecks: vi.fn(() => false),
   wagmiAddress: '0x1234567890123456789012345678901234567890' as string | undefined,
-  fetchEnhancedAddressScreening: vi.fn()
+  fetchEnhancedAddressScreening: vi.fn(),
+  fetchAddressScreening: vi.fn()
 }));
 
 vi.mock('@/lib/authCheck', () => ({
@@ -20,7 +21,8 @@ vi.mock('@/lib/authCheck', () => ({
 
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
-  fetchEnhancedAddressScreening: mocks.fetchEnhancedAddressScreening
+  fetchEnhancedAddressScreening: mocks.fetchEnhancedAddressScreening,
+  fetchAddressScreening: mocks.fetchAddressScreening
 }));
 
 vi.mock('wagmi', async io => ({
@@ -28,8 +30,8 @@ vi.mock('wagmi', async io => ({
   useConnection: () => ({ address: mocks.wagmiAddress, isConnected: !!mocks.wagmiAddress })
 }));
 
-import { enhancedAddressScreeningQueryKey } from '@/hooks';
-import { useEnhancedScreeningPreflight } from './useEnhancedScreeningPreflight';
+import { addressScreeningQueryKey, enhancedAddressScreeningQueryKey } from '@/hooks';
+import { useScreeningPreflight } from './useScreeningPreflight';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -43,31 +45,79 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 const renderPreflight = (usdValue: number | undefined, active = true, actionable = true) =>
-  renderHook(({ v, a, act }) => useEnhancedScreeningPreflight({ usdValue: v, active: a, actionable: act }), {
+  renderHook(({ v, a, act }) => useScreeningPreflight({ usdValue: v, active: a, actionable: act }), {
     wrapper,
     initialProps: { v: usdValue, a: active, act: actionable }
   });
 
-describe('useEnhancedScreeningPreflight', () => {
+describe('useScreeningPreflight', () => {
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, retryDelay: 0 } }
     });
     mocks.wagmiAddress = ADDRESS;
     mocks.shouldSkipAuthChecks.mockReturnValue(false);
+    mocks.fetchAddressScreening.mockResolvedValue({ addressAllowed: true });
   });
   afterEach(() => vi.clearAllMocks());
 
-  it('below the threshold: clear, and the endpoint is never touched', () => {
-    const { result } = renderPreflight(100);
-    expect(result.current).toEqual({ kind: 'clear' });
-    expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+  // Nothing screens on connect, so the standard check runs here — on the
+  // first screen, alongside where the enhanced one would — not at Confirm.
+  describe('below the threshold: the standard check', () => {
+    it('is warmed on the first screen (pending, then clear), never the enhanced one', async () => {
+      const { result } = renderPreflight(100);
+
+      expect(result.current).toEqual({ kind: 'pending' });
+      await waitFor(() => expect(result.current).toEqual({ kind: 'clear' }));
+      expect(mocks.fetchAddressScreening).toHaveBeenCalledTimes(1);
+      expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+    });
+
+    it('is fetched once however much the amount moves', async () => {
+      const { result, rerender } = renderPreflight(100);
+      await waitFor(() => expect(result.current).toEqual({ kind: 'clear' }));
+
+      rerender({ v: 5_000, a: true, act: true });
+      rerender({ v: 249_999, a: true, act: true });
+      expect(result.current).toEqual({ kind: 'clear' });
+      expect(mocks.fetchAddressScreening).toHaveBeenCalledTimes(1);
+    });
+
+    it('a risky verdict blocks with a message', async () => {
+      mocks.fetchAddressScreening.mockResolvedValue({ addressAllowed: false });
+      const { result } = renderPreflight(100);
+
+      await waitFor(() => expect(result.current.kind).toBe('blocked'));
+      expect(result.current.kind === 'blocked' && result.current.message).toBeTruthy();
+    });
+
+    it('an unavailable check blocks (fail closed)', async () => {
+      mocks.fetchAddressScreening.mockRejectedValue(new Error('down'));
+      const { result } = renderPreflight(100);
+
+      await waitFor(() => expect(result.current.kind).toBe('blocked'));
+    });
+
+    it('a cached verdict (pre-terms check or gate) clears without a fetch (shared cache)', () => {
+      queryClient.setQueryData(addressScreeningQueryKey(ADDRESS), { addressAllowed: true });
+      const { result } = renderPreflight(100);
+
+      expect(result.current).toEqual({ kind: 'clear' });
+      expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
+    });
+
+    it('not actionable: no call', () => {
+      const { result } = renderPreflight(100, true, false);
+      expect(result.current).toEqual({ kind: 'clear' });
+      expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
+    });
   });
 
-  it('no active session: clear even at whale size', () => {
+  it('no active session: clear, and neither tier is fetched', () => {
     const { result } = renderPreflight(1_000_000, false);
     expect(result.current).toEqual({ kind: 'clear' });
     expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+    expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
   });
 
   it('not actionable (over balance / quote pending): no call even at whale size', () => {
@@ -87,11 +137,12 @@ describe('useEnhancedScreeningPreflight', () => {
     expect(mocks.fetchEnhancedAddressScreening).toHaveBeenCalledTimes(1);
   });
 
-  it('the dev/e2e bypass clears everything', () => {
+  it('the dev/e2e bypass clears everything, at either tier', () => {
     mocks.shouldSkipAuthChecks.mockReturnValue(true);
-    const { result } = renderPreflight(1_000_000);
-    expect(result.current).toEqual({ kind: 'clear' });
+    expect(renderPreflight(1_000_000).result.current).toEqual({ kind: 'clear' });
+    expect(renderPreflight(100).result.current).toEqual({ kind: 'clear' });
     expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
+    expect(mocks.fetchAddressScreening).not.toHaveBeenCalled();
   });
 
   it('at the threshold: pending while the verdict is in flight, clear once allowed', async () => {
@@ -156,17 +207,18 @@ describe('useEnhancedScreeningPreflight', () => {
     expect(mocks.fetchEnhancedAddressScreening).not.toHaveBeenCalled();
   });
 
-  it('crossing the threshold mid-session flips the requirement on', async () => {
+  it('crossing the threshold mid-session switches to the enhanced tier', async () => {
     mocks.fetchEnhancedAddressScreening.mockResolvedValueOnce({ addressAllowed: false });
     const { result, rerender } = renderPreflight(100);
-    expect(result.current).toEqual({ kind: 'clear' });
+    await waitFor(() => expect(result.current).toEqual({ kind: 'clear' }));
 
     rerender({ v: 400_000, a: true, act: true });
     await waitFor(() => expect(result.current.kind).toBe('blocked'));
 
     // Dropping back below the threshold releases the hold — the smaller
-    // transaction never owed this check.
+    // transaction only owes the standard check, already cleared.
     rerender({ v: 100, a: true, act: true });
     expect(result.current).toEqual({ kind: 'clear' });
+    expect(mocks.fetchAddressScreening).toHaveBeenCalledTimes(1);
   });
 });

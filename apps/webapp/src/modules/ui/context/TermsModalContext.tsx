@@ -40,12 +40,13 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
     }
   }
 
-  // Derived from state rather than the connect event: the flow puts address
-  // screening between wallet selection and the T&C gate (APP-497), and
-  // `isAuthorized` stays false until screening resolves — so a blocked wallet
-  // gets the blocked screen and never sees the terms modal. That also makes
-  // this cover the account switch for free: ConnectedContext drops the terms
-  // verdict and re-runs screening on every address change, so the switched-in
+  // Derived from state rather than the connect event: once `/check` says the
+  // terms must be shown, ConnectedContext screens the address first and
+  // `isAuthorized` stays false until that resolves — so a blocked wallet gets
+  // the blocked screen and never sees the terms. (The latch may already be set
+  // from the `/check` wait; WalletChip only mounts the modal while authorized.)
+  // That also makes this cover the account switch for free: ConnectedContext
+  // drops the terms verdict on every address change, so the switched-in
   // address arrives here in exactly the state a fresh connection would.
   if (
     connectedAddress &&

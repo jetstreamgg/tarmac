@@ -259,7 +259,7 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
   };
 });
 
-// The takeover's own enhanced-screening hold (APP-517 via APP-550): the
+// The takeover's own screening hold (APP-517 via APP-550): the
 // provider's injected preflight, read through the context helper.
 const preflight = vi.hoisted(() => ({
   state: { kind: 'clear' } as { kind: 'clear' } | { kind: 'pending' } | { kind: 'blocked'; message: string },

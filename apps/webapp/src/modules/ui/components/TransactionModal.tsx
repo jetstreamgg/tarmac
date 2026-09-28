@@ -142,7 +142,7 @@ export type TransactionModalProps = {
    */
   gateCopy?: GateStatusCopy | null;
   /**
-   * Enhanced-screening preflight for $250k+ transactions (APP-517). While not
+   * Address-screening preflight (standard, or enhanced for $250k+). While not
    * 'clear', the CTAs that would FIRE the transaction are held (pending →
    * loading, blocked → disabled with the message rendered above them); CTAs
    * that only advance screens (a three-screen entry's Review) stay live.
@@ -343,7 +343,7 @@ export function TransactionModal({
   // only advances to the review (and a `confirmAction` override runs in
   // place), so neither is held by the preflight — the review's confirm is.
   const primaryConfirmFiresTx = isReview || (isEntry && !entry?.confirmAction && !hasReviewStage);
-  // Enhanced-screening hold (APP-517): blocked disables the firing CTAs (the
+  // Screening hold: blocked disables the firing CTAs (the
   // message renders above them); pending renders them in the DS loading state
   // unless something else already disables them.
   const preflightBlocked = preflight?.kind === 'blocked';
@@ -809,7 +809,7 @@ export function TransactionModal({
                 {/* Precedes the screening block — a wrong chain is the more
                     fundamental block. */}
                 {chainGuardBlock}
-                {/* Enhanced-screening failure (APP-517): rendered above the CTAs,
+                {/* Screening failure: rendered above the CTAs,
                     which stay visible but disabled — the transaction is blocked. */}
                 {preflight?.kind === 'blocked' && (
                   <div className="flex items-start gap-2" data-testid="transaction-preflight-blocked">

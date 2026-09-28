@@ -85,6 +85,41 @@ describe('entrance draw', () => {
     expect(fill.style.clipPath).toContain('url(#');
   });
 
+  it('holds the series hidden until the draw takes it over', () => {
+    // recharts fills its z-index portals a commit after ours: the layer
+    // mounts before the series paths it reveals exist.
+    const view = render(
+      <svg data-testid="surface">
+        <SeriesMotionLayer color="red" strokeWidth={1.5} seriesKey="rate-w" data={[1]} />
+      </svg>
+    );
+    const surface = screen.getByTestId('surface');
+    // Set in the mounting commit, before anything paints: the paths that
+    // land next must not show fully drawn ahead of the draw.
+    expect(surface.hasAttribute('data-series-reveal-pending')).toBe(true);
+
+    view.rerender(
+      <svg data-testid="surface">
+        <g className="recharts-area">
+          <path className="recharts-area-area" d="M0,0L100,0L100,50L0,50Z" data-testid="fill" />
+          <path className="recharts-area-curve" d="M0,0L100,0" data-testid="curve" />
+        </g>
+        <SeriesMotionLayer color="red" strokeWidth={1.5} seriesKey="rate-w" data={[1]} />
+      </svg>
+    );
+    // The measure retry finds the paths; the draw hides them itself from here.
+    act(() => vi.advanceTimersByTime(20));
+    expect(screen.getByTestId('curve').style.strokeDashoffset).toBe('0');
+    expect(surface.hasAttribute('data-series-reveal-pending')).toBe(false);
+  });
+
+  it('never leaves the hold on when the paths are there from the start', () => {
+    renderLayer();
+    expect(
+      screen.getByTestId('series-layer').closest('svg')!.hasAttribute('data-series-reveal-pending')
+    ).toBe(false);
+  });
+
   it('leaves the recharts paths clean once the draw has finished', () => {
     renderLayer();
     finishReveal();

@@ -48,16 +48,19 @@ interface ConnectedContextType {
    * consumer decides how to treat an unknown location.
    */
   isUsUser?: boolean;
-  /** Re-runs the /ip/status and address-screening checks (the "check again" path). */
+  /**
+   * Re-runs the /ip/status check, and address screening when it is what gates
+   * the terms (the "check again" path on the unavailable states).
+   */
   retryAccessChecks: () => void;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
   /**
-   * The worker answered `/check` with a 403: its own gate (screening or
-   * region) refused this address even though the client-side checks let it
-   * through — the two are independent data sources and can disagree. Renders
-   * a dead-end state instead of an interactive modal whose accept is
-   * guaranteed to fail on the missing-version guard.
+   * The worker answered `/check` with a 403: its own gate refused this
+   * request even though the client-side checks let it through — the two are
+   * independent data sources and can disagree. Renders a dead-end state
+   * instead of an interactive modal whose accept is guaranteed to fail on the
+   * missing-version guard.
    */
   termsCheckDenied: boolean;
   retryTermsCheck: () => void;
@@ -148,20 +151,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [termsCheck, setTermsCheck] = useState<TermsCheckData | undefined>(undefined);
   const [termsCheckError, setTermsCheckError] = useState(false);
   const [termsCheckDenied, setTermsCheckDenied] = useState(false);
-  // Derived, not state: an effect-synced copy lags `address` by a render, and
-  // in that render a fresh connection reads as authorized before screening has
-  // even started — long enough for the terms modal to latch open (APP-497 QA).
-  const enabled = !!address;
 
   const skipAuthCheck = shouldSkipAuthChecks();
 
   const authUrl = getAuthUrl();
-  const {
-    data: authData,
-    isLoading: authIsLoading,
-    error: authError,
-    refetch: refetchAddressCheck
-  } = useRestrictedAddressCheck({ address, authUrl, enabled });
 
   const {
     data: vpnData,
@@ -185,17 +178,6 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [vpnError]);
 
-  useEffect(() => {
-    if (authError) {
-      reportError(authError, {
-        module: 'auth',
-        flow: 'address-check',
-        action: 'fetch',
-        type: 'address_check_error'
-      });
-    }
-  }, [authError]);
-
   // Guard against stale responses when the address changes mid-flight
   const activeAddressRef = useRef<string | null>(null);
 
@@ -215,10 +197,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setTermsCheck(undefined);
         setTermsCheckError(true);
       } else if (result.status === 'access-denied') {
-        // 403 is an intentional refusal by the worker's own gate. Screening runs
-        // before this check ever fires (APP-497), so reaching here means the
-        // worker disagreed with the client-side verdict — the modal must show a
-        // dead end rather than terms whose accept can never succeed.
+        // 403 is an intentional refusal by the worker's own gate (its IP check;
+        // workers that predate api-workers#126 also screen the address here).
+        // The modal must show a dead end rather than terms whose accept can
+        // never succeed — and a denial arms client-side screening, so a
+        // screened-out wallet gets the blocked screen instead.
         setTermsCheck(undefined);
         setTermsCheckDenied(true);
       } else {
@@ -258,12 +241,13 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     activeAddressRef.current = address ?? null;
   }, [address]);
 
-  // The flow puts address screening between wallet selection and the T&C gate
-  // (APP-497): the terms check fires only once screening has cleared the
-  // address, so a blocked wallet sees the blocked screen, never the terms
-  // modal — and the ordering is guaranteed rather than incidental.
-  const addressScreeningPassed = authData?.addressAllowed === true;
-  const termsCheckDue = !skipAuthCheck && isConnected && !!address && addressScreeningPassed;
+  // The terms check runs on every connection, ahead of any screening: its
+  // answer is what tells us whether this address needs screening at all (see
+  // `screeningRequired` below).
+  // `!skipAuthCheck` also keeps dev and e2e builds (VITE_SKIP_AUTH_CHECK) from
+  // ever screening: `screeningRequired` below hangs off this flag, and those
+  // runs used to screen their test wallets against the real staging worker.
+  const termsCheckDue = !skipAuthCheck && isConnected && !!address;
 
   useEffect(() => {
     if (termsCheckDue) {
@@ -292,6 +276,46 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // environment that skips the gate ends up demanding a signature at Confirm
   // instead; C7 aligns the bypasses with the two-phase model.
   const hasSignedCurrentTerms = skipAuthCheck || !!termsCheck?.signedForCurrentVersion;
+
+  // Address screening runs only where a verdict gates something: before the
+  // terms are shown (here), and before a transaction (the modal's preflight
+  // and the pre-transaction gate, through the same query key). Every
+  // screening is a billed provider call once the worker's edge cache expires,
+  // so a wallet that has already accepted the terms is not screened on
+  // connect — a blocked one finds out on its first transaction screen
+  // instead. Screening is due once `/check` has answered and the terms modal
+  // has something to show: the terms themselves, or the dead end of a
+  // worker-side refusal (which the blocked screen explains better, when
+  // screening is what refused it). Never in a restricted region: that block
+  // wins over any verdict, so the call would be paid for nothing.
+  const screeningRequired =
+    termsCheckDue &&
+    !vpnData?.isRestrictedRegion &&
+    ((termsCheck !== undefined && !hasAcceptedTerms) || termsCheckDenied);
+
+  // Disabled, the query still observes the shared cache entry: a risky verdict
+  // the pre-transaction gate lands flips `wallet-blocked` below.
+  const {
+    data: authData,
+    error: authError,
+    refetch: refetchAddressCheck
+  } = useRestrictedAddressCheck({ address, authUrl, enabled: screeningRequired });
+
+  // Derived rather than read off the query's own loading flag: it has to be
+  // true in the very render the terms verdict lands, or that render reads as
+  // authorized and the terms modal would open before the address is screened.
+  const authIsLoading = screeningRequired && !authData && !authError;
+
+  useEffect(() => {
+    if (authError) {
+      reportError(authError, {
+        module: 'auth',
+        flow: 'address-check',
+        action: 'fetch',
+        type: 'address_check_error'
+      });
+    }
+  }, [authError]);
 
   /**
    * Writes the local flag and reports if it could not be written. Returning
@@ -432,16 +456,22 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // refetch keeps the cached data and sets `error`, so gating on the error
     // alone would discard a verdict we already hold.
     if (vpnError && !vpnData) return 'ip-check-unavailable';
-    if (enabled) {
+    if (address) {
+      // Whoever screened (the pre-terms check or the pre-transaction gate), a
+      // risky verdict blocks the app.
       if (authData?.addressAllowed === false) return 'wallet-blocked';
-      if (authError && !authData) return 'screening-unavailable';
+      // An unavailable check only walls the app off when it stood between the
+      // user and the terms. At Confirm, the gate owns that failure with its
+      // own dialog: a flaky check shouldn't take the whole app away from a
+      // wallet that was never screened out.
+      if (screeningRequired && authError && !authData) return 'screening-unavailable';
     }
     return undefined;
-  }, [vpnData, vpnError, enabled, authData, authError]);
+  }, [vpnData, vpnError, address, authData, authError, screeningRequired]);
 
-  // `undefined !== true` while screening is in flight, so a connected address
-  // stays gated (behind the loading dialog) until a verdict lands.
-  const isAllowed = !accessBlockReason && (!enabled || authData?.addressAllowed === true);
+  // `undefined !== true` while a required screening is in flight, so the
+  // address stays gated (behind the loading dialog) until a verdict lands.
+  const isAllowed = !accessBlockReason && (!screeningRequired || authData?.addressAllowed === true);
 
   const isAuthorized = isAllowed || skipAuthCheck;
   const isConnectedAndAcceptedTerms = isConnected && hasAcceptedTerms;
@@ -451,10 +481,14 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // as `isConnectedToVpn`, so the pair shares one loading state and verdict.
   const isUsUser = vpnData ? vpnData.countryCode === 'US' : undefined;
 
+  // Screening is only re-run when it is what stands in the way (the check
+  // before the terms, including its unavailable state): `refetch` ignores
+  // `enabled`, so an unconditional call would bill a screening to, say, an
+  // accepted wallet retrying the network-error screen.
   const retryAccessChecks = useCallback(() => {
     refetchVpnCheck();
-    if (enabled) refetchAddressCheck();
-  }, [refetchVpnCheck, refetchAddressCheck, enabled]);
+    if (screeningRequired) refetchAddressCheck();
+  }, [refetchVpnCheck, refetchAddressCheck, screeningRequired]);
 
   // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
   // PostHog event carries them. Unlike the fire-once tracking below, this re-runs

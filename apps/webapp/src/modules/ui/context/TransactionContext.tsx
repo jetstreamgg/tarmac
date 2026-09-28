@@ -151,12 +151,12 @@ export function useEntrySlot() {
   return useContext(EntrySlotContext);
 }
 
-// The injected enhanced-screening preflight hook (see `usePreflight` on the
+// The injected screening preflight hook (see `usePreflight` on the
 // provider), shared with flows whose OWN surface fires the transaction.
 const PreflightHookContext = createContext<PreflightHook>(allowAllPreflight);
 
 /**
- * The enhanced-screening preflight (APP-517) for a surface that fires the
+ * The screening preflight (standard, or enhanced at $250k+) for a surface that fires the
  * transaction itself — a `skipReview` flow's page-side Confirm (the stake
  * takeovers). The modal's first screen normally runs this check, warms the
  * verdict and holds its CTA; with no first screen the takeover has to: pass
@@ -205,7 +205,7 @@ export function TransactionProvider({
   // can exercise the deny/async paths; the app mounts the allow-all stub until
   // the signature verdict lands (APP-501).
   gate = allowAllGate,
-  // The enhanced-screening preflight (APP-517), a HOOK called unconditionally
+  // The screening preflight (standard, or enhanced at $250k+), a HOOK called unconditionally
   // every render — its identity must be stable for the life of the provider
   // (the app passes a module-level hook; tests pass stable fakes).
   usePreflight = allowAllPreflight

@@ -70,6 +70,7 @@ export default defineConfig({
         '**/pendle.spec.ts',
         '**/stusds.spec.ts',
         '**/terms-signature-gate.spec.ts',
+        '**/address-screening.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
         '**/optimism-savings.spec.ts',

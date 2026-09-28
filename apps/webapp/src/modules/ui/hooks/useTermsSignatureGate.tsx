@@ -15,6 +15,7 @@ import {
   enhancedAddressScreeningQueryKey,
   fetchEnhancedAddressScreening,
   requiresEnhancedScreening,
+  SCREENING_MAX_AGE_MS,
   type AddressScreeningResult
 } from '@/hooks';
 import { useConnectedContext, type SignTermsResult } from '@/modules/ui/context/ConnectedContext';
@@ -25,15 +26,6 @@ import type {
   PreTransactionGate
 } from '@/modules/ui/context/preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
-
-/**
- * How old a screening verdict may be and still clear a transaction without a
- * re-check (APP-501; the edge caches 12h, so this is the tighter bound). In
- * practice the connect-time hook re-polls every 60s while the tab is focused,
- * so the async re-screen only runs when that polling has been failing or
- * paused for four hours straight.
- */
-export const SCREENING_MAX_AGE_MS = 4 * 60 * 60 * 1000;
 
 /** Built per call: lingui's `t` must run after locale activation, not at module load. */
 const termsSignatureStep = (): TransactionStep => ({
@@ -54,12 +46,15 @@ const termsSignatureStep = (): TransactionStep => ({
  * The real pre-transaction gate (APP-501), filling the APP-496 plumbing. On
  * every Confirm (and retry, and secondary CTA), in order:
  *
- *  1. Address screening — the same query the connect-time check uses, so the
- *     two share one cached verdict per address. Fresh-and-allowed passes
+ *  1. Address screening — the same query the pre-terms check uses, so the
+ *     two share one cached verdict per address (`SCREENING_MAX_AGE_MS`).
+ *     Nothing screens on connect; the modal-side preflight
+ *     (`useScreeningPreflight`) warms the verdict on the first screen, so
+ *     this normally passes without a fetch. Fresh-and-allowed passes
  *     synchronously (preserving the same-tick onConfirm contract); risky
  *     closes the transaction modal and denies, and the app-level blocked
- *     dialog takes over through the shared query cache. A failed re-check
- *     fails closed: the transaction never starts.
+ *     dialog takes over through the shared query cache. A failed check fails
+ *     closed behind the gate's own dialog: the transaction never starts.
  *  2. Location — only US and VPN users owe the per-transaction signature.
  *     Unknown (the /ip/status check unresolved or failed) counts as US/VPN:
  *     requiring a signature we may not have owed beats skipping one we did.
@@ -75,7 +70,7 @@ const termsSignatureStep = (): TransactionStep => ({
  * is screened via the enhanced endpoint (stricter provider settings, its own
  * cache key) instead of the standard one. A denial returns the modal to its
  * FIRST screen, where the modal-side preflight
- * (`useEnhancedScreeningPreflight`) — reading the very query this gate just
+ * (`useScreeningPreflight`) — reading the very query this gate just
  * settled — renders the blocked/unavailable message above the disabled CTAs;
  * it never closes into the app-level blocked dialog. The preflight also warms
  * the query on the way in, so this usually passes synchronously.
@@ -93,14 +88,11 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
     vpnData
   } = useConnectedContext();
 
-  // Shown when a re-screen failed while a stale cached verdict exists: in that
-  // one shape ConnectedContext keeps trusting its cached data (deliberately —
-  // a failed background refetch shouldn't lock the app), so no app-level
-  // dialog appears and the denial needs its own surface. With no cached
-  // verdict at all, the same failure flips the app-level screening-unavailable
-  // state through the shared query, and this stays closed. Keyed to the
-  // address whose re-screen failed: a switch or disconnect closes it by
-  // derivation — wallet A's failure never hangs over wallet B.
+  // Shown when screening failed at Confirm. ConnectedContext only walls the
+  // app off for a screening that stood between the user and the terms, so
+  // this failure — cached verdict or none — is the gate's to surface. Keyed
+  // to the address whose screening failed: a switch or disconnect closes it
+  // by derivation — wallet A's failure never hangs over wallet B.
   const [screeningUnavailableFor, setScreeningUnavailableFor] = useState<string | null>(null);
   const screeningUnavailableOpen = screeningUnavailableFor !== null && screeningUnavailableFor === address;
 
@@ -272,7 +264,6 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
       }
 
       const gatedAddress = s.address;
-      const hadStaleVerdict = cached?.data !== undefined;
       return (async () => {
         // The modal is already on its transaction screen; don't leave it on IDLE.
         controls.setGateStatus('screening', screeningCopy());
@@ -296,7 +287,7 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
             controls.returnToFirstScreen();
             return { allow: false };
           }
-          if (hadStaleVerdict && live.current.address === gatedAddress) {
+          if (live.current.address === gatedAddress) {
             setScreeningUnavailableFor(gatedAddress);
           }
           return denyAndClose(controls);
@@ -323,7 +314,21 @@ export function useTermsSignatureGate(): { gate: PreTransactionGate; screeningDi
   const handleCheckAgain = useCallback(() => {
     setScreeningUnavailableFor(null);
     retryAccessChecks();
-  }, [retryAccessChecks]);
+    // The access-check retry only re-screens ahead of the terms. This failure
+    // happened at Confirm, so re-run that screening here: a success lands in
+    // the shared cache and the next Confirm clears synchronously; another
+    // failure stays quiet until that Confirm surfaces it again.
+    if (address) {
+      queryClient
+        .fetchQuery({
+          queryKey: addressScreeningQueryKey(address),
+          queryFn: () => fetchAddressScreening(address, getAuthUrl()),
+          staleTime: 0,
+          retry: 1
+        })
+        .catch(() => {});
+    }
+  }, [retryAccessChecks, queryClient, address]);
 
   // Styled on the APP-497 blocked/unavailable states (UnauthorizedPage) —
   // Bartek's real designs for these don't exist yet either.

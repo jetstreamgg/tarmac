@@ -1156,6 +1156,13 @@ svg.recharts-surface [tabindex]:focus,
   outline: none;
 }
 
+/* A series waiting on its entrance draw stays hidden until the draw takes it
+   over (SeriesMotionLayer's REVEAL_PENDING_ATTR) — otherwise it paints fully
+   drawn for a frame first, then blanks and draws itself in. */
+svg[data-series-reveal-pending] g.recharts-area {
+  visibility: hidden;
+}
+
 /* App page background (Figma: Backgrounds 5177:37170) ----------------------
    A viewport-fixed layer behind the shell (rendered once in Layout). Fixed
    instead of `background-attachment: fixed` because the latter is broken on

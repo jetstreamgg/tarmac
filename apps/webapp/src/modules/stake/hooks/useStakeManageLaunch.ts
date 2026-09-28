@@ -307,7 +307,7 @@ export function useStakeManageLaunch({
 
   // The moved legs (lock or free, borrow or wipe; a delegate-only change moves
   // nothing and values at $0). Live (not computed at launch) because the sheet
-  // runs the enhanced-screening preflight on it while the user is editing.
+  // runs the screening preflight on it while the user is editing.
   const usdValue = useMemo(
     () =>
       stakeUsdNotional(
