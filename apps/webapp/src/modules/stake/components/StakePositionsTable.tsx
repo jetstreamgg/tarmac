@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount, useChainId } from 'wagmi';
-import { RiskLevel } from '@/hooks';
 import { formatPercent } from '@/utils';
 import { Plus } from 'lucide-react';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
@@ -13,10 +12,12 @@ import { StakeSky, Liquidated, SuppliedEmpty } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { StakeEmptySection } from './StakeEmptySection';
-import { IconboxPosition } from '@/components/ui/iconbox';
+import { RiskPill } from './StakeManageBorrowCard';
+import { IconboxPosition, type IconboxPositionTone } from '@/components/ui/iconbox';
+import { RiskLevel } from '@/hooks';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RiskMeter } from '@/components/product/RiskMeter';
+import { RISK_ZONE_FILL } from '@/components/product/RiskMeter';
 import {
   ProductTransactionsTable,
   ProductTransactionColumn
@@ -35,28 +36,6 @@ import { StakePositionDetailWarmer } from './StakePositionDetailWarmer';
 import { useStakeRowVault } from '../hooks/useStakeRowVault';
 import { recallStakePositionCount, rememberStakePositionCount } from '../lib/positionCountMemory';
 
-// Liquidation-proximity mapping for the shared risk pill: more (and warmer)
-// lit segments = closer to liquidation; rows with no debt render unlit
-// (Figma Type=Risk "None"). Colors are the design-system Badges/Risk palette
-// (5017:7512) the pill uses everywhere — that node also settles what the 3-lit
-// tier is: Orange/600, not red. The pill chrome is the shared RiskMeter
-// (review feedback: one pill app-wide).
-const RISK_SEGMENTS: Record<RiskLevel, { lit: number; color: string }> = {
-  [RiskLevel.LOW]: { lit: 1, color: 'bg-riskLow' },
-  [RiskLevel.MEDIUM]: { lit: 2, color: 'bg-riskMedium' },
-  [RiskLevel.HIGH]: { lit: 3, color: 'bg-riskHigh' },
-  [RiskLevel.LIQUIDATION]: { lit: 3, color: 'bg-riskHigh' }
-};
-
-function PositionRiskMeter({ riskLevel }: { riskLevel?: RiskLevel }) {
-  const segments = riskLevel ? RISK_SEGMENTS[riskLevel] : undefined;
-  return (
-    <RiskMeter
-      segments={[0, 1, 2].map(index => (segments && index < segments.lit ? segments.color : null))}
-    />
-  );
-}
-
 /** Filled pill badge replacing the risk meter once a position has been liquidated. */
 function LiquidatedBadge() {
   return (
@@ -70,7 +49,7 @@ function LiquidatedBadge() {
   );
 }
 
-/** Liquidation-risk cell: liquidated badge, vault risk for urns with debt, or an unlit meter. */
+/** Liquidation-risk cell: liquidated badge, the vault's risk pill for urns with debt, or a dash. */
 function PositionRiskCell({ position }: { position: StakeUserPosition }) {
   const hasDebt = position.usdsDebt > 0n;
   // Computed from the list's own Vat snapshot: no per-row read, so the meter
@@ -98,8 +77,10 @@ function PositionRiskCell({ position }: { position: StakeUserPosition }) {
       </span>
     );
   }
-  if (!hasDebt) return <NoValueCell testId="stake-position-risk-none" />;
-  return <PositionRiskMeter riskLevel={vault?.riskLevel} />;
+  if (!hasDebt || !vault?.riskLevel) return <NoValueCell testId="stake-position-risk-none" />;
+  return (
+    <RiskPill riskLevel={vault.riskLevel} size="m" dataTestId={`stake-position-risk-${position.index}`} />
+  );
 }
 
 /** Comp 3617:24023: debt-free rows read "-" in fg-tertiary for LTV and risk. */
@@ -118,9 +99,25 @@ function PositionLtvCell({ position }: { position: StakeUserPosition }) {
   if (isLoading) return <Skeleton className="h-5 w-12" />;
   const ltv = loanToValue(vault?.debtValue, vault?.collateralValue);
   if (ltv === undefined) return <NoValueCell testId="stake-position-ltv-unavailable" />;
+  // Comp 3617:24391: a 48×3 track filled to the LTV, tinted by the risk zone.
+  const ltvFraction = Math.min(1, Math.max(0, Number(ltv) / 1e18));
   return (
-    <span data-testid={`stake-position-ltv-${position.index}`}>
-      {formatPercent(ltv, { showPercentageDecimals: false })}
+    <span className="flex items-center gap-[11px]">
+      {vault?.riskLevel && (
+        <span aria-hidden className="bg-sliderTrack relative h-[3px] w-12 shrink-0 rounded-full">
+          <span
+            data-testid={`stake-position-ltv-bar-${position.index}`}
+            className={cn(
+              'absolute inset-y-0 left-0 rounded-full bg-linear-to-r',
+              RISK_ZONE_FILL[vault.riskLevel]
+            )}
+            style={{ width: `${ltvFraction * 100}%` }}
+          />
+        </span>
+      )}
+      <span data-testid={`stake-position-ltv-${position.index}`}>
+        {formatPercent(ltv, { showPercentageDecimals: false })}
+      </span>
     </span>
   );
 }
@@ -143,8 +140,22 @@ function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
   );
 }
 
+const RISK_TONE: Record<RiskLevel, IconboxPositionTone> = {
+  [RiskLevel.LOW]: 'success',
+  [RiskLevel.MEDIUM]: 'warning',
+  [RiskLevel.HIGH]: 'error',
+  [RiskLevel.LIQUIDATION]: 'error'
+};
+
+// Iconbox colour follows liquidation risk; staking-only (or risk still loading) stays info.
+function usePositionTone(position: StakeUserPosition): IconboxPositionTone {
+  const { data: vault } = useStakeRowVault(position);
+  return position.usdsDebt > 0n && vault?.riskLevel ? RISK_TONE[vault.riskLevel] : 'info';
+}
+
 function PositionIdCell({ position }: { position: StakeUserPosition }) {
   const inactive = isInactiveStakePosition(position);
+  const tone = usePositionTone(position);
   return (
     // Inactive positions read through Iconbox/Position's own Inactive variant
     // (Figma 5051:145321) rather than a blanket opacity — the comp keeps the
@@ -156,7 +167,7 @@ function PositionIdCell({ position }: { position: StakeUserPosition }) {
         icon={<StakeSky width={16} height={16} />}
         label={<Trans>#{position.index + 1}</Trans>}
         inactive={inactive}
-        tone="info"
+        tone={tone}
       />
     </div>
   );
@@ -236,14 +247,21 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
 // hairlines, and a full-width secondary "View more" footer. The card wrapper
 // still owns the tap-to-manage behavior (the engine wires onRowClick to it);
 // the button simply bubbles into that same handler.
+function PositionIconbox({ position }: { position: StakeUserPosition }) {
+  const tone = usePositionTone(position);
+  return (
+    <IconboxPosition inactive={isInactiveStakePosition(position)} tone={tone}>
+      <StakeSky width={16} height={16} />
+    </IconboxPosition>
+  );
+}
+
 const renderCard = (position: StakeUserPosition) => (
   <TransactionCard
     header={
       <span className="flex items-center gap-3" data-testid={`stake-position-id-${position.index}`}>
         {/* Same inactive treatment as the desktop cell: the variant, not opacity. */}
-        <IconboxPosition inactive={isInactiveStakePosition(position)} tone="info">
-          <StakeSky width={16} height={16} />
-        </IconboxPosition>
+        <PositionIconbox position={position} />
         <span className="text-fgPrimary font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
           <Trans>#{position.index + 1}</Trans>
         </span>

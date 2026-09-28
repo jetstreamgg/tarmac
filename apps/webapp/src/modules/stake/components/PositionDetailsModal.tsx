@@ -15,7 +15,7 @@ import {
   UserRound,
   X
 } from 'lucide-react';
-import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
+import { BP, MD_MEDIA_QUERY, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle, SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';
@@ -28,7 +28,8 @@ import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { RateInfo } from '@/components/product/RateInfo';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
-import { liquidationDropPercent } from '../lib/positionDetail';
+import { loanToValue } from '../lib/loanToValue';
+import { RiskPill } from './StakeManageBorrowCard';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
 import { NO_VALUE } from '@/lib/constants';
 
@@ -37,15 +38,6 @@ const CLAIM_DUST_WAD = 10n ** 16n;
 
 /** The manage actions F5 implements — rows/CTAs route these to the sheet. */
 export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'reward' | 'delegate';
-
-// F4 risk pill palette — the components/status colours the borrow cards
-// (StakeTakeoverBorrowCard, StakeManageBorrowCard) render the same pill with.
-const RISK_PILL_COLOR: Record<RiskLevel, string> = {
-  [RiskLevel.LOW]: 'bg-statusSuccess/10 text-statusSuccess',
-  [RiskLevel.MEDIUM]: 'bg-statusWarning/10 text-statusWarning',
-  [RiskLevel.HIGH]: 'bg-statusError/10 text-statusError',
-  [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
-};
 
 // Stat cell (comps 1036:214176 desktop / 1292:63278 phone — same recipe at
 // every tier): Body 6 label over a Label 5 Circular value.
@@ -121,15 +113,12 @@ function MenuRow({
   );
 }
 
-// The contextual menu rows, shared verbatim between the desktop right panel
-// and the mobile manage sheet. Composition follows the debt state; an emptied
-// urn reorders to the frame layouts (C16) with mostly-disabled rows. The
-// undesigned `Close position` flow renders disabled — flagged on APP-312, not
-// improvised.
+// Inactive-urn menu rows (and the loading skeleton), shared verbatim between
+// the desktop right panel and the mobile manage sheet: the frame layouts
+// (C16) with mostly-disabled rows. The undesigned `Close position` flow
+// renders disabled — flagged on APP-312, not improvised.
 function ManageMenuRows({
   loading,
-  isInactive,
-  hasDebt,
   showInactiveBorrowBlock,
   claimDisabled,
   claimChip,
@@ -139,8 +128,6 @@ function ManageMenuRows({
   idSuffix = ''
 }: {
   loading: boolean;
-  isInactive: boolean;
-  hasDebt: boolean;
   showInactiveBorrowBlock: boolean;
   claimDisabled: boolean;
   claimChip?: ReactNode;
@@ -172,125 +159,27 @@ function ManageMenuRows({
 
   const rowProps = { variant };
 
-  if (isInactive) {
-    return (
-      <>
-        {!showInactiveBorrowBlock && (
-          <MenuRow
-            {...rowProps}
-            icon={<Gem className="h-4 w-4" />}
-            label={<Trans>Claim rewards</Trans>}
-            disabled={claimDisabled}
-            onClick={onClaim}
-            dataTestId={`stake-manage-menu-claim${idSuffix}`}
-            chip={claimChip}
-          />
-        )}
-        {/* An inactive urn stakes nothing, so switching its farm is a no-op —
-            the reopen takeover's picker (APP-516) is where its next farm gets
-            chosen; the row stays disabled here. */}
-        <MenuRow
-          {...rowProps}
-          icon={<Coins className="h-4 w-4" />}
-          label={<Trans>Change reward</Trans>}
-          disabled
-          dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
-        />
-        <MenuRow
-          {...rowProps}
-          icon={<UserRound className="h-4 w-4" />}
-          label={<Trans>Change delegate</Trans>}
-          onClick={() => onAction('delegate')}
-          dataTestId={`stake-manage-menu-change-delegate${idSuffix}`}
-        />
-        {showInactiveBorrowBlock && (
-          <>
-            <MenuRow
-              {...rowProps}
-              icon={<Gem className="h-4 w-4" />}
-              label={<Trans>Claim rewards</Trans>}
-              disabled={claimDisabled}
-              onClick={onClaim}
-              dataTestId={`stake-manage-menu-claim${idSuffix}`}
-              chip={claimChip}
-            />
-            <MenuRow
-              {...rowProps}
-              icon={<BanknoteArrowDown className="h-4 w-4" />}
-              label={<Trans>Borrow more USDS</Trans>}
-              disabled
-              dataTestId={`stake-manage-menu-borrow${idSuffix}`}
-            />
-            <MenuRow
-              {...rowProps}
-              icon={<BanknoteArrowUp className="h-4 w-4" />}
-              label={<Trans>Repay debt</Trans>}
-              disabled
-              dataTestId={`stake-manage-menu-repay${idSuffix}`}
-            />
-          </>
-        )}
-        <MenuRow
-          {...rowProps}
-          icon={<ArrowUpFromLine className="h-4 w-4" />}
-          label={<Trans>Withdraw SKY</Trans>}
-          disabled
-          dataTestId={`stake-manage-menu-withdraw${idSuffix}`}
-        />
-        {showInactiveBorrowBlock && (
-          <MenuRow
-            {...rowProps}
-            icon={<DoorClosed className="h-4 w-4" />}
-            label={<Trans>Close position</Trans>}
-            disabled
-            dataTestId={`stake-manage-menu-close-position${idSuffix}`}
-          />
-        )}
-      </>
-    );
-  }
-
   return (
     <>
-      <MenuRow
-        {...rowProps}
-        icon={<Gem className="h-4 w-4" />}
-        label={<Trans>Claim rewards</Trans>}
-        disabled={claimDisabled}
-        onClick={onClaim}
-        dataTestId={`stake-manage-menu-claim${idSuffix}`}
-        chip={claimChip}
-      />
-      {hasDebt && (
+      {!showInactiveBorrowBlock && (
         <MenuRow
           {...rowProps}
-          icon={<BanknoteArrowDown className="h-4 w-4" />}
-          label={<Trans>Borrow more USDS</Trans>}
-          onClick={() => onAction('borrow')}
-          dataTestId={`stake-manage-menu-borrow${idSuffix}`}
+          icon={<Gem className="h-4 w-4" />}
+          label={<Trans>Claim rewards</Trans>}
+          disabled={claimDisabled}
+          onClick={onClaim}
+          dataTestId={`stake-manage-menu-claim${idSuffix}`}
+          chip={claimChip}
         />
       )}
-      {hasDebt && (
-        <MenuRow
-          {...rowProps}
-          icon={<BanknoteArrowUp className="h-4 w-4" />}
-          label={<Trans>Repay debt</Trans>}
-          onClick={() => onAction('repay')}
-          dataTestId={`stake-manage-menu-repay${idSuffix}`}
-        />
-      )}
-      <MenuRow
-        {...rowProps}
-        icon={<ArrowUpFromLine className="h-4 w-4" />}
-        label={<Trans>Withdraw SKY</Trans>}
-        onClick={() => onAction('withdraw')}
-        dataTestId={`stake-manage-menu-withdraw${idSuffix}`}
-      />
+      {/* An inactive urn stakes nothing, so switching its farm is a no-op —
+          the reopen takeover's picker (APP-516) is where its next farm gets
+          chosen; the row stays disabled here. */}
       <MenuRow
         {...rowProps}
         icon={<Coins className="h-4 w-4" />}
         label={<Trans>Change reward</Trans>}
-        onClick={() => onAction('reward')}
+        disabled
         dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
       />
       <MenuRow
@@ -300,7 +189,41 @@ function ManageMenuRows({
         onClick={() => onAction('delegate')}
         dataTestId={`stake-manage-menu-change-delegate${idSuffix}`}
       />
-      {hasDebt && (
+      {showInactiveBorrowBlock && (
+        <>
+          <MenuRow
+            {...rowProps}
+            icon={<Gem className="h-4 w-4" />}
+            label={<Trans>Claim rewards</Trans>}
+            disabled={claimDisabled}
+            onClick={onClaim}
+            dataTestId={`stake-manage-menu-claim${idSuffix}`}
+            chip={claimChip}
+          />
+          <MenuRow
+            {...rowProps}
+            icon={<BanknoteArrowDown className="h-4 w-4" />}
+            label={<Trans>Borrow more USDS</Trans>}
+            disabled
+            dataTestId={`stake-manage-menu-borrow${idSuffix}`}
+          />
+          <MenuRow
+            {...rowProps}
+            icon={<BanknoteArrowUp className="h-4 w-4" />}
+            label={<Trans>Repay debt</Trans>}
+            disabled
+            dataTestId={`stake-manage-menu-repay${idSuffix}`}
+          />
+        </>
+      )}
+      <MenuRow
+        {...rowProps}
+        icon={<ArrowUpFromLine className="h-4 w-4" />}
+        label={<Trans>Withdraw SKY</Trans>}
+        disabled
+        dataTestId={`stake-manage-menu-withdraw${idSuffix}`}
+      />
+      {showInactiveBorrowBlock && (
         <MenuRow
           {...rowProps}
           icon={<DoorClosed className="h-4 w-4" />}
@@ -313,10 +236,10 @@ function ManageMenuRows({
   );
 }
 
-// Active urn without debt (comp 3617:24188): one "Manage position" entry into
-// the stake/borrow sheet, the reward/delegate switches, and a Claim CTA.
-// `Close position` stays disabled, as in the debt menu.
-function StakeOnlyActions({
+// Active urn, with or without debt (comps 3617:24188 / 3617:24541): one
+// "Manage position" entry into the stake/borrow sheet, the reward/delegate
+// switches, and a Claim CTA. `Close position` stays disabled.
+function ActiveActions({
   claimDisabled,
   onAction,
   onClaim,
@@ -366,7 +289,7 @@ function StakeOnlyActions({
       <Button
         variant="primary"
         size="l"
-        className="w-full"
+        className="mt-auto w-full"
         disabled={claimDisabled}
         onClick={onClaim}
         data-testid={`stake-manage-cta-claim${idSuffix}`}
@@ -377,81 +300,32 @@ function StakeOnlyActions({
   );
 }
 
-// The menu's primary CTAs, shared between the desktop panel (side-by-side,
-// comp 1036:214314) and the mobile manage sheet (stacked, comp 1222:16239).
+// Inactive urn's Reopen CTA, shared between the desktop panel and the mobile
+// manage sheet (comp 1222:16239).
 function ManageCtas({
   loading,
-  isInactive,
-  hasDebt,
   hasBorrowHistory,
-  canBorrow,
-  minStakeToBorrow,
-  onAction,
   onReopen,
   size = 'xl',
   idSuffix = ''
 }: {
   loading: boolean;
-  isInactive: boolean;
-  hasDebt: boolean;
   hasBorrowHistory: boolean;
-  /** Below the dust-implied stake the borrow flow is a dead end, so the CTA disables. */
-  canBorrow: boolean;
-  minStakeToBorrow: bigint | undefined;
-  onAction: (action: StakeManageAction) => void;
   onReopen: (borrowExpanded: boolean) => void;
   size?: 'xl' | 'l';
   idSuffix?: string;
 }) {
   if (loading) return <Skeleton className="h-12 w-full rounded-full" />;
-  if (isInactive) {
-    return (
-      <Button
-        variant="primary"
-        size={size}
-        className="w-full"
-        onClick={() => onReopen(hasBorrowHistory)}
-        data-testid={`stake-manage-cta-reopen${idSuffix}`}
-      >
-        <Trans>Reopen position</Trans>
-      </Button>
-    );
-  }
   return (
-    <>
-      <Button
-        variant="primary"
-        size={size}
-        className="w-full"
-        onClick={() => onAction('stake')}
-        data-testid={`stake-manage-cta-stake${idSuffix}`}
-      >
-        <Trans>Stake more SKY</Trans>
-      </Button>
-      {!hasDebt && (
-        <Button
-          variant="secondary"
-          size={size}
-          className="w-full"
-          disabled={!canBorrow}
-          onClick={() => onAction('borrow')}
-          data-testid={`stake-manage-cta-borrow${idSuffix}`}
-        >
-          <Trans>Borrow USDS</Trans>
-        </Button>
-      )}
-      {!hasDebt && !canBorrow && (
-        <p
-          className="text-textSecondary basis-full text-xs leading-[18px]"
-          data-testid={`stake-manage-cta-borrow-hint${idSuffix}`}
-        >
-          <Trans>
-            Stake at least {minStakeToBorrow !== undefined ? formatBigInt(minStakeToBorrow) : NO_VALUE} SKY to
-            borrow USDS.
-          </Trans>
-        </p>
-      )}
-    </>
+    <Button
+      variant="primary"
+      size={size}
+      className="w-full"
+      onClick={() => onReopen(hasBorrowHistory)}
+      data-testid={`stake-manage-cta-reopen${idSuffix}`}
+    >
+      <Trans>Reopen position</Trans>
+    </Button>
   );
 }
 
@@ -529,7 +403,7 @@ export function PositionDetailsModal({
     return () => mdQuery.removeEventListener('change', closeOnDesktop);
   }, [setManageSheet]);
 
-  const dropPercent = liquidationDropPercent(vault?.liquidationProximityPercentage);
+  const ltv = loanToValue(vault?.debtValue, vault?.collateralValue);
   // Price fields pin 4 decimals like the takeover/manage cards — the bare
   // magnitude-driven default would drop to 2 the moment a price crosses $10.
   const formattedLiqPrice = formatOraclePrice(vault?.liquidationPrice);
@@ -558,29 +432,18 @@ export function PositionDetailsModal({
       </span>
     ) : undefined;
 
-  const stakeOnly = !detail.shapeLoading && !isInactive && !hasDebt;
-  const stakeOnlyProps = { claimDisabled, onAction, onClaim };
+  const isActive = !detail.shapeLoading && !isInactive;
+  const activeActionsProps = { claimDisabled, onAction, onClaim };
 
   const menuRowsProps = {
     loading: detail.shapeLoading,
-    isInactive,
-    hasDebt,
     showInactiveBorrowBlock,
     claimDisabled,
     claimChip,
     onAction,
     onClaim
   };
-  const ctaProps = {
-    loading: detail.shapeLoading,
-    isInactive,
-    hasDebt,
-    hasBorrowHistory: detail.hasBorrowHistory,
-    canBorrow: detail.canBorrow,
-    minStakeToBorrow: vault?.minCollateralForDust,
-    onAction,
-    onReopen
-  };
+  const ctaProps = { loading: detail.shapeLoading, hasBorrowHistory: detail.hasBorrowHistory, onReopen };
 
   return (
     <>
@@ -674,7 +537,7 @@ export function PositionDetailsModal({
                 Pair 2's own divider is md:hidden because its seam falls on the
                 row break; adding a cell or dropping a divider without
                 rebalancing this rhythm shifts every later cell one track over. */}
-            <div className="flex flex-col gap-4 md:grid md:grid-cols-[120px_1px_120px_1px_minmax(0,1fr)] md:gap-x-8 md:gap-y-6">
+            <div className="flex flex-col gap-4 md:grid md:grid-cols-[120px_1px_minmax(120px,max-content)_1px_minmax(0,1fr)] md:gap-x-8 md:gap-y-6">
               <StatPair>
                 <StatCell
                   label={
@@ -931,36 +794,22 @@ export function PositionDetailsModal({
                   </span>
                 </div>
 
-                {/* Meter + warning read as one block: 20px apart at md (comp
-                    1036:214176), tighter than the 40px section rhythm. */}
-                <div className="flex flex-col gap-6 md:gap-5">
-                  {/* Real proximity fills the bar; the vault's risk level tints it
-                      (thresholds 0/25/40/80 aren't the bar's even quarters). */}
-                  <div data-testid="stake-position-risk-indicator">
-                    <RiskScaleMeter
-                      value={(vault?.liquidationProximityPercentage ?? 0) / 100}
-                      level={vault?.riskLevel}
-                    />
-                  </div>
-
-                  <p
-                    data-testid="stake-position-warning"
-                    className="text-textSecondary text-xs leading-[18px]"
-                  >
-                    <Trans>
-                      If the price of the collateral goes down{' '}
-                      <span className="text-text font-circle font-medium">
-                        {dropPercent !== null ? `${dropPercent}%` : NO_VALUE} ({formattedLiqPrice})
-                      </span>
-                      , you&apos;ll get liquidated. If you want to reduce this risk, add collateral or repay
-                      part of your loan.
-                    </Trans>
-                  </p>
+                {/* Real proximity fills the bar; the vault's risk level tints
+                    it. The liquidation disclaimer is dropped in comp
+                    3617:24541 ("Liq. disclaimer removed to save space"). */}
+                <div data-testid="stake-position-risk-indicator">
+                  <RiskScaleMeter
+                    value={(vault?.liquidationProximityPercentage ?? 0) / 100}
+                    level={vault?.riskLevel}
+                  />
                 </div>
 
-                {/* Bottom strip: hugging cells split by hairlines, no top border
-                    (comp 1036:214176). */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-10">
+                {/* Same five-track grid as the stats above (comp 3617:24750):
+                  row 1: borrow rate │ loan-to-value │ liquidation risk
+                  row 2: liquidation price │ SKY price
+                Pair 2's own divider is md:hidden because its seam falls on the
+                row break. */}
+                <div className="flex flex-col gap-4 md:grid md:grid-cols-[120px_1px_minmax(120px,max-content)_1px_minmax(0,1fr)] md:gap-x-8 md:gap-y-6">
                   <StatPair>
                     <StatCell
                       label={
@@ -976,10 +825,28 @@ export function PositionDetailsModal({
                     <StatCell
                       label={
                         <>
+                          <Trans>Loan-to-value</Trans>
+                          <InfoTooltip
+                            title={t`Loan-to-value (LTV)`}
+                            iconSize={12}
+                            iconClassName="shrink-0"
+                            content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
+                          />
+                        </>
+                      }
+                    >
+                      <span data-testid="stake-position-ltv">
+                        {ltv !== undefined ? formatPercent(ltv, { showPercentageDecimals: false }) : NO_VALUE}
+                      </span>
+                    </StatCell>
+                    <StatDesktopDivider />
+                  </StatPair>
+                  <StatPair>
+                    <StatCell
+                      label={
+                        <>
                           <Trans>Liquidation risk</Trans>
-                          {/* Same explainer as the manage sheet row; the mobile
-                              comp draws the glyph (1292:63278), desktop keeps it
-                              so both breakpoints answer the question. */}
+                          {/* Same explainer as the manage sheet row. */}
                           <InfoTooltip
                             title={t`Liquidation risk`}
                             iconSize={12}
@@ -994,24 +861,16 @@ export function PositionDetailsModal({
                       }
                     >
                       {vault?.riskLevel ? (
-                        <span
-                          data-testid="stake-position-risk-pill"
-                          className={cn(
-                            'font-circle rounded-full px-2 py-0.5 text-xs font-medium capitalize',
-                            RISK_PILL_COLOR[vault.riskLevel]
-                          )}
-                        >
-                          {vault.riskLevel.toLowerCase()}
-                        </span>
+                        <RiskPill riskLevel={vault.riskLevel} dataTestId="stake-position-risk-pill" />
                       ) : (
                         NO_VALUE
                       )}
                     </StatCell>
+                    <StatPairDivider className="md:hidden" />
+                    <StatCell label={<Trans>Liquidation price</Trans>}>{formattedLiqPrice}</StatCell>
                     <StatDesktopDivider />
                   </StatPair>
                   <StatPair>
-                    <StatCell label={<Trans>Liquidation price</Trans>}>{formattedLiqPrice}</StatCell>
-                    <StatPairDivider />
                     <StatCell
                       label={
                         <>
@@ -1030,13 +889,13 @@ export function PositionDetailsModal({
 
           {/* Right panel — contextual manage menu (desktop only; the phone tier
               reaches the same rows through the manage sheet below). */}
-          {stakeOnly ? (
+          {isActive ? (
             <div className="bg-modalSubsection hidden w-full flex-col gap-6 p-8 md:flex lg:w-[322px]">
-              <div className="flex flex-col gap-8">
+              <div className="flex flex-1 flex-col gap-8">
                 <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
                   <Trans>Actions</Trans>
                 </h3>
-                <StakeOnlyActions {...stakeOnlyProps} />
+                <ActiveActions {...activeActionsProps} />
               </div>
             </div>
           ) : (
@@ -1126,9 +985,9 @@ export function PositionDetailsModal({
             </Button>
           </div>
 
-          {stakeOnly ? (
+          {isActive ? (
             <div className="mt-3 flex flex-col gap-6">
-              <StakeOnlyActions {...stakeOnlyProps} idSuffix="-sheet" />
+              <ActiveActions {...activeActionsProps} idSuffix="-sheet" />
             </div>
           ) : (
             <>

@@ -42,30 +42,30 @@ describe('RiskScaleMeter', () => {
     expect(screen.getByTestId('risk-scale-fill').style.width).toBe('100%');
     cleanup();
     renderMeter({ level: RiskLevel.HIGH });
-    // High ends where Liquidation starts (the 80% threshold).
-    expect(screen.getByTestId('risk-scale-fill').style.width).toBe('80%');
+    // High ends where the Liquidation quarter starts.
+    expect(screen.getByTestId('risk-scale-fill').style.width).toBe('75%');
   });
 
   it('fills to the value while tinting by the level when given both', () => {
     renderMeter({ value: 0.5, level: RiskLevel.HIGH });
     const fill = screen.getByTestId('risk-scale-fill');
-    // Fill length follows the continuous value (50%), not the HIGH zone end (80%).
-    expect(fill.style.width).toBe('50%');
+    // 50% proximity sits a quarter into High's 40–80% zone: 2.25 quarters of
+    // the bar, not the HIGH zone end (75%).
+    expect(fill.style.width).toBe('56.25%');
     // The tint still comes from the level: the red slider gradient.
     expect(fill.dataset.zone).toBe(RiskLevel.HIGH);
     expect(fill.className).toContain('from-slider-red-start');
   });
 
-  it('centres a faint dot in each threshold zone and ticks the liquidation threshold (Design QA 3324:143419)', () => {
+  it('centres a faint dot in each equal zone and ticks where Liquidation starts (Figma 3199:81157)', () => {
     renderMeter({ level: RiskLevel.LOW });
-    // Zone midpoints of 0–25 / 25–40 / 40–80 / 80–100, not quarter centres.
     expect(screen.getAllByTestId('risk-scale-dot').map(m => m.style.left)).toEqual([
       '12.5%',
-      '32.5%',
-      '60%',
-      '90%'
+      '37.5%',
+      '62.5%',
+      '87.5%'
     ]);
-    expect(screen.getByTestId('risk-scale-liquidation-tick').style.left).toBe('80%');
+    expect(screen.getByTestId('risk-scale-liquidation-tick').style.left).toBe('75%');
     expect(screen.queryByTestId('risk-scale-marker')).toBeNull();
   });
 
@@ -74,11 +74,33 @@ describe('RiskScaleMeter', () => {
     const fill = screen.getByTestId('risk-scale-fill');
     expect(fill.dataset.zone).toBe(RiskLevel.MEDIUM);
     expect(fill.className).toContain('from-slider-yellow-start');
-    expect(fill.style.width).toBe('33%');
+    // Inside the Medium quarter (25–50% of the bar).
+    const width = parseFloat(fill.style.width);
+    expect(width).toBeGreaterThan(25);
+    expect(width).toBeLessThan(50);
+  });
+
+  it('maps each threshold onto a quarter boundary', () => {
+    for (const [value, width] of [
+      [0.25, '25%'],
+      [0.4, '50%'],
+      [0.8, '75%'],
+      [1, '100%']
+    ] as const) {
+      renderMeter({ value });
+      expect(screen.getByTestId('risk-scale-fill').style.width).toBe(width);
+      cleanup();
+    }
+  });
+
+  it('drops the zone labels when showLabels is false', () => {
+    renderMeter({ value: 0.1, showLabels: false });
+    expect(screen.queryByText('Low')).toBeNull();
+    expect(screen.getByTestId('risk-scale-fill')).toBeTruthy();
   });
 
   it('a discrete level fills to the end of its threshold zone', () => {
     renderMeter({ level: RiskLevel.MEDIUM });
-    expect(screen.getByTestId('risk-scale-fill').style.width).toBe('40%');
+    expect(screen.getByTestId('risk-scale-fill').style.width).toBe('50%');
   });
 });

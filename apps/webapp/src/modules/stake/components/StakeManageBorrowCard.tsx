@@ -50,12 +50,28 @@ const RISK_PILL: Record<RiskLevel, string> = {
   [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
 };
 
-export function RiskPill({ riskLevel, dataTestId }: { riskLevel: RiskLevel; dataTestId?: string }) {
+// Table cell pill (comp 3617:24391) is a size up: 24px tall on Label 6.
+const RISK_PILL_SIZE = {
+  s: 'h-[18px] px-1.5 text-[11px] leading-3 tracking-[-0.22px]',
+  m: 'h-6 px-2 text-xs leading-[14px] tracking-[-0.24px]'
+};
+
+export function RiskPill({
+  riskLevel,
+  size = 's',
+  dataTestId
+}: {
+  riskLevel: RiskLevel;
+  size?: keyof typeof RISK_PILL_SIZE;
+  dataTestId?: string;
+}) {
   return (
     <span
       data-testid={dataTestId}
+      data-risk={riskLevel}
       className={cn(
-        'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+        'font-circle flex w-fit items-center rounded-full font-medium',
+        RISK_PILL_SIZE[size],
         RISK_PILL[riskLevel]
       )}
     >

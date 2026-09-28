@@ -228,15 +228,31 @@ describe('StakePositionsTable', () => {
     expect(openPositionMock).toHaveBeenCalled();
   });
 
-  it('renders the risk cell through the shared RiskMeter pill (review: one pill app-wide)', () => {
+  it('renders the risk cell as a text pill and the LTV with its mini bar (comp 3617:24391)', () => {
+    h.vault = { riskLevel: 'LOW', debtValue: 30n * 10n ** 18n, collateralValue: 100n * 10n ** 18n };
     renderTable();
 
-    // The design-system Badges/Risk chrome (Figma Table Cell Type=Risk).
-    const meter = screen.getByTestId('stake-position-row-0').querySelector('div[aria-hidden]');
-    expect(meter?.className).toContain('border-glassBorder');
-    expect(meter?.className).toContain('gap-px');
-    const segment = meter?.querySelector('span');
-    expect(segment?.className).toContain('h-[3px] w-2');
+    const pill = screen.getByTestId('stake-position-risk-0');
+    expect(pill.textContent).toBe('Low');
+    expect(pill.className).toContain('h-6');
+    expect(screen.getByTestId('stake-position-ltv-bar-0').style.width).toBe('30%');
+  });
+
+  it('colours the position iconbox by liquidation risk, info for staking-only (annotation on 3617:25258)', () => {
+    const border = (index: number) =>
+      screen.getByTestId(`stake-position-id-${index}`).querySelector('span > span')!.className;
+
+    for (const [riskLevel, token] of [
+      ['LOW', 'border-iconboxPosition'],
+      ['MEDIUM', 'border-statusWarningBorder'],
+      ['HIGH', 'border-statusErrorBorder']
+    ] as const) {
+      h.vault = { riskLevel };
+      renderTable();
+      expect(border(0)).toContain(token);
+      expect(border(1)).toContain('border-statusInfoBorder');
+      cleanup();
+    }
   });
 
   it('renders a dash, not an unlit meter, when the vault read fails on a debt-carrying row', () => {

@@ -183,6 +183,23 @@ export function IconboxStatus({
  * blue) ring and disc around a 16px glyph, or the neutral `inactive` treatment
  * for closed/empty positions.
  */
+export type IconboxPositionTone = 'success' | 'info' | 'warning' | 'error';
+
+// Iconbox/Position types (3617:23647): Low risk / Staking only / Medium risk / High risk.
+const positionBorder: Record<IconboxPositionTone, string> = {
+  success: 'border-iconboxPosition',
+  info: 'border-statusInfoBorder',
+  warning: 'border-statusWarningBorder',
+  error: 'border-statusErrorBorder'
+};
+
+const positionDisc: Record<IconboxPositionTone, string> = {
+  success: 'bg-iconboxPositionBg text-statusSuccessSolid',
+  info: 'bg-statusInfoBg text-statusInfoSolid',
+  warning: 'bg-statusWarningBg text-statusWarning',
+  error: 'bg-statusErrorBg text-statusError'
+};
+
 export function IconboxPosition({
   inactive = false,
   tone = 'success',
@@ -190,7 +207,7 @@ export function IconboxPosition({
   className
 }: {
   inactive?: boolean;
-  tone?: 'success' | 'info';
+  tone?: IconboxPositionTone;
   children: ReactNode;
   className?: string;
 }) {
@@ -198,11 +215,7 @@ export function IconboxPosition({
     <span
       className={cn(
         'flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]',
-        inactive
-          ? 'border-glassBorder'
-          : tone === 'info'
-            ? 'border-statusInfoBorder'
-            : 'border-iconboxPosition',
+        inactive ? 'border-glassBorder' : positionBorder[tone],
         className
       )}
     >
@@ -214,11 +227,7 @@ export function IconboxPosition({
           'flex size-[30px] items-center justify-center rounded-full',
           // Active glyph is fg-system-success-primary (#02c2a1, theme-invariant)
           // per the comp — statusSuccess is the lighter status-text green.
-          inactive
-            ? 'bg-bgTertiary text-fgSecondary'
-            : tone === 'info'
-              ? 'bg-statusInfoBg text-statusInfoSolid'
-              : 'bg-iconboxPositionBg text-statusSuccessSolid'
+          inactive ? 'bg-bgTertiary text-fgSecondary' : positionDisc[tone]
         )}
       >
         {children}

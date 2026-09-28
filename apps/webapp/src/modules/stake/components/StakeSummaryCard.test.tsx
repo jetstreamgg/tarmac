@@ -71,6 +71,14 @@ vi.mock('../hooks/useStakeTotalDebt', () => ({
   useStakeTotalDebt: () => ({ data: undefined, isLoading: false, error: null })
 }));
 
+vi.mock('../hooks/useStakeRowVault', () => ({
+  useStakeRowVault: () => ({
+    data: { riskLevel: 'LOW', liquidationProximityPercentage: 10 },
+    isLoading: false,
+    error: null
+  })
+}));
+
 import { StakeSummaryCard } from './StakeSummaryCard';
 
 const POSITIONS: StakeUserPosition[] = [
@@ -169,5 +177,33 @@ describe('StakeSummaryCard', () => {
 
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('1');
+  });
+
+  it('leads with Total borrowed and shows the liquidation risk for a single borrowing urn (comp 3617:24493)', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakeSummaryCard positions={[POSITIONS[0]]} />
+      </I18nProvider>
+    );
+
+    const labels = ['Total borrowed', 'Claimable rewards', 'Est. earnings (1Y)', 'Total rewards earned'];
+    const positionsOf = labels.map(label =>
+      screen.getByTestId('stake-summary-card').textContent!.indexOf(label)
+    );
+    expect(positionsOf).toEqual([...positionsOf].sort((a, b) => a - b));
+    expect(screen.getByTestId('stake-summary-risk-pill').textContent).toBe('Low');
+    expect(screen.getByTestId('risk-scale-fill')).toBeTruthy();
+  });
+
+  it('keeps the stake-only order and no risk block without debt', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakeSummaryCard positions={[POSITIONS[1]]} />
+      </I18nProvider>
+    );
+
+    const text = screen.getByTestId('stake-summary-card').textContent!;
+    expect(text.indexOf('Claimable rewards')).toBeLessThan(text.indexOf('Total borrowed'));
+    expect(screen.queryByTestId('stake-summary-liquidation-risk')).toBeNull();
   });
 });

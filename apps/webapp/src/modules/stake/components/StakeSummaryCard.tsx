@@ -28,6 +28,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { useStakeEstAnnualRewardsUsd } from '../hooks/useStakeEstAnnualRewardsUsd';
+import { useStakeRowVault } from '../hooks/useStakeRowVault';
+import { RiskScaleMeter } from '@/components/product/RiskMeter';
+import { RiskPill } from './StakeManageBorrowCard';
 
 function SummaryStat({
   label,
@@ -57,6 +60,32 @@ function SummaryStat({
         </span>
       )}
     </ProductStat>
+  );
+}
+
+/** Single borrowing position (comp 3617:24520): risk pill over the unlabelled Progress Steps bar. */
+function SummaryLiquidationRisk({ position }: { position: StakeUserPosition }) {
+  const { data: vault, isLoading } = useStakeRowVault(position);
+  return (
+    <div data-testid="stake-summary-liquidation-risk" className="flex flex-col gap-4 pb-2">
+      <div className="flex flex-col gap-1">
+        <span className="text-textSecondary text-xs leading-[18px]">
+          <Trans>Liquidation risk</Trans>
+        </span>
+        {isLoading ? (
+          <Skeleton className="h-[18px] w-10" />
+        ) : vault?.riskLevel ? (
+          <RiskPill riskLevel={vault.riskLevel} dataTestId="stake-summary-risk-pill" />
+        ) : (
+          <span className="text-fgTertiary text-sm leading-4">{NO_VALUE}</span>
+        )}
+      </div>
+      <RiskScaleMeter
+        value={(vault?.liquidationProximityPercentage ?? 0) / 100}
+        level={vault?.riskLevel}
+        showLabels={false}
+      />
+    </div>
   );
 }
 
@@ -135,6 +164,49 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
 
   const { data: estAnnualUsd, isLoading: estAnnualLoading } = useStakeEstAnnualRewardsUsd(positions);
 
+  const hasDebt = totalBorrowed > 0n;
+  const claimableStat = (
+    <SummaryStat
+      label={<Trans>Claimable rewards</Trans>}
+      isLoading={claimableLoading || pricesLoading}
+      icon={rewardIcons}
+    >
+      {claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd)}
+    </SummaryStat>
+  );
+  const earnedStat = (
+    <SummaryStat
+      label={<Trans>Total rewards earned</Trans>}
+      isLoading={claimableLoading || historyLoading || pricesLoading}
+      icon={rewardIcons}
+    >
+      {claimableUnavailable ? NO_VALUE : formatUsd(rewardsEarnedUsd)}
+    </SummaryStat>
+  );
+  const estEarningsStat = (
+    <SummaryStat
+      label={<Trans>Est. earnings (1Y)</Trans>}
+      isLoading={estAnnualLoading}
+      icon={rewardIcons}
+      dataTestId="stake-summary-est-earnings"
+    >
+      {estAnnualUsd !== null ? formatUsd(estAnnualUsd) : NO_VALUE}
+    </SummaryStat>
+  );
+  const borrowedStat = (
+    <SummaryStat
+      label={<Trans>Total borrowed</Trans>}
+      isLoading={positions === undefined}
+      icon={
+        <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3 shrink-0" showChainIcon={false} />
+      }
+      iconFirst
+      dataTestId="stake-summary-borrowed"
+    >
+      <span className={!hasDebt ? 'text-fgSecondary' : undefined}>{formatStakeAmount(totalBorrowed)}</span>
+    </SummaryStat>
+  );
+
   // The desktop comp (1036:214138) adopts the structure the phone tier
   // (1222:16799) already had — the badge + hero figure in a 6px-inset "Cover"
   // with a bottom brand wash — so the card is now the shared position skeleton
@@ -161,59 +233,41 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
         />
       }
       stats={
-        <>
-          <ProductStatPair grow>
-            <SummaryStat
-              label={<Trans>Claimable rewards</Trans>}
-              isLoading={claimableLoading || pricesLoading}
-              icon={rewardIcons}
-            >
-              {claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd)}
-            </SummaryStat>
-            <SummaryStat
-              label={<Trans>Total rewards earned</Trans>}
-              isLoading={claimableLoading || historyLoading || pricesLoading}
-              icon={rewardIcons}
-            >
-              {claimableUnavailable ? NO_VALUE : formatUsd(rewardsEarnedUsd)}
-            </SummaryStat>
-          </ProductStatPair>
-          <ProductStatPair grow>
-            <SummaryStat
-              label={<Trans>Est. earnings (1Y)</Trans>}
-              isLoading={estAnnualLoading}
-              icon={rewardIcons}
-              dataTestId="stake-summary-est-earnings"
-            >
-              {estAnnualUsd !== null ? formatUsd(estAnnualUsd) : NO_VALUE}
-            </SummaryStat>
-            <SummaryStat
-              label={<Trans>Total borrowed</Trans>}
-              isLoading={positions === undefined}
-              icon={
-                <TokenIcon
-                  token={{ symbol: 'USDS' }}
-                  width={12}
-                  className="h-3 w-3 shrink-0"
-                  showChainIcon={false}
-                />
-              }
-              iconFirst
-              dataTestId="stake-summary-borrowed"
-            >
-              <span className={totalBorrowed === 0n ? 'text-fgSecondary' : undefined}>
-                {formatStakeAmount(totalBorrowed)}
-              </span>
-            </SummaryStat>
-          </ProductStatPair>
-        </>
+        // With debt, Total borrowed leads (comp 3617:24493); otherwise it
+        // trails as the greyed zero (comp 3617:24094).
+        hasDebt ? (
+          <>
+            <ProductStatPair grow>
+              {borrowedStat}
+              {claimableStat}
+            </ProductStatPair>
+            <ProductStatPair grow>
+              {estEarningsStat}
+              {earnedStat}
+            </ProductStatPair>
+          </>
+        ) : (
+          <>
+            <ProductStatPair grow>
+              {claimableStat}
+              {earnedStat}
+            </ProductStatPair>
+            <ProductStatPair grow>
+              {estEarningsStat}
+              {borrowedStat}
+            </ProductStatPair>
+          </>
+        )
       }
       actions={
-        <ProductActions>
-          <Button variant="secondary" size="xl" onClick={onManage} data-testid="stake-summary-manage-cta">
-            <Trans>Manage</Trans>
-          </Button>
-        </ProductActions>
+        <div className="flex flex-col gap-8">
+          {singlePosition && hasDebt && <SummaryLiquidationRisk position={singlePosition} />}
+          <ProductActions>
+            <Button variant="secondary" size="xl" onClick={onManage} data-testid="stake-summary-manage-cta">
+              <Trans>Manage</Trans>
+            </Button>
+          </ProductActions>
+        </div>
       }
     />
   );

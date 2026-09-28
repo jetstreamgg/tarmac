@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Loader } from '@/components/ui/loader';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
-import { IconboxAction, IconboxPosition, IconboxStatus } from './iconbox';
+import { IconboxAction, IconboxPosition, IconboxStatus, type IconboxPositionTone } from './iconbox';
 
 // Design-system typed table cells (Figma Table Cell 5032:9625, 17 types).
 // These are cell *contents*: the surface, height and padding live on the
@@ -228,7 +228,7 @@ export function CellPosition({
   icon: ReactNode;
   label: ReactNode;
   inactive?: boolean;
-  tone?: 'success' | 'info';
+  tone?: IconboxPositionTone;
 }) {
   return (
     <span className="flex items-center gap-3">
