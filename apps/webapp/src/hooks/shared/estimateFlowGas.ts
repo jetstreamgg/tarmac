@@ -102,8 +102,9 @@ async function simulateSequential(
  * Ambire's delegate returns *success* from an ERC-7821 `execute` it doesn't implement and
  * reports ~31,000 gas for the same work, which we would otherwise have shown as a 5x-too-
  * cheap fee. One code path, no assumptions about a wallet's ABI. The executor's code is
- * embedded (see multicall3RuntimeCode.ts), so the only read is the account's own code,
- * which decides whether the authorization tuple still has to be paid.
+ * read once per session and shared with the pre-send simulation (batchExecutorCode.ts), so
+ * the per-estimate read is the account's own code, which decides whether the
+ * authorization tuple still has to be paid.
  */
 async function simulateBundledGas(
   client: PublicClient,

@@ -23,7 +23,7 @@ vi.mock('@/modules/sentry/reportError', () => ({ reportError }));
 vi.mock('./useBatchExecutorFallbackClients', () => ({ useBatchExecutorFallbackClients: () => [] }));
 
 import { BatchSimulationError } from './simulateBatch';
-import { useSimulateBatch } from './useSimulateBatch';
+import { resetBatchSimulationReports, useSimulateBatch } from './useSimulateBatch';
 
 const call: Call = {
   to: '0xdC035D45d973E3EC169d2276DDab16f1e407384F',
@@ -44,6 +44,7 @@ const render = () => {
 beforeEach(() => {
   simulateBatch.mockReset();
   reportError.mockReset();
+  resetBatchSimulationReports();
 });
 afterEach(cleanup);
 
@@ -61,7 +62,7 @@ describe('useSimulateBatch', () => {
     expect(reportError).not.toHaveBeenCalled();
   });
 
-  it('fails closed on a revert without retrying, and reports it', async () => {
+  it('fails closed on a revert without retrying or reporting it, like the sequential flow', async () => {
     simulateBatch.mockRejectedValue(
       new BatchSimulationError('Batch simulation: call 1 (approve) reverted', {
         kind: 'reverted',
@@ -75,22 +76,23 @@ describe('useSimulateBatch', () => {
     expect(result.current.prepared).toBe(false);
     expect(result.current.structuralFailure).toBe(false);
     expect(simulateBatch).toHaveBeenCalledTimes(1);
-    expect(reportError).toHaveBeenCalledTimes(1);
-    expect(reportError.mock.calls[0][1]).toMatchObject({
-      type: 'reverted',
-      level: 'warning',
-      extra: { callIndex: 0 }
-    });
+    expect(reportError).not.toHaveBeenCalled();
   });
 
-  it('flags a structural failure for the router', async () => {
+  it('flags a structural failure for the router and reports it once per chain', async () => {
     simulateBatch.mockRejectedValue(new BatchSimulationError('invalid params', { kind: 'structural' }));
 
     const { result } = render();
 
     await waitFor(() => expect(result.current.structuralFailure).toBe(true));
     expect(result.current.prepared).toBe(false);
+    expect(reportError).toHaveBeenCalledTimes(1);
     expect(reportError.mock.calls[0][1]).toMatchObject({ type: 'structural', level: 'error' });
+
+    // A second flow on the same chain (a new amount, another modal) stays quiet.
+    const second = render();
+    await waitFor(() => expect(second.result.current.structuralFailure).toBe(true));
+    expect(reportError).toHaveBeenCalledTimes(1);
   });
 
   it('retries a transient failure and comes good', async () => {
@@ -102,5 +104,6 @@ describe('useSimulateBatch', () => {
 
     await waitFor(() => expect(result.current.prepared).toBe(true));
     expect(simulateBatch).toHaveBeenCalledTimes(2);
+    expect(reportError).not.toHaveBeenCalled();
   });
 });

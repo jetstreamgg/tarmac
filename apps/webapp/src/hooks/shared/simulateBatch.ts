@@ -164,19 +164,33 @@ export async function simulateBatch({
     });
   }
 
+  // Encoded before the request, so a call that can't be encoded reads as what it is —
+  // calls that are wrong, which no retry fixes — and not as a failed request.
+  let batchData: Hex;
+  try {
+    batchData = encodeBatchExecutorData(calls, { allowFailure: true });
+  } catch (error) {
+    throw new BatchSimulationError('Batch simulation: the calls could not be encoded', {
+      kind: 'reverted',
+      cause: error
+    });
+  }
+
   let data: Hex | undefined;
   try {
     ({ data } = await client.call({
       account,
       to: account,
-      data: encodeBatchExecutorData(calls, { allowFailure: true }),
+      data: batchData,
       value: totalCallValue(calls),
       stateOverride: [{ address: account, code: executorCode }]
     }));
   } catch (error) {
     // With failures allowed, the outer call only reverts for bundle-level reasons
-    // (Multicall3's own value-mismatch check, out of gas) — a revert nonetheless.
-    const kind = isExecutionRevert(error) ? 'reverted' : classifyRpcFailure(error);
+    // (Multicall3's own value-mismatch check, out of gas) — a revert nonetheless. A
+    // node that checks the sender's balance is answering about the inputs too.
+    const kind =
+      isExecutionRevert(error) || isInsufficientFunds(error) ? 'reverted' : classifyRpcFailure(error);
     const detail =
       error instanceof BaseError ? error.shortMessage : String((error as Error)?.message ?? error);
     throw new BatchSimulationError(`Batch simulation failed: ${detail}`, { kind, cause: error });
@@ -190,11 +204,21 @@ export async function simulateBatch({
     });
   }
 
-  const results = decodeFunctionResult({
-    abi: multicall3Abi,
-    functionName: totalCallValue(calls) > 0n ? 'aggregate3Value' : 'aggregate3',
-    data
-  });
+  // Anything that doesn't decode as the executor's result means the RPC ran something
+  // other than the overridden code — the same verdict as the empty result above.
+  let results: readonly BatchCallResult[];
+  try {
+    results = decodeFunctionResult({
+      abi: multicall3Abi,
+      functionName: totalCallValue(calls) > 0n ? 'aggregate3Value' : 'aggregate3',
+      data
+    });
+  } catch (error) {
+    throw new BatchSimulationError('Batch simulation returned data that is not the batch result', {
+      kind: 'structural',
+      cause: error
+    });
+  }
 
   results.forEach((result, index) => {
     const call = calls[index];
@@ -213,6 +237,12 @@ export async function simulateBatch({
   });
 
   return results;
+}
+
+/** A node that checks the sender's balance for the call's value (most don't on `eth_call`). */
+function isInsufficientFunds(error: unknown): boolean {
+  const message = error instanceof BaseError ? error.shortMessage : String((error as Error)?.message ?? '');
+  return /insufficient funds/i.test(message);
 }
 
 /** viem reports an `eth_call` revert with JSON-RPC code 3 (`ExecutionRevertedError`). */

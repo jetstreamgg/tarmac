@@ -6,7 +6,6 @@ import { reportError } from '@/modules/sentry/reportError';
 import { getCallsKey } from './networkFee';
 import { useBatchExecutorFallbackClients } from './useBatchExecutorFallbackClients';
 import {
-  isBatchSimulationError,
   isStructuralBatchSimulationError,
   isTransientBatchSimulationError,
   simulateBatch
@@ -32,6 +31,14 @@ export type UseSimulateBatchResult = {
   structuralFailure: boolean;
   refetch: () => void;
 };
+
+/** Chains already reported this session as unable to simulate a bundle. */
+const reportedStructuralChains = new Set<number>();
+
+/** Test seam: forget which chains were reported. */
+export function resetBatchSimulationReports(): void {
+  reportedStructuralChains.clear();
+}
 
 /**
  * Prepare-time simulation of a batch — the bundled flow's counterpart to the per-call
@@ -76,20 +83,20 @@ export function useSimulateBatch({
 
   const structuralFailure = isStructuralBatchSimulationError(error);
 
-  // Every failed outcome is worth a Sentry event: the signal to watch after launch is
-  // "the batch sim blocked, the user went sequential and it succeeded" — a false block.
+  // Reported like the sequential flow's simulation: a revert or a failed request is
+  // not (the user sees the disabled confirm; a send that fails reaches Sentry through
+  // the transaction context). The exception is an RPC that can't simulate a bundle at
+  // all — the router then falls back to sequential without a word, so every user on
+  // that chain loses bundling silently. Once per chain per session.
   useEffect(() => {
-    if (!error) return;
+    if (!structuralFailure || !error || reportedStructuralChains.has(resolvedChainId)) return;
+    reportedStructuralChains.add(resolvedChainId);
     reportError(error, {
       module: 'transactions',
       flow: 'batch-simulation',
-      type: isBatchSimulationError(error) ? error.kind : 'unknown',
-      level: structuralFailure ? 'error' : 'warning',
-      extra: {
-        chainId: resolvedChainId,
-        callCount: calls.length,
-        callIndex: isBatchSimulationError(error) ? error.callIndex : undefined
-      }
+      type: 'structural',
+      level: 'error',
+      extra: { chainId: resolvedChainId, callCount: calls.length }
     });
   }, [error, structuralFailure, resolvedChainId, calls.length]);
 

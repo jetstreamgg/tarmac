@@ -285,4 +285,35 @@ describe('simulateBatch — the RPC', () => {
     expect(error.kind).toBe('reverted');
     expect(error.message).toContain('value mismatch');
   });
+
+  it('classifies an insufficient-funds answer as reverted, not a request to retry', async () => {
+    const { client, call } = makeClient(async () => {
+      throw new BaseError('insufficient funds for gas * price + value');
+    });
+
+    const error = await failure(run(client));
+
+    expect(error.kind).toBe('reverted');
+    expect(call).toHaveBeenCalledTimes(1);
+  });
+
+  it('classifies a result that is not the batch result as structural', async () => {
+    // The RPC ran something other than the overridden executor and answered with bytes
+    // that don't decode as (success, returnData)[].
+    const { client } = makeClient(async () => ({ data: '0xdeadbeef' }));
+
+    const error = await failure(run(client));
+
+    expect(error.kind).toBe('structural');
+  });
+
+  it('classifies calls that cannot be encoded as reverted, without sending the request', async () => {
+    const unencodable = { ...approve, args: [DAI_USDS] } as unknown as Call;
+    const { client, call } = makeClient(async () => ({ data: bundle([]) }));
+
+    const error = await failure(run(client, [unencodable]));
+
+    expect(error.kind).toBe('reverted');
+    expect(call).not.toHaveBeenCalled();
+  });
 });
