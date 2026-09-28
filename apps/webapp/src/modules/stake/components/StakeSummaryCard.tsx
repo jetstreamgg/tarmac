@@ -91,8 +91,8 @@ function SummaryLiquidationRisk({ position }: { position: StakeUserPosition }) {
 
 /**
  * Aggregate "My position" summary card (comp 3617:24094): total staked hero,
- * claimable/earned/est. annual/borrowed stats, and a Manage CTA — the manage
- * modal for a single urn, the My positions tab otherwise.
+ * claimable/earned/est. annual/borrowed stats, and, for a single urn, a Manage
+ * CTA opening its manage modal. A multi-position card has none (comp 3617:25235).
  */
 export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
@@ -100,14 +100,11 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
 
   const singlePosition = positions?.length === 1 ? positions[0] : undefined;
   const onManage = useCallback(() => {
+    if (!singlePosition) return;
     setSearchParams(
       params => {
-        if (singlePosition) {
-          params.set(QueryParams.Flow, 'manage');
-          params.set(QueryParams.UrnIndex, String(singlePosition.index));
-        } else {
-          params.set(QueryParams.Tab, 'positions');
-        }
+        params.set(QueryParams.Flow, 'manage');
+        params.set(QueryParams.UrnIndex, String(singlePosition.index));
         return params;
       },
       { replace: true }
@@ -260,14 +257,17 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
         )
       }
       actions={
-        <div className="flex flex-col gap-8">
-          {singlePosition && hasDebt && <SummaryLiquidationRisk position={singlePosition} />}
-          <ProductActions>
-            <Button variant="secondary" size="xl" onClick={onManage} data-testid="stake-summary-manage-cta">
-              <Trans>Manage</Trans>
-            </Button>
-          </ProductActions>
-        </div>
+        // Omitted, not empty, with several urns: an empty slot still takes the card's gap.
+        singlePosition && (
+          <div className="flex flex-col gap-8">
+            {hasDebt && <SummaryLiquidationRisk position={singlePosition} />}
+            <ProductActions>
+              <Button variant="secondary" size="xl" onClick={onManage} data-testid="stake-summary-manage-cta">
+                <Trans>Manage</Trans>
+              </Button>
+            </ProductActions>
+          </div>
+        )
       }
     />
   );

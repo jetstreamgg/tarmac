@@ -8,6 +8,8 @@ export type UseRewardContractsToClaimResponse = ReadHook & {
   data:
     | {
         contractAddress: `0x${string}`;
+        /** The holder the balance was read for (one of `addresses`). */
+        address: `0x${string}`;
         claimBalance: bigint;
         rewardSymbol: string;
       }[]
@@ -16,8 +18,8 @@ export type UseRewardContractsToClaimResponse = ReadHook & {
 
 /**
  * Fetches claimable rewards for multiple addresses across multiple reward contracts.
- * Returns aggregated rewards - if multiple addresses have rewards from the same contract,
- * they are summed together into a single entry per contract.
+ * Returns one entry per (address, contract) pair with a non-zero balance — NOT summed
+ * across addresses; callers that aggregate group the entries themselves.
  */
 export const useRewardContractsToClaim = ({
   rewardContractAddresses,
@@ -30,7 +32,12 @@ export const useRewardContractsToClaim = ({
   chainId: number;
   enabled?: boolean;
 }): UseRewardContractsToClaimResponse => {
-  const addressArray = Array.isArray(addresses) ? addresses : addresses ? [addresses] : [];
+  // Keyed on the joined addresses so a fresh caller array doesn't bust the memos below.
+  const addressKey = Array.isArray(addresses) ? addresses.join(',') : (addresses ?? '');
+  const addressArray = useMemo(
+    () => (addressKey ? (addressKey.split(',') as `0x${string}`[]) : []),
+    [addressKey]
+  );
   // Fetch earned balances and reward tokens for all address/contract combinations
   const {
     data: earnedAndTokenData,
@@ -67,6 +74,7 @@ export const useRewardContractsToClaim = ({
 
     const results: Array<{
       contractAddress: `0x${string}`;
+      address: `0x${string}`;
       earned: bigint;
       tokenAddress: `0x${string}`;
     }> = [];
@@ -80,6 +88,7 @@ export const useRewardContractsToClaim = ({
         if (earned && earned > 0n) {
           results.push({
             contractAddress,
+            address: addressArray[addressIndex],
             earned,
             tokenAddress
           });
@@ -90,7 +99,7 @@ export const useRewardContractsToClaim = ({
     }
 
     return results;
-  }, [earnedAndTokenData, addressArray.length, rewardContractAddresses]);
+  }, [earnedAndTokenData, addressArray, rewardContractAddresses]);
 
   // Fetch token symbols for reward tokens that have balances
   const {
@@ -116,6 +125,7 @@ export const useRewardContractsToClaim = ({
 
     return contractsWithBalances.map((item, index) => ({
       contractAddress: item!.contractAddress,
+      address: item!.address,
       claimBalance: item!.earned,
       rewardSymbol: tokenSymbols[index] as string
     }));

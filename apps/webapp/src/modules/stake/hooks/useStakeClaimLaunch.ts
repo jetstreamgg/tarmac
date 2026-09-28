@@ -54,7 +54,8 @@ export function buildStakeClaimSteps({
 }
 
 export interface UseStakeClaimLaunchParams {
-  urnIndex: bigint;
+  /** The single urn claimed; undefined for a multi-urn selection, which offers no restake. */
+  urnIndex: bigint | undefined;
   /** Stake-source rewards the modal claims (adapter ids carry urn+contract). */
   selected: ClaimableReward[];
   /** Selection non-empty and the modal ready — gates both engines' prepare. */
@@ -119,7 +120,37 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   const skyClaim = claimables.find(claim => claim.rewardSymbol?.toUpperCase?.() === 'SKY');
   const isSkyRewardPosition = !!skyClaim;
   const restakeSkyAmount = skyClaim?.claimBalance ?? 0n;
-  const restakeAvailable = selectedClaims.some(claim => claim.rewardSymbol?.toUpperCase?.() === 'SKY');
+  const restakeAvailable =
+    urnIndex !== undefined && selectedClaims.some(claim => claim.rewardSymbol?.toUpperCase?.() === 'SKY');
+
+  // Claimed amounts per reward contract, SKY first: the urn's raw balances, or
+  // for a multi-urn selection the selected rewards summed per contract.
+  const claimedTokens = useMemo(() => {
+    if (urnIndex !== undefined) {
+      return selectedClaims.map(claim => ({
+        tokenSymbol: claim.rewardSymbol,
+        amount: wadToFloat(claim.claimBalance),
+        rewardContractAddress: claim.contractAddress
+      }));
+    }
+    const byContract = new Map<
+      string,
+      { tokenSymbol: string; amount: number; rewardContractAddress: `0x${string}` }
+    >();
+    for (const reward of selected) {
+      const { rewardContract } = parseStakeId(reward.id);
+      const key = rewardContract.toLowerCase();
+      byContract.set(key, {
+        tokenSymbol: reward.tokenSymbol,
+        amount: (byContract.get(key)?.amount ?? 0) + reward.amount,
+        rewardContractAddress: rewardContract
+      });
+    }
+    const isSky = (symbol: string) => symbol.toUpperCase() === 'SKY';
+    return [...byContract.values()].sort(
+      (a, b) => Number(isSky(b.tokenSymbol)) - Number(isSky(a.tokenSymbol))
+    );
+  }, [urnIndex, selectedClaims, selected]);
 
   // ── Plain claim: D5 adapter calls → the shared transaction flow (C2).
   // Ordered before the restake engine so tests can capture the two flows
@@ -145,7 +176,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   const { calldata } = useStakeCalldata({
     flow: 'manage',
     ownerAddress: address ?? ZERO_ADDRESS,
-    urnIndex,
+    urnIndex: urnIndex ?? 0n,
     urnAddress,
     skyToLock: 0n,
     skyToFree: 0n,
@@ -195,7 +226,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
     restakeExecuteRef.current = restakeEngine.execute;
   }, [restakeEngine.execute]);
 
-  const claimSymbols = useMemo(() => selectedClaims.map(claim => claim.rewardSymbol), [selectedClaims]);
+  const claimSymbols = useMemo(() => claimedTokens.map(claim => claim.tokenSymbol), [claimedTokens]);
 
   const { data: rewardContractTokens } = useRewardContractTokens(
     urnSelectedRewardContract && urnSelectedRewardContract !== ZERO_ADDRESS
@@ -213,13 +244,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
 
       // Legacy claimTransactionCallbacks parity (C8): claimedRewards carry the
       // raw claim amounts; the action name encodes count × restake.
-      const claimedRewards = selectedClaims
-        .filter(claim => claim.claimBalance > 0n)
-        .map(claim => ({
-          tokenSymbol: claim.rewardSymbol,
-          amount: wadToFloat(claim.claimBalance),
-          rewardContractAddress: claim.contractAddress
-        }));
+      const claimedRewards = claimedTokens.filter(claim => claim.amount > 0);
       const claimAction =
         claimedRewards.length === 0
           ? undefined
@@ -235,7 +260,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
         module: 'stake',
         assetSymbol: 'SKY',
         borrowSymbol: 'USDS',
-        urnIndex: Number(urnIndex),
+        ...(urnIndex !== undefined && { urnIndex: Number(urnIndex) }),
         selectedRewardContract: urnSelectedRewardContract,
         selectedRewardSymbol,
         isDelegating: false,
@@ -266,7 +291,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
       updateModalContent,
       sessionId,
       urnIndex,
-      selectedClaims,
+      claimedTokens,
       claimSymbols,
       needsSkyAllowance,
       restakeSkyAmount,

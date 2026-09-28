@@ -183,7 +183,11 @@ export function PositionManageFlow({
       // Portalled into the transaction modal's entry slot, so it leaves with
       // that modal rather than on its own.
       return isOpen ? (
-        <StakeClaimModal key="claim" urnIndex={index} onClose={currentView.direct ? close : onBack} />
+        <StakeClaimModal
+          key="claim"
+          selection={{ urnIndex: index }}
+          onClose={currentView.direct ? close : onBack}
+        />
       ) : null;
     }
 

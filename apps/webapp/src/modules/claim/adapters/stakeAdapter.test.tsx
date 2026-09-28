@@ -208,5 +208,22 @@ describe('stakeAdapter', () => {
       const calls = asCalls(result.current.calls);
       expect(calls.map(c => c.functionName)).toEqual(['getReward']);
     });
+
+    it('drops restake when the selection spans urns, claiming each urn plainly', () => {
+      seed();
+      const { result } = renderHook(() =>
+        stakeAdapter.useClaimCalls(
+          [...stakeSelection(0n, [SKY_REWARD]), ...stakeSelection(3n, [SKY_REWARD])],
+          {
+            restake: true
+          }
+        )
+      );
+
+      const calls = asCalls(result.current.calls);
+      expect(calls.map(c => c.functionName)).toEqual(['getReward', 'getReward']);
+      expect(calls[0].args).toEqual([USER, 0n, SKY_REWARD.toLowerCase(), USER]);
+      expect(calls[1].args).toEqual([USER, 3n, SKY_REWARD.toLowerCase(), USER]);
+    });
   });
 });

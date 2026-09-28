@@ -234,7 +234,7 @@ describe('PositionManageFlow', () => {
 
     act(() => (h.modalProps!.onClaim as () => void)());
     expect(screen.getByTestId('claim-modal-stub')).toBeTruthy();
-    expect(h.claimProps?.urnIndex).toBe(2);
+    expect(h.claimProps?.selection).toEqual({ urnIndex: 2 });
 
     act(() => (h.claimProps!.onClose as () => void)());
     expect(screen.getByTestId('details-modal-stub')).toBeTruthy();

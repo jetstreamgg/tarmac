@@ -109,10 +109,6 @@ export function StakeProductPage() {
       stageManageFlow(position, manageActionInit(action)),
     [stageManageFlow]
   );
-  const onClaimRewards = useCallback(
-    (position: StakeUserPosition) => stageManageFlow(position, 'claim'),
-    [stageManageFlow]
-  );
   const onInitialSheetInitConsumed = useCallback(() => setPendingSheetInit(null), []);
 
   // Phone tier (comp 1295:20810): the header scales down (56px iconbox,
@@ -204,7 +200,7 @@ export function StakeProductPage() {
           <StakeOverviewTab rail={rail} />
         </TabsContent>
         <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-5 md:mt-10">
-          <StakePositionsTab onRemediate={onRemediate} onClaimRewards={onClaimRewards} rail={rail} />
+          <StakePositionsTab onRemediate={onRemediate} rail={rail} />
         </TabsContent>
       </Tabs>
 

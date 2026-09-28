@@ -1,76 +1,80 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useChainId } from 'wagmi';
-import { usePrices, useRewardContractsToClaim, useStakeRewardContracts } from '@/hooks';
-import { formatBigInt } from '@/utils';
-import type { ClaimableReward } from '@/modules/claim';
-import { rewardTokenName } from '@/modules/claim/tokenNames';
+import { usePrices } from '@/hooks';
+import { Button } from '@/components/ui/button';
 import { RewardsClaimTable } from '@/modules/portfolio/components/RewardsClaimTable';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
-import { priceOfFromPrices, wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
+import { useStakeUrnsClaims, type StakeClaimTarget } from '../hooks/useStakeUrnsClaims';
+import { groupClaimsByToken, tokenClaimToReward } from '../lib/stakeClaims';
+import { priceOfFromPrices } from '../lib/stakeUsdNotional';
+import { StakeClaimModal, type StakeClaimSelection } from './StakeClaimModal';
 
 /**
- * My positions Rewards section (comp 3617:24049): claimable rewards across the
- * wallet's urns, one row per reward contract (the read sums urns per
- * contract). Claim opens the claim modal for the urn; with several urns that
- * target is ambiguous until the per-token claim lands, so the row CTA only
- * shows for a single urn.
+ * My positions Rewards section (comps 3617:24049, 3617:25250): claimable
+ * rewards across the wallet's urns, one row per reward token. With two or more
+ * tokens a primary "Claim all" heads the section and the row CTAs step down to
+ * secondary. A row claims that token from every urn holding it.
  */
-export function StakeRewardsSection({
-  positions,
-  onClaim
-}: {
-  positions?: StakeUserPosition[];
-  onClaim: (position: StakeUserPosition) => void;
-}) {
+export function StakeRewardsSection({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
-  const { data: rewardContracts } = useStakeRewardContracts();
-  const urnAddresses = useMemo(
-    () =>
-      (positions ?? [])
-        .map(position => position.urnAddress)
-        .filter((address): address is `0x${string}` => Boolean(address)),
-    [positions]
-  );
-  const { data: toClaim } = useRewardContractsToClaim({
-    rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? [],
-    addresses: urnAddresses,
-    chainId,
-    enabled: Boolean(urnAddresses.length && rewardContracts?.length)
-  });
-  const { data: prices } = usePrices();
-
-  const rewards = useMemo<ClaimableReward[]>(() => {
-    const priceOf = priceOfFromPrices(prices);
-    return (toClaim ?? []).map(({ contractAddress, claimBalance, rewardSymbol }) => ({
-      id: contractAddress,
-      source: 'stake',
-      tokenSymbol: rewardSymbol,
-      tokenName: rewardTokenName(rewardSymbol),
-      icon: null,
-      formattedAmount: formatBigInt(claimBalance, { unit: 18, minDecimals: 2, maxDecimals: 2 }),
-      amount: wadToFloat(claimBalance),
-      amountUsd: wadToUsd(claimBalance, priceOf(rewardSymbol)),
-      chainId
-    }));
-  }, [toClaim, prices, chainId]);
+  const [selection, setSelection] = useState<StakeClaimSelection | null>(null);
 
   // Emptied urns can still hold unclaimed rewards, so they count as targets.
-  const claimTarget = positions?.length === 1 ? positions[0] : undefined;
+  const targets = useMemo<StakeClaimTarget[]>(
+    () =>
+      (positions ?? [])
+        .filter(position => Boolean(position.urnAddress))
+        .map(position => ({ urnIndex: BigInt(position.index), urnAddress: position.urnAddress })),
+    [positions]
+  );
+  const { claims } = useStakeUrnsClaims(targets);
+  const { data: prices } = usePrices();
+
+  const groups = useMemo(() => groupClaimsByToken(claims), [claims]);
+  const rewards = useMemo(() => {
+    const priceOf = priceOfFromPrices(prices);
+    return groups.map(group => tokenClaimToReward(group, priceOf, chainId));
+  }, [groups, prices, chainId]);
 
   if (rewards.length === 0) return null;
 
+  const multiple = rewards.length > 1;
+
   return (
     <section data-testid="stake-rewards-section" className="order-2 flex flex-col gap-5">
-      <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
-        <Trans>Rewards</Trans>
-      </h3>
+      <div className="flex min-h-10 items-center justify-between gap-6">
+        <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+          <Trans>Rewards</Trans>
+        </h3>
+        {multiple && (
+          <Button
+            variant="primary"
+            size="m"
+            onClick={() => setSelection({ targets })}
+            className="shrink-0"
+            data-testid="stake-rewards-claim-all"
+          >
+            <Trans>Claim all</Trans>
+          </Button>
+        )}
+      </div>
       <RewardsClaimTable
         rewards={rewards}
-        ctaVariant="primary"
-        onClaim={claimTarget ? () => onClaim(claimTarget) : undefined}
+        ctaVariant={multiple ? 'secondary' : 'primary'}
+        onClaim={reward => {
+          const group = groups.find(g => g.rewardSymbol === reward.id);
+          if (!group) return;
+          setSelection({
+            targets,
+            rewardContracts: [...new Set(group.claims.map(claim => claim.contractAddress))]
+          });
+        }}
         testId="stake-rewards-table"
       />
+      {selection && (
+        <StakeClaimModal selection={selection} onClose={() => setSelection(null)} closeAfterSuccess />
+      )}
     </section>
   );
 }

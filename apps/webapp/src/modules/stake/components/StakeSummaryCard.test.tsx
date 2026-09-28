@@ -157,13 +157,10 @@ describe('StakeSummaryCard', () => {
     expect(screen.queryByTestId('stake-open-new-position-cta')).toBeNull();
   });
 
-  it('Manage opens the positions tab when there are several urns', () => {
+  it('drops Manage when there are several urns (comp 3617:25235)', () => {
     renderCard();
 
-    fireEvent.click(screen.getByTestId('stake-summary-manage-cta'));
-
-    expect(mockSearchParams.get('tab')).toBe('positions');
-    expect(mockSearchParams.get('flow')).toBeNull();
+    expect(screen.queryByTestId('stake-summary-manage-cta')).toBeNull();
   });
 
   it('Manage opens the manage modal for a single urn', () => {
