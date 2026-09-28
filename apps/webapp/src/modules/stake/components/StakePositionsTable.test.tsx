@@ -84,6 +84,10 @@ vi.mock('@/hooks', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+const openPositionMock = vi.fn();
+vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
+  useConnectThenAct: () => openPositionMock
+}));
 // The warmer only mounts the details-modal hooks; a marker is enough to assert which urns warm.
 vi.mock('./StakePositionDetailWarmer', () => ({
   StakePositionDetailWarmer: ({ urnIndex }: { urnIndex: number }) => (
@@ -169,22 +173,22 @@ describe('StakePositionsTable', () => {
 
     expect(screen.getByText('Active positions')).toBeTruthy();
     expect(screen.getByTestId('stake-positions-table')).toBeTruthy();
-    expect(screen.getByText('Position 1')).toBeTruthy();
-    expect(screen.getByText('Position 2')).toBeTruthy();
+    expect(screen.getByText('#1')).toBeTruthy();
+    expect(screen.getByText('#2')).toBeTruthy();
     // Formatted staked/borrowed amounts.
     expect(screen.getByText('700,550.00')).toBeTruthy();
     expect(screen.getAllByText('30,000.00').length).toBeGreaterThan(0);
   });
 
-  it('hides inactive positions by default and shows them when toggled off', () => {
+  it('hides inactive positions by default and shows them when toggled on', () => {
     renderTable();
 
-    // Position 3 is the emptied urn: hidden while the default-on toggle holds.
-    expect(screen.queryByText('Position 3')).toBeNull();
+    // #3 is the emptied urn: hidden until Show inactive is switched on.
+    expect(screen.queryByText('#3')).toBeNull();
 
-    fireEvent.click(screen.getByTestId('stake-hide-inactive-toggle'));
+    fireEvent.click(screen.getByTestId('stake-show-inactive-toggle'));
 
-    expect(screen.getByText('Position 3')).toBeTruthy();
+    expect(screen.getByText('#3')).toBeTruthy();
   });
 
   it('stubs the manage flow on row click: flow=manage + urn_index', () => {
@@ -196,18 +200,39 @@ describe('StakePositionsTable', () => {
     expect(mockSearchParams.get('urn_index')).toBe('0');
   });
 
-  it('renders claimable rewards in USD from claim balances and prices', () => {
+  it('renders the LTV for a debt-carrying row and dashes LTV and risk without debt', () => {
+    h.vault = { riskLevel: 'LOW', debtValue: 30n * 10n ** 18n, collateralValue: 100n * 10n ** 18n };
     renderTable();
 
-    // 128.9 SKY * $1 — one per visible row (both rows share the mocked reads).
-    expect(screen.getAllByText('$128.90').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('stake-position-ltv-0').textContent).toBe('30%');
+    const noDebtRow = screen.getByTestId('stake-position-row-1');
+    expect(noDebtRow.querySelector('[data-testid="stake-position-ltv-none"]')).toBeTruthy();
+    expect(noDebtRow.querySelector('[data-testid="stake-position-risk-none"]')).toBeTruthy();
+  });
+
+  it('opens the manage flow from the row Manage button', () => {
+    renderTable();
+
+    fireEvent.click(screen.getByTestId('stake-position-manage-1'));
+
+    expect(mockSearchParams.get('flow')).toBe('manage');
+    expect(mockSearchParams.get('urn_index')).toBe('1');
+  });
+
+  it('renders the dashed open-position card below the table', () => {
+    openPositionMock.mockClear();
+    renderTable();
+
+    fireEvent.click(screen.getByTestId('stake-open-position-card'));
+
+    expect(openPositionMock).toHaveBeenCalled();
   });
 
   it('renders the risk cell through the shared RiskMeter pill (review: one pill app-wide)', () => {
     renderTable();
 
     // The design-system Badges/Risk chrome (Figma Table Cell Type=Risk).
-    const meter = screen.getByTestId('stake-position-row-1').querySelector('div[aria-hidden]');
+    const meter = screen.getByTestId('stake-position-row-0').querySelector('div[aria-hidden]');
     expect(meter?.className).toContain('border-glassBorder');
     expect(meter?.className).toContain('gap-px');
     const segment = meter?.querySelector('span');
@@ -218,17 +243,9 @@ describe('StakePositionsTable', () => {
     h.vaultError = new Error('rpc down');
     renderTable();
 
-    // Only the row with subgraph debt dashes; the zero-debt row keeps its
-    // ordinary unlit meter (nothing is being masked there).
+    // Only the row with subgraph debt reports the failure; the zero-debt row
+    // shows the plain no-debt dash.
     expect(screen.getAllByTestId('stake-position-risk-unavailable').length).toBe(1);
-  });
-
-  it('renders a dash, not $0.00, when the claimables read fails', () => {
-    h.claimError = new Error('rpc down');
-    renderTable();
-
-    expect(screen.getAllByTestId('stake-position-claimable-unavailable').length).toBeGreaterThan(0);
-    expect(screen.queryByText('$128.90')).toBeNull();
   });
 
   it('renders the empty state when the user has no positions', () => {
@@ -276,8 +293,8 @@ describe('StakePositionsTable', () => {
     ];
     renderTable(positions);
 
-    expect(screen.getByText('Position 1')).toBeTruthy();
-    expect(screen.queryByText('Position 2')).toBeNull();
+    expect(screen.getByText('#1')).toBeTruthy();
+    expect(screen.queryByText('#2')).toBeNull();
   });
 
   it('keeps an emptied urn with unknown liquidation state visible and marks its risk cell', () => {
@@ -296,21 +313,21 @@ describe('StakePositionsTable', () => {
     ];
     renderTable(positions);
 
-    expect(screen.getByText('Position 1')).toBeTruthy();
+    expect(screen.getByText('#1')).toBeTruthy();
     expect(screen.getByTestId('stake-position-liquidation-unknown')).toBeTruthy();
     expect(screen.queryByTestId('stake-position-liquidated-badge')).toBeNull();
     expect(screen.queryByTestId('stake-position-liquidated-banner')).toBeNull();
   });
 
-  it('disables the hide-inactive toggle and hints when the bark context failed', () => {
+  it('disables the show-inactive toggle and hints when the bark context failed', () => {
     const unknownPositions = POSITIONS.map(position => ({ ...position, barks: undefined }));
     renderTable(unknownPositions, false, vi.fn(), new Error('indexer down'));
 
     // Every row shows, including the emptied urn.
-    expect(screen.getByText('Position 3')).toBeTruthy();
-    const toggle = screen.getByTestId('stake-hide-inactive-toggle') as HTMLButtonElement;
+    expect(screen.getByText('#3')).toBeTruthy();
+    const toggle = screen.getByTestId('stake-show-inactive-toggle') as HTMLButtonElement;
     expect(toggle.disabled).toBe(true);
-    expect(screen.getByTestId('stake-hide-inactive-unavailable')).toBeTruthy();
+    expect(screen.getByTestId('stake-show-inactive-unavailable')).toBeTruthy();
   });
 
   it('renders the row banner directly under its matching row', () => {
@@ -383,8 +400,8 @@ describe('StakePositionsTable — mobile cards (M5)', () => {
 
     expect(screen.queryByRole('table')).toBeNull();
     // One field-label pair per visible position card.
-    expect(screen.getAllByText('Total staked (SKY)')).toHaveLength(2);
-    expect(screen.getAllByText('Total borrowed (USDS)')).toHaveLength(2);
+    expect(screen.getAllByText('Staked (SKY)')).toHaveLength(2);
+    expect(screen.getAllByText('Borrowed (USDS)')).toHaveLength(2);
 
     fireEvent.click(screen.getByTestId('stake-position-row-0'));
     expect(mockSearchParams.get('flow')).toBe('manage');

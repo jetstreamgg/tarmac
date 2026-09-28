@@ -138,38 +138,35 @@ describe('PositionDetailsModal', () => {
     expect(chevron?.getAttribute('class') ?? '').not.toContain('opacity-0');
   });
 
-  it('reduces the menu and adds the Borrow USDS CTA without debt (UX 1050:21185)', () => {
-    renderModal({
-      hasDebt: false,
-      vault: { ...baseDetail.vault!, debtValue: 0n },
-      borrowedUsd: 0
-    });
+  const NO_DEBT = {
+    hasDebt: false,
+    vault: { ...baseDetail.vault!, debtValue: 0n },
+    borrowedUsd: 0
+  };
 
+  it('renders the stake-only Actions list without debt (comp 3617:24188)', () => {
+    const { onAction, onClaim } = renderModal(NO_DEBT);
+
+    expect(screen.getByText('Actions')).toBeTruthy();
     expect(screen.queryByText('Borrowed amount')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-menu-borrow')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-menu-repay')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-menu-close-position')).toBeNull();
-    expect(screen.getByTestId('stake-manage-menu-withdraw')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-cta-stake')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-cta-borrow').textContent).toContain('Borrow USDS');
+    expect(screen.queryByTestId('stake-manage-menu-withdraw')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-cta-borrow')).toBeNull();
+    expect((screen.getByTestId('stake-manage-menu-close-position') as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByTestId('stake-manage-menu-manage'));
+    expect(onAction).toHaveBeenLastCalledWith('stake');
+    fireEvent.click(screen.getByTestId('stake-manage-menu-change-reward'));
+    expect(onAction).toHaveBeenLastCalledWith('reward');
+    fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
+    expect(onAction).toHaveBeenLastCalledWith('delegate');
+    fireEvent.click(screen.getByTestId('stake-manage-cta-claim'));
+    expect(onClaim).toHaveBeenCalled();
   });
 
-  it('disables Borrow USDS below the minimum stake and says how much is needed', () => {
-    renderModal({
-      hasDebt: false,
-      canBorrow: false,
-      vault: {
-        ...baseDetail.vault!,
-        collateralAmount: parseUnits('74999', 18),
-        debtValue: 0n,
-        minCollateralForDust: parseUnits('1440000', 18)
-      },
-      borrowedUsd: 0
-    });
+  it('disables Claim rewards in the Actions panel when nothing is claimable', () => {
+    renderModal({ ...NO_DEBT, claimableTokenAmount: 0n });
 
-    const borrow = screen.getByTestId('stake-manage-cta-borrow') as HTMLButtonElement;
-    expect(borrow.disabled).toBe(true);
-    expect(screen.getByTestId('stake-manage-cta-borrow-hint').textContent).toContain('1,440,000.00 SKY');
+    expect((screen.getByTestId('stake-manage-cta-claim') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('derives the warning sentence from the liquidation proximity (M14)', () => {

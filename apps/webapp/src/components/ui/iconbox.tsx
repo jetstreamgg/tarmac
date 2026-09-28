@@ -179,16 +179,18 @@ export function IconboxStatus({
 // --- Iconbox / Position ------------------------------------------------------
 
 /**
- * Iconbox / Position: the 36px position marker — success-green ring and disc
- * around a 16px glyph, or the neutral `inactive` treatment for closed/empty
- * positions.
+ * Iconbox / Position: the 36px position marker — success-green (or `info`
+ * blue) ring and disc around a 16px glyph, or the neutral `inactive` treatment
+ * for closed/empty positions.
  */
 export function IconboxPosition({
   inactive = false,
+  tone = 'success',
   children,
   className
 }: {
   inactive?: boolean;
+  tone?: 'success' | 'info';
   children: ReactNode;
   className?: string;
 }) {
@@ -196,7 +198,11 @@ export function IconboxPosition({
     <span
       className={cn(
         'flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]',
-        inactive ? 'border-glassBorder' : 'border-iconboxPosition',
+        inactive
+          ? 'border-glassBorder'
+          : tone === 'info'
+            ? 'border-statusInfoBorder'
+            : 'border-iconboxPosition',
         className
       )}
     >
@@ -208,7 +214,11 @@ export function IconboxPosition({
           'flex size-[30px] items-center justify-center rounded-full',
           // Active glyph is fg-system-success-primary (#02c2a1, theme-invariant)
           // per the comp — statusSuccess is the lighter status-text green.
-          inactive ? 'bg-bgTertiary text-fgSecondary' : 'bg-iconboxPositionBg text-statusSuccessSolid'
+          inactive
+            ? 'bg-bgTertiary text-fgSecondary'
+            : tone === 'info'
+              ? 'bg-statusInfoBg text-statusInfoSolid'
+              : 'bg-iconboxPositionBg text-statusSuccessSolid'
         )}
       >
         {children}

@@ -29,6 +29,9 @@ vi.mock('./StakePositionsTable', () => ({
     return <div data-testid="stake-positions-table-stub" />;
   }
 }));
+vi.mock('./StakeRewardsSection', () => ({
+  StakeRewardsSection: () => <div data-testid="stake-rewards-section-stub" />
+}));
 vi.mock('./StakeActivityTable', () => ({
   StakeActivityTable: () => <div data-testid="stake-activity-table-stub" />
 }));
@@ -43,7 +46,11 @@ import { StakePositionsTab } from './StakePositionsTab';
 const renderTab = (onRemediate = vi.fn()) =>
   render(
     <I18nProvider i18n={i18n}>
-      <StakePositionsTab onRemediate={onRemediate} rail={{ positions: [], isLoading: false }} />
+      <StakePositionsTab
+        onRemediate={onRemediate}
+        onClaimRewards={vi.fn()}
+        rail={{ positions: [], isLoading: false }}
+      />
     </I18nProvider>
   );
 

@@ -225,16 +225,16 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   expect(summaryBox!.y).toBeLessThan(positionsBox!.y);
   expect(positionsBox!.y).toBeLessThan(activityBox!.y);
 
-  // Summary hero keeps its connect-gated CTA at the phone tier.
-  await expect(summary.getByTestId('stake-open-new-position-cta')).toBeVisible();
+  // Summary hero keeps its Manage CTA at the phone tier.
+  await expect(summary.getByTestId('stake-summary-manage-cta')).toBeVisible();
 
   // Position cards: one "View more" per active urn; the emptied urn stays
-  // behind the Hide inactive toggle (comp label "Hide inactive").
+  // behind the Show inactive toggle.
   const viewMore = isolatedPage.getByRole('button', { name: 'View more' });
   await expect(viewMore).toHaveCount(4, { timeout: 15_000 });
-  await isolatedPage.getByTestId('stake-hide-inactive-toggle').click();
+  await isolatedPage.getByTestId('stake-show-inactive-toggle').click();
   await expect(viewMore).toHaveCount(5);
-  await isolatedPage.getByTestId('stake-hide-inactive-toggle').click();
+  await isolatedPage.getByTestId('stake-show-inactive-toggle').click();
 
   // Tapping View more opens the manage flow for that urn (bubbles to the
   // card's row handler). At the phone tier the details modal hides the menu

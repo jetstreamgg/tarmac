@@ -22,12 +22,8 @@ vi.mock('@/lib/navigation', async importOriginal => {
   };
 });
 
-const connectThenActSpy = vi.fn();
-vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
-  useConnectThenAct: (action: () => void) => {
-    connectThenActSpy(action);
-    return action;
-  }
+vi.mock('../hooks/useStakeEstAnnualRewardsUsd', () => ({
+  useStakeEstAnnualRewardsUsd: () => ({ data: 11258.25, isLoading: false })
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -63,14 +59,7 @@ vi.mock('@/hooks', async importOriginal => {
       isLoading: false
     }),
     usePrices: () => ({ data: { SKY: { price: '1' } }, isLoading: false, error: null }),
-    useStakeHistory: () => ({ data: [], isLoading: false, error: null }),
-    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false }),
-    useHighestRateFromChartData: () => ({ rate: '0.015' }),
-    useStakeHistoricData: () => ({
-      data: [{ datetime: '2026-07-06T00:00:00Z', borrowRate: 0.081 }],
-      isLoading: false,
-      error: null
-    })
+    useStakeHistory: () => ({ data: [], isLoading: false, error: null })
   };
 });
 
@@ -82,7 +71,7 @@ vi.mock('../hooks/useStakeTotalDebt', () => ({
   useStakeTotalDebt: () => ({ data: undefined, isLoading: false, error: null })
 }));
 
-import { StakeSummaryCard, calculateNetApy } from './StakeSummaryCard';
+import { StakeSummaryCard } from './StakeSummaryCard';
 
 const POSITIONS: StakeUserPosition[] = [
   {
@@ -110,35 +99,10 @@ const renderCard = () =>
     </I18nProvider>
   );
 
-describe('calculateNetApy', () => {
-  it('is the borrow-cost-weighted net of the rewards rate (BL-13)', () => {
-    // (0.015 * 1000 - 0.08 * 500) / 1000 = -0.025
-    expect(
-      calculateNetApy({ rewardsRate: 0.015, borrowRate: 0.08, stakedUsd: 1000, borrowedUsd: 500 })
-    ).toBeCloseTo(-0.025);
-  });
-
-  it('equals the rewards rate when nothing is borrowed', () => {
-    expect(
-      calculateNetApy({ rewardsRate: 0.015, borrowRate: 0.08, stakedUsd: 1000, borrowedUsd: 0 })
-    ).toBeCloseTo(0.015);
-  });
-
-  it('is null without a rewards rate or without stake', () => {
-    expect(calculateNetApy({ rewardsRate: null, borrowRate: 0.08, stakedUsd: 1000, borrowedUsd: 0 })).toBe(
-      null
-    );
-    expect(calculateNetApy({ rewardsRate: 0.015, borrowRate: 0.08, stakedUsd: 0, borrowedUsd: 0 })).toBe(
-      null
-    );
-  });
-});
-
 describe('StakeSummaryCard', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
-    connectThenActSpy.mockClear();
   });
 
   afterEach(cleanup);
@@ -150,8 +114,9 @@ describe('StakeSummaryCard', () => {
     // Hero: 750,550 SKY staked, ~$750,550.00 at the mocked $1 price.
     expect(screen.getByText('750,550.00')).toBeTruthy();
     expect(screen.getByText('~$750,550.00')).toBeTruthy();
-    // Total borrowed: 30,000 USDS ≈ $30,000.00.
-    expect(screen.getByText('$30,000.00')).toBeTruthy();
+    // Total borrowed: a USDS amount, not USD.
+    expect(screen.getByTestId('stake-summary-borrowed').textContent).toBe('30,000.00');
+    expect(screen.getByTestId('stake-summary-est-earnings').textContent).toBe('$11,258.25');
     // Claimable rewards and (with empty claim history) rewards earned: $17.90.
     expect(screen.getAllByText('$17.90').length).toBe(2);
   });
@@ -173,22 +138,36 @@ describe('StakeSummaryCard', () => {
         />
       </I18nProvider>
     );
-    expect(screen.getByText('0.00')).toBeTruthy();
+    // Hero and Total borrowed.
+    expect(screen.getAllByText('0.00').length).toBe(2);
   });
 
-  it('renders the signed Net APY including negative values as-is', () => {
+  it('drops Net APY and the open-position CTA', () => {
     renderCard();
 
-    // (0.015 * 750550 - 0.081 * 30000) / 750550 = 0.01176... -> +1.18%
-    expect(screen.getByTestId('stake-summary-net-apy').textContent).toBe('+1.18%');
+    expect(screen.queryByText('Net APY')).toBeNull();
+    expect(screen.queryByTestId('stake-open-new-position-cta')).toBeNull();
   });
 
-  it('routes the CTA through connect-then-act and stubs flow=open', () => {
+  it('Manage opens the positions tab when there are several urns', () => {
     renderCard();
 
-    fireEvent.click(screen.getByTestId('stake-open-new-position-cta'));
+    fireEvent.click(screen.getByTestId('stake-summary-manage-cta'));
 
-    expect(connectThenActSpy).toHaveBeenCalled();
-    expect(mockSearchParams.get('flow')).toBe('open');
+    expect(mockSearchParams.get('tab')).toBe('positions');
+    expect(mockSearchParams.get('flow')).toBeNull();
+  });
+
+  it('Manage opens the manage modal for a single urn', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakeSummaryCard positions={[POSITIONS[1]]} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByTestId('stake-summary-manage-cta'));
+
+    expect(mockSearchParams.get('flow')).toBe('manage');
+    expect(mockSearchParams.get('urn_index')).toBe('1');
   });
 });

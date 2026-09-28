@@ -222,15 +222,19 @@ export function CellTokenIdle({
 export function CellPosition({
   icon,
   label,
-  inactive = false
+  inactive = false,
+  tone
 }: {
   icon: ReactNode;
   label: ReactNode;
   inactive?: boolean;
+  tone?: 'success' | 'info';
 }) {
   return (
     <span className="flex items-center gap-3">
-      <IconboxPosition inactive={inactive}>{icon}</IconboxPosition>
+      <IconboxPosition inactive={inactive} tone={tone}>
+        {icon}
+      </IconboxPosition>
       <span className={cn(label5, 'text-fgPrimary whitespace-nowrap')}>{label}</span>
     </span>
   );

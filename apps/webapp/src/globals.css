@@ -246,6 +246,10 @@
   --color-statusSuccessRing: #8bf1ca;
   --color-statusInfoRing: #60a9ff;
   --color-statusInfoSolid: #59b1ff;
+  /* components/status/bg-info + border-info (Figma 3617:24023, the stake
+     position iconbox). */
+  --color-statusInfoBg: rgba(46, 142, 255, 0.1);
+  --color-statusInfoBorder: rgba(46, 142, 255, 0.2);
   /* Design-system list + accordion tokens (Figma Patterns/Lists 5209:36922 /
      Patterns/Accordion 5386:66315): colors/border/border-primary (container,
      item and wallet-row hairlines — the `border-borderPrimary` utility

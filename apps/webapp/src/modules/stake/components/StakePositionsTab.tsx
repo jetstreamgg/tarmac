@@ -1,6 +1,7 @@
 import { useStakeUserPositions, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { StakePositionsTable } from './StakePositionsTable';
 import { StakeActivityTable } from './StakeActivityTable';
+import { StakeRewardsSection } from './StakeRewardsSection';
 import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
@@ -10,10 +11,13 @@ import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
  */
 export function StakePositionsTab({
   onRemediate,
+  onClaimRewards,
   rail
 }: {
   /** Passed straight through to the positions table — see its prop doc. */
   onRemediate: (position: StakeUserPosition, action: 'stake' | 'repay') => void;
+  /** Rewards section Claim: open that urn's claim modal directly. */
+  onClaimRewards: (position: StakeUserPosition) => void;
   /** The page's positions read, for the shared rail card. */
   rail: StakeRailCardProps;
 }) {
@@ -41,6 +45,8 @@ export function StakePositionsTab({
             onRemediate={onRemediate}
           />
         </div>
+        {/* Renders nothing (and takes no gap) when nothing is claimable. */}
+        <StakeRewardsSection positions={positions} onClaim={onClaimRewards} />
         <div className="order-3">
           <StakeActivityTable positions={positions} />
         </div>

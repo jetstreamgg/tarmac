@@ -68,22 +68,24 @@ export function RewardsClaimTable({
 }: {
   rewards: ClaimableReward[];
   ctaVariant: 'primary' | 'secondary';
-  onClaim: (reward: ClaimableReward) => void;
+  /** Omitted when no claim target is available; the row CTA then hides. */
+  onClaim?: (reward: ClaimableReward) => void;
   testId: string;
 }) {
   const { bpi } = useBreakpointIndex();
 
-  const claimButton = (reward: ClaimableReward) => (
-    <Button
-      variant={ctaVariant}
-      size="m"
-      className="w-full"
-      onClick={() => onClaim(reward)}
-      data-testid="reward-claim-button"
-    >
-      <Trans>Claim</Trans>
-    </Button>
-  );
+  const claimButton = (reward: ClaimableReward) =>
+    onClaim && (
+      <Button
+        variant={ctaVariant}
+        size="m"
+        className="w-full"
+        onClick={() => onClaim?.(reward)}
+        data-testid="reward-claim-button"
+      >
+        <Trans>Claim</Trans>
+      </Button>
+    );
 
   if (bpi < BP.md) {
     return (

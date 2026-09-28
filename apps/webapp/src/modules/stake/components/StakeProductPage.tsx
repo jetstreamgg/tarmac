@@ -87,11 +87,12 @@ export function StakeProductPage() {
   // A row-banner remediation CTA can fire before the manage flow is even
   // mounted (it stages `flow=manage` itself); this carries the sheet
   // pre-toggle across that gap until the flow's own view state picks it up.
-  const [pendingSheetInit, setPendingSheetInit] = useState<StakeManageFlowInit | null>(null);
+  // The Rewards section's Claim rides the same gap as 'claim'.
+  const [pendingSheetInit, setPendingSheetInit] = useState<StakeManageFlowInit | 'claim' | null>(null);
 
-  const onRemediate = useCallback(
-    (position: StakeUserPosition, action: 'stake' | 'repay') => {
-      setPendingSheetInit(manageActionInit(action));
+  const stageManageFlow = useCallback(
+    (position: StakeUserPosition, pending: StakeManageFlowInit | 'claim' | null) => {
+      setPendingSheetInit(pending);
       setSearchParams(
         params => {
           params.set(QueryParams.Flow, 'manage');
@@ -102,6 +103,15 @@ export function StakeProductPage() {
       );
     },
     [setSearchParams]
+  );
+  const onRemediate = useCallback(
+    (position: StakeUserPosition, action: 'stake' | 'repay') =>
+      stageManageFlow(position, manageActionInit(action)),
+    [stageManageFlow]
+  );
+  const onClaimRewards = useCallback(
+    (position: StakeUserPosition) => stageManageFlow(position, 'claim'),
+    [stageManageFlow]
   );
   const onInitialSheetInitConsumed = useCallback(() => setPendingSheetInit(null), []);
 
@@ -194,7 +204,7 @@ export function StakeProductPage() {
           <StakeOverviewTab rail={rail} />
         </TabsContent>
         <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-5 md:mt-10">
-          <StakePositionsTab onRemediate={onRemediate} rail={rail} />
+          <StakePositionsTab onRemediate={onRemediate} onClaimRewards={onClaimRewards} rail={rail} />
         </TabsContent>
       </Tabs>
 
@@ -210,7 +220,8 @@ export function StakeProductPage() {
           just started. Holding the mount lets the inner one finish. */}
       {holdManageFlow && (
         <PositionManageFlow
-          initialSheetInit={pendingSheetInit ?? undefined}
+          initialSheetInit={pendingSheetInit && pendingSheetInit !== 'claim' ? pendingSheetInit : undefined}
+          initialClaim={pendingSheetInit === 'claim'}
           onInitialSheetInitConsumed={onInitialSheetInitConsumed}
         />
       )}

@@ -10,6 +10,7 @@ import {
   DoorClosed,
   ExternalLink,
   Gem,
+  Settings2,
   TriangleAlert,
   UserRound,
   X
@@ -90,8 +91,12 @@ function MenuRow({
   disabled?: boolean;
   onClick?: () => void;
   dataTestId: string;
-  /** `panel` = desktop right-panel rows (bordered); `sheet` = mobile sheet rows (borderless 56px, comp 1222:16239). */
-  variant?: 'panel' | 'sheet';
+  /**
+   * `panel` = desktop right-panel rows (bordered); `sheet` = mobile sheet rows
+   * (borderless 56px, comp 1222:16239); `list` = 48px rows between separate
+   * dividers (Actions list, comp 3617:24188).
+   */
+  variant?: 'panel' | 'sheet' | 'list';
 }) {
   return (
     <button
@@ -101,7 +106,7 @@ function MenuRow({
       data-testid={dataTestId}
       className={cn(
         'group flex w-full items-center justify-between gap-3 text-left disabled:cursor-not-allowed disabled:opacity-40',
-        variant === 'panel' ? 'border-borderPrimary border-b py-8' : 'h-14'
+        variant === 'panel' ? 'border-borderPrimary border-b py-8' : variant === 'list' ? 'py-4' : 'h-14'
       )}
     >
       <span className="text-text font-circle flex items-center gap-3 text-sm leading-4 font-medium tracking-[-0.28px]">
@@ -308,6 +313,70 @@ function ManageMenuRows({
   );
 }
 
+// Active urn without debt (comp 3617:24188): one "Manage position" entry into
+// the stake/borrow sheet, the reward/delegate switches, and a Claim CTA.
+// `Close position` stays disabled, as in the debt menu.
+function StakeOnlyActions({
+  claimDisabled,
+  onAction,
+  onClaim,
+  idSuffix = ''
+}: {
+  claimDisabled: boolean;
+  onAction: (action: StakeManageAction) => void;
+  onClaim: () => void;
+  idSuffix?: string;
+}) {
+  const divider = <span className="bg-borderPrimary h-px w-full shrink-0" aria-hidden />;
+  return (
+    <>
+      <div className="flex flex-col gap-4">
+        <MenuRow
+          variant="list"
+          icon={<Settings2 className="h-4 w-4" />}
+          label={<Trans>Manage position</Trans>}
+          onClick={() => onAction('stake')}
+          dataTestId={`stake-manage-menu-manage${idSuffix}`}
+        />
+        {divider}
+        <MenuRow
+          variant="list"
+          icon={<Coins className="h-4 w-4" />}
+          label={<Trans>Change token reward</Trans>}
+          onClick={() => onAction('reward')}
+          dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
+        />
+        {divider}
+        <MenuRow
+          variant="list"
+          icon={<UserRound className="h-4 w-4" />}
+          label={<Trans>Change delegate</Trans>}
+          onClick={() => onAction('delegate')}
+          dataTestId={`stake-manage-menu-change-delegate${idSuffix}`}
+        />
+        {divider}
+        <MenuRow
+          variant="list"
+          icon={<DoorClosed className="text-statusError h-4 w-4" />}
+          label={<Trans>Close position</Trans>}
+          disabled
+          dataTestId={`stake-manage-menu-close-position${idSuffix}`}
+        />
+      </div>
+      <Button
+        variant="primary"
+        size="l"
+        className="w-full"
+        disabled={claimDisabled}
+        onClick={onClaim}
+        data-testid={`stake-manage-cta-claim${idSuffix}`}
+      >
+        <Trans>Claim rewards</Trans>
+      </Button>
+    </>
+  );
+}
+
 // The menu's primary CTAs, shared between the desktop panel (side-by-side,
 // comp 1036:214314) and the mobile manage sheet (stacked, comp 1222:16239).
 function ManageCtas({
@@ -489,6 +558,9 @@ export function PositionDetailsModal({
       </span>
     ) : undefined;
 
+  const stakeOnly = !detail.shapeLoading && !isInactive && !hasDebt;
+  const stakeOnlyProps = { claimDisabled, onAction, onClaim };
+
   const menuRowsProps = {
     loading: detail.shapeLoading,
     isInactive,
@@ -545,7 +617,7 @@ export function PositionDetailsModal({
               the no-debt comp 1036:214314 — the spare height distributes over
               the block gaps (title top, hero mid, stats bottom); a full column
               (debt comp) sits at the 40px minimum rhythm unchanged. */}
-          <div className="flex flex-1 flex-col gap-6 p-5 md:justify-between md:gap-10 md:p-8">
+          <div className="flex flex-1 flex-col gap-6 p-5 md:justify-between md:gap-10 md:p-8 md:pb-12">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-text font-circle flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
                 <Trans>Position {urnIndex + 1}</Trans>
@@ -597,8 +669,8 @@ export function PositionDetailsModal({
                 by source order once md:contents dissolves the pairs, so each
                 md row must receive exactly five in-flow items — three cells on
                 the 120px/120px/1fr tracks and a divider on each 1px seam:
-                  row 1: rewards rate │ reward token │ delegating-to
-                  row 2: claimable    │ est. annual  │ rewards earned
+                  row 1: rewards rate   │ reward token │ delegating-to
+                  row 2: rewards earned │ est. annual  │ claimable
                 Pair 2's own divider is md:hidden because its seam falls on the
                 row break; adding a cell or dropping a divider without
                 rebalancing this rhythm shifts every later cell one track over. */}
@@ -661,22 +733,24 @@ export function PositionDetailsModal({
                   )}
                 </StatCell>
                 <StatPairDivider className="md:hidden" />
-                <StatCell label={<Trans>Claimable rewards</Trans>}>
-                  {detail.claimableUsdLoading ? (
+                <StatCell label={<Trans>Rewards earned</Trans>}>
+                  {detail.rewardsEarnedLoading ? (
+                    // A still-loading history leg reads as $0.00 otherwise — hold
+                    // the figure like the claimable cell above does.
                     <Skeleton className="h-4 w-14" />
                   ) : (
-                    <>
-                      {formatUsd(detail.claimableUsd)}
-                      {detail.claimableSymbols.map(symbol => (
+                    <span className="flex items-center gap-1">
+                      <TrendingUpGradient boxSize={12} className="h-3 w-3 shrink-0" aria-hidden />
+                      {formatUsd(detail.rewardsEarnedUsd)}
+                      {detail.rewardSymbol && (
                         <TokenIcon
-                          key={symbol}
-                          token={{ symbol }}
+                          token={{ symbol: detail.rewardSymbol }}
                           width={12}
                           className="h-3 w-3"
                           showChainIcon={false}
                         />
-                      ))}
-                    </>
+                      )}
+                    </span>
                   )}
                 </StatCell>
                 <StatDesktopDivider />
@@ -706,24 +780,22 @@ export function PositionDetailsModal({
                   )}
                 </StatCell>
                 <StatPairDivider />
-                <StatCell label={<Trans>Rewards received</Trans>}>
-                  {detail.rewardsEarnedLoading ? (
-                    // A still-loading history leg reads as $0.00 otherwise — hold
-                    // the figure like the claimable cell above does.
+                <StatCell label={<Trans>Claimable rewards</Trans>}>
+                  {detail.claimableUsdLoading ? (
                     <Skeleton className="h-4 w-14" />
                   ) : (
-                    <span className="flex items-center gap-1">
-                      <TrendingUpGradient boxSize={12} className="h-3 w-3 shrink-0" aria-hidden />
-                      {formatUsd(detail.rewardsEarnedUsd)}
-                      {detail.rewardSymbol && (
+                    <>
+                      {formatUsd(detail.claimableUsd)}
+                      {detail.claimableSymbols.map(symbol => (
                         <TokenIcon
-                          token={{ symbol: detail.rewardSymbol }}
+                          key={symbol}
+                          token={{ symbol }}
                           width={12}
                           className="h-3 w-3"
                           showChainIcon={false}
                         />
-                      )}
-                    </span>
+                      ))}
+                    </>
                   )}
                 </StatCell>
               </StatPair>
@@ -958,24 +1030,35 @@ export function PositionDetailsModal({
 
           {/* Right panel — contextual manage menu (desktop only; the phone tier
               reaches the same rows through the manage sheet below). */}
-          <div className="bg-modalSubsection hidden w-full flex-col justify-between gap-6 p-8 md:flex lg:w-[322px]">
-            <div className="flex flex-col">
-              <h3 className="text-text font-circle mb-8 text-lg leading-[22px] font-medium tracking-[-0.36px]">
-                <Trans>Manage position</Trans>
-              </h3>
-              {/* 80px row pitch: py-8 rows with half-padding end caps and no
-                  hairline after the last row (comp 1036:214176). */}
-              <div className="flex flex-col [&>button:first-child]:pt-4 [&>button:last-child]:border-b-0 [&>button:last-child]:pb-4">
-                <ManageMenuRows {...menuRowsProps} variant="panel" />
+          {stakeOnly ? (
+            <div className="bg-modalSubsection hidden w-full flex-col gap-6 p-8 md:flex lg:w-[322px]">
+              <div className="flex flex-col gap-8">
+                <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+                  <Trans>Actions</Trans>
+                </h3>
+                <StakeOnlyActions {...stakeOnlyProps} />
               </div>
             </div>
+          ) : (
+            <div className="bg-modalSubsection hidden w-full flex-col justify-between gap-6 p-8 md:flex lg:w-[322px]">
+              <div className="flex flex-col">
+                <h3 className="text-text font-circle mb-8 text-lg leading-[22px] font-medium tracking-[-0.36px]">
+                  <Trans>Manage position</Trans>
+                </h3>
+                {/* 80px row pitch: py-8 rows with half-padding end caps and no
+                  hairline after the last row (comp 1036:214176). */}
+                <div className="flex flex-col [&>button:first-child]:pt-4 [&>button:last-child]:border-b-0 [&>button:last-child]:pb-4">
+                  <ManageMenuRows {...menuRowsProps} variant="panel" />
+                </div>
+              </div>
 
-            {/* Side-by-side pair (comp 1036:214314) — equal columns, labels may
+              {/* Side-by-side pair (comp 1036:214314) — equal columns, labels may
                 ellipsize rather than overflow the 322px panel. */}
-            <div className="flex flex-wrap gap-2 [&>button]:min-w-0 [&>button]:flex-1">
-              <ManageCtas {...ctaProps} size="l" />
+              <div className="flex flex-wrap gap-2 [&>button]:min-w-0 [&>button]:flex-1">
+                <ManageCtas {...ctaProps} size="l" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Phone tier: pinned CTA pair floating over the scrolling detail
               (comp 1222:15571) — content fades out under the gradient. */}
@@ -1043,13 +1126,21 @@ export function PositionDetailsModal({
             </Button>
           </div>
 
-          <div className="mt-3 flex flex-col">
-            <ManageMenuRows {...menuRowsProps} variant="sheet" idSuffix="-sheet" />
-          </div>
+          {stakeOnly ? (
+            <div className="mt-3 flex flex-col gap-6">
+              <StakeOnlyActions {...stakeOnlyProps} idSuffix="-sheet" />
+            </div>
+          ) : (
+            <>
+              <div className="mt-3 flex flex-col">
+                <ManageMenuRows {...menuRowsProps} variant="sheet" idSuffix="-sheet" />
+              </div>
 
-          <div className="mt-6 flex flex-col gap-3">
-            <ManageCtas {...ctaProps} size="l" idSuffix="-sheet" />
-          </div>
+              <div className="mt-6 flex flex-col gap-3">
+                <ManageCtas {...ctaProps} size="l" idSuffix="-sheet" />
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
