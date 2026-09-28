@@ -11,8 +11,7 @@ import { StakeSky, Liquidated, SuppliedEmpty } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
+import { StakeEmptySection } from './StakeEmptySection';
 import { IconboxPosition } from '@/components/ui/iconbox';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -333,22 +332,20 @@ export function StakePositionsTable({
     ...intentIndices
   ]);
 
-  // Comp 1036:208676: the empty state is a self-contained card — the section
-  // title moves inside it and there is no table chrome.
+  // Comp 3617:23840: the title sits above a dashed box, with no table chrome.
   if (isEmpty) {
     return (
-      <Card data-testid="stake-positions-empty" className="flex flex-col gap-6 p-8">
-        <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
-          <Trans>Active positions</Trans>
-        </h3>
-        <EmptyState illustration={<SuppliedEmpty aria-hidden />}>
-          {isConnected ? (
-            <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
-          ) : (
-            <Trans>Connect your wallet to see your positions.</Trans>
-          )}
-        </EmptyState>
-      </Card>
+      <StakeEmptySection
+        testId="stake-positions-empty"
+        title={<Trans>Active positions</Trans>}
+        illustration={<SuppliedEmpty aria-hidden />}
+      >
+        {isConnected ? (
+          <Trans>You don&apos;t have any staking and borrowing position yet.</Trans>
+        ) : (
+          <Trans>Connect your wallet to see your positions.</Trans>
+        )}
+      </StakeEmptySection>
     );
   }
 

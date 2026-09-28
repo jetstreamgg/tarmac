@@ -21,8 +21,7 @@ import {
 import { ExternalLink } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
+import { StakeEmptySection } from './StakeEmptySection';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ProductTransactionsTable,
@@ -322,25 +321,23 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
     return filtered.map(group => ({ ...group, skyPrice, chainId }));
   }, [stakeHistory, filter, skyPrice, chainId]);
 
-  // Comp 1036:208685: with no activity at all the empty state is a
-  // self-contained card — the section title moves inside it and there is
-  // no column header row or filter.
+  // Comp 3617:23840: with no activity at all the title sits above a dashed
+  // box, with no column header row or filter.
   const isEmpty = !isLoading && !error && (stakeHistory?.length ?? 0) === 0;
 
   if (isEmpty) {
     return (
-      <Card data-testid="stake-activity-empty" className="flex flex-col gap-6 p-8">
-        <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
-          <Trans>My activity</Trans>
-        </h3>
-        <EmptyState illustration={<TransactionsEmpty aria-hidden />}>
-          {isConnected ? (
-            <Trans>You don&apos;t have any transactions made yet.</Trans>
-          ) : (
-            <Trans>Connect your wallet to see your activity.</Trans>
-          )}
-        </EmptyState>
-      </Card>
+      <StakeEmptySection
+        testId="stake-activity-empty"
+        title={<Trans>My activity</Trans>}
+        illustration={<TransactionsEmpty aria-hidden />}
+      >
+        {isConnected ? (
+          <Trans>You don&apos;t have any transactions made yet.</Trans>
+        ) : (
+          <Trans>Connect your wallet to see your activity.</Trans>
+        )}
+      </StakeEmptySection>
     );
   }
 

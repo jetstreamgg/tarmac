@@ -109,7 +109,7 @@ test('percent chips and optional-card collapse work at the phone tier', async ({
 });
 
 // --- M6.6 (APP-405): the /stake page itself at the phone tier, per comps
-// 1222:16771 (My positions) / 1222:17089 (Statistics) / 1222:17233 (About).
+// 1222:16771 (My positions) / 1222:17089 (Overview).
 // Position rows come from the chain (`useStakeUrnVaults`), so the populated
 // spec stages real urns on the fork; the activity surface is subgraph-backed
 // and the vnet's urns are invisible to the indexer, so the two staking
@@ -178,8 +178,8 @@ function stubStakeSubgraph(page: Parameters<typeof stakeDeepLink>[0]) {
   });
 }
 
-test('statistics and about tabs lead with the promo card at the phone tier', async ({ isolatedPage }) => {
-  // Connected with zero positions → the page lands on Statistics.
+test('overview tab leads with the promo card at the phone tier', async ({ isolatedPage }) => {
+  // Connected with zero positions → the page lands on Overview.
   await stakeDeepLink(isolatedPage);
   const engineCard = isolatedPage.getByTestId('stake-engine-card');
   await expect(engineCard).toBeVisible({ timeout: 15_000 });
@@ -191,16 +191,9 @@ test('statistics and about tabs lead with the promo card at the phone tier', asy
   const chartBox = await chart.boundingBox();
   expect(engineBox!.y).toBeLessThan(chartBox!.y);
 
-  // Comp 1222:17233 order: promo card above the About copy; the two shipped
-  // links (View contract, Governance) stack as full-width rows — Docs is held
-  // back until staking docs exist (see StakeAboutTab.tsx).
-  await stakeDeepLink(isolatedPage, 'tab=about');
-  const aboutCopy = isolatedPage.getByTestId('stake-about-copy');
-  await expect(aboutCopy).toBeVisible({ timeout: 15_000 });
-  const engineBox2 = await isolatedPage.getByTestId('stake-engine-card').boundingBox();
-  const aboutBox = await aboutCopy.boundingBox();
-  expect(engineBox2!.y).toBeLessThan(aboutBox!.y);
-  const governanceLink = isolatedPage.getByTestId('stake-about-links').getByRole('link', {
+  // The two shipped links (View contract, Governance) stack as full-width
+  // rows — Docs is held back until staking docs exist.
+  const governanceLink = isolatedPage.getByTestId('stake-overview-links').getByRole('link', {
     name: 'Governance'
   });
   await expect(governanceLink).toBeVisible();

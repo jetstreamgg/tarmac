@@ -137,19 +137,19 @@ test.beforeEach(async ({ isolatedPage }) => {
 // Read smokes
 // ---------------------------------------------------------------------------
 
-test('smoke: destination shell renders all three tabs with live engine reads', async ({ isolatedPage }) => {
+test('smoke: destination shell renders both tabs with live engine reads', async ({ isolatedPage }) => {
   await stakeDeepLink(isolatedPage);
   await expect(isolatedPage.getByTestId('stake-tabs')).toBeVisible();
 
-  // Empty account → Statistics is the landing tab (post-review default).
+  // Empty account → Overview is the landing tab (post-review default).
   await expect(isolatedPage.getByTestId('stake-engine-card')).toBeVisible({ timeout: 15_000 });
 
   await isolatedPage.getByTestId('stake-tab-positions').click();
   await expect(isolatedPage.getByTestId('stake-positions-empty')).toBeVisible({ timeout: 15_000 });
   await expect(isolatedPage.getByTestId('stake-open-position-cta')).toBeVisible();
 
-  await isolatedPage.getByTestId('stake-tab-about').click();
-  await expect(isolatedPage.getByTestId('stake-about-links')).toBeVisible();
+  await isolatedPage.getByTestId('stake-tab-overview').click();
+  await expect(isolatedPage.getByTestId('stake-overview-links')).toBeVisible();
 });
 
 test('smoke: flow deep links mount the takeover and reject junk urn indexes', async ({ isolatedPage }) => {

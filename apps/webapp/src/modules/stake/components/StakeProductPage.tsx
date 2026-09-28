@@ -12,11 +12,12 @@ import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useExitHold } from '@/modules/ui/hooks/useExitHold';
+import { getBannerById } from '@/data/banners/banners';
+import { parseBannerContent } from '@/utils/bannerContentParser';
 import { StakeUserPosition, useStakeUserPositions } from '../hooks/useStakeUserPositions';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
 import { StakePositionsTab } from './StakePositionsTab';
-import { StakeStatisticsTab } from './StakeStatisticsTab';
-import { StakeAboutTab } from './StakeAboutTab';
+import { StakeOverviewTab } from './StakeOverviewTab';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
 import { PositionManageFlow, manageActionInit } from './PositionManageFlow';
 
@@ -27,17 +28,24 @@ const TAKEOVER_EXIT_MS = 300;
 // tab and always wins; without it (or with an unknown value) the default is
 // `positions`, except when that tab would provably render its empty state —
 // disconnected, or a settled positions query with zero urns — where the page
-// lands on `statistics` instead (review feedback on the F-track PR).
-const STAKE_TABS = ['positions', 'statistics', 'about'] as const;
+// lands on `overview` instead (review feedback on the F-track PR).
+const STAKE_TABS = ['overview', 'positions'] as const;
 type StakeTab = (typeof STAKE_TABS)[number];
 
+// Pre-APP-600 tabs folded into Overview; old deep links keep resolving.
+const LEGACY_OVERVIEW_TABS = ['statistics', 'about'];
+
 function parseStakeTab(value: string | null, fallback: StakeTab): StakeTab {
+  if (value && LEGACY_OVERVIEW_TABS.includes(value)) return 'overview';
   return STAKE_TABS.includes(value as StakeTab) ? (value as StakeTab) : fallback;
 }
 
+// Corpus-fed header description (PRD Decision 11): corpus wins over Figma copy.
+const ABOUT_BANNER_ID = 'about-the-staking-engine';
+
 /**
- * Stake destination page: SKY-branded header + the three-tab strip
- * (My positions / Statistics / About) synced to `?tab=`. Stake is a destination,
+ * Stake destination page: SKY-branded header + the two-tab strip
+ * (Overview / My positions) synced to `?tab=`. Stake is a destination,
  * not a ProductDetailTemplate consumer — the tabs compose L1 pieces directly.
  */
 export function StakeProductPage() {
@@ -47,13 +55,13 @@ export function StakeProductPage() {
   // While the positions query is still loading the default stays `positions`
   // (its skeletons) — only a *known* empty state redirects the landing view.
   // A failed query also stays on `positions`: the tab renders its error
-  // treatment there, which must not be hidden behind Statistics.
+  // treatment there, which must not be hidden behind Overview.
   const { address } = useConnection();
   const { data: positions, isLoading: positionsLoading } = useStakeUserPositions();
   // The one positions read the rail card on every tab draws from.
   const rail = { positions, isLoading: positionsLoading };
   const knownEmptyPositions = !positionsLoading && positions?.length === 0;
-  const defaultTab: StakeTab = !address || knownEmptyPositions ? 'statistics' : 'positions';
+  const defaultTab: StakeTab = !address || knownEmptyPositions ? 'overview' : 'positions';
   const tab = parseStakeTab(searchParams.get(QueryParams.Tab), defaultTab);
   // Route-driven overlays (Architecture §2.1): the F4 takeover mounts on
   // `flow=open`, the F5 manage flow (details modal ⇄ manage sheet) on
@@ -63,7 +71,7 @@ export function StakeProductPage() {
   const holdManageFlow = useExitHold(isManageFlow, TAKEOVER_EXIT_MS);
 
   // Radix only fires onValueChange for a *different* tab, so clicking the
-  // already-active trigger writes nothing — and the statistics default could
+  // already-active trigger writes nothing — and the overview default could
   // then yank the view away when the positions query settles empty under the
   // user. Every trigger click pins its tab into the URL instead.
   const onTabChange = (value: string) => {
@@ -103,6 +111,7 @@ export function StakeProductPage() {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const networkBadge = useNetworkTitleBadge(networks, 'stake-network');
+  const aboutBanner = getBannerById(ABOUT_BANNER_ID);
 
   return (
     // Desktop comp 1222:15123: corrected measurement (Figma Annotations R2
@@ -114,41 +123,59 @@ export function StakeProductPage() {
           Iconbox / Status beside a Heading 2 title; the DS 17px icon-title gap
           is normalized to 16. The brand glow was dropped from product icons in
           the latest design iterations (APP-416). */}
-      {/* From md up the title row carries 72px of its own padding-bottom on
-          top of the column's 24px gap — 96px of clearance to the tab strip. */}
-      <div className="flex items-center justify-between gap-4 md:pb-18">
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="shrink-0" data-testid="stake-header-icon">
-            <IconboxStatus size="l" className="size-14 md:size-16">
-              <TokenIcon token={{ symbol: 'SKY' }} width={52} showChainIcon={false} />
-            </IconboxStatus>
-          </div>
-          {/* Phone comp 1295:20810: Staking runs on one chain, so the phone
+      {/* APP-600 header (3617:23736): description 28px under the title row,
+          then 64px of padding plus the column's 24px gap — 88px to the tabs. */}
+      <div className="flex flex-col gap-4 md:gap-7 md:pb-16">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="shrink-0" data-testid="stake-header-icon">
+              <IconboxStatus size="l" className="size-14 md:size-16">
+                <TokenIcon token={{ symbol: 'SKY' }} width={52} showChainIcon={false} />
+              </IconboxStatus>
+            </div>
+            {/* Phone comp 1295:20810: Staking runs on one chain, so the phone
               header states it as the DS title-suffix badge beside the title
               (PageHeading's badge slot, 12px after the name, outside the h1)
               instead of a control-shaped pill with nothing to switch. Where a
               config lists several chains (dev's Tenderly fork) the dropdown
               stays. */}
-          <PageHeading
-            size="lg"
-            className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
-            badges={networkBadge}
-          >
-            <Trans>SKY Staking</Trans>
-          </PageHeading>
+            <PageHeading
+              size="lg"
+              className="text-2xl leading-[26px] tracking-[-0.48px] md:text-[44px] md:leading-[48px] md:tracking-[-0.88px]"
+              badges={networkBadge}
+            >
+              <Trans>SKY Staking</Trans>
+            </PageHeading>
+          </div>
+          {!networkBadge && (
+            <NetworkSelect
+              chainIds={networks}
+              size={isMobile ? 'xs' : undefined}
+              triggerClassName="h-8 md:h-10"
+              dataTestId="stake-network"
+            />
+          )}
         </div>
-        {!networkBadge && (
-          <NetworkSelect
-            chainIds={networks}
-            size={isMobile ? 'xs' : undefined}
-            triggerClassName="h-8 md:h-10"
-            dataTestId="stake-network"
-          />
+        {aboutBanner?.description && (
+          <div
+            data-testid="stake-header-description"
+            className="text-fgSecondary max-w-[761px] text-xs leading-[18px]"
+          >
+            {parseBannerContent(aboutBanner.description, 'text-xs leading-[18px]')}
+          </div>
         )}
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>
         <TabsList variant="nav" data-testid="stake-tabs">
+          <TabsTrigger
+            value="overview"
+            variant="nav"
+            onClick={() => onTabChange('overview')}
+            data-testid="stake-tab-overview"
+          >
+            <Trans>Overview</Trans>
+          </TabsTrigger>
           <TabsTrigger
             value="positions"
             variant="nav"
@@ -157,36 +184,17 @@ export function StakeProductPage() {
           >
             <Trans>My positions</Trans>
           </TabsTrigger>
-          <TabsTrigger
-            value="statistics"
-            variant="nav"
-            onClick={() => onTabChange('statistics')}
-            data-testid="stake-tab-statistics"
-          >
-            <Trans>Statistics</Trans>
-          </TabsTrigger>
-          <TabsTrigger
-            value="about"
-            variant="nav"
-            onClick={() => onTabChange('about')}
-            data-testid="stake-tab-about"
-          >
-            <Trans>About</Trans>
-          </TabsTrigger>
         </TabsList>
 
         {/* Design QA (2800:91832): 40px from the tab pills to the content from
             md up; the phone tier keeps its 20px. The nav pills carry no
             padding of their own and the tab bodies start flush, so the
             margin IS the gap. */}
+        <TabsContent value="overview" data-testid="stake-tab-content-overview" className="mt-5 md:mt-10">
+          <StakeOverviewTab rail={rail} />
+        </TabsContent>
         <TabsContent value="positions" data-testid="stake-tab-content-positions" className="mt-5 md:mt-10">
           <StakePositionsTab onRemediate={onRemediate} rail={rail} />
-        </TabsContent>
-        <TabsContent value="statistics" data-testid="stake-tab-content-statistics" className="mt-5 md:mt-10">
-          <StakeStatisticsTab rail={rail} />
-        </TabsContent>
-        <TabsContent value="about" data-testid="stake-tab-content-about" className="mt-5 md:mt-10">
-          <StakeAboutTab rail={rail} />
         </TabsContent>
       </Tabs>
 
