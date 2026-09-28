@@ -163,6 +163,19 @@ describe('StakeSummaryCard', () => {
     expect(screen.queryByTestId('stake-summary-manage-cta')).toBeNull();
   });
 
+  it('treats one live urn beside emptied ones as a single position (comp 3617:195171)', () => {
+    const emptied = { ...POSITIONS[1], index: 2, skyLocked: 0n, usdsDebt: 0n };
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakeSummaryCard positions={[POSITIONS[0], emptied]} />
+      </I18nProvider>
+    );
+
+    expect(screen.getByTestId('stake-summary-liquidation-risk')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('stake-summary-manage-cta'));
+    expect(mockSearchParams.get('urn_index')).toBe('0');
+  });
+
   it('Manage opens the manage modal for a single urn', () => {
     render(
       <I18nProvider i18n={i18n}>

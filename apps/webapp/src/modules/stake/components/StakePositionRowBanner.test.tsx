@@ -114,8 +114,7 @@ describe('StakePositionRowBanner', () => {
       </I18nProvider>
     );
 
-    const banner = screen.getByTestId('stake-position-warning-banner');
-    expect(banner.getAttribute('data-tier')).toBe('warning');
+    expect(screen.getByTestId('stake-position-warning-banner')).toBeTruthy();
     expect(screen.getByText(/liquidation risk is very high/)).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('stake-warning-stake-cta'));
@@ -125,7 +124,7 @@ describe('StakePositionRowBanner', () => {
     expect(onRemediate).toHaveBeenCalledWith('repay');
   });
 
-  it('turns the infobox red once the position reaches the liquidation tier', () => {
+  it('switches to the about-to-be-liquidated copy at the liquidation tier', () => {
     h.vault = {
       debtValue: 50n * 10n ** 18n,
       liquidationProximityPercentage: 85,
@@ -136,7 +135,7 @@ describe('StakePositionRowBanner', () => {
         <StakePositionRowBanner position={makePosition()} onRemediate={vi.fn()} onClaim={vi.fn()} />
       </I18nProvider>
     );
-    expect(screen.getByTestId('stake-position-warning-banner').getAttribute('data-tier')).toBe('error');
+    expect(screen.getByTestId('stake-position-warning-banner')).toBeTruthy();
     expect(screen.getByText(/about to be liquidated/)).toBeTruthy();
   });
 

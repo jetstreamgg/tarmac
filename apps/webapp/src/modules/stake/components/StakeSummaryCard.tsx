@@ -26,7 +26,7 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StakeUserPosition } from '../hooks/useStakeUserPositions';
+import { isInactiveStakePosition, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { useStakeEstAnnualRewardsUsd } from '../hooks/useStakeEstAnnualRewardsUsd';
 import { useStakeRowVault } from '../hooks/useStakeRowVault';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
@@ -98,7 +98,10 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   const chainId = useChainId();
   const [, setSearchParams] = useAppSearchParams();
 
-  const singlePosition = positions?.length === 1 ? positions[0] : undefined;
+  // Emptied urns don't count while a live one exists: it still gets its risk and Manage (comp 3617:195171).
+  const activePositions = positions?.filter(position => !isInactiveStakePosition(position));
+  const countedPositions = activePositions?.length ? activePositions : positions;
+  const singlePosition = countedPositions?.length === 1 ? countedPositions[0] : undefined;
   const onManage = useCallback(() => {
     if (!singlePosition) return;
     setSearchParams(
