@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { Ban, TriangleAlert } from 'lucide-react';
 import { useDisconnect } from 'wagmi';
 import { Text } from '@/modules/layout/components/Typography';
@@ -38,7 +38,6 @@ type UnauthorizedPageProps = {
   blockReason?: AccessBlockReason;
   /** Re-runs the failed checks — wired to the "unavailable" states only. */
   onRetry?: () => void;
-  children?: React.ReactNode;
 };
 
 const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
@@ -57,13 +56,7 @@ const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
     <>Terms of Use</>
   );
 
-export const UnauthorizedPage = ({
-  authData,
-  vpnData,
-  blockReason,
-  onRetry,
-  children
-}: UnauthorizedPageProps) => {
+export const UnauthorizedPage = ({ authData, vpnData, blockReason, onRetry }: UnauthorizedPageProps) => {
   const { trackVpnBlockedPageView } = useVpnAnalytics();
   const { disconnect } = useDisconnect();
   const blockedTrackedRef = useRef(false);
@@ -171,39 +164,40 @@ export const UnauthorizedPage = ({
 
   const { icon, title, message, actions } = stateContent();
 
-  return (
-    <>
-      {/* While the checks are in flight this renders nothing: WalletChip's
-          ConnectChecksCover holds the screen for the whole connect-time
-          sequence (screening, then the terms check), so the spinner doesn't
-          restart between them. This component mounts in two places at once
-          (here and AuthWrapper), which is the other reason the wait can't live
-          in it — two scrims would stack.
+  // While the checks are in flight this renders nothing: WalletChip's
+  // ConnectChecksCover holds the screen for the whole connect-time sequence
+  // (screening, then the terms check), so the spinner doesn't restart between
+  // them. This component mounts in two places at once (WalletChip and
+  // AuthWrapper), which is the other reason the wait can't live in it — two
+  // scrims would stack.
+  //
+  // The dialog therefore mounts only once the verdict is in, which is also what
+  // stops it resizing: it used to stay open across the swap from the 300px
+  // waiting card to this 500px one, and DialogContent's `transition: all 300ms`
+  // animated that as a widening.
+  if (isLoading) return null;
 
-          The dialog therefore mounts only once the verdict is in, which is
-          also what stops it resizing: it used to stay open across the swap
-          from the 300px waiting card to this 500px one, and DialogContent's
-          `transition: all 300ms` animated that as a widening. */}
-      {!isLoading && (
-        <Dialog open={true}>
-          <DialogContent
-            aria-describedby={undefined}
-            className="bg-containerDark w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
-          >
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                {icon}
-                <DialogTitle asChild>
-                  <Text className="text-text font-circle text-xl">{title}</Text>
-                </DialogTitle>
-              </div>
-              <Text className="font-graphik text-textSecondary text-sm">{message}</Text>
-            </div>
-            {actions}
-          </DialogContent>
-        </Dialog>
-      )}
-      {children}
-    </>
+  return (
+    <Dialog open={true}>
+      <DialogContent
+        aria-describedby={undefined}
+        // A block can now land mid-flow (screening runs on a transaction's
+        // first screen), so the gate has to clear any open modal, the toast
+        // stack and the cookie banner — the terms modal's tier (APP-534).
+        overlayClassName="z-[1000]"
+        className="bg-containerDark z-[1000] w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            {icon}
+            <DialogTitle asChild>
+              <Text className="text-text font-circle text-xl">{title}</Text>
+            </DialogTitle>
+          </div>
+          <Text className="font-graphik text-textSecondary text-sm">{message}</Text>
+        </div>
+        {actions}
+      </DialogContent>
+    </Dialog>
   );
 };

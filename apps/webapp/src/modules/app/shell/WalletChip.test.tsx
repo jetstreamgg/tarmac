@@ -59,9 +59,7 @@ vi.mock('@/modules/ui/components/TermsModal', () => ({
 }));
 
 vi.mock('@/modules/auth/components/UnauthorizedPage', () => ({
-  UnauthorizedPage: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="unauthorized-page-stub">{children}</div>
-  )
+  UnauthorizedPage: () => <div data-testid="unauthorized-page-stub" />
 }));
 
 vi.mock('@/modules/ui/components/Avatar', () => ({
@@ -168,8 +166,8 @@ describe('WalletChip render ladder', () => {
     mocks.connectedContext.isAuthorized = false;
     renderWalletChip();
 
-    const gate = await screen.findByTestId('unauthorized-page-stub');
-    expect(gate.querySelector('button')?.textContent).toMatch(/Connect Wallet/);
+    await screen.findByTestId('unauthorized-page-stub');
+    expect(screen.getByRole('button', { name: /Connect Wallet/ })).toBeTruthy();
   });
 });
 

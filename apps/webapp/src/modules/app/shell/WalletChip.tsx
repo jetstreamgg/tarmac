@@ -74,14 +74,15 @@ export function WalletChip() {
     <div data-testid="wallet-chip" className="desktop:min-w-[auto] min-w-0">
       <ConnectChecksCover open={showChecksCover} />
       {!isAuthorized ? (
-        <UnauthorizedPage
-          authData={authData}
-          vpnData={vpnData}
-          blockReason={accessBlockReason}
-          onRetry={retryAccessChecks}
-        >
+        <>
+          <UnauthorizedPage
+            authData={authData}
+            vpnData={vpnData}
+            blockReason={accessBlockReason}
+            onRetry={retryAccessChecks}
+          />
           {connectButton}
-        </UnauthorizedPage>
+        </>
       ) : !isConnectedAndAcceptedTerms ? (
         <TermsModal />
       ) : !isConnected ? (
