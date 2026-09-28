@@ -11,7 +11,6 @@ import {
   PendleConvertSide,
   useAllPendleMarketsHistory,
   useBatchPendleConvert,
-  useDebounce,
   useIsBatchSupported,
   useNow,
   usePendleMarketsApiData,
@@ -30,6 +29,7 @@ import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
 import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/modules/analytics/analyticsEvents';
@@ -115,9 +115,10 @@ export function PendleModalForm({
   // Every keystroke that yields a valid amount would otherwise refire the
   // Pendle quote (external API), the engine's simulation, the fee estimate and
   // the pre-send batch simulation; network reads and the engine take the
-  // settled value, validation (`insufficient`) stays on the raw one.
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
+  // settled value, validation (`insufficient`) stays on the raw one. Picking
+  // another token keeps the typed text but can change its decimals (USDC vs
+  // USDS), so the settle is keyed on the input token.
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount, `${inputSymbol}:${inputDecimals}`);
 
   const { data: walletBalance, refetch: refetchWalletBalance } = useTokenBalance({
     address,

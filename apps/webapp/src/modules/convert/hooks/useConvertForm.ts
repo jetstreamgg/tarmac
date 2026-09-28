@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
-import { useDebounce, useTokenBalance } from '@/hooks';
+import { useTokenBalance } from '@/hooks';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatBigInt } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -100,8 +101,9 @@ export function useConvertForm() {
   const amount = useMemo(() => parseAmountOrZero(value, originDecimals), [value, originDecimals]);
   // The engine, the fee estimate and the pre-send simulation all key off the
   // amount — settle a keystroke burst before they refire (stUSDS form pattern).
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
+  // A flip keeps the typed text but re-reads it at the other side's decimals —
+  // keyed on the direction so the old side's number is never quoted as the new.
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount, direction);
 
   const targetAmount = useMemo(() => getPsmTargetAmount(direction, amount), [direction, amount]);
 

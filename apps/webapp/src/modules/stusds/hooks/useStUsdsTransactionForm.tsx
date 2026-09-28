@@ -4,7 +4,6 @@ import { formatUnits, parseUnits } from 'viem';
 import {
   StUsdsDirection,
   StUsdsProviderType,
-  useDebounce,
   useStUsdsCapacityData,
   useStUsdsData,
   useStUsdsProviderSelection,
@@ -15,6 +14,7 @@ import { calculateApyFromStr, formatNumber } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useAmountToast, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { MAX_PRICE_IMPACT_BPS_WITHOUT_WARNING } from '../lib/providerNotice';
 import { StUsdsAmountSummary } from '../components/StUsdsAmountSummary';
 import type { StUsdsEngineParams, StUsdsLaunchFlow } from './useStUsdsLaunch';
@@ -125,8 +125,7 @@ export function useStUsdsTransactionForm({
   // invalidate, or misfire (the retired widget resynced with an effect).
   const displayValue = max && !isSupply ? formatUnits(available, DECIMALS) : value;
   const amount = parseAmountInput(displayValue, DECIMALS);
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount);
 
   const providerSelection = useStUsdsProviderSelection({
     amount: debouncedAmount,

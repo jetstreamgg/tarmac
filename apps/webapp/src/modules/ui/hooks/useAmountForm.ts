@@ -4,7 +4,7 @@ import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
-import { useDebounce } from '@/hooks';
+import { useSettledAmount } from './useSettledAmount';
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
 export type AmountToastTitles = { loading: string; success: string; error: string };
@@ -101,12 +101,12 @@ export function useAmountForm({
   );
 
   const amount = parseAmountInput(value, decimals);
-  // Every keystroke would otherwise refire the fee estimate and the batch
-  // pre-send simulation. Validation stays on the live amount for immediate
-  // feedback; everything network-bound follows the settled one, and the gate
-  // waits for it so the confirm never arms on reads keyed to a stale amount.
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
+  // The gate waits for the settle so the confirm never arms on reads keyed to a
+  // stale amount. The unit folds in the entry key: a chain switch is a new unit.
+  const { debouncedAmount, debouncePending } = useSettledAmount(
+    amount,
+    `${String(entryKey)}:${symbol}:${decimals}`
+  );
   const isZero = amount === 0n;
   const insufficient = availableKnown && amount > available;
   const amountReady = isConnected && !isZero && availableKnown && !insufficient && !debouncePending;

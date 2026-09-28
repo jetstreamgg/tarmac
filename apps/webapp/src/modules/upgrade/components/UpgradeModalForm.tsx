@@ -3,14 +3,7 @@ import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import {
-  TOKENS,
-  useMkrSkyFee,
-  useDebounce,
-  useSkyPrice,
-  useTokenBalance,
-  type UpgradeSourceToken
-} from '@/hooks';
+import { TOKENS, useMkrSkyFee, useSkyPrice, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, math } from '@/utils';
 import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { Text } from '@/modules/layout/components/Typography';
@@ -21,6 +14,7 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
@@ -69,8 +63,7 @@ export function UpgradeModalForm({
   const [value, setValue] = useState('');
 
   const amount = parseAmountInput(value, DECIMALS);
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount, token);
 
   const isMkr = token === 'MKR';
   const target = UPGRADE_TARGET[token];
