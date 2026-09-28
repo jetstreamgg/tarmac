@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BatchWriteHook, UseTransactionFlowParameters } from '../hooks';
 import { useSequentialTransactionFlow } from './useSequentialTransactionFlow';
 import { useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
@@ -45,39 +46,77 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
   // that modal had already paid for the probe.
   const routeUndecided = batchPossible && isLoadingCapabilities;
 
+  // The route a send went out on, held from execute() until that send settles. The live
+  // route can move under an in-flight send: a change of calls starts a fresh batch
+  // simulation with no verdict yet (on a chain whose RPC can't simulate a bundle that
+  // reads as "batch" until it fails again), and a multi-step sequential run whose calls
+  // change mid-way would otherwise hand its remaining steps to the batch flow.
+  const [sendRoute, setSendRoute] = useState<'batch' | 'sequential' | null>(null);
+  // The sequential step reached, for its error callback: a failure after a step has
+  // mined leaves the run resumable, and the resume must stay sequential.
+  const sequentialStep = useRef(0);
+
   const commonTransactionParameters = {
     calls,
     onMutate,
     onStart,
-    onSuccess,
-    onError,
+    onSuccess: (hash: string | undefined) => {
+      setSendRoute(null);
+      onSuccess?.(hash);
+    },
     chainId
   };
 
   // Use batch flow. Its send leg is gated on the wallet's answer, but its prepare-time
   // simulation is not: that is an RPC round trip of its own, and for the same reason as
-  // above it must not queue behind the wallet probe. It starts as soon as bundling is
-  // possible and stops only once the wallet has said no.
+  // above it must not queue behind the wallet probe. It runs while the wallet's answer
+  // is pending or once the wallet says it bundles — never after any other answer (a
+  // wallet without EIP-5792 rejects the probe, which reads as "unknown", not "no").
   const batchResults = useSendBatchTransactionFlow({
     ...commonTransactionParameters,
+    onError: (error: Error, hash: string | undefined) => {
+      setSendRoute(null);
+      onError?.(error, hash);
+    },
     enabled: enabled && walletBatches,
-    simulateEnabled: enabled && batchPossible && batchSupported !== false
+    simulateEnabled: enabled && (walletBatches || routeUndecided) && sendRoute !== 'sequential'
   });
 
   // A wallet that bundles on a chain whose RPC can't simulate a bundle would otherwise
   // sit on a Confirm that never enables. The calls are still validated one at a time on
   // the sequential path, so route there — N signatures instead of one, never an
   // unsimulated send.
-  const useBatch = walletBatches && !batchResults.batchUnavailable;
+  const useBatch = sendRoute ? sendRoute === 'batch' : walletBatches && !batchResults.batchUnavailable;
 
   // Use sequential flow
   const sequentialResults = useSequentialTransactionFlow({
     ...commonTransactionParameters,
+    onError: (error: Error, hash: string) => {
+      if (sequentialStep.current === 0) setSendRoute(null);
+      onError?.(error, hash);
+    },
     enabled: enabled && !useBatch && !routeUndecided,
     gcTime
   });
 
+  useEffect(() => {
+    sequentialStep.current = sequentialResults.currentCallIndex;
+  });
+
   // Return the appropriate results based on useBatch, carrying the calls and the routing
   // decision so callers can estimate what this flow costs without rebuilding calldata.
-  return { ...(useBatch ? batchResults : sequentialResults), calls, isBatch: useBatch };
+  // Wrapped to hold and release the route; each keeps the identity of the flow's own
+  // function, so consumers that key effects on them see no extra changes.
+  const selected = useBatch ? batchResults : sequentialResults;
+  const { execute: selectedExecute, reset: selectedReset } = selected;
+  const execute = useCallback(() => {
+    setSendRoute(useBatch ? 'batch' : 'sequential');
+    selectedExecute();
+  }, [useBatch, selectedExecute]);
+  const reset = useCallback(() => {
+    setSendRoute(null);
+    selectedReset();
+  }, [selectedReset]);
+
+  return { ...selected, execute, reset, calls, isBatch: useBatch };
 }
