@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BaseError,
+  CallExecutionError,
+  InsufficientFundsError,
   encodeAbiParameters,
   encodeErrorResult,
   encodeFunctionResult,
@@ -287,8 +289,13 @@ describe('simulateBatch — the RPC', () => {
   });
 
   it('classifies an insufficient-funds answer as reverted, not a request to retry', async () => {
+    // What viem hands back for a node's "insufficient funds": its own typed error, whose
+    // message no longer carries those words.
     const { client, call } = makeClient(async () => {
-      throw new BaseError('insufficient funds for gas * price + value');
+      throw new CallExecutionError(
+        new InsufficientFundsError({ cause: new BaseError('insufficient funds for gas * price + value') }),
+        {}
+      );
     });
 
     const error = await failure(run(client));
@@ -301,6 +308,14 @@ describe('simulateBatch — the RPC', () => {
     // The RPC ran something other than the overridden executor and answered with bytes
     // that don't decode as (success, returnData)[].
     const { client } = makeClient(async () => ({ data: '0xdeadbeef' }));
+
+    const error = await failure(run(client));
+
+    expect(error.kind).toBe('structural');
+  });
+
+  it('classifies a result with the wrong number of entries as structural', async () => {
+    const { client } = makeClient(async () => ({ data: bundle([]) }));
 
     const error = await failure(run(client));
 

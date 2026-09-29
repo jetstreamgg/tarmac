@@ -287,12 +287,12 @@ export function useSavingsTransactionForm({
   const previewShares = typeof previewSharesData === 'bigint' ? previewSharesData : undefined;
 
   // The savings gate is wider than the shared one (`useAmountForm` computes
-  // the plain rule): a max withdraw bypasses the amount check — the redeem is
+  // the plain rule): a max withdraw bypasses the balance check — the redeem is
   // driven by the flag, not the displayed (rounded) value — and a mainnet USDC
-  // supply also waits on the PSM gate above.
+  // supply also waits on the PSM gate above. A max withdraw of an empty position
+  // is still zero and stays blocked. Like the shared gate, it waits for the amount
+  // to settle so the confirm never arms on reads keyed to a stale amount.
   const insufficient = isConnected && !max && availableKnown && amount > available;
-  // Like the shared gate, it waits for the amount to settle so the confirm never
-  // arms on reads keyed to a stale amount.
   const amountReady =
     isConnected && usdcGateReady && availableKnown && !isZero && !insufficient && !debouncePending;
 

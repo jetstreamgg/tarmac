@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BatchWriteHook, UseTransactionFlowParameters } from '../hooks';
+import { BatchWriteHook, TxMutateVariables, UseTransactionFlowParameters } from '../hooks';
 import { useSequentialTransactionFlow } from './useSequentialTransactionFlow';
 import { useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
 import { useIsBatchSupported } from './useIsBatchSupported';
@@ -46,11 +46,13 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
   // that modal had already paid for the probe.
   const routeUndecided = batchPossible && isLoadingCapabilities;
 
-  // The route a send went out on, held from execute() until that send settles. The live
-  // route can move under an in-flight send: a change of calls starts a fresh batch
-  // simulation with no verdict yet (on a chain whose RPC can't simulate a bundle that
-  // reads as "batch" until it fails again), and a multi-step sequential run whose calls
-  // change mid-way would otherwise hand its remaining steps to the batch flow.
+  // The route a send went out on, held from the moment a flow hands a request to the
+  // wallet (its onMutate — an execute() that bails early never gets there, so there is
+  // nothing to release) until that send settles. The live route can move under an
+  // in-flight send: a change of calls starts a fresh batch simulation with no verdict
+  // yet (on a chain whose RPC can't simulate a bundle that reads as "batch" until it
+  // fails again), and a multi-step sequential run whose calls change mid-way would
+  // otherwise hand its remaining steps to the batch flow.
   const [sendRoute, setSendRoute] = useState<'batch' | 'sequential' | null>(null);
   // The sequential step reached, for its error callback: a failure after a step has
   // mined leaves the run resumable, and the resume must stay sequential.
@@ -58,7 +60,6 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
 
   const commonTransactionParameters = {
     calls,
-    onMutate,
     onStart,
     onSuccess: (hash: string | undefined) => {
       setSendRoute(null);
@@ -74,6 +75,10 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
   // wallet without EIP-5792 rejects the probe, which reads as "unknown", not "no").
   const batchResults = useSendBatchTransactionFlow({
     ...commonTransactionParameters,
+    onMutate: (variables?: TxMutateVariables) => {
+      setSendRoute('batch');
+      onMutate?.(variables);
+    },
     onError: (error: Error, hash: string | undefined) => {
       setSendRoute(null);
       onError?.(error, hash);
@@ -91,11 +96,19 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
   // Use sequential flow
   const sequentialResults = useSequentialTransactionFlow({
     ...commonTransactionParameters,
+    onMutate: (variables?: TxMutateVariables) => {
+      setSendRoute('sequential');
+      onMutate?.(variables);
+    },
     onError: (error: Error, hash: string) => {
       if (sequentialStep.current === 0) setSendRoute(null);
       onError?.(error, hash);
     },
-    enabled: enabled && !useBatch && !routeUndecided,
+    // A run in flight stays enabled whatever the caller's gate says now: the caller's
+    // validity check reads live balances, and a multi-step run moves them itself (a
+    // DAI→USDS leg lowers the DAI balance the amount was validated against). Turning the
+    // flow off mid-run would stop the next step from simulating, stranding the funds.
+    enabled: (enabled || sendRoute === 'sequential') && !useBatch && !routeUndecided,
     gcTime
   });
 
@@ -105,18 +118,14 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
 
   // Return the appropriate results based on useBatch, carrying the calls and the routing
   // decision so callers can estimate what this flow costs without rebuilding calldata.
-  // Wrapped to hold and release the route; each keeps the identity of the flow's own
-  // function, so consumers that key effects on them see no extra changes.
+  // Wrapped to release the route; keeps the identity of the flow's own reset, so
+  // consumers that key effects on it see no extra changes.
   const selected = useBatch ? batchResults : sequentialResults;
-  const { execute: selectedExecute, reset: selectedReset } = selected;
-  const execute = useCallback(() => {
-    setSendRoute(useBatch ? 'batch' : 'sequential');
-    selectedExecute();
-  }, [useBatch, selectedExecute]);
+  const { reset: selectedReset } = selected;
   const reset = useCallback(() => {
     setSendRoute(null);
     selectedReset();
   }, [selectedReset]);
 
-  return { ...selected, execute, reset, calls, isBatch: useBatch };
+  return { ...selected, reset, calls, isBatch: useBatch };
 }

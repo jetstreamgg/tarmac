@@ -54,6 +54,8 @@ const call: Call = {
 const sequentialEnabled = () => sequentialSpy.mock.lastCall?.[0].enabled;
 const batchEnabled = () => batchSpy.mock.lastCall?.[0].enabled;
 const batchSimulateEnabled = () => batchSpy.mock.lastCall?.[0].simulateEnabled;
+const sendBatch = () => batchSpy.mock.lastCall?.[0].onMutate();
+const sendSequential = () => sequentialSpy.mock.lastCall?.[0].onMutate();
 const failSequential = () => sequentialSpy.mock.lastCall?.[0].onError(new Error('rejected'), '');
 const failBatch = () => batchSpy.mock.lastCall?.[0].onError(new Error('rejected'), undefined);
 const succeedBatch = () => batchSpy.mock.lastCall?.[0].onSuccess('0xhash');
@@ -190,7 +192,7 @@ describe('useTransactionFlow', () => {
       // calls starts a new batch simulation, which reads as "batch" until it fails too.
       batchFlow.batchUnavailable = true;
       const { result, rerender } = renderHook(() => useTransactionFlow({ calls: [call, call] }));
-      act(() => result.current.execute());
+      act(() => sendSequential());
 
       batchFlow.batchUnavailable = false;
       rerender();
@@ -202,7 +204,7 @@ describe('useTransactionFlow', () => {
 
     it('keeps a batch send on the batch route until it settles', () => {
       const { result, rerender } = renderHook(() => useTransactionFlow({ calls: [call, call] }));
-      act(() => result.current.execute());
+      act(() => sendBatch());
 
       batchFlow.batchUnavailable = true;
       rerender();
@@ -214,7 +216,7 @@ describe('useTransactionFlow', () => {
 
     it('releases the route once the send succeeds', () => {
       const { result, rerender } = renderHook(() => useTransactionFlow({ calls: [call, call] }));
-      act(() => result.current.execute());
+      act(() => sendBatch());
       act(() => succeedBatch());
 
       batchFlow.batchUnavailable = true;
@@ -225,7 +227,7 @@ describe('useTransactionFlow', () => {
     it('releases a sequential route rejected before anything mined', () => {
       batchFlow.batchUnavailable = true;
       const { result, rerender } = renderHook(() => useTransactionFlow({ calls: [call, call] }));
-      act(() => result.current.execute());
+      act(() => sendSequential());
       act(() => failSequential());
 
       batchFlow.batchUnavailable = false;
@@ -236,7 +238,7 @@ describe('useTransactionFlow', () => {
     it('holds a sequential route rejected mid-run, so the resume stays sequential', () => {
       batchFlow.batchUnavailable = true;
       const { result, rerender } = renderHook(() => useTransactionFlow({ calls: [call, call] }));
-      act(() => result.current.execute());
+      act(() => sendSequential());
 
       // The first step mined; the wallet then rejects the second.
       sequentialFlow.currentCallIndex = 1;
@@ -246,6 +248,30 @@ describe('useTransactionFlow', () => {
       batchFlow.batchUnavailable = false;
       rerender();
       expect(result.current.isBatch).toBe(false);
+      expect(sequentialEnabled()).toBe(true);
+    });
+
+    it('holds nothing when execute() bails before reaching the wallet', () => {
+      // A flow that refuses early (not prepared, not enabled) never calls onMutate, so no
+      // route is held and the live route keeps following the flows.
+      const { result, rerender } = renderHook(() => useTransactionFlow({ calls: [call, call] }));
+      act(() => result.current.execute());
+
+      batchFlow.batchUnavailable = true;
+      rerender();
+      expect(result.current.isBatch).toBe(false);
+    });
+
+    it('keeps a sequential run enabled when the caller turns its gate off mid-run', () => {
+      // A DAI supply: the DAI→USDS leg lowers the DAI balance the amount was validated
+      // against, so the form's gate reads "insufficient" before the deposit step runs.
+      batchFlow.batchUnavailable = true;
+      const { rerender } = renderHook(({ enabled }) => useTransactionFlow({ calls: [call, call], enabled }), {
+        initialProps: { enabled: true }
+      });
+      act(() => sendSequential());
+
+      rerender({ enabled: false });
       expect(sequentialEnabled()).toBe(true);
     });
   });

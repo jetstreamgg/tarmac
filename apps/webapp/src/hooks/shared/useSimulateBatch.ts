@@ -15,7 +15,6 @@ export type UseSimulateBatchParameters = {
   calls: readonly Call[];
   chainId?: number;
   enabled?: boolean;
-  gcTime?: number;
 };
 
 export type UseSimulateBatchResult = {
@@ -29,7 +28,6 @@ export type UseSimulateBatchResult = {
    * the caller should fall back to the sequential flow rather than block.
    */
   structuralFailure: boolean;
-  refetch: () => void;
 };
 
 /** Chains already reported this session as unable to simulate a bundle. */
@@ -53,8 +51,7 @@ export function resetBatchSimulationReports(): void {
 export function useSimulateBatch({
   calls,
   chainId,
-  enabled = true,
-  gcTime = 30_000
+  enabled = true
 }: UseSimulateBatchParameters): UseSimulateBatchResult {
   const connectedChainId = useChainId();
   const resolvedChainId = chainId ?? connectedChainId;
@@ -72,13 +69,13 @@ export function useSimulateBatch({
     }
   }, [calls]);
 
-  const { isSuccess, isLoading, error, refetch } = useQuery({
+  const { isSuccess, isLoading, error } = useQuery({
     queryKey: ['simulate-batch', resolvedChainId, address, callsKey],
     queryFn: () => simulateBatch({ client: client!, account: address!, calls, fallbackClients }),
     enabled: enabled && !!client && !!address && calls.length > 0 && callsKey !== null,
     // A revert or an unsupported RPC won't change on a retry; only a failed request might.
     retry: (failureCount, err) => isTransientBatchSimulationError(err) && failureCount < 3,
-    gcTime
+    gcTime: 30_000
   });
 
   const structuralFailure = isStructuralBatchSimulationError(error);
@@ -104,7 +101,6 @@ export function useSimulateBatch({
     prepared: isSuccess,
     isLoading,
     error: error ?? null,
-    structuralFailure,
-    refetch
+    structuralFailure
   };
 }

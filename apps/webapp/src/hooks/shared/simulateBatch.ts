@@ -3,6 +3,7 @@ import {
   decodeErrorResult,
   decodeFunctionResult,
   getAbiItem,
+  InsufficientFundsError,
   type Address,
   type Call,
   type Hex,
@@ -219,6 +220,14 @@ export async function simulateBatch({
       cause: error
     });
   }
+  // One entry per call, or the result isn't the executor's answer to these calls: a
+  // short array would pass the calls it leaves out unchecked.
+  if (results.length !== calls.length) {
+    throw new BatchSimulationError(
+      `Batch simulation returned ${results.length} results for ${calls.length} calls`,
+      { kind: 'structural' }
+    );
+  }
 
   results.forEach((result, index) => {
     const call = calls[index];
@@ -239,10 +248,13 @@ export async function simulateBatch({
   return results;
 }
 
-/** A node that checks the sender's balance for the call's value (most don't on `eth_call`). */
+/**
+ * A node that checks the sender's balance for the call's value (most don't on `eth_call`).
+ * viem recognises the node's wording and rewrites it into its own `InsufficientFundsError`,
+ * whose message no longer says "insufficient funds" — so match the type, not the text.
+ */
 function isInsufficientFunds(error: unknown): boolean {
-  const message = error instanceof BaseError ? error.shortMessage : String((error as Error)?.message ?? '');
-  return /insufficient funds/i.test(message);
+  return error instanceof BaseError && error.walk(e => e instanceof InsufficientFundsError) !== null;
 }
 
 /** viem reports an `eth_call` revert with JSON-RPC code 3 (`ExecutionRevertedError`). */
