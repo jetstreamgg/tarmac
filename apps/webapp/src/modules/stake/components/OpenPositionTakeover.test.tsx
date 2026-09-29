@@ -794,11 +794,26 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     expect(h.manageLaunchParams?.selectedDelegate).toBe(ZERO_ADDRESS);
   });
 
+  it('opens the delegate card on with the urn delegate selected (UX 1194:21595)', () => {
+    renderReopen();
+
+    expect(screen.getByTestId('stake-takeover-delegate-search')).toBeTruthy();
+    expect(
+      screen.getByTestId(`stake-takeover-delegate-${DELEGATE_A.toLowerCase()}`).getAttribute('aria-pressed')
+    ).toBe('true');
+  });
+
+  it('keeps the delegate card off for a never-delegated urn', () => {
+    h.urnDelegate = ZERO_ADDRESS;
+    renderReopen();
+
+    expect(screen.queryByTestId('stake-takeover-delegate-search')).toBeNull();
+  });
+
   it('stages a different delegate once the user selects one', () => {
     renderReopen();
     typeStakeAmount('100');
 
-    fireEvent.click(screen.getByTestId('stake-takeover-delegate-card-toggle'));
     fireEvent.click(screen.getByTestId(`stake-takeover-delegate-${DELEGATE_B.toLowerCase()}`));
 
     expect(h.manageLaunchParams?.selectedDelegate).toBe(DELEGATE_B);

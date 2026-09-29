@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -97,6 +97,12 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const currentUrnDelegate =
     reopen && urnVoteDelegate && urnVoteDelegate !== ZERO_ADDRESS ? urnVoteDelegate : undefined;
   const reopenDelegateBaseline = reopen ? urnVoteDelegate : undefined;
+  // Reopen opens the delegate card already on when the urn has a delegate (UX 1194:21595).
+  const [delegatePrefillPending, setDelegatePrefillPending] = useState(!!reopen);
+  if (delegatePrefillPending && reopenUrn && urnVoteDelegate !== undefined) {
+    setDelegatePrefillPending(false);
+    if (currentUrnDelegate) dispatch({ type: 'setDelegateEnabled', enabled: true });
+  }
 
   const ilkName = getIlkName(2);
   const { data: skyBalance, isLoading: balanceLoading } = useTokenBalance({
