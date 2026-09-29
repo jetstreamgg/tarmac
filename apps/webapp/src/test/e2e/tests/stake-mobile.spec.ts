@@ -225,8 +225,8 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   expect(summaryBox!.y).toBeLessThan(positionsBox!.y);
   expect(positionsBox!.y).toBeLessThan(activityBox!.y);
 
-  // Summary hero keeps its Manage CTA at the phone tier.
-  await expect(summary.getByTestId('stake-summary-manage-cta')).toBeVisible();
+  // The summary's Manage CTA is single-position only.
+  await expect(summary.getByTestId('stake-summary-manage-cta')).not.toBeVisible();
 
   // Position cards: one "View more" per active urn; the emptied urn stays
   // behind the Show inactive toggle.
@@ -252,9 +252,12 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   await isolatedPage.getByTestId('stake-details-cta-manage').click();
   const sheet = isolatedPage.getByTestId('stake-manage-sheet');
   await expect(sheet).toBeVisible();
-  await expect(isolatedPage.getByTestId('stake-manage-menu-withdraw-sheet')).toBeVisible();
+  const sheetMenu = isolatedPage
+    .getByTestId('stake-manage-menu-manage-sheet')
+    .or(isolatedPage.getByTestId('stake-manage-menu-withdraw-sheet'));
+  await expect(sheetMenu).toBeVisible();
   const sheetPrimary = isolatedPage
-    .getByTestId('stake-manage-cta-stake-sheet')
+    .getByTestId('stake-manage-cta-claim-sheet')
     .or(isolatedPage.getByTestId('stake-manage-cta-reopen-sheet'));
   await expect(sheetPrimary).toBeVisible();
   await isolatedPage.getByTestId('stake-manage-sheet-close').click();

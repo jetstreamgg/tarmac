@@ -11,7 +11,7 @@ export const stakeManageFlowContract: TestContract = {
   intent: 'User borrows more against an existing position through the manage sheet',
   preconditions: ['existing urn', 'flow=manage&urn_index=N'],
   steps: [
-    { action: 'borrow menu', locator: { testId: 'stake-manage-menu-borrow' } },
+    { action: 'manage menu', locator: { testId: 'stake-manage-menu-manage' } },
     { action: 'borrow amount', locator: { testId: 'stake-manage-borrow-amount' } },
     { action: 'confirm', locator: { testId: 'stake-manage-confirm' } }
   ],

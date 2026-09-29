@@ -4,6 +4,7 @@ import {
   BORROW_SPEC_SKY,
   confirmTransactionModal,
   gotoManagePosition,
+  openManageSheet,
   openStakePosition,
   stakeDeepLink
 } from '../utils/stakeV2.ts';
@@ -38,12 +39,9 @@ test('repays all debt and the position lands in the no-debt state', async ({ iso
   await confirm.click();
   await confirmTransactionModal(isolatedPage);
 
-  // Debt-free position: the details menu drops the debt-only rows (repay,
-  // borrow-more) while withdraw stays available.
-  await gotoManagePosition(isolatedPage, 0);
-  await expect(isolatedPage.getByTestId('stake-manage-menu-withdraw')).toBeVisible();
-  await expect(isolatedPage.getByTestId('stake-manage-menu-repay')).not.toBeVisible();
-  await expect(isolatedPage.getByTestId('stake-manage-menu-borrow')).not.toBeVisible();
+  // Debt-free position: the manage sheet's borrow card becomes optional again.
+  await openManageSheet(isolatedPage, 0);
+  await expect(isolatedPage.getByTestId('stake-manage-borrow-card-toggle')).toBeVisible();
 });
 
 test('withdraws the full stake and the position goes inactive with a reopen CTA', async ({
@@ -51,9 +49,8 @@ test('withdraws the full stake and the position goes inactive with a reopen CTA'
 }) => {
   await openStakePosition(isolatedPage, { sky: '2400000' });
 
-  await gotoManagePosition(isolatedPage, 0);
-  await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, 0);
+  await isolatedPage.getByTestId('stake-manage-stake-card-mode-withdraw').click();
   await expect(isolatedPage.getByTestId('stake-manage-stake-card-mode-withdraw')).toHaveAttribute(
     'aria-pressed',
     'true'

@@ -7,6 +7,7 @@ import {
   BORROW_SPEC_SKY,
   confirmTransactionModal,
   gotoManagePosition,
+  openManageSheet,
   openStakePosition,
   stakeDeepLink
 } from '../utils/stakeV2.ts';
@@ -201,9 +202,7 @@ test('stake more and withdraw move vat ink by the exact staged amounts', async (
   expect((await getUrnInkArt(urn)).ink).toBe(parseUnits('2000000', 18));
 
   // Stake 500K more through the details-modal CTA → manage sheet.
-  await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-cta-stake').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, urnIndex);
   await isolatedPage.getByTestId('stake-manage-stake-amount').fill('500000');
   const confirm = isolatedPage.getByTestId('stake-manage-confirm');
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
@@ -213,9 +212,8 @@ test('stake more and withdraw move vat ink by the exact staged amounts', async (
 
   // Withdraw 1M: ink drops exactly; the freed SKY reaches the wallet.
   const skyBefore = await getTokenBalance(SKY_TOKEN, testAccount);
-  await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, urnIndex);
+  await isolatedPage.getByTestId('stake-manage-stake-card-mode-withdraw').click();
   await isolatedPage.getByTestId('stake-manage-stake-amount').fill('1000000');
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
   await confirm.click();
@@ -238,9 +236,7 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
   const borrowMore = parseUnits('5000', 18);
 
   // Borrow 5K more.
-  await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-menu-borrow').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, urnIndex);
   await isolatedPage.getByTestId('stake-manage-borrow-amount').fill('5000');
   const confirm = isolatedPage.getByTestId('stake-manage-confirm');
   await expect(confirm).toBeEnabled({ timeout: 30_000 });
@@ -252,9 +248,8 @@ test('borrow more, dust-gap repay guard, then wipe-all clears art on-chain', asy
 
   // Dust-gap guard: repaying 20K would leave ~23K < the 30K floor — blocked
   // before any transaction exists, so this leg is UI-only by design.
-  await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-menu-repay').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, urnIndex);
+  await isolatedPage.getByTestId('stake-manage-borrow-card-mode-repay').click();
   await isolatedPage.getByTestId('stake-manage-borrow-amount').fill('20000');
   await expect(isolatedPage.getByText(/needs at least .* USDS of debt to stay open/)).toBeVisible({
     timeout: 15_000
@@ -289,9 +284,8 @@ test('mixed flow: withdraw + borrow in one bundle moves ink down and art up toge
 
   // Withdraw card via the menu deep pre-toggle, then hand-enable the borrow
   // card in the same sheet (fresh toggle defaults to borrow mode).
-  await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, urnIndex);
+  await isolatedPage.getByTestId('stake-manage-stake-card-mode-withdraw').click();
   await isolatedPage.getByTestId('stake-manage-stake-amount').fill('400000');
   await isolatedPage.getByTestId('stake-manage-borrow-card-toggle').click();
   const borrowInput = isolatedPage.getByTestId('stake-manage-borrow-amount');
@@ -326,9 +320,7 @@ test('mixed flow: supply + repay in one bundle moves ink up and art down togethe
   // Stake card via the details CTA; with debt the borrow card is already open,
   // so just flip it to repay. Partial repay of 7K leaves ~31K debt — above the
   // 30K dust floor, so the mixed bundle must not trip the dust-gap guard.
-  await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-cta-stake').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, urnIndex);
   await isolatedPage.getByTestId('stake-manage-stake-amount').fill('200000');
   await isolatedPage.getByTestId('stake-manage-borrow-card-mode-repay').click();
   const repayAmount = isolatedPage.getByTestId('stake-manage-borrow-amount');
@@ -401,7 +393,7 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   const usdsBefore = await getTokenBalance(USDS_TOKEN, testAccount);
   const skyWalletBefore = await getTokenBalance(SKY_TOKEN, testAccount);
   await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-menu-claim').click();
+  await isolatedPage.getByTestId('stake-manage-cta-claim').click();
   await expect(isolatedPage.getByTestId('stake-claim-form')).toBeVisible();
   await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
   await isolatedPage.getByRole('button', { name: 'Claim', exact: true }).click();
@@ -422,7 +414,7 @@ test('claim pays rewards out and claim & restake locks them back into the urn', 
   const { ink: inkBefore } = await getUrnInkArt(urn);
   const skyBefore = await getTokenBalance(SKY_TOKEN, testAccount);
   await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-menu-claim').click();
+  await isolatedPage.getByTestId('stake-manage-cta-claim').click();
   await expect(isolatedPage.getByTestId('stake-claim-reward-sky')).toBeVisible({ timeout: 15_000 });
   await isolatedPage.getByRole('button', { name: 'Claim & Restake SKY' }).click();
   // A confirmed transaction closes its own modal and hands the outcome to a
