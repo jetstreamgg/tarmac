@@ -2,6 +2,7 @@ import { useStakeUserPositions, StakeUserPosition } from '../hooks/useStakeUserP
 import { StakePositionsTable } from './StakePositionsTable';
 import { StakeActivityTable } from './StakeActivityTable';
 import { StakeRewardsSection } from './StakeRewardsSection';
+import { stickyRailClasses } from '@/modules/layout/components/shellLayoutClasses';
 import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
@@ -49,8 +50,8 @@ export function StakePositionsTab({
         </div>
       </div>
       {/* The rail pins at the two-pane tier (Figma 2829:138694 — sticky
-          position card); `top-32` mirrors ProductDetailTemplate's offset. */}
-      <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
+          position card), same offset as ProductDetailTemplate. */}
+      <div className={`order-1 lg:order-none lg:col-span-1 ${stickyRailClasses}`}>
         <StakeRailCard {...rail} />
       </div>
     </div>

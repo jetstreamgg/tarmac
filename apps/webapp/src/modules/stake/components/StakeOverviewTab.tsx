@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { StakeRateChart } from './StakeRateChart';
 import { StakeDetailsStrip } from './StakeDetailsStrip';
 import { BorrowUtilizationBlock } from './BorrowUtilizationBlock';
+import { stickyRailClasses } from '@/modules/layout/components/shellLayoutClasses';
 import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
@@ -30,7 +31,7 @@ export function StakeOverviewTab({ rail }: { rail: StakeRailCardProps }) {
         <BorrowUtilizationBlock />
         <StakeLinks />
       </div>
-      <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
+      <div className={`order-1 lg:order-none lg:col-span-1 ${stickyRailClasses}`}>
         <StakeRailCard {...rail} />
       </div>
     </div>
