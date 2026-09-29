@@ -122,7 +122,6 @@ function ManageMenuRows({
   showInactiveBorrowBlock,
   claimDisabled,
   claimChip,
-  onAction,
   onClaim,
   variant = 'panel',
   idSuffix = ''
@@ -131,7 +130,6 @@ function ManageMenuRows({
   showInactiveBorrowBlock: boolean;
   claimDisabled: boolean;
   claimChip?: ReactNode;
-  onAction: (action: StakeManageAction) => void;
   onClaim: () => void;
   variant?: 'panel' | 'sheet';
   idSuffix?: string;
@@ -172,9 +170,8 @@ function ManageMenuRows({
           chip={claimChip}
         />
       )}
-      {/* An inactive urn stakes nothing, so switching its farm is a no-op —
-          the reopen takeover's picker (APP-516) is where its next farm gets
-          chosen; the row stays disabled here. */}
+      {/* An inactive urn stakes nothing, so switching its farm or delegate
+          waits for Reopen, whose takeover picks both; the rows stay disabled. */}
       <MenuRow
         {...rowProps}
         icon={<Coins className="h-4 w-4" />}
@@ -186,7 +183,7 @@ function ManageMenuRows({
         {...rowProps}
         icon={<UserRound className="h-4 w-4" />}
         label={<Trans>Change delegate</Trans>}
-        onClick={() => onAction('delegate')}
+        disabled
         dataTestId={`stake-manage-menu-change-delegate${idSuffix}`}
       />
       {showInactiveBorrowBlock && (
@@ -440,7 +437,6 @@ export function PositionDetailsModal({
     showInactiveBorrowBlock,
     claimDisabled,
     claimChip,
-    onAction,
     onClaim
   };
   const ctaProps = { loading: detail.shapeLoading, hasBorrowHistory: detail.hasBorrowHistory, onReopen };

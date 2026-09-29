@@ -343,9 +343,11 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
 
     expect((screen.getByTestId('stake-manage-menu-withdraw') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('stake-manage-menu-change-reward') as HTMLButtonElement).disabled).toBe(true);
-
-    fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
-    expect(onAction).toHaveBeenLastCalledWith('delegate');
+    // Reward and delegate changes wait for Reopen.
+    const delegateRow = screen.getByTestId('stake-manage-menu-change-delegate') as HTMLButtonElement;
+    expect(delegateRow.disabled).toBe(true);
+    fireEvent.click(delegateRow);
+    expect(onAction).not.toHaveBeenCalled();
 
     // No borrow section for a urn that never borrowed.
     expect(screen.queryByText('Borrowed amount')).toBeNull();
@@ -353,7 +355,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     expect(screen.queryByTestId('stake-position-warning')).toBeNull();
   });
 
-  it('staked-&-borrowed history: zeroed borrow block, No position chip, closed copy, 7 disabled-heavy rows', () => {
+  it('staked-&-borrowed history: zeroed borrow block, No position chip, closed copy, 7 disabled rows', () => {
     const { onAction } = renderModal(inactiveDetail({ hasBorrowHistory: true, claimableTokenAmount: 0n }));
 
     expect(screen.getByText('Borrowed amount')).toBeTruthy();
@@ -364,7 +366,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     // Liquidation price is a dash; the warning sentence never renders.
     expect(screen.queryByTestId('stake-position-warning')).toBeNull();
 
-    // Frame order: enabled rows first, then the disabled rest.
+    // Frame order (1194:21273).
     const rows = screen.getAllByTestId(/^stake-manage-menu-/);
     expect(rows.map(row => row.getAttribute('data-testid'))).toEqual([
       'stake-manage-menu-change-reward',
@@ -376,17 +378,11 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
       'stake-manage-menu-close-position'
     ]);
 
-    for (const testid of [
-      'stake-manage-menu-claim',
-      'stake-manage-menu-borrow',
-      'stake-manage-menu-repay',
-      'stake-manage-menu-withdraw',
-      'stake-manage-menu-close-position'
-    ]) {
-      expect((screen.getByTestId(testid) as HTMLButtonElement).disabled).toBe(true);
+    for (const row of rows) {
+      expect((row as HTMLButtonElement).disabled).toBe(true);
     }
     fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
-    expect(onAction).toHaveBeenLastCalledWith('delegate');
+    expect(onAction).not.toHaveBeenCalled();
   });
 
   it('keeps claim enabled on a borrowed-history urn with residual claimables (C16)', () => {
