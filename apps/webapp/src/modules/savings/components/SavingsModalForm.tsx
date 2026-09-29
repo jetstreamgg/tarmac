@@ -92,7 +92,7 @@ export function SavingsModalForm({
     switchOrigin
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useSavingsLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
   const errorMessage = enginePrepareErrorMessage(prepared, error);
 
@@ -227,6 +227,7 @@ export function SavingsModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,

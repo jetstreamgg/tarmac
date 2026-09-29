@@ -70,6 +70,8 @@ export interface UsePsmConversionResult {
   calls: Call[];
   /** Whether those calls go out bundled — the batch costs less than the sequence. */
   isBatch: boolean;
+  /** The calls `execute` would send now — see `BatchWriteHook.nextCalls`. */
+  nextCalls: Call[];
   execution: {
     l2AmountIn: bigint;
     l2MinAmountOut: bigint;
@@ -262,6 +264,7 @@ export function usePsmConversion({
     reset: activeHook.reset,
     calls: activeHook.calls ?? [],
     isBatch: !!activeHook.isBatch,
+    nextCalls: activeHook.nextCalls ?? activeHook.calls ?? [],
     execution: {
       l2AmountIn: execution.l2AmountIn,
       l2MinAmountOut: execution.l2MinAmountOut,

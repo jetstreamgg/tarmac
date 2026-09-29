@@ -93,7 +93,7 @@ export function StUsdsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   const feeCell = useModalFeeCell({ calls, shouldUseBatch: isBatch, enabled: amountReady });
@@ -231,6 +231,7 @@ export function StUsdsModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     transactionContent,
     transactionScreenContent,

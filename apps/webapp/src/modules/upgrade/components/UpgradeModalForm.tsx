@@ -94,7 +94,7 @@ export function UpgradeModalForm({
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
     amount: debouncedAmount,
     // The wallet balance is chain state the engine's success doesn't refetch —
@@ -195,6 +195,7 @@ export function UpgradeModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
     confirmAction: isConnected ? undefined : connectAction,

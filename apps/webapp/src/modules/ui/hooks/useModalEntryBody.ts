@@ -4,6 +4,7 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import type { TransactionAnalytics, TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import type { Call } from 'viem';
 
 /**
  * The live fields an editable modal body keeps in sync after launch. `confirmDisabled`
@@ -71,6 +72,13 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
    * a fresh `onConfirm` each render would loop the sync effect below.
    */
   execute: () => void;
+  /**
+   * The calls `execute` would send now (the engine's `nextCalls`). REQUIRED, like
+   * `usdValue`: the provider re-validates every deferred dispatch against what the
+   * user confirmed (see `TransactionConfig.getNextCalls`), and an editable body is
+   * exactly where calldata keeps moving after the review freezes.
+   */
+  nextCalls: readonly Call[];
 };
 
 /**
@@ -87,6 +95,7 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
 export function useModalEntryBody({
   sessionId,
   execute,
+  nextCalls,
   confirmDisabled,
   confirmLabel,
   confirmAction,
@@ -108,6 +117,13 @@ export function useModalEntryBody({
     executeRef.current = execute;
   }, [execute]);
   const onConfirm = useCallback(() => executeRef.current(), []);
+  // Same ref pattern: the provider reads the calls at dispatch time, past the
+  // IDLE freeze below, so they must stay live when nothing else is pushed.
+  const nextCallsRef = useRef(nextCalls);
+  useEffect(() => {
+    nextCallsRef.current = nextCalls;
+  }, [nextCalls]);
+  const getNextCalls = useCallback(() => nextCallsRef.current, []);
 
   // Keep the shared modal's confirm gating + handler + wallet summary (+ optional
   // step labels / toast titles) live. Merged into the entry (never replacing
@@ -136,6 +152,7 @@ export function useModalEntryBody({
       confirmDisabled,
       errorMessage,
       onConfirm,
+      getNextCalls,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
@@ -159,6 +176,7 @@ export function useModalEntryBody({
     usdValue,
     analytics,
     onConfirm,
+    getNextCalls,
     updateModalContent
   ]);
 

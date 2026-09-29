@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import type { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TxMutateVariables } from '@/hooks';
+import type { Call } from 'viem';
 
 /**
  * The frozen transaction-orchestration contract: a flow calls `launch(config)`,
@@ -183,6 +184,19 @@ export type TransactionConfig = {
    */
   onSecondaryConfirm?: () => void;
   onRetry?: () => void;
+  /**
+   * Reads the calls the flow's engine would send if dispatched right now (the
+   * engine's `nextCalls`, kept live through a ref). The provider snapshots them
+   * when the user confirms and, before any DEFERRED dispatch (an async gate
+   * verdict, Retry), refuses to send calls that are no longer the tail of that
+   * snapshot: the review screen freezes once the transaction leaves IDLE, but
+   * the engine keeps rebuilding its calldata from live quotes, so without this
+   * a deferred dispatch could sign terms the user never saw. A tail, not
+   * equality, because calls legitimately drop off the front (an approve that
+   * landed, a sequence resuming after a mined step). Omitted by flows whose
+   * calldata cannot drift after review.
+   */
+  getNextCalls?: () => readonly Call[];
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
@@ -278,6 +292,7 @@ export type LiveModalUpdate = Partial<
     | 'onConfirm'
     | 'onSecondaryConfirm'
     | 'onRetry'
+    | 'getNextCalls'
     | 'steps'
     | 'toast'
     | 'analytics'

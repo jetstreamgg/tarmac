@@ -37,6 +37,7 @@ function Host({
   const renderInSlot = useModalEntryBody({
     sessionId: 's1',
     execute: () => {},
+    nextCalls: [],
     confirmDisabled: false,
     confirmLabel,
     confirmAction,

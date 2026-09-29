@@ -588,6 +588,7 @@ export function PendleModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: writeHook.execute,
+    nextCalls: writeHook.nextCalls ?? [],
     confirmDisabled,
     errorMessage,
     transactionContent,

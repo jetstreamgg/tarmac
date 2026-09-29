@@ -88,7 +88,7 @@ export function VaultModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   const feeCell = useModalFeeCell({ calls, shouldUseBatch: isBatch, enabled: amountReady });
@@ -232,6 +232,7 @@ export function VaultModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,

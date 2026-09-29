@@ -46,6 +46,7 @@ import {
   type TransactionPreflight
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import { encodeCalls, isTailOf, type EncodedCall } from '@/modules/ui/lib/callIntent';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
@@ -118,6 +119,24 @@ function notifyReviewAgainOnChainChange() {
         title={<Trans>Network changed</Trans>}
         description={
           <Trans>Your wallet switched networks while confirming. Review the details and confirm again.</Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
+// A deferred dispatch (a gate verdict, Retry) found the flow's calls no longer
+// match what the user confirmed — a quote moved while the review was frozen —
+// so it was refused and the first screen re-derived against the new figures.
+function notifyReviewAgainOnChangedCalls() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Transaction details changed</Trans>}
+        description={
+          <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>
         }
       />
     ),
@@ -335,6 +354,10 @@ export function TransactionProvider({
   // flow_id latched at launch so this session's review/started/completed events
   // stay joined even if navigation rotates the live flow id mid-transaction.
   const flowIdRef = useRef<string | undefined>(undefined);
+  // The calls the user confirmed, encoded, captured at the click (see
+  // `getNextCalls` in the contract). Undefined when the flow doesn't report
+  // its calls; null when they couldn't be encoded, which fails closed.
+  const confirmedCallsRef = useRef<EncodedCall[] | null | undefined>(undefined);
 
   const chainId = useChainId();
   const { address, chainId: connectedChainId } = useConnection();
@@ -511,6 +534,7 @@ export function TransactionProvider({
       setGateCopy(null);
       gateInFlightRef.current = null;
       gatePhaseRef.current = null;
+      confirmedCallsRef.current = undefined;
       setMinimized(false);
       setLaunchCount(c => c + 1);
       setOpen(true);
@@ -636,6 +660,7 @@ export function TransactionProvider({
     setGateCopy(null);
     gateInFlightRef.current = null;
     gatePhaseRef.current = null;
+    confirmedCallsRef.current = undefined;
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
@@ -876,6 +901,19 @@ export function TransactionProvider({
     controls.returnToFirstScreen();
   }, []);
 
+  // Whether the calls the flow would send now are still ones the user
+  // confirmed. The review freezes once the transaction leaves IDLE while the
+  // engine keeps rebuilding from live quotes, so every dispatch re-checks —
+  // a confirm resolved synchronously trivially passes, a gate verdict or a
+  // Retry arriving after the quote moved does not.
+  const callsStillConfirmed = useCallback(() => {
+    const getNextCalls = configRef.current?.getNextCalls;
+    if (!getNextCalls) return true;
+    const confirmed = confirmedCallsRef.current;
+    const live = encodeCalls(getNextCalls());
+    return !!confirmed && !!live && isTailOf(live, confirmed);
+  }, []);
+
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
@@ -886,6 +924,21 @@ export function TransactionProvider({
         refuseOffChain(controls);
         return;
       }
+      // A confirm is the user agreeing to what the screen shows, so it fixes
+      // the calls; a retry re-sends what was already confirmed.
+      if (trigger !== 'retry') {
+        const getNextCalls = configRef.current?.getNextCalls;
+        confirmedCallsRef.current = getNextCalls ? encodeCalls(getNextCalls()) : undefined;
+      }
+      const dispatch = () => {
+        if (!callsStillConfirmed()) {
+          controls.setPreludeSteps(null);
+          controls.returnToFirstScreen();
+          notifyReviewAgainOnChangedCalls();
+          return;
+        }
+        action();
+      };
       // The chain the click was made on: a verdict must not fire the action
       // on any other, supported or not (see the chain-change close above).
       const chainAtClick = chainIdRef.current;
@@ -917,7 +970,7 @@ export function TransactionProvider({
                 notifyReviewAgainOnChainChange();
                 return;
               }
-              action();
+              dispatch();
             },
             () => {}
           )
@@ -928,9 +981,9 @@ export function TransactionProvider({
           });
         return;
       }
-      if (verdict.allow) action();
+      if (verdict.allow) dispatch();
     },
-    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain]
+    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain, callsStillConfirmed]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's

@@ -242,6 +242,7 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: flow.execute,
+    nextCalls: flow.nextCalls ?? [],
     confirmDisabled: disabled,
     transactionScreenContent,
     steps,

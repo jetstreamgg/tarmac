@@ -267,6 +267,7 @@ export function useSequentialTransactionFlow(
     prepared,
     error: writeError || miningError || simulationError,
     currentCallIndex: currentIndex,
-    reset
+    reset,
+    nextCalls: stableTransactions.slice(currentIndex)
   };
 }
