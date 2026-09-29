@@ -114,7 +114,7 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
 
   useEffect(() => {
     sequentialStep.current = sequentialResults.currentCallIndex;
-  });
+  }, [sequentialResults.currentCallIndex]);
 
   // Return the appropriate results based on useBatch, carrying the calls and the routing
   // decision so callers can estimate what this flow costs without rebuilding calldata.
