@@ -236,7 +236,8 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   await expect(viewMore).toHaveCount(5);
   await isolatedPage.getByTestId('stake-show-inactive-toggle').click();
 
-  // Tapping View more opens the manage flow for that urn. At the phone tier the details modal hides the menu
+  // Tapping View more opens the manage flow for that urn (bubbles to the
+  // card's row handler). At the phone tier the details modal hides the menu
   // panel behind a pinned footer pair (comp 1292:63278); Manage position
   // raises the menu as a bottom sheet (comp 1222:16239) whose close returns
   // to the details view underneath.

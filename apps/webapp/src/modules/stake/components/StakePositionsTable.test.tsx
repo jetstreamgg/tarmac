@@ -198,13 +198,13 @@ describe('StakePositionsTable', () => {
     expect(screen.getByText('#3')).toBeTruthy();
   });
 
-  it('keeps the row inert: only Manage opens the position', () => {
+  it('stubs the manage flow on row click: flow=manage + urn_index', () => {
     renderTable();
 
     fireEvent.click(screen.getByTestId('stake-position-row-0'));
 
-    expect(mockSearchParams.get('flow')).toBeNull();
-    expect(screen.getByTestId('stake-position-row-0').getAttribute('tabindex')).toBeNull();
+    expect(mockSearchParams.get('flow')).toBe('manage');
+    expect(mockSearchParams.get('urn_index')).toBe('0');
   });
 
   it('renders the LTV for a debt-carrying row and dashes LTV and risk without debt', () => {
@@ -418,7 +418,7 @@ describe('StakePositionsTable — mobile cards (M5)', () => {
     cleanup();
   });
 
-  it('renders position cards with the column data and opens manage from View more', () => {
+  it('renders position cards with the column data and keeps tap-to-manage', () => {
     renderTable();
 
     expect(screen.queryByRole('table')).toBeNull();
@@ -427,9 +427,6 @@ describe('StakePositionsTable — mobile cards (M5)', () => {
     expect(screen.getAllByText('Borrowed (USDS)')).toHaveLength(2);
 
     fireEvent.click(screen.getByTestId('stake-position-row-0'));
-    expect(mockSearchParams.get('flow')).toBeNull();
-
-    fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[0]);
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('0');
   });

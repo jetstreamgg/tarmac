@@ -230,9 +230,7 @@ const SORTABLE_COLUMNS: {
   }
 ];
 
-const manageColumn = (
-  onManage: (position: StakeUserPosition) => void
-): ProductTransactionColumn<StakeUserPosition> => ({
+const MANAGE_COLUMN: ProductTransactionColumn<StakeUserPosition> = {
   id: 'manage',
   header: null,
   width: '104px',
@@ -245,19 +243,17 @@ const manageColumn = (
         size="s"
         className="-ml-2 flex w-20 px-2"
         data-testid={`stake-position-manage-${position.index}`}
-        onClick={() => onManage(position)}
       >
         <Trans>Manage</Trans>
       </Button>
     </div>
   )
-});
+};
 
-// Comp 3617:24023: every data header sorts (3617:25270). Only the Manage button opens the position; the row stays inert like the rewards table.
+// Comp 3617:24023: every data header sorts (3617:25270). The Manage button just bubbles into the row click.
 function buildColumns(
   sort: StakePositionsSort,
-  onSort: (column: StakePositionsSortColumn) => void,
-  onManage: (position: StakeUserPosition) => void
+  onSort: (column: StakePositionsSortColumn) => void
 ): ProductTransactionColumn<StakeUserPosition>[] {
   return [
     ...SORTABLE_COLUMNS.map(({ id, label, width, cell }) => {
@@ -278,14 +274,15 @@ function buildColumns(
         )
       };
     }),
-    manageColumn(onManage)
+    MANAGE_COLUMN
   ];
 }
 
 // Mobile position card (comp 1222:16771 / 1295:21684): 36px position iconbox
 // with a Label 4 title, equal-column CardField pairs split by centered
-// hairlines, and a full-width secondary "View more" footer that opens the
-// position; the card itself stays inert.
+// hairlines, and a full-width secondary "View more" footer. The card wrapper
+// owns the tap-to-manage behavior (the engine wires onRowClick to it); the
+// button simply bubbles into that same handler.
 function PositionIconbox({ position }: { position: StakeUserPosition }) {
   const tone = usePositionTone(position);
   return (
@@ -295,7 +292,7 @@ function PositionIconbox({ position }: { position: StakeUserPosition }) {
   );
 }
 
-const renderCard = (position: StakeUserPosition, onManage: (position: StakeUserPosition) => void) => (
+const renderCard = (position: StakeUserPosition) => (
   <TransactionCard
     header={
       <span className="flex items-center gap-3" data-testid={`stake-position-id-${position.index}`}>
@@ -326,7 +323,7 @@ const renderCard = (position: StakeUserPosition, onManage: (position: StakeUserP
             </CardField>
           </CardFieldRow>
         </div>
-        <Button variant="secondary" size="m" className="w-full" onClick={() => onManage(position)}>
+        <Button variant="secondary" size="m" className="w-full">
           <Trans>View more</Trans>
         </Button>
       </>
@@ -337,7 +334,7 @@ const renderCard = (position: StakeUserPosition, onManage: (position: StakeUserP
 /**
  * Active-positions table (hi-fi 486:31830 / component 486:32084): one row per
  * staking urn with a "Hide inactive positions" toggle (emptied urns stay
- * on-chain forever, so they stay listed behind it). Manage stages the F5
+ * on-chain forever, so they stay listed behind it). Row click stages the F5
  * management modal via `flow=manage&urn_index=N` — nothing mounts on those
  * params until F5, same stub contract as the F2 open-position CTA.
  */
@@ -368,7 +365,7 @@ export function StakePositionsTable({
   const [intentIndices, setIntentIndices] = useState<Set<number>>(() => new Set());
   const [, setSearchParams] = useAppSearchParams();
 
-  const onManage = useCallback(
+  const onRowClick = useCallback(
     (position: StakeUserPosition) => {
       setSearchParams(
         params => {
@@ -392,11 +389,7 @@ export function StakePositionsTable({
       )
     : allPositions;
   const visiblePositions = sortStakePositions(filteredPositions, sort, vaultOf);
-  const columns = buildColumns(
-    sort,
-    column => setSort(previous => nextStakePositionsSort(previous, column)),
-    onManage
-  );
+  const columns = buildColumns(sort, column => setSort(previous => nextStakePositionsSort(previous, column)));
   const filterUnavailable = Boolean(contextError);
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
@@ -499,6 +492,7 @@ export function StakePositionsTable({
           rows={visiblePositions}
           rowKey={position => String(position.index)}
           rowTestId={position => `stake-position-row-${position.index}`}
+          onRowClick={onRowClick}
           onRowIntent={position =>
             setIntentIndices(previous =>
               previous.has(position.index) ? previous : new Set(previous).add(position.index)
@@ -508,14 +502,14 @@ export function StakePositionsTable({
           error={error}
           emptyLabel={<Trans>No active positions.</Trans>}
           emptyIllustration={<SuppliedEmpty aria-hidden />}
-          renderCard={position => renderCard(position, onManage)}
+          renderCard={renderCard}
           cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
           loadingRows={rememberedCount ? Math.min(rememberedCount, STAKE_PAGE_SIZE) : undefined}
           renderBelowRow={position => (
             <StakePositionRowBanner
               position={position}
               onRemediate={action => onRemediate(position, action)}
-              onClaim={() => onManage(position)}
+              onClaim={() => onRowClick(position)}
             />
           )}
         />
