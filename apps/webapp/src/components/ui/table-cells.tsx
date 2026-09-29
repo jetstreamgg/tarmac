@@ -287,9 +287,19 @@ export function CellProduct({ icon, label }: { icon?: ReactNode; label: ReactNod
 }
 
 /** Type=Amount: two-line amount — 12px logo + value over a Body 6 USD line. */
-export function CellAmount({ icon, amount, usd }: { icon?: ReactNode; amount: ReactNode; usd?: ReactNode }) {
+export function CellAmount({
+  icon,
+  amount,
+  usd,
+  className
+}: {
+  icon?: ReactNode;
+  amount: ReactNode;
+  usd?: ReactNode;
+  className?: string;
+}) {
   return (
-    <span className="flex flex-col gap-0.5">
+    <span className={cn('flex flex-col gap-0.5', className)}>
       <span className="flex items-center gap-1 whitespace-nowrap">
         {icon}
         {amount}
