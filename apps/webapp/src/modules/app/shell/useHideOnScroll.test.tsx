@@ -56,4 +56,18 @@ describe('useHideOnScroll', () => {
     scrollTo(198);
     expect(screen.getByTestId('probe').textContent).toBe('hidden');
   });
+
+  // Reading the offset forces a layout, which during the first commit is the
+  // whole page's: it is read a frame later instead.
+  it('takes the starting offset a frame after mount, not during it', async () => {
+    let reads = 0;
+    Object.defineProperty(window, 'scrollY', { configurable: true, get: () => (reads++, 500) });
+    render(<Probe />);
+    expect(reads).toBe(0);
+    await act(() => new Promise(resolve => requestAnimationFrame(resolve)));
+    expect(reads).toBe(1);
+    // Measured from 500, a 2px move is jitter rather than a scroll down.
+    scrollTo(502);
+    expect(screen.getByTestId('probe').textContent).toBe('visible');
+  });
 });

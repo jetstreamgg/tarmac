@@ -11,6 +11,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { preloadRouteChunks } from './vite.preloadRouteChunks';
 
 enum modeEnum {
   development = 'development',
@@ -204,6 +205,9 @@ export default ({ mode }: { mode: modeEnum }) => {
         include: ['buffer']
       }),
       // Must come before the react plugin so route files are transformed first
+      //
+      // preloadRouteChunks (below) maps flat, dot-named route files to URLs; a
+      // routes layout it can't map (subfolders, route groups, ...) fails the build.
       tanstackRouter({
         target: 'react',
         routesDirectory: path.resolve(__dirname, 'src/routes'),
@@ -214,6 +218,7 @@ export default ({ mode }: { mode: modeEnum }) => {
         plugins: [['@lingui/swc-plugin', {}]]
       }),
       tailwindcss(),
+      preloadRouteChunks(),
       lingui(),
       sentryVitePlugin({
         applicationKey: 'sky-webapp',
