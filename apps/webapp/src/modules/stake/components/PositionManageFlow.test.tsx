@@ -90,6 +90,11 @@ describe('manageActionInit', () => {
     expect(manageActionInit('withdraw')).toEqual({ stakeCard: 'withdraw' });
     expect(manageActionInit('borrow')).toEqual({ borrowCard: 'borrow' });
     expect(manageActionInit('repay')).toEqual({ borrowCard: 'repay' });
+    expect(manageActionInit('close')).toEqual({
+      stakeCard: 'withdraw',
+      borrowCard: 'repay',
+      closePosition: true
+    });
     // Reward/delegate open their own modals, not the sheet.
     expect(manageActionInit('reward')).toBeNull();
     expect(manageActionInit('delegate')).toBeNull();

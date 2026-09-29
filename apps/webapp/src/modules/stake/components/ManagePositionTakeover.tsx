@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -76,6 +76,16 @@ export function ManagePositionTakeover({
   const existingCollateral = existingVault?.collateralAmount ?? 0n;
 
   const [state, dispatch] = useStakeManageFlowState(init);
+  // Close position stages the max on both cards as soon as the vault resolves:
+  // all the SKY, and the full debt as wipeAll (the repay 100% chip). A debt-free
+  // position only withdraws, so its borrow toggle goes back off.
+  const [closePending, setClosePending] = useState(!!init.closePosition);
+  if (closePending && !detail.vaultLoading && existingVault) {
+    setClosePending(false);
+    dispatch({ type: 'setSkyAmount', amount: existingCollateral });
+    if (existingDebt > 0n) dispatch({ type: 'setUsdsAmount', amount: existingDebt, wipeAll: true });
+    else dispatch({ type: 'setBorrowEnabled', enabled: false });
+  }
   // Only a debt-free position gets a borrow toggle (Figma 3015:60677); with debt the
   // cards are interlinked, so both stay open (3015:58333). Stake is always on.
   const borrowOptional = !detail.vaultLoading && existingDebt === 0n;

@@ -37,7 +37,7 @@ import { NO_VALUE } from '@/lib/constants';
 const CLAIM_DUST_WAD = 10n ** 16n;
 
 /** The manage actions F5 implements — rows/CTAs route these to the sheet. */
-export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'reward' | 'delegate';
+export type StakeManageAction = 'stake' | 'withdraw' | 'borrow' | 'repay' | 'close' | 'reward' | 'delegate';
 
 // Stat cell (comps 1036:214176 desktop / 1292:63278 phone — same recipe at
 // every tier): Body 6 label over a Label 5 Circular value.
@@ -115,8 +115,8 @@ function MenuRow({
 
 // Inactive-urn menu rows (and the loading skeleton), shared verbatim between
 // the desktop right panel and the mobile manage sheet: the frame layouts
-// (C16) with mostly-disabled rows. The undesigned `Close position` flow
-// renders disabled — flagged on APP-312, not improvised.
+// (C16) with mostly-disabled rows. An emptied urn has nothing left to
+// close, so its `Close position` row stays disabled.
 function ManageMenuRows({
   loading,
   showInactiveBorrowBlock,
@@ -238,7 +238,7 @@ function ManageMenuRows({
 
 // Active urn, with or without debt (comps 3617:24188 / 3617:24541): one
 // "Manage position" entry into the stake/borrow sheet, the reward/delegate
-// switches, and a Claim CTA. `Close position` stays disabled.
+// switches, a Close position entry into the same sheet staged at max, and a Claim CTA.
 function ActiveActions({
   claimDisabled,
   onAction,
@@ -282,7 +282,7 @@ function ActiveActions({
           variant="list"
           icon={<DoorClosed className="text-statusError h-4 w-4" />}
           label={<Trans>Close position</Trans>}
-          disabled
+          onClick={() => onAction('close')}
           dataTestId={`stake-manage-menu-close-position${idSuffix}`}
         />
       </div>

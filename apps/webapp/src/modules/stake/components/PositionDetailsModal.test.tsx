@@ -158,8 +158,6 @@ describe('PositionDetailsModal', () => {
     expect(screen.queryByText('Borrowed amount')).toBeNull();
     expect(screen.queryByTestId('stake-manage-menu-withdraw')).toBeNull();
     expect(screen.queryByTestId('stake-manage-cta-borrow')).toBeNull();
-    expect((screen.getByTestId('stake-manage-menu-close-position') as HTMLButtonElement).disabled).toBe(true);
-
     fireEvent.click(screen.getByTestId('stake-manage-menu-manage'));
     expect(onAction).toHaveBeenLastCalledWith('stake');
     fireEvent.click(screen.getByTestId('stake-manage-menu-change-reward'));
@@ -240,13 +238,15 @@ describe('PositionDetailsModal', () => {
     expect(onAction).toHaveBeenLastCalledWith('reward');
   });
 
-  it('keeps the undesigned close-position flow disabled (M4: flagged, not improvised)', () => {
+  it('routes Close position to the close action, with or without debt (Figma 3644:62026)', () => {
     const { onAction } = renderModal();
+    fireEvent.click(screen.getByTestId('stake-manage-menu-close-position'));
+    expect(onAction).toHaveBeenLastCalledWith('close');
+    cleanup();
 
-    const row = screen.getByTestId('stake-manage-menu-close-position') as HTMLButtonElement;
-    expect(row.disabled).toBe(true);
-    fireEvent.click(row);
-    expect(onAction).not.toHaveBeenCalled();
+    const { onAction: onActionNoDebt } = renderModal(NO_DEBT);
+    fireEvent.click(screen.getByTestId('stake-manage-menu-close-position'));
+    expect(onActionNoDebt).toHaveBeenLastCalledWith('close');
   });
 
   it('opens the claim modal from an inactive urn claim row with its claimable chip (F6)', () => {

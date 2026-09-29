@@ -372,6 +372,31 @@ describe('ManagePositionTakeover', () => {
     );
   });
 
+  it('close position stages the full withdraw and a wipeAll repay (Figma 3644:62026)', () => {
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+
+    expect(h.launchParams?.skyToFree).toBe(h.existingCollateral);
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('close position on a debt-free urn only withdraws, with the borrow card off', () => {
+    h.existingDebt = 0n;
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+
+    expect(h.launchParams?.skyToFree).toBe(h.existingCollateral);
+    expect(h.launchParams?.usdsToWipe).toBe(0n);
+    expect(h.launchParams?.wipeAll).toBe(false);
+    expect(screen.queryByTestId('stake-manage-borrow-amount')).toBeNull();
+  });
+
+  it('close position waits for the vault read before staging', () => {
+    h.vaultLoading = true;
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+    expect(h.launchParams?.skyToFree).toBe(0n);
+  });
+
   it('keeps Confirm disabled while the typed amount has not debounced yet', () => {
     // The seam prepares calldata from the DEBOUNCED amounts; clicking Confirm
     // inside the debounce window would launch stale calldata. The gate must
