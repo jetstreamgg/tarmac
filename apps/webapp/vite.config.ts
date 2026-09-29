@@ -205,6 +205,9 @@ export default ({ mode }: { mode: modeEnum }) => {
         include: ['buffer']
       }),
       // Must come before the react plugin so route files are transformed first
+      //
+      // preloadRouteChunks (below) maps flat, dot-named route files to URLs; a
+      // routes layout it can't map (subfolders, route groups, ...) fails the build.
       tanstackRouter({
         target: 'react',
         routesDirectory: path.resolve(__dirname, 'src/routes'),
