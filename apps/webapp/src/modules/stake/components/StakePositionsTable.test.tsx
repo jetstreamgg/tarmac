@@ -33,6 +33,7 @@ vi.mock('wagmi', async importOriginal => {
 
 const h = vi.hoisted(() => ({
   vault: { riskLevel: 'LOW' } as Record<string, unknown> | undefined,
+  vaultByIndex: undefined as Record<number, Record<string, unknown>> | undefined,
   vaultError: null as Error | null,
   claimError: null as Error | null
 }));
@@ -50,8 +51,13 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
 // Per-row reads: urn address, vault risk, claimable rewards, prices — all
 // mocked to fixed values so the table logic is what's under test.
 vi.mock('../hooks/useStakeRowVault', () => ({
-  useStakeRowVault: () => ({
-    data: h.vaultError ? undefined : h.vault,
+  useStakeRowVault: (position: { index: number }) => ({
+    data: h.vaultError ? undefined : (h.vaultByIndex?.[position.index] ?? h.vault),
+    isLoading: false,
+    error: h.vaultError
+  }),
+  useStakeRowVaultLookup: () => ({
+    vaultOf: (index: number) => (h.vaultError ? undefined : (h.vaultByIndex?.[index] ?? h.vault)),
     isLoading: false,
     error: h.vaultError
   })
@@ -162,6 +168,7 @@ describe('StakePositionsTable', () => {
     mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
     h.vault = { riskLevel: 'LOW' };
+    h.vaultByIndex = undefined;
     h.vaultError = null;
     h.claimError = null;
   });
@@ -463,5 +470,55 @@ describe('StakePositionsTable — details prefetch', () => {
     expect(screen.getByTestId('stake-detail-warmer-3')).toBeTruthy();
     fireEvent.focus(screen.getByTestId('stake-position-row-4'));
     expect(screen.getByTestId('stake-detail-warmer-4')).toBeTruthy();
+  });
+});
+
+describe('StakePositionsTable — sorting', () => {
+  afterEach(cleanup);
+
+  const rowOrder = () =>
+    screen
+      .getAllByTestId(/^stake-position-row-\d+$/)
+      .map(row => row.getAttribute('data-testid')!.replace('stake-position-row-', ''));
+
+  const positions: StakeUserPosition[] = [
+    { ...POSITIONS[0], index: 0, skyLocked: 100n, usdsDebt: 10n },
+    { ...POSITIONS[0], index: 1, skyLocked: 300n, usdsDebt: 0n },
+    { ...POSITIONS[0], index: 2, skyLocked: 200n, usdsDebt: 20n }
+  ];
+
+  it('defaults to Position ID ascending, marked on its header', () => {
+    renderTable([positions[2], positions[0], positions[1]]);
+    expect(rowOrder()).toEqual(['0', '1', '2']);
+    expect(screen.getByTestId('stake-positions-sort-position').closest('th')?.getAttribute('aria-sort')).toBe(
+      'ascending'
+    );
+  });
+
+  it('sorts a new column largest first and flips on a second click', () => {
+    renderTable(positions);
+    fireEvent.click(screen.getByTestId('stake-positions-sort-staked'));
+    expect(rowOrder()).toEqual(['1', '2', '0']);
+    expect(screen.getByTestId('stake-positions-sort-staked').closest('th')?.getAttribute('aria-sort')).toBe(
+      'descending'
+    );
+    expect(screen.getByTestId('stake-positions-sort-position').closest('th')?.hasAttribute('aria-sort')).toBe(
+      false
+    );
+
+    fireEvent.click(screen.getByTestId('stake-positions-sort-staked'));
+    expect(rowOrder()).toEqual(['0', '2', '1']);
+  });
+
+  it('sorts risk by the vault figures, debt-free rows last', () => {
+    h.vaultByIndex = {
+      0: { riskLevel: 'LOW', liquidationProximityPercentage: 20 },
+      2: { riskLevel: 'MEDIUM', liquidationProximityPercentage: 60 }
+    };
+    renderTable(positions);
+    fireEvent.click(screen.getByTestId('stake-positions-sort-risk'));
+    expect(rowOrder()).toEqual(['2', '0', '1']);
+    fireEvent.click(screen.getByTestId('stake-positions-sort-risk'));
+    expect(rowOrder()).toEqual(['0', '2', '1']);
   });
 });

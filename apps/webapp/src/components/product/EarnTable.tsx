@@ -2,6 +2,7 @@ import { KeyboardEvent, ReactNode, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { RateInfo } from './RateInfo';
+import { ariaSortFor, SortHeaderButton } from './SortHeaderButton';
 import { Trans } from '@lingui/react/macro';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { rowCollapseAnimations, rowCollapseContainerAnimations } from '@/modules/ui/animation/presets';
@@ -475,32 +476,20 @@ export function EarnTable({
               <TableHead
                 key={column.key}
                 className={column.width}
-                aria-sort={isSorted ? (sort?.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+                aria-sort={ariaSortFor(isSorted, sort?.direction ?? 'asc')}
               >
                 {/* The explainer sits beside the sort button, not inside it:
                     a popover trigger nested in a button is invalid markup and
                     would fight the sort click. */}
                 <span className="inline-flex items-center gap-1">
                   {onSortChange ? (
-                    <button
-                      type="button"
-                      data-testid={`${tid}-sort-${column.key}`}
+                    <SortHeaderButton
+                      label={column.label}
+                      isSorted={isSorted}
+                      direction={sort?.direction ?? 'asc'}
                       onClick={() => onSortChange(column.key)}
-                      className={cn(
-                        'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
-                        isSorted && 'text-fgPrimary'
-                      )}
-                    >
-                      {column.label}
-                      <ChevronDown
-                        size={12}
-                        className={cn(
-                          'transition-transform',
-                          isSorted ? 'opacity-100' : 'opacity-40',
-                          isSorted && sort?.direction === 'asc' && 'rotate-180'
-                        )}
-                      />
-                    </button>
+                      dataTestId={`${tid}-sort-${column.key}`}
+                    />
                   ) : (
                     column.label
                   )}

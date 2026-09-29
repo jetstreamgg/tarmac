@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount, useChainId } from 'wagmi';
 import { formatPercent } from '@/utils';
@@ -33,7 +33,15 @@ import {
 } from '../hooks/useStakeUserPositions';
 import { StakePositionRowBanner } from './StakePositionRowBanner';
 import { StakePositionDetailWarmer } from './StakePositionDetailWarmer';
-import { useStakeRowVault } from '../hooks/useStakeRowVault';
+import { useStakeRowVault, useStakeRowVaultLookup } from '../hooks/useStakeRowVault';
+import {
+  DEFAULT_STAKE_POSITIONS_SORT,
+  nextStakePositionsSort,
+  sortStakePositions,
+  type StakePositionsSort,
+  type StakePositionsSortColumn
+} from '../lib/positionsSort';
+import { ariaSortFor, SortHeaderButton } from '@/components/product/SortHeaderButton';
 import { recallStakePositionCount, rememberStakePositionCount } from '../lib/positionCountMemory';
 
 /** Filled pill badge replacing the risk meter once a position has been liquidated. */
@@ -185,11 +193,15 @@ export const STAKE_PREFETCH_ROWS = 3;
 // ProductTransactionsTable's default page size; the skeleton never exceeds one page.
 const STAKE_PAGE_SIZE = 7;
 
-// Comp 3617:24023. The Manage button just bubbles into the row click.
-const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
+const SORTABLE_COLUMNS: {
+  id: StakePositionsSortColumn;
+  label: ReactNode;
+  width: string;
+  cell: (position: StakeUserPosition) => ReactNode;
+}[] = [
   {
     id: 'position',
-    header: (
+    label: (
       <span className="whitespace-nowrap">
         <Trans>Position ID</Trans>
       </span>
@@ -197,50 +209,74 @@ const COLUMNS: ProductTransactionColumn<StakeUserPosition>[] = [
     width: '150px',
     cell: position => <PositionIdCell position={position} />
   },
-  {
-    id: 'staked',
-    header: <Trans>Staked (SKY)</Trans>,
-    width: '1fr',
-    cell: stakedCell
-  },
+  { id: 'staked', label: <Trans>Staked (SKY)</Trans>, width: '1fr', cell: stakedCell },
   {
     id: 'borrowed',
-    header: <Trans>Borrowed (USDS)</Trans>,
+    label: <Trans>Borrowed (USDS)</Trans>,
     width: '1fr',
     cell: position => <PositionBorrowedCell position={position} />
   },
   {
     id: 'ltv',
-    header: <Trans>Loan-to-value</Trans>,
+    label: <Trans>Loan-to-value</Trans>,
     width: '1fr',
     cell: position => <PositionLtvCell position={position} />
   },
   {
     id: 'risk',
-    header: <Trans>Liquidation risk</Trans>,
+    label: <Trans>Liquidation risk</Trans>,
     width: '1fr',
     cell: position => <PositionRiskCell position={position} />
-  },
-  {
-    id: 'manage',
-    header: null,
-    width: '104px',
-    skeleton: false,
-    cell: position => (
-      // 104 - 2 × 8 padding.
-      <div className="min-w-[88px]">
-        <Button
-          variant="secondary"
-          size="s"
-          className="mx-auto flex w-20 px-2"
-          data-testid={`stake-position-manage-${position.index}`}
-        >
-          <Trans>Manage</Trans>
-        </Button>
-      </div>
-    )
   }
 ];
+
+const MANAGE_COLUMN: ProductTransactionColumn<StakeUserPosition> = {
+  id: 'manage',
+  header: null,
+  width: '104px',
+  skeleton: false,
+  cell: position => (
+    // 104 - 2 × 8 padding.
+    <div className="min-w-[88px]">
+      <Button
+        variant="secondary"
+        size="s"
+        className="mx-auto flex w-20 px-2"
+        data-testid={`stake-position-manage-${position.index}`}
+      >
+        <Trans>Manage</Trans>
+      </Button>
+    </div>
+  )
+};
+
+// Comp 3617:24023: every data header sorts (3617:25270). The Manage button just bubbles into the row click.
+function buildColumns(
+  sort: StakePositionsSort,
+  onSort: (column: StakePositionsSortColumn) => void
+): ProductTransactionColumn<StakeUserPosition>[] {
+  return [
+    ...SORTABLE_COLUMNS.map(({ id, label, width, cell }) => {
+      const isSorted = sort.column === id;
+      return {
+        id,
+        width,
+        cell,
+        ariaSort: ariaSortFor(isSorted, sort.direction),
+        header: (
+          <SortHeaderButton
+            label={label}
+            isSorted={isSorted}
+            direction={sort.direction}
+            onClick={() => onSort(id)}
+            dataTestId={`stake-positions-sort-${id}`}
+          />
+        )
+      };
+    }),
+    MANAGE_COLUMN
+  ];
+}
 
 // Mobile position card (comp 1222:16771 / 1295:21684): 36px position iconbox
 // with a Label 4 title, equal-column CardField pairs split by centered
@@ -324,6 +360,8 @@ export function StakePositionsTable({
   const { isConnected, address } = useAccount();
   const chainId = useChainId();
   const [showInactive, setShowInactive] = useState(false);
+  const [sort, setSort] = useState<StakePositionsSort>(DEFAULT_STAKE_POSITIONS_SORT);
+  const { vaultOf } = useStakeRowVaultLookup();
   const [intentIndices, setIntentIndices] = useState<Set<number>>(() => new Set());
   const [, setSearchParams] = useAppSearchParams();
 
@@ -345,11 +383,13 @@ export function StakePositionsTable({
   // An emptied urn only hides when it is known NOT to be liquidated: a
   // liquidated one stays listed, and so does one whose bark history is
   // unknown (subgraph down — `isLiquidatedStakePosition` is undefined).
-  const visiblePositions = !showInactive
+  const filteredPositions = !showInactive
     ? allPositions.filter(
         position => !isInactiveStakePosition(position) || isLiquidatedStakePosition(position) !== false
       )
     : allPositions;
+  const visiblePositions = sortStakePositions(filteredPositions, sort, vaultOf);
+  const columns = buildColumns(sort, column => setSort(previous => nextStakePositionsSort(previous, column)));
   const filterUnavailable = Boolean(contextError);
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
@@ -448,7 +488,7 @@ export function StakePositionsTable({
       <div className="flex flex-col gap-4">
         <ProductTransactionsTable
           dataTestId="stake-positions-table"
-          columns={COLUMNS}
+          columns={columns}
           rows={visiblePositions}
           rowKey={position => String(position.index)}
           rowTestId={position => `stake-position-row-${position.index}`}

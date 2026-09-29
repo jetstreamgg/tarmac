@@ -19,21 +19,35 @@ export function useStakeRowVault(position: { index: number; urnAddress?: `0x${st
   isLoading: boolean;
   error: Error | null;
 } {
+  const { vaultOf, isLoading, error } = useStakeRowVaultLookup();
+  const data = vaultOf(position.index);
+  return data ? { data, isLoading: false, error: null } : { data: undefined, isLoading, error };
+}
+
+/** Every row's vault figures from the same snapshot, for list-level work such as sorting. */
+export function useStakeRowVaultLookup(): {
+  vaultOf: (index: number) => Vault | undefined;
+  isLoading: boolean;
+  error: Error | null;
+} {
   const ilkName = getIlkName(2);
   const { data: urnVaults, ilk, isLoading, error } = useStakeUrnVaults();
-  const urn = urnVaults?.find(entry => entry.index === position.index);
 
   const { data: prices } = usePrices();
   const priceText = prices?.[COLLATERAL_PRICE_SYMBOL[ilkName]]?.price;
   const marketPrice = priceText ? parseUnits(priceText, 18) : undefined;
 
-  if (!urn || !ilk) return { data: undefined, isLoading, error };
+  const vaultOf = (index: number): Vault | undefined => {
+    const urn = urnVaults?.find(entry => entry.index === index);
+    if (!urn || !ilk) return undefined;
 
-  const info = calculateVaultInfo({ ...ilk, art: urn.art, ink: urn.skyLocked, marketPrice });
-  const minCollateralForDust =
-    info.dust && ilk.mat && info.delayedPrice
-      ? math.minSafeCollateralAmount(info.dust, ilk.mat, info.delayedPrice)
-      : undefined;
+    const info = calculateVaultInfo({ ...ilk, art: urn.art, ink: urn.skyLocked, marketPrice });
+    const minCollateralForDust =
+      info.dust && ilk.mat && info.delayedPrice
+        ? math.minSafeCollateralAmount(info.dust, ilk.mat, info.delayedPrice)
+        : undefined;
+    return { ...info, collateralType: ilkName, minCollateralForDust };
+  };
 
-  return { data: { ...info, collateralType: ilkName, minCollateralForDust }, isLoading: false, error: null };
+  return { vaultOf, isLoading, error };
 }
