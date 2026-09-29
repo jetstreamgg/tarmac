@@ -12,8 +12,6 @@ import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useExitHold } from '@/modules/ui/hooks/useExitHold';
-import { getBannerById } from '@/data/banners/banners';
-import { parseBannerContent } from '@/utils/bannerContentParser';
 import { StakeUserPosition, useStakeUserPositions } from '../hooks/useStakeUserPositions';
 import { StakeManageFlowInit } from '../hooks/useStakeManageFlowState';
 import { StakePositionsTab } from './StakePositionsTab';
@@ -39,9 +37,6 @@ function parseStakeTab(value: string | null, fallback: StakeTab): StakeTab {
   if (value && LEGACY_OVERVIEW_TABS.includes(value)) return 'overview';
   return STAKE_TABS.includes(value as StakeTab) ? (value as StakeTab) : fallback;
 }
-
-// Corpus-fed header description (PRD Decision 11): corpus wins over Figma copy.
-const ABOUT_BANNER_ID = 'about-the-staking-engine';
 
 /**
  * Stake destination page: SKY-branded header + the two-tab strip
@@ -117,7 +112,6 @@ export function StakeProductPage() {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const networkBadge = useNetworkTitleBadge(networks, 'stake-network');
-  const aboutBanner = getBannerById(ABOUT_BANNER_ID);
 
   return (
     // Desktop comp 1222:15123: corrected measurement (Figma Annotations R2
@@ -162,14 +156,15 @@ export function StakeProductPage() {
             />
           )}
         </div>
-        {aboutBanner?.description && (
-          <div
-            data-testid="stake-header-description"
-            className="text-fgSecondary max-w-[761px] text-xs leading-[18px]"
-          >
-            {parseBannerContent(aboutBanner.description, 'text-xs leading-[18px]')}
-          </div>
-        )}
+        <p
+          data-testid="stake-header-description"
+          className="text-fgSecondary max-w-[761px] text-xs leading-[18px]"
+        >
+          <Trans>
+            Stake SKY to accrue rewards, have a voting power in Sky Protocol and optionally borrow USDS
+            against your staked position. Unstake anytime: there is no lockup period.
+          </Trans>
+        </p>
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange}>

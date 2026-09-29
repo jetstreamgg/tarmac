@@ -4,7 +4,6 @@ import { render, screen, cleanup, fireEvent, act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SetSearchParams } from '@/lib/navigation';
 import type { StakeUserPosition } from '../hooks/useStakeUserPositions';
-import { getBannerById } from '@/data/banners/banners';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -149,12 +148,12 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(screen.getByText('SKY Staking')).toBeTruthy();
   });
 
-  it('renders the header description from the corpus banner', () => {
+  it('renders the header description', () => {
     renderPage();
 
-    const body = getBannerById('about-the-staking-engine')?.description ?? '';
-    expect(body.length).toBeGreaterThan(0);
-    expect(screen.getByTestId('stake-header-description').textContent).toContain(body);
+    expect(screen.getByTestId('stake-header-description').textContent?.replace(/\s+/g, ' ')).toBe(
+      'Stake SKY to accrue rewards, have a voting power in Sky Protocol and optionally borrow USDS against your staked position. Unstake anytime: there is no lockup period.'
+    );
   });
 
   it('defaults to the positions tab when no tab param is present', () => {
