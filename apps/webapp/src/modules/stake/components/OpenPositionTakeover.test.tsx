@@ -810,6 +810,26 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     expect(screen.queryByTestId('stake-takeover-delegate-search')).toBeNull();
   });
 
+  it('undelegates when the user switches the delegate card off', () => {
+    renderReopen();
+    typeStakeAmount('100');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-delegate-card-toggle'));
+
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(ZERO_ADDRESS);
+  });
+
+  it('keeps the zero delegate when a never-delegated urn toggles the card on and off', () => {
+    h.urnDelegate = ZERO_ADDRESS;
+    renderReopen();
+    typeStakeAmount('100');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-delegate-card-toggle'));
+    fireEvent.click(screen.getByTestId('stake-takeover-delegate-card-toggle'));
+
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(ZERO_ADDRESS);
+  });
+
   it('stages a different delegate once the user selects one', () => {
     renderReopen();
     typeStakeAmount('100');

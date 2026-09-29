@@ -73,7 +73,8 @@ export interface ReopenContext {
  * picker baselines, and the selectFarm/selectVoteDelegate legs only fire when
  * the user stages a DIFFERENT selection — an untouched form must never emit
  * either (C18: with `undefined` the delegate leg would silently undelegate the
- * urn). The frames keep the "Open a position" header (C17a).
+ * urn). Switching the delegate card off is the one explicit undelegate. The
+ * frames keep the "Open a position" header (C17a).
  */
 export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const chainId = useChainId();
@@ -253,7 +254,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     [debouncedSkyToLock, debouncedUsdsToBorrow]
   );
 
-  const effectiveDelegate = state.selectedDelegate ?? reopenDelegateBaseline;
+  // Reopen: switching the card off undelegates an urn that has a delegate.
+  const undelegate = !!currentUrnDelegate && !state.delegateEnabled;
+  const effectiveDelegate = undelegate ? ZERO_ADDRESS : (state.selectedDelegate ?? reopenDelegateBaseline);
   // Memoized so the review body below keeps its identity across renders — it
   // is a dep of the launch descriptor.
   const rewardFrom = useMemo(
