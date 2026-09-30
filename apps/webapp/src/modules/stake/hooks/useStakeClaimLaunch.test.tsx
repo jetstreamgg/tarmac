@@ -33,6 +33,7 @@ const h = vi.hoisted(() => ({
   mockExecute: vi.fn(),
   updateMock: vi.fn(),
   skyAllowance: 0n as bigint | undefined,
+  isBatch: false,
   claims: [] as { contractAddress: `0x${string}`; claimBalance: bigint; rewardSymbol: string }[]
 }));
 
@@ -59,6 +60,7 @@ vi.mock('@/hooks/shared/useTransactionFlow', () => ({
       isLoading: false,
       prepared: true,
       execute: h.mockExecute,
+      isBatch: h.isBatch && params.calls.length > 1,
       currentCallIndex: 0,
       reset: () => undefined
     };
@@ -133,12 +135,16 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
 
 import { REFERRAL_CODE } from '@/lib/constants';
 import { generateStakeCalldata } from './useStakeCalldata';
-import { buildStakeClaimSteps, useStakeClaimLaunch } from './useStakeClaimLaunch';
+import {
+  buildStakeClaimSteps,
+  buildStakeSequentialClaimSteps,
+  useStakeClaimLaunch
+} from './useStakeClaimLaunch';
 import { makeStakeId } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 
-const reward = (contract: `0x${string}`, symbol: string): ClaimableReward => ({
-  id: makeStakeId(URN_INDEX, contract),
+const reward = (contract: `0x${string}`, symbol: string, urnIndex = URN_INDEX): ClaimableReward => ({
+  id: makeStakeId(urnIndex, contract),
   source: 'stake',
   tokenName: 'Sky token',
   tokenSymbol: symbol,
@@ -229,12 +235,32 @@ describe('buildStakeClaimSteps', () => {
   });
 });
 
+describe('buildStakeSequentialClaimSteps', () => {
+  it('draws one row per getReward in call order, naming positions across urns', () => {
+    expect(
+      buildStakeSequentialClaimSteps([reward(SKY_FARM, 'SKY', 0n), reward(SKY_FARM, 'SKY', 1n), SPK_REWARD])
+    ).toEqual([
+      { label: 'Position 1: Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Position 2: Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Position 2: Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
+    ]);
+  });
+
+  it('keeps plain Claim labels within one urn', () => {
+    expect(buildStakeSequentialClaimSteps([SKY_REWARD, SPK_REWARD])).toEqual([
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
+    ]);
+  });
+});
+
 describe('useStakeClaimLaunch — engines', () => {
   beforeEach(() => {
     h.flows = [];
     h.mockExecute.mockClear();
     h.updateMock.mockClear();
     h.skyAllowance = 0n;
+    h.isBatch = false;
     bothClaims();
   });
   afterEach(cleanup);
@@ -303,6 +329,7 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     h.mockExecute.mockClear();
     h.updateMock.mockClear();
     h.skyAllowance = 0n;
+    h.isBatch = false;
     bothClaims();
   });
   afterEach(cleanup);
@@ -325,17 +352,50 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('pushes Approve + Claim + Restake steps on confirm(true)', () => {
+  it('pushes Approve + Claim + Restake steps on confirm(true), sharing the multicall write', () => {
     const { result } = renderLaunch();
     act(() => result.current.confirm(true));
 
     expect(lastPush().steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
-      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
-      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." },
-      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked." }
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved.", write: 0 },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed.", write: 1 },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed.", write: 1 },
+      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked.", write: 1 }
     ]);
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it('puts every restake row on the one multicall write when no approval is needed', () => {
+    h.skyAllowance = HAS_ALLOWANCE;
+    const { result } = renderLaunch();
+    act(() => result.current.confirm(true));
+
+    expect(lastPush().steps.map((step: { write?: number }) => step.write)).toEqual([0, 0, 0]);
+  });
+
+  it('draws one row per getReward on an unbundled multi-urn claim', () => {
+    const selected = [reward(SKY_FARM, 'SKY', 0n), reward(SKY_FARM, 'SKY', 1n), reward(SPK_FARM, 'SPK', 1n)];
+    const { result } = renderLaunch({ urnIndex: undefined, selected });
+    act(() => result.current.confirm(false));
+
+    expect(lastPush().steps.map((step: { label: string; tokenSymbol: string }) => step.label)).toEqual([
+      'Position 1: Claim',
+      'Position 2: Claim',
+      'Position 2: Claim'
+    ]);
+    expect(lastFlows()[0].calls).toHaveLength(3);
+  });
+
+  it('keeps one row per token when the plain claim bundles', () => {
+    h.isBatch = true;
+    const selected = [reward(SKY_FARM, 'SKY', 0n), reward(SKY_FARM, 'SKY', 1n), reward(SPK_FARM, 'SPK', 1n)];
+    const { result } = renderLaunch({ urnIndex: undefined, selected });
+    act(() => result.current.confirm(false));
+
+    expect(lastPush().steps).toEqual([
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
+      { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
+    ]);
   });
 
   it('pushes legacy claim analytics: claimAll for a multi-token plain claim', () => {
@@ -373,9 +433,9 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     const push = lastPush();
     expect(push.analytics.action).toBe('claimAndRestake');
     expect(push.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
-      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
-      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked." }
+      { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved.", write: 0 },
+      { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed.", write: 1 },
+      { label: 'Restake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been restaked.", write: 1 }
     ]);
   });
 

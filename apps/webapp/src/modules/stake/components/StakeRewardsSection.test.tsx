@@ -18,7 +18,8 @@ const h = vi.hoisted(() => ({
   claims: [] as StakeUrnClaim[],
   modalProps: undefined as Record<string, unknown> | undefined,
   mounts: 0,
-  unmounts: 0
+  unmounts: 0,
+  canBundle: true
 }));
 
 vi.mock('wagmi', () => ({ useChainId: () => 1 }));
@@ -26,6 +27,7 @@ vi.mock('@/hooks', async importOriginal => ({
   ...(await importOriginal<typeof import('@/hooks')>()),
   usePrices: () => ({ data: { SKY: { price: '0.05' }, USDS: { price: '1' } } })
 }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => h.canBundle }));
 vi.mock('../hooks/useStakeUrnsClaims', () => ({
   useStakeUrnsClaims: () => ({ claims: h.claims, isLoading: false })
 }));
@@ -70,6 +72,7 @@ afterEach(() => {
   h.modalProps = undefined;
   h.mounts = 0;
   h.unmounts = 0;
+  h.canBundle = true;
 });
 
 describe('StakeRewardsSection', () => {
@@ -102,6 +105,15 @@ describe('StakeRewardsSection', () => {
     expect(selection.targets).toHaveLength(2);
     expect(selection.rewardContracts).toBeUndefined();
     expect(h.modalProps?.closeAfterSuccess).toBe(true);
+  });
+
+  it('hides Claim all when the wallet cannot bundle', () => {
+    h.canBundle = false;
+    h.claims = [claim(0n, SKY_A, 1n, 'SKY'), claim(1n, USDS, 3n, 'USDS')];
+    renderSection();
+
+    expect(screen.getAllByTestId('reward-row')).toHaveLength(2);
+    expect(screen.queryByTestId('stake-rewards-claim-all')).toBeNull();
   });
 
   it('a token row claims every farm paying that token', () => {

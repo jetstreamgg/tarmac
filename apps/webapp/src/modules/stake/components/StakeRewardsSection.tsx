@@ -8,13 +8,15 @@ import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { useStakeUrnsClaims, type StakeClaimTarget } from '../hooks/useStakeUrnsClaims';
 import { groupClaimsByToken, tokenClaimToReward } from '../lib/stakeClaims';
 import { priceOfFromPrices } from '../lib/stakeUsdNotional';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { StakeClaimModal, type StakeClaimSelection } from './StakeClaimModal';
 
 /**
  * My positions Rewards section (comps 3617:24049, 3617:25250): claimable
  * rewards across the wallet's urns, one row per reward token. With two or more
- * tokens a primary "Claim all" heads the section and the row CTAs step down to
- * secondary. A row claims that token from every urn holding it.
+ * tokens a primary "Claim all" heads the section (bundling wallets only, as in
+ * Portfolio) and the row CTAs step down to secondary. A row claims that token from
+ * every urn holding it.
  */
 export function StakeRewardsSection({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
@@ -41,6 +43,7 @@ export function StakeRewardsSection({ positions }: { positions?: StakeUserPositi
   }, [groups, prices, chainId]);
 
   const multiple = rewards.length > 1;
+  const canClaimAll = useShouldUseBatch();
 
   // The launcher sits outside the section so a refetch that empties rewards can't unmount it mid-claim.
   return (
@@ -59,7 +62,7 @@ export function StakeRewardsSection({ positions }: { positions?: StakeUserPositi
             <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
               <Trans>Rewards</Trans>
             </h3>
-            {multiple && (
+            {multiple && canClaimAll && (
               <Button
                 variant="primary"
                 size="m"
