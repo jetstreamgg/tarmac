@@ -18,6 +18,7 @@ import { StakePositionsTab } from './StakePositionsTab';
 import { StakeOverviewTab } from './StakeOverviewTab';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
 import { PositionManageFlow, manageActionInit } from './PositionManageFlow';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 /** Matches the takeover dismissal in `components/product/TakeoverShell.tsx`. */
 const TAKEOVER_EXIT_MS = 300;
@@ -88,14 +89,11 @@ export function StakeProductPage() {
   const stageManageFlow = useCallback(
     (position: StakeUserPosition, pending: StakeManageFlowInit | 'claim' | null) => {
       setPendingSheetInit(pending);
-      setSearchParams(
-        params => {
-          params.set(QueryParams.Flow, 'manage');
-          params.set(QueryParams.UrnIndex, String(position.index));
-          return params;
-        },
-        { replace: true }
-      );
+      setSearchParams(params => {
+        params.set(QueryParams.Flow, 'manage');
+        params.set(QueryParams.UrnIndex, String(position.index));
+        return params;
+      }, FLOW_NAV_OPTIONS);
     },
     [setSearchParams]
   );

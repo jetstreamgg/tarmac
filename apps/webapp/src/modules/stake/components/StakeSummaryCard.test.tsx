@@ -187,6 +187,7 @@ describe('StakeSummaryCard', () => {
 
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('1');
+    expect(setSearchParamsMock.mock.calls[0][1]).toEqual({ replace: true, resetScroll: false });
   });
 
   it('leads with Total borrowed and shows the liquidation risk for a single borrowing urn (comp 3617:24493)', () => {

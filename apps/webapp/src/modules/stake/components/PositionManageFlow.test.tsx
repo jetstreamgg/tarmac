@@ -299,6 +299,7 @@ describe('PositionManageFlow', () => {
     expect(mockSearchParams.get('flow')).toBeNull();
     expect(mockSearchParams.get('urn_index')).toBeNull();
     expect(mockSearchParams.get('stake_tab')).toBeNull();
+    expect(setSearchParamsMock.mock.calls.at(-1)?.[1]).toEqual({ replace: true, resetScroll: false });
   });
 
   it('opens the sheet directly on initialSheetInit, ahead of stake_tab and details', () => {

@@ -43,6 +43,7 @@ import {
 } from '../lib/positionsSort';
 import { ariaSortFor, SortHeaderButton } from '@/components/product/SortHeaderButton';
 import { recallStakePositionCount, rememberStakePositionCount } from '../lib/positionCountMemory';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 /** Filled pill badge replacing the risk meter once a position has been liquidated. */
 function LiquidatedBadge() {
@@ -372,14 +373,11 @@ export function StakePositionsTable({
 
   const onRowClick = useCallback(
     (position: StakeUserPosition) => {
-      setSearchParams(
-        params => {
-          params.set(QueryParams.Flow, 'manage');
-          params.set(QueryParams.UrnIndex, String(position.index));
-          return params;
-        },
-        { replace: true }
-      );
+      setSearchParams(params => {
+        params.set(QueryParams.Flow, 'manage');
+        params.set(QueryParams.UrnIndex, String(position.index));
+        return params;
+      }, FLOW_NAV_OPTIONS);
     },
     [setSearchParams]
   );
@@ -403,13 +401,10 @@ export function StakePositionsTable({
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
   const openPosition = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.set(QueryParams.Flow, 'open');
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.set(QueryParams.Flow, 'open');
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams]);
   const onOpenPosition = useConnectThenAct(openPosition, 'stake_open');
 

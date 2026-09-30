@@ -31,6 +31,7 @@ import { useStakeEstAnnualRewardsUsd } from '../hooks/useStakeEstAnnualRewardsUs
 import { useStakeRowVault } from '../hooks/useStakeRowVault';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { RiskPill } from './StakeManageBorrowCard';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 function SummaryStat({
   label,
@@ -104,14 +105,11 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   const singlePosition = countedPositions?.length === 1 ? countedPositions[0] : undefined;
   const onManage = useCallback(() => {
     if (!singlePosition) return;
-    setSearchParams(
-      params => {
-        params.set(QueryParams.Flow, 'manage');
-        params.set(QueryParams.UrnIndex, String(singlePosition.index));
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.set(QueryParams.Flow, 'manage');
+      params.set(QueryParams.UrnIndex, String(singlePosition.index));
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams, singlePosition]);
 
   // Both live Vat figures via `useStakeUrnVaults` (debt = art × rate, accrued

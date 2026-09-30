@@ -10,6 +10,7 @@ import { ManagePositionTakeover } from './ManagePositionTakeover';
 import { StakeClaimModal } from './StakeClaimModal';
 import { StakeChangeRewardModal, StakeChangeDelegateModal } from './StakeChangeSelectionModal';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 /**
  * Menu action → sheet pre-toggle mapping (UX B.3 deep links). Reward and
@@ -102,15 +103,12 @@ export function PositionManageFlow({
   }, []);
 
   const close = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.delete(QueryParams.Flow);
-        params.delete(QueryParams.UrnIndex);
-        params.delete(QueryParams.StakeTab);
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.delete(QueryParams.Flow);
+      params.delete(QueryParams.UrnIndex);
+      params.delete(QueryParams.StakeTab);
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams]);
 
   const onAction = useCallback((action: StakeManageAction) => {

@@ -296,6 +296,7 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
 
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('3');
+    expect(setSearchParamsMock.mock.calls.at(-1)?.[1]).toEqual({ replace: true, resetScroll: false });
     expect(h.manageFlowProps?.initialSheetInit).toEqual({ borrowCard: 'repay' });
   });
 

@@ -44,6 +44,7 @@ import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 const FOOTER_NOTE_CLASSES =
   'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
@@ -226,13 +227,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet) && rewardBaselineResolved;
 
   const closeOpenFlow = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.delete(QueryParams.Flow);
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.delete(QueryParams.Flow);
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams]);
   const close = reopen ? reopen.onClose : closeOpenFlow;
 

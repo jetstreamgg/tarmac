@@ -721,6 +721,7 @@ describe('OpenPositionTakeover', () => {
     fireEvent.click(screen.getByTestId('stake-takeover-close'));
 
     expect(mockSearchParams.get('flow')).toBeNull();
+    expect(setSearchParamsMock.mock.calls.at(-1)?.[1]).toEqual({ replace: true, resetScroll: false });
   });
 });
 
