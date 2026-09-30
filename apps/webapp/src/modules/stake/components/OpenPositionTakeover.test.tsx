@@ -24,6 +24,7 @@ const h = vi.hoisted(() => ({
   // reproducing the window where typed amounts haven't settled yet.
   debounceLag: false,
   // The reopened urn's on-chain context (reopen-mode tests).
+  urnAddress: undefined as `0x${string}` | undefined,
   urnDelegate: undefined as string | undefined,
   urnRewardContract: undefined as string | undefined,
   // Indexer farm outside the generated address books, and the on-chain
@@ -181,7 +182,7 @@ vi.mock('@/hooks', async importOriginal => {
       dataSources: []
     }),
     // The reopened urn's context (inert in plain-open mode).
-    useStakeUrnAddress: () => ({ data: URN_ADDRESS, isLoading: false, error: null }),
+    useStakeUrnAddress: () => ({ data: h.urnAddress ?? URN_ADDRESS, isLoading: false, error: null }),
     useStakeUrnSelectedRewardContract: () => ({
       data: h.urnRewardContract,
       isLoading: false,
@@ -726,12 +727,13 @@ describe('OpenPositionTakeover', () => {
 describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)', () => {
   const renderReopen = (borrowExpanded = false) => {
     const onClose = vi.fn();
-    render(
+    const ui = () => (
       <I18nProvider i18n={i18n}>
         <OpenPositionTakeover reopen={{ urnIndex: 2, borrowExpanded, onClose }} />
       </I18nProvider>
     );
-    return { onClose };
+    const { rerender } = render(ui());
+    return { onClose, rerender: () => rerender(ui()) };
   };
 
   beforeEach(() => {
@@ -741,6 +743,7 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     h.launchParams = undefined;
     h.manageLaunchSpy.mockClear();
     h.manageLaunchParams = undefined;
+    h.urnAddress = undefined;
     h.urnDelegate = DELEGATE_A;
     h.urnRewardContract = lsSkySkyRewardAddress[1];
     h.extraFarm = undefined;
@@ -837,6 +840,37 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     fireEvent.click(screen.getByTestId(`stake-takeover-delegate-${DELEGATE_B.toLowerCase()}`));
 
     expect(h.manageLaunchParams?.selectedDelegate).toBe(DELEGATE_B);
+  });
+
+  it('follows a delegate set after mount instead of undelegating it', () => {
+    h.urnDelegate = ZERO_ADDRESS;
+    const { rerender } = renderReopen();
+    typeStakeAmount('100');
+
+    h.urnDelegate = DELEGATE_A;
+    rerender();
+
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(DELEGATE_A);
+    expect(
+      screen.getByTestId(`stake-takeover-delegate-${DELEGATE_A.toLowerCase()}`).getAttribute('aria-pressed')
+    ).toBe('true');
+  });
+
+  it('drops the staged delegate choice when the reopened urn changes (account switch)', () => {
+    const { rerender } = renderReopen();
+    typeStakeAmount('100');
+    fireEvent.click(screen.getByTestId('stake-takeover-delegate-card-toggle'));
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(ZERO_ADDRESS);
+
+    h.urnAddress = '0x9999999999999999999999999999999999999999';
+    h.urnDelegate = DELEGATE_B;
+    rerender();
+
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(DELEGATE_B);
+    expect(screen.getByTestId('stake-takeover-delegate-search')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('stake-takeover-delegate-card-toggle'));
+    expect(h.manageLaunchParams?.selectedDelegate).toBe(ZERO_ADDRESS);
   });
 
   it('passes the urn farm through while the picker is untouched (C18: no spurious selectFarm)', () => {

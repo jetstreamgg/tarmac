@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
-import { useStakeFlowState } from '../hooks/useStakeFlowState';
+import { StakeFlowAction, useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
@@ -98,12 +98,19 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const currentUrnDelegate =
     reopen && urnVoteDelegate && urnVoteDelegate !== ZERO_ADDRESS ? urnVoteDelegate : undefined;
   const reopenDelegateBaseline = reopen ? urnVoteDelegate : undefined;
-  // Reopen opens the delegate card already on when the urn has a delegate (UX 1194:21595).
-  const [delegatePrefillPending, setDelegatePrefillPending] = useState(!!reopen);
-  if (delegatePrefillPending && reopenUrn && urnVoteDelegate !== undefined) {
-    setDelegatePrefillPending(false);
-    if (currentUrnDelegate) dispatch({ type: 'setDelegateEnabled', enabled: true });
-  }
+  // Reopen: until the user touches the card for THIS urn it mirrors the urn's
+  // live delegate (on when it has one, UX 1194:21595) and stages nothing.
+  const [delegateTouchedUrn, setDelegateTouchedUrn] = useState<`0x${string}`>();
+  const delegateTouched = !reopen || (!!reopenUrn && delegateTouchedUrn === reopenUrn);
+  const delegateCardEnabled = delegateTouched ? state.delegateEnabled : !!currentUrnDelegate;
+  const stagedDelegate = delegateTouched ? state.selectedDelegate : undefined;
+  const dispatchDelegate = (action: StakeFlowAction) => {
+    if (!delegateTouched && reopenUrn) {
+      setDelegateTouchedUrn(reopenUrn);
+      dispatch({ type: 'resetDelegate', enabled: !!currentUrnDelegate });
+    }
+    dispatch(action);
+  };
 
   const ilkName = getIlkName(2);
   const { data: skyBalance, isLoading: balanceLoading } = useTokenBalance({
@@ -255,8 +262,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   );
 
   // Reopen: switching the card off undelegates an urn that has a delegate.
-  const undelegate = !!currentUrnDelegate && !state.delegateEnabled;
-  const effectiveDelegate = undelegate ? ZERO_ADDRESS : (state.selectedDelegate ?? reopenDelegateBaseline);
+  const undelegate = delegateTouched && !!currentUrnDelegate && !state.delegateEnabled;
+  const effectiveDelegate = undelegate ? ZERO_ADDRESS : (stagedDelegate ?? reopenDelegateBaseline);
   // Memoized so the review body below keeps its identity across renders — it
   // is a dep of the launch descriptor.
   const rewardFrom = useMemo(
@@ -483,12 +490,12 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       />
 
       <StakeTakeoverDelegateCard
-        enabled={state.delegateEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setDelegateEnabled', enabled })}
+        enabled={delegateCardEnabled}
+        onEnabledChange={enabled => dispatchDelegate({ type: 'setDelegateEnabled', enabled })}
         // Reopen shows the urn's preserved delegate as the selection baseline
         // (UX 1194:21595); staging a different one is the only way to change it.
-        selectedDelegate={state.selectedDelegate ?? currentUrnDelegate}
-        onSelect={delegate => dispatch({ type: 'selectDelegate', delegate })}
+        selectedDelegate={stagedDelegate ?? currentUrnDelegate}
+        onSelect={delegate => dispatchDelegate({ type: 'selectDelegate', delegate })}
       />
     </TakeoverShell>
   );

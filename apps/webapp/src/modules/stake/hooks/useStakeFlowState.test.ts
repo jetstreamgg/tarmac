@@ -70,6 +70,15 @@ describe('stakeFlowReducer', () => {
     expect(state.selectedDelegate).toBeUndefined();
   });
 
+  it('resetDelegate seeds the card and drops any staged delegate (reopen first touch)', () => {
+    let state = stakeFlowReducer(initialStakeFlowState, { type: 'setDelegateEnabled', enabled: true });
+    state = stakeFlowReducer(state, { type: 'selectDelegate', delegate: DELEGATE });
+    state = stakeFlowReducer(state, { type: 'resetDelegate', enabled: true });
+
+    expect(state.delegateEnabled).toBe(true);
+    expect(state.selectedDelegate).toBeUndefined();
+  });
+
   it('stores the selected reward contract (auto-defaulted by the takeover, A-Q2)', () => {
     const state = stakeFlowReducer(initialStakeFlowState, {
       type: 'selectRewardContract',
