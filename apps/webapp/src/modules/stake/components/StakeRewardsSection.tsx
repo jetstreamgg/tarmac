@@ -18,7 +18,10 @@ import { StakeClaimModal, type StakeClaimSelection } from './StakeClaimModal';
  */
 export function StakeRewardsSection({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
-  const [selection, setSelection] = useState<StakeClaimSelection | null>(null);
+  // Keyed per click so each Claim relaunches (restoring a minimized in-flight modal).
+  const [claim, setClaim] = useState<{ selection: StakeClaimSelection; key: number } | null>(null);
+  const openClaim = (selection: StakeClaimSelection) =>
+    setClaim(prev => ({ selection, key: (prev?.key ?? 0) + 1 }));
 
   // Emptied urns can still hold unclaimed rewards, so they count as targets.
   const targets = useMemo<StakeClaimTarget[]>(
@@ -37,44 +40,52 @@ export function StakeRewardsSection({ positions }: { positions?: StakeUserPositi
     return groups.map(group => tokenClaimToReward(group, priceOf, chainId));
   }, [groups, prices, chainId]);
 
-  if (rewards.length === 0) return null;
-
   const multiple = rewards.length > 1;
 
+  // The launcher sits outside the section so a refetch that empties rewards can't unmount it mid-claim.
   return (
-    <section data-testid="stake-rewards-section" className="order-2 flex flex-col gap-5">
-      <div className="flex min-h-10 items-center justify-between gap-6">
-        <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
-          <Trans>Rewards</Trans>
-        </h3>
-        {multiple && (
-          <Button
-            variant="primary"
-            size="m"
-            onClick={() => setSelection({ targets })}
-            className="shrink-0"
-            data-testid="stake-rewards-claim-all"
-          >
-            <Trans>Claim all</Trans>
-          </Button>
-        )}
-      </div>
-      <RewardsClaimTable
-        rewards={rewards}
-        ctaVariant={multiple ? 'secondary' : 'primary'}
-        onClaim={reward => {
-          const group = groups.find(g => g.rewardSymbol === reward.id);
-          if (!group) return;
-          setSelection({
-            targets,
-            rewardContracts: [...new Set(group.claims.map(claim => claim.contractAddress))]
-          });
-        }}
-        testId="stake-rewards-table"
-      />
-      {selection && (
-        <StakeClaimModal selection={selection} onClose={() => setSelection(null)} closeAfterSuccess />
+    <>
+      {claim && (
+        <StakeClaimModal
+          key={claim.key}
+          selection={claim.selection}
+          onClose={() => setClaim(null)}
+          closeAfterSuccess
+        />
       )}
-    </section>
+      {rewards.length > 0 && (
+        <section data-testid="stake-rewards-section" className="order-2 flex flex-col gap-5">
+          <div className="flex min-h-10 items-center justify-between gap-6">
+            <h3 className="text-fgPrimary font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+              <Trans>Rewards</Trans>
+            </h3>
+            {multiple && (
+              <Button
+                variant="primary"
+                size="m"
+                onClick={() => openClaim({ targets })}
+                className="shrink-0"
+                data-testid="stake-rewards-claim-all"
+              >
+                <Trans>Claim all</Trans>
+              </Button>
+            )}
+          </div>
+          <RewardsClaimTable
+            rewards={rewards}
+            ctaVariant={multiple ? 'secondary' : 'primary'}
+            onClaim={reward => {
+              const group = groups.find(g => g.rewardSymbol === reward.id);
+              if (!group) return;
+              openClaim({
+                targets,
+                rewardContracts: [...new Set(group.claims.map(claim => claim.contractAddress))]
+              });
+            }}
+            testId="stake-rewards-table"
+          />
+        </section>
+      )}
+    </>
   );
 }
