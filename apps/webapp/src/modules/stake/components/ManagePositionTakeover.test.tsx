@@ -775,6 +775,23 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.wipeAll).toBe(false);
   });
 
+  it('repay: the full-debt input rounds like the Borrowed row, and typing it back stages wipeAll', () => {
+    h.existingDebt = parseUnits('35029.6351', 18);
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+    expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).value).toBe('35,029.64');
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '35029.64' } });
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+
+    // A cent above the displayed debt is no longer "all of it".
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '35029.65' } });
+    expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
   it('withdraw: the liquidation bound follows the staged borrow, not the existing debt', () => {
     h.simProximity = 100;
     renderSheet({ stakeCard: 'withdraw', borrowCard: 'borrow' });

@@ -296,12 +296,13 @@ export function StakeManageBorrowCard({
           onAmountChange={value => {
             // Typing the displayed (2dp) debt means "all of it": the live debt
             // carries more decimals, so snap to wipeAll instead of a dust error.
-            const displayedDebt = (existingDebt / DISPLAY_STEP) * DISPLAY_STEP;
+            // The display rounds, so accept both cents around the live debt.
+            const debtFloor = (existingDebt / DISPLAY_STEP) * DISPLAY_STEP;
             const typedFull =
               isRepay &&
               existingDebt > 0n &&
-              value >= displayedDebt &&
-              value <= existingDebt &&
+              value >= debtFloor &&
+              value <= debtFloor + DISPLAY_STEP &&
               maxRepayable >= existingDebt;
             if (typedFull) onAmountChange(existingDebt, true);
             else onAmountChange(value);
@@ -315,6 +316,7 @@ export function StakeManageBorrowCard({
           // The repay 100% chip stages the wei-precise live debt — cap only the
           // DISPLAY (the staged value stays exact for wipeAll/buffer math).
           maxDisplayDecimals={2}
+          roundDisplay
           dataTestId="stake-manage-borrow-amount"
           // Comp 1036:213928 draws the position line above the chips; borrow
           // adds the headroom so the cap stays visible with no slider (zero debt).
