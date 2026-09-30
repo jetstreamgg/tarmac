@@ -20,11 +20,15 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
+const ACCOUNT_A = '0x0000000000000000000000000000000000000001';
+const ACCOUNT_B = '0x0000000000000000000000000000000000000002';
+// The connected account, switchable mid-test the way a wallet switches accounts.
+const wallet = vi.hoisted(() => ({ address: '0x0000000000000000000000000000000000000001' }));
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
   useChains: () => [{ id: 1, name: 'Ethereum' }],
-  useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
+  useConnection: () => ({ address: wallet.address, isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
@@ -90,9 +94,11 @@ function Harness({ config, onReady }: { config: TransactionConfig; onReady?: (cb
 
 // Mounts the provider (under StrictMode, mirroring the app) with an injected
 // gate and returns the latest engine callbacks.
+let rerenderTree: () => void;
+
 function renderWithGate(gate: PreTransactionGate, config: TransactionConfig): TxCallbacks {
   let cb!: TxCallbacks;
-  render(
+  const tree = () => (
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <TransactionProvider gate={gate}>
@@ -101,8 +107,15 @@ function renderWithGate(gate: PreTransactionGate, config: TransactionConfig): Tx
       </I18nProvider>
     </StrictMode>
   );
+  const { rerender } = render(tree());
+  rerenderTree = () => rerender(tree());
   return cb;
 }
+
+const switchAccount = (address: string) => {
+  wallet.address = address;
+  rerenderTree();
+};
 
 const flush = () => act(async () => {});
 
@@ -138,8 +151,67 @@ const lastToastTitle = () => renderLastToast().getByText('Transaction details ch
 describe('TransactionProvider deferred dispatch re-validation', () => {
   beforeEach(() => {
     i18n.activate('en');
+    wallet.address = ACCOUNT_A;
   });
   afterEach(() => vi.clearAllMocks());
+
+  it('refuses a retry from a different account than the one that confirmed', () => {
+    const onConfirm = vi.fn();
+    // No reported calls: an account switch must be caught even when the
+    // calldata never names the sender.
+    const cb = renderWithGate(() => ({ allow: true }), {
+      title: 'Claim',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('execution reverted')));
+
+    switchAccount(ACCOUNT_B);
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(renderLastToast().getByText('Account changed')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
+  });
+
+  it('refuses an async allow when the account switched while the verdict was pending', async () => {
+    const onConfirm = vi.fn();
+    let resolveVerdict!: (v: { allow: boolean }) => void;
+    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const { config } = driftingFlow(onConfirm, [swap(900n)]);
+    renderWithGate(gate, config);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    switchAccount(ACCOUNT_B);
+    resolveVerdict({ allow: true });
+    await flush();
+
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(renderLastToast().getByText('Account changed')).toBeTruthy();
+  });
+
+  it('a confirm from the new account goes through', () => {
+    const onConfirm = vi.fn();
+    const cb = renderWithGate(() => ({ allow: true }), {
+      title: 'Claim',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('execution reverted')));
+    switchAccount(ACCOUNT_B);
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+  });
 
   it('refuses an async allow when the calls changed while the verdict was pending', async () => {
     const onConfirm = vi.fn();

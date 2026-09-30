@@ -144,6 +144,24 @@ function notifyReviewAgainOnChangedCalls() {
   );
 }
 
+// The wallet moved to another account between the confirm and a deferred
+// dispatch (a gate verdict, Retry), so the dispatch was refused: what the user
+// reviewed — balances, position, receiver — belonged to the confirming account.
+function notifyReviewAgainOnAccountChange() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Account changed</Trans>}
+        description={
+          <Trans>Your wallet switched accounts while confirming. Review the details and confirm again.</Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
 }
@@ -358,6 +376,10 @@ export function TransactionProvider({
   // `getNextCalls` in the contract). Undefined when the flow doesn't report
   // its calls; null when they couldn't be encoded, which fails closed.
   const confirmedCallsRef = useRef<EncodedCall[] | null | undefined>(undefined);
+  // The account that confirmed, captured with the calls: calldata that never
+  // names the sender (a bare claim, a position addressed by index) encodes the
+  // same for every account, so the calls alone can't tell who signs.
+  const confirmedAddressRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
   const { address, chainId: connectedChainId } = useConnection();
@@ -382,6 +404,11 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
+  // Fire-time read of the account, for the same reason (see runGated).
+  const addressRef = useRef(address);
+  useEffect(() => {
+    addressRef.current = address;
+  }, [address]);
   // The chain the live session's write belongs to: latched at launch, adopted
   // while the session is still at IDLE (see the chain-change close below).
   const sessionChainRef = useRef(guardChainId);
@@ -535,6 +562,7 @@ export function TransactionProvider({
       gateInFlightRef.current = null;
       gatePhaseRef.current = null;
       confirmedCallsRef.current = undefined;
+      confirmedAddressRef.current = undefined;
       setMinimized(false);
       setLaunchCount(c => c + 1);
       setOpen(true);
@@ -661,6 +689,7 @@ export function TransactionProvider({
     gateInFlightRef.current = null;
     gatePhaseRef.current = null;
     confirmedCallsRef.current = undefined;
+    confirmedAddressRef.current = undefined;
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
@@ -925,12 +954,19 @@ export function TransactionProvider({
         return;
       }
       // A confirm is the user agreeing to what the screen shows, so it fixes
-      // the calls; a retry re-sends what was already confirmed.
+      // the calls and the account; a retry re-sends what was already confirmed.
       if (trigger !== 'retry') {
         const getNextCalls = configRef.current?.getNextCalls;
         confirmedCallsRef.current = getNextCalls ? encodeCalls(getNextCalls()) : undefined;
+        confirmedAddressRef.current = addressRef.current;
       }
       const dispatch = () => {
+        if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
+          controls.setPreludeSteps(null);
+          controls.returnToFirstScreen();
+          notifyReviewAgainOnAccountChange();
+          return;
+        }
         if (!callsStillConfirmed()) {
           controls.setPreludeSteps(null);
           controls.returnToFirstScreen();
