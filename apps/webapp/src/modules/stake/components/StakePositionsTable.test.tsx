@@ -145,6 +145,18 @@ const POSITIONS: StakeUserPosition[] = [
   } // inactive (emptied) urn
 ];
 
+// A drag-selection the click leaves intact: the row click stands down on it.
+const withTextSelection = (run: () => void) => {
+  const spy = vi
+    .spyOn(window, 'getSelection')
+    .mockReturnValue({ isCollapsed: false, toString: () => '20,000' } as unknown as Selection);
+  try {
+    run();
+  } finally {
+    spy.mockRestore();
+  }
+};
+
 const renderTable = (
   positions: StakeUserPosition[] | undefined = POSITIONS,
   isLoading = false,
@@ -224,6 +236,23 @@ describe('StakePositionsTable', () => {
 
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('1');
+  });
+
+  it('opens the manage flow from Manage while text is selected, once', () => {
+    renderTable();
+
+    withTextSelection(() => fireEvent.click(screen.getByTestId('stake-position-manage-1')));
+
+    expect(mockSearchParams.get('urn_index')).toBe('1');
+    expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the row itself inert while text is selected', () => {
+    renderTable();
+
+    withTextSelection(() => fireEvent.click(screen.getByTestId('stake-position-row-1')));
+
+    expect(setSearchParamsMock).not.toHaveBeenCalled();
   });
 
   it('renders the dashed open-position card below the table', () => {
@@ -429,6 +458,15 @@ describe('StakePositionsTable — mobile cards (M5)', () => {
     fireEvent.click(screen.getByTestId('stake-position-row-0'));
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('0');
+  });
+
+  it('opens the manage flow from View more while text is selected, once', () => {
+    renderTable();
+
+    withTextSelection(() => fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[1]));
+
+    expect(mockSearchParams.get('urn_index')).toBe('1');
+    expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the liquidation banner under its matching card', () => {

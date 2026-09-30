@@ -16,7 +16,7 @@ import { NO_VALUE } from '@/lib/constants';
 
 // The banner body activates the row like any other cell; only the CTAs keep
 // their own action, so they must not also open the position.
-function ownAction(action: () => void) {
+export function ownAction(action: () => void) {
   return (event: MouseEvent) => {
     event.stopPropagation();
     action();

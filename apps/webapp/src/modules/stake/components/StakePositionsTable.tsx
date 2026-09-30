@@ -31,7 +31,7 @@ import {
   isInactiveStakePosition,
   isLiquidatedStakePosition
 } from '../hooks/useStakeUserPositions';
-import { StakePositionRowBanner } from './StakePositionRowBanner';
+import { ownAction, StakePositionRowBanner } from './StakePositionRowBanner';
 import { StakePositionDetailWarmer } from './StakePositionDetailWarmer';
 import { useStakeRowVault, useStakeRowVaultLookup } from '../hooks/useStakeRowVault';
 import {
@@ -230,7 +230,10 @@ const SORTABLE_COLUMNS: {
   }
 ];
 
-const MANAGE_COLUMN: ProductTransactionColumn<StakeUserPosition> = {
+// Own handler: the row click stands down while text is selected, and a button click keeps the selection.
+const manageColumn = (
+  onManage: (position: StakeUserPosition) => void
+): ProductTransactionColumn<StakeUserPosition> => ({
   id: 'manage',
   header: null,
   width: '104px',
@@ -242,18 +245,20 @@ const MANAGE_COLUMN: ProductTransactionColumn<StakeUserPosition> = {
         variant="secondary"
         size="s"
         className="-ml-2 flex w-20 px-2"
+        onClick={ownAction(() => onManage(position))}
         data-testid={`stake-position-manage-${position.index}`}
       >
         <Trans>Manage</Trans>
       </Button>
     </div>
   )
-};
+});
 
-// Comp 3617:24023: every data header sorts (3617:25270). The Manage button just bubbles into the row click.
+// Comp 3617:24023: every data header sorts (3617:25270).
 function buildColumns(
   sort: StakePositionsSort,
-  onSort: (column: StakePositionsSortColumn) => void
+  onSort: (column: StakePositionsSortColumn) => void,
+  onManage: (position: StakeUserPosition) => void
 ): ProductTransactionColumn<StakeUserPosition>[] {
   return [
     ...SORTABLE_COLUMNS.map(({ id, label, width, cell }) => {
@@ -274,7 +279,7 @@ function buildColumns(
         )
       };
     }),
-    MANAGE_COLUMN
+    manageColumn(onManage)
   ];
 }
 
@@ -282,7 +287,7 @@ function buildColumns(
 // with a Label 4 title, equal-column CardField pairs split by centered
 // hairlines, and a full-width secondary "View more" footer. The card wrapper
 // owns the tap-to-manage behavior (the engine wires onRowClick to it); the
-// button simply bubbles into that same handler.
+// button runs the same handler on its own, like the desktop Manage.
 function PositionIconbox({ position }: { position: StakeUserPosition }) {
   const tone = usePositionTone(position);
   return (
@@ -292,7 +297,7 @@ function PositionIconbox({ position }: { position: StakeUserPosition }) {
   );
 }
 
-const renderCard = (position: StakeUserPosition) => (
+const renderCard = (position: StakeUserPosition, onManage: (position: StakeUserPosition) => void) => (
   <TransactionCard
     header={
       <span className="flex items-center gap-3" data-testid={`stake-position-id-${position.index}`}>
@@ -323,7 +328,7 @@ const renderCard = (position: StakeUserPosition) => (
             </CardField>
           </CardFieldRow>
         </div>
-        <Button variant="secondary" size="m" className="w-full">
+        <Button variant="secondary" size="m" className="w-full" onClick={ownAction(() => onManage(position))}>
           <Trans>View more</Trans>
         </Button>
       </>
@@ -389,7 +394,11 @@ export function StakePositionsTable({
       )
     : allPositions;
   const visiblePositions = sortStakePositions(filteredPositions, sort, vaultOf);
-  const columns = buildColumns(sort, column => setSort(previous => nextStakePositionsSort(previous, column)));
+  const columns = buildColumns(
+    sort,
+    column => setSort(previous => nextStakePositionsSort(previous, column)),
+    onRowClick
+  );
   const filterUnavailable = Boolean(contextError);
   const isEmpty = !isLoading && !error && allPositions.length === 0;
 
@@ -502,7 +511,7 @@ export function StakePositionsTable({
           error={error}
           emptyLabel={<Trans>No active positions.</Trans>}
           emptyIllustration={<SuppliedEmpty aria-hidden />}
-          renderCard={renderCard}
+          renderCard={position => renderCard(position, onRowClick)}
           cardSkeleton={<TransactionCardSkeleton fieldRows={2} fieldRowGapClassName="gap-6" />}
           loadingRows={rememberedCount ? Math.min(rememberedCount, STAKE_PAGE_SIZE) : undefined}
           renderBelowRow={position => (
