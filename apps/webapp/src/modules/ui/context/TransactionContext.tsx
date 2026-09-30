@@ -948,10 +948,17 @@ export function TransactionProvider({
   );
 
   const handleRetry = useCallback(() => {
+    const preludeBefore = preludeStepsRef.current?.length ?? 0;
     // The reset lives inside the gate: a denied retry must leave the failure
     // view in place, not clear it and then do nothing.
     runGated('retry', () => {
-      resetTransactionProgress();
+      if (hasMinedStep) {
+        // The engine resumes at the failed write; shift past any prelude the gate dropped.
+        const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
+        if (dropped > 0) setCurrentStep(s => s - dropped);
+      } else {
+        resetTransactionProgress();
+      }
 
       if (configRef.current?.onRetry) {
         configRef.current.onRetry();
@@ -960,7 +967,7 @@ export function TransactionProvider({
 
       configRef.current?.onConfirm();
     });
-  }, [runGated, resetTransactionProgress]);
+  }, [runGated, resetTransactionProgress, hasMinedStep]);
 
   // A settle callback belongs to the running session only if BOTH its closure
   // and the write it reports on were made in the current generation (see
