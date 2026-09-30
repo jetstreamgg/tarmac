@@ -32,12 +32,19 @@ const body6 = 'font-graphik text-xs leading-[18px] font-normal';
 // token logo, IconboxAction/IconboxPosition draw an inner 30px disc around a
 // 16px glyph.
 
-/** Title-row chip of the Token Idle cell (rate / 1:1-parity badges). */
+const cellBadgeTone = {
+  success: 'bg-statusSuccessBg text-statusSuccess',
+  warning: 'bg-statusWarningBg text-statusWarning',
+  error: 'bg-statusErrorBg text-statusError',
+  neutral: 'bg-bgTertiary text-fgSecondary'
+} as const;
+
+/** Title-row chip of the Token Idle cell (rate / 1:1-parity badges), also the earnings-breakdown row badges. */
 export function CellBadge({
   tone = 'neutral',
   children
 }: {
-  tone?: 'success' | 'neutral';
+  tone?: keyof typeof cellBadgeTone;
   children: ReactNode;
 }) {
   return (
@@ -45,7 +52,7 @@ export function CellBadge({
       className={cn(
         label7,
         'inline-flex h-[18px] shrink-0 items-center rounded-full px-1.5',
-        tone === 'success' ? 'bg-statusSuccessBg text-statusSuccess' : 'bg-bgTertiary text-fgSecondary'
+        cellBadgeTone[tone]
       )}
     >
       {children}
