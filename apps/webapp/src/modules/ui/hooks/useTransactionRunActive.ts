@@ -10,8 +10,10 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
  * them itself: a DAI/USDC savings supply spends the DAI or USDC its amount was
  * validated against once the conversion leg mines, and turning the engine off
  * there would stop the deposit (or a Retry of it) from simulating, stranding
- * the funds as USDS. Only the amount check is relaxed — the launch hooks' own
- * safety gates (the USDC supply's PSM fee gate) stay live.
+ * the funds as USDS. Only the form's own checks are relaxed (the amount, and on
+ * stUSDS the module cap and provider block, which the contracts and the
+ * simulation still enforce) — the launch hooks' safety gates (the USDC supply's
+ * PSM fee gate) stay live.
  *
  * Not SUCCESS: the run is over and nothing should re-simulate against the
  * post-send state.

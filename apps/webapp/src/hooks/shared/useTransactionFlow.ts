@@ -84,14 +84,31 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
       onError?.(error, hash);
     },
     enabled: enabled && walletBatches,
-    simulateEnabled: enabled && (walletBatches || routeUndecided) && sendRoute !== 'sequential'
+    // Not while a send is out: a refetch (on focus) would run against the state the
+    // send itself changes, and a bundle already signed has nothing left to gate.
+    simulateEnabled: enabled && (walletBatches || routeUndecided) && sendRoute === null
   });
 
   // A wallet that bundles on a chain whose RPC can't simulate a bundle would otherwise
   // sit on a Confirm that never enables. The calls are still validated one at a time on
   // the sequential path, so route there — N signatures instead of one, never an
-  // unsimulated send.
-  const useBatch = sendRoute ? sendRoute === 'batch' : walletBatches && !batchResults.batchUnavailable;
+  // unsimulated send. Only calls the sequential flow can simulate make the move: it needs
+  // each call's abi and function name, and a raw `{ to, data }` leg (stake's bundled
+  // multicall legs) would stall it after the first step. Those stay on the batch route,
+  // failed closed.
+  const sequentialCapable = calls.every(call => {
+    const { abi, functionName } = call as { abi?: unknown; functionName?: unknown };
+    return !!abi && !!functionName;
+  });
+  // A held batch route only holds while bundling still applies: calls that shrank to one
+  // (a new amount on a page-hosted form whose abandoned prompt never settled) have
+  // nothing to bundle, and holding would leave both flows disabled.
+  const useBatch =
+    sendRoute === 'batch'
+      ? walletBatches
+      : sendRoute === 'sequential'
+        ? false
+        : walletBatches && (!batchResults.batchUnavailable || !sequentialCapable);
 
   // Use sequential flow
   const sequentialResults = useSequentialTransactionFlow({

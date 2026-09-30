@@ -179,6 +179,19 @@ describe('useTransactionFlow', () => {
       expect(sequentialEnabled()).toBe(true);
       expect(result.current.isBatch).toBe(false);
     });
+    it('keeps calls the sequential flow cannot simulate on the batch route, failed closed', () => {
+      // Stake's bundled legs are raw `{ to, data }` calls: the sequential flow needs an
+      // abi and a function name per call, so it would stall after the approve.
+      capabilities.data = true;
+      capabilities.isLoading = false;
+      batchFlow.batchUnavailable = true;
+      const raw = { to: call.to, data: '0x12345678' } as Call;
+
+      const { result } = renderHook(() => useTransactionFlow({ calls: [call, raw] }));
+
+      expect(result.current.isBatch).toBe(true);
+      expect(sequentialEnabled()).toBe(false);
+    });
   });
 
   describe('while a send is in flight', () => {
@@ -212,6 +225,27 @@ describe('useTransactionFlow', () => {
 
       act(() => failBatch());
       expect(result.current.isBatch).toBe(false);
+    });
+
+    it('stops simulating the bundle while it is out', () => {
+      // A focus refetch would run against the state the send itself changes.
+      renderHook(() => useTransactionFlow({ calls: [call, call] }));
+      expect(batchSimulateEnabled()).toBe(true);
+      act(() => sendBatch());
+      expect(batchSimulateEnabled()).toBe(false);
+    });
+
+    it('lets go of a batch route once the calls no longer bundle', () => {
+      // A page-hosted form whose wallet prompt was abandoned without an answer: the next
+      // amount needs a single call, and a held batch route would disable both flows.
+      const { result, rerender } = renderHook(({ calls }) => useTransactionFlow({ calls }), {
+        initialProps: { calls: [call, call] }
+      });
+      act(() => sendBatch());
+
+      rerender({ calls: [call] });
+      expect(result.current.isBatch).toBe(false);
+      expect(sequentialEnabled()).toBe(true);
     });
 
     it('releases the route once the send succeeds', () => {

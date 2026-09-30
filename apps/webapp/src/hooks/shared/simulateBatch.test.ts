@@ -188,9 +188,10 @@ describe('simulateBatch — a failed sub-call', () => {
 });
 
 describe('simulateBatch — the RPC', () => {
+  // Shaped like viem's: its own canned text in `shortMessage`, the node's in `details`.
   class RpcError extends BaseError {
-    constructor(code: number, message: string) {
-      super(message, { cause: Object.assign(new Error(message), { code }) });
+    constructor(code: number, message: string, shortMessage = 'An error occurred.') {
+      super(shortMessage, { cause: Object.assign(new Error(message), { code }) });
     }
   }
 
@@ -202,6 +203,42 @@ describe('simulateBatch — the RPC', () => {
   ])('classifies JSON-RPC %i as structural', async (code, message) => {
     const { client } = makeClient(async () => {
       throw new RpcError(code, message);
+    });
+
+    const error = await failure(run(client));
+
+    expect(error.kind).toBe('structural');
+  });
+
+  it.each(['header not found', 'request timed out'])(
+    'classifies an unrecognised -32000 (%s) as transient, whatever viem calls it',
+    async message => {
+      // viem files an unrecognised -32000 under "Missing or invalid parameters.".
+      const { client } = makeClient(async () => {
+        throw new RpcError(-32000, message, 'Missing or invalid parameters.');
+      });
+
+      const error = await failure(run(client));
+
+      expect(error.kind).toBe('transient');
+    }
+  );
+
+  it("classifies a node's own override rejection as structural, whatever the code", async () => {
+    const { client } = makeClient(async () => {
+      throw new RpcError(-32603, 'state override is not supported');
+    });
+
+    const error = await failure(run(client));
+
+    expect(error.kind).toBe('structural');
+  });
+
+  it('classifies an outer revert other than the value check as an ignored override', async () => {
+    // Multicall3 with failures allowed doesn't revert; the account's own code (a 7702
+    // delegate) ran instead and rejected the `aggregate3` selector.
+    const { client } = makeClient(async () => {
+      throw new RpcError(3, 'execution reverted', 'Execution reverted.');
     });
 
     const error = await failure(run(client));
@@ -279,7 +316,11 @@ describe('simulateBatch — the RPC', () => {
 
   it('classifies a bundle-level revert as reverted', async () => {
     const { client } = makeClient(async () => {
-      throw new RpcError(3, 'execution reverted: Multicall3: value mismatch');
+      throw new RpcError(
+        3,
+        'execution reverted: Multicall3: value mismatch',
+        'Execution reverted with reason: Multicall3: value mismatch.'
+      );
     });
 
     const error = await failure(run(client));

@@ -78,6 +78,7 @@ export function VaultModalForm({
     isZero,
     insufficient,
     amountReady,
+    debouncePending,
     position,
     isLiquidityConstrained,
     isLiquidityDataUnavailable,
@@ -91,7 +92,13 @@ export function VaultModalForm({
   const { execute, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
   const disabled = !amountReady || !prepared;
   const errorMessage = enginePrepareErrorMessage(prepared, error);
 

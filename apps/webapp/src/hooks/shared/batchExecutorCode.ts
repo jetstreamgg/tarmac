@@ -11,7 +11,7 @@ import { BATCH_EXECUTOR_ADDRESS } from './networkFee';
  * The bytes are the same on every chain (a deterministic CREATE2 deployment), so they are
  * read once per session: from the chain at hand first, so chains stay independent of one
  * another in the normal case, and from the other configured chains only when that one has
- * nothing at the address. Resolves `undefined` when no chain does.
+ * nothing at the address (not when its read fails). Resolves `undefined` when no chain does.
  */
 let cached: Promise<Hex | undefined> | undefined;
 
@@ -39,11 +39,15 @@ export function getBatchExecutorCode(
 
 async function readFromFirstDeployment(clients: readonly PublicClient[]): Promise<Hex | undefined> {
   let firstFailure: unknown;
-  for (const client of clients) {
+  for (const [index, client] of clients.entries()) {
     try {
       const code = await client.getCode({ address: BATCH_EXECUTOR_ADDRESS });
       if (code && code !== '0x') return code;
     } catch (error) {
+      // The chain at hand is the one the simulation runs on: if its RPC can't answer
+      // this, it can't answer the simulation either. Fail now and let the retry ask
+      // again, rather than walk every other chain on each attempt of an outage.
+      if (index === 0) throw error;
       firstFailure ??= error;
     }
   }

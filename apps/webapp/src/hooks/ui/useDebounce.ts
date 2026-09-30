@@ -21,7 +21,7 @@ export function useDebounce<T>(value: T, delay?: number, resetKey?: unknown): T 
         setSettled(prev =>
           Object.is(prev.value, value) && Object.is(prev.resetKey, resetKey) ? prev : { value, resetKey }
         ),
-      keyChanged ? 0 : delay || 500
+      keyChanged ? 0 : (delay ?? 500)
     );
 
     return () => {

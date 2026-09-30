@@ -87,6 +87,7 @@ export function RewardsModalForm({
     isZero,
     insufficient,
     amountReady,
+    debouncePending,
     engineParams,
     toast,
     transactionScreenContent,
@@ -100,7 +101,14 @@ export function RewardsModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
 
   const networkName = useNetworkName(chainId);
   const rateValue = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;

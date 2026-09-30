@@ -20,8 +20,9 @@ import { getBatchExecutorCode } from './batchExecutorCode';
  *   calls (bad allowance, halted contract, a target with no code). Deterministic:
  *   retrying changes nothing until the inputs do.
  * - `structural`: the RPC will not run this kind of simulation at all — it rejected the
- *   state-override parameter or the method. Also deterministic, but says nothing about
- *   the calls; the sequential path (plain per-call `eth_call`) is still available.
+ *   state-override parameter or the method, or accepted the override and ignored it.
+ *   Also deterministic, but says nothing about the calls; the sequential path (plain
+ *   per-call `eth_call`) is still available.
  * - `transient`: the request itself failed (network, rate limit, a 5xx). Retry.
  */
 export type BatchSimulationFailureKind = 'reverted' | 'structural' | 'transient';
@@ -66,9 +67,28 @@ const STRUCTURAL_MESSAGE = /state ?override|not supported|unsupported|invalid pa
 function classifyRpcFailure(error: unknown): BatchSimulationFailureKind {
   const code = extractErrorCode(error);
   if (code !== undefined && STRUCTURAL_RPC_CODES.has(code)) return 'structural';
-  const message = error instanceof BaseError ? error.shortMessage : String((error as Error)?.message ?? '');
-  if (STRUCTURAL_MESSAGE.test(message)) return 'structural';
+  if (STRUCTURAL_MESSAGE.test(nodeMessage(error))) return 'structural';
   return 'transient';
+}
+
+/**
+ * What the node itself said. Not viem's `shortMessage`: that is viem's canned text for
+ * the error class, and the class it picks for an unrecognised -32000 ("header not
+ * found", a timeout) reads "Missing or invalid parameters." — which would pass for an
+ * override rejection. viem keeps the node's own words in `details`.
+ */
+function nodeMessage(error: unknown): string {
+  const parts: string[] = [];
+  let e: unknown = error;
+  for (let i = 0; i < 10 && e; i++) {
+    if (e instanceof BaseError) {
+      if (e.details) parts.push(e.details);
+    } else if (e instanceof Error) {
+      parts.push(e.message);
+    }
+    e = (e as { cause?: unknown }).cause;
+  }
+  return parts.join('\n');
 }
 
 /**
@@ -196,11 +216,13 @@ export async function simulateBatch({
       stateOverride: [{ address: account, code: executorCode }]
     }));
   } catch (error) {
-    // With failures allowed, the outer call only reverts for bundle-level reasons
-    // (Multicall3's own value-mismatch check, out of gas) — a revert nonetheless. A
-    // node that checks the sender's balance is answering about the inputs too.
-    const kind =
-      isExecutionRevert(error) || isInsufficientFunds(error) ? 'reverted' : classifyRpcFailure(error);
+    // A node that checks the sender's balance is answering about the inputs. An outer
+    // revert is classified by classifyBundleRevert.
+    const kind = isInsufficientFunds(error)
+      ? 'reverted'
+      : isExecutionRevert(error)
+        ? classifyBundleRevert(error)
+        : classifyRpcFailure(error);
     const detail =
       error instanceof BaseError ? error.shortMessage : String((error as Error)?.message ?? error);
     throw new BatchSimulationError(`Batch simulation failed: ${detail}`, { kind, cause: error });
@@ -264,6 +286,19 @@ export async function simulateBatch({
  */
 function isInsufficientFunds(error: unknown): boolean {
   return error instanceof BaseError && error.walk(e => e instanceof InsufficientFundsError) !== null;
+}
+
+/**
+ * With failures allowed and the value matching the calls', Multicall3 itself does not
+ * revert: every sub-call's failure comes back as an entry. An outer revert therefore
+ * means Multicall3 was not what ran — the RPC ignored the code override and the
+ * account's own code (an EIP-7702 delegate, a smart account: exactly the wallets that
+ * bundle) got an `aggregate3` it doesn't implement. That says nothing about the calls.
+ * Only Multicall3's own value check is about the inputs.
+ */
+function classifyBundleRevert(error: unknown): BatchSimulationFailureKind {
+  const message = error instanceof BaseError ? `${error.shortMessage}\n${nodeMessage(error)}` : '';
+  return /value mismatch/i.test(message) ? 'reverted' : 'structural';
 }
 
 /** viem reports an `eth_call` revert with JSON-RPC code 3 (`ExecutionRevertedError`). */

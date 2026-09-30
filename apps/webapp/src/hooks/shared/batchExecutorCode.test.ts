@@ -32,6 +32,16 @@ describe('getBatchExecutorCode', () => {
     expect(client.getCode).toHaveBeenCalledTimes(1);
   });
 
+  it("fails on the chain at hand's failed read without walking the other chains", async () => {
+    const client = clientReturning(async () => {
+      throw new Error('rpc down');
+    });
+    const other = clientReturning(async () => '0x6080');
+
+    await expect(getBatchExecutorCode(client, [other])).rejects.toThrow('rpc down');
+    expect(other.getCode).not.toHaveBeenCalled();
+  });
+
   it('does not keep a failed read', async () => {
     const client = clientReturning(async () => {
       throw new Error('rpc down');

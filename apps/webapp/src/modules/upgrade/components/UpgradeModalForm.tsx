@@ -104,7 +104,14 @@ export function UpgradeModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
   // Disconnected (APP-446): the modal still opens — the CTA becomes an enabled
   // "Connect wallet" that opens the connect modal in place (no screen advance,
   // see `confirmAction`), and reverts to the gated "Continue" once connected.
