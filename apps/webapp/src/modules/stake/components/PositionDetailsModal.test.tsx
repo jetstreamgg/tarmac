@@ -145,6 +145,21 @@ describe('PositionDetailsModal', () => {
     expect(chevron?.getAttribute('class') ?? '').not.toContain('opacity-0');
   });
 
+  it('gives Actions rows hover, pressed and focus states', () => {
+    renderModal();
+
+    for (const testid of ['stake-manage-menu-manage', 'stake-manage-menu-close-position']) {
+      const classes = screen.getByTestId(testid).className.split(/\s+/);
+      expect(classes).toEqual(
+        expect.arrayContaining([
+          'enabled:hover:before:bg-glassBadge',
+          'enabled:active:before:bg-glassBorder',
+          'focus-visible:before:ring-2'
+        ])
+      );
+    }
+  });
+
   const NO_DEBT = {
     hasDebt: false,
     vault: { ...baseDetail.vault!, debtValue: 0n },

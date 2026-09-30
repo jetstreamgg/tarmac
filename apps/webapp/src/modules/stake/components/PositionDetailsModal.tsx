@@ -97,8 +97,13 @@ function MenuRow({
       onClick={onClick}
       data-testid={dataTestId}
       className={cn(
-        'group flex w-full items-center justify-between gap-3 text-left disabled:cursor-not-allowed disabled:opacity-40',
-        variant === 'panel' ? 'border-borderPrimary border-b py-8' : variant === 'list' ? 'py-4' : 'h-14'
+        // No Figma states: mini-button tokens on a pseudo fill bleeding 12px, so text and hairlines don't move.
+        'group before:ease-out-expo focus-visible:before:ring-focusRing enabled:hover:before:bg-glassBadge enabled:active:before:bg-glassBorder relative isolate flex w-full items-center justify-between gap-3 text-left outline-hidden before:absolute before:-inset-x-3 before:inset-y-0 before:-z-10 before:rounded-xl before:transition-colors before:duration-250 focus-visible:before:ring-2 disabled:cursor-not-allowed disabled:opacity-40',
+        variant === 'panel'
+          ? 'border-borderPrimary border-b py-8'
+          : variant === 'list'
+            ? 'py-4 before:-inset-y-1.5'
+            : 'h-14'
       )}
     >
       <span className="text-text font-circle flex items-center gap-3 text-sm leading-4 font-medium tracking-[-0.28px]">
