@@ -236,6 +236,27 @@ describe('TransactionModal abandon vs minimize (state-dependent dismissal)', () 
     const blocked = renderLastToast();
     expect(blocked.getByText('Transaction in progress')).toBeDefined();
   });
+
+  it('launching a new flow while a minimized sequence waits on its next wallet prompt restores it, not abandons it', () => {
+    const ctx = renderFlow({ ...SUPPLY_CONFIG, steps: ['Approve', 'Supply'] });
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove')); // LOADING
+    act(() => ctx.minimize());
+    // The approve mined; the engine hands the supply to the wallet while minimized.
+    act(() => cb.onMutate());
+    analytics.trackTransactionCompleted.mockClear();
+    toastWithCloseMock.mockClear();
+
+    act(() => ctx.launch(STAKE_CONFIG));
+
+    expect(screen.queryByText('Supply USDS')).not.toBeNull();
+    expect(screen.queryByText('Stake SKY')).toBeNull();
+    expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
+    const blocked = renderLastToast();
+    expect(blocked.getByText('Transaction in progress')).toBeDefined();
+  });
 });
 
 // An in-flight write outlives its host: the wallet can accept in the same
