@@ -6,6 +6,7 @@ import {
   useReadMcdVatIlks,
   useReadMcdVatUrns
 } from '../generated';
+import { useCallback } from 'react';
 import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
@@ -59,7 +60,12 @@ export function useVault(
 
   const [, vatRate, spot, , dust] = vatIlkData || [];
   // Dripped rate: the debt a tx will see, so the max borrow leaves room for the accrued fee.
-  const { data: drippedRate, isLoading: isLoadingDrip, error: errorDrip } = useSimulatedDripRate(ilkHex);
+  const {
+    data: drippedRate,
+    isLoading: isLoadingDrip,
+    error: errorDrip,
+    refetch: refetchDrip
+  } = useSimulatedDripRate(ilkHex);
   const rate = drippedRate ?? vatRate;
 
   const {
@@ -132,17 +138,20 @@ export function useVault(
       ? math.minSafeCollateralAmount(data.dust, mat, data.delayedPrice)
       : undefined;
 
+  const mutate = useCallback(() => {
+    refetchVatUrn();
+    refetchVatIlk();
+    refetchSpotPar();
+    refetchSpotIlk();
+    refetchDrip();
+  }, [refetchVatUrn, refetchVatIlk, refetchSpotPar, refetchSpotIlk, refetchDrip]);
+
   return {
     data: data ? { ...data, collateralType: ilkName, minCollateralForDust } : undefined,
     raw,
     isLoading: !!isLoading,
     error: errorVatUrn || errorVatIlk || errorSpotPar || errorSpotIlk || errorDrip,
-    mutate: () => {
-      refetchVatUrn();
-      refetchVatIlk();
-      refetchSpotPar();
-      refetchSpotIlk();
-    },
+    mutate,
     dataSources: [mcdVatSource, mcdSpotSource]
   };
 }

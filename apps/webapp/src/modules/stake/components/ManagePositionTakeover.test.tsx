@@ -17,6 +17,7 @@ const OTHER_DELEGATE = '0x4444444444444444444444444444444444444444' as const;
 
 const h = vi.hoisted(() => ({
   launchSpy: vi.fn(),
+  refetchVault: vi.fn(),
   launchParams: undefined as Record<string, unknown> | undefined,
   prepared: true,
   // When true, the useDebounce mock lags behind: bigint values report 0n,
@@ -217,6 +218,7 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
             delayedPrice: h.simDelayedPrice
           },
       vaultLoading: h.vaultLoading,
+      refetchVault: h.refetchVault,
       hasDebt: h.existingDebt > 0n,
       rewardContract: h.rewardContract,
       rewardDeprecated: h.rewardDeprecated,
@@ -305,6 +307,7 @@ describe('ManagePositionTakeover', () => {
     mockSearchParams = new URLSearchParams('flow=manage&urn_index=0');
     setSearchParamsMock.mockClear();
     h.launchSpy.mockClear();
+    h.refetchVault.mockClear();
     h.launchParams = undefined;
     h.prepared = true;
     h.debounceLag = false;
@@ -381,6 +384,47 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
     expect(h.launchParams?.wipeAll).toBe(true);
     expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('close position re-reads the debt while the sheet stays open, so the approve covers the accrual', () => {
+    vi.useFakeTimers();
+    try {
+      renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+      expect(h.refetchVault).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(5 * 60_000);
+      expect(h.refetchVault).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(5 * 60_000);
+      expect(h.refetchVault).toHaveBeenCalledTimes(2);
+      cleanup();
+      vi.advanceTimersByTime(10 * 60_000);
+      expect(h.refetchVault).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('typing over a staged close stops the vault polling', () => {
+    vi.useFakeTimers();
+    try {
+      renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+      fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+      vi.advanceTimersByTime(15 * 60_000);
+      expect(h.refetchVault).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a partial repay does not poll the vault', () => {
+    vi.useFakeTimers();
+    try {
+      renderSheet({ borrowCard: 'repay' });
+      fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+      vi.advanceTimersByTime(15 * 60_000);
+      expect(h.refetchVault).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('close position keeps repaying the full debt as it accrues after staging', () => {

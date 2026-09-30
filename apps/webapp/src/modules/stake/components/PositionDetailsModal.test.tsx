@@ -37,6 +37,7 @@ const baseDetail: StakePositionDetail = {
     dust: parseUnits('30000', 18)
   },
   vaultLoading: false,
+  refetchVault: () => {},
   shapeLoading: false,
   hasDebt: true,
   canBorrow: true,

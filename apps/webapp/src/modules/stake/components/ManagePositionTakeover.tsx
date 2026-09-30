@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -41,6 +41,8 @@ import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
+
+const WIPE_ALL_DEBT_REFRESH_MS = 5 * 60_000;
 
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
@@ -93,6 +95,13 @@ export function ManagePositionTakeover({
   const wipeAll = borrowOn && state.borrowMode === 'repay' && state.wipeAll;
   // wipeAll repays the debt as of execution, so the staged repay tracks it as it accrues.
   const usdsAmount = wipeAll ? existingDebt : state.usdsAmount;
+  // Nothing else re-reads the vault while the sheet is open, and the wipeAll approve is sized off this debt.
+  const { refetchVault } = detail;
+  useEffect(() => {
+    if (!wipeAll) return;
+    const id = setInterval(refetchVault, WIPE_ALL_DEBT_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [wipeAll, refetchVault]);
 
   // Amounts routed through each card's mode; the reducer clears amounts on
   // toggle-off and mode switches, so these stay consistent by construction.
