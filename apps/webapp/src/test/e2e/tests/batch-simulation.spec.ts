@@ -14,6 +14,7 @@
  */
 
 import { type Page } from '@playwright/test';
+import { decodeFunctionData, encodeErrorResult, encodeFunctionResult, parseAbi, type Hex } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { SavingsProductPage } from '../pages/SavingsProductPage';
 
@@ -38,6 +39,46 @@ const failBatchSimulation = async (page: Page, error: { code: number; message: s
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ jsonrpc: '2.0', id: body.id, error })
+    });
+  });
+};
+
+const multicall3Abi = parseAbi([
+  'struct Call3 { address target; bool allowFailure; bytes callData; }',
+  'struct Call3Value { address target; bool allowFailure; uint256 value; bytes callData; }',
+  'struct Result { bool success; bytes returnData; }',
+  'function aggregate3(Call3[] calls) payable returns (Result[] returnData)',
+  'function aggregate3Value(Call3Value[] calls) payable returns (Result[] returnData)'
+]);
+
+/**
+ * Answers the batch simulation the way a real revert comes back: the simulation runs
+ * with failures allowed, so the call itself succeeds and every sub-call reports its own
+ * revert. (An error on the call itself would mean the RPC ignored the code override —
+ * the structural case.)
+ */
+const revertBatchSimulation = async (page: Page, reason: string) => {
+  await page.route(RPC_URL, async (route, request) => {
+    if (!isBatchSimulation(request.postData())) return route.fallback();
+    const body = JSON.parse(request.postData()!);
+    const { functionName, args } = decodeFunctionData({
+      abi: multicall3Abi,
+      data: body.params[0].data as Hex
+    });
+    const revert = encodeErrorResult({
+      abi: parseAbi(['error Error(string)']),
+      errorName: 'Error',
+      args: [reason]
+    });
+    const result = encodeFunctionResult({
+      abi: multicall3Abi,
+      functionName,
+      result: args[0].map(() => ({ success: false, returnData: revert }))
+    });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ jsonrpc: '2.0', id: body.id, result })
     });
   });
 };
@@ -76,8 +117,7 @@ test.describe('Batch simulation before send', () => {
     isolatedPage
   }) => {
     const wallet = recordWalletRequests(isolatedPage);
-    // JSON-RPC code 3 is `execution reverted` — what a bundle-level revert looks like.
-    await failBatchSimulation(isolatedPage, { code: 3, message: 'execution reverted' });
+    await revertBatchSimulation(isolatedPage, 'Test: simulated revert');
 
     const savings = new SavingsProductPage(isolatedPage);
     await savings.gotoConnected();
