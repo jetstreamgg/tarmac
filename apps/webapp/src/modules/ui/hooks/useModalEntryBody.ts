@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
@@ -120,7 +120,7 @@ export function useModalEntryBody({
   // Same ref pattern: the provider reads the calls at dispatch time, past the
   // IDLE freeze below, so they must stay live when nothing else is pushed.
   const nextCallsRef = useRef(nextCalls);
-  useEffect(() => {
+  useLayoutEffect(() => {
     nextCallsRef.current = nextCalls;
   }, [nextCalls]);
   const getNextCalls = useCallback(() => nextCallsRef.current, []);

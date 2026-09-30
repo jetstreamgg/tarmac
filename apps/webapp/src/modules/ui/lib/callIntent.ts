@@ -1,7 +1,8 @@
-import { encodeFunctionData, type Abi, type Call, type Hex } from 'viem';
+import type { Call, Hex } from 'viem';
+import { getCallData } from '@/hooks/shared/networkFee';
 
 /** A call reduced to what the wallet signs: target, calldata, value. */
-export type EncodedCall = { to: string; data: Hex | undefined; value: bigint };
+export type EncodedCall = { to: string; data: Hex; value: bigint };
 
 /**
  * Encode calls to the bytes the wallet would sign, so two call lists compare
@@ -11,20 +12,11 @@ export type EncodedCall = { to: string; data: Hex | undefined; value: bigint };
  */
 export function encodeCalls(calls: readonly Call[]): EncodedCall[] | null {
   try {
-    return calls.map(call => {
-      const { to, value } = call as { to: string; value?: bigint };
-      const { abi, functionName, args, data } = call as {
-        abi?: Abi;
-        functionName?: string;
-        args?: readonly unknown[];
-        data?: Hex;
-      };
-      return {
-        to: to.toLowerCase(),
-        data: abi && functionName ? encodeFunctionData({ abi, functionName, args }) : data,
-        value: value ?? 0n
-      };
-    });
+    return calls.map(call => ({
+      to: call.to.toLowerCase(),
+      data: getCallData(call),
+      value: call.value ?? 0n
+    }));
   } catch {
     return null;
   }
@@ -34,8 +26,12 @@ export function encodeCalls(calls: readonly Call[]): EncodedCall[] | null {
  * Whether `live` is the tail of `confirmed`: every call still to be sent is one
  * the user confirmed, in the confirmed order. Calls may drop off the front (an
  * approve that landed, a sequence resuming past a mined step), never change.
+ * An empty `live` against a non-empty `confirmed` fails: the flow can no longer
+ * build what was confirmed (an expired quote), and dispatching it would send
+ * nothing while the modal waits on the wallet.
  */
 export function isTailOf(live: readonly EncodedCall[], confirmed: readonly EncodedCall[]): boolean {
+  if (live.length === 0) return confirmed.length === 0;
   const offset = confirmed.length - live.length;
   if (offset < 0) return false;
   return live.every((call, i) => {

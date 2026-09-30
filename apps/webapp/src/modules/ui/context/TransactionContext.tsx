@@ -4,6 +4,7 @@ import {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   ReactNode
@@ -156,6 +157,21 @@ function notifyReviewAgainOnAccountChange() {
         description={
           <Trans>Your wallet switched accounts while confirming. Review the details and confirm again.</Trans>
         }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
+// The wallet disconnected between the confirm and a deferred dispatch, so the
+// dispatch was refused and the first screen shown again.
+function notifyReviewAgainOnDisconnect() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Wallet disconnected</Trans>}
+        description={<Trans>Your wallet disconnected while confirming. Reconnect and confirm again.</Trans>}
       />
     ),
     { id: ABANDONED_TOAST_ID, duration: 8000 }
@@ -405,8 +421,10 @@ export function TransactionProvider({
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
   // Fire-time read of the account, for the same reason (see runGated).
+  // A layout effect, so a verdict resolving right after a switch commits
+  // never reads the previous account.
   const addressRef = useRef(address);
-  useEffect(() => {
+  useLayoutEffect(() => {
     addressRef.current = address;
   }, [address]);
   // The chain the live session's write belongs to: latched at launch, adopted
@@ -964,7 +982,8 @@ export function TransactionProvider({
         if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
           controls.setPreludeSteps(null);
           controls.returnToFirstScreen();
-          notifyReviewAgainOnAccountChange();
+          if (addressRef.current) notifyReviewAgainOnAccountChange();
+          else notifyReviewAgainOnDisconnect();
           return;
         }
         if (!callsStillConfirmed()) {

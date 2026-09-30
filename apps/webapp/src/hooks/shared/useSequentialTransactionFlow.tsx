@@ -40,6 +40,10 @@ export function useSequentialTransactionFlow(
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
 
+  // What execute() would send from here (see `BatchWriteHook.nextCalls`); memoized so
+  // consumers keyed on it don't re-run every render.
+  const nextCalls = useMemo(() => stableTransactions.slice(currentIndex), [stableTransactions, currentIndex]);
+
   // Get current transaction with memoization
   const currentTransaction = useMemo(
     () => stableTransactions[currentIndex],
@@ -268,6 +272,6 @@ export function useSequentialTransactionFlow(
     error: writeError || miningError || simulationError,
     currentCallIndex: currentIndex,
     reset,
-    nextCalls: stableTransactions.slice(currentIndex)
+    nextCalls
   };
 }

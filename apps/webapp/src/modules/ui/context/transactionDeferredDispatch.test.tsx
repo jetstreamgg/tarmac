@@ -23,7 +23,9 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
 const ACCOUNT_A = '0x0000000000000000000000000000000000000001';
 const ACCOUNT_B = '0x0000000000000000000000000000000000000002';
 // The connected account, switchable mid-test the way a wallet switches accounts.
-const wallet = vi.hoisted(() => ({ address: '0x0000000000000000000000000000000000000001' }));
+const wallet = vi.hoisted(() => ({
+  address: '0x0000000000000000000000000000000000000001' as string | undefined
+}));
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
@@ -112,7 +114,7 @@ function renderWithGate(gate: PreTransactionGate, config: TransactionConfig): Tx
   return cb;
 }
 
-const switchAccount = (address: string) => {
+const switchAccount = (address: string | undefined) => {
   wallet.address = address;
   rerenderTree();
 };
@@ -192,6 +194,26 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
 
     expect(onConfirm).not.toHaveBeenCalled();
     expect(renderLastToast().getByText('Account changed')).toBeTruthy();
+  });
+
+  it('names a disconnect as a disconnect, not an account switch', () => {
+    const onConfirm = vi.fn();
+    const cb = renderWithGate(() => ({ allow: true }), {
+      title: 'Claim',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('execution reverted')));
+
+    switchAccount(undefined);
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(renderLastToast().getByText('Wallet disconnected')).toBeTruthy();
   });
 
   it('a confirm from the new account goes through', () => {

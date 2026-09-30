@@ -45,8 +45,12 @@ describe('isTailOf', () => {
     expect(isTailOf(encode([transfer(90n)]), confirmed)).toBe(true);
   });
 
-  it('accepts an empty list', () => {
-    expect(isTailOf([], confirmed)).toBe(true);
+  it('rejects an empty list once calls were confirmed', () => {
+    expect(isTailOf([], confirmed)).toBe(false);
+  });
+
+  it('accepts an empty list when nothing was confirmed', () => {
+    expect(isTailOf([], [])).toBe(true);
   });
 
   it('rejects a changed final call', () => {

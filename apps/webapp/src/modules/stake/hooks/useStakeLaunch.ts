@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
@@ -251,10 +251,10 @@ export function useStakeLaunch({
     executeRef.current = engine.execute;
   }, [engine.execute]);
   // Read by the provider at dispatch time (see `TransactionConfig.getNextCalls`).
-  const nextCallsRef = useRef(engine.nextCalls ?? []);
-  useEffect(() => {
-    nextCallsRef.current = engine.nextCalls ?? [];
-  }, [engine.nextCalls]);
+  const nextCallsRef = useRef(engine.nextCalls ?? engine.calls ?? []);
+  useLayoutEffect(() => {
+    nextCallsRef.current = engine.nextCalls ?? engine.calls ?? [];
+  }, [engine.nextCalls, engine.calls]);
 
   // Legs the flow sends when bundled, mirroring the engine's own composition
   // (approvals, then one call per calldata entry). NOT `calls.length`: with

@@ -196,7 +196,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // A layout effect, so a confirm click can never run the previous render's execute.
   useLayoutEffect(() => {
     executeRef.current = () => writeHook.execute();
-    nextCallsRef.current = writeHook.nextCalls ?? [];
+    nextCallsRef.current = writeHook.nextCalls ?? writeHook.calls ?? [];
   });
 
   // USD notional for the enhanced-screening threshold (APP-517): the valued
