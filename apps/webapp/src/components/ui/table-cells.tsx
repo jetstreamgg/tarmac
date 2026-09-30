@@ -35,11 +35,10 @@ const body6 = 'font-graphik text-xs leading-[18px] font-normal';
 const cellBadgeTone = {
   success: 'bg-statusSuccessBg text-statusSuccess',
   warning: 'bg-statusWarningBg text-statusWarning',
-  error: 'bg-statusErrorBg text-statusError',
   neutral: 'bg-bgTertiary text-fgSecondary'
 } as const;
 
-/** Title-row chip of the Token Idle cell (rate / 1:1-parity badges), also the earnings-breakdown row badges. */
+/** Title-row chip of the Token Idle cell (rate / 1:1-parity badges), also the earnings-breakdown "Not tracked" badge. */
 export function CellBadge({
   tone = 'neutral',
   children

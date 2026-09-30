@@ -42,11 +42,6 @@ async function fetchPrices(url: URL): Promise<Record<string, PriceData>> {
   return priceDataBySymbol;
 }
 
-/** Current USD prices keyed by symbol, for callers outside a hook (the wallet earnings aggregator). */
-export function fetchBaLabsCurrentPrices(): Promise<Record<string, PriceData>> {
-  return fetchPrices(formatBaLabsUrl(new URL(`${getBaLabsApiUrl()}/prices/`)));
-}
-
 export function usePrices(): ReadHook & { data?: Record<string, PriceData> } {
   const chainId = useChainId();
   const baseUrl = getBaLabsApiUrl() || '';

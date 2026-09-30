@@ -27,7 +27,7 @@ const h = vi.hoisted(() => ({
   fetchRewardFarmClaims: vi.fn(),
   fetchRewardFarmEarned: vi.fn(),
   findFirstBlockAtOrAfter: vi.fn(),
-  fetchBaLabsCurrentPrices: vi.fn()
+  currentPrices: undefined as Record<string, { price: string }> | undefined
 }));
 
 vi.mock('wagmi', () => ({
@@ -61,7 +61,7 @@ vi.mock('../../../hooks/helpers/findFirstBlockAtOrAfter', () => ({
   findFirstBlockAtOrAfter: h.findFirstBlockAtOrAfter
 }));
 vi.mock('../../../hooks/prices/usePrices', () => ({
-  fetchBaLabsCurrentPrices: h.fetchBaLabsCurrentPrices
+  usePrices: () => ({ data: h.currentPrices, isLoading: false, error: null })
 }));
 vi.mock('../../../hooks/vaults/fyi/constants', () => ({
   SUSDS_VAULT_ID_MAINNET: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
@@ -269,7 +269,7 @@ describe('useWalletEarnings', () => {
       blockNumber === undefined ? farmEarnedNow : farmEarnedAtStart
     );
     h.findFirstBlockAtOrAfter.mockResolvedValue(MONTH_START_BLOCK);
-    h.fetchBaLabsCurrentPrices.mockResolvedValue(currentPrices);
+    h.currentPrices = currentPrices;
     h.fetchPendlePnlTransactionsForUser.mockResolvedValue(pendleRawRows);
     h.fetchPendlePnlGainedPositions.mockResolvedValue(pendleGained);
     h.fetchPendleDashboardPositions.mockResolvedValue(pendleDashboard);
@@ -587,15 +587,29 @@ describe('useWalletEarnings', () => {
     expect(result.current.combined.missingFromMonth).toEqual(['merkl', SPK_FARM_ID, GROVE_FARM_ID]);
   });
 
-  it('degrades a farm whose reward token has no current price instead of valuing it at $0', async () => {
-    h.fetchBaLabsCurrentPrices.mockResolvedValue({ SPK: { price: '1' } });
+  it('degrades a farm with an unclaimed balance its token has no current price for', async () => {
+    h.currentPrices = {};
     const { result } = renderEarnings();
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
+    const spk = protocolById(result.current, SPK_FARM_ID);
+    expect(spk.totalEarned).toEqual({ status: 'notAvailable', reason: 'source-error' });
+    expect(spk.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'source-error' });
+    // Nothing unclaimed in GROVE, so its missing price doesn't matter: a real $0.
     const grove = protocolById(result.current, GROVE_FARM_ID);
-    expect(grove.totalEarned).toEqual({ status: 'notAvailable', reason: 'source-error' });
-    expect(grove.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'source-error' });
-    expect(protocolById(result.current, SPK_FARM_ID).totalEarned.status).toBe('ok');
+    expect(grove.totalEarned).toEqual({ status: 'ok', value: { usd: 0 } });
+    expect(grove.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 0 } });
+  });
+
+  it('settles the farm totals before the month-start block search', async () => {
+    h.findFirstBlockAtOrAfter.mockReturnValue(new Promise(() => {}));
+    const { result } = renderEarnings();
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const spk = protocolById(result.current, SPK_FARM_ID);
+    expect(spk.totalEarned.status).toBe('ok');
+    expect(spk.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'loading' });
   });
 });

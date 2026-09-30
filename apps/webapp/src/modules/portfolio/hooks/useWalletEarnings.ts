@@ -17,11 +17,12 @@ import {
 } from '../../../hooks/pendle/pendleApiClient';
 import { pendlePnlQueryKey } from '../../../hooks/pendle/usePendleAllPnlTransactions';
 import { fetchBaLabsHistoricDailyPrices } from '../../../hooks/prices/baLabsHistoricPrices';
-import { fetchBaLabsCurrentPrices } from '../../../hooks/prices/usePrices';
+import { usePrices } from '../../../hooks/prices/usePrices';
 import { isDeprecatedRewardContract } from '../../../hooks/rewards/deprecatedRewards';
 import { fetchRewardFarmClaims, fetchRewardFarmEarned } from '../../../hooks/rewards/rewardFarmEarnedClient';
 import { rewardContractDisplayName } from '../../../hooks/rewards/rewardContractDisplayName';
 import { createRewardContracts } from '../../../hooks/rewards/useAvailableTokenRewardContracts';
+import { TOKENS } from '../../../hooks/tokens/tokens.constants';
 import { STUSDS_VAULT_ID_MAINNET, SUSDS_VAULT_ID_MAINNET } from '../../../hooks/vaults/fyi/constants';
 import {
   fetchVaultsFyiPartialReturns,
@@ -64,7 +65,10 @@ const MORPHO_VAULT_ADDRESSES = MORPHO_MAINNET_VAULTS.map(v => v.address);
  * their rows render as "Not tracked".
  */
 const REWARD_FARMS = createRewardContracts(mainnet.id)
-  .filter(c => !c.pointsOnly && !isDeprecatedRewardContract(c.contractAddress, mainnet.id))
+  .filter(
+    c =>
+      c.rewardToken.symbol !== TOKENS.cle.symbol && !isDeprecatedRewardContract(c.contractAddress, mainnet.id)
+  )
   .map(c => {
     const { symbol, decimals } = c.rewardToken;
     return {
@@ -95,7 +99,6 @@ const BA_PRICES_STALE_MS = 24 * 60 * 60_000;
 const PENDLE_STALE_MS = 5 * 60_000;
 const VAULTS_FYI_STALE_MS = 45 * 60_000;
 const REWARD_FARM_STALE_MS = 5 * 60_000;
-const BA_CURRENT_PRICES_STALE_MS = 5 * 60_000;
 
 /** The transient not-yet-settled gap: 'source-error' once the query failed, 'loading' before. */
 const gapFor = (error: unknown) => notAvailable(error ? 'source-error' : 'loading');
@@ -358,12 +361,8 @@ export function useWalletEarnings(): WalletEarnings {
     staleTime: BA_PRICES_STALE_MS
   });
 
-  const currentPricesQuery = useQuery({
-    queryKey: ['wallet-earnings', 'ba-current-prices'],
-    queryFn: fetchBaLabsCurrentPrices,
-    enabled: farmsEnabled,
-    staleTime: BA_CURRENT_PRICES_STALE_MS
-  });
+  // The app-wide price cache (the portfolio's balances already load it).
+  const { data: currentPrices, isLoading: currentPricesLoading, error: currentPricesError } = usePrices();
 
   const protocols = useMemo<ProtocolEarnings[]>(() => {
     if (!connected) {
@@ -494,45 +493,48 @@ export function useWalletEarnings(): WalletEarnings {
     })();
 
     // The lifetime figure needs claims, the unclaimed balance and both price
-    // feeds; the monthly one additionally needs the month-start balance, so a
-    // slow block search never holds back the total.
-    const rewardFarms: ProtocolEarnings[] = REWARD_FARMS.map(farm => {
-      const totalQueries = [farmClaimsQuery, farmEarnedNowQuery, farmHistoricPricesQuery, currentPricesQuery];
-      const monthQueries = [...totalQueries, monthStartBlockQuery, farmEarnedAtStartQuery];
-      const totalError = totalQueries.find(q => q.error)?.error ?? null;
-      const monthError = monthQueries.find(q => q.error)?.error ?? null;
+    // feeds; the monthly one additionally needs the month-start balance. The
+    // source reports loading on the lifetime queries only: the month figure
+    // stays 'loading' on its own, which the combined month stat waits for, so
+    // the slow block search never holds back the total.
+    const currentPricesQuery = { isLoading: currentPricesLoading, error: currentPricesError };
+    const totalQueries = [farmClaimsQuery, farmEarnedNowQuery, farmHistoricPricesQuery, currentPricesQuery];
+    const monthQueries = [...totalQueries, monthStartBlockQuery, farmEarnedAtStartQuery];
+    const totalError = totalQueries.find(q => q.error)?.error ?? null;
+    const monthError = monthQueries.find(q => q.error)?.error ?? null;
 
-      const rawPrice = currentPricesQuery.data?.[farm.token.symbol]?.price;
+    const rewardFarms: ProtocolEarnings[] = REWARD_FARMS.map(farm => {
+      const rawPrice = currentPrices?.[farm.token.symbol]?.price;
       const currentPrice = rawPrice === undefined ? undefined : Number(rawPrice);
       const historicPrices = farmHistoricPricesQuery.data?.get(farm.token.address);
       const earnedNow = farmEarnedNowQuery.data?.get(farm.address.toLowerCase());
       const earnedAtMonthStart = farmEarnedAtStartQuery.data?.get(farm.address.toLowerCase());
       const claims = farmClaimsQuery.data?.filter(c => c.farm === farm.address.toLowerCase());
 
-      // A token the price feed doesn't list (a brand-new farm) can't be valued:
-      // an error-class gap, never a silent $0.
-      const priceMissing = currentPricesQuery.data !== undefined && !Number.isFinite(currentPrice);
-      const totalReady =
-        claims !== undefined && earnedNow !== undefined && historicPrices !== undefined && !priceMissing;
+      // The current price only values the unclaimed balance (claims use their
+      // day's price). A token the feed doesn't list (a brand-new farm) with a
+      // balance can't be valued: an error-class gap, never a silent $0. With
+      // nothing unclaimed the price isn't needed at all.
+      const priceMissing = currentPrices !== undefined && !Number.isFinite(currentPrice);
+      const ready = claims !== undefined && earnedNow !== undefined && historicPrices !== undefined;
+      const unpriceable = priceMissing && ready && earnedNow > 0n;
       const base = {
         claims: claims ?? [],
         earnedNow: earnedNow ?? 0n,
         historicPrices: historicPrices ?? new Map<string, number>(),
-        currentPrice: currentPrice ?? 0,
+        currentPrice: Number.isFinite(currentPrice) ? currentPrice! : 0,
         token: farm.token
       };
+      const totalReady = ready && currentPrices !== undefined;
 
-      const totalEarned = priceMissing
+      const totalEarned = unpriceable
         ? notAvailable('source-error')
-        : totalReady && currentPrice !== undefined
+        : totalReady
           ? computeRewardFarmTotal(base)
           : gapFor(totalError);
-      const earnedThisMonth = priceMissing
+      const earnedThisMonth = unpriceable
         ? notAvailable('source-error')
-        : totalReady &&
-            currentPrice !== undefined &&
-            monthStartBlock !== undefined &&
-            earnedAtMonthStart !== undefined
+        : totalReady && monthStartBlock !== undefined && earnedAtMonthStart !== undefined
           ? computeRewardFarmMonth({
               ...base,
               earnedAtMonthStart,
@@ -547,7 +549,7 @@ export function useWalletEarnings(): WalletEarnings {
         rowIds: [farm.rowId],
         totalEarned,
         earnedThisMonth,
-        isLoading: monthQueries.some(q => q.isLoading),
+        isLoading: totalQueries.some(q => q.isLoading),
         error: monthError
       };
     });
@@ -574,7 +576,9 @@ export function useWalletEarnings(): WalletEarnings {
     monthStartBlock,
     farmEarnedAtStartQuery,
     farmHistoricPricesQuery,
-    currentPricesQuery
+    currentPrices,
+    currentPricesLoading,
+    currentPricesError
   ]);
 
   const combined = useMemo(() => combineWalletEarnings(protocols), [protocols]);

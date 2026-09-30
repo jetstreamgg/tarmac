@@ -1,5 +1,5 @@
 import type { RewardFarmClaim } from '../../../hooks/rewards/rewardFarmEarnedClient';
-import { dayIsoOf, priceAtOrBefore } from './historicPrice';
+import { dayIsoOf, priceAtOrBefore } from './computeMerklEarnings';
 import { notAvailable, ok, type EarningsFigure, type EarningsWindow, type Maybe } from './types';
 
 type RewardToken = { symbol: string; decimals: number };

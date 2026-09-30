@@ -112,7 +112,7 @@ function EarningsTooltip({
         </PopoverTrigger>
         <PopoverContent
           align="center"
-          side="top"
+          side={side}
           className={cn(
             'bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
             contentClassName
@@ -271,7 +271,13 @@ export function CombinedEarningsStat({
    */
   breakdown?: ReactNode;
 }) {
-  if (earnings.isLoading) {
+  // A source can settle its total before its month (the reward farms' block
+  // search), so the month also waits for any figure still loading.
+  const figureLoading = earnings.protocols.some(p => {
+    const figure = field === 'total' ? p.totalEarned : p.earnedThisMonth;
+    return figure.status === 'notAvailable' && figure.reason === 'loading';
+  });
+  if (earnings.isLoading || figureLoading) {
     return <Skeleton data-testid="earnings-stat-skeleton" className="h-[18px] w-24 rounded" />;
   }
 
@@ -302,7 +308,9 @@ export function CombinedEarningsStat({
           contentClassName={BREAKDOWN_CONTENT}
           passThrough
           trigger={
-            <span tabIndex={0} className="cursor-default" data-testid={`${testId}-breakdown-trigger`}>
+            // flex, not inline: an inline wrapper's line box takes the
+            // inherited line height and pushes the figure down.
+            <span tabIndex={0} className="flex cursor-default" data-testid={`${testId}-breakdown-trigger`}>
               {value}
             </span>
           }

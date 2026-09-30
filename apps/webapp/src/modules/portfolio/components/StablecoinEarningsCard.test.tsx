@@ -275,6 +275,18 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(2);
   });
 
+  // APP-589: a reward farm settles its total before the month-start block search.
+  it('shows the total while a source is still loading its month figure', () => {
+    renderCard({
+      earnings: walletEarnings([
+        ...EARNINGS.protocols,
+        proto('reward-farm-0xspk', ['rewards-spk'], ok({ usd: 6 }), notAvailable('loading'))
+      ])
+    });
+    expect(totalText()).toBe('+$176.40');
+    expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(1);
+  });
+
   // The footer stats render the bare figures: the gap glyph beside
   // "Total accrued" / "Accrued this month" was dropped (2026-08-31), even when
   // a source is missing from the sum. The position cards still carry it.
@@ -430,15 +442,30 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     ).toEqual(['Fixed Yield$70.00', 'Sky Savings Rate$46.40', 'Staked USDS$30.00', 'USDS Flagship$24.00']);
   });
 
-  it('marks the Flagship monthly row as missing its rewards', () => {
+  it('lists a held product without an earnings source at $0.00, badged Not tracked', () => {
     touch.isTouch = true;
-    renderCard();
+    renderCard({
+      suppliedView: {
+        ...SUPPLIED,
+        positions: [
+          ...SUPPLIED.positions,
+          { ...SUPPLIED.positions[0], id: 'rewards-cle:1', rowId: 'rewards-cle', name: 'Chronicle Points' }
+        ]
+      },
+      products: [
+        ...PRODUCTS,
+        { id: 'rewards-cle', name: 'Chronicle Points', tokenSymbol: 'CLE', kind: 'rewards' as const }
+      ]
+    });
     fireEvent.click(screen.getByTestId('earnings-month-value-breakdown-trigger'));
 
     const rows = within(screen.getByTestId('earnings-breakdown')).getAllByTestId('earnings-breakdown-row');
+    // Merkl has no monthly figure, so the Flagship row is the vault alone; the
+    // untracked row sorts last.
     expect(rows.find(row => row.textContent?.startsWith('USDS Flagship'))?.textContent).toBe(
-      'USDS FlagshipRewards not included$10.00'
+      'USDS Flagship$10.00'
     );
+    expect(rows.at(-1)?.textContent).toBe('Chronicle PointsNot tracked$0.00');
   });
 
   // Hover-focused figures render bare too: no glyph for their missing contributors.

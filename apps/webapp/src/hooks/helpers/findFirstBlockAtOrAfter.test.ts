@@ -33,6 +33,27 @@ describe('findFirstBlockAtOrAfter', () => {
     expect(getBlock.mock.calls.length).toBeLessThanOrEqual(8);
   });
 
+  it('waits for the first block when the target is just past the chain head', async () => {
+    vi.useFakeTimers();
+    try {
+      let head = 1_000n;
+      const timestampOf = (n: bigint) => 1_000_000n + 12n * n;
+      const getBlock = vi.fn(async ({ blockNumber }: { blockNumber?: bigint } = {}) => {
+        const number = blockNumber ?? head;
+        return { number, timestamp: timestampOf(number) };
+      });
+      const client = { getBlock } as unknown as PublicClient;
+
+      const found = findFirstBlockAtOrAfter(client, Number(timestampOf(1_001n)));
+      await vi.advanceTimersByTimeAsync(0);
+      head = 1_001n;
+      await vi.advanceTimersByTimeAsync(4_000);
+      expect(await found).toBe(1_001n);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('throws for a timestamp the chain has not reached yet', async () => {
     const { client, timestampOf } = fakeChain({ latest: 1_000n });
     await expect(findFirstBlockAtOrAfter(client, Number(timestampOf(2_000n)))).rejects.toThrow();

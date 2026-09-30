@@ -43,7 +43,7 @@ const PRODUCTS = [
 ];
 
 const summary = (rows: ReturnType<typeof buildEarningsBreakdown>) =>
-  rows.map(r => [r.product.id, r.usd, r.note ?? null, r.isLoading]);
+  rows.map(r => [r.product.id, r.usd, r.untracked ?? false, r.isLoading]);
 
 describe('buildEarningsBreakdown', () => {
   it('lists held products and exited ones that earned, largest first, untracked last at $0', () => {
@@ -60,24 +60,24 @@ describe('buildEarningsBreakdown', () => {
     expect(
       summary(buildEarningsBreakdown({ earnings, field: 'total', products: PRODUCTS, heldRowIds: held }))
     ).toEqual([
-      ['vault-morpho-0xflagship', 24, null, false],
-      ['rewards-spk', 7, null, false],
-      ['savings', 5, 'mainnet-only', false],
-      ['rewards-cle', 0, 'not-tracked', false]
+      ['vault-morpho-0xflagship', 24, false, false],
+      ['rewards-spk', 7, false, false],
+      ['savings', 5, false, false],
+      ['rewards-cle', 0, true, false]
     ]);
 
-    // Month: Merkl has no monthly figure, so the Flagship row says rewards are missing.
+    // Month: Merkl has no monthly figure, so the Flagship row is the vault alone.
     expect(
       summary(buildEarningsBreakdown({ earnings, field: 'month', products: PRODUCTS, heldRowIds: held }))
     ).toEqual([
-      ['vault-morpho-0xflagship', 20, 'rewards-not-included', false],
-      ['rewards-spk', 7, null, false],
-      ['savings', 1, 'mainnet-only', false],
-      ['rewards-cle', 0, 'not-tracked', false]
+      ['vault-morpho-0xflagship', 20, false, false],
+      ['rewards-spk', 7, false, false],
+      ['savings', 1, false, false],
+      ['rewards-cle', 0, true, false]
     ]);
   });
 
-  it('flags failures: a failed source is unavailable even when exited, a failed contributor is partial', () => {
+  it('lists a failed source without a figure, even when exited', () => {
     const earnings = earningsOf([
       proto('morpho-vault-0xflagship', ['vault-morpho-0xflagship'], ok({ usd: 20 })),
       proto('merkl', ['vault-morpho-0xflagship'], notAvailable('source-error')),
@@ -90,8 +90,8 @@ describe('buildEarningsBreakdown', () => {
       heldRowIds: new Set(['vault-morpho-0xflagship'])
     });
     expect(summary(rows)).toEqual([
-      ['vault-morpho-0xflagship', 20, 'partial', false],
-      ['stusds', undefined, 'unavailable', false]
+      ['vault-morpho-0xflagship', 20, false, false],
+      ['stusds', undefined, false, false]
     ]);
   });
 
@@ -106,21 +106,6 @@ describe('buildEarningsBreakdown', () => {
       products: PRODUCTS,
       heldRowIds: new Set(['savings'])
     });
-    expect(summary(rows)).toEqual([['savings', undefined, null, true]]);
-  });
-
-  it('marks non-Flagship vaults as missing their rewards', () => {
-    const earnings = earningsOf([
-      proto('morpho-vault-0xother', ['vault-morpho-0xother'], ok({ usd: 3 }), ok({ usd: 1 }), {
-        coverage: 'rewards-not-included'
-      })
-    ]);
-    const rows = buildEarningsBreakdown({
-      earnings,
-      field: 'total',
-      products: PRODUCTS,
-      heldRowIds: new Set(['vault-morpho-0xother'])
-    });
-    expect(summary(rows)).toEqual([['vault-morpho-0xother', 3, 'rewards-not-included', false]]);
+    expect(summary(rows)).toEqual([['savings', undefined, false, true]]);
   });
 });

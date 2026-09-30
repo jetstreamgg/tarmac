@@ -102,16 +102,14 @@ export async function fetchRewardFarmEarned({
     blockNumber
   });
 
-  const earned = new Map<string, bigint>();
-  for (const [i, result] of results.entries()) {
-    const farm = farmAddresses[i];
-    if (result.status === 'success') {
-      earned.set(farm.toLowerCase(), result.result);
-      continue;
-    }
-    const code = await client.getCode({ address: farm, blockNumber });
-    if (code && code !== '0x') throw result.error;
-    earned.set(farm.toLowerCase(), 0n);
-  }
-  return earned;
+  const entries = await Promise.all(
+    results.map(async (result, i) => {
+      const farm = farmAddresses[i];
+      if (result.status === 'success') return [farm.toLowerCase(), result.result] as const;
+      const code = await client.getCode({ address: farm, blockNumber });
+      if (code && code !== '0x') throw result.error;
+      return [farm.toLowerCase(), 0n] as const;
+    })
+  );
+  return new Map(entries);
 }

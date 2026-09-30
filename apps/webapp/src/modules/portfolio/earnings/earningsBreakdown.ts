@@ -5,25 +5,13 @@ import { isAnnouncedGap, type WalletEarnings } from './types';
 /** The product identity a breakdown row needs (satisfied by EarnProductRow). */
 export type BreakdownProduct = { id: string; name: string; tokenSymbol: string; kind: EarnProductKind };
 
-/**
- * The one caveat a row can carry, rendered as its badge:
- * - 'not-tracked' — a held product with no earnings source (shown at $0.00;
- *   the badge says the zero isn't measured).
- * - 'unavailable' — the source failed; no figure.
- * - 'partial' — a figure missing a contributor that failed.
- * - 'rewards-not-included' — rewards aren't in this figure (non-Flagship vault
- *   Merkl attribution, or Merkl's missing monthly breakdown).
- * - 'mainnet-only' — the figure covers Ethereum Mainnet only.
- */
-export type BreakdownNote =
-  'not-tracked' | 'unavailable' | 'partial' | 'rewards-not-included' | 'mainnet-only';
-
 export type BreakdownRow = {
   product: BreakdownProduct;
-  /** undefined = no figure (unavailable). */
+  /** undefined = no figure (the source failed or doesn't cover this window). */
   usd?: number;
   isLoading: boolean;
-  note?: BreakdownNote;
+  /** A held product with no earnings source: shown at $0.00 with a "Not tracked" badge. */
+  untracked?: boolean;
 };
 
 /**
@@ -56,46 +44,25 @@ export function buildEarningsBreakdown({
 
     const slice = earningsForPosition(earnings, rowId);
     if (!slice) {
-      if (held) rows.push({ product, usd: 0, isLoading: false, note: 'not-tracked' });
+      if (held) rows.push({ product, usd: 0, isLoading: false, untracked: true });
       continue;
     }
 
     const figure = field === 'total' ? slice.totalEarned : slice.earnedThisMonth;
-    const missing = field === 'total' ? slice.missingFromTotal : slice.missingFromMonth;
-
     if (figure.status === 'notAvailable') {
       if (figure.reason === 'loading') {
         if (held) rows.push({ product, isLoading: true });
-      } else if (!isAnnouncedGap(figure.reason)) {
-        rows.push({ product, isLoading: false, note: 'unavailable' });
-      } else if (held && figure.reason === 'merkl-monthly-unsupported') {
-        rows.push({ product, isLoading: false, note: 'rewards-not-included' });
+      } else if (held || !isAnnouncedGap(figure.reason)) {
+        rows.push({ product, isLoading: false });
       }
       continue;
     }
 
-    const usd = figure.value.usd;
     // Exited products with nothing earned are noise; held ones always show.
-    if (!held && usd === 0) continue;
-
-    const note: BreakdownNote | undefined = missing.some(m => !isAnnouncedGap(m.reason))
-      ? 'partial'
-      : slice.coverage === 'rewards-not-included' ||
-          missing.some(m => m.reason === 'merkl-monthly-unsupported')
-        ? 'rewards-not-included'
-        : slice.coverage === 'mainnet-only'
-          ? 'mainnet-only'
-          : undefined;
-    rows.push({ product, usd, isLoading: false, ...(note ? { note } : {}) });
+    if (!held && figure.value.usd === 0) continue;
+    rows.push({ product, usd: figure.value.usd, isLoading: false });
   }
 
-  const rank = (row: BreakdownRow) =>
-    row.usd !== undefined && row.note !== 'not-tracked'
-      ? 0
-      : row.isLoading
-        ? 1
-        : row.usd === undefined
-          ? 2
-          : 3;
+  const rank = (row: BreakdownRow) => (row.untracked ? 3 : row.isLoading ? 1 : row.usd === undefined ? 2 : 0);
   return rows.sort((a, b) => rank(a) - rank(b) || (b.usd ?? 0) - (a.usd ?? 0));
 }

@@ -15,7 +15,7 @@ import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
 import { earningsForPosition, earningsForSuppliedPosition } from '../earnings/earningsForPosition';
-import { buildEarningsBreakdown, type BreakdownProduct } from '../earnings/earningsBreakdown';
+import type { BreakdownProduct } from '../earnings/earningsBreakdown';
 import { EarningsBreakdown } from './EarningsBreakdown';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
@@ -154,13 +154,10 @@ function SuppliedContent({
     ...new Set(view.positions.filter(p => earningsForPosition(earnings, p.rowId) === null).map(p => p.name))
   ];
   // APP-589 popup on each combined figure: one row per product, held or not.
+  // The rows are built inside the popup, so only while it is open.
   const heldRowIds = new Set(view.positions.map(p => p.rowId));
   const breakdownFor = (field: 'total' | 'month') => (
-    <EarningsBreakdown
-      title={field === 'total' ? <Trans>Total accrued</Trans> : <Trans>Accrued this month</Trans>}
-      totalUsd={field === 'total' ? earnings.combined.totalEarnedUsd : earnings.combined.earnedThisMonthUsd}
-      rows={buildEarningsBreakdown({ earnings, field, products, heldRowIds })}
-    />
+    <EarningsBreakdown earnings={earnings} field={field} products={products} heldRowIds={heldRowIds} />
   );
   const activeSymbol = activePosition?.tokenSymbol ?? null;
   const displayTotal = activePosition ? activePosition.amountUsd : view.totalSupplied;
