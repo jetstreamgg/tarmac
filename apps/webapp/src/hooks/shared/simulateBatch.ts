@@ -135,6 +135,15 @@ function describeCall(call: Call, index: number): string {
  * Resolves with each sub-call's `(success, returnData)` on a clean bundle. Throws a
  * `BatchSimulationError` otherwise, whose `kind` says whether the calls are wrong, the
  * RPC can't do this, or the request just failed.
+ *
+ * Limits, for whoever first bundles native ETH or NFTs (no flow does today):
+ * - The account runs Multicall3's code for the simulation, and Multicall3 has no
+ *   `receive`/`fallback` and no `onERC721Received`/`onERC1155Received`. A call that
+ *   pays ETH out to the user, or `safeTransfer`s an NFT to them, reverts here although
+ *   the wallet's real delegate would accept it — a false red.
+ * - Nothing checks the ETH `value` against the balance. Many nodes don't check it on
+ *   `eth_call` either; one that does answers "insufficient funds", which reads as a
+ *   revert.
  */
 export async function simulateBatch({
   client,

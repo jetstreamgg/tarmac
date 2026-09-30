@@ -5,7 +5,9 @@ import type { Call } from 'viem';
 import { reportError } from '@/modules/sentry/reportError';
 import { getCallsKey } from './networkFee';
 import { useBatchExecutorFallbackClients } from './useBatchExecutorFallbackClients';
+import { extractErrorCode } from '../helpers';
 import {
+  BatchSimulationError,
   isStructuralBatchSimulationError,
   isTransientBatchSimulationError,
   simulateBatch
@@ -88,12 +90,15 @@ export function useSimulateBatch({
   useEffect(() => {
     if (!structuralFailure || !error || reportedStructuralChains.has(resolvedChainId)) return;
     reportedStructuralChains.add(resolvedChainId);
-    reportError(error, {
+    // Reported without its cause: Sentry ships a cause as a linked error, and viem's
+    // message carries the request's arguments — the user's address among them. The
+    // message (viem's short one) and the RPC's error code say what went wrong.
+    reportError(new BatchSimulationError(error.message, { kind: 'structural' }), {
       module: 'transactions',
       flow: 'batch-simulation',
       type: 'structural',
       level: 'error',
-      extra: { chainId: resolvedChainId, callCount: calls.length }
+      extra: { chainId: resolvedChainId, callCount: calls.length, rpcCode: extractErrorCode(error.cause) }
     });
   }, [error, structuralFailure, resolvedChainId, calls.length]);
 

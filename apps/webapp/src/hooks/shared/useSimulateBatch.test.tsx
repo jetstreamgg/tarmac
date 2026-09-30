@@ -80,7 +80,12 @@ describe('useSimulateBatch', () => {
   });
 
   it('flags a structural failure for the router and reports it once per chain', async () => {
-    simulateBatch.mockRejectedValue(new BatchSimulationError('invalid params', { kind: 'structural' }));
+    const rpcError = Object.assign(new Error('Missing or invalid parameters. Request: from 0xabc…'), {
+      code: -32602
+    });
+    simulateBatch.mockRejectedValue(
+      new BatchSimulationError('invalid params', { kind: 'structural', cause: rpcError })
+    );
 
     const { result } = render();
 
@@ -88,6 +93,11 @@ describe('useSimulateBatch', () => {
     expect(result.current.prepared).toBe(false);
     expect(reportError).toHaveBeenCalledTimes(1);
     expect(reportError.mock.calls[0][1]).toMatchObject({ type: 'structural', level: 'error' });
+    // Without the RPC error it wraps: viem's message carries the request, address included.
+    const reported = reportError.mock.calls[0][0] as Error;
+    expect(reported.message).toBe('invalid params');
+    expect(reported.cause).toBeUndefined();
+    expect(reportError.mock.calls[0][1].extra).toMatchObject({ rpcCode: -32602 });
 
     // A second flow on the same chain (a new amount, another modal) stays quiet.
     const second = render();

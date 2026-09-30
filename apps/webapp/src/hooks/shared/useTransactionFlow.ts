@@ -104,11 +104,11 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
       if (sequentialStep.current === 0) setSendRoute(null);
       onError?.(error, hash);
     },
-    // A run in flight stays enabled whatever the caller's gate says now: the caller's
-    // validity check reads live balances, and a multi-step run moves them itself (a
-    // DAI→USDS leg lowers the DAI balance the amount was validated against). Turning the
-    // flow off mid-run would stop the next step from simulating, stranding the funds.
-    enabled: (enabled || sendRoute === 'sequential') && !useBatch && !routeUndecided,
+    // The caller's gate is followed as is, mid-run too: it carries safety checks (the
+    // USDC supply's PSM fee gate) that must stop a run. A form whose amount check a run
+    // invalidates (a DAI→USDS leg spends the DAI it was validated against) relaxes that
+    // check itself while the run is active (useTransactionRunActive).
+    enabled: enabled && !useBatch && !routeUndecided,
     gcTime
   });
 

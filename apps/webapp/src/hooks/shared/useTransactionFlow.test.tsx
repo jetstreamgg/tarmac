@@ -262,9 +262,10 @@ describe('useTransactionFlow', () => {
       expect(result.current.isBatch).toBe(false);
     });
 
-    it('keeps a sequential run enabled when the caller turns its gate off mid-run', () => {
-      // A DAI supply: the DAI→USDS leg lowers the DAI balance the amount was validated
-      // against, so the form's gate reads "insufficient" before the deposit step runs.
+    it("follows the caller's gate mid-run", () => {
+      // The caller's gate carries safety checks of its own (the USDC supply's PSM fee
+      // gate); a form that must stay armed through a run relaxes its amount check
+      // before it reaches here (useTransactionRunActive), never the whole gate.
       batchFlow.batchUnavailable = true;
       const { rerender } = renderHook(({ enabled }) => useTransactionFlow({ calls: [call, call], enabled }), {
         initialProps: { enabled: true }
@@ -272,7 +273,7 @@ describe('useTransactionFlow', () => {
       act(() => sendSequential());
 
       rerender({ enabled: false });
-      expect(sequentialEnabled()).toBe(true);
+      expect(sequentialEnabled()).toBe(false);
     });
   });
 });

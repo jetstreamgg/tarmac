@@ -12,6 +12,7 @@ import {
 import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 /** Seeds the form's initial amount (e.g. a Portfolio quick-deposit shortcut). */
 export type VaultModalPreset = { amount?: string };
@@ -136,6 +137,7 @@ export function useVaultTransactionForm({
     maxRedeems: !isSupply && isFullPositionWithdrawable
   });
 
+  const runActive = useTransactionRunActive();
   const engineParams: VaultEngineParams = {
     flow,
     vaultAddress,
@@ -143,7 +145,8 @@ export function useVaultTransactionForm({
     amount: debouncedAmount,
     max,
     shares: redeemShares,
-    enabled: amountReady
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive
   };
 
   const transactionScreenContent = useMemo(

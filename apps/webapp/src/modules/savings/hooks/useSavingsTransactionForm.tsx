@@ -27,6 +27,7 @@ import {
 import { useSavingsSupplyMinAmountOut } from './useSavingsSupplyMinAmountOut';
 import { useUsdcSupplyGate, type UsdcSupplyBlockedReason } from './useUsdcSupplyGate';
 import { type SavingsLaunchFlow, type UseSavingsLaunchParams } from './useSavingsLaunch';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 /** Seeds the form's initial amount/token (e.g. a Portfolio quick-deposit shortcut). */
 export type SavingsModalPreset = {
@@ -296,6 +297,7 @@ export function useSavingsTransactionForm({
   const amountReady =
     isConnected && usdcGateReady && availableKnown && !isZero && !insufficient && !debouncePending;
 
+  const runActive = useTransactionRunActive();
   const engineParams: SavingsEngineParams = {
     flow,
     originToken,
@@ -308,7 +310,8 @@ export function useSavingsTransactionForm({
     sUsdsBalance: susdsBalance?.value,
     minAmountOutForWithdrawAll: convertedBalance.value,
     maxAmountInForWithdraw,
-    enabled: amountReady
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive
   };
 
   // Compact summary for the wallet/status screen (Figma "Confirm in the wallet").

@@ -13,7 +13,7 @@ import { BATCH_EXECUTOR_ADDRESS } from './networkFee';
  * another in the normal case, and from the other configured chains only when that one has
  * nothing at the address. Resolves `undefined` when no chain does.
  */
-let cached: Promise<Hex> | undefined;
+let cached: Promise<Hex | undefined> | undefined;
 
 export function getBatchExecutorCode(
   client: PublicClient,
@@ -21,16 +21,19 @@ export function getBatchExecutorCode(
 ): Promise<Hex | undefined> {
   if (cached) return cached;
 
+  // Callers that arrive while the read is in flight (the fee estimate and the simulation
+  // both start on modal open) share it, so they all see the same answer: the code, a
+  // miss (`undefined`) or the read's failure.
   const pending = readFromFirstDeployment([client, ...fallbackClients]);
-  cached = pending.then(code => {
-    // Only a found deployment is worth keeping. Don't poison the cache with a miss or a
-    // transient RPC failure — the next simulation gets to try again.
-    if (code === undefined) throw new Error('not found');
-    return code;
-  });
-  cached.catch(() => {
-    cached = undefined;
-  });
+  cached = pending;
+  // Only a found deployment is worth keeping. Don't poison the cache with a miss or a
+  // transient RPC failure — the next simulation gets to try again.
+  const forget = () => {
+    if (cached === pending) cached = undefined;
+  };
+  pending.then(code => {
+    if (code === undefined) forget();
+  }, forget);
   return pending;
 }
 

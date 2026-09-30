@@ -5,6 +5,7 @@ import { type Token, getTokenDecimals, useRewardsSuppliedBalance, useTokenBalanc
 import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { RewardsAmountSummary } from '../components/RewardsAmountSummary';
 import type { RewardsEngineParams, RewardsLaunchFlow } from './useRewardsLaunch';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 /** Seeds the form's initial amount (e.g. a Portfolio quick-supply shortcut). */
 export type RewardsModalPreset = { amount?: string };
@@ -103,12 +104,14 @@ export function useRewardsTransactionForm({
     preset
   });
 
+  const runActive = useTransactionRunActive();
   const engineParams: RewardsEngineParams = {
     flow,
     contractAddress,
     supplyToken,
     amount: debouncedAmount,
-    enabled: amountReady
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive
   };
 
   const transactionScreenContent = useMemo(

@@ -26,6 +26,7 @@ import { buildUpgradeModalRows } from './upgradeModalRows';
 import { NO_VALUE } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 const UPGRADE_SOURCE_TOKENS = [TOKENS.dai, TOKENS.mkr];
 
@@ -87,10 +88,12 @@ export function UpgradeModalForm({
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
+  const runActive = useTransactionRunActive();
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
     amount: debouncedAmount,
-    enabled: amountReady,
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive,
     // The wallet balance is chain state the engine's success doesn't refetch —
     // sync it so the entry screen shows the post-upgrade balance if revisited.
     // Hung off the engine, not the context's txStatus: a confirmed transaction

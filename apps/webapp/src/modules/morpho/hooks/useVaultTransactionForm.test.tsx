@@ -23,6 +23,7 @@ const h = vi.hoisted(() => ({
   debounceLagged: undefined as bigint | undefined
 }));
 
+vi.mock('@/modules/ui/hooks/useTransactionRunActive', () => ({ useTransactionRunActive: () => false }));
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
