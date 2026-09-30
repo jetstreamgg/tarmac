@@ -30,18 +30,16 @@ export const PAGE_SCROLLBAR_ATTR = 'data-page-scrollbar';
  * resize, and the column's width is the one thing that changes) and when a
  * lock is released (a resize during the lock was skipped), so the value never
  * goes stale across a lock.
+ *
+ * The first reading is taken before React mounts: main.tsx calls
+ * `publishPageScrollbarGutter`, and the hook then only re-reads on changes.
  */
 export function usePageScrollbarGutter(): void {
   useLayoutEffect(() => {
-    const root = document.documentElement;
+    // Unless main.tsx already published it (tests, another root), read it now.
+    if (!document.documentElement.hasAttribute(PAGE_SCROLLBAR_ATTR)) publishPageScrollbarGutter();
     const body = document.body;
-    const measure = () => {
-      if (body.hasAttribute('data-scroll-locked')) return;
-      const gutter = Math.max(0, window.innerWidth - body.clientWidth);
-      root.style.setProperty(PAGE_SCROLLBAR_GUTTER_VAR, `${gutter}px`);
-      root.setAttribute(PAGE_SCROLLBAR_ATTR, gutter > 0 ? 'classic' : 'overlay');
-    };
-    measure();
+    const measure = () => publishPageScrollbarGutter();
     const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : undefined;
     resize?.observe(body);
     window.addEventListener('resize', measure);
@@ -55,4 +53,30 @@ export function usePageScrollbarGutter(): void {
       // mid-lock if the tree ever remounts.
     };
   }, []);
+}
+
+/**
+ * Reads the column and publishes it on the root, writing only what changed.
+ *
+ * main.tsx calls this before the app renders. Reading `clientWidth` forces a
+ * layout: on the empty page that costs nothing, while the same read in the
+ * root route's layout effect laid out the whole first page synchronously
+ * (~65 ms on a throttled phone), and the write that followed invalidated the
+ * style of every element under the root, so the next layout read computed it
+ * all again. The value is the same either way: the root reserves the column
+ * (`scrollbar-gutter: stable`) whatever the page holds. Unchanged values are
+ * not rewritten, so the ResizeObserver's first callback, which runs after the
+ * first layout, doesn't invalidate it again.
+ */
+export function publishPageScrollbarGutter(): void {
+  const root = document.documentElement;
+  const body = document.body;
+  if (body.hasAttribute('data-scroll-locked')) return;
+  const gutter = Math.max(0, window.innerWidth - body.clientWidth);
+  const value = `${gutter}px`;
+  const kind = gutter > 0 ? 'classic' : 'overlay';
+  if (root.style.getPropertyValue(PAGE_SCROLLBAR_GUTTER_VAR) !== value) {
+    root.style.setProperty(PAGE_SCROLLBAR_GUTTER_VAR, value);
+  }
+  if (root.getAttribute(PAGE_SCROLLBAR_ATTR) !== kind) root.setAttribute(PAGE_SCROLLBAR_ATTR, kind);
 }
