@@ -90,6 +90,9 @@ export function ManagePositionTakeover({
   // cards are interlinked, so both stay open (3015:58333). Stake is always on.
   const borrowOptional = !detail.vaultLoading && existingDebt === 0n;
   const borrowOn = !borrowOptional || state.borrowEnabled;
+  const wipeAll = borrowOn && state.borrowMode === 'repay' && state.wipeAll;
+  // wipeAll repays the debt as of execution, so the staged repay tracks it as it accrues.
+  const usdsAmount = wipeAll ? existingDebt : state.usdsAmount;
 
   // Amounts routed through each card's mode; the reducer clears amounts on
   // toggle-off and mode switches, so these stay consistent by construction.
@@ -97,12 +100,13 @@ export function ManagePositionTakeover({
   // otherwise the stale debounced value would validate under the new mode.
   const settleCleared = (amount: bigint, debounced: bigint) => (amount === 0n ? 0n : debounced);
   const debouncedSkyAmount = settleCleared(state.skyAmount, useDebounce(state.skyAmount));
-  const debouncedUsdsAmount = settleCleared(state.usdsAmount, useDebounce(state.usdsAmount));
+  const debouncedUsdsInput = useDebounce(state.usdsAmount);
+  // Accrual isn't typing, so wipeAll skips the debounce.
+  const debouncedUsdsAmount = wipeAll ? usdsAmount : settleCleared(usdsAmount, debouncedUsdsInput);
   const skyToLock = state.stakeMode === 'stake' ? debouncedSkyAmount : 0n;
   const skyToFree = state.stakeMode === 'withdraw' ? debouncedSkyAmount : 0n;
   const usdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? debouncedUsdsAmount : 0n;
   const usdsToWipe = borrowOn && state.borrowMode === 'repay' ? debouncedUsdsAmount : 0n;
-  const wipeAll = borrowOn && state.borrowMode === 'repay' && state.wipeAll;
 
   // Legacy Free.tsx/Repay.tsx simulation inputs, composed (M9).
   const newCollateralAmount = existingCollateral + skyToLock - skyToFree;
@@ -114,8 +118,8 @@ export function ManagePositionTakeover({
   // and validation stay debounced.
   const liveSkyToLock = state.stakeMode === 'stake' ? state.skyAmount : 0n;
   const liveSkyToFree = state.stakeMode === 'withdraw' ? state.skyAmount : 0n;
-  const liveUsdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? state.usdsAmount : 0n;
-  const liveUsdsToWipe = borrowOn && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
+  const liveUsdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? usdsAmount : 0n;
+  const liveUsdsToWipe = borrowOn && state.borrowMode === 'repay' ? usdsAmount : 0n;
   const liveCollateralAmount = existingCollateral + liveSkyToLock - liveSkyToFree;
   const liveDebtValue = existingDebt + liveUsdsToBorrow - liveUsdsToWipe;
   const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
@@ -137,8 +141,7 @@ export function ManagePositionTakeover({
   );
   // A pending debounce still validates the previous amounts, so its verdict
   // would flash stale errors; treat that window as loading instead.
-  const simulationSettling =
-    debouncedSkyAmount !== state.skyAmount || debouncedUsdsAmount !== state.usdsAmount;
+  const simulationSettling = debouncedSkyAmount !== state.skyAmount || debouncedUsdsAmount !== usdsAmount;
   const simulationLoading = debouncedSimLoading || simulationSettling;
   const simulationError = simulationSettling ? null : debouncedSimError;
   const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
@@ -296,7 +299,7 @@ export function ManagePositionTakeover({
     detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS ? detail.voteDelegate : undefined;
 
   // ---- Confirm gating (M20) -------------------------------------------------
-  const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
+  const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === usdsAmount;
   const hasChange = skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll;
   // Every staged change is relative to the existing position, so nothing may
   // confirm against an unresolved vault read.
@@ -643,7 +646,7 @@ export function ManagePositionTakeover({
         onModeChange={mode => dispatch({ type: 'setBorrowMode', mode })}
         enabled={borrowOn}
         onEnabledChange={borrowOptional ? enableBorrow : undefined}
-        amount={state.usdsAmount}
+        amount={usdsAmount}
         onAmountChange={(amount, stagedWipeAll) =>
           dispatch({ type: 'setUsdsAmount', amount, wipeAll: stagedWipeAll })
         }

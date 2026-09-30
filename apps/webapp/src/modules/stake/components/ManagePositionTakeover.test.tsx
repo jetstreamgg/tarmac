@@ -283,12 +283,14 @@ import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
   const onClose = vi.fn();
-  render(
+  // A fresh element per render, so a rerender picks up changed mocks.
+  const ui = () => (
     <I18nProvider i18n={i18n}>
       <ManagePositionTakeover urnIndex={0} init={init} onClose={onClose} />
     </I18nProvider>
   );
-  return { onClose };
+  const { rerender } = render(ui());
+  return { onClose, rerender: () => rerender(ui()) };
 };
 
 const confirmButton = () => screen.getByTestId('stake-manage-confirm') as HTMLButtonElement;
@@ -378,6 +380,22 @@ describe('ManagePositionTakeover', () => {
     expect(h.launchParams?.skyToFree).toBe(h.existingCollateral);
     expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
     expect(h.launchParams?.wipeAll).toBe(true);
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('close position keeps repaying the full debt as it accrues after staging', () => {
+    h.existingDebt = 50_000n * WAD;
+    const { rerender } = renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+
+    // A block later the debt has grown past the staged repay.
+    h.existingDebt = 50_000n * WAD + 48n * 10n ** 16n;
+    rerender();
+
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).value).toBe('50,000.48');
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-stake-amount-error')).toBeNull();
     expect(confirmButton().disabled).toBe(false);
   });
 
@@ -499,6 +517,20 @@ describe('ManagePositionTakeover', () => {
     // Typing afterwards clears wipeAll (legacy Repay onChange).
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
     expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
+  it('repay: the 100% chip keeps tracking the debt as it accrues', () => {
+    h.existingDebt = 50_000n * WAD;
+    const { rerender } = renderSheet({ borrowCard: 'repay' });
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+
+    h.existingDebt = 50_000n * WAD + 48n * 10n ** 16n;
+    rerender();
+
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(confirmButton().disabled).toBe(false);
   });
 
   it('repay: a full-right slider drag stages wipeAll like the 100% chip (M11)', () => {
