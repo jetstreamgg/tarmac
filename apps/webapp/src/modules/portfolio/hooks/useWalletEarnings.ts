@@ -1,8 +1,11 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { createPublicClient, type Address } from 'viem';
 import { useConnection } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
+import { createProxyTransport } from '@/data/wagmi/config/proxyTransport';
 import { usdsFlagshipVaultAddress } from '../../../hooks/generated';
+import { findFirstBlockAtOrAfter } from '../../../hooks/helpers/findFirstBlockAtOrAfter';
 import { MORPHO_VAULTS } from '../../../hooks/morpho/constants';
 import { fetchMerklClaims, fetchMerklUserRewards } from '../../../hooks/morpho/merklEarnedClient';
 import { fetchUserVaultV2Pnl, fetchVaultV2TransactionsSince } from '../../../hooks/morpho/morphoPnlClient';
@@ -14,6 +17,11 @@ import {
 } from '../../../hooks/pendle/pendleApiClient';
 import { pendlePnlQueryKey } from '../../../hooks/pendle/usePendleAllPnlTransactions';
 import { fetchBaLabsHistoricDailyPrices } from '../../../hooks/prices/baLabsHistoricPrices';
+import { fetchBaLabsCurrentPrices } from '../../../hooks/prices/usePrices';
+import { isDeprecatedRewardContract } from '../../../hooks/rewards/deprecatedRewards';
+import { fetchRewardFarmClaims, fetchRewardFarmEarned } from '../../../hooks/rewards/rewardFarmEarnedClient';
+import { rewardContractDisplayName } from '../../../hooks/rewards/rewardContractDisplayName';
+import { createRewardContracts } from '../../../hooks/rewards/useAvailableTokenRewardContracts';
 import { STUSDS_VAULT_ID_MAINNET, SUSDS_VAULT_ID_MAINNET } from '../../../hooks/vaults/fyi/constants';
 import {
   fetchVaultsFyiPartialReturns,
@@ -23,11 +31,13 @@ import { combineWalletEarnings } from '../earnings/combineWalletEarnings';
 import { attributedRewardTokenAddresses, computeMerklEarnings } from '../earnings/computeMerklEarnings';
 import { computeMorphoEarnings } from '../earnings/computeMorphoEarnings';
 import { computePendleEarnings } from '../earnings/computePendleEarnings';
+import { computeRewardFarmMonth, computeRewardFarmTotal } from '../earnings/computeRewardFarmEarnings';
 import { computeSavingsEarnings } from '../earnings/computeSavingsEarnings';
 import { monthToDateWindow } from '../earnings/monthWindow';
 import {
   morphoVaultSourceId,
   notAvailable,
+  rewardFarmSourceId,
   type ProtocolEarnings,
   type WalletEarnings
 } from '../earnings/types';
@@ -47,12 +57,45 @@ const MORPHO_MAINNET_VAULTS = MORPHO_VAULTS.flatMap(v => {
 });
 const MORPHO_VAULT_ADDRESSES = MORPHO_MAINNET_VAULTS.map(v => v.address);
 
+/**
+ * Every live, USD-priced Sky Token Rewards farm gets its own earnings source
+ * (APP-589), so a farm added to the rewards config is tracked without touching
+ * this file. Deprecated farms (SKY) and points farms (Chronicle) are left out:
+ * their rows render as "Not tracked".
+ */
+const REWARD_FARMS = createRewardContracts(mainnet.id)
+  .filter(c => !c.pointsOnly && !isDeprecatedRewardContract(c.contractAddress, mainnet.id))
+  .map(c => {
+    const { symbol, decimals } = c.rewardToken;
+    return {
+      address: c.contractAddress as Address,
+      name: rewardContractDisplayName(c),
+      rowId: `rewards-${symbol.toLowerCase()}`,
+      token: {
+        symbol,
+        decimals: typeof decimals === 'number' ? decimals : decimals[mainnet.id],
+        address: c.rewardToken.address[mainnet.id].toLowerCase()
+      }
+    };
+  });
+const REWARD_FARM_ADDRESSES = REWARD_FARMS.map(f => f.address);
+const REWARD_TOKEN_ADDRESSES = [...new Set(REWARD_FARMS.map(f => f.token.address))].sort();
+
+/**
+ * Farm balances are read straight from mainnet through the Sky proxy rather
+ * than the wagmi config: dev and e2e configs only carry the Tenderly fork,
+ * and every other earnings source is mainnet-scoped too.
+ */
+const mainnetClient = createPublicClient({ chain: mainnet, transport: createProxyTransport(mainnet.id) });
+
 const MORPHO_STALE_MS = 10 * 60_000;
 const MERKL_REWARDS_STALE_MS = 10 * 60_000;
 const MERKL_CLAIMS_STALE_MS = 60 * 60_000;
 const BA_PRICES_STALE_MS = 24 * 60 * 60_000;
 const PENDLE_STALE_MS = 5 * 60_000;
 const VAULTS_FYI_STALE_MS = 45 * 60_000;
+const REWARD_FARM_STALE_MS = 5 * 60_000;
+const BA_CURRENT_PRICES_STALE_MS = 5 * 60_000;
 
 /** The transient not-yet-settled gap: 'source-error' once the query failed, 'loading' before. */
 const gapFor = (error: unknown) => notAvailable(error ? 'source-error' : 'loading');
@@ -99,8 +142,8 @@ const monthStartSecSnapshot = (): number => monthToDateWindow(Date.now()).startS
 
 /**
  * APP-450 aggregator: per-wallet "Total earned" / "Earned this month" across
- * every supported Morpho vault, Merkl rewards, Pendle PT-sUSDS, sUSDS savings
- * and the stUSDS placeholder. Each source runs its own queries with its own
+ * every supported Morpho vault, Merkl rewards, Pendle PT-sUSDS, sUSDS savings,
+ * stUSDS and the Sky Token Rewards farms (APP-589). Each source runs its own queries with its own
  * isLoading/error (marketplace row discipline) so one failing API never sinks
  * the rest; failures degrade that source to `notAvailable('source-error')`.
  *
@@ -252,6 +295,76 @@ export function useWalletEarnings(): WalletEarnings {
     refetchOnWindowFocus: false
   });
 
+  const farmsEnabled = connected && REWARD_FARMS.length > 0;
+
+  const farmClaimsQuery = useQuery({
+    queryKey: ['wallet-earnings', 'reward-farm-claims', user],
+    queryFn: () =>
+      fetchRewardFarmClaims({ userAddress: address!, farmAddresses: REWARD_FARM_ADDRESSES, chainId }),
+    enabled: farmsEnabled,
+    staleTime: REWARD_FARM_STALE_MS
+  });
+
+  // Same staleness as the claims so the two halves of the total age together.
+  const farmEarnedNowQuery = useQuery({
+    queryKey: ['wallet-earnings', 'reward-farm-earned', user],
+    queryFn: () =>
+      fetchRewardFarmEarned({
+        client: mainnetClient,
+        userAddress: address!,
+        farmAddresses: REWARD_FARM_ADDRESSES
+      }),
+    enabled: farmsEnabled,
+    staleTime: REWARD_FARM_STALE_MS
+  });
+
+  // Global per month, so it is resolved once per session and never refetched;
+  // the key rolls over with startSec. Kept as a string: query keys are hashed
+  // with JSON.stringify, which throws on bigint.
+  const monthStartBlockQuery = useQuery({
+    queryKey: ['wallet-earnings', 'month-start-block', startSec],
+    queryFn: async () => (await findFirstBlockAtOrAfter(mainnetClient, window.startSec)).toString(),
+    enabled: farmsEnabled,
+    staleTime: Infinity
+  });
+
+  // The unclaimed balance the month began with: the state after the block
+  // before the first in-window block, matching the block-based claim split.
+  const monthStartBlock = monthStartBlockQuery.data;
+  const farmEarnedAtStartQuery = useQuery({
+    queryKey: ['wallet-earnings', 'reward-farm-earned-at', user, monthStartBlock],
+    queryFn: () =>
+      fetchRewardFarmEarned({
+        client: mainnetClient,
+        userAddress: address!,
+        farmAddresses: REWARD_FARM_ADDRESSES,
+        blockNumber: BigInt(monthStartBlock!) - 1n
+      }),
+    enabled: farmsEnabled && monthStartBlock !== undefined,
+    staleTime: Infinity
+  });
+
+  const farmHistoricPricesQuery = useQuery({
+    queryKey: ['wallet-earnings', 'ba-historic-prices', REWARD_TOKEN_ADDRESSES.join(',')],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        REWARD_TOKEN_ADDRESSES.map(
+          async token => [token, await fetchBaLabsHistoricDailyPrices({ tokenAddress: token })] as const
+        )
+      );
+      return new Map(entries);
+    },
+    enabled: farmsEnabled,
+    staleTime: BA_PRICES_STALE_MS
+  });
+
+  const currentPricesQuery = useQuery({
+    queryKey: ['wallet-earnings', 'ba-current-prices'],
+    queryFn: fetchBaLabsCurrentPrices,
+    enabled: farmsEnabled,
+    staleTime: BA_CURRENT_PRICES_STALE_MS
+  });
+
   const protocols = useMemo<ProtocolEarnings[]>(() => {
     if (!connected) {
       const gone = notAvailable('disconnected');
@@ -271,7 +384,8 @@ export function useWalletEarnings(): WalletEarnings {
         entry('merkl', [FLAGSHIP_ROW_ID]),
         entry('pendle', PENDLE_ROW_IDS),
         entry('savings', ['savings']),
-        entry('stusds', ['stusds'])
+        entry('stusds', ['stusds']),
+        ...REWARD_FARMS.map(f => ({ ...entry(rewardFarmSourceId(f.address), [f.rowId]), label: f.name }))
       ];
     }
 
@@ -379,7 +493,66 @@ export function useWalletEarnings(): WalletEarnings {
       };
     })();
 
-    return [...morphoVaults, merkl, pendle, savings, stusds];
+    // The lifetime figure needs claims, the unclaimed balance and both price
+    // feeds; the monthly one additionally needs the month-start balance, so a
+    // slow block search never holds back the total.
+    const rewardFarms: ProtocolEarnings[] = REWARD_FARMS.map(farm => {
+      const totalQueries = [farmClaimsQuery, farmEarnedNowQuery, farmHistoricPricesQuery, currentPricesQuery];
+      const monthQueries = [...totalQueries, monthStartBlockQuery, farmEarnedAtStartQuery];
+      const totalError = totalQueries.find(q => q.error)?.error ?? null;
+      const monthError = monthQueries.find(q => q.error)?.error ?? null;
+
+      const rawPrice = currentPricesQuery.data?.[farm.token.symbol]?.price;
+      const currentPrice = rawPrice === undefined ? undefined : Number(rawPrice);
+      const historicPrices = farmHistoricPricesQuery.data?.get(farm.token.address);
+      const earnedNow = farmEarnedNowQuery.data?.get(farm.address.toLowerCase());
+      const earnedAtMonthStart = farmEarnedAtStartQuery.data?.get(farm.address.toLowerCase());
+      const claims = farmClaimsQuery.data?.filter(c => c.farm === farm.address.toLowerCase());
+
+      // A token the price feed doesn't list (a brand-new farm) can't be valued:
+      // an error-class gap, never a silent $0.
+      const priceMissing = currentPricesQuery.data !== undefined && !Number.isFinite(currentPrice);
+      const totalReady =
+        claims !== undefined && earnedNow !== undefined && historicPrices !== undefined && !priceMissing;
+      const base = {
+        claims: claims ?? [],
+        earnedNow: earnedNow ?? 0n,
+        historicPrices: historicPrices ?? new Map<string, number>(),
+        currentPrice: currentPrice ?? 0,
+        token: farm.token
+      };
+
+      const totalEarned = priceMissing
+        ? notAvailable('source-error')
+        : totalReady && currentPrice !== undefined
+          ? computeRewardFarmTotal(base)
+          : gapFor(totalError);
+      const earnedThisMonth = priceMissing
+        ? notAvailable('source-error')
+        : totalReady &&
+            currentPrice !== undefined &&
+            monthStartBlock !== undefined &&
+            earnedAtMonthStart !== undefined
+          ? computeRewardFarmMonth({
+              ...base,
+              earnedAtMonthStart,
+              monthStartBlock: BigInt(monthStartBlock),
+              window
+            })
+          : gapFor(monthError);
+
+      return {
+        id: rewardFarmSourceId(farm.address),
+        label: farm.name,
+        rowIds: [farm.rowId],
+        totalEarned,
+        earnedThisMonth,
+        isLoading: monthQueries.some(q => q.isLoading),
+        error: monthError
+      };
+    });
+
+    return [...morphoVaults, merkl, pendle, savings, stusds, ...rewardFarms];
   }, [
     connected,
     window,
@@ -394,7 +567,14 @@ export function useWalletEarnings(): WalletEarnings {
     savingsTotalQuery,
     savingsPartialQuery,
     stusdsTotalQuery,
-    stusdsPartialQuery
+    stusdsPartialQuery,
+    farmClaimsQuery,
+    farmEarnedNowQuery,
+    monthStartBlockQuery,
+    monthStartBlock,
+    farmEarnedAtStartQuery,
+    farmHistoricPricesQuery,
+    currentPricesQuery
   ]);
 
   const combined = useMemo(() => combineWalletEarnings(protocols), [protocols]);

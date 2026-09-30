@@ -51,4 +51,6 @@ export type RewardContract = {
   externalLink: string;
   logo: string;
   featured?: boolean;
+  /** Pays points with no USD market price (Chronicle), so it has no USD earnings figure. */
+  pointsOnly?: boolean;
 };

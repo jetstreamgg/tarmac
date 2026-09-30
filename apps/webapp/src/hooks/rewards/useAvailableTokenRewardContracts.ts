@@ -44,12 +44,13 @@ const REWARD_CONTRACT_CONFIGS = [
     name: 'Earn Chronicle Points',
     description: 'Supply USDS, get CLE',
     externalLink: 'https://usds.sky',
-    logo: 'https://via.placeholder.com/400x400/04d19a/9CD33B?text=CLE'
+    logo: 'https://via.placeholder.com/400x400/04d19a/9CD33B?text=CLE',
+    pointsOnly: true
   }
 ] as const;
 
-// Helper function to create reward contracts for a specific chain
-const createRewardContracts = (chainId: number): RewardContract[] => {
+/** Every reward contract configured on a chain (deprecated farms included). */
+export const createRewardContracts = (chainId: number): RewardContract[] => {
   return REWARD_CONTRACT_CONFIGS.map(config => ({
     ...config,
     contractAddress: config.getAddress(chainId),
