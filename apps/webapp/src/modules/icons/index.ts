@@ -42,7 +42,7 @@ import { Morpho } from './Morpho';
 import { NoResults } from './NoResults';
 import { CurveLogo } from './CurveLogo';
 import { Info } from './Info';
-import { InProgress, SuccessCheck, FailedX, Cancel } from './Icons';
+import { InProgress, SuccessCheck, FailedX, Cancel, Refresh } from './Icons';
 
 export {
   ArrowDown,
@@ -92,5 +92,6 @@ export {
   InProgress,
   SuccessCheck,
   FailedX,
-  Cancel
+  Cancel,
+  Refresh
 };

@@ -10,7 +10,7 @@ import {
   ReactNode
 } from 'react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
-import { InProgress, Cancel } from '@/modules/icons';
+import { InProgress, Cancel, Refresh } from '@/modules/icons';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
@@ -134,7 +134,7 @@ function notifyReviewAgainOnChangedCalls() {
   toastWithClose(
     () => (
       <TransactionNoticeToast
-        icon={<Cancel />}
+        icon={<Refresh />}
         title={<Trans>Transaction details changed</Trans>}
         description={
           <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>
@@ -152,7 +152,7 @@ function notifyReviewAgainOnAccountChange() {
   toastWithClose(
     () => (
       <TransactionNoticeToast
-        icon={<Cancel />}
+        icon={<Refresh />}
         title={<Trans>Account changed</Trans>}
         description={
           <Trans>Your wallet switched accounts while confirming. Review the details and confirm again.</Trans>
