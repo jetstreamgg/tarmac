@@ -6,6 +6,7 @@ import { loanToValue as computeLoanToValue } from '../lib/loanToValue';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { StakeLtvInfoTooltip } from './StakeLtvInfoTooltip';
 import { RateInfo } from '@/components/product/RateInfo';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
@@ -220,12 +221,7 @@ export function StakeTakeoverBorrowCard({
             label={
               <>
                 <Trans>Loan-to-value</Trans>
-                <InfoTooltip
-                  title={t`Loan-to-value (LTV)`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
-                  content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
-                />
+                <StakeLtvInfoTooltip />
               </>
             }
             current={

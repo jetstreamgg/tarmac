@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RollingDigits } from '@/components/ui/rolling-digits';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { StakeLtvInfoTooltip } from './StakeLtvInfoTooltip';
 import { RiskMeter } from '@/components/product/RiskMeter';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
@@ -444,12 +445,7 @@ export function StakeManageBorrowCard({
             label={
               <>
                 <Trans>Loan-to-value</Trans>
-                <InfoTooltip
-                  title={t`Loan-to-value (LTV)`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
-                  content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
-                />
+                <StakeLtvInfoTooltip />
               </>
             }
             current={

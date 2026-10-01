@@ -33,6 +33,7 @@ import {
 } from '../hooks/useStakeUserPositions';
 import { ownAction, StakePositionRowBanner } from './StakePositionRowBanner';
 import { StakePositionDetailWarmer } from './StakePositionDetailWarmer';
+import { StakeLtvInfoTooltip } from './StakeLtvInfoTooltip';
 import { useStakeRowVault, useStakeRowVaultLookup } from '../hooks/useStakeRowVault';
 import {
   DEFAULT_STAKE_POSITIONS_SORT,
@@ -184,6 +185,7 @@ const STAKE_PAGE_SIZE = 7;
 const SORTABLE_COLUMNS: {
   id: StakePositionsSortColumn;
   label: ReactNode;
+  info?: ReactNode;
   width: string;
   cell: (position: StakeUserPosition) => ReactNode;
 }[] = [
@@ -207,6 +209,7 @@ const SORTABLE_COLUMNS: {
   {
     id: 'ltv',
     label: <Trans>Loan-to-value</Trans>,
+    info: <StakeLtvInfoTooltip />,
     width: '1fr',
     cell: position => <PositionLtvCell position={position} />
   },
@@ -249,21 +252,30 @@ function buildColumns(
   onManage: (position: StakeUserPosition) => void
 ): ProductTransactionColumn<StakeUserPosition>[] {
   return [
-    ...SORTABLE_COLUMNS.map(({ id, label, width, cell }) => {
+    ...SORTABLE_COLUMNS.map(({ id, label, info, width, cell }) => {
       const isSorted = sort.column === id;
+      const sortButton = (
+        <SortHeaderButton
+          label={label}
+          isSorted={isSorted}
+          direction={sort.direction}
+          onClick={() => onSort(id)}
+          dataTestId={`stake-positions-sort-${id}`}
+        />
+      );
       return {
         id,
         width,
         cell,
         ariaSort: ariaSortFor(isSorted, sort.direction),
-        header: (
-          <SortHeaderButton
-            label={label}
-            isSorted={isSorted}
-            direction={sort.direction}
-            onClick={() => onSort(id)}
-            dataTestId={`stake-positions-sort-${id}`}
-          />
+        // The info glyph sits beside the sort button, never inside it (no nested buttons).
+        header: info ? (
+          <span className="inline-flex items-center gap-1">
+            {sortButton}
+            {info}
+          </span>
+        ) : (
+          sortButton
         )
       };
     }),
@@ -307,7 +319,15 @@ const renderCard = (position: StakeUserPosition, onManage: (position: StakeUserP
             </CardField>
           </CardFieldRow>
           <CardFieldRow>
-            <CardField label={<Trans>Loan-to-value</Trans>}>
+            <CardField
+              label={
+                // Taps inside the portalled popover bubble through React to the card's tap-to-manage.
+                <span className="inline-flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <Trans>Loan-to-value</Trans>
+                  <StakeLtvInfoTooltip />
+                </span>
+              }
+            >
               <PositionLtvCell position={position} />
             </CardField>
             <CardFieldDivider />

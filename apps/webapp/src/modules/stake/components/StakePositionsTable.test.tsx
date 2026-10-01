@@ -14,6 +14,10 @@ const setSearchParamsMock = vi.fn<SetSearchParams>(next => {
     typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
 });
 
+vi.mock('../hooks/useStakeOracleCap', () => ({
+  useStakeOracleCap: () => ({ data: 25_000_000_000_000_000n, isLoading: false })
+}));
+
 vi.mock('@/lib/navigation', async importOriginal => {
   const actual = await importOriginal<typeof import('@/lib/navigation')>();
   return {

@@ -13,6 +13,9 @@ const h = vi.hoisted(() => ({
   detail: {} as Record<string, unknown>
 }));
 
+vi.mock('../hooks/useStakeOracleCap', () => ({
+  useStakeOracleCap: () => ({ data: 25_000_000_000_000_000n, isLoading: false })
+}));
 vi.mock('../hooks/useStakePositionDetail', () => ({
   useStakePositionDetail: () => h.detail
 }));

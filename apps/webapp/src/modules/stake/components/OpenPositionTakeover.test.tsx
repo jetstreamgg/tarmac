@@ -54,6 +54,9 @@ const setSearchParamsMock = vi.fn<SetSearchParams>(next => {
 // The confirm grid runs its own live reads (fee estimate, delegate metadata) —
 // out of scope here. Stubbed to expose the reward/delegate context this
 // takeover hands it, which IS this component's job to get right.
+vi.mock('../hooks/useStakeOracleCap', () => ({
+  useStakeOracleCap: () => ({ data: 25_000_000_000_000_000n, isLoading: false })
+}));
 vi.mock('./StakeConfirmGrid', () => ({
   StakeConfirmGrid: ({
     rewardFrom,

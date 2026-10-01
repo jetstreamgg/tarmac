@@ -27,6 +27,7 @@ import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { RiskScaleMeter } from '@/components/product/RiskMeter';
 import { RateInfo } from '@/components/product/RateInfo';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { StakeLtvInfoTooltip } from './StakeLtvInfoTooltip';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
 import { loanToValue } from '../lib/loanToValue';
 import { RiskPill } from './StakeManageBorrowCard';
@@ -827,12 +828,7 @@ export function PositionDetailsModal({
                       label={
                         <>
                           <Trans>Loan-to-value</Trans>
-                          <InfoTooltip
-                            title={t`Loan-to-value (LTV)`}
-                            iconSize={12}
-                            iconClassName="shrink-0"
-                            content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
-                          />
+                          <StakeLtvInfoTooltip />
                         </>
                       }
                     >
