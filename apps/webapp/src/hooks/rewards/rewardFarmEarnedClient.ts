@@ -1,6 +1,6 @@
 import { request, gql } from 'graphql-request';
 import type { Address, PublicClient } from 'viem';
-import { HISTORY_QUERY_LIMIT } from '../constants';
+import { INDEXER_MAX_QUERY_LIMIT } from '../constants';
 import { usdsSkyRewardAbi } from '../generated';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 
@@ -41,8 +41,9 @@ const REWARD_CLAIMS_QUERY = gql`
 
 /**
  * Every reward claim the wallet ever made on the given farms, oldest first.
- * The indexer caps each entity query at HISTORY_QUERY_LIMIT rows, so this
+ * The indexer caps each entity query at INDEXER_MAX_QUERY_LIMIT rows, so this
  * pages until a short page — a truncated list would under-count the total.
+ * Nearly every wallet fits in the first page; only bot-scale claimers page.
  */
 export async function fetchRewardFarmClaims({
   userAddress,
@@ -55,11 +56,11 @@ export async function fetchRewardFarmClaims({
 }): Promise<RewardFarmClaim[]> {
   const rewardIds = farmAddresses.map(a => `${chainId}-${a.toLowerCase()}`);
   const claims: RewardFarmClaim[] = [];
-  for (let offset = 0; ; offset += HISTORY_QUERY_LIMIT) {
+  for (let offset = 0; ; offset += INDEXER_MAX_QUERY_LIMIT) {
     const response = await request<{ RewardClaim: RewardClaimRow[] }>(
       getIndexerUrl(chainId),
       REWARD_CLAIMS_QUERY,
-      { user: userAddress.toLowerCase(), rewardIds, limit: HISTORY_QUERY_LIMIT, offset }
+      { user: userAddress.toLowerCase(), rewardIds, limit: INDEXER_MAX_QUERY_LIMIT, offset }
     );
     for (const row of response.RewardClaim) {
       claims.push({
@@ -69,7 +70,7 @@ export async function fetchRewardFarmClaims({
         blockTimestamp: Number(row.blockTimestamp)
       });
     }
-    if (response.RewardClaim.length < HISTORY_QUERY_LIMIT) return claims;
+    if (response.RewardClaim.length < INDEXER_MAX_QUERY_LIMIT) return claims;
   }
 }
 

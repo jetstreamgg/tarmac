@@ -4,7 +4,7 @@ import type { PublicClient } from 'viem';
 const h = vi.hoisted(() => ({ request: vi.fn() }));
 vi.mock('graphql-request', () => ({ request: h.request, gql: (s: TemplateStringsArray) => s.join('') }));
 
-import { HISTORY_QUERY_LIMIT } from '../constants';
+import { INDEXER_MAX_QUERY_LIMIT } from '../constants';
 import { fetchRewardFarmClaims, fetchRewardFarmEarned } from './rewardFarmEarnedClient';
 
 const USER = '0x1111111111111111111111111111111111111111';
@@ -23,8 +23,10 @@ describe('fetchRewardFarmClaims', () => {
 
   it('pages past the indexer cap until a short page and parses every row', async () => {
     h.request
-      .mockResolvedValueOnce({ RewardClaim: Array.from({ length: HISTORY_QUERY_LIMIT }, (_, i) => row(i)) })
-      .mockResolvedValueOnce({ RewardClaim: [row(HISTORY_QUERY_LIMIT)] });
+      .mockResolvedValueOnce({
+        RewardClaim: Array.from({ length: INDEXER_MAX_QUERY_LIMIT }, (_, i) => row(i))
+      })
+      .mockResolvedValueOnce({ RewardClaim: [row(INDEXER_MAX_QUERY_LIMIT)] });
 
     const claims = await fetchRewardFarmClaims({
       userAddress: USER,
@@ -32,7 +34,7 @@ describe('fetchRewardFarmClaims', () => {
       chainId: 1
     });
 
-    expect(claims).toHaveLength(HISTORY_QUERY_LIMIT + 1);
+    expect(claims).toHaveLength(INDEXER_MAX_QUERY_LIMIT + 1);
     expect(claims[0]).toEqual({
       farm: FARM_A.toLowerCase(),
       amount: 0n,
@@ -43,8 +45,8 @@ describe('fetchRewardFarmClaims', () => {
     expect(h.request.mock.calls[1][2]).toEqual({
       user: USER,
       rewardIds: [`1-${FARM_A.toLowerCase()}`, `1-${FARM_B.toLowerCase()}`],
-      limit: HISTORY_QUERY_LIMIT,
-      offset: HISTORY_QUERY_LIMIT
+      limit: INDEXER_MAX_QUERY_LIMIT,
+      offset: INDEXER_MAX_QUERY_LIMIT
     });
   });
 });
