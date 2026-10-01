@@ -103,8 +103,8 @@ catalogs:
       specifier: ~9.1.0
       version: 9.1.0
     '@sentry/react':
-      specifier: ^10.71.0
-      version: 10.71.0
+      specifier: ^10.75.3
+      version: 10.75.3
     '@sentry/vite-plugin':
       specifier: ^5.4.0
       version: 5.4.0
@@ -184,8 +184,8 @@ catalogs:
       specifier: ^7.16.2
       version: 7.16.2
     globals:
-      specifier: ^17.11.0
-      version: 17.11.0
+      specifier: ^17.12.0
+      version: 17.12.0
     graphql:
       specifier: ^16.14.2
       version: 16.14.2
@@ -208,8 +208,8 @@ catalogs:
       specifier: ^0.577.0
       version: 0.577.0
     motion:
-      specifier: ^12.42.0
-      version: 12.42.0
+      specifier: ^12.43.0
+      version: 12.43.0
     openapi-fetch:
       specifier: ^0.17.0
       version: 0.17.0
@@ -217,8 +217,8 @@ catalogs:
       specifier: ~0.2.37
       version: 0.2.37
     posthog-js:
-      specifier: ^1.419.2
-      version: 1.419.2
+      specifier: ^1.434.12
+      version: 1.434.12
     prettier:
       specifier: ^3.9.9
       version: 3.9.9
@@ -361,7 +361,7 @@ importers:
         version: 7.16.2(eslint@10.11.0(jiti@2.7.0))(typescript@6.0.3)
       globals:
         specifier: 'catalog:'
-        version: 17.11.0
+        version: 17.12.0
       happy-dom:
         specifier: 'catalog:'
         version: 20.11.15
@@ -460,7 +460,7 @@ importers:
         version: 9.1.0(typescript@6.0.3)(zod@4.3.6)
       '@sentry/react':
         specifier: 'catalog:'
-        version: 10.71.0(react@19.3.0)
+        version: 10.75.3(react@19.3.0)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.103.2(react@19.3.0)
@@ -502,7 +502,7 @@ importers:
         version: 0.577.0(react@19.3.0)
       motion:
         specifier: 'catalog:'
-        version: 12.42.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       openapi-fetch:
         specifier: 'catalog:'
         version: 0.17.0
@@ -511,7 +511,7 @@ importers:
         version: 0.2.37(cb5ea22c92e8643fd125e4d89a6304c1)
       posthog-js:
         specifier: 'catalog:'
-        version: 1.419.2(@types/react@19.3.0)(react@19.3.0)
+        version: 1.434.12(@types/react@19.3.0)(react@19.3.0)
       react:
         specifier: 'catalog:'
         version: 19.3.0
@@ -1450,14 +1450,14 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@posthog/browser-common@0.5.2':
-    resolution: {integrity: sha512-8GvfEshFdeKIccuy3kpp6mDBxawQtRamMYRCwzy1r1ixLKQVLAGs3afhOf6r75yp59ZQBi5mtXQgUJ2Jz8eHuw==}
+  '@posthog/browser-common@0.9.0':
+    resolution: {integrity: sha512-EWoVzs1vVY7ihpn8yOjj3jyjriHUEEMVSBNL/TW3hk09fTriWRe76vJXrRg0G0yjTYxHmtlSkNn4mOV24ZEzzA==}
 
-  '@posthog/core@1.48.11':
-    resolution: {integrity: sha512-fvKbxGaUM8RuCDB1jdhSqAHYjk42INfJDWT1KVezn74sCrfnr1YaUafxzmcS+87D5FzbA2tu7IT0GQRV2WkkRg==}
+  '@posthog/core@1.55.2':
+    resolution: {integrity: sha512-2mYxGbDmTLUs096VbcZqSWo0lrI48/BrX65r54NynxxFq409BOx9w73HxOAtOKZ1vblkdV6/GxQTe7KDcIQidg==}
 
-  '@posthog/types@1.406.0':
-    resolution: {integrity: sha512-JR00vHgZjqWA+d+HwOdGJ/dsWFcQwnnsNiq9SC9HsQK8woefW1jrhiz0top26oxn/y5MsgfKpxtrQYeG2QocIQ==}
+  '@posthog/types@1.412.4':
+    resolution: {integrity: sha512-Q7lV9O9TbLngjOYw1ucm3bS3tn48xb1B4ZQdDy8gv7yfKe99hCTeWYG4xZ36nJM80VxpTF9TriiJt5hngDOkBg==}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -2119,12 +2119,12 @@ packages:
   '@scure/bip39@1.6.0':
     resolution: {integrity: sha512-+lF0BbLiJNwVlev4eKelw1WWLaiKXw7sSl8T6FvBlWkdX+94aGJ4o8XjUdlyhTCjd8c+B3KT3JfS8P0bLRNU6A==}
 
-  '@sentry/browser-utils@10.71.0':
-    resolution: {integrity: sha512-Djhb+RdEwSdYTlDaMzc2uRCA+bYDIFsFCtZzKEtB9UR7lJNV/bJ0k3el3ifaVGTRELO8WBll/X0elty1Dk5tTw==}
+  '@sentry/browser-utils@10.75.3':
+    resolution: {integrity: sha512-T2oQSMMZ5mWDRlyCDx9HtPRzO0qMxYojmHjYwpKvzB2dmk9NFnTS+aGXNYVv2i1/Uz0dbl8RGETBDiFM5UOs+w==}
     engines: {node: '>=18'}
 
-  '@sentry/browser@10.71.0':
-    resolution: {integrity: sha512-fTE9tUDoggJSFv8cQ+h1UA9onovOoUNJWu8Var1MXmUVuVG/W3WqzJFVyKArZMj95lizZkq8aiS63SURvrBsFQ==}
+  '@sentry/browser@10.75.3':
+    resolution: {integrity: sha512-tqjrG3dnk7LHPDiIxg/5MVF+ONV3VI33fJbAdlSODZD9/i09gXXfp5yoI70HBuasYVMGoCwoUowDfuRoZWEBuA==}
     engines: {node: '>=18'}
 
   '@sentry/bundler-plugins@10.68.0':
@@ -2199,26 +2199,26 @@ packages:
     resolution: {integrity: sha512-5Amhx8ltVz7vb1bRGyf3c4J69/iHW8R/H+SJxTRILHlsSOBrnVVc/IQEYDC6PTRdRdZ3x2u7RVjxZi2Mhe525g==}
     engines: {node: '>=18'}
 
-  '@sentry/core@10.71.0':
-    resolution: {integrity: sha512-OIjT7rzcWJjUC6r3eBT3Td1j0afDBMkbbx9jTocSD+ZSfc25eEU7hoIPS0WvfeIOTIN3y8bfQnXavwMReaNVHQ==}
+  '@sentry/core@10.75.3':
+    resolution: {integrity: sha512-QHgzobetM4UgEVbyqx9WPJzRq0YzyNg2CeeoM1Bf84ivYJXXiiVWxjzc0RHk3c0DHY5/6O6nJqos1xVL55dgZA==}
     engines: {node: '>=18'}
 
-  '@sentry/feedback@10.71.0':
-    resolution: {integrity: sha512-4+zMAmn1DcbYBtFE0pWt6zo8vWoBHTuP/UhtCMTCoGB4sVYvmwRxv9Hc9OpRHSzE9kSl8beD0zKFxuoVHizKQQ==}
+  '@sentry/feedback@10.75.3':
+    resolution: {integrity: sha512-F9w4xK1/qd2cDvudyxPF23weFV/+4wDykRg7ay2iapRPqsSgHlHshkq9+OGLqrevhFrPUEizRMimulPuREHUiQ==}
     engines: {node: '>=18'}
 
-  '@sentry/react@10.71.0':
-    resolution: {integrity: sha512-Ab1cFyOpl0PKKgEBlckIq/gCRIP/MD75gc4B85YnifdTAHK3KxgSWxz43GCeyTTyNBCx19XQsd0dti9YCRYCkw==}
+  '@sentry/react@10.75.3':
+    resolution: {integrity: sha512-Bj8bF3j66GiGNa55LuGlkSWuYmuNWQSlrUBFKgjPJMCc75Ix/c+0EzLueRw6ttKGju+4FmKhF5aqYxcPJNH0MA==}
     engines: {node: '>=18'}
     peerDependencies:
       react: ^16.14.0 || 17.x || 18.x || 19.x
 
-  '@sentry/replay-canvas@10.71.0':
-    resolution: {integrity: sha512-YTqesxBh9arExI49LrTm4Y2/xPX40q2GWi0gWRw6lNfYtyNz7/ZfHi8/1N6JEc8dldTslqFhII6ZFecUyU9iaA==}
+  '@sentry/replay-canvas@10.75.3':
+    resolution: {integrity: sha512-uzmOMJ7O2BGIcfXtiqLrK25LmpbGll2YgJGf5Ulkv2tGSCpXRyC0JHl3mtQcb90AAjB/5/yS1xDAkZLWIEHHSQ==}
     engines: {node: '>=18'}
 
-  '@sentry/replay@10.71.0':
-    resolution: {integrity: sha512-ytEgVg7isvavQL6hgsgYeuSCkcA3EyOKm9lMLQOZTLkiUCtFT/ItWwGNhzS46vQ6wsTv3Uc0Y1JlcJHSFKe/Kg==}
+  '@sentry/replay@10.75.3':
+    resolution: {integrity: sha512-PSWveKEo/eGqcj7tjgNPLZCOQ5Gd0j0NCvVZvOyUhyZJ+W8rLXg4XrlWAlDGz6fjtK++oO1AOmcbv0Aonq+WlQ==}
     engines: {node: '>=18'}
 
   '@sentry/vite-plugin@5.4.0':
@@ -4276,8 +4276,8 @@ packages:
     engines: {node: '>=18.3.0'}
     hasBin: true
 
-  framer-motion@12.42.0:
-    resolution: {integrity: sha512-wp7EJnfWaaEScVygKv3e20udoRz+LbtxScsuTkakAxfXmt+ReC6WyPW2nINRAGvd+hG9odwcjBLyOTPjH5pBRA==}
+  framer-motion@12.43.0:
+    resolution: {integrity: sha512-1eaL3RvR/kAlbG7UYcpMptEyzPoENO0c6w7ZnB3/hh2vSAz/6uGAFn6fdoqTBguNstf3MsFhJHsD/0DHiclG+g==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -4353,8 +4353,8 @@ packages:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
 
-  globals@17.11.0:
-    resolution: {integrity: sha512-Z2I8hM+PbJDXQDq3Icgpzv+mPdwr68iZUU9d5WW4FuXfDUQfkZaZuvjMv42/5crNyw154+9+VWXbYrUgDXbxNw==}
+  globals@17.12.0:
+    resolution: {integrity: sha512-cezEd/DTyyht9cvSSURyygXPfy04GtWO/5e6ZPvH7fCtjKz9PYOmuawphw1Ctd1f6C+5JypXfGD7ahNMXvevBA==}
     engines: {node: '>=18'}
 
   globalthis@1.0.4:
@@ -5080,14 +5080,14 @@ packages:
   moo@0.5.2:
     resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}
 
-  motion-dom@12.42.0:
-    resolution: {integrity: sha512-M63h4n8R+quJdNhBwuLlgxM+OLYa9+I/T2pzDRboB9fLXRdbou+Gw7Zury+SkpaCyACP1JHSjHgZ1EgTkBr30w==}
+  motion-dom@12.43.0:
+    resolution: {integrity: sha512-azKON4d9S65PEoFUiQTMTgPheEmzf2QngdRc50AKfJp9Q9mmcBVw22c8eMq9k8kxOFHdL7+WZY7N/5F/lwiDag==}
 
   motion-utils@12.39.0:
     resolution: {integrity: sha512-8nadJAJjTtqRkmRF36FoJTrywK9nnFmnPwnSMyxaOCU7GDjN9RTMJIxx9De8ErM+vpPhMccr/6fo5WciyQLnMQ==}
 
-  motion@12.42.0:
-    resolution: {integrity: sha512-Qhwvu9sVl5/URSq5CNzwMCpSKK8Uhnrwb6VO977kZyj/wOCS7mWebJUnBoHx5cZU1Zv8a9BD5CSICWKAlrLJgA==}
+  motion@12.43.0:
+    resolution: {integrity: sha512-BQgQbSa9Hn3/mtbib0MK53y6JSANa+YKUKlaYnWzAVDH424RYQ5LVpV3pNiWH00BA2z4ojsSdMzqT7g2FQwjuQ==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -5500,8 +5500,8 @@ packages:
     resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
     engines: {node: ^10 || ^12 || >=14}
 
-  posthog-js@1.419.2:
-    resolution: {integrity: sha512-HVm3mPFucLZnT2/ITa/rjn/g4vQNofA+4nlWO6gUXggARPXkUL3Y6Z7WbGk+J++V+Bw1Q/sKucwYjLpWhms02A==}
+  posthog-js@1.434.12:
+    resolution: {integrity: sha512-gD7Xv8/iuSGiYYQHB9fxnfTsiPvi+WNJiEW9OXnZ/UFS9ZVkOzMVmEq29/NFLeYebVGQpVCBh0H4xbK1sJ7j5g==}
     peerDependencies:
       '@types/react': '>=16.8.0'
       react: '>=16.8.0'
@@ -6534,11 +6534,11 @@ packages:
     resolution: {integrity: sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==}
     engines: {node: 20 || >=22}
 
-  web-vitals@5.3.0:
-    resolution: {integrity: sha512-q6LWsLatGYZp5VGBIOvbTj6JBV2nOmC8KvWztXBmwJcfFAzhwKwbOxhUH306XY3CcaZDUlSmSuNPBsCn0bFu+g==}
+  web-vitals@6.2.1:
+    resolution: {integrity: sha512-rLcLXA2sx6+9dE88NHFubwTtGxpK4yYBLj6qHPdFoCaLr0cXGb4efOqtKLlm4loGA4OEKHIQKMKzZkKyOh5ctw==}
 
-  web-vitals@6.0.0:
-    resolution: {integrity: sha512-Guaibvy/+uNtL6Bsu4jmMJGzuSl91oeRH5iO9pPRbYftnFUr3yqT1TUNX/OE4o9HexuEMU3Kb/Wg7iKhlffZUA==}
+  web-vitals@6.2.2:
+    resolution: {integrity: sha512-oto5x6dLEgrRqfcWed+pZEUb2q6ikbFmqF54CRDhI/QGbn+qxC49b4C4OkbH+kb9C3a8shpFD3SgR9kRcs80ZQ==}
 
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
@@ -7720,16 +7720,16 @@ snapshots:
     dependencies:
       playwright: 1.63.0
 
-  '@posthog/browser-common@0.5.2':
+  '@posthog/browser-common@0.9.0':
     dependencies:
-      '@posthog/core': 1.48.11
-      '@posthog/types': 1.406.0
+      '@posthog/core': 1.55.2
+      '@posthog/types': 1.412.4
 
-  '@posthog/core@1.48.11':
+  '@posthog/core@1.55.2':
     dependencies:
-      '@posthog/types': 1.406.0
+      '@posthog/types': 1.412.4
 
-  '@posthog/types@1.406.0': {}
+  '@posthog/types@1.412.4': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -8623,19 +8623,19 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
-  '@sentry/browser-utils@10.71.0':
+  '@sentry/browser-utils@10.75.3':
     dependencies:
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.71.0
+      '@sentry/core': 10.75.3
 
-  '@sentry/browser@10.71.0':
+  '@sentry/browser@10.75.3':
     dependencies:
-      '@sentry/browser-utils': 10.71.0
+      '@sentry/browser-utils': 10.75.3
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.71.0
-      '@sentry/feedback': 10.71.0
-      '@sentry/replay': 10.71.0
-      '@sentry/replay-canvas': 10.71.0
+      '@sentry/core': 10.75.3
+      '@sentry/feedback': 10.75.3
+      '@sentry/replay': 10.75.3
+      '@sentry/replay-canvas': 10.75.3
 
   '@sentry/bundler-plugins@10.68.0':
     dependencies:
@@ -8700,30 +8700,30 @@ snapshots:
     dependencies:
       '@sentry/conventions': 0.16.0
 
-  '@sentry/core@10.71.0':
+  '@sentry/core@10.75.3':
     dependencies:
       '@sentry/conventions': 0.16.0
 
-  '@sentry/feedback@10.71.0':
+  '@sentry/feedback@10.75.3':
     dependencies:
-      '@sentry/core': 10.71.0
+      '@sentry/core': 10.75.3
 
-  '@sentry/react@10.71.0(react@19.3.0)':
+  '@sentry/react@10.75.3(react@19.3.0)':
     dependencies:
-      '@sentry/browser': 10.71.0
+      '@sentry/browser': 10.75.3
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.71.0
+      '@sentry/core': 10.75.3
       react: 19.3.0
 
-  '@sentry/replay-canvas@10.71.0':
+  '@sentry/replay-canvas@10.75.3':
     dependencies:
-      '@sentry/core': 10.71.0
-      '@sentry/replay': 10.71.0
+      '@sentry/core': 10.75.3
+      '@sentry/replay': 10.75.3
 
-  '@sentry/replay@10.71.0':
+  '@sentry/replay@10.75.3':
     dependencies:
-      '@sentry/browser-utils': 10.71.0
-      '@sentry/core': 10.71.0
+      '@sentry/browser-utils': 10.75.3
+      '@sentry/core': 10.75.3
 
   '@sentry/vite-plugin@5.4.0':
     dependencies:
@@ -11528,9 +11528,9 @@ snapshots:
     dependencies:
       fd-package-json: 2.0.0
 
-  framer-motion@12.42.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  framer-motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
-      motion-dom: 12.42.0
+      motion-dom: 12.43.0
       motion-utils: 12.39.0
       tslib: 2.8.1
     optionalDependencies:
@@ -11603,7 +11603,7 @@ snapshots:
 
   globals@14.0.0: {}
 
-  globals@17.11.0: {}
+  globals@17.12.0: {}
 
   globalthis@1.0.4:
     dependencies:
@@ -12274,15 +12274,15 @@ snapshots:
 
   moo@0.5.2: {}
 
-  motion-dom@12.42.0:
+  motion-dom@12.43.0:
     dependencies:
       motion-utils: 12.39.0
 
   motion-utils@12.39.0: {}
 
-  motion@12.42.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
-      framer-motion: 12.42.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      framer-motion: 12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       tslib: 2.8.1
     optionalDependencies:
       react: 19.3.0
@@ -12766,18 +12766,18 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  posthog-js@1.419.2(@types/react@19.3.0)(react@19.3.0):
+  posthog-js@1.434.12(@types/react@19.3.0)(react@19.3.0):
     dependencies:
-      '@posthog/browser-common': 0.5.2
-      '@posthog/core': 1.48.11
-      '@posthog/types': 1.406.0
+      '@posthog/browser-common': 0.9.0
+      '@posthog/core': 1.55.2
+      '@posthog/types': 1.412.4
       core-js: 3.49.0
       dompurify: 3.4.14
       fflate: 0.4.8
       preact: 10.29.3
       query-selector-shadow-dom: 1.0.1
-      web-vitals: 5.3.0
-      web-vitals-soft-navs: web-vitals@6.0.0
+      web-vitals: 6.2.2
+      web-vitals-soft-navs: web-vitals@6.2.1
     optionalDependencies:
       '@types/react': 19.3.0
       react: 19.3.0
@@ -13823,9 +13823,9 @@ snapshots:
 
   walk-up-path@4.0.0: {}
 
-  web-vitals@5.3.0: {}
+  web-vitals@6.2.1: {}
 
-  web-vitals@6.0.0: {}
+  web-vitals@6.2.2: {}
 
   webidl-conversions@3.0.1: {}
 
