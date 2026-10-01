@@ -67,6 +67,14 @@ describe('StakeOverviewTab', () => {
     expect(leftColumn?.className).toContain('order-2');
   });
 
+  it('keeps the stack through the tablet seam and splits only from desktop', () => {
+    renderTab();
+
+    const grid = screen.getByTestId('stub-rate-chart').parentElement?.parentElement;
+    expect(grid?.className).toContain('desktop:grid-cols-3');
+    expect(grid?.className).not.toMatch(/\blg:/);
+  });
+
   it('renders View contract and Governance links, and no Docs link yet', () => {
     renderTab();
 

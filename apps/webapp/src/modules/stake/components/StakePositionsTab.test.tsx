@@ -70,4 +70,13 @@ describe('StakePositionsTab', () => {
     expect(screen.getByTestId('stake-activity-table-stub')).toBeTruthy();
     expect(screen.getByTestId('stake-rail-card-stub')).toBeTruthy();
   });
+
+  it('keeps the stack through the tablet seam and splits only from desktop', () => {
+    mockPositions = { data: [], isLoading: false, error: null };
+    renderTab();
+
+    const grid = screen.getByTestId('stake-positions-tab');
+    expect(grid.className).toContain('desktop:grid-cols-3');
+    expect(grid.innerHTML).not.toMatch(/\blg:/);
+  });
 });

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { StakeRateChart } from './StakeRateChart';
 import { StakeDetailsStrip } from './StakeDetailsStrip';
 import { BorrowUtilizationBlock } from './BorrowUtilizationBlock';
-import { stickyRailClasses } from '@/modules/layout/components/shellLayoutClasses';
 import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
@@ -20,18 +19,19 @@ export function StakeOverviewTab({ rail }: { rail: StakeRailCardProps }) {
   // Mobile order: rail card → chart (20px below) → Details → Borrow
   // Utilization → Links (40px rhythm).
   //
-  // Desktop: two columns — the left column stacks its blocks 80px apart, the
+  // Desktop (from 1200; the rail's hero figure can't fit a 912-1199 third,
+  // APP-606): two columns — the left column stacks its blocks 80px apart, the
   // right rail holds the shared rail card. `items-start` keeps the rail from
   // stretching to the (much taller) left column's height.
   return (
-    <div className="grid items-start gap-5 lg:grid-cols-3 lg:gap-8">
-      <div className="order-2 flex flex-col gap-10 lg:order-none lg:col-span-2 lg:gap-20">
+    <div className="desktop:grid-cols-3 desktop:gap-8 grid items-start gap-5">
+      <div className="desktop:order-none desktop:col-span-2 desktop:gap-20 order-2 flex flex-col gap-10">
         <StakeRateChart />
         <StakeDetailsStrip />
         <BorrowUtilizationBlock />
         <StakeLinks />
       </div>
-      <div className={`order-1 lg:order-none lg:col-span-1 ${stickyRailClasses}`}>
+      <div className="desktop:sticky desktop:top-22 desktop:self-start desktop:order-none desktop:col-span-1 order-1">
         <StakeRailCard {...rail} />
       </div>
     </div>
