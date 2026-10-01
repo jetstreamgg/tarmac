@@ -208,12 +208,11 @@ const stusdsPartial = {
   toTimestamp: AUG_1 + 18 * DAY
 };
 
-// --- Reward farms: SPK total $6, month $3.25; GROVE never supplied → $0 --------
+// --- Reward farms: SPK total $6, month $3; GROVE never supplied → $0 -----------
 // Month starts at block 200. SPK: 10 claimed on Jul 22 @ $0.2 (before the
 // month) + 4 claimed on Aug 6 @ $0.5 (block 300, in-month) + 2 unclaimed now
 // @ $1 → total 2 + 2 + 2 = $6 over 16 SPK. The month began with 3 unclaimed,
-// valued at the Jul 31 close ($0.25) → month 2 + 2 − 0.75 = $3.25 over
-// 4 + 2 − 3 = 3 SPK.
+// so it earned 4 + 2 − 3 = 3 SPK, valued at the current $1 → $3.
 const MONTH_START_BLOCK = 200n;
 const WAD = 10n ** 18n;
 const farmClaims = [
@@ -400,7 +399,7 @@ describe('useWalletEarnings', () => {
     });
     expect(spk.earnedThisMonth).toEqual({
       status: 'ok',
-      value: { usd: 3.25, native: { amount: 3, symbol: 'SPK' } }
+      value: { usd: 3, native: { amount: 3, symbol: 'SPK' } }
     });
 
     const grove = protocolById(result.current, GROVE_FARM_ID);
@@ -410,9 +409,9 @@ describe('useWalletEarnings', () => {
     expect(grove.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 0 } });
 
     // Combined: 20 + 4 + 70 + 46.4 + 30 + 6 = 176.4 total;
-    // 10 + 7 + 5 − 2 + 3.25 = 23.25 monthly.
+    // 10 + 7 + 5 − 2 + 3 = 23 monthly.
     expect(result.current.combined.totalEarnedUsd).toBeCloseTo(176.4, 10);
-    expect(result.current.combined.earnedThisMonthUsd).toBeCloseTo(23.25, 10);
+    expect(result.current.combined.earnedThisMonthUsd).toBeCloseTo(23, 10);
     expect(result.current.combined.missingFromTotal).toEqual([]);
     expect(result.current.combined.missingFromMonth).toEqual(['merkl']);
 

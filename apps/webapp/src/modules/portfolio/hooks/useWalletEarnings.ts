@@ -536,10 +536,12 @@ export function useWalletEarnings(): WalletEarnings {
         ? notAvailable('source-error')
         : totalReady && monthStartBlock !== undefined && earnedAtMonthStart !== undefined
           ? computeRewardFarmMonth({
-              ...base,
+              claims: base.claims,
+              earnedNow: base.earnedNow,
               earnedAtMonthStart,
               monthStartBlock: BigInt(monthStartBlock),
-              window
+              currentPrice: base.currentPrice,
+              token: farm.token
             })
           : gapFor(monthError);
 

@@ -1,6 +1,6 @@
 import type { RewardFarmClaim } from '../../../hooks/rewards/rewardFarmEarnedClient';
 import { dayIsoOf, priceAtOrBefore } from './computeMerklEarnings';
-import { notAvailable, ok, type EarningsFigure, type EarningsWindow, type Maybe } from './types';
+import { notAvailable, ok, type EarningsFigure, type Maybe } from './types';
 
 type RewardToken = { symbol: string; decimals: number };
 
@@ -15,12 +15,17 @@ type RewardFarmTotalInput = {
   token: RewardToken;
 };
 
-type RewardFarmMonthInput = RewardFarmTotalInput & {
+type RewardFarmMonthInput = {
+  /** This farm's claims only. */
+  claims: RewardFarmClaim[];
+  /** Unclaimed `earned()` now, reward token base units. */
+  earnedNow: bigint;
   /** Unclaimed `earned()` at the end of the block before `monthStartBlock`. */
   earnedAtMonthStart: bigint;
   /** First block at or after the window start. */
   monthStartBlock: bigint;
-  window: EarningsWindow;
+  currentPrice: number;
+  token: RewardToken;
 };
 
 const units = (value: bigint, decimals: number): number => Number(value) / 10 ** decimals;
@@ -65,10 +70,11 @@ export function computeRewardFarmTotal({
 /**
  * Rewards accrued since the window start: claims from `monthStartBlock` on,
  * plus the unclaimed balance now, minus the unclaimed balance the month began
- * with. The month-start balance is valued at the last price before the window
- * (the previous UTC day), so the figure is exactly the change in the lifetime
- * total over the month; it goes negative when the reward token's price fell
- * more than the month accrued.
+ * with — valued at the current price. Valuing only the tokens earned this
+ * month (not the price move on rewards carried in from earlier months) keeps a
+ * rewards figure from going negative: a price drop can't take back rewards
+ * already earned. The lifetime total still values claims at their claim day,
+ * so twelve months don't sum exactly to a year's change in the total.
  *
  * Claims are split by block, not timestamp, so the claim cut and the
  * month-start `earned()` read describe the same chain state. A negative token
@@ -80,26 +86,14 @@ export function computeRewardFarmMonth({
   earnedNow,
   earnedAtMonthStart,
   monthStartBlock,
-  window,
-  historicPrices,
   currentPrice,
   token
 }: RewardFarmMonthInput): Maybe<EarningsFigure> {
   const monthClaims = claims.filter(c => BigInt(c.blockNumber) >= monthStartBlock);
   const accrued = sumAmounts(monthClaims) + earnedNow - earnedAtMonthStart;
   if (accrued < 0n) return notAvailable('reconciliation-failed');
-  if (monthClaims.length === 0 && earnedNow === 0n && earnedAtMonthStart === 0n) return ok({ usd: 0 });
+  if (accrued === 0n) return ok({ usd: 0 });
 
-  const claimedUsd = claimsUsd(monthClaims, historicPrices, token.decimals);
-  const startPrice =
-    earnedAtMonthStart === 0n ? 0 : priceAtOrBefore(historicPrices, dayIsoOf(window.startSec - 1));
-  if (claimedUsd === undefined || startPrice === undefined) return notAvailable('reconciliation-failed');
-
-  return ok({
-    usd:
-      claimedUsd +
-      units(earnedNow, token.decimals) * currentPrice -
-      units(earnedAtMonthStart, token.decimals) * startPrice,
-    native: { amount: units(accrued, token.decimals), symbol: token.symbol }
-  });
+  const amount = units(accrued, token.decimals);
+  return ok({ usd: amount * currentPrice, native: { amount, symbol: token.symbol } });
 }

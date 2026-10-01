@@ -6,7 +6,6 @@ const FARM = '0x173e314c7635b45322cd8cb14f44b312e079f3af';
 const WAD = 10n ** 18n;
 const DAY = 86400;
 const SEP_1 = 1788220800; // 2026-09-01T00:00:00Z
-const window = { startSec: SEP_1, endSec: SEP_1 + 30 * DAY - 1 };
 const MONTH_START_BLOCK = 1000n;
 const token = { symbol: 'SPK', decimals: 18 };
 
@@ -68,30 +67,23 @@ describe('computeRewardFarmTotal', () => {
 });
 
 describe('computeRewardFarmMonth', () => {
-  const base = {
-    historicPrices: prices,
-    currentPrice: 1,
-    token,
-    monthStartBlock: MONTH_START_BLOCK,
-    window
-  };
+  const base = { currentPrice: 1, token, monthStartBlock: MONTH_START_BLOCK };
 
-  it('adds in-month claims and the balance change, valuing the opening balance at the prior close', () => {
-    // In-month: 4 × 0.5 = 2; now 2 × 1 = 2; opening 3 × 0.25 = 0.75 → 3.25 over 4 + 2 − 3 = 3 SPK.
+  it('values the tokens earned this month (in-month claims + the balance change) at the current price', () => {
+    // 4 claimed in-month + 2 unclaimed now − 3 open at the start = 3 SPK × $1.
     const figure = computeRewardFarmMonth({
       ...base,
       claims: [claim(10n, 900, SEP_1 - 12 * DAY), claim(4n, 1100, SEP_1 + 4 * DAY)],
       earnedNow: 2n * WAD,
       earnedAtMonthStart: 3n * WAD
     });
-    expect(figure).toEqual({ status: 'ok', value: { usd: 3.25, native: { amount: 3, symbol: 'SPK' } } });
+    expect(figure).toEqual({ status: 'ok', value: { usd: 3, native: { amount: 3, symbol: 'SPK' } } });
   });
 
   it('splits claims by block, not timestamp: a claim in the month-start block counts as in-month', () => {
     // Same second as the window start but in the first in-window block.
     const figure = computeRewardFarmMonth({
       ...base,
-      historicPrices: new Map([['2026-09-01', 1]]),
       claims: [claim(5n, Number(MONTH_START_BLOCK), SEP_1)],
       earnedNow: 0n,
       earnedAtMonthStart: 0n
@@ -99,8 +91,8 @@ describe('computeRewardFarmMonth', () => {
     expect(figure).toEqual({ status: 'ok', value: { usd: 5, native: { amount: 5, symbol: 'SPK' } } });
   });
 
-  it('goes negative when the price fall on the opening balance outweighs the accrual', () => {
-    // Nothing claimed; 10 open at $0.25 → 11 now at $0.1: 1.1 − 2.5 = −1.4 over +1 SPK.
+  it('stays positive when the price falls: the opening balance carries no price move', () => {
+    // 10 open, 11 now, price down to $0.1 → +1 SPK × $0.1.
     const figure = computeRewardFarmMonth({
       ...base,
       currentPrice: 0.1,
@@ -108,10 +100,7 @@ describe('computeRewardFarmMonth', () => {
       earnedNow: 11n * WAD,
       earnedAtMonthStart: 10n * WAD
     });
-    expect(figure.status).toBe('ok');
-    if (figure.status !== 'ok') return;
-    expect(figure.value.usd).toBeCloseTo(-1.4, 10);
-    expect(figure.value.native).toEqual({ amount: 1, symbol: 'SPK' });
+    expect(figure).toEqual({ status: 'ok', value: { usd: 0.1, native: { amount: 1, symbol: 'SPK' } } });
   });
 
   it('degrades when balances and claims disagree (a claim the indexer has not seen yet)', () => {
@@ -125,10 +114,14 @@ describe('computeRewardFarmMonth', () => {
     expect(figure).toEqual({ status: 'notAvailable', reason: 'reconciliation-failed' });
   });
 
-  it('reports a genuine $0 when nothing accrued and nothing was open', () => {
+  it('reports a genuine $0 when nothing accrued', () => {
     expect(computeRewardFarmMonth({ ...base, claims: [], earnedNow: 0n, earnedAtMonthStart: 0n })).toEqual({
       status: 'ok',
       value: { usd: 0 }
     });
+    // A balance carried in untouched earned nothing this month either.
+    expect(
+      computeRewardFarmMonth({ ...base, claims: [], earnedNow: 3n * WAD, earnedAtMonthStart: 3n * WAD })
+    ).toEqual({ status: 'ok', value: { usd: 0 } });
   });
 });
