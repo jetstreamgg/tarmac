@@ -365,8 +365,8 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
               // wear (Figma 1030:59174, APP-443 item 16 — it was borderless).
               className={
                 isMobile
-                  ? 'border-glassBorder text-text font-circle h-11 w-full shrink-0 justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors focus-visible:ring-0'
-                  : cn(filterTriggerClasses(), 'shrink-0 transition-colors focus-visible:ring-0')
+                  ? 'border-glassBorder text-text font-circle h-11 w-full shrink-0 justify-between rounded-full border bg-transparent py-0 pr-3 pl-4 text-sm leading-4 font-medium tracking-[-0.28px] transition-colors'
+                  : cn(filterTriggerClasses(), 'shrink-0 transition-colors')
               }
             >
               <SelectValue>
