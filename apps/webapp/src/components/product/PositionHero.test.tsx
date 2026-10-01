@@ -59,4 +59,19 @@ describe('PositionHero', () => {
     expect(screen.getAllByTestId('rolling-digit')).toHaveLength(10);
     expect(screen.queryByTestId('rolling-value')).toBeNull();
   });
+
+  it('sizes the figure from its glyph widths so a long total fits a narrow card', () => {
+    renderHero({ balanceSymbol: 'SKY', amount: '125,000,000.00' });
+    const figure = screen.getByText('125,000,000.00').closest('.\\@container') as HTMLElement;
+    expect(Number(figure.style.getPropertyValue('--figure-em'))).toBeCloseTo(7.005, 3);
+    expect(figure.style.getPropertyValue('--figure-reserve')).toBe('40px');
+  });
+
+  it('reserves room for the fraction beside the whole', () => {
+    renderHero({ balanceSymbol: 'USDS', amount: 100000.0002 });
+    const figure = screen.getAllByTestId('rolling-value')[0].closest('.\\@container') as HTMLElement;
+    expect(Number(figure.style.getPropertyValue('--figure-em'))).toBeCloseTo(3.617, 3);
+    // 40px for the token mark and gap, plus ".0002" at the 20px fraction size and its 1px gap.
+    expect(parseFloat(figure.style.getPropertyValue('--figure-reserve'))).toBeCloseTo(92.88, 2);
+  });
 });
