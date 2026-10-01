@@ -205,7 +205,8 @@ export function IconboxPosition({
   tone = 'success',
   size = 'm',
   children,
-  className
+  className,
+  dataTestId
 }: {
   inactive?: boolean;
   tone?: IconboxPositionTone;
@@ -213,9 +214,11 @@ export function IconboxPosition({
   size?: 'm' | 'xs';
   children: ReactNode;
   className?: string;
+  dataTestId?: string;
 }) {
   return (
     <span
+      data-testid={dataTestId}
       className={cn(
         'flex shrink-0 items-center justify-center rounded-full',
         size === 'xs' ? 'size-5 border' : 'size-9 border-[1.5px]',

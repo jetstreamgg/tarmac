@@ -83,6 +83,18 @@ vi.mock('@/hooks', async importOriginal => {
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
+// Position 1 (index 0) carries debt at Medium risk; position 2 is staking-only.
+vi.mock('../hooks/useStakeRowVault', async () => {
+  const { RiskLevel } = await import('@/hooks');
+  return {
+    useStakeRowVault: (position: { index: number }) => ({
+      data: position.index === 0 ? { riskLevel: RiskLevel.MEDIUM } : undefined,
+      isLoading: false,
+      error: null
+    })
+  };
+});
+
 import { StakeActivityTable, toStakeActivityItems } from './StakeActivityTable';
 import { lsSkyUsdsRewardAddress } from '@/hooks';
 
@@ -212,5 +224,17 @@ describe('StakeActivityTable', () => {
     expect(screen.queryByText('Borrow')).toBeNull();
     expect(screen.getAllByText('Stake').length).toBe(1);
     expect(screen.getByText('Claim rewards')).toBeTruthy();
+  });
+
+  it('tints each position token like the positions list: by risk, staking-only in info', () => {
+    renderTable();
+    const tokens = screen.getAllByTestId(/^stake-activity-position-/);
+    const borderOf = (index: number) =>
+      tokens
+        .filter(token => token.dataset.testid === `stake-activity-position-${index}`)
+        .map(t => t.className);
+    expect(borderOf(0).length).toBeGreaterThan(0);
+    for (const className of borderOf(0)) expect(className).toContain('border-statusWarningBorder');
+    for (const className of borderOf(1)) expect(className).toContain('border-statusInfoBorder');
   });
 });

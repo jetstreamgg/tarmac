@@ -13,8 +13,8 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { StakeEmptySection } from './StakeEmptySection';
 import { RiskPill } from './StakeManageBorrowCard';
-import { IconboxPosition, type IconboxPositionTone } from '@/components/ui/iconbox';
-import { RiskLevel } from '@/hooks';
+import { IconboxPosition } from '@/components/ui/iconbox';
+import { useStakePositionTone } from '../hooks/useStakePositionTone';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RISK_ZONE_FILL } from '@/components/product/RiskMeter';
@@ -149,22 +149,9 @@ function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {
   );
 }
 
-const RISK_TONE: Record<RiskLevel, IconboxPositionTone> = {
-  [RiskLevel.LOW]: 'success',
-  [RiskLevel.MEDIUM]: 'warning',
-  [RiskLevel.HIGH]: 'error',
-  [RiskLevel.LIQUIDATION]: 'error'
-};
-
-// Iconbox colour follows liquidation risk; staking-only (or risk still loading) stays info.
-function usePositionTone(position: StakeUserPosition): IconboxPositionTone {
-  const { data: vault } = useStakeRowVault(position);
-  return position.usdsDebt > 0n && vault?.riskLevel ? RISK_TONE[vault.riskLevel] : 'info';
-}
-
 function PositionIdCell({ position }: { position: StakeUserPosition }) {
   const inactive = isInactiveStakePosition(position);
-  const tone = usePositionTone(position);
+  const tone = useStakePositionTone(position);
   return (
     // Inactive positions read through Iconbox/Position's own Inactive variant
     // (Figma 5051:145321) rather than a blanket opacity — the comp keeps the
@@ -290,7 +277,7 @@ function buildColumns(
 // owns the tap-to-manage behavior (the engine wires onRowClick to it); the
 // button runs the same handler on its own, like the desktop Manage.
 function PositionIconbox({ position }: { position: StakeUserPosition }) {
-  const tone = usePositionTone(position);
+  const tone = useStakePositionTone(position);
   return (
     <IconboxPosition inactive={isInactiveStakePosition(position)} tone={tone}>
       <StakeSky width={16} height={16} />

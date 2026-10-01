@@ -41,8 +41,9 @@ import { TransactionCard } from '@/components/product/TransactionCard';
 import { filterTriggerClasses } from '@/components/product/FilterSelect';
 import { cn } from '@/lib/cn';
 import { CellAction, CellAmount, CellEmpty, CellHash, CellStatus } from '@/components/ui/table-cells';
-import { IconboxPosition } from '@/components/ui/iconbox';
-import { StakeUserPosition } from '../hooks/useStakeUserPositions';
+import { IconboxPosition, type IconboxPositionTone } from '@/components/ui/iconbox';
+import { useStakePositionTone } from '../hooks/useStakePositionTone';
+import { isInactiveStakePosition, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
 
 /**
@@ -198,7 +199,11 @@ function actionIcon(action: StakeActivityAction) {
   }
 }
 
-type ActivityRow = StakeActivityItem & { skyPrice: number | null; chainId: number };
+type ActivityRow = StakeActivityItem & {
+  skyPrice: number | null;
+  chainId: number;
+  position?: StakeUserPosition;
+};
 
 const actionCell = (row: ActivityRow) => (
   <CellAction
@@ -210,15 +215,47 @@ const actionCell = (row: ActivityRow) => (
   />
 );
 
-// Figma 3617:24438: 20px green token with the sky glyph beside a Label 5 name.
+// Figma 3617:24438: 20px token with the sky glyph beside a Label 5 name, tinted like the positions list.
+function PositionToken({ urnIndex, position }: { urnIndex: number; position?: StakeUserPosition }) {
+  return position ? (
+    <TonedPositionToken urnIndex={urnIndex} position={position} />
+  ) : (
+    <PositionTokenMark urnIndex={urnIndex} tone="info" inactive={false} />
+  );
+}
+
+function TonedPositionToken({ urnIndex, position }: { urnIndex: number; position: StakeUserPosition }) {
+  const tone = useStakePositionTone(position);
+  return <PositionTokenMark urnIndex={urnIndex} tone={tone} inactive={isInactiveStakePosition(position)} />;
+}
+
+function PositionTokenMark({
+  urnIndex,
+  tone,
+  inactive
+}: {
+  urnIndex: number;
+  tone: IconboxPositionTone;
+  inactive: boolean;
+}) {
+  return (
+    <IconboxPosition
+      size="xs"
+      tone={tone}
+      inactive={inactive}
+      dataTestId={`stake-activity-position-${urnIndex}`}
+    >
+      <StakeSky width={9} height={9} />
+    </IconboxPosition>
+  );
+}
+
 const positionCell = (row: ActivityRow) =>
   row.urnIndex === undefined ? (
     <CellEmpty />
   ) : (
     <span className="text-fgPrimary font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] whitespace-nowrap">
-      <IconboxPosition size="xs">
-        <StakeSky width={9} height={9} />
-      </IconboxPosition>
+      <PositionToken urnIndex={row.urnIndex} position={row.position} />
       <Trans>Position {row.urnIndex + 1}</Trans>
     </span>
   );
@@ -338,7 +375,12 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
   const rows = useMemo<ActivityRow[]>(() => {
     const items = toStakeActivityItems(stakeHistory, { chainId, positions });
     const filtered = filter === 'all' ? items : items.filter(item => item.urnIndex === filter);
-    return filtered.map(item => ({ ...item, skyPrice, chainId }));
+    return filtered.map(item => ({
+      ...item,
+      skyPrice,
+      chainId,
+      position: positions?.find(position => position.index === item.urnIndex)
+    }));
   }, [stakeHistory, filter, skyPrice, chainId, positions]);
 
   // Comp 3617:23840: with no activity at all the title sits above a dashed
