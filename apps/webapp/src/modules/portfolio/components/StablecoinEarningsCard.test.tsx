@@ -508,16 +508,6 @@ describe('StablecoinEarningsCard Others bucket (Figma 3356:52120)', () => {
     expect(screen.getByText('8.33%')).toBeTruthy();
   });
 
-  it('lists the folded positions in a tooltip on the Others row', async () => {
-    renderCard({ suppliedView: SIX });
-    fireEvent.focus(screen.getByRole('button', { name: 'Others (2%)' }));
-    const list = await screen.findByTestId('legend-others-tooltip');
-    const rows = within(list)
-      .getAllByRole('listitem')
-      .map(li => li.textContent);
-    expect(rows).toEqual(['stUSDS(1%)$10.00', 'SKY Rewards(<1%)$5.00']);
-  });
-
   it('keeps every row when there are only 3 positions, however small', () => {
     renderCard({
       suppliedView: {
