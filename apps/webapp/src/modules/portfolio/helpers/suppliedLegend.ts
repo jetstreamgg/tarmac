@@ -8,7 +8,7 @@ export const OTHERS_ID = 'others';
 export const SMALL_SHARE = 0.01;
 /** Small positions fold into "Others" once there are at least this many positions. */
 export const FOLD_SMALL_FROM = 4;
-/** At most this many legend rows; past it the tail folds into the last one, "Others". */
+/** More positions than this cap the legend at this many rows, the last being "Others". */
 export const MAX_ROWS = 5;
 
 export type SuppliedLegend = {
@@ -23,13 +23,14 @@ export type SuppliedLegend = {
  * 3356:52120, thresholds per the user 2026-10-01):
  * - up to 3 positions, every position keeps its row, however small;
  * - from 4, positions under 1% of the total fold into "Others";
- * - from 5, the legend caps at 5 rows: the 4 largest plus "Others".
+ * - from 6, the legend caps at 5 rows: the 4 largest plus "Others" (exactly
+ *   5 positions all keep their rows, bar the small ones above).
  * Expects `positions` sorted by amount descending (as `buildSuppliedView`
  * returns them), so the small ones and the folded tail are always a suffix.
  */
 export function buildSuppliedLegend(positions: SuppliedPosition[]): SuppliedLegend {
   if (positions.length < FOLD_SMALL_FROM) return { named: positions, others: [] };
   const large = positions.filter(p => p.share >= SMALL_SHARE).length;
-  const keep = positions.length >= MAX_ROWS ? Math.min(large, MAX_ROWS - 1) : large;
+  const keep = positions.length > MAX_ROWS ? Math.min(large, MAX_ROWS - 1) : large;
   return { named: positions.slice(0, keep), others: positions.slice(keep) };
 }
