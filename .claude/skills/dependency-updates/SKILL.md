@@ -113,6 +113,13 @@ Push and open a single PR to `development`. The body should list:
 
 Then watch CI (`gh pr checks <number> --watch`). If e2e shards fail, use the `e2e-repair` skill. Before blaming the bumps, check whether the same job is also red on `development`'s latest run.
 
+Then handle Dependabot's open PRs. They're the team's monthly reminder for this run, and a cross-check of the plan:
+
+1. List them with `gh pr list --author app/dependabot --state open`, and read each one's bump list.
+2. Any package a Dependabot PR bumps that this PR doesn't (or bumps to a lower version) must have a reason in this PR's body. This month that was happy-dom, held back on purpose.
+3. Close each Dependabot PR whose bumps this PR fully covers, at the same or a newer version, with `gh pr close <n> --comment "Superseded by #<this PR>."`.
+4. Leave every other Dependabot PR open and mention it in your summary. This mostly concerns security-update PRs, which aren't part of the monthly run.
+
 When web3-tools moved by more than a patch, smoke-test a transaction flow on a Tenderly fork (`pnpm vnet:fork`, then `pnpm -F webapp dev:mock` with the mock wallet). This is optional for smaller bumps.
 
 ## Known pins & recurring checks
