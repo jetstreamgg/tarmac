@@ -251,6 +251,12 @@ const toReviewAndConfirm = () => {
   fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 };
 
+// The send-back lands on the review (Confirm), not the editable entry (Review).
+const expectOnReview = () => {
+  expect(screen.getByRole('button', { name: 'Confirm' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+};
+
 const lastToastTitle = () => {
   const renderFn = toastWithCloseMock.mock.calls.at(-1)?.[0] as ((id: string) => ReactNode) | undefined;
   if (!renderFn) return null;
@@ -301,6 +307,7 @@ describe('stUSDS Curve supply — deferred dispatch', () => {
 
     expect(h.writes).toHaveLength(0);
     expect(lastToastTitle()).toBe('Transaction details changed');
+    expectOnReview();
   });
 
   it('retries with the reviewed min-out when the quote holds', () => {
@@ -329,5 +336,6 @@ describe('stUSDS Curve supply — deferred dispatch', () => {
 
     expect(h.writes).toHaveLength(1);
     expect(lastToastTitle()).toBe('Transaction details changed');
+    expectOnReview();
   });
 });

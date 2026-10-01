@@ -321,6 +321,12 @@ const failLastWrite = () => {
   act(() => h.mutation!.onError(new Error('execution reverted')));
 };
 
+// The send-back lands on the review (Confirm), not the editable entry (Review).
+const expectOnReview = () => {
+  expect(screen.getByRole('button', { name: 'Confirm' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Review' })).toBeNull();
+};
+
 const lastToastTitle = () => {
   const renderFn = toastWithCloseMock.mock.calls.at(-1)?.[0] as ((id: string) => ReactNode) | undefined;
   if (!renderFn) return null;
@@ -366,6 +372,7 @@ describe('Pendle — deferred dispatch', () => {
 
       expect(h.writes).toHaveLength(0);
       expect(lastToastTitle()).toBe('Transaction details changed');
+      expectOnReview();
     });
 
     it('sends nothing on Retry once the quote moved', () => {
@@ -379,6 +386,7 @@ describe('Pendle — deferred dispatch', () => {
 
       expect(h.writes).toHaveLength(1);
       expect(lastToastTitle()).toBe('Transaction details changed');
+      expectOnReview();
     });
 
     it('goes back to review instead of hanging when the quote expires while the gate holds', async () => {
@@ -391,7 +399,7 @@ describe('Pendle — deferred dispatch', () => {
 
       expect(h.writes).toHaveLength(0);
       expect(lastToastTitle()).toBe('Transaction details changed');
-      expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy();
+      expectOnReview();
     });
   });
 

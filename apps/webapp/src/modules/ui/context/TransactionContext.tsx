@@ -792,6 +792,12 @@ export function TransactionProvider({
   const registerReturnToFirstScreen = useCallback((fn: (() => void) | null) => {
     returnToFirstScreenRef.current = fn;
   }, []);
+  // Its back-to-review twin, for a deferred dispatch refused because what the
+  // user confirmed no longer holds (see runGated).
+  const returnToReviewRef = useRef<(() => void) | null>(null);
+  const registerReturnToReview = useCallback((fn: (() => void) | null) => {
+    returnToReviewRef.current = fn;
+  }, []);
 
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
   // has nothing left to animate.
@@ -978,17 +984,25 @@ export function TransactionProvider({
         confirmedCallsRef.current = getNextCalls ? encodeCalls(getNextCalls()) : undefined;
         confirmedAddressRef.current = addressRef.current;
       }
+      // Back to the review to confirm again, at IDLE so it re-renders against
+      // the current figures. A skipReview flow has no review here; it closes
+      // back to the surface that launched it, like the gate's denials.
+      const sendBackToReview = () => {
+        if (controls.isStale()) return;
+        controls.setPreludeSteps(null);
+        controls.setGateStatus('idle');
+        if (configRef.current?.skipReview) handleCloseRef.current();
+        else (returnToReviewRef.current ?? returnToFirstScreenRef.current)?.();
+      };
       const dispatch = () => {
         if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
-          controls.setPreludeSteps(null);
-          controls.returnToFirstScreen();
+          sendBackToReview();
           if (addressRef.current) notifyReviewAgainOnAccountChange();
           else notifyReviewAgainOnDisconnect();
           return;
         }
         if (!callsStillConfirmed()) {
-          controls.setPreludeSteps(null);
-          controls.returnToFirstScreen();
+          sendBackToReview();
           notifyReviewAgainOnChangedCalls();
           return;
         }
@@ -1456,6 +1470,7 @@ export function TransactionProvider({
             open={open && !minimized && !!activeConfig}
             registerEntrySlot={setEntrySlotEl}
             registerReturnToFirstScreen={registerReturnToFirstScreen}
+            registerReturnToReview={registerReturnToReview}
             onClose={handleClose}
             onMinimize={minimize}
             title={modalView.config.title}
