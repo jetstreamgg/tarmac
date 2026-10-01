@@ -7,13 +7,13 @@ catalog:
   '@coinbase/wallet-sdk': ~4.3.7
   '@eslint/eslintrc': ^3.3.6
   '@eslint/js': ^10.0.1
-  '@lingui/cli': ^6.6.0
-  '@lingui/conf': ^6.6.0
-  '@lingui/core': ^6.6.0
-  '@lingui/format-po': ^6.6.0
-  '@lingui/react': ^6.6.0
-  '@lingui/swc-plugin': ^6.6.0
-  '@lingui/vite-plugin': ^6.6.0
+  '@lingui/cli': ^6.8.0
+  '@lingui/conf': ^6.8.0
+  '@lingui/core': ^6.8.0
+  '@lingui/format-po': ^6.8.0
+  '@lingui/react': ^6.8.0
+  '@lingui/swc-plugin': ^6.7.0
+  '@lingui/vite-plugin': ^6.8.0
   '@metamask/connect-evm': ^2.1.1
   '@playwright/test': ^1.62.1
   '@radix-ui/react-accordion': ^1.2.20
@@ -43,8 +43,8 @@ catalog:
   '@tanstack/router-plugin': 1.168.35
   '@testing-library/dom': ^10.4.1
   '@testing-library/react': ^16.3.2
-  '@types/react': ^19.2.18
-  '@types/react-dom': ^19.2.5
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
   '@typescript-eslint/eslint-plugin': ^8.68.0
   '@typescript-eslint/parser': ^8.68.0
   '@vitejs/plugin-react-swc': ^4.3.3
@@ -75,8 +75,8 @@ catalog:
   posthog-js: ^1.419.2
   prettier: ^3.9.6
   prettier-plugin-tailwindcss: ^0.8.1
-  react: ^19.2.8
-  react-dom: ^19.2.8
+  react: ^19.3.0
+  react-dom: ^19.3.0
   react-jazzicon: ^1.0.4
   react-remove-scroll: ^2.7.2
   recharts: ^3.10.1
