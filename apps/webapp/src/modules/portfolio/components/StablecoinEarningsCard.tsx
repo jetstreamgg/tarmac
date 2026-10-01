@@ -14,7 +14,12 @@ import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
-import { earningsForPosition, earningsForSuppliedPosition } from '../earnings/earningsForPosition';
+import {
+  earningsForPosition,
+  earningsForSuppliedPosition,
+  earningsForSuppliedPositions
+} from '../earnings/earningsForPosition';
+import { OTHERS_ID, buildSuppliedLegend } from '../helpers/suppliedLegend';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
 import { CombinedEarningsStat, EarningsFigureValue, STAT_ROW, StatInfoGlyph } from './EarningsStat';
@@ -129,10 +134,21 @@ function SuppliedContent({
 
   if (isLoading && view.positions.length === 0) return <EarningsSkeleton />;
 
-  const activePosition = activeId ? view.positions.find(p => p.id === activeId) : undefined;
+  // The legend and donut fold the long tail into one "Others" row/segment.
+  const legend = buildSuppliedLegend(view.positions);
+  const othersActive = activeId === OTHERS_ID && legend.others.length > 0;
+  const activePosition = activeId && !othersActive ? view.positions.find(p => p.id === activeId) : undefined;
+  // What the card focuses on while hovered: one position, or every position
+  // folded into "Others", whose figures then read as their sum.
+  const focused = othersActive ? legend.others : activePosition ? [activePosition] : undefined;
   // Hover-focus for the two earnings stats: the hovered position's own slice
-  // (null when the row is outside APP-450 scope → dash, like its siblings).
-  const activeEarnings = activePosition ? earningsForSuppliedPosition(earnings, activePosition) : null;
+  // (null when the row is outside APP-450 scope → dash, like its siblings),
+  // or the merged slice of the folded positions (sourceless ones add nothing).
+  const activeEarnings = othersActive
+    ? earningsForSuppliedPositions(earnings, legend.others)
+    : activePosition
+      ? earningsForSuppliedPosition(earnings, activePosition)
+      : null;
   // Products with no earnings source at all: the combined stats exclude them,
   // so the footer names them instead of posing as complete (review finding #2).
   // Keyed on the product, not the position: an L2 leg has no slice of its own
@@ -141,22 +157,37 @@ function SuppliedContent({
   const untrackedNames = [
     ...new Set(view.positions.filter(p => earningsForPosition(earnings, p.rowId) === null).map(p => p.name))
   ];
+  // "Others" spans several tokens, so it singles out no badge.
   const activeSymbol = activePosition?.tokenSymbol ?? null;
-  const displayTotal = activePosition ? activePosition.amountUsd : view.totalSupplied;
-  const displayProjected = activePosition
-    ? projectAnnualEarnings(activePosition.amountUsd, activePosition.rate)
+  const displayTotal = focused ? focused.reduce((acc, p) => acc + p.amountUsd, 0) : view.totalSupplied;
+  const displayProjected = focused
+    ? focused.reduce((acc, p) => acc + projectAnnualEarnings(p.amountUsd, p.rate), 0)
     : view.projected1Y;
-  const displayAvgRate = activePosition ? (activePosition.rate ?? 0) : view.avgRate;
+  // Supply-weighted, like the card's own average (a lone position's is its rate).
+  const displayAvgRate = focused ? (displayTotal > 0 ? displayProjected / displayTotal : 0) : view.avgRate;
   // Positions settle before the rate APIs — hold the rate-derived stats rather
   // than quote 0.00% / $0.00 in the gap.
-  const ratesPending = activePosition ? activePosition.rateLoading : view.ratesLoading;
+  const ratesPending = focused ? focused.some(p => p.rateLoading) : view.ratesLoading;
 
-  const segments: DonutSegment[] = view.positions.map(p => ({
-    id: p.id,
-    color: p.color,
-    hoverColor: p.hoverColor,
-    value: p.amountUsd
-  }));
+  const othersShare = legend.others.reduce((acc, p) => acc + p.share, 0);
+  const segments: DonutSegment[] = [
+    ...legend.named.map(p => ({
+      id: p.id,
+      color: p.color,
+      hoverColor: p.hoverColor,
+      value: p.amountUsd
+    })),
+    ...(legend.others.length > 0
+      ? [
+          {
+            id: OTHERS_ID,
+            color: OTHERS_COLOR,
+            hoverColor: OTHERS_HOVER_COLOR,
+            value: legend.others.reduce((acc, p) => acc + p.amountUsd, 0)
+          }
+        ]
+      : [])
+  ];
 
   return (
     <>
@@ -172,39 +203,55 @@ function SuppliedContent({
           />
 
           <ul className={cn(LEGEND, 'flex flex-col gap-3')} onMouseLeave={() => setActiveId(null)}>
-            {view.positions.map((position, index) => {
-              const pct = position.share * 100;
-              const pctLabel = pct > 0 && pct < 1 ? '<1%' : `${Math.round(pct)}%`;
-              return (
-                <motion.li
-                  key={position.id}
-                  {...entrance({ x: LEGEND_TRAVEL }, ENTRANCE_START + index * LEGEND_STAGGER)}
+            {legend.named.map((position, index) => (
+              <motion.li
+                key={position.id}
+                {...entrance({ x: LEGEND_TRAVEL }, ENTRANCE_START + index * LEGEND_STAGGER)}
+              >
+                <LegendRow
+                  color={position.color}
+                  dimmed={!!activeId && activeId !== position.id}
+                  onActivate={() => setActiveId(position.id)}
+                  onDeactivate={() => setActiveId(null)}
                 >
-                  <LegendRow
-                    color={position.color}
-                    dimmed={!!activeId && activeId !== position.id}
-                    onActivate={() => setActiveId(position.id)}
-                    onDeactivate={() => setActiveId(null)}
-                  >
-                    <Text variant="medium" tag="span" className="text-text font-circle font-medium">
-                      {position.name}
-                    </Text>
-                    {/* One legend row per chain leg (APP-547): the chain mark is
+                  <Text variant="medium" tag="span" className="text-text font-circle font-medium">
+                    {position.name}
+                  </Text>
+                  {/* One legend row per chain leg (APP-547): the chain mark is
                         what tells two sUSDS rows apart, so only multi-chain
                         products carry it — on a single-chain product it says
                         nothing the name doesn't. */}
-                    {position.multichain && (
-                      <span className="flex h-4 w-4 shrink-0" data-testid="legend-chain-icon">
-                        {getChainIcon(position.chainId, 'h-full w-full')}
-                      </span>
-                    )}
-                    <Text variant="medium" tag="span" className="text-textSecondary">
-                      ({pctLabel})
-                    </Text>
-                  </LegendRow>
-                </motion.li>
-              );
-            })}
+                  {position.multichain && (
+                    <span className="flex h-4 w-4 shrink-0" data-testid="legend-chain-icon">
+                      {getChainIcon(position.chainId, 'h-full w-full')}
+                    </span>
+                  )}
+                  <Text variant="medium" tag="span" className="text-textSecondary">
+                    ({sharePctLabel(position.share)})
+                  </Text>
+                </LegendRow>
+              </motion.li>
+            ))}
+            {legend.others.length > 0 && (
+              <motion.li
+                key={OTHERS_ID}
+                {...entrance({ x: LEGEND_TRAVEL }, ENTRANCE_START + legend.named.length * LEGEND_STAGGER)}
+              >
+                <LegendRow
+                  color={OTHERS_COLOR}
+                  dimmed={!!activeId && activeId !== OTHERS_ID}
+                  onActivate={() => setActiveId(OTHERS_ID)}
+                  onDeactivate={() => setActiveId(null)}
+                >
+                  <Text variant="medium" tag="span" className="text-text font-circle font-medium">
+                    <Trans>Others</Trans>
+                  </Text>
+                  <Text variant="medium" tag="span" className="text-textSecondary">
+                    ({sharePctLabel(othersShare)})
+                  </Text>
+                </LegendRow>
+              </motion.li>
+            )}
             {/* `ul` only admits `li` children, so the empty state gets one too. */}
             {view.positions.length === 0 && (
               <li>
@@ -222,6 +269,13 @@ function SuppliedContent({
           onActiveChange={setActiveId}
           size={donutSize}
           renderCenter={id => {
+            if (id === OTHERS_ID) {
+              return (
+                <DonutCenterLabel>
+                  <Trans>Others</Trans>
+                </DonutCenterLabel>
+              );
+            }
             const position = view.positions.find(p => p.id === id);
             return position ? <DonutCenter symbol={position.tokenSymbol} /> : null;
           }}
@@ -235,7 +289,7 @@ function SuppliedContent({
         <Stat
           label={<Trans>Total accrued</Trans>}
           value={
-            activePosition ? (
+            focused ? (
               <EarningsFigureValue
                 figure={activeEarnings?.totalEarned ?? null}
                 missing={activeEarnings?.missingFromTotal}
@@ -260,7 +314,7 @@ function SuppliedContent({
         <Stat
           label={<Trans>Accrued this month</Trans>}
           value={
-            activePosition ? (
+            focused ? (
               <EarningsFigureValue
                 figure={activeEarnings?.earnedThisMonth ?? null}
                 missing={activeEarnings?.missingFromMonth}
@@ -532,12 +586,30 @@ function DonutCenter({ symbol }: { symbol: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="h-4 w-4" />
-      <span className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
-        {symbol}
-      </span>
+      <DonutCenterLabel>{symbol}</DonutCenterLabel>
     </div>
   );
 }
+
+/** The donut-hole label alone — what "Others" shows, having no single token. */
+function DonutCenterLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
+      {children}
+    </span>
+  );
+}
+
+/** A legend share: whole percent, with "<1%" for anything above zero below it. */
+function sharePctLabel(share: number): string {
+  const pct = share * 100;
+  return pct > 0 && pct < 1 ? '<1%' : `${Math.round(pct)}%`;
+}
+
+/** The "Others" bucket's swatch and arc (Figma 3356:52120: fg-quaternary), with
+ * a theme-aware hover step since the DS has no Charts-Hover variable for it. */
+const OTHERS_COLOR = 'var(--color-chartOthers)';
+const OTHERS_HOVER_COLOR = 'var(--color-chartOthersHover)';
 
 function Divider() {
   return <div className="border-borderPrimary mt-8 mb-6 border-b" />;

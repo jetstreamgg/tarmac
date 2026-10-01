@@ -69,7 +69,19 @@ function mergeFigures(
  * renders a dash.
  */
 export function earningsForPosition(earnings: WalletEarnings, rowId: string): PositionEarnings | null {
-  const contributors = earnings.protocols.filter(p => p.rowIds.includes(rowId));
+  return earningsForRows(earnings, [rowId]);
+}
+
+/**
+ * One slice over several rows (the Portfolio legend's "Others" bucket): every
+ * source behind any of them, merged like a single row's contributors. Rows
+ * without a source simply add nothing; null only when none of them has one.
+ */
+export function earningsForRows(
+  earnings: WalletEarnings,
+  rowIds: readonly string[]
+): PositionEarnings | null {
+  const contributors = earnings.protocols.filter(p => p.rowIds.some(id => rowIds.includes(id)));
   if (contributors.length === 0) return null;
 
   const pick = (select: (p: ProtocolEarnings) => Maybe<EarningsFigure>) =>
@@ -77,7 +89,9 @@ export function earningsForPosition(earnings: WalletEarnings, rowId: string): Po
 
   const total = pick(p => p.totalEarned);
   const month = pick(p => p.earnedThisMonth);
-  const pendleSplit = contributors.find(p => p.pendleSplit)?.pendleSplit;
+  // The realized/mark-to-market split describes Pendle's figure alone, so a
+  // multi-row slice (whose total also counts other products) drops it.
+  const pendleSplit = rowIds.length === 1 ? contributors.find(p => p.pendleSplit)?.pendleSplit : undefined;
   const coverage = contributors.find(p => p.coverage)?.coverage;
 
   return {
@@ -101,4 +115,16 @@ export function earningsForSuppliedPosition(
   position: { rowId: string; chainId: number }
 ): PositionEarnings | null {
   return isMainnetId(position.chainId) ? earningsForPosition(earnings, position.rowId) : null;
+}
+
+/**
+ * The earnings slice for a group of supplied positions (the "Others" bucket):
+ * their mainnet legs' rows merged, L2 legs skipped for the reason above.
+ */
+export function earningsForSuppliedPositions(
+  earnings: WalletEarnings,
+  positions: readonly { rowId: string; chainId: number }[]
+): PositionEarnings | null {
+  const rowIds = [...new Set(positions.filter(p => isMainnetId(p.chainId)).map(p => p.rowId))];
+  return rowIds.length > 0 ? earningsForRows(earnings, rowIds) : null;
 }

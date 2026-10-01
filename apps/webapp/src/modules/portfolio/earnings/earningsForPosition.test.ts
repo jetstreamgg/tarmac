@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { earningsForPosition } from './earningsForPosition';
+import { earningsForPosition, earningsForSuppliedPositions } from './earningsForPosition';
 import { notAvailable, ok, type ProtocolEarnings, type WalletEarnings } from './types';
 
 const FLAGSHIP_ROW = 'vault-morpho-0xe15fcc81118895b67b6647bbd393182df44e11e0';
@@ -145,5 +145,45 @@ describe('earningsForPosition', () => {
   it('returns null for rows outside APP-450 scope', () => {
     expect(earningsForPosition(earnings, 'rewards-sky')).toBeNull();
     expect(earningsForPosition(earnings, 'vault-morpho-0xdeadbeef')).toBeNull();
+  });
+});
+
+describe('earningsForSuppliedPositions', () => {
+  it('merges every source behind the positions, skipping rows without one', () => {
+    const slice = earningsForSuppliedPositions(earnings, [
+      { rowId: 'savings', chainId: 1 },
+      { rowId: PENDLE_ROW, chainId: 1 },
+      { rowId: 'rewards-sky', chainId: 1 }
+    ]);
+    expect(slice?.totalEarned).toEqual(
+      ok({ usd: 120.5 + 916.82, native: { amount: 118.2, symbol: 'sUSDS' } })
+    );
+    expect(slice?.earnedThisMonth).toEqual(
+      ok({ usd: 46.4 + 635.39, native: { amount: 45.5, symbol: 'sUSDS' } })
+    );
+    // Pendle's realized/mark-to-market split no longer describes the merged figure.
+    expect(slice?.pendleSplit).toBeUndefined();
+  });
+
+  it('counts a product held on two chains once, from its mainnet leg', () => {
+    const slice = earningsForSuppliedPositions(earnings, [
+      { rowId: 'savings', chainId: 1 },
+      { rowId: 'savings', chainId: 8453 }
+    ]);
+    expect(slice?.totalEarned).toEqual(savings.totalEarned);
+  });
+
+  it('lists failed sources as missing while summing the rest', () => {
+    const slice = earningsForSuppliedPositions(earnings, [
+      { rowId: 'savings', chainId: 1 },
+      { rowId: 'stusds', chainId: 1 }
+    ]);
+    expect(slice?.totalEarned).toEqual(savings.totalEarned);
+    expect(slice?.missingFromTotal).toEqual([{ id: 'stusds', reason: 'source-error' }]);
+  });
+
+  it('returns null when no position has a mainnet source', () => {
+    expect(earningsForSuppliedPositions(earnings, [{ rowId: 'rewards-sky', chainId: 1 }])).toBeNull();
+    expect(earningsForSuppliedPositions(earnings, [{ rowId: 'savings', chainId: 8453 }])).toBeNull();
   });
 });
