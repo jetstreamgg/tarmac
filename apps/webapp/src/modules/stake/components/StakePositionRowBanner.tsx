@@ -28,8 +28,9 @@ export function ownAction(action: () => void) {
 const REVEAL_CLASS = '-mt-0.5 overflow-clip';
 const CARRIER_CLASS =
   'bg-bgSecondary w-full px-6 pb-5 transition-colors [tr:last-child>td>div>&]:rounded-b-[24px] [tr:hover+tr>td>div>&]:bg-bgTertiary [tr:hover>td>div>&]:bg-bgTertiary [tr:focus-visible+tr>td>div>&]:shadow-[inset_2px_0_0_0_var(--color-fgBrand),inset_-2px_0_0_0_var(--color-fgBrand),inset_0_-2px_0_0_var(--color-fgBrand)]';
-// Status infobox inside the cell (comp 3617:193974): red at every tier, icon on the title line.
-const INFOBOX_CLASS = 'bg-statusErrorBg flex w-full items-center gap-4 rounded-xl px-5 py-4';
+// Status infobox inside the cell (comp 3617:193974): red at every tier, icon on the title line; CTAs drop below the copy on a phone.
+const INFOBOX_CLASS =
+  'bg-statusErrorBg flex w-full flex-col items-stretch gap-4 rounded-xl px-5 py-4 sm:flex-row sm:items-center';
 const TITLE_CLASS = 'text-fgPrimary font-circle text-sm leading-4 font-medium';
 const BODY_CLASS = 'text-fgSecondary font-graphik text-xs leading-[18px]';
 
@@ -180,6 +181,7 @@ export function StakePositionRowBanner({
           <Button
             variant="primary"
             size="m"
+            className="flex-1 sm:flex-none"
             onClick={ownAction(() => onRemediate('stake'))}
             data-testid="stake-warning-stake-cta"
           >
@@ -188,6 +190,7 @@ export function StakePositionRowBanner({
           <Button
             variant="secondary"
             size="m"
+            className="flex-1 sm:flex-none"
             onClick={ownAction(() => onRemediate('repay'))}
             data-testid="stake-warning-repay-cta"
           >

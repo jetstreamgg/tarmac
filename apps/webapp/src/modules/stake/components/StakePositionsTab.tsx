@@ -27,7 +27,7 @@ export function StakePositionsTab({
   return (
     <div
       data-testid="stake-positions-tab"
-      className="desktop:grid-cols-3 desktop:gap-8 grid items-start gap-10"
+      className="desktop:grid-cols-3 desktop:gap-8 grid grid-cols-1 items-start gap-10"
     >
       {/* Two panes at desktop (ProductDetailTemplate's pattern): the left pane is a
           real column so positions → activity follow its normal flow beside the

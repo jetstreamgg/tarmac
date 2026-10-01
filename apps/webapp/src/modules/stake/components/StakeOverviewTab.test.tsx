@@ -73,6 +73,7 @@ describe('StakeOverviewTab', () => {
     const grid = screen.getByTestId('stub-rate-chart').parentElement?.parentElement;
     expect(grid?.className).toContain('desktop:grid-cols-3');
     expect(grid?.className).not.toMatch(/\blg:/);
+    expect(grid?.className).toMatch(/(^| )grid-cols-1( |$)/);
   });
 
   it('renders View contract and Governance links, and no Docs link yet', () => {

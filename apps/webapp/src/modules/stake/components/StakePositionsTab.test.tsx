@@ -79,4 +79,11 @@ describe('StakePositionsTab', () => {
     expect(grid.className).toContain('desktop:grid-cols-3');
     expect(grid.innerHTML).not.toMatch(/\blg:/);
   });
+
+  it('caps the stacked track at the container so a wide row cannot push the card off a phone', () => {
+    mockPositions = { data: [], isLoading: false, error: null };
+    renderTab();
+
+    expect(screen.getByTestId('stake-positions-tab').className).toMatch(/(^| )grid-cols-1( |$)/);
+  });
 });

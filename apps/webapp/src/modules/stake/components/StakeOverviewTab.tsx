@@ -24,7 +24,7 @@ export function StakeOverviewTab({ rail }: { rail: StakeRailCardProps }) {
   // right rail holds the shared rail card. `items-start` keeps the rail from
   // stretching to the (much taller) left column's height.
   return (
-    <div className="desktop:grid-cols-3 desktop:gap-8 grid items-start gap-5">
+    <div className="desktop:grid-cols-3 desktop:gap-8 grid grid-cols-1 items-start gap-5">
       <div className="desktop:order-none desktop:col-span-2 desktop:gap-20 order-2 flex flex-col gap-10">
         <StakeRateChart />
         <StakeDetailsStrip />
