@@ -87,10 +87,14 @@ vi.mock('wagmi', () => ({
   useChainId: () => mockConfigChainId,
   useChains: () => CHAINS,
   useConnection: () => ({ connector: { emitter }, chainId: mockWalletChainId, status: mockConnectionStatus }),
-  useSwitchChain: ({ mutation }: { mutation: typeof switchMutation }) => {
-    switchMutation = mutation;
-    return { switchChain: mockSwitchChain };
-  }
+  // The settle callbacks ride on each call, and only the latest request's
+  // fire — the same as TanStack's per-call mutate callbacks.
+  useSwitchChain: () => ({
+    switchChain: (vars: { chainId: number }, callbacks?: typeof switchMutation) => {
+      switchMutation = callbacks ?? {};
+      mockSwitchChain(vars);
+    }
+  })
 }));
 vi.mock('@/hooks', () => ({
   useAvailableTokenRewardContracts: () => mockRewardContracts,
@@ -363,13 +367,34 @@ describe('useAppOrchestration — a switch the wallet never answers', () => {
     mockPathname = '/earn';
     refresh();
 
-    // The wait is over, and the flags it raised come down with it.
     expect(pendingSwitchState).toBeUndefined();
-    expect(mockSetIsSwitchingNetwork).toHaveBeenCalledWith(false);
-    expect(mockSetIsAutoSwitching).toHaveBeenCalledWith(false);
+    // The config chain was already the target (wagmi kept mainnet pinned), so
+    // that switch raised no flags, and abandoning it lowers none — a flag up
+    // now belongs to some in-place flow's switch.
+    expect(mockSetIsSwitchingNetwork).not.toHaveBeenCalled();
+    expect(mockSetIsAutoSwitching).not.toHaveBeenCalled();
     // Earn runs anywhere: nothing to ask, nowhere to send the user.
     expect(mockSwitchChain).not.toHaveBeenCalled();
     expect(redirectedHome()).toBe(false);
+  });
+
+  it('lowers the switching flags a stalled switch raised once the user navigates on', () => {
+    // From Base the config chain does move, so the guard raises the flags.
+    mockWalletChainId = BASE;
+    mockConfigChainId = BASE;
+    mockPathname = '/stake';
+    const { refresh } = mount();
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
+    expect(mockSetIsAutoSwitching).toHaveBeenCalledWith(true);
+    mockSetIsSwitchingNetwork.mockClear();
+    mockSetIsAutoSwitching.mockClear();
+
+    mockPathname = '/portfolio';
+    refresh();
+
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSetIsSwitchingNetwork).toHaveBeenCalledWith(false);
+    expect(mockSetIsAutoSwitching).toHaveBeenCalledWith(false);
   });
 
   it('asks the wallet again on the next module that needs a chain', () => {
