@@ -1,4 +1,4 @@
-import { Children, Fragment, ReactNode, isValidElement, useState } from 'react';
+import { Children, ComponentPropsWithRef, Fragment, ReactNode, isValidElement, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { motion, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
@@ -8,10 +8,17 @@ import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';
 import { RollingValue } from '@/components/ui/rolling-value';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipPortal,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
-import type { SuppliedView } from '../helpers/suppliedView';
+import type { SuppliedPosition, SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
 import {
@@ -202,7 +209,9 @@ function SuppliedContent({
             activeSymbol={activeSymbol}
           />
 
-          <ul className={cn(LEGEND, 'flex flex-col gap-3')} onMouseLeave={() => setActiveId(null)}>
+          {/* Sized to its widest row (`w-fit`) so the Others row can stretch to
+              that edge and its tooltip opens clear of every label. */}
+          <ul className={cn(LEGEND, 'flex w-fit flex-col gap-3')} onMouseLeave={() => setActiveId(null)}>
             {legend.named.map((position, index) => (
               <motion.li
                 key={position.id}
@@ -237,19 +246,22 @@ function SuppliedContent({
                 key={OTHERS_ID}
                 {...entrance({ x: LEGEND_TRAVEL }, ENTRANCE_START + legend.named.length * LEGEND_STAGGER)}
               >
-                <LegendRow
-                  color={OTHERS_COLOR}
-                  dimmed={!!activeId && activeId !== OTHERS_ID}
-                  onActivate={() => setActiveId(OTHERS_ID)}
-                  onDeactivate={() => setActiveId(null)}
-                >
-                  <Text variant="medium" tag="span" className="text-text font-circle font-medium">
-                    <Trans>Others</Trans>
-                  </Text>
-                  <Text variant="medium" tag="span" className="text-textSecondary">
-                    ({sharePctLabel(othersShare)})
-                  </Text>
-                </LegendRow>
+                <OthersTooltip positions={legend.others}>
+                  <LegendRow
+                    color={OTHERS_COLOR}
+                    className="w-full"
+                    dimmed={!!activeId && activeId !== OTHERS_ID}
+                    onActivate={() => setActiveId(OTHERS_ID)}
+                    onDeactivate={() => setActiveId(null)}
+                  >
+                    <Text variant="medium" tag="span" className="text-text font-circle font-medium">
+                      <Trans>Others</Trans>
+                    </Text>
+                    <Text variant="medium" tag="span" className="text-textSecondary">
+                      ({sharePctLabel(othersShare)})
+                    </Text>
+                  </LegendRow>
+                </OthersTooltip>
               </motion.li>
             )}
             {/* `ul` only admits `li` children, so the empty state gets one too. */}
@@ -548,14 +560,23 @@ function EarningsHeadline({
   );
 }
 
-/** A hoverable legend entry: colored swatch + caller-provided label content. */
+/**
+ * A hoverable legend entry: colored swatch + caller-provided label content.
+ * Takes button props (and the ref) so a tooltip trigger can wrap it via
+ * `asChild`; its pointer/focus handlers compose with the row's own.
+ */
 function LegendRow({
   color,
   dimmed,
   onActivate,
   onDeactivate,
-  children
-}: {
+  children,
+  className,
+  onMouseEnter,
+  onFocus,
+  onBlur,
+  ...buttonProps
+}: Omit<ComponentPropsWithRef<'button'>, 'color'> & {
   color: string;
   dimmed: boolean;
   onActivate: () => void;
@@ -565,20 +586,80 @@ function LegendRow({
   return (
     <button
       type="button"
+      {...buttonProps}
       // Dim/undim on a 300ms ease-out (Figma 2233:61099 legend rows).
       className={cn(
         'flex items-center gap-3 text-left transition-opacity duration-300 ease-out',
-        dimmed && 'opacity-50'
+        dimmed && 'opacity-50',
+        className
       )}
-      onMouseEnter={onActivate}
-      onFocus={onActivate}
-      onBlur={onDeactivate}
+      onMouseEnter={e => {
+        onActivate();
+        onMouseEnter?.(e);
+      }}
+      onFocus={e => {
+        onActivate();
+        onFocus?.(e);
+      }}
+      onBlur={e => {
+        onDeactivate();
+        onBlur?.(e);
+      }}
     >
       <span className="h-1 w-4 shrink-0 rounded-full" style={{ backgroundColor: color }} />
       {children}
     </button>
   );
 }
+
+/**
+ * Lists what "Others" folds away, in legend style: swatch, name (+ chain mark
+ * for multi-chain products), share, and the USD amount. Opens to the right of
+ * the row (stretched to the legend's widest label), bottom-aligned with it, so
+ * it grows up into the empty space between the legend and the donut instead
+ * of down over the footer stats (which roll to the Others figures under it). Hover/focus only — the DS tooltip
+ * stays closed on touch devices.
+ */
+function OthersTooltip({ positions, children }: { positions: SuppliedPosition[]; children: ReactNode }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent side="right" align="end" sideOffset={16} className="max-w-[320px]">
+            <ul className="flex flex-col gap-2" data-testid="legend-others-tooltip">
+              {positions.map(position => (
+                <li key={position.id} className="flex items-center justify-between gap-6">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="h-1 w-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: position.color }}
+                    />
+                    <span className={cn(BODY_6, 'text-fgPrimary truncate')}>{position.name}</span>
+                    {position.multichain && (
+                      <span className="flex h-3 w-3 shrink-0">
+                        {getChainIcon(position.chainId, 'h-full w-full')}
+                      </span>
+                    )}
+                    <span className={cn(BODY_6, 'text-fgSecondary shrink-0')}>
+                      ({sharePctLabel(position.share)})
+                    </span>
+                  </span>
+                  <span className={cn(LABEL_6, 'text-fgPrimary shrink-0 text-right')}>
+                    {formatUsd(position.amountUsd)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+const BODY_6 = 'font-graphik text-xs leading-[18px] font-normal';
+const LABEL_6 = 'font-circle text-xs leading-[14px] font-medium tracking-[-0.24px]';
 
 /** The active segment's token, shown centered in the donut hole: 16px icon +
  * Label 4 (Circular 16/18, -0.32 tracking) per the comp (1036:189543). */
