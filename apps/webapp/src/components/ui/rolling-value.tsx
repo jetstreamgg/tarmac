@@ -125,13 +125,14 @@ export function RollingValue({
     // `clip-path` rather than `overflow: hidden` so the inline-block keeps the
     // text baseline (a clipped inline-block takes its baseline from its bottom
     // margin edge). The bottom edge is let out a little: at a tight line-height
-    // (the hero's `leading-none`) the box ends above the comma's tail. Width is
+    // (the hero's `leading-none`) the box ends above the comma's tail, and the
+    // right edge is open so the width glide never cuts the trailing digits. Width is
     // animated, not transitioned, because `auto` can't be transitioned in CSS;
     // it's only ever numeric after the first measure.
     <motion.span
       data-testid="rolling-value"
       className={cn(
-        'relative inline-block align-baseline whitespace-nowrap [clip-path:inset(0_0_-0.15em)]',
+        'relative inline-block align-baseline whitespace-nowrap [clip-path:inset(0_-100vw_-0.15em_0)]',
         className
       )}
       initial={false}
