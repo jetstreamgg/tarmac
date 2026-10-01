@@ -50,7 +50,7 @@ catalog:
   '@vitejs/plugin-react-swc': ^4.3.3
   '@vitest/coverage-v8': ^4.1.11
   '@wagmi/cli': ^2.10.0
-  '@wagmi/core': ^3.6.4
+  '@wagmi/core': ^3.6.5
   '@walletconnect/ethereum-provider': ~2.23.10
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
@@ -90,7 +90,7 @@ catalog:
   vite-plugin-node-polyfills: ^0.28.0
   vite-plugin-simple-html: ^1.1.0
   vitest: ^4.1.11
-  wagmi: ^3.7.6
+  wagmi: ^3.7.7
 
 catalogMode: strict
 
