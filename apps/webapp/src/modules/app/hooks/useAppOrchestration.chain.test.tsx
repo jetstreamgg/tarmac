@@ -1,5 +1,6 @@
 import { Intent } from '@/lib/enums';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
+import { useSyncExternalStore } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chainId as chainIdMap } from '@/utils/chainId';
 
@@ -112,8 +113,48 @@ vi.mock('@/modules/ui/context/ConnectedContext', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ closeOnNavigation: vi.fn(), isModalOpen: mockIsModalOpen })
 }));
+// The pending switch lives on NetworkSwitchContext, which the hook both writes
+// and reads back (through `useTargetChainId`). A small external store stands in
+// for the provider's state so a write re-renders the hook as the real one does.
+type PendingSwitch = { from: number; to: number } | undefined;
+let pendingSwitchState: PendingSwitch;
+const pendingSwitchListeners = new Set<() => void>();
+const pendingSwitchStore = {
+  subscribe: (fn: () => void) => {
+    pendingSwitchListeners.add(fn);
+    return () => pendingSwitchListeners.delete(fn);
+  },
+  get: () => pendingSwitchState,
+  set: (next: PendingSwitch) => {
+    pendingSwitchState = next;
+    pendingSwitchListeners.forEach(fn => fn());
+  }
+};
+const mockSetIsSwitchingNetwork = vi.fn();
+const mockSetIsAutoSwitching = vi.fn();
+function useMockPendingSwitch() {
+  const pending = useSyncExternalStore(pendingSwitchStore.subscribe, pendingSwitchStore.get);
+  // The provider's own rule: any wallet move off `from` (or a disconnect) ends
+  // the wait. It adjusts during render; reading through the guard is enough here.
+  return pending !== undefined && mockWalletChainId !== pending.from ? undefined : pending;
+}
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ setIsSwitchingNetwork: vi.fn(), setIsAutoSwitching: vi.fn() })
+  useNetworkSwitch: () => ({
+    setIsSwitchingNetwork: mockSetIsSwitchingNetwork,
+    setIsAutoSwitching: mockSetIsAutoSwitching,
+    pendingSwitch: useMockPendingSwitch(),
+    setPendingSwitch: pendingSwitchStore.set
+  }),
+  useTargetChainId: () => {
+    const pending = useMockPendingSwitch();
+    // The real one reads `useAppChainId`, whose rule is inlined in the
+    // '@/hooks' mock above.
+    const appChainId =
+      mockWalletChainId !== undefined && !CHAINS.some(c => c.id === mockWalletChainId)
+        ? mockWalletChainId
+        : mockConfigChainId;
+    return pending?.to ?? appChainId;
+  }
 }));
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => ({ trackNetworkAutoSwitched: vi.fn() })
@@ -161,6 +202,8 @@ beforeEach(() => {
   search = new URLSearchParams();
   listeners.clear();
   switchMutation = {};
+  pendingSwitchState = undefined;
+  pendingSwitchListeners.clear();
 });
 
 afterEach(() => {
@@ -289,6 +332,89 @@ describe('useAppOrchestration — chain resolution', () => {
     // route gives way rather than asking twice.
     expect(mockSwitchChain).not.toHaveBeenCalled();
     expect(redirectedHome()).toBe(true);
+  });
+});
+
+// A wallet that never answers the switch: stuck "connecting" to the chain it
+// is on, it neither honours nor refuses `wallet_switchEthereumChain`. The
+// pending switch has no answer to end it, so the user moving on is what does
+// (APP-591).
+describe('useAppOrchestration — a switch the wallet never answers', () => {
+  // /earn with the wallet moved to Polygon, then Savings: one switch goes out
+  // and the wallet sits on it.
+  function parkWithUnansweredSwitch() {
+    const view = mount();
+    walletEmitsChainChange(POLYGON);
+    view.refresh();
+    mockPathname = '/earn/savings';
+    view.refresh();
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    expect(pendingSwitchState).toEqual({ from: POLYGON, to: TENDERLY });
+    mockSwitchChain.mockClear();
+    mockNavigate.mockClear();
+    mockSetIsSwitchingNetwork.mockClear();
+    mockSetIsAutoSwitching.mockClear();
+    return view;
+  }
+
+  it('stops pointing the app at the target once the user navigates on', () => {
+    const { refresh } = parkWithUnansweredSwitch();
+
+    mockPathname = '/earn';
+    refresh();
+
+    // The wait is over, and the flags it raised come down with it.
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSetIsSwitchingNetwork).toHaveBeenCalledWith(false);
+    expect(mockSetIsAutoSwitching).toHaveBeenCalledWith(false);
+    // Earn runs anywhere: nothing to ask, nowhere to send the user.
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(redirectedHome()).toBe(false);
+  });
+
+  it('asks the wallet again on the next module that needs a chain', () => {
+    const { refresh } = parkWithUnansweredSwitch();
+    mockPathname = '/earn';
+    refresh();
+
+    mockPathname = '/earn/rewards/0xabc';
+    mockRewardContracts = [{ contractAddress: '0xabc' }];
+    refresh();
+
+    // Judged against Polygon, where the wallet really is, not against the
+    // target of a request it never answered — so a fresh ask, not silence.
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
+    expect(redirectedHome()).toBe(false);
+  });
+
+  it('falls back home when the wallet refuses that second ask', () => {
+    const { refresh } = parkWithUnansweredSwitch();
+    mockPathname = '/stake';
+    refresh();
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+
+    // A wallet still holding the first request answers the second as already
+    // pending (-32002).
+    act(() => switchMutation.onError?.());
+    refresh();
+
+    expect(redirectedHome()).toBe(true);
+  });
+
+  it('leaves the switching flags alone on a navigation with no switch pending', () => {
+    // In-place flows (Portfolio supply, Pendle redeem) raise `isAutoSwitching`
+    // for switches of their own; a navigation must not pull it out from under
+    // them.
+    const { refresh } = mount();
+    mockSetIsAutoSwitching.mockClear();
+    mockSetIsSwitchingNetwork.mockClear();
+
+    mockPathname = '/portfolio';
+    refresh();
+
+    expect(mockSetIsAutoSwitching).not.toHaveBeenCalled();
+    expect(mockSetIsSwitchingNetwork).not.toHaveBeenCalled();
   });
 });
 

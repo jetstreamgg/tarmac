@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { NetworkSwitchProvider, useNetworkSwitch } from './NetworkSwitchContext';
+import { NetworkSwitchProvider, useNetworkSwitch, useTargetChainId } from './NetworkSwitchContext';
 
 // `canSwitchChain` is the one place the app decides whether it may ask the
 // wallet to switch at all; every switch surface reads it. The Safe cases are
@@ -11,13 +11,14 @@ import { NetworkSwitchProvider, useNetworkSwitch } from './NetworkSwitchContext'
 const mocks = vi.hoisted(() => ({
   connector: undefined as { switchChain?: () => void; name?: string } | undefined,
   isSafeWallet: false,
-  switchChain: vi.fn()
+  switchChain: vi.fn(),
+  walletChainId: undefined as number | undefined
 }));
 
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useSwitchChain: () => ({ switchChain: mocks.switchChain, isPending: false, variables: undefined }),
-  useConnection: () => ({ connector: mocks.connector }),
+  useConnection: () => ({ connector: mocks.connector, chainId: mocks.walletChainId }),
   useChains: () => [
     { id: 1, name: 'Ethereum' },
     { id: 8453, name: 'Base' }
@@ -41,6 +42,7 @@ beforeEach(() => {
   mocks.connector = { switchChain: () => undefined, name: 'MetaMask' };
   mocks.isSafeWallet = false;
   mocks.switchChain.mockClear();
+  mocks.walletChainId = 1;
 });
 
 describe('canSwitchChain', () => {
@@ -74,5 +76,41 @@ describe('canSwitchChain', () => {
     const ok = render();
     act(() => ok.result.current.handleSwitchChain({ chainId: 8453 }));
     expect(mocks.switchChain).toHaveBeenCalledTimes(1);
+  });
+});
+
+// The route guard's pending switch, shared so the reward route resolves its
+// contract against the same chain the guard judges (APP-591).
+describe('pendingSwitch / useTargetChainId', () => {
+  const renderBoth = () =>
+    renderHook(() => ({ ...useNetworkSwitch(), target: useTargetChainId() }), { wrapper });
+
+  it('points at the wallet chain with nothing pending, and at the target while a switch waits', () => {
+    mocks.walletChainId = 137; // off-config: the app names the wallet's chain
+    const { result } = renderBoth();
+    expect(result.current.target).toBe(137);
+
+    act(() => result.current.setPendingSwitch({ from: 137, to: 1 }));
+    expect(result.current.target).toBe(1);
+  });
+
+  it('ends the wait when the wallet moves anywhere, not only to the target', () => {
+    mocks.walletChainId = 137;
+    const { result, rerender } = renderBoth();
+    act(() => result.current.setPendingSwitch({ from: 137, to: 1 }));
+
+    mocks.walletChainId = 8453;
+    rerender();
+    expect(result.current.pendingSwitch).toBeUndefined();
+  });
+
+  it('ends the wait on a disconnect', () => {
+    mocks.walletChainId = 137;
+    const { result, rerender } = renderBoth();
+    act(() => result.current.setPendingSwitch({ from: 137, to: 1 }));
+
+    mocks.walletChainId = undefined;
+    rerender();
+    expect(result.current.pendingSwitch).toBeUndefined();
   });
 });

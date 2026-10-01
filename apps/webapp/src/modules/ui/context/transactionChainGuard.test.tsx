@@ -76,12 +76,15 @@ const lastToastText = () => {
 const mockHandleSwitchChain = vi.fn();
 let mockIsSafeWallet = false;
 let mockCanSwitchChain = true;
+// A route-guard switch the wallet has not answered yet (NetworkSwitchContext).
+let mockPendingSwitch: { from: number; to: number } | undefined;
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     handleSwitchChain: mockHandleSwitchChain,
     isSwitchPending: false,
     switchVariables: undefined,
-    canSwitchChain: mockCanSwitchChain
+    canSwitchChain: mockCanSwitchChain,
+    pendingSwitch: mockPendingSwitch
   })
 }));
 
@@ -195,6 +198,7 @@ afterEach(() => {
   mockAddress = '0x0000000000000000000000000000000000000001';
   mockIsSafeWallet = false;
   mockCanSwitchChain = true;
+  mockPendingSwitch = undefined;
   mockHandleSwitchChain.mockReset();
   vi.clearAllMocks();
 });
@@ -313,6 +317,34 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     // The guard stays up until the wallet actually moves: a request is not an
     // answer, and the CTA is what the user has if they declined it.
     expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+  });
+
+  // APP-591: the wallet sits on an unconfigured chain and has not answered the
+  // switch the page asked for on arrival. A second request only queues behind
+  // the first, and being the modal's own it would hold the guard's button in
+  // its loading state for as long as the wallet sat on it.
+  it('does not queue a second request behind a page switch to the same chain, and leaves the button live', () => {
+    mockChainId = 1;
+    mockConnectedChainId = 137;
+    mockPendingSwitch = { from: 137, to: 1 };
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+
+    expect(mockHandleSwitchChain).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('transaction-chain-guard')).not.toBeNull();
+
+    // Pressing it is the user asking again.
+    const switchBtn = screen.getByTestId('transaction-chain-guard-switch') as HTMLButtonElement;
+    expect(switchBtn.disabled).toBe(false);
+    fireEvent.click(switchBtn);
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 1, source: 'transaction_modal' });
+  });
+
+  it('still asks by itself when the pending page switch is for another chain', () => {
+    mockChainId = 8453; // Base
+    mockPendingSwitch = { from: 8453, to: 42161 };
+    renderModal(() => mainnetOnlyConfig(vi.fn()));
+
+    expect(mockHandleSwitchChain).toHaveBeenCalledWith({ chainId: 1, source: 'transaction_modal_auto' });
   });
 
   it('asks for nothing when the modal opens on a supported chain', () => {
