@@ -203,18 +203,22 @@ const positionDisc: Record<IconboxPositionTone, string> = {
 export function IconboxPosition({
   inactive = false,
   tone = 'success',
+  size = 'm',
   children,
   className
 }: {
   inactive?: boolean;
   tone?: IconboxPositionTone;
+  /** `xs` is the 20px token beside the activity table's position label (3617:24439). */
+  size?: 'm' | 'xs';
   children: ReactNode;
   className?: string;
 }) {
   return (
     <span
       className={cn(
-        'flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]',
+        'flex shrink-0 items-center justify-center rounded-full',
+        size === 'xs' ? 'size-5 border' : 'size-9 border-[1.5px]',
         inactive ? 'border-glassBorder' : positionBorder[tone],
         className
       )}
@@ -224,7 +228,8 @@ export function IconboxPosition({
           // Disc pinned to Figma's 30px and centered, not `size-full` off a
           // padding: Chrome snaps the 1.5px border down to 1px, so any
           // padding-derived diameter lands a pixel wide.
-          'flex size-[30px] items-center justify-center rounded-full',
+          'flex items-center justify-center rounded-full',
+          size === 'xs' ? 'size-4' : 'size-[30px]',
           // Active glyph is fg-system-success-primary (#02c2a1, theme-invariant)
           // per the comp — statusSuccess is the lighter status-text green.
           inactive ? 'bg-bgTertiary text-fgSecondary' : positionDisc[tone]

@@ -4,18 +4,28 @@ import { wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { BP, TransactionTypeEnum, useBreakpointIndex, useSkyPrice, useStakeHistory } from '@/hooks';
+import {
+  BP,
+  TransactionTypeEnum,
+  lsSkySkyRewardAddress,
+  lsSkySpkRewardAddress,
+  lsSkyUsdsRewardAddress,
+  useBreakpointIndex,
+  useSkyPrice,
+  useStakeHistory
+} from '@/hooks';
 import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
-import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import {
-  Stake,
-  Delegate,
-  Borrow,
+  ActivityBorrow,
+  ActivityRepay,
+  ActivityStake,
+  ActivityUnstake,
   ClaimRewards,
+  Delegate,
   Liquidated,
-  Repaid,
   SelectRewards,
+  StakeSky,
   TransactionsEmpty
 } from '@/modules/icons';
 import { ExternalLink } from 'lucide-react';
@@ -30,37 +40,28 @@ import {
 import { TransactionCard } from '@/components/product/TransactionCard';
 import { filterTriggerClasses } from '@/components/product/FilterSelect';
 import { cn } from '@/lib/cn';
-import { CellAction, CellAmount, CellHash, CellStatus } from '@/components/ui/table-cells';
+import { CellAction, CellAmount, CellEmpty, CellHash, CellStatus } from '@/components/ui/table-cells';
+import { IconboxPosition } from '@/components/ui/iconbox';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { CardField, CardFieldDivider, CardFieldRow } from '@/components/product/CardFields';
 
 /**
- * The verb taxonomy of the hi-fi activity table (486:31830). The subgraph
- * emits atomic per-call events that share a transaction hash, so combined
- * verbs (Stake & Borrow, Unstake & Repay) come from grouping by hash.
+ * One row per atomic subgraph event (Figma 3617:24423): a batched transaction
+ * shows each of its actions as its own row under the same hash.
  */
-export type StakeActivityVerb =
-  | 'stakeBorrow'
-  | 'stake'
-  | 'unstakeRepay'
-  | 'unstake'
-  | 'borrow'
-  | 'repay'
-  | 'claim'
-  | 'selectDelegate'
-  | 'selectReward'
-  | 'open'
-  | 'liquidated';
+export type StakeActivityAction =
+  'stake' | 'unstake' | 'borrow' | 'repay' | 'claim' | 'selectDelegate' | 'selectReward' | 'liquidated';
 
-export type StakeActivityGroup = {
+export type StakeActivityToken = 'SKY' | 'USDS' | 'SPK';
+
+export type StakeActivityItem = {
+  id: string;
   transactionHash: string;
   blockTimestamp: Date;
   urnIndex?: number;
-  verb: StakeActivityVerb;
-  /** SKY moved (stake or unstake side of the tx). */
-  skyAmount: bigint;
-  /** USDS moved (borrow or repay side of the tx). */
-  usdsAmount: bigint;
+  action: StakeActivityAction;
+  amount?: bigint;
+  token?: StakeActivityToken;
 };
 
 type StakeActivityInput = {
@@ -69,73 +70,95 @@ type StakeActivityInput = {
   blockTimestamp: Date;
   urnIndex?: number;
   amount?: bigint;
+  rewardContract?: string;
+  urnAddress?: string;
 };
 
-function deriveVerb(types: Set<TransactionTypeEnum>): StakeActivityVerb {
-  const hasStake = types.has(TransactionTypeEnum.STAKE);
-  const hasUnstake = types.has(TransactionTypeEnum.UNSTAKE);
-  const hasBorrow = types.has(TransactionTypeEnum.STAKE_BORROW);
-  const hasRepay = types.has(TransactionTypeEnum.STAKE_REPAY);
+const ACTION_BY_TYPE: Partial<Record<TransactionTypeEnum, StakeActivityAction>> = {
+  [TransactionTypeEnum.STAKE_SELECT_DELEGATE]: 'selectDelegate',
+  [TransactionTypeEnum.STAKE_SELECT_REWARD]: 'selectReward',
+  [TransactionTypeEnum.STAKE]: 'stake',
+  [TransactionTypeEnum.STAKE_BORROW]: 'borrow',
+  [TransactionTypeEnum.STAKE_REPAY]: 'repay',
+  [TransactionTypeEnum.UNSTAKE]: 'unstake',
+  [TransactionTypeEnum.STAKE_REWARD]: 'claim',
+  [TransactionTypeEnum.UNSTAKE_KICK]: 'liquidated'
+};
 
-  if (hasStake && hasBorrow) return 'stakeBorrow';
-  if (hasUnstake && hasRepay) return 'unstakeRepay';
-  if (hasStake) return 'stake';
-  if (hasUnstake) return 'unstake';
-  if (hasBorrow) return 'borrow';
-  if (hasRepay) return 'repay';
-  if (types.has(TransactionTypeEnum.UNSTAKE_KICK)) return 'liquidated';
-  if (types.has(TransactionTypeEnum.STAKE_REWARD)) return 'claim';
-  if (types.has(TransactionTypeEnum.STAKE_SELECT_DELEGATE)) return 'selectDelegate';
-  if (types.has(TransactionTypeEnum.STAKE_SELECT_REWARD)) return 'selectReward';
-  return 'open';
+// Row order inside one transaction, the order the engine applies the calls.
+const ACTION_ORDER: StakeActivityAction[] = [
+  'selectDelegate',
+  'selectReward',
+  'stake',
+  'borrow',
+  'repay',
+  'unstake',
+  'claim',
+  'liquidated'
+];
+
+const TOKEN_BY_ACTION: Partial<Record<StakeActivityAction, StakeActivityToken>> = {
+  stake: 'SKY',
+  unstake: 'SKY',
+  liquidated: 'SKY',
+  borrow: 'USDS',
+  repay: 'USDS'
+};
+
+function rewardTokenFor(chainId: number, rewardContract: string | undefined): StakeActivityToken | undefined {
+  const address = rewardContract?.toLowerCase();
+  if (!address) return undefined;
+  const lookup = (map: Record<number, string>) => map[chainId]?.toLowerCase() === address;
+  if (lookup(lsSkyUsdsRewardAddress)) return 'USDS';
+  if (lookup(lsSkySkyRewardAddress)) return 'SKY';
+  if (lookup(lsSkySpkRewardAddress)) return 'SPK';
+  return undefined;
 }
 
 /**
- * Groups atomic stake-history events into one row per transaction and derives
- * the hi-fi verb for the group. Pure — tested directly.
+ * Maps stake-history events to activity rows, newest first. Open-position
+ * events are dropped (the batched Stake row already says it); a liquidation
+ * finds its position through the urn address. Pure — tested directly.
  */
-export function groupStakeActivity(history: readonly StakeActivityInput[] | undefined): StakeActivityGroup[] {
-  const byHash = new Map<string, StakeActivityInput[]>();
-  for (const item of history ?? []) {
-    const group = byHash.get(item.transactionHash);
-    if (group) group.push(item);
-    else byHash.set(item.transactionHash, [item]);
-  }
+export function toStakeActivityItems(
+  history: readonly StakeActivityInput[] | undefined,
+  {
+    chainId,
+    positions
+  }: { chainId: number; positions?: readonly Pick<StakeUserPosition, 'index' | 'urnAddress'>[] }
+): StakeActivityItem[] {
+  const urnIndexFor = (item: StakeActivityInput) =>
+    item.urnIndex ??
+    positions?.find(position => position.urnAddress.toLowerCase() === item.urnAddress?.toLowerCase())?.index;
 
-  const sumAmounts = (items: StakeActivityInput[], ...types: TransactionTypeEnum[]) =>
-    items.filter(item => types.includes(item.type)).reduce((total, item) => total + (item.amount ?? 0n), 0n);
-
-  return Array.from(byHash.entries())
-    .map(([transactionHash, items]) => {
-      const types = new Set(items.map(item => item.type));
-      const staked = sumAmounts(items, TransactionTypeEnum.STAKE);
-      const unstaked = sumAmounts(items, TransactionTypeEnum.UNSTAKE);
-      const borrowed = sumAmounts(items, TransactionTypeEnum.STAKE_BORROW);
-      const repaid = sumAmounts(items, TransactionTypeEnum.STAKE_REPAY);
-
-      return {
-        transactionHash,
-        blockTimestamp: items.reduce(
-          (latest, item) => (item.blockTimestamp > latest ? item.blockTimestamp : latest),
-          items[0].blockTimestamp
-        ),
-        urnIndex: items.find(item => item.urnIndex !== undefined)?.urnIndex,
-        verb: deriveVerb(types),
-        skyAmount: staked > 0n ? staked : unstaked,
-        usdsAmount: borrowed > 0n ? borrowed : repaid
-      };
+  return (history ?? [])
+    .flatMap((item, position) => {
+      const action = ACTION_BY_TYPE[item.type];
+      if (!action) return [];
+      return [
+        {
+          id: `${item.transactionHash}-${action}-${position}`,
+          transactionHash: item.transactionHash,
+          blockTimestamp: item.blockTimestamp,
+          urnIndex: urnIndexFor(item),
+          action,
+          amount: item.amount,
+          token: action === 'claim' ? rewardTokenFor(chainId, item.rewardContract) : TOKEN_BY_ACTION[action]
+        }
+      ];
     })
-    .sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
+    .sort(
+      (a, b) =>
+        b.blockTimestamp.getTime() - a.blockTimestamp.getTime() ||
+        a.transactionHash.localeCompare(b.transactionHash) ||
+        ACTION_ORDER.indexOf(a.action) - ACTION_ORDER.indexOf(b.action)
+    );
 }
 
-function verbLabel(verb: StakeActivityVerb) {
-  switch (verb) {
-    case 'stakeBorrow':
-      return <Trans>Stake &amp; Borrow</Trans>;
+function actionLabel(action: StakeActivityAction) {
+  switch (action) {
     case 'stake':
       return <Trans>Stake</Trans>;
-    case 'unstakeRepay':
-      return <Trans>Unstake &amp; Repay</Trans>;
     case 'unstake':
       return <Trans>Unstake</Trans>;
     case 'borrow':
@@ -150,26 +173,20 @@ function verbLabel(verb: StakeActivityVerb) {
       return <Trans>Change reward</Trans>;
     case 'liquidated':
       return <Trans>Liquidated</Trans>;
-    case 'open':
-      return <Trans>Open position</Trans>;
   }
 }
 
-// Same glyph family the legacy stake history uses per event type.
-function verbIcon(verb: StakeActivityVerb) {
-  switch (verb) {
-    case 'stakeBorrow':
-    case 'open':
-      return <Stake width={16} height={16} />;
+// Stake, Unstake, Borrow and Repay glyphs come from the comp; the rest have no comp row yet.
+function actionIcon(action: StakeActivityAction) {
+  switch (action) {
     case 'stake':
-      return <ArrowDownToLine className="size-4" />;
-    case 'unstakeRepay':
+      return <ActivityStake width={16} height={16} />;
     case 'unstake':
-      return <ArrowUpToLine className="size-4" />;
+      return <ActivityUnstake width={16} height={16} />;
     case 'borrow':
-      return <Borrow width={16} height={16} />;
+      return <ActivityBorrow width={16} height={16} />;
     case 'repay':
-      return <Repaid width={16} height={16} />;
+      return <ActivityRepay width={16} height={16} />;
     case 'claim':
       return <ClaimRewards width={16} height={16} />;
     case 'selectDelegate':
@@ -181,79 +198,84 @@ function verbIcon(verb: StakeActivityVerb) {
   }
 }
 
-type ActivityRow = StakeActivityGroup & { skyPrice: number | null; chainId: number };
+type ActivityRow = StakeActivityItem & { skyPrice: number | null; chainId: number };
 
-// Two chunks so the subline gives way in order as the column narrows: first
-// the position drops to its own line (CellAction), then the time itself
-// wraps — this table has five columns in the tablet pane, so at the 912 seam
-// the time alone is wider than the column.
-const activitySublabel = (row: ActivityRow) => (
-  <>
-    <span className="whitespace-normal">
-      {formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
-      {row.urnIndex !== undefined && '\u00A0·'}
-    </span>
-    {row.urnIndex !== undefined && <span>Position {row.urnIndex + 1}</span>}
-  </>
-);
-
-// Figma Type=Action and Position (Transaction Stake): Label 5 title.
 const actionCell = (row: ActivityRow) => (
   <CellAction
     compact
-    icon={verbIcon(row.verb)}
-    label={verbLabel(row.verb)}
-    sublabel={activitySublabel(row)}
+    icon={actionIcon(row.action)}
+    // The comp keeps action names on one line; auto layout otherwise squeezes the 200px column.
+    label={<span className="whitespace-nowrap">{actionLabel(row.action)}</span>}
+    sublabel={formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
   />
 );
 
-const skyCell = (row: ActivityRow) => (
-  <CellAmount
-    icon={<TokenIcon token={{ symbol: 'SKY' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-    amount={formatStakeAmount(row.skyAmount)}
-    usd={row.skyPrice !== null ? formatUsd(wadToUsd(row.skyAmount, row.skyPrice)) : undefined}
-  />
-);
+// Figma 3617:24438: 20px green token with the sky glyph beside a Label 5 name.
+const positionCell = (row: ActivityRow) =>
+  row.urnIndex === undefined ? (
+    <CellEmpty />
+  ) : (
+    <span className="text-fgPrimary font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px] whitespace-nowrap">
+      <IconboxPosition size="xs">
+        <StakeSky width={9} height={9} />
+      </IconboxPosition>
+      <Trans>Position {row.urnIndex + 1}</Trans>
+    </span>
+  );
 
-const usdsCell = (row: ActivityRow) => (
-  <CellAmount
-    icon={<TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />}
-    amount={formatStakeAmount(row.usdsAmount)}
-    usd={formatUsd(wadToFloat(row.usdsAmount))}
-  />
-);
+function usdValue(row: ActivityRow): string | undefined {
+  if (row.amount === undefined) return undefined;
+  if (row.token === 'USDS') return formatUsd(wadToFloat(row.amount));
+  if (row.token === 'SKY' && row.skyPrice !== null) return formatUsd(wadToUsd(row.amount, row.skyPrice));
+  return undefined;
+}
 
+const amountCell = (row: ActivityRow) =>
+  row.amount === undefined ? (
+    <CellEmpty />
+  ) : (
+    <CellAmount
+      icon={
+        row.token && (
+          <TokenIcon token={{ symbol: row.token }} width={12} className="h-3 w-3" showChainIcon={false} />
+        )
+      }
+      amount={formatStakeAmount(row.amount)}
+      usd={usdValue(row)}
+    />
+  );
+
+// Figma's px widths (824px table) as fr weights; mixing px with fr overflows 100% and squeezes the px columns.
 const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
   {
     id: 'action',
     header: <Trans>Action</Trans>,
-    width: '1.6fr',
+    width: '200fr',
     cell: actionCell
+  },
+  {
+    id: 'position',
+    header: <Trans>Position ID</Trans>,
+    width: '161fr',
+    cell: positionCell
   },
   {
     id: 'status',
     header: <Trans>Status</Trans>,
-    width: '1fr',
-    // Subgraph history is confirmed-only; optimistic pending rows are an open
-    // product decision (Ticket Breakdown) and would slot in via this badge.
+    width: '161fr',
+    // Subgraph history is confirmed-only; optimistic pending rows would slot in via this badge.
     cell: () => <CellStatus status="completed" />
   },
   {
-    id: 'sky',
-    header: <Trans>Stake/unstake</Trans>,
-    width: '1.2fr',
-    cell: skyCell
-  },
-  {
-    id: 'usds',
-    header: <Trans>Borrow/repay</Trans>,
-    width: '1.2fr',
-    cell: usdsCell
+    id: 'amount',
+    header: <Trans>Amount</Trans>,
+    width: '161fr',
+    cell: amountCell
   },
   {
     id: 'hash',
     header: <Trans>Txn hash</Trans>,
-    width: '1fr',
+    width: '141fr',
     cell: row => (
       <CellHash
         label={formatAddress(row.transactionHash, 6, 4)}
@@ -263,24 +285,23 @@ const COLUMNS: ProductTransactionColumn<ActivityRow>[] = [
   }
 ];
 
-// Mobile activity card (comp 1222:16770): the header verb steps UP to
-// Label 4 (16/18) — the non-compact CellAction — while the desktop table
-// keeps the compact Label 5 row; both amount columns become fields.
+// Mobile activity card (comp 1222:16770): Label 4 header, Position and Amount as fields.
 const renderCard = (row: ActivityRow) => (
   <TransactionCard
     header={
-      <CellAction icon={verbIcon(row.verb)} label={verbLabel(row.verb)} sublabel={activitySublabel(row)} />
+      <CellAction
+        icon={actionIcon(row.action)}
+        label={actionLabel(row.action)}
+        sublabel={formatDistanceToNowStrict(row.blockTimestamp, { addSuffix: true })}
+      />
     }
     badge={<CellStatus status="completed" />}
-    // Equal columns with the hairline dead-center — the same geometry as the
-    // position cards above (design call on the M6.6 review: the comp's fixed
-    // 128px left column reads lopsided with short values).
     footer={
       <>
         <CardFieldRow>
-          <CardField label={<Trans>Stake/unstake</Trans>}>{skyCell(row)}</CardField>
+          <CardField label={<Trans>Position ID</Trans>}>{positionCell(row)}</CardField>
           <CardFieldDivider className="h-[30px]" />
-          <CardField label={<Trans>Borrow/repay</Trans>}>{usdsCell(row)}</CardField>
+          <CardField label={<Trans>Amount</Trans>}>{amountCell(row)}</CardField>
         </CardFieldRow>
         <Button asChild variant="secondary" size="m" className="w-full">
           <a
@@ -301,9 +322,8 @@ const renderCard = (row: ActivityRow) => (
 );
 
 /**
- * "My activity" table (hi-fi 486:31830): stake history grouped per transaction
- * into the combined verb taxonomy, with a per-position filter. Read-only,
- * confirmed (subgraph) rows only.
+ * "My activity" table (Figma 3617:24423): one row per stake-history event,
+ * with a per-position filter. Read-only, confirmed (subgraph) rows only.
  */
 export function StakeActivityTable({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
@@ -316,10 +336,10 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
   const skyPrice = skyPriceString ? parseFloat(skyPriceString) : null;
 
   const rows = useMemo<ActivityRow[]>(() => {
-    const groups = groupStakeActivity(stakeHistory);
-    const filtered = filter === 'all' ? groups : groups.filter(group => group.urnIndex === filter);
-    return filtered.map(group => ({ ...group, skyPrice, chainId }));
-  }, [stakeHistory, filter, skyPrice, chainId]);
+    const items = toStakeActivityItems(stakeHistory, { chainId, positions });
+    const filtered = filter === 'all' ? items : items.filter(item => item.urnIndex === filter);
+    return filtered.map(item => ({ ...item, skyPrice, chainId }));
+  }, [stakeHistory, filter, skyPrice, chainId, positions]);
 
   // Comp 3617:23840: with no activity at all the title sits above a dashed
   // box, with no column header row or filter.
@@ -342,7 +362,8 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    // Comp leaves 24px between the title row and the table header from md.
+    <div className="flex flex-col gap-4 md:gap-6">
       {/* Phone tier (comp 1222:16962): heading above a full-width pill filter;
           md restores the heading row with the inline trigger. */}
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-4">
@@ -395,7 +416,7 @@ export function StakeActivityTable({ positions }: { positions?: StakeUserPositio
         dataTestId="stake-activity-table"
         columns={COLUMNS}
         rows={rows}
-        rowKey={row => row.transactionHash}
+        rowKey={row => row.id}
         rowHref={row => getEtherscanLink(row.chainId, row.transactionHash, 'tx')}
         isLoading={isLoading}
         error={error}
