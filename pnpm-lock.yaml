@@ -277,8 +277,8 @@ catalogs:
 overrides:
   esbuild@<0.28.1: ~0.28.1
   '@babel/runtime@7.26.7': 7.26.10
-  axios@>=1.0.0 <1.18.0: ^1.18.0
-  '@json-rpc-tools/provider>axios@^0.21.0': ^1.18.0
+  axios@>=1.0.0 <1.20.0: ^1.20.0
+  '@json-rpc-tools/provider>axios@^0.21.0': ^1.20.0
   postcss@<8.5.18: ^8.5.18
   protobufjs@<=7.6.0: ~7.6.1
   '@protobufjs/utf8@<1.1.1': ~1.1.1
@@ -3515,10 +3515,10 @@ packages:
   axios-retry@4.5.0:
     resolution: {integrity: sha512-aR99oXhpEDGo0UuAlYcn2iGRds30k366Zfa05XWScR9QaQD4JYiP3/1Qt1u7YlefUOK+cn0CcwoL1oefavQUlQ==}
     peerDependencies:
-      axios: ^1.18.0
+      axios: ^1.20.0
 
-  axios@1.18.1:
-    resolution: {integrity: sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==}
+  axios@1.20.0:
+    resolution: {integrity: sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==}
 
   babel-dead-code-elimination@1.0.12:
     resolution: {integrity: sha512-GERT7L2TiYcYDtYk1IpD+ASAYXjKbLTDPhBtYj7X1NuRMDTMtAx9kyBenub1Ev41lo91OHCKdmP+egTDmfQ7Ig==}
@@ -7072,8 +7072,8 @@ snapshots:
       '@solana-program/token': 0.9.0(@solana/kit@5.5.1(typescript@6.0.3))
       '@solana/kit': 5.5.1(typescript@6.0.3)
       abitype: 1.0.6(typescript@6.0.3)(zod@3.25.76)
-      axios: 1.18.1
-      axios-retry: 4.5.0(axios@1.18.1)
+      axios: 1.20.0
+      axios-retry: 4.5.0(axios@1.20.0)
       bs58: 6.0.0
       jose: 6.2.2
       md5: 2.3.0
@@ -7339,7 +7339,7 @@ snapshots:
   '@json-rpc-tools/provider@1.7.6':
     dependencies:
       '@json-rpc-tools/utils': 1.7.6
-      axios: 1.18.1
+      axios: 1.20.0
       safe-json-utils: 1.1.1
       ws: 7.5.11
     transitivePeerDependencies:
@@ -10599,12 +10599,12 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.0.0
 
-  axios-retry@4.5.0(axios@1.18.1):
+  axios-retry@4.5.0(axios@1.20.0):
     dependencies:
-      axios: 1.18.1
+      axios: 1.20.0
       is-retry-allowed: 2.2.0
 
-  axios@1.18.1:
+  axios@1.20.0:
     dependencies:
       follow-redirects: 1.16.0
       form-data: 4.0.6
