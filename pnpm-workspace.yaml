@@ -5,7 +5,7 @@ catalog:
   '@base-org/account': ~2.5.11
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@coinbase/wallet-sdk': ~4.3.7
-  '@eslint/eslintrc': ^3.3.6
+  '@eslint/eslintrc': ^3.3.7
   '@eslint/js': ^10.0.1
   '@lingui/cli': ^6.8.0
   '@lingui/conf': ^6.8.0
@@ -15,7 +15,7 @@ catalog:
   '@lingui/swc-plugin': ^6.7.0
   '@lingui/vite-plugin': ^6.8.0
   '@metamask/connect-evm': ^2.1.1
-  '@playwright/test': ^1.62.1
+  '@playwright/test': ^1.63.0
   '@radix-ui/react-accordion': ^1.2.20
   '@radix-ui/react-avatar': ^1.2.6
   '@radix-ui/react-checkbox': ^1.3.11
@@ -41,12 +41,12 @@ catalog:
   '@tanstack/react-query': ^5.103.2
   '@tanstack/react-router': 1.170.39
   '@tanstack/router-plugin': 1.168.40
-  '@testing-library/dom': ^10.4.1
-  '@testing-library/react': ^16.3.2
+  '@testing-library/dom': ^10.4.2
+  '@testing-library/react': ^16.3.3
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
-  '@typescript-eslint/eslint-plugin': ^8.68.0
-  '@typescript-eslint/parser': ^8.68.0
+  '@typescript-eslint/eslint-plugin': ^8.70.1
+  '@typescript-eslint/parser': ^8.70.1
   '@vitejs/plugin-react-swc': ^4.3.3
   '@vitest/coverage-v8': ^4.1.11
   '@wagmi/cli': ^2.10.0
@@ -57,23 +57,23 @@ catalog:
   date-fns: ^4.4.0
   dotenv: ^16.6.1
   embla-carousel-react: ^8.6.0
-  eslint: ^10.9.1
+  eslint: ^10.11.0
   eslint-plugin-react: ^7.37.5
   eslint-plugin-react-hooks: ^7.1.1
   eslint-plugin-testing-library: ^7.16.2
   globals: ^17.11.0
   graphql: ^16.14.2
   graphql-request: ^7.4.0
-  happy-dom: ^20.11.6
+  happy-dom: ^20.11.15
   husky: ^9.1.7
   knip: ^5.88.1
-  lint-staged: ^15.5.1
+  lint-staged: ^15.5.2
   lucide-react: ^0.577.0
   motion: ^12.42.0
   openapi-fetch: ^0.17.0
   porto: ~0.2.37
   posthog-js: ^1.419.2
-  prettier: ^3.9.6
+  prettier: ^3.9.9
   prettier-plugin-tailwindcss: ^0.8.1
   react: ^19.3.0
   react-dom: ^19.3.0
