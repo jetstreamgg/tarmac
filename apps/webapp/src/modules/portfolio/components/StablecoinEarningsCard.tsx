@@ -14,11 +14,7 @@ import { IconStack } from '@/modules/ui/components/TokenIconStack';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
-import {
-  earningsForPosition,
-  earningsForSuppliedPosition,
-  earningsForSuppliedPositions
-} from '../earnings/earningsForPosition';
+import { earningsForPosition, earningsForSuppliedPositions } from '../earnings/earningsForPosition';
 import { OTHERS_ID, buildSuppliedLegend } from '../helpers/suppliedLegend';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
@@ -136,19 +132,18 @@ function SuppliedContent({
 
   // The legend and donut fold the long tail into one "Others" row/segment.
   const legend = buildSuppliedLegend(view.positions);
+  // A hover only counts while its row is still on screen: a refetch can fold
+  // the hovered position into Others, or dissolve Others, under the pointer.
   const othersActive = activeId === OTHERS_ID && legend.others.length > 0;
-  const activePosition = activeId && !othersActive ? view.positions.find(p => p.id === activeId) : undefined;
+  const activePosition = othersActive ? undefined : legend.named.find(p => p.id === activeId);
+  const shownActiveId = othersActive ? OTHERS_ID : (activePosition?.id ?? null);
   // What the card focuses on while hovered: one position, or every position
   // folded into "Others", whose figures then read as their sum.
   const focused = othersActive ? legend.others : activePosition ? [activePosition] : undefined;
-  // Hover-focus for the two earnings stats: the hovered position's own slice
-  // (null when the row is outside APP-450 scope → dash, like its siblings),
-  // or the merged slice of the folded positions (sourceless ones add nothing).
-  const activeEarnings = othersActive
-    ? earningsForSuppliedPositions(earnings, legend.others)
-    : activePosition
-      ? earningsForSuppliedPosition(earnings, activePosition)
-      : null;
+  // Hover-focus for the two earnings stats: the focused positions' merged
+  // slice (null when none has an APP-450 source → dash, like its siblings;
+  // sourceless positions inside Others simply add nothing).
+  const activeEarnings = focused ? earningsForSuppliedPositions(earnings, focused) : null;
   // Products with no earnings source at all: the combined stats exclude them,
   // so the footer names them instead of posing as complete (review finding #2).
   // Keyed on the product, not the position: an L2 leg has no slice of its own
@@ -210,7 +205,7 @@ function SuppliedContent({
               >
                 <LegendRow
                   color={position.color}
-                  dimmed={!!activeId && activeId !== position.id}
+                  dimmed={!!shownActiveId && shownActiveId !== position.id}
                   onActivate={() => setActiveId(position.id)}
                   onDeactivate={() => setActiveId(null)}
                 >
@@ -239,7 +234,7 @@ function SuppliedContent({
               >
                 <LegendRow
                   color={OTHERS_COLOR}
-                  dimmed={!!activeId && activeId !== OTHERS_ID}
+                  dimmed={!!shownActiveId && shownActiveId !== OTHERS_ID}
                   onActivate={() => setActiveId(OTHERS_ID)}
                   onDeactivate={() => setActiveId(null)}
                 >
@@ -265,7 +260,7 @@ function SuppliedContent({
 
         <PortfolioDonutChart
           segments={segments}
-          activeId={activeId}
+          activeId={shownActiveId}
           onActiveChange={setActiveId}
           size={donutSize}
           renderCenter={id => {
@@ -593,11 +588,7 @@ function DonutCenter({ symbol }: { symbol: string }) {
 
 /** The donut-hole label alone — what "Others" shows, having no single token. */
 function DonutCenterLabel({ children }: { children: ReactNode }) {
-  return (
-    <span className="text-text font-circle text-base leading-[18px] font-medium tracking-[-0.32px]">
-      {children}
-    </span>
-  );
+  return <span className={cn(LABEL_4, 'text-text')}>{children}</span>;
 }
 
 /** A legend share: whole percent, with "<1%" for anything above zero below it. */
@@ -608,7 +599,7 @@ function sharePctLabel(share: number): string {
 
 /** The "Others" bucket's swatch and arc (Figma 3356:52120: fg-quaternary), with
  * a theme-aware hover step since the DS has no Charts-Hover variable for it. */
-const OTHERS_COLOR = 'var(--color-chartOthers)';
+const OTHERS_COLOR = 'var(--color-fgQuaternary)';
 const OTHERS_HOVER_COLOR = 'var(--color-chartOthersHover)';
 
 function Divider() {

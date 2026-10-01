@@ -5,13 +5,13 @@ import type { SuppliedPosition } from './suppliedView';
 export const OTHERS_ID = 'others';
 
 /** Below this share of total supplied a position counts as small. */
-export const SMALL_SHARE = 0.01;
+const SMALL_SHARE = 0.01;
 /** Small positions fold into "Others" once there are at least this many positions. */
-export const FOLD_SMALL_FROM = 4;
+const FOLD_SMALL_FROM = 4;
 /** More positions than this cap the legend at this many rows, the last being "Others". */
-export const MAX_ROWS = 5;
+const MAX_ROWS = 5;
 
-export type SuppliedLegend = {
+type SuppliedLegend = {
   /** Positions that keep a legend row and donut segment of their own, largest first. */
   named: SuppliedPosition[];
   /** Positions folded into the trailing "Others" row (empty → no such row). */

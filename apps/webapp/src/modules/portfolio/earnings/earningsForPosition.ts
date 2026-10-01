@@ -25,7 +25,12 @@ export type PositionEarnings = {
 const tokensOf = (figure: EarningsFigure): TokenAmount[] =>
   figure.byToken ?? (figure.native ? [figure.native] : []);
 
-/** Sums ok contributor figures; merges token amounts by symbol (first-seen order). */
+/**
+ * Sums ok contributor figures; merges token amounts by symbol (first-seen
+ * order). A contributor still loading makes the whole figure loading — a sum
+ * of the sources that happen to have landed would read as complete and then
+ * jump, where the combined stat holds a skeleton instead.
+ */
 function mergeFigures(
   contributors: { id: EarningsSourceId; label?: string; figure: Maybe<EarningsFigure> }[]
 ): {
@@ -38,6 +43,10 @@ function mergeFigures(
       : []
   );
   const okFigures = contributors.flatMap(c => (c.figure.status === 'ok' ? [c.figure.value] : []));
+
+  if (missing.some(m => m.reason === 'loading')) {
+    return { figure: { status: 'notAvailable', reason: 'loading' }, missing };
+  }
 
   if (okFigures.length === 0) {
     const first = contributors[0].figure;
@@ -77,10 +86,7 @@ export function earningsForPosition(earnings: WalletEarnings, rowId: string): Po
  * source behind any of them, merged like a single row's contributors. Rows
  * without a source simply add nothing; null only when none of them has one.
  */
-export function earningsForRows(
-  earnings: WalletEarnings,
-  rowIds: readonly string[]
-): PositionEarnings | null {
+function earningsForRows(earnings: WalletEarnings, rowIds: readonly string[]): PositionEarnings | null {
   const contributors = earnings.protocols.filter(p => p.rowIds.some(id => rowIds.includes(id)));
   if (contributors.length === 0) return null;
 
@@ -89,10 +95,14 @@ export function earningsForRows(
 
   const total = pick(p => p.totalEarned);
   const month = pick(p => p.earnedThisMonth);
-  // The realized/mark-to-market split describes Pendle's figure alone, so a
-  // multi-row slice (whose total also counts other products) drops it.
-  const pendleSplit = rowIds.length === 1 ? contributors.find(p => p.pendleSplit)?.pendleSplit : undefined;
-  const coverage = contributors.find(p => p.coverage)?.coverage;
+  // A Pendle market's realized/mark-to-market split describes that market's
+  // figure alone, so a slice that also counts other sources drops it.
+  const pendleSplit = contributors.length === 1 ? contributors[0].pendleSplit : undefined;
+  // Likewise a coverage caveat only travels when it is the slice's one caveat:
+  // mixed caveats (savings' mainnet-only + a vault's missing rewards) have no
+  // single message that is true of the whole figure.
+  const coverages = new Set(contributors.flatMap(p => (p.coverage ? [p.coverage] : [])));
+  const coverage = coverages.size === 1 ? [...coverages][0] : undefined;
 
   return {
     totalEarned: total.figure,

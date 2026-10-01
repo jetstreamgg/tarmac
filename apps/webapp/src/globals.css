@@ -192,11 +192,10 @@
      and this tail is the majority of the bar. Light takes the periwinkle tint it
      applies to every other low-tint surface instead. */
   --color-chartTrack: rgba(188, 182, 239, 0.2);
-  /* Portfolio donut "Others" bucket (Figma 3356:52120): the legend swatch and
-     the merged arc wear colors/fg/fg-quaternary. The DS has no Charts-Hover
-     variable for it, so the hovered arc steps one notch toward the foreground
-     (lighter on dark, darker on light) like the token hovers do. */
-  --color-chartOthers: #4d4d6e;
+  /* Hovered arc of the Portfolio donut's "Others" bucket (Figma 3356:52120),
+     whose swatch and arc wear fgQuaternary. The DS has no Charts-Hover
+     variable for it, so it steps one notch toward the foreground (lighter on
+     dark, darker on light) like the token hovers do. */
   --color-chartOthersHover: #74749c;
   --color-statusSuccess: #40e3c8;
   --color-statusSuccessBg: rgba(2, 194, 161, 0.1);
@@ -1079,7 +1078,6 @@
     --color-badgePrimary: #9ca0e54d; /* components/badges/bg-primary */
     --color-badgeSecondary: #9ca0e533; /* components/badges/bg-secondary */
     --color-chartTrack: rgba(156, 160, 229, 0.35); /* see the dark token's note */
-    --color-chartOthers: #a1a6c4; /* colors/fg/fg-quaternary */
     --color-chartOthersHover: #7a7fa3; /* see the dark token's note */
     --color-statusSuccess: #00a186; /* components/status/fg-success */
     --color-statusSuccessBg: #02c2a133; /* components/status/bg-success */

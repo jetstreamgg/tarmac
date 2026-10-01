@@ -108,7 +108,7 @@ const walletEarnings = (protocols: ProtocolEarnings[], isLoading = false): Walle
 const EARNINGS = walletEarnings([
   proto('morpho-vault-0xflagship', ['vault-morpho-0xflagship'], ok({ usd: 20 }), ok({ usd: 10 })),
   proto('merkl', ['vault-morpho-0xflagship'], ok({ usd: 4 }), notAvailable('merkl-monthly-unsupported')),
-  proto('pendle', ['fixed-0xmkt'], ok({ usd: 70 }), ok({ usd: 7 })),
+  proto('pendle-market-0xmkt', ['fixed-0xmkt'], ok({ usd: 70 }), ok({ usd: 7 })),
   proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 })),
   proto('stusds', ['stusds'], ok({ usd: 30 }), ok({ usd: 3 }))
 ]);
@@ -308,7 +308,9 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
 
   it('renders a negative combined total signed with a minus', () => {
     const pendleUnderwater = walletEarnings(
-      EARNINGS.protocols.map(p => (p.id === 'pendle' ? { ...p, totalEarned: ok({ usd: -130 }) } : p))
+      EARNINGS.protocols.map(p =>
+        p.id === 'pendle-market-0xmkt' ? { ...p, totalEarned: ok({ usd: -130 }) } : p
+      )
     );
     renderCard({ earnings: pendleUnderwater });
     // 20 + 4 - 130 + 46.4 + 30 = -29.6.
@@ -506,6 +508,31 @@ describe('StablecoinEarningsCard Others bucket (Figma 3356:52120)', () => {
     expect(screen.getByTestId('earnings-month-value').textContent).toBe('+$3.00');
     // Supply-weighted: (10 × 10% + 5 × 5%) / 15.
     expect(screen.getByText('8.33%')).toBeTruthy();
+  });
+
+  it('drops a hover whose row a refetch removed instead of keeping the card focused on it', () => {
+    const { rerender } = renderCard({ suppliedView: SIX });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'Others (2%)' }));
+    const three = { ...SIX, positions: SIX.positions.slice(0, 3), activePositions: 3 };
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <StablecoinEarningsCard
+          suppliedView={three}
+          suppliedLoading={false}
+          idleView={IDLE}
+          idleLoading={false}
+          savingsRate={0.0375}
+          earnings={EARNINGS}
+          tab="supplied"
+          onTabChange={() => {}}
+        />
+      </I18nProvider>
+    );
+    expect(screen.queryByRole('button', { name: /Others/ })).toBeNull();
+    // No row stays dimmed against a hover target that is gone.
+    for (const row of screen.getAllByRole('button', { name: /\(\d+%\)/ })) {
+      expect(row.className).not.toContain('opacity-50');
+    }
   });
 
   it('keeps every row when there are only 3 positions, however small', () => {

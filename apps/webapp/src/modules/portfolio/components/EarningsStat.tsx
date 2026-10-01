@@ -18,6 +18,7 @@ import {
 import {
   isAnnouncedGap,
   isMorphoVaultSourceId,
+  isPendleMarketSourceId,
   type EarningsCoverage,
   type EarningsFigure,
   type EarningsSourceId,
@@ -25,6 +26,7 @@ import {
   type MissingSourceDetail,
   type MorphoVaultSourceId,
   type NotAvailableReason,
+  type PendleMarketSourceId,
   type PendleSplit,
   type WalletEarnings
 } from '../earnings/types';
@@ -34,16 +36,25 @@ import {
 // than no number — anything notAvailable renders a dash with an explanation,
 // and a combined figure missing sources says so instead of posing as complete.
 
-const SOURCE_LABELS: Record<Exclude<EarningsSourceId, MorphoVaultSourceId>, ReactNode> = {
+const SOURCE_LABELS: Record<
+  Exclude<EarningsSourceId, MorphoVaultSourceId | PendleMarketSourceId>,
+  ReactNode
+> = {
   merkl: <Trans>Merkl rewards</Trans>,
-  pendle: <Trans>Pendle</Trans>,
   savings: <Trans>Sky Savings Rate</Trans>,
   stusds: <Trans>stUSDS</Trans>
 };
 
-/** Per-vault Morpho sources carry their vault name; fixed sources use the map. */
+/** Per-vault Morpho and per-market Pendle sources carry their own name; fixed sources use the map. */
 const sourceLabel = ({ id, label }: MissingSourceDetail): ReactNode =>
-  label ?? (isMorphoVaultSourceId(id) ? <Trans>Morpho vault</Trans> : SOURCE_LABELS[id]);
+  label ??
+  (isMorphoVaultSourceId(id) ? (
+    <Trans>Morpho vault</Trans>
+  ) : isPendleMarketSourceId(id) ? (
+    <Trans>Pendle</Trans>
+  ) : (
+    SOURCE_LABELS[id]
+  ));
 
 const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
   'merkl-monthly-unsupported': <Trans>Merkl doesn&apos;t break rewards down by month.</Trans>,

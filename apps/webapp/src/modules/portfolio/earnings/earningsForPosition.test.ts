@@ -34,7 +34,7 @@ const merkl = protocol({
   earnedThisMonth: notAvailable('merkl-monthly-unsupported')
 });
 const pendle = protocol({
-  id: 'pendle',
+  id: 'pendle-market-0xmkt',
   rowIds: [PENDLE_ROW],
   totalEarned: ok({ usd: 916.82 }),
   earnedThisMonth: ok({ usd: 635.39 }),
@@ -185,5 +185,64 @@ describe('earningsForSuppliedPositions', () => {
   it('returns null when no position has a mainnet source', () => {
     expect(earningsForSuppliedPositions(earnings, [{ rowId: 'rewards-sky', chainId: 1 }])).toBeNull();
     expect(earningsForSuppliedPositions(earnings, [{ rowId: 'savings', chainId: 8453 }])).toBeNull();
+  });
+
+  it('holds the merged figure as loading while any folded source is still loading', () => {
+    const loadingStusds = protocol({
+      id: 'stusds',
+      rowIds: ['stusds'],
+      totalEarned: notAvailable('loading'),
+      earnedThisMonth: notAvailable('loading')
+    });
+    const slice = earningsForSuppliedPositions(wallet([savings, loadingStusds]), [
+      { rowId: 'savings', chainId: 1 },
+      { rowId: 'stusds', chainId: 1 }
+    ]);
+    expect(slice?.totalEarned).toEqual(notAvailable('loading'));
+    expect(slice?.earnedThisMonth).toEqual(notAvailable('loading'));
+  });
+
+  it("reads only a folded Pendle market's own source, not a sibling market's", () => {
+    const marketA = protocol({
+      id: 'pendle-market-0xaaa',
+      rowIds: ['fixed-0xaaa'],
+      totalEarned: ok({ usd: 900 }),
+      earnedThisMonth: ok({ usd: 90 }),
+      pendleSplit: { realizedUsd: 800, markToMarketUsd: 900 }
+    });
+    const marketB = protocol({
+      id: 'pendle-market-0xbbb',
+      rowIds: ['fixed-0xbbb'],
+      totalEarned: ok({ usd: 4 }),
+      earnedThisMonth: ok({ usd: 1 }),
+      pendleSplit: { realizedUsd: 3, markToMarketUsd: 4 }
+    });
+    const slice = earningsForSuppliedPositions(wallet([marketA, marketB]), [
+      { rowId: 'fixed-0xbbb', chainId: 1 }
+    ]);
+    expect(slice?.totalEarned).toEqual(ok({ usd: 4 }));
+    // One source behind the slice, so its split still describes the figure.
+    expect(slice?.pendleSplit).toEqual({ realizedUsd: 3, markToMarketUsd: 4 });
+  });
+
+  it('keeps a coverage caveat only when it is the slice’s single caveat', () => {
+    const mainnetOnly = { ...savings, coverage: 'mainnet-only' as const };
+    const rewardsMissing = protocol({
+      id: 'morpho-vault-0xother',
+      rowIds: ['vault-morpho-0xother'],
+      totalEarned: ok({ usd: 10 }),
+      earnedThisMonth: ok({ usd: 1 }),
+      coverage: 'rewards-not-included'
+    });
+    const one = earningsForSuppliedPositions(wallet([mainnetOnly, pendle]), [
+      { rowId: 'savings', chainId: 1 },
+      { rowId: PENDLE_ROW, chainId: 1 }
+    ]);
+    expect(one?.coverage).toBe('mainnet-only');
+    const mixed = earningsForSuppliedPositions(wallet([mainnetOnly, rewardsMissing]), [
+      { rowId: 'savings', chainId: 1 },
+      { rowId: 'vault-morpho-0xother', chainId: 1 }
+    ]);
+    expect(mixed?.coverage).toBeUndefined();
   });
 });

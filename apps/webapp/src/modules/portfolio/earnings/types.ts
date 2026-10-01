@@ -13,13 +13,26 @@
  */
 export type MorphoVaultSourceId = `morpho-vault-${string}`;
 
-export type EarningsSourceId = MorphoVaultSourceId | 'merkl' | 'pendle' | 'savings' | 'stusds';
+/**
+ * One earnings source per Pendle market, keyed by the lowercased market
+ * address like the Morpho vaults, so each market's row (and a legend bucket
+ * folding some of them) reads only its own figure.
+ */
+export type PendleMarketSourceId = `pendle-market-${string}`;
+
+export type EarningsSourceId = MorphoVaultSourceId | PendleMarketSourceId | 'merkl' | 'savings' | 'stusds';
 
 export const morphoVaultSourceId = (vaultAddress: string): MorphoVaultSourceId =>
   `morpho-vault-${vaultAddress.toLowerCase()}`;
 
 export const isMorphoVaultSourceId = (id: EarningsSourceId): id is MorphoVaultSourceId =>
   id.startsWith('morpho-vault-');
+
+export const pendleMarketSourceId = (marketAddress: string): PendleMarketSourceId =>
+  `pendle-market-${marketAddress.toLowerCase()}`;
+
+export const isPendleMarketSourceId = (id: EarningsSourceId): id is PendleMarketSourceId =>
+  id.startsWith('pendle-market-');
 
 export type TokenAmount = { amount: number; symbol: string };
 
