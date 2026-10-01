@@ -112,3 +112,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "@walletconnect/ethereum-provider"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # happy-dom 20.12.0 added Element.animate(); its Animation.cancel() rejects `finished`
+      # without marking it handled, so motion's animations surface ~100 unhandled AbortErrors
+      # and vitest exits 1. Lift once capricorn86/happy-dom#2339 / #2412 are fixed.
+      - dependency-name: "happy-dom"
+        versions: [">=20.12.0"]

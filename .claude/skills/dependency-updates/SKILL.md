@@ -26,29 +26,34 @@ The two scripts in `scripts/` do the mechanical parts. Run them from the repo ro
 
 ## 2. Branch
 
-Work on `chore/dependency-updates-<YYYY-MM>`, based on a freshly fetched `origin/development`. If you're already on a new branch with no commits beyond `development`, for example one created by your worktree tool, rename it with `git branch -m` rather than leaving it behind.
+Work on `chore/dependency-updates-<YYYY-MM>`, based on a freshly fetched `origin/development`. If you're already on a new branch with no commits beyond `development`, for example one created by your worktree tool, rename it with `git branch -m` rather than leaving it behind. Then bring it up to date with `git merge --ff-only origin/development`, so the plan reads the current catalog and lockfile.
 
 ## 3. Plan the updates
 
 ```bash
-node .claude/skills/dependency-updates/scripts/plan-updates.mjs --json <scratch>/plan.json
+node .claude/skills/dependency-updates/scripts/plan-updates.mjs
 ```
 
 For each catalog entry, the script picks the newest stable version that:
 
-- the dependabot ignore rules allow, and
-- was published before now − `minimumReleaseAge`. Writing a too-new lower bound into the catalog makes `pnpm install` fail.
+- is newer than what the lockfile resolves today. Like dependabot, it measures the bump level from the installed version, not the catalog floor.
+- is not deprecated and not above the npm `latest` dist-tag
+- the dependabot ignore rules allow (`update-types` and `versions`), and
+- was published before now − `minimumReleaseAge`, unless the package is in `minimumReleaseAgeExclude`. Writing a too-new lower bound into the catalog makes `pnpm install` fail.
 
-It assigns each bump to the first dependabot group that matches, as dependabot does, and prints a ready-to-run `bump-catalog.mjs` command per group. Two more sections:
+It assigns each bump to the dependabot group with the most specific matching pattern, as dependabot does, and prints a ready-to-run `bump-catalog.mjs` command per group. More sections follow:
 
-- **Floor-only**: the lockfile already resolves the target. These aren't updates, so they're left out of the apply commands.
+- **Floor-only**: the catalog floor trails what the lockfile already resolves, and there is nothing newer to take. These aren't updates, so they're left out of the apply commands.
 - **Held back**: why the latest version wasn't taken (a major, patch-only, too young, or excluded by a `versions` rule).
+- **Errors**: packages that could not be planned, for example a malformed `versions` rule or a registry error. The script exits 1 when this section isn't empty. Fix the cause instead of planning those packages by hand.
 
-The script doesn't know about the couplings and holds in **Known pins & recurring checks** below. Go through that list and adjust the plan by hand. Also look at any row flagged `0.x minor`: semver treats those as breaking.
+The script refuses to run at all if a config file uses YAML it can't parse, rather than silently dropping rules.
+
+Long-term holds belong in `.github/dependabot.yml` as `versions` ignore rules, so dependabot and the script both respect them. Couplings the script can't see are listed in **Known pins & recurring checks** below; go through that list and adjust the plan by hand. Also look at any row flagged `0.x minor`: semver treats those as breaking.
 
 Present the resulting list to the user grouped like the dependabot groups, with the held-back majors listed separately, **before applying anything**.
 
-## 4. Review release notes (in parallel with step 5)
+## 4. Review release notes (before step 5)
 
 The gates don't catch runtime behavior changes. In 2026-08, viem's `parseUnits('')` started throwing and broke every widget input, with all gates green. Review every bump's release notes for:
 
@@ -56,14 +61,16 @@ The gates don't catch runtime behavior changes. In 2026-08, viem's `parseUnits('
 - deprecations
 - fixes to APIs the app calls
 
-If your harness supports subagents, start one read-only agent per group (in Claude Code: `Explore`, in the background). They only read, so they can run while you apply the commits. Give each agent its group's `pkg from → to` list and ask it to:
+Finish this review before applying anything. Holding a package back after its group is committed doesn't work cleanly: lowering the catalog floor doesn't downgrade the lockfile, and rewriting the commit conflicts in `pnpm-lock.yaml`.
+
+If your harness supports subagents, start one read-only agent per group (in Claude Code: `Explore`), all in parallel. Give each agent its group's `pkg from → to` list and ask it to:
 
 - read the changelog or GitHub releases for every version in each range, and
-- search `apps/webapp/src` for the affected APIs.
+- search for the affected APIs in `apps/webapp/src` and in the config files (`apps/webapp/*.config.ts` and the root `*.config.*`). Build and lint plugins are only used there.
 
 Ask for a short risk list (package, change, affected call sites, how to check it), not a changelog summary. Without subagents, do the same review sequentially, starting with web3-tools and infrastructure.
 
-Put the findings in the PR body. A finding that needs a code change gets its own commit. Otherwise, hold that package back and explain why in the PR.
+Adjust the plan with the findings before step 5: hold a risky package back (and say why in the PR), or plan a code change as its own commit. Put the findings in the PR body.
 
 ## 5. Apply as grouped commits
 
@@ -73,21 +80,23 @@ One commit per dependabot group (bisectability). For each group:
 2. Run `pnpm install`.
 3. Commit with a message naming the notable bumps.
 
-If a gate later needs a fix that belongs to one group, fold it into that group's commit so every commit still builds. A coupled transitive bump is an example (see Known pins). Use `git commit --fixup=<sha>` followed by `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash origin/development`.
+If a gate later needs a fix that belongs to one group, fold it into that group's commit so every commit still builds. A coupled transitive bump is an example (see Known pins). Use `git commit --fixup=<sha>` followed by `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash --keep-base origin/development`. `--keep-base` keeps the commits on the base the gates ran against, instead of moving them onto a newer `origin/development`.
 
 ## 6. Formatting fallout
 
 If **tailwindcss** or **prettier** was bumped, run `pnpm prettier:check`. A tailwindcss bump alone typically reformats dozens of files: `prettier-plugin-tailwindcss` sorts classes by the canonical order of the _installed_ Tailwind version.
 
-Format only the flagged files:
+Format only the flagged files that git tracks:
 
 ```bash
-pnpm exec prettier --list-different . | xargs pnpm exec prettier --write
+git ls-files -z | xargs -0 pnpm exec prettier --list-different --ignore-unknown | xargs pnpm exec prettier --write
 ```
 
-Avoid `pnpm prettier`: it rewrites everything under `.`, including any nested checkouts. Put the result in its **own commit** (don't fold it into a group). Attribute the changes correctly in the commit and the PR: Tailwind class re-sorting vs. actual prettier restyling.
+Avoid `pnpm prettier`: it rewrites everything under `.`, including nested checkouts such as `.claude/worktrees/*`. Put the result in its **own commit** (don't fold it into a group). Attribute the changes correctly in the commit and the PR: Tailwind class re-sorting vs. actual prettier restyling.
 
 ## 7. Gates
+
+Run them from a checkout without nested worktrees (a worktree of its own, for example). `pnpm lint` and `pnpm prettier:check` scan `.`, so in a main checkout that holds `.claude/worktrees/*` they also report other branches' files.
 
 1. Run `pnpm build` first and on its own. It starts with `pnpm messages`, which rewrites the compiled catalogs in `apps/webapp/src/locales` that the other gates read.
 2. Then start `pnpm test` in the background. It runs the unit suite plus the vnet hooks suite, takes about 3–5 minutes, and needs `TENDERLY_API_KEY`. Never run two vnet-backed test runs at once.
@@ -97,9 +106,16 @@ Avoid `pnpm prettier`: it rewrites everything under `.`, including any nested ch
    - `pnpm prettier:check`
    - `pnpm audit --prod --audit-level high`
 
-Vitest can exit non-zero while every test passes. Check the summary's `Errors` line for unhandled rejections before concluding the suite is green.
+`pnpm test` is green only when the command exits 0:
 
-After the test run, **restore `tenderlyTestnetData.json`** with `git checkout -- tenderlyTestnetData.json`. The vnet lifecycle rewrites it with ephemeral testnet IDs that teardown has already deleted. Never commit that churn.
+- Vitest can exit 1 while every test passes. Check the summary's `Errors` line for unhandled rejections.
+- The hooks suite only runs if the unit suite exits 0. If the unit suite failed, the hooks suite never ran, so rerun the full `pnpm test` after the fix.
+
+Clean up after the test run:
+
+- If `pnpm test` failed after the vnet fork started, the vnet was not deleted. Run `pnpm vnet:delete` first; it reads the testnet IDs from `tenderlyTestnetData.json`.
+- Then **restore `tenderlyTestnetData.json`** with `git checkout -- tenderlyTestnetData.json`. The vnet lifecycle rewrites it with ephemeral testnet IDs. Never commit that churn.
+- Run `git status`. If `apps/webapp/src/routeTree.gen.ts` changed (a `@tanstack/router-plugin` bump can change its generated output), check the diff and commit it on its own. CI typechecks the committed file.
 
 ## 8. PR and CI
 
@@ -111,7 +127,7 @@ Push and open a single PR to `development`. The body should list:
 - the formatting-commit attribution, if any
 - the verification checklist
 
-Then watch CI (`gh pr checks <number> --watch`). If e2e shards fail, use the `e2e-repair` skill. Before blaming the bumps, check whether the same job is also red on `development`'s latest run.
+Then watch CI (`gh pr checks <number> --watch`). If e2e shards fail, use the `e2e-repair` skill to diagnose them, but push any fix to this PR's branch: that skill's shipping instructions still target the retired `app-redesign` branch. Before blaming the bumps, check whether the same job is also red on `development`'s latest run.
 
 Then handle Dependabot's open PRs. They're the team's monthly reminder for this run, and a cross-check of the plan:
 
@@ -120,7 +136,11 @@ Then handle Dependabot's open PRs. They're the team's monthly reminder for this 
 3. Close each Dependabot PR whose bumps this PR fully covers, at the same or a newer version, with `gh pr close <n> --comment "Superseded by #<this PR>."`.
 4. Leave every other Dependabot PR open and mention it in your summary. This mostly concerns security-update PRs, which aren't part of the monthly run.
 
-When web3-tools moved by more than a patch, smoke-test a transaction flow on a Tenderly fork (`pnpm vnet:fork`, then `pnpm -F webapp dev:mock` with the mock wallet). This is optional for smaller bumps.
+When web3-tools moved by more than a patch, smoke-test a transaction flow on a Tenderly fork. This is optional for smaller bumps.
+
+1. Run `pnpm vnet:fork`, then `pnpm -F webapp dev:mock` and use the mock wallet.
+2. Afterwards, stop the dev server and run `pnpm vnet:delete`.
+3. Then `git checkout -- tenderlyTestnetData.json`.
 
 ## Known pins & recurring checks
 
@@ -136,8 +156,10 @@ When web3-tools moved by more than a patch, smoke-test a transaction flow on a T
   - Fix: refresh the compiler in the lockfile with `pnpm up -r --depth Infinity @swc/core`. In 2026-10, plugin 6.7.0 needed `@swc/core` 1.16.x. The allowed range comes from `@vitejs/plugin-react-swc`.
   - The plugin's version often trails the other `@lingui/*` packages; that's expected.
 - **`@tanstack/react-router` and `@tanstack/router-plugin` are exact pins.** Keep them exact and bump them together. `router-plugin` declares a minimum `@tanstack/react-router` version: check it with `npm view @tanstack/router-plugin@<ver> dependencies peerDependencies`.
-- **happy-dom is held below 20.12.**
+- **happy-dom is held below 20.12** by a `versions` ignore rule in `.github/dependabot.yml`.
   - 20.12.0 added `Element.animate()`, so motion runs real Web Animations in tests.
   - happy-dom's `Animation.cancel()` rejects `finished` without marking it handled. The result is about 100 unhandled `AbortError: The animation was canceled` errors, and Vitest exits 1.
-  - Upstream: capricorn86/happy-dom#2339 and #2412. Each run, check whether they're fixed before taking 20.12 or later.
-- **Obsolete catalog entries**: run `pnpm knip --dependencies`. If it reports an unused dependency, flag it for removal in a separate PR rather than bumping it.
+  - Upstream: capricorn86/happy-dom#2339 and #2412. Each run, check whether they're fixed; if so, remove the rule.
+- **Obsolete catalog entries**:
+  - Run `pnpm knip --dependencies`. If it reports an unused dependency, flag it for removal in a separate PR rather than bumping it.
+  - knip never reports packages listed in `knip.json`'s `ignoreDependencies`. Check those by hand: search for imports and config usage.
