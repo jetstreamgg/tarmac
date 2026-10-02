@@ -21,7 +21,9 @@ export function useSequentialTransactionFlow(
   const [currentIndex, setCurrentIndex] = useState(0);
   const [transactionHashes, setTransactionHashes] = useState<string[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [hasWriteError, setHasWriteError] = useState(false);
+  // The current call failed, in the wallet or on-chain: ends the loading state while a
+  // paused run (isExecuting held after a mined step) waits for Retry.
+  const [hasFailed, setHasFailed] = useState(false);
 
   // Snapshot of `calls` frozen at execute() time — keeps a refetching quote
   // from swapping in different args after the user clicked Confirm.
@@ -85,11 +87,11 @@ export function useSequentialTransactionFlow(
     mutation: {
       onMutate,
       onSuccess: (hash: `0x${string}`) => {
-        setHasWriteError(false);
+        setHasFailed(false);
         onStart(hash);
       },
       onError: (err: Error) => {
-        setHasWriteError(true);
+        setHasFailed(true);
         // Nothing has mined after a first-call rejection, so there is nothing to
         // resume — and a snapshot kept here would have the next confirm sign the
         // pre-rejection call after the user went back and edited it (APP-448).
@@ -190,7 +192,13 @@ export function useSequentialTransactionFlow(
       lastProcessedTxHash.current = txHash;
       // Transaction failed
       emitError(toError(miningError || failureReason), txHash);
-      setIsExecuting(false);
+      // Like a wallet rejection (see the write's onError), a failure after a mined
+      // step keeps the run paused so Retry resumes the frozen remainder: the live
+      // `calls` has dropped the mined approve, so slicing it at currentIndex would
+      // come up empty and leave nothing to retry.
+      const paused = currentIndex > 0;
+      setIsExecuting(paused);
+      setHasFailed(paused);
     }
   }, [
     isExecuting,
@@ -207,7 +215,7 @@ export function useSequentialTransactionFlow(
     setIsExecuting(false);
     setCurrentIndex(0);
     setTransactionHashes([]);
-    setHasWriteError(false);
+    setHasFailed(false);
     dispatchedIndexRef.current = -1;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
@@ -267,7 +275,7 @@ export function useSequentialTransactionFlow(
 
   return {
     execute,
-    isLoading: isSimulationLoading || (isMining && !txReverted) || (isExecuting && !hasWriteError),
+    isLoading: isSimulationLoading || (isMining && !txReverted) || (isExecuting && !hasFailed),
     prepared,
     error: writeError || miningError || simulationError,
     currentCallIndex: currentIndex,
