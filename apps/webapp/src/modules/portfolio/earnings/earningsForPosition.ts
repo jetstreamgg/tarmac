@@ -18,8 +18,8 @@ export type PositionEarnings = {
   missingFromTotal: MissingSourceDetail[];
   missingFromMonth: MissingSourceDetail[];
   pendleSplit?: PendleSplit;
-  /** A contributor's coverage caveat (savings is mainnet-only — finding #3). */
-  coverage?: EarningsCoverage;
+  /** The contributors' distinct coverage caveats (savings is mainnet-only — finding #3). */
+  coverage?: EarningsCoverage[];
 };
 
 const tokensOf = (figure: EarningsFigure): TokenAmount[] =>
@@ -98,11 +98,9 @@ function earningsForRows(earnings: WalletEarnings, rowIds: readonly string[]): P
   // A Pendle market's realized/mark-to-market split describes that market's
   // figure alone, so a slice that also counts other sources drops it.
   const pendleSplit = contributors.length === 1 ? contributors[0].pendleSplit : undefined;
-  // Likewise a coverage caveat only travels when it is the slice's one caveat:
-  // mixed caveats (savings' mainnet-only + a vault's missing rewards) have no
-  // single message that is true of the whole figure.
-  const coverages = new Set(contributors.flatMap(p => (p.coverage ? [p.coverage] : [])));
-  const coverage = coverages.size === 1 ? [...coverages][0] : undefined;
+  // Every distinct caveat travels: a slice mixing savings (mainnet-only) with
+  // a non-Flagship vault (rewards not included) is missing both.
+  const coverage = [...new Set(contributors.flatMap(p => (p.coverage ? [p.coverage] : [])))];
 
   return {
     totalEarned: total.figure,
@@ -110,7 +108,7 @@ function earningsForRows(earnings: WalletEarnings, rowIds: readonly string[]): P
     missingFromTotal: total.missing,
     missingFromMonth: month.missing,
     ...(pendleSplit ? { pendleSplit } : {}),
-    ...(coverage ? { coverage } : {})
+    ...(coverage.length > 0 ? { coverage } : {})
   };
 }
 

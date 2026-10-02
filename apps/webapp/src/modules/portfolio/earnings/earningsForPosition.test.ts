@@ -130,7 +130,7 @@ describe('earningsForPosition', () => {
       earnedThisMonth: ok({ usd: 46.4 }),
       coverage: 'mainnet-only'
     });
-    expect(earningsForPosition(wallet([mainnetOnly]), 'savings')?.coverage).toBe('mainnet-only');
+    expect(earningsForPosition(wallet([mainnetOnly]), 'savings')?.coverage).toEqual(['mainnet-only']);
     // Contributors without a caveat leave it unset.
     expect(earningsForPosition(earnings, FLAGSHIP_ROW)?.coverage).toBeUndefined();
   });
@@ -225,7 +225,7 @@ describe('earningsForSuppliedPositions', () => {
     expect(slice?.pendleSplit).toEqual({ realizedUsd: 3, markToMarketUsd: 4 });
   });
 
-  it('keeps a coverage caveat only when it is the slice’s single caveat', () => {
+  it('keeps every distinct coverage caveat of a merged slice, once each', () => {
     const mainnetOnly = { ...savings, coverage: 'mainnet-only' as const };
     const rewardsMissing = protocol({
       id: 'morpho-vault-0xother',
@@ -238,11 +238,11 @@ describe('earningsForSuppliedPositions', () => {
       { rowId: 'savings', chainId: 1 },
       { rowId: PENDLE_ROW, chainId: 1 }
     ]);
-    expect(one?.coverage).toBe('mainnet-only');
+    expect(one?.coverage).toEqual(['mainnet-only']);
     const mixed = earningsForSuppliedPositions(wallet([mainnetOnly, rewardsMissing]), [
       { rowId: 'savings', chainId: 1 },
       { rowId: 'vault-morpho-0xother', chainId: 1 }
     ]);
-    expect(mixed?.coverage).toBeUndefined();
+    expect(mixed?.coverage).toEqual(['mainnet-only', 'rewards-not-included']);
   });
 });

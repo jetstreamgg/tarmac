@@ -197,8 +197,8 @@ function GapGlyph({
 }: {
   missing: MissingSourceDetail[];
   untrackedNames?: string[];
-  /** Coverage caveat line — announced-class, never flips the glyph to error. */
-  coverage?: EarningsCoverage;
+  /** Coverage caveats, one line each — announced-class, never flip the glyph to error. */
+  coverage?: EarningsCoverage[];
 }) {
   const hasErrorGap = missing.some(m => !isAnnouncedGap(m.reason));
   return (
@@ -217,7 +217,9 @@ function GapGlyph({
         {(missing.length > 0 || untrackedNames.length > 0) && (
           <MissingList missing={missing} untrackedNames={untrackedNames} />
         )}
-        {coverage && <span>{COVERAGE_COPY[coverage]}</span>}
+        {coverage?.map(c => (
+          <span key={c}>{COVERAGE_COPY[c]}</span>
+        ))}
       </div>
     </EarningsTooltip>
   );
@@ -355,8 +357,8 @@ export function EarningsFigureValue({
   testId?: string;
   /** Contributors excluded from a partial figure (per-position missing list). */
   missing?: MissingSourceDetail[];
-  /** Coverage caveat for an otherwise-complete figure (review finding #3). */
-  coverage?: EarningsCoverage;
+  /** Coverage caveats for an otherwise-complete figure (review finding #3). */
+  coverage?: EarningsCoverage[];
   pendleSplit?: PendleSplit;
   /** Set false to render the bare figure without the missing-source info glyph. */
   showGapGlyph?: boolean;
@@ -394,7 +396,7 @@ export function EarningsFigureValue({
     );
 
   const gapGlyph =
-    showGapGlyph && (missing.length > 0 || coverage) ? (
+    showGapGlyph && (missing.length > 0 || (coverage?.length ?? 0) > 0) ? (
       <GapGlyph missing={missing} coverage={coverage} />
     ) : null;
 
