@@ -6,7 +6,6 @@ import {
   TOKENS,
   useOverallSkyData,
   usePreviewSwapExactIn,
-  usePreviewSwapExactOut,
   useReadSavingsUsds,
   useSavingsData,
   useTokenBalance,
@@ -24,6 +23,7 @@ import {
   type OriginSymbol
 } from '../components/SavingsOriginSelect';
 import { useSavingsSupplyMinAmountOut } from './useSavingsSupplyMinAmountOut';
+import { useSavingsWithdrawBounds } from './useSavingsWithdrawBounds';
 import { useUsdcSupplyGate, type UsdcSupplyBlockedReason } from './useUsdcSupplyGate';
 import { type SavingsLaunchFlow, type UseSavingsLaunchParams } from './useSavingsLaunch';
 
@@ -194,9 +194,11 @@ export function useSavingsTransactionForm({
   // L2 PSM bounds (no-ops on mainnet / where the flow doesn't use them):
   //  - minAmountOut: chi-projected sUSDS-out floor for an L2 supply (swapExactIn)
   //  - convertedBalance: the whole sUSDS balance valued in the destination token →
-  //    the L2 withdraw source balance + the max-withdraw floor (swapExactIn)
-  //  - maxAmountInForWithdraw: the sUSDS-in ceiling to take exactly `amount` out
-  //    (specific L2 withdraw, swapExactOut)
+  //    the L2 withdraw source balance shown and validated against
+  //  - minAmountOutForWithdrawAll / maxAmountInForWithdraw: the max-withdraw floor
+  //    (swapExactIn) and the sUSDS-in ceiling to take exactly `amount` out
+  //    (swapExactOut), priced at the oracle's stored chi so they hold still
+  //    between oracle updates (see useSavingsWithdrawBounds)
   // Mainnet USDC supply swaps through the PSM wrapper before the deposit, so it
   // inherits the wrapper's live / halted / fee switches. No-op for every other
   // origin+network pair (the reads are disabled where the wrapper has no address).
@@ -259,7 +261,11 @@ export function useSavingsTransactionForm({
   });
 
   const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
-  const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(amount, TOKENS.susds, originToken);
+  const { minAmountOutForWithdrawAll, maxAmountInForWithdraw } = useSavingsWithdrawBounds({
+    amount,
+    sUsdsBalance: susdsBalance?.value,
+    originToken
+  });
 
   // Mainnet supply preview: the USDS that reaches the vault → sUSDS shares via its
   // ERC-4626 convertToShares. USDS/DAI are already wad; a USDC amount is the 6-dec
@@ -290,7 +296,7 @@ export function useSavingsTransactionForm({
     referralCode: REFERRAL_CODE,
     minAmountOut,
     sUsdsBalance: susdsBalance?.value,
-    minAmountOutForWithdrawAll: convertedBalance.value,
+    minAmountOutForWithdrawAll,
     maxAmountInForWithdraw
   };
 
