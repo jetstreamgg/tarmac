@@ -11,12 +11,12 @@ const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 const h = vi.hoisted(() => ({
   chainId: 1 as number,
   walletBalance: 0n as bigint,
-  // L2 PSM mocks: the sUSDS→token converted balance (withdraw source), the SSR
-  // oracle's stored chi (prices the withdraw bounds), plus the supply slippage floor.
+  // L2 PSM mocks: the sUSDS→token converted balance (withdraw source) and the
+  // sUSDS-in ceiling for a specific withdraw, plus the supply slippage floor.
   convertedValue: 0n as bigint,
   // The converted-balance preview read is still in flight (its value is the 0n fallback).
   previewLoading: false,
-  chi: undefined as bigint | undefined,
+  maxAmountIn: 0n as bigint,
   minAmountOut: 0n as bigint,
   // Mainnet USDC supply gate (PSM wrapper reads): open module by default.
   psmLive: 1n as bigint | undefined,
@@ -90,7 +90,7 @@ vi.mock('@/hooks', async importOriginal => {
     useReadSavingsUsds: () => ({ data: undefined }),
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
     usePreviewSwapExactIn: () => ({ value: h.convertedValue, isLoading: h.previewLoading }),
-    useReadSsrAuthOracleGetChi: () => ({ data: h.chi }),
+    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn }),
     // Mainnet USDC supply gate: the PSM wrapper's live / fee / halt switches.
     // Default to an open module (live, zero fee, nothing halted).
     useUsdsPsmWrapperLive: () => ({ data: h.psmLive }),
@@ -225,7 +225,7 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     h.chainId = 1;
     h.walletBalance = 100n * 10n ** 18n;
     h.convertedValue = 0n;
-    h.chi = undefined;
+    h.maxAmountIn = 0n;
     h.minAmountOut = 0n;
     h.psmLive = 1n;
     h.psmTin = 0n;
@@ -427,7 +427,7 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     // A small wallet balance proves withdraw caps on the position, not the wallet.
     h.walletBalance = 1n * 10n ** 18n;
     h.convertedValue = 0n;
-    h.chi = undefined;
+    h.maxAmountIn = 0n;
     h.minAmountOut = 0n;
     h.psmLive = 1n;
     h.psmTin = 0n;
@@ -519,7 +519,7 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     // balance, not the 100-USDS position.
     h.convertedValue = 200n * 10n ** 18n;
     h.previewLoading = false;
-    h.chi = 2n * 10n ** 27n; // 1 sUSDS = 2 USDS at the oracle's stored chi
+    h.maxAmountIn = 7n * 10n ** 18n; // sUSDS-in ceiling for a specific withdraw
     h.minAmountOut = 49n * 10n ** 17n; // 4.9 sUSDS slippage floor
     h.psmLive = 1n;
     h.psmTin = 0n;
@@ -576,10 +576,8 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     renderForm('withdraw');
     fireEvent.click(screen.getByTestId('savings-modal-amount-max'));
     expect(h.launchParams?.max).toBe(true);
-    // The whole sUSDS balance is handed to the engine for swapExactIn (no dust),
-    // with its floor priced at the stored chi: 100 sUSDS × 2.
+    // The whole sUSDS balance is handed to the engine for swapExactIn (no dust).
     expect(h.launchParams?.sUsdsBalance).toBe(h.walletBalance);
-    expect(h.launchParams?.minAmountOutForWithdrawAll).toBe(200n * 10n ** 18n);
     expect(lastDisabled()).toBe(false);
   });
 
@@ -599,8 +597,7 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
     renderForm('withdraw');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
     expect(h.launchParams?.max).toBe(false);
-    // 50 USDS out at 2 USDS per sUSDS needs at most 25 sUSDS in.
-    expect(h.launchParams?.maxAmountInForWithdraw).toBe(25n * 10n ** 18n);
+    expect(h.launchParams?.maxAmountInForWithdraw).toBe(h.maxAmountIn);
   });
 });
 
@@ -615,7 +612,7 @@ describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
     h.chainId = 1;
     h.walletBalance = 100n * 10n ** 18n;
     h.convertedValue = 0n;
-    h.chi = undefined;
+    h.maxAmountIn = 0n;
     h.minAmountOut = 0n;
     h.psmLive = 1n;
     h.psmTin = 0n;
