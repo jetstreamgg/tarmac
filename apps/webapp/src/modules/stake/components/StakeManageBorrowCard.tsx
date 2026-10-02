@@ -319,7 +319,7 @@ export function StakeManageBorrowCard({
               />
             ) : maxHint !== undefined ? (
               <span className="whitespace-nowrap" data-testid="stake-manage-max-hint">
-                <Trans>Borrowable: {formatBigInt(maxHint)} USDS</Trans>
+                <Trans>Borrowable: {formatBigInt(maxHint, { maxDecimals: 0 })} USDS</Trans>
               </span>
             ) : undefined
           }

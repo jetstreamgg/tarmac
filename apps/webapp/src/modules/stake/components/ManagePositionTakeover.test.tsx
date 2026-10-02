@@ -705,7 +705,7 @@ describe('ManagePositionTakeover', () => {
     renderSheet({ borrowCard: 'borrow' });
 
     expect(screen.getByTestId('stake-manage-borrow-slider')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('Borrowable: 300,000.00 USDS');
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('Borrowable: 300,000 USDS');
     // Debt-free borrow chips are Min (dust) / Max (headroom).
     fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-min'));
     expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
@@ -743,7 +743,7 @@ describe('ManagePositionTakeover', () => {
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2000000' } });
 
     expect(screen.getByTestId('stake-manage-min-collateral-warning')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('Borrowable: 0.00 USDS');
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toContain('Borrowable: 0 USDS');
     const slider = screen.getByTestId('stake-manage-borrow-slider');
     expect(slider.querySelector('[data-slot="slider"]')?.getAttribute('data-disabled')).not.toBeNull();
     expect(screen.getByTestId('stake-manage-borrow-slider-max-label').textContent).toContain('30,000');
