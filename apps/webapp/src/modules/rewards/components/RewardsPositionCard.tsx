@@ -12,20 +12,21 @@ import {
   useUserRewardsBalance,
   type RewardContract
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
+import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
 import {
   ProductActions,
   ProductFigure,
-  ProductPercent,
   ProductPositionCard,
   ProductStat,
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { RateInfo } from '@/components/product/RateInfo';
+import { AccruedToDateStat } from '@/components/product/AccruedToDateStat';
+import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
+import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useClaimRewardsModal } from '@/modules/claim';
 import { useRewardsModal, type RewardsModalArgs } from '../hooks/useRewardsModal';
 import { rewardContractDisplayName } from '../helpers/rewardContractDisplayName';
@@ -90,6 +91,11 @@ export function RewardsPositionCard({
 
   const { openSupply, openWithdraw } = useRewardsModal({ onSuccess: refresh });
   const { openClaim } = useClaimRewardsModal({ onSuccess: refresh });
+
+  // "Accrued to date" is the same per-row slice the Portfolio renders for this
+  // farm's row (APP-589); points and deprecated farms have no source → dash.
+  const walletEarnings = useWalletEarnings();
+  const accrued = earningsForPosition(walletEarnings, `rewards-${contract.rewardToken.symbol.toLowerCase()}`);
 
   // Per-farm inputs for the supply/withdraw modal (passed at open time).
   const modalArgs: RewardsModalArgs = {
@@ -157,7 +163,6 @@ export function RewardsPositionCard({
       className="h-3 w-3 shrink-0"
     />
   );
-  const currentRate = rate !== undefined && rate > 0 ? formatDecimalPercentage(rate) : NO_VALUE;
 
   return (
     <ProductPositionCard
@@ -191,6 +196,7 @@ export function RewardsPositionCard({
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
+            <AccruedToDateStat accrued={accrued} testId="rewards-accrued-to-date" />
             {isPointsFarm ? (
               <ProductStat label={<Trans>Points accrued</Trans>}>
                 <ProductFigure value={accruedPoints}>
@@ -206,10 +212,6 @@ export function RewardsPositionCard({
                 </ProductFigure>
               </ProductStat>
             )}
-            <ProductStat label={<Trans>Current rate</Trans>}>
-              <ProductPercent value={currentRate} />
-              <RateInfo type="str" size={12} />
-            </ProductStat>
           </ProductStatPair>
         </>
       }

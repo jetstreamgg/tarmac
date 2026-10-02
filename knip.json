@@ -3,7 +3,11 @@
   "ignoreBinaries": ["tsx"],
   "workspaces": {
     ".": {
-      "entry": ["lingui.config.ts", "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"],
+      "entry": [
+        "lingui.config.ts",
+        "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!",
+        ".claude/skills/*/scripts/*.mjs"
+      ],
       "ignoreDependencies": [
         "@vitest/coverage-v8",
         "eslint-plugin-react",
