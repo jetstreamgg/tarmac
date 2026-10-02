@@ -44,6 +44,7 @@ export function StakeTakeoverAmountField({
   disabled = false,
   error,
   maxDisplayDecimals,
+  roundDisplay = false,
   dataTestId
 }: {
   tokenSymbol: string;
@@ -60,6 +61,8 @@ export function StakeTakeoverAmountField({
   error?: string;
   /** Display-only decimal cap for programmatic amounts (exact-max staging). */
   maxDisplayDecimals?: number;
+  /** Round the capped display half-up instead of truncating it. */
+  roundDisplay?: boolean;
   dataTestId: string;
 }) {
   const [text, setText] = useState('');
@@ -72,7 +75,7 @@ export function StakeTakeoverAmountField({
   const settled = parseAmountInput(text, DECIMALS) === amount;
   if (settled && typedFrom !== null) setTypedFrom(null);
   const typed = settled || amount === typedFrom;
-  const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals);
+  const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals, roundDisplay);
 
   const onChange = (sanitized: string) => {
     setText(sanitized);

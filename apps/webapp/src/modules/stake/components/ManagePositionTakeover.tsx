@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -42,6 +42,8 @@ import { formatOraclePrice } from '../lib/formatStakeAmount';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 
+const WIPE_ALL_DEBT_REFRESH_MS = 5 * 60_000;
+
 /**
  * "Manage a position" full-page sheet (F5, UX 1050:21454+): a position-summary
  * strip and two independently-toggleable cards over one Confirm (reward and
@@ -76,10 +78,30 @@ export function ManagePositionTakeover({
   const existingCollateral = existingVault?.collateralAmount ?? 0n;
 
   const [state, dispatch] = useStakeManageFlowState(init);
+  // Close position stages the max on both cards as soon as the vault resolves:
+  // all the SKY, and the full debt as wipeAll (the repay 100% chip). A debt-free
+  // position only withdraws, so its borrow toggle goes back off.
+  const [closePending, setClosePending] = useState(!!init.closePosition);
+  if (closePending && !detail.vaultLoading && existingVault) {
+    setClosePending(false);
+    dispatch({ type: 'setSkyAmount', amount: existingCollateral });
+    if (existingDebt > 0n) dispatch({ type: 'setUsdsAmount', amount: existingDebt, wipeAll: true });
+    else dispatch({ type: 'setBorrowEnabled', enabled: false });
+  }
   // Only a debt-free position gets a borrow toggle (Figma 3015:60677); with debt the
   // cards are interlinked, so both stay open (3015:58333). Stake is always on.
   const borrowOptional = !detail.vaultLoading && existingDebt === 0n;
   const borrowOn = !borrowOptional || state.borrowEnabled;
+  const wipeAll = borrowOn && state.borrowMode === 'repay' && state.wipeAll;
+  // wipeAll repays the debt as of execution, so the staged repay tracks it as it accrues.
+  const usdsAmount = wipeAll ? existingDebt : state.usdsAmount;
+  // Nothing else re-reads the vault while the sheet is open, and the wipeAll approve is sized off this debt.
+  const { refetchVault } = detail;
+  useEffect(() => {
+    if (!wipeAll) return;
+    const id = setInterval(refetchVault, WIPE_ALL_DEBT_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [wipeAll, refetchVault]);
 
   // Amounts routed through each card's mode; the reducer clears amounts on
   // toggle-off and mode switches, so these stay consistent by construction.
@@ -87,12 +109,13 @@ export function ManagePositionTakeover({
   // otherwise the stale debounced value would validate under the new mode.
   const settleCleared = (amount: bigint, debounced: bigint) => (amount === 0n ? 0n : debounced);
   const debouncedSkyAmount = settleCleared(state.skyAmount, useDebounce(state.skyAmount));
-  const debouncedUsdsAmount = settleCleared(state.usdsAmount, useDebounce(state.usdsAmount));
+  const debouncedUsdsInput = useDebounce(state.usdsAmount);
+  // Accrual isn't typing, so wipeAll skips the debounce.
+  const debouncedUsdsAmount = wipeAll ? usdsAmount : settleCleared(usdsAmount, debouncedUsdsInput);
   const skyToLock = state.stakeMode === 'stake' ? debouncedSkyAmount : 0n;
   const skyToFree = state.stakeMode === 'withdraw' ? debouncedSkyAmount : 0n;
   const usdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? debouncedUsdsAmount : 0n;
   const usdsToWipe = borrowOn && state.borrowMode === 'repay' ? debouncedUsdsAmount : 0n;
-  const wipeAll = borrowOn && state.borrowMode === 'repay' && state.wipeAll;
 
   // Legacy Free.tsx/Repay.tsx simulation inputs, composed (M9).
   const newCollateralAmount = existingCollateral + skyToLock - skyToFree;
@@ -104,8 +127,8 @@ export function ManagePositionTakeover({
   // and validation stay debounced.
   const liveSkyToLock = state.stakeMode === 'stake' ? state.skyAmount : 0n;
   const liveSkyToFree = state.stakeMode === 'withdraw' ? state.skyAmount : 0n;
-  const liveUsdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? state.usdsAmount : 0n;
-  const liveUsdsToWipe = borrowOn && state.borrowMode === 'repay' ? state.usdsAmount : 0n;
+  const liveUsdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? usdsAmount : 0n;
+  const liveUsdsToWipe = borrowOn && state.borrowMode === 'repay' ? usdsAmount : 0n;
   const liveCollateralAmount = existingCollateral + liveSkyToLock - liveSkyToFree;
   const liveDebtValue = existingDebt + liveUsdsToBorrow - liveUsdsToWipe;
   const { data: simulatedVault, isLoading: liveSimLoading } = useSimulatedVault(
@@ -127,8 +150,7 @@ export function ManagePositionTakeover({
   );
   // A pending debounce still validates the previous amounts, so its verdict
   // would flash stale errors; treat that window as loading instead.
-  const simulationSettling =
-    debouncedSkyAmount !== state.skyAmount || debouncedUsdsAmount !== state.usdsAmount;
+  const simulationSettling = debouncedSkyAmount !== state.skyAmount || debouncedUsdsAmount !== usdsAmount;
   const simulationLoading = debouncedSimLoading || simulationSettling;
   const simulationError = simulationSettling ? null : debouncedSimError;
   const { data: collateralData, isLoading: collateralLoading } = useCollateralData(ilkName);
@@ -286,7 +308,7 @@ export function ManagePositionTakeover({
     detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS ? detail.voteDelegate : undefined;
 
   // ---- Confirm gating (M20) -------------------------------------------------
-  const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === state.usdsAmount;
+  const debounceSettled = debouncedSkyAmount === state.skyAmount && debouncedUsdsAmount === usdsAmount;
   const hasChange = skyToLock > 0n || skyToFree > 0n || usdsToBorrow > 0n || usdsToWipe > 0n || wipeAll;
   // Every staged change is relative to the existing position, so nothing may
   // confirm against an unresolved vault read.
@@ -633,7 +655,7 @@ export function ManagePositionTakeover({
         onModeChange={mode => dispatch({ type: 'setBorrowMode', mode })}
         enabled={borrowOn}
         onEnabledChange={borrowOptional ? enableBorrow : undefined}
-        amount={state.usdsAmount}
+        amount={usdsAmount}
         onAmountChange={(amount, stagedWipeAll) =>
           dispatch({ type: 'setUsdsAmount', amount, wipeAll: stagedWipeAll })
         }

@@ -179,24 +179,50 @@ export function IconboxStatus({
 // --- Iconbox / Position ------------------------------------------------------
 
 /**
- * Iconbox / Position: the 36px position marker — success-green ring and disc
- * around a 16px glyph, or the neutral `inactive` treatment for closed/empty
- * positions.
+ * Iconbox / Position: the 36px position marker — success-green (or `info`
+ * blue) ring and disc around a 16px glyph, or the neutral `inactive` treatment
+ * for closed/empty positions.
  */
+export type IconboxPositionTone = 'success' | 'info' | 'warning' | 'error';
+
+// Iconbox/Position types (3617:23647): Low risk / Staking only / Medium risk / High risk.
+const positionBorder: Record<IconboxPositionTone, string> = {
+  success: 'border-iconboxPosition',
+  info: 'border-statusInfoBorder',
+  warning: 'border-statusWarningBorder',
+  error: 'border-statusErrorBorder'
+};
+
+const positionDisc: Record<IconboxPositionTone, string> = {
+  success: 'bg-iconboxPositionBg text-statusSuccessSolid',
+  info: 'bg-statusInfoBg text-statusInfoSolid',
+  warning: 'bg-statusWarningBg text-statusWarning',
+  error: 'bg-statusErrorBg text-statusError'
+};
+
 export function IconboxPosition({
   inactive = false,
+  tone = 'success',
+  size = 'm',
   children,
-  className
+  className,
+  dataTestId
 }: {
   inactive?: boolean;
+  tone?: IconboxPositionTone;
+  /** `xs` is the 20px token beside the activity table's position label (3617:24439). */
+  size?: 'm' | 'xs';
   children: ReactNode;
   className?: string;
+  dataTestId?: string;
 }) {
   return (
     <span
+      data-testid={dataTestId}
       className={cn(
-        'flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]',
-        inactive ? 'border-glassBorder' : 'border-iconboxPosition',
+        'flex shrink-0 items-center justify-center rounded-full',
+        size === 'xs' ? 'size-5 border' : 'size-9 border-[1.5px]',
+        inactive ? 'border-glassBorder' : positionBorder[tone],
         className
       )}
     >
@@ -205,10 +231,11 @@ export function IconboxPosition({
           // Disc pinned to Figma's 30px and centered, not `size-full` off a
           // padding: Chrome snaps the 1.5px border down to 1px, so any
           // padding-derived diameter lands a pixel wide.
-          'flex size-[30px] items-center justify-center rounded-full',
+          'flex items-center justify-center rounded-full',
+          size === 'xs' ? 'size-4' : 'size-[30px]',
           // Active glyph is fg-system-success-primary (#02c2a1, theme-invariant)
           // per the comp — statusSuccess is the lighter status-text green.
-          inactive ? 'bg-bgTertiary text-fgSecondary' : 'bg-iconboxPositionBg text-statusSuccessSolid'
+          inactive ? 'bg-bgTertiary text-fgSecondary' : positionDisc[tone]
         )}
       >
         {children}

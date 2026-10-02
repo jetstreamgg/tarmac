@@ -1,5 +1,5 @@
 import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
-import { Fragment, ReactNode, useState } from 'react';
+import { AriaAttributes, Fragment, ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount } from 'wagmi';
 import { cn } from '@/lib/cn';
@@ -45,6 +45,8 @@ export interface ProductTransactionColumn<T> {
   cell: (row: T) => ReactNode;
   /** Set false for icon/affordance columns (chevrons, network icons) so loading doesn't paint a text bar there. */
   skeleton?: boolean;
+  /** Set on the sorted column when the header sorts (see SortHeaderButton). */
+  ariaSort?: AriaAttributes['aria-sort'];
 }
 
 export interface ProductTransactionsTableProps<T> {
@@ -262,7 +264,7 @@ export function ProductTransactionsTable<T>({
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (
-              <TableHead key={column.id} style={{ width: widths[index] }}>
+              <TableHead key={column.id} style={{ width: widths[index] }} aria-sort={column.ariaSort}>
                 {column.header}
               </TableHead>
             ))}

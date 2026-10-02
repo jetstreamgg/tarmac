@@ -16,7 +16,7 @@ import { NO_VALUE } from '@/lib/constants';
 
 // The banner body activates the row like any other cell; only the CTAs keep
 // their own action, so they must not also open the position.
-function ownAction(action: () => void) {
+export function ownAction(action: () => void) {
   return (event: MouseEvent) => {
     event.stopPropagation();
     action();
@@ -27,14 +27,10 @@ function ownAction(action: () => void) {
 // The carrier shares its row's hover tint and completes its focus ring (see ProductTransactionsTable).
 const REVEAL_CLASS = '-mt-0.5 overflow-clip';
 const CARRIER_CLASS =
-  'bg-bgSecondary w-full px-6 pb-6 transition-colors [tr:last-child>td>div>&]:rounded-b-[24px] [tr:hover+tr>td>div>&]:bg-bgTertiary [tr:hover>td>div>&]:bg-bgTertiary [tr:focus-visible+tr>td>div>&]:shadow-[inset_2px_0_0_0_var(--color-fgBrand),inset_-2px_0_0_0_var(--color-fgBrand),inset_0_-2px_0_0_var(--color-fgBrand)]';
-// Status infobox inside the cell (Design QA 3324:136821): the tint follows the tier.
-const INFOBOX_CLASS = 'flex w-full items-center gap-4 rounded-xl px-5 py-4';
-const TIER_CLASS = {
-  warning: { box: 'bg-statusWarningBg', icon: 'text-fgSystemWarning' },
-  error: { box: 'bg-statusErrorBg', icon: 'text-statusError' }
-};
-const ICON_CLASS = 'mt-0.5 h-4 w-4 shrink-0 self-start';
+  'bg-bgSecondary w-full px-6 pb-5 transition-colors [tr:last-child>td>div>&]:rounded-b-[24px] [tr:hover+tr>td>div>&]:bg-bgTertiary [tr:hover>td>div>&]:bg-bgTertiary [tr:focus-visible+tr>td>div>&]:shadow-[inset_2px_0_0_0_var(--color-fgBrand),inset_-2px_0_0_0_var(--color-fgBrand),inset_0_-2px_0_0_var(--color-fgBrand)]';
+// Status infobox inside the cell (comp 3617:193974): red at every tier, icon on the title line; CTAs drop below the copy on a phone.
+const INFOBOX_CLASS =
+  'bg-statusErrorBg flex w-full flex-col items-stretch gap-4 rounded-xl px-5 py-4 sm:flex-row sm:items-center';
 const TITLE_CLASS = 'text-fgPrimary font-circle text-sm leading-4 font-medium';
 const BODY_CLASS = 'text-fgSecondary font-graphik text-xs leading-[18px]';
 
@@ -66,19 +62,27 @@ function Carrier({ reveal, children }: { reveal: boolean; children: ReactNode })
 }
 
 function Infobox({
-  tier,
   dataTestId,
-  children
+  title,
+  body,
+  actions
 }: {
-  tier: keyof typeof TIER_CLASS;
   dataTestId: string;
-  children: ReactNode;
+  title: ReactNode;
+  body: ReactNode;
+  actions: ReactNode;
 }) {
   return (
     <Carrier reveal>
-      <div data-testid={dataTestId} data-tier={tier} className={cn(INFOBOX_CLASS, TIER_CLASS[tier].box)}>
-        <TriangleAlert className={cn(ICON_CLASS, TIER_CLASS[tier].icon)} aria-hidden />
-        {children}
+      <div data-testid={dataTestId} className={INFOBOX_CLASS}>
+        <div className="flex flex-1 flex-col gap-2">
+          <p className={cn(TITLE_CLASS, 'flex items-center gap-2')}>
+            <TriangleAlert className="text-statusError h-4 w-4 shrink-0" aria-hidden />
+            {title}
+          </p>
+          <p className={BODY_CLASS}>{body}</p>
+        </div>
+        {actions}
       </div>
     </Carrier>
   );
@@ -132,22 +136,21 @@ export function StakePositionRowBanner({
     const refund = formatStakeAmount(vault?.collateralAmount ?? 0n);
 
     return (
-      <Infobox tier="error" dataTestId="stake-position-liquidated-banner">
-        <div className="flex flex-1 flex-col gap-2">
-          <p className={TITLE_CLASS}>
-            <Trans>This position was liquidated</Trans>
-          </p>
-          <p className={BODY_CLASS}>
-            <Trans>
-              Your {refund} SKY refund and {rewardsUsd} in rewards are still claimable. You can open a new
-              position at any time.
-            </Trans>
-          </p>
-        </div>
-        <Button variant="primary" onClick={ownAction(onClaim)} data-testid="stake-liquidated-claim-cta">
-          <Trans>Claim</Trans>
-        </Button>
-      </Infobox>
+      <Infobox
+        dataTestId="stake-position-liquidated-banner"
+        title={<Trans>This position was liquidated</Trans>}
+        body={
+          <Trans>
+            Your {refund} SKY refund and {rewardsUsd} in rewards are still claimable. You can open a new
+            position at any time.
+          </Trans>
+        }
+        actions={
+          <Button variant="primary" onClick={ownAction(onClaim)} data-testid="stake-liquidated-claim-cta">
+            <Trans>Claim</Trans>
+          </Button>
+        }
+      />
     );
   }
 
@@ -158,40 +161,43 @@ export function StakePositionRowBanner({
   const critical = (vault?.liquidationProximityPercentage ?? 0) >= LIQUIDATION_TIER_THRESHOLD;
 
   return (
-    <Infobox tier={critical ? 'error' : 'warning'} dataTestId="stake-position-warning-banner">
-      <div className="flex flex-1 flex-col gap-2">
-        <p className={TITLE_CLASS}>
-          {critical ? (
-            <Trans>Your position is about to be liquidated</Trans>
-          ) : (
-            <Trans>Your liquidation risk is very high</Trans>
-          )}
-        </p>
-        <p className={BODY_CLASS}>
-          <Trans>
-            If SKY drops to {formattedLiqPrice}, this position will be liquidated. Add collateral or repay
-            debt to lower the risk.
-          </Trans>
-        </p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Button
-          variant="primary"
-          size="m"
-          onClick={ownAction(() => onRemediate('stake'))}
-          data-testid="stake-warning-stake-cta"
-        >
-          <Trans>Stake SKY</Trans>
-        </Button>
-        <Button
-          variant="secondary"
-          size="m"
-          onClick={ownAction(() => onRemediate('repay'))}
-          data-testid="stake-warning-repay-cta"
-        >
-          <Trans>Repay debt</Trans>
-        </Button>
-      </div>
-    </Infobox>
+    <Infobox
+      dataTestId="stake-position-warning-banner"
+      title={
+        critical ? (
+          <Trans>Your position is about to be liquidated</Trans>
+        ) : (
+          <Trans>Your liquidation risk is very high</Trans>
+        )
+      }
+      body={
+        <Trans>
+          If SKY drops to {formattedLiqPrice}, this position will be liquidated. Add collateral or repay debt
+          to lower the risk.
+        </Trans>
+      }
+      actions={
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="primary"
+            size="m"
+            className="flex-1 sm:flex-none"
+            onClick={ownAction(() => onRemediate('stake'))}
+            data-testid="stake-warning-stake-cta"
+          >
+            <Trans>Stake SKY</Trans>
+          </Button>
+          <Button
+            variant="secondary"
+            size="m"
+            className="flex-1 sm:flex-none"
+            onClick={ownAction(() => onRemediate('repay'))}
+            data-testid="stake-warning-repay-cta"
+          >
+            <Trans>Repay debt</Trans>
+          </Button>
+        </div>
+      }
+    />
   );
 }

@@ -31,10 +31,11 @@ function tokenCell(reward: ClaimableReward) {
   );
 }
 
-/** Available-to-claim cell: 12px logo + amount over the USD value. */
-function amountCell(reward: ClaimableReward) {
+/** Available-to-claim cell: 12px logo + amount over the USD value, right-aligned in the table (Figma 1036:190247). */
+function amountCell(reward: ClaimableReward, className?: string) {
   return (
     <CellAmount
+      className={className}
       icon={
         <TokenIcon
           token={{ symbol: reward.tokenSymbol }}
@@ -68,22 +69,24 @@ export function RewardsClaimTable({
 }: {
   rewards: ClaimableReward[];
   ctaVariant: 'primary' | 'secondary';
-  onClaim: (reward: ClaimableReward) => void;
+  /** Omitted when no claim target is available; the row CTA then hides. */
+  onClaim?: (reward: ClaimableReward) => void;
   testId: string;
 }) {
   const { bpi } = useBreakpointIndex();
 
-  const claimButton = (reward: ClaimableReward) => (
-    <Button
-      variant={ctaVariant}
-      size="m"
-      className="w-full"
-      onClick={() => onClaim(reward)}
-      data-testid="reward-claim-button"
-    >
-      <Trans>Claim</Trans>
-    </Button>
-  );
+  const claimButton = (reward: ClaimableReward) =>
+    onClaim && (
+      <Button
+        variant={ctaVariant}
+        size="m"
+        className="w-full"
+        onClick={() => onClaim?.(reward)}
+        data-testid="reward-claim-button"
+      >
+        <Trans>Claim</Trans>
+      </Button>
+    );
 
   if (bpi < BP.md) {
     return (
@@ -116,7 +119,7 @@ export function RewardsClaimTable({
           <TableHead>
             <Trans>Token</Trans>
           </TableHead>
-          <TableHead className="w-[148px]">
+          <TableHead className="w-[148px] text-right">
             <Trans>Available to claim</Trans>
           </TableHead>
           {/* The CTA column's header stays visually empty (Figma 1036:190252)
@@ -132,7 +135,7 @@ export function RewardsClaimTable({
         {rewards.map(reward => (
           <TableRow key={reward.id} data-testid="reward-row">
             <TableCell>{tokenCell(reward)}</TableCell>
-            <TableCell>{amountCell(reward)}</TableCell>
+            <TableCell>{amountCell(reward, 'items-end')}</TableCell>
             <TableCell className="px-6">{claimButton(reward)}</TableCell>
           </TableRow>
         ))}

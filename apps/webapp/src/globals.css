@@ -246,6 +246,14 @@
   --color-statusSuccessRing: #8bf1ca;
   --color-statusInfoRing: #60a9ff;
   --color-statusInfoSolid: #59b1ff;
+  /* components/status/bg-info + border-info (Figma 3617:24023, the stake
+     position iconbox). */
+  --color-statusInfoBg: rgba(46, 142, 255, 0.1);
+  --color-statusInfoBorder: rgba(46, 142, 255, 0.2);
+  /* components/status/border-warning + border-error (Figma Iconbox/Position
+     Medium/High risk 3617:23651 / 3617:23654). */
+  --color-statusWarningBorder: rgba(255, 170, 32, 0.2);
+  --color-statusErrorBorder: rgba(248, 60, 59, 0.2);
   /* Design-system list + accordion tokens (Figma Patterns/Lists 5209:36922 /
      Patterns/Accordion 5386:66315): colors/border/border-primary (container,
      item and wallet-row hairlines — the `border-borderPrimary` utility
@@ -1079,6 +1087,8 @@
     --color-statusError: #e51f1d; /* components/status/fg-error */
     --color-statusWarningBg: #dd61021a; /* components/status/bg-warning */
     --color-statusErrorBg: #e51f1d1a; /* components/status/bg-error */
+    --color-statusWarningBorder: #dd610233; /* bg-warning's hue at the dark border/bg ratio */
+    --color-statusErrorBorder: #e51f1d33; /* bg-error's hue at the dark border/bg ratio */
     --color-riskLow: #02c2a1; /* components/badges/bg-risk-low */
     --color-riskMedium: #ffaa20; /* components/badges/bg-risk-medium */
     --color-statusBrand: #4836f5; /* components/status/fg-brand */

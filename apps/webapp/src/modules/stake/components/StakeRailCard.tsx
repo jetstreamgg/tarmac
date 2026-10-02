@@ -48,15 +48,15 @@ function StakeRailCardSkeleton() {
             <ProductStat label={<Trans>Claimable rewards</Trans>}>
               <Skeleton className="h-5 w-20" />
             </ProductStat>
-            <ProductStat label={<Trans>Total rewards received</Trans>}>
+            <ProductStat label={<Trans>Total rewards earned</Trans>}>
               <Skeleton className="h-5 w-20" />
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
-            <ProductStat label={<Trans>Total borrowed</Trans>}>
+            <ProductStat label={<Trans>Est. earnings (1Y)</Trans>}>
               <Skeleton className="h-5 w-20" />
             </ProductStat>
-            <ProductStat label={<Trans>Net APY</Trans>}>
+            <ProductStat label={<Trans>Total borrowed</Trans>}>
               <Skeleton className="h-5 w-20" />
             </ProductStat>
           </ProductStatPair>
@@ -64,7 +64,7 @@ function StakeRailCardSkeleton() {
       }
       actions={
         <ProductActions>
-          <Skeleton className="h-12 w-full rounded-full" />
+          <Skeleton className="h-14 w-full rounded-full" />
         </ProductActions>
       }
     />

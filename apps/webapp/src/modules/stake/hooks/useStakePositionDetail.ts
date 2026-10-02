@@ -28,6 +28,8 @@ export interface StakePositionDetail {
   urnAddress: `0x${string}` | undefined;
   vault: Vault | undefined;
   vaultLoading: boolean;
+  /** Re-reads the vault and the dripped rate; stable across renders. */
+  refetchVault: () => void;
   /**
    * Active/inactive and debt/no-debt are still unknown, so the menu and CTA
    * shape can't be committed. Falls back to the positions table's warm Vat read
@@ -82,7 +84,11 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const ilkName = getIlkName(2);
 
   const { data: urnAddress } = useStakeUrnAddress(BigInt(urnIndex));
-  const { data: vault, isLoading: vaultLoading } = useVault(urnAddress || ZERO_ADDRESS, ilkName);
+  const {
+    data: vault,
+    isLoading: vaultLoading,
+    mutate: refetchVault
+  } = useVault(urnAddress || ZERO_ADDRESS, ilkName);
   const { data: urnVaults } = useStakeUrnVaults();
   const urnVault = urnVaults?.find(entry => entry.index === urnIndex);
   const { data: collateralData } = useCollateralData(ilkName);
@@ -144,6 +150,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     urnAddress,
     vault,
     vaultLoading,
+    refetchVault,
     shapeLoading: vaultLoading && urnVault === undefined,
     hasDebt: vault ? (vault.debtValue ?? 0n) > 0n : (urnVault?.usdsDebt ?? 0n) > 0n,
     canBorrow: !isMinCollateralNotMet(vault),

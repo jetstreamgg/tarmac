@@ -6,18 +6,14 @@ import {
   useStakeRewardContracts,
   useRewardContractsToClaim,
   usePrices,
-  useStakeHistory,
-  useMultipleRewardsChartInfo,
-  useHighestRateFromChartData,
-  useStakeHistoricData
+  useStakeHistory
 } from '@/hooks';
-import { formatUsd, formatDecimalPercentage } from '@/utils';
+import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { calculateClaimedRewardsUsd } from '../lib/positionDetail';
-import { priceOfFromPrices, sumRewardsUsd, wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
+import { priceOfFromPrices, sumRewardsUsd, wadToUsd } from '../lib/stakeUsdNotional';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
-import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { StakeSky } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
@@ -30,29 +26,12 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StakeUserPosition } from '../hooks/useStakeUserPositions';
-
-/**
- * Net APY per BL-13: staking-reward APY netted against the borrow-cost APY on
- * the borrowed USDS, weighted by position size — and honestly negative when
- * borrow cost outweighs rewards. Null when there is nothing staked or no
- * rewards rate to net against.
- */
-export function calculateNetApy({
-  rewardsRate,
-  borrowRate,
-  stakedUsd,
-  borrowedUsd
-}: {
-  rewardsRate: number | null;
-  borrowRate: number | null;
-  stakedUsd: number;
-  borrowedUsd: number;
-}): number | null {
-  if (rewardsRate === null || !Number.isFinite(rewardsRate) || stakedUsd <= 0) return null;
-  const borrowCost = (borrowRate ?? 0) * borrowedUsd;
-  return (rewardsRate * stakedUsd - borrowCost) / stakedUsd;
-}
+import { isInactiveStakePosition, StakeUserPosition } from '../hooks/useStakeUserPositions';
+import { useStakeEstAnnualRewardsUsd } from '../hooks/useStakeEstAnnualRewardsUsd';
+import { useStakeRowVault } from '../hooks/useStakeRowVault';
+import { RiskScaleMeter } from '@/components/product/RiskMeter';
+import { RiskPill } from './StakeManageBorrowCard';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 function SummaryStat({
   label,
@@ -85,26 +64,53 @@ function SummaryStat({
   );
 }
 
+/** Single borrowing position (comp 3617:24520): risk pill over the unlabelled Progress Steps bar. */
+function SummaryLiquidationRisk({ position }: { position: StakeUserPosition }) {
+  const { data: vault, isLoading } = useStakeRowVault(position);
+  return (
+    <div data-testid="stake-summary-liquidation-risk" className="flex flex-col gap-4 pb-2">
+      <div className="flex flex-col gap-1">
+        <span className="text-textSecondary text-xs leading-[18px]">
+          <Trans>Liquidation risk</Trans>
+        </span>
+        {isLoading ? (
+          <Skeleton className="h-[18px] w-10" />
+        ) : vault?.riskLevel ? (
+          <RiskPill riskLevel={vault.riskLevel} dataTestId="stake-summary-risk-pill" />
+        ) : (
+          <span className="text-fgTertiary text-sm leading-4">{NO_VALUE}</span>
+        )}
+      </div>
+      <RiskScaleMeter
+        value={(vault?.liquidationProximityPercentage ?? 0) / 100}
+        level={vault?.riskLevel}
+        showLabels={false}
+      />
+    </div>
+  );
+}
+
 /**
- * Aggregate "My position" summary card (hi-fi 486:31830 right rail): total
- * staked hero, claimable/earned/borrowed stats, the BL-13 Net APY (negative
- * shown as-is), and the connect-gated "Open a new position" CTA that stages
- * the F4 takeover via `flow=open`.
+ * Aggregate "My position" summary card (comp 3617:24094): total staked hero,
+ * claimable/earned/est. annual/borrowed stats, and, for a single urn, a Manage
+ * CTA opening its manage modal. A multi-position card has none (comp 3617:25235).
  */
 export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[] }) {
   const chainId = useChainId();
   const [, setSearchParams] = useAppSearchParams();
 
-  const openPosition = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.set(QueryParams.Flow, 'open');
-        return params;
-      },
-      { replace: true }
-    );
-  }, [setSearchParams]);
-  const onOpenPosition = useConnectThenAct(openPosition, 'stake_open');
+  // Emptied urns don't count while a live one exists: it still gets its risk and Manage (comp 3617:195171).
+  const activePositions = positions?.filter(position => !isInactiveStakePosition(position));
+  const countedPositions = activePositions?.length ? activePositions : positions;
+  const singlePosition = countedPositions?.length === 1 ? countedPositions[0] : undefined;
+  const onManage = useCallback(() => {
+    if (!singlePosition) return;
+    setSearchParams(params => {
+      params.set(QueryParams.Flow, 'manage');
+      params.set(QueryParams.UrnIndex, String(singlePosition.index));
+      return params;
+    }, FLOW_NAV_OPTIONS);
+  }, [setSearchParams, singlePosition]);
 
   // Both live Vat figures via `useStakeUrnVaults` (debt = art × rate, accrued
   // interest included — legacy parity).
@@ -119,7 +125,6 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
 
   // Claimable rewards across every urn, valued via the price feed.
   const urnAddresses = useMemo(() => (positions ?? []).map(position => position.urnAddress), [positions]);
-  const totalBorrowedUsd = wadToFloat(totalBorrowed);
   const { data: rewardContracts } = useStakeRewardContracts();
   const {
     data: toClaim,
@@ -155,26 +160,50 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
   );
   const rewardsEarnedUsd = claimedUsd + claimableUsd;
 
-  // Net APY inputs: highest live staking-reward rate; latest historic borrow rate.
-  const { data: rewardsChartInfo } = useMultipleRewardsChartInfo({
-    rewardContractAddresses: rewardContracts?.map(({ contractAddress }) => contractAddress) ?? []
-  });
-  const highestRateData = useHighestRateFromChartData(rewardsChartInfo ?? []);
-  const parsedRate = highestRateData ? parseFloat(highestRateData.rate) : NaN;
-  const rewardsRate = Number.isFinite(parsedRate) ? parsedRate : null;
+  const { data: estAnnualUsd, isLoading: estAnnualLoading } = useStakeEstAnnualRewardsUsd(positions);
 
-  const { data: historicData } = useStakeHistoricData();
-  const latestHistoric = historicData
-    ?.slice()
-    .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime())[0];
-  const borrowRate = latestHistoric?.borrowRate ?? null;
-
-  const netApy = calculateNetApy({
-    rewardsRate,
-    borrowRate,
-    stakedUsd: totalStakedUsd ?? 0,
-    borrowedUsd: totalBorrowedUsd
-  });
+  const hasDebt = totalBorrowed > 0n;
+  const claimableStat = (
+    <SummaryStat
+      label={<Trans>Claimable rewards</Trans>}
+      isLoading={claimableLoading || pricesLoading}
+      icon={rewardIcons}
+    >
+      {claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd)}
+    </SummaryStat>
+  );
+  const earnedStat = (
+    <SummaryStat
+      label={<Trans>Total rewards earned</Trans>}
+      isLoading={claimableLoading || historyLoading || pricesLoading}
+      icon={rewardIcons}
+    >
+      {claimableUnavailable ? NO_VALUE : formatUsd(rewardsEarnedUsd)}
+    </SummaryStat>
+  );
+  const estEarningsStat = (
+    <SummaryStat
+      label={<Trans>Est. earnings (1Y)</Trans>}
+      isLoading={estAnnualLoading}
+      icon={rewardIcons}
+      dataTestId="stake-summary-est-earnings"
+    >
+      {estAnnualUsd !== null ? formatUsd(estAnnualUsd) : NO_VALUE}
+    </SummaryStat>
+  );
+  const borrowedStat = (
+    <SummaryStat
+      label={<Trans>Total borrowed</Trans>}
+      isLoading={positions === undefined}
+      icon={
+        <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3 shrink-0" showChainIcon={false} />
+      }
+      iconFirst
+      dataTestId="stake-summary-borrowed"
+    >
+      <span className={!hasDebt ? 'text-fgSecondary' : undefined}>{formatStakeAmount(totalBorrowed)}</span>
+    </SummaryStat>
+  );
 
   // The desktop comp (1036:214138) adopts the structure the phone tier
   // (1222:16799) already had — the badge + hero figure in a 6px-inset "Cover"
@@ -202,58 +231,44 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
         />
       }
       stats={
-        <>
-          <ProductStatPair grow>
-            <SummaryStat
-              label={<Trans>Claimable rewards</Trans>}
-              isLoading={claimableLoading || pricesLoading}
-              icon={rewardIcons}
-            >
-              {claimableUnavailable ? NO_VALUE : formatUsd(claimableUsd)}
-            </SummaryStat>
-            <SummaryStat
-              label={<Trans>Total rewards received</Trans>}
-              isLoading={claimableLoading || historyLoading || pricesLoading}
-              icon={rewardIcons}
-            >
-              {claimableUnavailable ? NO_VALUE : formatUsd(rewardsEarnedUsd)}
-            </SummaryStat>
-          </ProductStatPair>
-          <ProductStatPair grow>
-            <SummaryStat
-              label={<Trans>Total borrowed</Trans>}
-              isLoading={positions === undefined}
-              icon={
-                <TokenIcon
-                  token={{ symbol: 'USDS' }}
-                  width={12}
-                  className="h-3 w-3 shrink-0"
-                  showChainIcon={false}
-                />
-              }
-              iconFirst
-            >
-              {formatUsd(totalBorrowedUsd)}
-            </SummaryStat>
-            {/* Net APY is the one rate here that can go negative, so it keeps
-                the plain "%" rather than the success gradient. */}
-            <SummaryStat label={<Trans>Net APY</Trans>} dataTestId="stake-summary-net-apy">
-              {netApy !== null ? `${netApy > 0 ? '+' : ''}${formatDecimalPercentage(netApy)}` : NO_VALUE}
-            </SummaryStat>
-          </ProductStatPair>
-        </>
+        // With debt, Total borrowed leads (comp 3617:24493); otherwise it
+        // trails as the greyed zero (comp 3617:24094).
+        hasDebt ? (
+          <>
+            <ProductStatPair grow>
+              {borrowedStat}
+              {claimableStat}
+            </ProductStatPair>
+            <ProductStatPair grow>
+              {estEarningsStat}
+              {earnedStat}
+            </ProductStatPair>
+          </>
+        ) : (
+          <>
+            <ProductStatPair grow>
+              {claimableStat}
+              {earnedStat}
+            </ProductStatPair>
+            <ProductStatPair grow>
+              {estEarningsStat}
+              {borrowedStat}
+            </ProductStatPair>
+          </>
+        )
       }
       actions={
-        <ProductActions>
-          <Button
-            variant="primary"
-            size="l"
-            onClick={onOpenPosition}
-            data-testid="stake-open-new-position-cta"
-          >
-            <Trans>Open a new position</Trans>
-          </Button>
-        </ProductActions>
+        // Omitted, not empty, with several urns: an empty slot still takes the card's gap.
+        singlePosition && (
+          <div className="flex flex-col gap-8">
+            {hasDebt && <SummaryLiquidationRisk position={singlePosition} />}
+            <ProductActions>
+              <Button variant="secondary" size="xl" onClick={onManage} data-testid="stake-summary-manage-cta">
+                <Trans>Manage</Trans>
+              </Button>
+            </ProductActions>
+          </div>
+        )
       }
     />
   );

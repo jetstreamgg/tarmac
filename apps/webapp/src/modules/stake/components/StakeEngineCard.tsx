@@ -22,6 +22,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RateInfo } from '@/components/product/RateInfo';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 // Inline token chip (hi-fi 486:31955). `headline` variant is 24px and flows in
 // the heading text (vertically centered, with breathing room); `stat` variant is
@@ -90,13 +91,10 @@ export function StakeEngineCard() {
   // CTA stub: connected users get the URL param set; disconnected users hit the
   // connect flow first, then the same action runs (pattern: SavingsSupplyCard).
   const openPosition = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.set(QueryParams.Flow, 'open');
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.set(QueryParams.Flow, 'open');
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams]);
   const onOpenPosition = useConnectThenAct(openPosition, 'stake_open');
 

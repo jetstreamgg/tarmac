@@ -137,7 +137,7 @@ function renderLauncher() {
   const view = render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <StakeClaimModal urnIndex={1} onClose={onClose} />
+        <StakeClaimModal selection={{ urnIndex: 1 }} onClose={onClose} />
       </TooltipProvider>
     </I18nProvider>
   );
@@ -296,7 +296,7 @@ describe('StakeClaimModal', () => {
     view.rerender(
       <I18nProvider i18n={i18n}>
         <TooltipProvider>
-          <StakeClaimModal urnIndex={1} onClose={onClose} />
+          <StakeClaimModal selection={{ urnIndex: 1 }} onClose={onClose} />
         </TooltipProvider>
       </I18nProvider>
     );

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
-import { useStakeFlowState } from '../hooks/useStakeFlowState';
+import { StakeFlowAction, useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
@@ -44,6 +44,7 @@ import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 const FOOTER_NOTE_CLASSES =
   'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
@@ -73,7 +74,8 @@ export interface ReopenContext {
  * picker baselines, and the selectFarm/selectVoteDelegate legs only fire when
  * the user stages a DIFFERENT selection — an untouched form must never emit
  * either (C18: with `undefined` the delegate leg would silently undelegate the
- * urn). The frames keep the "Open a position" header (C17a).
+ * urn). Switching the delegate card off is the one explicit undelegate. The
+ * frames keep the "Open a position" header (C17a).
  */
 export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const chainId = useChainId();
@@ -97,6 +99,19 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const currentUrnDelegate =
     reopen && urnVoteDelegate && urnVoteDelegate !== ZERO_ADDRESS ? urnVoteDelegate : undefined;
   const reopenDelegateBaseline = reopen ? urnVoteDelegate : undefined;
+  // Reopen: until the user touches the card for THIS urn it mirrors the urn's
+  // live delegate (on when it has one, UX 1194:21595) and stages nothing.
+  const [delegateTouchedUrn, setDelegateTouchedUrn] = useState<`0x${string}`>();
+  const delegateTouched = !reopen || (!!reopenUrn && delegateTouchedUrn === reopenUrn);
+  const delegateCardEnabled = delegateTouched ? state.delegateEnabled : !!currentUrnDelegate;
+  const stagedDelegate = delegateTouched ? state.selectedDelegate : undefined;
+  const dispatchDelegate = (action: StakeFlowAction) => {
+    if (!delegateTouched && reopenUrn) {
+      setDelegateTouchedUrn(reopenUrn);
+      dispatch({ type: 'resetDelegate', enabled: !!currentUrnDelegate });
+    }
+    dispatch(action);
+  };
 
   const ilkName = getIlkName(2);
   const { data: skyBalance, isLoading: balanceLoading } = useTokenBalance({
@@ -212,13 +227,10 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet) && rewardBaselineResolved;
 
   const closeOpenFlow = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.delete(QueryParams.Flow);
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.delete(QueryParams.Flow);
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams]);
   const close = reopen ? reopen.onClose : closeOpenFlow;
 
@@ -247,7 +259,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     [debouncedSkyToLock, debouncedUsdsToBorrow]
   );
 
-  const effectiveDelegate = state.selectedDelegate ?? reopenDelegateBaseline;
+  // Reopen: switching the card off undelegates an urn that has a delegate.
+  const undelegate = delegateTouched && !!currentUrnDelegate && !state.delegateEnabled;
+  const effectiveDelegate = undelegate ? ZERO_ADDRESS : (stagedDelegate ?? reopenDelegateBaseline);
   // Memoized so the review body below keeps its identity across renders — it
   // is a dep of the launch descriptor.
   const rewardFrom = useMemo(
@@ -474,12 +488,12 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       />
 
       <StakeTakeoverDelegateCard
-        enabled={state.delegateEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setDelegateEnabled', enabled })}
+        enabled={delegateCardEnabled}
+        onEnabledChange={enabled => dispatchDelegate({ type: 'setDelegateEnabled', enabled })}
         // Reopen shows the urn's preserved delegate as the selection baseline
         // (UX 1194:21595); staging a different one is the only way to change it.
-        selectedDelegate={state.selectedDelegate ?? currentUrnDelegate}
-        onSelect={delegate => dispatch({ type: 'selectDelegate', delegate })}
+        selectedDelegate={stagedDelegate ?? currentUrnDelegate}
+        onSelect={delegate => dispatchDelegate({ type: 'selectDelegate', delegate })}
       />
     </TakeoverShell>
   );

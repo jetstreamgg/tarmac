@@ -13,6 +13,9 @@ const h = vi.hoisted(() => ({
   detail: {} as Record<string, unknown>
 }));
 
+vi.mock('../hooks/useStakeOracleCap', () => ({
+  useStakeOracleCap: () => ({ data: 25_000_000_000_000_000n, isLoading: false })
+}));
 vi.mock('../hooks/useStakePositionDetail', () => ({
   useStakePositionDetail: () => h.detail
 }));
@@ -37,6 +40,7 @@ const baseDetail: StakePositionDetail = {
     dust: parseUnits('30000', 18)
   },
   vaultLoading: false,
+  refetchVault: () => {},
   shapeLoading: false,
   hasDebt: true,
   canBorrow: true,
@@ -108,78 +112,96 @@ describe('PositionDetailsModal', () => {
   });
   afterEach(cleanup);
 
-  it('renders both heroes and the full 7-row menu when the urn has debt', () => {
+  it('renders both heroes and the Actions list when the urn has debt (comp 3617:24541)', () => {
     renderModal();
 
     expect(screen.getByText('Position 1')).toBeTruthy();
     expect(screen.getByText('Staked amount')).toBeTruthy();
     expect(screen.getByText('Borrowed amount')).toBeTruthy();
+    expect(screen.getByText('Actions')).toBeTruthy();
 
+    for (const testid of [
+      'stake-manage-menu-manage',
+      'stake-manage-menu-change-reward',
+      'stake-manage-menu-change-delegate',
+      'stake-manage-menu-close-position',
+      'stake-manage-cta-claim'
+    ]) {
+      expect(screen.getByTestId(testid)).toBeTruthy();
+    }
+    // Borrow/repay/withdraw live behind Manage position now.
     for (const testid of [
       'stake-manage-menu-claim',
       'stake-manage-menu-borrow',
       'stake-manage-menu-repay',
       'stake-manage-menu-withdraw',
-      'stake-manage-menu-change-reward',
-      'stake-manage-menu-change-delegate',
-      'stake-manage-menu-close-position'
+      'stake-manage-cta-stake'
     ]) {
-      expect(screen.getByTestId(testid)).toBeTruthy();
+      expect(screen.queryByTestId(testid)).toBeNull();
     }
-    expect(screen.getByTestId('stake-manage-cta-stake').textContent).toContain('Stake more SKY');
-    expect(screen.queryByTestId('stake-manage-cta-borrow')).toBeNull();
   });
 
   it('keeps menu-row chevrons persistently visible (no hover-only opacity gate)', () => {
     renderModal();
 
-    const chevron = screen.getByTestId('stake-manage-menu-claim').querySelector('svg.lucide-chevron-right');
+    const chevron = screen.getByTestId('stake-manage-menu-manage').querySelector('svg.lucide-chevron-right');
     expect(chevron).toBeTruthy();
     expect(chevron?.getAttribute('class') ?? '').not.toContain('opacity-0');
   });
 
-  it('reduces the menu and adds the Borrow USDS CTA without debt (UX 1050:21185)', () => {
-    renderModal({
-      hasDebt: false,
-      vault: { ...baseDetail.vault!, debtValue: 0n },
-      borrowedUsd: 0
-    });
-
-    expect(screen.queryByText('Borrowed amount')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-menu-borrow')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-menu-repay')).toBeNull();
-    expect(screen.queryByTestId('stake-manage-menu-close-position')).toBeNull();
-    expect(screen.getByTestId('stake-manage-menu-withdraw')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-cta-stake')).toBeTruthy();
-    expect(screen.getByTestId('stake-manage-cta-borrow').textContent).toContain('Borrow USDS');
-  });
-
-  it('disables Borrow USDS below the minimum stake and says how much is needed', () => {
-    renderModal({
-      hasDebt: false,
-      canBorrow: false,
-      vault: {
-        ...baseDetail.vault!,
-        collateralAmount: parseUnits('74999', 18),
-        debtValue: 0n,
-        minCollateralForDust: parseUnits('1440000', 18)
-      },
-      borrowedUsd: 0
-    });
-
-    const borrow = screen.getByTestId('stake-manage-cta-borrow') as HTMLButtonElement;
-    expect(borrow.disabled).toBe(true);
-    expect(screen.getByTestId('stake-manage-cta-borrow-hint').textContent).toContain('1,440,000.00 SKY');
-  });
-
-  it('derives the warning sentence from the liquidation proximity (M14)', () => {
+  it('gives Actions rows hover, pressed and focus states', () => {
     renderModal();
-    const warning = screen.getByTestId('stake-position-warning');
-    // Integer percent — the row banner interpolates the same value bare, and
-    // the proximity math only ever produces integers.
-    expect(warning.textContent).toContain('48%');
-    expect(warning.textContent).not.toContain('48.00%');
-    expect(warning.textContent).toContain('$0.0432');
+
+    for (const testid of ['stake-manage-menu-manage', 'stake-manage-menu-close-position']) {
+      const classes = screen.getByTestId(testid).className.split(/\s+/);
+      expect(classes).toEqual(
+        expect.arrayContaining([
+          'enabled:hover:before:bg-glassBadge',
+          'enabled:active:before:bg-glassBorder',
+          'focus-visible:before:ring-2'
+        ])
+      );
+    }
+  });
+
+  const NO_DEBT = {
+    hasDebt: false,
+    vault: { ...baseDetail.vault!, debtValue: 0n },
+    borrowedUsd: 0
+  };
+
+  it('renders the stake-only Actions list without debt (comp 3617:24188)', () => {
+    const { onAction, onClaim } = renderModal(NO_DEBT);
+
+    expect(screen.getByText('Actions')).toBeTruthy();
+    expect(screen.queryByText('Borrowed amount')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-menu-withdraw')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-cta-borrow')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-manage-menu-manage'));
+    expect(onAction).toHaveBeenLastCalledWith('stake');
+    fireEvent.click(screen.getByTestId('stake-manage-menu-change-reward'));
+    expect(onAction).toHaveBeenLastCalledWith('reward');
+    fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
+    expect(onAction).toHaveBeenLastCalledWith('delegate');
+    fireEvent.click(screen.getByTestId('stake-manage-cta-claim'));
+    expect(onClaim).toHaveBeenCalled();
+  });
+
+  it('disables Claim rewards in the Actions panel when nothing is claimable', () => {
+    renderModal({ ...NO_DEBT, claimableTokenAmount: 0n });
+
+    expect((screen.getByTestId('stake-manage-cta-claim') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('shows LTV and the risk pill, without the liquidation disclaimer (comp 3617:24541)', () => {
+    renderModal({
+      vault: { ...baseDetail.vault!, collateralValue: parseUnits('103448.28', 18) }
+    });
+    expect(screen.queryByTestId('stake-position-warning')).toBeNull();
+    expect(screen.getByTestId('stake-position-ltv').textContent).toBe('29%');
+    expect(screen.getByTestId('stake-position-risk-pill').textContent).toBe('Low');
+    expect(screen.getByTestId('stake-position-risk-indicator')).toBeTruthy();
+    expect(screen.getByText('$0.0432')).toBeTruthy();
   });
 
   it('holds the rewards-earned figure while either of its legs is loading', () => {
@@ -187,19 +209,15 @@ describe('PositionDetailsModal', () => {
     expect(screen.queryByText('+$128.90')).toBeNull();
   });
 
-  it('routes menu rows and CTAs through onAction', () => {
-    const { onAction } = renderModal();
+  it('routes the Actions rows and Claim CTA with debt', () => {
+    const { onAction, onClaim } = renderModal();
 
-    fireEvent.click(screen.getByTestId('stake-manage-menu-withdraw'));
-    expect(onAction).toHaveBeenLastCalledWith('withdraw');
-    fireEvent.click(screen.getByTestId('stake-manage-menu-borrow'));
-    expect(onAction).toHaveBeenLastCalledWith('borrow');
-    fireEvent.click(screen.getByTestId('stake-manage-menu-repay'));
-    expect(onAction).toHaveBeenLastCalledWith('repay');
+    fireEvent.click(screen.getByTestId('stake-manage-menu-manage'));
+    expect(onAction).toHaveBeenLastCalledWith('stake');
     fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
     expect(onAction).toHaveBeenLastCalledWith('delegate');
-    fireEvent.click(screen.getByTestId('stake-manage-cta-stake'));
-    expect(onAction).toHaveBeenLastCalledWith('stake');
+    fireEvent.click(screen.getByTestId('stake-manage-cta-claim'));
+    expect(onClaim).toHaveBeenCalled();
   });
 
   it('shows the deprecated-farm chip, warning, and change-reward CTA (APP-516)', () => {
@@ -239,17 +257,19 @@ describe('PositionDetailsModal', () => {
     expect(onAction).toHaveBeenLastCalledWith('reward');
   });
 
-  it('keeps the undesigned close-position flow disabled (M4: flagged, not improvised)', () => {
+  it('routes Close position to the close action, with or without debt (Figma 3644:62026)', () => {
     const { onAction } = renderModal();
+    fireEvent.click(screen.getByTestId('stake-manage-menu-close-position'));
+    expect(onAction).toHaveBeenLastCalledWith('close');
+    cleanup();
 
-    const row = screen.getByTestId('stake-manage-menu-close-position') as HTMLButtonElement;
-    expect(row.disabled).toBe(true);
-    fireEvent.click(row);
-    expect(onAction).not.toHaveBeenCalled();
+    const { onAction: onActionNoDebt } = renderModal(NO_DEBT);
+    fireEvent.click(screen.getByTestId('stake-manage-menu-close-position'));
+    expect(onActionNoDebt).toHaveBeenLastCalledWith('close');
   });
 
-  it('opens the claim modal from the live claim row with its claimable chip (F6)', () => {
-    const { onClaim } = renderModal();
+  it('opens the claim modal from an inactive urn claim row with its claimable chip (F6)', () => {
+    const { onClaim } = renderModal(inactiveDetail());
 
     const row = screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement;
     // Chip shows the bare amount + token icon (Badges/Special) — no symbol text.
@@ -261,22 +281,22 @@ describe('PositionDetailsModal', () => {
   });
 
   it('compacts a huge claimable amount in the chip', () => {
-    renderModal({ claimableTokenAmount: parseUnits('123456789', 18) });
+    renderModal(inactiveDetail({ claimableTokenAmount: parseUnits('123456789', 18) }));
     expect(screen.getByTestId('stake-manage-menu-claim').textContent).toContain('123.46M');
   });
 
   it('keeps 4 decimals on a dust claimable instead of collapsing to <0.01', () => {
-    renderModal({ claimableTokenAmount: parseUnits('0.0012', 18) });
+    renderModal(inactiveDetail({ claimableTokenAmount: parseUnits('0.0012', 18) }));
     expect(screen.getByTestId('stake-manage-menu-claim').textContent).toContain('0.0012');
   });
 
-  it('disables the claim row while nothing is claimable or the read is loading', () => {
+  it('disables Claim while nothing is claimable or the read is loading', () => {
     renderModal({ claimableTokenAmount: 0n });
-    expect((screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('stake-manage-cta-claim') as HTMLButtonElement).disabled).toBe(true);
     cleanup();
 
     renderModal({ claimableLoading: true });
-    expect((screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByTestId('stake-manage-cta-claim') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('closes through the close button', () => {
@@ -342,9 +362,11 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
 
     expect((screen.getByTestId('stake-manage-menu-withdraw') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('stake-manage-menu-change-reward') as HTMLButtonElement).disabled).toBe(true);
-
-    fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
-    expect(onAction).toHaveBeenLastCalledWith('delegate');
+    // Reward and delegate changes wait for Reopen.
+    const delegateRow = screen.getByTestId('stake-manage-menu-change-delegate') as HTMLButtonElement;
+    expect(delegateRow.disabled).toBe(true);
+    fireEvent.click(delegateRow);
+    expect(onAction).not.toHaveBeenCalled();
 
     // No borrow section for a urn that never borrowed.
     expect(screen.queryByText('Borrowed amount')).toBeNull();
@@ -352,7 +374,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     expect(screen.queryByTestId('stake-position-warning')).toBeNull();
   });
 
-  it('staked-&-borrowed history: zeroed borrow block, No position chip, closed copy, 7 disabled-heavy rows', () => {
+  it('staked-&-borrowed history: zeroed borrow block, No position chip, closed copy, 7 disabled rows', () => {
     const { onAction } = renderModal(inactiveDetail({ hasBorrowHistory: true, claimableTokenAmount: 0n }));
 
     expect(screen.getByText('Borrowed amount')).toBeTruthy();
@@ -363,7 +385,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     // Liquidation price is a dash; the warning sentence never renders.
     expect(screen.queryByTestId('stake-position-warning')).toBeNull();
 
-    // Frame order: enabled rows first, then the disabled rest.
+    // Frame order (1194:21273).
     const rows = screen.getAllByTestId(/^stake-manage-menu-/);
     expect(rows.map(row => row.getAttribute('data-testid'))).toEqual([
       'stake-manage-menu-change-reward',
@@ -375,17 +397,11 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
       'stake-manage-menu-close-position'
     ]);
 
-    for (const testid of [
-      'stake-manage-menu-claim',
-      'stake-manage-menu-borrow',
-      'stake-manage-menu-repay',
-      'stake-manage-menu-withdraw',
-      'stake-manage-menu-close-position'
-    ]) {
-      expect((screen.getByTestId(testid) as HTMLButtonElement).disabled).toBe(true);
+    for (const row of rows) {
+      expect((row as HTMLButtonElement).disabled).toBe(true);
     }
     fireEvent.click(screen.getByTestId('stake-manage-menu-change-delegate'));
-    expect(onAction).toHaveBeenLastCalledWith('delegate');
+    expect(onAction).not.toHaveBeenCalled();
   });
 
   it('keeps claim enabled on a borrowed-history urn with residual claimables (C16)', () => {
@@ -438,22 +454,18 @@ describe('PositionDetailsModal — phone-tier footer + manage sheet (M6, comps 1
     expect(screen.getByTestId('stake-manage-sheet')).toBeTruthy();
 
     for (const testid of [
-      'stake-manage-menu-claim-sheet',
-      'stake-manage-menu-borrow-sheet',
-      'stake-manage-menu-repay-sheet',
-      'stake-manage-menu-withdraw-sheet',
+      'stake-manage-menu-manage-sheet',
       'stake-manage-menu-change-reward-sheet',
       'stake-manage-menu-change-delegate-sheet',
-      'stake-manage-menu-close-position-sheet'
+      'stake-manage-menu-close-position-sheet',
+      'stake-manage-cta-claim-sheet'
     ]) {
       expect(screen.getByTestId(testid)).toBeTruthy();
     }
-    // Comp 1222:16239 pins a single Stake more SKY CTA while indebted.
-    expect(screen.getByTestId('stake-manage-cta-stake-sheet')).toBeTruthy();
-    expect(screen.queryByTestId('stake-manage-cta-borrow-sheet')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-menu-withdraw-sheet')).toBeNull();
 
-    fireEvent.click(screen.getByTestId('stake-manage-menu-withdraw-sheet'));
-    expect(onAction).toHaveBeenLastCalledWith('withdraw');
+    fireEvent.click(screen.getByTestId('stake-manage-menu-manage-sheet'));
+    expect(onAction).toHaveBeenLastCalledWith('stake');
   });
 
   it('closes the sheet without taking the details modal down with it', () => {

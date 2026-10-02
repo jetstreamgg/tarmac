@@ -114,8 +114,7 @@ describe('StakePositionRowBanner', () => {
       </I18nProvider>
     );
 
-    const banner = screen.getByTestId('stake-position-warning-banner');
-    expect(banner.getAttribute('data-tier')).toBe('warning');
+    expect(screen.getByTestId('stake-position-warning-banner')).toBeTruthy();
     expect(screen.getByText(/liquidation risk is very high/)).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('stake-warning-stake-cta'));
@@ -125,7 +124,28 @@ describe('StakePositionRowBanner', () => {
     expect(onRemediate).toHaveBeenCalledWith('repay');
   });
 
-  it('turns the infobox red once the position reaches the liquidation tier', () => {
+  it('stacks the CTAs under the copy on a phone and shares the row with them from sm', () => {
+    h.vault = {
+      debtValue: 50n * 10n ** 18n,
+      liquidationProximityPercentage: 65,
+      liquidationPrice: 1n * 10n ** 18n
+    };
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakePositionRowBanner position={makePosition()} onRemediate={vi.fn()} onClaim={vi.fn()} />
+      </I18nProvider>
+    );
+
+    const banner = screen.getByTestId('stake-position-warning-banner').className.split(' ');
+    expect(banner).toEqual(expect.arrayContaining(['flex-col', 'sm:flex-row']));
+    for (const id of ['stake-warning-stake-cta', 'stake-warning-repay-cta']) {
+      expect(screen.getByTestId(id).className.split(' ')).toEqual(
+        expect.arrayContaining(['flex-1', 'sm:flex-none'])
+      );
+    }
+  });
+
+  it('switches to the about-to-be-liquidated copy at the liquidation tier', () => {
     h.vault = {
       debtValue: 50n * 10n ** 18n,
       liquidationProximityPercentage: 85,
@@ -136,7 +156,7 @@ describe('StakePositionRowBanner', () => {
         <StakePositionRowBanner position={makePosition()} onRemediate={vi.fn()} onClaim={vi.fn()} />
       </I18nProvider>
     );
-    expect(screen.getByTestId('stake-position-warning-banner').getAttribute('data-tier')).toBe('error');
+    expect(screen.getByTestId('stake-position-warning-banner')).toBeTruthy();
     expect(screen.getByText(/about to be liquidated/)).toBeTruthy();
   });
 

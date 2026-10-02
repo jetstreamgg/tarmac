@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
 import { TransactionTypeEnum } from '@/hooks';
-import {
-  calculateClaimedRewardsUsd,
-  hasStakeBorrowHistory,
-  liquidationDropPercent,
-  rewardContractSymbols
-} from './positionDetail';
+import { calculateClaimedRewardsUsd, hasStakeBorrowHistory, rewardContractSymbols } from './positionDetail';
 
 // lsSkySkyRewardAddress[1] — the mainnet SKY farm.
 const SKY_FARM = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
@@ -66,14 +61,5 @@ describe('hasStakeBorrowHistory', () => {
 
     expect(hasStakeBorrowHistory(undefined)).toBe(false);
     expect(hasStakeBorrowHistory([])).toBe(false);
-  });
-});
-
-describe('liquidationDropPercent', () => {
-  it('is the complement of the liquidation proximity, clamped to [0, 100]', () => {
-    expect(liquidationDropPercent(52)).toBe(48);
-    expect(liquidationDropPercent(0)).toBe(100);
-    expect(liquidationDropPercent(120)).toBe(0);
-    expect(liquidationDropPercent(undefined)).toBeNull();
   });
 });

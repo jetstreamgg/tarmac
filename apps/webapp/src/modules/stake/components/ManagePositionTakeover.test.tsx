@@ -17,6 +17,7 @@ const OTHER_DELEGATE = '0x4444444444444444444444444444444444444444' as const;
 
 const h = vi.hoisted(() => ({
   launchSpy: vi.fn(),
+  refetchVault: vi.fn(),
   launchParams: undefined as Record<string, unknown> | undefined,
   prepared: true,
   // When true, the useDebounce mock lags behind: bigint values report 0n,
@@ -62,6 +63,9 @@ const setSearchParamsMock = vi.fn<SetSearchParams>(next => {
 // The confirm grid runs its own live reads (fee estimate, delegate metadata) —
 // out of scope here. Stubbed to expose the reward/delegate context this
 // takeover hands it, which IS this component's job to get right.
+vi.mock('../hooks/useStakeOracleCap', () => ({
+  useStakeOracleCap: () => ({ data: 25_000_000_000_000_000n, isLoading: false })
+}));
 vi.mock('./StakeConfirmGrid', () => ({
   StakeConfirmGrid: ({
     rewardFrom,
@@ -217,6 +221,7 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
             delayedPrice: h.simDelayedPrice
           },
       vaultLoading: h.vaultLoading,
+      refetchVault: h.refetchVault,
       hasDebt: h.existingDebt > 0n,
       rewardContract: h.rewardContract,
       rewardDeprecated: h.rewardDeprecated,
@@ -283,12 +288,14 @@ import { ManagePositionTakeover } from './ManagePositionTakeover';
 
 const renderSheet = (init: StakeManageFlowInit = {}) => {
   const onClose = vi.fn();
-  render(
+  // A fresh element per render, so a rerender picks up changed mocks.
+  const ui = () => (
     <I18nProvider i18n={i18n}>
       <ManagePositionTakeover urnIndex={0} init={init} onClose={onClose} />
     </I18nProvider>
   );
-  return { onClose };
+  const { rerender } = render(ui());
+  return { onClose, rerender: () => rerender(ui()) };
 };
 
 const confirmButton = () => screen.getByTestId('stake-manage-confirm') as HTMLButtonElement;
@@ -303,6 +310,7 @@ describe('ManagePositionTakeover', () => {
     mockSearchParams = new URLSearchParams('flow=manage&urn_index=0');
     setSearchParamsMock.mockClear();
     h.launchSpy.mockClear();
+    h.refetchVault.mockClear();
     h.launchParams = undefined;
     h.prepared = true;
     h.debounceLag = false;
@@ -370,6 +378,88 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-borrow-card-mode-repay').getAttribute('aria-pressed')).toBe(
       'true'
     );
+  });
+
+  it('close position stages the full withdraw and a wipeAll repay (Figma 3644:62026)', () => {
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+
+    expect(h.launchParams?.skyToFree).toBe(h.existingCollateral);
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('close position re-reads the debt while the sheet stays open, so the approve covers the accrual', () => {
+    vi.useFakeTimers();
+    try {
+      renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+      expect(h.refetchVault).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(5 * 60_000);
+      expect(h.refetchVault).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(5 * 60_000);
+      expect(h.refetchVault).toHaveBeenCalledTimes(2);
+      cleanup();
+      vi.advanceTimersByTime(10 * 60_000);
+      expect(h.refetchVault).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('typing over a staged close stops the vault polling', () => {
+    vi.useFakeTimers();
+    try {
+      renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+      fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+      vi.advanceTimersByTime(15 * 60_000);
+      expect(h.refetchVault).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a partial repay does not poll the vault', () => {
+    vi.useFakeTimers();
+    try {
+      renderSheet({ borrowCard: 'repay' });
+      fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '1000' } });
+      vi.advanceTimersByTime(15 * 60_000);
+      expect(h.refetchVault).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('close position keeps repaying the full debt as it accrues after staging', () => {
+    h.existingDebt = 50_000n * WAD;
+    const { rerender } = renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+
+    // A block later the debt has grown past the staged repay.
+    h.existingDebt = 50_000n * WAD + 48n * 10n ** 16n;
+    rerender();
+
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).value).toBe('50,000.48');
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(screen.queryByTestId('stake-manage-stake-amount-error')).toBeNull();
+    expect(confirmButton().disabled).toBe(false);
+  });
+
+  it('close position on a debt-free urn only withdraws, with the borrow card off', () => {
+    h.existingDebt = 0n;
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+
+    expect(h.launchParams?.skyToFree).toBe(h.existingCollateral);
+    expect(h.launchParams?.usdsToWipe).toBe(0n);
+    expect(h.launchParams?.wipeAll).toBe(false);
+    expect(screen.queryByTestId('stake-manage-borrow-amount')).toBeNull();
+  });
+
+  it('close position waits for the vault read before staging', () => {
+    h.vaultLoading = true;
+    renderSheet({ stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true });
+    expect(h.launchParams?.skyToFree).toBe(0n);
   });
 
   it('keeps Confirm disabled while the typed amount has not debounced yet', () => {
@@ -474,6 +564,20 @@ describe('ManagePositionTakeover', () => {
     // Typing afterwards clears wipeAll (legacy Repay onChange).
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
     expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
+  it('repay: the 100% chip keeps tracking the debt as it accrues', () => {
+    h.existingDebt = 50_000n * WAD;
+    const { rerender } = renderSheet({ borrowCard: 'repay' });
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+
+    h.existingDebt = 50_000n * WAD + 48n * 10n ** 16n;
+    rerender();
+
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(confirmButton().disabled).toBe(false);
   });
 
   it('repay: a full-right slider drag stages wipeAll like the 100% chip (M11)', () => {
@@ -671,6 +775,23 @@ describe('ManagePositionTakeover', () => {
 
     // Anything short of the displayed debt is a plain partial repay.
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '29999.99' } });
+    expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
+  it('repay: the full-debt input rounds like the Borrowed row, and typing it back stages wipeAll', () => {
+    h.existingDebt = parseUnits('35029.6351', 18);
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+    expect((screen.getByTestId('stake-manage-borrow-amount') as HTMLInputElement).value).toBe('35,029.64');
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '35029.64' } });
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+
+    // A cent above the displayed debt is no longer "all of it".
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '35029.65' } });
     expect(h.launchParams?.wipeAll).toBe(false);
   });
 
