@@ -7,10 +7,13 @@ description: Manually run dependabot-style dependency updates (dependabot doesn'
 
 Dependabot PRs are unreliable with pnpm catalogs, so version updates are done manually with this procedure. All dependency versions live in the `catalog:` section of `pnpm-workspace.yaml`: every bump is an edit there plus a `pnpm install` to refresh the lockfile.
 
-The two scripts in `scripts/` do the mechanical parts. Run them from the repo root:
+The scripts in `scripts/` do the mechanical parts. Run them from the repo root:
 
 - `plan-updates.mjs` finds every catalog entry that can move and its target version, sorted by group.
-- `bump-catalog.mjs` edits catalog versions and keeps each entry's `^`, `~` or exact style.
+- `bump-catalog.mjs` edits catalog versions and keeps each entry's `^`, `~` or exact style, and any trailing comment.
+- `check-overrides.mjs` reports which `overrides:` entries are still needed (see Known pins & recurring checks).
+
+They share `lib.mjs`. If you change any of them, run `node --test .claude/skills/dependency-updates/scripts/lib.test.mjs`.
 
 ## 0. Preflight
 
@@ -160,6 +163,12 @@ When web3-tools moved by more than a patch, smoke-test a transaction flow on a T
   - 20.12.0 added `Element.animate()`, so motion runs real Web Animations in tests.
   - happy-dom's `Animation.cancel()` rejects `finished` without marking it handled. The result is about 100 unhandled `AbortError: The animation was canceled` errors, and Vitest exits 1.
   - Upstream: capricorn86/happy-dom#2339 and #2412. Each run, check whether they're fixed; if so, remove the rule.
+- **Overrides**: run `node .claude/skills/dependency-updates/scripts/check-overrides.mjs`.
+  - It removes every override in a temp copy, re-resolves the lockfile, and checks each override's selector against the result.
+  - `removable`: nothing the selector targets would be installed without it. Delete those entries from `overrides:`, run `pnpm install`, and commit that as its own commit. The audit gate in step 7 must still pass.
+  - `needed`: keep it. The detail column shows the version that would come back.
+  - `review`: an unconditional override, or a selector the script can't evaluate. Decide by hand.
+  - Also go through the watchlist comment above `overrides:` (advisories deliberately left unoverridden). If upstream now publishes a fix, add a range-scoped override following the conventions in that comment, or drop the watchlist entry if the package left the tree.
 - **Obsolete catalog entries**:
   - Run `pnpm knip --dependencies`. If it reports an unused dependency, flag it for removal in a separate PR rather than bumping it.
   - knip never reports packages listed in `knip.json`'s `ignoreDependencies`. Check those by hand: search for imports and config usage.

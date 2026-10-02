@@ -158,8 +158,50 @@ export function bumpLevel(from, to) {
   return 'patch';
 }
 
-/** One `  name: range` line of the catalog block, with the key unquoted. */
-export const CATALOG_LINE_RE = /^ {2}(?:'([^']+)'|"([^"]+)"|([^\s:'"][^:]*?)): (.*)$/;
+/** One `  name: range  # comment` line of the catalog block: key (unquoted), range, comment. */
+export const CATALOG_LINE_RE = /^ {2}(?:'([^']+)'|"([^"]+)"|([^\s:'"][^:]*?)): (\S+)(\s+#.*)?$/;
+
+/**
+ * Sets catalog versions in pnpm-workspace.yaml text, keeping each entry's `^`, `~` or exact
+ * style and any trailing comment. Only the top-level `catalog:` block is touched. Throws,
+ * without returning partial text, on an unknown package, an unsupported range, a version
+ * that isn't newer, or a line that would not actually change.
+ */
+export function bumpCatalogText(text, specs) {
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const lines = text.split(/\r?\n/);
+  const start = lines.indexOf('catalog:');
+  if (start === -1) throw new Error('No top-level catalog: block');
+  let end = start + 1;
+  while (end < lines.length && (lines[end].trim() === '' || /^\s/.test(lines[end]))) end++;
+
+  const changes = [];
+  for (const spec of specs) {
+    const at = spec.lastIndexOf('@');
+    const [name, version] = [spec.slice(0, at), spec.slice(at + 1)];
+    if (at <= 0 || !STABLE_VERSION.test(version)) throw new Error(`Expected <pkg@x.y.z>, got "${spec}"`);
+
+    let index = -1;
+    let match = null;
+    for (let i = start + 1; i < end; i++) {
+      const m = CATALOG_LINE_RE.exec(lines[i]);
+      if (m && (m[1] ?? m[2] ?? m[3]) === name) [index, match] = [i, m];
+    }
+    if (index === -1) throw new Error(`${name} is not in the catalog`);
+
+    const range = splitRange(match[4]);
+    if (!range) throw new Error(`Unsupported catalog range for ${name}: ${match[4]}`);
+    if (compareVersions(version, range.version) <= 0) {
+      throw new Error(`${name}@${version} is not newer than the catalog's ${range.prefix}${range.version}`);
+    }
+    const before = lines[index];
+    const keyEnd = before.length - match[4].length - (match[5] ?? '').length;
+    lines[index] = `${before.slice(0, keyEnd)}${range.prefix}${version}${match[5] ?? ''}`;
+    if (lines[index] === before) throw new Error(`Line for ${name} did not change: ${before}`);
+    changes.push({ name, from: `${range.prefix}${range.version}`, to: `${range.prefix}${version}` });
+  }
+  return { text: lines.join(eol), changes };
+}
 
 /** Splits a catalog range like `^1.2.3`, `~1.2.3` or `1.2.3` into prefix and version. */
 export function splitRange(range) {
@@ -172,11 +214,13 @@ export function splitRange(range) {
 // `^1.0.0`, `~1.2`, `>=1 <2`, `1.x`, `1.2` (an x-range), `a - b` and `a || b`. Commas are
 // also accepted as AND, matching dependabot's own parser.
 
-const PARTIAL_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?$/;
+// A prerelease or build suffix is accepted and dropped: these ranges only gate stable versions.
+const PARTIAL_RE =
+  /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 function parsePartial(text, rule) {
   const match = PARTIAL_RE.exec(text);
-  if (!match) throw new Error(`Unsupported version "${text}" in dependabot versions rule "${rule}"`);
+  if (!match) throw new Error(`Unsupported version "${text}" in range "${rule}"`);
   const parts = match.slice(1, 4).map(p => (p === undefined || /^[xX*]$/.test(p) ? null : Number(p)));
   // Anything after a wildcard is a wildcard too (`1.x.3` behaves like `1.x`).
   const firstWild = parts.indexOf(null);
@@ -254,10 +298,12 @@ function comparatorsFor(alternative, rule) {
 }
 
 /**
- * Whether `version` (a stable x.y.z) satisfies a dependabot `versions` entry for npm.
- * Unsupported syntax throws; callers decide whether that aborts one package or the run.
+ * Whether `version` satisfies an npm range: a dependabot `versions` entry or a pnpm
+ * override selector. A prerelease `version` is compared by its x.y.z. Unsupported syntax
+ * throws; callers decide whether that aborts one item or the run.
  */
 export function satisfies(version, rule) {
+  version = String(version).replace(/[-+].*$/, '');
   const alternatives = String(rule)
     .split('||')
     .map(alt => alt.trim());
@@ -286,4 +332,52 @@ export function patternSpecificity(pattern, name) {
   const wildcards = (pattern.match(/\*/g) ?? []).length;
   if (wildcards === 0) return 500;
   return Math.max(100 - wildcards * 10 + Math.max(pattern.length - 5, 0), 1);
+}
+
+/**
+ * Splits a pnpm override key into its parts: `pkg`, `pkg@range`, `@scope/pkg@range` or
+ * `parent>pkg@range` (the parent may carry a range too, which is ignored here).
+ */
+export function parseOverrideSelector(key) {
+  // `>` also appears in ranges (`>=1.0.0`); only a `>` followed by a package name separates
+  // parent from child.
+  const separator = /(?<![<>=\s])>(?=@|[a-z])/.exec(key);
+  const [parentPart, childPart] = separator
+    ? [key.slice(0, separator.index), key.slice(separator.index + 1)]
+    : [null, key];
+  const split = part => {
+    const at = part.indexOf('@', part.startsWith('@') ? 1 : 0);
+    return at === -1 ? { name: part, range: null } : { name: part.slice(0, at), range: part.slice(at + 1) };
+  };
+  const child = split(childPart);
+  return { parent: parentPart ? split(parentPart).name : null, name: child.name, range: child.range };
+}
+
+/** Every resolved `name -> Set(version)` in a v9 pnpm-lock.yaml's `packages:` section. */
+export function lockfilePackages(lockText) {
+  const section = /^packages:\r?\n([\s\S]*?)(?=^\S|(?![\s\S]))/m.exec(lockText)?.[1] ?? '';
+  const versions = new Map();
+  for (const match of section.matchAll(/^ {2}'?(@?[^@'\s]+)@([^('\s:]+)/gm)) {
+    if (!versions.has(match[1])) versions.set(match[1], new Set());
+    versions.get(match[1]).add(match[2]);
+  }
+  return versions;
+}
+
+/** Versions of `child` that any resolved `parent` depends on, from the `snapshots:` section. */
+export function lockfileChildVersions(lockText, parent, child) {
+  const section = /^snapshots:\r?\n([\s\S]*?)(?=^\S|(?![\s\S]))/m.exec(lockText)?.[1] ?? '';
+  const found = new Set();
+  const quotedChild = new RegExp(`^ {6}'?${child.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}'?: (\\S+)`);
+  let inParent = false;
+  for (const line of section.split(/\r?\n/)) {
+    if (/^ {2}\S/.test(line)) {
+      const name = /^ {2}'?(@?[^@'\s]+)@/.exec(line)?.[1];
+      inParent = name === parent;
+    } else if (inParent) {
+      const match = quotedChild.exec(line);
+      if (match) found.add(match[1].replace(/\(.*$/, ''));
+    }
+  }
+  return found;
 }

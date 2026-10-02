@@ -16,6 +16,10 @@ updates:
       timezone: "Europe/Stockholm"
     allow:
       - dependency-type: "direct"
+    # Same age gate as minimumReleaseAge (10080 min) in pnpm-workspace.yaml, so these PRs
+    # match what the dependency-updates skill can install. Version updates only.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 15
     groups:
       # Web3 and blockchain-related packages
