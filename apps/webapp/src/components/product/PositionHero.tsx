@@ -23,10 +23,16 @@ const GLYPH_EM: Record<string, number> = {
   ',': 0.276,
   '.': 0.265
 };
+// RollingDigits sets digits in tabular figures, which Circular draws all at this width.
+const TABULAR_DIGIT_EM = 0.578;
 const FIGURE_TRACKING_EM = -0.02;
 
-function textWidthEm(text: string): number {
-  return [...text].reduce((total, char) => total + (GLYPH_EM[char] ?? 0.623) + FIGURE_TRACKING_EM, 0);
+function textWidthEm(text: string, tabularDigits = false): number {
+  return [...text].reduce((total, char) => {
+    const advance =
+      tabularDigits && char >= '0' && char <= '9' ? TABULAR_DIGIT_EM : (GLYPH_EM[char] ?? 0.623);
+    return total + advance + FIGURE_TRACKING_EM;
+  }, 0);
 }
 
 /**
@@ -93,9 +99,9 @@ export function PositionHero({
   // the glyphs rather than measured, so the size is settled on the first frame
   // and holds still while RollingValue glides its width; it only drops below
   // 44px when the figure wouldn't fit beside the token mark and the fraction.
-  const fractionPx = fraction ? textWidthEm(`.${fraction}`) * 20 + 1 : 0;
+  const fractionPx = fraction ? textWidthEm(`.${fraction}`, isAccruing) * 20 + 1 : 0;
   const figureFit = {
-    '--figure-em': textWidthEm(whole),
+    '--figure-em': textWidthEm(whole, isAccruing),
     '--figure-reserve': `${40 + fractionPx}px`
   } as CSSProperties;
 
@@ -120,7 +126,7 @@ export function PositionHero({
             showChainIcon={false}
             className="h-8 w-8 shrink-0"
           />
-          <span className="flex items-baseline gap-px">
+          <span className="flex items-baseline gap-px md:whitespace-nowrap">
             <span className="font-circle text-[32px] leading-[35px] font-medium tracking-[-0.64px] md:text-[length:min(44px,calc((100cqi_-_var(--figure-reserve))/var(--figure-em)))] md:leading-[48px] md:tracking-[-0.02em]">
               {/* A live figure is one odometer across the point: when the
                   fraction carries into the whole dollars, only the units digit

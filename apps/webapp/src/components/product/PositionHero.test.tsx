@@ -74,4 +74,19 @@ describe('PositionHero', () => {
     // 40px for the token mark and gap, plus ".0002" at the 20px fraction size and its 1px gap.
     expect(parseFloat(figure.style.getPropertyValue('--figure-reserve'))).toBeCloseTo(92.88, 2);
   });
+
+  it('sizes an accruing figure with tabular digits, which RollingDigits renders', () => {
+    renderHero({ balanceSymbol: 'USDS', amount: 1_111_111, ratePerSecond: SSR_3_75 });
+    const [whole, fraction] = screen.getAllByTestId('rolling-digits');
+    expect(whole.textContent).toBe('1,111,111');
+    const figure = whole.closest('.\\@container') as HTMLElement;
+    // Seven 0.578em digits and two 0.276em commas, each tracked -0.02em.
+    expect(Number(figure.style.getPropertyValue('--figure-em'))).toBeCloseTo(4.418, 3);
+    const digits = fraction.textContent!.length;
+    const fractionEm = 0.265 + digits * 0.578 - 0.02 * (digits + 1);
+    expect(parseFloat(figure.style.getPropertyValue('--figure-reserve'))).toBeCloseTo(
+      40 + fractionEm * 20 + 1,
+      2
+    );
+  });
 });
