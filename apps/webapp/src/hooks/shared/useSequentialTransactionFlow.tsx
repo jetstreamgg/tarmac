@@ -36,6 +36,10 @@ export function useSequentialTransactionFlow(
   // repeat flow). That re-dispatch sent a second supply tx and double-advanced the
   // modal's step counter, completing the step before its tx mined (APP-417).
   const dispatchedIndexRef = useRef(-1);
+  // The step index whose failed simulation was reported. That step waits for
+  // Retry: a simulation that recovers on its own must not send it behind the
+  // error screen.
+  const reportedSimulationIndexRef = useRef(-1);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
@@ -132,6 +136,7 @@ export function useSequentialTransactionFlow(
       simulationData?.request &&
       currentIndex < stableTransactions.length &&
       dispatchedIndexRef.current !== currentIndex && // one dispatch per index — see the ref
+      reportedSimulationIndexRef.current !== currentIndex &&
       !transactionHashes[currentIndex] // Only execute if not already executed
     ) {
       dispatchedIndexRef.current = currentIndex;
@@ -152,6 +157,25 @@ export function useSequentialTransactionFlow(
   // effect must not re-run because a caller passed a new inline function.
   const emitSuccess = useEffectEvent((hash: string) => onSuccess(hash));
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
+
+  // A later step is only sent once its simulation succeeds, so a step that
+  // stops simulating after an earlier one mined (e.g. a repay whose debt
+  // accrued past the approved amount) would otherwise leave the run executing
+  // with nothing in flight. Report it once per step and pause like a wallet
+  // rejection, so the modal fails with Retry instead of hanging on Processing.
+  useEffect(() => {
+    if (
+      !isExecuting ||
+      currentIndex === 0 ||
+      !simulationError ||
+      dispatchedIndexRef.current === currentIndex ||
+      reportedSimulationIndexRef.current === currentIndex
+    )
+      return;
+    reportedSimulationIndexRef.current = currentIndex;
+    setHasWriteError(true);
+    emitError(simulationError, '');
+  }, [isExecuting, currentIndex, simulationError]);
 
   // Handle transaction completion
   useEffect(() => {
@@ -205,6 +229,7 @@ export function useSequentialTransactionFlow(
     setTransactionHashes([]);
     setHasWriteError(false);
     dispatchedIndexRef.current = -1;
+    reportedSimulationIndexRef.current = -1;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution
@@ -239,6 +264,10 @@ export function useSequentialTransactionFlow(
       dispatchedIndexRef.current = currentIndex;
       setIsExecuting(true);
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
+    } else if (isResume && simulationError) {
+      // Retry while the paused step still fails to simulate: fail again rather
+      // than leave the retry hanging.
+      onError(simulationError, '');
     } else {
       console.error(`ERROR: Transaction ${currentIndex} is not ready to execute.
       contract address: ${currentTransaction.to}
@@ -258,7 +287,8 @@ export function useSequentialTransactionFlow(
     simulationData,
     writeContract,
     isSimulationLoading,
-    simulationError
+    simulationError,
+    onError
   ]);
 
   return {
