@@ -39,6 +39,7 @@ let mockIsModalOpen = false;
 const mockNavigate = vi.fn();
 const mockSwitchChain = vi.fn();
 let switchMutation: { onSuccess?: () => void; onError?: () => void } = {};
+let mockIsSwitchPending = false;
 
 // A stand-in for the connector's event emitter, which is how a wallet-side
 // chain change reaches the app.
@@ -89,9 +90,21 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: { emitter }, chainId: mockWalletChainId, status: mockConnectionStatus }),
   // The settle callbacks ride on each call, and only the latest request's
   // fire — the same as TanStack's per-call mutate callbacks.
+  // A request stays pending until a test settles it through those callbacks.
   useSwitchChain: () => ({
+    isPending: mockIsSwitchPending,
     switchChain: (vars: { chainId: number }, callbacks?: typeof switchMutation) => {
-      switchMutation = callbacks ?? {};
+      mockIsSwitchPending = true;
+      switchMutation = {
+        onSuccess: () => {
+          mockIsSwitchPending = false;
+          callbacks?.onSuccess?.();
+        },
+        onError: () => {
+          mockIsSwitchPending = false;
+          callbacks?.onError?.();
+        }
+      };
       mockSwitchChain(vars);
     }
   })
@@ -206,6 +219,7 @@ beforeEach(() => {
   search = new URLSearchParams();
   listeners.clear();
   switchMutation = {};
+  mockIsSwitchPending = false;
   pendingSwitchState = undefined;
   pendingSwitchListeners.clear();
 });
@@ -339,11 +353,11 @@ describe('useAppOrchestration — chain resolution', () => {
   });
 });
 
-// A wallet that never answers the switch: stuck "connecting" to the chain it
-// is on, it neither honours nor refuses `wallet_switchEthereumChain`. The
-// pending switch has no answer to end it, so the user moving on is what does
-// (APP-591).
-describe('useAppOrchestration — a switch the wallet never answers', () => {
+// A switch the wallet has not answered: a prompt still open while the user
+// clicks around, or a wallet stuck "connecting" to the chain it is on that
+// never answers at all (APP-591). The request stays the wallet's to answer;
+// the app keeps pointing at its target and never queues a second one behind it.
+describe('useAppOrchestration — a switch the wallet has not answered', () => {
   // /earn with the wallet moved to Polygon, then Savings: one switch goes out
   // and the wallet sits on it.
   function parkWithUnansweredSwitch() {
@@ -356,48 +370,10 @@ describe('useAppOrchestration — a switch the wallet never answers', () => {
     expect(pendingSwitchState).toEqual({ from: POLYGON, to: TENDERLY });
     mockSwitchChain.mockClear();
     mockNavigate.mockClear();
-    mockSetIsSwitchingNetwork.mockClear();
-    mockSetIsAutoSwitching.mockClear();
     return view;
   }
 
-  it('stops pointing the app at the target once the user navigates on', () => {
-    const { refresh } = parkWithUnansweredSwitch();
-
-    mockPathname = '/earn';
-    refresh();
-
-    expect(pendingSwitchState).toBeUndefined();
-    // The config chain was already the target (wagmi kept mainnet pinned), so
-    // that switch raised no flags, and abandoning it lowers none — a flag up
-    // now belongs to some in-place flow's switch.
-    expect(mockSetIsSwitchingNetwork).not.toHaveBeenCalled();
-    expect(mockSetIsAutoSwitching).not.toHaveBeenCalled();
-    // Earn runs anywhere: nothing to ask, nowhere to send the user.
-    expect(mockSwitchChain).not.toHaveBeenCalled();
-    expect(redirectedHome()).toBe(false);
-  });
-
-  it('lowers the switching flags a stalled switch raised once the user navigates on', () => {
-    // From Base the config chain does move, so the guard raises the flags.
-    mockWalletChainId = BASE;
-    mockConfigChainId = BASE;
-    mockPathname = '/stake';
-    const { refresh } = mount();
-    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
-    expect(mockSetIsAutoSwitching).toHaveBeenCalledWith(true);
-    mockSetIsSwitchingNetwork.mockClear();
-    mockSetIsAutoSwitching.mockClear();
-
-    mockPathname = '/portfolio';
-    refresh();
-
-    expect(pendingSwitchState).toBeUndefined();
-    expect(mockSetIsSwitchingNetwork).toHaveBeenCalledWith(false);
-    expect(mockSetIsAutoSwitching).toHaveBeenCalledWith(false);
-  });
-
-  it('asks the wallet again on the next module that needs a chain', () => {
+  it('keeps pointing at the target on the next module, without asking again', () => {
     const { refresh } = parkWithUnansweredSwitch();
     mockPathname = '/earn';
     refresh();
@@ -406,32 +382,69 @@ describe('useAppOrchestration — a switch the wallet never answers', () => {
     mockRewardContracts = [{ contractAddress: '0xabc' }];
     refresh();
 
-    // Judged against Polygon, where the wallet really is, not against the
-    // target of a request it never answered — so a fresh ask, not silence.
-    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
-    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
-    expect(redirectedHome()).toBe(false);
+    // Judged against the target the request is still waiting on: the reward
+    // route stays (its page resolves on that same chain) and no second prompt
+    // queues behind the first.
+    expect(pendingSwitchState).toEqual({ from: POLYGON, to: TENDERLY });
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('falls back home when the wallet refuses that second ask', () => {
+  it('falls back home when the user then refuses the waiting request', () => {
     const { refresh } = parkWithUnansweredSwitch();
     mockPathname = '/stake';
     refresh();
-    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    expect(mockSwitchChain).not.toHaveBeenCalled();
 
-    // A wallet still holding the first request answers the second as already
-    // pending (-32002).
+    // The wallet's answer to the Savings request arrives on Stake: no.
     act(() => switchMutation.onError?.());
     refresh();
 
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
     expect(redirectedHome()).toBe(true);
   });
 
-  it('leaves the switching flags alone on a navigation with no switch pending', () => {
+  it('settles on the target when the wallet finally moves there', () => {
+    const { refresh } = parkWithUnansweredSwitch();
+    mockPathname = '/stake';
+    refresh();
+
+    walletEmitsChainChange(TENDERLY);
+    refresh();
+
+    // (The provider ends the wait on the move; NetworkSwitchContext.test.)
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(redirectedHome()).toBe(false);
+  });
+
+  // Only a link's `network=` switch can target a chain a later module can't
+  // run on. Its wait ends on that module, which is judged against the wallet's
+  // real chain — but the request is still out, so nothing is stacked on it.
+  it('releases a target the next module cannot use, and redirects rather than stacking a request', () => {
+    const { refresh } = mount();
+    walletEmitsChainChange(POLYGON);
+    refresh();
+    search = new URLSearchParams('network=tenderlybase');
+    refresh();
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: BASE });
+    expect(pendingSwitchState).toEqual({ from: POLYGON, to: BASE });
+    mockSwitchChain.mockClear();
+    mockNavigate.mockClear();
+
+    mockPathname = '/stake'; // mainnet only
+    refresh();
+
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(redirectedHome()).toBe(true);
+  });
+
+  it('leaves the switching flags alone on a navigation', () => {
     // In-place flows (Portfolio supply, Pendle redeem) raise `isAutoSwitching`
     // for switches of their own; a navigation must not pull it out from under
     // them.
-    const { refresh } = mount();
+    const { refresh } = parkWithUnansweredSwitch();
     mockSetIsAutoSwitching.mockClear();
     mockSetIsSwitchingNetwork.mockClear();
 
