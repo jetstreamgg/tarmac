@@ -302,6 +302,7 @@ export function TransactionProvider({
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
+  const hasMinedStepRef = useRef(false);
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
@@ -573,6 +574,7 @@ export function TransactionProvider({
       txHashRef.current = undefined;
       setCurrentStep(0);
       setHasMinedStep(false);
+      hasMinedStepRef.current = false;
       preludeStepsRef.current = null;
       setPreludeSteps(null);
       gateCopyRef.current = null;
@@ -700,6 +702,7 @@ export function TransactionProvider({
     txStatusRef.current = TxStatus.IDLE;
     setCurrentStep(0);
     setHasMinedStep(false);
+    hasMinedStepRef.current = false;
     preludeStepsRef.current = null;
     setPreludeSteps(null);
     gateCopyRef.current = null;
@@ -986,12 +989,15 @@ export function TransactionProvider({
       }
       // Back to the review to confirm again, at IDLE so it re-renders against
       // the current figures. A skipReview flow has no review here; it closes
-      // back to the surface that launched it, like the gate's denials.
+      // back to the surface that launched it, like the gate's denials. So does
+      // a session with a mined step: the engine's paused run would resume the
+      // calls confirmed before the refusal, not what the review re-renders, so
+      // the user reopens the flow and it rebuilds from the current state.
       const sendBackToReview = () => {
         if (controls.isStale()) return;
         controls.setPreludeSteps(null);
         controls.setGateStatus('idle');
-        if (configRef.current?.skipReview) handleCloseRef.current();
+        if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
         else (returnToReviewRef.current ?? returnToFirstScreenRef.current)?.();
       };
       const dispatch = () => {
@@ -1132,7 +1138,10 @@ export function TransactionProvider({
       }
       // A sequential engine dispatches the next call only once the previous
       // receipt landed, so a write arriving over LOADING means a step mined.
-      if (txStatusRef.current === TxStatus.LOADING) setHasMinedStep(true);
+      if (txStatusRef.current === TxStatus.LOADING) {
+        setHasMinedStep(true);
+        hasMinedStepRef.current = true;
+      }
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;

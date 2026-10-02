@@ -312,6 +312,46 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });
 
+  // The engine's paused run would resume the calls confirmed for the old
+  // account from the review's Confirm, so the session closes instead.
+  it('closes instead of returning to the review when a refused retry follows a mined step', () => {
+    const onConfirm = vi.fn();
+    const { config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), config);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate()); // the approve mined, the swap is in the wallet
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    switchAccount(ACCOUNT_B);
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(renderLastToast().getByText('Account changed')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes on changed calls after a mined step too', () => {
+    const onConfirm = vi.fn();
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), config);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    live.calls = [swap(350n)];
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(lastToastTitle()).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('a fresh confirm after being sent back re-captures the new calls', async () => {
     const onConfirm = vi.fn();
     let resolveVerdict!: (v: { allow: boolean }) => void;
