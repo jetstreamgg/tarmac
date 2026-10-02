@@ -39,12 +39,12 @@ describe('filterWalletEarnings', () => {
     const earnings = wallet([
       protocol('savings', ['savings'], { totalEarned: ok({ usd: 46.4 }) }),
       protocol('stusds', ['stusds'], { totalEarned: ok({ usd: 30 }) }),
-      protocol('pendle', ['fixed-0xaaa'], { totalEarned: ok({ usd: 916.82 }) })
+      protocol('pendle-market-0xmkt', ['fixed-0xaaa'], { totalEarned: ok({ usd: 916.82 }) })
     ]);
 
     const filtered = filterWalletEarnings(earnings, new Set(['stusds']));
 
-    expect(filtered.protocols.map(p => p.id)).toEqual(['savings', 'pendle']);
+    expect(filtered.protocols.map(p => p.id)).toEqual(['savings', 'pendle-market-0xmkt']);
     expect(filtered.combined.totalEarnedUsd).toBeCloseTo(46.4 + 916.82, 10);
   });
 
@@ -66,7 +66,7 @@ describe('filterWalletEarnings', () => {
   it('keeps sources whose rows are simply absent (matured Pendle market): only named rows hide', () => {
     const earnings = wallet([
       protocol('savings', ['savings']),
-      protocol('pendle', ['fixed-0xmatured'], { totalEarned: ok({ usd: 916.82 }) })
+      protocol('pendle-market-0xmkt', ['fixed-0xmatured'], { totalEarned: ok({ usd: 916.82 }) })
     ]);
 
     // The matured market's row is delisted from the marketplace, so it can
@@ -78,7 +78,7 @@ describe('filterWalletEarnings', () => {
 
   it('drops a multi-row source when any of its rows is hidden (module-level restriction)', () => {
     const earnings = wallet([
-      protocol('pendle', ['fixed-0xaaa', 'fixed-0xbbb']),
+      protocol('pendle-market-0xmkt', ['fixed-0xaaa', 'fixed-0xbbb']),
       protocol('savings', ['savings'])
     ]);
 

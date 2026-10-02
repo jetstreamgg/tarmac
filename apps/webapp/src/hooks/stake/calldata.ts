@@ -135,25 +135,3 @@ export const getStakeGetRewardCalldata = ({
     functionName: 'getReward',
     args: [ownerAddress, urnIndex, rewardContractAddress, toAddress]
   });
-
-export const getStakeHopeCalldata = ({
-  ownerAddress,
-  urnIndex,
-  usrAddress
-}: {
-  ownerAddress: `0x${string}`;
-  urnIndex: bigint;
-  usrAddress: `0x${string}`;
-}) =>
-  encodeFunctionData({
-    abi: stakeModuleAbi,
-    functionName: 'hope',
-    args: [ownerAddress, urnIndex, usrAddress]
-  });
-
-export const getStakeMulticallCalldata = ({ calldata }: { calldata: `0x${string}`[] }) =>
-  encodeFunctionData({
-    abi: stakeModuleAbi,
-    functionName: 'multicall',
-    args: [calldata]
-  });

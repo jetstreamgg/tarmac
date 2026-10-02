@@ -1,14 +1,8 @@
-import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import {
-  historyQueryArgs,
-  historyPageBoundary,
-  clampHistoryPage,
-  HistoryPage
-} from '../shared/historyQueryHelpers';
-import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { historyQueryArgs, secondsToDate } from '../shared/historyQueryHelpers';
+import { PaginatedHistory } from '../shared/useHistoryPagination';
+import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
 import {
   SavingsSupply,
   SavingsHistory,
@@ -16,9 +10,8 @@ import {
   SavingsSupplyResponse,
   SavingsWithdrawalResponse
 } from './savings';
-import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
-import { familyMainnetId } from '@/utils';
+import { mapIndexerRows, safeBigInt } from '@/utils/indexerRows';
 
 export function savingsHistoryFragments({
   owner,
@@ -45,45 +38,39 @@ export function savingsHistoryFragments({
 }
 
 export function mapSavingsHistoryResponse(response: any, chainId: number): SavingsHistory {
-  const supplies: SavingsSupply[] = response.savingsSupplies.map((d: SavingsSupplyResponse) => ({
-    assets: BigInt(d.assets),
-    blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
-    transactionHash: d.transactionHash,
-    module: ModuleEnum.SAVINGS,
-    type: TransactionTypeEnum.SUPPLY,
-    token: TOKENS.usds,
-    chainId
-  }));
+  const supplies = mapIndexerRows<SavingsSupplyResponse, SavingsSupply>(response?.savingsSupplies, d => {
+    const assets = safeBigInt(d.assets);
+    if (assets === undefined) return undefined;
+    return {
+      assets,
+      blockTimestamp: secondsToDate(d.blockTimestamp),
+      transactionHash: d.transactionHash,
+      module: ModuleEnum.SAVINGS,
+      type: TransactionTypeEnum.SUPPLY,
+      token: TOKENS.usds,
+      chainId
+    };
+  });
 
-  const withdraws: SavingsWithdrawal[] = response.savingsWithdraws.map((w: SavingsWithdrawalResponse) => ({
-    assets: -BigInt(w.assets), //make withdrawals negative
-    blockTimestamp: new Date(parseInt(w.blockTimestamp) * 1000),
-    transactionHash: w.transactionHash,
-    module: ModuleEnum.SAVINGS,
-    type: TransactionTypeEnum.WITHDRAW,
-    token: TOKENS.usds,
-    chainId
-  }));
+  const withdraws = mapIndexerRows<SavingsWithdrawalResponse, SavingsWithdrawal>(
+    response?.savingsWithdraws,
+    w => {
+      const assets = safeBigInt(w.assets);
+      if (assets === undefined) return undefined;
+      return {
+        assets: -assets, //make withdrawals negative
+        blockTimestamp: secondsToDate(w.blockTimestamp),
+        transactionHash: w.transactionHash,
+        module: ModuleEnum.SAVINGS,
+        type: TransactionTypeEnum.WITHDRAW,
+        token: TOKENS.usds,
+        chainId
+      };
+    }
+  );
 
   const combined = [...supplies, ...withdraws];
   return combined.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
-}
-
-async function fetchEthereumSavingsHistoryPage(
-  urlIndexer: string,
-  chainId: number,
-  address?: string,
-  beforeTimestamp?: number
-): Promise<HistoryPage<SavingsHistory[number]>> {
-  if (!address) return { items: [], nextCursor: undefined };
-  const query = gql`
-    {
-      ${savingsHistoryFragments({ owner: address.toLowerCase(), chainId, beforeTimestamp })}
-    }
-  `;
-  const response = (await request(urlIndexer, query)) as any;
-  const nextCursor = historyPageBoundary(response);
-  return { items: clampHistoryPage(mapSavingsHistoryResponse(response, chainId), nextCursor), nextCursor };
 }
 
 export function useEthereumSavingsHistory({
@@ -93,35 +80,12 @@ export function useEthereumSavingsHistory({
   indexerUrl?: string;
   enabled?: boolean;
 } = {}): ReadHook & PaginatedHistory & { data?: SavingsHistory } {
-  const { address } = useConnection();
-  const currentChainId = useChainId();
-  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
-  const chainIdToUse = familyMainnetId(currentChainId);
-
-  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useHistoryPagination({
-      enabled: Boolean(urlIndexer) && enabled,
-      queryKey: ['savings-history', urlIndexer, address, chainIdToUse],
-      fetchPage: beforeTimestamp =>
-        fetchEthereumSavingsHistoryPage(urlIndexer, chainIdToUse, address, beforeTimestamp)
-    });
-
-  return {
-    data,
-    isLoading,
-    error: error as Error,
-    mutate,
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
-  };
+  return useIndexerFamilyHistory<SavingsHistory[number]>({
+    indexerUrl,
+    familyMainnet: true,
+    enabled,
+    queryKey: ({ urlIndexer, address, chainId }) => ['savings-history', urlIndexer, address, chainId],
+    fragments: savingsHistoryFragments,
+    mapPage: mapSavingsHistoryResponse
+  });
 }

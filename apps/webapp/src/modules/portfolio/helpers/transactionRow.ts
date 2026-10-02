@@ -51,8 +51,8 @@ export interface PortfolioTxRow {
 // the same way the widget helpers do.
 type TokenArg = Parameters<typeof getTokenDecimals>[0];
 
-// True $1-pegged tokens whose formatted amount doubles as its USD value. sUSDS /
-// sUSDT are yield-bearing shares worth more than $1, so they are excluded (a
+// True $1-pegged tokens whose formatted amount doubles as its USD value. sUSDS
+// is a yield-bearing share worth more than $1, so it is excluded (a
 // Pendle row carries `underlyingSymbol: 'sUSDS'`, which must not read as $1).
 const STABLES = new Set(['USDS', 'USDC', 'USDT', 'DAI', 'USDL']);
 
@@ -98,13 +98,13 @@ function actionLabel(item: CombinedHistoryItem): string {
       if (module === ModuleEnum.REWARDS) return t`Rewards Supply`;
       if (module === ModuleEnum.SAVINGS) return t`Savings Supply`;
       if (module === ModuleEnum.STUSDS) return t`stUSDS Supply`;
-      if (module === ModuleEnum.MORPHO || module === ModuleEnum.SUSDT) return t`Vault Supply`;
+      if (module === ModuleEnum.MORPHO) return t`Vault Supply`;
       return t`Supply`;
     case TransactionTypeEnum.WITHDRAW:
       if (module === ModuleEnum.REWARDS) return t`Rewards Withdraw`;
       if (module === ModuleEnum.SAVINGS) return t`Savings Withdraw`;
       if (module === ModuleEnum.STUSDS) return t`stUSDS Withdraw`;
-      if (module === ModuleEnum.MORPHO || module === ModuleEnum.SUSDT) return t`Vault Withdraw`;
+      if (module === ModuleEnum.MORPHO) return t`Vault Withdraw`;
       return t`Withdraw`;
     case TransactionTypeEnum.REWARD:
     case TransactionTypeEnum.STAKE_REWARD:
@@ -187,7 +187,6 @@ function amountString(item: CombinedHistoryItem, chainId: number): string {
     case ModuleEnum.SAVINGS:
     case ModuleEnum.STUSDS:
     case ModuleEnum.MORPHO:
-    case ModuleEnum.SUSDT:
       return formatBigInt(absBigInt('assets' in item ? item.assets : 0n), {
         compact: true,
         unit: getTokenDecimals(('token' in item ? item.token : undefined) as TokenArg, chainId)

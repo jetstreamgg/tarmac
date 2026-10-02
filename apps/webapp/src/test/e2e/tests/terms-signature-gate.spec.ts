@@ -8,10 +8,11 @@
 //
 // Not covered here, deliberately: the POST /sign contract (the mock wallet
 // skips the POST; unit-covered in signTermsAcceptance.test.ts), the risky and
-// screening-error verdicts at Confirm (the gate shares the connect-time query
-// cache, so those states block at connect before a Confirm exists; the
-// >4h-stale-cache shapes are unit-covered in useTermsSignatureGate.test.tsx),
-// and the version-bump re-trigger (unit-covered).
+// screening-error verdicts at Confirm (the first-screen preflight shares the
+// gate's query cache, so those states hold the flow before a Confirm exists;
+// the gate-side shapes are unit-covered in useTermsSignatureGate.test.tsx),
+// and the version-bump re-trigger (unit-covered). Where screening runs is
+// pinned in address-screening.spec.ts.
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { openSavingsSupplyConfirm } from '../utils/openSavingsSupplyConfirm';

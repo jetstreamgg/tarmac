@@ -8,9 +8,9 @@ import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { RateBadge } from '@/components/ui/RateBadge';
-import { PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
+import { PopoverRateInfo, type PopoverTooltipType } from '@/modules/ui/components/PopoverRateInfo';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
-import { Vaults } from '@/widgets/shared/components/icons/Vaults';
+import { Vaults } from '@/modules/icons/VaultsGradient';
 import type { EarnWithSkyProduct, EarnWithSkyProductId } from '../helpers/earnWithSky';
 
 /**

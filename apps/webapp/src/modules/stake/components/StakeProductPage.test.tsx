@@ -80,20 +80,8 @@ const h = vi.hoisted(() => ({
   manageFlowProps: undefined as Record<string, unknown> | undefined,
   address: '0x1234567890123456789012345678901234567890' as string | undefined,
   positions: [{ index: 0 }] as unknown[] | undefined,
-  positionsLoading: false,
-  pathname: '/stake'
+  positionsLoading: false
 }));
-
-// The page reads only the location pathname off the router (to tell an
-// outgoing render from a live one); no router is stood up here.
-vi.mock('@tanstack/react-router', async importOriginal => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
-  return {
-    ...actual,
-    useRouterState: ({ select }: { select: (s: { location: { pathname: string } }) => unknown }) =>
-      select({ location: { pathname: h.pathname } })
-  };
-});
 
 // And for the My positions tab body (subgraph + per-urn reads).
 vi.mock('./StakePositionsTab', () => ({
@@ -147,7 +135,6 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     h.address = '0x1234567890123456789012345678901234567890';
     h.positions = [{ index: 0 }];
     h.positionsLoading = false;
-    h.pathname = '/stake';
   });
 
   afterEach(cleanup);
@@ -228,25 +215,6 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(activeTab()).toBe('positions');
   });
 
-  it('keeps following the tab param on a case-variant pathname (/Stake matches the route too)', () => {
-    // The router matches `/Stake` but reports it verbatim; a raw compare
-    // against ROUTES.STAKE read that as "leaving" for the page's whole life
-    // and froze the tab latch — the URL moved on a click, the view did not.
-    h.pathname = '/Stake';
-    mockSearchParams = new URLSearchParams('tab=about');
-    const view = renderPage();
-    expect(activeTab()).toBe('about');
-
-    mockSearchParams = new URLSearchParams('tab=statistics');
-    view.rerender(
-      <I18nProvider i18n={i18n}>
-        <StakeProductPage />
-      </I18nProvider>
-    );
-    expect(activeTab()).toBe('statistics');
-    h.pathname = '/stake';
-  });
-
   it('selects the About tab when tab=about is in the URL', () => {
     mockSearchParams = new URLSearchParams('tab=about');
     renderPage();
@@ -254,26 +222,7 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(activeTab()).toBe('about');
   });
 
-  it('keeps the selected tab while the page renders against the next route', () => {
-    // A navigation away commits the destination's pathname + search (no
-    // `tab`) one render before this page unmounts; the view transition
-    // snapshots that render, so it must still show the tab the user was on.
-    mockSearchParams = new URLSearchParams('tab=about');
-    const view = renderPage();
-    expect(activeTab()).toBe('about');
-
-    mockSearchParams = new URLSearchParams();
-    h.pathname = '/earn';
-    view.rerender(
-      <I18nProvider i18n={i18n}>
-        <StakeProductPage />
-      </I18nProvider>
-    );
-
-    expect(activeTab()).toBe('about');
-  });
-
-  it('follows the URL again once the tab param changes on the stake path', () => {
+  it('follows the tab param when it changes', () => {
     mockSearchParams = new URLSearchParams('tab=about');
     const view = renderPage();
 

@@ -4,7 +4,7 @@ import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
 import { math } from '@/utils';
-import { EPOCH_LENGTH } from '@/widgets/shared/constants';
+import { EPOCH_LENGTH } from '@/modules/savings/constants';
 
 // Fixed SSR auth oracle reads (ray-scaled) + a fixed clock so the chi projection
 // is deterministic. NOW is ~1000s past RHO, well inside one epoch.

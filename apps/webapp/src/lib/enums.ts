@@ -12,8 +12,7 @@ export enum Intent {
 }
 
 export enum VaultsIntent {
-  MORPHO_VAULT_INTENT = 'MORPHO_VAULT_INTENT',
-  SKY_VAULT_INTENT = 'SKY_VAULT_INTENT'
+  MORPHO_VAULT_INTENT = 'MORPHO_VAULT_INTENT'
 }
 
 export enum ConvertIntent {

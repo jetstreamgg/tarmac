@@ -78,10 +78,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 const renderForm = (flow: 'supply' | 'withdraw' = 'withdraw') =>
-  renderHook(
-    () => useVaultTransactionForm({ flow, vaultAddress: VAULT, assetToken: ASSET, provider: 'morpho' }),
-    { wrapper }
-  );
+  renderHook(() => useVaultTransactionForm({ flow, vaultAddress: VAULT, assetToken: ASSET }), { wrapper });
 
 describe('useVaultTransactionForm Max routing (APP-488)', () => {
   afterEach(() => cleanup());

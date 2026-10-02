@@ -35,18 +35,6 @@ export function getTokenDecimals(
   return token.decimals[chainId] ?? defaultDecimals; // fallback to 18 if not specified
 }
 
-export function tokenArrayFiltered(arr: Array<TokenForChain>, elementToRemove?: TokenForChain) {
-  return arr?.filter(el => el !== elementToRemove);
-}
-
-export function tokenForChainToToken(
-  tokenForChain: TokenForChain,
-  address: `0x${string}`,
-  chainId: number
-): Token {
-  return { ...tokenForChain, address: { [chainId]: address } };
-}
-
 export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' as const;
 
 export const TOKENS: TokenMapping = {

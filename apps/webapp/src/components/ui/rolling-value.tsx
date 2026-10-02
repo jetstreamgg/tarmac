@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { motion, useMotionValue, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
 import { easeInRoll, easeOutSettle, springSettle } from '@/modules/ui/animation/timingFunctions';
@@ -26,8 +26,10 @@ const IN_Y = '0.55em';
 const REST_Y = '0em';
 
 type RollState = {
-  current: string;
-  previous: string | null;
+  /** What the roll is keyed on — the text, or the caller's `rollKey`. */
+  key: string;
+  current: ReactNode;
+  previous: ReactNode | null;
   /** Where the outgoing glyph starts from — the resting line, or wherever the
    * glyph it interrupts had got to. */
   outFrom: { y: string; opacity: number };
@@ -36,19 +38,30 @@ type RollState = {
 
 export function RollingValue({
   value,
+  rollKey,
   className,
+  glyphClassName,
   speed = 'hero',
   instant = false
 }: {
-  value: string | number;
+  /** The figure. A non-text node (a `<Trans>` label) needs a `rollKey`. */
+  value: ReactNode;
+  /** What a change is detected on when `value` is not plain text — a node's
+   * identity says nothing about whether it reads differently. */
+  rollKey?: string;
   className?: string;
+  /** Classes for the glyph spans themselves (the in-flow one and the one
+   * rolling out). Needed for a `background-clip: text` paint: the glyphs are
+   * transformed, so a gradient clipped on an ancestor never reaches them —
+   * it has to be declared on the glyph that carries the transform. */
+  glyphClassName?: string;
   speed?: keyof typeof SPEEDS;
   /** Swap without rolling — for a burst of continuous updates (a slider
    * drag) where every roll would be interrupted mid-flight; discrete changes
    * roll again once it's off. */
   instant?: boolean;
 }) {
-  const text = String(value);
+  const text = rollKey ?? (typeof value === 'string' || typeof value === 'number' ? String(value) : '');
   const prefersReducedMotion = useReducedMotion();
   // The incoming glyph animates these shared motion values, so a roll that
   // interrupts another can read exactly where the half-risen glyph is and
@@ -56,17 +69,19 @@ export function RollingValue({
   const inY = useMotionValue(REST_Y);
   const inOpacity = useMotionValue(1);
   const [state, setState] = useState<RollState>({
-    current: text,
+    key: text,
+    current: value,
     previous: null,
     outFrom: { y: REST_Y, opacity: 1 },
     gen: 0
   });
 
-  if (state.current !== text) {
+  if (state.key !== text) {
     // Derived during render: the roll has to start on the commit that paints
     // the new value, which an effect would be a frame too late for.
     setState({
-      current: text,
+      key: text,
+      current: value,
       // Nothing to roll out when motion is reduced — the outgoing glyph is only
       // ever visible while it animates away.
       previous: prefersReducedMotion || instant ? null : state.current,
@@ -130,7 +145,7 @@ export function RollingValue({
           data-testid="rolling-value-out"
           // Out of the accessibility tree and the selection, so neither a screen
           // reader nor a copy taken mid-roll picks up the stale figure.
-          className="absolute top-0 left-0 select-none"
+          className={cn('absolute top-0 left-0 select-none', glyphClassName)}
           initial={state.outFrom}
           animate={{ y: OUT_Y, opacity: 0 }}
           transition={outTransition}
@@ -146,13 +161,15 @@ export function RollingValue({
         key={`in-${state.gen}`}
         ref={glyphRef}
         data-testid={state.gen > 0 ? 'rolling-value-in' : undefined}
-        className="inline-block"
+        className={cn('inline-block', glyphClassName)}
         style={{ y: inY, opacity: inOpacity }}
         initial={state.gen > 0 && !prefersReducedMotion && !instant ? { y: IN_Y, opacity: 0 } : false}
         animate={{ y: REST_Y, opacity: 1 }}
         transition={inTransition}
       >
-        {state.current}
+        {/* The live node, not the stored one: same key means same text, and
+            the caller's latest element is the one carrying fresh props. */}
+        {value}
       </motion.span>
     </motion.span>
   );

@@ -14,4 +14,3 @@
  */
 
 export { Banner } from './Banner';
-export type { BannerProps, BannerPosition } from './Banner';

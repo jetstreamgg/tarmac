@@ -9,7 +9,7 @@ import {
   Outlet,
   RouterProvider
 } from '@tanstack/react-router';
-import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import { Intent } from '@/lib/enums';
 import { ROUTES } from '@/lib/routes';
 import { TopNav } from './TopNav';

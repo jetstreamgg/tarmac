@@ -19,7 +19,6 @@ const FAMILY_BY_MODULE: Partial<Record<ModuleEnum, HistoryFamily>> = {
   [ModuleEnum.STAKE]: 'stake',
   [ModuleEnum.REWARDS]: 'rewards',
   [ModuleEnum.STUSDS]: 'stusds',
-  [ModuleEnum.SUSDT]: 'susdt',
   [ModuleEnum.TRADE]: 'psmTrades'
 };
 
@@ -49,9 +48,9 @@ const INERT_PAGINATION = {
  * always-on sources (aggregate, CoW/Morpho/Pendle) are shared with the
  * aggregate's own instances through the react-query cache.
  *
- * `products` is a list because one product in the UI can span several modules:
- * Morpho and sUSDT are both "Vault" (APP-443 item 21), and their history comes
- * from two different sources that have to be merged behind the one filter.
+ * `products` is a list because one product in the UI can span several modules
+ * (APP-443 item 21), whose history may come from different sources that have to
+ * be merged behind the one filter.
  */
 export function useFilteredPortfolioHistory({
   products,

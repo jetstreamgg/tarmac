@@ -26,7 +26,8 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1
+    useChainId: () => 1,
+    useAccount: () => ({ isConnected: true })
   };
 });
 
@@ -48,16 +49,18 @@ vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
 
 // Per-row reads: urn address, vault risk, claimable rewards, prices — all
 // mocked to fixed values so the table logic is what's under test.
+vi.mock('../hooks/useStakeRowVault', () => ({
+  useStakeRowVault: () => ({
+    data: h.vaultError ? undefined : h.vault,
+    isLoading: false,
+    error: h.vaultError
+  })
+}));
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111', isLoading: false }),
-    useVault: () => ({
-      data: h.vaultError ? undefined : h.vault,
-      isLoading: false,
-      error: h.vaultError
-    }),
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0x2222222222222222222222222222222222222222' }],
       isLoading: false
@@ -81,6 +84,12 @@ vi.mock('@/hooks', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+// The warmer only mounts the details-modal hooks; a marker is enough to assert which urns warm.
+vi.mock('./StakePositionDetailWarmer', () => ({
+  StakePositionDetailWarmer: ({ urnIndex }: { urnIndex: number }) => (
+    <span data-testid={`stake-detail-warmer-${urnIndex}`} />
+  )
+}));
 
 import { StakePositionsTable } from './StakePositionsTable';
 
@@ -163,8 +172,8 @@ describe('StakePositionsTable', () => {
     expect(screen.getByText('Position 1')).toBeTruthy();
     expect(screen.getByText('Position 2')).toBeTruthy();
     // Formatted staked/borrowed amounts.
-    expect(screen.getByText('700,550')).toBeTruthy();
-    expect(screen.getAllByText('30,000').length).toBeGreaterThan(0);
+    expect(screen.getByText('700,550.00')).toBeTruthy();
+    expect(screen.getAllByText('30,000.00').length).toBeGreaterThan(0);
   });
 
   it('hides inactive positions by default and shows them when toggled off', () => {
@@ -396,5 +405,30 @@ describe('StakePositionsTable — mobile cards (M5)', () => {
     renderTable(positions);
 
     expect(screen.getByTestId('stake-position-liquidated-banner')).toBeTruthy();
+  });
+});
+
+describe('StakePositionsTable — details prefetch', () => {
+  afterEach(cleanup);
+
+  const many: StakeUserPosition[] = Array.from({ length: 5 }, (_, index) => ({
+    ...POSITIONS[0],
+    index
+  }));
+
+  it('warms the first rows on load and no others', () => {
+    renderTable(many);
+    expect(screen.getByTestId('stake-detail-warmer-0')).toBeTruthy();
+    expect(screen.getByTestId('stake-detail-warmer-2')).toBeTruthy();
+    expect(screen.queryByTestId('stake-detail-warmer-3')).toBeNull();
+    expect(screen.queryByTestId('stake-detail-warmer-4')).toBeNull();
+  });
+
+  it('warms a later row once the pointer or focus lands on it', () => {
+    renderTable(many);
+    fireEvent.pointerEnter(screen.getByTestId('stake-position-row-3'));
+    expect(screen.getByTestId('stake-detail-warmer-3')).toBeTruthy();
+    fireEvent.focus(screen.getByTestId('stake-position-row-4'));
+    expect(screen.getByTestId('stake-detail-warmer-4')).toBeTruthy();
   });
 });

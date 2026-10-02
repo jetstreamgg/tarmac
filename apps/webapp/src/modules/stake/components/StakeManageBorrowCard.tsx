@@ -1,27 +1,32 @@
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
-import { Info } from 'lucide-react';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
-import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@/utils';
+import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD, WAD_PRECISION } from '@/utils';
+import { loanToValue } from '../lib/loanToValue';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Slider, SliderTicks } from '@/components/ui/slider';
+import { RollingDigits } from '@/components/ui/rolling-digits';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { RiskMeter } from '@/components/product/RiskMeter';
-import { useStakeRiskSlider } from '../hooks/useStakeRiskSlider';
+import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
 import { BorrowRequirementNotice } from './BorrowRequirementNotice';
+import { StakeBorrowSliderRow, sliderToneForRisk } from './StakeBorrowSliderRow';
+import { StakeMoreToBorrowHint } from './StakeCardToggle';
 import {
   StakeManageCard,
-  StakeManageStatCell,
-  StakeManageStatDivider,
+  StakeManageStatRow,
+  StakeManageStatRows,
   UpdatedHourlyBadge
 } from './StakeManageCard';
-import { StakeTakeoverAmountField, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
+import { StakeTakeoverAmountField, AmountChip, BORROW_PERCENT_CHIPS } from './StakeTakeoverAmountField';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { NO_VALUE } from '@/lib/constants';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
 
-const WAD = 10n ** 18n;
+/** One unit at the field's 2dp display precision. */
+const DISPLAY_STEP = 10n ** 16n;
 
 // Badges/Risk dash mapping (comp 1036:213853) — the F3 table-meter levels on
 // the shared RiskMeter pill (dashes only, no text; the level name stays on the
@@ -45,9 +50,10 @@ const RISK_PILL: Record<RiskLevel, string> = {
   [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
 };
 
-function RiskPill({ riskLevel }: { riskLevel: RiskLevel }) {
+export function RiskPill({ riskLevel, dataTestId }: { riskLevel: RiskLevel; dataTestId?: string }) {
   return (
     <span
+      data-testid={dataTestId}
       className={cn(
         'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
         RISK_PILL[riskLevel]
@@ -68,13 +74,31 @@ export function RiskBadge({ riskLevel }: { riskLevel: RiskLevel }) {
   );
 }
 
+/** Neutral pill for the post-full-repay risk cell. */
+function RepaidPill() {
+  return (
+    <span
+      data-testid="stake-manage-repaid-pill"
+      className="bg-glassBadge text-fgSecondary font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]"
+    >
+      <Trans>Repaid</Trans>
+    </span>
+  );
+}
+
 /**
  * Manage card 2 · Borrow USDS | Repay USDS (UX 1104:18395 / 1104:20574):
  * segmented mode + toggle, amount field, "Borrowed:" before→after line, the
- * legacy risk slider (borrow: floor at current risk, min-dust/max labels;
- * repay: ceiling at current risk, 0–100% labels), and the delta rows. Full
- * repay renders `No position` / `$0.0` / `0.00%` (M13). Repay percent chips
- * stage wipeAll only when the max equals the full debt (M11).
+ * amount slider (borrow: total debt 0 → debt + headroom with a "Borrowed:"
+ * tick; repay: 0 → debt with a tick at debt − dust) and the stacked stat rows
+ * (Figma 3015:58333: Borrowed, risk, liquidation price, OSM price, rate). Deltas
+ * follow any staged change on the position (a stake/unstake moves the risk
+ * too) and stay up through errors; a full withdraw with debt left reads
+ * `>100%` loan-to-value. Full repay renders `Repaid` / `0%` / `$0.00` /
+ * `0.00%` (Figma 3015:57426). The `next` figures roll digit by digit as the
+ * input moves (Design QA 3314:135843). Repay percent chips stage wipeAll only when the
+ * max equals the full debt (M11). Below the min collateral the Borrow switch is disabled
+ * behind a "Stake more to borrow" hint; a card already on keeps the notice.
  */
 export function StakeManageBorrowCard({
   mode,
@@ -87,22 +111,22 @@ export function StakeManageBorrowCard({
   positionLoading,
   simulatedVault,
   simulationLoading,
-  vaultNoBorrow,
   collateralData,
   collateralLoading,
   maxBorrowable,
   maxRepayable,
-  usdsBalanceLoading,
   wipeAll,
   minCollateralNotMet,
   minCollateralForDust,
   currentCollateral,
+  hasStagedChange,
   error
 }: {
   mode: BorrowCardMode;
   onModeChange: (mode: BorrowCardMode) => void;
   enabled: boolean;
-  onEnabledChange: (enabled: boolean) => void;
+  /** Only a debt-free position gets the toggle; omit to keep the card always on. */
+  onEnabledChange?: (enabled: boolean) => void;
   amount: bigint;
   onAmountChange: (amount: bigint, wipeAll?: boolean) => void;
   existingVault: Vault | undefined;
@@ -111,7 +135,6 @@ export function StakeManageBorrowCard({
   simulatedVault: Vault | undefined;
   /** The live simulation is in flight — its dust/max figures hold skeletons. */
   simulationLoading?: boolean;
-  vaultNoBorrow: Vault | undefined;
   collateralData: CollateralRiskParameters | undefined;
   /** The collateral-parameters read is in flight — the borrow rate holds a skeleton. */
   collateralLoading?: boolean;
@@ -119,73 +142,97 @@ export function StakeManageBorrowCard({
   maxBorrowable: bigint;
   /** Legacy calculateMaxRepayable output (dust-gap aware). */
   maxRepayable: bigint;
-  /** The USDS balance feeding `maxRepayable` is in flight. */
-  usdsBalanceLoading?: boolean;
   wipeAll: boolean;
   minCollateralNotMet: boolean;
   minCollateralForDust: bigint | undefined;
   currentCollateral: bigint;
+  /** Any staged change on the position (stake, unstake, borrow, repay) — drives the delta rows. */
+  hasStagedChange?: boolean;
   error?: string;
 }) {
   const isRepay = mode === 'repay';
   const existingDebt = existingVault?.debtValue ?? 0n;
-
-  const { sliderValue, handleSliderChange, shouldShowSlider } = useStakeRiskSlider({
-    vault: simulatedVault,
-    existingVault,
-    vaultNoBorrow,
-    isRepayMode: isRepay,
-    usdsToBorrow: isRepay ? 0n : amount,
-    setUsdsToBorrow: value => onAmountChange(value),
-    usdsToWipe: isRepay ? amount : 0n,
-    // Mirror the 100% chip's wipeAll staging (M11): a full-left drag lands on
-    // the exact debt, and without wipeAll the launch builds a plain wipe whose
-    // accrued-interest remainder strands sub-dust debt (vat dust revert).
-    setUsdsToWipe: value =>
-      onAmountChange(value, value === existingDebt && maxRepayable === existingDebt && existingDebt > 0n)
-  });
+  const dust = existingVault?.dust ?? simulatedVault?.dust;
 
   const debtCeilingReached = collateralData?.debtCeilingUtilization === 1;
-  const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || debtCeilingReached;
+  // With debt, a stake below the min keeps the slider as a dead track topping
+  // out at the current debt (Figma 3015:62431 / 3015:62772); debt-free, the
+  // axis would run Min > Max, so only the notice shows (1036:218776).
+  const borrowDead = !isRepay && minCollateralNotMet && existingDebt > 0n;
+  const slider = useStakeAmountSlider({
+    mode: isRepay ? 'repay' : 'borrow',
+    existingDebt,
+    dust,
+    headroom: debtCeilingReached || borrowDead ? 0n : maxBorrowable,
+    disabled: borrowDead,
+    amount,
+    onAmountChange
+  });
+  const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || slider.disabled;
   const hasAmount = amount > 0n;
 
-  // Always-visible cap next to the "Borrowed:" line (pre-redesign behavior):
-  // repay's max is wallet- and dust-aware, and borrow has no slider — and thus
-  // no max label — until the position carries debt.
-  const maxHint = isRepay ? maxRepayable : minCollateralNotMet ? undefined : maxBorrowable;
+  // Borrow only: "Borrowable: headroom" (Figma 3015:58333). Repay shows just
+  // "Borrowed:" (Design QA 3312:76634); the wallet cap surfaces as the amount
+  // error and the slider end.
+  const maxHint = isRepay ? undefined : borrowDead ? 0n : minCollateralNotMet ? undefined : maxBorrowable;
   // The hint composes over `?? 0n` fallbacks, so it skeletons while any input
   // read is unresolved.
-  const maxHintLoading = isRepay
-    ? positionLoading || usdsBalanceLoading
-    : positionLoading || collateralLoading || simulationLoading;
+  const maxHintLoading = !isRepay && (positionLoading || collateralLoading || simulationLoading);
 
-  // Compact below md (matching the field's own responsive cut) so the line
-  // holds one row on phones; full precision from md up.
-  const borrowedValue = (compact: boolean) => {
-    const newDebt = simulatedVault?.debtValue;
-    return showDeltas && newDebt !== undefined && newDebt !== existingDebt
-      ? `${formatBigInt(existingDebt, { compact })} → ${formatBigInt(newDebt, { compact })}`
-      : formatBigInt(existingDebt, { compact });
-  };
+  // Delta values (M13): current → simulated, arrow only when they differ. The
+  // projection stays up through errors so an over-withdraw still reads
+  // Medium → Liquidation (Figma 3015:62772); only a repay past the debt has
+  // nothing real to project.
+  const isFullRepay = isRepay && (wipeAll || (hasAmount && amount >= existingDebt));
+  const overRepay = isRepay && hasAmount && amount > existingDebt;
+  const showDeltas = (hasStagedChange ?? (hasAmount || wipeAll)) && !overRepay;
+  const newDebt = showDeltas ? (isFullRepay ? 0n : simulatedVault?.debtValue) : undefined;
+  const currentLtv = loanToValue(existingVault?.debtValue, existingVault?.collateralValue);
+  const nextLtv = isFullRepay
+    ? undefined
+    : loanToValue(simulatedVault?.debtValue, simulatedVault?.collateralValue);
+  // Debt left with no collateral (a full withdraw) has no finite ratio.
+  const nextLtvUnbounded =
+    !isFullRepay && simulatedVault?.collateralValue === 0n && (simulatedVault?.debtValue ?? 0n) > 0n;
+  const formatLtv = (ltv: bigint | undefined) =>
+    ltv === undefined ? NO_VALUE : formatPercent(ltv, { showPercentageDecimals: false });
+  const usdsIcon = (
+    <TokenIcon token={{ symbol: 'USDS' }} width={12} className="h-3 w-3" showChainIcon={false} />
+  );
 
   const onPercentClick = (percent: number) => {
-    if (isRepay) {
-      if (maxRepayable === 0n) return;
-      const raw = percent === 100 ? maxRepayable : ((maxRepayable * BigInt(percent)) / 100n / WAD) * WAD;
-      // wipeAll only when the exact-max staging clears the full debt (M11).
-      onAmountChange(raw, percent === 100 && maxRepayable === existingDebt && existingDebt > 0n);
-      return;
-    }
     if (maxBorrowable === 0n) return;
     onAmountChange(((maxBorrowable * BigInt(percent)) / 100n / WAD) * WAD);
   };
-
-  // Delta values (M13): current → simulated, arrow only when they differ.
-  const isFullRepay = isRepay && (wipeAll || (hasAmount && amount >= existingDebt));
-  const showDeltas = hasAmount || wipeAll;
+  // Repay keeps only "100%" (full debt, wipeAll; the wallet check surfaces as
+  // the amount error): the comp's share chip (3015:56730) went with the slider's
+  // dust tick. A debt-free borrow has Min (dust) / Max (headroom); borrow-more
+  // keeps 25/50/100 of the headroom.
+  const labelledChips: AmountChip[] | undefined = isRepay
+    ? [
+        {
+          key: 'chip-max',
+          label: '100%',
+          onClick: () => existingDebt > 0n && onAmountChange(existingDebt, true)
+        }
+      ]
+    : existingDebt === 0n
+      ? [
+          { key: 'chip-min', label: t`Min`, onClick: () => dust !== undefined && onAmountChange(dust) },
+          {
+            key: 'chip-max',
+            label: t`Max`,
+            onClick: () => maxBorrowable > 0n && onAmountChange(maxBorrowable)
+          }
+        ]
+      : undefined;
 
   const currentRisk = existingVault?.riskLevel;
   const nextRisk = isFullRepay ? null : simulatedVault?.riskLevel;
+  const nextRiskIsDanger = nextRisk === RiskLevel.HIGH || nextRisk === RiskLevel.LIQUIDATION;
+  // Figma colours the fill by the resulting risk; a full repay reads as Low.
+  const sliderRisk = isFullRepay ? RiskLevel.LOW : hasAmount ? (nextRisk ?? currentRisk) : currentRisk;
+  const sliderTone = sliderToneForRisk(sliderRisk);
 
   return (
     <StakeManageCard
@@ -197,6 +244,31 @@ export function StakeManageBorrowCard({
       onModeChange={onModeChange}
       enabled={enabled}
       onEnabledChange={onEnabledChange}
+      toggleDisabled={!enabled && !isRepay && minCollateralNotMet}
+      toggleDisabledHint={
+        <StakeMoreToBorrowHint
+          title={<Trans>Stake more to borrow</Trans>}
+          current={currentCollateral}
+          required={minCollateralForDust ?? 0n}
+          description={
+            currentCollateral > 0n ? (
+              <Trans>
+                To borrow, you&apos;ll need to stake a minimum of{' '}
+                {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
+                collateral. You have {formatBigInt(currentCollateral)} SKY staked, so make sure to add more
+                collateral to qualify for borrowing USDS.
+              </Trans>
+            ) : (
+              <Trans>
+                To borrow, you&apos;ll need to stake a minimum of{' '}
+                {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
+                collateral. Since you haven&apos;t staked any SKY yet, make sure to add more collateral to
+                qualify for borrowing USDS.
+              </Trans>
+            )
+          }
+        />
+      }
       dataTestId="stake-manage-borrow-card"
     >
       {/* Design QA 2800:91832 ("More gap", 32px): the amount block, the
@@ -205,9 +277,22 @@ export function StakeManageBorrowCard({
         <StakeTakeoverAmountField
           tokenSymbol="USDS"
           amount={amount}
-          onAmountChange={value => onAmountChange(value)}
+          onAmountChange={value => {
+            // Typing the displayed (2dp) debt means "all of it": the live debt
+            // carries more decimals, so snap to wipeAll instead of a dust error.
+            const displayedDebt = (existingDebt / DISPLAY_STEP) * DISPLAY_STEP;
+            const typedFull =
+              isRepay &&
+              existingDebt > 0n &&
+              value >= displayedDebt &&
+              value <= existingDebt &&
+              maxRepayable >= existingDebt;
+            if (typedFull) onAmountChange(existingDebt, true);
+            else onAmountChange(value);
+          }}
           onPercentClick={onPercentClick}
-          percentChips={isRepay ? undefined : BORROW_PERCENT_CHIPS}
+          percentChips={BORROW_PERCENT_CHIPS}
+          chips={labelledChips}
           disabled={inputDisabled}
           error={error}
           label={isRepay ? <Trans>Repay amount</Trans> : <Trans>Borrow amount</Trans>}
@@ -215,91 +300,42 @@ export function StakeManageBorrowCard({
           // DISPLAY (the staged value stays exact for wipeAll/buffer math).
           maxDisplayDecimals={2}
           dataTestId="stake-manage-borrow-amount"
-          // Comp 1036:213928 draws the position line above the chips; the max
-          // rides along after it so the cap stays visible in the states the
-          // slider's right label can't cover (zero-debt borrow, all of repay).
+          // Comp 1036:213928 draws the position line above the chips; borrow
+          // adds the headroom so the cap stays visible with no slider (zero debt).
           topRight={
-            <>
+            isRepay ? (
               <span className="whitespace-nowrap" data-testid="stake-manage-borrowed-line">
                 <Trans>Borrowed:</Trans>{' '}
                 {positionLoading ? (
                   <Skeleton className="inline-block h-3.5 w-16 align-middle" />
                 ) : (
-                  <>
-                    <span className="md:hidden">{borrowedValue(true)}</span>
-                    <span className="max-md:hidden">{borrowedValue(false)}</span>
-                  </>
+                  formatBigInt(existingDebt, { compact: true })
                 )}
               </span>
-              {/* One pending marker per line: while the Borrowed value is itself a
-                  skeleton, a second pill for the max hint reads as a glitch. */}
-              {maxHintLoading && !positionLoading ? (
-                <>
-                  {' '}
-                  <Skeleton
-                    className="inline-block h-3.5 w-20 align-middle"
-                    data-testid="stake-manage-max-hint-loading"
-                  />
-                </>
-              ) : null}
-              {!maxHintLoading && maxHint !== undefined && (
-                // nowrap per chunk, with an explicit breakable space between
-                // them (JSX strips the inter-element newline): on narrow
-                // screens the line breaks between the Borrowed and max parts,
-                // never mid-hint.
-                <>
-                  {' '}
-                  <span className="whitespace-nowrap" data-testid="stake-manage-max-hint">
-                    {'· '}
-                    <Trans>max. {formatBigInt(maxHint, { compact: true })} USDS</Trans>
-                  </span>
-                </>
-              )}
-            </>
+            ) : maxHintLoading ? (
+              <Skeleton
+                className="inline-block h-3.5 w-24 align-middle"
+                data-testid="stake-manage-max-hint-loading"
+              />
+            ) : maxHint !== undefined ? (
+              <span className="whitespace-nowrap" data-testid="stake-manage-max-hint">
+                <Trans>Borrowable: {formatBigInt(maxHint, { compact: true })} USDS</Trans>
+              </span>
+            ) : undefined
           }
         />
 
-        {(isRepay ? shouldShowSlider && !minCollateralNotMet : !inputDisabled) && (
-          <div className="flex flex-col gap-2">
-            <Slider
-              variant="range"
-              value={sliderValue}
-              max={100}
-              step={1}
-              onValueChange={value => handleSliderChange(value[0])}
-              aria-label={t`Liquidation risk meter`}
-              data-testid="stake-manage-borrow-slider"
-            />
-            <div className="text-fgSecondary flex items-center gap-4 text-xs">
-              {isRepay ? (
-                <>
-                  <span>0%</span>
-                  <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
-                  <span>100%</span>
-                </>
-              ) : (
-                <>
-                  <span className="flex items-center gap-1">
-                    {simulatedVault?.dust !== undefined ? (
-                      <Trans>min. {formatBigInt(simulatedVault.dust, { compact: true })} USDS</Trans>
-                    ) : simulationLoading ? (
-                      <Skeleton className="h-3.5 w-14" />
-                    ) : (
-                      <Trans>min. {NO_VALUE} USDS</Trans>
-                    )}
-                  </span>
-                  <SliderTicks variant="range" progress={sliderValue[0]} className="grow" />
-                  <span className="flex items-center gap-1">
-                    {maxHintLoading ? (
-                      <Skeleton className="h-3.5 w-14" />
-                    ) : (
-                      <Trans>max. {formatBigInt(maxBorrowable, { compact: true })} USDS</Trans>
-                    )}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
+        {(isRepay ? !slider.hidden : !minCollateralNotMet || borrowDead) && (
+          <StakeBorrowSliderRow
+            // Remount on a mode switch so the fill doesn't glide from the other axis.
+            key={mode}
+            slider={slider}
+            mode={isRepay ? 'repay' : 'borrow'}
+            tone={sliderTone}
+            minLoading={dust === undefined && (positionLoading || simulationLoading)}
+            maxLoading={isRepay ? positionLoading : maxHintLoading}
+            dataTestId="stake-manage-borrow-slider"
+          />
         )}
 
         {!isRepay && minCollateralNotMet && (
@@ -326,42 +362,44 @@ export function StakeManageBorrowCard({
           </p>
         )}
 
-        {/* Comp 1036:213936 stat columns: Borrow rate · risk badge · prices,
-            hugging cells split by hairlines. 2×2 on phones (the takeover's
-            1222:19900 geometry), one row from md — and that row never wraps
-            (APP-546): the two oracle prices change precision as the slider
-            moves, and a wrapping row flipped between one and two lines under
-            the pointer. The cells are nowrap and each carries `min-w-0`, so a
-            long value shrinks its neighbours rather than pushing a cell down.
-            12px gutters in the row: with a staged delta in the price cell
-            (`$0.0125 → $0.0147`) plus the Updated-hourly badge, 16px ones ran
-            ~20px into the card's inset (measured at the 610px column). */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 md:flex md:flex-nowrap md:gap-3">
-          <StakeManageStatCell
-            label={
-              <>
-                <Trans>Borrow rate</Trans>
-                <RateInfo type="sbr" size={12} />
-              </>
-            }
+        {/* Figma 3015:58333 rows: Borrowed, risk, liquidation price, OSM price, borrow rate. */}
+        <StakeManageStatRows>
+          <StakeManageStatRow
+            label={<Trans>Borrowed</Trans>}
             current={
-              collateralData?.stabilityFee ? (
-                formatPercent(collateralData.stabilityFee)
-              ) : collateralLoading ? (
+              positionLoading ? (
                 <Skeleton className="h-4 w-14" />
               ) : (
-                NO_VALUE
+                <>
+                  {formatBigInt(existingDebt)}
+                  {usdsIcon}
+                </>
               )
             }
-            next={isFullRepay ? '0.00%' : undefined}
-            dataTestId="stake-manage-borrow-rate-row"
+            next={
+              newDebt !== undefined && newDebt !== existingDebt ? (
+                <>
+                  <RollingDigits value={formatBigInt(newDebt)} />
+                  {usdsIcon}
+                </>
+              ) : undefined
+            }
+            dataTestId="stake-manage-borrowed-row"
           />
-          <StakeManageStatDivider />
-          <StakeManageStatCell
+          <StakeManageStatRow
             label={
               <>
                 <Trans>Liquidation risk</Trans>
-                <Info className="h-3 w-3" aria-hidden />
+                <InfoTooltip
+                  title={t`Liquidation risk`}
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={
+                    existingVault?.liquidationPrice
+                      ? t`Sky closes your position if SKY's price drops to your liquidation price ($${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}). Your collateral is sold to repay the debt plus a penalty.`
+                      : t`Sky closes your position if SKY's price drops to your liquidation price. Your collateral is sold to repay the debt plus a penalty.`
+                  }
+                />
               </>
             }
             current={
@@ -376,7 +414,7 @@ export function StakeManageBorrowCard({
             next={
               showDeltas ? (
                 isFullRepay ? (
-                  t`No position`
+                  <RepaidPill />
                 ) : nextRisk && nextRisk !== currentRisk ? (
                   <RiskPill riskLevel={nextRisk} />
                 ) : undefined
@@ -384,8 +422,48 @@ export function StakeManageBorrowCard({
             }
             dataTestId="stake-manage-risk-row"
           />
-          <StakeManageStatDivider className="hidden md:block" />
-          <StakeManageStatCell
+          <StakeManageStatRow
+            label={
+              <>
+                <Trans>Loan-to-value</Trans>
+                <InfoTooltip
+                  title={t`Loan-to-value (LTV)`}
+                  iconSize={12}
+                  iconClassName="shrink-0"
+                  content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
+                />
+              </>
+            }
+            current={
+              positionLoading && existingVault?.collateralValue === undefined ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                formatLtv(currentLtv)
+              )
+            }
+            next={
+              showDeltas ? (
+                isFullRepay ? (
+                  <RollingDigits value="0%" />
+                ) : nextLtvUnbounded ? (
+                  <span data-testid="stake-manage-ltv-danger" className="text-statusError">
+                    {'>100%'}
+                  </span>
+                ) : nextLtv !== undefined && nextLtv !== currentLtv ? (
+                  // The new value goes red once the move lands in high/liquidation risk (Figma 3297:72534).
+                  nextRiskIsDanger ? (
+                    <span data-testid="stake-manage-ltv-danger" className="text-statusError">
+                      <RollingDigits value={formatLtv(nextLtv)} />
+                    </span>
+                  ) : (
+                    <RollingDigits value={formatLtv(nextLtv)} />
+                  )
+                ) : undefined
+              ) : undefined
+            }
+            dataTestId="stake-manage-ltv-row"
+          />
+          <StakeManageStatRow
             label={<Trans>Liquidation price</Trans>}
             current={
               positionLoading && existingVault?.liquidationPrice === undefined ? (
@@ -395,39 +473,50 @@ export function StakeManageBorrowCard({
               )
             }
             next={
-              showDeltas
-                ? isFullRepay
-                  ? formatOraclePrice(0n)
-                  : simulatedVault?.liquidationPrice !== undefined &&
-                      simulatedVault.liquidationPrice !== existingVault?.liquidationPrice
-                    ? formatOraclePrice(simulatedVault.liquidationPrice)
-                    : undefined
-                : undefined
+              showDeltas ? (
+                isFullRepay ? (
+                  <RollingDigits value={formatOraclePrice(0n)} />
+                ) : simulatedVault?.liquidationPrice !== undefined &&
+                  simulatedVault.liquidationPrice !== existingVault?.liquidationPrice ? (
+                  <RollingDigits value={formatOraclePrice(simulatedVault.liquidationPrice)} />
+                ) : undefined
+              ) : undefined
             }
             dataTestId="stake-manage-liq-price-row"
           />
-          <StakeManageStatDivider />
-          <StakeManageStatCell
+          <StakeManageStatRow
             label={
               <>
                 <Trans>Capped OSM SKY price</Trans>
                 <RateInfo type="cappedOsmSkyPrice" size={12} />
+                <UpdatedHourlyBadge />
               </>
             }
             // Single value on purpose: the OSM price ignores user input (M13).
             current={
-              <>
-                {(positionLoading || simulationLoading) &&
-                (simulatedVault?.delayedPrice ?? existingVault?.delayedPrice) === undefined ? (
-                  <Skeleton className="h-4 w-14" />
-                ) : (
-                  formatOraclePrice(simulatedVault?.delayedPrice ?? existingVault?.delayedPrice)
-                )}
-                <UpdatedHourlyBadge />
-              </>
+              (positionLoading || simulationLoading) &&
+              (simulatedVault?.delayedPrice ?? existingVault?.delayedPrice) === undefined ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                formatOraclePrice(simulatedVault?.delayedPrice ?? existingVault?.delayedPrice)
+              )
             }
           />
-        </div>
+          <StakeManageStatRow
+            label={<Trans>Borrow rate</Trans>}
+            current={
+              collateralData?.stabilityFee ? (
+                formatPercent(collateralData.stabilityFee)
+              ) : collateralLoading ? (
+                <Skeleton className="h-4 w-14" />
+              ) : (
+                NO_VALUE
+              )
+            }
+            next={isFullRepay ? '0.00%' : undefined}
+            dataTestId="stake-manage-borrow-rate-row"
+          />
+        </StakeManageStatRows>
       </div>
     </StakeManageCard>
   );

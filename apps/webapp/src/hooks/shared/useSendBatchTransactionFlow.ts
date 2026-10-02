@@ -1,6 +1,6 @@
 import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchWriteHook, UseSendBatchTransactionFlowParameters } from '../hooks';
-import { useEffect } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { isRevertedError, toError } from '../helpers';
 import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
@@ -60,16 +60,20 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
 
   const txReverted = isRevertedError(failureReason);
 
+  // The consumer's callbacks are read through effect events: the settle effect
+  // must not re-run because a caller passed a new inline function.
+  const emitSuccess = useEffectEvent((hash?: string) => onSuccess(hash));
+  const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
   useEffect(() => {
     if (mutationData?.id) {
       if (isSuccess && data.status === 'success') {
-        onSuccess(data.receipts?.[0]?.transactionHash);
+        emitSuccess(data.receipts?.[0]?.transactionHash);
       } else if (isSuccess && data.status === 'failure') {
-        onError(new Error('ERROR: Batch transaction failed'), undefined);
+        emitError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (miningError) {
-        onError(miningError, data?.receipts?.[0]?.transactionHash);
+        emitError(miningError, data?.receipts?.[0]?.transactionHash);
       } else if (failureReason && txReverted) {
-        onError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
+        emitError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
       }
     }
   }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data]);
@@ -78,15 +82,15 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     execute: () => {
       // Sanity checks before sending the transaction
       if (!enabled) {
-        console.log(`ERROR: A batch transaction was triggered before the transaction was enabled.
+        console.error(`ERROR: A batch transaction was triggered before the transaction was enabled.
           Contract calls: ${JSON.stringify(parameters.calls, (_, value) => (typeof value === 'bigint' ? value.toString() : value))}
           `);
       } else if (!batchSupported) {
-        console.log(
+        console.error(
           'ERROR: A batch transaction was triggered but it looks like the connected wallet does not support it'
         );
       } else if (parameters.calls.length < 2) {
-        console.log(
+        console.error(
           'ERROR: You are attempting to send a single transaction as a batch transaction. It may be more gas efficient to send the transaction individually'
         );
       } else if (parameters.calls.some(call => !(call as { to?: unknown }).to)) {

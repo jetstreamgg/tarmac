@@ -1,42 +1,24 @@
 import { useEffect, useState, useCallback } from 'react';
 import { copyToClipboard } from '@/utils';
 
+const COPIED_FEEDBACK_MS = 1500;
+
 export function useClipboard(text: string) {
   const [hasCopied, setHasCopied] = useState(false);
 
-  const [textState, setTextState] = useState(text);
-  useEffect(() => setTextState(text), [text]);
-
-  const timeout = 1500;
-
   const onCopy = useCallback(() => {
     copyToClipboard(
-      textState,
+      text,
       () => setHasCopied(true),
       () => setHasCopied(false)
     );
-  }, [textState]);
+  }, [text]);
 
   useEffect(() => {
-    let timeoutId: number | null = null;
+    if (!hasCopied) return;
+    const timeoutId = window.setTimeout(() => setHasCopied(false), COPIED_FEEDBACK_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [hasCopied]);
 
-    if (hasCopied) {
-      timeoutId = window.setTimeout(() => {
-        setHasCopied(false);
-      }, timeout);
-    }
-
-    return () => {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [timeout, hasCopied]);
-
-  return {
-    value: textState,
-    setValue: setTextState,
-    onCopy,
-    hasCopied
-  };
+  return { onCopy, hasCopied };
 }

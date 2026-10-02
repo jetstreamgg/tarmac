@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import { ThemeToggle } from './ThemeToggle';
 
 const mocks = vi.hoisted(() => ({

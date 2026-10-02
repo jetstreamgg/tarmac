@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useChains, useConnection } from 'wagmi';
-import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
-import type { WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
+import { WidgetAnalyticsEventType } from '@/modules/analytics/analyticsEvents';
+import type { WidgetAnalyticsEvent } from '@/modules/analytics/analyticsEvents';
 import {
   AppEvents,
   safeCapture,

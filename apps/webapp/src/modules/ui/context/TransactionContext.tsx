@@ -8,7 +8,8 @@ import {
   useRef,
   ReactNode
 } from 'react';
-import { TxStatus, InProgress, Cancel } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { InProgress, Cancel } from '@/modules/icons';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
@@ -136,13 +137,6 @@ function offSupportedChains(supportedChainIds: readonly number[], chainId: numbe
 
 // The transaction-orchestration contract is frozen in ./transactionContract.
 // Re-exported here so existing import sites keep working.
-export type {
-  TransactionAnalytics,
-  TransactionConfig,
-  TransactionEntry,
-  TxCallbacks
-} from './transactionContract';
-
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
 // Internal: the DOM node on the modal's entry screen where an editable flow's
@@ -157,12 +151,12 @@ export function useEntrySlot() {
   return useContext(EntrySlotContext);
 }
 
-// The injected enhanced-screening preflight hook (see `usePreflight` on the
+// The injected screening preflight hook (see `usePreflight` on the
 // provider), shared with flows whose OWN surface fires the transaction.
 const PreflightHookContext = createContext<PreflightHook>(allowAllPreflight);
 
 /**
- * The enhanced-screening preflight (APP-517) for a surface that fires the
+ * The screening preflight (standard, or enhanced at $250k+) for a surface that fires the
  * transaction itself — a `skipReview` flow's page-side Confirm (the stake
  * takeovers). The modal's first screen normally runs this check, warms the
  * verdict and holds its CTA; with no first screen the takeover has to: pass
@@ -203,7 +197,7 @@ type TransactionModalView = {
  * animation can play. Matches the dismissal in `components/ui/dialog.tsx`
  * (and the bottom sheet's, which is the same 300ms).
  */
-const MODAL_EXIT_MS = 300;
+import { MODAL_EXIT_MS } from '@/modules/ui/animation/constants';
 
 export function TransactionProvider({
   children,
@@ -211,7 +205,7 @@ export function TransactionProvider({
   // can exercise the deny/async paths; the app mounts the allow-all stub until
   // the signature verdict lands (APP-501).
   gate = allowAllGate,
-  // The enhanced-screening preflight (APP-517), a HOOK called unconditionally
+  // The screening preflight (standard, or enhanced at $250k+), a HOOK called unconditionally
   // every render — its identity must be stable for the life of the provider
   // (the app passes a module-level hook; tests pass stable fakes).
   usePreflight = allowAllPreflight
@@ -368,7 +362,12 @@ export function TransactionProvider({
   // The chain the live session's write belongs to: latched at launch, adopted
   // while the session is still at IDLE (see the chain-change close below).
   const sessionChainRef = useRef(guardChainId);
-  const { handleSwitchChain, isSwitchPending: switchPending, switchVariables } = useNetworkSwitch();
+  const {
+    handleSwitchChain,
+    isSwitchPending: switchPending,
+    switchVariables,
+    canSwitchChain
+  } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
   // Enhanced screening for $250k+ transactions (APP-517): warmed as soon as
@@ -641,7 +640,7 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -1040,7 +1039,7 @@ export function TransactionProvider({
         txHashRef.current = hash;
       }
     },
-    [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
+    [sessionGen, isStaleWrite]
   );
 
   const onSuccess = useCallback(
@@ -1182,16 +1181,7 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [
-      sessionGen,
-      chainId,
-      address,
-      isSafeWallet,
-      trackTransactionCompleted,
-      startNewFlow,
-      isStaleWrite,
-      isForeignHash
-    ]
+    [sessionGen, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is
@@ -1232,9 +1222,10 @@ export function TransactionProvider({
       )
     : undefined;
   const guardTargetName = chains.find(c => c.id === guardTargetChainId)?.name;
-  // Safe wallets can't switch networks from the dapp (APP-486) — offer no
-  // switch button, only the explanatory block; the guard still disables the CTAs.
-  const guardCanSwitch = guardTargetChainId !== undefined && !isSafeWallet;
+  // A wallet the dapp must not switch (a Safe — `canSwitchChain` on
+  // NetworkSwitchContext says why) gets no switch button, only the explanatory
+  // block; the guard still disables the CTAs (APP-486).
+  const guardCanSwitch = guardTargetChainId !== undefined && canSwitchChain;
   const switchGuardChain = useCallback(
     (source: NetworkSwitchSource = 'transaction_modal') => {
       if (guardTargetChainId === undefined) return;
@@ -1389,6 +1380,7 @@ export function TransactionProvider({
             preflight={preflight}
             chainGuard={chainGuard}
             skipReview={modalView.config.skipReview}
+            scrimHandoff={modalView.config.scrimHandoff}
           />
         )}
       </EntrySlotContext.Provider>

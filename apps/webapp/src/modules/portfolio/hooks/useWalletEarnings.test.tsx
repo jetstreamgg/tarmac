@@ -23,7 +23,11 @@ const h = vi.hoisted(() => ({
   fetchPendlePnlGainedPositions: vi.fn(),
   fetchPendleDashboardPositions: vi.fn(),
   fetchVaultsFyiTotalReturns: vi.fn(),
-  fetchVaultsFyiPartialReturns: vi.fn()
+  fetchVaultsFyiPartialReturns: vi.fn(),
+  fetchRewardFarmClaims: vi.fn(),
+  fetchRewardFarmEarned: vi.fn(),
+  findFirstBlockAtOrAfter: vi.fn(),
+  currentPrices: undefined as Record<string, { price: string }> | undefined
 }));
 
 vi.mock('wagmi', () => ({
@@ -49,11 +53,27 @@ vi.mock('../../../hooks/vaults/fyi/vaultsFyiClient', () => ({
   fetchVaultsFyiTotalReturns: h.fetchVaultsFyiTotalReturns,
   fetchVaultsFyiPartialReturns: h.fetchVaultsFyiPartialReturns
 }));
+vi.mock('../../../hooks/rewards/rewardFarmEarnedClient', () => ({
+  fetchRewardFarmClaims: h.fetchRewardFarmClaims,
+  fetchRewardFarmEarned: h.fetchRewardFarmEarned
+}));
+vi.mock('../../../hooks/helpers/findFirstBlockAtOrAfter', () => ({
+  findFirstBlockAtOrAfter: h.findFirstBlockAtOrAfter
+}));
+vi.mock('../../../hooks/prices/usePrices', () => ({
+  usePrices: () => ({ data: h.currentPrices, isLoading: false, error: null })
+}));
 vi.mock('../../../hooks/vaults/fyi/constants', () => ({
   SUSDS_VAULT_ID_MAINNET: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
   STUSDS_VAULT_ID_MAINNET: '0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9'
 }));
 
+import {
+  groveAddress,
+  spkAddress,
+  usdsGroveRewardAddress,
+  usdsSpkRewardAddress
+} from '../../../hooks/generated';
 import { MORPHO_VAULTS, MorphoTransactionType } from '../../../hooks/morpho/constants';
 import type { MorphoUserVaultV2Position, MorphoVaultV2Transaction } from '../../../hooks/morpho/morpho';
 import type { MerklClaimRaw, MerklUserRewardRaw } from '../../../hooks/morpho/merklEarnedClient';
@@ -67,8 +87,14 @@ const FLAGSHIP = '0xE15fcC81118895b67b6647BBd393182dF44E11E0';
 const MORPHO_VAULT_ADDRESSES = MORPHO_VAULTS.map(v => v.vaultAddress[1]);
 const MORPHO_VAULT_IDS = MORPHO_VAULT_ADDRESSES.map(a => `morpho-vault-${a.toLowerCase()}`);
 const MORPHO_FLAGSHIP_ID = `morpho-vault-${FLAGSHIP.toLowerCase()}`;
-const SOURCE_COUNT = MORPHO_VAULT_IDS.length + 4; // + merkl, pendle, savings, stusds
+// Live, USD-priced reward farms: SPK and GROVE (SKY is deprecated, Chronicle pays points).
+const SPK_FARM = usdsSpkRewardAddress[1].toLowerCase();
+const GROVE_FARM = usdsGroveRewardAddress[1].toLowerCase();
+const SPK_FARM_ID = `reward-farm-${SPK_FARM}`;
+const GROVE_FARM_ID = `reward-farm-${GROVE_FARM}`;
+const SOURCE_COUNT = MORPHO_VAULT_IDS.length + 6; // + merkl, the one Pendle market, savings, stusds, SPK and GROVE farms
 const PENDLE_MARKET = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
+const PENDLE_SOURCE_ID = `pendle-market-${PENDLE_MARKET}`;
 const USDS_TOKEN = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
 
 // External anchor: 2026-08-01T00:00:00Z (verified in the APP-450 spike).
@@ -183,6 +209,32 @@ const stusdsPartial = {
   toTimestamp: AUG_1 + 18 * DAY
 };
 
+// --- Reward farms: SPK total $6, month $3; GROVE never supplied → $0 -----------
+// Month starts at block 200. SPK: 10 claimed on Jul 22 @ $0.2 (before the
+// month) + 4 claimed on Aug 6 @ $0.5 (block 300, in-month) + 2 unclaimed now
+// @ $1 → total 2 + 2 + 2 = $6 over 16 SPK. The month began with 3 unclaimed,
+// so it earned 4 + 2 − 3 = 3 SPK, valued at the current $1 → $3.
+const MONTH_START_BLOCK = 200n;
+const WAD = 10n ** 18n;
+const farmClaims = [
+  { farm: SPK_FARM, amount: 10n * WAD, blockNumber: 100, blockTimestamp: AUG_1 - 10 * DAY },
+  { farm: SPK_FARM, amount: 4n * WAD, blockNumber: 300, blockTimestamp: AUG_1 + 5 * DAY }
+];
+const farmEarnedNow = new Map([
+  [SPK_FARM, 2n * WAD],
+  [GROVE_FARM, 0n]
+]);
+const farmEarnedAtStart = new Map([
+  [SPK_FARM, 3n * WAD],
+  [GROVE_FARM, 0n]
+]);
+const spkPrices = new Map([
+  ['2026-07-22', 0.2],
+  ['2026-07-31', 0.25],
+  ['2026-08-06', 0.5]
+]);
+const currentPrices = { SPK: { price: '1' }, GROVE: { price: '0.01' } };
+
 const FLAGSHIP_ROW_ID = `vault-morpho-${FLAGSHIP.toLowerCase()}`;
 
 function renderEarnings() {
@@ -205,7 +257,19 @@ describe('useWalletEarnings', () => {
     h.fetchVaultV2TransactionsSince.mockResolvedValue(morphoTransactions);
     h.fetchMerklUserRewards.mockResolvedValue(merklRewards);
     h.fetchMerklClaims.mockResolvedValue(merklClaims);
-    h.fetchBaLabsHistoricDailyPrices.mockResolvedValue(merklPrices);
+    h.fetchBaLabsHistoricDailyPrices.mockImplementation(async ({ tokenAddress }: { tokenAddress: string }) =>
+      tokenAddress === spkAddress[1].toLowerCase()
+        ? spkPrices
+        : tokenAddress === groveAddress[1].toLowerCase()
+          ? new Map([['2026-08-01', 0.01]])
+          : merklPrices
+    );
+    h.fetchRewardFarmClaims.mockResolvedValue(farmClaims);
+    h.fetchRewardFarmEarned.mockImplementation(async ({ blockNumber }: { blockNumber?: bigint }) =>
+      blockNumber === undefined ? farmEarnedNow : farmEarnedAtStart
+    );
+    h.findFirstBlockAtOrAfter.mockResolvedValue(MONTH_START_BLOCK);
+    h.currentPrices = currentPrices;
     h.fetchPendlePnlTransactionsForUser.mockResolvedValue(pendleRawRows);
     h.fetchPendlePnlGainedPositions.mockResolvedValue(pendleGained);
     h.fetchPendleDashboardPositions.mockResolvedValue(pendleDashboard);
@@ -241,9 +305,12 @@ describe('useWalletEarnings', () => {
     expect(h.fetchMerklUserRewards).not.toHaveBeenCalled();
     expect(h.fetchPendlePnlTransactionsForUser).not.toHaveBeenCalled();
     expect(h.fetchVaultsFyiTotalReturns).not.toHaveBeenCalled();
+    expect(h.fetchRewardFarmClaims).not.toHaveBeenCalled();
+    expect(h.fetchRewardFarmEarned).not.toHaveBeenCalled();
+    expect(h.findFirstBlockAtOrAfter).not.toHaveBeenCalled();
   });
 
-  it('aggregates all five sources with the month window and mainnet-scoped fetch args', async () => {
+  it('aggregates every source with the month window and mainnet-scoped fetch args', async () => {
     const { result, queryClient } = renderEarnings();
 
     // Loading state first: figures are the transient 'loading' gap, never $0.
@@ -293,7 +360,8 @@ describe('useWalletEarnings', () => {
       reason: 'merkl-monthly-unsupported'
     });
 
-    const pendle = protocolById(result.current, 'pendle');
+    const pendle = protocolById(result.current, PENDLE_SOURCE_ID);
+    expect(pendle.label).toBe('Fixed Yield');
     expect(pendle.rowIds).toEqual([`fixed-${PENDLE_MARKET}`]);
     expect(pendle.totalEarned).toEqual({ status: 'ok', value: { usd: 70 } });
     expect(pendle.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 7 } });
@@ -324,9 +392,28 @@ describe('useWalletEarnings', () => {
       value: { usd: -2, native: { amount: -2, symbol: 'USDS' } }
     });
 
-    // Combined: 20 + 4 + 70 + 46.4 + 30 = 170.4 total; 10 + 7 + 5 − 2 = 20 monthly.
-    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(170.4, 10);
-    expect(result.current.combined.earnedThisMonthUsd).toBeCloseTo(20, 10);
+    const spk = protocolById(result.current, SPK_FARM_ID);
+    expect(spk.rowIds).toEqual(['rewards-spk']);
+    expect(spk.label).toBe('SPK Rewards');
+    expect(spk.totalEarned).toEqual({
+      status: 'ok',
+      value: { usd: 6, native: { amount: 16, symbol: 'SPK' } }
+    });
+    expect(spk.earnedThisMonth).toEqual({
+      status: 'ok',
+      value: { usd: 3, native: { amount: 3, symbol: 'SPK' } }
+    });
+
+    const grove = protocolById(result.current, GROVE_FARM_ID);
+    expect(grove.rowIds).toEqual(['rewards-grove']);
+    expect(grove.label).toBe('GROVE Rewards');
+    expect(grove.totalEarned).toEqual({ status: 'ok', value: { usd: 0 } });
+    expect(grove.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 0 } });
+
+    // Combined: 20 + 4 + 70 + 46.4 + 30 + 6 = 176.4 total;
+    // 10 + 7 + 5 − 2 + 3 = 23 monthly.
+    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(176.4, 10);
+    expect(result.current.combined.earnedThisMonthUsd).toBeCloseTo(23, 10);
     expect(result.current.combined.missingFromTotal).toEqual([]);
     expect(result.current.combined.missingFromMonth).toEqual(['merkl']);
 
@@ -363,6 +450,18 @@ describe('useWalletEarnings', () => {
       vaultId: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
       fromTimestamp: AUG_1
     });
+    const farmAddresses = [usdsSpkRewardAddress[1], usdsGroveRewardAddress[1]];
+    expect(h.fetchRewardFarmClaims).toHaveBeenCalledWith({
+      userAddress: USER,
+      farmAddresses,
+      chainId: 1
+    });
+    expect(h.findFirstBlockAtOrAfter).toHaveBeenCalledWith(expect.anything(), AUG_1);
+    // The month-start balance is read at the end of the block BEFORE the
+    // first in-window block, matching the block-based claim split.
+    expect(h.fetchRewardFarmEarned).toHaveBeenCalledWith(
+      expect.objectContaining({ userAddress: USER, farmAddresses, blockNumber: MONTH_START_BLOCK - 1n })
+    );
 
     // The raw Pendle rows land under the SHARED history-hook cache key, so the
     // single /v1/pnl/transactions call serves both this hook and the history UI.
@@ -381,12 +480,12 @@ describe('useWalletEarnings', () => {
     expect(morpho.error).toBeInstanceOf(Error);
 
     expect(protocolById(result.current, 'merkl').totalEarned.status).toBe('ok');
-    expect(protocolById(result.current, 'pendle').totalEarned.status).toBe('ok');
+    expect(protocolById(result.current, PENDLE_SOURCE_ID).totalEarned.status).toBe('ok');
     expect(protocolById(result.current, 'savings').totalEarned.status).toBe('ok');
 
     // Combined still sums the healthy sources and names what is missing —
     // the single Morpho query feeds every vault source, so all degrade.
-    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(4 + 70 + 46.4 + 30, 10);
+    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(4 + 70 + 46.4 + 30 + 6, 10);
     expect(result.current.combined.missingFromTotal).toEqual([...MORPHO_VAULT_IDS]);
   });
 
@@ -432,7 +531,7 @@ describe('useWalletEarnings', () => {
       status: 'ok',
       value: { usd: 46.4, native: { amount: 46.4, symbol: 'sUSDS' } }
     });
-    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(20 + 4 + 70 + 46.4 + 30, 10);
+    expect(result.current.combined.totalEarnedUsd).toBeCloseTo(20 + 4 + 70 + 46.4 + 30 + 6, 10);
     expect(result.current.combined.missingFromTotal).toEqual([]);
   });
 
@@ -467,6 +566,51 @@ describe('useWalletEarnings', () => {
     const merkl = protocolById(result.current, 'merkl');
     expect(merkl.totalEarned).toEqual({ status: 'ok', value: { usd: 0 } });
     expect(merkl.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 0 } });
-    expect(h.fetchBaLabsHistoricDailyPrices).not.toHaveBeenCalled();
+    // Only the reward farms' own token series are fetched.
+    expect(h.fetchBaLabsHistoricDailyPrices).not.toHaveBeenCalledWith({
+      tokenAddress: USDS_TOKEN.toLowerCase()
+    });
+  });
+
+  it('keeps the farm totals when the month-start block search fails', async () => {
+    h.findFirstBlockAtOrAfter.mockRejectedValue(new Error('rpc down'));
+    const { result } = renderEarnings();
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const spk = protocolById(result.current, SPK_FARM_ID);
+    expect(spk.totalEarned).toEqual({
+      status: 'ok',
+      value: { usd: 6, native: { amount: 16, symbol: 'SPK' } }
+    });
+    expect(spk.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'source-error' });
+    expect(result.current.combined.missingFromTotal).toEqual([]);
+    expect(result.current.combined.missingFromMonth).toEqual(['merkl', SPK_FARM_ID, GROVE_FARM_ID]);
+  });
+
+  it('degrades a farm with an unclaimed balance its token has no current price for', async () => {
+    h.currentPrices = {};
+    const { result } = renderEarnings();
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const spk = protocolById(result.current, SPK_FARM_ID);
+    expect(spk.totalEarned).toEqual({ status: 'notAvailable', reason: 'source-error' });
+    expect(spk.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'source-error' });
+    // Nothing unclaimed in GROVE, so its missing price doesn't matter: a real $0.
+    const grove = protocolById(result.current, GROVE_FARM_ID);
+    expect(grove.totalEarned).toEqual({ status: 'ok', value: { usd: 0 } });
+    expect(grove.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 0 } });
+  });
+
+  it('settles the farm totals before the month-start block search', async () => {
+    h.findFirstBlockAtOrAfter.mockReturnValue(new Promise(() => {}));
+    const { result } = renderEarnings();
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    const spk = protocolById(result.current, SPK_FARM_ID);
+    expect(spk.totalEarned.status).toBe('ok');
+    expect(spk.earnedThisMonth).toEqual({ status: 'notAvailable', reason: 'loading' });
   });
 });

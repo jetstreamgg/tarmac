@@ -68,17 +68,6 @@ export const contracts: {
     }
   },
 
-  // Spark Tether Savings (sUSDT) vault — verified ERC-4626 SparkVault (APP-266).
-  // The address is consumed at runtime via the generated `sparkUsdtVaultAddress`.
-  // Codegen only emits the proxy ABI here; reads/writes use the captured
-  // implementation ABI in hooks/abis/sparkVaultAbi.ts.
-  {
-    name: 'sparkUsdtVault',
-    address: {
-      [mainnet.id]: '0x74cb54e082411cfCAEADb00a0765625B10410DAa',
-      [TENDERLY_CHAIN_ID]: '0x74cb54e082411cfCAEADb00a0765625B10410DAa'
-    }
-  },
   {
     name: 'wstEth',
     address: {

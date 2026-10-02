@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnalyticsFlowProvider } from '../context/AnalyticsFlowContext';
 import { useWidgetAnalytics } from './useWidgetAnalytics';
-import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
+import { WidgetAnalyticsEventType } from '@/modules/analytics/analyticsEvents';
 import { capturedEventsNamed, clearCapturedEvents, lastCapturedEvent } from '@/test/analyticsCapture';
 
 vi.mock('posthog-js/react', async () => {

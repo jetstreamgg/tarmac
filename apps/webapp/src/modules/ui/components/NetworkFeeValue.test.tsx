@@ -1,6 +1,6 @@
 import { render, renderHook, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import type { NetworkFeeData } from '@/hooks';
 import { NetworkFeeValue, useBundleFeeState } from './NetworkFeeValue';
 
@@ -86,6 +86,10 @@ const renderValue = (data: NetworkFeeData | undefined, state: ReturnType<typeof 
     </I18nWidgetProvider>
   );
 
+// A figure is drawn digit by digit, so it is read back from the element's text.
+const figure = (text: string) =>
+  screen.getAllByTestId('rolling-digits').find(el => el.textContent === text) ?? null;
+
 describe('NetworkFeeValue', () => {
   it('is a plain dash before anything has resolved', async () => {
     renderValue(undefined, stateOf(2, undefined));
@@ -97,7 +101,8 @@ describe('NetworkFeeValue', () => {
     mocks.batchSupported = false;
     const data = fee({ isBatch: false });
     renderValue(data, stateOf(2, data));
-    expect(await screen.findByText('$0.11')).toBeTruthy();
+    await screen.findByTestId('rolling-digits');
+    expect(figure('$0.11')).toBeTruthy();
     expect(screen.queryByTestId('bundle-toggle-badge')).toBeNull();
   });
 
@@ -108,7 +113,7 @@ describe('NetworkFeeValue', () => {
     renderValue(data, stateOf(2, data));
     expect(await screen.findByTestId('bundle-toggle-badge')).toBeTruthy();
     expect(screen.getByText('Not bundled')).toBeTruthy();
-    expect(screen.getByText('$0.11')).toBeTruthy();
+    expect(figure('$0.11')).toBeTruthy();
   });
 
   it('shows the badge and the bundled fee when bundling is on', async () => {
@@ -117,11 +122,11 @@ describe('NetworkFeeValue', () => {
     renderValue(data, stateOf(2, data));
     expect(await screen.findByTestId('bundle-toggle-badge')).toBeTruthy();
     expect(screen.getByText('Bundled')).toBeTruthy();
-    expect(screen.getByText('$0.11')).toBeTruthy();
+    expect(figure('$0.11')).toBeTruthy();
     // The sequential cost is not drawn beside it — struck through or otherwise: the
     // saving has already been made by the time this state is reachable (team call,
     // 2026-07-28).
-    expect(screen.queryByText('$0.13')).toBeNull();
+    expect(figure('$0.13')).toBeNull();
   });
 
   it('shows a `Not bundled` badge with bundling off and no saving to report', async () => {
@@ -153,13 +158,34 @@ describe('NetworkFeeValue', () => {
     expect(screen.queryByText('–')).toBeNull();
   });
 
+  it('rolls the fee as the estimate refreshes and keeps the currency sign still', async () => {
+    mocks.batchSupported = false;
+    const data = fee({ isBatch: false });
+    const tree = (next: typeof data) => (
+      <I18nWidgetProvider locale="en">
+        <NetworkFeeValue fee={next} state={stateOf(2, next)} />
+      </I18nWidgetProvider>
+    );
+    const { rerender } = render(tree(data));
+    await screen.findByTestId('rolling-digits');
+    expect(figure('$0.11')).toBeTruthy();
+    rerender(tree({ ...data, formatted: '$0.14' }));
+    const moving = screen.getAllByTestId('rolling-digit-in');
+    expect(moving.map(el => el.textContent)).toEqual(['4']);
+    expect(moving[0].getAttribute('data-transition')).toBe('roll');
+    const copy = screen.getByTestId('rolling-digits').cloneNode(true) as HTMLElement;
+    copy.querySelectorAll('[data-testid="rolling-digit-out"]').forEach(el => el.remove());
+    expect(copy.textContent).toBe('$0.14');
+  });
+
   it('keeps a held figure through a failed refetch', async () => {
     // `keepPreviousData` can hand back the last estimate alongside a new error —
     // the figure wins over the failed marker.
     const data = fee({ isBatch: false });
     mocks.batchSupported = false;
     renderValue(data, stateOf(1, data, true), false);
-    expect(await screen.findByText('$0.11')).toBeTruthy();
+    await screen.findByTestId('rolling-digits');
+    expect(figure('$0.11')).toBeTruthy();
     expect(screen.queryByTestId('network-fee-failed')).toBeNull();
   });
 });

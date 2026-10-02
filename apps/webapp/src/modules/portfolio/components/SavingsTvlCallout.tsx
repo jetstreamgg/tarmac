@@ -14,7 +14,7 @@ import { trackPromoImpression, trackPromoClicked } from '@/modules/analytics/lib
  * same before and after the figure lands.
  */
 function TvlFigure({ tvlUsd }: { tvlUsd: number | undefined }) {
-  return <>{tvlUsd === undefined ? '$0.00b' : `$${formatNumber(tvlUsd, { compact: true }).toLowerCase()}`}</>;
+  return <>{tvlUsd === undefined ? '$0.00B' : `$${formatNumber(tvlUsd, { compact: true })}`}</>;
 }
 
 /**

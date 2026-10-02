@@ -9,7 +9,6 @@ import { upgradeHistoryFragments, mapUpgradeHistoryResponse } from '../upgrade/u
 import { stakeHistoryFragments, mapStakeHistoryResponse } from '../stake/useStakeHistory';
 import { rewardsHistoryFragments, mapRewardsHistoryResponse } from '../rewards/useAllRewardsUserHistory';
 import { stusdsHistoryFragments, mapStusdsHistoryResponse } from '../stusds/useStUsdsHistory';
-import { susdtHistoryFragments, mapSusdtHistoryResponse } from '../vaults/spark/useSusdtVaultHistory';
 import { l2SavingsHistoryFragments, mapL2SavingsRows } from '../psm/useL2SavingsHistory';
 import { psmTradeFragment, mapPsmTradeRows } from '../psm/usePsmTradeHistory';
 import { useAvailableTokenRewardContracts } from '../rewards/useAvailableTokenRewardContracts';
@@ -27,7 +26,7 @@ import { familyMainnetId, chainId as chainIdMap } from '@/utils';
  * (the merged all-families documents clamp every page at the densest family's
  * frontier, hiding a sparse family's older rows until many pages load).
  */
-export type HistoryFamily = 'savings' | 'upgrade' | 'stake' | 'rewards' | 'stusds' | 'susdt' | 'psmTrades';
+export type HistoryFamily = 'savings' | 'upgrade' | 'stake' | 'rewards' | 'stusds' | 'psmTrades';
 
 // Every family has a mainnet document; savings and psmTrades (the mainnet
 // PSM conversions, APP-558) additionally have their L2 `Swap` legs.
@@ -53,8 +52,6 @@ function mainnetFamilyFragments(
       return rewardsHistoryFragments({ user: owner, rewardContracts, chainId, beforeTimestamp });
     case 'stusds':
       return stusdsHistoryFragments({ owner, chainId, beforeTimestamp });
-    case 'susdt':
-      return susdtHistoryFragments({ owner, chainId, beforeTimestamp });
     default:
       return '';
   }
@@ -79,8 +76,6 @@ function mapMainnetFamilyResponse(
       return mapRewardsHistoryResponse(response, chainId) || [];
     case 'stusds':
       return mapStusdsHistoryResponse(response, chainId);
-    case 'susdt':
-      return mapSusdtHistoryResponse(response, chainId);
     default:
       return [];
   }

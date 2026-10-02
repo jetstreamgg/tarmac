@@ -235,7 +235,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
       userSavingsBalance: isL2ChainId(connectedChainId) ? convertedBalance.value : maxWithdraw || 0n,
       userNstBalance: userNstBalance?.value || 0n
     };
-  }, [pie, Pie, dsr, chi, userNstBalance, maxWithdraw, sUsdsBalance]);
+  }, [pie, Pie, dsr, chi, userNstBalance, maxWithdraw, connectedChainId, convertedBalance.value]);
 
   return {
     isLoading,

@@ -1,4 +1,4 @@
-const SECONDS_PER_DAY = 86_400;
+import { SECONDS_PER_DAY } from '@/utils';
 
 /**
  * Whole days until a PT market's expiry — floored, matching the pendle

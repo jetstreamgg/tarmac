@@ -75,6 +75,7 @@ jobs:
         run: pnpm i --frozen-lockfile
       - name: Lint and Type Check
         run: |
+          pnpm prettier:check
           pnpm lint
           pnpm typecheck
 

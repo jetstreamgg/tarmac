@@ -8,7 +8,7 @@ i18n.activate('en');
 describe('formatSimulationErrorMessage', () => {
   it('formats the dust floor into the raw min-borrow message', () => {
     expect(formatSimulationErrorMessage('Minimum borrow amount is 30000', 30000n * 10n ** 18n)).toBe(
-      'Minimum borrow amount is 30,000'
+      'Minimum borrow amount is 30,000.00'
     );
   });
 
@@ -44,7 +44,7 @@ describe('formatSimulationErrorMessage', () => {
   it('keeps the normal mapping when the staged amount is nonzero', () => {
     expect(
       formatSimulationErrorMessage('Minimum borrow amount is 30000', 30000n * 10n ** 18n, 100n * 10n ** 18n)
-    ).toBe('Minimum borrow amount is 30,000');
+    ).toBe('Minimum borrow amount is 30,000.00');
     expect(
       formatSimulationErrorMessage('Insufficient collateral', 30000n * 10n ** 18n, 100n * 10n ** 18n)
     ).toBe('Insufficient collateral');
