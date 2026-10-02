@@ -63,8 +63,12 @@ export function pendleDataSource(): DataSource {
   };
 }
 
-// Server-side cap per history entity query; the indexer stores addresses lowercase,
-// so history queries filter with _eq on lowercased addresses (ILIKE defeats the DB indexes).
+// The indexer's own row cap: any entity query asking for more silently gets 1000 rows back.
+// Queries that need every row (e.g. summing a wallet's whole history) should page at this size,
+// not HISTORY_QUERY_LIMIT, to make the fewest requests — the proxy can rate limit us.
+export const INDEXER_MAX_QUERY_LIMIT = 1000;
+// Page size we choose for the UI history lists (well under the indexer's cap); the indexer stores
+// addresses lowercase, so history queries filter with _eq on lowercased addresses (ILIKE defeats the DB indexes).
 export const HISTORY_QUERY_LIMIT = 100;
 // History is append-only; without this every remount/window focus refires the full history fan-out.
 export const HISTORY_STALE_TIME = 60_000;

@@ -13,13 +13,27 @@
  */
 export type MorphoVaultSourceId = `morpho-vault-${string}`;
 
-export type EarningsSourceId = MorphoVaultSourceId | 'merkl' | 'pendle' | 'savings' | 'stusds';
+/**
+ * One earnings source per Sky Token Rewards farm (APP-589: every live,
+ * USD-priced farm is tracked automatically), keyed by the lowercased farm
+ * address like the Morpho vaults.
+ */
+export type RewardFarmSourceId = `reward-farm-${string}`;
+
+export type EarningsSourceId =
+  MorphoVaultSourceId | RewardFarmSourceId | 'merkl' | 'pendle' | 'savings' | 'stusds';
 
 export const morphoVaultSourceId = (vaultAddress: string): MorphoVaultSourceId =>
   `morpho-vault-${vaultAddress.toLowerCase()}`;
 
 export const isMorphoVaultSourceId = (id: EarningsSourceId): id is MorphoVaultSourceId =>
   id.startsWith('morpho-vault-');
+
+export const rewardFarmSourceId = (farmAddress: string): RewardFarmSourceId =>
+  `reward-farm-${farmAddress.toLowerCase()}`;
+
+export const isRewardFarmSourceId = (id: EarningsSourceId): id is RewardFarmSourceId =>
+  id.startsWith('reward-farm-');
 
 export type TokenAmount = { amount: number; symbol: string };
 

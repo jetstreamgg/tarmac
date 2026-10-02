@@ -15,6 +15,8 @@ import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
 import { earningsForPosition, earningsForSuppliedPosition } from '../earnings/earningsForPosition';
+import type { BreakdownProduct } from '../earnings/earningsBreakdown';
+import { EarningsBreakdown } from './EarningsBreakdown';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
 import { CombinedEarningsStat, EarningsFigureValue, STAT_ROW, StatInfoGlyph } from './EarningsStat';
@@ -83,6 +85,7 @@ export function StablecoinEarningsCard({
   idleLoading,
   savingsRate,
   earnings,
+  products,
   tab,
   onTabChange
 }: {
@@ -96,6 +99,8 @@ export function StablecoinEarningsCard({
   savingsRate?: number;
   /** APP-450 wallet earnings driving the Total earned / Earned this month stats. */
   earnings: WalletEarnings;
+  /** Every visible marketplace product: names the rows of the earnings breakdown popup (APP-589). */
+  products: BreakdownProduct[];
   tab: PortfolioTab;
   onTabChange: (tab: PortfolioTab) => void;
 }) {
@@ -106,7 +111,12 @@ export function StablecoinEarningsCard({
       {tab === 'idle' ? (
         <IdleContent view={idleView} savingsRate={savingsRate} isLoading={idleLoading} />
       ) : (
-        <SuppliedContent view={suppliedView} earnings={earnings} isLoading={suppliedLoading} />
+        <SuppliedContent
+          view={suppliedView}
+          earnings={earnings}
+          products={products}
+          isLoading={suppliedLoading}
+        />
       )}
     </Card>
   );
@@ -115,10 +125,12 @@ export function StablecoinEarningsCard({
 function SuppliedContent({
   view,
   earnings,
+  products,
   isLoading
 }: {
   view: SuppliedView;
   earnings: WalletEarnings;
+  products: BreakdownProduct[];
   isLoading: boolean;
 }) {
   // Hovering a position (legend or chart) focuses the card on it: totals and
@@ -141,6 +153,12 @@ function SuppliedContent({
   const untrackedNames = [
     ...new Set(view.positions.filter(p => earningsForPosition(earnings, p.rowId) === null).map(p => p.name))
   ];
+  // APP-589 popup on each combined figure: one row per product, held or not.
+  // The rows are built inside the popup, so only while it is open.
+  const heldRowIds = new Set(view.positions.map(p => p.rowId));
+  const breakdownFor = (field: 'total' | 'month') => (
+    <EarningsBreakdown earnings={earnings} field={field} products={products} heldRowIds={heldRowIds} />
+  );
   const activeSymbol = activePosition?.tokenSymbol ?? null;
   const displayTotal = activePosition ? activePosition.amountUsd : view.totalSupplied;
   const displayProjected = activePosition
@@ -253,6 +271,7 @@ function SuppliedContent({
                 testId="earnings-total-value"
                 untrackedNames={untrackedNames}
                 showGapGlyph={false}
+                breakdown={breakdownFor('total')}
               />
             )
           }
@@ -278,6 +297,7 @@ function SuppliedContent({
                 testId="earnings-month-value"
                 untrackedNames={untrackedNames}
                 showGapGlyph={false}
+                breakdown={breakdownFor('month')}
               />
             )
           }
