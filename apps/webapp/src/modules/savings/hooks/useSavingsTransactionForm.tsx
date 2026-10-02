@@ -284,8 +284,8 @@ export function useSavingsTransactionForm({
     flow,
     originToken,
     amount,
-    // `max` only applies to withdraw — it routes to maxWithdraw(owner) on mainnet
-    // or swapExactIn(whole sUSDS balance) on L2.
+    // `max` only applies to withdraw — it redeems the whole sUSDS share balance on
+    // mainnet or swapExactIn(whole sUSDS balance) on L2.
     max: !isSupply && max,
     referralCode: REFERRAL_CODE,
     minAmountOut,
