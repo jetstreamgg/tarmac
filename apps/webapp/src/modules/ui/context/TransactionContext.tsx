@@ -1001,7 +1001,9 @@ export function TransactionProvider({
           else notifyReviewAgainOnDisconnect();
           return;
         }
-        if (!callsStillConfirmed()) {
+        // The calls can hold steady while the flow's own gating turns against
+        // them (an acknowledgement lapsing, a module halting since the confirm).
+        if (!callsStillConfirmed() || configRef.current?.getConfirmDisabled?.()) {
           sendBackToReview();
           notifyReviewAgainOnChangedCalls();
           return;

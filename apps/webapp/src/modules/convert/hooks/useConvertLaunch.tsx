@@ -132,12 +132,15 @@ export function useConvertLaunch({
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
   const executeRef = useRef<() => void>(() => undefined);
-  // Read by the provider at dispatch time (see `TransactionConfig.getNextCalls`).
+  // Read by the provider at dispatch time (see `TransactionConfig.getNextCalls`
+  // and `getConfirmDisabled`).
   const nextCallsRef = useRef<Call[]>([]);
+  const confirmDisabledRef = useRef(true);
   // A layout effect, so a confirm click can never run the previous render's execute.
   useLayoutEffect(() => {
     executeRef.current = () => conversion.execute();
     nextCallsRef.current = conversion.nextCalls;
+    confirmDisabledRef.current = confirmDisabled;
   });
 
   // Engine reads (allowance / liquidity / halted flags) refetch on success before
@@ -227,6 +230,7 @@ export function useConvertLaunch({
       errorMessage,
       onConfirm: () => executeRef.current(),
       getNextCalls: () => nextCallsRef.current,
+      getConfirmDisabled: () => confirmDisabledRef.current,
       onSuccess: handleSuccess,
       sessionId,
       // Both legs are $1-pegged (USDC/USDS); the amount is fixed at launch

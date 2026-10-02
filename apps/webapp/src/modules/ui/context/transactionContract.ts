@@ -197,6 +197,13 @@ export type TransactionConfig = {
    * calldata cannot drift after review.
    */
   getNextCalls?: () => readonly Call[];
+  /**
+   * Reads the flow's live confirm gating (what `confirmDisabled` would be if
+   * pushed now). Pushes freeze once the transaction leaves IDLE, so the provider
+   * reads this instead to refuse a deferred dispatch the flow would no longer
+   * allow: a lapsed acknowledgement, a module that halted since the confirm.
+   */
+  getConfirmDisabled?: () => boolean;
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
@@ -293,6 +300,7 @@ export type LiveModalUpdate = Partial<
     | 'onSecondaryConfirm'
     | 'onRetry'
     | 'getNextCalls'
+    | 'getConfirmDisabled'
     | 'steps'
     | 'toast'
     | 'analytics'

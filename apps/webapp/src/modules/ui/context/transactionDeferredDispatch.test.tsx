@@ -331,6 +331,56 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
+  it('refuses a retry once the flow no longer allows the confirm, even with the calls unchanged', () => {
+    const onConfirm = vi.fn();
+    const gating = { disabled: false };
+    const { config } = driftingFlow(onConfirm, [swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), {
+      ...config,
+      getConfirmDisabled: () => gating.disabled
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    // e.g. an acknowledgement lapsed or the module halted since the confirm.
+    gating.disabled = true;
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(renderLastToast().getByText('Transaction details changed')).toBeTruthy();
+  });
+
+  it('refuses an async allow once the flow no longer allows the confirm', async () => {
+    const onConfirm = vi.fn();
+    const gating = { disabled: false };
+    let resolveVerdict!: (v: { allow: boolean }) => void;
+    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const { config } = driftingFlow(onConfirm, [swap(900n)]);
+    renderWithGate(gate, { ...config, getConfirmDisabled: () => gating.disabled });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    gating.disabled = true;
+    resolveVerdict({ allow: true });
+    await flush();
+
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('retries when the flow still allows the confirm', () => {
+    const onConfirm = vi.fn();
+    const { config } = driftingFlow(onConfirm, [swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), { ...config, getConfirmDisabled: () => false });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('rejected in wallet')));
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+  });
+
   it('leaves flows that report no calls to the gate alone', () => {
     const onConfirm = vi.fn();
     const cb = renderWithGate(() => ({ allow: true }), {

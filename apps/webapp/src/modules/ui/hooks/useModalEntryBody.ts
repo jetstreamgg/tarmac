@@ -124,6 +124,11 @@ export function useModalEntryBody({
     nextCallsRef.current = nextCalls;
   }, [nextCalls]);
   const getNextCalls = useCallback(() => nextCallsRef.current, []);
+  const confirmDisabledRef = useRef(confirmDisabled);
+  useLayoutEffect(() => {
+    confirmDisabledRef.current = confirmDisabled;
+  }, [confirmDisabled]);
+  const getConfirmDisabled = useCallback(() => confirmDisabledRef.current, []);
 
   // Keep the shared modal's confirm gating + handler + wallet summary (+ optional
   // step labels / toast titles) live. Merged into the entry (never replacing
@@ -153,6 +158,7 @@ export function useModalEntryBody({
       errorMessage,
       onConfirm,
       getNextCalls,
+      getConfirmDisabled,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
@@ -177,6 +183,7 @@ export function useModalEntryBody({
     analytics,
     onConfirm,
     getNextCalls,
+    getConfirmDisabled,
     updateModalContent
   ]);
 
