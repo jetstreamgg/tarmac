@@ -42,10 +42,11 @@ export type MerklEarnings = {
 
 const units = (value: bigint, decimals: number): number => Number(value) / 10 ** decimals;
 
-const dayIsoOf = (timestampSec: number): string => new Date(timestampSec * 1000).toISOString().slice(0, 10);
+export const dayIsoOf = (timestampSec: number): string =>
+  new Date(timestampSec * 1000).toISOString().slice(0, 10);
 
 /** Price on the day, else the nearest previous day in the series (ISO strings sort chronologically). */
-function priceAtOrBefore(prices: Map<string, number>, dayIso: string): number | undefined {
+export function priceAtOrBefore(prices: Map<string, number>, dayIso: string): number | undefined {
   const exact = prices.get(dayIso);
   if (exact !== undefined) return exact;
   let bestDay: string | undefined;

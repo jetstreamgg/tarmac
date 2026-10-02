@@ -286,7 +286,7 @@ transaction was sent through the mock wallet. 28/28 checks passed:
   unit, warning banner "dropped to 0%" with liquidation price $0.0101, risk meter fully lit,
   no liquidated badge (barks empty). Debt-free rows unlit with `0.00`.
 - **Summary card**: total staked 4,108,092; ~$216,660.75 = exactly `4,108,091.6 × $0.05274`(the MKT price at run time — proves the MKT attribution); total borrowed $30,022.49 live;
-claimable $123.39 =`123.45 × $0.99953` (MKT USDS — not the $1 peg, correct per source);
+  claimable $123.39 =`123.45 × $0.99953` (MKT USDS — not the $1 peg, correct per source);
   Net APY −1.14% reproduced the formula exactly with the run's inputs.
 - **Details modal**: Protocol SKY Price $0.0025 (OSM, unmoved by the 21× market divergence),
   liquidation price $0.0101, risk pill "liquidation" (the OSM guard, since market price sat far

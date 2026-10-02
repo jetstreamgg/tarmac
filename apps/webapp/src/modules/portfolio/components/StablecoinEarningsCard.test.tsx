@@ -113,6 +113,14 @@ const EARNINGS = walletEarnings([
   proto('stusds', ['stusds'], ok({ usd: 30 }), ok({ usd: 3 }))
 ]);
 
+// The visible marketplace products naming the breakdown popup rows (APP-589).
+const PRODUCTS = [
+  { id: 'savings', name: 'Sky Savings Rate', tokenSymbol: 'sUSDS', kind: 'savings' as const },
+  { id: 'vault-morpho-0xflagship', name: 'USDS Flagship', tokenSymbol: 'USDS', kind: 'vault' as const },
+  { id: 'fixed-0xmkt', name: 'Fixed Yield', tokenSymbol: 'sUSDS', kind: 'fixed' as const },
+  { id: 'stusds', name: 'Staked USDS', tokenSymbol: 'stUSDS', kind: 'stusds' as const }
+];
+
 const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> = {}) =>
   render(
     <I18nProvider i18n={i18n}>
@@ -123,6 +131,7 @@ const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> 
         idleLoading={false}
         savingsRate={0.0375}
         earnings={EARNINGS}
+        products={PRODUCTS}
         tab="supplied"
         onTabChange={() => {}}
         {...over}
@@ -189,6 +198,7 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
           idleLoading={false}
           savingsRate={0.0375}
           earnings={EARNINGS}
+          products={PRODUCTS}
           tab="supplied"
           onTabChange={() => {}}
         />
@@ -263,6 +273,18 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     );
     renderCard({ earnings: loading });
     expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(2);
+  });
+
+  // APP-589: a reward farm settles its total before the month-start block search.
+  it('shows the total while a source is still loading its month figure', () => {
+    renderCard({
+      earnings: walletEarnings([
+        ...EARNINGS.protocols,
+        proto('reward-farm-0xspk', ['rewards-spk'], ok({ usd: 6 }), notAvailable('loading'))
+      ])
+    });
+    expect(totalText()).toBe('+$176.40');
+    expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(1);
   });
 
   // The footer stats render the bare figures: the gap glyph beside
@@ -406,6 +428,48 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     expect(screen.getByText(/Not included:/)).toBeTruthy();
   });
 
+  // APP-589: the combined figure itself opens the per-product breakdown.
+  it('opens the per-product breakdown from the combined total', () => {
+    touch.isTouch = true;
+    renderCard();
+    fireEvent.click(screen.getByTestId('earnings-total-value-breakdown-trigger'));
+
+    const breakdown = screen.getByTestId('earnings-breakdown');
+    expect(within(breakdown).getByText('$170.40')).toBeTruthy();
+    // Largest first; the Flagship row folds Morpho PnL and Merkl rewards (20 + 4).
+    expect(
+      within(breakdown)
+        .getAllByTestId('earnings-breakdown-row')
+        .map(row => row.textContent)
+    ).toEqual(['Fixed Yield$70.00', 'Sky Savings Rate$46.40', 'Staked USDS$30.00', 'USDS Flagship$24.00']);
+  });
+
+  it('lists a held product without an earnings source at $0.00, badged Not tracked', () => {
+    touch.isTouch = true;
+    renderCard({
+      suppliedView: {
+        ...SUPPLIED,
+        positions: [
+          ...SUPPLIED.positions,
+          { ...SUPPLIED.positions[0], id: 'rewards-cle:1', rowId: 'rewards-cle', name: 'Chronicle Points' }
+        ]
+      },
+      products: [
+        ...PRODUCTS,
+        { id: 'rewards-cle', name: 'Chronicle Points', tokenSymbol: 'CLE', kind: 'rewards' as const }
+      ]
+    });
+    fireEvent.click(screen.getByTestId('earnings-month-value-breakdown-trigger'));
+
+    const rows = within(screen.getByTestId('earnings-breakdown')).getAllByTestId('earnings-breakdown-row');
+    // Merkl has no monthly figure, so the Flagship row is the vault alone; the
+    // untracked row sorts last.
+    expect(rows.find(row => row.textContent?.startsWith('USDS Flagship'))?.textContent).toBe(
+      'USDS Flagship$10.00'
+    );
+    expect(rows.at(-1)?.textContent).toBe('Chronicle PointsNot tracked$0.00');
+  });
+
   // Hover-focused figures render bare too: no glyph for their missing contributors.
 
   it("shows the hovered position's figure without a glyph for its announced gap", () => {
@@ -523,6 +587,7 @@ describe('StablecoinEarningsCard Others bucket (Figma 3356:52120)', () => {
           idleLoading={false}
           savingsRate={0.0375}
           earnings={EARNINGS}
+          products={PRODUCTS}
           tab="supplied"
           onTabChange={() => {}}
         />

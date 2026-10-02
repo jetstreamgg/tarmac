@@ -52,6 +52,6 @@ Push and open a single PR to `development`. The body should list each group's bu
 
 ## Known pins & recurring checks
 
-- **@metamask/connect-evm stays on 1.x**: it is never imported directly — it only satisfies the peer dependency of wagmi's `metaMask()` connector, and `@wagmi/connectors` (via wagmi) requires `^1.3.0`. Each run, check whether wagmi's current `@wagmi/connectors` has widened that range before considering 2.x.
+- **@metamask/connect-evm follows `@wagmi/connectors`' peer range, not the patch-only rule**: it is never imported directly — it only satisfies the peer dependency of wagmi's `metaMask()` connector. That peer is `^2.1.0` (moved off 1.x in 2026-08), so the catalog is on 2.x. Each run, check the peer range of the `@wagmi/connectors` that the target wagmi depends on (`npm view @wagmi/connectors@<ver> peerDependencies`); if it moves to a new major, follow it as a deliberate, PR-documented deviation from the patch-only rule.
 - Wallet-connector packages are deliberately conservative (patch-only, `~` ranges) — do not "helpfully" widen them.
 - If a catalog entry looks obsolete (e.g. a package no longer imported anywhere), flag it for removal in a separate PR rather than bumping it.
