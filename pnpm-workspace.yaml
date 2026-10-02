@@ -72,7 +72,7 @@ catalog:
   motion: ^12.43.0
   openapi-fetch: ^0.17.0
   porto: ~0.2.37
-  posthog-js: ^1.434.12
+  posthog-js: ^1.434.14
   prettier: ^3.9.9
   prettier-plugin-tailwindcss: ^0.8.1
   react: ^19.3.0
