@@ -1,9 +1,10 @@
-// Tests for lib.mjs. Run with: node --test .claude/skills/dependency-updates/scripts/
+// Tests for lib.mjs. Run with: node --test .claude/skills/dependency-updates/scripts/lib.test.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
 import {
   bumpCatalogText,
+  filterOverrides,
   bumpLevel,
   globMatch,
   lockfileChildVersions,
@@ -12,7 +13,9 @@ import {
   parseYaml,
   patternSpecificity,
   satisfies,
-  splitRange
+  splitRange,
+  topLevelBlock,
+  workspaceManifests
 } from './lib.mjs';
 
 describe('parseYaml', () => {
@@ -53,6 +56,22 @@ describe('parseYaml', () => {
 
   test('BOM, CRLF and a trailing flow comma', () => {
     assert.deepEqual(parseYaml('\uFEFFa: 1\r\nv: [">=20.14.0",]\r\n'), { a: '1', v: ['>=20.14.0'] });
+  });
+
+  test('a sequence item whose key and value are both quoted is a mapping', () => {
+    assert.deepEqual(
+      parseYaml("ignore:\n  - 'dependency-name': 'happy-dom'\n    \"versions\": ['>=20.12.0']"),
+      {
+        ignore: [{ 'dependency-name': 'happy-dom', versions: ['>=20.12.0'] }]
+      }
+    );
+  });
+
+  test('an apostrophe inside plain text is not a quote', () => {
+    assert.deepEqual(parseYaml('a: Sky\'s thing # c\nb: [it\'s, "x, y"]'), {
+      a: "Sky's thing",
+      b: ["it's", 'x, y']
+    });
   });
 
   for (const [label, text] of [
@@ -116,6 +135,12 @@ describe('satisfies', () => {
   test('throws on unsupported syntax', () => {
     assert.throws(() => satisfies('1.0.0', 'latest'));
   });
+
+  test('throws on an empty range or an empty || alternative', () => {
+    assert.throws(() => satisfies('1.2.3', ''));
+    assert.throws(() => satisfies('3.0.0', '<2 || '));
+    assert.equal(satisfies('3.0.0', '*'), true);
+  });
 });
 
 describe('versions and patterns', () => {
@@ -142,6 +167,7 @@ describe('versions and patterns', () => {
     assert.equal(patternSpecificity('*', 'wagmi'), 1);
     assert.equal(patternSpecificity('eslint*', 'eslint'), 92);
     assert.equal(patternSpecificity('@tanstack/*', '@tanstack/react-query'), 96);
+    assert.equal(patternSpecificity(undefined, 'anything'), 500);
   });
 });
 
@@ -180,6 +206,17 @@ describe('bumpCatalogText', () => {
     );
   });
 
+  test('tolerates a header comment, trailing spaces and quoted ranges', () => {
+    const text = ['catalog:  # versions', "  vite: '^8.2.2'   ", '  react: "19.2.8" # pinned  ', ''].join(
+      '\n'
+    );
+    const { text: out } = bumpCatalogText(text, ['vite@8.3.1', 'react@19.3.0']);
+    assert.equal(
+      out,
+      ['catalog:  # versions', "  vite: '^8.3.1'   ", '  react: "19.3.0" # pinned  ', ''].join('\n')
+    );
+  });
+
   test('preserves CRLF line endings', () => {
     const { text } = bumpCatalogText(workspace.replace(/\n/g, '\r\n'), ['viem@2.56.8']);
     assert.ok(text.includes('viem: ^2.56.8 # keep the comment\r\n'));
@@ -214,6 +251,22 @@ describe('overrides', () => {
       range: '7.26.7'
     });
     assert.deepEqual(parseOverrideSelector('foo'), { parent: null, name: 'foo', range: null });
+    assert.deepEqual(parseOverrideSelector('foo>7zip-bin@<5'), {
+      parent: 'foo',
+      name: '7zip-bin',
+      range: '<5'
+    });
+    assert.deepEqual(parseOverrideSelector('parent@1>JSONStream@<1.3.1'), {
+      parent: 'parent',
+      name: 'JSONStream',
+      range: '<1.3.1'
+    });
+    assert.deepEqual(parseOverrideSelector('vite@>=8.0.0 <=8.0.15'), {
+      parent: null,
+      name: 'vite',
+      range: '>=8.0.0 <=8.0.15'
+    });
+    assert.deepEqual(parseOverrideSelector('a@>1 || >2'), { parent: null, name: 'a', range: '>1 || >2' });
   });
 
   const lockfile = [
@@ -252,5 +305,65 @@ describe('overrides', () => {
   test('lockfileChildVersions only reads the parent snapshot', () => {
     assert.deepEqual([...lockfileChildVersions(lockfile, '@json-rpc-tools/provider', 'axios')], ['0.21.4']);
     assert.deepEqual([...lockfileChildVersions(lockfile, 'other', 'axios')], ['1.20.0']);
+  });
+});
+
+describe('workspace blocks', () => {
+  const workspace = [
+    'catalog:',
+    '  vite: ^8.3.1',
+    '',
+    '# Watchlist: elliptic is deliberately not overridden.',
+    'overrides:  # security floors',
+    '  esbuild@<0.28.1: ~0.28.1',
+    '# a column-0 comment inside the block',
+    "  '@babel/runtime@7.26.7': 7.26.10",
+    '  axios@>=1.0.0 <1.20.0: ^1.20.0',
+    '',
+    '# allowBuilds comment',
+    'allowBuilds:',
+    '  esbuild: false',
+    ''
+  ].join('\n');
+
+  test('topLevelBlock spans inner column-0 comments but not the next key comment', () => {
+    const lines = workspace.split('\n');
+    const { start, end } = topLevelBlock(lines, 'overrides');
+    assert.equal(lines[start], 'overrides:  # security floors');
+    assert.equal(lines[end - 1], '  axios@>=1.0.0 <1.20.0: ^1.20.0');
+    assert.equal(topLevelBlock(lines, 'missing'), null);
+  });
+
+  test('filterOverrides keeps only the selected entries', () => {
+    const out = filterOverrides(workspace, key => key === '@babel/runtime@7.26.7');
+    assert.ok(out.includes("  '@babel/runtime@7.26.7': 7.26.10"));
+    assert.ok(!out.includes('esbuild@<0.28.1'));
+    assert.ok(!out.includes('axios@>=1.0.0'));
+    assert.ok(out.includes('overrides:  # security floors'));
+    assert.ok(out.includes('allowBuilds:\n  esbuild: false'));
+    assert.deepEqual(Object.keys(parseYaml(out).overrides), ['@babel/runtime@7.26.7']);
+  });
+
+  test('filterOverrides drops the header when nothing is kept, and keeps CRLF', () => {
+    const out = filterOverrides(workspace.replace(/\n/g, '\r\n'), () => false);
+    assert.ok(!out.includes('overrides:'));
+    assert.ok(out.includes('allowBuilds:\r\n  esbuild: false'));
+    assert.equal(parseYaml(out).overrides, undefined);
+  });
+
+  test('filterOverrides throws without an overrides block', () => {
+    assert.throws(() => filterOverrides('catalog:\n  vite: ^8.3.1\n', () => true));
+  });
+
+  test('workspaceManifests expands dir/* globs and keeps only existing manifests', () => {
+    const files = new Set(['package.json', 'apps/webapp/package.json']);
+    const manifests = workspaceManifests(
+      { packages: ['apps/*'] },
+      { exists: file => files.has(file), listDirs: () => ['webapp', 'empty'] }
+    );
+    assert.deepEqual(manifests, ['package.json', 'apps/webapp/package.json']);
+    assert.throws(() =>
+      workspaceManifests({ packages: ['apps/**'] }, { exists: () => true, listDirs: () => [] })
+    );
   });
 });

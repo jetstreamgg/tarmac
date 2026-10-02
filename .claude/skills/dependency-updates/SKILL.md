@@ -92,7 +92,7 @@ If **tailwindcss** or **prettier** was bumped, run `pnpm prettier:check`. A tail
 Format only the flagged files that git tracks:
 
 ```bash
-git ls-files -z | xargs -0 pnpm exec prettier --list-different --ignore-unknown | xargs pnpm exec prettier --write
+git ls-files -z | xargs -0 pnpm exec prettier --list-different --ignore-unknown | xargs -r pnpm exec prettier --write
 ```
 
 Avoid `pnpm prettier`: it rewrites everything under `.`, including nested checkouts such as `.claude/worktrees/*`. Put the result in its **own commit** (don't fold it into a group). Attribute the changes correctly in the commit and the PR: Tailwind class re-sorting vs. actual prettier restyling.
@@ -135,7 +135,7 @@ Then watch CI (`gh pr checks <number> --watch`). If e2e shards fail, use the `e2
 Then handle Dependabot's open PRs. They're the team's monthly reminder for this run, and a cross-check of the plan:
 
 1. List them with `gh pr list --author app/dependabot --state open`, and read each one's bump list.
-2. Any package a Dependabot PR bumps that this PR doesn't (or bumps to a lower version) must have a reason in this PR's body. This month that was happy-dom, held back on purpose.
+2. Any package a Dependabot PR bumps that this PR doesn't (or bumps to a lower version) must have a reason in this PR's body. For example, a package held back by a `versions` ignore rule.
 3. Close each Dependabot PR whose bumps this PR fully covers, at the same or a newer version, with `gh pr close <n> --comment "Superseded by #<this PR>."`.
 4. Leave every other Dependabot PR open and mention it in your summary. This mostly concerns security-update PRs, which aren't part of the monthly run.
 
@@ -164,10 +164,10 @@ When web3-tools moved by more than a patch, smoke-test a transaction flow on a T
   - happy-dom's `Animation.cancel()` rejects `finished` without marking it handled. The result is about 100 unhandled `AbortError: The animation was canceled` errors, and Vitest exits 1.
   - Upstream: capricorn86/happy-dom#2339 and #2412. Each run, check whether they're fixed; if so, remove the rule.
 - **Overrides**: run `node .claude/skills/dependency-updates/scripts/check-overrides.mjs`.
-  - It removes every override in a temp copy, re-resolves the lockfile, and checks each override's selector against the result.
+  - It removes every override in a temp copy, re-resolves the lockfile, and checks each override's selector against the result. A second pass then keeps every non-candidate override and removes only the candidates, so the result matches the tree you'd actually get.
   - `removable`: nothing the selector targets would be installed without it. Delete those entries from `overrides:`, run `pnpm install`, and commit that as its own commit. The audit gate in step 7 must still pass.
   - `needed`: keep it. The detail column shows the version that would come back.
-  - `review`: an unconditional override, or a selector the script can't evaluate. Decide by hand.
+  - `review`: an unconditional override, a selector the script can't evaluate, or a package that isn't in the re-resolved tree at all. The last case usually means the package left the tree, but it's not reported as removable because it could also be a selector the script misread. Decide by hand.
   - Also go through the watchlist comment above `overrides:` (advisories deliberately left unoverridden). If upstream now publishes a fix, add a range-scoped override following the conventions in that comment, or drop the watchlist entry if the package left the tree.
 - **Obsolete catalog entries**:
   - Run `pnpm knip --dependencies`. If it reports an unused dependency, flag it for removal in a separate PR rather than bumping it.

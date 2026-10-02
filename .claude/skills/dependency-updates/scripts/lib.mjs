@@ -5,17 +5,24 @@ import { readFileSync } from 'node:fs';
 export const WORKSPACE_FILE = 'pnpm-workspace.yaml';
 export const DEPENDABOT_FILE = '.github/dependabot.yml';
 
+// A quote only opens a quoted scalar at the start of one: at the start of the line or of
+// a flow item, or after `key:` or `- `. An apostrophe inside plain text (`Sky's`) is text.
+const SCALAR_START = new Set(['', ':', '-', '[', ',']);
+
 // Cuts a trailing `# comment`, ignoring `#` inside quotes.
 function stripComment(line) {
   let quote = null;
+  let last = '';
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (quote) {
-      if (ch === quote) quote = null;
-    } else if (ch === '"' || ch === "'") {
+      if (ch === quote) [quote, last] = [null, ch];
+    } else if ((ch === '"' || ch === "'") && SCALAR_START.has(last)) {
       quote = ch;
     } else if (ch === '#' && (i === 0 || /\s/.test(line[i - 1]))) {
       return line.slice(0, i);
+    } else if (!/\s/.test(ch)) {
+      last = ch;
     }
   }
   return line;
@@ -25,16 +32,19 @@ function stripComment(line) {
 function splitFlow(inner) {
   const items = [];
   let quote = null;
+  let last = '';
   let start = 0;
   for (let i = 0; i < inner.length; i++) {
     const ch = inner[i];
     if (quote) {
-      if (ch === quote) quote = null;
-    } else if (ch === '"' || ch === "'") {
+      if (ch === quote) [quote, last] = [null, ch];
+    } else if ((ch === '"' || ch === "'") && (last === '' || last === ',')) {
       quote = ch;
     } else if (ch === ',') {
       items.push(inner.slice(start, i));
-      start = i + 1;
+      [start, last] = [i + 1, ','];
+    } else if (!/\s/.test(ch)) {
+      last = ch;
     }
   }
   if (quote) throw new Error(`Unterminated quote in flow sequence: [${inner}]`);
@@ -119,7 +129,9 @@ export function parseYaml(text) {
       const gap = SEQ_ITEM_RE.exec(line.text)[1].length;
       const item = line.text.slice(1 + gap);
       if (!item) throw new Error(`Unsupported empty sequence item at indent ${indent}`);
-      if (KEY_RE.test(item) && !/^(['"]).*\1$/.test(item)) {
+      // KEY_RE never matches a lone quoted scalar (`"a: b"`), only `key: value` pairs,
+      // including ones whose key and value are both quoted.
+      if (KEY_RE.test(item)) {
         // `- key: value` opens a mapping whose keys line up with the first key.
         lines[i] = { indent: indent + 1 + gap, text: item };
         seq.push(parseMap(indent + 1 + gap));
@@ -158,22 +170,37 @@ export function bumpLevel(from, to) {
   return 'patch';
 }
 
-/** One `  name: range  # comment` line of the catalog block: key (unquoted), range, comment. */
-export const CATALOG_LINE_RE = /^ {2}(?:'([^']+)'|"([^"]+)"|([^\s:'"][^:]*?)): (\S+)(\s+#.*)?$/;
+/**
+ * One `  name: range  # comment` line of the catalog block. Groups: 1 everything up to the
+ * value, 2-4 the key (single-quoted, double-quoted, plain), 5 the value (possibly quoted),
+ * 6 a trailing comment, 7 trailing whitespace.
+ */
+export const CATALOG_LINE_RE = /^( {2}(?:'([^']+)'|"([^"]+)"|([^\s:'"#][^:]*?)):\s+)(\S+?)(\s+#.*?)?(\s*)$/;
+
+/** Index range [start, end) of a top-level `name:` block, including column-0 comments in it. */
+export function topLevelBlock(lines, name) {
+  const header = new RegExp(`^${name}:\\s*(#.*)?$`);
+  const start = lines.findIndex(line => header.test(line));
+  if (start === -1) return null;
+  let end = start + 1;
+  while (end < lines.length && (lines[end].trim() === '' || /^[\s#]/.test(lines[end]))) end++;
+  // Comments and blank lines right before the next key belong to that key, not to this block.
+  while (end > start + 1 && (lines[end - 1].trim() === '' || lines[end - 1].startsWith('#'))) end--;
+  return { start, end };
+}
 
 /**
  * Sets catalog versions in pnpm-workspace.yaml text, keeping each entry's `^`, `~` or exact
- * style and any trailing comment. Only the top-level `catalog:` block is touched. Throws,
- * without returning partial text, on an unknown package, an unsupported range, a version
- * that isn't newer, or a line that would not actually change.
+ * style, quotes, trailing comment and line endings. Only the top-level `catalog:` block is
+ * touched. Throws, without returning partial text, on an unknown package, an unsupported
+ * range, or a version that isn't newer than the current one.
  */
 export function bumpCatalogText(text, specs) {
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
   const lines = text.split(/\r?\n/);
-  const start = lines.indexOf('catalog:');
-  if (start === -1) throw new Error('No top-level catalog: block');
-  let end = start + 1;
-  while (end < lines.length && (lines[end].trim() === '' || /^\s/.test(lines[end]))) end++;
+  const block = topLevelBlock(lines, 'catalog');
+  if (!block) throw new Error('No top-level catalog: block');
+  const { start, end } = block;
 
   const changes = [];
   for (const spec of specs) {
@@ -185,19 +212,18 @@ export function bumpCatalogText(text, specs) {
     let match = null;
     for (let i = start + 1; i < end; i++) {
       const m = CATALOG_LINE_RE.exec(lines[i]);
-      if (m && (m[1] ?? m[2] ?? m[3]) === name) [index, match] = [i, m];
+      if (m && (m[2] ?? m[3] ?? m[4]) === name) [index, match] = [i, m];
     }
     if (index === -1) throw new Error(`${name} is not in the catalog`);
 
-    const range = splitRange(match[4]);
-    if (!range) throw new Error(`Unsupported catalog range for ${name}: ${match[4]}`);
+    const [, lead, , , , value, comment = '', trailing] = match;
+    const quote = /^(['"]).*\1$/.test(value) ? value[0] : '';
+    const range = splitRange(quote ? value.slice(1, -1) : value);
+    if (!range) throw new Error(`Unsupported catalog range for ${name}: ${value}`);
     if (compareVersions(version, range.version) <= 0) {
       throw new Error(`${name}@${version} is not newer than the catalog's ${range.prefix}${range.version}`);
     }
-    const before = lines[index];
-    const keyEnd = before.length - match[4].length - (match[5] ?? '').length;
-    lines[index] = `${before.slice(0, keyEnd)}${range.prefix}${version}${match[5] ?? ''}`;
-    if (lines[index] === before) throw new Error(`Line for ${name} did not change: ${before}`);
+    lines[index] = `${lead}${quote}${range.prefix}${version}${quote}${comment}${trailing}`;
     changes.push({ name, from: `${range.prefix}${range.version}`, to: `${range.prefix}${version}` });
   }
   return { text: lines.join(eol), changes };
@@ -294,6 +320,8 @@ function comparatorsFor(alternative, rule) {
     .replace(/(\^|~>?|>=|<=|>|<|=)\s+/g, '$1')
     .split(/[\s,]+/)
     .filter(Boolean);
+  // An empty range would match everything; `*` is the explicit way to say that.
+  if (!tokens.length) throw new Error(`Empty range or \`||\` alternative in "${rule}"`);
   return tokens.flatMap(token => expandComparator(token, rule));
 }
 
@@ -327,6 +355,7 @@ export function globMatch(pattern, name) {
  * updater/lib/dependabot/updater/pattern_specificity_calculator.rb.
  */
 export function patternSpecificity(pattern, name) {
+  if (pattern === undefined) return 500; // a group without `patterns` (NO_PATTERNS_SCORE)
   if (pattern === name) return 1000;
   if (pattern === '*') return 1;
   const wildcards = (pattern.match(/\*/g) ?? []).length;
@@ -339,11 +368,11 @@ export function patternSpecificity(pattern, name) {
  * `parent>pkg@range` (the parent may carry a range too, which is ignored here).
  */
 export function parseOverrideSelector(key) {
-  // `>` also appears in ranges (`>=1.0.0`); only a `>` followed by a package name separates
-  // parent from child.
-  const separator = /(?<![<>=\s])>(?=@|[a-z])/.exec(key);
+  // pnpm's own rule (@pnpm/parse-overrides): the separator is a `>` right after a character
+  // other than space, `|` or `@`, so range operators like `@>=1` or ` >2` never split.
+  const separator = /[^ |@]>/.exec(key);
   const [parentPart, childPart] = separator
-    ? [key.slice(0, separator.index), key.slice(separator.index + 1)]
+    ? [key.slice(0, separator.index + 1), key.slice(separator.index + 2)]
     : [null, key];
   const split = part => {
     const at = part.indexOf('@', part.startsWith('@') ? 1 : 0);
@@ -380,4 +409,42 @@ export function lockfileChildVersions(lockText, parent, child) {
     }
   }
   return found;
+}
+
+/**
+ * Keeps only the `overrides:` entries whose (unquoted) key passes `keep`, preserving every
+ * other line. Drops the `overrides:` header too when no entry is left. Throws on an entry
+ * line it can't read, so a layout change can't silently keep or drop the wrong override.
+ */
+export function filterOverrides(text, keep) {
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const lines = text.split(/\r?\n/);
+  const block = topLevelBlock(lines, 'overrides');
+  if (!block) throw new Error('No top-level overrides: block');
+  const kept = [];
+  let entries = 0;
+  for (const line of lines.slice(block.start + 1, block.end)) {
+    if (!line.trim() || line.trimStart().startsWith('#')) {
+      kept.push(line);
+      continue;
+    }
+    const match = /^\s+(?:'([^']*)'|"([^"]*)"|([^\s'"#][^#]*?)):(?:\s|$)/.exec(line);
+    if (!match) throw new Error(`Unsupported overrides line: ${line}`);
+    if (keep(match[1] ?? match[2] ?? match[3])) {
+      kept.push(line);
+      entries++;
+    }
+  }
+  const header = entries ? [lines[block.start]] : [];
+  return [...lines.slice(0, block.start), ...header, ...kept, ...lines.slice(block.end)].join(eol);
+}
+
+/** package.json paths of the workspace root and its packages (`dir/*` or plain `dir` globs). */
+export function workspaceManifests(workspace, { exists, listDirs }) {
+  const dirs = (workspace.packages ?? []).flatMap(glob => {
+    if (glob.endsWith('/*')) return listDirs(glob.slice(0, -2)).map(dir => `${glob.slice(0, -2)}/${dir}`);
+    if (/[*?{[!]/.test(glob)) throw new Error(`Unsupported workspace glob: ${glob}`);
+    return [glob];
+  });
+  return ['package.json', ...dirs.map(dir => `${dir}/package.json`)].filter(exists);
 }

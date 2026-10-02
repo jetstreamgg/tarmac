@@ -10,7 +10,7 @@
 // Exits 1 (after printing what it could) if any package could not be planned, so a
 // broken rule or registry error never passes for "nothing to update".
 import { execFile } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { promisify } from 'node:util';
 import {
   DEPENDABOT_FILE,
@@ -23,7 +23,8 @@ import {
   patternSpecificity,
   readYaml,
   satisfies,
-  splitRange
+  splitRange,
+  workspaceManifests
 } from './lib.mjs';
 
 const run = promisify(execFile);
@@ -81,10 +82,35 @@ const groups = Object.entries(npmConfig.groups ?? {})
   .filter(([, group]) => (group['applies-to'] ?? 'version-updates') === 'version-updates')
   .map(([name, group]) => ({
     name,
-    patterns: group.patterns ?? ['*'],
+    patterns: group.patterns ?? null,
     excludePatterns: group['exclude-patterns'] ?? [],
-    updateTypes: group['update-types'] ?? LEVELS
+    updateTypes: group['update-types'] ?? LEVELS,
+    dependencyType: group['dependency-type'] ?? null
   }));
+
+// Whether each package is a `production` and/or `development` dependency somewhere in the
+// workspace, for groups that filter on `dependency-type`.
+const dependencyTypes = new Map();
+const manifests = workspaceManifests(workspace, {
+  exists: existsSync,
+  listDirs: root =>
+    readdirSync(root, { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name)
+});
+for (const file of manifests) {
+  const manifest = JSON.parse(readFileSync(file, 'utf8'));
+  for (const [field, type] of [
+    ['dependencies', 'production'],
+    ['optionalDependencies', 'production'],
+    ['devDependencies', 'development']
+  ]) {
+    for (const name of Object.keys(manifest[field] ?? {})) {
+      if (!dependencyTypes.has(name)) dependencyTypes.set(name, new Set());
+      dependencyTypes.get(name).add(type);
+    }
+  }
+}
 
 function rulesFor(name) {
   const allowed = new Set(LEVELS);
@@ -107,7 +133,11 @@ function groupFor(name, level) {
   for (const group of groups) {
     if (!group.updateTypes.includes(level)) continue;
     if (group.excludePatterns.some(p => globMatch(p, name))) continue;
-    const scores = group.patterns.filter(p => globMatch(p, name)).map(p => patternSpecificity(p, name));
+    if (group.dependencyType && !dependencyTypes.get(name)?.has(group.dependencyType)) continue;
+    // A group without `patterns` takes every dependency its other filters allow.
+    const scores = group.patterns
+      ? group.patterns.filter(p => globMatch(p, name)).map(p => patternSpecificity(p, name))
+      : [patternSpecificity(undefined, name)];
     if (!scores.length) continue;
     const score = Math.max(...scores);
     if (!best || score > best.score) best = { name: group.name, score };
