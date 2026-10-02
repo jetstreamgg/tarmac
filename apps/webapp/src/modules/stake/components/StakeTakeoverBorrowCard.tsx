@@ -142,7 +142,7 @@ export function StakeTakeoverBorrowCard({
               minCollateralNotMet ? undefined : maxLoading ? (
                 <Skeleton className="h-4 w-24" data-testid="stake-takeover-max-loading" />
               ) : (
-                <Trans>max. {formatBigInt(maxBorrowable, { compact: true })} USDS</Trans>
+                <Trans>max. {formatBigInt(maxBorrowable)} USDS</Trans>
               )
             }
           />

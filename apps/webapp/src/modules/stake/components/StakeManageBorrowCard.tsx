@@ -309,7 +309,7 @@ export function StakeManageBorrowCard({
                 {positionLoading ? (
                   <Skeleton className="inline-block h-3.5 w-16 align-middle" />
                 ) : (
-                  formatBigInt(existingDebt, { compact: true })
+                  `${formatBigInt(existingDebt)} USDS`
                 )}
               </span>
             ) : maxHintLoading ? (
@@ -319,7 +319,7 @@ export function StakeManageBorrowCard({
               />
             ) : maxHint !== undefined ? (
               <span className="whitespace-nowrap" data-testid="stake-manage-max-hint">
-                <Trans>Borrowable: {formatBigInt(maxHint, { compact: true })} USDS</Trans>
+                <Trans>Borrowable: {formatBigInt(maxHint)} USDS</Trans>
               </span>
             ) : undefined
           }
@@ -345,10 +345,8 @@ export function StakeManageBorrowCard({
           >
             <Trans>
               The minimum borrow is{' '}
-              {simulatedVault?.dust !== undefined
-                ? formatBigInt(simulatedVault.dust, { compact: true })
-                : NO_VALUE}{' '}
-              USDS, which requires at least{' '}
+              {simulatedVault?.dust !== undefined ? formatBigInt(simulatedVault.dust) : NO_VALUE} USDS, which
+              requires at least{' '}
               {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY as
               collateral. You currently have {formatBigInt(currentCollateral)}/
               {minCollateralForDust !== undefined ? formatBigInt(minCollateralForDust) : NO_VALUE} SKY staked.
