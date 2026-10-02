@@ -18,6 +18,7 @@ import {
 import {
   isAnnouncedGap,
   isMorphoVaultSourceId,
+  isPendleMarketSourceId,
   isRewardFarmSourceId,
   type EarningsCoverage,
   type EarningsFigure,
@@ -26,6 +27,7 @@ import {
   type MissingSourceDetail,
   type MorphoVaultSourceId,
   type NotAvailableReason,
+  type PendleMarketSourceId,
   type PendleSplit,
   type RewardFarmSourceId,
   type WalletEarnings
@@ -37,20 +39,21 @@ import {
 // and a combined figure missing sources says so instead of posing as complete.
 
 const SOURCE_LABELS: Record<
-  Exclude<EarningsSourceId, MorphoVaultSourceId | RewardFarmSourceId>,
+  Exclude<EarningsSourceId, MorphoVaultSourceId | PendleMarketSourceId | RewardFarmSourceId>,
   ReactNode
 > = {
   merkl: <Trans>Merkl rewards</Trans>,
-  pendle: <Trans>Pendle</Trans>,
   savings: <Trans>Sky Savings Rate</Trans>,
   stusds: <Trans>stUSDS</Trans>
 };
 
-/** Per-vault and per-farm sources carry their own name; fixed sources use the map. */
+/** Per-vault Morpho, per-market Pendle and per-farm sources carry their own name; fixed sources use the map. */
 const sourceLabel = ({ id, label }: MissingSourceDetail): ReactNode =>
   label ??
   (isMorphoVaultSourceId(id) ? (
     <Trans>Morpho vault</Trans>
+  ) : isPendleMarketSourceId(id) ? (
+    <Trans>Pendle</Trans>
   ) : isRewardFarmSourceId(id) ? (
     <Trans>Rewards</Trans>
   ) : (
@@ -194,8 +197,8 @@ function GapGlyph({
 }: {
   missing: MissingSourceDetail[];
   untrackedNames?: string[];
-  /** Coverage caveat line — announced-class, never flips the glyph to error. */
-  coverage?: EarningsCoverage;
+  /** Coverage caveats, one line each — announced-class, never flip the glyph to error. */
+  coverage?: EarningsCoverage[];
 }) {
   const hasErrorGap = missing.some(m => !isAnnouncedGap(m.reason));
   return (
@@ -214,7 +217,9 @@ function GapGlyph({
         {(missing.length > 0 || untrackedNames.length > 0) && (
           <MissingList missing={missing} untrackedNames={untrackedNames} />
         )}
-        {coverage && <span>{COVERAGE_COPY[coverage]}</span>}
+        {coverage?.map(c => (
+          <span key={c}>{COVERAGE_COPY[c]}</span>
+        ))}
       </div>
     </EarningsTooltip>
   );
@@ -352,8 +357,8 @@ export function EarningsFigureValue({
   testId?: string;
   /** Contributors excluded from a partial figure (per-position missing list). */
   missing?: MissingSourceDetail[];
-  /** Coverage caveat for an otherwise-complete figure (review finding #3). */
-  coverage?: EarningsCoverage;
+  /** Coverage caveats for an otherwise-complete figure (review finding #3). */
+  coverage?: EarningsCoverage[];
   pendleSplit?: PendleSplit;
   /** Set false to render the bare figure without the missing-source info glyph. */
   showGapGlyph?: boolean;
@@ -391,7 +396,7 @@ export function EarningsFigureValue({
     );
 
   const gapGlyph =
-    showGapGlyph && (missing.length > 0 || coverage) ? (
+    showGapGlyph && (missing.length > 0 || (coverage?.length ?? 0) > 0) ? (
       <GapGlyph missing={missing} coverage={coverage} />
     ) : null;
 

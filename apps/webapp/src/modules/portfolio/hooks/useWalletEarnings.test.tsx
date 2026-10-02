@@ -92,8 +92,9 @@ const SPK_FARM = usdsSpkRewardAddress[1].toLowerCase();
 const GROVE_FARM = usdsGroveRewardAddress[1].toLowerCase();
 const SPK_FARM_ID = `reward-farm-${SPK_FARM}`;
 const GROVE_FARM_ID = `reward-farm-${GROVE_FARM}`;
-const SOURCE_COUNT = MORPHO_VAULT_IDS.length + 6; // + merkl, pendle, savings, stusds, SPK and GROVE farms
+const SOURCE_COUNT = MORPHO_VAULT_IDS.length + 6; // + merkl, the one Pendle market, savings, stusds, SPK and GROVE farms
 const PENDLE_MARKET = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
+const PENDLE_SOURCE_ID = `pendle-market-${PENDLE_MARKET}`;
 const USDS_TOKEN = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
 
 // External anchor: 2026-08-01T00:00:00Z (verified in the APP-450 spike).
@@ -359,7 +360,8 @@ describe('useWalletEarnings', () => {
       reason: 'merkl-monthly-unsupported'
     });
 
-    const pendle = protocolById(result.current, 'pendle');
+    const pendle = protocolById(result.current, PENDLE_SOURCE_ID);
+    expect(pendle.label).toBe('Fixed Yield');
     expect(pendle.rowIds).toEqual([`fixed-${PENDLE_MARKET}`]);
     expect(pendle.totalEarned).toEqual({ status: 'ok', value: { usd: 70 } });
     expect(pendle.earnedThisMonth).toEqual({ status: 'ok', value: { usd: 7 } });
@@ -478,7 +480,7 @@ describe('useWalletEarnings', () => {
     expect(morpho.error).toBeInstanceOf(Error);
 
     expect(protocolById(result.current, 'merkl').totalEarned.status).toBe('ok');
-    expect(protocolById(result.current, 'pendle').totalEarned.status).toBe('ok');
+    expect(protocolById(result.current, PENDLE_SOURCE_ID).totalEarned.status).toBe('ok');
     expect(protocolById(result.current, 'savings').totalEarned.status).toBe('ok');
 
     // Combined still sums the healthy sources and names what is missing —

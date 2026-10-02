@@ -38,6 +38,7 @@ import { monthToDateWindow } from '../earnings/monthWindow';
 import {
   morphoVaultSourceId,
   notAvailable,
+  pendleMarketSourceId,
   rewardFarmSourceId,
   type ProtocolEarnings,
   type WalletEarnings
@@ -45,7 +46,8 @@ import {
 
 const FLAGSHIP = usdsFlagshipVaultAddress[mainnet.id];
 const FLAGSHIP_ROW_ID = `vault-morpho-${FLAGSHIP.toLowerCase()}`;
-const PENDLE_ROW_IDS = PENDLE_MARKETS.map(m => `fixed-${m.marketAddress.toLowerCase()}`);
+/** A Pendle market's marketplace row id (useEarnMarketplace `fixed-*` rows). */
+const pendleRowId = (marketAddress: string) => `fixed-${marketAddress.toLowerCase()}`;
 
 /**
  * Every supported Morpho vault gets its own earnings source (Kuba 2026-08-21:
@@ -381,7 +383,10 @@ export function useWalletEarnings(): WalletEarnings {
           label: v.name
         })),
         entry('merkl', [FLAGSHIP_ROW_ID]),
-        entry('pendle', PENDLE_ROW_IDS),
+        ...PENDLE_MARKETS.map(m => ({
+          ...entry(pendleMarketSourceId(m.marketAddress), [pendleRowId(m.marketAddress)]),
+          label: m.name
+        })),
         entry('savings', ['savings']),
         entry('stusds', ['stusds']),
         ...REWARD_FARMS.map(f => ({ ...entry(rewardFarmSourceId(f.address), [f.rowId]), label: f.name }))
@@ -429,23 +434,29 @@ export function useWalletEarnings(): WalletEarnings {
       };
     })();
 
-    const pendle: ProtocolEarnings = (() => {
+    // One source per market, each scoped to its own market from the same three
+    // wallet-wide responses, so a market's row never reads another's earnings.
+    const pendleMarkets: ProtocolEarnings[] = (() => {
       const error = pendleRowsQuery.error ?? pendleGainedQuery.error ?? pendleDashboardQuery.error ?? null;
       const ready = !!pendleRowsQuery.data && !!pendleGainedQuery.data && !!pendleDashboardQuery.data;
-      return {
-        id: 'pendle',
-        rowIds: PENDLE_ROW_IDS,
+      const isLoading =
+        pendleRowsQuery.isLoading || pendleGainedQuery.isLoading || pendleDashboardQuery.isLoading;
+      return PENDLE_MARKETS.map(market => ({
+        id: pendleMarketSourceId(market.marketAddress),
+        label: market.name,
+        rowIds: [pendleRowId(market.marketAddress)],
         ...(ready
           ? computePendleEarnings({
               gainedPositions: pendleGainedQuery.data!,
               dashboardPositions: pendleDashboardQuery.data!,
               pnlRows: pendleRowsQuery.data!,
-              window
+              window,
+              markets: [market]
             })
           : { totalEarned: gapFor(error), earnedThisMonth: gapFor(error) }),
-        isLoading: pendleRowsQuery.isLoading || pendleGainedQuery.isLoading || pendleDashboardQuery.isLoading,
+        isLoading,
         error
-      };
+      }));
     })();
 
     const savings: ProtocolEarnings = (() => {
@@ -556,7 +567,7 @@ export function useWalletEarnings(): WalletEarnings {
       };
     });
 
-    return [...morphoVaults, merkl, pendle, savings, stusds, ...rewardFarms];
+    return [...morphoVaults, merkl, ...pendleMarkets, savings, stusds, ...rewardFarms];
   }, [
     connected,
     window,
