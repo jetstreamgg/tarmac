@@ -18,6 +18,7 @@ import {
 import {
   isAnnouncedGap,
   isMorphoVaultSourceId,
+  isRewardFarmSourceId,
   type EarningsCoverage,
   type EarningsFigure,
   type EarningsSourceId,
@@ -26,6 +27,7 @@ import {
   type MorphoVaultSourceId,
   type NotAvailableReason,
   type PendleSplit,
+  type RewardFarmSourceId,
   type WalletEarnings
 } from '../earnings/types';
 
@@ -34,16 +36,26 @@ import {
 // than no number — anything notAvailable renders a dash with an explanation,
 // and a combined figure missing sources says so instead of posing as complete.
 
-const SOURCE_LABELS: Record<Exclude<EarningsSourceId, MorphoVaultSourceId>, ReactNode> = {
+const SOURCE_LABELS: Record<
+  Exclude<EarningsSourceId, MorphoVaultSourceId | RewardFarmSourceId>,
+  ReactNode
+> = {
   merkl: <Trans>Merkl rewards</Trans>,
   pendle: <Trans>Pendle</Trans>,
   savings: <Trans>Sky Savings Rate</Trans>,
   stusds: <Trans>stUSDS</Trans>
 };
 
-/** Per-vault Morpho sources carry their vault name; fixed sources use the map. */
+/** Per-vault and per-farm sources carry their own name; fixed sources use the map. */
 const sourceLabel = ({ id, label }: MissingSourceDetail): ReactNode =>
-  label ?? (isMorphoVaultSourceId(id) ? <Trans>Morpho vault</Trans> : SOURCE_LABELS[id]);
+  label ??
+  (isMorphoVaultSourceId(id) ? (
+    <Trans>Morpho vault</Trans>
+  ) : isRewardFarmSourceId(id) ? (
+    <Trans>Rewards</Trans>
+  ) : (
+    SOURCE_LABELS[id]
+  ));
 
 const REASON_COPY: Record<NotAvailableReason, ReactNode> = {
   'merkl-monthly-unsupported': <Trans>Merkl doesn&apos;t break rewards down by month.</Trans>,
@@ -68,7 +80,25 @@ const COVERAGE_COPY: Record<EarningsCoverage, ReactNode> = {
   'rewards-not-included': <Trans>Rewards not included yet.</Trans>
 };
 
-function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: ReactNode }) {
+function EarningsTooltip({
+  trigger,
+  children,
+  side = 'top',
+  contentClassName,
+  passThrough = false
+}: {
+  trigger: ReactNode;
+  children: ReactNode;
+  side?: 'top' | 'right';
+  /** Overrides the DS tooltip's 260px cap for wider content (the APP-589 breakdown). */
+  contentClassName?: string;
+  /**
+   * Close as soon as the pointer leaves the trigger and let it through the
+   * content: for purely informational content that covers neighbouring
+   * targets (the breakdown opens over the next footer stat).
+   */
+  passThrough?: boolean;
+}) {
   // The app Tooltip force-closes on touch devices, so the explanations would
   // be unreachable there — fall back to a tap popover styled like the DS
   // tooltip, the InfoTooltip precedent (review finding #7).
@@ -82,8 +112,11 @@ function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: 
         </PopoverTrigger>
         <PopoverContent
           align="center"
-          side="top"
-          className="bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]"
+          side={side}
+          className={cn(
+            'bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
+            contentClassName
+          )}
         >
           {children}
         </PopoverContent>
@@ -92,11 +125,13 @@ function EarningsTooltip({ trigger, children }: { trigger: ReactNode; children: 
   }
 
   return (
-    <TooltipProvider delayDuration={300}>
+    <TooltipProvider delayDuration={300} disableHoverableContent={passThrough}>
       <Tooltip>
         <TooltipTrigger asChild>{trigger}</TooltipTrigger>
         <TooltipPortal>
-          <TooltipContent>{children}</TooltipContent>
+          <TooltipContent side={side} className={cn(passThrough && 'pointer-events-none', contentClassName)}>
+            {children}
+          </TooltipContent>
         </TooltipPortal>
       </Tooltip>
     </TooltipProvider>
@@ -203,6 +238,9 @@ export function StatInfoGlyph({ children, testId }: { children: ReactNode; testI
   );
 }
 
+/** The breakdown popup is 316px in the comp (16px padding around 284px rows), capped to the viewport on phones. */
+const BREAKDOWN_CONTENT = 'w-[316px] max-w-[calc(100vw-32px)]';
+
 /**
  * The combined footer stat: skeleton while the hook loads, a dash when every
  * source is missing, otherwise the signed sum — with an info glyph naming the
@@ -215,7 +253,8 @@ export function CombinedEarningsStat({
   className,
   testId,
   untrackedNames = [],
-  showGapGlyph = true
+  showGapGlyph = true,
+  breakdown
 }: {
   earnings: WalletEarnings;
   field: 'total' | 'month';
@@ -226,8 +265,19 @@ export function CombinedEarningsStat({
   untrackedNames?: string[];
   /** Set false to render the bare figure without the missing-source info glyph. */
   showGapGlyph?: boolean;
+  /**
+   * Per-product popup opened from the figure itself (APP-589): hovering or
+   * focusing the value — tapping on touch — shows it to the value's right.
+   */
+  breakdown?: ReactNode;
 }) {
-  if (earnings.isLoading) {
+  // A source can settle its total before its month (the reward farms' block
+  // search), so the month also waits for any figure still loading.
+  const figureLoading = earnings.protocols.some(p => {
+    const figure = field === 'total' ? p.totalEarned : p.earnedThisMonth;
+    return figure.status === 'notAvailable' && figure.reason === 'loading';
+  });
+  if (earnings.isLoading || figureLoading) {
     return <Skeleton data-testid="earnings-stat-skeleton" className="h-[18px] w-24 rounded" />;
   }
 
@@ -249,9 +299,27 @@ export function CombinedEarningsStat({
   }
 
   const usd = field === 'total' ? earnings.combined.totalEarnedUsd : earnings.combined.earnedThisMonthUsd;
+  const value = <GainValue value={usd} signed rolling className={className} />;
   return (
     <span data-testid={testId} className={STAT_ROW}>
-      <GainValue value={usd} signed rolling className={className} />
+      {breakdown ? (
+        <EarningsTooltip
+          side="right"
+          contentClassName={BREAKDOWN_CONTENT}
+          passThrough
+          trigger={
+            // flex, not inline: an inline wrapper's line box takes the
+            // inherited line height and pushes the figure down.
+            <span tabIndex={0} className="flex cursor-default" data-testid={`${testId}-breakdown-trigger`}>
+              {value}
+            </span>
+          }
+        >
+          {breakdown}
+        </EarningsTooltip>
+      ) : (
+        value
+      )}
       {showGapGlyph && (missing.length > 0 || untrackedNames.length > 0) && (
         <GapGlyph missing={missing} untrackedNames={untrackedNames} />
       )}
