@@ -700,6 +700,16 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-borrow-amount-chip-max').textContent).toBe('100%');
   });
 
+  it('borrow: a debt-ceiling-bound cap shows and stages the same whole amount', () => {
+    h.existingDebt = 0n;
+    h.debtCeiling = 40_000n * WAD + (WAD * 6n) / 10n;
+    renderSheet({ borrowCard: 'borrow' });
+
+    expect(screen.getByTestId('stake-manage-max-hint').textContent).toBe('Borrowable: 40,000 USDS');
+    fireEvent.click(screen.getByTestId('stake-manage-borrow-amount-chip-max'));
+    expect(h.launchParams?.usdsToBorrow).toBe(40_000n * WAD);
+  });
+
   it('borrow: a debt-free urn still shows the slider and the max hint', () => {
     h.existingDebt = 0n;
     renderSheet({ borrowCard: 'borrow' });
