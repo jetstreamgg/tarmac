@@ -108,7 +108,9 @@ function extendedMock(params: MockParameters) {
 declare global {
   interface Window {
     __MOCK_SWITCH_CHAIN_ERROR__?: 'reject' | 'error';
+    __MOCK_SWITCH_CHAIN_HANG__?: boolean;
     __MOCK_SWITCH_CHAIN__?: (chainName: string) => Promise<number>;
+    __MOCK_PARK_WALLET_ON__?: (chainId: number) => void;
     __MOCK_APP_CHAIN__?: () => { id: number; name: string };
   }
 }
@@ -130,12 +132,23 @@ function consumeSwitchChainTestError(): Error | undefined {
     : Object.assign(new Error('Mock wallet: request already pending (test hook).'), { code: -32002 });
 }
 
+/**
+ * Playwright hook for a wallet that never answers a switch at all: one stuck
+ * "connecting" to the chain it is on, which neither honours nor refuses
+ * `wallet_switchEthereumChain` (APP-591). While `window.__MOCK_SWITCH_CHAIN_HANG__`
+ * is set, every switchChain call returns a promise that never settles. Unlike
+ * the error hook it is not consumed — a stuck wallet stays stuck — so a test
+ * clears it to let the wallet recover.
+ */
+const switchChainHangs = () => typeof window !== 'undefined' && window.__MOCK_SWITCH_CHAIN_HANG__ === true;
+
 function withSwitchChainTestHook(createConnectorFn: CreateConnectorFn): CreateConnectorFn {
   return config => {
     const connector = createConnectorFn(config);
     return {
       ...connector,
       async switchChain(parameters) {
+        if (switchChainHangs()) return new Promise<never>(() => {});
         const error = consumeSwitchChainTestError();
         if (error) throw error;
         return connector.switchChain!(parameters);
@@ -255,6 +268,21 @@ export function createMockWagmiConfig() {
       if (!chain) throw new Error(`Mock wallet: no configured chain named "${chainName}".`);
       await switchChain(mockWagmiConfig, { chainId: chain.id });
       return chain.id;
+    };
+
+    /**
+     * Moves the wallet onto a chain the app does NOT configure (Polygon, say),
+     * from the wallet's own menu. `__MOCK_SWITCH_CHAIN__` can't: wagmi's
+     * `switchChain` only goes to configured chains. The connector's `change`
+     * event is what a real wallet emits, so wagmi records the chain on the
+     * connection while refusing to move `config.state.chainId` onto it — the
+     * parked state the app has to handle.
+     */
+    window.__MOCK_PARK_WALLET_ON__ = (chainId: number) => {
+      const { current, connections } = mockWagmiConfig.state;
+      const connection = current ? connections.get(current) : undefined;
+      if (!connection) throw new Error('Mock wallet: not connected.');
+      connection.connector.emitter.emit('change', { chainId });
     };
   }
 
