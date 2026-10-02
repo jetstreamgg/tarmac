@@ -73,7 +73,8 @@ export function useSequentialTransactionFlow(
   const {
     data: simulationData,
     isLoading: isSimulationLoading,
-    error: simulationError
+    error: simulationError,
+    refetch: refetchSimulation
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
 
   const {
@@ -198,6 +199,7 @@ export function useSequentialTransactionFlow(
         setTransactionHashes([]);
         lastProcessedTxHash.current = undefined; // Reset ref on completion
         dispatchedIndexRef.current = -1; // next flow starts from a clean latch
+        reportedSimulationIndexRef.current = -1;
       } else {
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
@@ -265,9 +267,17 @@ export function useSequentialTransactionFlow(
       setIsExecuting(true);
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     } else if (isResume && simulationError) {
-      // Retry while the paused step still fails to simulate: fail again rather
-      // than leave the retry hanging.
-      onError(simulationError, '');
+      // Retry of a step that failed to simulate: the stored error may be stale
+      // (e.g. a transient RPC failure), so re-simulate and act on the result.
+      const index = currentIndex;
+      void refetchSimulation().then(({ data, error }) => {
+        if (data?.request) {
+          dispatchedIndexRef.current = index;
+          writeContract(data.request as Parameters<typeof writeContract>[0]);
+        } else {
+          onError(toError(error ?? simulationError), '');
+        }
+      });
     } else {
       console.error(`ERROR: Transaction ${currentIndex} is not ready to execute.
       contract address: ${currentTransaction.to}
@@ -288,6 +298,7 @@ export function useSequentialTransactionFlow(
     writeContract,
     isSimulationLoading,
     simulationError,
+    refetchSimulation,
     onError
   ]);
 
