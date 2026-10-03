@@ -4,12 +4,13 @@ import {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   ReactNode
 } from 'react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
-import { InProgress, Cancel } from '@/modules/icons';
+import { InProgress, Cancel, Refresh } from '@/modules/icons';
 import { toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
@@ -46,6 +47,7 @@ import {
   type TransactionPreflight
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import { encodeCalls, isTailOf, type EncodedCall } from '@/modules/ui/lib/callIntent';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
@@ -119,6 +121,57 @@ function notifyReviewAgainOnChainChange() {
         description={
           <Trans>Your wallet switched networks while confirming. Review the details and confirm again.</Trans>
         }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
+// A deferred dispatch (a gate verdict, Retry) found the flow's calls no longer
+// match what the user confirmed — a quote moved while the review was frozen —
+// so it was refused and the first screen re-derived against the new figures.
+function notifyReviewAgainOnChangedCalls() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Refresh />}
+        title={<Trans>Transaction details changed</Trans>}
+        description={
+          <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
+// The wallet moved to another account between the confirm and a deferred
+// dispatch (a gate verdict, Retry), so the dispatch was refused: what the user
+// reviewed — balances, position, receiver — belonged to the confirming account.
+function notifyReviewAgainOnAccountChange() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Refresh />}
+        title={<Trans>Account changed</Trans>}
+        description={
+          <Trans>Your wallet switched accounts while confirming. Review the details and confirm again.</Trans>
+        }
+      />
+    ),
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
+// The wallet disconnected between the confirm and a deferred dispatch, so the
+// dispatch was refused and the first screen shown again.
+function notifyReviewAgainOnDisconnect() {
+  toastWithClose(
+    () => (
+      <TransactionNoticeToast
+        icon={<Cancel />}
+        title={<Trans>Wallet disconnected</Trans>}
+        description={<Trans>Your wallet disconnected while confirming. Reconnect and confirm again.</Trans>}
       />
     ),
     { id: ABANDONED_TOAST_ID, duration: 8000 }
@@ -249,6 +302,7 @@ export function TransactionProvider({
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
+  const hasMinedStepRef = useRef(false);
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
@@ -335,6 +389,14 @@ export function TransactionProvider({
   // flow_id latched at launch so this session's review/started/completed events
   // stay joined even if navigation rotates the live flow id mid-transaction.
   const flowIdRef = useRef<string | undefined>(undefined);
+  // The calls the user confirmed, encoded, captured at the click (see
+  // `getNextCalls` in the contract). Undefined when the flow doesn't report
+  // its calls; null when they couldn't be encoded, which fails closed.
+  const confirmedCallsRef = useRef<EncodedCall[] | null | undefined>(undefined);
+  // The account that confirmed, captured with the calls: calldata that never
+  // names the sender (a bare claim, a position addressed by index) encodes the
+  // same for every account, so the calls alone can't tell who signs.
+  const confirmedAddressRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
   const { address, chainId: connectedChainId } = useConnection();
@@ -359,6 +421,13 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
+  // Fire-time read of the account, for the same reason (see runGated).
+  // A layout effect, so a verdict resolving right after a switch commits
+  // never reads the previous account.
+  const addressRef = useRef(address);
+  useLayoutEffect(() => {
+    addressRef.current = address;
+  }, [address]);
   // The chain the live session's write belongs to: latched at launch, adopted
   // while the session is still at IDLE (see the chain-change close below).
   const sessionChainRef = useRef(guardChainId);
@@ -505,12 +574,15 @@ export function TransactionProvider({
       txHashRef.current = undefined;
       setCurrentStep(0);
       setHasMinedStep(false);
+      hasMinedStepRef.current = false;
       preludeStepsRef.current = null;
       setPreludeSteps(null);
       gateCopyRef.current = null;
       setGateCopy(null);
       gateInFlightRef.current = null;
       gatePhaseRef.current = null;
+      confirmedCallsRef.current = undefined;
+      confirmedAddressRef.current = undefined;
       setMinimized(false);
       setLaunchCount(c => c + 1);
       setOpen(true);
@@ -630,12 +702,15 @@ export function TransactionProvider({
     txStatusRef.current = TxStatus.IDLE;
     setCurrentStep(0);
     setHasMinedStep(false);
+    hasMinedStepRef.current = false;
     preludeStepsRef.current = null;
     setPreludeSteps(null);
     gateCopyRef.current = null;
     setGateCopy(null);
     gateInFlightRef.current = null;
     gatePhaseRef.current = null;
+    confirmedCallsRef.current = undefined;
+    confirmedAddressRef.current = undefined;
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
@@ -719,6 +794,12 @@ export function TransactionProvider({
   const returnToFirstScreenRef = useRef<(() => void) | null>(null);
   const registerReturnToFirstScreen = useCallback((fn: (() => void) | null) => {
     returnToFirstScreenRef.current = fn;
+  }, []);
+  // Its back-to-review twin, for a deferred dispatch refused because what the
+  // user confirmed no longer holds (see runGated).
+  const returnToReviewRef = useRef<(() => void) | null>(null);
+  const registerReturnToReview = useCallback((fn: (() => void) | null) => {
+    returnToReviewRef.current = fn;
   }, []);
 
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
@@ -840,8 +921,10 @@ export function TransactionProvider({
           setGateCopy(null);
           // A skipReview flow has no first screen: the denial hands the user
           // back to the surface that launched it, which renders the same
-          // hold through useTransactionPreflight.
-          if (configRef.current?.skipReview) handleCloseRef.current();
+          // hold through useTransactionPreflight. Nor, in effect, does a
+          // session with a mined step: the entry would be editable while the
+          // engine's paused run still resumes the calls confirmed before.
+          if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
           else returnToFirstScreenRef.current?.();
         },
         reportSignatureRejected: () => {
@@ -876,6 +959,19 @@ export function TransactionProvider({
     controls.returnToFirstScreen();
   }, []);
 
+  // Whether the calls the flow would send now are still ones the user
+  // confirmed. The review freezes once the transaction leaves IDLE while the
+  // engine keeps rebuilding from live quotes, so every dispatch re-checks —
+  // a confirm resolved synchronously trivially passes, a gate verdict or a
+  // Retry arriving after the quote moved does not.
+  const callsStillConfirmed = useCallback(() => {
+    const getNextCalls = configRef.current?.getNextCalls;
+    if (!getNextCalls) return true;
+    const confirmed = confirmedCallsRef.current;
+    const live = encodeCalls(getNextCalls());
+    return !!confirmed && !!live && isTailOf(live, confirmed, configRef.current?.callMatches);
+  }, []);
+
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
@@ -886,6 +982,42 @@ export function TransactionProvider({
         refuseOffChain(controls);
         return;
       }
+      // A confirm is the user agreeing to what the screen shows, so it fixes
+      // the calls and the account; a retry re-sends what was already confirmed.
+      if (trigger !== 'retry') {
+        const getNextCalls = configRef.current?.getNextCalls;
+        confirmedCallsRef.current = getNextCalls ? encodeCalls(getNextCalls()) : undefined;
+        confirmedAddressRef.current = addressRef.current;
+      }
+      // Back to the review to confirm again, at IDLE so it re-renders against
+      // the current figures. A skipReview flow has no review here; it closes
+      // back to the surface that launched it, like the gate's denials. So does
+      // a session with a mined step: the engine's paused run would resume the
+      // calls confirmed before the refusal, not what the review re-renders, so
+      // the user reopens the flow and it rebuilds from the current state.
+      const sendBackToReview = () => {
+        if (controls.isStale()) return;
+        controls.setPreludeSteps(null);
+        controls.setGateStatus('idle');
+        if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
+        else (returnToReviewRef.current ?? returnToFirstScreenRef.current)?.();
+      };
+      const dispatch = () => {
+        if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
+          sendBackToReview();
+          if (addressRef.current) notifyReviewAgainOnAccountChange();
+          else notifyReviewAgainOnDisconnect();
+          return;
+        }
+        // The calls can hold steady while the flow's own gating turns against
+        // them (an acknowledgement lapsing, a module halting since the confirm).
+        if (!callsStillConfirmed() || configRef.current?.getConfirmDisabled?.()) {
+          sendBackToReview();
+          notifyReviewAgainOnChangedCalls();
+          return;
+        }
+        action();
+      };
       // The chain the click was made on: a verdict must not fire the action
       // on any other, supported or not (see the chain-change close above).
       const chainAtClick = chainIdRef.current;
@@ -917,7 +1049,7 @@ export function TransactionProvider({
                 notifyReviewAgainOnChainChange();
                 return;
               }
-              action();
+              dispatch();
             },
             () => {}
           )
@@ -928,9 +1060,9 @@ export function TransactionProvider({
           });
         return;
       }
-      if (verdict.allow) action();
+      if (verdict.allow) dispatch();
     },
-    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain]
+    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain, callsStillConfirmed]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -1008,7 +1140,10 @@ export function TransactionProvider({
       }
       // A sequential engine dispatches the next call only once the previous
       // receipt landed, so a write arriving over LOADING means a step mined.
-      if (txStatusRef.current === TxStatus.LOADING) setHasMinedStep(true);
+      if (txStatusRef.current === TxStatus.LOADING) {
+        setHasMinedStep(true);
+        hasMinedStepRef.current = true;
+      }
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;
@@ -1348,6 +1483,7 @@ export function TransactionProvider({
             open={open && !minimized && !!activeConfig}
             registerEntrySlot={setEntrySlotEl}
             registerReturnToFirstScreen={registerReturnToFirstScreen}
+            registerReturnToReview={registerReturnToReview}
             onClose={handleClose}
             onMinimize={minimize}
             title={modalView.config.title}

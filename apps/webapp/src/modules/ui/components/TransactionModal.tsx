@@ -73,6 +73,8 @@ export type TransactionModalProps = {
    * blocked message above the disabled CTAs — is that denial's surface.
    */
   registerReturnToFirstScreen?: (fn: (() => void) | null) => void;
+  /** Like `registerReturnToFirstScreen`, but a three-screen flow lands on its review. */
+  registerReturnToReview?: (fn: (() => void) | null) => void;
   onClose: () => void;
   /**
    * Hide the modal while keeping the transaction running. When provided, dismissing
@@ -240,6 +242,7 @@ export function TransactionModal({
   preflight,
   chainGuard,
   registerReturnToFirstScreen,
+  registerReturnToReview,
   skipReview = false,
   scrimHandoff = false
 }: TransactionModalProps) {
@@ -528,6 +531,18 @@ export function TransactionModal({
     registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);
   }, [registerReturnToFirstScreen, handleBack]);
+
+  // The provider's send-back when a deferred dispatch no longer matches what was
+  // confirmed: the user re-confirms on the review, which re-renders against the
+  // current figures once the status is back at IDLE.
+  const handleReturnToReview = useCallback(() => {
+    onBack?.();
+    setStep(hasReviewStage ? 'review' : firstStep);
+  }, [onBack, hasReviewStage, firstStep]);
+  useEffect(() => {
+    registerReturnToReview?.(handleReturnToReview);
+    return () => registerReturnToReview?.(null);
+  }, [registerReturnToReview, handleReturnToReview]);
 
   // A skipReview launch is the review's Confirm: fire once on mount, through
   // the same gated `onConfirm` the review CTA uses. The ref (not the effect)

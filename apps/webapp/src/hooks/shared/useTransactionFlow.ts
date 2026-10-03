@@ -70,5 +70,10 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
 
   // Return the appropriate results based on useBatch, carrying the calls and the routing
   // decision so callers can estimate what this flow costs without rebuilding calldata.
-  return { ...(useBatch ? batchResults : sequentialResults), calls, isBatch: useBatch };
+  return {
+    ...(useBatch ? batchResults : sequentialResults),
+    calls,
+    isBatch: useBatch,
+    nextCalls: useBatch ? calls : sequentialResults.nextCalls
+  };
 }
