@@ -120,9 +120,11 @@ export function useModalEntryBody({
   const entrySlot = useEntrySlot();
 
   // `execute` is rebuilt every render; read the latest from a ref so `onConfirm`
-  // is stable and never needs re-pushing.
+  // is stable and never needs re-pushing. A layout effect, like `nextCallsRef`
+  // below: a gate verdict landing between commit and the passive flush must not
+  // validate this render's calls and then run the previous render's execute.
   const executeRef = useRef(execute);
-  useEffect(() => {
+  useLayoutEffect(() => {
     executeRef.current = execute;
   }, [execute]);
   const onConfirm = useCallback(() => executeRef.current(), []);

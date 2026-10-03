@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
@@ -246,8 +246,9 @@ export function useStakeLaunch({
 
   // Live execute ref: launch() must never snapshot onConfirm state (landmine #2)
   // — the engine hook re-renders between launch and the user's Confirm click.
+  // Layout effect, with nextCallsRef: the provider validates one and runs the other.
   const executeRef = useRef(engine.execute);
-  useEffect(() => {
+  useLayoutEffect(() => {
     executeRef.current = engine.execute;
   }, [engine.execute]);
   // Read by the provider at dispatch time (see `TransactionConfig.getNextCalls`).
