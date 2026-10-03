@@ -636,6 +636,18 @@ describe('OpenPositionTakeover', () => {
     expect(badge.getAttribute('data-reached')).toBeNull();
   });
 
+  it('min-collateral constraint: a stake exactly at the minimum is Not reached and keeps the switch disabled', () => {
+    h.minCollateralForDust = 715104n * WAD;
+    h.dust = 30000n * WAD;
+    renderTakeover();
+    typeStakeAmount('715104');
+
+    expect(screen.getByTestId('stake-min-stake-badge').textContent).toBe('Not reached');
+    expect((screen.getByTestId('stake-takeover-borrow-card-toggle') as HTMLButtonElement).disabled).toBe(
+      true
+    );
+  });
+
   it('min-collateral constraint: a card already on keeps the warning when the stake drops (C.3)', () => {
     h.minCollateralForDust = 715104n * WAD;
     h.dust = 30000n * WAD;

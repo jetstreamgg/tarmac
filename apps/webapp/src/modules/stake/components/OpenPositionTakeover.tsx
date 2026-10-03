@@ -430,7 +430,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         minStakeLoading={liveSimLoading}
         minStakeReached={
           simulatedVault?.minCollateralForDust !== undefined
-            ? state.skyToLock >= simulatedVault.minCollateralForDust
+            ? state.skyToLock > simulatedVault.minCollateralForDust
             : undefined
         }
         error={stakeError}
