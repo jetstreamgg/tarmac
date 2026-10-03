@@ -921,8 +921,10 @@ export function TransactionProvider({
           setGateCopy(null);
           // A skipReview flow has no first screen: the denial hands the user
           // back to the surface that launched it, which renders the same
-          // hold through useTransactionPreflight.
-          if (configRef.current?.skipReview) handleCloseRef.current();
+          // hold through useTransactionPreflight. Nor, in effect, does a
+          // session with a mined step: the entry would be editable while the
+          // engine's paused run still resumes the calls confirmed before.
+          if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
           else returnToFirstScreenRef.current?.();
         },
         reportSignatureRejected: () => {

@@ -334,6 +334,28 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('closes when the gate sends a retry after a mined step back to the first screen', () => {
+    const onConfirm = vi.fn();
+    const { config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const gate: PreTransactionGate = ({ trigger, controls }) => {
+      if (trigger !== 'retry') return { allow: true };
+      controls.returnToFirstScreen();
+      return { allow: false };
+    };
+    const cb = renderWithGate(gate, config);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('closes on changed calls after a mined step too', () => {
     const onConfirm = vi.fn();
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
