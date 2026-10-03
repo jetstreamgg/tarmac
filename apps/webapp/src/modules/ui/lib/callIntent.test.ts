@@ -175,6 +175,21 @@ describe('tightensOnly', () => {
   });
 });
 
+describe('tightensOnly with a paired approve', () => {
+  const matches = tightensOnly({
+    swapExactOut: { index: 3, kind: 'max' },
+    approve: { index: 1, kind: 'max' }
+  });
+
+  it('lets the approve amount shrink with the max-in, never grow or change spender', () => {
+    const confirmed = encode([approve(900n), swapOut(1000n, 900n)]);
+    expect(isTailOf(encode([approve(899n), swapOut(1000n, 899n)]), confirmed, matches)).toBe(true);
+    expect(isTailOf(encode([approve(901n), swapOut(1000n, 901n)]), confirmed, matches)).toBe(false);
+    const otherSpender = { ...approve(899n), args: [OTHER, 899n] } as Call;
+    expect(isTailOf(encode([otherSpender, swapOut(1000n, 899n)]), confirmed, matches)).toBe(false);
+  });
+});
+
 describe('exactMatch', () => {
   it('matches only identical calls and fails closed on an unencodable one', () => {
     expect(exactMatch(transfer(1n), transfer(1n))).toBe(true);

@@ -192,11 +192,13 @@ export function useSequentialTransactionFlow(
       lastProcessedTxHash.current = txHash;
       // Transaction failed
       emitError(toError(miningError || failureReason), txHash);
-      // Like a wallet rejection (see the write's onError), a failure after a mined
+      // Like a wallet rejection (see the write's onError), a revert after a mined
       // step keeps the run paused so Retry resumes the frozen remainder: the live
       // `calls` has dropped the mined approve, so slicing it at currentIndex would
-      // come up empty and leave nothing to retry.
-      const paused = currentIndex > 0;
+      // come up empty and leave nothing to retry. Only a revert: any other receipt
+      // error (an RPC failing to poll) can leave the tx pending, and resuming
+      // would sign it a second time.
+      const paused = currentIndex > 0 && txReverted;
       setIsExecuting(paused);
       setHasFailed(paused);
     }
