@@ -11,6 +11,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { tightensOnly } from '@/modules/ui/lib/callIntent';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -29,6 +30,14 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 export type { SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 
 const USDS_DECIMALS = 18;
+
+// The L2 PSM swaps carry a bound from the live sUSDS rate: a refetch while the
+// user signs moves it, but between oracle updates only ever tighter (the rate
+// rises). Every other savings call must still match byte for byte.
+const PSM_SWAP_BOUNDS = tightensOnly({
+  swapExactIn: { index: 3, kind: 'min' },
+  swapExactOut: { index: 3, kind: 'max' }
+});
 
 const formatUsds = (value: bigint) =>
   formatNumber(parseFloat(formatUnits(value, USDS_DECIMALS)), { maxDecimals: 2 });
@@ -228,6 +237,7 @@ export function SavingsModalForm({
     sessionId,
     execute,
     nextCalls,
+    callMatches: PSM_SWAP_BOUNDS,
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,

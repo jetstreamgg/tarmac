@@ -15,6 +15,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { tightensOnly } from '@/modules/ui/lib/callIntent';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
@@ -30,6 +31,10 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
 const DECIMALS = 18;
+
+// A Curve `min_dy` follows the live quote. It may only tighten after the
+// confirm: the pool moving against the user loosens it and is refused.
+const CURVE_SWAP_BOUNDS = tightensOnly({ exchange: { index: 3, kind: 'min' } });
 
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
 const formatUsds = (units: bigint) =>
@@ -232,6 +237,7 @@ export function StUsdsModalForm({
     sessionId,
     execute,
     nextCalls,
+    callMatches: CURVE_SWAP_BOUNDS,
     confirmDisabled: disabled,
     transactionContent,
     transactionScreenContent,

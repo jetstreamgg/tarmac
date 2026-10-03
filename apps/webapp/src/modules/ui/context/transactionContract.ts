@@ -3,6 +3,7 @@ import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/compone
 import type { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TxMutateVariables } from '@/hooks';
 import type { Call } from 'viem';
+import type { CallMatcher } from '@/modules/ui/lib/callIntent';
 
 /**
  * The frozen transaction-orchestration contract: a flow calls `launch(config)`,
@@ -198,6 +199,13 @@ export type TransactionConfig = {
    */
   getNextCalls?: () => readonly Call[];
   /**
+   * Relaxes the `getNextCalls` comparison per call, for calldata carrying a
+   * slippage bound that follows a live quote — build it with `tightensOnly`,
+   * which lets only that bound move, and only in the user's favour. Omitted, a
+   * deferred dispatch must match the confirmed calls byte for byte.
+   */
+  callMatches?: CallMatcher;
+  /**
    * Reads the flow's live confirm gating (what `confirmDisabled` would be if
    * pushed now). Pushes freeze once the transaction leaves IDLE, so the provider
    * reads this instead to refuse a deferred dispatch the flow would no longer
@@ -300,6 +308,7 @@ export type LiveModalUpdate = Partial<
     | 'onSecondaryConfirm'
     | 'onRetry'
     | 'getNextCalls'
+    | 'callMatches'
     | 'getConfirmDisabled'
     | 'steps'
     | 'toast'

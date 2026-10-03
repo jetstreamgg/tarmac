@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from './transactionContract';
 import type { PreTransactionGate } from './preTransactionGate';
 import { erc20Abi, type Call } from 'viem';
+import { tightensOnly } from '@/modules/ui/lib/callIntent';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads.
@@ -350,6 +351,37 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(lastToastTitle()).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it("lets a flow's callMatches accept a tighter bound", async () => {
+    const callMatches = tightensOnly({ transferFrom: { index: 2, kind: 'min' } });
+    let resolveVerdict!: (v: { allow: boolean }) => void;
+    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const onConfirm = vi.fn();
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    renderWithGate(gate, { ...config, callMatches });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    live.calls = [approve, swap(905n)];
+    resolveVerdict({ allow: true });
+    await flush();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a looser bound under the flow's callMatches", async () => {
+    const callMatches = tightensOnly({ transferFrom: { index: 2, kind: 'min' } });
+    let resolveVerdict!: (v: { allow: boolean }) => void;
+    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const onConfirm = vi.fn();
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    renderWithGate(gate, { ...config, callMatches });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    live.calls = [approve, swap(899n)];
+    resolveVerdict({ allow: true });
+    await flush();
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(lastToastTitle()).toBeTruthy();
   });
 
   it('a fresh confirm after being sent back re-captures the new calls', async () => {

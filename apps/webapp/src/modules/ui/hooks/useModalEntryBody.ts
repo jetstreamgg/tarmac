@@ -5,6 +5,7 @@ import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionCo
 import type { TransactionAnalytics, TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import type { Call } from 'viem';
+import type { CallMatcher } from '@/modules/ui/lib/callIntent';
 
 /**
  * The live fields an editable modal body keeps in sync after launch. `confirmDisabled`
@@ -79,6 +80,13 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
    * exactly where calldata keeps moving after the review freezes.
    */
   nextCalls: readonly Call[];
+  /**
+   * Relaxes the dispatch-time comparison of `nextCalls` (see
+   * `TransactionConfig.callMatches`). Module-level or memoized: the sync effect
+   * below depends on its identity. Always pushed, so `undefined` restores the
+   * exact comparison (e.g. after a switch to a chain without a drifting bound).
+   */
+  callMatches?: CallMatcher;
 };
 
 /**
@@ -96,6 +104,7 @@ export function useModalEntryBody({
   sessionId,
   execute,
   nextCalls,
+  callMatches,
   confirmDisabled,
   confirmLabel,
   confirmAction,
@@ -158,6 +167,7 @@ export function useModalEntryBody({
       errorMessage,
       onConfirm,
       getNextCalls,
+      callMatches,
       getConfirmDisabled,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
@@ -183,6 +193,7 @@ export function useModalEntryBody({
     analytics,
     onConfirm,
     getNextCalls,
+    callMatches,
     getConfirmDisabled,
     updateModalContent
   ]);

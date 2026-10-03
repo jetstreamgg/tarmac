@@ -17,6 +17,8 @@ const ADDRESS = '0x0000000000000000000000000000000000000001';
 const AMOUNT = parseUnits('100000', 18);
 const QUOTE_A = parseUnits('92000', 18);
 const QUOTE_B = parseUnits('35000', 18);
+// The rate-driven drift between polls: a slightly better quote.
+const QUOTE_A_UP = parseUnits('92001', 18);
 
 type WriteRequest = { address: string; functionName: string; args: readonly unknown[] };
 type Mutation = { onMutate: () => void; onError: (error: Error) => void };
@@ -308,6 +310,27 @@ describe('stUSDS Curve supply — deferred dispatch', () => {
     expect(h.writes).toHaveLength(0);
     expect(lastToastTitle()).toBe('Transaction details changed');
     expectOnReview();
+  });
+
+  it('sends the tighter min-out when the quote improves while the gate holds', async () => {
+    // The min-out the reviewed quote produces, as the baseline.
+    const held = heldGate();
+    renderModal(held.gate);
+    toReviewAndConfirm();
+    await held.release();
+    const reviewedMinOut = minOutOf(h.writes[0]);
+    cleanup();
+    h.writes = [];
+
+    const improved = heldGate();
+    renderModal(improved.gate);
+    toReviewAndConfirm();
+    act(() => setQuote(QUOTE_A_UP));
+    await improved.release();
+
+    expect(h.writes).toHaveLength(1);
+    expect(minOutOf(h.writes[0])).toBeGreaterThan(reviewedMinOut);
+    expect(toastWithCloseMock).not.toHaveBeenCalled();
   });
 
   it('retries with the reviewed min-out when the quote holds', () => {

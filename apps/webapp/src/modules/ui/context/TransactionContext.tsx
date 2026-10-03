@@ -967,7 +967,7 @@ export function TransactionProvider({
     if (!getNextCalls) return true;
     const confirmed = confirmedCallsRef.current;
     const live = encodeCalls(getNextCalls());
-    return !!confirmed && !!live && isTailOf(live, confirmed);
+    return !!confirmed && !!live && isTailOf(live, confirmed, configRef.current?.callMatches);
   }, []);
 
   const runGated = useCallback(
