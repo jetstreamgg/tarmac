@@ -11,6 +11,7 @@ import { erc20Abi, type Call } from 'viem';
 
 const sendCallsSpy = vi.hoisted(() => vi.fn());
 const capabilities = vi.hoisted(() => ({ data: true as boolean | undefined, isLoading: false }));
+const callsStatusParams = vi.hoisted(() => ({ last: undefined as Record<string, any> | undefined }));
 
 vi.mock('wagmi', () => ({
   useSendCalls: () => ({
@@ -19,13 +20,16 @@ vi.mock('wagmi', () => ({
     data: undefined,
     reset: vi.fn()
   }),
-  useWaitForCallsStatus: () => ({
-    isLoading: false,
-    isSuccess: false,
-    error: null,
-    failureReason: null,
-    data: undefined
-  })
+  useWaitForCallsStatus: (params: Record<string, any>) => {
+    callsStatusParams.last = params;
+    return {
+      isLoading: false,
+      isSuccess: false,
+      error: null,
+      failureReason: null,
+      data: undefined
+    };
+  }
 }));
 
 vi.mock('@/hooks/shared/useSimulateBatch', () => ({
@@ -107,5 +111,36 @@ describe('useSendBatchTransactionFlow — cross-chain backstop (APP-528)', () =>
     expect((error as Error).message).toMatch(/no target address/);
     expect(hash).toBeUndefined();
     errorSpy.mockRestore();
+  });
+});
+
+describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
+  const pollingOptions = () => {
+    renderHook(() => useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1 } as never));
+    return callsStatusParams.last!;
+  };
+
+  it('waits on the bundle without a timeout', () => {
+    expect(pollingOptions().timeout).toBe(0);
+  });
+
+  it('keeps polling through RPC and wallet errors', () => {
+    const { retry } = pollingOptions().query;
+    expect(retry(1, new Error('HTTP request failed. Status: 503'))).toBe(true);
+    expect(retry(50, Object.assign(new Error('Internal error'), { code: -32603 }))).toBe(true);
+  });
+
+  it('stops on a revert or an error after which polling can never succeed', () => {
+    const { retry } = pollingOptions().query;
+    expect(retry(1, new Error('execution reverted'))).toBe(false);
+    for (const code of [4100, 4200, 5730]) {
+      expect(retry(1, Object.assign(new Error('wrapped'), { cause: { code } }))).toBe(false);
+    }
+  });
+
+  it('backs off to at most 30s between polls', () => {
+    const { retryDelay } = pollingOptions().query;
+    expect(retryDelay(0)).toBe(1000);
+    expect(retryDelay(20)).toBe(30_000);
   });
 });

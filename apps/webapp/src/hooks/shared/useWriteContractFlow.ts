@@ -1,13 +1,8 @@
-import {
-  UseSimulateContractParameters,
-  useSimulateContract,
-  useWaitForTransactionReceipt,
-  useWriteContract
-} from 'wagmi';
-import { isRevertedError, toError } from '../helpers';
+import { UseSimulateContractParameters, useSimulateContract, useWriteContract } from 'wagmi';
 import { useEffect, useEffectEvent, useMemo } from 'react';
 import { Config, ResolvedRegister } from '@wagmi/core';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
+import { useTransactionReceipt } from './useTransactionReceipt';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
 import type { Abi, Call, ContractFunctionArgs, ContractFunctionName } from 'viem';
 
@@ -75,14 +70,10 @@ export function useWriteContractFlow<
 
   // Monitor tx
   const {
-    isLoading: isMining,
+    isPending: isMining,
     isSuccess,
-    error: miningError,
-    failureReason
-  } = useWaitForTransactionReceipt({
-    hash: txHash
-  });
-  const txReverted = isRevertedError(failureReason);
+    failure: miningError
+  } = useTransactionReceipt({ hash: txHash, chainId: parameters.chainId });
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
@@ -94,11 +85,9 @@ export function useWriteContractFlow<
         emitSuccess(txHash);
       } else if (miningError) {
         emitError(miningError, txHash);
-      } else if (failureReason && txReverted) {
-        emitError(toError(failureReason), txHash);
       }
     }
-  }, [isSuccess, miningError, failureReason, txHash, txReverted]);
+  }, [isSuccess, miningError, txHash]);
 
   // The single call this hook sends, in the same contract form the batch engines use.
   // Exposed read-only so a flow that routes through here can still be fee-estimated;
@@ -124,7 +113,7 @@ export function useWriteContractFlow<
       }
     },
     data: txHash,
-    isLoading: isSimulationLoading || (isMining && !txReverted),
+    isLoading: isSimulationLoading || isMining,
     error: writeError || miningError,
     prepareError: simulationError,
     prepared: !!simulationData?.request,

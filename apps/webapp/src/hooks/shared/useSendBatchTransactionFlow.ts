@@ -7,6 +7,22 @@ import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
 import { useSimulateBatch } from './useSimulateBatch';
 
+/** Ceiling on the gap between status polls while the wallet keeps erroring. */
+const MAX_STATUS_RETRY_DELAY_MS = 30_000;
+// EIP-1193 / EIP-5792 codes after which polling can never succeed: unauthorized,
+// method unsupported, unknown bundle id.
+const PERMANENT_STATUS_ERROR_CODES = new Set([4100, 4200, 5730]);
+
+function isPermanentStatusError(error: unknown): boolean {
+  let e: unknown = error;
+  for (let i = 0; i < 10 && e; i++) {
+    const code = (e as { code?: unknown }).code;
+    if (typeof code === 'number' && PERMANENT_STATUS_ERROR_CODES.has(code)) return true;
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
 ): BatchTransactionFlowHook {
@@ -59,7 +75,10 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     }
   });
 
-  // Monitor tx, this is also compatible with Safe wallets
+  // Monitor tx, this is also compatible with Safe wallets. No timeout, and a
+  // failed poll is retried rather than reported: the bundle is with the wallet
+  // whatever the poll says (a Safe waits on co-signers for as long as it takes),
+  // and reporting it put Retry on screen, which sends the bundle a second time.
   const {
     isLoading: isMining,
     isSuccess,
@@ -67,7 +86,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     failureReason,
     data
   } = useWaitForCallsStatus({
-    id: mutationData?.id
+    id: mutationData?.id,
+    timeout: 0,
+    query: {
+      retry: (_count, error) => !isRevertedError(error) && !isPermanentStatusError(error),
+      retryDelay: attempt => Math.min(1000 * 2 ** attempt, MAX_STATUS_RETRY_DELAY_MS)
+    }
   });
 
   const txReverted = isRevertedError(failureReason);
