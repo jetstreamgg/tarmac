@@ -622,7 +622,7 @@ export function ManagePositionTakeover({
         minStakeToBorrowLoading={liveSimLoading}
         minStakeReached={
           simulatedVault?.minCollateralForDust !== undefined
-            ? liveCollateralAmount > simulatedVault.minCollateralForDust
+            ? liveCollateralAmount >= simulatedVault.minCollateralForDust
             : undefined
         }
         error={stakeError}
