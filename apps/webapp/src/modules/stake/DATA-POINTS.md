@@ -55,10 +55,12 @@ mixing them up is the highest-impact bug class this module has had.
 ### Refresh semantics
 
 The four transaction success handlers (`OpenPositionTakeover`, `ManagePositionTakeover`,
-`StakeClaimModal`, `LiquidationPostMortemModal`) invalidate the same key set:
-`['stake-user-positions']`, `['readContract']`, `['readContracts']`, `['simulateDrip']`.
-`['stake-history']` is refreshed by the transaction context instead: every confirmed transaction
-refetches the history queries until the indexer has the transaction (`refreshHistoryUntilIndexed`). The last two were added by this audit — wagmi's batched `useReadContracts`
+`StakeClaimModal`, `LiquidationPostMortemModal`) invalidate the same on-chain key set:
+`['stake-urn-vaults']` (again 5s and 15s later, for RPC lag), `['readContract']`, `['readContracts']`,
+`['simulateDrip']`. The indexer-backed `['stake-user-positions']` and `['stake-history']` are
+refreshed by the transaction context instead: on every confirmed transaction it waits (up to 60s)
+for the indexer's `_meta.progressBlock` to reach the receipt's block, then refetches every query
+tagged `INDEXER_HISTORY_META` (`refreshHistoryAfterTx`). The last two on-chain keys were added by this audit — wagmi's batched `useReadContracts`
 keys under `['readContracts', …]` (plural), a **different top-level key** from the singular
 `['readContract', …]`, so claimable rewards, wallet balances, and the live total-debt aggregate
 were previously never refreshed by any stake transaction; `['simulateDrip']` feeds the live `rate`
@@ -68,11 +70,11 @@ Price/analytics feeds (`['prices']`, `['stake-historic-data']`, `['reward-charts
 `['stakeRewardContracts']`) are deliberately not tied to tx success — they are market data, not
 urn state.
 
-Key inventory (✅ = invalidated by all four success handlers):
+Key inventory (✅ = invalidated by all four success handlers; ✅ (transaction context) = refetched by `refreshHistoryAfterTx`):
 
 | Key                                                                                         | Hook                                                                      | Post-tx                    |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------- |
-| `['stake-user-positions', …]`                                                               | `useStakeUserPositions`                                                   | ✅                         |
+| `['stake-user-positions', …]`                                                               | `useStakeUserPositions`                                                   | ✅ (transaction context)   |
 | `['stake-history', …]`                                                                      | `useStakeHistory`                                                         | ✅ (transaction context)   |
 | `['readContract', …]`                                                                       | every singular `useReadContract` (vault, urn selections, allowances)      | ✅                         |
 | `['readContracts', …]`                                                                      | `useRewardContractsToClaim`, `useTokenBalance`, `useRewardContractTokens` | ✅ (this audit)            |

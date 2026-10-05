@@ -10,36 +10,25 @@ describe('invalidateStakeQueries', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it('invalidates every stake read but the history immediately', () => {
+  it('invalidates every on-chain stake read immediately', () => {
     const client = makeClient();
     invalidateStakeQueries(client);
 
-    expect(keysCalled(client)).toEqual([
-      'stake-user-positions',
-      'stake-urn-vaults',
-      'readContract',
-      'readContracts',
-      'simulateDrip'
-    ]);
+    expect(keysCalled(client)).toEqual(['stake-urn-vaults', 'readContract', 'readContracts', 'simulateDrip']);
   });
 
-  it('re-invalidates the subgraph keys and the positions list along the lag trail', () => {
+  it('re-invalidates the positions list along the RPC lag trail', () => {
     const client = makeClient();
     invalidateStakeQueries(client);
     (client.invalidateQueries as ReturnType<typeof vi.fn>).mockClear();
 
     vi.advanceTimersByTime(5_000);
-    expect(keysCalled(client)).toEqual(['stake-user-positions', 'stake-urn-vaults']);
+    expect(keysCalled(client)).toEqual(['stake-urn-vaults']);
 
     vi.advanceTimersByTime(10_000);
-    expect(keysCalled(client)).toEqual([
-      'stake-user-positions',
-      'stake-urn-vaults',
-      'stake-user-positions',
-      'stake-urn-vaults'
-    ]);
+    expect(keysCalled(client)).toEqual(['stake-urn-vaults', 'stake-urn-vaults']);
 
     vi.advanceTimersByTime(60_000);
-    expect((client.invalidateQueries as ReturnType<typeof vi.fn>).mock.calls.length).toBe(4);
+    expect((client.invalidateQueries as ReturnType<typeof vi.fn>).mock.calls.length).toBe(2);
   });
 });

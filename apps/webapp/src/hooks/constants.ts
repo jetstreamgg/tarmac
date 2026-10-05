@@ -72,6 +72,11 @@ export const INDEXER_MAX_QUERY_LIMIT = 1000;
 export const HISTORY_QUERY_LIMIT = 100;
 // History is append-only; without this every remount/window focus refires the full history fan-out.
 export const HISTORY_STALE_TIME = 60_000;
+// `meta` a history query carries so a confirmed transaction refreshes it (src/lib/historyRefresh):
+// indexer-backed history refetches once the Sky indexer has processed the transaction's block;
+// third-party history (Morpho, Pendle) has its own lag, so it also gets fixed follow-ups.
+export const INDEXER_HISTORY_META = { history: 'indexer' } as const;
+export const EXTERNAL_HISTORY_META = { history: 'external' } as const;
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;

@@ -289,13 +289,13 @@ export function PendleModalForm({
       });
     },
     onStart: hash => txCallbacks.onStart(hash),
-    onSuccess: hash => {
+    onSuccess: (hash, blockNumber) => {
       mutatePtBalances();
       refetchWalletBalance();
       // Pendle's PnL indexer needs ~20s after the receipt lands to expose the
       // new row — see PENDLE_HISTORY_REFRESH_MS for measurements.
       setTimeout(refreshPendleHistory, PENDLE_HISTORY_REFRESH_MS);
-      txCallbacks.onSuccess(hash);
+      txCallbacks.onSuccess(hash, blockNumber);
       fireAnalytics({
         event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,
         action: mainAction,

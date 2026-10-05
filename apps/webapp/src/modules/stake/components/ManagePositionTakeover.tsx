@@ -297,8 +297,9 @@ export function ManagePositionTakeover({
   }, [onClose]);
 
   const onSuccess = useCallback(() => {
-    // Fresh positions/activity AND fresh on-chain reads (vault, balances,
-    // allowances) on return — manage txs change what every read hook reports.
+    // Fresh on-chain reads (vault, balances, allowances) on return — manage
+    // txs change what every read hook reports; the indexer-backed positions
+    // rows and activity refetch once the indexer has the tx (refreshHistoryAfterTx).
     invalidateStakeQueries(queryClient);
     setSearchParams(
       params => {

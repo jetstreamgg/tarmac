@@ -1,6 +1,7 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { useConnection } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
+import { EXTERNAL_HISTORY_META } from '../constants';
 import { PendleHistoryAction, getPendleMarketByAddress } from './constants';
 import type { PendleCombinedHistoryRow, PendleMarketConfig, PendlePnlTransactionRaw } from './pendle';
 import { fetchPendlePnlTransactionsForUser } from './pendleApiClient';
@@ -113,6 +114,9 @@ export function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
  * triggered explicitly from the widget pane on a ~25s delay — Pendle's PnL
  * indexer lag is empirically ~20s (verified May 2026), much longer than the
  * 1s used elsewhere for our Envio Hyperindex / Morpho-API-backed histories.
+ * Every confirmed transaction also refetches it on the external-history
+ * follow-ups (src/lib/historyRefresh), which covers flows without that delay
+ * (the matured-PT redeem).
  */
 export function usePendleAllPnlTransactions(): UseQueryResult<PendleCombinedHistoryRow[]> {
   const { address: userAddress } = useConnection();
@@ -122,6 +126,7 @@ export function usePendleAllPnlTransactions(): UseQueryResult<PendleCombinedHist
     queryFn: (): Promise<PendlePnlTransactionRaw[]> =>
       fetchPendlePnlTransactionsForUser(userAddress!, { chainId: mainnet.id }),
     select: normalizePendlePnlRows,
-    enabled: !!userAddress
+    enabled: !!userAddress,
+    meta: EXTERNAL_HISTORY_META
   });
 }

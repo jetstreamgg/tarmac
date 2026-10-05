@@ -42,7 +42,7 @@ vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
 }));
 
 const refreshHistoryMock = vi.hoisted(() => vi.fn(async () => {}));
-vi.mock('@/lib/historyRefresh', () => ({ refreshHistoryUntilIndexed: refreshHistoryMock }));
+vi.mock('@/lib/historyRefresh', () => ({ refreshHistoryAfterTx: refreshHistoryMock }));
 
 const toastMock = vi.hoisted(() => ({ dismiss: vi.fn() }));
 const toastWithCloseMock = vi.hoisted(() => vi.fn());
@@ -180,16 +180,16 @@ describe('TransactionModal success handoff', () => {
     expect(toastWithCloseMock).toHaveBeenCalledTimes(1);
   });
 
-  it('refreshes the history tables until the confirmed transaction is indexed', () => {
+  it('refreshes the history tables once the indexer reaches the receipt block', () => {
     const cb = renderFlow(CONFIG);
 
     act(() => cb.onMutate());
     act(() => cb.onStart(HASH));
     expect(refreshHistoryMock).not.toHaveBeenCalled();
 
-    act(() => cb.onSuccess(HASH));
+    act(() => cb.onSuccess(HASH, 123n));
 
     expect(refreshHistoryMock).toHaveBeenCalledTimes(1);
-    expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), HASH);
+    expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), { chainId: 1, blockNumber: 123n });
   });
 });
