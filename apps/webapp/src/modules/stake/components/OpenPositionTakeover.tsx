@@ -8,7 +8,6 @@ import {
   lsSkySkyRewardAddress,
   TOKENS,
   useCollateralData,
-  useDebounce,
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   useSimulatedVault,
@@ -21,6 +20,7 @@ import {
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatDecimalPercentage } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -122,8 +122,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
 
   // Debounced amounts drive approval sizing, calldata and validation — the
   // legacy widget's exact arrangement (typing doesn't thrash the RPC reads).
-  const debouncedSkyToLock = useDebounce(state.skyToLock);
-  const debouncedUsdsToBorrow = useDebounce(state.usdsToBorrow);
+  const { debouncedAmount: debouncedSkyToLock } = useSettledAmount(state.skyToLock);
+  const { debouncedAmount: debouncedUsdsToBorrow } = useSettledAmount(state.usdsToBorrow);
 
   // Live simulation for the slider and display surfaces: useSimulatedVault's
   // per-amount work is pure math over cached chain reads, so it can track the

@@ -18,6 +18,12 @@ export interface VaultEngineParams {
   max?: boolean;
   /** Share balance to redeem on a Max withdraw. */
   shares?: bigint;
+  /**
+   * Form validity (amount entered, within balance, any product gate open). Gates the
+   * engines' prepare-time simulation: an input the form already knows is invalid is
+   * never simulated, so no RPC round trip and no Sentry event for a foregone revert.
+   */
+  enabled?: boolean;
 }
 
 export type UseVaultLaunchResult = EngineLaunchResult;
@@ -40,7 +46,8 @@ export function useVaultLaunch({
   assetToken,
   amount,
   max = false,
-  shares = 0n
+  shares = 0n,
+  enabled = true
 }: VaultEngineParams): UseVaultLaunchResult {
   const { txCallbacks } = useTransaction();
   const chainId = useChainId();
@@ -69,20 +76,20 @@ export function useVaultLaunch({
     amount,
     vaultAddress,
     assetAddress: assetAddress!,
-    enabled: isSupply,
+    enabled: enabled && isSupply,
     shouldUseBatch,
     ...txCallbacks
   });
   const withdrawHook = useVaultWithdraw({
     amount,
     vaultAddress,
-    enabled: !isSupply && !max,
+    enabled: enabled && !isSupply && !max,
     ...txCallbacks
   });
   const redeemHook = useVaultRedeem({
     shares,
     vaultAddress,
-    enabled: !isSupply && max,
+    enabled: enabled && !isSupply && max,
     ...txCallbacks
   });
 

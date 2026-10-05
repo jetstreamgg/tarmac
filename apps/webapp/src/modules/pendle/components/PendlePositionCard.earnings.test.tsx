@@ -50,6 +50,7 @@ import { combineWalletEarnings } from '@/modules/portfolio/earnings/combineWalle
 import {
   notAvailable,
   ok,
+  pendleMarketSourceId,
   type ProtocolEarnings,
   type WalletEarnings
 } from '@/modules/portfolio/earnings/types';
@@ -63,7 +64,7 @@ const pendleEarnings = (
 ): WalletEarnings => {
   const protocols: ProtocolEarnings[] = [
     {
-      id: 'pendle',
+      id: pendleMarketSourceId(MARKET.marketAddress),
       rowIds: [`fixed-${MARKET.marketAddress.toLowerCase()}`],
       totalEarned,
       earnedThisMonth: totalEarned,

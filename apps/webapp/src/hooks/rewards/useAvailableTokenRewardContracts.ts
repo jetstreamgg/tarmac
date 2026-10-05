@@ -49,7 +49,7 @@ const REWARD_CONTRACT_CONFIGS = [
 ] as const;
 
 // Helper function to create reward contracts for a specific chain
-const createRewardContracts = (chainId: number): RewardContract[] => {
+export const createRewardContracts = (chainId: number): RewardContract[] => {
   return REWARD_CONTRACT_CONFIGS.map(config => ({
     ...config,
     contractAddress: config.getAddress(chainId),
