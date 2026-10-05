@@ -5,28 +5,38 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
 const viem = vi.hoisted(() => ({ waitForTransactionReceipt: vi.fn() }));
+const chain = vi.hoisted(() => ({ current: 1, clientsFor: [] as (number | undefined)[] }));
 vi.mock('viem/actions', async io => ({
   ...(await io<typeof import('viem/actions')>()),
   waitForTransactionReceipt: viem.waitForTransactionReceipt
 }));
-vi.mock('wagmi', () => ({ useConfig: () => ({}) }));
-vi.mock('@wagmi/core', () => ({ getPublicClient: () => ({}) }));
+vi.mock('wagmi', () => ({ useConfig: () => ({}), useChainId: () => chain.current }));
+vi.mock('@wagmi/core', () => ({
+  getPublicClient: (_config: unknown, { chainId }: { chainId?: number }) => {
+    chain.clientsFor.push(chainId);
+    return {};
+  }
+}));
 
 import { useTransactionReceipt } from '@/hooks/shared/useTransactionReceipt';
 
 const HASH = '0xabc' as const;
 const receipt = (status: 'success' | 'reverted') => ({ status, transactionHash: HASH });
 
-function render() {
+function render(props: { hash?: `0x${string}`; chainId?: number } = { hash: HASH, chainId: 1 }) {
   const client = new QueryClient();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return renderHook(() => useTransactionReceipt({ hash: HASH, chainId: 1 }), { wrapper });
+  return renderHook(p => useTransactionReceipt(p), { wrapper, initialProps: props });
 }
 
 describe('useTransactionReceipt', () => {
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    chain.current = 1;
+    chain.clientsFor = [];
+  });
 
   it('reports a mined receipt as a success', async () => {
     viem.waitForTransactionReceipt.mockResolvedValue(receipt('success'));
@@ -86,4 +96,27 @@ describe('useTransactionReceipt', () => {
       expect(isUserRejectedRequestError(result.current.failure!)).toBe(true);
     }
   );
+
+  it('keeps watching on the chain the hash was sent to when the wallet switches chains', async () => {
+    viem.waitForTransactionReceipt
+      .mockRejectedValueOnce(new Error('HTTP request failed. Status: 503'))
+      .mockResolvedValueOnce(receipt('success'));
+    const { result, rerender } = render({ hash: HASH });
+    await waitFor(() => expect(viem.waitForTransactionReceipt).toHaveBeenCalledTimes(1));
+
+    // The wallet moves to Base while the mainnet tx is pending.
+    chain.current = 8453;
+    rerender({ hash: HASH });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 3_000 });
+    expect(chain.clientsFor).toEqual([1, 1]);
+  });
+
+  it('stops retrying once nothing watches the hash', async () => {
+    viem.waitForTransactionReceipt.mockRejectedValue(new Error('HTTP request failed. Status: 503'));
+    const { unmount } = render();
+    await waitFor(() => expect(viem.waitForTransactionReceipt).toHaveBeenCalledTimes(1));
+    unmount();
+    await new Promise(r => setTimeout(r, 3_500));
+    expect(viem.waitForTransactionReceipt.mock.calls.length).toBeLessThanOrEqual(2);
+  });
 });

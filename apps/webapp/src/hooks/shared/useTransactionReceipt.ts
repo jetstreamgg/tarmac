@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useConfig } from 'wagmi';
+import { useChainId, useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
 import {
   UserRejectedRequestError,
@@ -37,15 +37,25 @@ export type TransactionReceiptState = {
  * the receipt itself (`status`), not from replaying the call and reading the
  * error text. A speed-up counts as the same transaction; a cancel or any other
  * replacement does not, though its receipt reads `success`.
+ *
+ * The chain is fixed when a hash first appears: the wallet can switch chains
+ * while the transaction is pending, and the hash only exists on the chain it
+ * was sent to.
  */
 export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?: number }) {
   const config = useConfig();
+  const currentChainId = useChainId();
+  const sendChainId = chainId ?? currentChainId;
+  const [watched, setWatched] = useState<{ hash?: Hash; chainId: number }>({ chainId: sendChainId });
+  if (hash !== watched.hash) setWatched({ hash, chainId: sendChainId });
+  const watchChainId = hash === watched.hash ? watched.chainId : sendChainId;
+
   const { data, isSuccess: settled } = useQuery<ReceiptResult>({
-    queryKey: ['transactionReceipt', chainId, hash],
+    queryKey: ['transactionReceipt', watchChainId, hash],
     enabled: !!hash,
     queryFn: async () => {
-      const client = getPublicClient(config, { chainId });
-      if (!client) throw new Error(`No client for chain ${chainId}`);
+      const client = getPublicClient(config, { chainId: watchChainId });
+      if (!client) throw new Error(`No client for chain ${watchChainId}`);
       let replacement: ReplacementReturnType | undefined;
       const receipt = await waitForTransactionReceipt(client, {
         hash: hash!,
@@ -54,6 +64,7 @@ export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?
       });
       return { receipt, replacement };
     },
+    // Unlimited while watched; TanStack stops retrying once nothing observes the query.
     retry: true,
     retryDelay: attempt => Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY_MS),
     staleTime: Infinity,
