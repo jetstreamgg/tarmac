@@ -10,7 +10,13 @@ i18n.load('en', {});
 i18n.activate('en');
 
 const h = vi.hoisted(() => ({
-  detail: {} as Record<string, unknown>
+  detail: {} as Record<string, unknown>,
+  delegateName: 'Shadow delegate' as string | undefined
+}));
+
+vi.mock('@/hooks', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/hooks')>()),
+  useDelegateName: () => ({ data: h.delegateName })
 }));
 
 vi.mock('../hooks/useStakeOracleCap', () => ({
@@ -108,6 +114,7 @@ const inactiveDetail = (overrides: Partial<StakePositionDetail> = {}): Partial<S
 
 describe('PositionDetailsModal', () => {
   beforeEach(() => {
+    h.delegateName = 'Shadow delegate';
     h.detail = { ...baseDetail };
   });
   afterEach(cleanup);
@@ -305,7 +312,16 @@ describe('PositionDetailsModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('shows the delegate as a shortened address with a profile link', () => {
+  it('shows the delegate name when the governance portal has one', () => {
+    h.delegateName = 'cloaky';
+    renderModal();
+    const delegateLink = screen.getByTestId('stake-position-delegate-link') as HTMLAnchorElement;
+    expect(delegateLink.textContent).toContain('cloaky');
+    expect(delegateLink.textContent).not.toContain('0x0F23');
+    expect(delegateLink.href).toContain(DELEGATE.toLowerCase());
+  });
+
+  it('shows a shadow delegate as a shortened address with a profile link', () => {
     renderModal();
     const delegateLink = screen.getByTestId('stake-position-delegate-link') as HTMLAnchorElement;
     expect(delegateLink.textContent).toContain('0x0F23...CC86');
