@@ -1,6 +1,6 @@
 import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { erc20Abi, type Call } from 'viem';
+import { WaitForCallsStatusTimeoutError, erc20Abi, type Call } from 'viem';
 
 // The cross-chain-calldata backstop (APP-528): the shared batch flow itself
 // must refuse a batch whose target address resolved to `undefined` — the shape
@@ -120,8 +120,12 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
     return callsStatusParams.last!;
   };
 
-  it('waits on the bundle without a timeout', () => {
-    expect(pollingOptions().timeout).toBe(0);
+  it('starts the next poll straight away when an attempt times out', () => {
+    const { query, timeout } = pollingOptions();
+    const timedOut = new WaitForCallsStatusTimeoutError({ id: '0x1' });
+    expect(timeout).toBeUndefined(); // viem's bounded default per attempt
+    expect(query.retry(9, timedOut)).toBe(true);
+    expect(query.retryDelay(9, timedOut)).toBe(0);
   });
 
   it('keeps polling through RPC and wallet errors', () => {
@@ -140,7 +144,7 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
 
   it('backs off to at most 30s between polls', () => {
     const { retryDelay } = pollingOptions().query;
-    expect(retryDelay(0)).toBe(1000);
-    expect(retryDelay(20)).toBe(30_000);
+    expect(retryDelay(0, new Error('503'))).toBe(1000);
+    expect(retryDelay(20, new Error('503'))).toBe(30_000);
   });
 });

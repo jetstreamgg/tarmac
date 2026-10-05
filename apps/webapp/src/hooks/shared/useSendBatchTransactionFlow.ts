@@ -2,6 +2,7 @@ import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
 import { useEffect, useEffectEvent } from 'react';
 import type { Call } from 'viem';
+import { WaitForCallsStatusTimeoutError } from 'viem';
 import { isRevertedError, toError } from '../helpers';
 import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
@@ -75,10 +76,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     }
   });
 
-  // Monitor tx, this is also compatible with Safe wallets. No timeout, and a
-  // failed poll is retried rather than reported: the bundle is with the wallet
-  // whatever the poll says (a Safe waits on co-signers for as long as it takes),
-  // and reporting it put Retry on screen, which sends the bundle a second time.
+  // Monitor tx, this is also compatible with Safe wallets. A timed-out or failed
+  // poll is retried rather than reported, for as long as the bundle is watched:
+  // it's with the wallet whatever the poll says (a Safe waits on co-signers for
+  // as long as it takes), and reporting it put Retry on screen, which sends the
+  // bundle a second time. Each attempt keeps viem's 60s timeout so a bundle
+  // nobody watches any more stops being polled.
   const {
     isLoading: isMining,
     isSuccess,
@@ -87,10 +90,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     data
   } = useWaitForCallsStatus({
     id: mutationData?.id,
-    timeout: 0,
     query: {
       retry: (_count, error) => !isRevertedError(error) && !isPermanentStatusError(error),
-      retryDelay: attempt => Math.min(1000 * 2 ** attempt, MAX_STATUS_RETRY_DELAY_MS)
+      retryDelay: (attempt, error) =>
+        error instanceof WaitForCallsStatusTimeoutError
+          ? 0
+          : Math.min(1000 * 2 ** attempt, MAX_STATUS_RETRY_DELAY_MS)
     }
   });
 
