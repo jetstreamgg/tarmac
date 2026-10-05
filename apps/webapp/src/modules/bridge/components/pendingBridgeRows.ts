@@ -1,0 +1,62 @@
+/**
+ * Pure cell builders for a pending bridge card (Figma 3574:64348):
+ * [Source | Destination], [Status | Estimated arrival], [Bridge type | Transaction].
+ * Labels and pairing are the Figma contract, asserted in `pendingBridgeRows.test.ts`.
+ */
+
+import { formatAddress } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
+import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
+import type { PendingBridge, PendingBridgeStatus } from '../model/types';
+import { BRIDGE_TYPE_LABEL, formatEta } from './bridgeModalRows';
+
+export type PendingBridgeCell =
+  | { kind: 'network'; label: string; network: BridgeNetworkId }
+  | { kind: 'status'; label: string; status: PendingBridgeStatus }
+  | { kind: 'text'; label: string; value: string }
+  | { kind: 'link'; label: string; value: string; href?: string };
+
+export const PENDING_STATUS_LABEL: Record<PendingBridgeStatus, string> = {
+  pending: 'Pending',
+  ready: 'Ready to claim',
+  arrived: 'Arrived',
+  claimed: 'Claimed',
+  failed: 'Failed'
+};
+
+/** "25/10/26 15:26 UTC". */
+export const formatBridgeDate = (ms: number): string => {
+  const date = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCFullYear() % 100)} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
+};
+
+const arrivalText = (bridge: PendingBridge, now: number): string => {
+  if (bridge.status !== 'pending') return 'Arrived';
+  // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
+  const elapsedFrom = Math.max(now, bridge.startedAt);
+  return formatEta(Math.max(1, Math.ceil((bridge.etaAt - elapsedFrom) / 60_000)));
+};
+
+export function buildPendingBridgeRows(bridge: PendingBridge, now: number): PendingBridgeCell[][] {
+  const sourceChainId = getBridgeNetwork(bridge.from).chainId;
+  return [
+    [
+      { kind: 'network', label: 'Source', network: bridge.from },
+      { kind: 'network', label: 'Destination', network: bridge.to }
+    ],
+    [
+      { kind: 'status', label: 'Status', status: bridge.status },
+      { kind: 'text', label: 'Estimated arrival', value: arrivalText(bridge, now) }
+    ],
+    [
+      { kind: 'text', label: 'Bridge type', value: BRIDGE_TYPE_LABEL[bridge.routeKind] },
+      {
+        kind: 'link',
+        label: 'Transaction',
+        value: formatAddress(bridge.txHash, 6, 4),
+        href: sourceChainId === undefined ? undefined : getEtherscanLink(sourceChainId, bridge.txHash, 'tx')
+      }
+    ]
+  ];
+}

@@ -16,12 +16,15 @@ export const BalancesHistory = ({
   showAllNetworks,
   className,
   itemsPerPage = 5,
-  useInfiniteScroll = false
+  useInfiniteScroll = false,
+  hideEmptyState = false
 }: {
   showAllNetworks?: boolean;
   className?: string;
   itemsPerPage?: number;
   useInfiniteScroll?: boolean;
+  /** Skip "No history found" when the caller renders other rows above. */
+  hideEmptyState?: boolean;
 }) => {
   const singleNetworkHistory = useCombinedHistory();
   const allNetworksHistory = useAllNetworksCombinedHistory();
@@ -158,7 +161,7 @@ export const BalancesHistory = ({
         <Trans>Unable to fetch history</Trans>
       </Text>
     </div>
-  ) : (
+  ) : hideEmptyState ? null : (
     <div className="flex flex-col items-center space-y-3 pt-9 pb-3">
       <NoResults />
       <Text className="text-textSecondary text-center">

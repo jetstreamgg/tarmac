@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { MoveDown } from 'lucide-react';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
@@ -8,17 +9,19 @@ export type TokenTransferHeroSide = {
   /** Formatted display amount (modules pin two decimals per the comps). */
   amount: string;
   testId?: string;
+  /** Replaces the token badge (the bridge review names each side's network instead). */
+  badge?: ReactNode;
 };
 
 /** One hero row (Figma 1310:130691): 32px icon + Heading-2 amount + token badge. */
-function HeroAmountRow({ symbol, amount, testId }: TokenTransferHeroSide) {
+function HeroAmountRow({ symbol, amount, testId, badge }: TokenTransferHeroSide) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="flex min-w-0 items-center gap-3">
         <TokenIcon token={{ symbol }} width={32} showChainIcon={false} className="size-8 shrink-0" />
         <FittedAmount amount={amount} testId={testId} />
       </span>
-      <TokenBadge symbol={symbol} />
+      {badge ?? <TokenBadge symbol={symbol} />}
     </div>
   );
 }
