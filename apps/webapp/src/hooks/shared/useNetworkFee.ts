@@ -8,6 +8,7 @@ import { TRUST_LEVELS } from '../constants';
 import type { ReadHook } from '../hooks';
 import { usePrices } from '../prices/usePrices';
 import { estimateFlowGas } from './estimateFlowGas';
+import { useBatchExecutorFallbackClients } from './useBatchExecutorFallbackClients';
 import {
   computeBatchSaving,
   computeFeePerGas,
@@ -85,6 +86,7 @@ export function useNetworkFee({
   const resolvedChainId = chainId ?? connectedChainId;
   const { address } = useAccount();
   const publicClient = usePublicClient({ chainId: resolvedChainId });
+  const fallbackClients = useBatchExecutorFallbackClients(resolvedChainId);
   const { data: batchSupported } = useIsBatchSupported();
   const { data: pricesData, isLoading: isPricesLoading } = usePrices();
 
@@ -122,7 +124,8 @@ export function useNetworkFee({
         chainId: resolvedChainId,
         account: address!,
         calls,
-        wantsBatch: canBundle
+        wantsBatch: canBundle,
+        fallbackClients
       }),
     enabled: enabled && !!publicClient && !!address && calls.length > 0 && callsKey !== null,
     staleTime: GAS_STALE_TIME,

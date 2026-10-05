@@ -79,7 +79,7 @@ export function RewardsModalForm({
     isSupply,
     decimals,
     value,
-    amount,
+    debouncedAmount,
     available,
     availableKnown,
     position,
@@ -87,6 +87,7 @@ export function RewardsModalForm({
     isZero,
     insufficient,
     amountReady,
+    debouncePending,
     engineParams,
     toast,
     transactionScreenContent,
@@ -100,16 +101,23 @@ export function RewardsModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
 
   const networkName = useNetworkName(chainId);
   const rateValue = rate !== undefined ? formatDecimalPercentage(rate) : NO_VALUE;
 
-  // Position/earnings deltas from the parsed engine `amount` (not the raw input)
+  // Position/earnings deltas from the debounced engine amount (not the raw input)
   // so the preview matches what's submitted. USD ≈ amount for the $1-pegged
   // supply token (USDS); earnings = position × rate, "–" for point farms.
   const positionUsd = parseFloat(formatUnits(position, decimals));
-  const amountUsd = parseFloat(formatUnits(amount, decimals));
+  const amountUsd = parseFloat(formatUnits(debouncedAmount, decimals));
   const positionAfterUsd = isSupply ? positionUsd + amountUsd : Math.max(positionUsd - amountUsd, 0);
   const earnings = (principalUsd: number) =>
     rate !== undefined ? formatUsd(projectAnnualEarnings(principalUsd, rate)) : NO_VALUE;
@@ -190,10 +198,10 @@ export function RewardsModalForm({
         assetAddress: supplyToken.address[chainId],
         assetSymbol: supplyToken.symbol,
         isBatchTx: isBatch,
-        amount: signedAmount(parseFloat(formatUnits(amount, decimals)), flow)
+        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, decimals)), flow)
       }
     }),
-    [flow, productName, contractAddress, supplyToken, chainId, isBatch, amount, decimals]
+    [flow, productName, contractAddress, supplyToken, chainId, isBatch, debouncedAmount, decimals]
   );
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that

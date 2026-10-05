@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/react';
-import { toError } from '@/hooks';
+// The helpers module, not the `@/hooks` barrel: hooks report through this file, so
+// importing the barrel here would close an import cycle.
+import { toError } from '@/hooks/helpers';
 
 export type ReportContext = {
   module: string;
