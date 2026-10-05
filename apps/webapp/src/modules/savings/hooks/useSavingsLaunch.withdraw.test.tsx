@@ -20,8 +20,8 @@ const h = vi.hoisted(() => ({
   capturedWrite: null as WriteParams | null,
   mockWithdrawExecute: vi.fn(),
   mockSupplyExecute: vi.fn(),
-  // Resolved by the engine for a `max` withdraw (maxWithdraw(owner)).
-  maxWithdraw: undefined as bigint | undefined
+  // Resolved by the engine for a `max` withdraw: the sUSDS share balance it redeems.
+  shares: undefined as bigint | undefined
 }));
 
 type WriteParams = {
@@ -29,6 +29,7 @@ type WriteParams = {
   abi: readonly unknown[];
   functionName: string;
   args: readonly unknown[];
+  enabled?: boolean;
 };
 
 vi.mock('wagmi', async importOriginal => {
@@ -61,7 +62,8 @@ vi.mock('@/hooks/shared/useWriteContractFlow', () => ({
       address: params.address,
       abi: params.abi,
       functionName: params.functionName,
-      args: params.args
+      args: params.args,
+      enabled: params.enabled
     };
     return {
       error: null,
@@ -127,13 +129,13 @@ vi.mock('@/hooks/savings/useSavingsData', () => ({
   })
 }));
 
-// Resolve maxWithdraw(owner) for the `max` path; preserve the real address/ABI
+// Resolve balanceOf(owner) for the `max` path; preserve the real address/ABI
 // exports both engines import from this module.
 vi.mock('@/hooks/savings/useReadSavingsUsds', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks/savings/useReadSavingsUsds')>();
   return {
     ...actual,
-    useReadSavingsUsdsMaxWithdraw: () => ({ data: h.maxWithdraw, queryKey: ['maxWithdraw'] })
+    useReadSavingsUsdsBalanceOf: () => ({ data: h.shares })
   };
 });
 
@@ -177,7 +179,7 @@ import { TOKENS, useSavingsWithdraw } from '@/hooks';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
 const AMOUNT = parseUnits('5', 18);
-const MAX_WITHDRAW = parseUnits('123.456789012345678', 18);
+const SHARES = parseUnits('123.456789012345678', 18);
 
 function normalize(call: WriteParams) {
   return {
@@ -215,7 +217,7 @@ describe('useSavingsLaunch — mainnet USDS withdraw calldata parity', () => {
     h.capturedWrite = null;
     h.mockWithdrawExecute.mockClear();
     h.mockSupplyExecute.mockClear();
-    h.maxWithdraw = undefined;
+    h.shares = undefined;
   });
   afterEach(() => cleanup());
 
@@ -232,19 +234,25 @@ describe('useSavingsLaunch — mainnet USDS withdraw calldata parity', () => {
     expect(orch.args).toEqual([AMOUNT, TEST_ADDRESS, TEST_ADDRESS]);
   });
 
-  it('routes byte-identical calldata for a max withdraw (amount resolved via maxWithdraw)', () => {
-    h.maxWithdraw = MAX_WITHDRAW;
+  it('routes byte-identical calldata for a max withdraw (redeems the whole share balance)', () => {
+    h.shares = SHARES;
     // The input amount is deliberately a non-matching sentinel: a max withdraw
-    // must resolve to maxWithdraw(owner), NOT the panel's input amount.
+    // must redeem balanceOf(owner) shares, NOT the panel's input amount.
     const orch = captureOrchestratorWithdraw(AMOUNT, true);
-    h.maxWithdraw = MAX_WITHDRAW;
     const engine = captureEngineWithdraw(AMOUNT, true);
 
     expect(normalize(orch)).toEqual(normalize(engine));
-    // Resolved amount is the engine's maxWithdraw — never the AMOUNT sentinel.
-    expect(orch.args).toEqual([MAX_WITHDRAW, TEST_ADDRESS, TEST_ADDRESS]);
-    expect(orch.args[0]).toBe(MAX_WITHDRAW);
-    expect(orch.args[0]).not.toBe(AMOUNT);
+    expect(orch.functionName).toBe('redeem');
+    // redeem(shares, receiver, owner) — never the AMOUNT sentinel.
+    expect(orch.args).toEqual([SHARES, TEST_ADDRESS, TEST_ADDRESS]);
+  });
+
+  it('keeps a max withdraw unprepared until the share balance resolves', () => {
+    h.capturedWrite = null;
+    const { unmount } = renderHook(() => useSavingsWithdraw({ amount: AMOUNT, max: true, enabled: true }));
+    const call = h.capturedWrite as WriteParams | null;
+    unmount();
+    expect(call?.enabled).toBe(false);
   });
 });
 
@@ -253,7 +261,7 @@ describe('useSavingsLaunch — withdraw routing + steps', () => {
     h.capturedWrite = null;
     h.mockWithdrawExecute.mockClear();
     h.mockSupplyExecute.mockClear();
-    h.maxWithdraw = undefined;
+    h.shares = undefined;
   });
   afterEach(() => cleanup());
 
