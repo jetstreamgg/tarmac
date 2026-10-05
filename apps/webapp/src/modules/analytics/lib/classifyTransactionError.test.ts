@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TransactionReplacedError } from '@/hooks/shared/useTransactionReceipt';
 import { classifyTransactionError } from './classifyTransactionError';
 
 // Error-like shapes mirroring what viem/wallets actually throw. Wallets nest the
@@ -84,5 +85,14 @@ describe('classifyTransactionError', () => {
     const result = classifyTransactionError(err, true);
     expect(result.error_kind).toBe('reverted');
     expect(result.is_user_rejection).toBe(false);
+  });
+
+  it('classifies a transaction replaced in the wallet after broadcast as a user rejection', () => {
+    const replaced = new TransactionReplacedError(new Error('Transaction cancelled in the wallet.'));
+    expect(classifyTransactionError(replaced, true)).toMatchObject({
+      error_kind: 'user_rejected',
+      is_user_rejection: true,
+      error_name: 'TransactionReplacedError'
+    });
   });
 });

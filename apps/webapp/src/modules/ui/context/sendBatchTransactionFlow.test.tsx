@@ -132,12 +132,14 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
     const { retry } = pollingOptions().query;
     expect(retry(1, new Error('HTTP request failed. Status: 503'))).toBe(true);
     expect(retry(50, Object.assign(new Error('Internal error'), { code: -32603 }))).toBe(true);
+    // A locked wallet can answer 4100 and recover once unlocked.
+    expect(retry(3, Object.assign(new Error('Unauthorized'), { code: 4100 }))).toBe(true);
   });
 
   it('stops on a revert or an error after which polling can never succeed', () => {
     const { retry } = pollingOptions().query;
     expect(retry(1, new Error('execution reverted'))).toBe(false);
-    for (const code of [4100, 4200, 5730]) {
+    for (const code of [4200, 5730]) {
       expect(retry(1, Object.assign(new Error('wrapped'), { cause: { code } }))).toBe(false);
     }
   });

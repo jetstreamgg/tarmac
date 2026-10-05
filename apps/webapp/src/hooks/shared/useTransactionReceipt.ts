@@ -33,6 +33,16 @@ const MAX_RETRY_DELAY_MS = 30_000;
 const ATTEMPT_TIMEOUT_MS = 60_000;
 
 type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementReturnType };
+
+/**
+ * A broadcast transaction the user replaced in their wallet: a cancel, or
+ * another transaction at its nonce. A wallet rejection (code 4001) for the modal
+ * and Sentry, but it carries a hash, so the analytics classifier recognises it
+ * by name rather than by the usual "rejections never have a hash" rule.
+ */
+export class TransactionReplacedError extends UserRejectedRequestError {
+  override name = 'TransactionReplacedError' as const;
+}
 type SentTransaction = { transaction: Transaction; seenAtBlock: bigint };
 
 /**
@@ -173,7 +183,7 @@ export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?
   const failure = useMemo(() => {
     if (!data) return null;
     if (data.replacement && data.replacement.reason !== 'repriced') {
-      return new UserRejectedRequestError(new Error(`Transaction ${data.replacement.reason} in the wallet.`));
+      return new TransactionReplacedError(new Error(`Transaction ${data.replacement.reason} in the wallet.`));
     }
     return data.receipt.status === 'reverted' ? new Error('Transaction reverted on-chain.') : null;
   }, [data]);

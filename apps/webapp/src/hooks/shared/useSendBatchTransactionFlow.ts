@@ -10,9 +10,10 @@ import { useSimulateBatch } from './useSimulateBatch';
 
 /** Ceiling on the gap between status polls while the wallet keeps erroring. */
 const MAX_STATUS_RETRY_DELAY_MS = 30_000;
-// EIP-1193 / EIP-5792 codes after which polling can never succeed: unauthorized,
-// method unsupported, unknown bundle id.
-const PERMANENT_STATUS_ERROR_CODES = new Set([4100, 4200, 5730]);
+// EIP-1193 / EIP-5792 codes after which polling can never succeed: method
+// unsupported, unknown bundle id. Not 4100 (unauthorized): a locked wallet can
+// answer that and work again once unlocked.
+const PERMANENT_STATUS_ERROR_CODES = new Set([4200, 5730]);
 
 function isPermanentStatusError(error: unknown): boolean {
   let e: unknown = error;

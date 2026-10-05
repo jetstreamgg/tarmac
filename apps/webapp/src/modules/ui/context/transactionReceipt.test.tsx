@@ -130,6 +130,7 @@ describe('useTransactionReceipt', () => {
       await waitFor(() => expect(result.current.failure).not.toBeNull());
       expect(result.current.isSuccess).toBe(false);
       expect(isUserRejectedRequestError(result.current.failure!)).toBe(true);
+      expect(result.current.failure!.name).toBe('TransactionReplacedError');
     }
   );
 
