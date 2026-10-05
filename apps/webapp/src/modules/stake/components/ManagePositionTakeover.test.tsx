@@ -536,7 +536,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /^Withdrawing 1,000,000\.00 SKY would liquidate your position\. With your 30,000\.00 USDS debt, you can withdraw at most 2,229,029\.00 SKY\.$/
+      /^Withdrawing this would liquidate your position\. Max 2,229,029\.00 SKY\.$/
     );
     expect(confirmButton().disabled).toBe(true);
   });
@@ -566,7 +566,7 @@ describe('ManagePositionTakeover', () => {
     // 500k left at 1.25 / 0.0608 within 80% proximity carries at most ~19,456 USDS.
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2500000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /you can withdraw at most 2,229,029\.00 SKY\. Repay at least 10,54\d\.\d\d USDS to withdraw 2,500,000\.00 SKY\.$/
+      /^Withdrawing this would liquidate your position\. Max 2,229,029\.00 SKY, or repay 10,54\d\.\d\d USDS first\.$/
     );
 
     fireEvent.click(screen.getByTestId('stake-manage-stake-amount-unblock-repay'));
@@ -582,7 +582,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2500000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /To withdraw 2,500,000\.00 SKY, repay the full 30,000\.00 USDS\. Your position needs at least 30,000\.00 USDS of debt to stay open\.$/
+      /^Withdrawing this would liquidate your position\. Max 2,229,029\.00 SKY, or repay all 30,000\.00 USDS first \(debt can't stay below 30,000\.00\)\.$/
     );
 
     const action = screen.getByTestId('stake-manage-stake-amount-unblock-repay');
@@ -600,7 +600,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe(
-      'You cannot withdraw more than 1,560,000.00 SKY, as this may result in liquidation. To withdraw 2,000,000.00 SKY, repay the full 30,000.00 USDS. Your position needs at least 30,000.00 USDS of debt to stay open.'
+      "You cannot withdraw more than 1,560,000.00 SKY, as this may result in liquidation. Repay all 30,000.00 USDS first (debt can't stay below 30,000.00)."
     );
     expect(screen.getByTestId('stake-manage-stake-amount-unblock-repay').textContent).toBe('Repay all');
   });
@@ -611,7 +611,7 @@ describe('ManagePositionTakeover', () => {
 
     fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2000000' } });
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /repay the full 30,000\.00 USDS\. Your position needs at least 30,000\.00 USDS of debt to stay open\. You have 5,000\.00 USDS\.$/
+      /repay all 30,000\.00 USDS first \(debt can't stay below 30,000\.00\)\. You have 5,000\.00 USDS\.$/
     );
     expect(screen.queryByTestId('stake-manage-stake-amount-unblock-repay')).toBeNull();
   });
@@ -888,13 +888,13 @@ describe('ManagePositionTakeover', () => {
     // Existing 30k debt at 1.25 / 0.0608, quoted at 80% proximity (0.04864):
     // min collateral 770,970.x → at most 2,229,029, floored to whole SKY.
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /With your 30,000\.00 USDS debt, you can withdraw at most 2,229,029\.00/
+      /Max 2,229,029\.00 SKY/
     );
 
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '10000' } });
     // Resulting 40k debt: min collateral 1,027,960 → at most 1,972,040.
     expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
-      /With your 40,000\.00 USDS debt, you can withdraw at most 1,972,0\d\d\.00/
+      /Max 1,972,0\d\d\.00 SKY/
     );
   });
 

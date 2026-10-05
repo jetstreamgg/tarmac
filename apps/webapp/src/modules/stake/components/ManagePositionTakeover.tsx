@@ -254,16 +254,27 @@ export function ManagePositionTakeover({
         : existingDebt;
   const unblockAffordable =
     unblockRepay !== undefined && usdsBalance?.value !== undefined && usdsBalance.value >= unblockRepay;
-  const withdrawLabel = formatBigInt(skyToFree);
-  const unblockHint =
-    unblockRepay === undefined
+  const balanceNote =
+    unblockAffordable || usdsBalance?.value === undefined
       ? ''
-      : (partialUnblocks
-          ? t`Repay at least ${formatBigInt(unblockRepay)} USDS to withdraw ${withdrawLabel} SKY.`
-          : t`To withdraw ${withdrawLabel} SKY, repay the full ${formatBigInt(existingDebt)} USDS. Your position needs at least ${formatBigInt(existingVault?.dust ?? 0n)} USDS of debt to stay open.`) +
-        (unblockAffordable || usdsBalance?.value === undefined
-          ? ''
-          : ' ' + t`You have ${formatBigInt(usdsBalance.value)} USDS.`);
+      : ' ' + t`You have ${formatBigInt(usdsBalance.value)} USDS.`;
+  const debtLabel = formatBigInt(existingDebt);
+  const dustLabel = formatBigInt(existingVault?.dust ?? 0n);
+  const fullRepayHint = t`Repay all ${debtLabel} USDS first (debt can't stay below ${dustLabel}).`;
+  const liquidationMessage = (maxWithdraw: bigint) => {
+    const base = t`Withdrawing this would liquidate your position.`;
+    const max = maxWithdraw > 0n ? formatBigInt(maxWithdraw) : undefined;
+    if (unblockRepay === undefined) return max ? `${base} ${t`Max ${max} SKY.`}` : base;
+    const repay = formatBigInt(unblockRepay);
+    const hint = partialUnblocks
+      ? max
+        ? t`Max ${max} SKY, or repay ${repay} USDS first.`
+        : t`Repay ${repay} USDS first.`
+      : max
+        ? t`Max ${max} SKY, or repay all ${debtLabel} USDS first (debt can't stay below ${dustLabel}).`
+        : fullRepayHint;
+    return `${base} ${hint}${balanceNote}`;
+  };
   const stageUnblockRepay = () => {
     if (unblockRepay === undefined) return;
     dispatch({ type: 'setBorrowMode', mode: 'repay' });
@@ -277,7 +288,6 @@ export function ManagePositionTakeover({
           onClick: stageUnblockRepay
         }
       : undefined;
-  const withUnblockHint = (message: string) => (unblockHint ? `${message} ${unblockHint}` : message);
 
   const stakeError =
     state.stakeMode === 'stake'
@@ -293,17 +303,13 @@ export function ManagePositionTakeover({
           // the generic risk error is unreachable-shadowed, not the reverse.
           isCappedOsmError || isLiquidationError
           ? maxWithdrawSafe !== undefined && newDebtValue > 0n
-            ? withUnblockHint(
-                t`Withdrawing ${formatBigInt(state.skyAmount)} SKY would liquidate your position. With your ${formatBigInt(newDebtValue)} USDS debt, you can withdraw at most ${formatBigInt(maxWithdrawSafe)} SKY.`
-              )
+            ? liquidationMessage(maxWithdrawSafe)
             : isCappedOsmError
               ? t`Liquidation price is higher than the capped OSM SKY price`
               : t`Liquidation risk too high`
           : isMinCollateralWithdrawError
-            ? unblockHint
-              ? withUnblockHint(
-                  t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation.`
-                )
+            ? unblockRepay !== undefined
+              ? `${t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation.`} ${fullRepayHint}${balanceNote}`
               : t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation. You must first repay your position or close it entirely.`
             : undefined;
   const stakeCardValid = state.skyAmount === 0n || !stakeError;
