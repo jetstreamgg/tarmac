@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { HISTORY_STALE_TIME } from '../constants';
 import type { HistoryPage } from './historyQueryHelpers';
+import { HISTORY_QUERY_META } from '@/lib/historyRefresh';
 
 /** Pagination surface a keyset-paginated history hook adds on top of ReadHook. */
 export type PaginatedHistory = {
@@ -33,6 +34,7 @@ export function useHistoryPagination<T>({
     useInfiniteQuery({
       enabled,
       staleTime: HISTORY_STALE_TIME,
+      meta: HISTORY_QUERY_META,
       queryKey,
       initialPageParam: undefined as number | undefined,
       queryFn: ({ pageParam }) => fetchPage(pageParam),

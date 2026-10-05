@@ -10,6 +10,7 @@ import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
 import { CombinedHistoryItem } from './shared';
 import { chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
+import { HISTORY_QUERY_META } from '@/lib/historyRefresh';
 
 // The chains whose PSM `Swap` history feeds the all-networks views. All of
 // them live in the indexer's single multichain database, so one document
@@ -97,6 +98,7 @@ export function useL2sIndexerHistory({ enabled = true }: { enabled?: boolean } =
     useInfiniteQuery({
       enabled: Boolean(urlIndexer && address) && enabled,
       staleTime: HISTORY_STALE_TIME,
+      meta: HISTORY_QUERY_META,
       queryKey: ['l2s-indexer-history', urlIndexer, address, L2_HISTORY_CHAIN_IDS.join('-')],
       initialPageParam: undefined as number | undefined,
       queryFn: ({ pageParam }) =>

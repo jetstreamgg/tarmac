@@ -18,6 +18,7 @@ import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQue
 import { L2_HISTORY_CHAIN_IDS, tradeCutoffTimestamp } from './useL2sIndexerHistory';
 import { CombinedHistoryItem } from './shared';
 import { familyMainnetId, chainId as chainIdMap } from '@/utils';
+import { HISTORY_QUERY_META } from '@/lib/historyRefresh';
 
 /**
  * One Envio-backed history family, queried on its own. Used by the filtered
@@ -213,6 +214,7 @@ export function useHistoryFamilyQuery({
     useInfiniteQuery({
       enabled: Boolean(address) && enabled && hasScope,
       staleTime: HISTORY_STALE_TIME,
+      meta: HISTORY_QUERY_META,
       queryKey: ['history-family', family, chainId ?? 'all', address, mainnetChainId],
       initialPageParam: undefined as number | undefined,
       queryFn: ({ pageParam }) =>

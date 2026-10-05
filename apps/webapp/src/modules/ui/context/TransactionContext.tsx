@@ -20,6 +20,8 @@ import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSucc
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
+import { refreshHistoryUntilIndexed } from '@/lib/historyRefresh';
+import { queryClient } from '@/lib/queryClient';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -1074,6 +1076,9 @@ export function TransactionProvider({
       const config = configRef.current;
 
       configRef.current?.onSuccess?.();
+      // Every product's history table (and the portfolio/wallet history) lags
+      // the receipt by the indexer's catch-up; keep refetching until it lands.
+      void refreshHistoryUntilIndexed(queryClient, hash ?? txHashRef.current);
       // Rotate AFTER the consumer callback so anything it emits joins this flow
       if (analytics) {
         startNewFlow();

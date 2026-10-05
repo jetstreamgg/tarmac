@@ -13,6 +13,7 @@ import {
 } from './constants';
 import { toReadHook } from '../shared/toReadHook';
 import { morphoGraphql } from './morphoGraphql';
+import { HISTORY_QUERY_META } from '@/lib/historyRefresh';
 
 async function fetchMorphoDepositWithdrawHistory(
   vaultAddress: `0x${string}` | undefined,
@@ -64,6 +65,7 @@ export function useMorphoVaultHistory({
   const query = useQuery({
     enabled: enabled && !!address,
     queryKey: ['morpho-vault-history', vaultAddress || 'all', address],
+    meta: HISTORY_QUERY_META,
     // Morpho vaults are mainnet-only
     queryFn: () => fetchMorphoDepositWithdrawHistory(vaultAddress, MORPHO_API_CHAIN_ID, address!)
   });

@@ -56,8 +56,9 @@ mixing them up is the highest-impact bug class this module has had.
 
 The four transaction success handlers (`OpenPositionTakeover`, `ManagePositionTakeover`,
 `StakeClaimModal`, `LiquidationPostMortemModal`) invalidate the same key set:
-`['stake-user-positions']`, `['stake-history']`, `['readContract']`, `['readContracts']`,
-`['simulateDrip']`. The last two were added by this audit — wagmi's batched `useReadContracts`
+`['stake-user-positions']`, `['readContract']`, `['readContracts']`, `['simulateDrip']`.
+`['stake-history']` is refreshed by the transaction context instead: every confirmed transaction
+refetches the history queries until the indexer has the transaction (`refreshHistoryUntilIndexed`). The last two were added by this audit — wagmi's batched `useReadContracts`
 keys under `['readContracts', …]` (plural), a **different top-level key** from the singular
 `['readContract', …]`, so claimable rewards, wallet balances, and the live total-debt aggregate
 were previously never refreshed by any stake transaction; `['simulateDrip']` feeds the live `rate`
@@ -72,7 +73,7 @@ Key inventory (✅ = invalidated by all four success handlers):
 | Key                                                                                         | Hook                                                                      | Post-tx                    |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------- |
 | `['stake-user-positions', …]`                                                               | `useStakeUserPositions`                                                   | ✅                         |
-| `['stake-history', …]`                                                                      | `useStakeHistory`                                                         | ✅                         |
+| `['stake-history', …]`                                                                      | `useStakeHistory`                                                         | ✅ (transaction context)   |
 | `['readContract', …]`                                                                       | every singular `useReadContract` (vault, urn selections, allowances)      | ✅                         |
 | `['readContracts', …]`                                                                      | `useRewardContractsToClaim`, `useTokenBalance`, `useRewardContractTokens` | ✅ (this audit)            |
 | `['simulateDrip', …]`                                                                       | `useCollateralData`'s drip simulation                                     | ✅ (this audit)            |

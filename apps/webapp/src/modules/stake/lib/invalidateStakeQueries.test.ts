@@ -10,13 +10,12 @@ describe('invalidateStakeQueries', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it('invalidates every stake read immediately', () => {
+  it('invalidates every stake read but the history immediately', () => {
     const client = makeClient();
     invalidateStakeQueries(client);
 
     expect(keysCalled(client)).toEqual([
       'stake-user-positions',
-      'stake-history',
       'stake-urn-vaults',
       'readContract',
       'readContracts',
@@ -30,19 +29,17 @@ describe('invalidateStakeQueries', () => {
     (client.invalidateQueries as ReturnType<typeof vi.fn>).mockClear();
 
     vi.advanceTimersByTime(5_000);
-    expect(keysCalled(client)).toEqual(['stake-user-positions', 'stake-history', 'stake-urn-vaults']);
+    expect(keysCalled(client)).toEqual(['stake-user-positions', 'stake-urn-vaults']);
 
     vi.advanceTimersByTime(10_000);
     expect(keysCalled(client)).toEqual([
       'stake-user-positions',
-      'stake-history',
       'stake-urn-vaults',
       'stake-user-positions',
-      'stake-history',
       'stake-urn-vaults'
     ]);
 
     vi.advanceTimersByTime(60_000);
-    expect((client.invalidateQueries as ReturnType<typeof vi.fn>).mock.calls.length).toBe(6);
+    expect((client.invalidateQueries as ReturnType<typeof vi.fn>).mock.calls.length).toBe(4);
   });
 });

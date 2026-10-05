@@ -41,6 +41,9 @@ vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
   useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
 }));
 
+const refreshHistoryMock = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock('@/lib/historyRefresh', () => ({ refreshHistoryUntilIndexed: refreshHistoryMock }));
+
 const toastMock = vi.hoisted(() => ({ dismiss: vi.fn() }));
 const toastWithCloseMock = vi.hoisted(() => vi.fn());
 vi.mock('@/components/ui/use-toast', () => ({
@@ -175,5 +178,18 @@ describe('TransactionModal success handoff', () => {
     expect(toastMock.dismiss).toHaveBeenCalledWith('transaction-minimized');
     // One toast for the outcome, not one per surface.
     expect(toastWithCloseMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshes the history tables until the confirmed transaction is indexed', () => {
+    const cb = renderFlow(CONFIG);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart(HASH));
+    expect(refreshHistoryMock).not.toHaveBeenCalled();
+
+    act(() => cb.onSuccess(HASH));
+
+    expect(refreshHistoryMock).toHaveBeenCalledTimes(1);
+    expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), HASH);
   });
 });
