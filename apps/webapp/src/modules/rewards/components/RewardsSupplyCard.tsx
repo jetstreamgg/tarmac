@@ -1,4 +1,4 @@
-import { useChainId, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { getTokenDecimals, useTokenBalance, type RewardContract } from '@/hooks';
 import { formatDecimalPercentage } from '@/utils';
@@ -37,7 +37,12 @@ export function RewardsSupplyCard({
   rate?: number;
   onSupply?: () => void;
 }) {
-  const chainId = useChainId();
+  // The farm's own chain, like the rest of the detail page — not wagmi's
+  // pinned one. The page resolves its contract on the chain the app is headed
+  // to (`useRouteRewardContract`), and while a switch is pending (or a wallet
+  // parked off-config never answers it) the pinned chain can still be the one
+  // being left: an L2 balance would show as this mainnet farm's idle supply.
+  const chainId = contract.chainId;
   const { address, isConnected } = useConnection();
 
   // The CTA stays enabled while disconnected, like every other product's:
