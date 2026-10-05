@@ -19,8 +19,8 @@ export function calculateAvailableBorrow(
       : 0n;
   const fromCollateral = maxSafeBorrowableIntAmount ?? 0n;
   const cap = fromDebtCeiling > fromCollateral ? fromCollateral : fromDebtCeiling;
-  // Whole USDS like the collateral side: the dropped fraction is the margin that
-  // keeps a Max borrow safe against the fee accrued before the tx mines.
+  // Whole USDS like the collateral side, so a ceiling-bound cap shows and
+  // stages the same figure as a collateral-bound one.
   return { fromDebtCeiling, balance: (cap / WAD) * WAD };
 }
 
