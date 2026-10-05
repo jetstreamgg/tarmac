@@ -30,6 +30,7 @@ const h = vi.hoisted(() => ({
   // When true, the position-detail mock reports an in-flight vault read.
   vaultLoading: false,
   dust: 0n,
+  maxPartialRepay: undefined as bigint | undefined,
   voteDelegate: undefined as `0x${string}` | undefined,
   // The urn's current farm (defaults to the mainnet SKY farm in beforeEach).
   rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc' as `0x${string}`,
@@ -213,6 +214,7 @@ vi.mock('../hooks/useStakePositionDetail', async importOriginal => {
             collateralAmount: h.existingCollateral,
             debtValue: h.existingDebt,
             dust: h.dust,
+            maxPartialRepay: h.maxPartialRepay,
             riskLevel: h.existingDebt > 0n ? 'MEDIUM' : 'LOW',
             // Capped collateral value at 150% of the debt → 67% loan-to-value.
             collateralValue: (h.existingDebt * 3n) / 2n,
@@ -320,6 +322,7 @@ describe('ManagePositionTakeover', () => {
     h.existingDebt = 30_000n * WAD;
     h.vaultLoading = false;
     h.dust = 30_000n * WAD;
+    h.maxPartialRepay = undefined;
     h.voteDelegate = CURRENT_DELEGATE;
     h.rewardContract = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
     h.rewardDeprecated = false;
@@ -776,6 +779,29 @@ describe('ManagePositionTakeover', () => {
     // Anything short of the displayed debt is a plain partial repay.
     fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '29999.99' } });
     expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
+  it('repay: the partial max follows the stored-rate wipe ceiling, floored to the cent', () => {
+    // Projected debt 30,003.74; wipe (no drip) only takes 2.4599… before hitting dust.
+    h.existingDebt = parseUnits('30003.7401', 18);
+    h.maxPartialRepay = parseUnits('2.4599', 18);
+    renderSheet({ borrowCard: 'repay' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '3.74' } });
+    expect(screen.getByTestId('stake-manage-borrow-amount-error').textContent).toBe(
+      'Your position needs at least 30,000.00 USDS of debt to stay open. You can repay up to 2.45 and keep it, or repay the full 30,003.74 to close it.'
+    );
+    expect(confirmButton().disabled).toBe(true);
+
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '2.45' } });
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
+    expect(h.launchParams?.wipeAll).toBe(false);
+
+    // The full repay still keys off the projected debt.
+    fireEvent.change(screen.getByTestId('stake-manage-borrow-amount'), { target: { value: '30003.74' } });
+    expect(h.launchParams?.usdsToWipe).toBe(h.existingDebt);
+    expect(h.launchParams?.wipeAll).toBe(true);
+    expect(screen.queryByTestId('stake-manage-borrow-amount-error')).toBeNull();
   });
 
   it('repay: the full-debt input rounds like the Borrowed row, and typing it back stages wipeAll', () => {

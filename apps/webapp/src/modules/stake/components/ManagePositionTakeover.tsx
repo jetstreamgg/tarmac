@@ -42,6 +42,8 @@ import { formatOraclePrice } from '../lib/formatStakeAmount';
 import { calculateAvailableBorrow, isMinCollateralNotMet, isMinCollateralReached } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 
+const CENT = 10n ** 16n;
+
 const WIPE_ALL_DEBT_REFRESH_MS = 5 * 60_000;
 
 /**
@@ -244,11 +246,18 @@ export function ManagePositionTakeover({
   const maxRepayable = calculateMaxRepayable({
     debtValue: existingDebt,
     dust: existingVault?.dust,
-    balance: usdsBalance?.value
+    balance: usdsBalance?.value,
+    partialMax: existingVault?.maxPartialRepay
   });
 
-  // Legacy Repay.tsx error ladder (M11).
-  const minDebtNotMet = newDebtValue > 0n && newDebtValue < (existingVault?.dust ?? 0n) && usdsToWipe > 0n;
+  // Legacy Repay.tsx error ladder (M11). The partial ceiling is the stored-rate
+  // one `wipe` enforces, not debt − dust on the projected (dripped) debt.
+  const projectedPartialMax = existingDebt - (existingVault?.dust ?? 0n);
+  const partialRepayMax =
+    existingVault?.maxPartialRepay !== undefined && existingVault.maxPartialRepay < projectedPartialMax
+      ? existingVault.maxPartialRepay
+      : projectedPartialMax;
+  const minDebtNotMet = usdsToWipe > 0n && newDebtValue > 0n && usdsToWipe > partialRepayMax;
   const hasEnoughUsds =
     !!usdsBalance?.value && usdsBalance.value > 0n && usdsBalance.value >= debouncedUsdsAmount;
 
@@ -259,10 +268,12 @@ export function ManagePositionTakeover({
   const gap = repayGapOptions({
     debtValue: existingDebt,
     dust: existingVault?.dust ?? 0n,
-    balance: usdsBalance?.value
+    balance: usdsBalance?.value,
+    partialMax: existingVault?.maxPartialRepay
   });
   const gapFloor = formatBigInt(existingVault?.dust ?? 0n);
-  const gapPartial = formatBigInt(gap.partialMax);
+  // Floored to the cent so the quoted figure is itself repayable.
+  const gapPartial = formatBigInt((gap.partialMax / CENT) * CENT);
   const gapFull = formatBigInt(existingDebt);
   const gapError =
     gap.partial && gap.full

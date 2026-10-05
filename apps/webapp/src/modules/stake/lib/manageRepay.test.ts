@@ -54,6 +54,45 @@ describe('calculateMaxRepayable — legacy Repay.tsx math, verbatim', () => {
   });
 });
 
+describe('stored-rate partial max', () => {
+  // Projected (dripped) debt 30,003.74 but wipe only accepts 2.46 at the stored rate.
+  const debtValue = usds('30003.74');
+  const partialMax = usds('2.46');
+
+  it('caps the max repayable at the stored-rate partial max', () => {
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('3.74'), partialMax })).toEqual(
+      partialMax
+    );
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('1'), partialMax })).toEqual(
+      usds('1')
+    );
+  });
+
+  it('still offers the full projected debt when the wallet covers it', () => {
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('50000'), partialMax })).toEqual(
+      debtValue
+    );
+    expect(repayGapOptions({ debtValue, dust: DUST, balance: usds('50000'), partialMax })).toEqual({
+      partialMax,
+      partial: true,
+      full: true
+    });
+  });
+
+  it('has no partial option when the stored-rate max is 0', () => {
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('3'), partialMax: 0n })).toBe(0n);
+    expect(repayGapOptions({ debtValue, dust: DUST, balance: usds('3'), partialMax: 0n }).partial).toBe(
+      false
+    );
+  });
+
+  it('never raises the max above debt − dust', () => {
+    expect(
+      calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('5'), partialMax: usds('4') })
+    ).toEqual(usds('3.74'));
+  });
+});
+
 describe('repayGapOptions — ways out of the dust gap', () => {
   const dust = DUST;
 

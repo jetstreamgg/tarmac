@@ -137,6 +137,8 @@ export function useVault(
     data?.dust && mat && data.delayedPrice
       ? math.nextCentAboveWad(math.minSafeCollateralAmount(data.dust, mat, data.delayedPrice))
       : undefined;
+  const maxPartialRepay =
+    art !== undefined && vatRate && dust !== undefined ? math.maxPartialWipe(art, vatRate, dust) : undefined;
 
   const mutate = useCallback(() => {
     refetchVatUrn();
@@ -147,7 +149,7 @@ export function useVault(
   }, [refetchVatUrn, refetchVatIlk, refetchSpotPar, refetchSpotIlk, refetchDrip]);
 
   return {
-    data: data ? { ...data, collateralType: ilkName, minCollateralForDust } : undefined,
+    data: data ? { ...data, collateralType: ilkName, minCollateralForDust, maxPartialRepay } : undefined,
     raw,
     isLoading: !!isLoading,
     error: errorVatUrn || errorVatIlk || errorSpotPar || errorSpotIlk || errorDrip,

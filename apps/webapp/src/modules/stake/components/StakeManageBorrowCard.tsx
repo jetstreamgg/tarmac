@@ -183,7 +183,8 @@ export function StakeManageBorrowCard({
     headroom: debtCeilingReached || borrowDead ? 0n : maxBorrowable,
     disabled: borrowDead,
     amount,
-    onAmountChange
+    onAmountChange,
+    partialMax: existingVault?.maxPartialRepay
   });
   const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || slider.disabled;
   const hasAmount = amount > 0n;
