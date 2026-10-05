@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Intent } from '@/lib/enums';
 import { NetworkSwitchProvider, useNetworkSwitch, useTargetChainId } from './NetworkSwitchContext';
 
 // `canSwitchChain` is the one place the app decides whether it may ask the
@@ -82,8 +83,9 @@ describe('canSwitchChain', () => {
 // The route guard's pending switch, shared so the reward route resolves its
 // contract against the same chain the guard judges (APP-591).
 describe('pendingSwitch / useTargetChainId', () => {
-  const renderBoth = () =>
-    renderHook(() => ({ ...useNetworkSwitch(), target: useTargetChainId() }), { wrapper });
+  // Stake runs on mainnet only, so it can wait on a switch to 1 but not to Base.
+  const renderBoth = (intent: Intent = Intent.STAKE_INTENT) =>
+    renderHook(() => ({ ...useNetworkSwitch(), target: useTargetChainId(intent) }), { wrapper });
 
   it('points at the wallet chain with nothing pending, and at the target while a switch waits', () => {
     mocks.walletChainId = 137; // off-config: the app names the wallet's chain
@@ -92,6 +94,18 @@ describe('pendingSwitch / useTargetChainId', () => {
 
     act(() => result.current.setPendingSwitch({ from: 137, to: 1 }));
     expect(result.current.target).toBe(1);
+  });
+
+  it("points at the wallet's chain while the route's module can't run on the target", () => {
+    // Before the navigation's release of the switch lands: the new module's
+    // first render must not be judged against a target it can't use.
+    mocks.walletChainId = 1;
+    const { result } = renderBoth();
+    act(() => result.current.setPendingSwitch({ from: 1, to: 8453 }));
+    expect(result.current.pendingSwitch).toEqual({ from: 1, to: 8453 });
+    expect(result.current.target).toBe(1);
+
+    expect(renderBoth(Intent.SAVINGS_INTENT).result.current.target).toBe(1); // nothing pending here
   });
 
   it('ends the wait when the wallet moves anywhere, not only to the target', () => {

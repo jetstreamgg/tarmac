@@ -22,7 +22,7 @@ import { useTargetChainId } from '@/modules/ui/context/NetworkSwitchContext';
 export function useRouteRewardContract(): RewardContract | undefined {
   const intent = useRouteIntent();
   const { rewardContract } = useRouteEntityParams();
-  const chainId = useTargetChainId();
+  const chainId = useTargetChainId(intent);
 
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
 

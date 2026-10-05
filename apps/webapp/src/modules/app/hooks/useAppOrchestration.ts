@@ -20,7 +20,11 @@ import { usePageLoadNotifications } from './usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useNetworkSwitch, useTargetChainId } from '@/modules/ui/context/NetworkSwitchContext';
+import {
+  canWaitOnPendingSwitch,
+  useNetworkSwitch,
+  useTargetChainId
+} from '@/modules/ui/context/NetworkSwitchContext';
 import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -95,14 +99,14 @@ export function useAppOrchestration(): { intent: Intent } {
   // wallet prompt can sit open for as long as the user reads it.
   //
   // A module that can't run on the target ends the wait, and is judged
-  // against the chain the wallet is really on. Only a link's `network=` switch
+  // against the chain the wallet is really on — from its first render, before
+  // this release lands (`useTargetChainId`). Only a link's `network=` switch
   // can get here — the route guard's own targets are the mainnet family, which
   // every module runs on — and that switch raises no switching flags, so there
   // are none to lower.
   const autoSwitchAttempted = useRef(false);
   const releaseUnusablePendingSwitch = useEffectEvent(() => {
-    if (pendingSwitch === undefined) return;
-    if (getRouteChainAction(intent, pendingSwitch.to, { chains }).kind === 'render') return;
+    if (pendingSwitch === undefined || canWaitOnPendingSwitch(intent, pendingSwitch, chains)) return;
     setPendingSwitch(undefined);
   });
   useEffect(() => {
@@ -179,7 +183,7 @@ export function useAppOrchestration(): { intent: Intent } {
   // had no param to write. It lives on the context, not here, because the
   // reward route resolves its contract against the same chain
   // (`useTargetChainId`), and the two must agree.
-  const newChainId = useTargetChainId();
+  const newChainId = useTargetChainId(intent);
 
   const rewardContracts = useAvailableTokenRewardContracts(newChainId);
 

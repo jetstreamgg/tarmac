@@ -155,24 +155,32 @@ function useMockPendingSwitch() {
   // the wait. It adjusts during render; reading through the guard is enough here.
   return pending !== undefined && mockWalletChainId !== pending.from ? undefined : pending;
 }
-vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({
-    setIsSwitchingNetwork: mockSetIsSwitchingNetwork,
-    setIsAutoSwitching: mockSetIsAutoSwitching,
-    pendingSwitch: useMockPendingSwitch(),
-    setPendingSwitch: pendingSwitchStore.set
-  }),
-  useTargetChainId: () => {
-    const pending = useMockPendingSwitch();
-    // The real one reads `useAppChainId`, whose rule is inlined in the
-    // '@/hooks' mock above.
-    const appChainId =
-      mockWalletChainId !== undefined && !CHAINS.some(c => c.id === mockWalletChainId)
-        ? mockWalletChainId
-        : mockConfigChainId;
-    return pending?.to ?? appChainId;
-  }
-}));
+vi.mock('@/modules/ui/context/NetworkSwitchContext', async () => {
+  const { getRouteChainAction } = await import('@/lib/widget-network-map');
+  const canWaitOnPendingSwitch = (intent: Intent, pending: { to: number }, chains: { id: number }[]) =>
+    getRouteChainAction(intent, pending.to, { chains }).kind === 'render';
+  return {
+    canWaitOnPendingSwitch,
+    useNetworkSwitch: () => ({
+      setIsSwitchingNetwork: mockSetIsSwitchingNetwork,
+      setIsAutoSwitching: mockSetIsAutoSwitching,
+      pendingSwitch: useMockPendingSwitch(),
+      setPendingSwitch: pendingSwitchStore.set
+    }),
+    useTargetChainId: (intent: Intent) => {
+      const pending = useMockPendingSwitch();
+      // The real one reads `useAppChainId`, whose rule is inlined in the
+      // '@/hooks' mock above.
+      const appChainId =
+        mockWalletChainId !== undefined && !CHAINS.some(c => c.id === mockWalletChainId)
+          ? mockWalletChainId
+          : mockConfigChainId;
+      return pending !== undefined && canWaitOnPendingSwitch(intent, pending, CHAINS)
+        ? pending.to
+        : appChainId;
+    }
+  };
+});
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => ({ trackNetworkAutoSwitched: vi.fn() })
 }));
@@ -438,6 +446,25 @@ describe('useAppOrchestration — a switch the wallet has not answered', () => {
     expect(pendingSwitchState).toBeUndefined();
     expect(mockSwitchChain).not.toHaveBeenCalled();
     expect(redirectedHome()).toBe(true);
+  });
+
+  it('keeps a wallet whose chain the next module runs on when the target is released', () => {
+    // The release lands a render after the navigation. The render that sees
+    // the new route must already judge it against the wallet's chain, not the
+    // released target, or it redirects a wallet that was fine where it was.
+    const { refresh } = mount();
+    search = new URLSearchParams('network=tenderlybase');
+    refresh();
+    expect(pendingSwitchState).toEqual({ from: TENDERLY, to: BASE });
+    mockSwitchChain.mockClear();
+    mockNavigate.mockClear();
+
+    mockPathname = '/stake'; // mainnet only, and the wallet is on it
+    refresh();
+
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('leaves the switching flags alone on a navigation', () => {
