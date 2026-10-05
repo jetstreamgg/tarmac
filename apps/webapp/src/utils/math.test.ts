@@ -387,4 +387,11 @@ describe('USDC rounding functions', () => {
       expect(roundDownLastTwelveDigits(complex)).toBe(expectedComplex);
     });
   });
+
+  it('nextCentAboveWad rounds strictly up to the next cent', () => {
+    const WAD = 10n ** 18n;
+    expect(math.nextCentAboveWad(1_440_000n * WAD)).toBe(1_440_000n * WAD + WAD / 100n);
+    expect(math.nextCentAboveWad(1_440_000n * WAD + 25n)).toBe(1_440_000n * WAD + WAD / 100n);
+    expect(math.nextCentAboveWad(0n)).toBe(WAD / 100n);
+  });
 });

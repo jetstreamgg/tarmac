@@ -42,7 +42,7 @@ import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
-import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
+import { calculateAvailableBorrow, isMinCollateralNotMet, isMinCollateralReached } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
@@ -442,11 +442,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         estAnnualRewardsUsd={estAnnualRewardsUsd}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
         minStakeLoading={liveSimLoading}
-        minStakeReached={
-          simulatedVault?.minCollateralForDust !== undefined
-            ? state.skyToLock >= simulatedVault.minCollateralForDust
-            : undefined
-        }
+        minStakeReached={isMinCollateralReached(state.skyToLock, simulatedVault?.minCollateralForDust)}
         error={stakeError}
         rewardPicker={
           <StakeTakeoverRewardField

@@ -135,7 +135,7 @@ export function useVault(
   // Collateral needed to carry the dust debt; below it the urn cannot borrow at all.
   const minCollateralForDust =
     data?.dust && mat && data.delayedPrice
-      ? math.minSafeCollateralAmount(data.dust, mat, data.delayedPrice)
+      ? math.nextCentAboveWad(math.minSafeCollateralAmount(data.dust, mat, data.delayedPrice))
       : undefined;
 
   const mutate = useCallback(() => {

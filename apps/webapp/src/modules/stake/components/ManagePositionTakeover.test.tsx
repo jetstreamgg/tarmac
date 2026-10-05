@@ -894,6 +894,17 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-min-stake').textContent).not.toContain('Not reached');
   });
 
+  it('stake: staging exactly the minimum flips the min-stake row to Reached', () => {
+    h.existingDebt = 0n;
+    h.existingCollateral = 1_000_000n * WAD;
+    renderSheet({ stakeCard: 'stake' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '439999.99' } });
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).toContain('Not reached');
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '440000' } });
+    expect(screen.getByTestId('stake-manage-min-stake').textContent).not.toContain('Not reached');
+  });
+
   it('stake-only change surfaces the borrow card price delta (G3)', () => {
     renderSheet({ stakeCard: 'stake', borrowCard: 'borrow' });
 

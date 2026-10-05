@@ -39,7 +39,7 @@ import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
-import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
+import { calculateAvailableBorrow, isMinCollateralNotMet, isMinCollateralReached } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 
 const WIPE_ALL_DEBT_REFRESH_MS = 5 * 60_000;
@@ -642,11 +642,7 @@ export function ManagePositionTakeover({
         estNextUsd={estNextUsd}
         minStakeToBorrow={simulatedVault?.minCollateralForDust}
         minStakeToBorrowLoading={liveSimLoading}
-        minStakeReached={
-          simulatedVault?.minCollateralForDust !== undefined
-            ? liveCollateralAmount >= simulatedVault.minCollateralForDust
-            : undefined
-        }
+        minStakeReached={isMinCollateralReached(liveCollateralAmount, simulatedVault?.minCollateralForDust)}
         error={stakeError}
       />
 
