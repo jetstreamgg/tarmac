@@ -14,7 +14,7 @@ import {
   UserRound,
   X
 } from 'lucide-react';
-import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, ZERO_ADDRESS } from '@/hooks';
+import { BP, MD_MEDIA_QUERY, RiskLevel, useBreakpointIndex, useDelegateName, ZERO_ADDRESS } from '@/hooks';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle, SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';
@@ -465,6 +465,9 @@ export function PositionDetailsModal({
   // magnitude-driven default would drop to 2 the moment a price crosses $10.
   const formattedLiqPrice = formatOraclePrice(vault?.liquidationPrice);
   const hasDelegate = !!detail.voteDelegate && detail.voteDelegate !== ZERO_ADDRESS;
+  // A named delegate wins; a shadow delegate (no metadata) falls back to its
+  // shortened address, as the delegate list and the review do.
+  const { data: delegateName } = useDelegateName(hasDelegate ? detail.voteDelegate : undefined);
 
   const claimDisabled = detail.claimableLoading || detail.claimableTokenAmount === 0n;
   const claimChip =
@@ -653,7 +656,9 @@ export function PositionDetailsModal({
                       <span className="flex" aria-hidden>
                         <CustomAvatar address={detail.voteDelegate!.toLowerCase()} size={12} />
                       </span>
-                      {formatAddress(detail.voteDelegate!, 6, 4)}
+                      {delegateName && delegateName !== 'Shadow delegate'
+                        ? delegateName
+                        : formatAddress(detail.voteDelegate!, 6, 4)}
                       <ExternalLink className="h-3 w-3" aria-hidden />
                     </a>
                   ) : (
