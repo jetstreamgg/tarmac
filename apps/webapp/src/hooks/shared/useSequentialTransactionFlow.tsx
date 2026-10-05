@@ -151,6 +151,7 @@ export function useSequentialTransactionFlow(
   useEffect(() => {
     return () => {
       lastProcessedTxHash.current = undefined;
+      dispatchedIndexRef.current = -1;
     };
   }, []);
 
@@ -269,12 +270,17 @@ export function useSequentialTransactionFlow(
     } else if (isResume && simulationError) {
       // Retry of a step that failed to simulate: the stored error may be stale
       // (e.g. a transient RPC failure), so re-simulate and act on the result.
+      // Claim the index up front so a second click while this is in flight is a
+      // no-op, and drop the result if reset or unmount released the claim.
+      if (dispatchedIndexRef.current === currentIndex) return;
       const index = currentIndex;
+      dispatchedIndexRef.current = index;
       void refetchSimulation().then(({ data, error }) => {
+        if (dispatchedIndexRef.current !== index) return;
         if (data?.request) {
-          dispatchedIndexRef.current = index;
           writeContract(data.request as Parameters<typeof writeContract>[0]);
         } else {
+          dispatchedIndexRef.current = -1;
           onError(toError(error ?? simulationError), '');
         }
       });

@@ -528,6 +528,57 @@ describe('useSequentialTransactionFlow — a later step that fails to simulate',
     expect(wagmi.writeContract).toHaveBeenLastCalledWith(expect.objectContaining({ functionName: 'supply' }));
   });
 
+  function renderStalledOnSupply() {
+    const onError = vi.fn();
+    const hook = renderHook(() => useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError }));
+    act(() => hook.result.current.execute());
+    wagmi.simulationErrors = { supply: new Error('reverted') };
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    hook.rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    hook.rerender();
+    wagmi.simulationErrors = {};
+    return { ...hook, onError };
+  }
+
+  it('a double-clicked Retry sends the step once', async () => {
+    const { result } = renderStalledOnSupply();
+
+    await act(async () => {
+      result.current.execute();
+      result.current.execute();
+    });
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+  });
+
+  it('a Retry still re-simulating when the run resets sends nothing', async () => {
+    const { result } = renderStalledOnSupply();
+
+    await act(async () => {
+      result.current.execute();
+      result.current.reset();
+    });
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
+  });
+
+  it('a Retry still re-simulating when the hook unmounts sends nothing', async () => {
+    const { result, unmount } = renderStalledOnSupply();
+
+    await act(async () => {
+      result.current.execute();
+      unmount();
+    });
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
+  });
+
   it('a run that recovered from a failed simulation does not block the next run', async () => {
     const onSuccess = vi.fn();
     const { result, rerender } = renderHook(() =>
