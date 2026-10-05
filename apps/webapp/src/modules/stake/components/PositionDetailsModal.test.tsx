@@ -114,8 +114,8 @@ const inactiveDetail = (overrides: Partial<StakePositionDetail> = {}): Partial<S
 
 describe('PositionDetailsModal', () => {
   beforeEach(() => {
-    h.delegateName = 'Shadow delegate';
     h.detail = { ...baseDetail };
+    h.delegateName = 'Shadow delegate';
   });
   afterEach(cleanup);
 
@@ -353,6 +353,7 @@ describe('PositionDetailsModal', () => {
 describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:21273)', () => {
   beforeEach(() => {
     h.detail = { ...baseDetail };
+    h.delegateName = 'Shadow delegate';
   });
   afterEach(cleanup);
 
@@ -442,6 +443,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
 describe('PositionDetailsModal — phone-tier footer + manage sheet (M6, comps 1292:63278 / 1222:16239)', () => {
   beforeEach(() => {
     h.detail = { ...baseDetail };
+    h.delegateName = 'Shadow delegate';
   });
   afterEach(cleanup);
 
