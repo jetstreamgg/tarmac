@@ -11,6 +11,7 @@ vi.mock('wagmi', () => ({
   usePublicClient: () => undefined
 }));
 
+vi.mock('./useBatchExecutorFallbackClients', () => ({ useBatchExecutorFallbackClients: () => [] }));
 vi.mock('./useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false })
 }));

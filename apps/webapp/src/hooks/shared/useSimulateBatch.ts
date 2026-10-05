@@ -1,0 +1,111 @@
+import { useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAccount, useChainId, usePublicClient } from 'wagmi';
+import type { Call } from 'viem';
+import { reportError } from '@/modules/sentry/reportError';
+import { getCallsKey } from './networkFee';
+import { useBatchExecutorFallbackClients } from './useBatchExecutorFallbackClients';
+import { extractErrorCode } from '../helpers';
+import {
+  BatchSimulationError,
+  isStructuralBatchSimulationError,
+  isTransientBatchSimulationError,
+  simulateBatch
+} from './simulateBatch';
+
+export type UseSimulateBatchParameters = {
+  calls: readonly Call[];
+  chainId?: number;
+  enabled?: boolean;
+};
+
+export type UseSimulateBatchResult = {
+  /** The bundle ran clean in simulation — the only state in which it may be sent. */
+  prepared: boolean;
+  isLoading: boolean;
+  error: Error | null;
+  /**
+   * The RPC refused to run the simulation at all (rejected the state override or the
+   * method). The calls may be fine; this chain just can't validate them as a bundle, so
+   * the caller should fall back to the sequential flow rather than block.
+   */
+  structuralFailure: boolean;
+};
+
+/** Chains already reported this session as unable to simulate a bundle. */
+const reportedStructuralChains = new Set<number>();
+
+/** Test seam: forget which chains were reported. */
+export function resetBatchSimulationReports(): void {
+  reportedStructuralChains.clear();
+}
+
+/**
+ * Prepare-time simulation of a batch — the bundled flow's counterpart to the per-call
+ * `useSimulateContract` the sequential flow gates on. Fails closed: `prepared` is only
+ * true on a clean run, and every other outcome (a sub-call revert, an RPC that can't do
+ * it, a request that failed) leaves it false with the reason in `error`.
+ *
+ * Keyed on the encoded calls, the account and the chain, so a changed amount or an
+ * allowance that lands re-simulates; refetch-on-focus is harmless here (no dispatch
+ * side effect, unlike the sequential hook — APP-417).
+ */
+export function useSimulateBatch({
+  calls,
+  chainId,
+  enabled = true
+}: UseSimulateBatchParameters): UseSimulateBatchResult {
+  const connectedChainId = useChainId();
+  const resolvedChainId = chainId ?? connectedChainId;
+  const { address } = useAccount();
+  const client = usePublicClient({ chainId: resolvedChainId });
+  const fallbackClients = useBatchExecutorFallbackClients(resolvedChainId);
+
+  // An engine can hand over a call it can't encode yet (an arg only known after
+  // connect). Not simulatable, so not prepared — never a crash.
+  const callsKey = useMemo(() => {
+    try {
+      return getCallsKey(calls);
+    } catch {
+      return null;
+    }
+  }, [calls]);
+
+  const { isSuccess, isLoading, error } = useQuery({
+    queryKey: ['simulate-batch', resolvedChainId, address, callsKey],
+    queryFn: () => simulateBatch({ client: client!, account: address!, calls, fallbackClients }),
+    enabled: enabled && !!client && !!address && calls.length > 0 && callsKey !== null,
+    // A revert or an unsupported RPC won't change on a retry; only a failed request might.
+    retry: (failureCount, err) => isTransientBatchSimulationError(err) && failureCount < 3,
+    gcTime: 30_000
+  });
+
+  const structuralFailure = isStructuralBatchSimulationError(error);
+
+  // Reported like the sequential flow's simulation: a revert or a failed request is
+  // not (the user sees the disabled confirm; a send that fails reaches Sentry through
+  // the transaction context). The exception is an RPC that can't simulate a bundle at
+  // all — the router then falls back to sequential without a word, so every user on
+  // that chain loses bundling silently. Once per chain per session.
+  useEffect(() => {
+    if (!structuralFailure || !error || reportedStructuralChains.has(resolvedChainId)) return;
+    reportedStructuralChains.add(resolvedChainId);
+    // Reported without its cause: Sentry ships a cause as a linked error, and viem's
+    // message carries the request's arguments — the user's address among them. The
+    // message (viem's short one) and the RPC's error code say what went wrong.
+    reportError(new BatchSimulationError(error.message, { kind: 'structural' }), {
+      module: 'transactions',
+      flow: 'batch-simulation',
+      type: 'structural',
+      level: 'error',
+      extra: { chainId: resolvedChainId, callCount: calls.length, rpcCode: extractErrorCode(error.cause) }
+    });
+  }, [error, structuralFailure, resolvedChainId, calls.length]);
+
+  return {
+    prepared: isSuccess,
+    isLoading,
+    error: error ?? null,
+    structuralFailure
+  };
+}

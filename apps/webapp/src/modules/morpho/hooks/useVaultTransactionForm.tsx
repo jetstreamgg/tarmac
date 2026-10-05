@@ -12,6 +12,7 @@ import {
 import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 /** Seeds the form's initial amount (e.g. a Portfolio quick-deposit shortcut). */
 export type VaultModalPreset = { amount?: string };
@@ -24,13 +25,18 @@ export interface VaultTransactionForm {
   isSupply: boolean;
   decimals: number;
   value: string;
+  /** The parsed input as typed — validation (`isZero`, `insufficient`) reads this. */
   amount: bigint;
+  /** The settled amount (500ms): drives the engine, the fee/simulation reads, and every amount display. */
+  debouncedAmount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / max withdraw (withdraw). */
   available: bigint;
   /** The `available` read has resolved — display and validation wait on it. */
   availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
+  /** The typed amount hasn't settled yet — `amountReady` holds until it does. */
+  debouncePending: boolean;
   amountReady: boolean;
   /** Supplied position in asset units (ERC-4626 `userAssets`) — feeds the entry deltas. */
   position: bigint;
@@ -107,6 +113,8 @@ export function useVaultTransactionForm({
   const {
     value,
     amount,
+    debouncedAmount,
+    debouncePending,
     max,
     isZero,
     insufficient,
@@ -129,13 +137,16 @@ export function useVaultTransactionForm({
     maxRedeems: !isSupply && isFullPositionWithdrawable
   });
 
+  const runActive = useTransactionRunActive();
   const engineParams: VaultEngineParams = {
     flow,
     vaultAddress,
     assetToken,
-    amount,
+    amount: debouncedAmount,
     max,
-    shares: redeemShares
+    shares: redeemShares,
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive
   };
 
   const transactionScreenContent = useMemo(
@@ -143,11 +154,11 @@ export function useVaultTransactionForm({
       <VaultAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
         assetToken={assetToken}
-        amount={amount}
+        amount={debouncedAmount}
         decimals={decimals}
       />
     ),
-    [isSupply, assetToken, amount, decimals]
+    [isSupply, assetToken, debouncedAmount, decimals]
   );
 
   return {
@@ -156,10 +167,12 @@ export function useVaultTransactionForm({
     decimals,
     value,
     amount,
+    debouncedAmount,
     available,
     availableKnown,
     isZero,
     insufficient,
+    debouncePending,
     amountReady,
     position,
     isLiquidityConstrained,

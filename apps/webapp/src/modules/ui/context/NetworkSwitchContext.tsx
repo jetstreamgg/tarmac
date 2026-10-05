@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
 import { useSwitchChain, useConnection, useChains, useChainId } from 'wagmi';
-import { useIsSafeWallet } from '@/hooks';
+import { useAppChainId, useIsSafeWallet } from '@/hooks';
 import { Trans } from '@lingui/react/macro';
 import type { Intent } from '@/lib/enums';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -11,6 +11,7 @@ import { VStack } from '@/modules/layout/components/VStack';
 import { Text } from '@/modules/layout/components/Typography';
 import { Failure } from '@/modules/icons';
 import { reportError } from '@/modules/sentry/reportError';
+import { getRouteChainAction } from '@/lib/widget-network-map';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
 /**
@@ -42,6 +43,8 @@ type SwitchChainRequest = {
   onSettled?: () => void;
 };
 
+type PendingSwitch = { from: number; to: number };
+
 interface NetworkSwitchContextValue {
   isSwitchingNetwork: boolean;
   setIsSwitchingNetwork: (isSwitching: boolean) => void;
@@ -68,6 +71,15 @@ interface NetworkSwitchContextValue {
   pendingManualSwitchChainId: number | null;
   setPendingManualSwitchChainId: (chainId: number | null) => void;
   /**
+   * The switch the route guard has asked the wallet for and is still waiting
+   * on, as {from, to}. Read through `useTargetChainId`; see there for why it is
+   * shared. Ends when the wallet moves off `from` (wherever to) or disconnects,
+   * when the switch fails, and when the user navigates to a module that can't
+   * run on `to`.
+   */
+  pendingSwitch: PendingSwitch | undefined;
+  setPendingSwitch: (pendingSwitch: PendingSwitch | undefined) => void;
+  /**
    * Whether an in-app control may ask the wallet to switch. False for a
    * connector without `switchChain` (wagmi's Safe App connector) and for a
    * Safe account by any connector; see the provider for why.
@@ -87,9 +99,21 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
   const [isAutoSwitching, setIsAutoSwitching] = useState(false);
   const [autoSwitchIntent, setAutoSwitchIntent] = useState<Intent | null>(null);
   const [pendingManualSwitchChainId, setPendingManualSwitchChainId] = useState<number | null>(null);
+  const [pendingSwitch, setPendingSwitch] = useState<PendingSwitch | undefined>(undefined);
 
   const { switchChain, isPending: isSwitchPending, variables: switchVariables } = useSwitchChain();
-  const { connector } = useConnection();
+  const { connector, chainId: walletChainId } = useConnection();
+
+  // Held as {from, to} rather than the target alone so the wait can be ended by
+  // ANY move, not just the requested one: a user shown a switch prompt can open
+  // their wallet and pick a third chain, and that answers the request as surely
+  // as honouring it. Waiting for the target specifically would leave the app
+  // pointed at a chain the wallet is not on. A disconnect (undefined) ends the
+  // wait as well. Adjusted during render, so no render ever pairs the moved
+  // wallet with the stale target.
+  if (pendingSwitch !== undefined && walletChainId !== pendingSwitch.from) {
+    setPendingSwitch(undefined);
+  }
   const chains = useChains();
   const currentChainId = useChainId();
   const isSafeWallet = useIsSafeWallet();
@@ -232,6 +256,8 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
         setAutoSwitchIntent,
         pendingManualSwitchChainId,
         setPendingManualSwitchChainId,
+        pendingSwitch,
+        setPendingSwitch,
         canSwitchChain,
         handleSwitchChain,
         isSwitchPending,
@@ -249,4 +275,41 @@ export const useNetworkSwitch = () => {
     throw new Error('useNetworkSwitch must be used within NetworkSwitchProvider');
   }
   return context;
+};
+
+/**
+ * Whether the module `intent` routes to can run on a pending switch's target.
+ * The wait is kept across navigation only while it can; a module that can't
+ * ends it (useAppOrchestration).
+ */
+export const canWaitOnPendingSwitch = (
+  intent: Intent,
+  pendingSwitch: PendingSwitch,
+  chains: readonly { id: number }[]
+): boolean => getRouteChainAction(intent, pendingSwitch.to, { chains }).kind === 'render';
+
+/**
+ * The chain the app is pointed at for `intent`'s route: a route-guard switch
+ * the wallet has not answered yet wins while the module can run on its target,
+ * then wherever the wallet actually is (`useAppChainId`).
+ *
+ * Every reader that resolves a route against a chain goes through this, so the
+ * guard that decides whether a route stays and the page that resolves the
+ * route's entity cannot disagree. They used to: the guard judged a reward route
+ * against the switch's target while the page resolved its contract against the
+ * wallet's actual (unconfigured) chain, so a wallet that never answered left the
+ * guard keeping the route and the page rendering nothing (APP-591).
+ *
+ * The module check is here, not only in the release that ends the wait, because
+ * the release lands a render late: the first render of a module that can't use
+ * the target would otherwise still judge against it, and redirect home a wallet
+ * already on a chain the module runs on.
+ */
+export const useTargetChainId = (intent: Intent): number => {
+  const { pendingSwitch } = useNetworkSwitch();
+  const appChainId = useAppChainId();
+  const chains = useChains();
+  return pendingSwitch !== undefined && canWaitOnPendingSwitch(intent, pendingSwitch, chains)
+    ? pendingSwitch.to
+    : appChainId;
 };
