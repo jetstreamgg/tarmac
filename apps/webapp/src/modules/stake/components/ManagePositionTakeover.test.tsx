@@ -557,6 +557,65 @@ describe('ManagePositionTakeover', () => {
     expect(confirmButton().disabled).toBe(true);
   });
 
+  it('blocked withdraw: names the least repay and stages it in the repay card', () => {
+    h.simProximity = 100;
+    h.dust = 10_000n * WAD;
+    h.minCollateralForDust = 100_000n * WAD;
+    renderSheet({ stakeCard: 'withdraw' });
+
+    // 500k left at 1.25 / 0.0608 within 80% proximity carries at most ~19,456 USDS.
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2500000' } });
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /you can withdraw at most 2,229,029\.00 SKY\. Repay at least 10,54\d\.\d\d USDS to withdraw 2,500,000\.00 SKY\.$/
+    );
+
+    fireEvent.click(screen.getByTestId('stake-manage-stake-amount-unblock-repay'));
+    expect(h.launchParams?.usdsToWipe).toBeGreaterThan(10_540n * WAD);
+    expect(h.launchParams?.usdsToWipe).toBeLessThan(10_550n * WAD);
+    expect(h.launchParams?.wipeAll).toBe(false);
+  });
+
+  it('blocked withdraw: suggests the full repay when the partial one would cross the dust floor', () => {
+    h.simProximity = 100;
+    h.minCollateralForDust = 100_000n * WAD;
+    renderSheet({ stakeCard: 'withdraw' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2500000' } });
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /To withdraw 2,500,000\.00 SKY, repay the full 30,000\.00 USDS\. Your position needs at least 30,000\.00 USDS of debt to stay open\.$/
+    );
+
+    const action = screen.getByTestId('stake-manage-stake-amount-unblock-repay');
+    expect(action.textContent).toBe('Repay all');
+    fireEvent.click(action);
+    expect(h.launchParams?.usdsToWipe).toBe(30_000n * WAD);
+    expect(h.launchParams?.wipeAll).toBe(true);
+  });
+
+  it('blocked withdraw below the min stake: suggests the full repay', () => {
+    // Only the min stake binds: no risk error, liquidation price under the oracle's.
+    h.simProximity = 0;
+    h.simLiqPrice = 100n * 10n ** 14n;
+    renderSheet({ stakeCard: 'withdraw' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2000000' } });
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toBe(
+      'You cannot withdraw more than 1,560,000.00 SKY, as this may result in liquidation. To withdraw 2,000,000.00 SKY, repay the full 30,000.00 USDS. Your position needs at least 30,000.00 USDS of debt to stay open.'
+    );
+    expect(screen.getByTestId('stake-manage-stake-amount-unblock-repay').textContent).toBe('Repay all');
+  });
+
+  it('blocked withdraw: a short wallet gets the balance and no action', () => {
+    h.usdsBalance = 5_000n * WAD;
+    renderSheet({ stakeCard: 'withdraw' });
+
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '2000000' } });
+    expect(screen.getByTestId('stake-manage-stake-amount-error').textContent).toMatch(
+      /repay the full 30,000\.00 USDS\. Your position needs at least 30,000\.00 USDS of debt to stay open\. You have 5,000\.00 USDS\.$/
+    );
+    expect(screen.queryByTestId('stake-manage-stake-amount-unblock-repay')).toBeNull();
+  });
+
   it('repay: the Max chip stages wipeAll when the balance covers the debt (M11)', () => {
     renderSheet({ borrowCard: 'repay' });
 

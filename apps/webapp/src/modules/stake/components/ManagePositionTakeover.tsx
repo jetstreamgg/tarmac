@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
-import { maxWithdrawWithinRisk } from '../lib/liquidation';
+import { maxWithdrawWithinRisk, repayToWithdraw } from '../lib/liquidation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable, repayGapOptions } from '../lib/manageRepay';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
@@ -39,6 +39,7 @@ import { UpdatedHourlyBadge } from './StakeManageCard';
 import { StakeManageConfirmSummary } from './StakeManageConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
+import type { AmountChip } from './StakeTakeoverAmountField';
 import { calculateAvailableBorrow, isMinCollateralNotMet, isMinCollateralReached } from '../lib/maxBorrow';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 
@@ -169,6 +170,13 @@ export function ManagePositionTakeover({
   });
 
   // ---- Card 1 validation ----------------------------------------------------
+  // The partial-repay ceiling is the stored-rate one `wipe` enforces, not
+  // debt − dust on the projected (dripped) debt.
+  const projectedPartialMax = existingDebt - (existingVault?.dust ?? 0n);
+  const partialRepayMax =
+    existingVault?.maxPartialRepay !== undefined && existingVault.maxPartialRepay < projectedPartialMax
+      ? existingVault.maxPartialRepay
+      : projectedPartialMax;
   const liquidationThreshold = RISK_LEVEL_THRESHOLDS.find(
     risk => risk.level === RiskLevel.LIQUIDATION
   )?.threshold;
@@ -213,6 +221,64 @@ export function ManagePositionTakeover({
     existingCollateral > debouncedVault.minCollateralForDust
       ? existingCollateral - debouncedVault.minCollateralForDust
       : 0n;
+  // How a blocked withdraw gets unblocked (APP-609): the least repay that
+  // clears the risk bound, or the full debt when that repay would cross the
+  // dust floor or the min stake to borrow still binds. Not offered while
+  // card 2 stages a borrow, which is what blocks the withdraw then.
+  const withdrawBlocked = isCappedOsmError || isLiquidationError || isMinCollateralWithdrawError;
+  const repayToUnblock =
+    withdrawBlocked && existingDebt > 0n && usdsToBorrow === 0n && maxWithdrawSafe !== undefined
+      ? repayToWithdraw({
+          collateral: existingCollateral,
+          withdraw: skyToFree,
+          debtValue: existingDebt,
+          liquidationRatio: debouncedVault!.liquidationRatio!,
+          delayedPrice: debouncedVault!.delayedPrice!,
+          riskPrice: debouncedVault!.riskPrice ?? debouncedVault!.delayedPrice!,
+          threshold: liquidationThreshold!
+        })
+      : undefined;
+  const partialUnblocks =
+    repayToUnblock !== undefined &&
+    repayToUnblock > 0n &&
+    !isMinCollateralWithdrawError &&
+    repayToUnblock <= partialRepayMax &&
+    (debouncedVault?.minCollateralForDust === undefined ||
+      newCollateralAmount >= debouncedVault.minCollateralForDust);
+  // A zero repay outside the min-stake case means another bound blocks; no hint then.
+  const unblockRepay =
+    repayToUnblock === undefined || (repayToUnblock === 0n && !isMinCollateralWithdrawError)
+      ? undefined
+      : partialUnblocks
+        ? repayToUnblock
+        : existingDebt;
+  const unblockAffordable =
+    unblockRepay !== undefined && usdsBalance?.value !== undefined && usdsBalance.value >= unblockRepay;
+  const withdrawLabel = formatBigInt(skyToFree);
+  const unblockHint =
+    unblockRepay === undefined
+      ? ''
+      : (partialUnblocks
+          ? t`Repay at least ${formatBigInt(unblockRepay)} USDS to withdraw ${withdrawLabel} SKY.`
+          : t`To withdraw ${withdrawLabel} SKY, repay the full ${formatBigInt(existingDebt)} USDS. Your position needs at least ${formatBigInt(existingVault?.dust ?? 0n)} USDS of debt to stay open.`) +
+        (unblockAffordable || usdsBalance?.value === undefined
+          ? ''
+          : ' ' + t`You have ${formatBigInt(usdsBalance.value)} USDS.`);
+  const stageUnblockRepay = () => {
+    if (unblockRepay === undefined) return;
+    dispatch({ type: 'setBorrowMode', mode: 'repay' });
+    dispatch({ type: 'setUsdsAmount', amount: unblockRepay, wipeAll: !partialUnblocks });
+  };
+  const stakeErrorAction: AmountChip | undefined =
+    unblockRepay !== undefined && unblockAffordable
+      ? {
+          key: 'unblock-repay',
+          label: partialUnblocks ? t`Repay ${formatBigInt(unblockRepay)} USDS` : t`Repay all`,
+          onClick: stageUnblockRepay
+        }
+      : undefined;
+  const withUnblockHint = (message: string) => (unblockHint ? `${message} ${unblockHint}` : message);
+
   const stakeError =
     state.stakeMode === 'stake'
       ? skyBalance !== undefined && state.skyAmount > skyBalance.value && state.skyAmount !== 0n
@@ -227,12 +293,18 @@ export function ManagePositionTakeover({
           // the generic risk error is unreachable-shadowed, not the reverse.
           isCappedOsmError || isLiquidationError
           ? maxWithdrawSafe !== undefined && newDebtValue > 0n
-            ? t`Withdrawing ${formatBigInt(state.skyAmount)} SKY would liquidate your position. With your ${formatBigInt(newDebtValue)} USDS debt, you can withdraw at most ${formatBigInt(maxWithdrawSafe)} SKY.`
+            ? withUnblockHint(
+                t`Withdrawing ${formatBigInt(state.skyAmount)} SKY would liquidate your position. With your ${formatBigInt(newDebtValue)} USDS debt, you can withdraw at most ${formatBigInt(maxWithdrawSafe)} SKY.`
+              )
             : isCappedOsmError
               ? t`Liquidation price is higher than the capped OSM SKY price`
               : t`Liquidation risk too high`
           : isMinCollateralWithdrawError
-            ? t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation. You must first repay your position or close it entirely.`
+            ? unblockHint
+              ? withUnblockHint(
+                  t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation.`
+                )
+              : t`You cannot withdraw more than ${formatBigInt(maxWithdrawForMinCollateral)} SKY, as this may result in liquidation. You must first repay your position or close it entirely.`
             : undefined;
   const stakeCardValid = state.skyAmount === 0n || !stakeError;
 
@@ -250,13 +322,7 @@ export function ManagePositionTakeover({
     partialMax: existingVault?.maxPartialRepay
   });
 
-  // Legacy Repay.tsx error ladder (M11). The partial ceiling is the stored-rate
-  // one `wipe` enforces, not debt − dust on the projected (dripped) debt.
-  const projectedPartialMax = existingDebt - (existingVault?.dust ?? 0n);
-  const partialRepayMax =
-    existingVault?.maxPartialRepay !== undefined && existingVault.maxPartialRepay < projectedPartialMax
-      ? existingVault.maxPartialRepay
-      : projectedPartialMax;
+  // Legacy Repay.tsx error ladder (M11).
   const minDebtNotMet = usdsToWipe > 0n && newDebtValue > 0n && usdsToWipe > partialRepayMax;
   const hasEnoughUsds =
     !!usdsBalance?.value && usdsBalance.value > 0n && usdsBalance.value >= debouncedUsdsAmount;
@@ -655,6 +721,7 @@ export function ManagePositionTakeover({
         minStakeToBorrowLoading={liveSimLoading}
         minStakeReached={isMinCollateralReached(liveCollateralAmount, simulatedVault?.minCollateralForDust)}
         error={stakeError}
+        errorAction={stakeError ? stakeErrorAction : undefined}
       />
 
       <StakeManageBorrowCard
