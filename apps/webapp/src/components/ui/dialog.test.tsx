@@ -39,6 +39,34 @@ const SheetHarness = () => {
   );
 };
 
+// The stake takeover's shape: the dialog opens from a button inside an outer
+// dialog, and that button is disabled (a pending transaction) by the time the
+// dialog closes.
+const DisabledOpenerHarness = () => {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  return (
+    <div role="dialog" tabIndex={-1} data-testid="outer">
+      <button disabled={pending} onClick={() => setOpen(true)}>
+        confirm
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Title</DialogTitle>
+          <button
+            onClick={() => {
+              setPending(true);
+              setOpen(false);
+            }}
+          >
+            close dialog
+          </button>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
 describe('DialogContent', () => {
   it('caps its height and scrolls internally so tall modals fit the viewport', () => {
     render(
@@ -95,6 +123,19 @@ describe('focus on open and close', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     await new Promise(resolve => setTimeout(resolve, 20));
     expect(document.activeElement).not.toBe(opener);
+  });
+
+  it('falls back to the dialog around the opener when the opener is disabled', async () => {
+    render(<DisabledOpenerHarness />);
+    const opener = screen.getByText('confirm');
+    opener.focus();
+    fireEvent.click(opener);
+    await waitFor(() => expect(screen.getByText('close dialog')).toBeTruthy());
+
+    fireEvent.click(screen.getByText('close dialog'));
+
+    await waitFor(() => expect(screen.queryByText('close dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('outer')));
   });
 
   it('still calls the caller handler', async () => {
