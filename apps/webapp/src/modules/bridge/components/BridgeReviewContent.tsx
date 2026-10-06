@@ -6,16 +6,21 @@ import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
-import { buildBridgeModalRows } from './bridgeModalRows';
+import { buildBridgeModalRows, formatDays } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 
 const formatAmount = (amount: bigint) =>
   formatNumber(parseFloat(formatUnits(amount, 18)), { minDecimals: 2, maxDecimals: 2 });
 
-export const bridgeFootnote = (route: BridgeRoute): string =>
-  route.requiresClaim
-    ? t`The transaction will be processed on the blockchain and is expected to complete within approximately ${route.etaMinutes} minutes. You will need to claim your asset manually afterward.`
-    : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${route.etaMinutes} minutes. Your funds will arrive automatically.`;
+const etaPhrase = (minutes: number): string =>
+  minutes >= 24 * 60 ? t`${formatDays(minutes)} days` : t`${minutes} minutes`;
+
+export const bridgeFootnote = (route: BridgeRoute): string => {
+  const eta = etaPhrase(route.etaMinutes);
+  return route.requiresClaim
+    ? t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. You will need to claim your asset manually afterward.`
+    : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. Your funds will arrive automatically.`;
+};
 
 /** USDS from → to hero with each side's network badge (Figma 3574:64110). */
 export function BridgeTransferHero({

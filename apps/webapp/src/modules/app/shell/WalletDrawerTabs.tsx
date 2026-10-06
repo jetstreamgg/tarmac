@@ -5,6 +5,7 @@ import { WalletDrawerAssets } from './WalletDrawerAssets';
 import { BRIDGE_ENABLED } from '@/lib/constants';
 import { BridgeActivityList } from '@/modules/bridge/components/BridgeActivityList';
 import { useBridgeHistory } from '@/modules/bridge/hooks/useBridgeHistory';
+import { buildBridgeActivity } from '@/modules/bridge/components/bridgeActivity';
 
 enum WalletDrawerTab {
   ASSETS = 'assets',
@@ -14,7 +15,8 @@ enum WalletDrawerTab {
 /** Assets/Activity tabs: wallet token balances with earn CTAs, and the shared history widget. */
 export function WalletDrawerTabs() {
   const bridgeHistory = useBridgeHistory();
-  const hasBridgeActivity = BRIDGE_ENABLED && bridgeHistory.length > 0;
+  // A Safe bridge still awaiting signatures has no activity row yet.
+  const hasBridgeActivity = BRIDGE_ENABLED && buildBridgeActivity(bridgeHistory).length > 0;
   return (
     <Tabs defaultValue={WalletDrawerTab.ASSETS} className="flex min-h-0 flex-1 flex-col">
       {/* Base = the M4.6 mobile panel (20px content inset via the body's pl-3

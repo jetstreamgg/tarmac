@@ -6,6 +6,7 @@
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import { networkFeeCell } from '@/components/product/ModalGridCells';
+import { NO_VALUE } from '@/lib/constants';
 import { formatUsd } from '@/utils';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 
@@ -15,8 +16,14 @@ export const BRIDGE_TYPE_LABEL: Record<BridgeRouteKind, string> = {
   layerzero: 'LayerZero'
 };
 
-/** "~3 min", "~1 hr 30 min". */
+const DAY_MINUTES = 24 * 60;
+
+/** Whole or one-decimal days, for multi-day withdrawals: "7", "6.4". */
+export const formatDays = (minutes: number): string => String(Math.round((minutes / DAY_MINUTES) * 10) / 10);
+
+/** "~3 min", "~1 hr 30 min", "~7 days". */
 export const formatEta = (minutes: number): string => {
+  if (minutes >= DAY_MINUTES) return `~${formatDays(minutes)} days`;
   if (minutes < 60) return `~${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
@@ -42,7 +49,11 @@ export function buildBridgeModalRows({
       { kind: 'single', label: 'Slippage', value: formatSlippage(route.slippage) }
     ],
     [
-      { kind: 'single', label: 'Bridge fee', value: formatUsd(route.bridgeFeeUsd) },
+      {
+        kind: 'single',
+        label: 'Bridge fee',
+        value: route.bridgeFeeUsd === undefined ? NO_VALUE : formatUsd(route.bridgeFeeUsd)
+      },
       networkFeeCell(networkFee)
     ]
   ];

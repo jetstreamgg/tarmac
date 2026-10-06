@@ -1,35 +1,43 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
-import { useChainId } from 'wagmi';
+import { useChainId, useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
+import { useIsSafeWallet } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeReviewContent';
-import { mockPendingStore } from '../mocks/mockPendingStore';
-import { runMockLegs } from '../mocks/mockExecutor';
+import { runMockLegs } from '../adapters/mockAdapter';
+import { bridgeChainId } from '../model/networks';
+import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
+import { pendingBridgeStore } from '../store/pendingStore';
+import { withSourceRecording } from '../tracking/sourceRecording';
 import type { BridgeFormModel } from './useBridgeForm';
+import { usePendingScope } from './usePendingScope';
 
 /**
  * The seam between the Bridge tab and `TransactionContext.launch()` (mirrors
- * `useConvertLaunch`). APP-611 runs a mock executor: Confirm walks the source
- * legs (approve + send) through the modal and records a pending bridge. The
- * real engine (APP-612) replaces `runMockLegs` and keeps this config.
+ * `useConvertLaunch`). Confirm runs the source legs (approve + send) and
+ * stores the pending bridge; a Safe's is stored as soon as it is queued. The
+ * legs run on the mock executor until the route tickets add their calls.
  */
 export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
   const sessionId = useId();
-  const chainId = useChainId();
+  const walletChainId = useChainId();
+  const chains = useChains();
+  const isSafe = useIsSafeWallet();
+  const { account, scope, familyChainId } = usePendingScope();
   const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { amount, from, to, route, recipient } = form;
 
-  // Only the source-side legs run here; a destination claim is its own modal.
+  // Only the source-side legs run here; destination actions are their own modal.
   const steps = useMemo<TransactionStep[]>(
     () =>
-      route.steps
+      (route?.steps ?? [])
         .filter(step => step.network === from)
         .map(step =>
           step.action === 'approve'
@@ -39,19 +47,42 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     [route, from]
   );
 
+  // The source chain, when the app can switch to it; otherwise the launch chain.
+  const sourceChainId = bridgeChainId(from, familyChainId);
+  const guardChainId =
+    sourceChainId !== undefined && chains.some(chain => chain.id === sourceChainId)
+      ? sourceChainId
+      : walletChainId;
+
   const callbacksRef = useRef(txCallbacks);
   const executeRef = useRef<() => void>(() => undefined);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     executeRef.current = () => {
-      void runMockLegs(steps.length, () => callbacksRef.current).then(txHash =>
-        mockPendingStore.add({ amount, from, to, recipient, route, txHash })
-      );
+      if (!route || !account || !scope) return;
+      // Snapshot at Confirm: the form may change or reset before the legs finish.
+      const record = { account, amount, from, to, recipient, route };
+      const callbacks = withSourceRecording(() => callbacksRef.current, {
+        legs: steps.length,
+        isSafe,
+        onQueued: safeTxHash =>
+          pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() })),
+        onExecuted: (txHash, safeTxHash) =>
+          safeTxHash
+            ? pendingBridgeStore.update(scope, safeTxHash, bridge =>
+                applyProgress(bridge, { kind: 'source-executed', txHash }, Date.now())
+              )
+            : pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }))
+      });
+      void runMockLegs(steps.length, () => callbacks);
     };
   });
 
   const transactionContent = useMemo(
-    () => <BridgeReviewContent amount={amount} from={from} to={to} route={route} networkFee={NO_VALUE} />,
+    () =>
+      route && (
+        <BridgeReviewContent amount={amount} from={from} to={to} route={route} networkFee={NO_VALUE} />
+      ),
     [amount, from, to, route]
   );
   const transactionScreenContent = useMemo(
@@ -60,7 +91,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   );
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, 18)), { maxDecimals: 2 })} USDS`;
-  const confirmDisabled = amount === 0n;
+  const confirmDisabled = amount === 0n || !route;
 
   const launch = useCallback(() => {
     launchModal({
@@ -81,9 +112,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       sessionId,
       // USDS is $1-pegged; same valuation as Convert (enhanced screening, APP-517).
       usdValue: Number(formatUnits(amount, 18)),
-      // Mock: no calldata yet, so pin the launch chain like Convert. The real
-      // engine pins the source network and switches to it at Confirm.
-      supportedChainIds: [chainId],
+      // The legs are built for the source network, so leaving it guards the flow.
+      supportedChainIds: [guardChainId],
       chainGuardReason: 'launch-chain'
     });
   }, [
@@ -96,7 +126,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     onSuccess,
     sessionId,
     amount,
-    chainId
+    guardChainId
   ]);
 
   useEffect(() => {

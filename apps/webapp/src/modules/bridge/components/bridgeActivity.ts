@@ -1,12 +1,12 @@
 import type { BridgeNetworkId } from '../model/networks';
-import type { PendingBridge } from '../model/types';
+import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 
-export type BridgeActivityKind = 'bridge' | 'claim';
+export type BridgeActivityKind = 'bridge' | PendingBridgeNextAction;
 
 export type BridgeActivityEntry = {
   id: string;
   kind: BridgeActivityKind;
-  /** Network the transaction ran on: source for the bridge, destination for the claim. */
+  /** Network the transaction ran on: source for the bridge, destination for the actions. */
   network: BridgeNetworkId;
   amount: bigint;
   timestamp: number;
@@ -15,34 +15,38 @@ export type BridgeActivityEntry = {
 
 export const BRIDGE_ACTIVITY_TITLE: Record<BridgeActivityKind, string> = {
   bridge: 'Bridge',
-  claim: 'Funds claim'
+  claim: 'Funds claim',
+  prove: 'Withdrawal proof',
+  finalize: 'Funds claim'
 };
 
-/** One "Bridge" row per bridge plus a "Funds claim" row once claimed, newest first. */
+/**
+ * One "Bridge" row per bridge with an on-chain source tx, plus a row per
+ * destination action the user sent, newest first.
+ */
 export function buildBridgeActivity(bridges: PendingBridge[]): BridgeActivityEntry[] {
   return bridges
-    .flatMap(bridge => {
-      const entries: BridgeActivityEntry[] = [
-        {
-          id: `${bridge.id}-bridge`,
-          kind: 'bridge',
-          network: bridge.from,
-          amount: bridge.amount,
-          timestamp: bridge.startedAt,
-          txHash: bridge.txHash
-        }
-      ];
-      if (bridge.claimTxHash && bridge.claimedAt) {
-        entries.push({
-          id: `${bridge.id}-claim`,
-          kind: 'claim',
-          network: bridge.to,
-          amount: bridge.amount,
-          timestamp: bridge.claimedAt,
-          txHash: bridge.claimTxHash
-        });
-      }
-      return entries;
-    })
+    .flatMap(bridge => [
+      ...(bridge.txHash
+        ? [
+            {
+              id: `${bridge.id}-bridge`,
+              kind: 'bridge' as const,
+              network: bridge.from,
+              amount: bridge.amount,
+              timestamp: bridge.startedAt,
+              txHash: bridge.txHash
+            }
+          ]
+        : []),
+      ...bridge.actions.map(action => ({
+        id: `${bridge.id}-${action.action}-${action.txHash}`,
+        kind: action.action,
+        network: bridge.to,
+        amount: bridge.amount,
+        timestamp: action.at,
+        txHash: action.txHash
+      }))
+    ])
     .sort((a, b) => b.timestamp - a.timestamp);
 }

@@ -11,7 +11,7 @@ import { useBridgeHistory } from '../hooks/useBridgeHistory';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { BRIDGE_ACTIVITY_TITLE, buildBridgeActivity, type BridgeActivityEntry } from './bridgeActivity';
 
-// USDS is pegged 1:1; the mock feed has no price source of its own.
+// USDS is pegged 1:1.
 const USDS_USD = 1;
 
 /** Bridge / Funds claim rows (Figma Wallet Activity 3574:64437), styled as BalancesHistoryItem. */

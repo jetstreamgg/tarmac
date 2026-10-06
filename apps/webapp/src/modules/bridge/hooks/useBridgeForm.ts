@@ -1,18 +1,46 @@
 import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
-import { useAppChainId } from '@/hooks';
+import { useAppChainId, useIsSafeWallet, useTokenBalance, usdsAddress, usdsL2Address } from '@/hooks';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
-import { bridgeNetworkForChainId, getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
+import {
+  bridgeChainId,
+  bridgeNetworkForChainId,
+  getBridgeNetwork,
+  type BridgeNetworkId
+} from '../model/networks';
 import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
-import { getMockRoute } from '../mocks/mockRoutes';
+import { recipientRequirement } from '../model/recipient';
+import { resolveBridgeRoute } from '../model/resolveRoute';
+import { useSafeConfig } from './useSafeConfig';
 
 export const USDS_DECIMALS = 18;
 
-// Mock balances until the bridge core (APP-612) reads USDS per network.
-const MOCK_SOURCE_BALANCE = parseUnits('10000', USDS_DECIMALS);
-const MOCK_DESTINATION_BALANCE = 0n;
+const usdsTokenAddress = (network: BridgeNetworkId, chainId: number | undefined) => {
+  if (chainId === undefined) return undefined;
+  const addresses: Record<number, `0x${string}`> = network === 'ethereum' ? usdsAddress : usdsL2Address;
+  return addresses[chainId];
+};
+
+/** USDS balance of `address` on a bridge network the app can read; undefined otherwise. */
+function useUsdsBalance(
+  address: `0x${string}` | undefined,
+  network: BridgeNetworkId,
+  chainId: number | undefined
+) {
+  const chains = useChains();
+  const token = usdsTokenAddress(network, chainId);
+  const readable = chainId !== undefined && chains.some(chain => chain.id === chainId);
+  const { data } = useTokenBalance({
+    address,
+    token,
+    chainId: chainId ?? 0,
+    enabled: readable && !!token
+  });
+  return readable && token ? data?.value : undefined;
+}
 
 const AMOUNT_PATTERN = /^\d*\.?\d{0,18}$/;
 
@@ -37,8 +65,10 @@ const parseAmountOrZero = (value: string) => {
  * switch or wallet connect for those happens at Confirm.
  */
 export function useBridgeForm() {
-  const { isConnected } = useConnection();
+  const { isConnected, address } = useConnection();
   const walletChainId = useAppChainId();
+  const familyChainId = familyMainnetId(walletChainId);
+  const isSafe = useIsSafeWallet();
   const chains = useChains();
   const { canSwitchChain, handleSwitchChain } = useNetworkSwitch();
 
@@ -87,8 +117,10 @@ export function useBridgeForm() {
     if (AMOUNT_PATTERN.test(typed)) setValue(typed);
   }, []);
 
-  const sourceBalance = isConnected ? MOCK_SOURCE_BALANCE : undefined;
-  const destinationBalance = isConnected ? MOCK_DESTINATION_BALANCE : undefined;
+  const sourceChainId = bridgeChainId(from, familyChainId);
+  const destinationChainId = bridgeChainId(to, familyChainId);
+  const sourceBalance = useUsdsBalance(isConnected ? address : undefined, from, sourceChainId);
+  const destinationBalance = useUsdsBalance(isConnected ? address : undefined, to, destinationChainId);
 
   const setPercent = useCallback(
     (percent: number) => {
@@ -99,11 +131,21 @@ export function useBridgeForm() {
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
-  const route = useMemo(() => getMockRoute(from, to), [from, to]);
+  // Route facts (open/paused, limits, liquidity, fee quote) come from the route tickets.
+  const resolved = useMemo(() => resolveBridgeRoute({ from, to, amount, facts: {} }), [from, to, amount]);
+  const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;
-  // A Solana destination needs a Solana address; the connected EVM wallet can't receive there.
-  const needsRecipient = getBridgeNetwork(to).family !== 'evm' && !recipient;
+
+  const destinationFamily = getBridgeNetwork(to).family;
+  const checkSafe = isConnected && isSafe && destinationFamily === 'evm' && !recipient;
+  const sourceSafe = useSafeConfig({ address, chainId: sourceChainId, enabled: checkSafe });
+  const destinationSafe = useSafeConfig({ address, chainId: destinationChainId, enabled: checkSafe });
+  const recipientRule = recipientRequirement({
+    destinationFamily,
+    recipient,
+    safe: isSafe ? { source: sourceSafe, destination: destinationSafe } : undefined
+  });
 
   return {
     from,
@@ -113,13 +155,16 @@ export function useBridgeForm() {
     value,
     amount,
     route,
+    /** Why no route can take this bridge right now. */
+    blockedReason: resolved.status === 'blocked' ? resolved.reason : undefined,
     recipient,
     sourceBalance,
     destinationBalance,
     isConnected,
     isZero,
     insufficient,
-    needsRecipient,
+    needsRecipient: recipientRule.required,
+    recipientReason: recipientRule.required ? recipientRule.reason : undefined,
     selectFrom,
     selectTo,
     flip,

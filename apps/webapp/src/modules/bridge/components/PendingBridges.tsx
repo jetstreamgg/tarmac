@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
@@ -8,12 +8,13 @@ import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { getBridgeNetwork } from '../model/networks';
+import { isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
   buildPendingBridgeRows,
   formatBridgeDate,
-  PENDING_STATUS_LABEL,
+  NEXT_ACTION_LABEL,
   type PendingBridgeCell
 } from './pendingBridgeRows';
 
@@ -45,7 +46,7 @@ function CellValue({ cell }: { cell: PendingBridgeCell }) {
           )}
           data-testid="pending-bridge-status"
         >
-          {PENDING_STATUS_LABEL[cell.status]}
+          {cell.value}
         </span>
       );
     case 'link':
@@ -70,11 +71,11 @@ function CellValue({ cell }: { cell: PendingBridgeCell }) {
 function PendingBridgeCard({
   bridge,
   now,
-  onClaim
+  onAction
 }: {
   bridge: PendingBridge;
   now: number;
-  onClaim: (bridge: PendingBridge) => void;
+  onAction: (bridge: PendingBridge) => void;
 }) {
   const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), { minDecimals: 2, maxDecimals: 2 });
   return (
@@ -96,16 +97,16 @@ function PendingBridgeCard({
             </Text>
           </span>
         </span>
-        {bridge.requiresClaim && (
+        {bridge.requiresClaim && bridge.nextAction && !isSettled(bridge) && (
           <Button
             variant="primary"
             size="m"
             className="w-24"
             disabled={bridge.status !== 'ready'}
-            onClick={() => onClaim(bridge)}
-            data-testid="pending-bridge-claim"
+            onClick={() => onAction(bridge)}
+            data-testid="pending-bridge-action"
           >
-            <Trans>Claim</Trans>
+            {NEXT_ACTION_LABEL[bridge.nextAction]}
           </Button>
         )}
       </div>
@@ -132,21 +133,13 @@ function PendingBridgeCard({
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
 export function PendingBridges({
   bridges,
-  onClaim
+  now,
+  onAction
 }: {
   bridges: PendingBridge[];
-  onClaim: (bridge: PendingBridge) => void;
+  now: number;
+  onAction: (bridge: PendingBridge) => void;
 }) {
-  const [now, setNow] = useState(() => Date.now());
-  const hasPending = bridges.some(bridge => bridge.status === 'pending');
-
-  // Ticks the remaining-time estimate while something is in flight.
-  useEffect(() => {
-    if (!hasPending) return;
-    const id = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(id);
-  }, [hasPending]);
-
   if (bridges.length === 0) return null;
 
   return (
@@ -155,7 +148,7 @@ export function PendingBridges({
         <Trans>Pending bridges</Trans>
       </h2>
       {bridges.map(bridge => (
-        <PendingBridgeCard key={bridge.id} bridge={bridge} now={now} onClaim={onClaim} />
+        <PendingBridgeCard key={bridge.id} bridge={bridge} now={now} onAction={onAction} />
       ))}
     </section>
   );

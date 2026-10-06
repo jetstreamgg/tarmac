@@ -35,3 +35,7 @@ export const bridgeNetworkForChainId = (chainId: number | undefined): BridgeNetw
   chainId === chainIdMap.tenderly
     ? 'ethereum'
     : BRIDGE_NETWORKS.find(network => network.chainId !== undefined && network.chainId === chainId)?.id;
+
+/** The chain a bridge transacts on for a network; Ethereum is the family's (mainnet or the Tenderly fork). */
+export const bridgeChainId = (network: BridgeNetworkId, familyChainId: number): number | undefined =>
+  network === 'ethereum' ? familyChainId : getBridgeNetwork(network).chainId;
