@@ -1012,7 +1012,12 @@ export function TransactionProvider({
         }
         // The calls can hold steady while the flow's own gating turns against
         // them (an acknowledgement lapsing, a module halting since the confirm).
-        if (!callsStillConfirmed() || configRef.current?.getConfirmDisabled?.()) {
+        // Not on a retry after a mined step: the run itself has moved the
+        // balances the form checks (a conversion leg spends the input), and a
+        // stalled step is unprepared until the engine re-simulates it. What is
+        // left to send is already held to the confirmed calls above.
+        const gateApplies = trigger !== 'retry' || !hasMinedStepRef.current;
+        if (!callsStillConfirmed() || (gateApplies && configRef.current?.getConfirmDisabled?.())) {
           sendBackToReview();
           notifyReviewAgainOnChangedCalls();
           return;

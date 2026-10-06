@@ -462,6 +462,54 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  // The run itself moves what the form checks (a conversion leg spends the
+  // input), and a stalled step stays unprepared until the engine re-simulates
+  // it on the retry; the remainder is still held to the confirmed calls.
+  it('retries past the flow gate once a step has mined', () => {
+    const onConfirm = vi.fn();
+    const gating = { disabled: false };
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), {
+      ...config,
+      getConfirmDisabled: () => gating.disabled
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate()); // the approve mined, the swap is in the wallet
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    live.calls = [swap(900n)];
+    gating.disabled = true;
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+  });
+
+  it('still holds a retry after a mined step to the confirmed calls', () => {
+    const onConfirm = vi.fn();
+    const gating = { disabled: false };
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), {
+      ...config,
+      getConfirmDisabled: () => gating.disabled
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    live.calls = [swap(350n)];
+    gating.disabled = true;
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('retries when the flow still allows the confirm', () => {
     const onConfirm = vi.fn();
     const { config } = driftingFlow(onConfirm, [swap(900n)]);
