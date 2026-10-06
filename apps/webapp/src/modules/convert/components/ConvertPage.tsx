@@ -16,6 +16,7 @@ import { useConvertForm } from '../hooks/useConvertForm';
 import { useConvertLaunch } from '../hooks/useConvertLaunch';
 import type { PsmConversionDisabledReason } from '../hooks/usePsmConversion.helpers';
 import { ConvertCard } from './ConvertCard';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 // Same copy as the legacy PsmConversionWidget — the engine's guard reasons are
 // unchanged, so the user-facing explanations carry over verbatim.
@@ -50,9 +51,17 @@ const CTA_CLASSES =
 
 export function ConvertPage() {
   const form = useConvertForm();
+  const runActive = useTransactionRunActive();
   const { launch, conversion, locked, restore } = useConvertLaunch({
     direction: form.direction,
-    amount: form.amount,
+    // The settled amount: the engine, fee estimate and pre-send simulation all
+    // hang off it, so a keystroke burst fires them once. The modal derives its
+    // figures from this same value, so shown == signed.
+    amount: form.debouncedAmount,
+    // The engine self-gates on a zero amount; the balance is the form's to know.
+    // Held while the debounce is mid-settle so the lagged amount isn't simulated, and
+    // held on through a run the check no longer passes (see useTransactionRunActive).
+    enabled: (!form.insufficient && !form.debouncePending) || runActive,
     onSuccess: () => {
       form.mutateBalances();
       form.reset();
@@ -73,8 +82,11 @@ export function ConvertPage() {
   }, [conversion.disabledReason, chainId, trackConvertBlocked]);
 
   const disabledReasonText = getDisabledReasonText(conversion.disabledReason, conversion.targetToken?.symbol);
+  // Review waits for the debounce to settle (mirrors `amountReady` elsewhere):
+  // the modal would otherwise open on the previous amount.
   const reviewDisabled =
-    form.isConnected && (form.isZero || form.insufficient || !!conversion.disabledReason);
+    form.isConnected &&
+    (form.isZero || form.insufficient || form.debouncePending || !!conversion.disabledReason);
 
   // Form column: the middle 6 columns of the design grid (624px @1280)
   // minus 48px breathing room each side, per the Convert mock.

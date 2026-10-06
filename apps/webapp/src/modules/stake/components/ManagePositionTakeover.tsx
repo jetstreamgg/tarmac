@@ -10,11 +10,11 @@ import {
   RiskLevel,
   TOKENS,
   useCollateralData,
-  useDebounce,
   useSimulatedVault,
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatBigInt, formatUsd } from '@/utils';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -83,11 +83,11 @@ export function ManagePositionTakeover({
 
   // Amounts routed through each card's mode; the reducer clears amounts on
   // toggle-off and mode switches, so these stay consistent by construction.
-  // A cleared amount (mode switch, toggle-off, emptied field) settles at once;
-  // otherwise the stale debounced value would validate under the new mode.
-  const settleCleared = (amount: bigint, debounced: bigint) => (amount === 0n ? 0n : debounced);
-  const debouncedSkyAmount = settleCleared(state.skyAmount, useDebounce(state.skyAmount));
-  const debouncedUsdsAmount = settleCleared(state.usdsAmount, useDebounce(state.usdsAmount));
+  // A cleared amount (mode switch, toggle-off, emptied field) and a mode switch
+  // settle at once; otherwise the stale debounced value would validate under the
+  // new mode.
+  const { debouncedAmount: debouncedSkyAmount } = useSettledAmount(state.skyAmount, state.stakeMode);
+  const { debouncedAmount: debouncedUsdsAmount } = useSettledAmount(state.usdsAmount, state.borrowMode);
   const skyToLock = state.stakeMode === 'stake' ? debouncedSkyAmount : 0n;
   const skyToFree = state.stakeMode === 'withdraw' ? debouncedSkyAmount : 0n;
   const usdsToBorrow = borrowOn && state.borrowMode === 'borrow' ? debouncedUsdsAmount : 0n;

@@ -1,8 +1,9 @@
+import { WAD } from '@/utils';
+
 /**
- * Max borrow — legacy Borrow.tsx:359-375 verbatim: debt-ceiling headroom
- * (total debt padded 0.001% for rate drift) capped by the collateral's safe
- * max. Frozen legacy math (F4 parity), shared by both takeover containers so
- * exactly one copy exists.
+ * Max borrow — legacy Borrow.tsx:359-375: debt-ceiling headroom (total debt
+ * padded 0.001% for rate drift) capped by the collateral's safe max, floored to
+ * whole USDS. Shared by both takeover containers so exactly one copy exists.
  */
 export function calculateAvailableBorrow(
   collateralData: { totalDaiDebt?: bigint; debtCeiling?: bigint } | undefined,
@@ -17,7 +18,10 @@ export function calculateAvailableBorrow(
         : collateralData.debtCeiling - adjustedTotalDebt
       : 0n;
   const fromCollateral = maxSafeBorrowableIntAmount ?? 0n;
-  return { fromDebtCeiling, balance: fromDebtCeiling > fromCollateral ? fromCollateral : fromDebtCeiling };
+  const cap = fromDebtCeiling > fromCollateral ? fromCollateral : fromDebtCeiling;
+  // Whole USDS like the collateral side, so a ceiling-bound cap shows and
+  // stages the same figure as a collateral-bound one.
+  return { fromDebtCeiling, balance: (cap / WAD) * WAD };
 }
 
 /** Collateral at/below the dust-implied minimum — the min-collateral warning gate. */
