@@ -9,7 +9,6 @@ import {
   getTokenDecimals,
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
-  useAllPendleMarketsHistory,
   useBatchPendleConvert,
   useIsBatchSupported,
   useNow,
@@ -23,7 +22,7 @@ import {
 } from '@/hooks';
 import { getTooltipById } from '@/modules/ui/data/tooltips';
 import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
-import { PENDLE_HISTORY_REFRESH_MS, PendleFlow } from '@/modules/pendle/lib/constants';
+import { PendleFlow } from '@/modules/pendle/lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/lib/pendleAnalyticsData';
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
 import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
@@ -262,7 +261,6 @@ export function PendleModalForm({
   }, []);
 
   const { txCallbacks } = useTransaction();
-  const { mutate: refreshPendleHistory } = useAllPendleMarketsHistory();
 
   const writeHook = useBatchPendleConvert({
     side,
@@ -292,9 +290,6 @@ export function PendleModalForm({
     onSuccess: (hash, blockNumber) => {
       mutatePtBalances();
       refetchWalletBalance();
-      // Pendle's PnL indexer needs ~20s after the receipt lands to expose the
-      // new row — see PENDLE_HISTORY_REFRESH_MS for measurements.
-      setTimeout(refreshPendleHistory, PENDLE_HISTORY_REFRESH_MS);
       txCallbacks.onSuccess(hash, blockNumber);
       fireAnalytics({
         event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,

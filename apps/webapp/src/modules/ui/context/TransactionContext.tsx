@@ -1049,8 +1049,9 @@ export function TransactionProvider({
     (hash?: string, blockNumber?: bigint) => {
       // Ahead of the session guard: a transaction that mined after its modal
       // was closed still lands in the history tables, which lag the receipt
-      // by the indexer's catch-up.
-      void refreshHistoryAfterTx(queryClient, { chainId, blockNumber });
+      // by the indexer's catch-up. The session's latched chain, not the
+      // config's: a batch receipt can land after a network switch.
+      void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current, blockNumber });
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;

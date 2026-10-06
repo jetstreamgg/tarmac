@@ -59,7 +59,7 @@ The four transaction success handlers (`OpenPositionTakeover`, `ManagePositionTa
 `['stake-urn-vaults']` (again 5s and 15s later, for RPC lag), `['readContract']`, `['readContracts']`,
 `['simulateDrip']`. The indexer-backed `['stake-user-positions']` and `['stake-history']` are
 refreshed by the transaction context instead: on every confirmed transaction it waits (up to 60s)
-for the indexer's `_meta.progressBlock` to reach the receipt's block, then refetches every query
+for `_meta.progressBlock` on every indexer the tables read to reach the receipt's block, then refetches every query
 tagged `INDEXER_HISTORY_META` (`refreshHistoryAfterTx`). The last two on-chain keys were added by this audit — wagmi's batched `useReadContracts`
 keys under `['readContracts', …]` (plural), a **different top-level key** from the singular
 `['readContract', …]`, so claimable rewards, wallet balances, and the live total-debt aggregate

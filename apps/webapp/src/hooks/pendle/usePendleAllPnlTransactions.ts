@@ -110,13 +110,11 @@ export function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
  *
  * Cache behavior intentionally inherits the global React Query defaults
  * (`staleTime: 0`, `refetchOnWindowFocus: true`, `refetchOnMount: true`) so
- * the hook matches every other history hook in the app. Post-tx refresh is
- * triggered explicitly from the widget pane on a ~25s delay — Pendle's PnL
- * indexer lag is empirically ~20s (verified May 2026), much longer than the
- * 1s used elsewhere for our Envio Hyperindex / Morpho-API-backed histories.
- * Every confirmed transaction also refetches it on the external-history
- * follow-ups (src/lib/historyRefresh), which covers flows without that delay
- * (the matured-PT redeem).
+ * the hook matches every other history hook in the app. Post-tx refresh comes
+ * from the external-history follow-ups every confirmed transaction schedules
+ * (src/lib/historyRefresh), timed for Pendle's ~20s PnL indexer lag.
+ * `useWalletEarnings` reads the same key and must carry the same `meta`: a
+ * query keeps the options of whichever observer fetched last.
  */
 export function usePendleAllPnlTransactions(): UseQueryResult<PendleCombinedHistoryRow[]> {
   const { address: userAddress } = useConnection();

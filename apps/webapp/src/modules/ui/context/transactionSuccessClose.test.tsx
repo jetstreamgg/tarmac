@@ -18,10 +18,14 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
+const chainMock = vi.hoisted(() => ({ id: 1 }));
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
-  useChainId: () => 1,
-  useChains: () => [{ id: 1, name: 'Ethereum' }],
+  useChainId: () => chainMock.id,
+  useChains: () => [
+    { id: 1, name: 'Ethereum' },
+    { id: 8453, name: 'Base' }
+  ],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
 vi.mock('@/hooks', async io => ({
@@ -93,13 +97,20 @@ function Harness({ config, onReady }: { config: TransactionConfig; onReady: (cb:
 }
 
 // Mounts the provider, opens the modal and advances it to the transaction screen.
-function renderFlow(config: TransactionConfig): TxCallbacks {
+// `onReady` sees the callbacks of every render, for a test that re-renders mid-flow.
+function renderFlow(config: TransactionConfig, onReady?: (cb: TxCallbacks) => void): TxCallbacks {
   let cb!: TxCallbacks;
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
-          <Harness config={config} onReady={c => (cb = c)} />
+          <Harness
+            config={config}
+            onReady={c => {
+              cb = c;
+              onReady?.(c);
+            }}
+          />
         </TransactionProvider>
       </I18nProvider>
     </StrictMode>
@@ -124,7 +135,10 @@ const CONFIG: TransactionConfig = {
 };
 
 describe('TransactionModal success handoff', () => {
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    chainMock.id = 1;
+  });
 
   it('closes the modal and moves the outcome to a toast', () => {
     const cb = renderFlow(CONFIG);
@@ -190,6 +204,19 @@ describe('TransactionModal success handoff', () => {
     act(() => cb.onSuccess(HASH, 123n));
 
     expect(refreshHistoryMock).toHaveBeenCalledTimes(1);
+    expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), { chainId: 1, blockNumber: 123n });
+  });
+
+  it("polls the indexer for the session's chain when the receipt lands after a network switch", () => {
+    let cb: TxCallbacks | undefined;
+    renderFlow(CONFIG, latest => (cb = latest));
+
+    act(() => cb!.onMutate());
+    chainMock.id = 8453;
+    // Re-renders the provider on the new chain, handing out callbacks that close over it.
+    act(() => cb!.onStart(HASH));
+    act(() => cb!.onSuccess(HASH, 123n));
+
     expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), { chainId: 1, blockNumber: 123n });
   });
 });
