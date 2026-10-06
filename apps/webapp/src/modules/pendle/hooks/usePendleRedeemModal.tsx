@@ -94,9 +94,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     // Forward wagmi's write variables so the approve leg reports action 'approve'.
     onMutate: variables => txCallbacks.onMutate(variables),
     onStart: hash => txCallbacks.onStart(hash),
-    onSuccess: hash => {
+    onSuccess: (hash, blockNumber) => {
       mutatePtBalances();
-      txCallbacks.onSuccess(hash);
+      txCallbacks.onSuccess(hash, blockNumber);
     },
     onError: (err, hash) => txCallbacks.onError(err, hash)
   });

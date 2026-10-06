@@ -72,22 +72,23 @@ export function useWriteContractFlow<
   const {
     isPending: isMining,
     isSuccess,
-    failure: miningError
+    failure: miningError,
+    receipt
   } = useTransactionReceipt({ hash: txHash, chainId: parameters.chainId });
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
-  const emitSuccess = useEffectEvent((hash: string) => onSuccess(hash));
+  const emitSuccess = useEffectEvent((hash: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
   useEffect(() => {
     if (txHash) {
       if (isSuccess) {
-        emitSuccess(txHash);
+        emitSuccess(txHash, receipt?.blockNumber);
       } else if (miningError) {
         emitError(miningError, txHash);
       }
     }
-  }, [isSuccess, miningError, txHash]);
+  }, [isSuccess, miningError, txHash, receipt?.blockNumber]);
 
   // The single call this hook sends, in the same contract form the batch engines use.
   // Exposed read-only so a flow that routes through here can still be fee-estimated;

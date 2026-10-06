@@ -30,8 +30,14 @@ const wagmi = vi.hoisted(() => ({
   receipt: {
     isLoading: false,
     isSuccess: false,
-    error: null as Error | null,
-    failureReason: null as Error | null
+    error: null,
+    failureReason: null
+  } as {
+    isLoading: boolean;
+    isSuccess: boolean;
+    error: Error | null;
+    failureReason: Error | null;
+    data?: { blockNumber: bigint };
   }
 }));
 
@@ -79,7 +85,8 @@ vi.mock('@/hooks/shared/useTransactionReceipt', () => ({
   useTransactionReceipt: () => ({
     isPending: wagmi.receipt.isLoading,
     isSuccess: wagmi.receipt.isSuccess,
-    failure: wagmi.receipt.error ?? wagmi.receipt.failureReason
+    failure: wagmi.receipt.error ?? wagmi.receipt.failureReason,
+    receipt: wagmi.receipt.data
   })
 }));
 
@@ -165,14 +172,20 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     // Still not fired between the two receipts.
     expect(onSuccess).not.toHaveBeenCalled();
 
-    // Supply receipt mines → the final completion.
+    // Supply receipt mines → the final completion, carrying its block for the history refresh.
     act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: true,
+        error: null,
+        failureReason: null,
+        data: { blockNumber: 42n }
+      };
     });
     rerender();
 
     expect(onSuccess).toHaveBeenCalledTimes(1);
-    expect(onSuccess).toHaveBeenCalledWith('0xsupply');
+    expect(onSuccess).toHaveBeenCalledWith('0xsupply', 42n);
     expect(onError).not.toHaveBeenCalled();
   });
 
@@ -199,7 +212,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     rerender();
 
     expect(onSuccess).toHaveBeenCalledTimes(1);
-    expect(onSuccess).toHaveBeenCalledWith('0xsupply');
+    expect(onSuccess).toHaveBeenCalledWith('0xsupply', undefined);
     expect(result.current.currentCallIndex).toBe(0); // reset on completion
   });
 
@@ -259,7 +272,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
 
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
     expect(onSuccess).toHaveBeenCalledTimes(1);
-    expect(onSuccess).toHaveBeenCalledWith('0xsupply');
+    expect(onSuccess).toHaveBeenCalledWith('0xsupply', undefined);
   });
 
   it('a second flow on the same mounted hook dispatches each call once', () => {
@@ -310,7 +323,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
 
     expect(wagmi.writeContract).toHaveBeenCalledTimes(4); // 2 per flow, not 3
     expect(onSuccess).toHaveBeenCalledTimes(2);
-    expect(onSuccess).toHaveBeenLastCalledWith('0xsupply2');
+    expect(onSuccess).toHaveBeenLastCalledWith('0xsupply2', undefined);
   });
 
   // Retrying a wallet rejection mid-sequence. `handleRetry` calls the config's

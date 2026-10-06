@@ -131,6 +131,8 @@ export type TransactionReceiptState = {
    * a `UserRejectedRequestError`: the user took it back, like declining a prompt.
    */
   failure: Error | null;
+  /** The mined receipt once settled; a speed-up's own receipt when it was repriced. */
+  receipt?: TransactionReceipt;
 };
 
 /**
@@ -191,6 +193,7 @@ export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?
   return {
     isPending: !!hash && !settled,
     isSuccess: settled && !failure,
-    failure
+    failure,
+    receipt: data?.receipt
   } satisfies TransactionReceiptState;
 }

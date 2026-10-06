@@ -104,12 +104,17 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
-  const emitSuccess = useEffectEvent((hash?: string) => onSuccess(hash));
+  const emitSuccess = useEffectEvent((hash?: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
   useEffect(() => {
     if (mutationData?.id) {
       if (isSuccess && data.status === 'success') {
-        emitSuccess(data.receipts?.[0]?.transactionHash);
+        // A non-atomic bundle can land across blocks; the history refresh waits for the last.
+        const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);
+        emitSuccess(
+          data.receipts?.[0]?.transactionHash,
+          blockNumbers.length > 0 ? blockNumbers.reduce((a, b) => (b > a ? b : a)) : undefined
+        );
       } else if (isSuccess && data.status === 'failure') {
         emitError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (miningError) {

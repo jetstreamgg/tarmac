@@ -3,6 +3,7 @@ import { request, gql } from 'graphql-request';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
+import { INDEXER_HISTORY_META } from '@/hooks';
 import { StakeUrnVault, useStakeUrnVaults } from './useStakeUrnVaults';
 
 /**
@@ -248,7 +249,9 @@ export function useStakeUserPositions() {
   } = useQuery({
     enabled: Boolean(indexerUrl && address),
     queryKey: ['stake-user-positions', indexerUrl, address, chainId],
-    queryFn: () => fetchStakeUserPositions(indexerUrl, chainId, address!)
+    queryFn: () => fetchStakeUserPositions(indexerUrl, chainId, address!),
+    // Barks / last mutation come from the indexer: refetch once it has the tx's block.
+    meta: INDEXER_HISTORY_META
   });
 
   const subgraphSettled = subgraphPositions !== undefined || Boolean(subgraphError);

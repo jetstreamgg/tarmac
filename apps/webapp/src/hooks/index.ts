@@ -204,7 +204,14 @@ export {
 } from './psm/useUsdsPsmWrapperReads';
 export { usePsmPocketBalance } from './psm/usePsmPocketBalance';
 
-export { ModuleEnum, TransactionTypeEnum, ZERO_ADDRESS, TENDERLY_CHAIN_ID } from './constants';
+export {
+  ModuleEnum,
+  TransactionTypeEnum,
+  ZERO_ADDRESS,
+  TENDERLY_CHAIN_ID,
+  INDEXER_HISTORY_META,
+  EXTERNAL_HISTORY_META
+} from './constants';
 
 export { getIlkName } from './vaults/helpers';
 export { toError } from './helpers';
