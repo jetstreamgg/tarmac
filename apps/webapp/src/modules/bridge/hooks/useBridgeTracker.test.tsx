@@ -76,7 +76,9 @@ describe('useBridgeTracker', () => {
     seed({ safeTxHash: '0xsafe' });
     renderTracker();
     await waitFor(() => expect(stored('0xsafe')).toMatchObject({ txHash: '0xexec' }));
-    expect(mocks.readSafeTxProgress).toHaveBeenCalledWith({ chainId: 8453, safeTxHash: '0xsafe' });
+    expect(mocks.readSafeTxProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ chainId: 8453, safeTxHash: '0xsafe', queuedAt: NOW })
+    );
     expect(mocks.checkProgress).not.toHaveBeenCalled();
   });
 

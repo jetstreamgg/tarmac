@@ -78,13 +78,17 @@ describe('createPendingBridge', () => {
 });
 
 describe('applyProgress', () => {
-  it('a Safe transaction executing sets the tx hash and keeps the id', () => {
-    const bridge = applyProgress(
-      create(routeFor('base', 'ethereum'), { safeTxHash: '0xsafe' }),
-      { kind: 'source-executed', txHash: '0xexec' },
-      NOW
-    );
-    expect(bridge).toMatchObject({ id: '0xsafe', txHash: '0xexec', status: 'pending' });
+  it('a Safe transaction executing sets the tx hash, keeps the id and restarts the clock', () => {
+    const queued = create(routeFor('base', 'ethereum'), { safeTxHash: '0xsafe' });
+    const executedAt = NOW + 48 * HOUR;
+    const bridge = applyProgress(queued, { kind: 'source-executed', txHash: '0xexec' }, executedAt);
+    expect(bridge).toMatchObject({
+      id: '0xsafe',
+      txHash: '0xexec',
+      status: 'pending',
+      startedAt: executedAt,
+      etaAt: executedAt + (queued.etaAt - queued.startedAt)
+    });
   });
 
   it('a ready attestation makes a CCTP bridge ready to claim and keeps the route data', () => {
@@ -221,10 +225,10 @@ describe('pollIntervalMs', () => {
     expect(pollIntervalMs(withdrawal, withdrawal.etaAt - MINUTE)).toBe(15_000);
   });
 
-  it('polls a queued Safe transaction until it executes', () => {
-    expect(pollIntervalMs(create(routeFor('base', 'ethereum', false), { safeTxHash: '0xsafe' }), NOW)).toBe(
-      15_000
-    );
+  it('polls a queued Safe transaction fast for an hour, then slowly while the signers take their time', () => {
+    const queued = create(routeFor('base', 'ethereum', false), { safeTxHash: '0xsafe' });
+    expect(pollIntervalMs(queued, NOW)).toBe(15_000);
+    expect(pollIntervalMs(queued, NOW + 2 * HOUR)).toBe(5 * MINUTE);
   });
 
   it('keeps polling ready bridges slowly, since anyone can send the next action', () => {

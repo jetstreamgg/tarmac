@@ -5,7 +5,6 @@ import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useBridgeForm } from '../hooks/useBridgeForm';
 import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
-import { usePendingBridges } from '../hooks/usePendingBridges';
 import { BridgeCard } from './BridgeCard';
 import { PendingBridges } from './PendingBridges';
 
@@ -45,10 +44,10 @@ export function BridgePanel() {
   const { launch, locked, restore } = useBridgeLaunch(form, form.reset);
   const launchOrConnect = useConnectThenAct(launch);
   const launchAction = useDestinationActionLaunch();
-  const { bridges, now } = usePendingBridges();
 
   const reviewDisabled =
-    form.isConnected && (form.isZero || form.insufficient || form.needsRecipient || !form.route);
+    form.isConnected &&
+    (form.isZero || form.insufficient || form.balanceLoading || form.needsRecipient || !form.route);
 
   return (
     <div className="flex w-full flex-col gap-8" data-testid="bridge-panel">
@@ -71,7 +70,8 @@ export function BridgePanel() {
           </Text>
         ) : (
           form.isConnected &&
-          form.needsRecipient && (
+          form.needsRecipient &&
+          !form.recipientChecking && (
             <Text className="text-textSecondary text-sm" dataTestId="bridge-recipient-hint">
               <RecipientHint reason={form.recipientReason} />
             </Text>
@@ -90,7 +90,7 @@ export function BridgePanel() {
         </Button>
       </div>
 
-      <PendingBridges bridges={bridges} now={now} onAction={launchAction} />
+      <PendingBridges onAction={launchAction} />
     </div>
   );
 }

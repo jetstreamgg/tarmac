@@ -31,7 +31,12 @@ export function useBridgeTracker() {
             const chainId = bridgeChainId(entry.from, familyChainId);
             return chainId === undefined
               ? null
-              : readSafeTxProgress({ chainId, safeTxHash: entry.safeTxHash });
+              : readSafeTxProgress({
+                  chainId,
+                  safeTxHash: entry.safeTxHash,
+                  queuedAt: entry.startedAt,
+                  now: Date.now()
+                });
           }
         });
         return progress?.kind ?? null;

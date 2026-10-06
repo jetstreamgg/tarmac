@@ -33,10 +33,15 @@ export async function trackBridge({
       ? await readSafeTx({ ...bridge, safeTxHash: bridge.safeTxHash })
       : null;
   if (!progress) return null;
+  const polled = fingerprint(bridge);
+  let applied = false;
   store.update(scope, id, current => {
+    // The entry changed during the poll (an action was recorded): the result is stale.
+    if (fingerprint(current) !== polled) return current;
+    applied = true;
     const next = applyProgress(current, progress, now());
     // Repeated polls report the same state; skip the write.
-    return fingerprint(next) === fingerprint(current) ? current : next;
+    return fingerprint(next) === polled ? current : next;
   });
-  return progress;
+  return applied ? progress : null;
 }

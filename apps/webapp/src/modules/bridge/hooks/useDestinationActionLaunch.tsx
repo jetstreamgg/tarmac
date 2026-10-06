@@ -7,7 +7,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { runMockLegs } from '../adapters/mockAdapter';
-import { bridgeChainId } from '../model/networks';
+import { guardChainId } from '../model/networks';
 import { recordAction } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -69,11 +69,12 @@ export function useDestinationActionLaunch() {
         maxDecimals: 2
       });
       const copy = actionCopy(action, amount);
-      const destinationChainId = bridgeChainId(bridge.to, familyChainId);
-      const guardChainId =
-        destinationChainId !== undefined && chains.some(chain => chain.id === destinationChainId)
-          ? destinationChainId
-          : walletChainId;
+      const pinnedChainId = guardChainId({
+        network: bridge.to,
+        familyChainId,
+        chainIds: chains.map(chain => chain.id),
+        walletChainId
+      });
       launchModal({
         title: t`Confirm`,
         skipReview: true,
@@ -98,7 +99,7 @@ export function useDestinationActionLaunch() {
         sessionId,
         usdValue: Number(formatUnits(bridge.amount, 18)),
         // Destination actions run on the destination network.
-        supportedChainIds: [guardChainId],
+        supportedChainIds: [pinnedChainId],
         chainGuardReason: 'launch-chain'
       });
     },

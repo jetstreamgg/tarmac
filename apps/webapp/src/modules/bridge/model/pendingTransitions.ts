@@ -77,7 +77,13 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
   if (isSettled(bridge)) return bridge;
   switch (progress.kind) {
     case 'source-executed':
-      return { ...bridge, txHash: progress.txHash };
+      // The bridge starts when the Safe executes, which can be days after it was queued.
+      return {
+        ...bridge,
+        txHash: progress.txHash,
+        startedAt: now,
+        etaAt: now + bridge.etaAt - bridge.startedAt
+      };
     case 'waiting':
       return {
         ...bridge,
@@ -124,7 +130,8 @@ export const isPendingBridgeVisible = (bridge: PendingBridge, now: number): bool
 /** How often the tracker checks a bridge; undefined once settled. */
 export function pollIntervalMs(bridge: PendingBridge, now: number): number | undefined {
   if (isSettled(bridge)) return undefined;
-  if (!bridge.txHash) return FAST_POLL_MS;
+  // A queued Safe transaction: signers usually act soon, but can take days.
+  if (!bridge.txHash) return now - bridge.startedAt <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
   // Anyone can send the next action, so a ready bridge can still settle without us.
   if (bridge.status === 'ready') return READY_POLL_MS;
   return bridge.etaAt - now <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;

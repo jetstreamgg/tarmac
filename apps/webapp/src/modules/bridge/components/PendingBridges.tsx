@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { usePendingBridges } from '../hooks/usePendingBridges';
 import { getBridgeNetwork } from '../model/networks';
 import { isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
@@ -131,15 +132,9 @@ function PendingBridgeCard({
 }
 
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
-export function PendingBridges({
-  bridges,
-  now,
-  onAction
-}: {
-  bridges: PendingBridge[];
-  now: number;
-  onAction: (bridge: PendingBridge) => void;
-}) {
+export function PendingBridges({ onAction }: { onAction: (bridge: PendingBridge) => void }) {
+  // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
+  const { bridges, now } = usePendingBridges();
   if (bridges.length === 0) return null;
 
   return (

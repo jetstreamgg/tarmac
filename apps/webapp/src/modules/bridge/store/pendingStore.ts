@@ -1,3 +1,4 @@
+import { isSettled } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 
 const KEY_PREFIX = 'bridgePending:v1:';
@@ -16,9 +17,6 @@ export const pendingScopeKey = ({ account, familyChainId }: { account: string; f
   `${familyChainId}:${account.toLowerCase()}`;
 
 const storageKey = (scope: string) => `${KEY_PREFIX}${scope}`;
-
-const isSettled = (bridge: PendingBridge) =>
-  bridge.status === 'arrived' || bridge.status === 'claimed' || bridge.status === 'failed';
 
 const parseEntry = (value: unknown): PendingBridge | null => {
   if (typeof value !== 'object' || value === null) return null;

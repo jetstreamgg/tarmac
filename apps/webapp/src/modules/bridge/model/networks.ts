@@ -39,3 +39,19 @@ export const bridgeNetworkForChainId = (chainId: number | undefined): BridgeNetw
 /** The chain a bridge transacts on for a network; Ethereum is the family's (mainnet or the Tenderly fork). */
 export const bridgeChainId = (network: BridgeNetworkId, familyChainId: number): number | undefined =>
   network === 'ethereum' ? familyChainId : getBridgeNetwork(network).chainId;
+
+/** The chain a flow on `network` is pinned to: that chain when the app can switch to it, else the wallet's. */
+export function guardChainId({
+  network,
+  familyChainId,
+  chainIds,
+  walletChainId
+}: {
+  network: BridgeNetworkId;
+  familyChainId: number;
+  chainIds: number[];
+  walletChainId: number;
+}): number {
+  const target = bridgeChainId(network, familyChainId);
+  return target !== undefined && chainIds.includes(target) ? target : walletChainId;
+}

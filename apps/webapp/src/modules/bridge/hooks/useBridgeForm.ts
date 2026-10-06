@@ -24,7 +24,7 @@ const usdsTokenAddress = (network: BridgeNetworkId, chainId: number | undefined)
   return addresses[chainId];
 };
 
-/** USDS balance of `address` on a bridge network the app can read; undefined otherwise. */
+/** USDS balance of `address` on a bridge network the app can read; `value` is undefined otherwise. */
 function useUsdsBalance(
   address: `0x${string}` | undefined,
   network: BridgeNetworkId,
@@ -33,13 +33,13 @@ function useUsdsBalance(
   const chains = useChains();
   const token = usdsTokenAddress(network, chainId);
   const readable = chainId !== undefined && chains.some(chain => chain.id === chainId);
-  const { data } = useTokenBalance({
+  const { data, isLoading } = useTokenBalance({
     address,
     token,
     chainId: chainId ?? 0,
     enabled: readable && !!token
   });
-  return readable && token ? data?.value : undefined;
+  return readable && token ? { value: data?.value, isLoading } : { value: undefined, isLoading: false };
 }
 
 const AMOUNT_PATTERN = /^\d*\.?\d{0,18}$/;
@@ -119,8 +119,9 @@ export function useBridgeForm() {
 
   const sourceChainId = bridgeChainId(from, familyChainId);
   const destinationChainId = bridgeChainId(to, familyChainId);
-  const sourceBalance = useUsdsBalance(isConnected ? address : undefined, from, sourceChainId);
-  const destinationBalance = useUsdsBalance(isConnected ? address : undefined, to, destinationChainId);
+  const source = useUsdsBalance(isConnected ? address : undefined, from, sourceChainId);
+  const sourceBalance = source.value;
+  const destinationBalance = useUsdsBalance(isConnected ? address : undefined, to, destinationChainId).value;
 
   const setPercent = useCallback(
     (percent: number) => {
@@ -144,7 +145,7 @@ export function useBridgeForm() {
   const recipientRule = recipientRequirement({
     destinationFamily,
     recipient,
-    safe: isSafe ? { source: sourceSafe, destination: destinationSafe } : undefined
+    safe: isSafe ? { source: sourceSafe.lookup, destination: destinationSafe.lookup } : undefined
   });
 
   return {
@@ -163,7 +164,11 @@ export function useBridgeForm() {
     isConnected,
     isZero,
     insufficient,
+    /** The source balance is still loading, so `insufficient` can't be trusted yet. */
+    balanceLoading: isConnected && source.isLoading,
     needsRecipient: recipientRule.required,
+    /** The Safe lookups behind `needsRecipient` are still in flight. */
+    recipientChecking: checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking),
     recipientReason: recipientRule.required ? recipientRule.reason : undefined,
     selectFrom,
     selectTo,

@@ -47,26 +47,44 @@ const getJson = async (url: string): Promise<{ status: number; body: unknown }> 
   return { status: res.status, body: res.ok ? await res.json() : undefined };
 };
 
+// The service indexes a proposed transaction within seconds; one still missing after this was deleted.
+const NOT_FOUND_AFTER_MS = 60 * 60_000;
+
 /**
  * Resolves a queued Safe transaction through the Safe Transaction Service, with
  * no time limit: multisig signers can take days.
  */
 export async function readSafeTxProgress({
   chainId,
-  safeTxHash
+  safeTxHash,
+  queuedAt,
+  now
 }: {
   chainId: number;
   safeTxHash: string;
+  queuedAt: number;
+  now: number;
 }): Promise<BridgeProgress | null> {
   const base = SAFE_TRANSACTION_SERVICE_URL[chainId];
   if (!base) return null;
-  const txResponse = await getJson(`${base}/api/v1/multisig-transactions/${safeTxHash}/`);
-  const tx = parseSafeTx(txResponse.body);
-  if (!tx) return null;
+  const readTx = async () => {
+    const { status, body } = await getJson(`${base}/api/v1/multisig-transactions/${safeTxHash}/`);
+    return { status, tx: parseSafeTx(body) };
+  };
+  const { status, tx } = await readTx();
+  if (!tx) {
+    return status === 404 && now - queuedAt > NOT_FOUND_AFTER_MS
+      ? { kind: 'failed', reason: 'safe-tx-not-found' }
+      : null;
+  }
   if (tx.isExecuted) return safeTxProgress(tx, undefined);
   const safeResponse = await getJson(`${base}/api/v1/safes/${tx.safe}/`);
-  const safeNonce = (safeResponse.body as { nonce?: unknown } | undefined)?.nonce;
-  return safeTxProgress(tx, toNonce(safeNonce));
+  const safeNonce = toNonce((safeResponse.body as { nonce?: unknown } | undefined)?.nonce);
+  const progress = safeTxProgress(tx, safeNonce);
+  if (progress?.kind !== 'failed') return progress;
+  // The nonce moved after the first read: this transaction may be what moved it.
+  const again = await readTx();
+  return again.tx?.isExecuted ? safeTxProgress(again.tx, undefined) : progress;
 }
 
 /**

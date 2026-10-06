@@ -11,7 +11,7 @@ import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionL
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeReviewContent';
 import { runMockLegs } from '../adapters/mockAdapter';
-import { bridgeChainId } from '../model/networks';
+import { guardChainId } from '../model/networks';
 import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withSourceRecording } from '../tracking/sourceRecording';
@@ -21,7 +21,7 @@ import { usePendingScope } from './usePendingScope';
 /**
  * The seam between the Bridge tab and `TransactionContext.launch()` (mirrors
  * `useConvertLaunch`). Confirm runs the source legs (approve + send) and
- * stores the pending bridge; a Safe's is stored as soon as it is queued. The
+ * stores the pending bridge once the send is broadcast, or queued for a Safe. The
  * legs run on the mock executor until the route tickets add their calls.
  */
 export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
@@ -47,12 +47,12 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     [route, from]
   );
 
-  // The source chain, when the app can switch to it; otherwise the launch chain.
-  const sourceChainId = bridgeChainId(from, familyChainId);
-  const guardChainId =
-    sourceChainId !== undefined && chains.some(chain => chain.id === sourceChainId)
-      ? sourceChainId
-      : walletChainId;
+  const pinnedChainId = guardChainId({
+    network: from,
+    familyChainId,
+    chainIds: chains.map(chain => chain.id),
+    walletChainId
+  });
 
   const callbacksRef = useRef(txCallbacks);
   const executeRef = useRef<() => void>(() => undefined);
@@ -65,6 +65,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       const callbacks = withSourceRecording(() => callbacksRef.current, {
         legs: steps.length,
         isSafe,
+        onSent: txHash =>
+          pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() })),
         onQueued: safeTxHash =>
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() })),
         onExecuted: (txHash, safeTxHash) =>
@@ -113,7 +115,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       // USDS is $1-pegged; same valuation as Convert (enhanced screening, APP-517).
       usdValue: Number(formatUnits(amount, 18)),
       // The legs are built for the source network, so leaving it guards the flow.
-      supportedChainIds: [guardChainId],
+      supportedChainIds: [pinnedChainId],
       chainGuardReason: 'launch-chain'
     });
   }, [
@@ -126,7 +128,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     onSuccess,
     sessionId,
     amount,
-    guardChainId
+    pinnedChainId
   ]);
 
   useEffect(() => {

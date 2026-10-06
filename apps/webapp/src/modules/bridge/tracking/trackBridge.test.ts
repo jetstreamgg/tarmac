@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPendingBridge } from '../model/pendingTransitions';
+import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { createPendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { mockAdapter, MOCK_STAGE_MS } from '../adapters/mockAdapter';
@@ -83,6 +83,37 @@ describe('trackBridge', () => {
     store.subscribe(listener);
     await run('0xsource');
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('drops a poll result when the bridge changed while the poll was in flight', async () => {
+    const withdrawal = resolveBridgeRoute({
+      from: 'base',
+      to: 'ethereum',
+      amount: 1n,
+      facts: { cctp: { isOpen: false } }
+    });
+    if (withdrawal.status !== 'ok') throw new Error(withdrawal.reason);
+    const bridge = createPendingBridge({
+      account: ACCOUNT,
+      amount: 1n,
+      from: 'base',
+      to: 'ethereum',
+      route: withdrawal.route,
+      txHash: '0xsource',
+      now: NOW
+    });
+    store.upsert(SCOPE, applyProgress(bridge, { kind: 'ready', nextAction: 'prove' }, NOW));
+    const adapter = {
+      checkProgress: vi.fn(async () => {
+        // The user's prove lands while this poll still reports the old state.
+        store.update(SCOPE, '0xsource', entry =>
+          recordAction(entry, { action: 'prove', txHash: '0xprove', at: now })
+        );
+        return { kind: 'ready' as const, nextAction: 'prove' as const };
+      })
+    };
+    expect(await run('0xsource', adapter)).toBeNull();
+    expect(store.getSnapshot(SCOPE)[0]).toMatchObject({ status: 'pending', nextAction: 'finalize' });
   });
 
   it('skips settled and unknown bridges', async () => {
