@@ -94,7 +94,7 @@ function SheetContent({
         {!hideCloseButton && (
           <SheetPrimitive.Close
             className={cn(
-              'data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-2 focus:outline-offset-2 disabled:pointer-events-none',
+              'data-[state=open]:bg-secondary focus-visible:outline-focusRing absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none',
               closeButtonClassName
             )}
           >

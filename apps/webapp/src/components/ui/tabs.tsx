@@ -49,7 +49,7 @@ const tabsTriggerVariants = cva('', {
   variants: {
     variant: {
       default:
-        'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary light:text-textSecondary transition-all focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text disabled:text-opacity duration-250 ease-out-expo',
+        'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary light:text-textSecondary transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focusRing disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text disabled:text-opacity duration-250 ease-out-expo',
       // Tabs item (5029:51762) — Label 5 chip: 12x8 padding, glass border.
       // State=Disabled swaps to a bg-secondary fill, fg-secondary text and no
       // border at full opacity; Disabled Active keeps the glass border so the
@@ -99,7 +99,10 @@ const TabsContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
-    className={cn('focus-visible:outline-2 focus-visible:outline-offset-2', className)}
+    className={cn(
+      'focus-visible:outline-focusRing focus-visible:outline-2 focus-visible:outline-offset-2',
+      className
+    )}
     {...props}
   />
 ));
