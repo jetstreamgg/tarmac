@@ -7,6 +7,7 @@ import type { TransactionConfig, TxCallbacks } from './transactionContract';
 import type { PreTransactionGate } from './preTransactionGate';
 import { erc20Abi, type Call } from 'viem';
 import { tightensOnly } from '@/modules/ui/lib/callIntent';
+import { markStalledStep } from '@/hooks/helpers';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads.
@@ -488,7 +489,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
   });
 
   // A step that fails to simulate after one mined never reaches the wallet, so
-  // no write reports the mined step; the paused remainder does.
+  // no write reports the mined step; the engine's tagged error does.
   it('retries a run that stalled after a mined step', () => {
     const onConfirm = vi.fn();
     const gating = { disabled: false };
@@ -503,7 +504,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     act(() => cb.onStart('0xapprove'));
     live.calls = [swap(900n)];
     gating.disabled = true; // the stalled step is unprepared
-    act(() => cb.onError(new Error('simulation reverted'), ''));
+    act(() => cb.onError(markStalledStep(new Error('simulation reverted')), ''));
 
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
@@ -519,13 +520,31 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     act(() => cb.onMutate());
     act(() => cb.onStart('0xapprove'));
     live.calls = [swap(900n)];
-    act(() => cb.onError(new Error('simulation reverted'), ''));
+    act(() => cb.onError(markStalledStep(new Error('simulation reverted')), ''));
 
     switchAccount(ACCOUNT_B);
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  // Live calls also shrink or empty without anything mining (an expired quote,
+  // an allowance landing from elsewhere): a plain rejection stays unmined.
+  it('returns to the review when a refused retry follows a rejection with fewer live calls', () => {
+    const onConfirm = vi.fn();
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), config);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    live.calls = [];
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('dialog')).toBeTruthy();
   });
 
   it('still holds a retry after a mined step to the confirmed calls', () => {

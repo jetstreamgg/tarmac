@@ -207,7 +207,7 @@ export { usePsmPocketBalance } from './psm/usePsmPocketBalance';
 export { ModuleEnum, TransactionTypeEnum, ZERO_ADDRESS, TENDERLY_CHAIN_ID } from './constants';
 
 export { getIlkName } from './vaults/helpers';
-export { toError } from './helpers';
+export { toError, isStalledStep } from './helpers';
 
 export { TOKENS, getTokenDecimals } from './tokens/tokens.constants';
 

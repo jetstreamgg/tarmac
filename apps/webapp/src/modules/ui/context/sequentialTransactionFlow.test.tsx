@@ -78,6 +78,7 @@ vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
 }));
 
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
+import { isStalledStep } from '@/hooks/helpers';
 
 function makeCall(functionName: string): Call {
   return {
@@ -579,6 +580,7 @@ describe('useSequentialTransactionFlow — a later step that fails to simulate',
     expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledWith(wagmi.simulationErrors.supply, '');
+    expect(isStalledStep(onError.mock.calls[0][0])).toBe(true);
     expect(result.current.isLoading).toBe(false);
 
     // Re-renders with the same failure don't report it again.

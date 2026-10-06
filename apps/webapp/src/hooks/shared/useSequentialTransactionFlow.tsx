@@ -1,5 +1,5 @@
 import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { isRevertedError, toError } from '../helpers';
+import { isRevertedError, markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
@@ -182,7 +182,7 @@ export function useSequentialTransactionFlow(
       return;
     reportedSimulationIndexRef.current = currentIndex;
     setHasFailed(true);
-    emitError(simulationError, '');
+    emitError(markStalledStep(simulationError), '');
   }, [isExecuting, currentIndex, simulationError]);
 
   // Handle transaction completion

@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { InProgress, Cancel, Refresh } from '@/modules/icons';
-import { toError, type TxMutateVariables } from '@/hooks';
+import { isStalledStep, toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
@@ -303,6 +303,10 @@ export function TransactionProvider({
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
   const hasMinedStepRef = useRef(false);
+  const markMinedStep = useCallback(() => {
+    setHasMinedStep(true);
+    hasMinedStepRef.current = true;
+  }, []);
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
@@ -1145,10 +1149,7 @@ export function TransactionProvider({
       }
       // A sequential engine dispatches the next call only once the previous
       // receipt landed, so a write arriving over LOADING means a step mined.
-      if (txStatusRef.current === TxStatus.LOADING) {
-        setHasMinedStep(true);
-        hasMinedStepRef.current = true;
-      }
+      if (txStatusRef.current === TxStatus.LOADING) markMinedStep();
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;
@@ -1166,7 +1167,7 @@ export function TransactionProvider({
         });
       }
     },
-    [sessionGen, chainId, trackTransactionStarted]
+    [sessionGen, chainId, trackTransactionStarted, markMinedStep]
   );
 
   const onStart = useCallback(
@@ -1276,17 +1277,9 @@ export function TransactionProvider({
       if (hash) {
         txHashRef.current = hash;
       }
-      // A run that stalls after a mined step (the next call fails to simulate)
-      // never hands that call to the wallet, so no write reports the mined step.
-      // A paused run's remainder only drops calls off the front once one mined.
-      if (!hasMinedStepRef.current) {
-        const remaining = configRef.current?.getNextCalls?.();
-        const confirmed = confirmedCallsRef.current;
-        if (remaining && confirmed && remaining.length < confirmed.length) {
-          setHasMinedStep(true);
-          hasMinedStepRef.current = true;
-        }
-      }
+      // A run that stalls after a mined step never hands its next call to the
+      // wallet, so no write reports the mined step; the engine's error does.
+      if (isStalledStep(error)) markMinedStep();
 
       // Track transaction completed (error). Bounded classification props only —
       // never the raw message, which can embed addresses and calldata. A wallet
@@ -1332,7 +1325,16 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [sessionGen, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
+    [
+      sessionGen,
+      chainId,
+      isSafeWallet,
+      trackTransactionCompleted,
+      startNewFlow,
+      isStaleWrite,
+      isForeignHash,
+      markMinedStep
+    ]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is
