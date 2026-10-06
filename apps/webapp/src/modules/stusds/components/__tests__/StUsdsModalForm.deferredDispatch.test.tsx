@@ -92,6 +92,9 @@ vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
 vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false, isLoading: false })
 }));
+vi.mock('@/hooks/shared/useSimulateBatch', () => ({
+  useSimulateBatch: () => batchSimulation
+}));
 vi.mock('@/hooks/stusds/providers/useCurveAllowance', () => ({
   useCurveAllowance: () => ({ data: maxUint256, hasAllowance: true, error: null, mutate: () => {} })
 }));
@@ -118,6 +121,12 @@ vi.mock('@/hooks', async io => ({
   useStUsdsWithdraw: () => idleEngine
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));
+const batchSimulation = vi.hoisted(() => ({
+  prepared: false,
+  isLoading: false,
+  error: null,
+  structuralFailure: false
+}));
 const feeCell = vi.hoisted(() => ({ fee: undefined, state: {}, loading: false }));
 vi.mock('@/modules/ui/hooks/useModalFeeCell', () => ({ useModalFeeCell: () => feeCell }));
 

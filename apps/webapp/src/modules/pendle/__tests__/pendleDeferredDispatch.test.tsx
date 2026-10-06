@@ -180,6 +180,9 @@ vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
 vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false, isLoading: false })
 }));
+vi.mock('@/hooks/shared/useSimulateBatch', () => ({
+  useSimulateBatch: () => batchSimulation
+}));
 
 // Hook results the modals key effects on must keep their identity across renders.
 const stable = vi.hoisted(() => ({
@@ -215,6 +218,7 @@ vi.mock('@/hooks', async io => {
   const marketsApi = { [MARKET.marketAddress]: { impliedApy: 0.05, expirySec: MARKET.expiry } };
   return {
     ...actual,
+    useDebounce: <T,>(value: T) => value,
     useIsSafeWallet: () => false,
     useIsBatchSupported: () => ({ data: false, isLoading: false }),
     useIsTouchDevice: () => false,
@@ -242,6 +246,12 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({ useAppAnalytics: () => stable.analytics }));
 vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
   useAnalyticsFlow: () => stable.analyticsFlow
+}));
+const batchSimulation = vi.hoisted(() => ({
+  prepared: false,
+  isLoading: false,
+  error: null,
+  structuralFailure: false
 }));
 const toastWithCloseMock = vi.hoisted(() => vi.fn());
 vi.mock('@/components/ui/use-toast', () => ({

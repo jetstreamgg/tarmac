@@ -4,6 +4,7 @@ import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
+import { useSettledAmount } from './useSettledAmount';
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
 export type AmountToastTitles = { loading: string; success: string; error: string };
@@ -43,13 +44,17 @@ interface UseAmountFormParams {
 interface AmountForm {
   /** The raw input text (empty when clamped off by `entryKey`). */
   value: string;
-  /** The parsed amount at `decimals` (0n for empty / unparseable text). */
+  /** The parsed amount at `decimals` (0n for empty / unparseable text) — validation reads this. */
   amount: bigint;
+  /** The amount once it has settled (500ms) — the engine, the network reads and the amount displays read this. */
+  debouncedAmount: bigint;
+  /** The typed amount has not settled yet; `amountReady` holds until it does. */
+  debouncePending: boolean;
   /** Max was clicked with `maxRedeems` on; cleared the moment the amount is edited. */
   max: boolean;
   isZero: boolean;
   insufficient: boolean;
-  /** True when the amount/connection gate is satisfied; combine with the engine's `prepared` for the submit gate. */
+  /** True when the amount/connection gate is satisfied and the amount has settled; combine with the engine's `prepared` for the submit gate. */
   amountReady: boolean;
   /** Amount-aware minimized-toast titles for the active flow. */
   toast: AmountToastTitles;
@@ -96,9 +101,15 @@ export function useAmountForm({
   );
 
   const amount = parseAmountInput(value, decimals);
+  // The gate waits for the settle so the confirm never arms on reads keyed to a
+  // stale amount. The unit folds in the entry key: a chain switch is a new unit.
+  const { debouncedAmount, debouncePending } = useSettledAmount(
+    amount,
+    `${String(entryKey)}:${symbol}:${decimals}`
+  );
   const isZero = amount === 0n;
   const insufficient = availableKnown && amount > available;
-  const amountReady = isConnected && !isZero && availableKnown && !insufficient;
+  const amountReady = isConnected && !isZero && availableKnown && !insufficient && !debouncePending;
 
   const onInput = useCallback((raw: string) => setAmount(raw), [setAmount]);
 
@@ -122,12 +133,14 @@ export function useAmountForm({
 
   const clearAmount = useCallback(() => setAmount(''), [setAmount]);
 
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${symbol}`;
+  const amountLabel = `${formatNumber(parseFloat(formatUnits(debouncedAmount, decimals)), { maxDecimals: 2 })} ${symbol}`;
   const toast = useAmountToast({ isSupply, amountLabel });
 
   return {
     value,
     amount,
+    debouncedAmount,
+    debouncePending,
     max,
     isZero,
     insufficient,

@@ -72,12 +72,13 @@ export function VaultModalForm({
     isSupply,
     decimals,
     value,
-    amount,
+    debouncedAmount,
     available,
     availableKnown,
     isZero,
     insufficient,
     amountReady,
+    debouncePending,
     position,
     isLiquidityConstrained,
     isLiquidityDataUnavailable,
@@ -91,7 +92,13 @@ export function VaultModalForm({
   const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
   const disabled = !amountReady || !prepared;
   const errorMessage = enginePrepareErrorMessage(prepared, error);
 
@@ -114,7 +121,11 @@ export function VaultModalForm({
 
   // Position after the action, clamped at zero for over-withdrawals (the
   // insufficient gate blocks submission anyway).
-  const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
+  const positionAfter = isSupply
+    ? position + debouncedAmount
+    : position > debouncedAmount
+      ? position - debouncedAmount
+      : 0n;
 
   // With zero liquidity the notice alone carries the message — the inline error
   // would repeat it word for word.
@@ -164,7 +175,7 @@ export function VaultModalForm({
   // Review breakdown (Figma 859:38553 / 859:38234): the amount hero the wallet
   // screen also draws, over the review grid. Scalar deps keep the memo stable
   // across unrelated renders (matches the savings form).
-  const amountDisplay = formatAsset(amount);
+  const amountDisplay = formatAsset(debouncedAmount);
   const earningsAfterDisplay = projectEarnings(positionAfter);
   // Resolved outside the memo so it keys on the string, not the i18n object.
   const withdrawalLabel = i18n._(withdrawalWording(riskProfile, flow));
@@ -220,10 +231,10 @@ export function VaultModalForm({
         assetAddress: assetToken.address[chainId],
         assetSymbol: assetToken.symbol,
         isBatchTx: isBatch,
-        amount: signedAmount(parseFloat(formatUnits(amount, decimals)), flow)
+        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, decimals)), flow)
       }
     }),
-    [flow, vaultName, vaultAddress, assetToken, chainId, isBatch, amount, decimals]
+    [flow, vaultName, vaultAddress, assetToken, chainId, isBatch, debouncedAmount, decimals]
   );
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -242,7 +253,7 @@ export function VaultModalForm({
     // Every current vault asset is a $1-pegged stablecoin (USDC/USDS/USDT),
     // so the entered amount doubles as the USD notional (enhanced screening,
     // APP-517).
-    usdValue: parseFloat(formatUnits(amount, decimals)),
+    usdValue: parseFloat(formatUnits(debouncedAmount, decimals)),
     analytics
   });
 

@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useRouterState } from '@tanstack/react-router';
 import { keepSearch, useAppSearchParams, useRouteEntityParams, useRouteIntent } from '@/lib/navigation';
@@ -20,7 +20,11 @@ import { usePageLoadNotifications } from './usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import {
+  canWaitOnPendingSwitch,
+  useNetworkSwitch,
+  useTargetChainId
+} from '@/modules/ui/context/NetworkSwitchContext';
 import { useUpgradeDeepLink } from '@/modules/upgrade/hooks/useUpgradeDeepLink';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -74,38 +78,85 @@ export function useAppOrchestration(): { intent: Intent } {
     closeOnNavigation(pathname);
   }, [pathname, closeOnNavigation]);
 
-  const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
+  const { setIsSwitchingNetwork, setIsAutoSwitching, pendingSwitch, setPendingSwitch } = useNetworkSwitch();
 
   // One auto-switch chance per module visit, reset when the user navigates to
   // a different module. Marked on an attempt, on a rejected wallet switch and
   // on a manual wallet chain change, so route validation falls through to the
   // home redirect instead of re-prompting against the user's choice.
+  //
+  // A switch still unanswered when the user moves on keeps the app pointed at
+  // its target for as long as the next module can run there. The wallet may
+  // simply not have answered YET — its prompt open while the user clicks
+  // around — and the request is still the wallet's to honour: asking again
+  // would only queue a second prompt behind it, which a wallet holding the
+  // first refuses as already pending, bouncing the user home a beat before
+  // they approve. The same holds for a wallet that never answers (one stuck
+  // "connecting" to the chain it is on, APP-591): a second request can't move
+  // it either, and judged against the target every page renders, reading the
+  // configured chain wagmi keeps pinned while the transaction modal's chain
+  // guard holds any write and offers the switch as a button. No timeout: a
+  // wallet prompt can sit open for as long as the user reads it.
+  //
+  // A module that can't run on the target ends the wait, and is judged
+  // against the chain the wallet is really on — from its first render, before
+  // this release lands (`useTargetChainId`). Only a link's `network=` switch
+  // can get here — the route guard's own targets are the mainnet family, which
+  // every module runs on — and that switch raises no switching flags, so there
+  // are none to lower.
   const autoSwitchAttempted = useRef(false);
+  const releaseUnusablePendingSwitch = useEffectEvent(() => {
+    if (pendingSwitch === undefined || canWaitOnPendingSwitch(intent, pendingSwitch, chains)) return;
+    setPendingSwitch(undefined);
+  });
   useEffect(() => {
     autoSwitchAttempted.current = false;
+    releaseUnusablePendingSwitch();
   }, [intent]);
 
-  const { switchChain } = useSwitchChain({
-    mutation: {
-      onSuccess: () => {
-        // Clear switching state when network switch succeeds
-        setIsSwitchingNetwork(false);
-      },
-      onError: () => {
-        // Clear switching state when network switch fails
-        setIsSwitchingNetwork(false);
-        setIsAutoSwitching(false);
-        // The app stops pointing at a chain the wallet refused to move to.
-        setPendingSwitch(undefined);
-
-        // Whether the user rejected the request or the wallet failed to honor
-        // it (e.g. a pending-request error while a popup sits unanswered), the
-        // visit has had its switch chance. Route validation then falls back
-        // home for mainnet-only modules instead of stranding a half-switched
-        // page, or re-prompting against an answer already given.
-        autoSwitchAttempted.current = true;
-      }
+  const { switchChain, isPending: isSwitchPending } = useSwitchChain();
+  // The wallet chain the latest request went out from. A request still in
+  // flight while the wallet sits there is outstanding; once the wallet moves
+  // it has answered, whatever the promise later does (a request the wallet
+  // never answers never settles).
+  const switchRequestedFrom = useRef<number | undefined>(undefined);
+  // Asks the wallet for a chain and records the wait. The settle callbacks go
+  // on the call, not the hook's options: hook-level callbacks are stored on
+  // every mutation and fire for each one, so a late answer to a switch the
+  // user navigated away from would clear the pending switch a newer request
+  // is still waiting on and spend the new visit's chance (APP-591). Per-call
+  // callbacks fire for the latest request only.
+  const requestSwitch = useEffectEvent((targetChainId: number) => {
+    // Only while a wallet is attached. Disconnected, `switchChain` moves the
+    // config chain synchronously — there is no in-flight window to cover, and
+    // a pending entry keyed on a `from` that never changes would never clear.
+    if (walletChainId !== undefined) {
+      setPendingSwitch({ from: walletChainId, to: targetChainId });
     }
+    switchRequestedFrom.current = walletChainId;
+    switchChain(
+      { chainId: targetChainId },
+      {
+        onSuccess: () => {
+          // Clear switching state when network switch succeeds
+          setIsSwitchingNetwork(false);
+        },
+        onError: () => {
+          // Clear switching state when network switch fails
+          setIsSwitchingNetwork(false);
+          setIsAutoSwitching(false);
+          // The app stops pointing at a chain the wallet refused to move to.
+          setPendingSwitch(undefined);
+
+          // Whether the user rejected the request or the wallet failed to honor
+          // it (e.g. a pending-request error while a popup sits unanswered), the
+          // visit has had its switch chance. Route validation then falls back
+          // home for mainnet-only modules instead of stranding a half-switched
+          // page, or re-prompting against an answer already given.
+          autoSwitchAttempted.current = true;
+        }
+      }
+    );
   });
 
   // A wallet parked on a chain the app doesn't configure. wagmi refuses to
@@ -118,7 +169,8 @@ export function useAppOrchestration(): { intent: Intent } {
   // chain the module runs on.
   const appChainId = useAppChainId();
 
-  // The chain a switch below has asked the wallet for and is still waiting on.
+  // The chain a switch below has asked the wallet for and is still waiting on
+  // (`pendingSwitch`, held on NetworkSwitchContext).
   //
   // This is the whole job the `network=` param used to do besides being a URL.
   // A switch went out by WRITING the param, so from the moment it was requested
@@ -126,29 +178,12 @@ export function useAppOrchestration(): { intent: Intent } {
   // where the app was HEADED. Take the param away and the in-flight renders
   // validate against the chain being left, and any unrelated re-render during
   // that window (a query settling, say) bounces the user home a beat before the
-  // wallet answers. So the pending target is held here instead — one mechanism
-  // for both paths, where the off-config path already needed its own because it
-  // had no param to write.
-  //
-  // Held as {from, to} rather than the target alone so the wait can be ended by
-  // ANY move, not just the requested one: a user shown a switch prompt can open
-  // their wallet and pick a third chain, and that answers the request as surely
-  // as honouring it. Waiting for the target specifically would leave the app
-  // pointed at a chain the wallet is not on for the rest of the session — every
-  // later navigation, and the reward contracts routes resolve, reading a frozen
-  // value with no way back.
-  const [pendingSwitch, setPendingSwitch] = useState<{ from: number; to: number } | undefined>(undefined);
-  useEffect(() => {
-    // Moved — wherever to. A disconnect (undefined) ends the wait as well.
-    // Cleared on an outright failure by the switch's own onError.
-    if (pendingSwitch !== undefined && walletChainId !== pendingSwitch.from) {
-      setPendingSwitch(undefined);
-    }
-  }, [walletChainId, pendingSwitch]);
-
-  // The chain the app is pointed at: a switch we are waiting on wins, then
-  // wherever the wallet actually is.
-  const newChainId = pendingSwitch?.to ?? appChainId;
+  // wallet answers. So the pending target is held instead — one mechanism for
+  // both paths, where the off-config path already needed its own because it
+  // had no param to write. It lives on the context, not here, because the
+  // reward route resolves its contract against the same chain
+  // (`useTargetChainId`), and the two must agree.
+  const newChainId = useTargetChainId(intent);
 
   const rewardContracts = useAvailableTokenRewardContracts(newChainId);
 
@@ -187,12 +222,6 @@ export function useAppOrchestration(): { intent: Intent } {
       setIsSwitchingNetwork(true);
       setIsAutoSwitching(true);
     }
-    // Only while a wallet is attached. Disconnected, `switchChain` moves the
-    // config chain synchronously — there is no in-flight window to cover, and
-    // a pending entry keyed on a `from` that never changes would never clear.
-    if (walletChainId !== undefined) {
-      setPendingSwitch({ from: walletChainId, to: targetChainId });
-    }
     trackNetworkAutoSwitched({
       // `appChainId` parts from the config's only for a wallet on a chain the
       // app doesn't configure — a distinct story from a module simply wanting
@@ -202,7 +231,7 @@ export function useAppOrchestration(): { intent: Intent } {
       fromChainId: appChainId,
       toChainId: targetChainId
     });
-    switchChain({ chainId: targetChainId });
+    requestSwitch(targetChainId);
   });
   const redirectTo = useEffectEvent(
     (
@@ -226,8 +255,14 @@ export function useAppOrchestration(): { intent: Intent } {
     // re-runs when the status settles, and resolves then.
     if (status === 'connecting' || status === 'reconnecting') return;
 
+    // A request already waiting in the wallet is this visit's switch chance
+    // too: a second one would only queue behind it (see the intent reset).
+    // Reached only when the next module can't use the waiting request's
+    // target, and it falls through to the home redirect.
+    const switchRequestOutstanding =
+      isSwitchPending && walletChainId !== undefined && switchRequestedFrom.current === walletChainId;
     const action = getRouteChainAction(intent, newChainId, {
-      switchAttempted: autoSwitchAttempted.current,
+      switchAttempted: autoSwitchAttempted.current || switchRequestOutstanding,
       chains
     });
 
@@ -282,9 +317,9 @@ export function useAppOrchestration(): { intent: Intent } {
     chains,
     chainId,
     walletChainId,
-    switchChain,
     status,
-    isModalOpen
+    isModalOpen,
+    isSwitchPending
   ]);
 
   // Run validation on the remaining query-driven search params whenever they
@@ -363,9 +398,8 @@ export function useAppOrchestration(): { intent: Intent } {
     if (getRouteChainAction(intent, target, { chains }).kind !== 'render') return;
     if (status !== 'connected') honouredParamTargetRef.current = target;
     trackUrlParamSwitch(target);
-    if (walletChainId !== undefined) setPendingSwitch({ from: walletChainId, to: target });
-    switchChain({ chainId: target });
-  }, [status, networkParam, chains, chainId, walletChainId, intent, setSearchParams, switchChain]);
+    requestSwitch(target);
+  }, [status, networkParam, chains, chainId, walletChainId, intent, setSearchParams]);
 
   // The wallet arrives after a cold-loaded link was honoured against the
   // config chain alone: ask it once for the link's chain, then forget the link.
@@ -375,9 +409,8 @@ export function useAppOrchestration(): { intent: Intent } {
     honouredParamTargetRef.current = null;
     if (walletChainId === target) return;
     if (getRouteChainAction(intent, target, { chains }).kind !== 'render') return;
-    setPendingSwitch({ from: walletChainId, to: target });
-    switchChain({ chainId: target });
-  }, [status, walletChainId, intent, chains, switchChain]);
+    requestSwitch(target);
+  }, [status, walletChainId, intent, chains]);
 
   useEffect(() => {
     // The wallet's chain choice is explicit — never auto-revert it. Marking the

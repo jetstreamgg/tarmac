@@ -435,7 +435,8 @@ export function TransactionProvider({
     handleSwitchChain,
     isSwitchPending: switchPending,
     switchVariables,
-    canSwitchChain
+    canSwitchChain,
+    pendingSwitch
   } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
@@ -1383,6 +1384,14 @@ export function TransactionProvider({
   // wallet with the modal already open — from yanking them back. That change is
   // deliberate and gets the CTA, not a prompt. A decline is covered by the same
   // latch, so the guard block stays put rather than asking twice.
+  //
+  // Nor when the route guard is already waiting on the wallet for that same
+  // chain (a module visit's switch the wallet has not answered). A second
+  // request only queues behind the first — a wallet that does recover then
+  // refuses it as already pending — and, being the modal's own, it would hold
+  // the guard's switch button in its loading state for as long as the wallet
+  // sat on it, a dead end with nothing saying why (APP-591). Skipped, the
+  // button stays live: pressing it is the user asking again.
   const autoSwitchedSessionRef = useRef<number | null>(null);
   useEffect(() => {
     if (autoSwitchedSessionRef.current === sessionGen) return;
@@ -1395,8 +1404,18 @@ export function TransactionProvider({
     // a modal the user just dismissed — including on the route guard's own
     // redirect, which closes modals as it navigates.
     if (!activeConfig) return;
-    if (chainGuardActive && guardCanSwitch) switchGuardChain('transaction_modal_auto');
-  }, [sessionGen, activeConfig, chainGuardActive, guardCanSwitch, switchGuardChain]);
+    if (!chainGuardActive || !guardCanSwitch) return;
+    if (pendingSwitch?.to === guardTargetChainId) return;
+    switchGuardChain('transaction_modal_auto');
+  }, [
+    sessionGen,
+    activeConfig,
+    chainGuardActive,
+    guardCanSwitch,
+    switchGuardChain,
+    pendingSwitch,
+    guardTargetChainId
+  ]);
   const chainGuard = chainGuardActive
     ? {
         // The chain the guard is judging, not the one wagmi has pinned. Reading

@@ -85,12 +85,13 @@ export function SavingsModalForm({
     originOptions,
     originDecimals,
     value,
-    amount,
+    debouncedAmount,
     available,
     availableKnown,
     isZero,
     insufficient,
     amountReady,
+    debouncePending,
     usdcBlockedReason,
     position,
     apyDisplay,
@@ -110,7 +111,14 @@ export function SavingsModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
 
   const networkName = useNetworkName(chainId);
   // Savings runs on the whole family, so the entry grid's Network cell is a
@@ -123,7 +131,8 @@ export function SavingsModalForm({
   // wad for the before→after delta: USDS/DAI are already 18-dec; a USDC amount
   // (6-dec) is widened 1:1 — exact on mainnet (`sellGem` mints amount × 1e12 at the
   // zero fee the supply is gated on), approximate on L2 (the PSM swaps ≈1:1).
-  const amountWad = originDecimals === 18 ? amount : amount * 10n ** BigInt(18 - originDecimals);
+  const amountWad =
+    originDecimals === 18 ? debouncedAmount : debouncedAmount * 10n ** BigInt(18 - originDecimals);
 
   // Position after the action, clamped at zero for over-withdrawals (the
   // insufficient gate blocks submission anyway).
@@ -167,7 +176,7 @@ export function SavingsModalForm({
       : previewShares !== undefined
         ? `${formatUsds(previewShares)} sUSDS`
         : NO_VALUE
-    : `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;
+    : `${formatNumber(parseFloat(formatUnits(debouncedAmount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;
 
   // The review projects the position the transaction leaves behind. Scalar, so the
   // memo below stays stable across unrelated renders.
@@ -227,10 +236,10 @@ export function SavingsModalForm({
         assetAddress: engineParams.originToken.address[chainId],
         assetSymbol: originSymbol,
         isBatchTx: isBatch,
-        amount: signedAmount(parseFloat(formatUnits(amount, originDecimals)), flow)
+        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, originDecimals)), flow)
       }
     }),
-    [flow, engineParams.originToken, chainId, originSymbol, isBatch, amount, originDecimals]
+    [flow, engineParams.originToken, chainId, originSymbol, isBatch, debouncedAmount, originDecimals]
   );
 
   // Stable confirm over a live `execute` ref + the `updateModalContent` push that
@@ -249,7 +258,7 @@ export function SavingsModalForm({
     toast,
     // All supply/withdraw origins are $1-pegged (USDS/DAI/USDC), so the
     // entered amount doubles as the USD notional (enhanced screening, APP-517).
-    usdValue: parseFloat(formatUnits(amount, originDecimals)),
+    usdValue: parseFloat(formatUnits(debouncedAmount, originDecimals)),
     analytics
   });
 
