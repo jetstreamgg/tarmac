@@ -19,23 +19,20 @@ import {
 const sendCallsSpy = vi.hoisted(() => vi.fn());
 const capabilities = vi.hoisted(() => ({ data: true as boolean | undefined, isLoading: false }));
 const callsStatusParams = vi.hoisted(() => ({ last: undefined as Record<string, any> | undefined }));
+const sentBundle = vi.hoisted(() => ({ id: undefined as string | undefined }));
+const idleStatus = { isLoading: false, isSuccess: false, error: null, failureReason: null, data: undefined };
+const callsStatus = vi.hoisted(() => ({ result: undefined as Record<string, any> | undefined }));
 
 vi.mock('wagmi', () => ({
   useSendCalls: () => ({
     sendCalls: sendCallsSpy,
     error: null,
-    data: undefined,
+    data: sentBundle.id ? { id: sentBundle.id } : undefined,
     reset: vi.fn()
   }),
   useWaitForCallsStatus: (params: Record<string, any>) => {
     callsStatusParams.last = params;
-    return {
-      isLoading: false,
-      isSuccess: false,
-      error: null,
-      failureReason: null,
-      data: undefined
-    };
+    return callsStatus.result ?? idleStatus;
   }
 }));
 
@@ -143,9 +140,30 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
     expect(retry(3, Object.assign(new Error('Unauthorized'), { code: 4100 }))).toBe(true);
   });
 
-  it('stops on a revert or an error after which polling can never succeed', () => {
+  it('reads the outcome from the bundle status, never from error text', () => {
+    expect(pollingOptions().query.retry(1, new Error('execution reverted'))).toBe(true);
+
+    const onError = vi.fn();
+    sentBundle.id = '0xb';
+    callsStatus.result = { ...idleStatus, isLoading: true, failureReason: new Error('execution timeout') };
+    try {
+      const { result, rerender } = renderHook(() =>
+        useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never)
+      );
+      expect(onError).not.toHaveBeenCalled();
+      expect(result.current.isLoading).toBe(true);
+
+      callsStatus.result = { ...idleStatus, isSuccess: true, data: { status: 'failure', receipts: [] } };
+      rerender();
+      expect(onError).toHaveBeenCalledTimes(1);
+    } finally {
+      sentBundle.id = undefined;
+      callsStatus.result = undefined;
+    }
+  });
+
+  it('stops on an error after which polling can never succeed', () => {
     const { retry } = pollingOptions().query;
-    expect(retry(1, new Error('execution reverted'))).toBe(false);
     for (const permanent of [UnsupportedProviderMethodError, UnknownBundleIdError]) {
       expect(retry(1, new UnknownRpcError(new permanent(new Error('wallet'))))).toBe(false);
     }
