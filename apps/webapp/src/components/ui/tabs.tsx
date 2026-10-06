@@ -59,7 +59,7 @@ const tabsTriggerVariants = cva('', {
       // Tabs2 item (5039:73516) — Label 6, 28px tall, borderless until active
       // (a transparent border keeps the geometry stable across states).
       segmented:
-        'font-circle text-fgSecondary inline-flex h-7 items-center justify-center whitespace-nowrap rounded-full border border-transparent px-3 text-xs leading-3.5 font-medium tracking-[-0.24px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focusRing data-[state=inactive]:hover:bg-glassBadge data-[state=inactive]:hover:text-text data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end data-[state=active]:text-text',
+        'font-circle text-fgSecondary inline-flex h-7 items-center justify-center whitespace-nowrap rounded-full border border-transparent px-3 text-xs leading-3.5 font-medium tracking-[-0.24px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focusRing data-[state=inactive]:hover:bg-glassBadge data-[state=inactive]:hover:text-text data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end data-[state=active]:text-text',
       // Tabs3 item (5043:59420) — Label 5 nav pill: 44px tall, 20px inline
       // padding, brand text on hover.
       nav: 'font-circle text-text inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border px-5 text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focusRing border-glassBorder data-[state=inactive]:hover:border-borderTertiary data-[state=inactive]:hover:bg-glassBadge data-[state=inactive]:hover:text-fgBrand data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end',
@@ -99,10 +99,7 @@ const TabsContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
-    className={cn(
-      'focus-visible:ring-ring ring-offset-pageBackground focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden',
-      className
-    )}
+    className={cn('focus-visible:outline-2 focus-visible:outline-offset-2', className)}
     {...props}
   />
 ));
