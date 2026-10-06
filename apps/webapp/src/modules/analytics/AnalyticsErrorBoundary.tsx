@@ -15,13 +15,13 @@ interface State {
  * on every render re-throws past this boundary.
  */
 export class AnalyticsErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false };
+  override state: State = { hasError: false };
 
   static getDerivedStateFromError(): State {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
+  override componentDidCatch(error: Error, info: React.ErrorInfo) {
     reportError(error, {
       module: 'analytics',
       flow: 'render',
@@ -31,7 +31,7 @@ export class AnalyticsErrorBoundary extends React.Component<Props, State> {
     });
   }
 
-  render() {
+  override render() {
     return this.props.children;
   }
 }

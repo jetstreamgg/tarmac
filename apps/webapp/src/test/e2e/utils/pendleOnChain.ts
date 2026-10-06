@@ -86,7 +86,7 @@ export async function installPendleUiMaturity(page: Page, expirySec = PT_SUSDS_E
         if (args.length === 0) super(frozenMs);
         else super(...(args as ConstructorParameters<typeof Date>));
       }
-      static now() {
+      static override now() {
         return frozenMs;
       }
     }
@@ -95,7 +95,6 @@ export async function installPendleUiMaturity(page: Page, expirySec = PT_SUSDS_E
       UTC: RealDate.UTC
     });
     // Browser init script — FrozenDate only needs now() + construction override.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).Date = FrozenDate;
   }, expirySec);
 }

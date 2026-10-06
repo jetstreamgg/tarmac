@@ -1,15 +1,18 @@
 import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
-import { BatchWriteHook, UseSendBatchTransactionFlowParameters } from '../hooks';
-import { useEffect } from 'react';
+import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
+import { useEffect, useEffectEvent } from 'react';
+import type { Call } from 'viem';
 import { isRevertedError, toError } from '../helpers';
 import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
+import { useSimulateBatch } from './useSimulateBatch';
 
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
-): BatchWriteHook {
+): BatchTransactionFlowHook {
   const {
     enabled,
+    simulateEnabled = enabled,
     onMutate = () => null,
     onSuccess = () => null,
     onError = () => null,
@@ -23,6 +26,15 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     isLoading: isLoadingCapabilities,
     error: capabilitiesError
   } = useIsBatchSupported();
+
+  // Prepare-time simulation of the whole bundle — the batch counterpart of the per-call
+  // `useSimulateContract` the sequential flow gates on. Nothing goes to the wallet unless
+  // it ran clean (APP-537).
+  const simulation = useSimulateBatch({
+    calls: parameters.calls as readonly Call[],
+    chainId: parameters.chainId,
+    enabled: simulateEnabled
+  });
 
   // Initiate hook to send the batch transaction
   const {
@@ -60,16 +72,25 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
 
   const txReverted = isRevertedError(failureReason);
 
+  // The consumer's callbacks are read through effect events: the settle effect
+  // must not re-run because a caller passed a new inline function.
+  const emitSuccess = useEffectEvent((hash?: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
+  const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
   useEffect(() => {
     if (mutationData?.id) {
       if (isSuccess && data.status === 'success') {
-        onSuccess(data.receipts?.[0]?.transactionHash);
+        // A non-atomic bundle can land across blocks; the history refresh waits for the last.
+        const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);
+        emitSuccess(
+          data.receipts?.[0]?.transactionHash,
+          blockNumbers.length > 0 ? blockNumbers.reduce((a, b) => (b > a ? b : a)) : undefined
+        );
       } else if (isSuccess && data.status === 'failure') {
-        onError(new Error('ERROR: Batch transaction failed'), undefined);
+        emitError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (miningError) {
-        onError(miningError, data?.receipts?.[0]?.transactionHash);
+        emitError(miningError, data?.receipts?.[0]?.transactionHash);
       } else if (failureReason && txReverted) {
-        onError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
+        emitError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
       }
     }
   }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data]);
@@ -78,15 +99,15 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     execute: () => {
       // Sanity checks before sending the transaction
       if (!enabled) {
-        console.log(`ERROR: A batch transaction was triggered before the transaction was enabled.
+        console.error(`ERROR: A batch transaction was triggered before the transaction was enabled.
           Contract calls: ${JSON.stringify(parameters.calls, (_, value) => (typeof value === 'bigint' ? value.toString() : value))}
           `);
       } else if (!batchSupported) {
-        console.log(
+        console.error(
           'ERROR: A batch transaction was triggered but it looks like the connected wallet does not support it'
         );
       } else if (parameters.calls.length < 2) {
-        console.log(
+        console.error(
           'ERROR: You are attempting to send a single transaction as a batch transaction. It may be more gas efficient to send the transaction individually'
         );
       } else if (parameters.calls.some(call => !(call as { to?: unknown }).to)) {
@@ -107,16 +128,29 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         );
         console.error(error);
         onError(error, undefined);
+      } else if (!simulation.prepared) {
+        // `prepared` only disables a button. This is the guarantee behind it: a bundle
+        // that has not simulated clean never reaches `wallet_sendCalls`, whatever
+        // called execute(). Reported like the backstop above, for the same reason.
+        const error = new Error(
+          simulation.error
+            ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
+            : 'Refusing to send a batch before its simulation has completed.'
+        );
+        console.error(error);
+        onError(error, undefined);
       } else {
         // Call is legit, proceed to send the transaction
         sendCalls(sendCallsParameters);
       }
     },
     data: data?.receipts?.[0]?.transactionHash,
-    isLoading: isLoadingCapabilities || (isMining && !txReverted),
-    prepared: !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError,
-    error: sendError || miningError,
+    isLoading: isLoadingCapabilities || simulation.isLoading || (isMining && !txReverted),
+    prepared:
+      !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError && simulation.prepared,
+    error: sendError || miningError || simulation.error,
     currentCallIndex: 0,
-    reset: resetSendCalls
+    reset: resetSendCalls,
+    batchUnavailable: simulation.structuralFailure
   };
 }

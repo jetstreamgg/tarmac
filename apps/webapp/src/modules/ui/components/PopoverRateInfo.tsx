@@ -76,6 +76,9 @@ const getContent = () => {
 // Derive the type from the map
 export type PopoverTooltipType = keyof typeof TOOLTIP_ID_MAP;
 
+/** Full tooltip id behind a short key, for app-side readers of the same copy. */
+export const resolveTooltipId = (type: PopoverTooltipType): string => TOOLTIP_ID_MAP[type];
+
 // Accepts short keys ("ssr") or full ids ("sky-savings-rate").
 export function resolvePopoverTooltipKey(raw: string): PopoverTooltipType | undefined {
   if (raw in TOOLTIP_ID_MAP) return raw as PopoverTooltipType;

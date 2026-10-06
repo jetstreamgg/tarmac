@@ -49,16 +49,12 @@ const Carousel = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & 
       },
       plugins
     );
-    const [canScrollPrev, setCanScrollPrev] = React.useState(false);
-    const [canScrollNext, setCanScrollNext] = React.useState(false);
-    const [selectedIndex, setSelectedIndex] = React.useState(0);
-
-    const onSelect = React.useCallback((api: CarouselApi) => {
-      if (!api) return;
-      setCanScrollPrev(api.canScrollPrev());
-      setCanScrollNext(api.canScrollNext());
-      setSelectedIndex(api.selectedScrollSnap());
-    }, []);
+    // Embla owns the scroll state: it is read here and a select/reInit
+    // re-renders so the reads pick up the new position.
+    const [, syncFromEmbla] = React.useReducer((n: number) => n + 1, 0);
+    const canScrollPrev = api?.canScrollPrev() ?? false;
+    const canScrollNext = api?.canScrollNext() ?? false;
+    const selectedIndex = api?.selectedScrollSnap() ?? 0;
 
     const scrollPrev = React.useCallback(() => {
       api?.scrollPrev();
@@ -95,15 +91,14 @@ const Carousel = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & 
 
     React.useEffect(() => {
       if (!api) return;
-      onSelect(api);
-      api.on('reInit', onSelect);
-      api.on('select', onSelect);
+      api.on('reInit', syncFromEmbla);
+      api.on('select', syncFromEmbla);
 
       return () => {
-        api?.off('select', onSelect);
-        api?.off('reInit', onSelect);
+        api.off('select', syncFromEmbla);
+        api.off('reInit', syncFromEmbla);
       };
-    }, [api, onSelect]);
+    }, [api]);
 
     return (
       <CarouselContext.Provider
@@ -231,12 +226,8 @@ function CarouselNext({
 
 function CarouselDots({ className, ...props }: React.ComponentProps<'div'>) {
   const { api, selectedIndex, scrollTo } = useCarousel();
-  const [count, setCount] = React.useState(0);
-
-  React.useEffect(() => {
-    if (!api) return;
-    setCount(api.scrollSnapList().length);
-  }, [api]);
+  // The provider re-renders its consumers on reInit, so this read stays current.
+  const count = api?.scrollSnapList().length ?? 0;
 
   return (
     <div className={cn('flex justify-center gap-2', className)} data-slot="carousel-dots" {...props}>

@@ -52,7 +52,7 @@ export function calculateClaimedRewardsUsd(
  */
 export function liquidationDropPercent(liquidationProximityPercentage: number | undefined): number | null {
   if (liquidationProximityPercentage === undefined) return null;
-  return Math.min(100, Math.max(0, 100 - liquidationProximityPercentage));
+  return Math.min(100, Math.max(0, Math.round(100 - liquidationProximityPercentage)));
 }
 
 /**

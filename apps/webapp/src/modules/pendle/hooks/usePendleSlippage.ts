@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { PENDLE_DEFAULT_SLIPPAGE } from '@/hooks';
 import {
   PendleFlow,
@@ -51,9 +51,13 @@ export function usePendleSlippage(mode: PendleSlippageMode) {
 
   const [slippage, setSlippageRaw] = useState<number>(() => readStoredSlippage(storageKey, defaultSlippage));
 
-  useEffect(() => {
+  // A mode change swaps the storage key under the hook: the other mode's
+  // tolerance is loaded in the render that brings the new key.
+  const [loadedKey, setLoadedKey] = useState(storageKey);
+  if (loadedKey !== storageKey) {
+    setLoadedKey(storageKey);
     setSlippageRaw(readStoredSlippage(storageKey, defaultSlippage));
-  }, [storageKey, defaultSlippage]);
+  }
 
   const setSlippage = useCallback(
     (decimal: number) => {

@@ -213,6 +213,7 @@ function useChartTooltipPortal(): HTMLElement | null {
       element.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:101';
       document.body.appendChild(element);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the layer is a DOM node this effect creates on mount; nothing exists to derive it from during render
     setPortal(element);
   }, []);
 

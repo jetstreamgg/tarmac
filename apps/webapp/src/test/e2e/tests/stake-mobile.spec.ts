@@ -66,15 +66,18 @@ test('mobile takeover renders the full-overlay comp presentation', async ({ isol
 
   // Enable Delegate so the overlay is at its tallest. TakeoverShell scrolls the
   // footer with the card column (not a sticky bar — see TakeoverShell.tsx), so
-  // scroll to the footer before asserting the Confirm CTA is reachable.
+  // scroll to the footer before asserting the Confirm CTA is reachable. The
+  // card body grows over an animation, so keep scrolling until it settles.
   await isolatedPage.getByTestId('stake-takeover-delegate-card-toggle').click();
   await expect(isolatedPage.getByTestId('stake-takeover-delegate-list')).toBeVisible({ timeout: 15_000 });
   const scrollArea = takeover.locator('.flex-1.overflow-y-auto');
-  await scrollArea.evaluate(el => {
-    el.scrollTop = el.scrollHeight;
-  });
   const confirm = isolatedPage.getByTestId('stake-takeover-confirm');
-  await expect(confirm).toBeInViewport();
+  await expect(async () => {
+    await scrollArea.evaluate(el => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await expect(confirm).toBeInViewport({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
   const confirmBox = await confirm.boundingBox();
   expect(confirmBox).not.toBeNull();
   // Comp footer CTA is the 48px L button (desktop keeps the 56px XL).

@@ -11,6 +11,13 @@ const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
 
+/**
+ * Overlay class for a modal that replaces another modal in the same commit:
+ * the scrim mounts already up instead of fading in over the uncovered page.
+ * `!` beats the overlay's own `animate-in`; the exit animation is untouched.
+ */
+export const SCRIM_HANDOFF_OVERLAY_CLASS = 'data-[state=open]:animate-none!';
+
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & { className?: string }

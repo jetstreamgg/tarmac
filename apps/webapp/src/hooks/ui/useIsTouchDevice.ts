@@ -1,17 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+// Touch capability is fixed for the life of the page, so there is nothing to
+// subscribe to; the store exists so the read goes through React rather than
+// through state set after mount.
+const subscribe = () => () => {};
+const getSnapshot = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const getServerSnapshot = () => false;
 
 /**
- * Hook to detect if the current device supports touch interactions.
- * Returns false initially for SSR compatibility, then updates after mount.
- *
- * @returns {boolean} true if the device supports touch, false otherwise
+ * Whether the current device supports touch interactions.
  */
 export function useIsTouchDevice(): boolean {
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-
-  useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }, []);
-
-  return isTouchDevice;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

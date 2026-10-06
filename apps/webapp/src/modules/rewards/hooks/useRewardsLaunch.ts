@@ -16,6 +16,12 @@ export interface RewardsEngineParams {
   /** The token staked into the reward contract (USDS for every current farm). */
   supplyToken: Token;
   amount: bigint;
+  /**
+   * Form validity (amount entered, within balance, any product gate open). Gates the
+   * engines' prepare-time simulation: an input the form already knows is invalid is
+   * never simulated, so no RPC round trip and no Sentry event for a foregone revert.
+   */
+  enabled?: boolean;
 }
 
 export type UseRewardsLaunchResult = EngineLaunchResult;
@@ -35,7 +41,8 @@ export function useRewardsLaunch({
   flow,
   contractAddress,
   supplyToken,
-  amount
+  amount,
+  enabled = true
 }: RewardsEngineParams): UseRewardsLaunchResult {
   const { txCallbacks } = useTransaction();
   const chainId = useChainId();
@@ -64,14 +71,14 @@ export function useRewardsLaunch({
     supplyTokenAddress,
     amount,
     ref: REFERRAL_CODE,
-    enabled: isSupply,
+    enabled: enabled && isSupply,
     shouldUseBatch,
     ...txCallbacks
   });
   const withdrawHook = useRewardsWithdraw({
     contractAddress,
     amount,
-    enabled: !isSupply,
+    enabled: enabled && !isSupply,
     ...txCallbacks
   });
 
