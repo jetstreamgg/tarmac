@@ -88,7 +88,8 @@ export type BatchWriteHook = {
   isBatch?: boolean;
   /**
    * The calls `execute()` would send from here: the remainder of the sequence frozen at
-   * the run's start while a sequential run is paused mid-way, the live calls otherwise.
+   * the run's start while a sequential run is in progress (including paused after a
+   * mined step), the live calls otherwise.
    * What the modal re-validates a deferred dispatch against.
    */
   nextCalls?: Call[];

@@ -84,7 +84,7 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
    * Relaxes the dispatch-time comparison of `nextCalls` (see
    * `TransactionConfig.callMatches`). Module-level or memoized: the sync effect
    * below depends on its identity. Always pushed, so `undefined` restores the
-   * exact comparison (e.g. after a switch to a chain without a drifting bound).
+   * exact comparison.
    */
   callMatches?: CallMatcher;
 };

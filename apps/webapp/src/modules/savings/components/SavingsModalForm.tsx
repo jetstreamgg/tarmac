@@ -34,8 +34,9 @@ const USDS_DECIMALS = 18;
 // The L2 PSM swaps carry a bound from the live sUSDS rate: a refetch while the
 // user signs moves it, but between oracle updates only ever tighter (the rate
 // rises). A specific-amount withdraw approves exactly its max-in, so the
-// approve amount moves with it and may likewise only shrink. Every other
-// savings call must still match byte for byte.
+// approve amount moves with it and may likewise only shrink (applied to every
+// savings approve; a smaller one can at worst revert). Every other savings call
+// must still match byte for byte.
 const PSM_SWAP_BOUNDS = tightensOnly({
   swapExactIn: { index: 3, kind: 'min' },
   swapExactOut: { index: 3, kind: 'max' },

@@ -210,6 +210,9 @@ export type TransactionConfig = {
    * pushed now). Pushes freeze once the transaction leaves IDLE, so the provider
    * reads this instead to refuse a deferred dispatch the flow would no longer
    * allow: a lapsed acknowledgement, a module that halted since the confirm.
+   * Not read on a retry after a mined step: the run itself has moved the
+   * balances the form checks, and what is left to send is still held to the
+   * confirmed calls.
    */
   getConfirmDisabled?: () => boolean;
   confirmLabel?: string;

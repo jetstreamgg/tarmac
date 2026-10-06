@@ -525,16 +525,16 @@ export function TransactionModal({
   // Hand the provider the same back-to-first-screen the header arrow uses, so
   // the gate's returnToFirstScreen control (enhanced-screening denials) lands
   // on an identical screen state — onBack's progress reset included. (For a
-  // skipReview flow the provider closes the modal instead — there is no first
-  // screen to return to.)
+  // skipReview flow, or once a step has mined, the provider closes the modal
+  // instead.)
   useEffect(() => {
     registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);
   }, [registerReturnToFirstScreen, handleBack]);
 
-  // The provider's send-back when a deferred dispatch no longer matches what was
-  // confirmed: the user re-confirms on the review, which re-renders against the
-  // current figures once the status is back at IDLE.
+  // The provider's send-back when a deferred dispatch is refused (changed calls,
+  // account or confirm gating): the user re-confirms on the review, which
+  // re-renders against the current figures once the status is back at IDLE.
   const handleReturnToReview = useCallback(() => {
     onBack?.();
     setStep(hasReviewStage ? 'review' : firstStep);

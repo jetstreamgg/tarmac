@@ -64,9 +64,12 @@ export function tightensOnly(bounds: Record<string, { index: number; kind: 'min'
     const liveBound = live.args[bound.index];
     const confirmedBound = confirmed.args[bound.index];
     if (typeof liveBound !== 'bigint' || typeof confirmedBound !== 'bigint') return false;
-    const withoutBound = (call: Call, args: readonly unknown[]) =>
-      ({ ...call, args: args.map((arg, i) => (i === bound.index ? 0n : arg)) }) as Call;
-    if (!exactMatch(withoutBound(live, live.args), withoutBound(confirmed, confirmed.args))) return false;
+    const withoutBound = (call: Call) =>
+      ({
+        ...call,
+        args: (call.args as readonly unknown[]).map((arg, i) => (i === bound.index ? 0n : arg))
+      }) as Call;
+    if (!exactMatch(withoutBound(live), withoutBound(confirmed))) return false;
     return bound.kind === 'min' ? liveBound >= confirmedBound : liveBound <= confirmedBound;
   };
 }
