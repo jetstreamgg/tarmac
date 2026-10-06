@@ -47,7 +47,7 @@ type RouteChainAction =
  *     future L2-only module.
  *
  * `currentChainId` is the chain the app is pointed at: the target of a switch
- * still in flight when there is one (`pendingSwitch` in useAppOrchestration),
+ * still in flight when there is one (`useTargetChainId`, NetworkSwitchContext),
  * else the wallet's. Leading the wallet that way is what stops a navigation
  * validating against the chain being left.
  *

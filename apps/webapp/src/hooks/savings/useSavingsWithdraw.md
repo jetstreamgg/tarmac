@@ -57,7 +57,7 @@ type Props = ReadHookParams & {
 - `amount`: `string`
   - The amount of USDS tokens to withdraw, in wei.
 - `max?`: `boolean`
-  - Whether to withdraw the maximum amount of USDS tokens.
+  - Whether to withdraw the whole position. Redeems the full sUSDS share balance; `amount` is ignored.
 - `onStart?`: `(hash: string) => void`
   - A callback function that is called when the transaction starts.
 - `onSuccess?`: `(hash: string) => void`
