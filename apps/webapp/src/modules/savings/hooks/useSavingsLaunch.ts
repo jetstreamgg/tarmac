@@ -82,7 +82,7 @@ export type UseSavingsLaunchResult = EngineLaunchResult;
  *    the PSM standing in for the upgrade, armed only while `useUsdcSupplyGate` is open
  *  - supply        (L2)      → `useBatchPsmSwapExactIn` (optional approve →
  *    psm.swapExactIn(token → sUSDS), referralCode as bigint)
- *  - withdraw      (mainnet) → `useSavingsWithdraw` (`max` resolves via maxWithdraw(owner))
+ *  - withdraw      (mainnet) → `useSavingsWithdraw` (`max` redeems the whole sUSDS share balance)
  *
  * The engines own all calldata. Allowance reads here are READ ONLY — they label
  * the modal's approve steps; the approve/deposit/swap calls (and the USDT/allowance
