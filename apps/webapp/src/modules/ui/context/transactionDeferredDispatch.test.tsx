@@ -178,7 +178,9 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(renderLastToast().getByText('Account changed')).toBeTruthy();
+    const toast = renderLastToast();
+    expect(toast.getByText('Account changed')).toBeTruthy();
+    expect(toast.getByText(/Review the details and confirm again/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
   });
 
@@ -331,7 +333,9 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(renderLastToast().getByText('Account changed')).toBeTruthy();
+    const toast = renderLastToast();
+    expect(toast.getByText('Transaction closed')).toBeTruthy();
+    expect(toast.getByText(/Start again from the account you want to use/)).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
@@ -372,7 +376,26 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(lastToastTitle()).toBeTruthy();
+    const toast = renderLastToast();
+    expect(toast.getByText('Transaction closed')).toBeTruthy();
+    expect(toast.getByText(/Start again to see the current details/)).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes a skipReview flow on changed calls with the closed wording', () => {
+    const onConfirm = vi.fn();
+    const { live, config } = driftingFlow(onConfirm, [swap(900n)]);
+    // A skipReview launch confirms on open: the flow's own surface was the review.
+    const cb = renderWithGate(() => ({ allow: true }), { ...config, skipReview: true });
+
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    live.calls = [swap(350n)];
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(renderLastToast().getByText(/Start again to see the current details/)).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 

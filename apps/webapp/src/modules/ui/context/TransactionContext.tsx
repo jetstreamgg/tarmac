@@ -129,18 +129,31 @@ function notifyReviewAgainOnChainChange() {
 
 // A deferred dispatch (a gate verdict, Retry) was refused because the flow's
 // calls no longer match what the user confirmed (a quote moved while the review
-// was frozen) or its own confirm gating turned against them.
-function notifyReviewAgainOnChangedCalls() {
+// was frozen) or its own confirm gating turned against them. `closed`: the
+// modal closed instead of returning to the review (a skipReview flow, or after
+// a step of the session mined).
+function notifyReviewAgainOnChangedCalls(closed: boolean) {
   toastWithClose(
-    () => (
-      <TransactionNoticeToast
-        icon={<Refresh />}
-        title={<Trans>Transaction details changed</Trans>}
-        description={
-          <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>
-        }
-      />
-    ),
+    () =>
+      closed ? (
+        <TransactionNoticeToast
+          icon={<Cancel />}
+          title={<Trans>Transaction closed</Trans>}
+          description={
+            <Trans>
+              The details changed while you were confirming. Start again to see the current details.
+            </Trans>
+          }
+        />
+      ) : (
+        <TransactionNoticeToast
+          icon={<Refresh />}
+          title={<Trans>Transaction details changed</Trans>}
+          description={
+            <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>
+          }
+        />
+      ),
     { id: ABANDONED_TOAST_ID, duration: 8000 }
   );
 }
@@ -148,32 +161,50 @@ function notifyReviewAgainOnChangedCalls() {
 // The wallet moved to another account between the confirm and a deferred
 // dispatch (a gate verdict, Retry), so the dispatch was refused: what the user
 // reviewed — balances, position, receiver — belonged to the confirming account.
-function notifyReviewAgainOnAccountChange() {
+function notifyReviewAgainOnAccountChange(closed: boolean) {
   toastWithClose(
-    () => (
-      <TransactionNoticeToast
-        icon={<Refresh />}
-        title={<Trans>Account changed</Trans>}
-        description={
-          <Trans>Your wallet switched accounts while confirming. Review the details and confirm again.</Trans>
-        }
-      />
-    ),
+    () =>
+      closed ? (
+        <TransactionNoticeToast
+          icon={<Cancel />}
+          title={<Trans>Transaction closed</Trans>}
+          description={
+            <Trans>Your wallet switched accounts. Start again from the account you want to use.</Trans>
+          }
+        />
+      ) : (
+        <TransactionNoticeToast
+          icon={<Refresh />}
+          title={<Trans>Account changed</Trans>}
+          description={
+            <Trans>
+              Your wallet switched accounts while confirming. Review the details and confirm again.
+            </Trans>
+          }
+        />
+      ),
     { id: ABANDONED_TOAST_ID, duration: 8000 }
   );
 }
 
 // The wallet disconnected between the confirm and a deferred dispatch, so the
 // dispatch was refused.
-function notifyReviewAgainOnDisconnect() {
+function notifyReviewAgainOnDisconnect(closed: boolean) {
   toastWithClose(
-    () => (
-      <TransactionNoticeToast
-        icon={<Cancel />}
-        title={<Trans>Wallet disconnected</Trans>}
-        description={<Trans>Your wallet disconnected while confirming. Reconnect and confirm again.</Trans>}
-      />
-    ),
+    () =>
+      closed ? (
+        <TransactionNoticeToast
+          icon={<Cancel />}
+          title={<Trans>Transaction closed</Trans>}
+          description={<Trans>Your wallet disconnected. Reconnect and start again.</Trans>}
+        />
+      ) : (
+        <TransactionNoticeToast
+          icon={<Cancel />}
+          title={<Trans>Wallet disconnected</Trans>}
+          description={<Trans>Your wallet disconnected while confirming. Reconnect and confirm again.</Trans>}
+        />
+      ),
     { id: ABANDONED_TOAST_ID, duration: 8000 }
   );
 }
@@ -987,12 +1018,15 @@ export function TransactionProvider({
       // a session with a mined step: the engine's paused run would resume the
       // calls confirmed before the refusal, not what the review re-renders, so
       // the user reopens the flow and it rebuilds from the current state.
-      const sendBackToReview = () => {
-        if (controls.isStale()) return;
+      // Returns whether it closed the modal rather than returning to the review.
+      const sendBackToReview = (): boolean => {
+        const closes = !!configRef.current?.skipReview || hasMinedStepRef.current;
+        if (controls.isStale()) return closes;
         controls.setPreludeSteps(null);
         controls.setGateStatus('idle');
-        if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
+        if (closes) handleCloseRef.current();
         else returnToReviewRef.current?.();
+        return closes;
       };
       // Whether the calls the flow would send now are still ones the user
       // confirmed. The review freezes once the transaction leaves IDLE while the
@@ -1008,9 +1042,9 @@ export function TransactionProvider({
       };
       const dispatch = () => {
         if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
-          sendBackToReview();
-          if (addressRef.current) notifyReviewAgainOnAccountChange();
-          else notifyReviewAgainOnDisconnect();
+          const closed = sendBackToReview();
+          if (addressRef.current) notifyReviewAgainOnAccountChange(closed);
+          else notifyReviewAgainOnDisconnect(closed);
           return;
         }
         // The calls can hold steady while the flow's own gating turns against
@@ -1021,8 +1055,7 @@ export function TransactionProvider({
         // left to send is still held to the confirmed calls.
         const gateApplies = trigger !== 'retry' || !hasMinedStepRef.current;
         if (!callsStillConfirmed() || (gateApplies && configRef.current?.getConfirmDisabled?.())) {
-          sendBackToReview();
-          notifyReviewAgainOnChangedCalls();
+          notifyReviewAgainOnChangedCalls(sendBackToReview());
           return;
         }
         action();
