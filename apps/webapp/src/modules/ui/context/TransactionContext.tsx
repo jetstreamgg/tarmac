@@ -127,9 +127,9 @@ function notifyReviewAgainOnChainChange() {
   );
 }
 
-// A deferred dispatch (a gate verdict, Retry) found the flow's calls no longer
-// match what the user confirmed — a quote moved while the review was frozen —
-// so it was refused and the first screen re-derived against the new figures.
+// A deferred dispatch (a gate verdict, Retry) was refused because the flow's
+// calls no longer match what the user confirmed (a quote moved while the review
+// was frozen) or its own confirm gating turned against them.
 function notifyReviewAgainOnChangedCalls() {
   toastWithClose(
     () => (
@@ -164,7 +164,7 @@ function notifyReviewAgainOnAccountChange() {
 }
 
 // The wallet disconnected between the confirm and a deferred dispatch, so the
-// dispatch was refused and the first screen shown again.
+// dispatch was refused.
 function notifyReviewAgainOnDisconnect() {
   toastWithClose(
     () => (
@@ -960,19 +960,6 @@ export function TransactionProvider({
     controls.returnToFirstScreen();
   }, []);
 
-  // Whether the calls the flow would send now are still ones the user
-  // confirmed. The review freezes once the transaction leaves IDLE while the
-  // engine keeps rebuilding from live quotes, so every dispatch re-checks —
-  // a confirm resolved synchronously trivially passes, a gate verdict or a
-  // Retry arriving after the quote moved does not.
-  const callsStillConfirmed = useCallback(() => {
-    const getNextCalls = configRef.current?.getNextCalls;
-    if (!getNextCalls) return true;
-    const confirmed = confirmedCallsRef.current;
-    const live = encodeCalls(getNextCalls());
-    return !!confirmed && !!live && isTailOf(live, confirmed, configRef.current?.callMatches);
-  }, []);
-
   const runGated = useCallback(
     (trigger: GateTrigger, action: () => void) => {
       // A verdict already pending for this session holds the floor — see gateInFlightRef.
@@ -1001,7 +988,19 @@ export function TransactionProvider({
         controls.setPreludeSteps(null);
         controls.setGateStatus('idle');
         if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
-        else (returnToReviewRef.current ?? returnToFirstScreenRef.current)?.();
+        else returnToReviewRef.current?.();
+      };
+      // Whether the calls the flow would send now are still ones the user
+      // confirmed. The review freezes once the transaction leaves IDLE while the
+      // engine keeps rebuilding from live quotes, so every dispatch re-checks —
+      // a confirm resolved synchronously trivially passes, a gate verdict or a
+      // Retry arriving after the quote moved does not.
+      const callsStillConfirmed = () => {
+        const getNextCalls = configRef.current?.getNextCalls;
+        if (!getNextCalls) return true;
+        const confirmed = confirmedCallsRef.current;
+        const live = encodeCalls(getNextCalls());
+        return !!confirmed && !!live && isTailOf(live, confirmed, configRef.current?.callMatches);
       };
       const dispatch = () => {
         if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
@@ -1015,7 +1014,7 @@ export function TransactionProvider({
         // Not on a retry after a mined step: the run itself has moved the
         // balances the form checks (a conversion leg spends the input), and a
         // stalled step is unprepared until the engine re-simulates it. What is
-        // left to send is already held to the confirmed calls above.
+        // left to send is still held to the confirmed calls.
         const gateApplies = trigger !== 'retry' || !hasMinedStepRef.current;
         if (!callsStillConfirmed() || (gateApplies && configRef.current?.getConfirmDisabled?.())) {
           sendBackToReview();
@@ -1068,7 +1067,7 @@ export function TransactionProvider({
       }
       if (verdict.allow) dispatch();
     },
-    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain, callsStillConfirmed]
+    [gate, makeGateControls, walletOnSupportedChain, refuseOffChain]
   );
 
   // Config callbacks are read through the ref at fire time (not the render's
@@ -1276,6 +1275,17 @@ export function TransactionProvider({
       setUserRejected(isUserRejectedRequestError(error));
       if (hash) {
         txHashRef.current = hash;
+      }
+      // A run that stalls after a mined step (the next call fails to simulate)
+      // never hands that call to the wallet, so no write reports the mined step.
+      // A paused run's remainder only drops calls off the front once one mined.
+      if (!hasMinedStepRef.current) {
+        const remaining = configRef.current?.getNextCalls?.();
+        const confirmed = confirmedCallsRef.current;
+        if (remaining && confirmed && remaining.length < confirmed.length) {
+          setHasMinedStep(true);
+          hasMinedStepRef.current = true;
+        }
       }
 
       // Track transaction completed (error). Bounded classification props only —

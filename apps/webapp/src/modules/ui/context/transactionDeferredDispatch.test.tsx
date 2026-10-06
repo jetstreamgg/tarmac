@@ -487,6 +487,47 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });
 
+  // A step that fails to simulate after one mined never reaches the wallet, so
+  // no write reports the mined step; the paused remainder does.
+  it('retries a run that stalled after a mined step', () => {
+    const onConfirm = vi.fn();
+    const gating = { disabled: false };
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), {
+      ...config,
+      getConfirmDisabled: () => gating.disabled
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    live.calls = [swap(900n)];
+    gating.disabled = true; // the stalled step is unprepared
+    act(() => cb.onError(new Error('simulation reverted'), ''));
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+  });
+
+  it('closes when a retry of a stalled run is refused', () => {
+    const onConfirm = vi.fn();
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), config);
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    live.calls = [swap(900n)];
+    act(() => cb.onError(new Error('simulation reverted'), ''));
+
+    switchAccount(ACCOUNT_B);
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('still holds a retry after a mined step to the confirmed calls', () => {
     const onConfirm = vi.fn();
     const gating = { disabled: false };
