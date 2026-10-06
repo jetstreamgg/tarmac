@@ -10,7 +10,13 @@ i18n.load('en', {});
 i18n.activate('en');
 
 const h = vi.hoisted(() => ({
-  detail: {} as Record<string, unknown>
+  detail: {} as Record<string, unknown>,
+  delegateName: 'Shadow delegate'
+}));
+
+vi.mock('@/hooks', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/hooks')>()),
+  useDelegateName: () => ({ data: h.delegateName })
 }));
 
 vi.mock('../hooks/useStakePositionDetail', () => ({
@@ -37,7 +43,9 @@ const baseDetail: StakePositionDetail = {
     dust: parseUnits('30000', 18)
   },
   vaultLoading: false,
+  shapeLoading: false,
   hasDebt: true,
+  canBorrow: true,
   isInactive: false,
   hasBorrowHistory: true,
   rewardContract: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
@@ -103,6 +111,7 @@ const inactiveDetail = (overrides: Partial<StakePositionDetail> = {}): Partial<S
 describe('PositionDetailsModal', () => {
   beforeEach(() => {
     h.detail = { ...baseDetail };
+    h.delegateName = 'Shadow delegate';
   });
   afterEach(cleanup);
 
@@ -150,6 +159,24 @@ describe('PositionDetailsModal', () => {
     expect(screen.getByTestId('stake-manage-menu-withdraw')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-cta-stake')).toBeTruthy();
     expect(screen.getByTestId('stake-manage-cta-borrow').textContent).toContain('Borrow USDS');
+  });
+
+  it('disables Borrow USDS below the minimum stake and says how much is needed', () => {
+    renderModal({
+      hasDebt: false,
+      canBorrow: false,
+      vault: {
+        ...baseDetail.vault!,
+        collateralAmount: parseUnits('74999', 18),
+        debtValue: 0n,
+        minCollateralForDust: parseUnits('1440000', 18)
+      },
+      borrowedUsd: 0
+    });
+
+    const borrow = screen.getByTestId('stake-manage-cta-borrow') as HTMLButtonElement;
+    expect(borrow.disabled).toBe(true);
+    expect(screen.getByTestId('stake-manage-cta-borrow-hint').textContent).toContain('1,440,000.00 SKY');
   });
 
   it('derives the warning sentence from the liquidation proximity (M14)', () => {
@@ -265,7 +292,16 @@ describe('PositionDetailsModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('shows the delegate as a shortened address with a profile link', () => {
+  it('shows the delegate by name when it has one', () => {
+    h.delegateName = 'cloaky';
+    renderModal();
+    const delegateLink = screen.getByTestId('stake-position-delegate-link') as HTMLAnchorElement;
+    expect(delegateLink.textContent).toContain('cloaky');
+    expect(delegateLink.textContent).not.toContain('0x0F23');
+    expect(delegateLink.href).toContain(DELEGATE.toLowerCase());
+  });
+
+  it('shows a shadow delegate as a shortened address with a profile link', () => {
     renderModal();
     const delegateLink = screen.getByTestId('stake-position-delegate-link') as HTMLAnchorElement;
     expect(delegateLink.textContent).toContain('0x0F23...CC86');
@@ -279,7 +315,13 @@ describe('PositionDetailsModal', () => {
   });
 
   it('skeletons the menu and CTAs while the vault state is unknown (no wrong-variant flash)', () => {
-    renderModal({ vault: undefined, vaultLoading: true, hasDebt: false, isInactive: false });
+    renderModal({
+      vault: undefined,
+      vaultLoading: true,
+      shapeLoading: true,
+      hasDebt: false,
+      isInactive: false
+    });
 
     expect(screen.getByTestId('stake-manage-menu-loading')).toBeTruthy();
     expect(screen.queryAllByTestId(/^stake-manage-menu-(claim|borrow|repay|withdraw)/)).toHaveLength(0);
@@ -291,6 +333,7 @@ describe('PositionDetailsModal', () => {
 describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:21273)', () => {
   beforeEach(() => {
     h.detail = { ...baseDetail };
+    h.delegateName = 'Shadow delegate';
   });
   afterEach(cleanup);
 
@@ -384,6 +427,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
 describe('PositionDetailsModal — phone-tier footer + manage sheet (M6, comps 1292:63278 / 1222:16239)', () => {
   beforeEach(() => {
     h.detail = { ...baseDetail };
+    h.delegateName = 'Shadow delegate';
   });
   afterEach(cleanup);
 

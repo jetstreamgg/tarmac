@@ -102,7 +102,7 @@ const flush = () => act(async () => {});
 const BLOCKED_MESSAGE = 'This wallet didn’t pass the enhanced verification.';
 const blocked = (): TransactionPreflight => ({ kind: 'blocked', message: BLOCKED_MESSAGE });
 
-describe('TransactionProvider enhanced-screening preflight', () => {
+describe('TransactionProvider screening preflight', () => {
   beforeEach(() => {
     i18n.activate('en');
     preflightState = { kind: 'clear' };

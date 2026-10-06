@@ -236,6 +236,8 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
       usdValue: undefined,
       // Staking is mainnet-only — guard the modal off any L2 (APP-528).
       supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+      // Opened over the details modal, which unmounts in this commit.
+      scrimHandoff: true,
       // Figma 1036:214007 titles the wallet screen "Confirm claim".
       transactionTitle: t`Confirm claim`,
       // Toasts reuse the legacy claim notification copy (C6).

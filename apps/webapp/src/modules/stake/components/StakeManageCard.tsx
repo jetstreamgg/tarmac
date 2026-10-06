@@ -1,75 +1,96 @@
 import { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { Switch } from '@/components/ui/switch';
+import { StakeCardBody } from './StakeCardBody';
+import { StakeCardToggle } from './StakeCardToggle';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 
 /**
  * Manage-sheet card shell (redesign comps 1036:213821+, flows UX 1050:21454):
- * a segmented mode control in place of the takeover's step number, plus the
- * enable toggle. Disabled cards collapse to their header row — same
- * temporal-states-of-one-screen model as F4. Mode pills are the design-system
+ * a segmented mode control in place of the takeover's step number, plus an
+ * optional enable toggle (only the borrow card of a debt-free position has
+ * one, Figma 3015:60677 vs 3015:58333). Disabled cards collapse to their
+ * header row — same temporal-states-of-one-screen model as F4. Mode pills are the design-system
  * Tabs chip (Figma 5029:51762) on plain buttons: aria-pressed carries the
  * toggle semantics, data-state drives the recipe's styling contract (same
  * non-Radix reuse as EarnTableFilters). While the card is toggled off the
  * pills are disabled (Design QA 2800:91832: "If the section is turned off by
  * the toggle the tabs should be disabled", Tabs State=Disabled) — switching
- * mode on a collapsed card would silently reset amounts the user can't see.
+ * mode on a collapsed card would silently reset amounts the user can't see,
+ * and no pill reads selected until the card is on.
  */
 export function StakeManageCard<Mode extends string>({
   modes,
   activeMode,
   onModeChange,
-  enabled,
+  enabled = true,
   onEnabledChange,
+  toggleDisabled,
+  toggleDisabledHint,
   dataTestId,
   children
 }: {
   modes: { value: Mode; label: ReactNode }[];
   activeMode: Mode;
   onModeChange: (mode: Mode) => void;
-  enabled: boolean;
-  onEnabledChange: (enabled: boolean) => void;
+  enabled?: boolean;
+  /** Omit to render the card without a toggle (always on). */
+  onEnabledChange?: (enabled: boolean) => void;
+  /** The switch can't be turned on yet; `toggleDisabledHint` says why (hover/tap). */
+  toggleDisabled?: boolean;
+  toggleDisabledHint?: ReactNode;
   dataTestId: string;
   children: ReactNode;
 }) {
   return (
-    <section
-      data-testid={dataTestId}
-      className="bg-glassSurface rounded-card flex flex-col gap-6 p-5 backdrop-blur-[20px] md:gap-8 md:p-8"
-    >
+    <section data-testid={dataTestId} className="bg-bgSecondary rounded-card flex flex-col p-5 md:p-8">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-1.5" role="group">
-          {modes.map(mode => (
-            <button
-              key={mode.value}
-              type="button"
-              onClick={() => onModeChange(mode.value)}
-              disabled={!enabled}
-              aria-pressed={mode.value === activeMode}
-              data-state={mode.value === activeMode ? 'active' : 'inactive'}
-              data-testid={`${dataTestId}-mode-${mode.value}`}
-              className={tabsTriggerVariants({ variant: 'pill' })}
-            >
-              {mode.label}
-            </button>
-          ))}
+          {modes.map(mode => {
+            // The last selection stays marked while the card is off (Figma
+            // Tabs Item "Disabled Active", 3015:60680).
+            const selected = mode.value === activeMode;
+            return (
+              <button
+                key={mode.value}
+                type="button"
+                onClick={() => onModeChange(mode.value)}
+                disabled={!enabled}
+                aria-pressed={selected}
+                data-state={selected ? 'active' : 'inactive'}
+                data-testid={`${dataTestId}-mode-${mode.value}`}
+                className={tabsTriggerVariants({ variant: 'pill' })}
+              >
+                {mode.label}
+              </button>
+            );
+          })}
         </div>
-        <Switch checked={enabled} onCheckedChange={onEnabledChange} data-testid={`${dataTestId}-toggle`} />
+        {onEnabledChange && (
+          <StakeCardToggle
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            disabled={toggleDisabled}
+            disabledHint={toggleDisabledHint}
+            dataTestId={`${dataTestId}-toggle`}
+          />
+        )}
       </div>
-      {enabled && children}
+      <StakeCardBody open={enabled}>{children}</StakeCardBody>
     </section>
   );
 }
 
 /**
- * In-card stat cell (comps 1036:213889/213936): Body 6 label over a Label 5
- * Circular value; a staged change renders `current → next` with both values
- * white and a muted 12px arrow. Values arrive pre-formatted (token icons
- * included); the arrow only appears when a next value is passed.
+ * Stacked stat rows (Figma 3015:58333 cards): full-width label / value rows
+ * split by hairlines; a staged change renders `current → next`.
  */
-export function StakeManageStatCell({
+export function StakeManageStatRows({ children }: { children: ReactNode }) {
+  return <div className="divide-borderPrimary flex flex-col divide-y">{children}</div>;
+}
+
+export function StakeManageStatRow({
   label,
   current,
   next,
@@ -81,16 +102,14 @@ export function StakeManageStatCell({
   next?: ReactNode;
   dataTestId?: string;
 }) {
-  const hasDelta = next !== undefined;
   return (
-    // min-w-0 + nowrap from md: the cell yields width to its row rather than
-    // wrapping its value onto a second line (see the borrow card's stat row,
-    // APP-546). Phones keep the 2×2 grid, whose narrow tracks need the wrap.
-    <div data-testid={dataTestId} className="flex min-w-0 flex-col gap-1 md:whitespace-nowrap">
-      <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
-      <span className="text-text font-circle flex items-center gap-1.5 text-sm leading-4 font-medium tracking-[-0.28px]">
+    <div data-testid={dataTestId} className="flex items-center justify-between gap-4 py-2.5">
+      <span className="text-textSecondary flex shrink-0 items-center gap-1 text-xs leading-[18px]">
+        {label}
+      </span>
+      <span className="text-text font-circle flex min-w-0 flex-wrap items-center justify-end gap-1.5 text-right text-sm leading-4 font-medium tracking-[-0.28px]">
         <span className="flex items-center gap-1">{current}</span>
-        {hasDelta && (
+        {next !== undefined && (
           <>
             <ArrowRight className="text-textSecondary h-3 w-3 shrink-0" aria-hidden />
             <span className="flex items-center gap-1">{next}</span>
@@ -101,14 +120,29 @@ export function StakeManageStatCell({
   );
 }
 
-/** 32px vertical hairline between hugging stat cells (comps' Vector 461x). */
-export const StakeManageStatDivider = ({ className }: { className?: string }) => (
-  <span className={cn('bg-borderPrimary h-8 w-px shrink-0 self-center', className)} aria-hidden />
-);
+/**
+ * Min-stake-to-borrow status (Figma "Reached" / "Not reached" badge on every
+ * manage frame). Not reached is the neutral badge, not warning: borrowing is
+ * optional, so an unmet minimum is not an error (Design QA 3314:134356).
+ */
+export function ReachedBadge({ reached }: { reached: boolean }) {
+  return (
+    <span
+      data-testid="stake-min-stake-badge"
+      data-reached={reached || undefined}
+      className={cn(
+        'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+        reached ? 'bg-statusSuccessBg text-statusSuccess' : 'bg-glassBadge text-fgSecondary'
+      )}
+    >
+      {reached ? <Trans>Reached</Trans> : <Trans>Not reached</Trans>}
+    </span>
+  );
+}
 
-/** Badges XS neutral "Updated hourly" (comp 1594:43606): no icon, 11px Circular on the glass tint. */
+/** Badges XS neutral "Hourly updates" (comp 1594:43606, copy per 3015:59185): no icon, 11px Circular on the glass tint. */
 export const UpdatedHourlyBadge = () => (
   <span className="bg-glassBadge text-textSecondary font-circle flex h-[18px] items-center rounded-full px-2 text-[11px] leading-none font-medium whitespace-nowrap">
-    <Trans>Updated hourly</Trans>
+    <Trans>Hourly updates</Trans>
   </span>
 );

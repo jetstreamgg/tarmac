@@ -20,6 +20,8 @@ import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSucc
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
+import { refreshHistoryAfterTx } from '@/lib/historyRefresh';
+import { queryClient } from '@/lib/queryClient';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -151,12 +153,12 @@ export function useEntrySlot() {
   return useContext(EntrySlotContext);
 }
 
-// The injected enhanced-screening preflight hook (see `usePreflight` on the
+// The injected screening preflight hook (see `usePreflight` on the
 // provider), shared with flows whose OWN surface fires the transaction.
 const PreflightHookContext = createContext<PreflightHook>(allowAllPreflight);
 
 /**
- * The enhanced-screening preflight (APP-517) for a surface that fires the
+ * The screening preflight (standard, or enhanced at $250k+) for a surface that fires the
  * transaction itself — a `skipReview` flow's page-side Confirm (the stake
  * takeovers). The modal's first screen normally runs this check, warms the
  * verdict and holds its CTA; with no first screen the takeover has to: pass
@@ -205,7 +207,7 @@ export function TransactionProvider({
   // can exercise the deny/async paths; the app mounts the allow-all stub until
   // the signature verdict lands (APP-501).
   gate = allowAllGate,
-  // The enhanced-screening preflight (APP-517), a HOOK called unconditionally
+  // The screening preflight (standard, or enhanced at $250k+), a HOOK called unconditionally
   // every render — its identity must be stable for the life of the provider
   // (the app passes a module-level hook; tests pass stable fakes).
   usePreflight = allowAllPreflight
@@ -366,7 +368,8 @@ export function TransactionProvider({
     handleSwitchChain,
     isSwitchPending: switchPending,
     switchVariables,
-    canSwitchChain
+    canSwitchChain,
+    pendingSwitch
   } = useNetworkSwitch();
   const isSafeWallet = useIsSafeWallet();
 
@@ -640,7 +643,7 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -1039,11 +1042,16 @@ export function TransactionProvider({
         txHashRef.current = hash;
       }
     },
-    [sessionGen, chainId, address, isSafeWallet, isStaleWrite]
+    [sessionGen, isStaleWrite]
   );
 
   const onSuccess = useCallback(
-    (hash?: string) => {
+    (hash?: string, blockNumber?: bigint) => {
+      // Ahead of the session guard: a transaction that mined after its modal
+      // was closed still lands in the history tables, which lag the receipt
+      // by the indexer's catch-up. The session's latched chain, not the
+      // config's: a batch receipt can land after a network switch.
+      void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current, blockNumber });
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
@@ -1181,16 +1189,7 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [
-      sessionGen,
-      chainId,
-      address,
-      isSafeWallet,
-      trackTransactionCompleted,
-      startNewFlow,
-      isStaleWrite,
-      isForeignHash
-    ]
+    [sessionGen, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is
@@ -1257,6 +1256,14 @@ export function TransactionProvider({
   // wallet with the modal already open — from yanking them back. That change is
   // deliberate and gets the CTA, not a prompt. A decline is covered by the same
   // latch, so the guard block stays put rather than asking twice.
+  //
+  // Nor when the route guard is already waiting on the wallet for that same
+  // chain (a module visit's switch the wallet has not answered). A second
+  // request only queues behind the first — a wallet that does recover then
+  // refuses it as already pending — and, being the modal's own, it would hold
+  // the guard's switch button in its loading state for as long as the wallet
+  // sat on it, a dead end with nothing saying why (APP-591). Skipped, the
+  // button stays live: pressing it is the user asking again.
   const autoSwitchedSessionRef = useRef<number | null>(null);
   useEffect(() => {
     if (autoSwitchedSessionRef.current === sessionGen) return;
@@ -1269,8 +1276,18 @@ export function TransactionProvider({
     // a modal the user just dismissed — including on the route guard's own
     // redirect, which closes modals as it navigates.
     if (!activeConfig) return;
-    if (chainGuardActive && guardCanSwitch) switchGuardChain('transaction_modal_auto');
-  }, [sessionGen, activeConfig, chainGuardActive, guardCanSwitch, switchGuardChain]);
+    if (!chainGuardActive || !guardCanSwitch) return;
+    if (pendingSwitch?.to === guardTargetChainId) return;
+    switchGuardChain('transaction_modal_auto');
+  }, [
+    sessionGen,
+    activeConfig,
+    chainGuardActive,
+    guardCanSwitch,
+    switchGuardChain,
+    pendingSwitch,
+    guardTargetChainId
+  ]);
   const chainGuard = chainGuardActive
     ? {
         // The chain the guard is judging, not the one wagmi has pinned. Reading
@@ -1389,6 +1406,7 @@ export function TransactionProvider({
             preflight={preflight}
             chainGuard={chainGuard}
             skipReview={modalView.config.skipReview}
+            scrimHandoff={modalView.config.scrimHandoff}
           />
         )}
       </EntrySlotContext.Provider>

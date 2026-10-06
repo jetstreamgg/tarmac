@@ -4,10 +4,10 @@ import { useChainId, useConnection, useChains } from 'wagmi';
  * The chain the app is pointed at.
  *
  * This used to be spelled `?network=` in the URL, which made it ambient: any
- * hook could read the app's chain by reading the location. Two did. With the
- * param gone the derivation lives here instead, so the route guard and the
- * reward-route resolver can't drift apart in what they think the current chain
- * is.
+ * hook could read the app's chain by reading the location. With the param gone
+ * the derivation lives here instead. The route guard and the reward-route
+ * resolver read it through `useTargetChainId` (NetworkSwitchContext), which
+ * puts a switch still waiting on the wallet ahead of it.
  *
  * It is NOT simply `useChainId()`. `@wagmi/core`'s `createConfig` refuses to
  * move `config.state.chainId` onto a chain the app doesn't configure, so a

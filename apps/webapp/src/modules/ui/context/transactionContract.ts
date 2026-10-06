@@ -135,6 +135,12 @@ export type TransactionConfig = {
    */
   skipReview?: boolean;
   /**
+   * The modal replaces another modal that unmounts in the same commit (the
+   * stake change/claim modals over the details modal): its scrim mounts
+   * already up instead of fading in over the uncovered page.
+   */
+  scrimHandoff?: boolean;
+  /**
    * Content the provider keeps mounted (hidden) for the whole modal lifetime —
    * independent of which screen is showing and of minimize. This is where a flow
    * hosts the in-flight engine hook whose receipt-watcher must survive a minimize:
@@ -286,13 +292,14 @@ export type LiveModalUpdate = Partial<
  * Lifecycle callbacks spread into write hooks. Compatible with both
  * WriteHookParams and BatchWriteHookParams. `hash` is the on-chain tx hash where
  * one exists; for EIP-5792 batches it is undefined until a receipt resolves (see
- * the EIP-5792 rule above).
+ * the EIP-5792 rule above). `blockNumber` on success is the block of the last
+ * receipt, which the history refresh waits for the indexer to reach.
  */
 export type TxCallbacks = {
   /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
   onMutate: (variables?: TxMutateVariables) => void;
   onStart: (hash?: string) => void;
-  onSuccess: (hash?: string) => void;
+  onSuccess: (hash?: string, blockNumber?: bigint) => void;
   onError: (error: Error, hash?: string) => void;
 };
 

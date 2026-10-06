@@ -15,6 +15,10 @@ import {
 } from './constants';
 import type { PendleConvertQuote } from './pendle';
 import { buildVerifiedArgs } from './buildVerifiedArgs';
+import { useNow } from '../ui/useNow';
+
+/** How often the stale-quote verdict is re-checked; well inside the 90s TTL. */
+const QUOTE_STALENESS_TICK_MS = 5_000;
 
 type UseBatchPendleConvertParams = BatchWriteHookParams & {
   side: PendleConvertSide;
@@ -98,6 +102,12 @@ export function useBatchPendleConvert({
 
   const hasAllowance = allowance !== undefined && amountIn !== undefined && allowance >= amountIn;
 
+  // A quote goes stale `PENDLE_QUOTE_TTL_MS` after it was fetched. The clock
+  // ticks well inside that window so the verdict flips close to on time, and
+  // only the boolean feeds the memo below so it doesn't rebuild on every tick.
+  const now = useNow(QUOTE_STALENESS_TICK_MS);
+  const quoteIsStale = quote !== undefined && now - quote.fetchedAt > PENDLE_QUOTE_TTL_MS;
+
   // Verify the quote and rebuild args. Memoised so the verification only runs
   // when an input changes — guards otherwise re-throw on every render.
   const { verified, verifyError } = useMemo(() => {
@@ -113,7 +123,7 @@ export function useBatchPendleConvert({
     ) {
       return { verified: undefined, verifyError: null as Error | null };
     }
-    if (Date.now() - quote.fetchedAt > PENDLE_QUOTE_TTL_MS) {
+    if (quoteIsStale) {
       return {
         verified: undefined,
         verifyError: new Error('Pendle: quote is stale — please refresh')
@@ -138,6 +148,7 @@ export function useBatchPendleConvert({
     }
   }, [
     quote,
+    quoteIsStale,
     marketAddress,
     inputToken,
     outputToken,

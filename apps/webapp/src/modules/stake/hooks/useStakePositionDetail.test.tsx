@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StakeUrnClaimable } from './useStakeUrnClaimables';
 
 const h = vi.hoisted(() => ({
-  claimables: [] as { contractAddress: string; claimBalance: bigint; rewardSymbol: string }[]
+  claimables: [] as { contractAddress: string; claimBalance: bigint; rewardSymbol: string }[],
+  vaultLoading: false,
+  urnVaults: undefined as
+    { index: number; urnAddress: `0x${string}`; skyLocked: bigint; usdsDebt: bigint }[] | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -17,7 +20,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111' }),
-    useVault: () => ({ data: undefined, isLoading: false, error: null }),
+    useVault: () => ({ data: undefined, isLoading: h.vaultLoading, error: null }),
     useCollateralData: () => ({ data: undefined, isLoading: false, error: null }),
     useStakeUrnSelectedRewardContract: () => ({ data: undefined }),
     useStakeUrnSelectedVoteDelegate: () => ({ data: undefined }),
@@ -29,6 +32,16 @@ vi.mock('@/hooks', async importOriginal => {
     useStakeHistory: () => ({ data: [], isLoading: false, error: null })
   };
 });
+
+vi.mock('./useStakeUrnVaults', () => ({
+  useStakeUrnVaults: () => ({
+    data: h.urnVaults,
+    isLoading: false,
+    isFetching: false,
+    error: null,
+    mutate: () => {}
+  })
+}));
 
 vi.mock('./useStakeUrnClaimables', () => ({
   useStakeUrnClaimables: () => ({
@@ -49,6 +62,8 @@ const claimable = (rewardSymbol: string, claimBalance: bigint) => ({
 describe('useStakePositionDetail — claim chip amount', () => {
   beforeEach(() => {
     h.claimables = [];
+    h.vaultLoading = false;
+    h.urnVaults = undefined;
   });
 
   it("is the first symbol's own balance, never a sum across different tokens", () => {
@@ -75,5 +90,40 @@ describe('useStakePositionDetail — claim chip amount', () => {
 
     expect(result.current.claimableSymbols).toEqual(['SKY']);
     expect(result.current.claimableTokenAmount).toBe(0n);
+  });
+});
+
+describe('useStakePositionDetail — menu shape while the vault is cold', () => {
+  const urn = (skyLocked: bigint, usdsDebt: bigint) => ({
+    index: 0,
+    urnAddress: '0x1111111111111111111111111111111111111111' as const,
+    skyLocked,
+    usdsDebt
+  });
+  beforeEach(() => {
+    h.claimables = [];
+    h.vaultLoading = true;
+  });
+
+  it('holds the shape when neither the vault nor the table read has landed', () => {
+    h.urnVaults = undefined;
+    const { result } = renderHook(() => useStakePositionDetail(0));
+    expect(result.current.shapeLoading).toBe(true);
+  });
+
+  it('commits the active debt shape from the warm table read', () => {
+    h.urnVaults = [urn(10n ** 18n, 5n * 10n ** 18n)];
+    const { result } = renderHook(() => useStakePositionDetail(0));
+    expect(result.current.shapeLoading).toBe(false);
+    expect(result.current.hasDebt).toBe(true);
+    expect(result.current.isInactive).toBe(false);
+  });
+
+  it('commits the inactive shape from the warm table read', () => {
+    h.urnVaults = [urn(0n, 0n)];
+    const { result } = renderHook(() => useStakePositionDetail(0));
+    expect(result.current.shapeLoading).toBe(false);
+    expect(result.current.hasDebt).toBe(false);
+    expect(result.current.isInactive).toBe(true);
   });
 });

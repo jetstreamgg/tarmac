@@ -70,11 +70,13 @@ export default defineConfig({
         '**/pendle.spec.ts',
         '**/stusds.spec.ts',
         '**/terms-signature-gate.spec.ts',
+        '**/address-screening.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
         '**/optimism-savings.spec.ts',
         '**/unichain-savings.spec.ts',
-        '**/sequential-tx.spec.ts'
+        '**/sequential-tx.spec.ts',
+        '**/batch-simulation.spec.ts'
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]

@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
+import { RewardsProductPage } from '../pages/RewardsProductPage';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms';
 import {
   expectAppChain,
@@ -230,5 +231,69 @@ test.describe('Network switching on navigation (V2 shell)', () => {
     await expect(isolatedPage).toHaveURL(/\/stake/);
     await expect(isolatedPage).not.toHaveURL(/network=/);
     await expect(isolatedPage.getByTestId('stake-network')).toBeVisible();
+  });
+
+  // APP-591: a wallet parked on a chain the app doesn't configure that never
+  // answers a switch (stuck "connecting" to that chain). The app asks once per
+  // module visit and must not stay pinned to the target of a request nobody
+  // answered: every page still renders, and the next module asks again.
+  test.describe('a wallet that never answers the switch', () => {
+    // Parked on Portfolio, which runs on any chain and so asks for nothing,
+    // then into the Earn marketplace, which does the same.
+    const parkOnPolygonUnanswered = async (page: Page) => {
+      await page.goto('/portfolio');
+      await connectMockWalletAndAcceptTerms(page);
+      await page.evaluate(() => {
+        window.__MOCK_SWITCH_CHAIN_HANG__ = true;
+        const park = window.__MOCK_PARK_WALLET_ON__;
+        if (!park) throw new Error('Mock park hook is not installed (is this the mock build?)');
+        park(137);
+      });
+      await page.getByTestId('nav-earn').click();
+      await expect(page.getByTestId('earn-opportunities-table')).toBeVisible();
+    };
+
+    test('reward pages still render, after a stalled Savings visit and straight from Earn', async ({
+      isolatedPage
+    }) => {
+      await parkOnPolygonUnanswered(isolatedPage);
+      const rewards = new RewardsProductPage(isolatedPage);
+
+      // The ticket's path: Savings asks once and the wallet sits on it.
+      await isolatedPage.getByTestId('earn-row-savings').click();
+      await expect(isolatedPage.getByTestId('product-detail-network')).toBeVisible();
+      await isolatedPage.getByTestId('nav-earn').click();
+      await isolatedPage.getByTestId('earn-row-rewards-spk').click();
+      await expect(isolatedPage).toHaveURL(/\/earn\/rewards\/0x/);
+      await rewards.expectProductShell();
+
+      // Straight from Earn: the reward page's own ask is the one left pending.
+      await isolatedPage.getByTestId('nav-earn').click();
+      await isolatedPage.getByTestId('earn-row-rewards-grove').click();
+      await expect(isolatedPage).toHaveURL(/\/earn\/rewards\/0x/);
+      await rewards.expectProductShell();
+    });
+
+    test("the modal's switch button stays live, and works once the wallet recovers", async ({
+      isolatedPage
+    }) => {
+      await parkOnPolygonUnanswered(isolatedPage);
+      await isolatedPage.getByTestId('earn-row-savings').click();
+      await expect(isolatedPage.getByTestId('product-detail-network')).toBeVisible();
+
+      await isolatedPage
+        .getByRole('button', { name: /^Supply/ })
+        .first()
+        .click();
+      const switchButton = isolatedPage.getByTestId('transaction-chain-guard-switch');
+      await expect(switchButton).toBeEnabled();
+
+      // The wallet comes back: the user's press is the ask that lands.
+      await isolatedPage.evaluate(() => {
+        window.__MOCK_SWITCH_CHAIN_HANG__ = false;
+      });
+      await switchButton.click();
+      await expect(isolatedPage.getByTestId('transaction-chain-guard')).toHaveCount(0, { timeout: 15000 });
+    });
   });
 });

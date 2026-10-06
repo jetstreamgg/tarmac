@@ -2,15 +2,16 @@ import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useTokenBalance } from '@/hooks';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatBigInt } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
 import {
   getPsmConversionTokens,
-  getPsmDecimalsForDirection,
   getPsmTargetAmount,
   getValidatedPsmExternalAmount,
+  PSM_ORIGIN_DECIMALS,
   type PsmConversionDirection
 } from './usePsmConversion.helpers';
 import type { ConvertTokenSymbol } from '../components/ConvertTokenSelect';
@@ -20,15 +21,22 @@ const OPPOSITE: Record<PsmConversionDirection, PsmConversionDirection> = {
   USDS_TO_USDC: 'USDC_TO_USDS'
 };
 
-const directionForSourceSymbol = (symbol: string | null): PsmConversionDirection | undefined =>
-  symbol?.toUpperCase() === 'USDC'
-    ? 'USDC_TO_USDS'
-    : symbol?.toUpperCase() === 'USDS'
-      ? 'USDS_TO_USDC'
-      : undefined;
-
 const originSymbolFor = (direction: PsmConversionDirection): ConvertTokenSymbol =>
   direction === 'USDC_TO_USDS' ? 'USDC' : 'USDS';
+
+/**
+ * The typed string as a bigint at the origin's decimals; '' and anything
+ * `parseUnits` rejects read as 0n. Kept out of the `useMemo` body: the React
+ * Compiler lint cannot memoize a value produced inside a try block.
+ */
+const parseAmountOrZero = (value: string, decimals: number) => {
+  if (value === '') return 0n;
+  try {
+    return parseUnits(value, decimals);
+  } catch {
+    return 0n;
+  }
+};
 
 /** Trims a decimal string's fraction so it parses at the given token decimals. */
 const clampFraction = (value: string, decimals: number) => {
@@ -61,11 +69,16 @@ export function useConvertForm() {
 
   // `searchParams` comes from the committed route match, so this reads the
   // page's own `source_token` through its exit frame — no latch needed.
-  const direction = directionForSourceSymbol(searchParams.get(QueryParams.SourceToken)) ?? 'USDC_TO_USDS';
+  // Spelled as a literal ternary (and the decimals as constant lookups below)
+  // rather than helper calls: the React Compiler lint treats a call's result
+  // as a mutable value, and a mutable value passed to any later call counts
+  // as a possible mutation of these memo dependencies.
+  const direction: PsmConversionDirection =
+    searchParams.get(QueryParams.SourceToken)?.toUpperCase() === 'USDS' ? 'USDS_TO_USDC' : 'USDC_TO_USDS';
   const [rawValue, setRawValue] = useState('');
 
-  const originDecimals = getPsmDecimalsForDirection(direction);
-  const targetDecimals = getPsmDecimalsForDirection(OPPOSITE[direction]);
+  const originDecimals = PSM_ORIGIN_DECIMALS[direction];
+  const targetDecimals = PSM_ORIGIN_DECIMALS[OPPOSITE[direction]];
   // The typed string re-clamped to the active origin's decimals (USDS 18 → USDC 6);
   // everything below (display, parsing, validation) reads this, never rawValue.
   const value = rawValue === '' ? rawValue : clampFraction(rawValue, originDecimals);
@@ -85,14 +98,12 @@ export function useConvertForm() {
     token: targetToken?.address
   });
 
-  const amount = useMemo(() => {
-    if (value === '') return 0n;
-    try {
-      return parseUnits(value, originDecimals);
-    } catch {
-      return 0n;
-    }
-  }, [value, originDecimals]);
+  const amount = useMemo(() => parseAmountOrZero(value, originDecimals), [value, originDecimals]);
+  // The engine, the fee estimate and the pre-send simulation all key off the
+  // amount — settle a keystroke burst before they refire (stUSDS form pattern).
+  // A flip keeps the typed text but re-reads it at the other side's decimals —
+  // keyed on the direction so the old side's number is never quoted as the new.
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount, direction);
 
   const targetAmount = useMemo(() => getPsmTargetAmount(direction, amount), [direction, amount]);
 
@@ -163,6 +174,8 @@ export function useConvertForm() {
 
   const reset = useCallback(() => setRawValue(''), []);
 
+  // Validation reads the RAW amount so the feedback is immediate; only the
+  // RPC-backed consumers (engine / fee / simulation) wait on the debounce.
   const isZero = amount === 0n;
   const insufficient = isConnected && !isZero && originBalance !== undefined && amount > originBalance.value;
 
@@ -179,6 +192,10 @@ export function useConvertForm() {
     // significant digits; the transacted bigint is untouched.
     targetValue: value === '' ? '' : formatBigInt(targetAmount, { unit: targetDecimals, maxDecimals: 6 }),
     amount,
+    /** The typed amount after the 500ms settle — what the engine and the modal read. */
+    debouncedAmount,
+    /** True while `amount` has moved and `debouncedAmount` has not caught up yet. */
+    debouncePending,
     targetAmount,
     originDecimals,
     targetDecimals,

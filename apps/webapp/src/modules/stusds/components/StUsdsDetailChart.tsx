@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
 import { useStUsdsChartInfo, useStUsdsData } from '@/hooks';
 import { calculateApyFromStr } from '@/utils';
@@ -35,7 +35,10 @@ export function StUsdsDetailChart() {
   const liveRate = stUsdsData ? calculateApyFromStr(stUsdsData.moduleRate) : undefined;
   const liveTvl = stUsdsData ? parseFloat(formatUnits(stUsdsData.totalAssets, 18)) : undefined;
 
-  const rateData = withLivePoint(parsed.rate, liveRate);
+  // Memoized: withLivePoint builds a fresh array whenever there is a live
+  // value, and a fresh array makes recharts rebuild the path — any re-render
+  // during the entrance draw would cut it short.
+  const rateData = useMemo(() => withLivePoint(parsed.rate, liveRate), [parsed.rate, liveRate]);
   // The TVL series gets no live point: BA Labs' daily `stusds_tvl` is not the
   // module's on-chain `totalAssets` (measured 224.3M vs 209.0M on the same
   // day), so a trailing on-chain point drew a step off the end of the daily

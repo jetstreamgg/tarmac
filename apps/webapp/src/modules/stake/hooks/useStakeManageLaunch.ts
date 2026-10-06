@@ -130,7 +130,15 @@ export interface UseStakeManageLaunchParams {
   transactionContent?: StakeLaunchContent;
   /** Compact wallet/status-screen summary; omitted, the full body carries over. */
   transactionScreenContent?: ReactNode;
+  /** Push `transactionContent` as the wallet-screen summary only (entry-first sessions). */
+  transactionContentAsScreen?: boolean;
   onSuccess?: () => void;
+  /**
+   * Session of an already-launched modal (the change reward / delegate modals
+   * mount their picker as the modal's entry and fire `execute` from its CTA).
+   * Omitted, the hook owns its own session and `launch()` opens the modal.
+   */
+  sessionId?: string;
 }
 
 /**
@@ -162,10 +170,13 @@ export function useStakeManageLaunch({
   claimSymbols,
   transactionContent,
   transactionScreenContent,
-  onSuccess
+  transactionContentAsScreen = false,
+  onSuccess,
+  sessionId: sharedSessionId
 }: UseStakeManageLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
-  const sessionId = useId();
+  const ownSessionId = useId();
+  const sessionId = sharedSessionId ?? ownSessionId;
   const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
@@ -259,7 +270,8 @@ export function useStakeManageLaunch({
     isBatch: !!engine.isBatch,
     legCount,
     content: transactionContent,
-    screenContent: transactionScreenContent
+    screenContent: transactionScreenContent,
+    screenOnly: transactionContentAsScreen
   });
 
   const hasLock = skyToLock > 0n;
@@ -295,7 +307,7 @@ export function useStakeManageLaunch({
 
   // The moved legs (lock or free, borrow or wipe; a delegate-only change moves
   // nothing and values at $0). Live (not computed at launch) because the sheet
-  // runs the enhanced-screening preflight on it while the user is editing.
+  // runs the screening preflight on it while the user is editing.
   const usdValue = useMemo(
     () =>
       stakeUsdNotional(
@@ -385,6 +397,7 @@ export function useStakeManageLaunch({
     /** Live USD notional of the staged changes, for the sheet's own preflight. */
     usdValue,
     calldata,
+    legCount,
     hasRewardChange,
     hasDelegateChange,
     urnSelectedVoteDelegate,

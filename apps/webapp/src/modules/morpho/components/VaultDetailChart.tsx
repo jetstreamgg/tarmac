@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { getTokenDecimals, useMorphoVaultChartInfo, useVaultMarketData, type Token } from '@/hooks';
@@ -29,14 +29,19 @@ export function VaultDetailChart({
 
   const {
     data: chartInfo,
-    isLoading,
+    isLoading: historyLoading,
     error
   } = useMorphoVaultChartInfo({
     vaultAddress,
     useHourlyInterval,
     hourlyWindow
   });
-  const { data: marketData } = useVaultMarketData({ vaultAddress });
+  const { data: marketData, isLoading: marketLoading } = useVaultMarketData({ vaultAddress });
+  // The live point is appended to the history, so the series isn't complete
+  // until both have landed. Drawing on the history alone let the live point
+  // arrive ~600ms into the entrance draw: recharts rebuilds its path nodes on
+  // any new data array, and the half-drawn line snapped to fully drawn.
+  const isLoading = historyLoading || marketLoading;
 
   const decimals = getTokenDecimals(assetToken, chainId);
   const parsed = useParseVaultChartData(timeFrame, chartInfo || [], decimals, useHourlyInterval);
@@ -49,8 +54,11 @@ export function VaultDetailChart({
       : undefined;
   const liveRate = marketData?.rate ? marketData.rate.netRate * 100 : undefined;
 
-  const rateData = withLivePoint(parsed.rate, liveRate);
-  const tvlData = withLivePoint(parsed.tvl, liveTvl);
+  // Memoized: withLivePoint builds a fresh array whenever there is a live
+  // value, and a fresh array makes recharts rebuild the path — any re-render
+  // during the entrance draw would cut it short.
+  const rateData = useMemo(() => withLivePoint(parsed.rate, liveRate), [parsed.rate, liveRate]);
+  const tvlData = useMemo(() => withLivePoint(parsed.tvl, liveTvl), [parsed.tvl, liveTvl]);
 
   return (
     <RateTvlDetailChart
