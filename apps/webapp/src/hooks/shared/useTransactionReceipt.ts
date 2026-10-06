@@ -38,7 +38,7 @@ type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementRet
  * A broadcast transaction the user replaced in their wallet: a cancel, or
  * another transaction at its nonce. A wallet rejection (code 4001) for the modal
  * and Sentry, but it carries a hash, so the analytics classifier recognises it
- * by name rather than by the usual "rejections never have a hash" rule.
+ * by class rather than by the usual "rejections never have a hash" rule.
  */
 export class TransactionReplacedError extends UserRejectedRequestError {
   override name = 'TransactionReplacedError' as const;

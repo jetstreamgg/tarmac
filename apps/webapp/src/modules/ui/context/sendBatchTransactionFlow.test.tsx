@@ -1,6 +1,13 @@
 import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { WaitForCallsStatusTimeoutError, erc20Abi, type Call } from 'viem';
+import {
+  UnknownBundleIdError,
+  UnknownRpcError,
+  UnsupportedProviderMethodError,
+  WaitForCallsStatusTimeoutError,
+  erc20Abi,
+  type Call
+} from 'viem';
 
 // The cross-chain-calldata backstop (APP-528): the shared batch flow itself
 // must refuse a batch whose target address resolved to `undefined` — the shape
@@ -139,8 +146,8 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
   it('stops on a revert or an error after which polling can never succeed', () => {
     const { retry } = pollingOptions().query;
     expect(retry(1, new Error('execution reverted'))).toBe(false);
-    for (const code of [4200, 5730]) {
-      expect(retry(1, Object.assign(new Error('wrapped'), { cause: { code } }))).toBe(false);
+    for (const permanent of [UnsupportedProviderMethodError, UnknownBundleIdError]) {
+      expect(retry(1, new UnknownRpcError(new permanent(new Error('wallet'))))).toBe(false);
     }
   });
 

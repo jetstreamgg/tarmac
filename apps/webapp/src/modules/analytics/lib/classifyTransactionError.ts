@@ -1,4 +1,5 @@
 import { isUserRejection, extractErrorCode } from '@/hooks/helpers';
+import { TransactionReplacedError } from '@/hooks/shared/useTransactionReceipt';
 
 export type WidgetErrorKind = 'user_rejected' | 'reverted' | 'wallet_error' | 'unknown';
 
@@ -24,8 +25,7 @@ export function classifyTransactionError(error: unknown, hasTxHash: boolean): Tr
   // replaced in their wallet after broadcast (cancel / same-nonce replacement),
   // which the receipt watcher reports as a TransactionReplacedError.
   const is_user_rejection =
-    (error as { name?: unknown } | null)?.name === 'TransactionReplacedError' ||
-    (!hasTxHash && isUserRejection(error));
+    error instanceof TransactionReplacedError || (!hasTxHash && isUserRejection(error));
   const error_code = extractErrorCode(error);
   // Top-level viem class (e.g. ContractFunctionExecutionError), kept stable for
   // grouping rather than the deepest cause.

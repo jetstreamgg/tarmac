@@ -2,7 +2,12 @@ import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
 import { useEffect, useEffectEvent } from 'react';
 import type { Call } from 'viem';
-import { WaitForCallsStatusTimeoutError } from 'viem';
+import {
+  BaseError,
+  UnknownBundleIdError,
+  UnsupportedProviderMethodError,
+  WaitForCallsStatusTimeoutError
+} from 'viem';
 import { isRevertedError, toError } from '../helpers';
 import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
@@ -10,20 +15,12 @@ import { useSimulateBatch } from './useSimulateBatch';
 
 /** Ceiling on the gap between status polls while the wallet keeps erroring. */
 const MAX_STATUS_RETRY_DELAY_MS = 30_000;
-// EIP-1193 / EIP-5792 codes after which polling can never succeed: method
-// unsupported, unknown bundle id. Not 4100 (unauthorized): a locked wallet can
-// answer that and work again once unlocked.
-const PERMANENT_STATUS_ERROR_CODES = new Set([4200, 5730]);
-
-function isPermanentStatusError(error: unknown): boolean {
-  let e: unknown = error;
-  for (let i = 0; i < 10 && e; i++) {
-    const code = (e as { code?: unknown }).code;
-    if (typeof code === 'number' && PERMANENT_STATUS_ERROR_CODES.has(code)) return true;
-    e = (e as { cause?: unknown }).cause;
-  }
-  return false;
-}
+// Errors after which polling can never succeed: method unsupported (4200),
+// unknown bundle id (5730). Not 4100 (unauthorized): a locked wallet can answer
+// that and work again once unlocked.
+const isPermanentStatusError = (error: unknown) =>
+  error instanceof BaseError &&
+  error.walk(e => e instanceof UnsupportedProviderMethodError || e instanceof UnknownBundleIdError) !== null;
 
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
