@@ -97,6 +97,25 @@ describe('refreshHistoryAfterTx', () => {
     expect(queryFn).toHaveBeenCalledTimes(2);
   });
 
+  it('runs one refresh for a success reported twice, and a fresh one once it has finished', async () => {
+    const fetchMock = stubIndexerProgress([99, 100]);
+    const { queryFn } = mountQuery(client, ['savings-history'], INDEXER_HISTORY_META);
+    await vi.advanceTimersByTimeAsync(0);
+
+    void refreshHistoryAfterTx(client, TX);
+    void refreshHistoryAfterTx(client, TX);
+    await vi.advanceTimersByTimeAsync(INDEXER_POLL_MS);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(queryFn).toHaveBeenCalledTimes(2);
+
+    // The follow-ups are part of the refresh: the same block only runs again after them.
+    await vi.advanceTimersByTimeAsync(EXTERNAL_FOLLOW_UPS_MS.at(-1)!);
+    void refreshHistoryAfterTx(client, TX);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(queryFn).toHaveBeenCalledTimes(3);
+  });
+
   it('waits for every indexer the tables read when the proxy origin is a separate deployment', async () => {
     vi.stubEnv('VITE_PROXY_ORIGIN', STAGING_PROXY);
     const fetchMock = stubIndexerProgress({ [PROD_PROXY]: [100], [STAGING_PROXY]: [98, 99, 100] });

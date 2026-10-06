@@ -130,6 +130,12 @@ async function followUpExternalHistory(queryClient: QueryClient) {
   }
 }
 
+// The `chainId:blockNumber` refreshes running per client. An engine can report
+// the same success twice (its settle effect re-runs while the receipt is still
+// in), and two transactions can land in one block: either way one refresh
+// covers both.
+const runningRefreshes = new WeakMap<QueryClient, Set<string>>();
+
 /**
  * Brings the history tables up to date with a just-confirmed transaction. The
  * indexer trails the receipt by a few seconds (far longer when it falls
@@ -145,9 +151,21 @@ export async function refreshHistoryAfterTx(
   queryClient: QueryClient,
   { chainId, blockNumber }: { chainId: number; blockNumber?: bigint }
 ) {
-  void queryClient.invalidateQueries({ predicate: isHistory(), refetchType: 'none' });
-  await Promise.all([
-    refreshIndexerHistory(queryClient, chainId, blockNumber),
-    followUpExternalHistory(queryClient)
-  ]);
+  const key = blockNumber === undefined ? undefined : `${chainId}:${blockNumber}`;
+  let running = runningRefreshes.get(queryClient);
+  if (!running) runningRefreshes.set(queryClient, (running = new Set()));
+  if (key !== undefined) {
+    if (running.has(key)) return;
+    running.add(key);
+  }
+
+  try {
+    void queryClient.invalidateQueries({ predicate: isHistory(), refetchType: 'none' });
+    await Promise.all([
+      refreshIndexerHistory(queryClient, chainId, blockNumber),
+      followUpExternalHistory(queryClient)
+    ]);
+  } finally {
+    if (key !== undefined) running.delete(key);
+  }
 }
