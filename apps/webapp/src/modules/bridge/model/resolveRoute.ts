@@ -52,19 +52,25 @@ export const DAY_MINUTES = 24 * 60;
 const CCTP_ETA_MINUTES = 20;
 const LAYERZERO_ETA_MINUTES = 3;
 
+/** Networks the native bridges reach; one added without its ETAs fails to compile. */
+type NativeNetworkId = Exclude<BridgeNetworkId, 'ethereum' | 'avalanche' | 'solana'>;
+
 // Measured from past deposits and withdrawals (APP-613, APP-617).
-const DEPOSIT_ETA_MINUTES: Partial<Record<BridgeNetworkId, number>> = {
+const DEPOSIT_ETA_MINUTES: Record<NativeNetworkId, number> = {
   optimism: 1,
   unichain: 1,
   base: 3,
   arbitrum: 7
 };
-const WITHDRAWAL_ETA_MINUTES: Partial<Record<BridgeNetworkId, number>> = {
+const WITHDRAWAL_ETA_MINUTES: Record<NativeNetworkId, number> = {
   base: 5 * DAY_MINUTES,
   arbitrum: Math.round(6.4 * DAY_MINUTES),
   optimism: 7 * DAY_MINUTES,
   unichain: 7 * DAY_MINUTES
 };
+
+const nativeEtaMinutes = (etas: Record<NativeNetworkId, number>, network: BridgeNetworkId) =>
+  (etas as Partial<Record<BridgeNetworkId, number>>)[network];
 
 const isUnread = (fact: RouteFact<unknown> | undefined): fact is 'loading' | 'error' =>
   fact === 'loading' || fact === 'error';
@@ -155,10 +161,13 @@ export function resolveBridgeRoute({
 
   const { native, cctp } = facts;
   if (from === 'ethereum') {
+    // No known ETA means no native route to that network.
+    const etaMinutes = nativeEtaMinutes(DEPOSIT_ETA_MINUTES, to);
+    if (etaMinutes === undefined) return blocked('pair-not-allowed');
     if (isUnread(native)) return blocked(unreadReason(native));
     const failure = gateFailure(amount, native);
     if (failure) return blocked(failure);
-    return ok(route('native', routeSteps('native', from, to), DEPOSIT_ETA_MINUTES[to] ?? 0, 0));
+    return ok(route('native', routeSteps('native', from, to), etaMinutes, 0));
   }
 
   // No fallback before CCTP is known: the native withdrawal takes days.
@@ -167,10 +176,10 @@ export function resolveBridgeRoute({
   if (!cctpFailure) {
     return ok(route('cctp', routeSteps('cctp', from, to), CCTP_ETA_MINUTES, 0));
   }
+  const withdrawalMinutes = nativeEtaMinutes(WITHDRAWAL_ETA_MINUTES, from);
+  if (withdrawalMinutes === undefined) return blocked(cctpFailure);
   if (isUnread(native)) return blocked(unreadReason(native));
   const nativeFailure = gateFailure(amount, native);
   if (nativeFailure) return blocked(nativeFailure);
-  return ok(
-    route('native', routeSteps('native', from, to), WITHDRAWAL_ETA_MINUTES[from] ?? 0, 0, cctpFailure)
-  );
+  return ok(route('native', routeSteps('native', from, to), withdrawalMinutes, 0, cctpFailure));
 }

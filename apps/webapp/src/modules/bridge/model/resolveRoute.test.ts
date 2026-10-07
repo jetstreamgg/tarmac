@@ -19,6 +19,14 @@ const okRoute = (result: ReturnType<typeof resolveBridgeRoute>) => {
 };
 
 describe('resolveBridgeRoute: pairs', () => {
+  it('every native route has a measured ETA, so the card never starts at 0 min', () => {
+    const cctpClosed = { cctp: { isOpen: false }, native: { isOpen: true } };
+    for (const l2 of L2S) {
+      expect(okRoute(resolve('ethereum', l2)).etaMinutes).toBeGreaterThan(0);
+      expect(okRoute(resolve(l2, 'ethereum', usds('1'), cctpClosed)).etaMinutes).toBeGreaterThan(0);
+    }
+  });
+
   it('Ethereum to an L2 uses the native deposit: source-side only, no claim', () => {
     for (const to of L2S) {
       const route = okRoute(resolve('ethereum', to));
