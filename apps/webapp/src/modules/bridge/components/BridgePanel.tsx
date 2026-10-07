@@ -82,7 +82,7 @@ export function BridgePanel() {
           </Text>
         ) : form.safeCheckFailed ? (
           <Text className="text-error text-sm" dataTestId="bridge-safe-unknown">
-            <Trans>We couldn&apos;t check your wallet. Try again in a moment.</Trans>
+            <Trans>We couldn&apos;t check your wallet type. Try again in a moment.</Trans>
           </Text>
         ) : form.recipientInvalid ? (
           <Text className="text-error text-sm" dataTestId="bridge-recipient-invalid">

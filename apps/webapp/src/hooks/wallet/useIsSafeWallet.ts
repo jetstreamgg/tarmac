@@ -38,7 +38,9 @@ export const useSafeWalletStatus = (): SafeWalletStatus => {
     queryKey: ['is-safe-wallet-found', address, chainId],
     queryFn: () => isSafeWalletFound(url!),
     staleTime: Infinity,
-    gcTime: Infinity
+    gcTime: Infinity,
+    // An outage reads as unknown, which blocks callers that fail closed: say so quickly.
+    retry: 1
   });
 
   if (isSafeApp) return 'safe';
