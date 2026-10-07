@@ -290,6 +290,57 @@ describe('createPendingBridgeStore', () => {
 
       expect(store.getSnapshot(SCOPE).map(entry => entry.status)).toEqual(['ready']);
     });
+
+    describe("once storage works again, this session's next write keeps another tab's progress", () => {
+      const stored = () => JSON.parse(localStorage.getItem(KEY) ?? '[]') as { id: string; status: string }[];
+
+      const failOnce = () => {
+        const setItem = localStorage.setItem.bind(localStorage);
+        let failed = false;
+        vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+          if (failed) return setItem(key, value);
+          failed = true;
+          throw new Error('QuotaExceededError');
+        });
+      };
+
+      const run = (deliverStorageEvent: boolean) => {
+        make().upsert(SCOPE, bridge({ id: '0xx', txHash: '0xx' }));
+        make().upsert(SCOPE, bridge({ id: '0xy', txHash: '0xy', startedAt: NOW - 1 }));
+        const store = make();
+        store.subscribe(() => {});
+        store.getSnapshot(SCOPE);
+        failOnce();
+        store.update(SCOPE, '0xy', current => ({ ...current, etaAt: current.etaAt + 1 }));
+        make().update(SCOPE, '0xx', current => ({ ...current, status: 'ready' }));
+        if (deliverStorageEvent) window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
+        store.update(SCOPE, '0xy', current => ({ ...current, status: 'ready' }));
+        vi.restoreAllMocks();
+        return store;
+      };
+
+      it('with the storage event delivered', () => {
+        const store = run(true);
+        expect(stored().map(entry => entry.status)).toEqual(['ready', 'ready']);
+        expect(store.getSnapshot(SCOPE).map(entry => entry.status)).toEqual(['ready', 'ready']);
+      });
+
+      it('before the storage event arrives', () => {
+        run(false);
+        expect(stored().map(entry => entry.status)).toEqual(['ready', 'ready']);
+      });
+
+      it('and a bridge dismissed while writes failed stays dismissed', () => {
+        make().upsert(SCOPE, bridge({ id: '0xsafe', safeTxHash: '0xsafe', txHash: undefined }));
+        make().upsert(SCOPE, bridge({ id: '0xy', txHash: '0xy', startedAt: NOW - 1 }));
+        const store = make();
+        failOnce();
+        store.dismiss(SCOPE, '0xsafe');
+        store.update(SCOPE, '0xy', current => ({ ...current, status: 'ready' }));
+        vi.restoreAllMocks();
+        expect(stored().map(entry => entry.id)).toEqual(['0xy']);
+      });
+    });
   });
 
   describe('dismiss', () => {

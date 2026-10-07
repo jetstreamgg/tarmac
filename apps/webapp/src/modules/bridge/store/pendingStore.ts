@@ -102,11 +102,6 @@ const fillMissing = (existing: PendingBridge, incoming: PendingBridge): PendingB
   ) as PendingBridge)
 });
 
-const withStored = (session: PendingBridge[], stored: PendingBridge[] | undefined) =>
-  [...session, ...(stored ?? []).filter(entry => !session.some(own => isSameBridge(own, entry)))].sort(
-    byNewest
-  );
-
 /**
  * Pending bridges in localStorage, so they survive a reload and stay in sync
  * across tabs. Settled bridges are kept 90 days for the Activity list.
@@ -115,8 +110,8 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
   const listeners = new Set<Listener>();
   const snapshots = new Map<string, PendingBridge[]>();
 
-  // Off once a write fails: storage then lags the session copy.
-  let storageWritable = true;
+  // Bridges whose last change reached only this session's copy (a write failed), by scope.
+  const unsaved = new Map<string, Set<string>>();
 
   /** The stored list; undefined when storage can't be read. */
   const load = (scope: string): PendingBridge[] | undefined => {
@@ -143,24 +138,41 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
 
   const emit = () => listeners.forEach(listener => listener());
 
-  const write = (scope: string, bridges: PendingBridge[]) => {
+  /** The stored list with this session's unsaved changes on top: added, updated or dropped. */
+  const withUnsaved = (scope: string, stored: PendingBridge[]): PendingBridge[] => {
+    const ids = unsaved.get(scope);
+    if (!ids) return stored;
+    const own = (snapshots.get(scope) ?? []).filter(entry => ids.has(entry.id));
+    return [
+      ...own,
+      ...stored.filter(entry => !ids.has(entry.id) && !own.some(mine => isSameBridge(mine, entry)))
+    ].sort(byNewest);
+  };
+
+  const write = (scope: string, bridges: PendingBridge[], changedId: string) => {
     const sorted = [...bridges].sort(byNewest);
     snapshots.set(scope, sorted);
     try {
       const key = storageKey(scope);
       localStorage.setItem(key, serialize(sorted, unparsedEntries(key)));
+      unsaved.delete(scope);
     } catch {
       // ignore storage write failures (private mode, quota); the session copy still updates
-      storageWritable = false;
+      unsaved.set(scope, new Set(unsaved.get(scope)).add(changedId));
     }
     emit();
   };
 
   const onStorage = (event: StorageEvent) => {
     if (event.key !== null && !event.key.startsWith(KEY_PREFIX)) return;
-    if (storageWritable) snapshots.clear();
-    // Storage lags this session: keep its copy and add what the other tab stored.
-    else snapshots.forEach((session, scope) => snapshots.set(scope, withStored(session, load(scope))));
+    snapshots.forEach((_, scope) => {
+      if (!unsaved.has(scope)) {
+        snapshots.delete(scope);
+        return;
+      }
+      const stored = load(scope);
+      if (stored) snapshots.set(scope, withUnsaved(scope, stored));
+    });
     emit();
   };
 
@@ -174,7 +186,10 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
   };
 
   // Writes start from storage, not this tab's copy, so another tab's write is not lost.
-  const latest = (scope: string): PendingBridge[] => (storageWritable && load(scope)) || getSnapshot(scope);
+  const latest = (scope: string): PendingBridge[] => {
+    const stored = load(scope);
+    return stored ? withUnsaved(scope, stored) : getSnapshot(scope);
+  };
 
   return {
     subscribe(listener: Listener) {
@@ -194,7 +209,8 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
         scope,
         existing
           ? current.map(entry => (entry === existing ? fillMissing(existing, bridge) : entry))
-          : [bridge, ...current]
+          : [bridge, ...current],
+        existing?.id ?? bridge.id
       );
     },
     /**
@@ -207,7 +223,8 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       if (!existing || !canDismiss(existing)) return;
       write(
         scope,
-        current.filter(entry => entry.id !== id)
+        current.filter(entry => entry.id !== id),
+        id
       );
     },
     update(scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) {
@@ -218,7 +235,8 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       if (next === existing) return;
       write(
         scope,
-        current.map(entry => (entry === existing ? next : entry))
+        current.map(entry => (entry === existing ? next : entry)),
+        id
       );
     }
   };
