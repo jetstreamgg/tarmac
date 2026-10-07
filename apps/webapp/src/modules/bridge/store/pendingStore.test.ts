@@ -279,4 +279,32 @@ describe('createPendingBridgeStore', () => {
       expect(store.getSnapshot(SCOPE).map(entry => entry.status)).toEqual(['ready']);
     });
   });
+
+  describe('remove', () => {
+    const KEY = `bridgePending:v1:${SCOPE}`;
+
+    it('removes one bridge and keeps the rest, including entries it cannot parse', () => {
+      const future = { id: '0xfuture', status: 'expired' };
+      localStorage.setItem(KEY, JSON.stringify([future]));
+      const store = make();
+      store.upsert(SCOPE, bridge());
+      store.upsert(SCOPE, bridge({ id: '0xother', txHash: '0xother', startedAt: NOW - 1 }));
+      store.remove(SCOPE, '0xsource');
+      expect(store.getSnapshot(SCOPE).map(entry => entry.id)).toEqual(['0xother']);
+      expect(
+        make()
+          .getSnapshot(SCOPE)
+          .map(entry => entry.id)
+      ).toEqual(['0xother']);
+      expect(JSON.parse(localStorage.getItem(KEY) ?? '[]')).toContainEqual(future);
+    });
+
+    it('is a no-op for an unknown id', () => {
+      const store = make();
+      store.upsert(SCOPE, bridge());
+      const before = store.getSnapshot(SCOPE);
+      store.remove(SCOPE, '0xnope');
+      expect(store.getSnapshot(SCOPE)).toBe(before);
+    });
+  });
 });

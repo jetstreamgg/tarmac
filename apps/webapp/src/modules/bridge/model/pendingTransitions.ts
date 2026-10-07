@@ -156,6 +156,10 @@ export const canLaunchAction = (bridge: PendingBridge): boolean =>
   !!bridge.nextAction &&
   !bridge.actions.some(sent => isSent(sent) && sent.action === bridge.nextAction);
 
+/** A Safe bridge still waiting to execute: nothing on chain yet, so the user may drop it. */
+export const canDismiss = (bridge: PendingBridge): boolean =>
+  bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash;
+
 /** A destination action the user sent and the transaction flow confirmed. */
 export function recordAction(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
   const remaining = destinationActions(bridge.routeKind, bridge.from);

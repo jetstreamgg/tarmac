@@ -8,9 +8,10 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
-import { canLaunchAction, isSettled } from '../model/pendingTransitions';
+import { canDismiss, canLaunchAction, isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
 import { formatUsds } from '../model/usds';
+import { pendingBridgeStore } from '../store/pendingStore';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
   buildPendingBridgeRows,
@@ -76,10 +77,19 @@ type PendingBridgeCardProps = {
   now: number;
   familyChainId: number;
   onAction: (bridge: PendingBridge) => void;
+  onDismiss: (bridge: PendingBridge) => void;
   actionLocked: boolean;
 };
 
-function PendingBridgeCard({ bridge, now, familyChainId, onAction, actionLocked }: PendingBridgeCardProps) {
+function PendingBridgeCard({
+  bridge,
+  now,
+  familyChainId,
+  onAction,
+  onDismiss,
+  actionLocked
+}: PendingBridgeCardProps) {
+  const dismissible = canDismiss(bridge);
   const amount = formatUsds(bridge.amount);
   return (
     <div
@@ -100,19 +110,39 @@ function PendingBridgeCard({ bridge, now, familyChainId, onAction, actionLocked 
             </Text>
           </span>
         </span>
-        {bridge.requiresClaim && bridge.nextAction && !isSettled(bridge) && (
+        {dismissible ? (
           <Button
-            variant="primary"
+            variant="secondary"
             size="m"
             className="w-24"
-            disabled={actionLocked || !canLaunchAction(bridge)}
-            onClick={() => onAction(bridge)}
-            data-testid="pending-bridge-action"
+            onClick={() => onDismiss(bridge)}
+            data-testid="pending-bridge-dismiss"
           >
-            {nextActionLabel(bridge.nextAction)}
+            <Trans>Dismiss</Trans>
           </Button>
+        ) : (
+          bridge.requiresClaim &&
+          bridge.nextAction &&
+          !isSettled(bridge) && (
+            <Button
+              variant="primary"
+              size="m"
+              className="w-24"
+              disabled={actionLocked || !canLaunchAction(bridge)}
+              onClick={() => onAction(bridge)}
+              data-testid="pending-bridge-action"
+            >
+              {nextActionLabel(bridge.nextAction)}
+            </Button>
+          )
         )}
       </div>
+
+      {dismissible && (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
+          <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
+        </Text>
+      )}
 
       <div className="flex flex-col gap-6">
         {buildPendingBridgeRows(bridge, now, familyChainId).map((row, rowIndex) => (
@@ -133,17 +163,17 @@ function PendingBridgeCard({ bridge, now, familyChainId, onAction, actionLocked 
   );
 }
 
-/** "Pending bridges" list under the bridge form (Figma 3574:64348). */
 type PendingBridgesProps = {
   onAction: (bridge: PendingBridge) => void;
   /** An action's session is minimized: it must be restored, not launched again. */
   actionLocked: boolean;
 };
 
+/** "Pending bridges" list under the bridge form (Figma 3574:64348). */
 export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
-  const { familyChainId } = usePendingScope();
+  const { familyChainId, scope } = usePendingScope();
   if (bridges.length === 0) return null;
 
   return (
@@ -158,6 +188,7 @@ export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) 
           now={now}
           familyChainId={familyChainId}
           onAction={onAction}
+          onDismiss={dismissed => scope && pendingBridgeStore.remove(scope, dismissed.id)}
           actionLocked={actionLocked}
         />
       ))}

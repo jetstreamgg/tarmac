@@ -4,6 +4,7 @@ import {
   applyProgress,
   createPendingBridge,
   isPendingBridgeVisible,
+  canDismiss,
   canLaunchAction,
   dropSentAction,
   pollIntervalMs,
@@ -443,5 +444,32 @@ describe('a lagging poll never re-offers an action that is already confirmed', (
   it('the next action still becomes ready', () => {
     const ready = applyProgress(proven(), { kind: 'ready', nextAction: 'finalize' }, NOW + MINUTE);
     expect(canLaunchAction(ready)).toBe(true);
+  });
+});
+
+describe('a queued Safe bridge can be dismissed, nothing else can', () => {
+  const route = routeFor('base', 'ethereum');
+
+  it('a Safe bridge still waiting to execute can be dismissed', () => {
+    expect(canDismiss(create(route, { safeTxHash: '0xsafe' }))).toBe(true);
+  });
+
+  it('a bridge with an on-chain transaction cannot', () => {
+    const executed = applyProgress(
+      create(route, { safeTxHash: '0xsafe' }),
+      { kind: 'source-executed', txHash: '0xsource' },
+      NOW
+    );
+    expect(canDismiss(executed)).toBe(false);
+    expect(canDismiss(create(route))).toBe(false);
+  });
+
+  it('a settled Safe bridge cannot', () => {
+    const failed = applyProgress(
+      create(route, { safeTxHash: '0xsafe' }),
+      { kind: 'failed', reason: 'x' },
+      NOW
+    );
+    expect(canDismiss(failed)).toBe(false);
   });
 });

@@ -197,6 +197,15 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
           : [bridge, ...current]
       );
     },
+    /** Drops one bridge; entries this bundle can't parse stay. */
+    remove(scope: string, id: string) {
+      const current = latest(scope);
+      if (!current.some(entry => entry.id === id)) return;
+      write(
+        scope,
+        current.filter(entry => entry.id !== id)
+      );
+    },
     update(scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) {
       const current = latest(scope);
       const existing = current.find(entry => entry.id === id);
