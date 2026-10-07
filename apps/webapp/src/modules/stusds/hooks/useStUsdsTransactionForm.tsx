@@ -1,11 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useConnection } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
-import { t } from '@lingui/core/macro';
 import {
   StUsdsDirection,
   StUsdsProviderType,
-  useDebounce,
   useStUsdsCapacityData,
   useStUsdsData,
   useStUsdsProviderSelection,
@@ -15,15 +13,18 @@ import {
 import { calculateApyFromStr, formatNumber } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useAmountToast, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { MAX_PRICE_IMPACT_BPS_WITHOUT_WARNING } from '../lib/providerNotice';
 import { StUsdsAmountSummary } from '../components/StUsdsAmountSummary';
 import type { StUsdsEngineParams, StUsdsLaunchFlow } from './useStUsdsLaunch';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 /** Seeds the form's initial amount (e.g. a Portfolio quick-deposit shortcut). */
 export type StUsdsModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
-export type StUsdsToastTitles = { loading: string; success: string; error: string };
+export type StUsdsToastTitles = AmountToastTitles;
 
 // USDS and stUSDS are both 18-decimal on every deployment.
 const DECIMALS = 18;
@@ -125,8 +126,7 @@ export function useStUsdsTransactionForm({
   // invalidate, or misfire (the retired widget resynced with an effect).
   const displayValue = max && !isSupply ? formatUnits(available, DECIMALS) : value;
   const amount = parseAmountInput(displayValue, DECIMALS);
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount);
 
   const providerSelection = useStUsdsProviderSelection({
     amount: debouncedAmount,
@@ -242,34 +242,20 @@ export function useStUsdsTransactionForm({
     setImpactAccepted(false);
   };
 
+  const runActive = useTransactionRunActive();
   const engineParams: StUsdsEngineParams = {
     flow,
     amount: debouncedAmount,
     max,
     selectedProvider: providerSelection.selectedProvider,
     expectedOutput: providerSelection.selectedQuote?.outputAmount ?? 0n,
-    stUsdsAmount: providerSelection.selectedQuote?.stUsdsAmount
+    stUsdsAmount: providerSelection.selectedQuote?.stUsdsAmount,
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive
   };
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(debouncedAmount, DECIMALS)), { maxDecimals: 2 })} USDS`;
-  // Memoized so the modal-content sync effect in StUsdsModalForm has stable deps —
-  // an unmemoized object/element here recreates every render and loops
-  // updateModalContent → setActiveConfig (matches the savings/vault forms).
-  const toast = useMemo<StUsdsToastTitles>(
-    () =>
-      isSupply
-        ? {
-            loading: t`Supplying ${amountLabel}`,
-            success: t`${amountLabel} supplied!`,
-            error: t`Supply failed`
-          }
-        : {
-            loading: t`Withdrawing ${amountLabel}`,
-            success: t`${amountLabel} withdrawn!`,
-            error: t`Withdrawal failed`
-          },
-    [isSupply, amountLabel]
-  );
+  const toast = useAmountToast({ isSupply, amountLabel });
 
   // The from→to hero the review and wallet screens draw: supply is USDS →
   // quoted stUSDS; a withdraw redeems/swaps stUSDS (the quote's input) → USDS.

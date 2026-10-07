@@ -61,7 +61,8 @@ vi.mock('@/hooks', async importOriginal => {
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     setIsAutoSwitching: h.setIsAutoSwitching,
-    setAutoSwitchIntent: h.setAutoSwitchIntent
+    setAutoSwitchIntent: h.setAutoSwitchIntent,
+    canSwitchChain: true
   })
 }));
 
@@ -166,7 +167,7 @@ const walletEarnings = (protocols: ProtocolEarnings[], isLoading = false): Walle
 
 const EARNINGS = walletEarnings([
   proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 })),
-  proto('pendle', ['fixed-0xmkt'], ok({ usd: 916.82 }), ok({ usd: 635.39 }), {
+  proto('pendle-market-0xmkt', ['fixed-0xmkt'], ok({ usd: 916.82 }), ok({ usd: 635.39 }), {
     pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 916.82 }
   }),
   proto('stusds', ['stusds'], ok({ usd: 30 }), ok({ usd: 3 }))

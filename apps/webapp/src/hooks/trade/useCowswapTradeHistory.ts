@@ -9,6 +9,7 @@ import { ETH_ADDRESS, getTokensForChain } from '../tokens/tokens.constants';
 import { formatOrderStatus } from './formatOrderStatus';
 import { isCowSupportedChainId } from '@/utils';
 import { SKY_MONEY_APP_CODE } from './constants';
+import { toReadHook } from '../shared/toReadHook';
 
 async function fetchCowswapTradeHistory(
   chainId: number,
@@ -101,29 +102,18 @@ export function useCowswapTradeHistory({
 
   const tokens = getTokensForChain(chainId);
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     enabled: Boolean(address) && enabled && isCowSupported,
     queryKey: ['cowswap-trade-history', address, limit, chainId],
     queryFn: () => fetchCowswapTradeHistory(chainId, address, limit, tokens)
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'CoW Protocol API',
-        href: 'https://docs.cow.fi/category/apis',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [
+    {
+      title: 'CoW Protocol API',
+      href: 'https://docs.cow.fi/category/apis',
+      onChain: false,
+      trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
+    }
+  ]);
 }

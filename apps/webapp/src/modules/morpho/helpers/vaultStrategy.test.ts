@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildVaultStrategy, IDLE_COLOR } from './vaultStrategy';
-import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/widgets/shared/constants';
+import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/modules/ui/lib/tokenColors';
 import type { MorphoMarketAllocation } from '@/hooks';
 
 // Minimal allocation factory — only the fields buildVaultStrategy reads matter.

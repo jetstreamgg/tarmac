@@ -8,7 +8,7 @@ import {
   Outlet,
   RouterProvider
 } from '@tanstack/react-router';
-import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
 import type { WalletDrawerAsset } from './useWalletDrawerAssets';
 

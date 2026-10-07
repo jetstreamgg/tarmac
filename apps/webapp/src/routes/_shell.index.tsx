@@ -13,6 +13,9 @@ import { readLastPortfolioDecision } from '@/lib/portfolioDecisionCache';
 // Legacy ?widget= / pre-flip-path deep links are already rewritten in __root's
 // beforeLoad (which throws first), so only a bare "/" reaches here. Global
 // search params (e.g. ?network=) are preserved.
+//
+// The index.html preload script (vite.preloadRouteChunks.ts) mirrors this
+// decision to preload the landing page's code for "/". Keep the two in sync.
 export const Route = createFileRoute('/_shell/')({
   beforeLoad: ({ search }) => {
     const last = readLastPortfolioDecision();

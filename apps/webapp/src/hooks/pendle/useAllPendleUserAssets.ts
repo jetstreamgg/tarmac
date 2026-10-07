@@ -5,6 +5,7 @@ import { usePendleUserPtBalances } from './usePendleUserPtBalances';
 import { usePendleMarketsApiData } from './usePendleMarketsApiData';
 import { computePendleAssetValuations } from './computePendleAssetValuations';
 import { AllPendleUserAssetsData, AllPendleUserAssetsHook } from './pendle';
+import { useNow } from '../ui/useNow';
 
 /**
  * Aggregates the user's PT balances across every Pendle market we support.
@@ -27,6 +28,9 @@ export function useAllPendleUserAssets(): AllPendleUserAssetsHook {
   } = usePendleUserPtBalances();
   const { data: pricesData, isLoading: pricesLoading, error: pricesError } = usePrices();
   const { data: marketsApi } = usePendleMarketsApiData();
+  // The valuation discounts by time-to-maturity, so it drifts with the clock;
+  // a minute is far finer than the discount moves.
+  const nowMs = useNow();
 
   const data = useMemo<AllPendleUserAssetsData>(
     () =>
@@ -35,9 +39,9 @@ export function useAllPendleUserAssets(): AllPendleUserAssetsHook {
         usdsPrice: pricesData?.USDS ? parseFloat(pricesData.USDS.price) : 0,
         sUsdsPrice: pricesData?.sUSDS ? parseFloat(pricesData.sUSDS.price) : 0,
         marketsApi,
-        nowSec: Math.floor(Date.now() / 1000)
+        nowSec: Math.floor(nowMs / 1000)
       }),
-    [ptBalances, pricesData, marketsApi]
+    [ptBalances, pricesData, marketsApi, nowMs]
   );
 
   return {

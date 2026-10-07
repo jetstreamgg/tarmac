@@ -58,7 +58,6 @@ export const MODAL_BACK_SHIFT_PX = 20;
 export const MODAL_STEP_EXIT_CLASSES =
   'transition-transform duration-200 ease-accelerate motion-reduce:transition-none';
 
-export const modalCarrierTransition = { duration: MODAL_CARRIER_S, ease: easeStandard };
 export const modalExitTransition = { duration: MODAL_LEG_S, ease: easeAccelerate };
 export const modalEnterTransition = {
   duration: MODAL_LEG_S,

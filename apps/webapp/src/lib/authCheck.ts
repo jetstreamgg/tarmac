@@ -2,7 +2,7 @@ import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 
 /**
- * The dev/e2e bypass for the whole compliance surface: connect-time screening,
+ * The dev/e2e bypass for the whole compliance surface: pre-terms screening,
  * the browse-gate terms check, and the pre-transaction gate (screening + the
  * terms signature) all skip together. One expression, shared by every gate, so
  * an environment can't end up half-open — browsing freely but stuck at a

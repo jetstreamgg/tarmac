@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { useStakeRewardContracts, useMultipleRewardsChartInfo, type RewardsChartInfoParsed } from '@/hooks';
 
 // Full farm history: the Statistics chart's `All` range and the trailing
@@ -91,14 +91,19 @@ export function useStakeRewardsRate(): StakeRewardsRate {
    * while the next one loads. Only the true cold start, with nothing resolved
    * yet, still reports loading.
    */
-  const lastResolved = useRef<{ series: RewardsChartInfoParsed[]; currentRate: number | null } | null>(null);
-  if (winner) {
-    lastResolved.current = {
-      series: bestByDay,
-      currentRate: Number.isFinite(parsedRate) ? parsedRate : null
-    };
+  const [lastResolved, setLastResolved] = useState<{
+    series: RewardsChartInfoParsed[];
+    currentRate: number | null;
+  } | null>(null);
+  const resolvedNow = winner
+    ? { series: bestByDay, currentRate: Number.isFinite(parsedRate) ? parsedRate : null }
+    : null;
+  // Compared by content, not identity: a source that hands back a fresh array
+  // with the same points must not re-latch on every render.
+  if (resolvedNow && !sameResolved(resolvedNow, lastResolved)) {
+    setLastResolved(resolvedNow);
   }
-  const resolved = lastResolved.current;
+  const resolved = resolvedNow ?? lastResolved;
 
   return {
     series: resolved?.series ?? [],
@@ -106,4 +111,16 @@ export function useStakeRewardsRate(): StakeRewardsRate {
     isLoading: (contractsLoading || chartsLoading) && !resolved,
     error: error ?? null
   };
+}
+
+function sameResolved(
+  a: { series: RewardsChartInfoParsed[]; currentRate: number | null },
+  b: { series: RewardsChartInfoParsed[]; currentRate: number | null } | null
+): boolean {
+  if (!b || a.currentRate !== b.currentRate) return false;
+  if (a.series === b.series) return true;
+  if (a.series.length !== b.series.length) return false;
+  return a.series.every(
+    (point, i) => point.blockTimestamp === b.series[i].blockTimestamp && point.rate === b.series[i].rate
+  );
 }

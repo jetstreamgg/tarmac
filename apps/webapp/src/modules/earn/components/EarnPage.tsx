@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useChainId, useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
-import { Morpho, Pendle } from '@/widgets';
+import { Morpho } from '@/modules/icons';
+import { Pendle } from '@/modules/icons/PendleSymbol';
 import {
   useEarnMarketplace,
   EarnProductKind,
@@ -13,7 +14,7 @@ import {
 } from '@/hooks';
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
-import { usePendleUsdValue } from '@/widgets';
+import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';

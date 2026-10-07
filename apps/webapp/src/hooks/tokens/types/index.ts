@@ -1,5 +1,3 @@
-export type GeneratedAddressGroup = Record<number, string>;
-
 export type TokenMapping = {
   [key: string]: Token;
 };

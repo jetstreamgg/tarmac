@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
@@ -9,9 +9,9 @@ import {
   getTokenDecimals,
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
-  useAllPendleMarketsHistory,
   useBatchPendleConvert,
   useIsBatchSupported,
+  useNow,
   usePendleMarketsApiData,
   usePendleUserPtBalances,
   useQuotePendleConvert,
@@ -20,21 +20,18 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import {
-  getTooltipById,
-  PENDLE_HISTORY_REFRESH_MS,
-  PendleFlow,
-  pendleAnalyticsData,
-  pendleNonPtLeg,
-  PopoverInfo,
-  usePendleTokens,
-  usePendleUsdValue,
-  type PendleAnalyticsSide
-} from '@/widgets';
+import { getTooltipById } from '@/modules/ui/data/tooltips';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { PendleFlow } from '@/modules/pendle/lib/constants';
+import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/lib/pendleAnalyticsData';
+import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
+import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
+import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
-import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
+import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/modules/analytics/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { Text } from '@/modules/layout/components/Typography';
@@ -114,6 +111,13 @@ export function PendleModalForm({
 
   const [value, setValue] = useState('');
   const amount = parseAmountInput(value, inputDecimals);
+  // Every keystroke that yields a valid amount would otherwise refire the
+  // Pendle quote (external API), the engine's simulation, the fee estimate and
+  // the pre-send batch simulation; network reads and the engine take the
+  // settled value, validation (`insufficient`) stays on the raw one. Picking
+  // another token keeps the typed text but can change its decimals (USDC vs
+  // USDS), so the settle is keyed on the input token.
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount, `${inputSymbol}:${inputDecimals}`);
 
   const { data: walletBalance, refetch: refetchWalletBalance } = useTokenBalance({
     address,
@@ -127,7 +131,7 @@ export function PendleModalForm({
   // Never validate against the unresolved balance's 0n fallback.
   const balanceKnown = isSupply ? walletBalance !== undefined : ptBalances !== undefined;
   const insufficient = balanceKnown && amount > available;
-  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient;
+  const amountReady = isConnected && amount > 0n && balanceKnown && !insufficient && !debouncePending;
 
   const { slippage, slippageDisplay, slippageMode, slippageAction } = usePendleSlippageCell(
     isSupply ? PendleFlow.BUY : PendleFlow.WITHDRAW
@@ -152,7 +156,7 @@ export function PendleModalForm({
     owner: address,
     spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
   });
-  const needsAllowance = allowance !== undefined && amount > 0n && allowance < amount;
+  const needsAllowance = allowance !== undefined && debouncedAmount > 0n && allowance < debouncedAmount;
 
   // Steps mirror the engine's call count ([approve?, convert]) so the
   // indicator advances in lockstep with the sequential flow's onMutate bumps.
@@ -187,9 +191,9 @@ export function PendleModalForm({
     outputToken: isSupply ? market.ptToken : selectedAddress,
     underlyingToken: market.underlyingToken,
     syAcceptedTokens: market.syAcceptedTokens,
-    amountIn: amount > 0n ? amount : undefined,
+    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    enabled: amount > 0n
+    enabled: debouncedAmount > 0n
   });
 
   // --- Analytics: the legacy PendleWidget event set, with live amounts. ---
@@ -207,7 +211,7 @@ export function PendleModalForm({
   const leg = pendleNonPtLeg(analyticsSide, {
     originSymbol: originToken.symbol,
     targetSymbol: targetToken.symbol,
-    amountInBigint: amount,
+    amountInBigint: debouncedAmount,
     amountOutBigint: quote?.amountOut ?? 0n,
     fromDecimals,
     toDecimals
@@ -220,7 +224,7 @@ export function PendleModalForm({
       side: analyticsSide,
       originToken,
       targetToken,
-      amountFromBigint: amount,
+      amountFromBigint: debouncedAmount,
       amountToBigint: quote?.amountOut ?? 0n,
       fromDecimals,
       toDecimals,
@@ -237,24 +241,26 @@ export function PendleModalForm({
       // swallow
     }
   };
-  const fireAnalyticsRef = useRef(fireAnalytics);
-  fireAnalyticsRef.current = fireAnalytics;
 
   // Review-viewed parity: fired once when the modal body mounts, matching the
   // shipped two-screen behavior (the legacy widget fired it entering review).
-  const reviewFiredRef = useRef(false);
-  useEffect(() => {
-    if (reviewFiredRef.current) return;
-    reviewFiredRef.current = true;
-    fireAnalyticsRef.current({
+  // An effect event, so the mount effect reads the latest callback and action
+  // without depending on them.
+  const fireReviewViewed = useEffectEvent(() => {
+    fireAnalytics({
       event: WidgetAnalyticsEventType.REVIEW_VIEWED,
       action: mainAction,
       flow: mainAction
     });
-  }, [mainAction]);
+  });
+  const reviewFiredRef = useRef(false);
+  useEffect(() => {
+    if (reviewFiredRef.current) return;
+    reviewFiredRef.current = true;
+    fireReviewViewed();
+  }, []);
 
   const { txCallbacks } = useTransaction();
-  const { mutate: refreshPendleHistory } = useAllPendleMarketsHistory();
 
   const writeHook = useBatchPendleConvert({
     side,
@@ -263,7 +269,7 @@ export function PendleModalForm({
     outputToken: isSupply ? market.ptToken : selectedAddress,
     underlyingToken: market.underlyingToken,
     syAcceptedTokens: market.syAcceptedTokens,
-    amountIn: amount > 0n ? amount : undefined,
+    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     quote,
     slippage,
     enabled: amountReady && !!quote,
@@ -281,13 +287,10 @@ export function PendleModalForm({
       });
     },
     onStart: hash => txCallbacks.onStart(hash),
-    onSuccess: hash => {
+    onSuccess: (hash, blockNumber) => {
       mutatePtBalances();
       refetchWalletBalance();
-      // Pendle's PnL indexer needs ~20s after the receipt lands to expose the
-      // new row — see PENDLE_HISTORY_REFRESH_MS for measurements.
-      setTimeout(refreshPendleHistory, PENDLE_HISTORY_REFRESH_MS);
-      txCallbacks.onSuccess(hash);
+      txCallbacks.onSuccess(hash, blockNumber);
       fireAnalytics({
         event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,
         action: mainAction,
@@ -350,7 +353,8 @@ export function PendleModalForm({
   const impliedApy = stats?.impliedApy;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const daysToMaturity = remainingDaysToMaturity(expirySec, Date.now());
+  const nowMs = useNow();
+  const daysToMaturity = remainingDaysToMaturity(expirySec, nowMs);
   const claimDate = formatMaturity(expirySec);
 
   // Pegged markets (1 PT → 1 USDS at expiry) display position values as USDS.
@@ -358,7 +362,7 @@ export function PendleModalForm({
   const ptSymbol = ptToken.symbol;
 
   const fmt = (n: number) => formatNumber(n, { maxDecimals: 2 });
-  const inFloat = parseFloat(formatUnits(amount, inputDecimals));
+  const inFloat = parseFloat(formatUnits(debouncedAmount, inputDecimals));
   const outDecimals = isSupply ? ptDecimals : selectedDecimals;
   const outFloat = quote ? parseFloat(formatUnits(quote.amountOut, outDecimals)) : undefined;
 
@@ -471,7 +475,7 @@ export function PendleModalForm({
     setValue(formatUnits((available * BigInt(pct)) / 100n, inputDecimals));
   };
 
-  const amountDisplay = fmt(parseFloat(formatUnits(amount, inputDecimals)));
+  const amountDisplay = fmt(parseFloat(formatUnits(debouncedAmount, inputDecimals)));
 
   // Amount hero shared by the review + wallet/status screens (Figma 859:41271 /
   // 859:41686), mirroring the savings/vault treatment.
@@ -509,6 +513,8 @@ export function PendleModalForm({
       ? { loading: t`Supplying ${label}`, success: t`${label} supplied!`, error: t`Supply failed` }
       : { loading: t`Withdrawing ${label}`, success: t`${label} withdrawn!`, error: t`Withdrawal failed` };
   }, [inFloat, inputSymbol, isSupply]);
+  // Resolved outside the memo so it keys on the string, not the i18n object.
+  const withdrawalLabel = i18n._(withdrawalWording('fixed', flow));
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`pendle-modal-${flow}-review`}>
@@ -539,7 +545,7 @@ export function PendleModalForm({
               // convention, not the market's marketing name ("Fixed Yield").
               product: `Pendle ${market.underlyingSymbol} (PT-${market.underlyingSymbol})`,
               productSymbol: market.underlyingSymbol,
-              withdrawal: i18n._(withdrawalWording('fixed', flow)),
+              withdrawal: withdrawalLabel,
               slippage: slippageDisplay,
               slippageMode,
               priceImpact: priceImpactDisplay,
@@ -577,7 +583,8 @@ export function PendleModalForm({
       priceImpactDisplay,
       networkName,
       engineChainId,
-      feeCell
+      feeCell,
+      withdrawalLabel
     ]
   );
 

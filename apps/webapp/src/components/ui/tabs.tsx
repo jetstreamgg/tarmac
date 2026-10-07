@@ -51,9 +51,11 @@ const tabsTriggerVariants = cva('', {
       default:
         'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary light:text-textSecondary ring-offset-background transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text disabled:text-opacity duration-250 ease-out-expo',
       // Tabs item (5029:51762) — Label 5 chip: 12x8 padding, glass border.
-      // State=Disabled is the same chip at half opacity, inert to the pointer
-      // (non-Radix pill consumers set `disabled` themselves).
-      pill: 'font-circle text-text inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-2 text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focusRing disabled:pointer-events-none disabled:opacity-50 border-glassBorder data-[state=inactive]:hover:border-borderTertiary data-[state=inactive]:hover:bg-glassBadge data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end',
+      // State=Disabled swaps to a bg-secondary fill, fg-secondary text and no
+      // border at full opacity; Disabled Active keeps the glass border so the
+      // last selection still reads (non-Radix pill consumers set `disabled`
+      // and data-state themselves).
+      pill: 'font-circle text-text inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-2 text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focusRing border-glassBorder data-[state=inactive]:hover:border-borderTertiary data-[state=inactive]:hover:bg-glassBadge data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end disabled:pointer-events-none disabled:bg-bgSecondary disabled:text-fgSecondary disabled:border-transparent data-[state=active]:disabled:border-glassBorder data-[state=active]:disabled:bg-none',
       // Tabs2 item (5039:73516) — Label 6, 28px tall, borderless until active
       // (a transparent border keeps the geometry stable across states).
       segmented:
@@ -106,69 +108,4 @@ const TabsContent = React.forwardRef<
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 
-// Widget look — relocated under TabsWidget*; the widgets/tabs shim aliases it back.
-// (Tabs itself is shared — both trees use TabsPrimitive.Root.)
-
-const TabsWidgetList = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn('text-muted-foreground inline-flex h-10 w-full items-center justify-center', className)}
-    {...props}
-  />
-));
-TabsWidgetList.displayName = TabsPrimitive.List.displayName;
-
-const tabsWidgetTriggerVariants = cva('', {
-  variants: {
-    variant: {
-      default:
-        'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary light:text-textSecondary ring-offset-background transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text disabled:text-opacity duration-250 ease-out-expo',
-      icons:
-        'uppercase text-xs text-textSecondary flex flex-col items-center justify-center hover:bg-primaryHover hover:text-textSecondary data-[state=active]:bg-primaryActive data-[state=active]:text-text active:bg-primaryActive active:text-text focus:bg-primaryFocus'
-    },
-    position: {
-      default: '',
-      left: 'border border-r-0 rounded-tl-xl rounded-bl-xl',
-      right: 'border border-l-0 rounded-tr-xl rounded-br-xl',
-      middle: ''
-    }
-  },
-  defaultVariants: {
-    variant: 'default',
-    position: 'default'
-  }
-});
-
-const TabsWidgetTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> &
-    VariantProps<typeof tabsWidgetTriggerVariants>
->(({ className, variant, position, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(tabsWidgetTriggerVariants({ variant, position }), className)}
-    {...props}
-  />
-));
-TabsWidgetTrigger.displayName = TabsPrimitive.Trigger.displayName;
-
-const TabsWidgetContent = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      'ring-offset-background focus-visible:ring-ring mt-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden',
-      className
-    )}
-    {...props}
-  />
-));
-TabsWidgetContent.displayName = TabsPrimitive.Content.displayName;
-
 export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants, tabsTriggerVariants };
-export { TabsWidgetList, TabsWidgetTrigger, TabsWidgetContent };

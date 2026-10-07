@@ -1,8 +1,10 @@
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { formatBaLabsUrl } from '../helpers';
 import { useQuery } from '@tanstack/react-query';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
+import { toReadHook } from '../shared/toReadHook';
+import { fetchJson } from '../shared/fetchJson';
 
 type RewardsDataResponse = {
   wallet_address: string;
@@ -20,14 +22,7 @@ type RewardsData = {
 
 async function fetchRewardsData(url: URL): Promise<RewardsData> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data: RewardsDataResponse = await response.json();
+    const data = await fetchJson<RewardsDataResponse>(url, { label: 'BaLabs data' });
 
     return {
       walletAddress: data?.wallet_address || '',
@@ -60,29 +55,11 @@ export const useUserRewardsBalance = ({
     url = formatBaLabsUrl(new URL(endpoint));
   }
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery<RewardsData | undefined>({
+  const query = useQuery<RewardsData | undefined>({
     enabled: Boolean(baseUrl && contractAddress && address),
     queryKey: ['rewards-data', url],
     queryFn: () => (url ? fetchRewardsData(url) : Promise.resolve(undefined))
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [baLabsDataSource(url)]);
 };

@@ -1,5 +1,5 @@
 import { useChainId } from 'wagmi';
-import { formatUnits, type Call } from 'viem';
+import { type Call } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   RiskLevel,
@@ -9,7 +9,14 @@ import {
   useSkyPrice,
   ZERO_ADDRESS
 } from '@/hooks';
-import { capitalizeFirstLetter, formatAddress, formatBigInt, formatPercent, formatUsd } from '@/utils';
+import {
+  capitalizeFirstLetter,
+  formatAddress,
+  formatBigInt,
+  formatDecimalPercentage,
+  formatPercent,
+  formatUsd
+} from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
@@ -17,6 +24,7 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { formatOraclePrice } from '../lib/formatStakeAmount';
+import { wadToFloat } from '../lib/stakeUsdNotional';
 import { buildStakeConfirmRows, type StakeDelegateSide, type StakeRewardSide } from './stakeModalRows';
 
 /** A reward-farm endpoint: the farm, plus its reward-token symbol when known. */
@@ -27,7 +35,7 @@ export interface StakeRewardEndpoint {
 }
 
 const formatSky = (amount: bigint) => `${formatBigInt(amount, { maxDecimals: 2 })} SKY`;
-const formatRate = (rate: number | null) => (rate !== null ? `${(rate * 100).toFixed(2)}%` : NO_VALUE);
+const formatRate = (rate: number | null) => (rate !== null ? formatDecimalPercentage(rate) : NO_VALUE);
 
 /**
  * The latest published rate for ONE farm, as a decimal. `useMultipleRewardsChartInfo`
@@ -159,9 +167,7 @@ export function StakeConfirmGrid({
   // token outright. USD is what the position details modal and the rewards
   // module's own review already quote.
   const estRewards = (staked: bigint, rate: number | null) =>
-    rate !== null && skyPriceUsd !== null
-      ? formatUsd(Number(formatUnits(staked, 18)) * rate * skyPriceUsd)
-      : NO_VALUE;
+    rate !== null && skyPriceUsd !== null ? formatUsd(wadToFloat(staked) * rate * skyPriceUsd) : NO_VALUE;
 
   // The borrow group collapses whole on a position that neither owes nor is
   // taking on debt — four cells, so the pairing stays aligned either way.

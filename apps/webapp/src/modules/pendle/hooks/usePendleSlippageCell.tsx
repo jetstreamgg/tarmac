@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
-import { usePendleSlippage, type PendleSlippageMode } from '@/widgets';
+import { usePendleSlippage, type PendleSlippageMode } from '@/modules/pendle/hooks/usePendleSlippage';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
 
 /**

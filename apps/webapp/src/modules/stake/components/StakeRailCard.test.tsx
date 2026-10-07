@@ -1,3 +1,5 @@
+import { i18n } from '@lingui/core';
+import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StakeUserPosition } from '../hooks/useStakeUserPositions';
@@ -14,13 +16,21 @@ vi.mock('./StakeEngineCard', () => ({
 
 import { StakeRailCard } from './StakeRailCard';
 
+i18n.load('en', {});
+i18n.activate('en');
+
 describe('StakeRailCard', () => {
   afterEach(cleanup);
 
   it('holds a skeleton while positions load', () => {
-    render(<StakeRailCard positions={undefined} isLoading />);
+    render(
+      <I18nProvider i18n={i18n}>
+        <StakeRailCard positions={undefined} isLoading />
+      </I18nProvider>
+    );
 
-    expect(screen.getByTestId('stake-rail-skeleton-stub')).toBeTruthy();
+    expect(screen.getByTestId('stake-rail-card-loading')).toBeTruthy();
+    expect(screen.getAllByTestId('stake-rail-skeleton-stub').length).toBeGreaterThan(1);
     expect(screen.queryByTestId('stake-summary-card-stub')).toBeNull();
     expect(screen.queryByTestId('stake-engine-card-stub')).toBeNull();
   });

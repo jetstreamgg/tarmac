@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildSupplyModalRows,
+  buildSavingsEntryRows,
   buildSupplyReviewRows,
-  buildWithdrawModalRows,
   buildWithdrawReviewRows,
   type SavingsModalCell,
   type SavingsModalGridRow
@@ -44,15 +43,15 @@ describe('the Network cell: a control on entry, a value on review', () => {
 
   it('carries the switchable chains on both entry grids', () => {
     for (const rows of [
-      buildSupplyModalRows({ ...INPUT, networkChainIds: CHAINS }),
-      buildWithdrawModalRows({ ...WITHDRAW_INPUT, networkChainIds: CHAINS })
+      buildSavingsEntryRows('supply', { ...INPUT, networkChainIds: CHAINS }),
+      buildSavingsEntryRows('withdraw', { ...WITHDRAW_INPUT, networkChainIds: CHAINS })
     ]) {
       expect(byLabel(rows)['Network'].networkChainIds).toEqual(CHAINS);
     }
   });
 
   it('leaves them off when the flow names none (every mainnet-only product)', () => {
-    expect(byLabel(buildSupplyModalRows(INPUT))['Network'].networkChainIds).toBeUndefined();
+    expect(byLabel(buildSavingsEntryRows('supply', INPUT))['Network'].networkChainIds).toBeUndefined();
   });
 
   it('never carries them on a review grid — the builders take no such input', () => {
@@ -72,9 +71,9 @@ describe('the Network cell: a control on entry, a value on review', () => {
   });
 });
 
-describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry grid', () => {
+describe('buildSavingsEntryRows(supply) — Figma 859:36036 "Supply to Sky Savings" entry grid', () => {
   it('produces exactly the Figma grid pairing, in order', () => {
-    const rows = buildSupplyModalRows(INPUT);
+    const rows = buildSavingsEntryRows('supply', INPUT);
     // Exact labels, exact pairing — this is the Figma contract for the entry grid.
     expect(gridLabels(rows)).toEqual([
       ['Savings rate', 'Network'],
@@ -84,7 +83,7 @@ describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry
   });
 
   it('marks Supply and Est. earnings as before→after deltas once an amount is entered', () => {
-    const cells = byLabel(buildSupplyModalRows(INPUT));
+    const cells = byLabel(buildSavingsEntryRows('supply', INPUT));
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '110' });
     expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({
       kind: 'delta',
@@ -94,13 +93,13 @@ describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry
   });
 
   it('collapses the delta cells to their current value with no amount (Figma 859:36036 empty state)', () => {
-    const cells = byLabel(buildSupplyModalRows({ ...INPUT, hasAmount: false }));
+    const cells = byLabel(buildSavingsEntryRows('supply', { ...INPUT, hasAmount: false }));
     expect(cells['Supply']).toMatchObject({ kind: 'single', value: '100' });
     expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ kind: 'single', value: '6.5' });
   });
 
   it('threads the single-value cells with their presentation hints', () => {
-    const cells = byLabel(buildSupplyModalRows(INPUT));
+    const cells = byLabel(buildSavingsEntryRows('supply', INPUT));
     expect(cells['Savings rate']).toMatchObject({ kind: 'single', value: '6.50%', rateAccent: 'savings' });
     expect(cells['Network']).toMatchObject({ kind: 'single', value: 'Ethereum', network: true });
     expect(cells['Network fee']).toMatchObject({ kind: 'single', value: '–' });
@@ -109,11 +108,11 @@ describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry
   });
 
   it('omits the L2 "Receive at least" cell on mainnet (no minReceived)', () => {
-    expect(flat(buildSupplyModalRows(INPUT)).map(c => c.label)).not.toContain('Receive at least');
+    expect(flat(buildSavingsEntryRows('supply', INPUT)).map(c => c.label)).not.toContain('Receive at least');
   });
 
   it('pairs "Receive at least" with Network fee when minReceived is given (L2 PSM)', () => {
-    const rows = buildSupplyModalRows({ ...INPUT, minReceived: '4.95' });
+    const rows = buildSavingsEntryRows('supply', { ...INPUT, minReceived: '4.95' });
     expect(gridLabels(rows)).toEqual([
       ['Savings rate', 'Network'],
       ['Supply', 'Est. 1Y yield (at current rate)'],
@@ -127,9 +126,9 @@ describe('buildSupplyModalRows — Figma 859:36036 "Supply to Sky Savings" entry
   });
 });
 
-describe('buildWithdrawModalRows — "Withdraw from Sky Savings" entry grid', () => {
+describe('buildSavingsEntryRows(withdraw) — "Withdraw from Sky Savings" entry grid', () => {
   it('mirrors the supply grid pairing', () => {
-    expect(gridLabels(buildWithdrawModalRows(WITHDRAW_INPUT))).toEqual([
+    expect(gridLabels(buildSavingsEntryRows('withdraw', WITHDRAW_INPUT))).toEqual([
       ['Savings rate', 'Network'],
       ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Network fee']
@@ -137,7 +136,7 @@ describe('buildWithdrawModalRows — "Withdraw from Sky Savings" entry grid', ()
   });
 
   it('keeps Savings rate single (a withdrawal never moves the rate) and deltas the position', () => {
-    const cells = byLabel(buildWithdrawModalRows(WITHDRAW_INPUT));
+    const cells = byLabel(buildSavingsEntryRows('withdraw', WITHDRAW_INPUT));
     expect(cells['Savings rate']).toMatchObject({ kind: 'single', value: '6.50%', rateAccent: 'savings' });
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '90' });
     expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({

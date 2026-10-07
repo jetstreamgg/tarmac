@@ -3,17 +3,24 @@ import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { motion } from 'motion/react';
 
 import { cn } from '@/lib/cn';
-// Leaf-safe motion tokens (no app graph) — used only by the widget popover below.
-import { AnimationLabels } from '@/widgets/shared/animation/constants';
-import { cardInAnimate, cardInInitial } from '@/widgets/shared/animation/presets';
+// Leaf-safe motion tokens (no app graph) — used only by the widget-look popover below.
+import { AnimationLabels } from '@/modules/ui/animation/constants';
+import { cardInAnimate, cardInInitial } from '@/modules/ui/animation/presets';
 
 // Shared Radix aliases (identical in both trees).
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
-const PopoverPortal = PopoverPrimitive.Portal;
-const PopoverAnchor = PopoverPrimitive.Anchor;
 const PopoverClose = PopoverPrimitive.Close;
-const PopoverArrow = PopoverPrimitive.Arrow;
+// Radix's arrow polygon carries no fill, so it painted UA black under the
+// light theme's #ecf0ff panel. The fill follows the widget surface token the
+// info popovers paint, so a theme swap moves both together.
+const PopoverArrow = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Arrow>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Arrow>
+>(({ className, ...props }, ref) => (
+  <PopoverPrimitive.Arrow ref={ref} className={cn('fill-containerDark', className)} {...props} />
+));
+PopoverArrow.displayName = PopoverPrimitive.Arrow.displayName;
 
 // The stock open/close motion (tailwindcss-animate zoom + fade + slide).
 // Kept separate so a caller can opt out and bring its own `animate-*`
@@ -49,7 +56,7 @@ const PopoverContent = React.forwardRef<
 
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-// Widget look — relocated as PopoverWidgetContent; the widgets/popover shim aliases it back.
+// Widget look (the info popovers).
 const PopoverWidgetContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
@@ -83,4 +90,4 @@ const PopoverWidgetContent = React.forwardRef<
 PopoverWidgetContent.displayName = PopoverPrimitive.Content.displayName;
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverArrow };
-export { PopoverWidgetContent, PopoverPortal, PopoverAnchor };
+export { PopoverWidgetContent };

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
-import { TxStatus } from '@/widgets/shared/constants';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { StepState } from '@/components/ui/steps';
 
 /**

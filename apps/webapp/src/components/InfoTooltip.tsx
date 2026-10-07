@@ -2,14 +2,27 @@ import { Info, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useIsTouchDevice } from '@/hooks';
+import { cn } from '@/lib/cn';
 
+// The glyph's focus ring is the DS ring, not the browser outline (Design QA 3314:135504).
+const TRIGGER_CLASS =
+  'focus-visible:ring-focusRing rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
+
+/**
+ * Info glyph opening the design-system Tooltip (Figma 5043:58210). Desktop
+ * hovers the Radix tooltip; touch devices, which can't hover, tap a Popover
+ * wearing the same chrome. Body-only is the Simple type; pass `title` for the
+ * Default type (5043:58197): Label 5 heading over fg-secondary body copy.
+ */
 export function InfoTooltip({
+  title,
   content,
   contentClassname,
   iconClassName,
   iconSize = 13,
   shouldShowCloseButton = false
 }: {
+  title?: React.ReactNode;
   content: string | React.ReactNode;
   contentClassname?: string;
   iconClassName?: string;
@@ -18,11 +31,20 @@ export function InfoTooltip({
 }) {
   const isTouchDevice = useIsTouchDevice();
 
+  const body = (
+    <div className={title ? 'text-fgSecondary flex flex-col gap-2' : undefined}>
+      {title && (
+        <p className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">{title}</p>
+      )}
+      {typeof content === 'string' ? <p>{content}</p> : content}
+    </div>
+  );
+
   return isTouchDevice ? (
     <Popover>
       <PopoverTrigger
         onClick={e => e.stopPropagation()}
-        className="z-10"
+        className={cn(TRIGGER_CLASS, 'z-10')}
         aria-label="Show additional information"
       >
         <Info size={iconSize} className={iconClassName} />
@@ -43,7 +65,7 @@ export function InfoTooltip({
           onWheel={e => e.stopPropagation()}
           onTouchMove={e => e.stopPropagation()}
         >
-          {typeof content === 'string' ? <p>{content}</p> : content}
+          {body}
         </div>
       </PopoverContent>
     </Popover>
@@ -54,13 +76,13 @@ export function InfoTooltip({
     // RiskTierDetailsTrigger.
     <TooltipProvider delayDuration={300}>
       <Tooltip>
-        <TooltipTrigger aria-label="Show additional information">
+        <TooltipTrigger className={TRIGGER_CLASS} aria-label="Show additional information">
           <Info size={iconSize} className={iconClassName} />
         </TooltipTrigger>
         <TooltipPortal>
           <TooltipContent className={contentClassname}>
             <div className="max-h-[calc(var(--radix-tooltip-content-available-height)-64px)] overflow-y-auto">
-              {typeof content === 'string' ? <p>{content}</p> : content}
+              {body}
             </div>
           </TooltipContent>
         </TooltipPortal>

@@ -20,9 +20,18 @@ export function useHideOnScroll(): boolean {
   const lastScrollY = useRef(0);
 
   useEffect(() => {
-    lastScrollY.current = window.scrollY;
+    // Reading the offset forces a layout. This effect runs in the same task as
+    // the app's first commit, so reading here would lay out the whole first
+    // page synchronously, on top of the layout the next frame does anyway.
+    // From a frame callback the read only brings that frame's own layout
+    // forward. A scroll event before then takes the offset itself.
+    let pending = true;
+    const frame = requestAnimationFrame(() => {
+      if (pending) lastScrollY.current = window.scrollY;
+    });
 
     const onScroll = () => {
+      pending = false;
       const y = window.scrollY;
       const delta = y - lastScrollY.current;
       if (Math.abs(delta) < DIRECTION_THRESHOLD_PX) return;
@@ -31,7 +40,10 @@ export function useHideOnScroll(): boolean {
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+    };
   }, []);
 
   return hidden;

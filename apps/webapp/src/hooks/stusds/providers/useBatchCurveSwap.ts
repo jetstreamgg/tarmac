@@ -9,7 +9,7 @@ import {
 } from '../../generated';
 import { BatchWriteHook, BatchWriteHookParams } from '../../hooks';
 import { getWriteContractCall } from '../../shared/getWriteContractCall';
-import { useTransactionFlow } from '../../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../../shared/useBatchWriteFlow';
 import { familyMainnetId } from '@/utils';
 import { useCurveAllowance } from './useCurveAllowance';
 import { useCurvePoolData } from './useCurvePoolData';
@@ -121,7 +121,7 @@ export function useBatchCurveSwap({
     allowance !== undefined &&
     activeEnabled;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -129,11 +129,7 @@ export function useBatchCurveSwap({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

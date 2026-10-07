@@ -1,4 +1,4 @@
-import { formatUnits, parseUnits, stringToHex } from 'viem';
+import { parseUnits, stringToHex } from 'viem';
 import {
   mcdSpotAddress,
   mcdVatAddress,
@@ -10,11 +10,12 @@ import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
 import { calculateVaultInfo } from './calculateVaultInfo';
-import { getEtherscanLink, math } from '@/utils';
+import { formatBigInt, getEtherscanLink, math } from '@/utils';
 import { TRUST_LEVELS } from '../constants';
 import { COLLATERAL_PRICE_SYMBOL, SupportedCollateralTypes } from './vaults.constants';
 import { getIlkName } from './helpers';
 import { usePrices } from '../prices/usePrices';
+import { useSimulatedDripRate } from './useSimulatedDripRate';
 
 export function useSimulatedVault(
   collateralAmount: bigint,
@@ -48,7 +49,10 @@ export function useSimulatedVault(
     scopeKey: `vat-ilk-${ilkName}`
   });
 
-  const [, rate, spot, , dust] = vatIlkData || [];
+  const [, vatRate, spot, , dust] = vatIlkData || [];
+  // Use the dripped rate so the max borrow leaves room for the fee the tx itself accrues.
+  const { data: drippedRate, isLoading: isLoadingDrip, error: errorDrip } = useSimulatedDripRate(ilkHex);
+  const rate = drippedRate ?? vatRate;
 
   // MCD Spot
   const {
@@ -75,8 +79,8 @@ export function useSimulatedVault(
 
   const [, mat] = spotIlkData || [];
 
-  const isLoading = isLoadingVatIlk || isLoadingSpotPar || isLoadingSpotIlk;
-  const error = errorVatIlk || errorSpotPar || errorSpotIlk;
+  const isLoading = isLoadingVatIlk || isLoadingSpotPar || isLoadingSpotIlk || isLoadingDrip;
+  const error = errorVatIlk || errorSpotPar || errorSpotIlk || errorDrip;
 
   // Once all the values are present we can compute the vault info
   const allLoaded = [spot, rate, par, mat, dust].every(value => !!value || value === 0n);
@@ -112,8 +116,8 @@ export function useSimulatedVault(
       : data?.dust && desiredDebtAmount < data.dust && desiredDebtAmount !== 0n
         ? new Error(
             isPayingDebt
-              ? `Debt must be payed off entirely, or left with a minimum of ${formatUnits(data.dust, 18)}`
-              : `Minimum borrow amount is ${formatUnits(data.dust, 18)}`
+              ? `Debt must be payed off entirely, or left with a minimum of ${formatBigInt(data.dust)}`
+              : `Minimum borrow amount is ${formatBigInt(data.dust)}`
           )
         : null;
 

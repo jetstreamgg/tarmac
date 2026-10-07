@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
-import type { TxStatus } from '@/widgets';
+import type { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TxMutateVariables } from '@/hooks';
 
 /**
@@ -134,6 +134,12 @@ export type TransactionConfig = {
    * `useTransactionPreflight`.
    */
   skipReview?: boolean;
+  /**
+   * The modal replaces another modal that unmounts in the same commit (the
+   * stake change/claim modals over the details modal): its scrim mounts
+   * already up instead of fading in over the uncovered page.
+   */
+  scrimHandoff?: boolean;
   /**
    * Content the provider keeps mounted (hidden) for the whole modal lifetime —
    * independent of which screen is showing and of minimize. This is where a flow
@@ -286,13 +292,14 @@ export type LiveModalUpdate = Partial<
  * Lifecycle callbacks spread into write hooks. Compatible with both
  * WriteHookParams and BatchWriteHookParams. `hash` is the on-chain tx hash where
  * one exists; for EIP-5792 batches it is undefined until a receipt resolves (see
- * the EIP-5792 rule above).
+ * the EIP-5792 rule above). `blockNumber` on success is the block of the last
+ * receipt, which the history refresh waits for the indexer to reach.
  */
 export type TxCallbacks = {
   /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
   onMutate: (variables?: TxMutateVariables) => void;
   onStart: (hash?: string) => void;
-  onSuccess: (hash?: string) => void;
+  onSuccess: (hash?: string, blockNumber?: bigint) => void;
   onError: (error: Error, hash?: string) => void;
 };
 
@@ -331,66 +338,3 @@ export type TransactionContextValue = {
    */
   txStatus: TxStatus;
 };
-
-/* ============================================================================
- * Async-order variant (CoW / ETH-flow) — TYPE SPIKE. Not wired to production
- * (proven by the throwaway harness). Models the off-chain lifecycle with no
- * receipt: sign (EIP-712) → POST → orderId (UID) → poll → terminal.
- *
- * What it formalizes vs the on-chain flow:
- *  - No tx hash. The order is its UID; a link would use `orderExplorerUrl(orderId)`
- *    — E3 has to place it itself, since the modal no longer renders one.
- *  - Retry RE-POLLS the existing order — never re-signs (that would create a
- *    second order).
- *  - All terminal states surface (today's Trade flow drops cancelled/expired).
- *
- * Status → TxStatus: presignaturePending|open → LOADING; fulfilled → SUCCESS;
- * cancelled → CANCELLED; expired → ERROR (retry re-polls).
- * ========================================================================== */
-
-/** CoW order status (mirrors `OrderStatus` in cowApiSchema). */
-export type AsyncOrderStatus = 'presignaturePending' | 'open' | 'fulfilled' | 'cancelled' | 'expired';
-
-/** The config a consumer passes to `launch()` for an off-chain (async) order. */
-export type AsyncOrderConfig = Pick<
-  TransactionConfig,
-  | 'title'
-  | 'subtitles'
-  | 'transactionContent'
-  | 'rightHeaderComponent'
-  | 'confirmLabel'
-  | 'confirmDisabled'
-  | 'successLabel'
-  | 'errorLabel'
-  | 'steps'
-  | 'analytics'
-  | 'sessionId'
-  | 'supportedChainIds'
-  | 'onSuccess'
-  | 'onError'
-> & {
-  /** Discriminant separating this from the on-chain `TransactionConfig`. */
-  kind: 'async-order';
-  /** Sign + POST the order; resolves with the order UID. No tx hash / receipt. */
-  submitOrder: () => Promise<string>;
-  /** Poll an order's status by UID. Idempotent — retry re-polls, never re-signs. */
-  pollOrderStatus: (orderId: string) => Promise<AsyncOrderStatus>;
-  /** Cancel an open order by UID. */
-  cancelOrder?: (orderId: string) => Promise<void>;
-  /**
-   * Explorer URL for the order — the async-order stand-in for a tx hash.
-   * Unwired: the modal's explorer link was removed (a confirmed transaction
-   * hands its hash to the success toast instead), so E3 owns where this lands.
-   */
-  orderExplorerUrl?: (orderId: string) => string;
-  /** Poll cadence in ms; defaults to 2000 (matches the current Trade flow). */
-  pollIntervalMs?: number;
-};
-
-/** What a future `launch()` accepts: the frozen on-chain config or the async-order variant. */
-export type LaunchConfig = TransactionConfig | AsyncOrderConfig;
-
-/** Narrows a LaunchConfig to the async-order variant. */
-export function isAsyncOrderConfig(config: LaunchConfig): config is AsyncOrderConfig {
-  return (config as AsyncOrderConfig).kind === 'async-order';
-}

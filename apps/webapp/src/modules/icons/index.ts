@@ -1,29 +1,21 @@
 import { ArrowDown } from './ArrowDown';
 import { ArrowRightLong } from './ArrowRightLong';
 import { Copy } from './Copy';
-import { SavingsSupply } from './SavingsSupply';
 import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
 import { LinkExternal } from './LinkExternal';
 import { Merkl } from './Merkl';
-import { Rewards } from './Rewards';
-import { RewardsEmpty } from './RewardsEmpty';
 import { Savings } from './Savings';
 import { Usds } from './Usds';
 import { Earn } from './Earn';
-import { Supplied } from './Supplied';
 import { SuppliedEmpty } from './SuppliedEmpty';
 import { TransactionsEmpty } from './TransactionsEmpty';
-import { Withdrawn } from './Withdrawn';
-import { WithdrawnEmpty } from './WithdrawnEmpty';
 import { Balances } from './Balances';
 import { LightningFilled } from './LightningFilled';
 import { Close } from './Close';
 import { FilterX } from './FilterX';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
-import { ArbitrumChain } from './ArbitrumChain';
-import { UnichainChain } from './UnichainChain';
 import { OptimismChain } from './OptimismChain';
 import { Stake } from './Stake';
 import { StakeSky } from './StakeSky';
@@ -46,35 +38,32 @@ import { TrendingUp } from './TrendingUp';
 import { TrendingUpGradient } from './TrendingUpGradient';
 import { IllustrationStaked } from './IllustrationStaked';
 import { IllustrationStakingLogomark } from './IllustrationStakingLogomark';
+import { Morpho } from './Morpho';
+import { NoResults } from './NoResults';
+import { CurveLogo } from './CurveLogo';
+import { Info } from './Info';
+import { InProgress, SuccessCheck, FailedX, Cancel } from './Icons';
 
 export {
   ArrowDown,
   ArrowRightLong,
   Copy,
-  SavingsSupply,
   Failure,
   RewardsModule,
   LinkExternal,
   Merkl,
-  Rewards,
-  RewardsEmpty,
   Savings,
   Usds,
   Earn,
-  Supplied,
   SuppliedEmpty,
   TransactionsEmpty,
-  Withdrawn,
-  WithdrawnEmpty,
   Balances,
   LightningFilled,
   Close,
   FilterX,
   BaseChain,
   MainnetChain,
-  ArbitrumChain,
   OptimismChain,
-  UnichainChain,
   Stake,
   StakeSky,
   Expert,
@@ -95,5 +84,13 @@ export {
   TrendingUp,
   TrendingUpGradient,
   IllustrationStaked,
-  IllustrationStakingLogomark
+  IllustrationStakingLogomark,
+  Morpho,
+  NoResults,
+  CurveLogo,
+  Info,
+  InProgress,
+  SuccessCheck,
+  FailedX,
+  Cancel
 };

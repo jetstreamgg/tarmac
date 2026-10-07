@@ -12,7 +12,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useEntrySlot: () => null
 }));
 
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useModalEntryBody } from './useModalEntryBody';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';

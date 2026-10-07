@@ -2,6 +2,8 @@
 
 Hook for checking if an address is allowed based on an authentication URL.
 
+Every call can reach the paid screening provider once the worker's 12h edge cache expires, so the hook never polls: a verdict stays fresh for `SCREENING_MAX_AGE_MS` (4h), and the webapp only enables it before showing the terms. The pre-transaction gate reads and writes the same cache entry (`addressScreeningQueryKey`).
+
 ## Import
 
 ```ts

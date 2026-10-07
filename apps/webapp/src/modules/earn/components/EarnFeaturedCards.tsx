@@ -9,7 +9,7 @@ import { IconboxStatus } from '@/components/ui/iconbox';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
-import { Pendle } from '@/widgets';
+import { Pendle } from '@/modules/icons/PendleSymbol';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatMaturity } from '../helpers/formatMaturity';
 import { formatUsdCompact } from '../helpers/formatUsdCompact';

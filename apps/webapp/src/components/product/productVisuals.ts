@@ -5,7 +5,7 @@ import type { EarnProductKind } from '@/hooks';
  * icon is shown — Portfolio cards, Earn marketplace cards, and the
  * product-detail page headers: Morpho vaults `info` (blue ring + dot), Pendle
  * fixed-yield `success` (green ring + dot), everything else (savings, rewards,
- * stUSDS, Spark vaults) the neutral default ring. Lives in components/product
+ * stUSDS) the neutral default ring. Lives in components/product
  * so product modules import it "down" rather than from a sibling module.
  */
 export const RING_PENDLE = '#1DD9BA';

@@ -1,5 +1,4 @@
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
-import { ReadHook } from '../hooks';
 import { Token } from '../tokens/types';
 import { VaultConfig } from '../vaults/types';
 import { MorphoTransactionType } from './constants';
@@ -9,50 +8,6 @@ import { MorphoTransactionType } from './constants';
  * {@link VaultConfig}; entries set `provider: 'morpho'`.
  */
 export type MorphoVaultConfig = VaultConfig;
-
-/**
- * API response type for Morpho V2 vault adapters query.
- */
-export type MorphoVaultV2AdaptersApiResponse = {
-  data: {
-    vaultV2ByAddress: {
-      address: string;
-      symbol: string;
-      asset: {
-        symbol: string;
-        decimals: number;
-      };
-      totalAssets: string;
-      totalAssetsUsd: number;
-      /** Idle (undeployed) assets in USD */
-      idleAssetsUsd: number;
-      adapters: {
-        items: Array<{
-          address: string;
-          assets: string;
-          assetsUsd: number;
-          type: string;
-        }>;
-      };
-    } | null;
-  };
-};
-
-/**
- * API response type for Morpho V1 vault basic data query (name only, no allocations).
- */
-export type MorphoVaultV1BasicDataApiResponse = {
-  data: {
-    vaultByAddress: {
-      address: string;
-      name: string;
-      symbol: string;
-      state: {
-        netApy: number;
-      };
-    } | null;
-  };
-};
 
 /** V1 vault allocation from the V2 vault */
 export type MorphoV1VaultAllocation = {
@@ -131,10 +86,6 @@ export type MorphoVaultAllocationsData = {
   idleLiquidity: MorphoIdleLiquidityAllocation[];
   /** Asset symbol (e.g., "USDC") */
   assetSymbol: string;
-};
-
-export type MorphoVaultAllocationsHook = ReadHook & {
-  data?: MorphoVaultAllocationsData;
 };
 
 export type MorphoVaultV2Transaction = {

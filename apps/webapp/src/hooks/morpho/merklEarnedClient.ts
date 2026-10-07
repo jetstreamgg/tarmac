@@ -1,31 +1,18 @@
 import { MERKL_API_URL } from './constants';
+import { fetchJson } from '../shared/fetchJson';
+import type { MerklRewardBreakdown, MerklRewardData } from './merklTypes';
 
-export type MerklRewardTokenRaw = {
-  address: string;
-  chainId: number;
-  symbol: string;
-  decimals: number;
-  /** Current USD price of the reward token. */
-  price: number;
-};
+/** The slice of a breakdown the earned computation reads. */
+export type MerklRewardBreakdownRaw = Pick<
+  MerklRewardBreakdown,
+  'reason' | 'amount' | 'claimed' | 'pending' | 'campaignId'
+>;
 
-/** One campaign's slice of a reward; `reason` carries the source (vault address or airdrop name). */
-export type MerklRewardBreakdownRaw = {
-  reason: string;
-  amount: string;
-  claimed: string;
-  pending: string;
-  campaignId: string;
-};
-
-/** Lifetime cumulative reward for one token: amount = claimed + unclaimed, pending = not yet in the merkle root. */
-export type MerklUserRewardRaw = {
-  root: string;
-  recipient: string;
-  amount: string;
-  claimed: string;
-  pending: string;
-  token: MerklRewardTokenRaw;
+/** The slice of a reward the earned computation reads (no proofs — it never claims). */
+export type MerklUserRewardRaw = Pick<
+  MerklRewardData,
+  'root' | 'recipient' | 'amount' | 'claimed' | 'pending' | 'token'
+> & {
   breakdowns: MerklRewardBreakdownRaw[];
 };
 
@@ -44,15 +31,8 @@ export type MerklClaimRaw = {
   amount: string;
 };
 
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' }
-  });
-  if (!response.ok) {
-    throw new Error(`Merkl API error: ${response.status}`);
-  }
-  return (await response.json()) as T;
+function getJson<T>(url: string): Promise<T> {
+  return fetchJson<T>(url, { label: 'Merkl API', requireOk: true });
 }
 
 /**

@@ -25,6 +25,9 @@ const h = vi.hoisted(() => ({
   prepared: true,
   execute: vi.fn(),
   update: vi.fn(),
+  // When set, useDebounce returns this instead of the live value — simulates
+  // the settle window after an amount change. Unset → passthrough.
+  debounceLagged: undefined as bigint | undefined,
   // Latest params the form passed to useSavingsLaunch (flow / max / amount / origin +
   // the L2 PSM bounds, so the L2 routing can be asserted).
   launchParams: undefined as
@@ -37,6 +40,7 @@ const h = vi.hoisted(() => ({
         sUsdsBalance?: bigint;
         minAmountOutForWithdrawAll?: bigint;
         maxAmountInForWithdraw?: bigint;
+        enabled?: boolean;
       }
     | undefined
 }));
@@ -58,6 +62,10 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    // The form debounces the typed amount before it reaches the reads/engine; a
+    // passthrough keeps the existing tests synchronous, `debounceLagged` opens the
+    // settle window on demand.
+    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? (h.debounceLagged as T) : value),
     // The bundling badge asks whether the wallet can batch; these renders have no
     // WagmiProvider, so answer "no" and the fee row stays a plain value.
     useIsBatchSupported: () => ({
@@ -116,6 +124,7 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
     sUsdsBalance?: bigint;
     minAmountOutForWithdrawAll?: bigint;
     maxAmountInForWithdraw?: bigint;
+    enabled?: boolean;
   }) => {
     h.launchParams = params;
     return {
@@ -231,10 +240,14 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     h.psmTin = 0n;
     h.psmHalted = 0n;
     h.prepared = true;
+    h.debounceLagged = undefined;
     h.execute.mockClear();
     h.update.mockClear();
   });
-  afterEach(() => cleanup());
+  afterEach(() => {
+    h.debounceLagged = undefined;
+    cleanup();
+  });
 
   it('renders the amount input and the exact Figma supply row set', () => {
     renderForm('supply');
@@ -268,7 +281,7 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   it('pushes an amount-aware success title for the minimized toast', () => {
     renderForm('supply');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10000' } });
-    expect(lastToast()?.success).toBe('10,000 USDS supplied!');
+    expect(lastToast()?.success).toBe('10,000.00 USDS supplied!');
   });
 
   it('enables the confirm (confirmDisabled=false) once a valid amount is entered', () => {
@@ -296,6 +309,26 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '100' } });
     // 200 USDS × 3.75% — the delta's `after`.
     expect(cell().textContent).toContain('7.5');
+  });
+
+  it('rolls the projection figures as the amount changes (Design QA 3314:135843)', () => {
+    renderForm('supply');
+    const cell = () => screen.getByTestId('savings-modal-row-Est. 1Y yield (at current rate)');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '100' } });
+    within(cell())
+      .queryAllByTestId('rolling-digit-in')
+      .forEach(el => fireEvent.animationEnd(el));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '300' } });
+    // 400 USDS × 3.75% = 15: the delta's right side turns over digit by digit,
+    // the left side (the position today) stays still.
+    const moving = within(cell()).getAllByTestId('rolling-digit-in');
+    expect(moving.length).toBeGreaterThan(0);
+    expect(moving.every(el => el.getAttribute('data-transition') === 'roll')).toBe(true);
+    const shown = cell().cloneNode(true) as HTMLElement;
+    shown.querySelectorAll('[data-testid="rolling-digit-out"]').forEach(el => el.remove());
+    expect(shown.textContent).toContain('3.7515.00');
+    const [before] = within(cell()).getAllByTestId('rolling-digits');
+    expect(within(before).queryAllByTestId('rolling-digit-in')).toHaveLength(0);
   });
 
   it('offers USDS, DAI and USDC origin options on mainnet supply', () => {
@@ -398,6 +431,26 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '5' } });
     fireEvent.click(screen.getByTestId('origin-opt-DAI'));
     expect((screen.getByTestId('savings-modal-amount-input') as HTMLInputElement).value).toBe('');
+  });
+
+  // Every keystroke used to refire the preview / min-out / fee / pre-send
+  // simulation reads. The engine now keys on the debounced amount, and the
+  // confirm holds until it has settled, so nothing arms on a stale figure.
+  it('holds the confirm and hands the engine the lagged amount until the debounce settles', () => {
+    const { refresh } = renderForm('supply');
+    // The user typed 5, then 10 — the debounce still reports 5 for the settle window.
+    h.debounceLagged = 5n * 10n ** 18n;
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    expect(lastDisabled()).toBe(true);
+    expect(h.launchParams?.amount).toBe(5n * 10n ** 18n);
+    expect(h.launchParams?.enabled).toBe(false);
+
+    // Settled: the engine sees the typed amount and the confirm opens.
+    h.debounceLagged = undefined;
+    refresh();
+    expect(lastDisabled()).toBe(false);
+    expect(h.launchParams?.amount).toBe(10n * 10n ** 18n);
+    expect(h.launchParams?.enabled).toBe(true);
   });
 });
 

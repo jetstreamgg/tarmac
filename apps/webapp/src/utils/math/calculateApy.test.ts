@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateApyFromStr, formatStrAsApy } from './calculateApy';
+import { calculateApyFromStr } from './calculateApy';
 
 describe('calculateApyFromStr', () => {
   it('should return 0 for zero rate', () => {
@@ -64,28 +64,5 @@ describe('calculateApyFromStr', () => {
 
     // Should fall back to linear approximation for safety
     expect(Number.isFinite(result)).toBe(true);
-  });
-});
-
-describe('formatStrAsApy', () => {
-  it('should format APY as percentage string with default 2 decimals', () => {
-    const str = 1000000010669464688489416886n;
-    const result = formatStrAsApy(str);
-
-    // Should return something like "40.03%"
-    expect(result).toMatch(/^(39|40)\.\d{2}%$/);
-  });
-
-  it('should format APY with custom decimal places', () => {
-    const str = 1000000010669464688489416886n;
-    const result = formatStrAsApy(str, 4);
-
-    // Should return something like "40.0314%"
-    expect(result).toMatch(/^(39|40)\.\d{4}%$/);
-  });
-
-  it('should format zero rate', () => {
-    const result = formatStrAsApy(0n);
-    expect(result).toBe('0.00%');
   });
 });

@@ -30,6 +30,8 @@ const h = vi.hoisted(() => ({
   // rewardsToken symbols backing the useRewardContractTokens mock.
   extraFarm: undefined as `0x${string}` | undefined,
   farmTokenSymbols: {} as Record<string, string>,
+  // Replaces the whole indexer farm list (layout/default-selection tests).
+  farms: undefined as `0x${string}`[] | undefined,
   // Simulation knobs (see the useSimulatedVault mock below).
   minCollateralForDust: 0n,
   dust: 0n,
@@ -130,6 +132,8 @@ vi.mock('@/hooks', async importOriginal => {
         dust: h.dust,
         minCollateralForDust: h.minCollateralForDust,
         riskLevel: desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW,
+        // Capped collateral value at 150% of the debt → 67% loan-to-value.
+        collateralValue: (desiredDebt * 3n) / 2n,
         liquidationProximityPercentage: desiredDebt > 0n ? 36 : 0,
         liquidationPrice: 432n * 10n ** 14n,
         delayedPrice: 608n * 10n ** 14n
@@ -140,12 +144,14 @@ vi.mock('@/hooks', async importOriginal => {
       dataSources: []
     }),
     useStakeRewardContracts: () => ({
-      data: [
-        { contractAddress: actual.lsSkySpkRewardAddress[1] },
-        { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
-        { contractAddress: actual.lsSkySkyRewardAddress[1] },
-        ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
-      ],
+      data: h.farms
+        ? h.farms.map(contractAddress => ({ contractAddress }))
+        : [
+            { contractAddress: actual.lsSkySpkRewardAddress[1] },
+            { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
+            { contractAddress: actual.lsSkySkyRewardAddress[1] },
+            ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
+          ],
       isLoading: false,
       error: null,
       mutate: () => undefined
@@ -234,7 +240,7 @@ vi.mock('../hooks/useStakeLaunch', async importOriginal => {
   };
 });
 
-// The takeover's own enhanced-screening hold (APP-517 via APP-550): the
+// The takeover's own screening hold (APP-517 via APP-550): the
 // provider's injected preflight, read through the context helper.
 const preflight = vi.hoisted(() => ({
   state: { kind: 'clear' } as { kind: 'clear' } | { kind: 'pending' } | { kind: 'blocked'; message: string },
@@ -292,6 +298,7 @@ describe('OpenPositionTakeover', () => {
     h.urnRewardContract = undefined;
     h.extraFarm = undefined;
     h.farmTokenSymbols = {};
+    h.farms = undefined;
     h.prepared = true;
     h.balance = 1000n * WAD;
     h.debounceLag = false;
@@ -307,16 +314,16 @@ describe('OpenPositionTakeover', () => {
     document.body.style.overflow = '';
   });
 
-  it('renders the four numbered cards with both optional cards off (A-Q1)', () => {
+  it('renders the three numbered cards, the reward field, and both optional cards off (A-Q1)', () => {
     renderTakeover();
 
     expect(screen.getByTestId('stake-takeover-stake-card')).toBeTruthy();
-    expect(screen.getByTestId('stake-takeover-reward-card')).toBeTruthy();
+    expect(screen.getByTestId('stake-takeover-reward-field')).toBeTruthy();
     expect(screen.getByTestId('stake-takeover-borrow-card')).toBeTruthy();
     expect(screen.getByTestId('stake-takeover-delegate-card')).toBeTruthy();
-    // The reward card is always-on (no toggle): the list renders expanded.
+    // The reward field is always-on (no toggle): the tiles render expanded.
     expect(screen.getByTestId('stake-takeover-reward-list')).toBeTruthy();
-    expect(screen.queryByTestId('stake-takeover-reward-card-toggle')).toBeNull();
+    expect(screen.queryByTestId('stake-takeover-reward-field-toggle')).toBeNull();
     // Collapsed bodies: no borrow input, no delegate search.
     expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
     expect(screen.queryByTestId('stake-takeover-delegate-search')).toBeNull();
@@ -335,6 +342,50 @@ describe('OpenPositionTakeover', () => {
     const usdsRow = screen.getByTestId(`stake-takeover-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`);
     expect(skyRow.getAttribute('aria-pressed')).toBe('true');
     expect(usdsRow.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('reward picker: two farms render as side-by-side tiles (Figma 3015:59109)', () => {
+    renderTakeover();
+
+    expect(screen.getByTestId('stake-takeover-reward-list').className).toContain('md:grid-cols-2');
+    const skyRow = screen.getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`);
+    expect(skyRow.className).toContain('flex-col');
+    expect(skyRow.className).not.toContain('justify-between');
+  });
+
+  it('reward picker: three or more farms stack as full-width compact rows (Figma 3199:69364)', () => {
+    const extra = '0x9999999999999999999999999999999999999999' as const;
+    h.extraFarm = extra;
+    h.farmTokenSymbols[extra] = 'FOO';
+    renderTakeover();
+
+    expect(screen.getByTestId('stake-takeover-reward-list').className).not.toContain('md:grid-cols-2');
+    const skyRow = screen.getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`);
+    expect(skyRow.className).toContain('justify-between');
+    expect(skyRow.className).not.toContain('flex-col');
+  });
+
+  it('reward picker: a single visible farm is a compact row and comes pre-selected', () => {
+    h.farms = [lsSkySpkRewardAddress[1], lsSkySkyRewardAddress[1]];
+    renderTakeover();
+
+    expect(
+      screen.queryByTestId(`stake-takeover-reward-${lsSkySpkRewardAddress[1].toLowerCase()}`)
+    ).toBeNull();
+    const skyRow = screen.getByTestId(`stake-takeover-reward-${lsSkySkyRewardAddress[1].toLowerCase()}`);
+    expect(skyRow.getAttribute('aria-pressed')).toBe('true');
+    expect(skyRow.className).toContain('justify-between');
+    expect(screen.getByTestId('stake-takeover-reward-list').className).not.toContain('md:grid-cols-2');
+  });
+
+  it('reward picker: without SKY, the default is the first farm shown, never a hidden deprecated one', () => {
+    h.farms = [lsSkySpkRewardAddress[1], lsSkyUsdsRewardAddress[1]];
+    renderTakeover();
+    typeStakeAmount('100');
+
+    const usdsRow = screen.getByTestId(`stake-takeover-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`);
+    expect(usdsRow.getAttribute('aria-pressed')).toBe('true');
+    expect(h.launchParams?.selectedRewardContract).toBe(lsSkyUsdsRewardAddress[1]);
   });
 
   it('reward picker: a selection reaches the open seam and the confirm summary', () => {
@@ -401,7 +452,7 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.enabled).toBe(true);
   });
 
-  it('runs the enhanced-screening preflight itself — the takeover is the review (APP-550)', () => {
+  it('runs the screening preflight itself — the takeover is the review (APP-550)', () => {
     preflight.contexts = [];
     renderTakeover();
     // Nothing staged → not actionable: a user playing with the form never
@@ -474,51 +525,6 @@ describe('OpenPositionTakeover', () => {
     expect(h.launchParams?.skyToLock).toBe(500n * WAD);
   });
 
-  it('the stake slider tracks the typed share of the balance (1036:209724)', () => {
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-    expect(slider?.getAttribute('aria-valuenow')).toBe('0');
-
-    // Balance is 1000 SKY, so a quarter of it puts the thumb at 25%.
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
-
-    // Typing past the balance pins the thumb rather than running it off-track.
-    typeStakeAmount('5000');
-    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
-  });
-
-  it('the stake slider still reads whole percents on a dust-bearing balance', () => {
-    // Staging floors, so a balance that is not a round multiple of 100 wei used
-    // to read back one percent LOW (25% chip → thumb at 24) when the projection
-    // floored as well. Real balances are all of this shape.
-    h.balance = 1234567891234567891234n;
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-25'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('25');
-    expect(slider?.getAttribute('aria-valuetext')).toBe('25%');
-
-    fireEvent.click(screen.getByTestId('stake-takeover-stake-amount-percent-100'));
-    expect(slider?.getAttribute('aria-valuenow')).toBe('100');
-  });
-
-  it('dragging the stake slider stages the matching share of the balance', () => {
-    renderTakeover();
-
-    const slider = screen.getByTestId('stake-takeover-stake-slider').querySelector('[role="slider"]');
-    (slider as HTMLElement).focus();
-    // One keyboard step off zero is 1% of the 1000 SKY balance.
-    fireEvent.keyDown(slider as HTMLElement, { key: 'ArrowRight' });
-
-    expect(slider?.getAttribute('aria-valuenow')).toBe('1');
-    expect((screen.getByTestId('stake-takeover-stake-amount') as HTMLInputElement).value).toBe('10');
-    expect(h.launchParams?.skyToLock).toBe(10n * WAD);
-  });
-
   it('shows the est. annual rewards from the selected farm rate, in USD', () => {
     renderTakeover();
 
@@ -540,12 +546,65 @@ describe('OpenPositionTakeover', () => {
     expect(screen.getByTestId('stake-takeover-risk-pill').textContent).toBe('Medium');
     const slider = screen.getByTestId('stake-takeover-borrow-slider');
     expect(slider).toBeTruthy();
-    // The risk slider uses the design-system range treatment (H7): the
-    // orange→yellow fill instead of the default brand gradient.
-    const range = slider.querySelector('[data-slot=slider-range]');
-    expect(range?.className).toContain('from-slider-yellow-start');
+    // Progress Steps: the borrow fill carries the orange→yellow gradient.
+    const fill = slider.querySelector('[data-slot=slider-fill]');
+    expect(fill?.className).toContain('from-slider-yellow-start');
     // Card 1 now shows the min-stake-to-borrow stat.
     expect(screen.getByTestId('stake-takeover-min-stake')).toBeTruthy();
+  });
+
+  it('stat blocks are stacked rows in the Figma order (3015:59161 / 3015:59215)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    const labels = (card: string) =>
+      Array.from(
+        screen.getByTestId(card).querySelectorAll('[class*="divide-y"] > div > span:first-child')
+      ).map(el => el.textContent);
+    expect(labels('stake-takeover-stake-card')).toEqual([
+      'Min. stake to borrow',
+      'Est. annual rewards',
+      'Staking Rewards Rate'
+    ]);
+    expect(labels('stake-takeover-borrow-card')).toEqual([
+      'Liquidation risk',
+      'Loan-to-value',
+      'Liquidation price',
+      'Capped OSM SKY priceHourly updates',
+      'Borrow rate'
+    ]);
+    // Reached badge leads the min-stake value; the hourly pill sits in the label, not the value.
+    const minStake = screen.getByTestId('stake-takeover-min-stake');
+    expect(minStake.firstElementChild?.getAttribute('data-testid')).toBe('stake-min-stake-badge');
+    expect(screen.getByTestId('stake-takeover-osm-price-row').lastElementChild?.textContent).not.toContain(
+      'Hourly updates'
+    );
+  });
+
+  it('shows loan-to-value as debt over the capped collateral value (Figma 3015:59185)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    // Toggling on stages the dust floor, so the simulation carries debt.
+    expect(screen.getByTestId('stake-takeover-ltv-row').textContent).toContain('67%');
+    // The rate row carries no info icon (Figma 3015:59236).
+    expect(screen.getByTestId('stake-takeover-borrow-rate-row').querySelector('svg')).toBeNull();
+  });
+
+  it('enabling the borrow toggle pre-selects the dust floor (Figma 3015:59185)', () => {
+    renderTakeover();
+    typeStakeAmount('1000');
+
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).value).toBe('30');
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
+    // Toggling off and on again keeps a zeroed leg on the floor, never stacks it.
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
   });
 
   it('disabling the borrow toggle zeroes the borrow leg', () => {
@@ -560,19 +619,38 @@ describe('OpenPositionTakeover', () => {
     expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
   });
 
-  it('min-collateral constraint: warning box shown, borrow input disabled, Confirm disabled (C.3)', () => {
+  it('min-collateral constraint: Borrow switch disabled behind the "Stake more to borrow" hint (G11)', () => {
     h.minCollateralForDust = 715104n * WAD;
     h.dust = 30000n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
+    const toggle = screen.getByTestId('stake-takeover-borrow-card-toggle') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    expect(screen.getByTestId('stake-takeover-borrow-card-toggle-hint')).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount')).toBeNull();
+    // The stake card's min row carries the Not-reached badge.
+    const badge = screen.getByTestId('stake-min-stake-badge');
+    expect(badge.textContent).toBe('Not reached');
+    expect(badge.getAttribute('data-reached')).toBeNull();
+  });
+
+  it('min-collateral constraint: a card already on keeps the warning when the stake drops (C.3)', () => {
+    h.minCollateralForDust = 715104n * WAD;
+    h.dust = 30000n * WAD;
+    renderTakeover();
+    typeStakeAmount('800000');
+    expect(screen.getByTestId('stake-min-stake-badge').textContent).toBe('Reached');
+
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+    typeStakeAmount('1000');
 
     const warning = screen.getByTestId('stake-takeover-min-collateral-warning');
-    expect(warning).toBeTruthy();
     // The callout prose spells the dust floor out in full (UX 1104:19793).
-    expect(warning.textContent).toContain('30,000 USDS');
+    expect(warning.textContent).toContain('30,000.00 USDS');
     expect(warning.textContent).not.toContain('30K USDS');
+    expect(screen.queryByTestId('stake-takeover-borrow-slider')).toBeNull();
     expect((screen.getByTestId('stake-takeover-borrow-amount') as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(true);
   });
@@ -593,16 +671,17 @@ describe('OpenPositionTakeover', () => {
     expect((screen.getByTestId('stake-takeover-confirm') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('borrow: the top chip is 75% and stages three quarters of the max, whole-USDS rounded', () => {
+  it('borrow: the Min chip stages the dust floor and Max the ceiling headroom', () => {
     h.debtCeilingHeadroom = 50n * WAD;
     renderTakeover();
     typeStakeAmount('1000');
 
     fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
-    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-100')).toBeNull();
-    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-percent-75'));
-
-    expect(h.launchParams?.usdsToBorrow).toBe(37n * WAD);
+    expect(screen.queryByTestId('stake-takeover-borrow-amount-percent-75')).toBeNull();
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-chip-max'));
+    expect(h.launchParams?.usdsToBorrow).toBe(50n * WAD);
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-amount-chip-min'));
+    expect(h.launchParams?.usdsToBorrow).toBe(h.dust);
   });
 
   it('borrow above the ceiling headroom shows the debt-ceiling error and disables Confirm', () => {

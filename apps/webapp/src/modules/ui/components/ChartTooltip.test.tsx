@@ -47,7 +47,7 @@ describe('ChartTooltip', () => {
   it('omits the series-label cell entirely when no label resolves (no empty gap)', () => {
     render(<ChartTooltip {...base} tooltipLabel={undefined} />);
     expect(screen.queryByTestId('chart-tooltip-series-label')).toBeNull();
-    expect(screen.getByText('5,774,407')).toBeTruthy();
+    expect(screen.getByText('5,774,407.00')).toBeTruthy();
   });
 
   it('renders the trailing token icon for a token series', () => {
@@ -67,13 +67,13 @@ describe('ChartTooltip', () => {
 
   it('drops the text symbol suffix when a token icon carries the unit', () => {
     render(<ChartTooltip {...base} symbol="USDS" tokenSymbols={['USDS']} />);
-    expect(screen.getByText('5,774,407')).toBeTruthy();
+    expect(screen.getByText('5,774,407.00')).toBeTruthy();
     expect(screen.queryByText(/USDS/)).toBeNull();
   });
 
   it('keeps the text symbol suffix when there is no token icon', () => {
     render(<ChartTooltip {...base} symbol="USDS" />);
-    expect(screen.getByText('5,774,407 USDS')).toBeTruthy();
+    expect(screen.getByText('5,774,407.00 USDS')).toBeTruthy();
   });
 });
 
