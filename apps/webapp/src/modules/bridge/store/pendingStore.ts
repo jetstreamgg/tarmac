@@ -55,6 +55,7 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.safeTxHash, isString) ||
     !optional(entry.recipient, isString) ||
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
+    !optional(entry.readyAt, at => typeof at === 'number') ||
     !optional(entry.settledAt, at => typeof at === 'number') ||
     !optional(entry.failureReason, isString)
   ) {

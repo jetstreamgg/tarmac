@@ -272,13 +272,26 @@ describe('pollIntervalMs', () => {
     expect(pollIntervalMs(queued, NOW + 2 * HOUR)).toBe(5 * MINUTE);
   });
 
-  it('keeps polling ready bridges slowly, since anyone can send the next action', () => {
+  it('keeps polling ready bridges, since anyone can send the next action, and backs off after an hour', () => {
     const ready = applyProgress(
       create(routeFor('base', 'ethereum')),
       { kind: 'ready', nextAction: 'claim' },
       NOW
     );
     expect(pollIntervalMs(ready, NOW)).toBe(MINUTE);
+    expect(pollIntervalMs(ready, NOW + 59 * MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(ready, NOW + 2 * HOUR)).toBe(5 * MINUTE);
+    expect(pollIntervalMs(ready, NOW + 30 * 24 * HOUR)).toBe(5 * MINUTE);
+  });
+
+  it('counts the hour from when the bridge became ready, not from its ETA', () => {
+    // An OP withdrawal is ready to prove about an hour in, days before its ETA.
+    const withdrawal = create(routeFor('base', 'ethereum', false));
+    const ready = applyProgress(withdrawal, { kind: 'ready', nextAction: 'prove' }, NOW + HOUR);
+    expect(pollIntervalMs(ready, NOW + HOUR + MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(ready, NOW + 3 * HOUR)).toBe(5 * MINUTE);
+    const stillReady = applyProgress(ready, { kind: 'ready', nextAction: 'prove' }, NOW + 3 * HOUR);
+    expect(stillReady.readyAt).toBe(NOW + HOUR);
   });
 });
 

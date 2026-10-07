@@ -69,6 +69,8 @@ export type PendingBridge = {
   actions: PendingBridgeAction[];
   /** Route-specific tracking ids (CCTP message hash, withdrawal hash, LayerZero guid). */
   routeData?: Record<string, string>;
+  /** When the bridge last became ready for its next action. */
+  readyAt?: number;
   /** When the bridge reached arrived, claimed or failed. */
   settledAt?: number;
   failureReason?: string;
