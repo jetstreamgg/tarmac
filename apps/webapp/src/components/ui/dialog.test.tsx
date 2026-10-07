@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Dialog, DialogContent, DialogTitle } from './dialog';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Sheet, SheetContent, SheetTitle } from './sheet';
 
 afterEach(cleanup);
@@ -64,6 +65,71 @@ const DisabledOpenerHarness = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+// The More menu's shape: a popover item opens the dialog and closes the
+// popover, so the opener and the dialog it sat in are both gone on close. In a
+// browser the popover is still animating out when the dialog opens, so the
+// item is still focused then; `menuClosesFirst` covers the order jsdom runs.
+const MenuOpenerHarness = ({ menuClosesFirst }: { menuClosesFirst: boolean }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <PopoverTrigger>more</PopoverTrigger>
+        <PopoverContent>
+          <button
+            onClick={() => {
+              if (menuClosesFirst) {
+                setMenuOpen(false);
+                setOpen(true);
+              } else {
+                setOpen(true);
+                setTimeout(() => setMenuOpen(false), 50);
+              }
+            }}
+          >
+            upgrade
+          </button>
+        </PopoverContent>
+      </Popover>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Title</DialogTitle>
+          <button onClick={() => setOpen(false)}>close dialog</button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+// Position details handing off to the manage takeover: the takeover mounts and
+// makes the page inert, then the dialog closes with its opener behind it.
+const HandOffHarness = () => {
+  const [open, setOpen] = useState(false);
+  const [takeover, setTakeover] = useState(false);
+  return (
+    <>
+      <div inert={takeover}>
+        <button onClick={() => setOpen(true)}>row</button>
+      </div>
+      {takeover && <div role="dialog" aria-modal="true" tabIndex={-1} data-testid="takeover" />}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Title</DialogTitle>
+          <button
+            onClick={() => {
+              setTakeover(true);
+              setOpen(false);
+            }}
+          >
+            borrow
+          </button>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -136,6 +202,38 @@ describe('focus on open and close', () => {
 
     await waitFor(() => expect(screen.queryByText('close dialog')).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('outer')));
+  });
+
+  it.each([true, false])(
+    'falls back to the menu trigger when the menu item that opened it is gone (menu closes first: %s)',
+    async menuClosesFirst => {
+      render(<MenuOpenerHarness menuClosesFirst={menuClosesFirst} />);
+      const trigger = screen.getByText('more');
+      trigger.focus();
+      fireEvent.click(trigger);
+      const item = await screen.findByText('upgrade');
+      item.focus();
+      fireEvent.click(item);
+      await waitFor(() => expect(screen.getByText('close dialog')).toBeTruthy());
+
+      fireEvent.click(screen.getByText('close dialog'));
+
+      await waitFor(() => expect(screen.queryByText('close dialog')).toBeNull());
+      await waitFor(() => expect(document.activeElement).toBe(trigger));
+    }
+  );
+
+  it('falls back to the open modal on top when the opener is inert behind it', async () => {
+    render(<HandOffHarness />);
+    const opener = screen.getByText('row');
+    opener.focus();
+    fireEvent.click(opener);
+    await waitFor(() => expect(screen.getByText('borrow')).toBeTruthy());
+
+    fireEvent.click(screen.getByText('borrow'));
+
+    await waitFor(() => expect(screen.queryByText('borrow')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('takeover')));
   });
 
   it('still calls the caller handler', async () => {

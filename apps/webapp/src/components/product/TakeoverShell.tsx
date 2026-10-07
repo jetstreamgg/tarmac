@@ -5,6 +5,7 @@ import { RemoveScroll } from 'react-remove-scroll';
 import { X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
+import { focusFallbackFor } from '@/hooks/ui/useRestoreFocusOnClose';
 
 /**
  * The takeover opens and closes on the modal comp's motion (Figma: Sky App: UI
@@ -96,6 +97,9 @@ export function TakeoverShell({
     const container = containerRef.current;
     if (!container) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Opened from position details, the trigger is a details-modal control
+    // that's gone by close; the row that opened the details stands in.
+    const fallback = focusFallbackFor(previouslyFocused);
     const appRoot = document.getElementById('root');
     if (appRoot) {
       inertRootHolds += 1;
@@ -130,6 +134,7 @@ export function TakeoverShell({
         if (inertRootHolds === 0) appRoot.removeAttribute('inert');
       }
       previouslyFocused?.focus();
+      if (document.activeElement !== previouslyFocused) fallback?.focus();
     };
   }, []);
 

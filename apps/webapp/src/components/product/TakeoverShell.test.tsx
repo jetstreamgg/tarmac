@@ -108,6 +108,33 @@ describe('TakeoverShell', () => {
     root.remove();
   });
 
+  it('falls back to what opened the details modal when its control is gone on close', () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    const row = document.createElement('button');
+    root.appendChild(row);
+    document.body.appendChild(root);
+    row.focus();
+    const details = document.createElement('div');
+    details.setAttribute('role', 'dialog');
+    const borrow = document.createElement('button');
+    details.appendChild(borrow);
+    document.body.appendChild(details);
+    borrow.focus();
+
+    const { unmount } = render(
+      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
+        <div />
+      </TakeoverShell>
+    );
+    details.remove();
+
+    unmount();
+
+    expect(document.activeElement).toBe(row);
+    root.remove();
+  });
+
   it('keeps the app root inert until the last overlapping takeover unmounts', () => {
     const root = document.createElement('div');
     root.id = 'root';
