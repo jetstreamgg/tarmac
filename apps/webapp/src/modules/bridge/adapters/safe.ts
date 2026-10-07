@@ -4,20 +4,39 @@ import type { SafeConfig } from '../model/recipient';
 
 export type SafeMultisigTx = {
   safe: string;
+  safeTxHash: string;
   nonce: number;
   isExecuted: boolean;
   isSuccessful: boolean | null;
   transactionHash: string | null;
+  executedAt?: number;
 };
 
-/** Where a queued Safe transaction stands; null while it still waits for signatures. */
-export function safeTxProgress(tx: SafeMultisigTx, safeNonce: number | undefined): BridgeProgress | null {
-  if (tx.isExecuted) {
-    if (tx.isSuccessful === false) return { kind: 'failed', reason: 'safe-tx-reverted' };
-    return tx.transactionHash ? { kind: 'source-executed', txHash: tx.transactionHash } : null;
+const sameHash = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
+/**
+ * Where a queued Safe transaction stands, given the executed transactions the
+ * service lists at its nonce; null while it still waits for signatures.
+ */
+export function safeTxProgress(
+  tx: SafeMultisigTx,
+  executedAtNonce: SafeMultisigTx[] = []
+): BridgeProgress | null {
+  const executed = tx.isExecuted
+    ? tx
+    : executedAtNonce.find(other => other.isExecuted && sameHash(other.safeTxHash, tx.safeTxHash));
+  if (executed) {
+    if (executed.isSuccessful === false) return { kind: 'failed', reason: 'safe-tx-reverted' };
+    return executed.transactionHash
+      ? {
+          kind: 'source-executed',
+          txHash: executed.transactionHash,
+          ...(executed.executedAt !== undefined && { executedAt: executed.executedAt })
+        }
+      : null;
   }
-  // Another transaction executed at this nonce, so this one can never run.
-  if (safeNonce !== undefined && safeNonce > tx.nonce) return { kind: 'failed', reason: 'safe-tx-replaced' };
+  // Only another executed transaction at this nonce rules this one out: the Safe nonce can move first.
+  if (executedAtNonce.some(other => other.isExecuted)) return { kind: 'failed', reason: 'safe-tx-replaced' };
   return null;
 }
 
@@ -32,13 +51,23 @@ export function parseSafeTx(value: unknown): SafeMultisigTx | null {
   if (typeof value !== 'object' || value === null) return null;
   const tx = value as Record<string, unknown>;
   const nonce = toNonce(tx.nonce);
-  if (typeof tx.safe !== 'string' || nonce === undefined || typeof tx.isExecuted !== 'boolean') return null;
+  if (
+    typeof tx.safe !== 'string' ||
+    typeof tx.safeTxHash !== 'string' ||
+    nonce === undefined ||
+    typeof tx.isExecuted !== 'boolean'
+  ) {
+    return null;
+  }
+  const executedAt = typeof tx.executionDate === 'string' ? Date.parse(tx.executionDate) : NaN;
   return {
     safe: tx.safe,
+    safeTxHash: tx.safeTxHash,
     nonce,
     isExecuted: tx.isExecuted,
     isSuccessful: typeof tx.isSuccessful === 'boolean' ? tx.isSuccessful : null,
-    transactionHash: typeof tx.transactionHash === 'string' ? tx.transactionHash : null
+    transactionHash: typeof tx.transactionHash === 'string' ? tx.transactionHash : null,
+    ...(Number.isFinite(executedAt) && { executedAt })
   };
 }
 
@@ -47,44 +76,36 @@ const getJson = async (url: string): Promise<{ status: number; body: unknown }> 
   return { status: res.status, body: res.ok ? await res.json() : undefined };
 };
 
-// The service indexes a proposed transaction within seconds; one still missing after this was deleted.
-const NOT_FOUND_AFTER_MS = 60 * 60_000;
-
 /**
  * Resolves a queued Safe transaction through the Safe Transaction Service, with
- * no time limit: multisig signers can take days.
+ * no time limit: multisig signers can take days, and a missing transaction keeps waiting.
  */
 export async function readSafeTxProgress({
   chainId,
-  safeTxHash,
-  queuedAt,
-  now
+  safeTxHash
 }: {
   chainId: number;
   safeTxHash: string;
-  queuedAt: number;
-  now: number;
 }): Promise<BridgeProgress | null> {
   const base = SAFE_TRANSACTION_SERVICE_URL[chainId];
   if (!base) return null;
-  const readTx = async () => {
-    const { status, body } = await getJson(`${base}/api/v1/multisig-transactions/${safeTxHash}/`);
-    return { status, tx: parseSafeTx(body) };
-  };
-  const { status, tx } = await readTx();
-  if (!tx) {
-    return status === 404 && now - queuedAt > NOT_FOUND_AFTER_MS
-      ? { kind: 'failed', reason: 'safe-tx-not-found' }
-      : null;
-  }
-  if (tx.isExecuted) return safeTxProgress(tx, undefined);
-  const safeResponse = await getJson(`${base}/api/v1/safes/${tx.safe}/`);
-  const safeNonce = toNonce((safeResponse.body as { nonce?: unknown } | undefined)?.nonce);
-  const progress = safeTxProgress(tx, safeNonce);
-  if (progress?.kind !== 'failed') return progress;
-  // The nonce moved after the first read: this transaction may be what moved it.
-  const again = await readTx();
-  return again.tx?.isExecuted ? safeTxProgress(again.tx, undefined) : progress;
+  const tx = parseSafeTx((await getJson(`${base}/api/v1/multisig-transactions/${safeTxHash}/`)).body);
+  if (!tx) return null;
+  if (tx.isExecuted) return safeTxProgress(tx);
+  const safeNonce = toNonce(
+    ((await getJson(`${base}/api/v1/safes/${tx.safe}/`)).body as { nonce?: unknown } | undefined)?.nonce
+  );
+  if (safeNonce === undefined || safeNonce <= tx.nonce) return null;
+  // The nonce moved past ours: ask what executed there, which may be this transaction.
+  const { body } = await getJson(
+    `${base}/api/v1/safes/${tx.safe}/multisig-transactions/?nonce=${tx.nonce}&executed=true`
+  );
+  const results = (body as { results?: unknown } | undefined)?.results;
+  if (!Array.isArray(results)) return null;
+  const executedAtNonce = results
+    .map(parseSafeTx)
+    .filter((other): other is SafeMultisigTx => other !== null && other.nonce === tx.nonce);
+  return safeTxProgress(tx, executedAtNonce);
 }
 
 /**

@@ -3,6 +3,7 @@ import { parseSafeTx, readSafeConfig, readSafeTxProgress, safeTxProgress, type S
 
 const queued: SafeMultisigTx = {
   safe: '0x0000000000000000000000000000000000005afe',
+  safeTxHash: '0xsafe',
   nonce: 7,
   isExecuted: false,
   isSuccessful: null,
@@ -20,14 +21,22 @@ const respond = (routes: Record<string, { status: number; body?: unknown }>) =>
 afterEach(() => vi.restoreAllMocks());
 
 describe('safeTxProgress', () => {
-  it('waits while signatures are pending at the current nonce', () => {
-    expect(safeTxProgress(queued, 7)).toBeNull();
-    expect(safeTxProgress(queued, undefined)).toBeNull();
+  const other = {
+    ...queued,
+    safeTxHash: '0xother',
+    isExecuted: true,
+    isSuccessful: true,
+    transactionHash: '0xo'
+  };
+
+  it('waits while signatures are pending', () => {
+    expect(safeTxProgress(queued)).toBeNull();
+    expect(safeTxProgress(queued, [])).toBeNull();
   });
 
   it('reports the on-chain hash once executed', () => {
     expect(
-      safeTxProgress({ ...queued, isExecuted: true, isSuccessful: true, transactionHash: '0xexec' }, 8)
+      safeTxProgress({ ...queued, isExecuted: true, isSuccessful: true, transactionHash: '0xexec' })
     ).toEqual({
       kind: 'source-executed',
       txHash: '0xexec'
@@ -36,15 +45,12 @@ describe('safeTxProgress', () => {
 
   it('fails when execution reverted', () => {
     expect(
-      safeTxProgress({ ...queued, isExecuted: true, isSuccessful: false, transactionHash: '0xexec' }, 8)
-    ).toEqual({
-      kind: 'failed',
-      reason: 'safe-tx-reverted'
-    });
+      safeTxProgress({ ...queued, isExecuted: true, isSuccessful: false, transactionHash: '0xexec' })
+    ).toEqual({ kind: 'failed', reason: 'safe-tx-reverted' });
   });
 
-  it('fails when another transaction took its nonce', () => {
-    expect(safeTxProgress(queued, 8)).toEqual({ kind: 'failed', reason: 'safe-tx-replaced' });
+  it('fails only when another transaction executed at its nonce', () => {
+    expect(safeTxProgress(queued, [other])).toEqual({ kind: 'failed', reason: 'safe-tx-replaced' });
   });
 });
 
@@ -61,31 +67,71 @@ describe('parseSafeTx', () => {
 });
 
 describe('readSafeTxProgress', () => {
-  const NOW = 1_800_000_000_000;
-  const read = (overrides: { chainId?: number; queuedAt?: number } = {}) =>
-    readSafeTxProgress({ chainId: 8453, safeTxHash: '0xsafe', queuedAt: NOW, now: NOW, ...overrides });
+  const read = (overrides: { chainId?: number } = {}) =>
+    readSafeTxProgress({ chainId: 8453, safeTxHash: '0xsafe', ...overrides });
 
-  it('compares a pending transaction with the Safe nonce', async () => {
+  const atNonce = `/safes/${queued.safe}/multisig-transactions/?nonce=7&executed=true`;
+  const nonceMoved = { [`/safes/${queued.safe}/`]: { status: 200, body: { nonce: '8' } } };
+
+  it('fails when the service lists another executed transaction at its nonce', async () => {
     respond({
       '/multisig-transactions/0xsafe/': { status: 200, body: queued },
-      [`/safes/${queued.safe}/`]: { status: 200, body: { nonce: '8' } }
+      ...nonceMoved,
+      [atNonce]: {
+        status: 200,
+        body: { results: [{ ...queued, safeTxHash: '0xother', isExecuted: true, isSuccessful: true }] }
+      }
     });
     expect(await read()).toEqual({ kind: 'failed', reason: 'safe-tx-replaced' });
   });
 
-  it('reads the transaction again before calling it replaced, in case it executed between the reads', async () => {
-    const executed = { ...queued, isExecuted: true, isSuccessful: true, transactionHash: '0xexec' };
-    let txReads = 0;
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
-      const url = String(input);
-      const body = url.endsWith('/multisig-transactions/0xsafe/')
-        ? txReads++ === 0
-          ? queued
-          : executed
-        : { nonce: 8 };
-      return new Response(JSON.stringify(body), { status: 200 });
+  it('a moved Safe nonce alone is not a replacement (the service can lag)', async () => {
+    respond({
+      '/multisig-transactions/0xsafe/': { status: 200, body: queued },
+      ...nonceMoved,
+      [atNonce]: { status: 200, body: { results: [] } }
     });
-    expect(await read()).toEqual({ kind: 'source-executed', txHash: '0xexec' });
+    expect(await read()).toBeNull();
+  });
+
+  it('an executed entry at its nonce without a Safe tx hash is no evidence', async () => {
+    const unhashed = { ...queued, safeTxHash: undefined, isExecuted: true, isSuccessful: true };
+    respond({
+      '/multisig-transactions/0xsafe/': { status: 200, body: queued },
+      ...nonceMoved,
+      [atNonce]: { status: 200, body: { results: [unhashed] } }
+    });
+    expect(await read()).toBeNull();
+  });
+
+  it('keeps waiting when the list at its nonce cannot be read', async () => {
+    respond({
+      '/multisig-transactions/0xsafe/': { status: 200, body: queued },
+      ...nonceMoved,
+      [atNonce]: { status: 500 }
+    });
+    expect(await read()).toBeNull();
+  });
+
+  it('reports its own execution found at its nonce, with the execution time', async () => {
+    const executionDate = '2027-01-15T08:00:00Z';
+    respond({
+      '/multisig-transactions/0xsafe/': { status: 200, body: queued },
+      ...nonceMoved,
+      [atNonce]: {
+        status: 200,
+        body: {
+          results: [
+            { ...queued, isExecuted: true, isSuccessful: true, transactionHash: '0xexec', executionDate }
+          ]
+        }
+      }
+    });
+    expect(await read()).toEqual({
+      kind: 'source-executed',
+      txHash: '0xexec',
+      executedAt: Date.parse(executionDate)
+    });
   });
 
   it('keeps waiting when the service does not know the transaction yet', async () => {
@@ -93,17 +139,14 @@ describe('readSafeTxProgress', () => {
     expect(await read()).toBeNull();
   });
 
-  it('fails a transaction the service still does not know an hour after it was queued (deleted by the owners)', async () => {
+  it('keeps waiting for a transaction the service does not know, with no time limit', async () => {
     respond({});
-    expect(await read({ queuedAt: NOW - 61 * 60_000 })).toEqual({
-      kind: 'failed',
-      reason: 'safe-tx-not-found'
-    });
+    expect(await read()).toBeNull();
   });
 
   it('keeps waiting through service errors', async () => {
     respond({ '/multisig-transactions/0xsafe/': { status: 500 } });
-    expect(await read({ queuedAt: NOW - 2 * 24 * 60 * 60_000 })).toBeNull();
+    expect(await read()).toBeNull();
   });
 
   it('has nothing to say for a chain without a service', async () => {

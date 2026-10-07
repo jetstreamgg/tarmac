@@ -11,8 +11,8 @@ const FAST_POLL_WINDOW_MS = 60 * MINUTE;
 
 /** What a route adapter observed about a bridge on one poll. */
 export type BridgeProgress =
-  /** The queued Safe transaction executed on-chain. */
-  | { kind: 'source-executed'; txHash: string }
+  /** The queued Safe transaction executed on-chain, at `executedAt` when the service says. */
+  | { kind: 'source-executed'; txHash: string; executedAt?: number }
   | {
       kind: 'waiting';
       etaAt?: number;
@@ -76,14 +76,18 @@ const mergeRouteData = (bridge: PendingBridge, routeData: Record<string, string>
 export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, now: number): PendingBridge {
   if (isSettled(bridge)) return bridge;
   switch (progress.kind) {
-    case 'source-executed':
+    case 'source-executed': {
+      // The launch and the tracker can both report it; the first one set the clock.
+      if (bridge.txHash) return bridge;
       // The bridge starts when the Safe executes, which can be days after it was queued.
+      const startedAt = progress.executedAt ?? now;
       return {
         ...bridge,
         txHash: progress.txHash,
-        startedAt: now,
-        etaAt: now + bridge.etaAt - bridge.startedAt
+        startedAt,
+        etaAt: startedAt + bridge.etaAt - bridge.startedAt
       };
+    }
     case 'waiting':
       return {
         ...bridge,

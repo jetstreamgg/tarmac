@@ -55,6 +55,8 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
   if (bridge.status === 'ready' && (bridge.nextAction === 'prove' || bridge.nextAction === 'finalize'))
     return 'Ready';
   if (bridge.status !== 'pending') return 'Arrived';
+  // A queued Safe transaction: the clock starts once it executes.
+  if (!bridge.txHash) return NO_VALUE;
   // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
   const elapsedFrom = Math.max(now, bridge.startedAt);
   return formatEta(Math.max(1, Math.ceil((bridge.etaAt - elapsedFrom) / 60_000)));
@@ -82,7 +84,11 @@ export function buildPendingBridgeRows(bridge: PendingBridge, now: number): Pend
               sourceChainId === undefined ? undefined : getEtherscanLink(sourceChainId, bridge.txHash, 'tx')
           }
         : // A Safe transaction queued for its owners to sign.
-          { kind: 'text', label: 'Transaction', value: 'Awaiting signatures' }
+          {
+            kind: 'text',
+            label: 'Transaction',
+            value: bridge.status === 'failed' ? NO_VALUE : 'Awaiting signatures'
+          }
     ]
   ];
 }

@@ -91,6 +91,27 @@ describe('applyProgress', () => {
     });
   });
 
+  it('a Safe execution reported twice keeps the first clock', () => {
+    const queued = create(routeFor('base', 'ethereum'), { safeTxHash: '0xsafe' });
+    const once = applyProgress(queued, { kind: 'source-executed', txHash: '0xexec' }, NOW + HOUR);
+    const twice = applyProgress(once, { kind: 'source-executed', txHash: '0xexec' }, NOW + 5 * HOUR);
+    expect(twice).toEqual(once);
+  });
+
+  it('a Safe execution starts the clock at the execution time the service reports', () => {
+    const queued = create(routeFor('base', 'ethereum'), { safeTxHash: '0xsafe' });
+    const executedAt = NOW + 2 * HOUR;
+    const bridge = applyProgress(
+      queued,
+      { kind: 'source-executed', txHash: '0xexec', executedAt },
+      NOW + 6 * HOUR
+    );
+    expect(bridge).toMatchObject({
+      startedAt: executedAt,
+      etaAt: executedAt + (queued.etaAt - queued.startedAt)
+    });
+  });
+
   it('a ready attestation makes a CCTP bridge ready to claim and keeps the route data', () => {
     const bridge = applyProgress(
       create(routeFor('base', 'ethereum')),

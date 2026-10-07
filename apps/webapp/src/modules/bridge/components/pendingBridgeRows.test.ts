@@ -51,6 +51,20 @@ describe('buildPendingBridgeRows', () => {
     });
   });
 
+  it('shows no arrival time before a queued Safe transaction executes', () => {
+    const queued = { ...base, txHash: undefined, safeTxHash: '0xsafe' };
+    expect(buildPendingBridgeRows(queued, 0)[1][1]).toMatchObject({ value: NO_VALUE });
+  });
+
+  it('does not show a failed Safe bridge as awaiting signatures', () => {
+    const failed = { ...base, txHash: undefined, safeTxHash: '0xsafe', status: 'failed' as const };
+    expect(buildPendingBridgeRows(failed, 0)[2][1]).toEqual({
+      kind: 'text',
+      label: 'Transaction',
+      value: NO_VALUE
+    });
+  });
+
   it('ignores a clock older than the bridge start', () => {
     const late = { ...base, startedAt: 120_000, etaAt: 120_000 + 3 * 60_000 };
     expect(buildPendingBridgeRows(late, 0)[1][1]).toMatchObject({ value: '~3 min' });
