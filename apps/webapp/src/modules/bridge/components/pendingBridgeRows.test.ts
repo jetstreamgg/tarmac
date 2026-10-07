@@ -1,5 +1,6 @@
 import { i18n } from '@lingui/core';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { getAddress } from 'viem';
 import { NO_VALUE } from '@/lib/constants';
 import type { PendingBridge } from '../model/types';
 import { chainId } from '@/utils/chainId';
@@ -63,7 +64,7 @@ describe('buildPendingBridgeRows', () => {
     const queued = { ...base, from: 'base' as const, txHash: undefined, safeTxHash: '0x5afe' };
     const tx = buildPendingBridgeRows(queued, 0, 1)[2][1];
     expect(tx.kind === 'link' && tx.href).toBe(
-      `https://app.safe.global/transactions/tx?safe=base:${base.account}&id=0x5afe`
+      `https://app.safe.global/transactions/tx?safe=base:${getAddress(base.account)}&id=0x5afe`
     );
     const avalanche = buildPendingBridgeRows({ ...queued, from: 'avalanche' as const }, 0, 1)[2][1];
     expect('href' in avalanche && avalanche.href).toBeFalsy();

@@ -5,6 +5,7 @@
  */
 
 import { t } from '@lingui/core/macro';
+import { getAddress, isAddress } from 'viem';
 import { NO_VALUE } from '@/lib/constants';
 import { formatAddress } from '@/utils';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
@@ -13,6 +14,9 @@ import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
+
+// The store keeps accounts lowercased; the Safe app expects a checksummed address.
+const checksummed = (account: string) => (isAddress(account) ? getAddress(account) : account);
 
 export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
@@ -122,7 +126,7 @@ export function buildPendingBridgeRows(
                 sourceChainId !== undefined &&
                 bridge.safeTxHash &&
                 SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
-                  ? getSafeTransactionLink(sourceChainId, bridge.account, bridge.safeTxHash)
+                  ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
                   : undefined
             }
     ]
