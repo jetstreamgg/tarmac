@@ -64,15 +64,39 @@ describe('createPendingBridgeStore', () => {
     expect(store.getSnapshot(SCOPE)).not.toBe(first);
   });
 
-  it('lists newest first and replaces an entry with the same id', () => {
+  it('lists newest first and does not duplicate an entry with the same id', () => {
     const store = make();
     store.upsert(SCOPE, bridge({ id: '0xa', txHash: '0xa', startedAt: NOW }));
     store.upsert(SCOPE, bridge({ id: '0xb', txHash: '0xb', startedAt: NOW + 1 }));
-    store.upsert(SCOPE, bridge({ id: '0xa', txHash: '0xa', startedAt: NOW, status: 'ready' }));
-    expect(store.getSnapshot(SCOPE).map(entry => [entry.id, entry.status])).toEqual([
-      ['0xb', 'pending'],
-      ['0xa', 'ready']
-    ]);
+    store.upsert(SCOPE, bridge({ id: '0xa', txHash: '0xa', startedAt: NOW }));
+    expect(store.getSnapshot(SCOPE).map(entry => entry.id)).toEqual(['0xb', '0xa']);
+  });
+
+  it('a repeated upsert keeps the progress the bridge already made', () => {
+    const store = make();
+    const ready = bridge({
+      status: 'ready',
+      routeData: { messageHash: '0xm' },
+      actions: [{ action: 'claim', txHash: '0xclaim', at: NOW + 1 }]
+    });
+    store.upsert(SCOPE, ready);
+    store.upsert(SCOPE, bridge({ startedAt: NOW + 5 * 60_000, etaAt: NOW + 25 * 60_000 }));
+    expect(store.getSnapshot(SCOPE)).toEqual([ready]);
+  });
+
+  it('two stores on one localStorage keep both writes (two tabs before the storage event)', () => {
+    const tabA = make();
+    const tabB = make();
+    tabA.upsert(SCOPE, bridge());
+    expect(tabB.getSnapshot(SCOPE)).toHaveLength(1);
+    tabA.upsert(SCOPE, bridge({ id: '0xa', txHash: '0xa', startedAt: NOW + 1 }));
+    tabB.upsert(SCOPE, bridge({ id: '0xb', txHash: '0xb', startedAt: NOW + 2 }));
+    tabA.update(SCOPE, '0xsource', current => ({ ...current, status: 'ready' }));
+    tabB.update(SCOPE, '0xa', current => ({ ...current, routeData: { output: '1' } }));
+    const stored = make().getSnapshot(SCOPE);
+    expect(stored.map(entry => entry.id)).toEqual(['0xb', '0xa', '0xsource']);
+    expect(stored.find(entry => entry.id === '0xsource')?.status).toBe('ready');
+    expect(stored.find(entry => entry.id === '0xa')?.routeData).toEqual({ output: '1' });
   });
 
   it('matches a Safe bridge by its Safe tx hash, so a second submit does not duplicate it', () => {
@@ -120,6 +144,34 @@ describe('createPendingBridgeStore', () => {
         .getSnapshot(SCOPE)
         .map(entry => entry.id)
     ).toEqual(['0xstuck']);
+  });
+
+  it('keeps updating the session copy once storage writes fail', () => {
+    const store = make();
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    store.upsert(SCOPE, bridge());
+    store.update(SCOPE, '0xsource', current => ({ ...current, status: 'ready' }));
+    expect(store.getSnapshot(SCOPE).map(entry => entry.status)).toEqual(['ready']);
+    setItem.mockRestore();
+  });
+
+  it('skips entries whose fields the app cannot use', () => {
+    const good = { ...bridge(), amount: bridge().amount.toString() };
+    const bad = [
+      { ...good, id: '0x1', from: 'moon' },
+      { ...good, id: '0x2', to: 42 },
+      { ...good, id: '0x3', nextAction: 'teleport' },
+      { ...good, id: '0x4', actions: [{ action: 'teleport', txHash: '0xt', at: NOW }] },
+      { ...good, id: '0x5', actions: ['claim'] },
+      { ...good, id: '0x6', txHash: 7 },
+      { ...good, id: '0x7', safeTxHash: {} },
+      { ...good, id: '0x8', routeData: { messageHash: 1 } },
+      { ...good, id: '0x9', requiresClaim: 'yes' }
+    ];
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([...bad, good]));
+    expect(make().getSnapshot(SCOPE)).toEqual([bridge()]);
   });
 
   it('skips malformed entries and unreadable storage', () => {

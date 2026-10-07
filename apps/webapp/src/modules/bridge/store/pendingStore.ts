@@ -1,3 +1,4 @@
+import { BRIDGE_NETWORKS } from '../model/networks';
 import { isSettled } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 
@@ -6,6 +7,8 @@ const SETTLED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 const STATUSES = new Set(['pending', 'ready', 'arrived', 'claimed', 'failed']);
 const ROUTE_KINDS = new Set(['native', 'cctp', 'layerzero']);
+const NETWORKS = new Set<unknown>(BRIDGE_NETWORKS.map(network => network.id));
+const NEXT_ACTIONS = new Set<unknown>(['claim', 'prove', 'finalize']);
 
 type Listener = () => void;
 
@@ -18,20 +21,38 @@ export const pendingScopeKey = ({ account, familyChainId }: { account: string; f
 
 const storageKey = (scope: string) => `${KEY_PREFIX}${scope}`;
 
+const isString = (value: unknown): value is string => typeof value === 'string';
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+const optional = (value: unknown, check: (value: unknown) => boolean) => value === undefined || check(value);
+
+const isAction = (value: unknown) =>
+  isRecord(value) && NEXT_ACTIONS.has(value.action) && isString(value.txHash) && typeof value.at === 'number';
+
 const parseEntry = (value: unknown): PendingBridge | null => {
-  if (typeof value !== 'object' || value === null) return null;
-  const entry = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const entry = value;
   if (
-    typeof entry.id !== 'string' ||
-    typeof entry.account !== 'string' ||
-    typeof entry.amount !== 'string' ||
-    typeof entry.from !== 'string' ||
-    typeof entry.to !== 'string' ||
+    !isString(entry.id) ||
+    !isString(entry.account) ||
+    !isString(entry.amount) ||
+    entry.token !== 'USDS' ||
+    !NETWORKS.has(entry.from) ||
+    !NETWORKS.has(entry.to) ||
     !STATUSES.has(entry.status as string) ||
     !ROUTE_KINDS.has(entry.routeKind as string) ||
+    typeof entry.requiresClaim !== 'boolean' ||
     typeof entry.startedAt !== 'number' ||
     typeof entry.etaAt !== 'number' ||
-    !Array.isArray(entry.actions)
+    !Array.isArray(entry.actions) ||
+    !entry.actions.every(isAction) ||
+    !optional(entry.nextAction, action => NEXT_ACTIONS.has(action)) ||
+    !optional(entry.txHash, isString) ||
+    !optional(entry.safeTxHash, isString) ||
+    !optional(entry.recipient, isString) ||
+    !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
+    !optional(entry.settledAt, at => typeof at === 'number') ||
+    !optional(entry.failureReason, isString)
   ) {
     return null;
   }
@@ -50,6 +71,14 @@ const byNewest = (a: PendingBridge, b: PendingBridge) => b.startedAt - a.started
 const isSameBridge = (a: PendingBridge, b: PendingBridge) =>
   a.id === b.id || (!!a.safeTxHash && a.safeTxHash === b.safeTxHash) || (!!a.txHash && a.txHash === b.txHash);
 
+/** The stored entry wins; the incoming one only fills what it lacks (a Safe bridge's tx hash). */
+const fillMissing = (existing: PendingBridge, incoming: PendingBridge): PendingBridge => ({
+  ...incoming,
+  ...(Object.fromEntries(
+    Object.entries(existing).filter(([, value]) => value !== undefined)
+  ) as PendingBridge)
+});
+
 /**
  * Pending bridges in localStorage, so they survive a reload and stay in sync
  * across tabs. Settled bridges are kept 90 days for the Activity list.
@@ -58,11 +87,19 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
   const listeners = new Set<Listener>();
   const snapshots = new Map<string, PendingBridge[]>();
 
-  const read = (scope: string): PendingBridge[] => {
+  // Off once a write fails: storage then lags the session copy.
+  let storageWritable = true;
+
+  /** The stored list; undefined when storage can't be read. */
+  const load = (scope: string): PendingBridge[] | undefined => {
+    let raw: string | null;
     try {
-      const raw = localStorage.getItem(storageKey(scope));
-      if (!raw) return [];
-      const parsed: unknown = JSON.parse(raw);
+      raw = localStorage.getItem(storageKey(scope));
+    } catch {
+      return undefined;
+    }
+    try {
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(parsed)) return [];
       const cutoff = now() - SETTLED_RETENTION_MS;
       return parsed
@@ -74,6 +111,7 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       return [];
     }
   };
+  const read = (scope: string): PendingBridge[] => load(scope) ?? [];
 
   const emit = () => listeners.forEach(listener => listener());
 
@@ -84,6 +122,7 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       localStorage.setItem(storageKey(scope), serialize(sorted));
     } catch {
       // ignore storage write failures (private mode, quota); the session copy still updates
+      storageWritable = false;
     }
     emit();
   };
@@ -103,6 +142,9 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
     return snapshot;
   };
 
+  // Writes start from storage, not this tab's copy, so another tab's write is not lost.
+  const latest = (scope: string): PendingBridge[] => (storageWritable && load(scope)) || getSnapshot(scope);
+
   return {
     subscribe(listener: Listener) {
       if (listeners.size === 0) window.addEventListener('storage', onStorage);
@@ -113,19 +155,19 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       };
     },
     getSnapshot,
-    /** Adds a bridge, or replaces the one with the same id, Safe tx hash or tx hash (keeping its id). */
+    /** Adds a bridge, or fills the gaps of the one with the same id, Safe tx hash or tx hash. */
     upsert(scope: string, bridge: PendingBridge) {
-      const current = getSnapshot(scope);
+      const current = latest(scope);
       const existing = current.find(entry => isSameBridge(entry, bridge));
       write(
         scope,
         existing
-          ? current.map(entry => (entry === existing ? { ...bridge, id: existing.id } : entry))
+          ? current.map(entry => (entry === existing ? fillMissing(existing, bridge) : entry))
           : [bridge, ...current]
       );
     },
     update(scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) {
-      const current = getSnapshot(scope);
+      const current = latest(scope);
       const existing = current.find(entry => entry.id === id);
       if (!existing) return;
       const next = apply(existing);

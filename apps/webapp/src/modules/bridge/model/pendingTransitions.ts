@@ -117,10 +117,11 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
 
 /** A destination action the user sent and the transaction flow confirmed. */
 export function recordAction(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
+  const remaining = destinationActions(bridge.routeKind, bridge.from);
+  if (!remaining.includes(action.action)) return bridge;
   if (bridge.actions.some(sent => sent.txHash === action.txHash)) return bridge;
   const actions = [...bridge.actions, action];
   if (isSettled(bridge)) return { ...bridge, actions };
-  const remaining = destinationActions(bridge.routeKind, bridge.from);
   const next = remaining[remaining.indexOf(action.action) + 1];
   return next
     ? { ...bridge, actions, status: 'pending', nextAction: next }

@@ -189,6 +189,15 @@ describe('recordAction', () => {
     });
   });
 
+  it('an action the route does not have is ignored', () => {
+    const withdrawal = applyProgress(
+      create(routeFor('optimism', 'ethereum', false)),
+      { kind: 'ready', nextAction: 'finalize' },
+      NOW
+    );
+    expect(recordAction(withdrawal, { action: 'claim', txHash: '0xclaim', at: NOW })).toBe(withdrawal);
+  });
+
   it('an OP Stack prove moves on to waiting for finalize', () => {
     const ready = applyProgress(
       create(routeFor('optimism', 'ethereum', false)),
