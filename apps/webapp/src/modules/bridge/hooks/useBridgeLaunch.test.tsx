@@ -314,6 +314,28 @@ describe('useBridgeLaunch Confirm gate', () => {
     expect(pendingBridgeStore.getSnapshot(scope).filter(bridge => bridge.amount === ONE)).toHaveLength(1);
   });
 
+  it('a send that reverts leaves the stored bridge failed, and Retry can send again', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    const callbacks = mocks.legs[0].getCallbacks();
+    callbacks.onMutate({ functionName: 'approve' });
+    callbacks.onStart('0xapprove1');
+    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onStart('0xsend1');
+    const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+    const stored = () => pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.txHash === '0xsend1');
+    expect(stored()?.status).toBe('pending');
+
+    callbacks.onError(new Error('Transaction receipt: execution reverted'), '0xsend1');
+    expect(stored()?.status).toBe('failed');
+
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.legs).toHaveLength(2);
+  });
+
   it('Retry after a rejected approve runs the legs again', async () => {
     const view = renderBridge();
     act(() => view.result.current.form.onInput('1'));

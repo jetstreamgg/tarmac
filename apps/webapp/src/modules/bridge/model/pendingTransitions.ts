@@ -75,6 +75,9 @@ export function createPendingBridge({
   };
 }
 
+const isConfirmed = (bridge: PendingBridge, action: PendingBridgeNextAction | undefined) =>
+  !!action && bridge.actions.some(done => done.action === action && done.status !== 'sent');
+
 const mergeRouteData = (bridge: PendingBridge, routeData: Record<string, string> | undefined) =>
   routeData ? { ...bridge.routeData, ...routeData } : bridge.routeData;
 
@@ -85,6 +88,13 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
   }
   if (progress.kind === 'action-dropped') return dropSentAction(bridge, progress.txHash);
   if (isSettled(bridge)) return bridge;
+  // A lagging read can still report an action this bridge already confirmed.
+  if (
+    (progress.kind === 'waiting' || progress.kind === 'ready') &&
+    isConfirmed(bridge, progress.nextAction)
+  ) {
+    return bridge;
+  }
   switch (progress.kind) {
     case 'source-executed': {
       // The launch and the tracker can both report it; the first one set the clock.

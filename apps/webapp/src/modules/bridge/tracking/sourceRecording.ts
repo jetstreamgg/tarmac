@@ -1,3 +1,5 @@
+import type { WaitForTransactionReceiptErrorType } from 'viem';
+import { isRevertedError, TransactionReplacedError } from '@/hooks/helpers';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 
 /**
@@ -8,6 +10,8 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * gets the on-chain hash with that Safe tx hash. The bridge leg is any leg
  * whose `onMutate` function name isn't `approve`, so a skipped approve or a
  * Retry that resumes at the bridge leg is still recorded at broadcast.
+ * `onFailed` gets the sent hash when it reverted or was cancelled or replaced;
+ * a Safe's execution is read by its tracker instead.
  */
 export function withSourceRecording(
   getCallbacks: () => TxCallbacks,
@@ -15,12 +19,14 @@ export function withSourceRecording(
     isSafe,
     onSent,
     onQueued,
-    onExecuted
+    onExecuted,
+    onFailed
   }: {
     isSafe: boolean;
     onSent: (txHash: string) => void;
     onQueued: (safeTxHash: string) => void;
     onExecuted: (txHash: string, safeTxHash: string | undefined) => void;
+    onFailed: (txHash: string, reason: string) => void;
   }
 ): TxCallbacks {
   let isApproveLeg = false;
@@ -43,7 +49,14 @@ export function withSourceRecording(
       else if (hash && !recorded) onSent(hash);
       getCallbacks().onSuccess(hash);
     },
-    // Not recorded here: the sequential flow can pass the previous leg's hash, and a batch its call id.
-    onError: (error, hash) => getCallbacks().onError(error, hash)
+    // Recorded only for the sent hash: the sequential flow can pass the previous leg's hash, and a batch its call id.
+    onError: (error, hash) => {
+      if (!isSafe && recorded && hash === recorded) {
+        if (error instanceof TransactionReplacedError) onFailed(hash, 'source-tx-replaced');
+        else if (isRevertedError(error as WaitForTransactionReceiptErrorType))
+          onFailed(hash, 'source-tx-reverted');
+      }
+      getCallbacks().onError(error, hash);
+    }
   };
 }

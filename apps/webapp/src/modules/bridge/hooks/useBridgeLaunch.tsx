@@ -101,6 +101,13 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
               applyProgress(bridge, { kind: 'source-executed', txHash }, Date.now())
             );
           else pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
+        },
+        // The funds never left, so Retry may send again.
+        onFailed: (txHash, reason) => {
+          sentRef.current = false;
+          pendingBridgeStore.update(scope, txHash, bridge =>
+            applyProgress(bridge, { kind: 'failed', reason }, Date.now())
+          );
         }
       });
       void runMockLegs(sourceActions, () => callbacks);

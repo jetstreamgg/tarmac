@@ -417,3 +417,31 @@ describe('a sent action confirmed or released from chain', () => {
     expect(confirmed.actions).toEqual([{ action: 'claim', txHash: '0xclaim', at: NOW }]);
   });
 });
+
+describe('a lagging poll never re-offers an action that is already confirmed', () => {
+  const proven = () =>
+    recordAction(
+      applyProgress(
+        create(routeFor('optimism', 'ethereum', false)),
+        { kind: 'ready', nextAction: 'prove' },
+        NOW
+      ),
+      { action: 'prove', txHash: '0xprove', at: NOW }
+    );
+
+  it('a lagging "ready to prove" poll does not make Prove launchable again', () => {
+    const lagging = applyProgress(proven(), { kind: 'ready', nextAction: 'prove' }, NOW + MINUTE);
+    expect(lagging).toMatchObject({ status: 'pending', nextAction: 'finalize' });
+    expect(canLaunchAction(lagging)).toBe(false);
+  });
+
+  it('a lagging "waiting for prove" poll does not move nextAction back to prove', () => {
+    const lagging = applyProgress(proven(), { kind: 'waiting', nextAction: 'prove' }, NOW + MINUTE);
+    expect(lagging.nextAction).toBe('finalize');
+  });
+
+  it('the next action still becomes ready', () => {
+    const ready = applyProgress(proven(), { kind: 'ready', nextAction: 'finalize' }, NOW + MINUTE);
+    expect(canLaunchAction(ready)).toBe(true);
+  });
+});

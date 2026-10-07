@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { TransactionReplacedError } from '@/hooks/helpers';
 import { withSourceRecording } from './sourceRecording';
 
 // The engine reports each leg's function name at onMutate, before its start.
@@ -11,8 +12,9 @@ const setup = (isSafe: boolean) => {
   const onSent = vi.fn();
   const onQueued = vi.fn();
   const onExecuted = vi.fn();
-  const callbacks = withSourceRecording(() => inner, { isSafe, onSent, onQueued, onExecuted });
-  return { inner, onSent, onQueued, onExecuted, callbacks };
+  const onFailed = vi.fn();
+  const callbacks = withSourceRecording(() => inner, { isSafe, onSent, onQueued, onExecuted, onFailed });
+  return { inner, onSent, onQueued, onExecuted, onFailed, callbacks };
 };
 
 describe('withSourceRecording', () => {
@@ -112,5 +114,41 @@ describe('withSourceRecording', () => {
     callbacks.onStart('0xsend');
     callbacks.onSuccess('0xsend');
     expect(onSent).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('withSourceRecording, a send that never landed', () => {
+  const reverted = new Error('Transaction receipt: execution reverted');
+
+  it.each([
+    ['reverted', reverted],
+    ['was cancelled or replaced', new TransactionReplacedError()]
+  ])('fails the stored bridge when its send %s', (_, error) => {
+    const { inner, onFailed, callbacks } = setup(false);
+    callbacks.onMutate(send);
+    callbacks.onStart('0xsend');
+    callbacks.onError(error, '0xsend');
+    expect(onFailed).toHaveBeenCalledWith('0xsend', expect.any(String));
+    expect(inner.onError).toHaveBeenCalledWith(error, '0xsend');
+  });
+
+  it('fails nothing for an approve that reverted, a send not yet broadcast, or a failed receipt wait', () => {
+    const { onFailed, callbacks } = setup(false);
+    callbacks.onMutate(approve);
+    callbacks.onStart('0xapprove');
+    callbacks.onError(reverted, '0xapprove');
+    callbacks.onMutate(send);
+    callbacks.onError(reverted, '0xapprove');
+    callbacks.onStart('0xsend');
+    callbacks.onError(new Error('Timed out while waiting for transaction'), '0xsend');
+    expect(onFailed).not.toHaveBeenCalled();
+  });
+
+  it('leaves a Safe to its tracker, which reads the execution', () => {
+    const { onFailed, callbacks } = setup(true);
+    callbacks.onMutate(send);
+    callbacks.onStart('0xsafetx');
+    callbacks.onError(reverted, '0xsafetx');
+    expect(onFailed).not.toHaveBeenCalled();
   });
 });
