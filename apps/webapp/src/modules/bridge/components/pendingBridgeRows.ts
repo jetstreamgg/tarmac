@@ -4,12 +4,13 @@
  * Labels and pairing are the Figma contract, asserted in `pendingBridgeRows.test.ts`.
  */
 
+import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
 import { formatAddress } from '@/utils';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
-import { BRIDGE_TYPE_LABEL, formatEta } from './bridgeModalRows';
+import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
 
 export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
@@ -17,30 +18,45 @@ export type PendingBridgeCell =
   | { kind: 'text'; label: string; value: string }
   | { kind: 'link'; label: string; value: string; href?: string };
 
-export const PENDING_STATUS_LABEL: Record<PendingBridgeStatus, string> = {
-  pending: 'Pending',
-  ready: 'Ready to claim',
-  arrived: 'Arrived',
-  claimed: 'Claimed',
-  failed: 'Failed'
+const statusLabel = (status: PendingBridgeStatus): string => {
+  switch (status) {
+    case 'pending':
+      return t`Pending`;
+    case 'ready':
+      return t`Ready to claim`;
+    case 'arrived':
+      return t`Arrived`;
+    case 'claimed':
+      return t`Claimed`;
+    case 'failed':
+      return t`Failed`;
+  }
 };
 
-export const NEXT_ACTION_LABEL: Record<PendingBridgeNextAction, string> = {
-  claim: 'Claim',
-  prove: 'Prove',
-  finalize: 'Finalize'
+export const nextActionLabel = (action: PendingBridgeNextAction): string => {
+  switch (action) {
+    case 'claim':
+      return t`Claim`;
+    case 'prove':
+      return t`Prove`;
+    case 'finalize':
+      return t`Finalize`;
+  }
 };
 
-const READY_LABEL: Record<PendingBridgeNextAction, string> = {
-  claim: 'Ready to claim',
-  prove: 'Ready to prove',
-  finalize: 'Ready to finalize'
+const readyLabel = (action: PendingBridgeNextAction): string => {
+  switch (action) {
+    case 'claim':
+      return t`Ready to claim`;
+    case 'prove':
+      return t`Ready to prove`;
+    case 'finalize':
+      return t`Ready to finalize`;
+  }
 };
 
 const statusText = (bridge: PendingBridge): string =>
-  bridge.status === 'ready' && bridge.nextAction
-    ? READY_LABEL[bridge.nextAction]
-    : PENDING_STATUS_LABEL[bridge.status];
+  bridge.status === 'ready' && bridge.nextAction ? readyLabel(bridge.nextAction) : statusLabel(bridge.status);
 
 /** "25/10/26 15:26 UTC". */
 export const formatBridgeDate = (ms: number): string => {
@@ -53,12 +69,13 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
   if (bridge.status === 'failed') return NO_VALUE;
   // A ready prove or finalize still has a step before the funds land.
   if (bridge.status === 'ready' && (bridge.nextAction === 'prove' || bridge.nextAction === 'finalize'))
-    return 'Ready';
-  if (bridge.status !== 'pending') return 'Arrived';
+    return t`Ready`;
+  if (bridge.status !== 'pending') return t`Arrived`;
   // A queued Safe transaction: the clock starts once it executes.
   if (!bridge.txHash) return NO_VALUE;
   // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
   const elapsedFrom = Math.max(now, bridge.startedAt);
+  if (elapsedFrom > bridge.etaAt) return t`Taking longer than expected`;
   return formatEta(Math.max(1, Math.ceil((bridge.etaAt - elapsedFrom) / 60_000)));
 };
 
@@ -66,19 +83,19 @@ export function buildPendingBridgeRows(bridge: PendingBridge, now: number): Pend
   const sourceChainId = getBridgeNetwork(bridge.from).chainId;
   return [
     [
-      { kind: 'network', label: 'Source', network: bridge.from },
-      { kind: 'network', label: 'Destination', network: bridge.to }
+      { kind: 'network', label: t`Source`, network: bridge.from },
+      { kind: 'network', label: t`Destination`, network: bridge.to }
     ],
     [
-      { kind: 'status', label: 'Status', status: bridge.status, value: statusText(bridge) },
-      { kind: 'text', label: 'Estimated arrival', value: arrivalText(bridge, now) }
+      { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) },
+      { kind: 'text', label: t`Estimated arrival`, value: arrivalText(bridge, now) }
     ],
     [
-      { kind: 'text', label: 'Bridge type', value: BRIDGE_TYPE_LABEL[bridge.routeKind] },
+      { kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel(bridge.routeKind) },
       bridge.txHash
         ? {
             kind: 'link',
-            label: 'Transaction',
+            label: t`Transaction`,
             value: formatAddress(bridge.txHash, 6, 4),
             href:
               sourceChainId === undefined ? undefined : getEtherscanLink(sourceChainId, bridge.txHash, 'tx')
@@ -86,8 +103,8 @@ export function buildPendingBridgeRows(bridge: PendingBridge, now: number): Pend
         : // A Safe transaction queued for its owners to sign.
           {
             kind: 'text',
-            label: 'Transaction',
-            value: bridge.status === 'failed' ? NO_VALUE : 'Awaiting signatures'
+            label: t`Transaction`,
+            value: bridge.status === 'failed' ? NO_VALUE : t`Awaiting signatures`
           }
     ]
   ];

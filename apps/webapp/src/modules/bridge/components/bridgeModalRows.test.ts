@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { i18n } from '@lingui/core';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { NO_VALUE } from '@/lib/constants';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
+import { bridgeFootnote } from './BridgeReviewContent';
 import { buildBridgeModalRows, formatEta } from './bridgeModalRows';
+
+beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
 const routeFor = (from: BridgeNetworkId, to: BridgeNetworkId): BridgeRoute => {
   const result = resolveBridgeRoute({ from, to, amount: 1n, facts: {} });
@@ -43,5 +47,40 @@ describe('formatEta', () => {
   it('switches to days for multi-day withdrawals', () => {
     expect(formatEta(7 * 24 * 60)).toBe('~7 days');
     expect(formatEta(Math.round(6.4 * 24 * 60))).toBe('~6.4 days');
+  });
+});
+
+describe('arrival copy in the singular and plural', () => {
+  const DAY = 24 * 60;
+  afterEach(() => vi.restoreAllMocks());
+
+  it('says one day and many days', () => {
+    expect(formatEta(DAY)).toBe('~1 day');
+    expect(formatEta(2 * DAY)).toBe('~2 days');
+  });
+
+  it('the review footnote says one minute, many minutes, one day and many days', () => {
+    const route = routeFor('base', 'ethereum');
+    const eta = (etaMinutes: number) => bridgeFootnote({ ...route, etaMinutes });
+    expect(eta(1)).toContain('approximately 1 minute.');
+    expect(eta(20)).toContain('approximately 20 minutes.');
+    expect(eta(DAY)).toContain('approximately 1 day.');
+    expect(eta(7 * DAY)).toContain('approximately 7 days.');
+  });
+
+  it('reads the grid labels from the active catalog at call time', () => {
+    vi.spyOn(i18n, '_').mockImplementation(
+      ((descriptor: { message?: string }) => `<${descriptor.message}>`) as never
+    );
+    const rows = buildBridgeModalRows({ route: routeFor('ethereum', 'base'), networkFee: '' });
+    expect(
+      rows
+        .flat()
+        .map(cell => cell.label)
+        .slice(0, 5)
+    ).toEqual(
+      ['Bridge type', 'Bridge rate', 'Estimated arrival', 'Slippage', 'Bridge fee'].map(l => `<${l}>`)
+    );
+    expect(rows[0][0]).toMatchObject({ value: '<Native>' });
   });
 });

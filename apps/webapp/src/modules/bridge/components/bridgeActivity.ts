@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import type { BridgeNetworkId } from '../model/networks';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 
@@ -13,11 +14,17 @@ export type BridgeActivityEntry = {
   txHash: string;
 };
 
-export const BRIDGE_ACTIVITY_TITLE: Record<BridgeActivityKind, string> = {
-  bridge: 'Bridge',
-  claim: 'Funds claim',
-  prove: 'Withdrawal proof',
-  finalize: 'Funds claim'
+export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
+  switch (kind) {
+    case 'bridge':
+      return t`Bridge`;
+    case 'claim':
+      return t`Funds claim`;
+    case 'prove':
+      return t`Withdrawal proof`;
+    case 'finalize':
+      return t`Withdrawal finalization`;
+  }
 };
 
 /**

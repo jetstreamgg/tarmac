@@ -6,6 +6,7 @@ const MINUTE = 60_000;
 const SETTLED_VISIBLE_MS = 24 * 60 * MINUTE;
 const FAST_POLL_MS = 15_000;
 const READY_POLL_MS = MINUTE;
+const OVERDUE_POLL_MS = MINUTE;
 const SLOW_POLL_MS = 5 * MINUTE;
 const FAST_POLL_WINDOW_MS = 60 * MINUTE;
 
@@ -164,5 +165,7 @@ export function pollIntervalMs(bridge: PendingBridge, now: number): number | und
   if (!bridge.txHash) return now - bridge.startedAt <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
   // Anyone can send the next action, so a ready bridge can still settle without us.
   if (bridge.status === 'ready') return READY_POLL_MS;
+  // Past the ETA: check each minute for an hour, then back off.
+  if (now > bridge.etaAt) return now - bridge.etaAt <= FAST_POLL_WINDOW_MS ? OVERDUE_POLL_MS : SLOW_POLL_MS;
   return bridge.etaAt - now <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
 }

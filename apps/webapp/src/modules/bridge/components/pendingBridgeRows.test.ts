@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { i18n } from '@lingui/core';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { NO_VALUE } from '@/lib/constants';
 import type { PendingBridge } from '../model/types';
-import { buildPendingBridgeRows, formatBridgeDate } from './pendingBridgeRows';
+import { buildPendingBridgeRows, formatBridgeDate, nextActionLabel } from './pendingBridgeRows';
+
+beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
 const base: PendingBridge = {
   id: '0xabc',
@@ -70,10 +73,41 @@ describe('buildPendingBridgeRows', () => {
     expect(buildPendingBridgeRows(late, 0)[1][1]).toMatchObject({ value: '~3 min' });
   });
 
+  it('says the bridge is taking longer than expected once past its ETA', () => {
+    expect(buildPendingBridgeRows(base, base.etaAt)[1][1]).toMatchObject({ value: '~1 min' });
+    expect(buildPendingBridgeRows(base, base.etaAt + 60_000)[1][1]).toMatchObject({
+      value: 'Taking longer than expected'
+    });
+  });
+
   it('truncates the hash like the comp and links the source explorer', () => {
     const tx = buildPendingBridgeRows(base, 0)[2][1];
     expect(tx).toMatchObject({ value: '0xff9s...dsa6' });
     expect(tx.kind === 'link' && tx.href).toContain('etherscan.io/tx/');
+  });
+});
+
+describe('pending bridge copy', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('reads labels, statuses and actions from the active catalog at call time', () => {
+    vi.spyOn(i18n, '_').mockImplementation(
+      ((descriptor: { message?: string }) => `<${descriptor.message}>`) as never
+    );
+    const ready = buildPendingBridgeRows({ ...base, status: 'ready', nextAction: 'claim' }, 0);
+    const queued = buildPendingBridgeRows({ ...base, txHash: undefined, safeTxHash: '0xsafe' }, 0);
+    expect(ready.flat().map(cell => cell.label)).toEqual(
+      ['Source', 'Destination', 'Status', 'Estimated arrival', 'Bridge type', 'Transaction'].map(
+        l => `<${l}>`
+      )
+    );
+    expect(ready[1].map(cell => 'value' in cell && cell.value)).toEqual(['<Ready to claim>', '<Arrived>']);
+    expect(queued[1][0]).toMatchObject({ value: '<Pending>' });
+    expect(queued[2].map(cell => 'value' in cell && cell.value)).toEqual([
+      '<Native>',
+      '<Awaiting signatures>'
+    ]);
+    expect(nextActionLabel('finalize')).toBe('<Finalize>');
   });
 });
 

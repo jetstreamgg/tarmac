@@ -1,19 +1,21 @@
 import { formatUnits } from 'viem';
-import { t } from '@lingui/core/macro';
+import { plural, t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
-import { buildBridgeModalRows, formatDays } from './bridgeModalRows';
+import { buildBridgeModalRows, toDays } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 
 const formatAmount = (amount: bigint) =>
   formatNumber(parseFloat(formatUnits(amount, 18)), { minDecimals: 2, maxDecimals: 2 });
 
 const etaPhrase = (minutes: number): string =>
-  minutes >= 24 * 60 ? t`${formatDays(minutes)} days` : t`${minutes} minutes`;
+  minutes >= 24 * 60
+    ? plural(toDays(minutes), { one: '# day', other: '# days' })
+    : plural(minutes, { one: '# minute', other: '# minutes' });
 
 export const bridgeFootnote = (route: BridgeRoute): string => {
   const eta = etaPhrase(route.etaMinutes);

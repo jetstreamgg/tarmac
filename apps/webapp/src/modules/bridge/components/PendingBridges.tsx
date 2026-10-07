@@ -15,7 +15,7 @@ import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
   buildPendingBridgeRows,
   formatBridgeDate,
-  NEXT_ACTION_LABEL,
+  nextActionLabel,
   type PendingBridgeCell
 } from './pendingBridgeRows';
 
@@ -109,7 +109,7 @@ function PendingBridgeCard({
             onClick={() => onAction(bridge)}
             data-testid="pending-bridge-action"
           >
-            {NEXT_ACTION_LABEL[bridge.nextAction]}
+            {nextActionLabel(bridge.nextAction)}
           </Button>
         )}
       </div>

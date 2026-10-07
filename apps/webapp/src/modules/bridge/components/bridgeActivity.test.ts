@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { i18n } from '@lingui/core';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { PendingBridge } from '../model/types';
-import { buildBridgeActivity } from './bridgeActivity';
+import { bridgeActivityTitle, buildBridgeActivity } from './bridgeActivity';
+
+beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
 const bridge = (patch: Partial<PendingBridge>): PendingBridge => ({
   id: '0xa',
@@ -70,5 +73,12 @@ describe('buildBridgeActivity', () => {
 
   it('leaves out a Safe bridge still waiting for signatures', () => {
     expect(summary([bridge({ id: '0xsafe', safeTxHash: '0xsafe', txHash: undefined })])).toEqual([]);
+  });
+});
+
+describe('bridgeActivityTitle', () => {
+  it('names a finalized withdrawal apart from a claim', () => {
+    expect(bridgeActivityTitle('finalize')).not.toBe(bridgeActivityTitle('claim'));
+    expect(bridgeActivityTitle('finalize')).toBe('Withdrawal finalization');
   });
 });

@@ -258,6 +258,13 @@ describe('pollIntervalMs', () => {
     expect(pollIntervalMs(withdrawal, withdrawal.etaAt - MINUTE)).toBe(15_000);
   });
 
+  it('past the ETA polls every minute for an hour, then every five minutes', () => {
+    const late = deposit();
+    expect(pollIntervalMs(late, late.etaAt + MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(late, late.etaAt + 59 * MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(late, late.etaAt + 2 * HOUR)).toBe(5 * MINUTE);
+  });
+
   it('polls a queued Safe transaction fast for an hour, then slowly while the signers take their time', () => {
     const queued = create(routeFor('base', 'ethereum', false), { safeTxHash: '0xsafe' });
     expect(pollIntervalMs(queued, NOW)).toBe(15_000);

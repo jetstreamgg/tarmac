@@ -9,7 +9,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { getBridgeNetwork } from '../model/networks';
 import { useBridgeHistory } from '../hooks/useBridgeHistory';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
-import { BRIDGE_ACTIVITY_TITLE, buildBridgeActivity, type BridgeActivityEntry } from './bridgeActivity';
+import { bridgeActivityTitle, buildBridgeActivity, type BridgeActivityEntry } from './bridgeActivity';
 
 // USDS is pegged 1:1.
 const USDS_USD = 1;
@@ -56,7 +56,7 @@ function BridgeActivityItem({ entry }: { entry: BridgeActivityEntry }) {
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-fgPrimary font-circle truncate text-base leading-[18px] font-medium tracking-[-0.32px]">
-            {BRIDGE_ACTIVITY_TITLE[entry.kind]}
+            {bridgeActivityTitle(entry.kind)}
           </span>
           <span className="text-fgSecondary font-graphik text-xs leading-[18px]">
             {formatDistanceToNowStrict(entry.timestamp, { addSuffix: true })}
