@@ -8,7 +8,8 @@ import { i18n } from '@lingui/core';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { zeroAddress } from 'viem';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
-import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
+import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeForm } from './useBridgeForm';
 import { useBridgeLaunch } from './useBridgeLaunch';
 
@@ -29,7 +30,7 @@ const mocks = vi.hoisted(() => ({
   updates: [] as Partial<TransactionConfig>[],
   onError: vi.fn(),
   appChainId: 1,
-  legs: 0
+  legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[]
 }));
 
 vi.mock('wagmi', async io => ({
@@ -68,16 +69,12 @@ vi.mock('@/modules/ui/hooks/useMinimizedSessionLock', () => ({
 vi.mock('@/hooks/ui/useAppChainId', () => ({
   useAppChainId: () => mocks.appChainId
 }));
-vi.mock('../adapters/mockAdapter', async io => {
-  const actual = await io<typeof import('../adapters/mockAdapter')>();
-  return {
-    ...actual,
-    runMockLegs: (...args: Parameters<typeof actual.runMockLegs>) => {
-      mocks.legs += 1;
-      return actual.runMockLegs(...args);
-    }
-  };
-});
+vi.mock('../adapters/mockAdapter', () => ({
+  runMockLegs: (names: string[], getCallbacks: () => TxCallbacks) => {
+    mocks.legs.push({ names, getCallbacks });
+    return new Promise<string>(() => undefined);
+  }
+}));
 vi.mock('../components/BridgeReviewContent', () => ({
   BridgeReviewContent: () => null,
   BridgeTransferHero: () => null
@@ -152,7 +149,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       launched: [],
       updates: [],
       appChainId: 1,
-      legs: 0
+      legs: []
     });
     mocks.onError.mockClear();
   });
@@ -292,7 +289,42 @@ describe('useBridgeLaunch Confirm gate', () => {
     act(() => view.result.current.form.setRecipient(SOLANA_RECIPIENT));
     await settle();
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    expect(mocks.legs).toBe(0);
+    expect(mocks.legs).toHaveLength(0);
     expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('Retry after the send was broadcast runs nothing again and stores one bridge', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    const callbacks = mocks.legs[0].getCallbacks();
+    callbacks.onMutate({ functionName: 'approve' });
+    callbacks.onStart('0xapprove');
+    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onStart('0xsend');
+    callbacks.onError(new Error('rpc timeout'), '0xsend');
+
+    // TransactionContext.handleRetry calls onConfirm when the flow has no onRetry.
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.legs).toHaveLength(1);
+    expect(mocks.onError).toHaveBeenCalledTimes(2);
+    const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+    expect(pendingBridgeStore.getSnapshot(scope).filter(bridge => bridge.amount === ONE)).toHaveLength(1);
+  });
+
+  it('Retry after a rejected approve runs the legs again', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    const callbacks = mocks.legs[0].getCallbacks();
+    callbacks.onMutate({ functionName: 'approve' });
+    callbacks.onError(new Error('User rejected the request.'));
+
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.legs).toHaveLength(2);
   });
 });

@@ -58,6 +58,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const executeRef = useRef<() => void>(() => undefined);
   // The chain the open modal guards; the source legs must run on it.
   const launchedChainIdRef = useRef<number | undefined>(undefined);
+  // Set once this Review's bridge leg is broadcast or queued; Retry must not send it again.
+  const sentRef = useRef(false);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     executeRef.current = () => {
@@ -72,6 +74,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         callbacksRef.current.onError(new Error('The bridge is not ready to send.'));
         return;
       }
+      if (sentRef.current) {
+        callbacksRef.current.onError(new Error('The bridge was already sent.'));
+        return;
+      }
       if (pinnedChainId !== launchedChainIdRef.current) {
         callbacksRef.current.onError(new Error('The source network changed after Review.'));
         return;
@@ -80,16 +86,22 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       const record = { account, amount, from, to, recipient, route };
       const callbacks = withSourceRecording(() => callbacksRef.current, {
         isSafe,
-        onSent: txHash =>
-          pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() })),
-        onQueued: safeTxHash =>
-          pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() })),
-        onExecuted: (txHash, safeTxHash) =>
-          safeTxHash
-            ? pendingBridgeStore.update(scope, safeTxHash, bridge =>
-                applyProgress(bridge, { kind: 'source-executed', txHash }, Date.now())
-              )
-            : pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }))
+        onSent: txHash => {
+          sentRef.current = true;
+          pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
+        },
+        onQueued: safeTxHash => {
+          sentRef.current = true;
+          pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() }));
+        },
+        onExecuted: (txHash, safeTxHash) => {
+          sentRef.current = true;
+          if (safeTxHash)
+            pendingBridgeStore.update(scope, safeTxHash, bridge =>
+              applyProgress(bridge, { kind: 'source-executed', txHash }, Date.now())
+            );
+          else pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
+        }
       });
       void runMockLegs(sourceActions, () => callbacks);
     };
@@ -114,6 +126,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     // No chain to guard: an empty guard would let the legs run on any chain.
     if (pinnedChainId === undefined) return;
     launchedChainIdRef.current = pinnedChainId;
+    sentRef.current = false;
     launchModal({
       title: t`Review USDS bridge`,
       transactionTitle: t`Review USDS bridge`,

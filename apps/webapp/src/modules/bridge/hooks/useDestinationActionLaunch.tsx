@@ -94,6 +94,12 @@ export function useDestinationActionLaunch() {
         toast: { loading: copy.loading, success: copy.success, error: copy.error },
         steps: [{ label: copy.step, tokenSymbol: 'USDS', failureDetail: copy.failure }],
         onConfirm: () => {
+          // Retry calls onConfirm again; an action already sent must not go out twice.
+          const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
+          if (!current || current.nextAction !== action || !canLaunchAction(current)) {
+            callbacksRef.current.onError(new Error('This action was already sent.'));
+            return;
+          }
           const record =
             (change: (current: PendingBridge, txHash: string) => PendingBridge) => (txHash: string) =>
               pendingBridgeStore.update(scope, bridge.id, current => change(current, txHash));
