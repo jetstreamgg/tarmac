@@ -5,6 +5,7 @@ import { NO_VALUE } from '@/lib/constants';
 import { useIsSafeWallet } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeReviewContent';
@@ -59,6 +60,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const launchedChainIdRef = useRef<number | undefined>(undefined);
   // Set once this Review's bridge leg is broadcast or queued; Retry must not send it again.
   const sentRef = useRef(false);
+  // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
+  const unresolvedRef = useRef<string | undefined>(undefined);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     executeRef.current = () => {
@@ -74,7 +77,13 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         return;
       }
       if (sentRef.current) {
-        callbacksRef.current.onError(new Error('The bridge was already sent.'));
+        callbacksRef.current.onError(
+          new Error(
+            unresolvedRef.current
+              ? 'The last bridge is still pending. Check it on its card before sending again.'
+              : 'The bridge was already sent.'
+          )
+        );
         return;
       }
       if (pinnedChainId !== launchedChainIdRef.current) {
@@ -83,16 +92,18 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       }
       // Snapshot at Confirm: the form may change or reset before the legs finish.
       const record = { account, amount, from, to, recipient, route };
-      const callbacks = withSourceRecording(() => callbacksRef.current, {
+      const recording = withSourceRecording(() => callbacksRef.current, {
         isSafe,
         // The mock names each leg after its step; route tickets pass their bridge call's name.
         bridgeFunctionName: 'send',
         onSent: txHash => {
           sentRef.current = true;
+          unresolvedRef.current = txHash;
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
         },
         onQueued: safeTxHash => {
           sentRef.current = true;
+          unresolvedRef.current = safeTxHash;
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() }));
         },
         onExecuted: (txHash, safeTxHash) => {
@@ -112,11 +123,19 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         // The funds never left, so Retry may send again.
         onFailed: (txHash, reason) => {
           sentRef.current = false;
+          unresolvedRef.current = undefined;
           pendingBridgeStore.update(scope, txHash, bridge =>
             applyProgress(bridge, { kind: 'failed', reason }, Date.now())
           );
         }
       });
+      const callbacks: TxCallbacks = {
+        ...recording,
+        onSuccess: hash => {
+          unresolvedRef.current = undefined;
+          recording.onSuccess(hash);
+        }
+      };
       void runMockLegs(sourceActions, () => callbacks);
     };
   });
@@ -140,7 +159,15 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     // No chain to guard: an empty guard would let the legs run on any chain.
     if (pinnedChainId === undefined) return;
     launchedChainIdRef.current = pinnedChainId;
-    sentRef.current = false;
+    // A send whose outcome is unknown (a failed receipt wait) may still land: wait for its card to settle.
+    const unresolved =
+      unresolvedRef.current && scope
+        ? pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.id === unresolvedRef.current)
+        : undefined;
+    if (unresolved?.status !== 'pending') {
+      unresolvedRef.current = undefined;
+      sentRef.current = false;
+    }
     launchModal({
       title: t`Review USDS bridge`,
       transactionTitle: t`Review USDS bridge`,
@@ -173,7 +200,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     onSuccess,
     sessionId,
     amount,
-    pinnedChainId
+    pinnedChainId,
+    scope
   ]);
 
   useEffect(() => {

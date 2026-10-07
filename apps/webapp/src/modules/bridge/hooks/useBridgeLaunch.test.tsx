@@ -352,6 +352,54 @@ describe('useBridgeLaunch Confirm gate', () => {
     expect(stored[0].txHash).toBe('0xfast');
   });
 
+  describe('a new Review after a send with no verdict', () => {
+    // The send was broadcast, then the receipt wait failed without a revert.
+    async function sendWithUnknownOutcome() {
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      await settle();
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacks = mocks.legs[0].getCallbacks();
+      callbacks.onMutate({ functionName: 'send' });
+      callbacks.onStart('0xunknown');
+      callbacks.onError(new Error('Timed out while waiting for transaction'), '0xunknown');
+      return { view, callbacks, scope: pendingScopeKey({ account: SENDER, familyChainId: 1 }) };
+    }
+
+    it('sends nothing while that bridge is still pending', async () => {
+      const { view } = await sendWithUnknownOutcome();
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.legs).toHaveLength(1);
+      expect((mocks.onError.mock.calls.at(-1)?.[0] as Error).message).toMatch(/still pending/);
+    });
+
+    it('can send again once the card settles', async () => {
+      const { view, scope } = await sendWithUnknownOutcome();
+      pendingBridgeStore.update(scope, '0xunknown', bridge => ({ ...bridge, status: 'failed' }));
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.legs).toHaveLength(2);
+    });
+
+    it('can send again after a flow that succeeded, while that bridge is still in flight', async () => {
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      await settle();
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacks = mocks.legs[0].getCallbacks();
+      callbacks.onMutate({ functionName: 'send' });
+      callbacks.onStart('0xdone');
+      callbacks.onSuccess('0xdone');
+
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.legs).toHaveLength(2);
+    });
+  });
+
   it('a bridge call rejected after an earlier leg mined stores nothing, and Retry runs the legs again', async () => {
     const view = renderBridge();
     act(() => view.result.current.form.onInput('1'));
