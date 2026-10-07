@@ -9,7 +9,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { getBridgeNetwork } from '../model/networks';
-import { isSettled } from '../model/pendingTransitions';
+import { canLaunchAction, isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
@@ -72,11 +72,13 @@ function CellValue({ cell }: { cell: PendingBridgeCell }) {
 function PendingBridgeCard({
   bridge,
   now,
-  onAction
+  onAction,
+  actionLocked
 }: {
   bridge: PendingBridge;
   now: number;
   onAction: (bridge: PendingBridge) => void;
+  actionLocked: boolean;
 }) {
   const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), { minDecimals: 2, maxDecimals: 2 });
   return (
@@ -103,7 +105,7 @@ function PendingBridgeCard({
             variant="primary"
             size="m"
             className="w-24"
-            disabled={bridge.status !== 'ready'}
+            disabled={actionLocked || !canLaunchAction(bridge)}
             onClick={() => onAction(bridge)}
             data-testid="pending-bridge-action"
           >
@@ -132,7 +134,14 @@ function PendingBridgeCard({
 }
 
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
-export function PendingBridges({ onAction }: { onAction: (bridge: PendingBridge) => void }) {
+export function PendingBridges({
+  onAction,
+  actionLocked
+}: {
+  onAction: (bridge: PendingBridge) => void;
+  /** An action's session is minimized: it must be restored, not launched again. */
+  actionLocked: boolean;
+}) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
   if (bridges.length === 0) return null;
@@ -143,7 +152,13 @@ export function PendingBridges({ onAction }: { onAction: (bridge: PendingBridge)
         <Trans>Pending bridges</Trans>
       </h2>
       {bridges.map(bridge => (
-        <PendingBridgeCard key={bridge.id} bridge={bridge} now={now} onAction={onAction} />
+        <PendingBridgeCard
+          key={bridge.id}
+          bridge={bridge}
+          now={now}
+          onAction={onAction}
+          actionLocked={actionLocked}
+        />
       ))}
     </section>
   );

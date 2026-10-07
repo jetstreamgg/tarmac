@@ -39,14 +39,17 @@ export function buildBridgeActivity(bridges: PendingBridge[]): BridgeActivityEnt
             }
           ]
         : []),
-      ...bridge.actions.map(action => ({
-        id: `${bridge.id}-${action.action}-${action.txHash}`,
-        kind: action.action,
-        network: bridge.to,
-        amount: bridge.amount,
-        timestamp: action.at,
-        txHash: action.txHash
-      }))
+      // A sent action's hash can be a Safe tx hash; it shows once confirmed.
+      ...bridge.actions
+        .filter(action => action.status !== 'sent')
+        .map(action => ({
+          id: `${bridge.id}-${action.action}-${action.txHash}`,
+          kind: action.action,
+          network: bridge.to,
+          amount: bridge.amount,
+          timestamp: action.at,
+          txHash: action.txHash
+        }))
     ])
     .sort((a, b) => b.timestamp - a.timestamp);
 }

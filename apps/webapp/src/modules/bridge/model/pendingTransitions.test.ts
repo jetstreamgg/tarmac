@@ -4,8 +4,11 @@ import {
   applyProgress,
   createPendingBridge,
   isPendingBridgeVisible,
+  canLaunchAction,
+  dropSentAction,
   pollIntervalMs,
-  recordAction
+  recordAction,
+  recordActionSent
 } from './pendingTransitions';
 import { resolveBridgeRoute } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
@@ -268,5 +271,75 @@ describe('pollIntervalMs', () => {
       NOW
     );
     expect(pollIntervalMs(ready, NOW)).toBe(MINUTE);
+  });
+});
+
+describe('destination actions sent before they are confirmed', () => {
+  const readyClaim = () =>
+    applyProgress(create(routeFor('base', 'ethereum')), { kind: 'ready', nextAction: 'claim' }, NOW);
+
+  it('a sent action does not advance the bridge, and blocks a second launch', () => {
+    const ready = readyClaim();
+    expect(canLaunchAction(ready)).toBe(true);
+    const sent = recordActionSent(ready, { action: 'claim', txHash: '0xclaim', at: NOW });
+    expect(sent).toMatchObject({ status: 'ready', nextAction: 'claim' });
+    expect(sent.settledAt).toBeUndefined();
+    expect(canLaunchAction(sent)).toBe(false);
+  });
+
+  it('confirming a sent action advances once, without a duplicate entry', () => {
+    const sent = recordActionSent(readyClaim(), { action: 'claim', txHash: '0xclaim', at: NOW });
+    const confirmed = recordAction(sent, { action: 'claim', txHash: '0xclaim', at: NOW + MINUTE });
+    expect(confirmed).toMatchObject({ status: 'claimed', settledAt: NOW + MINUTE });
+    expect(confirmed.actions).toHaveLength(1);
+    expect(confirmed.actions[0]).not.toMatchObject({ status: 'sent' });
+  });
+
+  it('a Safe confirms with the on-chain hash, which replaces the sent Safe tx hash', () => {
+    const sent = recordActionSent(readyClaim(), { action: 'claim', txHash: '0xsafetx', at: NOW });
+    const confirmed = recordAction(sent, { action: 'claim', txHash: '0xexec', at: NOW + 1 });
+    expect(confirmed.actions).toEqual([{ action: 'claim', txHash: '0xexec', at: NOW + 1 }]);
+  });
+
+  it('dropping a reverted sent action lets the user try again', () => {
+    const sent = recordActionSent(readyClaim(), { action: 'claim', txHash: '0xclaim', at: NOW });
+    const dropped = dropSentAction(sent, '0xclaim');
+    expect(dropped.actions).toEqual([]);
+    expect(canLaunchAction(dropped)).toBe(true);
+  });
+
+  it('dropping never removes a confirmed action', () => {
+    const ready = applyProgress(
+      create(routeFor('optimism', 'ethereum', false)),
+      { kind: 'ready', nextAction: 'prove' },
+      NOW
+    );
+    const proven = recordAction(ready, { action: 'prove', txHash: '0xprove', at: NOW });
+    expect(dropSentAction(proven, '0xprove')).toBe(proven);
+  });
+
+  it('a sent action the route does not have, or a hash already there, is ignored', () => {
+    const ready = readyClaim();
+    expect(recordActionSent(ready, { action: 'finalize', txHash: '0xf', at: NOW })).toBe(ready);
+    const sent = recordActionSent(ready, { action: 'claim', txHash: '0xclaim', at: NOW });
+    expect(recordActionSent(sent, { action: 'claim', txHash: '0xclaim', at: NOW + 1 })).toBe(sent);
+  });
+
+  it('a stored action without a status reads as confirmed', () => {
+    const ready = applyProgress(
+      create(routeFor('optimism', 'ethereum', false)),
+      { kind: 'ready', nextAction: 'prove' },
+      NOW
+    );
+    const legacy = applyProgress(
+      { ...ready, actions: [{ action: 'prove', txHash: '0xprove', at: NOW }], nextAction: 'finalize' },
+      { kind: 'ready', nextAction: 'finalize' },
+      NOW
+    );
+    expect(canLaunchAction(legacy)).toBe(true);
+  });
+
+  it('only a ready bridge can launch its action', () => {
+    expect(canLaunchAction(create(routeFor('base', 'ethereum')))).toBe(false);
   });
 });

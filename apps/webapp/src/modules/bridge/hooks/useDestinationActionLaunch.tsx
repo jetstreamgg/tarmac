@@ -4,13 +4,15 @@ import { useChainId, useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
-import { recordAction } from '../model/pendingTransitions';
+import { canLaunchAction, dropSentAction, recordAction, recordActionSent } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
+import { withActionRecording } from '../tracking/actionRecording';
 import { usePendingScope } from './usePendingScope';
 
 const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
@@ -46,7 +48,7 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
  * The bridge's next destination action (claim, prove or finalize; Figma
  * 3574:64565): the modal opens straight on the "Confirm" wallet screen with
  * the amount hero and a single action. Runs on the mock executor until the
- * route tickets add their calls.
+ * route tickets add their calls. `locked` is true while its session is minimized.
  */
 export function useDestinationActionLaunch() {
   const { launch: launchModal, txCallbacks } = useTransaction();
@@ -54,16 +56,20 @@ export function useDestinationActionLaunch() {
   const walletChainId = useChainId();
   const chains = useChains();
   const { scope, familyChainId } = usePendingScope();
+  const { locked } = useMinimizedSessionLock(sessionId);
 
   const callbacksRef = useRef(txCallbacks);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
   });
 
-  return useCallback(
-    (bridge: PendingBridge) => {
-      const action = bridge.nextAction;
-      if (!action || !scope) return;
+  const launch = useCallback(
+    (card: PendingBridge) => {
+      if (!scope) return;
+      // The card can predate a broadcast; the store has the sent action.
+      const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === card.id);
+      const action = bridge?.nextAction;
+      if (!bridge || !action || !canLaunchAction(bridge)) return;
       const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), {
         minDecimals: 2,
         maxDecimals: 2
@@ -89,12 +95,19 @@ export function useDestinationActionLaunch() {
         toast: { loading: copy.loading, success: copy.success, error: copy.error },
         steps: [{ label: copy.step, tokenSymbol: 'USDS', failureDetail: copy.failure }],
         onConfirm: () => {
-          // A Safe's action is caught by the tracker once it lands, if this never resolves.
-          void runMockLegs([action], () => callbacksRef.current).then(txHash =>
-            pendingBridgeStore.update(scope, bridge.id, current =>
+          const record =
+            (change: (current: PendingBridge, txHash: string) => PendingBridge) => (txHash: string) =>
+              pendingBridgeStore.update(scope, bridge.id, current => change(current, txHash));
+          const callbacks = withActionRecording(() => callbacksRef.current, {
+            onSent: record((current, txHash) =>
+              recordActionSent(current, { action, txHash, at: Date.now() })
+            ),
+            onConfirmed: record((current, txHash) =>
               recordAction(current, { action, txHash, at: Date.now() })
-            )
-          );
+            ),
+            onReverted: record(dropSentAction)
+          });
+          void runMockLegs([action], () => callbacks);
         },
         sessionId,
         usdValue: Number(formatUnits(bridge.amount, 18)),
@@ -105,4 +118,6 @@ export function useDestinationActionLaunch() {
     },
     [launchModal, sessionId, scope, familyChainId, chains, walletChainId]
   );
+
+  return { launch, locked };
 }

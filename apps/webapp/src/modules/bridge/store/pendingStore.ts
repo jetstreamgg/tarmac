@@ -27,7 +27,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const optional = (value: unknown, check: (value: unknown) => boolean) => value === undefined || check(value);
 
 const isAction = (value: unknown) =>
-  isRecord(value) && NEXT_ACTIONS.has(value.action) && isString(value.txHash) && typeof value.at === 'number';
+  isRecord(value) &&
+  NEXT_ACTIONS.has(value.action) &&
+  isString(value.txHash) &&
+  typeof value.at === 'number' &&
+  optional(value.status, status => status === 'sent');
 
 const parseEntry = (value: unknown): PendingBridge | null => {
   if (!isRecord(value)) return null;

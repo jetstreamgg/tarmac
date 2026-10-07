@@ -60,6 +60,14 @@ describe('buildBridgeActivity', () => {
     ]);
   });
 
+  it('leaves out a destination action until it is confirmed', () => {
+    const sent = bridge({
+      status: 'ready',
+      actions: [{ action: 'claim', txHash: '0xsafetx', at: 5000, status: 'sent' }]
+    });
+    expect(summary([sent])).toEqual([['bridge', 'base', '0xa']]);
+  });
+
   it('leaves out a Safe bridge still waiting for signatures', () => {
     expect(summary([bridge({ id: '0xsafe', safeTxHash: '0xsafe', txHash: undefined })])).toEqual([]);
   });

@@ -15,7 +15,7 @@ export const fakeTxHash = () =>
 /** Stand-in for every route until the route tickets (APP-613 to APP-617) add theirs. */
 export const mockAdapter: BridgeAdapter = {
   async checkProgress(bridge, now) {
-    const since = bridge.actions.at(-1)?.at ?? bridge.startedAt;
+    const since = bridge.actions.filter(action => action.status !== 'sent').at(-1)?.at ?? bridge.startedAt;
     if (now - since < MOCK_STAGE_MS) return null;
     return bridge.nextAction ? { kind: 'ready', nextAction: bridge.nextAction } : { kind: 'arrived' };
   }

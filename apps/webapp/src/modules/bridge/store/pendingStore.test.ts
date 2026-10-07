@@ -174,6 +174,21 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([bridge()]);
   });
 
+  it('keeps a sent action through storage and skips an unknown action status', () => {
+    const sent = bridge({
+      status: 'ready',
+      actions: [{ action: 'claim', txHash: '0xc', at: NOW, status: 'sent' }]
+    });
+    const stored = { ...sent, amount: sent.amount.toString() };
+    const bad = {
+      ...stored,
+      id: '0xa',
+      actions: [{ action: 'claim', txHash: '0xc', at: NOW, status: 'maybe' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad, stored]));
+    expect(make().getSnapshot(SCOPE)).toEqual([sent]);
+  });
+
   it('skips malformed entries and unreadable storage', () => {
     localStorage.setItem(
       `bridgePending:v1:${SCOPE}`,

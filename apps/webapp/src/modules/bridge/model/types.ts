@@ -32,7 +32,13 @@ export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 
 export type PendingBridgeNextAction = 'claim' | 'prove' | 'finalize';
 
 /** A destination-side transaction the user sent for a bridge. */
-export type PendingBridgeAction = { action: PendingBridgeNextAction; txHash: string; at: number };
+export type PendingBridgeAction = {
+  action: PendingBridgeNextAction;
+  txHash: string;
+  at: number;
+  /** `sent` until the flow confirms it; entries without a status are confirmed. */
+  status?: 'sent';
+};
 
 export type PendingBridge = {
   /** The first source identifier known: the tx hash, or the Safe tx hash for a queued Safe transaction. */

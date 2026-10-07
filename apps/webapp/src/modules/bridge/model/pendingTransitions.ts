@@ -115,12 +115,37 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
   }
 }
 
+const isSent = (action: PendingBridgeAction) => action.status === 'sent';
+
+/** A destination action broadcast but not yet confirmed: it blocks a second launch, not the bridge's progress. */
+export function recordActionSent(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
+  if (!destinationActions(bridge.routeKind, bridge.from).includes(action.action)) return bridge;
+  if (bridge.actions.some(sent => sent.txHash === action.txHash)) return bridge;
+  return { ...bridge, actions: [...bridge.actions, { ...action, status: 'sent' }] };
+}
+
+/** Removes a sent action whose transaction reverted; confirmed actions stay. */
+export function dropSentAction(bridge: PendingBridge, txHash: string): PendingBridge {
+  const actions = bridge.actions.filter(sent => !(isSent(sent) && sent.txHash === txHash));
+  return actions.length === bridge.actions.length ? bridge : { ...bridge, actions };
+}
+
+/** The next action can be launched: it is ready and not already sent. */
+export const canLaunchAction = (bridge: PendingBridge): boolean =>
+  bridge.status === 'ready' &&
+  !!bridge.nextAction &&
+  !bridge.actions.some(sent => isSent(sent) && sent.action === bridge.nextAction);
+
 /** A destination action the user sent and the transaction flow confirmed. */
 export function recordAction(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
   const remaining = destinationActions(bridge.routeKind, bridge.from);
   if (!remaining.includes(action.action)) return bridge;
-  if (bridge.actions.some(sent => sent.txHash === action.txHash)) return bridge;
-  const actions = [...bridge.actions, action];
+  if (bridge.actions.some(sent => !isSent(sent) && sent.txHash === action.txHash)) return bridge;
+  // A Safe confirms with the on-chain hash, not the Safe tx hash it was sent with.
+  const actions = [
+    ...bridge.actions.filter(sent => !(isSent(sent) && sent.action === action.action)),
+    { action: action.action, txHash: action.txHash, at: action.at }
+  ];
   if (isSettled(bridge)) return { ...bridge, actions };
   const next = remaining[remaining.indexOf(action.action) + 1];
   return next
