@@ -148,9 +148,10 @@ export function BridgeCard({ form }: { form: BridgeFormModel }) {
       <button
         type="button"
         onClick={form.flip}
+        disabled={form.isSourceStatic}
         aria-label={t`Flip bridge direction`}
         data-testid="bridge-flip"
-        className="bg-flipSurface border-flipRing text-textSecondary hover:text-text absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors"
+        className="bg-flipSurface border-flipRing text-textSecondary hover:text-text absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors disabled:pointer-events-none disabled:opacity-50"
       >
         <ChevronDown width={16} height={16} />
       </button>

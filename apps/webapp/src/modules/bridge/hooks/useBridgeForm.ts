@@ -81,11 +81,7 @@ export function useBridgeForm() {
     );
   };
 
-  const selectFrom = (next: BridgeNetworkId) => {
-    const nextPair = pickFrom(pair, next);
-    setPickedTo(nextPair.to);
-    // A recipient typed for one address family can't carry over to another.
-    if (getBridgeNetwork(nextPair.to).family !== getBridgeNetwork(to).family) setRecipient(undefined);
+  const moveSource = (next: BridgeNetworkId) => {
     const target = getBridgeNetwork(next);
     if (isConfiguredChain(next) && canSwitchChain && target.chainId !== undefined) {
       setSourceOverride(null);
@@ -95,13 +91,17 @@ export function useBridgeForm() {
     setSourceOverride(next === walletNetwork ? null : next);
   };
 
-  const selectTo = (next: BridgeNetworkId) => {
-    const nextPair = pickTo(pair, next);
-    if (getBridgeNetwork(nextPair.to).family !== getBridgeNetwork(to).family) setRecipient(undefined);
-    setPickedTo(nextPair.to);
-    if (nextPair.from !== from) selectFrom(nextPair.from);
+  const applyPair = (next: BridgePair) => {
+    // A wallet the app can't switch (Safe) keeps its network as the source.
+    if (next.from !== from && !canSwitchChain) return;
+    // A recipient typed for one address family can't carry over to another.
+    if (getBridgeNetwork(next.to).family !== getBridgeNetwork(to).family) setRecipient(undefined);
+    setPickedTo(next.to);
+    if (next.from !== from) moveSource(next.from);
   };
 
+  const selectFrom = (next: BridgeNetworkId) => applyPair(pickFrom(pair, next));
+  const selectTo = (next: BridgeNetworkId) => applyPair(pickTo(pair, next));
   const flip = () => selectFrom(to);
 
   const onInput = useCallback((raw: string) => {
