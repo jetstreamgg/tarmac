@@ -26,7 +26,8 @@ export type BridgeRouteFacts = {
   native?: RouteFact<RouteGate>;
   /** `liquidity`: USDC the L2 PSM3 can pay out, in USDS wei. */
   cctp?: RouteFact<RouteGate & { liquidity?: bigint }>;
-  layerzero?: RouteFact<RouteGate & { bridgeFeeUsd?: number }>;
+  /** `bridgeFeeUsd`: the quoted fee, paid on top in the native token; a read with no quote blocks. */
+  layerzero?: RouteFact<RouteGate & { bridgeFeeUsd: number }>;
 };
 
 /** A query's result as a route fact; a success with no data is an error. */
@@ -144,6 +145,7 @@ export function resolveBridgeRoute({
   if (isLayerZero) {
     const { layerzero } = facts;
     if (isUnread(layerzero)) return blocked(unreadReason(layerzero));
+    if (layerzero && !Number.isFinite(layerzero.bridgeFeeUsd)) return blocked('facts-error');
     const failure = gateFailure(amount, layerzero);
     if (failure) return blocked(failure);
     return ok(

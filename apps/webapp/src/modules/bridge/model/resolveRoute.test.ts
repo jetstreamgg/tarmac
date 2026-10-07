@@ -84,6 +84,17 @@ describe('resolveBridgeRoute: pairs', () => {
     expect(okRoute(resolve('base', 'ethereum')).bridgeFeeUsd).toBe(0);
   });
 
+  it('a LayerZero read with no fee quote blocks, so Review never confirms an unknown fee', () => {
+    // @ts-expect-error a LayerZero fact must carry its fee
+    expect(resolve('ethereum', 'avalanche', usds('1'), { layerzero: { isOpen: true } })).toEqual({
+      status: 'blocked',
+      reason: 'facts-error'
+    });
+    expect(
+      resolve('solana', 'ethereum', usds('1'), { layerzero: { isOpen: true, bridgeFeeUsd: Number.NaN } })
+    ).toEqual({ status: 'blocked', reason: 'facts-error' });
+  });
+
   it('every route is 1:1 with no slippage (PSMs swap at a fixed price)', () => {
     for (const route of [
       resolve('ethereum', 'base'),
@@ -187,7 +198,11 @@ describe('resolveBridgeRoute: single-route pairs', () => {
   });
 
   it('blocks a LayerZero send over the rate limit', () => {
-    expect(resolve('ethereum', 'avalanche', usds('10'), { layerzero: { maxAmount: usds('5') } })).toEqual({
+    expect(
+      resolve('ethereum', 'avalanche', usds('10'), {
+        layerzero: { maxAmount: usds('5'), bridgeFeeUsd: 0.42 }
+      })
+    ).toEqual({
       status: 'blocked',
       reason: 'over-limit'
     });
