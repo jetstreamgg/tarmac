@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ArrowDownToLine } from 'lucide-react';
 import { formatNumber, formatUsd } from '@/utils';
 import { IconboxAction } from '@/components/ui/iconbox';
+import type { ExtraActivityRow } from '@/modules/app/shell/activity/mergeActivityRows';
 import { ConvertArrows } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useBridgeHistory } from '../hooks/useBridgeHistory';
@@ -14,17 +16,18 @@ import { bridgeTxHref } from './pendingBridgeRows';
 // USDS is pegged 1:1.
 const USDS_USD = 1;
 
-/** Bridge / Funds claim rows (Figma Wallet Activity 3574:64437), styled as BalancesHistoryItem. */
-export function BridgeActivityList() {
-  const entries = buildBridgeActivity(useBridgeHistory());
+/** Bridge / Funds claim rows (Figma Wallet Activity 3574:64437), styled as BalancesHistoryItem, for the Activity feed. */
+export function useBridgeActivityRows(): ExtraActivityRow[] {
+  const history = useBridgeHistory();
   const { familyChainId } = usePendingScope();
-  if (entries.length === 0) return null;
-  return (
-    <div className="flex flex-col" data-testid="bridge-activity">
-      {entries.map(entry => (
-        <BridgeActivityItem key={entry.id} entry={entry} familyChainId={familyChainId} />
-      ))}
-    </div>
+  return useMemo(
+    () =>
+      buildBridgeActivity(history).map(entry => ({
+        key: entry.id,
+        timestamp: entry.timestamp,
+        render: () => <BridgeActivityItem entry={entry} familyChainId={familyChainId} />
+      })),
+    [history, familyChainId]
   );
 }
 
