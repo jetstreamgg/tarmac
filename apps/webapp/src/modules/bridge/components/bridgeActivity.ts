@@ -31,13 +31,13 @@ export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
 const isConfirmed = (action: PendingBridge['actions'][number]) => action.status !== 'sent';
 
 /**
- * One "Bridge" row per bridge with an on-chain source tx, plus a row per
- * destination action the user sent, newest first.
+ * One "Bridge" row per bridge whose source tx went through, plus a row per
+ * destination action the user sent, newest first. A reverted send gets no row.
  */
 export function buildBridgeActivity(bridges: PendingBridge[]): BridgeActivityEntry[] {
   return bridges
     .flatMap(bridge => [
-      ...(bridge.txHash
+      ...(bridge.txHash && bridge.status !== 'failed'
         ? [
             {
               id: `${bridge.id}-bridge`,

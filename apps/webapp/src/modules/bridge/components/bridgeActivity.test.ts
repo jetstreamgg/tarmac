@@ -71,6 +71,12 @@ describe('buildBridgeActivity', () => {
     expect(summary([sent])).toEqual([['bridge', 'base', '0xa']]);
   });
 
+  it('leaves out a bridge whose source tx failed, so it does not read as a transfer', () => {
+    expect(summary([bridge({ status: 'failed', nextAction: undefined, failureReason: 'reverted' })])).toEqual(
+      []
+    );
+  });
+
   it('leaves out a Safe bridge still waiting for signatures', () => {
     expect(summary([bridge({ id: '0xsafe', safeTxHash: '0xsafe', txHash: undefined })])).toEqual([]);
   });

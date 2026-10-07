@@ -23,6 +23,7 @@ export type BridgeProgress =
   | { kind: 'ready'; nextAction: PendingBridgeNextAction; routeData?: Record<string, string> }
   /** Funds landed, automatically or through an action someone else sent. */
   | { kind: 'arrived' }
+  /** The source send moved no funds (reverted, or a Safe tx replaced); Activity leaves it out. */
   | { kind: 'failed'; reason: string }
   /** A sent destination action mined, read from chain (a Safe reports its on-chain hash). */
   | { kind: 'action-confirmed'; action: PendingBridgeNextAction; txHash: string; at?: number }
