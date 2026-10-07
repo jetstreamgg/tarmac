@@ -198,4 +198,51 @@ describe('createPendingBridgeStore', () => {
     localStorage.setItem(`bridgePending:v1:${SCOPE}`, '{not json');
     expect(make().getSnapshot(SCOPE)).toEqual([]);
   });
+
+  describe('never loses what it cannot read', () => {
+    const KEY = `bridgePending:v1:${SCOPE}`;
+    // A newer bundle (a later route kind) wrote this entry under the same key.
+    const future = { ...bridge({ id: '0xfuture', txHash: '0xfuture' }), amount: '1', routeKind: 'hyperlane' };
+    const seed = () =>
+      localStorage.setItem(
+        KEY,
+        JSON.stringify([future, { ...bridge(), amount: bridge().amount.toString() }])
+      );
+    const storedIds = () =>
+      (JSON.parse(localStorage.getItem(KEY)!) as { id: string }[]).map(entry => entry.id);
+
+    it('an upsert keeps an entry it cannot parse', () => {
+      seed();
+      make().upsert(SCOPE, bridge({ id: '0xnew', txHash: '0xnew', startedAt: NOW + 1 }));
+      expect(storedIds()).toEqual(expect.arrayContaining(['0xnew', '0xsource', '0xfuture']));
+    });
+
+    it('an update keeps an entry it cannot parse', () => {
+      seed();
+      make().update(SCOPE, '0xsource', current => ({ ...current, status: 'ready' }));
+      expect(storedIds()).toEqual(expect.arrayContaining(['0xsource', '0xfuture']));
+    });
+
+    it('keeps a copy of an unreadable value before replacing it', () => {
+      localStorage.setItem(KEY, '[{"id":"0xfuture", not json');
+      make().upsert(SCOPE, bridge());
+      expect(localStorage.getItem(`${KEY}:unreadable`)).toBe('[{"id":"0xfuture", not json');
+      expect(make().getSnapshot(SCOPE)).toEqual([bridge()]);
+    });
+
+    it('does not replace an unreadable value it could not copy', () => {
+      localStorage.setItem(KEY, '{not json');
+      const setItem = localStorage.setItem.bind(localStorage);
+      const spy = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+        if (key.endsWith(':unreadable')) throw new Error('QuotaExceededError');
+        setItem(key, value);
+      });
+      const store = make();
+      store.upsert(SCOPE, bridge());
+      expect(spy).toHaveBeenCalledWith(`${KEY}:unreadable`, '{not json');
+      spy.mockRestore();
+      expect(localStorage.getItem(KEY)).toBe('{not json');
+      expect(store.getSnapshot(SCOPE)).toEqual([bridge()]);
+    });
+  });
 });
