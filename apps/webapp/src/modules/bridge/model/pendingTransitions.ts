@@ -27,7 +27,9 @@ export type BridgeProgress =
   /** A sent destination action mined, read from chain (a Safe reports its on-chain hash). */
   | { kind: 'action-confirmed'; action: PendingBridgeNextAction; txHash: string; at?: number }
   /** A sent destination action that will never land (reverted, replaced, rejected), by the hash it was sent with. */
-  | { kind: 'action-dropped'; txHash: string };
+  | { kind: 'action-dropped'; txHash: string }
+  /** A confirmed action the chain no longer counts, so it must be sent again (an OP re-prove). */
+  | { kind: 'action-invalidated'; action: PendingBridgeNextAction };
 
 export const isSettled = (bridge: PendingBridge): boolean =>
   bridge.status === 'arrived' || bridge.status === 'claimed' || bridge.status === 'failed';
@@ -76,7 +78,7 @@ export function createPendingBridge({
 }
 
 const isConfirmed = (bridge: PendingBridge, action: PendingBridgeNextAction | undefined) =>
-  !!action && bridge.actions.some(done => done.action === action && done.status !== 'sent');
+  !!action && bridge.actions.some(done => done.action === action && done.status === undefined);
 
 const mergeRouteData = (bridge: PendingBridge, routeData: Record<string, string> | undefined) =>
   routeData ? { ...bridge.routeData, ...routeData } : bridge.routeData;
@@ -88,6 +90,7 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
   }
   if (progress.kind === 'action-dropped') return dropSentAction(bridge, progress.txHash);
   if (isSettled(bridge)) return bridge;
+  if (progress.kind === 'action-invalidated') return invalidateAction(bridge, progress.action);
   // A lagging read can still report an action this bridge already confirmed.
   if (
     (progress.kind === 'waiting' || progress.kind === 'ready') &&
@@ -148,6 +151,19 @@ export function recordActionSent(bridge: PendingBridge, action: PendingBridgeAct
 export function dropSentAction(bridge: PendingBridge, txHash: string): PendingBridge {
   const actions = bridge.actions.filter(sent => !(isSent(sent) && sent.txHash === txHash));
   return actions.length === bridge.actions.length ? bridge : { ...bridge, actions };
+}
+
+/** The chain no longer counts the action: it is offered again, and the mined one stays in the history. */
+function invalidateAction(bridge: PendingBridge, action: PendingBridgeNextAction): PendingBridge {
+  if (!isConfirmed(bridge, action)) return bridge;
+  return {
+    ...bridge,
+    status: 'pending',
+    nextAction: action,
+    actions: bridge.actions.map(done =>
+      done.action === action && done.status === undefined ? { ...done, status: 'invalidated' } : done
+    )
+  };
 }
 
 /** The next action can be launched: it is ready and not already sent. */

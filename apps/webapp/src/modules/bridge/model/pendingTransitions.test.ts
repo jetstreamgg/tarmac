@@ -447,6 +447,56 @@ describe('a lagging poll never re-offers an action that is already confirmed', (
   });
 });
 
+describe('a confirmed action the chain no longer honours can be sent again (OP re-prove)', () => {
+  const DAY = 24 * HOUR;
+  const invalidated = () =>
+    applyProgress(
+      recordAction(
+        applyProgress(
+          create(routeFor('optimism', 'ethereum', false)),
+          { kind: 'ready', nextAction: 'prove' },
+          NOW
+        ),
+        { action: 'prove', txHash: '0xprove', at: NOW }
+      ),
+      { kind: 'action-invalidated', action: 'prove' },
+      NOW + 8 * DAY
+    );
+
+  it('an invalidated prove goes back to waiting for prove, and Finalize is no longer offered', () => {
+    const bridge = invalidated();
+    expect(bridge).toMatchObject({ status: 'pending', nextAction: 'prove' });
+    expect(canLaunchAction(bridge)).toBe(false);
+  });
+
+  it('the re-prove becomes launchable when the chain says it is ready', () => {
+    const ready = applyProgress(invalidated(), { kind: 'ready', nextAction: 'prove' }, NOW + 8 * DAY);
+    expect(ready).toMatchObject({ status: 'ready', nextAction: 'prove' });
+    expect(canLaunchAction(ready)).toBe(true);
+  });
+
+  it('the first prove stays in the history, and the re-prove then moves on to finalize', () => {
+    const reproven = recordAction(
+      applyProgress(invalidated(), { kind: 'ready', nextAction: 'prove' }, NOW + 8 * DAY),
+      { action: 'prove', txHash: '0xreprove', at: NOW + 8 * DAY }
+    );
+    expect(reproven.actions.map(({ txHash, status }) => ({ txHash, status }))).toEqual([
+      { txHash: '0xprove', status: 'invalidated' },
+      { txHash: '0xreprove', status: undefined }
+    ]);
+    expect(reproven).toMatchObject({ status: 'pending', nextAction: 'finalize' });
+  });
+
+  it('invalidating an action that was never confirmed changes nothing', () => {
+    const bridge = applyProgress(
+      create(routeFor('optimism', 'ethereum', false)),
+      { kind: 'ready', nextAction: 'prove' },
+      NOW
+    );
+    expect(applyProgress(bridge, { kind: 'action-invalidated', action: 'prove' }, NOW)).toBe(bridge);
+  });
+});
+
 describe('a queued Safe bridge can be dismissed, nothing else can', () => {
   const route = routeFor('base', 'ethereum');
 

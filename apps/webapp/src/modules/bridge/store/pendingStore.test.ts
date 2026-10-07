@@ -189,6 +189,17 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([sent]);
   });
 
+  it('keeps an invalidated action through storage', () => {
+    const reproving = bridge({
+      routeKind: 'native',
+      from: 'optimism',
+      to: 'ethereum',
+      actions: [{ action: 'prove', txHash: '0xp', at: NOW, status: 'invalidated' }]
+    });
+    make().upsert(SCOPE, reproving);
+    expect(make().getSnapshot(SCOPE)).toEqual([reproving]);
+  });
+
   it('skips malformed entries and unreadable storage', () => {
     localStorage.setItem(
       `bridgePending:v1:${SCOPE}`,

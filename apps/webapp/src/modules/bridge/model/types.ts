@@ -36,8 +36,11 @@ export type PendingBridgeAction = {
   action: PendingBridgeNextAction;
   txHash: string;
   at: number;
-  /** `sent` until the flow confirms it; entries without a status are confirmed. */
-  status?: 'sent';
+  /**
+   * `sent` until the flow confirms it; entries without a status are confirmed.
+   * `invalidated`: it mined, but the chain no longer counts it (an OP prove whose dispute game was invalidated).
+   */
+  status?: 'sent' | 'invalidated';
 };
 
 export type PendingBridge = {
