@@ -23,7 +23,11 @@ export type BridgeProgress =
   | { kind: 'ready'; nextAction: PendingBridgeNextAction; routeData?: Record<string, string> }
   /** Funds landed, automatically or through an action someone else sent. */
   | { kind: 'arrived' }
-  | { kind: 'failed'; reason: string };
+  | { kind: 'failed'; reason: string }
+  /** A sent destination action mined, read from chain (a Safe reports its on-chain hash). */
+  | { kind: 'action-confirmed'; action: PendingBridgeNextAction; txHash: string; at?: number }
+  /** A sent destination action that will never land (reverted, replaced, rejected), by the hash it was sent with. */
+  | { kind: 'action-dropped'; txHash: string };
 
 export const isSettled = (bridge: PendingBridge): boolean =>
   bridge.status === 'arrived' || bridge.status === 'claimed' || bridge.status === 'failed';
@@ -75,6 +79,11 @@ const mergeRouteData = (bridge: PendingBridge, routeData: Record<string, string>
   routeData ? { ...bridge.routeData, ...routeData } : bridge.routeData;
 
 export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, now: number): PendingBridge {
+  // Actions are read after arrival too, so Activity keeps the claim.
+  if (progress.kind === 'action-confirmed') {
+    return recordAction(bridge, { action: progress.action, txHash: progress.txHash, at: progress.at ?? now });
+  }
+  if (progress.kind === 'action-dropped') return dropSentAction(bridge, progress.txHash);
   if (isSettled(bridge)) return bridge;
   switch (progress.kind) {
     case 'source-executed': {

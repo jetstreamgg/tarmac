@@ -350,3 +350,70 @@ describe('destination actions sent before they are confirmed', () => {
     expect(canLaunchAction(create(routeFor('base', 'ethereum')))).toBe(false);
   });
 });
+
+describe('a sent action confirmed or released from chain', () => {
+  const sentClaim = (txHash = '0xclaim') =>
+    recordActionSent(
+      applyProgress(create(routeFor('base', 'ethereum')), { kind: 'ready', nextAction: 'claim' }, NOW),
+      { action: 'claim', txHash, at: NOW }
+    );
+
+  it('a sent action the chain dropped can be launched again, while the tracker still says ready', () => {
+    const released = applyProgress(sentClaim(), { kind: 'action-dropped', txHash: '0xclaim' }, NOW + HOUR);
+    const polled = applyProgress(released, { kind: 'ready', nextAction: 'claim' }, NOW + HOUR);
+    expect(canLaunchAction(polled)).toBe(true);
+  });
+
+  it('a Safe action dropped by its Safe tx hash can be launched again', () => {
+    const released = applyProgress(
+      sentClaim('0xsafetx'),
+      { kind: 'action-dropped', txHash: '0xsafetx' },
+      NOW
+    );
+    expect(canLaunchAction(released)).toBe(true);
+  });
+
+  it('a sent action the chain confirmed advances the bridge once', () => {
+    const progress = {
+      kind: 'action-confirmed',
+      action: 'claim',
+      txHash: '0xclaim',
+      at: NOW + MINUTE
+    } as const;
+    const confirmed = applyProgress(sentClaim(), progress, NOW + HOUR);
+    expect(confirmed).toMatchObject({ status: 'claimed', settledAt: NOW + MINUTE });
+    expect(confirmed.actions).toEqual([{ action: 'claim', txHash: '0xclaim', at: NOW + MINUTE }]);
+    expect(applyProgress(confirmed, progress, NOW + 2 * HOUR)).toBe(confirmed);
+  });
+
+  it('a confirmation without a time is dated when it is seen', () => {
+    const confirmed = applyProgress(
+      sentClaim(),
+      { kind: 'action-confirmed', action: 'claim', txHash: '0xclaim' },
+      NOW + HOUR
+    );
+    expect(confirmed.settledAt).toBe(NOW + HOUR);
+  });
+
+  it('dropping twice, or dropping a confirmed action, changes nothing', () => {
+    const released = applyProgress(sentClaim(), { kind: 'action-dropped', txHash: '0xclaim' }, NOW);
+    expect(applyProgress(released, { kind: 'action-dropped', txHash: '0xclaim' }, NOW)).toBe(released);
+    const confirmed = applyProgress(
+      sentClaim(),
+      { kind: 'action-confirmed', action: 'claim', txHash: '0xclaim', at: NOW },
+      NOW
+    );
+    expect(applyProgress(confirmed, { kind: 'action-dropped', txHash: '0xclaim' }, NOW)).toBe(confirmed);
+  });
+
+  it('a confirmation seen after the bridge arrived is kept, and the bridge stays settled', () => {
+    const arrived = applyProgress(sentClaim(), { kind: 'arrived' }, NOW + MINUTE);
+    const confirmed = applyProgress(
+      arrived,
+      { kind: 'action-confirmed', action: 'claim', txHash: '0xclaim', at: NOW },
+      NOW + HOUR
+    );
+    expect(confirmed).toMatchObject({ status: 'claimed', settledAt: NOW + MINUTE });
+    expect(confirmed.actions).toEqual([{ action: 'claim', txHash: '0xclaim', at: NOW }]);
+  });
+});
