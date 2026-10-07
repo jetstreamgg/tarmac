@@ -245,4 +245,38 @@ describe('createPendingBridgeStore', () => {
       expect(store.getSnapshot(SCOPE)).toEqual([bridge()]);
     });
   });
+
+  describe('after a failed write, another tab never wipes what only this session has', () => {
+    const KEY = `bridgePending:v1:${SCOPE}`;
+
+    it("keeps a session-only bridge and picks up the other tab's entry", () => {
+      const store = make();
+      store.subscribe(() => {});
+      const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+      store.upsert(SCOPE, bridge());
+      spy.mockRestore();
+
+      make().upsert(SCOPE, bridge({ id: '0xother', txHash: '0xother', startedAt: NOW - 1 }));
+      window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
+
+      expect(store.getSnapshot(SCOPE).map(entry => entry.id)).toEqual(['0xsource', '0xother']);
+    });
+
+    it('keeps the session progress of a bridge storage still has as before', () => {
+      make().upsert(SCOPE, bridge());
+      const store = make();
+      store.subscribe(() => {});
+      const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceededError');
+      });
+      store.update(SCOPE, '0xsource', current => ({ ...current, status: 'ready' }));
+      spy.mockRestore();
+
+      window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
+
+      expect(store.getSnapshot(SCOPE).map(entry => entry.status)).toEqual(['ready']);
+    });
+  });
 });

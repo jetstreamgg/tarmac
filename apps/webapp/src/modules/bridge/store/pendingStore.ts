@@ -102,6 +102,11 @@ const fillMissing = (existing: PendingBridge, incoming: PendingBridge): PendingB
   ) as PendingBridge)
 });
 
+const withStored = (session: PendingBridge[], stored: PendingBridge[] | undefined) =>
+  [...session, ...(stored ?? []).filter(entry => !session.some(own => isSameBridge(own, entry)))].sort(
+    byNewest
+  );
+
 /**
  * Pending bridges in localStorage, so they survive a reload and stay in sync
  * across tabs. Settled bridges are kept 90 days for the Activity list.
@@ -153,7 +158,9 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
 
   const onStorage = (event: StorageEvent) => {
     if (event.key !== null && !event.key.startsWith(KEY_PREFIX)) return;
-    snapshots.clear();
+    if (storageWritable) snapshots.clear();
+    // Storage lags this session: keep its copy and add what the other tab stored.
+    else snapshots.forEach((session, scope) => snapshots.set(scope, withStored(session, load(scope))));
     emit();
   };
 
