@@ -9,6 +9,7 @@ import {
   bridgeChainId,
   bridgeNetworkForChainId,
   getBridgeNetwork,
+  guardChainId,
   type BridgeNetworkId
 } from '../model/networks';
 import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
@@ -61,8 +62,8 @@ const parseAmountOrZero = (value: string) => {
  * The source network follows the wallet on networks the app supports: picking
  * one asks the wallet to switch, and the form shows whatever the wallet lands
  * on. Avalanche and Solana (and app networks the current config can't switch
- * to, like L2s in the Tenderly dev setup) are held as a local pick instead; the
- * switch or wallet connect for those happens at Confirm.
+ * to, like L2s in the Tenderly dev setup) are held as a local pick and block
+ * Review until their route tickets add them.
  */
 export function useBridgeForm() {
   const { isConnected, address } = useConnection();
@@ -151,6 +152,10 @@ export function useBridgeForm() {
   });
 
   const balanceLoading = isConnected && source.isLoading;
+  // An unread balance (failed, or a network the app can't read) never passes as enough.
+  const balanceUnknown = isConnected && !balanceLoading && sourceBalance === undefined;
+  const sourceUnavailable =
+    guardChainId({ network: from, familyChainId, chainIds: chains.map(chain => chain.id) }) === undefined;
   // Recording and the recipient rule both depend on whether the wallet is a Safe.
   const walletUnchecked = isConnected && (safeStatus === 'checking' || safeStatus === 'unknown');
 
@@ -172,6 +177,10 @@ export function useBridgeForm() {
     insufficient,
     /** The source balance is still loading, so `insufficient` can't be trusted yet. */
     balanceLoading,
+    /** The source balance couldn't be read. */
+    balanceUnknown,
+    /** The app can't switch to the source network, so it can't run the source legs. */
+    sourceUnavailable,
     needsRecipient: recipientRule.required,
     /** The Safe lookups behind `needsRecipient` are still in flight. */
     recipientChecking: checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking),
@@ -180,7 +189,14 @@ export function useBridgeForm() {
     safeCheckFailed: isConnected && safeStatus === 'unknown',
     /** Review and Confirm can't go ahead; only meaningful while connected. */
     reviewBlocked:
-      isZero || insufficient || balanceLoading || recipientRule.required || walletUnchecked || !route,
+      isZero ||
+      insufficient ||
+      balanceLoading ||
+      balanceUnknown ||
+      sourceUnavailable ||
+      recipientRule.required ||
+      walletUnchecked ||
+      !route,
     selectFrom,
     selectTo,
     flip,

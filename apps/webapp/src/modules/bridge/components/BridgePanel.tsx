@@ -58,6 +58,14 @@ export function BridgePanel() {
           <Text className="text-textSecondary text-sm" dataTestId="bridge-locked">
             <Trans>A transaction is in progress. Open it to continue.</Trans>
           </Text>
+        ) : form.sourceUnavailable ? (
+          <Text className="text-error text-sm" dataTestId="bridge-source-unavailable">
+            <Trans>Bridging from this network isn&apos;t available yet.</Trans>
+          </Text>
+        ) : form.balanceUnknown ? (
+          <Text className="text-error text-sm" dataTestId="bridge-balance-unknown">
+            <Trans>We couldn&apos;t load your USDS balance. Try again in a moment.</Trans>
+          </Text>
         ) : form.insufficient ? (
           <Text className="text-error text-sm" dataTestId="bridge-error">
             <Trans>Insufficient funds</Trans>

@@ -25,7 +25,8 @@ const mocks = vi.hoisted(() => ({
   safe: {} as Record<string, SafeReply>,
   isModalOpen: false,
   launched: [] as TransactionConfig[],
-  updates: [] as Partial<TransactionConfig>[]
+  updates: [] as Partial<TransactionConfig>[],
+  onError: vi.fn()
 }));
 
 vi.mock('wagmi', async io => ({
@@ -54,7 +55,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
     launch: (config: TransactionConfig) => mocks.launched.push(config),
     updateModalContent: (_id: string, patch: Partial<TransactionConfig>) => mocks.updates.push(patch),
     isModalOpen: mocks.isModalOpen,
-    txCallbacks: {},
+    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: mocks.onError },
     txStatus: TxStatus.IDLE
   })
 }));
@@ -126,6 +127,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       launched: [],
       updates: []
     });
+    mocks.onError.mockClear();
   });
 
   afterEach(() => {
@@ -186,5 +188,43 @@ describe('useBridgeLaunch Confirm gate', () => {
     await settle();
 
     expect(mocks.updates.at(-1)?.confirmDisabled).toBe(true);
+  });
+
+  it('blocks when the balance could not be read', async () => {
+    mocks.balance = undefined;
+    expect(await confirmDisabledFor('1')).toBe(true);
+  });
+
+  it('blocks a source the app cannot switch to, instead of running on the wallet chain', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    act(() => view.result.current.form.selectFrom('avalanche'));
+    await settle();
+    expect(view.result.current.form.sourceUnavailable).toBe(true);
+    expect(view.result.current.form.reviewBlocked).toBe(true);
+    act(() => view.result.current.launch());
+    expect(mocks.launched.every(config => config.confirmDisabled)).toBe(true);
+  });
+
+  it('Confirm fails, not silently, when the source is no longer available', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    act(() => view.result.current.form.selectFrom('avalanche'));
+    await settle();
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('Confirm fails, not silently, when the wallet disconnected', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    mocks.isConnected = false;
+    view.rerender();
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
   });
 });

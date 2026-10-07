@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
-import { useChainId, useChains } from 'wagmi';
+import { useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
@@ -27,7 +27,6 @@ import { usePendingScope } from './usePendingScope';
 export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
   const sessionId = useId();
-  const walletChainId = useChainId();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
   const { account, scope, familyChainId } = usePendingScope();
@@ -52,16 +51,24 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const pinnedChainId = guardChainId({
     network: from,
     familyChainId,
-    chainIds: chains.map(chain => chain.id),
-    walletChainId
+    chainIds: chains.map(chain => chain.id)
   });
 
   const callbacksRef = useRef(txCallbacks);
   const executeRef = useRef<() => void>(() => undefined);
+  // The chain the open modal guards; the source legs must run on it.
+  const launchedChainIdRef = useRef<number | undefined>(undefined);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     executeRef.current = () => {
-      if (!route || !account || !scope) return;
+      if (!route || !account || !scope || pinnedChainId === undefined) {
+        callbacksRef.current.onError(new Error('The bridge is not ready to send.'));
+        return;
+      }
+      if (pinnedChainId !== launchedChainIdRef.current) {
+        callbacksRef.current.onError(new Error('The source network changed after Review.'));
+        return;
+      }
       // Snapshot at Confirm: the form may change or reset before the legs finish.
       const record = { account, amount, from, to, recipient, route };
       const callbacks = withSourceRecording(() => callbacksRef.current, {
@@ -97,6 +104,9 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const confirmDisabled = !form.isConnected || form.reviewBlocked;
 
   const launch = useCallback(() => {
+    // No chain to guard: an empty guard would let the legs run on any chain.
+    if (pinnedChainId === undefined) return;
+    launchedChainIdRef.current = pinnedChainId;
     launchModal({
       title: t`Review USDS bridge`,
       transactionTitle: t`Review USDS bridge`,

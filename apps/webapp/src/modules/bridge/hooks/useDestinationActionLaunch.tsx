@@ -1,6 +1,6 @@
 import { useCallback, useId, useLayoutEffect, useRef } from 'react';
 import { formatUnits } from 'viem';
-import { useChainId, useChains } from 'wagmi';
+import { useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { formatNumber } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -53,7 +53,6 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
 export function useDestinationActionLaunch() {
   const { launch: launchModal, txCallbacks } = useTransaction();
   const sessionId = useId();
-  const walletChainId = useChainId();
   const chains = useChains();
   const { scope, familyChainId } = usePendingScope();
   const { locked } = useMinimizedSessionLock(sessionId);
@@ -78,9 +77,9 @@ export function useDestinationActionLaunch() {
       const pinnedChainId = guardChainId({
         network: bridge.to,
         familyChainId,
-        chainIds: chains.map(chain => chain.id),
-        walletChainId
+        chainIds: chains.map(chain => chain.id)
       });
+      if (pinnedChainId === undefined) return;
       launchModal({
         title: t`Confirm`,
         skipReview: true,
@@ -116,7 +115,7 @@ export function useDestinationActionLaunch() {
         chainGuardReason: 'launch-chain'
       });
     },
-    [launchModal, sessionId, scope, familyChainId, chains, walletChainId]
+    [launchModal, sessionId, scope, familyChainId, chains]
   );
 
   return { launch, locked };
