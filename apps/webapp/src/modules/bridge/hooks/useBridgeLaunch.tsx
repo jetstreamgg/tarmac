@@ -35,16 +35,18 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const { amount, from, to, route, recipient } = form;
 
   // Only the source-side legs run here; destination actions are their own modal.
+  const sourceActions = useMemo(
+    () => (route?.steps ?? []).filter(step => step.network === from).map(step => step.action),
+    [route, from]
+  );
   const steps = useMemo<TransactionStep[]>(
     () =>
-      (route?.steps ?? [])
-        .filter(step => step.network === from)
-        .map(step =>
-          step.action === 'approve'
-            ? { label: t`Approve`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.approve('USDS') }
-            : { label: t`Bridge`, tokenSymbol: 'USDS', failureDetail: t`The USDS hasn't been bridged.` }
-        ),
-    [route, from]
+      sourceActions.map(action =>
+        action === 'approve'
+          ? { label: t`Approve`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.approve('USDS') }
+          : { label: t`Bridge`, tokenSymbol: 'USDS', failureDetail: t`The USDS hasn't been bridged.` }
+      ),
+    [sourceActions]
   );
 
   const pinnedChainId = guardChainId({
@@ -63,7 +65,6 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       // Snapshot at Confirm: the form may change or reset before the legs finish.
       const record = { account, amount, from, to, recipient, route };
       const callbacks = withSourceRecording(() => callbacksRef.current, {
-        legs: steps.length,
         isSafe,
         onSent: txHash =>
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() })),
@@ -76,7 +77,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
               )
             : pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }))
       });
-      void runMockLegs(steps.length, () => callbacks);
+      void runMockLegs(sourceActions, () => callbacks);
     };
   });
 

@@ -22,14 +22,15 @@ export const mockAdapter: BridgeAdapter = {
 };
 
 /**
- * Walks the modal through `legs` sequential writes without touching a chain.
+ * Walks the modal through one sequential write per function name without
+ * touching a chain, reporting each name at `onMutate` like the real flow.
  * Reads callbacks through `getCallbacks` so each leg uses the provider's
  * latest session-bound callbacks. Resolves with the last leg's hash.
  */
-export async function runMockLegs(legs: number, getCallbacks: () => TxCallbacks): Promise<string> {
+export async function runMockLegs(functionNames: string[], getCallbacks: () => TxCallbacks): Promise<string> {
   let hash = '';
-  for (let leg = 0; leg < legs; leg++) {
-    getCallbacks().onMutate();
+  for (const functionName of functionNames) {
+    getCallbacks().onMutate({ functionName });
     await wait(SIGN_MS);
     hash = fakeTxHash();
     getCallbacks().onStart(hash);

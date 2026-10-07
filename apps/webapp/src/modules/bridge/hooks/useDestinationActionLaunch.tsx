@@ -90,7 +90,7 @@ export function useDestinationActionLaunch() {
         steps: [{ label: copy.step, tokenSymbol: 'USDS', failureDetail: copy.failure }],
         onConfirm: () => {
           // A Safe's action is caught by the tracker once it lands, if this never resolves.
-          void runMockLegs(1, () => callbacksRef.current).then(txHash =>
+          void runMockLegs([action], () => callbacksRef.current).then(txHash =>
             pendingBridgeStore.update(scope, bridge.id, current =>
               recordAction(current, { action, txHash, at: Date.now() })
             )
