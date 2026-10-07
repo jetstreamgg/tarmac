@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { resolveBridgeRoute } from './resolveRoute';
+import { resolveBridgeRoute, toRouteFact } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
 
 const usds = (value: string) => parseUnits(value, 18);
@@ -195,5 +195,51 @@ describe('resolveBridgeRoute: single-route pairs', () => {
 
   it('unknown facts do not block (each route ticket supplies its reads)', () => {
     expect(resolve('ethereum', 'base', usds('1'), {}).status).toBe('ok');
+  });
+});
+
+describe('resolveBridgeRoute: facts still loading or failed never pass as open', () => {
+  const unread = ['loading', 'error'] as const;
+  const open = { isOpen: true };
+
+  it('blocks every route while its facts load or after they fail', () => {
+    for (const state of unread) {
+      expect(resolve('ethereum', 'base', usds('1'), { native: state }).status).toBe('blocked');
+      expect(resolve('ethereum', 'avalanche', usds('1'), { layerzero: state }).status).toBe('blocked');
+      expect(resolve('solana', 'ethereum', usds('1'), { layerzero: state }).status).toBe('blocked');
+      expect(resolve('base', 'ethereum', usds('1'), { cctp: state, native: open }).status).toBe('blocked');
+    }
+  });
+
+  it('does not fall back to the native withdrawal before CCTP is known', () => {
+    for (const state of unread) {
+      expect(resolve('arbitrum', 'ethereum', usds('1'), { cctp: state, native: open })).toMatchObject({
+        status: 'blocked'
+      });
+    }
+  });
+
+  it('blocks a CCTP fallback while the native facts are unread', () => {
+    for (const state of unread) {
+      expect(resolve('base', 'ethereum', usds('1'), { cctp: { isOpen: false }, native: state }).status).toBe(
+        'blocked'
+      );
+    }
+  });
+
+  it('blocks with a zero amount too (the gate is unknown, not the amount)', () => {
+    expect(resolve('ethereum', 'base', 0n, { native: 'loading' }).status).toBe('blocked');
+  });
+});
+
+describe('toRouteFact', () => {
+  it('reads a query as loading, error or its data', () => {
+    expect(toRouteFact({ status: 'pending', data: undefined })).toBe('loading');
+    expect(toRouteFact({ status: 'error', data: { isOpen: true } })).toBe('error');
+    expect(toRouteFact({ status: 'success', data: { isOpen: false } })).toEqual({ isOpen: false });
+  });
+
+  it('a successful read with no data is an error, not an open route', () => {
+    expect(toRouteFact({ status: 'success', data: undefined })).toBe('error');
   });
 });

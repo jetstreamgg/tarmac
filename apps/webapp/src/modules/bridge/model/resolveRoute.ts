@@ -15,15 +15,34 @@ type RouteGate = {
   maxAmount?: bigint;
 };
 
-/** On-chain state each route ticket reads; anything left undefined does not block. */
+/** A fact being read, or one that couldn't be read, blocks its route. */
+export type RouteFact<T> = T | 'loading' | 'error';
+
+/**
+ * On-chain state each route ticket reads. A route ticket passes `toRouteFact`
+ * of its query; undefined means no ticket reads that route yet.
+ */
 export type BridgeRouteFacts = {
-  native?: RouteGate;
+  native?: RouteFact<RouteGate>;
   /** `liquidity`: USDC the L2 PSM3 can pay out, in USDS wei. */
-  cctp?: RouteGate & { liquidity?: bigint };
-  layerzero?: RouteGate & { bridgeFeeUsd?: number };
+  cctp?: RouteFact<RouteGate & { liquidity?: bigint }>;
+  layerzero?: RouteFact<RouteGate & { bridgeFeeUsd?: number }>;
 };
 
-export type BridgeBlockReason = 'pair-not-allowed' | BridgeFallbackReason;
+/** A query's result as a route fact; a success with no data is an error. */
+export const toRouteFact = <T>({
+  status,
+  data
+}: {
+  status: 'pending' | 'error' | 'success';
+  data: T | undefined;
+}): RouteFact<T> => {
+  if (status === 'pending') return 'loading';
+  if (status === 'error' || data === undefined) return 'error';
+  return data;
+};
+
+export type BridgeBlockReason = 'pair-not-allowed' | 'facts-loading' | 'facts-error' | BridgeFallbackReason;
 
 export type ResolvedBridgeRoute =
   { status: 'ok'; route: BridgeRoute } | { status: 'blocked'; reason: BridgeBlockReason };
@@ -45,6 +64,11 @@ const WITHDRAWAL_ETA_MINUTES: Partial<Record<BridgeNetworkId, number>> = {
   optimism: 7 * DAY_MINUTES,
   unichain: 7 * DAY_MINUTES
 };
+
+const isUnread = (fact: RouteFact<unknown> | undefined): fact is 'loading' | 'error' =>
+  fact === 'loading' || fact === 'error';
+const unreadReason = (fact: 'loading' | 'error'): BridgeBlockReason =>
+  fact === 'loading' ? 'facts-loading' : 'facts-error';
 
 const gateFailure = (
   amount: bigint,
@@ -118,29 +142,31 @@ export function resolveBridgeRoute({
 
   const isLayerZero = [from, to].some(network => network === 'avalanche' || network === 'solana');
   if (isLayerZero) {
-    const failure = gateFailure(amount, facts.layerzero);
+    const { layerzero } = facts;
+    if (isUnread(layerzero)) return blocked(unreadReason(layerzero));
+    const failure = gateFailure(amount, layerzero);
     if (failure) return blocked(failure);
     return ok(
-      route(
-        'layerzero',
-        routeSteps('layerzero', from, to),
-        LAYERZERO_ETA_MINUTES,
-        facts.layerzero?.bridgeFeeUsd
-      )
+      route('layerzero', routeSteps('layerzero', from, to), LAYERZERO_ETA_MINUTES, layerzero?.bridgeFeeUsd)
     );
   }
 
+  const { native, cctp } = facts;
   if (from === 'ethereum') {
-    const failure = gateFailure(amount, facts.native);
+    if (isUnread(native)) return blocked(unreadReason(native));
+    const failure = gateFailure(amount, native);
     if (failure) return blocked(failure);
     return ok(route('native', routeSteps('native', from, to), DEPOSIT_ETA_MINUTES[to] ?? 0, 0));
   }
 
-  const cctpFailure = gateFailure(amount, facts.cctp);
+  // No fallback before CCTP is known: the native withdrawal takes days.
+  if (isUnread(cctp)) return blocked(unreadReason(cctp));
+  const cctpFailure = gateFailure(amount, cctp);
   if (!cctpFailure) {
     return ok(route('cctp', routeSteps('cctp', from, to), CCTP_ETA_MINUTES, 0));
   }
-  const nativeFailure = gateFailure(amount, facts.native);
+  if (isUnread(native)) return blocked(unreadReason(native));
+  const nativeFailure = gateFailure(amount, native);
   if (nativeFailure) return blocked(nativeFailure);
   return ok(
     route('native', routeSteps('native', from, to), WITHDRAWAL_ETA_MINUTES[from] ?? 0, 0, cctpFailure)

@@ -33,6 +33,8 @@ function BlockedMessage({ reason }: BlockedMessageProps) {
       return <Trans>This amount is over the bridge limit. Try a smaller amount.</Trans>;
     case 'no-liquidity':
       return <Trans>Not enough liquidity on the destination for this amount. Try a smaller amount.</Trans>;
+    case 'facts-error':
+      return <Trans>We couldn&apos;t check this route. Try again in a moment.</Trans>;
     default:
       return <Trans>This route is temporarily unavailable.</Trans>;
   }
@@ -74,7 +76,7 @@ export function BridgePanel() {
           <Text className="text-error text-sm" dataTestId="bridge-error">
             <Trans>Insufficient funds</Trans>
           </Text>
-        ) : form.blockedReason ? (
+        ) : form.blockedReason && form.blockedReason !== 'facts-loading' ? (
           <Text className="text-error text-sm" dataTestId="bridge-blocked">
             <BlockedMessage reason={form.blockedReason} />
           </Text>

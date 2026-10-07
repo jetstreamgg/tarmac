@@ -124,7 +124,7 @@ export function useBridgeForm() {
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
-  // Route facts (open/paused, limits, liquidity, fee quote) come from the route tickets.
+  // Route facts (open/paused, limits, liquidity, fee quote) come from the route tickets, through toRouteFact.
   const resolved = useMemo(() => resolveBridgeRoute({ from, to, amount, facts: {} }), [from, to, amount]);
   const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;
