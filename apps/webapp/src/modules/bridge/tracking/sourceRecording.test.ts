@@ -13,8 +13,16 @@ const setup = (isSafe: boolean) => {
   const onQueued = vi.fn();
   const onExecuted = vi.fn();
   const onFailed = vi.fn();
-  const callbacks = withSourceRecording(() => inner, { isSafe, onSent, onQueued, onExecuted, onFailed });
-  return { inner, onSent, onQueued, onExecuted, onFailed, callbacks };
+  const onRepriced = vi.fn();
+  const callbacks = withSourceRecording(() => inner, {
+    isSafe,
+    onSent,
+    onQueued,
+    onExecuted,
+    onFailed,
+    onRepriced
+  });
+  return { inner, onSent, onQueued, onExecuted, onFailed, onRepriced, callbacks };
 };
 
 describe('withSourceRecording', () => {
@@ -150,5 +158,44 @@ describe('withSourceRecording, a send that never landed', () => {
     callbacks.onStart('0xsafetx');
     callbacks.onError(reverted, '0xsafetx');
     expect(onFailed).not.toHaveBeenCalled();
+  });
+});
+
+describe('withSourceRecording, a send sped up in the wallet', () => {
+  // The flow announces the replacement's hash at a second start.
+  const speedUp = () => {
+    const recording = setup(false);
+    recording.callbacks.onMutate(send);
+    recording.callbacks.onStart('0xsend');
+    recording.callbacks.onStart('0xfaster');
+    return recording;
+  };
+
+  it('moves the stored bridge to the hash that will mine', () => {
+    const { onSent, onRepriced, inner, callbacks } = speedUp();
+    callbacks.onSuccess('0xfaster');
+    expect(onSent).toHaveBeenCalledTimes(1);
+    expect(onRepriced).toHaveBeenCalledExactlyOnceWith('0xsend', '0xfaster');
+    expect(inner.onSuccess).toHaveBeenCalledWith('0xfaster');
+  });
+
+  it('fails the stored bridge when the faster send reverts', () => {
+    const { onFailed, callbacks } = speedUp();
+    callbacks.onError(new Error('Transaction receipt: execution reverted'), '0xfaster');
+    expect(onFailed).toHaveBeenCalledWith('0xsend', 'source-tx-reverted');
+  });
+
+  it('never moves a Safe bridge or a sped-up approve', () => {
+    const safe = setup(true);
+    safe.callbacks.onMutate(send);
+    safe.callbacks.onStart('0xsafetx');
+    safe.callbacks.onStart('0xother');
+    expect(safe.onRepriced).not.toHaveBeenCalled();
+
+    const eoa = setup(false);
+    eoa.callbacks.onMutate(approve);
+    eoa.callbacks.onStart('0xapprove');
+    eoa.callbacks.onStart('0xapprovefaster');
+    expect(eoa.onRepriced).not.toHaveBeenCalled();
   });
 });

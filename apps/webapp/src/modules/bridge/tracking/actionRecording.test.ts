@@ -69,3 +69,14 @@ describe('withActionRecording, a sent action cancelled or replaced in the wallet
     expect(onReverted).toHaveBeenCalledWith('0xclaim');
   });
 });
+
+describe('withActionRecording, a sent action sped up in the wallet', () => {
+  it('drops the action sent first when the faster transaction reverts', () => {
+    const { onSent, onReverted, callbacks } = setup();
+    callbacks.onStart('0xclaim');
+    callbacks.onStart('0xfaster');
+    expect(onSent).toHaveBeenCalledTimes(1);
+    callbacks.onError(reverted, '0xfaster');
+    expect(onReverted).toHaveBeenCalledWith('0xclaim');
+  });
+});

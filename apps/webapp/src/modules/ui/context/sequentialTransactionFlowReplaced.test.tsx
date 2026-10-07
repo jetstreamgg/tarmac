@@ -5,7 +5,8 @@ import { TransactionReplacedError } from '@/hooks/helpers';
 
 const wagmi = vi.hoisted(() => ({
   onWriteSuccess: undefined as undefined | ((hash: `0x${string}`) => void),
-  onReplaced: undefined as undefined | ((replacement: { reason: string }) => void),
+  onReplaced: undefined as
+    undefined | ((replacement: { reason: string; transaction: { hash: `0x${string}` } }) => void),
   mutationHash: undefined as `0x${string}` | undefined,
   receipt: { isLoading: false, isSuccess: false, error: null as Error | null, failureReason: null }
 }));
@@ -21,7 +22,7 @@ vi.mock('wagmi', () => ({
     wagmi.onWriteSuccess = opts.mutation.onSuccess;
     return { writeContract: vi.fn(), error: null, data: wagmi.mutationHash, reset: vi.fn() };
   },
-  useWaitForTransactionReceipt: (params: { onReplaced?: (replacement: { reason: string }) => void }) => {
+  useWaitForTransactionReceipt: (params: { onReplaced?: typeof wagmi.onReplaced }) => {
     wagmi.onReplaced = params.onReplaced;
     return wagmi.receipt;
   }
@@ -42,10 +43,11 @@ const CLAIM = {
 
 // Sends the call, then mines it after the wallet replaced it for `reason`.
 const mineReplaced = (failOnReplaced: boolean | undefined, reason: string) => {
+  const onStart = vi.fn();
   const onSuccess = vi.fn();
   const onError = vi.fn();
   const { result, rerender } = renderHook(() =>
-    useSequentialTransactionFlow({ calls: [CLAIM], onSuccess, onError, failOnReplaced })
+    useSequentialTransactionFlow({ calls: [CLAIM], onStart, onSuccess, onError, failOnReplaced })
   );
   act(() => result.current.execute());
   act(() => {
@@ -55,11 +57,11 @@ const mineReplaced = (failOnReplaced: boolean | undefined, reason: string) => {
   rerender();
   // viem reports the replacement, then resolves with the replacing tx's receipt.
   act(() => {
-    wagmi.onReplaced?.({ reason });
+    wagmi.onReplaced?.({ reason, transaction: { hash: '0xrepriced' } });
     wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
   });
   rerender();
-  return { onSuccess, onError };
+  return { onStart, onSuccess, onError };
 };
 
 describe('useSequentialTransactionFlow, a transaction replaced before it mined', () => {
@@ -80,10 +82,17 @@ describe('useSequentialTransactionFlow, a transaction replaced before it mined',
     }
   );
 
-  it('with failOnReplaced, a repriced transaction (same call, new fee) still succeeds', () => {
-    const { onSuccess, onError } = mineReplaced(true, 'repriced');
-    expect(onSuccess).toHaveBeenCalledWith('0xclaim');
+  it('with failOnReplaced, a repriced transaction (same call, new fee) succeeds under the hash that mined', () => {
+    const { onStart, onSuccess, onError } = mineReplaced(true, 'repriced');
+    expect(onStart).toHaveBeenLastCalledWith('0xrepriced');
+    expect(onSuccess).toHaveBeenCalledWith('0xrepriced');
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('without the option, a repriced transaction succeeds under its first hash as before', () => {
+    const { onStart, onSuccess } = mineReplaced(undefined, 'repriced');
+    expect(onStart).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith('0xclaim');
   });
 
   it('without the option, a replaced transaction succeeds as before', () => {

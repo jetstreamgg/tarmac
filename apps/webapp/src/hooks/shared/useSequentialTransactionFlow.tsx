@@ -114,6 +114,9 @@ export function useSequentialTransactionFlow(
 
   // The hash viem saw cancelled or replaced; its receipt is the replacing tx's.
   const replacedHashRef = useRef<string | undefined>(undefined);
+  // With failOnReplaced, a repriced tx (same call, new fee) is reported under the hash that mines.
+  const repricedRef = useRef<{ from: string; to: string } | undefined>(undefined);
+  const minedHash = (hash: string) => (repricedRef.current?.from === hash ? repricedRef.current.to : hash);
 
   // Monitor current transaction
   const {
@@ -125,6 +128,10 @@ export function useSequentialTransactionFlow(
     hash: txHash,
     onReplaced: replacement => {
       if (replacement.reason !== 'repriced') replacedHashRef.current = txHash;
+      else if (failOnReplaced && txHash) {
+        repricedRef.current = { from: txHash, to: replacement.transaction.hash };
+        onStart(replacement.transaction.hash);
+      }
     }
   });
 
@@ -211,7 +218,7 @@ export function useSequentialTransactionFlow(
       // Done only when every expected call has produced a hash, not merely when the index reaches the count.
       if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
-        emitSuccess(txHash);
+        emitSuccess(minedHash(txHash));
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
@@ -229,7 +236,7 @@ export function useSequentialTransactionFlow(
     ) {
       lastProcessedTxHash.current = txHash;
       // Transaction failed
-      emitError(toError(miningError || failureReason), txHash);
+      emitError(toError(miningError || failureReason), minedHash(txHash));
       setIsExecuting(false);
     }
   }, [

@@ -336,6 +336,22 @@ describe('useBridgeLaunch Confirm gate', () => {
     expect(mocks.legs).toHaveLength(2);
   });
 
+  it('a send sped up in the wallet is tracked under the hash that mines', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    const callbacks = mocks.legs[0].getCallbacks();
+    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onStart('0xslow');
+    callbacks.onStart('0xfast');
+    const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+    const stored = pendingBridgeStore.getSnapshot(scope).filter(bridge => bridge.id === '0xslow');
+    expect(stored).toHaveLength(1);
+    expect(stored[0].txHash).toBe('0xfast');
+  });
+
   it('Retry after a rejected approve runs the legs again', async () => {
     const view = renderBridge();
     act(() => view.result.current.form.onInput('1'));

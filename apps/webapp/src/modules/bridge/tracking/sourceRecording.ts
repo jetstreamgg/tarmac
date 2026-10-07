@@ -11,7 +11,8 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * whose `onMutate` function name isn't `approve`, so a skipped approve or a
  * Retry that resumes at the bridge leg is still recorded at broadcast.
  * `onFailed` gets the sent hash when it reverted or was cancelled or replaced;
- * a Safe's execution is read by its tracker instead.
+ * a Safe's execution is read by its tracker instead. A send sped up in the
+ * wallet starts again under a new hash, passed to `onRepriced`.
  */
 export function withSourceRecording(
   getCallbacks: () => TxCallbacks,
@@ -20,17 +21,21 @@ export function withSourceRecording(
     onSent,
     onQueued,
     onExecuted,
-    onFailed
+    onFailed,
+    onRepriced
   }: {
     isSafe: boolean;
     onSent: (txHash: string) => void;
     onQueued: (safeTxHash: string) => void;
     onExecuted: (txHash: string, safeTxHash: string | undefined) => void;
     onFailed: (txHash: string, reason: string) => void;
+    onRepriced: (txHash: string, newTxHash: string) => void;
   }
 ): TxCallbacks {
   let isApproveLeg = false;
   let recorded: string | undefined;
+  // The hash the recorded send will mine under.
+  let current: string | undefined;
   return {
     onMutate: variables => {
       isApproveLeg = variables?.functionName === 'approve';
@@ -38,9 +43,12 @@ export function withSourceRecording(
     },
     onStart: hash => {
       if (hash && !isApproveLeg && !recorded) {
-        recorded = hash;
+        recorded = current = hash;
         if (isSafe) onQueued(hash);
         else onSent(hash);
+      } else if (hash && !isApproveLeg && !isSafe && recorded && hash !== current) {
+        current = hash;
+        onRepriced(recorded, hash);
       }
       getCallbacks().onStart(hash);
     },
@@ -51,10 +59,10 @@ export function withSourceRecording(
     },
     // Recorded only for the sent hash: the sequential flow can pass the previous leg's hash, and a batch its call id.
     onError: (error, hash) => {
-      if (!isSafe && recorded && hash === recorded) {
-        if (error instanceof TransactionReplacedError) onFailed(hash, 'source-tx-replaced');
+      if (!isSafe && recorded && (hash === recorded || hash === current)) {
+        if (error instanceof TransactionReplacedError) onFailed(recorded, 'source-tx-replaced');
         else if (isRevertedError(error as WaitForTransactionReceiptErrorType))
-          onFailed(hash, 'source-tx-reverted');
+          onFailed(recorded, 'source-tx-reverted');
       }
       getCallbacks().onError(error, hash);
     }

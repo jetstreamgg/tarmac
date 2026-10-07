@@ -104,6 +104,9 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           } else
             pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
         },
+        // Sped up in the wallet: the tracker reads the hash that will mine.
+        onRepriced: (txHash, newTxHash) =>
+          pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash })),
         // The funds never left, so Retry may send again.
         onFailed: (txHash, reason) => {
           sentRef.current = false;
