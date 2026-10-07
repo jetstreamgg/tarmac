@@ -352,6 +352,24 @@ describe('useBridgeLaunch Confirm gate', () => {
     expect(stored[0].txHash).toBe('0xfast');
   });
 
+  it('a bridge call rejected after an earlier leg mined stores nothing, and Retry runs the legs again', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    const callbacks = mocks.legs[0].getCallbacks();
+    callbacks.onMutate({ functionName: 'swapExactIn' });
+    callbacks.onStart('0xswap');
+    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onError(new Error('User rejected the request.'), '0xswap');
+    const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+    expect(pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.id === '0xswap')).toBeUndefined();
+
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.legs).toHaveLength(2);
+  });
+
   it('Retry after a rejected approve runs the legs again', async () => {
     const view = renderBridge();
     act(() => view.result.current.form.onInput('1'));

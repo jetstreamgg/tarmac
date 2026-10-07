@@ -16,6 +16,7 @@ const setup = (isSafe: boolean) => {
   const onRepriced = vi.fn();
   const callbacks = withSourceRecording(() => inner, {
     isSafe,
+    bridgeFunctionName: 'send',
     onSent,
     onQueued,
     onExecuted,
@@ -123,6 +124,37 @@ describe('withSourceRecording', () => {
     callbacks.onSuccess('0xsend');
     expect(onSent).toHaveBeenCalledTimes(1);
   });
+});
+
+describe('withSourceRecording, a route with more legs than approve and send', () => {
+  const swap = { functionName: 'swapExactIn' };
+  const rejected = new Error('User rejected the request.');
+
+  it('records the bridge under the bridge call, never under a swap before it', () => {
+    const { onSent, onRepriced, callbacks } = setup(false);
+    callbacks.onMutate(approve);
+    callbacks.onStart('0xapprove');
+    callbacks.onMutate(swap);
+    callbacks.onStart('0xswap');
+    callbacks.onMutate(send);
+    callbacks.onStart('0xsend');
+    callbacks.onSuccess('0xsend');
+    expect(onSent).toHaveBeenCalledExactlyOnceWith('0xsend');
+    expect(onRepriced).not.toHaveBeenCalled();
+  });
+
+  it.each([['0xswap'], ['']])(
+    'records nothing when the bridge call is rejected after the swap mined (error hash %j)',
+    hash => {
+      const { onSent, onQueued, callbacks } = setup(false);
+      callbacks.onMutate(swap);
+      callbacks.onStart('0xswap');
+      callbacks.onMutate(send);
+      callbacks.onError(rejected, hash);
+      expect(onSent).not.toHaveBeenCalled();
+      expect(onQueued).not.toHaveBeenCalled();
+    }
+  );
 });
 
 describe('withSourceRecording, a send that never landed', () => {

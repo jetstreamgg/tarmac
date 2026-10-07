@@ -7,9 +7,10 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * `onSent` gets the hash as soon as the bridge leg is broadcast, so a bridge
  * survives a closed tab or a failed receipt wait. A Safe returns its Safe tx
  * hash at the bridge leg's start instead (`onQueued`), and `onExecuted` later
- * gets the on-chain hash with that Safe tx hash. The bridge leg is any leg
- * whose `onMutate` function name isn't `approve`, so a skipped approve or a
- * Retry that resumes at the bridge leg is still recorded at broadcast.
+ * gets the on-chain hash with that Safe tx hash. The bridge leg is the leg
+ * whose `onMutate` function name is `bridgeFunctionName` (or a leg with no
+ * name), so other legs such as an approve or a swap are never recorded, and a
+ * skipped approve or a Retry that resumes at the bridge leg still records it.
  * `onFailed` gets the sent hash when it reverted or was cancelled or replaced;
  * a Safe's execution is read by its tracker instead. A send sped up in the
  * wallet starts again under a new hash, passed to `onRepriced`.
@@ -18,6 +19,7 @@ export function withSourceRecording(
   getCallbacks: () => TxCallbacks,
   {
     isSafe,
+    bridgeFunctionName,
     onSent,
     onQueued,
     onExecuted,
@@ -25,6 +27,8 @@ export function withSourceRecording(
     onRepriced
   }: {
     isSafe: boolean;
+    /** The function name of the call that moves the funds, e.g. `depositForBurn`. */
+    bridgeFunctionName: string;
     onSent: (txHash: string) => void;
     onQueued: (safeTxHash: string) => void;
     onExecuted: (txHash: string, safeTxHash: string | undefined) => void;
@@ -32,21 +36,22 @@ export function withSourceRecording(
     onRepriced: (txHash: string, newTxHash: string) => void;
   }
 ): TxCallbacks {
-  let isApproveLeg = false;
+  let isBridgeLeg = true;
   let recorded: string | undefined;
   // The hash the recorded send will mine under.
   let current: string | undefined;
   return {
     onMutate: variables => {
-      isApproveLeg = variables?.functionName === 'approve';
+      const functionName = variables?.functionName;
+      isBridgeLeg = functionName === undefined || functionName === bridgeFunctionName;
       getCallbacks().onMutate(variables);
     },
     onStart: hash => {
-      if (hash && !isApproveLeg && !recorded) {
+      if (hash && isBridgeLeg && !recorded) {
         recorded = current = hash;
         if (isSafe) onQueued(hash);
         else onSent(hash);
-      } else if (hash && !isApproveLeg && !isSafe && recorded && hash !== current) {
+      } else if (hash && isBridgeLeg && !isSafe && recorded && hash !== current) {
         current = hash;
         onRepriced(recorded, hash);
       }

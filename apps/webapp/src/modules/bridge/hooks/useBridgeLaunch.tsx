@@ -85,6 +85,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       const record = { account, amount, from, to, recipient, route };
       const callbacks = withSourceRecording(() => callbacksRef.current, {
         isSafe,
+        // The mock names each leg after its step; route tickets pass their bridge call's name.
+        bridgeFunctionName: 'send',
         onSent: txHash => {
           sentRef.current = true;
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
