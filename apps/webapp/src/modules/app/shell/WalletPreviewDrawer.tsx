@@ -68,8 +68,6 @@ export function WalletPreviewDrawer({
           overlayClassName={NO_SCRIM}
           hideCloseButton
           className="bg-containerDark border-borderPrimary inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] h-auto max-h-[calc(100dvh-92px)] gap-0 overflow-hidden rounded-[28px] border p-0 backdrop-blur-sm"
-          onOpenAutoFocus={e => e.preventDefault()}
-          onCloseAutoFocus={e => e.preventDefault()}
         >
           <SheetTitle className="sr-only">{t`Account`}</SheetTitle>
           <WalletPreviewHeader
@@ -99,8 +97,6 @@ export function WalletPreviewDrawer({
         overlayClassName={NO_SCRIM}
         className="border-glassBorder bg-glassSurface inset-y-3 right-3 h-auto w-[calc(100%-24px)] flex-row gap-0 overflow-hidden rounded-[28px] border p-0 backdrop-blur-sm sm:max-w-[538px]"
         closeButtonClassName="hidden"
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
       >
         <SheetTitle className="sr-only">{t`Account`}</SheetTitle>
         <div className="hidden shrink-0 p-3 sm:block">

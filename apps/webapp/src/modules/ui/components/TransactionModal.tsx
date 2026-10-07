@@ -709,8 +709,6 @@ export function TransactionModal({
           !isTransaction && 'sm:gap-12'
         )}
         overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
           <div className="flex min-w-0 flex-1 flex-col gap-4">

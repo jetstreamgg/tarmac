@@ -5,6 +5,7 @@ import { RemoveScroll } from 'react-remove-scroll';
 import { X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
+import { FOCUSABLE_SELECTOR, captureFocusOrigin, restoreFocus } from '@/hooks/ui/useRestoreFocusOnClose';
 
 /**
  * The takeover opens and closes on the modal comp's motion (Figma: Sky App: UI
@@ -18,8 +19,10 @@ import { Button } from '@/components/ui/button';
 const SCRIM_IN = { duration: 0.3, ease: [0.23, 1, 0.32, 1] } as const;
 const SCRIM_OUT = { duration: 0.3, ease: [0.77, 0, 0.175, 1] } as const;
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+// The takeover portals to the body, so the app root can go inert around it.
+// The toast stack portals to the body too (App.tsx) and stays live.
+// Counted because a closing takeover can overlap the one that replaces it.
+let inertRootHolds = 0;
 
 /**
  * Full-screen takeover chrome (hi-fi 486:32657, restyled to 1036:209505):
@@ -67,10 +70,13 @@ export function TakeoverShell({
   const reduceMotion = useReducedMotion();
 
   // Escape-to-close: syncing with the DOM outside React. (The document scroll
-  // lock is `RemoveScroll` around the portal below.)
+  // lock is `RemoveScroll` around the portal below.) Radix layers (popovers,
+  // selects, tooltips, the transaction modal) handle Escape in the capture
+  // phase and mark it defaultPrevented, so a layer on top takes the key and
+  // the takeover stays open — as a Radix dialog does under an open tooltip.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape' && !event.defaultPrevented) onClose();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -81,10 +87,20 @@ export function TakeoverShell({
   // close. The Tab listener sits on the CONTAINER, not the document — the
   // transaction modal (z-50) portals above this shell with its own Radix
   // focus scope, and a document-level trap would yank focus back out of it.
+  // The app root goes inert for the same reason Radix's dialogs hide their
+  // siblings: aria-modal promises assistive tech that nothing outside the
+  // dialog is reachable, and a screen reader's virtual cursor ignores the trap.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Opened from position details, the trigger is a details-modal control
+    // that's gone by close; the row that opened the details stands in.
+    const focusOrigin = captureFocusOrigin();
+    const appRoot = document.getElementById('root');
+    if (appRoot) {
+      inertRootHolds += 1;
+      appRoot.setAttribute('inert', '');
+    }
     container.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -108,7 +124,12 @@ export function TakeoverShell({
     container.addEventListener('keydown', onKeyDown);
     return () => {
       container.removeEventListener('keydown', onKeyDown);
-      previouslyFocused?.focus();
+      // Before the focus restore: focus() on an inert trigger is a no-op.
+      if (appRoot) {
+        inertRootHolds -= 1;
+        if (inertRootHolds === 0) appRoot.removeAttribute('inert');
+      }
+      restoreFocus(focusOrigin, container);
     };
   }, []);
 
@@ -147,7 +168,7 @@ export function TakeoverShell({
         // /earn), not as a second opaque page: same scrim + blur recipe as the
         // dialog and sheet overlays. It previously repainted the app background,
         // which hid the page underneath entirely.
-        className="bg-modalOverlay fixed inset-0 z-[46] flex flex-col backdrop-blur-[100px]"
+        className="bg-modalOverlay fixed inset-0 z-[46] flex flex-col outline-hidden backdrop-blur-[100px]"
       >
         <div className="border-glassBorder flex items-center justify-between gap-4 border-b px-5 py-3 md:px-10 md:py-5">
           {/* Title + badge only — no back arrow (Design QA 2800:91832: "There's
