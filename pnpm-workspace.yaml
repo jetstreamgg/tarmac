@@ -117,6 +117,7 @@ overrides:
   '@json-rpc-tools/provider>axios@^0.21.0': ^1.20.0
   '@binance/w3w-qrcode-modal>tailwindcss': '-'
   seroval@<1.6.3: ^1.6.3
+  source-map-js@<1.2.2: ^1.2.2
 
 allowBuilds:
   '@reown/appkit': false
