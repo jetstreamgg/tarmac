@@ -10,7 +10,7 @@ import { formatAddress } from '@/utils';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
-import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
+import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
 
@@ -81,8 +81,18 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
   return formatEta(Math.max(1, Math.ceil((bridge.etaAt - elapsedFrom) / 60_000)));
 };
 
-export function buildPendingBridgeRows(bridge: PendingBridge, now: number): PendingBridgeCell[][] {
-  const sourceChainId = getBridgeNetwork(bridge.from).chainId;
+/** Explorer link for a tx on `network`, on the chain the app runs that network on. */
+export const bridgeTxHref = (network: BridgeNetworkId, txHash: string, familyChainId: number) => {
+  const chainId = bridgeChainId(network, familyChainId);
+  return chainId === undefined ? undefined : getEtherscanLink(chainId, txHash, 'tx');
+};
+
+export function buildPendingBridgeRows(
+  bridge: PendingBridge,
+  now: number,
+  familyChainId: number
+): PendingBridgeCell[][] {
+  const sourceChainId = bridgeChainId(bridge.from, familyChainId);
   return [
     [
       { kind: 'network', label: t`Source`, network: bridge.from },
@@ -99,8 +109,7 @@ export function buildPendingBridgeRows(bridge: PendingBridge, now: number): Pend
             kind: 'link',
             label: t`Transaction`,
             value: formatAddress(bridge.txHash, 6, 4),
-            href:
-              sourceChainId === undefined ? undefined : getEtherscanLink(sourceChainId, bridge.txHash, 'tx')
+            href: bridgeTxHref(bridge.from, bridge.txHash, familyChainId)
           }
         : bridge.status === 'failed'
           ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }

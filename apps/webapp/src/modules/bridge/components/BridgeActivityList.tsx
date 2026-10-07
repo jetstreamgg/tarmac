@@ -2,14 +2,14 @@ import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ArrowDownToLine } from 'lucide-react';
 import { formatNumber, formatUsd } from '@/utils';
-import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { IconboxAction } from '@/components/ui/iconbox';
 import { ConvertArrows } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { getBridgeNetwork } from '../model/networks';
 import { useBridgeHistory } from '../hooks/useBridgeHistory';
+import { usePendingScope } from '../hooks/usePendingScope';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { bridgeActivityTitle, buildBridgeActivity, type BridgeActivityEntry } from './bridgeActivity';
+import { bridgeTxHref } from './pendingBridgeRows';
 
 // USDS is pegged 1:1.
 const USDS_USD = 1;
@@ -17,19 +17,21 @@ const USDS_USD = 1;
 /** Bridge / Funds claim rows (Figma Wallet Activity 3574:64437), styled as BalancesHistoryItem. */
 export function BridgeActivityList() {
   const entries = buildBridgeActivity(useBridgeHistory());
+  const { familyChainId } = usePendingScope();
   if (entries.length === 0) return null;
   return (
     <div className="flex flex-col" data-testid="bridge-activity">
       {entries.map(entry => (
-        <BridgeActivityItem key={entry.id} entry={entry} />
+        <BridgeActivityItem key={entry.id} entry={entry} familyChainId={familyChainId} />
       ))}
     </div>
   );
 }
 
-function BridgeActivityItem({ entry }: { entry: BridgeActivityEntry }) {
-  const chainId = getBridgeNetwork(entry.network).chainId;
-  const href = chainId === undefined ? undefined : getEtherscanLink(chainId, entry.txHash, 'tx');
+type BridgeActivityItemProps = { entry: BridgeActivityEntry; familyChainId: number };
+
+function BridgeActivityItem({ entry, familyChainId }: BridgeActivityItemProps) {
+  const href = bridgeTxHref(entry.network, entry.txHash, familyChainId);
   const value = parseFloat(formatUnits(entry.amount, 18));
 
   return (

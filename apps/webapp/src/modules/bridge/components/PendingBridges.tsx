@@ -8,6 +8,7 @@ import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { usePendingBridges } from '../hooks/usePendingBridges';
+import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
 import { canLaunchAction, isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
@@ -72,11 +73,12 @@ function CellValue({ cell }: { cell: PendingBridgeCell }) {
 type PendingBridgeCardProps = {
   bridge: PendingBridge;
   now: number;
+  familyChainId: number;
   onAction: (bridge: PendingBridge) => void;
   actionLocked: boolean;
 };
 
-function PendingBridgeCard({ bridge, now, onAction, actionLocked }: PendingBridgeCardProps) {
+function PendingBridgeCard({ bridge, now, familyChainId, onAction, actionLocked }: PendingBridgeCardProps) {
   const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), { minDecimals: 2, maxDecimals: 2 });
   return (
     <div
@@ -112,7 +114,7 @@ function PendingBridgeCard({ bridge, now, onAction, actionLocked }: PendingBridg
       </div>
 
       <div className="flex flex-col gap-6">
-        {buildPendingBridgeRows(bridge, now).map((row, rowIndex) => (
+        {buildPendingBridgeRows(bridge, now, familyChainId).map((row, rowIndex) => (
           <div key={rowIndex} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
             {row.map((cell, cellIndex) => (
               <Fragment key={cell.label}>
@@ -140,6 +142,7 @@ type PendingBridgesProps = {
 export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
+  const { familyChainId } = usePendingScope();
   if (bridges.length === 0) return null;
 
   return (
@@ -152,6 +155,7 @@ export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) 
           key={bridge.id}
           bridge={bridge}
           now={now}
+          familyChainId={familyChainId}
           onAction={onAction}
           actionLocked={actionLocked}
         />
