@@ -26,6 +26,7 @@ export const mockAdapter: BridgeAdapter = {
  * touching a chain, reporting each name at `onMutate` like the real flow.
  * Reads callbacks through `getCallbacks` so each leg uses the provider's
  * latest session-bound callbacks. Resolves with the last leg's hash.
+ * Real legs must run with `failOnReplaced` so a cancelled tx is not a success.
  */
 export async function runMockLegs(functionNames: string[], getCallbacks: () => TxCallbacks): Promise<string> {
   let hash = '';

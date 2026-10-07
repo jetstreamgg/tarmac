@@ -1,12 +1,12 @@
 import type { WaitForTransactionReceiptErrorType } from 'viem';
-import { isRevertedError } from '@/hooks/helpers';
+import { isRevertedError, TransactionReplacedError } from '@/hooks/helpers';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 
 /**
  * Wraps the modal's callbacks to record a destination action: `onSent` at
  * broadcast, `onConfirmed` once mined (a Safe passes its on-chain hash here),
- * and `onReverted` only for a revert of the sent hash. Any other failure keeps
- * it sent, since the transaction may still land.
+ * and `onReverted` only when the sent hash reverted or was cancelled or replaced.
+ * Any other failure keeps it sent, since the transaction may still land.
  */
 export function withActionRecording(
   getCallbacks: () => TxCallbacks,
@@ -35,7 +35,10 @@ export function withActionRecording(
       getCallbacks().onSuccess(hash);
     },
     onError: (error, hash) => {
-      if (sent && hash === sent && isRevertedError(error as WaitForTransactionReceiptErrorType)) {
+      const neverLands =
+        error instanceof TransactionReplacedError ||
+        isRevertedError(error as WaitForTransactionReceiptErrorType);
+      if (sent && hash === sent && neverLands) {
         onReverted(hash);
       }
       getCallbacks().onError(error, hash);

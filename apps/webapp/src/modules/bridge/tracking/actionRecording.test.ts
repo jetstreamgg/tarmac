@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { TransactionReplacedError } from '@/hooks/helpers';
 import { withActionRecording } from './actionRecording';
 
 const setup = () => {
@@ -57,5 +58,14 @@ describe('withActionRecording', () => {
     expect(onSent).not.toHaveBeenCalled();
     callbacks.onSuccess('0xclaim');
     expect(onConfirmed).toHaveBeenCalledWith('0xclaim');
+  });
+});
+
+describe('withActionRecording, a sent action cancelled or replaced in the wallet', () => {
+  it('drops the sent action, so the user can claim again', () => {
+    const { onReverted, callbacks } = setup();
+    callbacks.onStart('0xclaim');
+    callbacks.onError(new TransactionReplacedError(), '0xclaim');
+    expect(onReverted).toHaveBeenCalledWith('0xclaim');
   });
 });
