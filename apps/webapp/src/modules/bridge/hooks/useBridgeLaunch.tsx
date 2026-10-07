@@ -93,7 +93,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   );
 
   const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, 18)), { maxDecimals: 2 })} USDS`;
-  const confirmDisabled = amount === 0n || !route;
+  const confirmDisabled = !form.isConnected || form.reviewBlocked;
 
   const launch = useCallback(() => {
     launchModal({

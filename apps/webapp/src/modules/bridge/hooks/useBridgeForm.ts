@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
-import { useAppChainId, useIsSafeWallet, useTokenBalance, usdsAddress, usdsL2Address } from '@/hooks';
+import { useAppChainId, useSafeWalletStatus, useTokenBalance, usdsAddress, usdsL2Address } from '@/hooks';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
 import { familyMainnetId } from '@/utils/isTestnetId';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -12,7 +12,7 @@ import {
   type BridgeNetworkId
 } from '../model/networks';
 import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
-import { recipientRequirement } from '../model/recipient';
+import { recipientRequirement, sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { useSafeConfig } from './useSafeConfig';
 
@@ -68,7 +68,8 @@ export function useBridgeForm() {
   const { isConnected, address } = useConnection();
   const walletChainId = useAppChainId();
   const familyChainId = familyMainnetId(walletChainId);
-  const isSafe = useIsSafeWallet();
+  const safeStatus = useSafeWalletStatus();
+  const isSafe = safeStatus === 'safe';
   const chains = useChains();
   const { canSwitchChain, handleSwitchChain } = useNetworkSwitch();
 
@@ -139,14 +140,19 @@ export function useBridgeForm() {
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;
 
   const destinationFamily = getBridgeNetwork(to).family;
-  const checkSafe = isConnected && isSafe && destinationFamily === 'evm' && !recipient;
+  const checkSafe = isConnected && isSafe && destinationFamily === 'evm' && !sendsToOther(recipient, address);
   const sourceSafe = useSafeConfig({ address, chainId: sourceChainId, enabled: checkSafe });
   const destinationSafe = useSafeConfig({ address, chainId: destinationChainId, enabled: checkSafe });
   const recipientRule = recipientRequirement({
     destinationFamily,
+    sender: address,
     recipient,
     safe: isSafe ? { source: sourceSafe.lookup, destination: destinationSafe.lookup } : undefined
   });
+
+  const balanceLoading = isConnected && source.isLoading;
+  // Recording and the recipient rule both depend on whether the wallet is a Safe.
+  const walletUnchecked = isConnected && (safeStatus === 'checking' || safeStatus === 'unknown');
 
   return {
     from,
@@ -165,11 +171,16 @@ export function useBridgeForm() {
     isZero,
     insufficient,
     /** The source balance is still loading, so `insufficient` can't be trusted yet. */
-    balanceLoading: isConnected && source.isLoading,
+    balanceLoading,
     needsRecipient: recipientRule.required,
     /** The Safe lookups behind `needsRecipient` are still in flight. */
     recipientChecking: checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking),
     recipientReason: recipientRule.required ? recipientRule.reason : undefined,
+    /** The Safe check failed, so the wallet type is unknown. */
+    safeCheckFailed: isConnected && safeStatus === 'unknown',
+    /** Review and Confirm can't go ahead; only meaningful while connected. */
+    reviewBlocked:
+      isZero || insufficient || balanceLoading || recipientRule.required || walletUnchecked || !route,
     selectFrom,
     selectTo,
     flip,

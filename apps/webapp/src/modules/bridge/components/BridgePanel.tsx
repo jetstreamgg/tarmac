@@ -45,9 +45,7 @@ export function BridgePanel() {
   const launchOrConnect = useConnectThenAct(launch);
   const launchAction = useDestinationActionLaunch();
 
-  const reviewDisabled =
-    form.isConnected &&
-    (form.isZero || form.insufficient || form.balanceLoading || form.needsRecipient || !form.route);
+  const reviewDisabled = form.isConnected && form.reviewBlocked;
 
   return (
     <div className="flex w-full flex-col gap-8" data-testid="bridge-panel">
@@ -67,6 +65,10 @@ export function BridgePanel() {
         ) : form.blockedReason ? (
           <Text className="text-error text-sm" dataTestId="bridge-blocked">
             <BlockedMessage reason={form.blockedReason} />
+          </Text>
+        ) : form.safeCheckFailed ? (
+          <Text className="text-error text-sm" dataTestId="bridge-safe-unknown">
+            <Trans>We couldn&apos;t check your wallet. Try again in a moment.</Trans>
           </Text>
         ) : (
           form.isConnected &&

@@ -52,6 +52,17 @@ describe('recipientRequirement', () => {
     ).toEqual({ required: false });
   });
 
+  it('a Safe typing its own address (any case) is still held to the same-Safe rule', () => {
+    expect(
+      recipientRequirement({
+        destinationFamily: 'evm',
+        sender: A,
+        recipient: A.toLowerCase(),
+        safe: { source: safe([B], 1), destination: null }
+      })
+    ).toEqual({ required: true, reason: 'safe-not-on-destination' });
+  });
+
   it('an EOA sending to itself on EVM needs nothing', () => {
     expect(recipientRequirement({ ...evm, safe: undefined })).toEqual({ required: false });
   });
