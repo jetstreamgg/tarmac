@@ -5,7 +5,7 @@ import { RemoveScroll } from 'react-remove-scroll';
 import { X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
-import { focusFallbackFor } from '@/hooks/ui/useRestoreFocusOnClose';
+import { FOCUSABLE_SELECTOR, captureFocusOrigin, restoreFocus } from '@/hooks/ui/useRestoreFocusOnClose';
 
 /**
  * The takeover opens and closes on the modal comp's motion (Figma: Sky App: UI
@@ -23,9 +23,6 @@ const SCRIM_OUT = { duration: 0.3, ease: [0.77, 0, 0.175, 1] } as const;
 // The toast stack portals to the body too (App.tsx) and stays live.
 // Counted because a closing takeover can overlap the one that replaces it.
 let inertRootHolds = 0;
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Full-screen takeover chrome (hi-fi 486:32657, restyled to 1036:209505):
@@ -74,9 +71,9 @@ export function TakeoverShell({
 
   // Escape-to-close: syncing with the DOM outside React. (The document scroll
   // lock is `RemoveScroll` around the portal below.) Radix layers (popovers,
-  // selects, the transaction modal) handle Escape in the capture phase and
-  // mark it defaultPrevented, so a layer on top takes the key and the takeover
-  // stays open.
+  // selects, tooltips, the transaction modal) handle Escape in the capture
+  // phase and mark it defaultPrevented, so a layer on top takes the key and
+  // the takeover stays open — as a Radix dialog does under an open tooltip.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented) onClose();
@@ -96,10 +93,9 @@ export function TakeoverShell({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
     // Opened from position details, the trigger is a details-modal control
     // that's gone by close; the row that opened the details stands in.
-    const fallback = focusFallbackFor(previouslyFocused);
+    const focusOrigin = captureFocusOrigin();
     const appRoot = document.getElementById('root');
     if (appRoot) {
       inertRootHolds += 1;
@@ -133,8 +129,7 @@ export function TakeoverShell({
         inertRootHolds -= 1;
         if (inertRootHolds === 0) appRoot.removeAttribute('inert');
       }
-      previouslyFocused?.focus();
-      if (document.activeElement !== previouslyFocused) fallback?.focus();
+      restoreFocus(focusOrigin, container);
     };
   }, []);
 

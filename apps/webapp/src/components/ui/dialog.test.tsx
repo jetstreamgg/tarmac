@@ -133,6 +133,38 @@ const HandOffHarness = () => {
   );
 };
 
+// The wallet drawer's "Switch account": a second dialog opens while the first
+// is still animating out, so the first's close fires with focus already in the
+// second.
+const SwitchHarness = () => {
+  const [first, setFirst] = useState(false);
+  const [second, setSecond] = useState(false);
+  return (
+    <>
+      <button onClick={() => setFirst(true)}>account</button>
+      <Dialog open={first} onOpenChange={setFirst}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>First</DialogTitle>
+          <button
+            onClick={() => {
+              setSecond(true);
+              setTimeout(() => setFirst(false), 20);
+            }}
+          >
+            switch
+          </button>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={second} onOpenChange={setSecond}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Second</DialogTitle>
+          <button>second close</button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 describe('DialogContent', () => {
   it('caps its height and scrolls internally so tall modals fit the viewport', () => {
     render(
@@ -234,6 +266,43 @@ describe('focus on open and close', () => {
 
     await waitFor(() => expect(screen.queryByText('borrow')).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('takeover')));
+  });
+
+  it('returns focus to a pressed opener that never took focus, not an older focus', async () => {
+    // Safari doesn't focus a button on click, so focus sits on the body at open.
+    const older = document.createElement('button');
+    document.body.appendChild(older);
+    older.focus();
+    older.blur();
+    render(<DialogHarness />);
+    const opener = screen.getByText('open dialog');
+    fireEvent.pointerDown(opener);
+    fireEvent.click(opener);
+    await waitFor(() => expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true));
+
+    fireEvent.click(screen.getByText('close dialog'));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+    older.remove();
+  });
+
+  it('leaves focus in a dialog that opened while this one was closing', async () => {
+    render(<SwitchHarness />);
+    const opener = screen.getByText('account');
+    opener.focus();
+    fireEvent.click(opener);
+    const focusins: EventTarget[] = [];
+    const onFocusIn = (event: FocusEvent) => focusins.push(event.target!);
+    document.addEventListener('focusin', onFocusIn);
+
+    fireEvent.click(await screen.findByText('switch'));
+    await waitFor(() => expect(screen.queryByText('First')).toBeNull());
+    await new Promise(resolve => setTimeout(resolve, 20));
+    document.removeEventListener('focusin', onFocusIn);
+
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    expect(focusins).not.toContain(opener);
   });
 
   it('still calls the caller handler', async () => {

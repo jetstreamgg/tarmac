@@ -158,6 +158,38 @@ describe('TakeoverShell', () => {
     root.remove();
   });
 
+  it('leaves focus in a newer takeover when an older one unmounts behind it', () => {
+    const root = document.createElement('div');
+    root.id = 'root';
+    document.body.appendChild(root);
+    const toast = document.createElement('button');
+    document.body.appendChild(toast);
+    toast.focus();
+    const details = document.createElement('div');
+    details.setAttribute('role', 'dialog');
+    const control = document.createElement('button');
+    details.appendChild(control);
+    document.body.appendChild(details);
+    control.focus();
+
+    const first = render(
+      <TakeoverShell title="a" onClose={vi.fn()} dataTestId="first">
+        <div />
+      </TakeoverShell>
+    );
+    details.remove();
+    render(
+      <TakeoverShell title="b" onClose={vi.fn()} dataTestId="second">
+        <div />
+      </TakeoverShell>
+    );
+    first.unmount();
+
+    expect(document.activeElement).toBe(screen.getByTestId('second'));
+    toast.remove();
+    root.remove();
+  });
+
   it('names the dialog from its title via aria-labelledby', () => {
     renderShell();
 
