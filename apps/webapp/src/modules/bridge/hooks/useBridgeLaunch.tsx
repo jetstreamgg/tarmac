@@ -102,8 +102,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
         },
         onQueued: safeTxHash => {
+          // Not unresolved: it waits for co-signers, and a Safe may queue several bridges.
           sentRef.current = true;
-          unresolvedRef.current = safeTxHash;
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() }));
         },
         onExecuted: (txHash, safeTxHash) => {

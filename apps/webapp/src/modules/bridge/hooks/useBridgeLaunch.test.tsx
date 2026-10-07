@@ -398,6 +398,23 @@ describe('useBridgeLaunch Confirm gate', () => {
       act(() => mocks.launched.at(-1)!.onConfirm!());
       expect(mocks.legs).toHaveLength(2);
     });
+
+    it('a Safe can queue another bridge while the first waits for its co-signers', async () => {
+      mocks.safe = { [MAINNET]: 200, [BASE]: 200 };
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      await settle();
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacks = mocks.legs[0].getCallbacks();
+      callbacks.onMutate({ functionName: 'send' });
+      callbacks.onStart('0xsafequeued');
+
+      // The modal closed before the Safe executed: no verdict reached the flow.
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.legs).toHaveLength(2);
+    });
   });
 
   it('a bridge call rejected after an earlier leg mined stores nothing, and Retry runs the legs again', async () => {
