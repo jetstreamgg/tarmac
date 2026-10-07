@@ -1,24 +1,15 @@
-import { formatUnits } from 'viem';
-import { plural, t } from '@lingui/core/macro';
-import { formatNumber } from '@/utils';
+import { t } from '@lingui/core/macro';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
-import { buildBridgeModalRows, toDays } from './bridgeModalRows';
+import { formatUsds } from '../model/usds';
+import { buildBridgeModalRows, formatEtaWords } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 
-const formatAmount = (amount: bigint) =>
-  formatNumber(parseFloat(formatUnits(amount, 18)), { minDecimals: 2, maxDecimals: 2 });
-
-const etaPhrase = (minutes: number): string =>
-  minutes >= 24 * 60
-    ? plural(toDays(minutes), { one: '# day', other: '# days' })
-    : plural(minutes, { one: '# minute', other: '# minutes' });
-
 export const bridgeFootnote = (route: BridgeRoute): string => {
-  const eta = etaPhrase(route.etaMinutes);
+  const eta = formatEtaWords(route.etaMinutes);
   return route.requiresClaim
     ? t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. You will need to claim your asset manually afterward.`
     : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. Your funds will arrive automatically.`;
@@ -36,7 +27,7 @@ export function BridgeTransferHero({
   to: BridgeNetworkId;
   testId?: string;
 }) {
-  const formatted = formatAmount(amount);
+  const formatted = formatUsds(amount);
   return (
     <TokenTransferHero
       from={{

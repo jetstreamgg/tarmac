@@ -15,9 +15,8 @@ import {
 import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
 import { isValidRecipient, recipientRequirement, sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute } from '../model/resolveRoute';
+import { USDS_DECIMALS } from '../model/usds';
 import { useSafeConfig } from './useSafeConfig';
-
-export const USDS_DECIMALS = 18;
 
 /** USDS balance of `address` on a bridge network the app can read; `value` is undefined otherwise. */
 function useUsdsBalance(address: `0x${string}` | undefined, chainId: number | undefined) {

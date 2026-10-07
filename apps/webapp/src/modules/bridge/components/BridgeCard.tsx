@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ChevronDown, Wallet } from 'lucide-react';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { cn } from '@/lib/cn';
 import { NO_VALUE } from '@/lib/constants';
-import { formatAddress, formatNumber } from '@/utils';
+import { formatAddress } from '@/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountInput } from '@/components/product/AmountInput';
 import { RollingValue } from '@/components/ui/rolling-value';
@@ -14,7 +13,8 @@ import { Text } from '@/modules/layout/components/Typography';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
 import { BRIDGE_NETWORKS, getBridgeNetwork } from '../model/networks';
 import { allowedDestinations } from '../model/pairs';
-import { USDS_DECIMALS, type BridgeFormModel } from '../hooks/useBridgeForm';
+import type { BridgeFormModel } from '../hooks/useBridgeForm';
+import { formatUsds, USDS_DECIMALS } from '../model/usds';
 import { BridgeNetworkSelect } from './BridgeNetworkSelect';
 import { RecipientAddressModal } from './RecipientAddressModal';
 
@@ -30,9 +30,7 @@ const panelClassName =
 const metaClassName = 'text-fgSecondary text-xs md:text-sm md:leading-[22px]';
 
 const formatBalance = (balance: bigint | undefined) =>
-  balance === undefined
-    ? NO_VALUE
-    : formatNumber(parseFloat(formatUnits(balance, USDS_DECIMALS)), { maxDecimals: 2 });
+  balance === undefined ? NO_VALUE : formatUsds(balance, { maxDecimals: 2 });
 
 /**
  * The Bridge tab card (Figma 3574:64074): From and To glass panels, each with

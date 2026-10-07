@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ArrowDownToLine } from 'lucide-react';
 import { formatNumber, formatUsd } from '@/utils';
@@ -9,6 +8,7 @@ import { ConvertArrows } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useBridgeHistory } from '../hooks/useBridgeHistory';
 import { usePendingScope } from '../hooks/usePendingScope';
+import { usdsToNumber } from '../model/usds';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { bridgeActivityTitle, buildBridgeActivity, type BridgeActivityEntry } from './bridgeActivity';
 import { bridgeTxHref } from './pendingBridgeRows';
@@ -35,7 +35,7 @@ type BridgeActivityItemProps = { entry: BridgeActivityEntry; familyChainId: numb
 
 function BridgeActivityItem({ entry, familyChainId }: BridgeActivityItemProps) {
   const href = bridgeTxHref(entry.network, entry.txHash, familyChainId);
-  const value = parseFloat(formatUnits(entry.amount, 18));
+  const value = usdsToNumber(entry.amount);
 
   return (
     <a

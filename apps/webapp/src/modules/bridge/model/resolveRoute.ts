@@ -47,7 +47,7 @@ export type BridgeBlockReason = 'pair-not-allowed' | 'facts-loading' | 'facts-er
 export type ResolvedBridgeRoute =
   { status: 'ok'; route: BridgeRoute } | { status: 'blocked'; reason: BridgeBlockReason };
 
-const DAY_MINUTES = 24 * 60;
+export const DAY_MINUTES = 24 * 60;
 const CCTP_ETA_MINUTES = 20;
 const LAYERZERO_ETA_MINUTES = 3;
 

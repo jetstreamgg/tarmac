@@ -1,8 +1,6 @@
 import { Fragment } from 'react';
-import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
@@ -12,6 +10,7 @@ import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
 import { canLaunchAction, isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
+import { formatUsds } from '../model/usds';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
   buildPendingBridgeRows,
@@ -79,7 +78,7 @@ type PendingBridgeCardProps = {
 };
 
 function PendingBridgeCard({ bridge, now, familyChainId, onAction, actionLocked }: PendingBridgeCardProps) {
-  const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), { minDecimals: 2, maxDecimals: 2 });
+  const amount = formatUsds(bridge.amount);
   return (
     <div
       className="bg-bgSecondary flex flex-col gap-6 rounded-2xl p-5 backdrop-blur-[20px] md:rounded-3xl md:p-8"

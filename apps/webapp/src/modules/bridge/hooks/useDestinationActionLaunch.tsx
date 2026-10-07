@@ -1,8 +1,6 @@
 import { useCallback, useId, useLayoutEffect, useRef } from 'react';
-import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { formatNumber } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
@@ -11,6 +9,7 @@ import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
 import { canLaunchAction, dropSentAction, recordAction, recordActionSent } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
+import { formatUsds, usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
 import { usePendingScope } from './usePendingScope';
@@ -69,10 +68,7 @@ export function useDestinationActionLaunch() {
       const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === card.id);
       const action = bridge?.nextAction;
       if (!bridge || !action || !canLaunchAction(bridge)) return;
-      const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), {
-        minDecimals: 2,
-        maxDecimals: 2
-      });
+      const amount = formatUsds(bridge.amount);
       const copy = actionCopy(action, amount);
       const pinnedChainId = guardChainId({
         network: bridge.to,
@@ -115,7 +111,7 @@ export function useDestinationActionLaunch() {
           void runMockLegs([action], () => callbacks);
         },
         sessionId,
-        usdValue: Number(formatUnits(bridge.amount, 18)),
+        usdValue: usdsToNumber(bridge.amount),
         // Destination actions run on the destination network.
         supportedChainIds: [pinnedChainId],
         chainGuardReason: 'launch-chain'

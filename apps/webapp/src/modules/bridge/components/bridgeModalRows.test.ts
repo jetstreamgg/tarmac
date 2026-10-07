@@ -68,6 +68,16 @@ describe('arrival copy in the singular and plural', () => {
     expect(eta(7 * DAY)).toContain('approximately 7 days.');
   });
 
+  it('the review footnote uses the grid units: hours past an hour', () => {
+    const route = routeFor('base', 'ethereum');
+    const eta = (etaMinutes: number) => bridgeFootnote({ ...route, etaMinutes });
+    expect(formatEta(60)).toBe('~1 hr');
+    expect(eta(60)).toContain('approximately 1 hour.');
+    expect(formatEta(90)).toBe('~1 hr 30 min');
+    expect(eta(90)).toContain('approximately 1 hour 30 minutes.');
+    expect(eta(121)).toContain('approximately 2 hours 1 minute.');
+  });
+
   it('reads the grid labels from the active catalog at call time', () => {
     vi.spyOn(i18n, '_').mockImplementation(
       ((descriptor: { message?: string }) => `<${descriptor.message}>`) as never

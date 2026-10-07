@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
-import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { formatNumber } from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
 import { useIsSafeWallet } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
@@ -13,6 +11,7 @@ import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeRev
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
 import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
+import { formatUsds, usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withSourceRecording } from '../tracking/sourceRecording';
 import type { BridgeFormModel } from './useBridgeForm';
@@ -126,7 +125,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     [amount, from, to]
   );
 
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, 18)), { maxDecimals: 2 })} USDS`;
+  const amountLabel = `${formatUsds(amount, { maxDecimals: 2 })} USDS`;
   const confirmDisabled = !form.isConnected || form.reviewBlocked;
 
   const launch = useCallback(() => {
@@ -151,7 +150,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       onSuccess,
       sessionId,
       // USDS is $1-pegged; same valuation as Convert (enhanced screening, APP-517).
-      usdValue: Number(formatUnits(amount, 18)),
+      usdValue: usdsToNumber(amount),
       // The legs are built for the source network, so leaving it guards the flow.
       supportedChainIds: [pinnedChainId],
       chainGuardReason: 'launch-chain'
