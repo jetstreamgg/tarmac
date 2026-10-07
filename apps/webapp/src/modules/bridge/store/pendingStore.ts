@@ -1,5 +1,5 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { isSettled } from '../model/pendingTransitions';
+import { canDismiss, isSettled } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 
 const KEY_PREFIX = 'bridgePending:v1:';
@@ -197,10 +197,14 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
           : [bridge, ...current]
       );
     },
-    /** Drops one bridge; entries this bundle can't parse stay. */
-    remove(scope: string, id: string) {
+    /**
+     * Drops a queued Safe bridge the user dismissed; entries this bundle can't parse stay.
+     * Checks the latest entry, so a bridge another tab saw execute is kept.
+     */
+    dismiss(scope: string, id: string) {
       const current = latest(scope);
-      if (!current.some(entry => entry.id === id)) return;
+      const existing = current.find(entry => entry.id === id);
+      if (!existing || !canDismiss(existing)) return;
       write(
         scope,
         current.filter(entry => entry.id !== id)

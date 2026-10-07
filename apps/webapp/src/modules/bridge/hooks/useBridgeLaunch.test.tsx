@@ -447,7 +447,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.safeTxHash === '0xsafequeued');
     expect(stored()).toBeDefined();
 
-    pendingBridgeStore.remove(scope, stored()!.id);
+    pendingBridgeStore.dismiss(scope, stored()!.id);
     expect(stored()).toBeUndefined();
 
     callbacks.onSuccess('0xsafeexecuted');

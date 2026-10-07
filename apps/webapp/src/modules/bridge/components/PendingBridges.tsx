@@ -188,7 +188,7 @@ export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) 
           now={now}
           familyChainId={familyChainId}
           onAction={onAction}
-          onDismiss={dismissed => scope && pendingBridgeStore.remove(scope, dismissed.id)}
+          onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
           actionLocked={actionLocked}
         />
       ))}

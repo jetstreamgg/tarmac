@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPendingBridgeStore, pendingScopeKey } from './pendingStore';
+import { applyProgress } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -291,16 +292,18 @@ describe('createPendingBridgeStore', () => {
     });
   });
 
-  describe('remove', () => {
+  describe('dismiss', () => {
     const KEY = `bridgePending:v1:${SCOPE}`;
+    const queued = (id: string, overrides: Partial<PendingBridge> = {}) =>
+      bridge({ id, safeTxHash: id, txHash: undefined, ...overrides });
 
-    it('removes one bridge and keeps the rest, including entries it cannot parse', () => {
+    it('drops one queued Safe bridge and keeps the rest, including entries it cannot parse', () => {
       const future = { id: '0xfuture', status: 'expired' };
       localStorage.setItem(KEY, JSON.stringify([future]));
       const store = make();
-      store.upsert(SCOPE, bridge());
-      store.upsert(SCOPE, bridge({ id: '0xother', txHash: '0xother', startedAt: NOW - 1 }));
-      store.remove(SCOPE, '0xsource');
+      store.upsert(SCOPE, queued('0xsafe'));
+      store.upsert(SCOPE, queued('0xother', { startedAt: NOW - 1 }));
+      store.dismiss(SCOPE, '0xsafe');
       expect(store.getSnapshot(SCOPE).map(entry => entry.id)).toEqual(['0xother']);
       expect(
         make()
@@ -310,12 +313,41 @@ describe('createPendingBridgeStore', () => {
       expect(JSON.parse(localStorage.getItem(KEY) ?? '[]')).toContainEqual(future);
     });
 
-    it('is a no-op for an unknown id', () => {
+    it('is a no-op for an unknown id or a bridge already on chain', () => {
       const store = make();
       store.upsert(SCOPE, bridge());
       const before = store.getSnapshot(SCOPE);
-      store.remove(SCOPE, '0xnope');
+      store.dismiss(SCOPE, '0xnope');
+      store.dismiss(SCOPE, '0xsource');
       expect(store.getSnapshot(SCOPE)).toBe(before);
+    });
+
+    describe('keeps a Safe bridge another tab saw execute, though the card still offered Dismiss', () => {
+      const executeInOtherTab = () =>
+        make().update(SCOPE, '0xsafe', current =>
+          applyProgress(current, { kind: 'source-executed', txHash: '0xexecuted' }, NOW + 1000)
+        );
+
+      it('before the storage event arrives', () => {
+        const store = make();
+        store.subscribe(() => {});
+        store.upsert(SCOPE, queued('0xsafe'));
+        store.getSnapshot(SCOPE);
+        executeInOtherTab();
+        store.dismiss(SCOPE, '0xsafe');
+        const stored = JSON.parse(localStorage.getItem(KEY) ?? '[]') as { id: string; txHash?: string }[];
+        expect(stored.find(entry => entry.id === '0xsafe')?.txHash).toBe('0xexecuted');
+      });
+
+      it('after the storage event arrives', () => {
+        const store = make();
+        store.subscribe(() => {});
+        store.upsert(SCOPE, queued('0xsafe'));
+        executeInOtherTab();
+        window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
+        store.dismiss(SCOPE, '0xsafe');
+        expect(store.getSnapshot(SCOPE).find(entry => entry.id === '0xsafe')?.txHash).toBe('0xexecuted');
+      });
     });
   });
 });
