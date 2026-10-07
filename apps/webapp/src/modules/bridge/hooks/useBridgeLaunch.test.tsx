@@ -349,4 +349,26 @@ describe('useBridgeLaunch Confirm gate', () => {
     act(() => mocks.launched.at(-1)!.onConfirm!());
     expect(mocks.legs).toHaveLength(2);
   });
+
+  it('a dismissed Safe bridge that executes anyway comes back with its on-chain hash', async () => {
+    mocks.safe = { [MAINNET]: 200, [BASE]: 200 };
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    const callbacks = mocks.legs[0].getCallbacks();
+    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onStart('0xsafequeued');
+    const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+    const stored = () =>
+      pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.safeTxHash === '0xsafequeued');
+    expect(stored()).toBeDefined();
+
+    pendingBridgeStore.remove(scope, stored()!.id);
+    expect(stored()).toBeUndefined();
+
+    callbacks.onSuccess('0xsafeexecuted');
+    expect(stored()?.txHash).toBe('0xsafeexecuted');
+  });
 });

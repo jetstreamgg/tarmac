@@ -95,11 +95,14 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         },
         onExecuted: (txHash, safeTxHash) => {
           sentRef.current = true;
-          if (safeTxHash)
+          if (safeTxHash) {
+            // A no-op unless the queued bridge was dismissed: it executed anyway, so it comes back.
+            pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() }));
             pendingBridgeStore.update(scope, safeTxHash, bridge =>
               applyProgress(bridge, { kind: 'source-executed', txHash }, Date.now())
             );
-          else pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
+          } else
+            pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
         },
         // The funds never left, so Retry may send again.
         onFailed: (txHash, reason) => {
