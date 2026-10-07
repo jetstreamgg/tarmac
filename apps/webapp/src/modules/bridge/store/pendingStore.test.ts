@@ -149,12 +149,14 @@ describe('createPendingBridgeStore', () => {
 
   it('keeps updating the session copy once storage writes fail', () => {
     const store = make();
-    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError');
     });
     store.upsert(SCOPE, bridge());
     store.update(SCOPE, '0xsource', current => ({ ...current, status: 'ready' }));
     expect(store.getSnapshot(SCOPE).map(entry => entry.status)).toEqual(['ready']);
+    expect(setItem).toHaveBeenCalled();
+    expect(localStorage.getItem(`bridgePending:v1:${SCOPE}`)).toBeNull();
     setItem.mockRestore();
   });
 
