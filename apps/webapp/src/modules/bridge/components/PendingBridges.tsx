@@ -8,7 +8,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
-import { canDismiss, canLaunchAction, isSettled } from '../model/pendingTransitions';
+import { canDismiss, isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
 import { formatUsds } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -78,6 +78,7 @@ type PendingBridgeCardProps = {
   familyChainId: number;
   onAction: (bridge: PendingBridge) => void;
   onDismiss: (bridge: PendingBridge) => void;
+  canAction: (bridge: PendingBridge) => boolean;
   actionLocked: boolean;
 };
 
@@ -87,6 +88,7 @@ function PendingBridgeCard({
   familyChainId,
   onAction,
   onDismiss,
+  canAction,
   actionLocked
 }: PendingBridgeCardProps) {
   const dismissible = canDismiss(bridge);
@@ -128,7 +130,7 @@ function PendingBridgeCard({
               variant="primary"
               size="m"
               className="w-24"
-              disabled={actionLocked || !canLaunchAction(bridge)}
+              disabled={actionLocked || !canAction(bridge)}
               onClick={() => onAction(bridge)}
               data-testid="pending-bridge-action"
             >
@@ -165,12 +167,14 @@ function PendingBridgeCard({
 
 type PendingBridgesProps = {
   onAction: (bridge: PendingBridge) => void;
+  /** The next action can be sent now, on a network the app can switch to. */
+  canAction: (bridge: PendingBridge) => boolean;
   /** An action's session is minimized: it must be restored, not launched again. */
   actionLocked: boolean;
 };
 
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
-export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) {
+export function PendingBridges({ onAction, canAction, actionLocked }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
   const { familyChainId, scope } = usePendingScope();
@@ -188,6 +192,7 @@ export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) 
           now={now}
           familyChainId={familyChainId}
           onAction={onAction}
+          canAction={canAction}
           onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
           actionLocked={actionLocked}
         />

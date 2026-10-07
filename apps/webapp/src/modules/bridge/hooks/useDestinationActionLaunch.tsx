@@ -47,7 +47,8 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
  * The bridge's next destination action (claim, prove or finalize; Figma
  * 3574:64565): the modal opens straight on the "Confirm" wallet screen with
  * the amount hero and a single action. Runs on the mock executor until the
- * route tickets add their calls. `locked` is true while its session is minimized.
+ * route tickets add their calls. `locked` is true while its session is minimized;
+ * `canLaunch` is false when the action can't be sent or its network can't be pinned.
  */
 export function useDestinationActionLaunch() {
   const { launch: launchModal, txCallbacks } = useTransaction();
@@ -61,6 +62,17 @@ export function useDestinationActionLaunch() {
     callbacksRef.current = txCallbacks;
   });
 
+  const pinChainId = useCallback(
+    (bridge: PendingBridge) =>
+      guardChainId({ network: bridge.to, familyChainId, chainIds: chains.map(chain => chain.id) }),
+    [familyChainId, chains]
+  );
+
+  const canLaunch = useCallback(
+    (bridge: PendingBridge) => canLaunchAction(bridge) && pinChainId(bridge) !== undefined,
+    [pinChainId]
+  );
+
   const launch = useCallback(
     (card: PendingBridge) => {
       if (!scope) return;
@@ -70,11 +82,7 @@ export function useDestinationActionLaunch() {
       if (!bridge || !action || !canLaunchAction(bridge)) return;
       const amount = formatUsds(bridge.amount);
       const copy = actionCopy(action, amount);
-      const pinnedChainId = guardChainId({
-        network: bridge.to,
-        familyChainId,
-        chainIds: chains.map(chain => chain.id)
-      });
+      const pinnedChainId = pinChainId(bridge);
       if (pinnedChainId === undefined) return;
       launchModal({
         title: t`Confirm`,
@@ -117,8 +125,8 @@ export function useDestinationActionLaunch() {
         chainGuardReason: 'launch-chain'
       });
     },
-    [launchModal, sessionId, scope, familyChainId, chains]
+    [launchModal, sessionId, scope, pinChainId]
   );
 
-  return { launch, locked };
+  return { launch, canLaunch, locked };
 }

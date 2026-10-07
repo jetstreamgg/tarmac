@@ -49,7 +49,11 @@ export function BridgePanel() {
   const form = useBridgeForm();
   const { launch, locked, restore } = useBridgeLaunch(form, form.reset);
   const launchOrConnect = useConnectThenAct(launch);
-  const { launch: launchAction, locked: actionLocked } = useDestinationActionLaunch();
+  const {
+    launch: launchAction,
+    canLaunch: canLaunchAction,
+    locked: actionLocked
+  } = useDestinationActionLaunch();
 
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
@@ -110,7 +114,7 @@ export function BridgePanel() {
         </Button>
       </div>
 
-      <PendingBridges onAction={launchAction} actionLocked={actionLocked} />
+      <PendingBridges onAction={launchAction} canAction={canLaunchAction} actionLocked={actionLocked} />
     </div>
   );
 }

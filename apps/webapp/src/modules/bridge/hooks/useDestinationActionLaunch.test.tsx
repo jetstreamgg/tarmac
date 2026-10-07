@@ -12,6 +12,7 @@ import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
 const mocks = vi.hoisted(() => ({
   address: '',
+  chainIds: [1, 8453],
   launched: [] as TransactionConfig[],
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[]
 }));
@@ -19,7 +20,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address }),
   useChainId: () => 1,
-  useChains: () => [1, 8453].map(id => ({ id }))
+  useChains: () => mocks.chainIds.map(id => ({ id }))
 }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
@@ -75,8 +76,28 @@ describe('useDestinationActionLaunch', () => {
 
   beforeEach(() => {
     mocks.address = `0x${(2000 + ++accountSeq).toString(16).padStart(40, '0')}`;
+    mocks.chainIds = [1, 8453];
     mocks.launched = [];
     mocks.legs = [];
+  });
+
+  it("can't launch, and the card disables its button, when the destination network can't be pinned", () => {
+    const card = seedReadyClaim();
+    mocks.chainIds = [8453];
+    const { result } = renderHook(() => useDestinationActionLaunch());
+    expect(result.current.canLaunch(card)).toBe(false);
+    act(() => result.current.launch(card));
+    expect(mocks.launched).toHaveLength(0);
+  });
+
+  it('can launch a ready action on a network the app can switch to, and not once it is sent', () => {
+    const card = seedReadyClaim();
+    const { result } = renderHook(() => useDestinationActionLaunch());
+    expect(result.current.canLaunch(card)).toBe(true);
+    const callbacks = launchAndConfirm(result.current.launch, card);
+    callbacks.onMutate({ functionName: 'claim' });
+    callbacks.onStart('0xclaim');
+    expect(result.current.canLaunch(stored('0xsource'))).toBe(false);
   });
 
   it('records the action at broadcast and refuses a second launch while it is sent', () => {
