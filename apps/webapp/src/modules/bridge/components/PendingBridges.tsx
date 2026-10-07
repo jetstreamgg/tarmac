@@ -29,7 +29,9 @@ const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
 
 const valueClassName = 'font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]';
 
-function CellValue({ cell }: { cell: PendingBridgeCell }) {
+type CellValueProps = { cell: PendingBridgeCell };
+
+function CellValue({ cell }: CellValueProps) {
   switch (cell.kind) {
     case 'network':
       return (

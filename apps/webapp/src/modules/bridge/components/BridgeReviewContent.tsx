@@ -15,18 +15,15 @@ export const bridgeFootnote = (route: BridgeRoute): string => {
     : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. Your funds will arrive automatically.`;
 };
 
-/** USDS from → to hero with each side's network badge (Figma 3574:64110). */
-export function BridgeTransferHero({
-  amount,
-  from,
-  to,
-  testId
-}: {
+type BridgeTransferHeroProps = {
   amount: bigint;
   from: BridgeNetworkId;
   to: BridgeNetworkId;
   testId?: string;
-}) {
+};
+
+/** USDS from → to hero with each side's network badge (Figma 3574:64110). */
+export function BridgeTransferHero({ amount, from, to, testId }: BridgeTransferHeroProps) {
   const formatted = formatUsds(amount);
   return (
     <TokenTransferHero
@@ -47,20 +44,16 @@ export function BridgeTransferHero({
   );
 }
 
-/** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
-export function BridgeReviewContent({
-  amount,
-  from,
-  to,
-  route,
-  networkFee
-}: {
+type BridgeReviewContentProps = {
   amount: bigint;
   from: BridgeNetworkId;
   to: BridgeNetworkId;
   route: BridgeRoute;
   networkFee: string;
-}) {
+};
+
+/** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
+export function BridgeReviewContent({ amount, from, to, route, networkFee }: BridgeReviewContentProps) {
   const rows = buildBridgeModalRows({ route, networkFee });
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">

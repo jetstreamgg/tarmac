@@ -13,6 +13,14 @@ import { Text } from '@/modules/layout/components/Typography';
 import type { BridgeNetwork } from '../model/networks';
 import { isValidRecipient } from '../model/recipient';
 
+type RecipientAddressModalProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  recipient?: string;
+  family: BridgeNetwork['family'];
+  onSave: (recipient: string | undefined) => void;
+};
+
 /**
  * "Send to a different wallet" (Figma 3831:127366): title + close, warning
  * copy, an underlined address field and Save. Saving an empty field clears the
@@ -24,13 +32,7 @@ export function RecipientAddressModal({
   recipient,
   family,
   onSave
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  recipient?: string;
-  family: BridgeNetwork['family'];
-  onSave: (recipient: string | undefined) => void;
-}) {
+}: RecipientAddressModalProps) {
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange}>
       <ResponsiveModalContent className="flex w-full flex-col gap-12 p-8 sm:max-w-[610px]">
@@ -51,17 +53,14 @@ export function RecipientAddressModal({
   );
 }
 
-function RecipientForm({
-  recipient,
-  family,
-  onClose,
-  onSave
-}: {
+type RecipientFormProps = {
   recipient?: string;
   family: BridgeNetwork['family'];
   onClose: () => void;
   onSave: (recipient: string | undefined) => void;
-}) {
+};
+
+function RecipientForm({ recipient, family, onClose, onSave }: RecipientFormProps) {
   const [draft, setDraft] = useState(recipient ?? '');
   const trimmed = draft.trim();
   const invalid = trimmed !== '' && !isValidRecipient(trimmed, family);

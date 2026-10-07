@@ -32,13 +32,15 @@ const metaClassName = 'text-fgSecondary text-xs md:text-sm md:leading-[22px]';
 const formatBalance = (balance: bigint | undefined) =>
   balance === undefined ? NO_VALUE : formatUsds(balance, { maxDecimals: 2 });
 
+type BridgeCardProps = { form: BridgeFormModel };
+
 /**
  * The Bridge tab card (Figma 3574:64074): From and To glass panels, each with
  * its network dropdown, separated by the flip control. USDS only; the
  * destination amount mirrors the source 1:1. The To panel carries the
  * recipient button (3827:65770) — the wallet glyph, or the saved address.
  */
-export function BridgeCard({ form }: { form: BridgeFormModel }) {
+export function BridgeCard({ form }: BridgeCardProps) {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const [recipientOpen, setRecipientOpen] = useState(false);
