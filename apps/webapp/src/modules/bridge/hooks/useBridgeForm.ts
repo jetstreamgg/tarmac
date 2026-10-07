@@ -13,7 +13,7 @@ import {
   type BridgeNetworkId
 } from '../model/networks';
 import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
-import { recipientRequirement, sendsToOther } from '../model/recipient';
+import { isValidRecipient, recipientRequirement, sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { useSafeConfig } from './useSafeConfig';
 
@@ -131,6 +131,8 @@ export function useBridgeForm() {
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;
 
   const destinationFamily = getBridgeNetwork(to).family;
+  // The destination can change under a saved recipient (the source follows the wallet).
+  const recipientInvalid = !!recipient && !isValidRecipient(recipient, destinationFamily);
   const checkSafe = isConnected && isSafe && destinationFamily === 'evm' && !sendsToOther(recipient, address);
   const sourceSafe = useSafeConfig({ address, chainId: sourceChainId, enabled: checkSafe });
   const destinationSafe = useSafeConfig({ address, chainId: destinationChainId, enabled: checkSafe });
@@ -171,6 +173,8 @@ export function useBridgeForm() {
     balanceUnknown,
     /** The app can't switch to the source network, so it can't run the source legs. */
     sourceUnavailable,
+    /** The saved recipient is not a valid address on the destination network. */
+    recipientInvalid,
     needsRecipient: recipientRule.required,
     /** The Safe lookups behind `needsRecipient` are still in flight. */
     recipientChecking: checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking),
@@ -184,6 +188,7 @@ export function useBridgeForm() {
       balanceLoading ||
       balanceUnknown ||
       sourceUnavailable ||
+      recipientInvalid ||
       recipientRule.required ||
       walletUnchecked ||
       !route,

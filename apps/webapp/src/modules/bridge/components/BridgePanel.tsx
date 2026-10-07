@@ -82,6 +82,10 @@ export function BridgePanel() {
           <Text className="text-error text-sm" dataTestId="bridge-safe-unknown">
             <Trans>We couldn&apos;t check your wallet. Try again in a moment.</Trans>
           </Text>
+        ) : form.recipientInvalid ? (
+          <Text className="text-error text-sm" dataTestId="bridge-recipient-invalid">
+            <Trans>The recipient address doesn&apos;t match the destination network. Change it.</Trans>
+          </Text>
         ) : (
           form.isConnected &&
           form.needsRecipient &&

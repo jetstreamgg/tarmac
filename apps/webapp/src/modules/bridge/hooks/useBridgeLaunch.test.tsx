@@ -6,6 +6,7 @@ import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { zeroAddress } from 'viem';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig } from '@/modules/ui/context/transactionContract';
 import { useBridgeForm } from './useBridgeForm';
@@ -26,7 +27,9 @@ const mocks = vi.hoisted(() => ({
   isModalOpen: false,
   launched: [] as TransactionConfig[],
   updates: [] as Partial<TransactionConfig>[],
-  onError: vi.fn()
+  onError: vi.fn(),
+  appChainId: 1,
+  legs: 0
 }));
 
 vi.mock('wagmi', async io => ({
@@ -36,12 +39,12 @@ vi.mock('wagmi', async io => ({
     address: mocks.isConnected ? SENDER : undefined,
     connector: mocks.isConnected ? { id: 'injected' } : undefined
   }),
-  useChainId: () => 1,
+  useChainId: () => mocks.appChainId,
   useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id }))
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
-  useAppChainId: () => 1,
+  useAppChainId: () => mocks.appChainId,
   useTokenBalance: () => ({
     data: mocks.balance === undefined ? undefined : { value: mocks.balance },
     isLoading: mocks.balanceLoading
@@ -62,6 +65,19 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 vi.mock('@/modules/ui/hooks/useMinimizedSessionLock', () => ({
   useMinimizedSessionLock: () => ({ locked: false, restore: vi.fn() })
 }));
+vi.mock('@/hooks/ui/useAppChainId', () => ({
+  useAppChainId: () => mocks.appChainId
+}));
+vi.mock('../adapters/mockAdapter', async io => {
+  const actual = await io<typeof import('../adapters/mockAdapter')>();
+  return {
+    ...actual,
+    runMockLegs: (...args: Parameters<typeof actual.runMockLegs>) => {
+      mocks.legs += 1;
+      return actual.runMockLegs(...args);
+    }
+  };
+});
 vi.mock('../components/BridgeReviewContent', () => ({
   BridgeReviewContent: () => null,
   BridgeTransferHero: () => null
@@ -102,6 +118,15 @@ const settle = async () => {
 };
 
 /** Types `amount`, opens Review and returns the modal's Confirm gate. */
+const SOLANA_RECIPIENT = 'So11111111111111111111111111111111111111112';
+
+/** Moves the wallet to `chainId` (as the wallet itself would) and lets the hooks catch up. */
+async function moveWallet(view: ReturnType<typeof renderBridge>, chainId: number) {
+  mocks.appChainId = chainId;
+  view.rerender();
+  await settle();
+}
+
 async function confirmDisabledFor(amount: string, recipient?: string) {
   const view = renderBridge();
   act(() => view.result.current.form.onInput(amount));
@@ -125,7 +150,9 @@ describe('useBridgeLaunch Confirm gate', () => {
       safe: {},
       isModalOpen: false,
       launched: [],
-      updates: []
+      updates: [],
+      appChainId: 1,
+      legs: 0
     });
     mocks.onError.mockClear();
   });
@@ -225,6 +252,47 @@ describe('useBridgeLaunch Confirm gate', () => {
     mocks.isConnected = false;
     view.rerender();
     act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('blocks a recipient that is not valid for the destination: EVM address kept for Solana', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    act(() => view.result.current.form.selectTo('solana'));
+    await moveWallet(view, 8453);
+    expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum' });
+    act(() => view.result.current.form.setRecipient(OWNER));
+    await moveWallet(view, 1);
+    const form = view.result.current.form;
+    expect(form.to).toBe('solana');
+    expect(!!form.recipient && !form.reviewBlocked).toBe(false);
+  });
+
+  it('blocks a recipient that is not valid for the destination: Solana address kept for EVM', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    act(() => view.result.current.form.selectTo('solana'));
+    act(() => view.result.current.form.setRecipient(SOLANA_RECIPIENT));
+    await moveWallet(view, 8453);
+    const form = view.result.current.form;
+    expect(form.to).toBe('ethereum');
+    expect(!!form.recipient && !form.reviewBlocked).toBe(false);
+  });
+
+  it('blocks the zero address as recipient', async () => {
+    expect(await confirmDisabledFor('1', zeroAddress)).toBe(true);
+  });
+
+  it('Confirm runs nothing when the recipient stopped being valid after Review', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settle();
+    act(() => view.result.current.launch());
+    expect(mocks.launched.at(-1)?.confirmDisabled).toBe(false);
+    act(() => view.result.current.form.setRecipient(SOLANA_RECIPIENT));
+    await settle();
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.legs).toBe(0);
     expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
   });
 });

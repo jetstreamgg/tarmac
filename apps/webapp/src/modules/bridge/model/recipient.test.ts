@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { zeroAddress } from 'viem';
 import { isSameSafe, isValidRecipient, recipientRequirement } from './recipient';
 
 describe('isValidRecipient', () => {
@@ -10,6 +11,10 @@ describe('isValidRecipient', () => {
   it('accepts a base58 Solana address and rejects an EVM one on Solana', () => {
     expect(isValidRecipient('9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', 'solana')).toBe(true);
     expect(isValidRecipient('0x71C7656EC7ab88b098defB751B7401B5f6d8976F', 'solana')).toBe(false);
+  });
+
+  it('rejects the zero address, which nobody controls', () => {
+    expect(isValidRecipient(zeroAddress, 'evm')).toBe(false);
   });
 });
 

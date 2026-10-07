@@ -61,7 +61,14 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     executeRef.current = () => {
-      if (!route || !account || !scope || pinnedChainId === undefined) {
+      if (
+        !form.isConnected ||
+        form.reviewBlocked ||
+        !route ||
+        !account ||
+        !scope ||
+        pinnedChainId === undefined
+      ) {
         callbacksRef.current.onError(new Error('The bridge is not ready to send.'));
         return;
       }
