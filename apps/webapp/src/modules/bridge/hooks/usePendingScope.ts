@@ -1,11 +1,13 @@
-import { useChainId, useConnection } from 'wagmi';
+import { useConnection } from 'wagmi';
+import { useAppChainId } from '@/hooks/ui/useAppChainId';
 import { familyMainnetId } from '@/utils/isTestnetId';
 import { pendingScopeKey } from '../store/pendingStore';
 
 /** The connected account's pending-bridge scope; undefined while disconnected. */
 export function usePendingScope() {
   const { address } = useConnection();
-  const familyChainId = familyMainnetId(useChainId());
+  // Same chain as the form, so the scope and the form agree when the wallet sits off the app's chains.
+  const familyChainId = familyMainnetId(useAppChainId());
   return {
     account: address,
     familyChainId,

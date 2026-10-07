@@ -47,11 +47,20 @@ describe('buildPendingBridgeRows', () => {
 
   it('shows a queued Safe transaction as awaiting signatures', () => {
     const queued = { ...base, txHash: undefined, safeTxHash: '0xsafe' };
-    expect(buildPendingBridgeRows(queued, 0)[2][1]).toEqual({
-      kind: 'text',
+    expect(buildPendingBridgeRows(queued, 0)[2][1]).toMatchObject({
       label: 'Transaction',
       value: 'Awaiting signatures'
     });
+  });
+
+  it('links a queued Safe transaction to the Safe queue, only on chains the Safe app serves', () => {
+    const queued = { ...base, from: 'base' as const, txHash: undefined, safeTxHash: '0x5afe' };
+    const tx = buildPendingBridgeRows(queued, 0)[2][1];
+    expect(tx.kind === 'link' && tx.href).toBe(
+      `https://app.safe.global/transactions/tx?safe=base:${base.account}&id=0x5afe`
+    );
+    const avalanche = buildPendingBridgeRows({ ...queued, from: 'avalanche' as const }, 0)[2][1];
+    expect('href' in avalanche && avalanche.href).toBeFalsy();
   });
 
   it('shows no arrival time before a queued Safe transaction executes', () => {

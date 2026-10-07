@@ -8,6 +8,8 @@ import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
 import { formatAddress } from '@/utils';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
+import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
+import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
@@ -100,12 +102,20 @@ export function buildPendingBridgeRows(bridge: PendingBridge, now: number): Pend
             href:
               sourceChainId === undefined ? undefined : getEtherscanLink(sourceChainId, bridge.txHash, 'tx')
           }
-        : // A Safe transaction queued for its owners to sign.
-          {
-            kind: 'text',
-            label: t`Transaction`,
-            value: bridge.status === 'failed' ? NO_VALUE : t`Awaiting signatures`
-          }
+        : bridge.status === 'failed'
+          ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }
+          : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
+            {
+              kind: 'link',
+              label: t`Transaction`,
+              value: t`Awaiting signatures`,
+              href:
+                sourceChainId !== undefined &&
+                bridge.safeTxHash &&
+                SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
+                  ? getSafeTransactionLink(sourceChainId, bridge.account, bridge.safeTxHash)
+                  : undefined
+            }
     ]
   ];
 }

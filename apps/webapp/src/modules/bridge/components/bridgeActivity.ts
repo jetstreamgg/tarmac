@@ -27,6 +27,13 @@ export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
   }
 };
 
+// A sent action's hash can be a Safe tx hash; it shows once confirmed.
+const isConfirmed = (action: PendingBridge['actions'][number]) => action.status !== 'sent';
+
+/** Whether `buildBridgeActivity` has any row, without building the list. */
+export const hasBridgeActivity = (bridges: PendingBridge[]): boolean =>
+  bridges.some(bridge => !!bridge.txHash || bridge.actions.some(isConfirmed));
+
 /**
  * One "Bridge" row per bridge with an on-chain source tx, plus a row per
  * destination action the user sent, newest first.
@@ -46,17 +53,14 @@ export function buildBridgeActivity(bridges: PendingBridge[]): BridgeActivityEnt
             }
           ]
         : []),
-      // A sent action's hash can be a Safe tx hash; it shows once confirmed.
-      ...bridge.actions
-        .filter(action => action.status !== 'sent')
-        .map(action => ({
-          id: `${bridge.id}-${action.action}-${action.txHash}`,
-          kind: action.action,
-          network: bridge.to,
-          amount: bridge.amount,
-          timestamp: action.at,
-          txHash: action.txHash
-        }))
+      ...bridge.actions.filter(isConfirmed).map(action => ({
+        id: `${bridge.id}-${action.action}-${action.txHash}`,
+        kind: action.action,
+        network: bridge.to,
+        amount: bridge.amount,
+        timestamp: action.at,
+        txHash: action.txHash
+      }))
     ])
     .sort((a, b) => b.timestamp - a.timestamp);
 }

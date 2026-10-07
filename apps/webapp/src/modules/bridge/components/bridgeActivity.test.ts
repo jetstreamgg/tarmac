@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { PendingBridge } from '../model/types';
-import { bridgeActivityTitle, buildBridgeActivity } from './bridgeActivity';
+import { bridgeActivityTitle, buildBridgeActivity, hasBridgeActivity } from './bridgeActivity';
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
@@ -80,5 +80,21 @@ describe('bridgeActivityTitle', () => {
   it('names a finalized withdrawal apart from a claim', () => {
     expect(bridgeActivityTitle('finalize')).not.toBe(bridgeActivityTitle('claim'));
     expect(bridgeActivityTitle('finalize')).toBe('Withdrawal finalization');
+  });
+});
+
+describe('hasBridgeActivity', () => {
+  it('agrees with the activity list', () => {
+    const queued = { txHash: undefined, safeTxHash: '0xs' };
+    const cases: PendingBridge[][] = [
+      [],
+      [bridge(queued)],
+      [bridge({})],
+      [bridge({ ...queued, actions: [{ action: 'claim', txHash: '0xc', at: 1, status: 'sent' }] })],
+      [bridge({ ...queued, actions: [{ action: 'claim', txHash: '0xc', at: 1 }] })]
+    ];
+    for (const bridges of cases) {
+      expect(hasBridgeActivity(bridges)).toBe(buildBridgeActivity(bridges).length > 0);
+    }
   });
 });

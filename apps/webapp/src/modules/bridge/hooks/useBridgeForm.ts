@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
-import { useAppChainId, useSafeWalletStatus, useTokenBalance, usdsAddress, usdsL2Address } from '@/hooks';
+import { TOKENS, useAppChainId, useSafeWalletStatus, useTokenBalance } from '@/hooks';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
 import { familyMainnetId } from '@/utils/isTestnetId';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -19,20 +19,10 @@ import { useSafeConfig } from './useSafeConfig';
 
 export const USDS_DECIMALS = 18;
 
-const usdsTokenAddress = (network: BridgeNetworkId, chainId: number | undefined) => {
-  if (chainId === undefined) return undefined;
-  const addresses: Record<number, `0x${string}`> = network === 'ethereum' ? usdsAddress : usdsL2Address;
-  return addresses[chainId];
-};
-
 /** USDS balance of `address` on a bridge network the app can read; `value` is undefined otherwise. */
-function useUsdsBalance(
-  address: `0x${string}` | undefined,
-  network: BridgeNetworkId,
-  chainId: number | undefined
-) {
+function useUsdsBalance(address: `0x${string}` | undefined, chainId: number | undefined) {
   const chains = useChains();
-  const token = usdsTokenAddress(network, chainId);
+  const token = chainId === undefined ? undefined : TOKENS.usds.address[chainId];
   const readable = chainId !== undefined && chains.some(chain => chain.id === chainId);
   const { data, isLoading } = useTokenBalance({
     address,
@@ -121,9 +111,9 @@ export function useBridgeForm() {
 
   const sourceChainId = bridgeChainId(from, familyChainId);
   const destinationChainId = bridgeChainId(to, familyChainId);
-  const source = useUsdsBalance(isConnected ? address : undefined, from, sourceChainId);
+  const source = useUsdsBalance(isConnected ? address : undefined, sourceChainId);
   const sourceBalance = source.value;
-  const destinationBalance = useUsdsBalance(isConnected ? address : undefined, to, destinationChainId).value;
+  const destinationBalance = useUsdsBalance(isConnected ? address : undefined, destinationChainId).value;
 
   const setPercent = useCallback(
     (percent: number) => {

@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address }),
-  useChainId: () => 1
+  useChainId: () => 1,
+  useChains: () => [{ id: 1 }]
 }));
 vi.mock('../adapters/registry', () => ({
   getBridgeAdapter: () => ({ checkProgress: mocks.checkProgress })

@@ -8,7 +8,9 @@ import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch'
 import { BridgeCard } from './BridgeCard';
 import { PendingBridges } from './PendingBridges';
 
-function RecipientHint({ reason }: { reason: ReturnType<typeof useBridgeForm>['recipientReason'] }) {
+type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
+
+function RecipientHint({ reason }: RecipientHintProps) {
   switch (reason) {
     case 'other-family':
       return <Trans>Add a Solana address to receive the funds.</Trans>;
@@ -23,7 +25,9 @@ function RecipientHint({ reason }: { reason: ReturnType<typeof useBridgeForm>['r
   }
 }
 
-function BlockedMessage({ reason }: { reason: ReturnType<typeof useBridgeForm>['blockedReason'] }) {
+type BlockedMessageProps = { reason: ReturnType<typeof useBridgeForm>['blockedReason'] };
+
+function BlockedMessage({ reason }: BlockedMessageProps) {
   switch (reason) {
     case 'over-limit':
       return <Trans>This amount is over the bridge limit. Try a smaller amount.</Trans>;

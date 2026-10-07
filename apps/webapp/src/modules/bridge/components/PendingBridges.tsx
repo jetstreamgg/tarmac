@@ -69,17 +69,14 @@ function CellValue({ cell }: { cell: PendingBridgeCell }) {
   }
 }
 
-function PendingBridgeCard({
-  bridge,
-  now,
-  onAction,
-  actionLocked
-}: {
+type PendingBridgeCardProps = {
   bridge: PendingBridge;
   now: number;
   onAction: (bridge: PendingBridge) => void;
   actionLocked: boolean;
-}) {
+};
+
+function PendingBridgeCard({ bridge, now, onAction, actionLocked }: PendingBridgeCardProps) {
   const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), { minDecimals: 2, maxDecimals: 2 });
   return (
     <div
@@ -134,14 +131,13 @@ function PendingBridgeCard({
 }
 
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
-export function PendingBridges({
-  onAction,
-  actionLocked
-}: {
+type PendingBridgesProps = {
   onAction: (bridge: PendingBridge) => void;
   /** An action's session is minimized: it must be restored, not launched again. */
   actionLocked: boolean;
-}) {
+};
+
+export function PendingBridges({ onAction, actionLocked }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
   if (bridges.length === 0) return null;

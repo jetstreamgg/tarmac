@@ -13,7 +13,8 @@ const mocks = vi.hoisted(() => ({ address: undefined as string | undefined, chai
 
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address }),
-  useChainId: () => mocks.chainId
+  useChainId: () => mocks.chainId,
+  useChains: () => [{ id: 1 }, { id: 8453 }, { id: 314310 }]
 }));
 
 const NOW = 1_800_000_000_000;
@@ -89,5 +90,19 @@ describe('usePendingBridges', () => {
     act(() => void vi.advanceTimersByTime(15_000));
     expect(result.current.now).toBeGreaterThan(NOW + DAY);
     expect(result.current.bridges.map(bridge => bridge.id)).toEqual(['0xactive']);
+  });
+
+  it('does not re-render every 15 s while nothing is in flight', () => {
+    const scope = pendingScopeKey({ account: mocks.address!, familyChainId: 1 });
+    const settled = seed(mocks.address!, '0xsettled', NOW - 1);
+    pendingBridgeStore.update(scope, settled.id, bridge => applyProgress(bridge, { kind: 'arrived' }, NOW));
+    let renders = 0;
+    renderHook(() => {
+      renders += 1;
+      return usePendingBridges();
+    });
+    const before = renders;
+    act(() => void vi.advanceTimersByTime(15_000));
+    expect(renders).toBe(before);
   });
 });
