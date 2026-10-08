@@ -1,18 +1,18 @@
-import { parseUnits } from 'viem';
+import { parseUnits, stringToHex } from 'viem';
 import { getIlkName, usePrices, type Vault } from '@/hooks';
 import { calculateVaultInfo } from '@/hooks/vaults/calculateVaultInfo';
+import { useSimulatedDripRate } from '@/hooks/vaults/useSimulatedDripRate';
 import { COLLATERAL_PRICE_SYMBOL } from '@/hooks/vaults/vaults.constants';
 import { math } from '@/utils';
 import { useStakeUrnVaults } from './useStakeUrnVaults';
 
 /**
- * Vault figures for one positions-table row, computed entirely from the
- * list's own snapshot: `useStakeUrnVaults` reads every urn's ink/art and the
- * ilk parameters (spot, rate, dust, par, mat) in one pass, so the risk cell
- * and the liquidation banner are decided in the same paint as the amounts —
- * no cold ilk reads or drip simulation arriving late and pushing the table
- * around. The rate is the Vat's stored one (the same the list's debt uses);
- * the details modal still shows the dripped figures via `useVault`.
+ * Vault figures for one positions-table row, computed from the list's own
+ * snapshot: `useStakeUrnVaults` reads every urn's ink/art and the ilk
+ * parameters (spot, rate, dust, par, mat) in one pass, so the risk cell and
+ * the liquidation banner are decided together with the amounts. Risk uses the
+ * dripped rate, as the details modal (`useVault`) does: the stored one lags and
+ * understates risk on urns near the liquidation price.
  */
 export function useStakeRowVault(position: { index: number; urnAddress?: `0x${string}` }): {
   data?: Vault;
@@ -32,6 +32,10 @@ export function useStakeRowVaultLookup(): {
 } {
   const ilkName = getIlkName(2);
   const { data: urnVaults, ilk, isLoading, error } = useStakeUrnVaults();
+  // On a drip error fall back to the stored rate, as `useVault` does.
+  const { data: drippedRate, isLoading: isLoadingDrip } = useSimulatedDripRate(
+    stringToHex(ilkName, { size: 32 })
+  );
 
   const { data: prices } = usePrices();
   const priceText = prices?.[COLLATERAL_PRICE_SYMBOL[ilkName]]?.price;
@@ -39,9 +43,11 @@ export function useStakeRowVaultLookup(): {
 
   const vaultOf = (index: number): Vault | undefined => {
     const urn = urnVaults?.find(entry => entry.index === index);
-    if (!urn || !ilk) return undefined;
+    if (!urn || !ilk || isLoadingDrip) return undefined;
 
-    const info = calculateVaultInfo({ ...ilk, art: urn.art, ink: urn.skyLocked, marketPrice });
+    // A tx drips after the drip simulation was cached, so never go below the stored rate.
+    const rate = drippedRate && drippedRate > ilk.rate ? drippedRate : ilk.rate;
+    const info = calculateVaultInfo({ ...ilk, rate, art: urn.art, ink: urn.skyLocked, marketPrice });
     const minCollateralForDust =
       info.dust && ilk.mat && info.delayedPrice
         ? math.minSafeCollateralAmount(info.dust, ilk.mat, info.delayedPrice)
@@ -49,5 +55,5 @@ export function useStakeRowVaultLookup(): {
     return { ...info, collateralType: ilkName, minCollateralForDust };
   };
 
-  return { vaultOf, isLoading, error };
+  return { vaultOf, isLoading: isLoading || isLoadingDrip, error };
 }
