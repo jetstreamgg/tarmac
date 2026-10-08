@@ -9,7 +9,8 @@ import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
 import { canLaunchAction, dropSentAction, recordAction, recordActionSent } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
-import { formatUsds, usdsToNumber } from '../model/usds';
+import { formatBigInt } from '@/utils';
+import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
 import { usePendingScope } from './usePendingScope';
@@ -80,7 +81,7 @@ export function useDestinationActionLaunch() {
       const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === card.id);
       const action = bridge?.nextAction;
       if (!bridge || !action || !canLaunchAction(bridge)) return;
-      const amount = formatUsds(bridge.amount);
+      const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
       const copy = actionCopy(action, amount);
       const pinnedChainId = pinChainId(bridge);
       if (pinnedChainId === undefined) return;

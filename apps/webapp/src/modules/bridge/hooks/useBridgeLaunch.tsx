@@ -12,7 +12,8 @@ import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeRev
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
 import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
-import { formatUsds, usdsToNumber } from '../model/usds';
+import { formatBigInt } from '@/utils';
+import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withSourceRecording } from '../tracking/sourceRecording';
 import type { BridgeFormModel } from './useBridgeForm';
@@ -152,7 +153,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     [amount, from, to]
   );
 
-  const amountLabel = `${formatUsds(amount, { maxDecimals: 2 })} USDS`;
+  const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
   const confirmDisabled = !form.isConnected || form.reviewBlocked;
 
   const launch = useCallback(() => {

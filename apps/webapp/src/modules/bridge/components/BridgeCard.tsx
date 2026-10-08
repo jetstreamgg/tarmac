@@ -5,7 +5,7 @@ import { ChevronDown, Wallet } from 'lucide-react';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { cn } from '@/lib/cn';
 import { NO_VALUE } from '@/lib/constants';
-import { formatAddress } from '@/utils';
+import { formatAddress, formatBigInt } from '@/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountInput } from '@/components/product/AmountInput';
 import { RollingValue } from '@/components/ui/rolling-value';
@@ -14,7 +14,7 @@ import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
 import { BRIDGE_NETWORKS, getBridgeNetwork } from '../model/networks';
 import { allowedDestinations } from '../model/pairs';
 import type { BridgeFormModel } from '../hooks/useBridgeForm';
-import { formatUsds, USDS_DECIMALS } from '../model/usds';
+import { USDS_DECIMALS } from '../model/usds';
 import { BridgeNetworkSelect } from './BridgeNetworkSelect';
 import { RecipientAddressModal } from './RecipientAddressModal';
 
@@ -30,7 +30,7 @@ const panelClassName =
 const metaClassName = 'text-fgSecondary text-xs md:text-sm md:leading-[22px]';
 
 const formatBalance = (balance: bigint | undefined) =>
-  balance === undefined ? NO_VALUE : formatUsds(balance, { maxDecimals: 2 });
+  balance === undefined ? NO_VALUE : formatBigInt(balance, { maxDecimals: 2 });
 
 type BridgeCardProps = { form: BridgeFormModel };
 

@@ -4,7 +4,7 @@ import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
-import { formatUsds } from '../model/usds';
+import { formatBigInt } from '@/utils';
 import { buildBridgeModalRows, formatEtaWords } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 
@@ -24,7 +24,7 @@ type BridgeTransferHeroProps = {
 
 /** USDS from → to hero with each side's network badge (Figma 3574:64110). */
 export function BridgeTransferHero({ amount, from, to, testId }: BridgeTransferHeroProps) {
-  const formatted = formatUsds(amount);
+  const formatted = formatBigInt(amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <TokenTransferHero
       from={{

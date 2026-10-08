@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ArrowDownToLine } from 'lucide-react';
-import { formatNumber, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils';
 import { IconboxAction } from '@/components/ui/iconbox';
 import type { ExtraActivityRow } from '@/modules/app/shell/activity/mergeActivityRows';
 import { ConvertArrows } from '@/modules/icons';
@@ -71,7 +71,7 @@ function BridgeActivityItem({ entry, familyChainId }: BridgeActivityItemProps) {
       <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
         <span className="text-fgPrimary font-circle flex items-center gap-1 text-lg leading-[22px] font-medium tracking-[-0.36px]">
           <TokenIcon token={{ symbol: 'USDS' }} className="size-4" width={16} showChainIcon={false} />
-          {formatNumber(value, { minDecimals: 2, maxDecimals: 2 })}
+          {formatBigInt(entry.amount, { minDecimals: 2, maxDecimals: 2 })}
         </span>
         <span className="text-fgSecondary font-graphik text-xs leading-[18px]">
           {formatUsd(value * USDS_USD)}
