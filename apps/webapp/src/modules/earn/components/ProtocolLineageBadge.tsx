@@ -32,7 +32,7 @@ const LINEAGE_COPY = (
  * has no hover value in either theme.
  */
 const TRIGGER_CLASSES =
-  'hover:ring-glassBorder focus-visible:ring-ring inline-flex cursor-default rounded-full transition-shadow hover:ring-1 hover:ring-inset focus-visible:ring-1 focus-visible:outline-hidden';
+  'hover:ring-glassBorder focus-visible:ring-focusRing inline-flex cursor-default rounded-full transition-shadow hover:ring-1 hover:ring-inset focus-visible:ring-2 focus-visible:outline-hidden';
 
 /**
  * Opens *above* the badge, against the hero's empty top padding — every other
