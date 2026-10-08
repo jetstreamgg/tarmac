@@ -193,6 +193,41 @@ describe('ProductTransactionsTable — mobile cards (M5)', () => {
     ]);
   });
 
+  describe('page change scroll', () => {
+    const scrollIntoView = vi.fn();
+    const stubListTop = (top: number) =>
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ top } as DOMRect);
+    beforeEach(() => {
+      scrollIntoView.mockClear();
+      HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    it('scrolls back to the card list when it sits above the viewport', () => {
+      stubListTop(-1100);
+      renderWithCards(makeRows(9));
+      fireEvent.click(screen.getByLabelText('Go to next page'));
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByText('card-7').closest('.scroll-mt-36'));
+      expect(scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
+    });
+
+    it('leaves the scroll alone when the card list top is in view', () => {
+      stubListTop(200);
+      renderWithCards(makeRows(9));
+      fireEvent.click(screen.getByLabelText('Go to next page'));
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('never scrolls the desktop table', () => {
+      breakpoint.isMobile = false;
+      stubListTop(-1100);
+      renderWithCards(makeRows(9));
+      fireEvent.click(screen.getByLabelText('Go to next page'));
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+  });
+
   it('hides empty carrier rows and re-pins the last row corners through :has', () => {
     render(
       <I18nProvider i18n={i18n}>

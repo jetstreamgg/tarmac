@@ -1,5 +1,5 @@
 import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
-import { AriaAttributes, Fragment, ReactNode, useState } from 'react';
+import { AriaAttributes, Fragment, ReactNode, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount } from 'wagmi';
 import { cn } from '@/lib/cn';
@@ -33,6 +33,9 @@ function EmptyLabel({ emptyLabel, isConnected }: { emptyLabel?: ReactNode; isCon
  * `renderCard` swaps the <table> for a stacked card list (Figma mobile Table
  * Sections, e.g. 486:20827) — same rows, loading/empty/error and pagination.
  */
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /** Placeholder rows/cards rendered while `isLoading`. */
 const LOADING_ROWS = 4;
@@ -170,21 +173,33 @@ export function ProductTransactionsTable<T>({
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
+  const { bpi } = useBreakpointIndex();
+  const isCards = !!renderCard && bpi < BP.md;
+  const cardListRef = useRef<HTMLDivElement>(null);
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage);
     onPageChange?.(nextPage, totalPages);
+    // A shorter page of tall cards would otherwise leave the viewport below the list.
+    const list = cardListRef.current;
+    if (
+      isCards &&
+      list &&
+      list.getBoundingClientRect().top < (parseFloat(getComputedStyle(list).scrollMarginTop) || 0)
+    ) {
+      list.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    }
   };
   const showPagination = !isLoading && !error && totalPages > 1;
   const widths = columnWidths(columns);
-  const { bpi } = useBreakpointIndex();
   const { isConnected } = useAccount();
 
-  if (renderCard && bpi < BP.md) {
+  if (isCards) {
     return (
       <>
         {/* 2px gaps + outer-corners-only rounding mirror the desktop table
             surface (border-spacing-y + first/last cell radii). */}
-        <div data-testid={dataTestId} className="flex w-full flex-col gap-0.5">
+        {/* scroll-mt-36 keeps the sticky navbar off the section heading when paging scrolls back up. */}
+        <div ref={cardListRef} data-testid={dataTestId} className="flex w-full scroll-mt-36 flex-col gap-0.5">
           {isLoading ? (
             Array.from({ length: loadingRows }).map((_, index) => (
               <div
