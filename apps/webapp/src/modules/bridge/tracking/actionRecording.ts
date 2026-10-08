@@ -34,9 +34,9 @@ export function withActionRecording(
       if (hash) current = hash;
       getCallbacks().onStart(hash);
     },
-    onSuccess: hash => {
+    onSuccess: (hash, blockNumber) => {
       if (hash) onConfirmed(hash);
-      getCallbacks().onSuccess(hash);
+      getCallbacks().onSuccess(hash, blockNumber);
     },
     onError: (error, hash) => {
       const neverLands =

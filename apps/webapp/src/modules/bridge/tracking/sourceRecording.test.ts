@@ -35,12 +35,12 @@ describe('withSourceRecording', () => {
     callbacks.onMutate(send);
     callbacks.onStart('0xsend');
     expect(onSent).toHaveBeenCalledWith('0xsend');
-    callbacks.onSuccess('0xsend');
+    callbacks.onSuccess('0xsend', 42n);
     expect(onSent).toHaveBeenCalledTimes(1);
     expect(onQueued).not.toHaveBeenCalled();
     expect(onExecuted).not.toHaveBeenCalled();
     expect(inner.onStart).toHaveBeenCalledTimes(2);
-    expect(inner.onSuccess).toHaveBeenCalledWith('0xsend');
+    expect(inner.onSuccess).toHaveBeenCalledWith('0xsend', 42n);
   });
 
   it('keeps a broadcast bridge when the receipt wait fails, for the tracker to resolve', () => {
@@ -205,10 +205,10 @@ describe('withSourceRecording, a send sped up in the wallet', () => {
 
   it('moves the stored bridge to the hash that will mine', () => {
     const { onSent, onRepriced, inner, callbacks } = speedUp();
-    callbacks.onSuccess('0xfaster');
+    callbacks.onSuccess('0xfaster', 42n);
     expect(onSent).toHaveBeenCalledTimes(1);
     expect(onRepriced).toHaveBeenCalledExactlyOnceWith('0xsend', '0xfaster');
-    expect(inner.onSuccess).toHaveBeenCalledWith('0xfaster');
+    expect(inner.onSuccess).toHaveBeenCalledWith('0xfaster', 42n);
   });
 
   it('fails the stored bridge when the faster send reverts', () => {

@@ -21,12 +21,12 @@ describe('withActionRecording', () => {
     callbacks.onStart('0xclaim');
     expect(onSent).toHaveBeenCalledWith('0xclaim');
     expect(onConfirmed).not.toHaveBeenCalled();
-    callbacks.onSuccess('0xclaim');
+    callbacks.onSuccess('0xclaim', 42n);
     expect(onConfirmed).toHaveBeenCalledWith('0xclaim');
     expect(onSent).toHaveBeenCalledTimes(1);
     expect(inner.onMutate).toHaveBeenCalled();
     expect(inner.onStart).toHaveBeenCalledWith('0xclaim');
-    expect(inner.onSuccess).toHaveBeenCalledWith('0xclaim');
+    expect(inner.onSuccess).toHaveBeenCalledWith('0xclaim', 42n);
   });
 
   it('drops the sent action when its transaction reverted', () => {

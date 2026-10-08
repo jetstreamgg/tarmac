@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   launched: [] as TransactionConfig[],
   updates: [] as Partial<TransactionConfig>[],
   onError: vi.fn(),
+  onSuccess: vi.fn(),
   appChainId: 1,
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[]
 }));
@@ -59,7 +60,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
     launch: (config: TransactionConfig) => mocks.launched.push(config),
     updateModalContent: (_id: string, patch: Partial<TransactionConfig>) => mocks.updates.push(patch),
     isModalOpen: mocks.isModalOpen,
-    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: mocks.onError },
+    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: mocks.onSuccess, onError: mocks.onError },
     txStatus: TxStatus.IDLE
   })
 }));
@@ -152,6 +153,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       legs: []
     });
     mocks.onError.mockClear();
+    mocks.onSuccess.mockClear();
   });
 
   afterEach(() => {
@@ -392,7 +394,9 @@ describe('useBridgeLaunch Confirm gate', () => {
       const callbacks = mocks.legs[0].getCallbacks();
       callbacks.onMutate({ functionName: 'send' });
       callbacks.onStart('0xdone');
-      callbacks.onSuccess('0xdone');
+      callbacks.onSuccess('0xdone', 42n);
+      // The block lets the history refresh wait for the indexer.
+      expect(mocks.onSuccess).toHaveBeenCalledWith('0xdone', 42n);
 
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());

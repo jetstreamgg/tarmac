@@ -132,9 +132,9 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       });
       const callbacks: TxCallbacks = {
         ...recording,
-        onSuccess: hash => {
+        onSuccess: (hash, blockNumber) => {
           unresolvedRef.current = undefined;
-          recording.onSuccess(hash);
+          recording.onSuccess(hash, blockNumber);
         }
       };
       void runMockLegs(sourceActions, () => callbacks);

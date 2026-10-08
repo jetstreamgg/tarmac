@@ -57,10 +57,10 @@ export function withSourceRecording(
       }
       getCallbacks().onStart(hash);
     },
-    onSuccess: hash => {
+    onSuccess: (hash, blockNumber) => {
       if (hash && isSafe) onExecuted(hash, recorded);
       else if (hash && !recorded) onSent(hash);
-      getCallbacks().onSuccess(hash);
+      getCallbacks().onSuccess(hash, blockNumber);
     },
     // Recorded only for the sent hash: the sequential flow can pass the previous leg's hash, and a batch its call id.
     onError: (error, hash) => {
