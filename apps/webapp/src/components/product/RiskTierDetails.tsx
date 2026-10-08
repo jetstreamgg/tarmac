@@ -200,7 +200,7 @@ function ExposureFactValue({ symbols }: { symbols: string[] }) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-1 focus-visible:outline-hidden"
+          className="focus-visible:ring-focusRing inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-hidden"
         >
           {stack}
         </button>
@@ -332,7 +332,7 @@ export function RiskTierDetailsTrigger({
     />
   );
   const triggerClassName = cn(
-    'focus-visible:ring-ring inline-flex rounded-full focus-visible:ring-1 focus-visible:outline-hidden',
+    'focus-visible:ring-focusRing inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-hidden',
     className
   );
 
