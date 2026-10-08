@@ -41,6 +41,8 @@ export type PendingBridgeAction = {
    * `invalidated`: it mined, but the chain no longer counts it (an OP prove whose dispute game was invalidated).
    */
   status?: 'sent' | 'invalidated';
+  /** Sent from a Safe: `txHash` is its Safe tx hash, which the tracker resolves through the Safe service. */
+  safe?: true;
 };
 
 export type PendingBridge = {

@@ -31,7 +31,8 @@ const isAction = (value: unknown) =>
   NEXT_ACTIONS.has(value.action) &&
   isString(value.txHash) &&
   typeof value.at === 'number' &&
-  optional(value.status, status => status === 'sent' || status === 'invalidated');
+  optional(value.status, status => status === 'sent' || status === 'invalidated') &&
+  optional(value.safe, safe => safe === true);
 
 const parseEntry = (value: unknown): PendingBridge | null => {
   if (!isRecord(value)) return null;

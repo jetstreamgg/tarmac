@@ -7,7 +7,8 @@ import type { PendingBridge } from '../model/types';
  *
  * Every adapter must settle each `sent` action, by the hash it was sent with,
  * with `action-confirmed` or `action-dropped`; until it does, that action can't
- * be sent again. After each confirmed action it must report `waiting` with the
+ * be sent again. A Safe's sent action (`safe`) is settled by the tracker from
+ * the Safe Transaction Service instead. After each confirmed action it must report `waiting` with the
  * next step's `etaAt`, or the card shows the bridge as overdue.
  */
 export type BridgeAdapter = {

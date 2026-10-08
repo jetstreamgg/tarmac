@@ -192,6 +192,15 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([sent]);
   });
 
+  it('keeps the Safe marker of a sent action through storage', () => {
+    const sent = bridge({
+      status: 'ready',
+      actions: [{ action: 'claim', txHash: '0xsafeclaim', at: NOW, status: 'sent', safe: true }]
+    });
+    make().upsert(SCOPE, sent);
+    expect(make().getSnapshot(SCOPE)).toEqual([sent]);
+  });
+
   it('keeps an invalidated action through storage', () => {
     const reproving = bridge({
       routeKind: 'native',

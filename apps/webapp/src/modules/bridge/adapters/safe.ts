@@ -1,5 +1,6 @@
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import type { BridgeProgress } from '../model/pendingTransitions';
+import type { PendingBridgeAction } from '../model/types';
 import type { SafeConfig } from '../model/recipient';
 
 export type SafeMultisigTx = {
@@ -76,6 +77,16 @@ const getJson = async (url: string): Promise<{ status: number; body: unknown }> 
   return { status: res.status, body: res.ok ? await res.json() : undefined };
 };
 
+/** `missing` when the service answers 404 for the Safe tx hash. */
+async function readQueuedSafeTx(
+  base: string,
+  safeTxHash: string
+): Promise<{ missing: boolean; progress: BridgeProgress | null }> {
+  const { status, body } = await getJson(`${base}/api/v1/multisig-transactions/${safeTxHash}/`);
+  const tx = parseSafeTx(body);
+  return { missing: status === 404, progress: tx && (await resolveSafeTx(base, tx)) };
+}
+
 /**
  * Resolves a queued Safe transaction through the Safe Transaction Service, with
  * no time limit: multisig signers can take days, and a missing transaction keeps waiting.
@@ -88,9 +99,43 @@ export async function readSafeTxProgress({
   safeTxHash: string;
 }): Promise<BridgeProgress | null> {
   const base = SAFE_TRANSACTION_SERVICE_URL[chainId];
+  return base ? (await readQueuedSafeTx(base, safeTxHash)).progress : null;
+}
+
+/** A proposal the service still doesn't have this long after it was sent was deleted. */
+export const SAFE_ACTION_MISSING_MS = 60 * 60 * 1000;
+
+/**
+ * Settles a destination action a Safe sent: confirmed under its on-chain hash
+ * once executed, dropped when it reverted, was replaced at its nonce, or was
+ * deleted. A deleted proposal leaves no trace, so a 404 counts only after
+ * `SAFE_ACTION_MISSING_MS`; any other unknown keeps the action sent.
+ */
+export async function readSafeActionProgress({
+  chainId,
+  sent,
+  now
+}: {
+  chainId: number;
+  sent: PendingBridgeAction;
+  now: number;
+}): Promise<BridgeProgress | null> {
+  const base = SAFE_TRANSACTION_SERVICE_URL[chainId];
   if (!base) return null;
-  const tx = parseSafeTx((await getJson(`${base}/api/v1/multisig-transactions/${safeTxHash}/`)).body);
-  if (!tx) return null;
+  const { missing, progress } = await readQueuedSafeTx(base, sent.txHash);
+  const dropped = { kind: 'action-dropped', txHash: sent.txHash } as const;
+  if (missing) return now - sent.at > SAFE_ACTION_MISSING_MS ? dropped : null;
+  if (progress?.kind === 'failed') return dropped;
+  if (progress?.kind !== 'source-executed') return null;
+  return {
+    kind: 'action-confirmed',
+    action: sent.action,
+    txHash: progress.txHash,
+    ...(progress.executedAt !== undefined && { at: progress.executedAt })
+  };
+}
+
+async function resolveSafeTx(base: string, tx: SafeMultisigTx): Promise<BridgeProgress | null> {
   if (tx.isExecuted) return safeTxProgress(tx);
   const safeNonce = toNonce(
     ((await getJson(`${base}/api/v1/safes/${tx.safe}/`)).body as { nonce?: unknown } | undefined)?.nonce

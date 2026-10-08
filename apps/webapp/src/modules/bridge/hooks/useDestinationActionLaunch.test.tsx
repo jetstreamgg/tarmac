@@ -12,6 +12,7 @@ import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
 const mocks = vi.hoisted(() => ({
   address: '',
+  isSafe: false,
   chainIds: [1, 8453],
   launched: [] as TransactionConfig[],
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[]
@@ -21,6 +22,10 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address }),
   useChainId: () => 1,
   useChains: () => mocks.chainIds.map(id => ({ id }))
+}));
+vi.mock('@/hooks', async io => ({
+  ...(await io<typeof import('@/hooks')>()),
+  useIsSafeWallet: () => mocks.isSafe
 }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
@@ -77,6 +82,7 @@ describe('useDestinationActionLaunch', () => {
   beforeEach(() => {
     mocks.address = `0x${(2000 + ++accountSeq).toString(16).padStart(40, '0')}`;
     mocks.chainIds = [1, 8453];
+    mocks.isSafe = false;
     mocks.launched = [];
     mocks.legs = [];
   });
@@ -107,13 +113,24 @@ describe('useDestinationActionLaunch', () => {
     callbacks.onMutate({ functionName: 'claim' });
     callbacks.onStart('0xclaim');
     expect(stored('0xsource').actions).toEqual([
-      expect.objectContaining({ action: 'claim', txHash: '0xclaim', status: 'sent' })
+      { action: 'claim', txHash: '0xclaim', at: expect.any(Number), status: 'sent' }
     ]);
 
     // The card's snapshot may predate the broadcast.
     act(() => result.current.launch(card));
     act(() => result.current.launch(stored('0xsource')));
     expect(mocks.launched).toHaveLength(1);
+  });
+
+  it('marks an action a Safe sent, so the tracker reads its Safe tx hash from the Safe service', () => {
+    mocks.isSafe = true;
+    seedReadyClaim();
+    const { result } = renderHook(() => useDestinationActionLaunch());
+    const callbacks = launchAndConfirm(result.current.launch);
+    callbacks.onStart('0xsafeclaim');
+    expect(stored('0xsource').actions).toEqual([
+      expect.objectContaining({ txHash: '0xsafeclaim', status: 'sent', safe: true })
+    ]);
   });
 
   it('a reverted action clears, so the user can claim again', () => {
