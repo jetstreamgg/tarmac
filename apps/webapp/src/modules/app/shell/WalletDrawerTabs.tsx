@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { BalancesHistory } from './activity/BalancesHistory';
 import { WalletDrawerAssets } from './WalletDrawerAssets';
 import { BRIDGE_ENABLED } from '@/lib/constants';
-import { useBridgeActivityRows } from '@/modules/bridge/components/BridgeActivityList';
+import { useBridgeActivityRows } from '@/modules/bridge/hooks/useBridgeActivityRows';
 
 enum WalletDrawerTab {
   ASSETS = 'assets',

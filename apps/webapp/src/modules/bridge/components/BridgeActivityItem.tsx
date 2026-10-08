@@ -1,39 +1,20 @@
-import { useMemo } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ArrowDownToLine } from 'lucide-react';
 import { formatBigInt, formatUsd } from '@/utils';
 import { IconboxAction } from '@/components/ui/iconbox';
-import type { ExtraActivityRow } from '@/modules/app/shell/activity/mergeActivityRows';
 import { ConvertArrows } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useBridgeHistory } from '../hooks/useBridgeHistory';
-import { usePendingScope } from '../hooks/usePendingScope';
 import { usdsToNumber } from '../model/usds';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
-import { bridgeActivityTitle, buildBridgeActivity, type BridgeActivityEntry } from './bridgeActivity';
+import { bridgeActivityTitle, type BridgeActivityEntry } from './bridgeActivity';
 import { bridgeTxHref } from './pendingBridgeRows';
 
 // USDS is pegged 1:1.
 const USDS_USD = 1;
 
-/** Bridge / Funds claim rows (Figma Wallet Activity 3574:64437), styled as BalancesHistoryItem, for the Activity feed. */
-export function useBridgeActivityRows(): ExtraActivityRow[] {
-  const history = useBridgeHistory();
-  const { familyChainId } = usePendingScope();
-  return useMemo(
-    () =>
-      buildBridgeActivity(history).map(entry => ({
-        key: entry.id,
-        timestamp: entry.timestamp,
-        render: () => <BridgeActivityItem entry={entry} familyChainId={familyChainId} />
-      })),
-    [history, familyChainId]
-  );
-}
-
 type BridgeActivityItemProps = { entry: BridgeActivityEntry; familyChainId: number };
 
-function BridgeActivityItem({ entry, familyChainId }: BridgeActivityItemProps) {
+export function BridgeActivityItem({ entry, familyChainId }: BridgeActivityItemProps) {
   const href = bridgeTxHref(entry.network, entry.txHash, familyChainId);
   const value = usdsToNumber(entry.amount);
 
