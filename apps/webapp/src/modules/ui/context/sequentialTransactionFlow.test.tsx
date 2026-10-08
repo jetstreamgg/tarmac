@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Call } from 'viem';
+import { UserRejectedRequestError, type Call } from 'viem';
 
 // Regression guard for "bug #1" — premature SUCCESS in the non-batch sequential
 // flow. An "approve then deposit" sequence must fire the shared onSuccess only
@@ -24,7 +24,7 @@ const wagmi = vi.hoisted(() => ({
   resetWrite: vi.fn(),
   // functionName → error its simulation fails with
   simulationErrors: {} as Record<string, Error>,
-  // current write mutation hash (drives useWaitForTransactionReceipt)
+  // current write mutation hash (drives the receipt hook)
   mutationHash: undefined as `0x${string}` | undefined,
   // current receipt state, keyed off the active hash by the test driver
   receipt: {
@@ -74,11 +74,22 @@ vi.mock('wagmi', () => ({
       data: wagmi.mutationHash,
       reset: wagmi.resetWrite
     };
-  },
-  useWaitForTransactionReceipt: () => wagmi.receipt
+  }
 }));
 
 // Safe-connector hash workaround is irrelevant here (connector is undefined).
+// The receipt hook reports only final outcomes (a success, or a revert / wallet
+// cancel as `failure`); an RPC error while watching never reaches the engine.
+// `receipt.error` / `failureReason` stand in for that final failure.
+vi.mock('@/hooks/shared/useTransactionReceipt', () => ({
+  useTransactionReceipt: () => ({
+    isPending: wagmi.receipt.isLoading,
+    isSuccess: wagmi.receipt.isSuccess,
+    failure: wagmi.receipt.error ?? wagmi.receipt.failureReason,
+    receipt: wagmi.receipt.data
+  })
+}));
+
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
   useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })
 }));
@@ -127,7 +138,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
 
     // The approve mutation lands: wallet returns its hash → onStart, hash becomes
-    // visible to useWaitForTransactionReceipt on the next render.
+    // visible to the receipt hook on the next render.
     act(() => {
       wagmi.mutationHash = '0xapprove';
       wagmi.onWriteSuccess?.('0xapprove');
@@ -395,6 +406,45 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0][1]).toBe('0xapprove');
+  });
+
+  it('a step cancelled in the wallet is reported as a rejection, never as the success of the run', () => {
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onSuccess, onError })
+    );
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    act(() => {
+      wagmi.receipt = { isLoading: true, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    expect(result.current.isLoading).toBe(true);
+
+    // The receipt hook saw the supply replaced by a cancel (whose own receipt succeeded).
+    const cancelled = new UserRejectedRequestError(new Error('Transaction cancelled in the wallet.'));
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: cancelled, failureReason: null };
+    });
+    rerender();
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(cancelled, '0xsupply');
+    expect(result.current.isLoading).toBe(false);
   });
 });
 

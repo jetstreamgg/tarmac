@@ -1,7 +1,8 @@
-import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { isRevertedError, toError } from '../helpers';
+import { useSimulateContract, useWriteContract } from 'wagmi';
+import { toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
+import { useTransactionReceipt } from './useTransactionReceipt';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
 export function useSequentialTransactionFlow(
@@ -113,16 +114,11 @@ export function useSequentialTransactionFlow(
 
   // Monitor current transaction
   const {
-    isLoading: isMining,
+    isPending: isMining,
     isSuccess,
-    error: miningError,
-    failureReason,
-    data: receipt
-  } = useWaitForTransactionReceipt({
-    hash: txHash
-  });
-
-  const txReverted = isRevertedError(failureReason);
+    failure: miningError,
+    receipt
+  } = useTransactionReceipt({ hash: txHash, chainId });
 
   // Check if current transaction is prepared
   const prepared = useMemo(() => {
@@ -185,7 +181,7 @@ export function useSequentialTransactionFlow(
     // Only process if we're executing
     if (!isExecuting) return;
 
-    if (txHash && isSuccess && !txReverted && lastProcessedTxHash.current !== txHash) {
+    if (txHash && isSuccess && lastProcessedTxHash.current !== txHash) {
       lastProcessedTxHash.current = txHash;
 
       const newHashes = [...transactionHashes];
@@ -206,27 +202,15 @@ export function useSequentialTransactionFlow(
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
       }
-    } else if (
-      txHash &&
-      (miningError || (failureReason && txReverted)) &&
-      lastProcessedTxHash.current !== txHash
-    ) {
+    } else if (txHash && miningError && lastProcessedTxHash.current !== txHash) {
       lastProcessedTxHash.current = txHash;
-      // Transaction failed
-      emitError(toError(miningError || failureReason), txHash);
+      // Transaction failed: reverted, or cancelled/replaced in the wallet. Never
+      // an RPC error while watching — the receipt hook keeps watching through
+      // those, since the tx may still land.
+      emitError(miningError, txHash);
       setIsExecuting(false);
     }
-  }, [
-    isExecuting,
-    isSuccess,
-    miningError,
-    failureReason,
-    txHash,
-    txReverted,
-    receipt?.blockNumber,
-    currentIndex,
-    transactionHashes
-  ]);
+  }, [isExecuting, isSuccess, miningError, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
 
   const reset = useCallback(() => {
     setIsExecuting(false);
@@ -312,7 +296,7 @@ export function useSequentialTransactionFlow(
 
   return {
     execute,
-    isLoading: isSimulationLoading || (isMining && !txReverted) || (isExecuting && !hasWriteError),
+    isLoading: isSimulationLoading || isMining || (isExecuting && !hasWriteError),
     prepared,
     error: writeError || miningError || simulationError,
     currentCallIndex: currentIndex,
