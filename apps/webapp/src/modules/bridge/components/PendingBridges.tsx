@@ -1,19 +1,22 @@
-import { Fragment, useEffect, useState } from 'react';
-import { formatUnits } from 'viem';
+import { Fragment } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { usePendingBridges } from '../hooks/usePendingBridges';
+import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
+import { canDismiss, isSettled } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
+import { formatBigInt } from '@/utils';
+import { pendingBridgeStore } from '../store/pendingStore';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
   buildPendingBridgeRows,
   formatBridgeDate,
-  PENDING_STATUS_LABEL,
+  nextActionLabel,
   type PendingBridgeCell
 } from './pendingBridgeRows';
 
@@ -27,7 +30,9 @@ const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
 
 const valueClassName = 'font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]';
 
-function CellValue({ cell }: { cell: PendingBridgeCell }) {
+type CellValueProps = { cell: PendingBridgeCell };
+
+function CellValue({ cell }: CellValueProps) {
   switch (cell.kind) {
     case 'network':
       return (
@@ -45,7 +50,7 @@ function CellValue({ cell }: { cell: PendingBridgeCell }) {
           )}
           data-testid="pending-bridge-status"
         >
-          {PENDING_STATUS_LABEL[cell.status]}
+          {cell.value}
         </span>
       );
     case 'link':
@@ -67,16 +72,27 @@ function CellValue({ cell }: { cell: PendingBridgeCell }) {
   }
 }
 
+type PendingBridgeCardProps = {
+  bridge: PendingBridge;
+  now: number;
+  familyChainId: number;
+  onAction: (bridge: PendingBridge) => void;
+  onDismiss: (bridge: PendingBridge) => void;
+  canAction: (bridge: PendingBridge) => boolean;
+  actionLocked: boolean;
+};
+
 function PendingBridgeCard({
   bridge,
   now,
-  onClaim
-}: {
-  bridge: PendingBridge;
-  now: number;
-  onClaim: (bridge: PendingBridge) => void;
-}) {
-  const amount = formatNumber(parseFloat(formatUnits(bridge.amount, 18)), { minDecimals: 2, maxDecimals: 2 });
+  familyChainId,
+  onAction,
+  onDismiss,
+  canAction,
+  actionLocked
+}: PendingBridgeCardProps) {
+  const dismissible = canDismiss(bridge);
+  const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <div
       className="bg-bgSecondary flex flex-col gap-6 rounded-2xl p-5 backdrop-blur-[20px] md:rounded-3xl md:p-8"
@@ -96,22 +112,42 @@ function PendingBridgeCard({
             </Text>
           </span>
         </span>
-        {bridge.requiresClaim && (
+        {dismissible ? (
           <Button
-            variant="primary"
+            variant="secondary"
             size="m"
             className="w-24"
-            disabled={bridge.status !== 'ready'}
-            onClick={() => onClaim(bridge)}
-            data-testid="pending-bridge-claim"
+            onClick={() => onDismiss(bridge)}
+            data-testid="pending-bridge-dismiss"
           >
-            <Trans>Claim</Trans>
+            <Trans>Dismiss</Trans>
           </Button>
+        ) : (
+          bridge.requiresClaim &&
+          bridge.nextAction &&
+          !isSettled(bridge) && (
+            <Button
+              variant="primary"
+              size="m"
+              className="w-24"
+              disabled={actionLocked || !canAction(bridge)}
+              onClick={() => onAction(bridge)}
+              data-testid="pending-bridge-action"
+            >
+              {nextActionLabel(bridge.nextAction)}
+            </Button>
+          )
         )}
       </div>
 
+      {dismissible && (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
+          <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
+        </Text>
+      )}
+
       <div className="flex flex-col gap-6">
-        {buildPendingBridgeRows(bridge, now).map((row, rowIndex) => (
+        {buildPendingBridgeRows(bridge, now, familyChainId).map((row, rowIndex) => (
           <div key={rowIndex} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
             {row.map((cell, cellIndex) => (
               <Fragment key={cell.label}>
@@ -129,24 +165,19 @@ function PendingBridgeCard({
   );
 }
 
+type PendingBridgesProps = {
+  onAction: (bridge: PendingBridge) => void;
+  /** The next action can be sent now, on a network the app can switch to. */
+  canAction: (bridge: PendingBridge) => boolean;
+  /** An action's session is minimized: it must be restored, not launched again. */
+  actionLocked: boolean;
+};
+
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
-export function PendingBridges({
-  bridges,
-  onClaim
-}: {
-  bridges: PendingBridge[];
-  onClaim: (bridge: PendingBridge) => void;
-}) {
-  const [now, setNow] = useState(() => Date.now());
-  const hasPending = bridges.some(bridge => bridge.status === 'pending');
-
-  // Ticks the remaining-time estimate while something is in flight.
-  useEffect(() => {
-    if (!hasPending) return;
-    const id = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(id);
-  }, [hasPending]);
-
+export function PendingBridges({ onAction, canAction, actionLocked }: PendingBridgesProps) {
+  // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
+  const { bridges, now } = usePendingBridges();
+  const { familyChainId, scope } = usePendingScope();
   if (bridges.length === 0) return null;
 
   return (
@@ -155,7 +186,16 @@ export function PendingBridges({
         <Trans>Pending bridges</Trans>
       </h2>
       {bridges.map(bridge => (
-        <PendingBridgeCard key={bridge.id} bridge={bridge} now={now} onClaim={onClaim} />
+        <PendingBridgeCard
+          key={bridge.id}
+          bridge={bridge}
+          now={now}
+          familyChainId={familyChainId}
+          onAction={onAction}
+          canAction={canAction}
+          onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
+          actionLocked={actionLocked}
+        />
       ))}
     </section>
   );

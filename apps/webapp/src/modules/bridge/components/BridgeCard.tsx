@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ChevronDown, Wallet } from 'lucide-react';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { cn } from '@/lib/cn';
 import { NO_VALUE } from '@/lib/constants';
-import { formatAddress, formatNumber } from '@/utils';
+import { formatAddress, formatBigInt } from '@/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountInput } from '@/components/product/AmountInput';
 import { RollingValue } from '@/components/ui/rolling-value';
@@ -14,7 +13,8 @@ import { Text } from '@/modules/layout/components/Typography';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
 import { BRIDGE_NETWORKS, getBridgeNetwork } from '../model/networks';
 import { allowedDestinations } from '../model/pairs';
-import { USDS_DECIMALS, type BridgeFormModel } from '../hooks/useBridgeForm';
+import type { BridgeFormModel } from '../hooks/useBridgeForm';
+import { USDS_DECIMALS } from '../model/usds';
 import { BridgeNetworkSelect } from './BridgeNetworkSelect';
 import { RecipientAddressModal } from './RecipientAddressModal';
 
@@ -30,9 +30,9 @@ const panelClassName =
 const metaClassName = 'text-fgSecondary text-xs md:text-sm md:leading-[22px]';
 
 const formatBalance = (balance: bigint | undefined) =>
-  balance === undefined
-    ? NO_VALUE
-    : formatNumber(parseFloat(formatUnits(balance, USDS_DECIMALS)), { maxDecimals: 2 });
+  balance === undefined ? NO_VALUE : formatBigInt(balance, { maxDecimals: 2 });
+
+type BridgeCardProps = { form: BridgeFormModel };
 
 /**
  * The Bridge tab card (Figma 3574:64074): From and To glass panels, each with
@@ -40,7 +40,7 @@ const formatBalance = (balance: bigint | undefined) =>
  * destination amount mirrors the source 1:1. The To panel carries the
  * recipient button (3827:65770) — the wallet glyph, or the saved address.
  */
-export function BridgeCard({ form }: { form: BridgeFormModel }) {
+export function BridgeCard({ form }: BridgeCardProps) {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const [recipientOpen, setRecipientOpen] = useState(false);
@@ -148,9 +148,10 @@ export function BridgeCard({ form }: { form: BridgeFormModel }) {
       <button
         type="button"
         onClick={form.flip}
+        disabled={form.isSourceStatic}
         aria-label={t`Flip bridge direction`}
         data-testid="bridge-flip"
-        className="bg-flipSurface border-flipRing text-textSecondary hover:text-text absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors"
+        className="bg-flipSurface border-flipRing text-textSecondary hover:text-text absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors disabled:pointer-events-none disabled:opacity-50"
       >
         <ChevronDown width={16} height={16} />
       </button>

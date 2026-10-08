@@ -8,7 +8,9 @@ const PLACEHOLDER: Partial<Record<BridgeNetworkId, { letter: string; className: 
   solana: { letter: 'S', className: 'bg-linear-to-br from-[#9945ff] to-[#14f195]' }
 };
 
-export function BridgeNetworkIcon({ network, className }: { network: BridgeNetworkId; className?: string }) {
+type BridgeNetworkIconProps = { network: BridgeNetworkId; className?: string };
+
+export function BridgeNetworkIcon({ network, className }: BridgeNetworkIconProps) {
   const placeholder = PLACEHOLDER[network];
   if (placeholder) {
     return (
@@ -27,8 +29,10 @@ export function BridgeNetworkIcon({ network, className }: { network: BridgeNetwo
   return getChainIcon(getBridgeNetwork(network).chainId ?? 1, cn('shrink-0', className));
 }
 
+type BridgeNetworkBadgeProps = { network: BridgeNetworkId };
+
 /** Badges / Illustration pill (28px) naming a network — the review hero's right-hand badge. */
-export function BridgeNetworkBadge({ network }: { network: BridgeNetworkId }) {
+export function BridgeNetworkBadge({ network }: BridgeNetworkBadgeProps) {
   return (
     <span className="bg-glassBadge flex h-7 shrink-0 items-center gap-1 rounded-full py-1.5 pr-2 pl-1.5">
       <BridgeNetworkIcon network={network} className="size-4" />

@@ -5,7 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
 import { BridgeNetworkIcon, BridgeNetworkBadge } from './BridgeNetworkIcon';
 
-function NetworkOption({ network }: { network: BridgeNetworkId }) {
+type NetworkOptionProps = { network: BridgeNetworkId };
+
+function NetworkOption({ network }: NetworkOptionProps) {
   return (
     <span className="flex items-center gap-1">
       <BridgeNetworkIcon network={network} className="size-4" />
@@ -13,6 +15,14 @@ function NetworkOption({ network }: { network: BridgeNetworkId }) {
     </span>
   );
 }
+
+type BridgeNetworkSelectProps = {
+  value: BridgeNetworkId;
+  options: BridgeNetworkId[];
+  onChange: (next: BridgeNetworkId) => void;
+  isStatic?: boolean;
+  dataTestId: string;
+};
 
 /**
  * The network Button / Dropdown beside "From"/"To" on the bridge card (Figma
@@ -25,13 +35,7 @@ export function BridgeNetworkSelect({
   onChange,
   isStatic = false,
   dataTestId
-}: {
-  value: BridgeNetworkId;
-  options: BridgeNetworkId[];
-  onChange: (next: BridgeNetworkId) => void;
-  isStatic?: boolean;
-  dataTestId: string;
-}) {
+}: BridgeNetworkSelectProps) {
   if (isStatic) {
     return (
       <span data-testid={dataTestId}>

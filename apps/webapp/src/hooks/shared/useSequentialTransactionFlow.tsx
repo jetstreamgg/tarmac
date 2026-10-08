@@ -1,5 +1,5 @@
 import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { isRevertedError, toError } from '../helpers';
+import { isRevertedError, toError, TransactionReplacedError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
@@ -15,7 +15,8 @@ export function useSequentialTransactionFlow(
     onSuccess = () => null,
     onError = () => null,
     gcTime = 30000,
-    chainId
+    chainId,
+    failOnReplaced = false
   } = parameters;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -111,6 +112,12 @@ export function useSequentialTransactionFlow(
     [eventHash, mutationHash, isSafeConnector]
   );
 
+  // The hash viem saw cancelled or replaced; its receipt is the replacing tx's.
+  const replacedHashRef = useRef<string | undefined>(undefined);
+  // With failOnReplaced, a repriced tx (same call, new fee) is reported under the hash that mines.
+  const repricedRef = useRef<{ from: string; to: string } | undefined>(undefined);
+  const minedHash = (hash: string) => (repricedRef.current?.from === hash ? repricedRef.current.to : hash);
+
   // Monitor current transaction
   const {
     isLoading: isMining,
@@ -118,7 +125,14 @@ export function useSequentialTransactionFlow(
     error: miningError,
     failureReason
   } = useWaitForTransactionReceipt({
-    hash: txHash
+    hash: txHash,
+    onReplaced: replacement => {
+      if (replacement.reason !== 'repriced') replacedHashRef.current = txHash;
+      else if (failOnReplaced && txHash) {
+        repricedRef.current = { from: txHash, to: replacement.transaction.hash };
+        onStart(replacement.transaction.hash);
+      }
+    }
   });
 
   const txReverted = isRevertedError(failureReason);
@@ -184,7 +198,17 @@ export function useSequentialTransactionFlow(
     // Only process if we're executing
     if (!isExecuting) return;
 
-    if (txHash && isSuccess && !txReverted && lastProcessedTxHash.current !== txHash) {
+    if (
+      failOnReplaced &&
+      txHash &&
+      isSuccess &&
+      replacedHashRef.current === txHash &&
+      lastProcessedTxHash.current !== txHash
+    ) {
+      lastProcessedTxHash.current = txHash;
+      emitError(new TransactionReplacedError(), txHash);
+      setIsExecuting(false);
+    } else if (txHash && isSuccess && !txReverted && lastProcessedTxHash.current !== txHash) {
       lastProcessedTxHash.current = txHash;
 
       const newHashes = [...transactionHashes];
@@ -194,7 +218,7 @@ export function useSequentialTransactionFlow(
       // Done only when every expected call has produced a hash, not merely when the index reaches the count.
       if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
-        emitSuccess(txHash);
+        emitSuccess(minedHash(txHash));
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
@@ -212,7 +236,7 @@ export function useSequentialTransactionFlow(
     ) {
       lastProcessedTxHash.current = txHash;
       // Transaction failed
-      emitError(toError(miningError || failureReason), txHash);
+      emitError(toError(miningError || failureReason), minedHash(txHash));
       setIsExecuting(false);
     }
   }, [
@@ -223,7 +247,8 @@ export function useSequentialTransactionFlow(
     txHash,
     txReverted,
     currentIndex,
-    transactionHashes
+    transactionHashes,
+    failOnReplaced
   ]);
 
   const reset = useCallback(() => {
