@@ -144,5 +144,11 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
     selectedReset();
   }, [selectedReset]);
 
-  return { ...selected, reset, calls, isBatch: useBatch };
+  return {
+    ...selected,
+    reset,
+    calls,
+    isBatch: useBatch,
+    nextCalls: useBatch ? calls : sequentialResults.nextCalls
+  };
 }

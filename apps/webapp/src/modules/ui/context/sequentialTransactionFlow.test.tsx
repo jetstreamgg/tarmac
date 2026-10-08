@@ -84,6 +84,7 @@ vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
 }));
 
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
+import { isStalledStep } from '@/hooks/helpers';
 
 function makeCall(functionName: string): Call {
   return {
@@ -462,6 +463,107 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     expect(lastDispatchedCall()).toBe('supply');
     expect(result.current.currentCallIndex).toBe(1);
   });
+
+  it('a receipt error that is not a revert AFTER a mined step ends the run: Retry must not re-sign a tx that may still be pending', () => {
+    const onError = vi.fn();
+    let calls: Call[] = [APPROVE, SUPPLY];
+    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onError }));
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: false,
+        error: new Error('HTTP request failed'),
+        failureReason: null
+      };
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    calls = [SUPPLY];
+    rerender();
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + the one supply
+  });
+
+  it('an on-chain revert AFTER a mined step keeps the snapshot too: nextCalls holds the call and the retry dispatches it', () => {
+    const onError = vi.fn();
+    const onSuccess = vi.fn();
+    let calls: Call[] = [APPROVE, SUPPLY];
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls, onError, onSuccess })
+    );
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(result.current.currentCallIndex).toBe(1);
+
+    // The supply is broadcast and reverts on-chain.
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: false,
+        error: null,
+        failureReason: new Error('execution reverted')
+      };
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(result.current.isLoading).toBe(false);
+
+    // The allowance refetch drops the mined approve from the live calls.
+    calls = [SUPPLY];
+    rerender();
+    expect(result.current.nextCalls.map(c => c.functionName)).toEqual(['supply']);
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+    expect(lastDispatchedCall()).toBe('supply');
+
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply2';
+      wagmi.onWriteSuccess?.('0xsupply2');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(result.current.currentCallIndex).toBe(0);
+  });
 });
 
 describe('useSequentialTransactionFlow — a later step that fails to simulate', () => {
@@ -490,6 +592,7 @@ describe('useSequentialTransactionFlow — a later step that fails to simulate',
     expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledWith(wagmi.simulationErrors.supply, '');
+    expect(isStalledStep(onError.mock.calls[0][0])).toBe(true);
     expect(result.current.isLoading).toBe(false);
 
     // Re-renders with the same failure don't report it again.

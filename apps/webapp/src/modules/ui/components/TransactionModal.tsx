@@ -73,6 +73,8 @@ export type TransactionModalProps = {
    * blocked message above the disabled CTAs — is that denial's surface.
    */
   registerReturnToFirstScreen?: (fn: (() => void) | null) => void;
+  /** Like `registerReturnToFirstScreen`, but a three-screen flow lands on its review. */
+  registerReturnToReview?: (fn: (() => void) | null) => void;
   onClose: () => void;
   /**
    * Hide the modal while keeping the transaction running. When provided, dismissing
@@ -240,6 +242,7 @@ export function TransactionModal({
   preflight,
   chainGuard,
   registerReturnToFirstScreen,
+  registerReturnToReview,
   skipReview = false,
   scrimHandoff = false
 }: TransactionModalProps) {
@@ -522,12 +525,24 @@ export function TransactionModal({
   // Hand the provider the same back-to-first-screen the header arrow uses, so
   // the gate's returnToFirstScreen control (enhanced-screening denials) lands
   // on an identical screen state — onBack's progress reset included. (For a
-  // skipReview flow the provider closes the modal instead — there is no first
-  // screen to return to.)
+  // skipReview flow, or once a step has mined, the provider closes the modal
+  // instead.)
   useEffect(() => {
     registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);
   }, [registerReturnToFirstScreen, handleBack]);
+
+  // The provider's send-back when a deferred dispatch is refused (changed calls,
+  // account or confirm gating): the user re-confirms on the review, which
+  // re-renders against the current figures once the status is back at IDLE.
+  const handleReturnToReview = useCallback(() => {
+    onBack?.();
+    setStep(hasReviewStage ? 'review' : firstStep);
+  }, [onBack, hasReviewStage, firstStep]);
+  useEffect(() => {
+    registerReturnToReview?.(handleReturnToReview);
+    return () => registerReturnToReview?.(null);
+  }, [registerReturnToReview, handleReturnToReview]);
 
   // A skipReview launch is the review's Confirm: fire once on mount, through
   // the same gated `onConfirm` the review CTA uses. The ref (not the effect)

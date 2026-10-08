@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
@@ -40,6 +40,7 @@ type StakeLaunchOverrides = Pick<
   | 'transactionScreenContent'
   | 'steps'
   | 'onConfirm'
+  | 'getNextCalls'
   | 'onSuccess'
 > & {
   /** The legacy stakeData analytics payload (useStakeTransactionCallbacks shape). */
@@ -245,10 +246,16 @@ export function useStakeLaunch({
 
   // Live execute ref: launch() must never snapshot onConfirm state (landmine #2)
   // — the engine hook re-renders between launch and the user's Confirm click.
+  // Layout effect, with nextCallsRef: the provider validates one and runs the other.
   const executeRef = useRef(engine.execute);
-  useEffect(() => {
+  useLayoutEffect(() => {
     executeRef.current = engine.execute;
   }, [engine.execute]);
+  // Read by the provider at dispatch time (see `TransactionConfig.getNextCalls`).
+  const nextCallsRef = useRef(engine.nextCalls ?? engine.calls ?? []);
+  useLayoutEffect(() => {
+    nextCallsRef.current = engine.nextCalls ?? engine.calls ?? [];
+  }, [engine.nextCalls, engine.calls]);
 
   // Legs the flow sends when bundled, mirroring the engine's own composition
   // (approvals, then one call per calldata entry). NOT `calls.length`: with
@@ -329,6 +336,7 @@ export function useStakeLaunch({
       transactionScreenContent,
       steps,
       onConfirm: () => executeRef.current(),
+      getNextCalls: () => nextCallsRef.current,
       onSuccess,
       stakeData
     });

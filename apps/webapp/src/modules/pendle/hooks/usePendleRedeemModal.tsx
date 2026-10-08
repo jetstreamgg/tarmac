@@ -1,3 +1,4 @@
+import type { Call } from 'viem';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
@@ -190,9 +191,15 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // Indirect onConfirm through a ref — the stored onConfirm can't be
   // live-updated, but the ref always points at the latest writeHook.execute.
   const executeRef = useRef<() => void>(() => undefined);
+  // Read by the provider at dispatch time (see `TransactionConfig.getNextCalls`
+  // and `getConfirmDisabled`).
+  const nextCallsRef = useRef<Call[]>([]);
+  const confirmDisabledRef = useRef(true);
   // A layout effect, so a confirm click can never run the previous render's execute.
   useLayoutEffect(() => {
     executeRef.current = () => writeHook.execute();
+    nextCallsRef.current = writeHook.nextCalls ?? writeHook.calls ?? [];
+    confirmDisabledRef.current = confirmDisabled;
   });
 
   // USD notional for the enhanced-screening threshold (APP-517): the valued
@@ -332,6 +339,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       confirmLabel: t`Claim`,
       confirmDisabled,
       onConfirm: () => executeRef.current(),
+      getNextCalls: () => nextCallsRef.current,
+      getConfirmDisabled: () => confirmDisabledRef.current,
       sessionId,
       analytics
     });
