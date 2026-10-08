@@ -1,10 +1,7 @@
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import {
-  ArrowUpFromLine,
-  BanknoteArrowDown,
-  BanknoteArrowUp,
   ChevronRight,
   Coins,
   DoorClosed,
@@ -75,8 +72,7 @@ function MenuRow({
   chip,
   disabled = false,
   onClick,
-  dataTestId,
-  variant = 'panel'
+  dataTestId
 }: {
   icon: ReactNode;
   label: ReactNode;
@@ -84,12 +80,6 @@ function MenuRow({
   disabled?: boolean;
   onClick?: () => void;
   dataTestId: string;
-  /**
-   * `panel` = desktop right-panel rows (bordered); `sheet` = mobile sheet rows
-   * (borderless 56px, comp 1222:16239); `list` = 48px rows between separate
-   * dividers (Actions list, comp 3617:24188).
-   */
-  variant?: 'panel' | 'sheet' | 'list';
 }) {
   return (
     <button
@@ -97,15 +87,8 @@ function MenuRow({
       disabled={disabled}
       onClick={onClick}
       data-testid={dataTestId}
-      className={cn(
-        // No Figma states: mini-button tokens on a pseudo fill bleeding 12px, so text and hairlines don't move.
-        'group before:ease-out-expo focus-visible:before:ring-focusRing enabled:hover:before:bg-glassBadge enabled:active:before:bg-glassBorder relative isolate flex w-full items-center justify-between gap-3 text-left outline-hidden before:absolute before:-inset-x-3 before:inset-y-0 before:-z-10 before:rounded-xl before:transition-colors before:duration-250 focus-visible:before:ring-2 disabled:cursor-not-allowed disabled:opacity-40',
-        variant === 'panel'
-          ? 'border-borderPrimary border-b py-8'
-          : variant === 'list'
-            ? 'py-4 before:-inset-y-1.5'
-            : 'h-14'
-      )}
+      // No Figma states: mini-button tokens on a pseudo fill bleeding 12px, so text and hairlines don't move.
+      className="group before:ease-out-expo focus-visible:before:ring-focusRing enabled:hover:before:bg-glassBadge enabled:active:before:bg-glassBorder relative isolate flex w-full items-center justify-between gap-3 py-4 text-left outline-hidden before:absolute before:-inset-x-3 before:-inset-y-1.5 before:-z-10 before:rounded-xl before:transition-colors before:duration-250 focus-visible:before:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
     >
       <span className="text-text font-circle flex items-center gap-3 text-sm leading-4 font-medium tracking-[-0.28px]">
         <span className="text-textSecondary flex h-4 w-4 items-center justify-center" aria-hidden>
@@ -119,123 +102,77 @@ function MenuRow({
   );
 }
 
-// Inactive-urn menu rows (and the loading skeleton), shared verbatim between
-// the desktop right panel and the mobile manage sheet: the frame layouts
-// (C16) with mostly-disabled rows. An emptied urn has nothing left to
-// close, so its `Close position` row stays disabled.
+// Inactive-urn menu rows (and the loading skeleton), shared between the
+// desktop right panel and the mobile manage sheet. Same list as the active
+// urn (comp 3617:24188) with the switches disabled; Claim stays reachable.
 function ManageMenuRows({
   loading,
-  showInactiveBorrowBlock,
   claimDisabled,
   claimChip,
   onClaim,
-  variant = 'panel',
   idSuffix = ''
 }: {
   loading: boolean;
-  showInactiveBorrowBlock: boolean;
   claimDisabled: boolean;
   claimChip?: ReactNode;
   onClaim: () => void;
-  variant?: 'panel' | 'sheet';
   idSuffix?: string;
 }) {
+  const divider = <span className="bg-borderPrimary h-px w-full shrink-0" aria-hidden />;
+
   if (loading) {
     // Active vs inactive is unknown until the vault resolves — a premature
     // active menu would offer the wrong flow for an emptied urn. The rows
     // keep MenuRow's geometry so the card doesn't grow when the menu lands.
     return (
-      <div className="flex flex-col" data-testid={`stake-manage-menu-loading${idSuffix}`}>
+      <div className="flex flex-col gap-4" data-testid={`stake-manage-menu-loading${idSuffix}`}>
         {Array.from({ length: 4 }, (_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'flex items-center',
-              variant === 'panel' ? 'border-borderPrimary border-b py-8' : 'h-14'
-            )}
-          >
-            <Skeleton className="h-4 w-40" />
-          </div>
+          <Fragment key={i}>
+            {i > 0 && divider}
+            <div className="flex items-center py-4">
+              <Skeleton className="h-4 w-40" />
+            </div>
+          </Fragment>
         ))}
       </div>
     );
   }
 
-  const rowProps = { variant };
-
   return (
-    <>
-      {!showInactiveBorrowBlock && (
-        <MenuRow
-          {...rowProps}
-          icon={<Gem className="h-4 w-4" />}
-          label={<Trans>Claim rewards</Trans>}
-          disabled={claimDisabled}
-          onClick={onClaim}
-          dataTestId={`stake-manage-menu-claim${idSuffix}`}
-          chip={claimChip}
-        />
-      )}
+    <div className="flex flex-col gap-4">
       {/* An inactive urn stakes nothing, so switching its farm or delegate
           waits for Reopen, whose takeover picks both; the rows stay disabled. */}
       <MenuRow
-        {...rowProps}
         icon={<Coins className="h-4 w-4" />}
-        label={<Trans>Change reward</Trans>}
+        label={<Trans>Change token reward</Trans>}
         disabled
         dataTestId={`stake-manage-menu-change-reward${idSuffix}`}
       />
+      {divider}
       <MenuRow
-        {...rowProps}
         icon={<UserRound className="h-4 w-4" />}
         label={<Trans>Change delegate</Trans>}
         disabled
         dataTestId={`stake-manage-menu-change-delegate${idSuffix}`}
       />
-      {showInactiveBorrowBlock && (
-        <>
-          <MenuRow
-            {...rowProps}
-            icon={<Gem className="h-4 w-4" />}
-            label={<Trans>Claim rewards</Trans>}
-            disabled={claimDisabled}
-            onClick={onClaim}
-            dataTestId={`stake-manage-menu-claim${idSuffix}`}
-            chip={claimChip}
-          />
-          <MenuRow
-            {...rowProps}
-            icon={<BanknoteArrowDown className="h-4 w-4" />}
-            label={<Trans>Borrow more USDS</Trans>}
-            disabled
-            dataTestId={`stake-manage-menu-borrow${idSuffix}`}
-          />
-          <MenuRow
-            {...rowProps}
-            icon={<BanknoteArrowUp className="h-4 w-4" />}
-            label={<Trans>Repay debt</Trans>}
-            disabled
-            dataTestId={`stake-manage-menu-repay${idSuffix}`}
-          />
-        </>
-      )}
+      {divider}
+      {/* An emptied urn has nothing left to close. */}
       <MenuRow
-        {...rowProps}
-        icon={<ArrowUpFromLine className="h-4 w-4" />}
-        label={<Trans>Withdraw SKY</Trans>}
+        icon={<DoorClosed className="text-statusError h-4 w-4" />}
+        label={<Trans>Close position</Trans>}
         disabled
-        dataTestId={`stake-manage-menu-withdraw${idSuffix}`}
+        dataTestId={`stake-manage-menu-close-position${idSuffix}`}
       />
-      {showInactiveBorrowBlock && (
-        <MenuRow
-          {...rowProps}
-          icon={<DoorClosed className="h-4 w-4" />}
-          label={<Trans>Close position</Trans>}
-          disabled
-          dataTestId={`stake-manage-menu-close-position${idSuffix}`}
-        />
-      )}
-    </>
+      {divider}
+      <MenuRow
+        icon={<Gem className="h-4 w-4" />}
+        label={<Trans>Claim rewards</Trans>}
+        disabled={claimDisabled}
+        onClick={onClaim}
+        dataTestId={`stake-manage-menu-claim${idSuffix}`}
+        chip={claimChip}
+      />
+    </div>
   );
 }
 
@@ -258,7 +195,6 @@ function ActiveActions({
     <>
       <div className="flex flex-col gap-4">
         <MenuRow
-          variant="list"
           icon={<Settings2 className="h-4 w-4" />}
           label={<Trans>Manage position</Trans>}
           onClick={() => onAction('stake')}
@@ -266,7 +202,6 @@ function ActiveActions({
         />
         {divider}
         <MenuRow
-          variant="list"
           icon={<Coins className="h-4 w-4" />}
           label={<Trans>Change token reward</Trans>}
           onClick={() => onAction('reward')}
@@ -274,7 +209,6 @@ function ActiveActions({
         />
         {divider}
         <MenuRow
-          variant="list"
           icon={<UserRound className="h-4 w-4" />}
           label={<Trans>Change delegate</Trans>}
           onClick={() => onAction('delegate')}
@@ -282,7 +216,6 @@ function ActiveActions({
         />
         {divider}
         <MenuRow
-          variant="list"
           icon={<DoorClosed className="text-statusError h-4 w-4" />}
           label={<Trans>Close position</Trans>}
           onClick={() => onAction('close')}
@@ -442,7 +375,6 @@ export function PositionDetailsModal({
 
   const menuRowsProps = {
     loading: detail.shapeLoading,
-    showInactiveBorrowBlock,
     claimDisabled,
     claimChip,
     onClaim
@@ -900,23 +832,14 @@ export function PositionDetailsModal({
               </div>
             </div>
           ) : (
-            <div className="bg-modalSubsection hidden w-full flex-col justify-between gap-6 p-8 md:flex lg:w-[322px]">
-              <div className="flex flex-col">
-                <h3 className="text-text font-circle mb-8 text-lg leading-[22px] font-medium tracking-[-0.36px]">
-                  <Trans>Manage position</Trans>
+            <div className="bg-modalSubsection hidden w-full flex-col gap-6 p-8 md:flex lg:w-[322px]">
+              <div className="flex flex-1 flex-col gap-8">
+                <h3 className="text-text font-circle text-lg leading-[22px] font-medium tracking-[-0.36px]">
+                  <Trans>Actions</Trans>
                 </h3>
-                {/* 80px row pitch: py-8 rows with half-padding end caps and no
-                  hairline after the last row (comp 1036:214176). */}
-                <div className="flex flex-col [&>button:first-child]:pt-4 [&>button:last-child]:border-b-0 [&>button:last-child]:pb-4">
-                  <ManageMenuRows {...menuRowsProps} variant="panel" />
-                </div>
+                <ManageMenuRows {...menuRowsProps} />
               </div>
-
-              {/* Side-by-side pair (comp 1036:214314) — equal columns, labels may
-                ellipsize rather than overflow the 322px panel. */}
-              <div className="flex flex-wrap gap-2 [&>button]:min-w-0 [&>button]:flex-1">
-                <ManageCtas {...ctaProps} size="l" />
-              </div>
+              <ManageCtas {...ctaProps} size="l" />
             </div>
           )}
 
@@ -991,15 +914,10 @@ export function PositionDetailsModal({
               <ActiveActions {...activeActionsProps} idSuffix="-sheet" />
             </div>
           ) : (
-            <>
-              <div className="mt-3 flex flex-col">
-                <ManageMenuRows {...menuRowsProps} variant="sheet" idSuffix="-sheet" />
-              </div>
-
-              <div className="mt-6 flex flex-col gap-3">
-                <ManageCtas {...ctaProps} size="l" idSuffix="-sheet" />
-              </div>
-            </>
+            <div className="mt-3 flex flex-col gap-6">
+              <ManageMenuRows {...menuRowsProps} idSuffix="-sheet" />
+              <ManageCtas {...ctaProps} size="l" idSuffix="-sheet" />
+            </div>
           )}
         </DialogContent>
       </Dialog>

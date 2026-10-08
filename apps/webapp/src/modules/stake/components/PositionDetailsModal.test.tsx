@@ -357,18 +357,18 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
   });
   afterEach(cleanup);
 
-  it('staked-only history: chip, 4-row menu, withdraw disabled, claim enabled with chip', () => {
+  it('staked-only history: chip, actions list with switches disabled, claim enabled with chip', () => {
     const { onAction, onClaim } = renderModal(inactiveDetail());
 
     expect(screen.getByTestId('stake-position-inactive-chip').textContent).toBe('Inactive');
 
-    // Frame order: Claim rewards · Change reward · Change delegate · Withdraw SKY.
+    // Active list order (3617:24188) minus Manage, with Claim as the last row.
     const rows = screen.getAllByTestId(/^stake-manage-menu-/);
     expect(rows.map(row => row.getAttribute('data-testid'))).toEqual([
-      'stake-manage-menu-claim',
       'stake-manage-menu-change-reward',
       'stake-manage-menu-change-delegate',
-      'stake-manage-menu-withdraw'
+      'stake-manage-menu-close-position',
+      'stake-manage-menu-claim'
     ]);
 
     const claimRow = screen.getByTestId('stake-manage-menu-claim') as HTMLButtonElement;
@@ -377,13 +377,18 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     fireEvent.click(claimRow);
     expect(onClaim).toHaveBeenCalled();
 
-    expect((screen.getByTestId('stake-manage-menu-withdraw') as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByTestId('stake-manage-menu-change-reward') as HTMLButtonElement).disabled).toBe(true);
-    // Reward and delegate changes wait for Reopen.
-    const delegateRow = screen.getByTestId('stake-manage-menu-change-delegate') as HTMLButtonElement;
-    expect(delegateRow.disabled).toBe(true);
-    fireEvent.click(delegateRow);
+    // Reward and delegate changes wait for Reopen; an emptied urn has nothing to close.
+    for (const testid of [
+      'stake-manage-menu-change-reward',
+      'stake-manage-menu-change-delegate',
+      'stake-manage-menu-close-position'
+    ]) {
+      const row = screen.getByTestId(testid) as HTMLButtonElement;
+      expect(row.disabled).toBe(true);
+      fireEvent.click(row);
+    }
     expect(onAction).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('stake-manage-cta-claim')).toBeNull();
 
     // No borrow section for a urn that never borrowed.
     expect(screen.queryByText('Borrowed amount')).toBeNull();
@@ -391,7 +396,7 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     expect(screen.queryByTestId('stake-position-warning')).toBeNull();
   });
 
-  it('staked-&-borrowed history: zeroed borrow block, No position chip, closed copy, 7 disabled rows', () => {
+  it('staked-&-borrowed history: zeroed borrow block, No position chip, closed copy, same disabled list', () => {
     const { onAction } = renderModal(inactiveDetail({ hasBorrowHistory: true, claimableTokenAmount: 0n }));
 
     expect(screen.getByText('Borrowed amount')).toBeTruthy();
@@ -402,16 +407,12 @@ describe('PositionDetailsModal — inactive states (F6, UX 1194:20561 / 1194:212
     // Liquidation price is a dash; the warning sentence never renders.
     expect(screen.queryByTestId('stake-position-warning')).toBeNull();
 
-    // Frame order (1194:21273).
     const rows = screen.getAllByTestId(/^stake-manage-menu-/);
     expect(rows.map(row => row.getAttribute('data-testid'))).toEqual([
       'stake-manage-menu-change-reward',
       'stake-manage-menu-change-delegate',
-      'stake-manage-menu-claim',
-      'stake-manage-menu-borrow',
-      'stake-manage-menu-repay',
-      'stake-manage-menu-withdraw',
-      'stake-manage-menu-close-position'
+      'stake-manage-menu-close-position',
+      'stake-manage-menu-claim'
     ]);
 
     for (const row of rows) {
