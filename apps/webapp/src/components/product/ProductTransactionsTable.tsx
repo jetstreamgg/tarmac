@@ -212,7 +212,15 @@ export function ProductTransactionsTable<T>({
             pageRows.map((row, index) => {
               const activate = rowAction(row);
               return (
-                <Fragment key={rowKey(row)}>
+                // The below-row content shares its card's outer corners.
+                <div
+                  key={rowKey(row)}
+                  className={cn(
+                    'overflow-hidden',
+                    index === 0 && 'rounded-t-[20px]',
+                    index === pageRows.length - 1 && 'rounded-b-[20px]'
+                  )}
+                >
                   <div
                     data-testid={rowTestId?.(row)}
                     tabIndex={activate ? 0 : undefined}
@@ -229,17 +237,12 @@ export function ProductTransactionsTable<T>({
                           }
                         : undefined
                     }
-                    className={cn(
-                      'overflow-hidden',
-                      index === 0 && 'rounded-t-[20px]',
-                      index === pageRows.length - 1 && 'rounded-b-[20px]',
-                      activate && 'cursor-pointer'
-                    )}
+                    className={cn(activate && 'cursor-pointer')}
                   >
                     {renderCard(row)}
                   </div>
                   {renderBelowRow?.(row)}
-                </Fragment>
+                </div>
               );
             })
           )}
