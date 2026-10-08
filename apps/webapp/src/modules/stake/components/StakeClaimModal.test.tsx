@@ -310,13 +310,7 @@ describe('StakeClaimModal', () => {
 
     const invalidated = h.invalidateMock.mock.calls.map(call => call[0].queryKey[0]);
     expect(invalidated).toEqual(
-      expect.arrayContaining([
-        'stake-user-positions',
-        'stake-history',
-        'readContract',
-        'readContracts',
-        'simulateDrip'
-      ])
+      expect.arrayContaining(['stake-urn-vaults', 'readContract', 'readContracts', 'simulateDrip'])
     );
 
     const updater = h.setSearchParamsMock.mock.calls[0][0];

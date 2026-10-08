@@ -235,8 +235,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const close = reopen ? reopen.onClose : closeOpenFlow;
 
   const onSuccess = useCallback(() => {
-    // Fresh positions/activity on return — the subgraph hooks re-query along
-    // the shared lag trail; on-chain reads refetch once.
+    // Fresh on-chain reads on return; the indexer-backed positions rows and
+    // activity refetch once the indexer has the tx (refreshHistoryAfterTx).
     invalidateStakeQueries(queryClient);
     setSearchParams(
       params => {

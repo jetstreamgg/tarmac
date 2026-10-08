@@ -42,7 +42,7 @@ export type TxMutateVariables = { functionName?: string };
 export type WriteHookParams = {
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
-  onSuccess?: (hash: string) => void;
+  onSuccess?: (hash: string, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string) => void;
   enabled?: boolean;
   gas?: bigint;
@@ -66,7 +66,7 @@ export type UseWriteContractFlowParameters<
   gcTime?: number;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
-  onSuccess?: (hash: string) => void;
+  onSuccess?: (hash: string, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string) => void;
 };
 
@@ -100,7 +100,7 @@ export type BatchTransactionFlowHook = BatchWriteHook & {
 export type BatchWriteHookParams = {
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
-  onSuccess?: (hash: string | undefined) => void;
+  onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string | undefined) => void;
   shouldUseBatch?: boolean;
   enabled?: boolean;
@@ -120,7 +120,7 @@ export type UseSendBatchTransactionFlowParameters<
   simulateEnabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
-  onSuccess?: (hash: string | undefined) => void;
+  onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string | undefined) => void;
 };
 
@@ -145,7 +145,7 @@ export type UseTransactionFlowParameters = {
   enabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
-  onSuccess?: (hash: string | undefined) => void;
+  onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string | undefined) => void;
   gcTime?: number;
   chainId?: number;
@@ -156,7 +156,7 @@ export type UseSequentialTransactionFlowParameters = {
   enabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
-  onSuccess?: (hash: string) => void;
+  onSuccess?: (hash: string, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string) => void;
   gcTime?: number;
   chainId?: number;

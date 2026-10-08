@@ -20,6 +20,8 @@ import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSucc
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
+import { refreshHistoryAfterTx } from '@/lib/historyRefresh';
+import { queryClient } from '@/lib/queryClient';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -1062,7 +1064,12 @@ export function TransactionProvider({
   );
 
   const onSuccess = useCallback(
-    (hash?: string) => {
+    (hash?: string, blockNumber?: bigint) => {
+      // Ahead of the session guard: a transaction that mined after its modal
+      // was closed still lands in the history tables, which lag the receipt
+      // by the indexer's catch-up. The session's latched chain, not the
+      // config's: a batch receipt can land after a network switch.
+      void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current, blockNumber });
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
