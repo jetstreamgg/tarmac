@@ -1,5 +1,5 @@
 import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
-import { Fragment, ReactNode, useState } from 'react';
+import { AriaAttributes, Fragment, ReactNode, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount } from 'wagmi';
 import { cn } from '@/lib/cn';
@@ -34,6 +34,9 @@ function EmptyLabel({ emptyLabel, isConnected }: { emptyLabel?: ReactNode; isCon
  * Sections, e.g. 486:20827) — same rows, loading/empty/error and pagination.
  */
 
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 /** Placeholder rows/cards rendered while `isLoading`. */
 const LOADING_ROWS = 4;
 
@@ -45,6 +48,8 @@ export interface ProductTransactionColumn<T> {
   cell: (row: T) => ReactNode;
   /** Set false for icon/affordance columns (chevrons, network icons) so loading doesn't paint a text bar there. */
   skeleton?: boolean;
+  /** Set on the sorted column when the header sorts (see SortHeaderButton). */
+  ariaSort?: AriaAttributes['aria-sort'];
 }
 
 export interface ProductTransactionsTableProps<T> {
@@ -168,21 +173,33 @@ export function ProductTransactionsTable<T>({
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
+  const { bpi } = useBreakpointIndex();
+  const isCards = !!renderCard && bpi < BP.md;
+  const cardListRef = useRef<HTMLDivElement>(null);
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage);
     onPageChange?.(nextPage, totalPages);
+    // A shorter page of tall cards would otherwise leave the viewport below the list.
+    const list = cardListRef.current;
+    if (
+      isCards &&
+      list &&
+      list.getBoundingClientRect().top < (parseFloat(getComputedStyle(list).scrollMarginTop) || 0)
+    ) {
+      list.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    }
   };
   const showPagination = !isLoading && !error && totalPages > 1;
   const widths = columnWidths(columns);
-  const { bpi } = useBreakpointIndex();
   const { isConnected } = useAccount();
 
-  if (renderCard && bpi < BP.md) {
+  if (isCards) {
     return (
       <>
         {/* 2px gaps + outer-corners-only rounding mirror the desktop table
             surface (border-spacing-y + first/last cell radii). */}
-        <div data-testid={dataTestId} className="flex w-full flex-col gap-0.5">
+        {/* scroll-mt-36 keeps the sticky navbar off the section heading when paging scrolls back up. */}
+        <div ref={cardListRef} data-testid={dataTestId} className="flex w-full scroll-mt-36 flex-col gap-0.5">
           {isLoading ? (
             Array.from({ length: loadingRows }).map((_, index) => (
               <div
@@ -210,7 +227,15 @@ export function ProductTransactionsTable<T>({
             pageRows.map((row, index) => {
               const activate = rowAction(row);
               return (
-                <Fragment key={rowKey(row)}>
+                // The below-row content shares its card's outer corners.
+                <div
+                  key={rowKey(row)}
+                  className={cn(
+                    'overflow-hidden',
+                    index === 0 && 'rounded-t-[20px]',
+                    index === pageRows.length - 1 && 'rounded-b-[20px]'
+                  )}
+                >
                   <div
                     data-testid={rowTestId?.(row)}
                     tabIndex={activate ? 0 : undefined}
@@ -227,17 +252,12 @@ export function ProductTransactionsTable<T>({
                           }
                         : undefined
                     }
-                    className={cn(
-                      'overflow-hidden',
-                      index === 0 && 'rounded-t-[20px]',
-                      index === pageRows.length - 1 && 'rounded-b-[20px]',
-                      activate && 'cursor-pointer'
-                    )}
+                    className={cn(activate && 'cursor-pointer')}
                   >
                     {renderCard(row)}
                   </div>
                   {renderBelowRow?.(row)}
-                </Fragment>
+                </div>
               );
             })
           )}
@@ -262,7 +282,7 @@ export function ProductTransactionsTable<T>({
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (
-              <TableHead key={column.id} style={{ width: widths[index] }}>
+              <TableHead key={column.id} style={{ width: widths[index] }} aria-sort={column.ariaSort}>
                 {column.header}
               </TableHead>
             ))}

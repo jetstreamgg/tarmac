@@ -24,13 +24,18 @@ export function calculateAvailableBorrow(
   return { fromDebtCeiling, balance: (cap / WAD) * WAD };
 }
 
-/** Collateral at/below the dust-implied minimum — the min-collateral warning gate. */
+/** Collateral below the dust-implied minimum — the min-collateral warning gate. */
 export function isMinCollateralNotMet(
   vault: { collateralAmount?: bigint; minCollateralForDust?: bigint } | undefined
 ): boolean {
   return (
     vault?.collateralAmount !== undefined &&
     vault?.minCollateralForDust !== undefined &&
-    vault.collateralAmount <= vault.minCollateralForDust
+    vault.collateralAmount < vault.minCollateralForDust
   );
+}
+
+/** Min-stake badge, same boundary as the gate. */
+export function isMinCollateralReached(collateral: bigint, minCollateralForDust: bigint | undefined) {
+  return minCollateralForDust !== undefined ? collateral >= minCollateralForDust : undefined;
 }

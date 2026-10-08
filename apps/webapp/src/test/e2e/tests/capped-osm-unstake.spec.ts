@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
-import { BORROW_SPEC_SKY, gotoManagePosition, openStakePosition } from '../utils/stakeV2.ts';
+import { BORROW_SPEC_SKY, openManageSheet, openStakePosition } from '../utils/stakeV2.ts';
 import { getOsmSpotPrice, restoreOsmSpotPrice, triggerCappedOsmError } from '../utils/setOsmSpotPrice.ts';
 import { updateStakeModuleDebtCeiling } from '../utils/updateStakeDebtCeiling.ts';
 import { parseUnits } from 'viem';
@@ -40,9 +40,8 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await openStakePosition(isolatedPage, { sky: BORROW_SPEC_SKY, usds: '38000' });
 
     // Step 2: withdraw works normally before the OSM price is manipulated.
-    await gotoManagePosition(isolatedPage, 0);
-    await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
-    await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+    await openManageSheet(isolatedPage, 0);
+    await isolatedPage.getByTestId('stake-manage-stake-card-mode-withdraw').click();
 
     await isolatedPage.getByTestId('stake-manage-stake-amount').fill('100000');
     await expect(isolatedPage.getByTestId('stake-manage-stake-amount-error')).not.toBeVisible();
@@ -61,9 +60,8 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await isolatedPage.waitForTimeout(2000);
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
 
-    await gotoManagePosition(isolatedPage, 0);
-    await isolatedPage.getByTestId('stake-manage-menu-withdraw').click();
-    await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+    await openManageSheet(isolatedPage, 0);
+    await isolatedPage.getByTestId('stake-manage-stake-card-mode-withdraw').click();
     await isolatedPage.getByTestId('stake-manage-stake-amount').fill('100000');
 
     // Step 5: the capped OSM guard blocks the withdrawal. With the cap binding

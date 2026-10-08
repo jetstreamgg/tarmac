@@ -85,7 +85,7 @@ describe('StakeEngineCard', () => {
     expect(screen.getByText('10,000.00')).toBeTruthy();
   });
 
-  it('routes the CTA through connect-then-act and sets flow=open with replace', () => {
+  it('routes the CTA through connect-then-act and sets flow=open with replace, keeping the scroll', () => {
     renderCard();
 
     fireEvent.click(screen.getByTestId('stake-open-position-cta'));
@@ -94,7 +94,7 @@ describe('StakeEngineCard', () => {
     // path, ran — writing the flow param.
     expect(connectThenActSpy).toHaveBeenCalledTimes(1);
     expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
-    expect(setSearchParamsMock.mock.calls[0][1]).toEqual({ replace: true });
+    expect(setSearchParamsMock.mock.calls[0][1]).toEqual({ replace: true, resetScroll: false });
     expect(mockSearchParams.get('flow')).toBe('open');
   });
 });

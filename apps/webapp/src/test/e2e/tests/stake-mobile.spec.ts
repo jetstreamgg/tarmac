@@ -109,7 +109,7 @@ test('percent chips and optional-card collapse work at the phone tier', async ({
 });
 
 // --- M6.6 (APP-405): the /stake page itself at the phone tier, per comps
-// 1222:16771 (My positions) / 1222:17089 (Statistics) / 1222:17233 (About).
+// 1222:16771 (My positions) / 1222:17089 (Overview).
 // Position rows come from the chain (`useStakeUrnVaults`), so the populated
 // spec stages real urns on the fork; the activity surface is subgraph-backed
 // and the vnet's urns are invisible to the indexer, so the two staking
@@ -178,8 +178,8 @@ function stubStakeSubgraph(page: Parameters<typeof stakeDeepLink>[0]) {
   });
 }
 
-test('statistics and about tabs lead with the promo card at the phone tier', async ({ isolatedPage }) => {
-  // Connected with zero positions → the page lands on Statistics.
+test('overview tab leads with the promo card at the phone tier', async ({ isolatedPage }) => {
+  // Connected with zero positions → the page lands on Overview.
   await stakeDeepLink(isolatedPage);
   const engineCard = isolatedPage.getByTestId('stake-engine-card');
   await expect(engineCard).toBeVisible({ timeout: 15_000 });
@@ -191,16 +191,9 @@ test('statistics and about tabs lead with the promo card at the phone tier', asy
   const chartBox = await chart.boundingBox();
   expect(engineBox!.y).toBeLessThan(chartBox!.y);
 
-  // Comp 1222:17233 order: promo card above the About copy; the two shipped
-  // links (View contract, Governance) stack as full-width rows — Docs is held
-  // back until staking docs exist (see StakeAboutTab.tsx).
-  await stakeDeepLink(isolatedPage, 'tab=about');
-  const aboutCopy = isolatedPage.getByTestId('stake-about-copy');
-  await expect(aboutCopy).toBeVisible({ timeout: 15_000 });
-  const engineBox2 = await isolatedPage.getByTestId('stake-engine-card').boundingBox();
-  const aboutBox = await aboutCopy.boundingBox();
-  expect(engineBox2!.y).toBeLessThan(aboutBox!.y);
-  const governanceLink = isolatedPage.getByTestId('stake-about-links').getByRole('link', {
+  // The two shipped links (View contract, Governance) stack as full-width
+  // rows — Docs is held back until staking docs exist.
+  const governanceLink = isolatedPage.getByTestId('stake-overview-links').getByRole('link', {
     name: 'Governance'
   });
   await expect(governanceLink).toBeVisible();
@@ -232,16 +225,16 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   expect(summaryBox!.y).toBeLessThan(positionsBox!.y);
   expect(positionsBox!.y).toBeLessThan(activityBox!.y);
 
-  // Summary hero keeps its connect-gated CTA at the phone tier.
-  await expect(summary.getByTestId('stake-open-new-position-cta')).toBeVisible();
+  // The summary's Manage CTA is single-position only.
+  await expect(summary.getByTestId('stake-summary-manage-cta')).not.toBeVisible();
 
   // Position cards: one "View more" per active urn; the emptied urn stays
-  // behind the Hide inactive toggle (comp label "Hide inactive").
+  // behind the Show inactive toggle.
   const viewMore = isolatedPage.getByRole('button', { name: 'View more' });
   await expect(viewMore).toHaveCount(4, { timeout: 15_000 });
-  await isolatedPage.getByTestId('stake-hide-inactive-toggle').click();
+  await isolatedPage.getByTestId('stake-show-inactive-toggle').click();
   await expect(viewMore).toHaveCount(5);
-  await isolatedPage.getByTestId('stake-hide-inactive-toggle').click();
+  await isolatedPage.getByTestId('stake-show-inactive-toggle').click();
 
   // Tapping View more opens the manage flow for that urn (bubbles to the
   // card's row handler). At the phone tier the details modal hides the menu
@@ -259,9 +252,12 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   await isolatedPage.getByTestId('stake-details-cta-manage').click();
   const sheet = isolatedPage.getByTestId('stake-manage-sheet');
   await expect(sheet).toBeVisible();
-  await expect(isolatedPage.getByTestId('stake-manage-menu-withdraw-sheet')).toBeVisible();
+  const sheetMenu = isolatedPage
+    .getByTestId('stake-manage-menu-manage-sheet')
+    .or(isolatedPage.getByTestId('stake-manage-menu-claim-sheet'));
+  await expect(sheetMenu).toBeVisible();
   const sheetPrimary = isolatedPage
-    .getByTestId('stake-manage-cta-stake-sheet')
+    .getByTestId('stake-manage-cta-claim-sheet')
     .or(isolatedPage.getByTestId('stake-manage-cta-reopen-sheet'));
   await expect(sheetPrimary).toBeVisible();
   await isolatedPage.getByTestId('stake-manage-sheet-close').click();

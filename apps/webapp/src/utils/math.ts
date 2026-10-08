@@ -106,6 +106,19 @@ export const minSafeCollateralAmount = (debtValue: bigint, mat: bigint, price: b
   return rescaleHalfUp(rayValue, RAY_PRECISION, WAD_PRECISION);
 };
 
+// Next cent strictly above `wad`: clears the vat's rate/spot rounding at the exact minimum.
+export const nextCentAboveWad = (wad: bigint): bigint => {
+  const CENT = WAD / 100n;
+  return (wad / CENT + 1n) * CENT;
+};
+
+// Largest `wipe` that keeps the urn at or above dust: wipe converts at the stored (undripped) rate.
+export const maxPartialWipe = (art: bigint, storedRate: bigint, dustRad: bigint): bigint => {
+  if (storedRate === 0n) return 0n;
+  const minArt = (dustRad + storedRate - 1n) / storedRate;
+  return art > minArt ? ((art - minArt) * storedRate) / RAY : 0n;
+};
+
 export const daiAvailable = (collateralValue: bigint, debtValue: bigint, mat: bigint): bigint => {
   if (mat === 0n) return 0n;
   // At fixed256x27: colValue (wad → ×10^9) divided by mat (ray) = colValue*10^36/mat.

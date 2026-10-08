@@ -123,12 +123,16 @@ function useStakeClaimable(scope: ClaimScope): ClaimableResult {
 function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOptions): ClaimCallsResult {
   const chainId = useChainId();
   const { address } = useConnection();
-  const restake = options?.restake ?? false;
 
   const stakeSelected = useMemo(() => selected.filter(reward => reward.source === 'stake'), [selected]);
-  // Every stake selection in one launch belongs to the same urn (the scope is one urn),
-  // so the index is carried by any selected id.
-  const index = stakeSelected.length > 0 ? parseStakeId(stakeSelected[0].id).urnIndex : undefined;
+  // A selection may span urns (the Rewards section's multi-urn claim); restake
+  // only applies when it is a single urn, whose index every id then carries.
+  const urnIndices = useMemo(
+    () => [...new Set(stakeSelected.map(reward => parseStakeId(reward.id).urnIndex))],
+    [stakeSelected]
+  );
+  const index = urnIndices.length === 1 ? urnIndices[0] : undefined;
+  const restake = (options?.restake ?? false) && index !== undefined;
 
   // Only needed to resolve the SKY reward's claim amount for restake, but must be
   // called unconditionally; disabled (empty) when there's no stake selection.
@@ -137,12 +141,12 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
 
   return useMemo(() => {
     const stakeModule = stakeModuleAddress[chainId as keyof typeof stakeModuleAddress];
-    if (!address || index === undefined || stakeSelected.length === 0 || !stakeModule) {
+    if (!address || stakeSelected.length === 0 || !stakeModule) {
       return { calls: [], prepared: false };
     }
 
-    const selectedContracts = stakeSelected.map(reward => parseStakeId(reward.id).rewardContract);
-    const selectedSet = new Set(selectedContracts.map(contract => contract.toLowerCase()));
+    const selectedIds = stakeSelected.map(reward => parseStakeId(reward.id));
+    const selectedSet = new Set(selectedIds.map(({ rewardContract }) => rewardContract.toLowerCase()));
 
     // Restake (SKY-only): the selected SKY reward folds back via `lock`. lock pulls SKY
     // from the owner, so prepend an approve when the current allowance is short.
@@ -174,20 +178,20 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
       );
     }
 
-    // One getReward(owner, urnIndex, rewardContract, owner) per selected contract — all
-    // before `lock`, so the SKY reward lands with the owner before being re-locked.
-    for (const rewardContract of selectedContracts) {
+    // One getReward(owner, urnIndex, rewardContract, owner) per selected (urn, contract) —
+    // all before `lock`, so the SKY reward lands with the owner before being re-locked.
+    for (const { urnIndex, rewardContract } of selectedIds) {
       calls.push(
         getWriteContractCall({
           to: stakeModule,
           abi: stakeModuleAbi,
           functionName: 'getReward',
-          args: [address, index, rewardContract, address]
+          args: [address, urnIndex, rewardContract, address]
         })
       );
     }
 
-    if (restake && restakeAmount > 0n) {
+    if (restake && index !== undefined && restakeAmount > 0n) {
       calls.push(
         getWriteContractCall({
           to: stakeModule,
@@ -206,9 +210,9 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
  * Stake claim adapter (SKY Staking Engine `stakeModule`, per-urn). `useClaimable`
  * ({kind:'stake',index}) reads a single urn's claimable rewards and normalizes each
  * into a `ClaimableReward` keyed `${urnIndex}:${rewardContract}`. `useClaimCalls`
- * builds a `getReward(owner,urnIndex,rewardContract,owner)` Call per selected contract;
- * with `restake` it also folds the selected SKY reward back via `lock` (+ a conditional
- * SKY approve). The panel merges these into one `useTransactionFlow`. Only the stake
+ * builds a `getReward(owner,urnIndex,rewardContract,owner)` Call per selected id (the
+ * selection may span urns); with `restake` on a single-urn selection it also folds the
+ * selected SKY reward back via `lock` (+ a conditional SKY approve). The panel merges these into one `useTransactionFlow`. Only the stake
  * scope yields rewards; a portfolio claim-all across every urn is a later concern
  * (would need urn enumeration). Mainnet-only.
  */

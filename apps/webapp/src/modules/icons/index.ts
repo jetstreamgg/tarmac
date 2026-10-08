@@ -18,6 +18,10 @@ import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
 import { OptimismChain } from './OptimismChain';
 import { Stake } from './Stake';
+import { ActivityStake } from './ActivityStake';
+import { ActivityUnstake } from './ActivityUnstake';
+import { ActivityBorrow } from './ActivityBorrow';
+import { ActivityRepay } from './ActivityRepay';
 import { StakeSky } from './StakeSky';
 import { Expert } from './Expert';
 import { Delegate } from './Delegate';
@@ -65,6 +69,10 @@ export {
   MainnetChain,
   OptimismChain,
   Stake,
+  ActivityStake,
+  ActivityUnstake,
+  ActivityBorrow,
+  ActivityRepay,
   StakeSky,
   Expert,
   Delegate,

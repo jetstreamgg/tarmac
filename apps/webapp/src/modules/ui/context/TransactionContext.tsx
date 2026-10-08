@@ -251,6 +251,8 @@ export function TransactionProvider({
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
+  // Ref twin for launch(), which reads it synchronously.
+  const hasMinedStepRef = useRef(false);
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
@@ -469,7 +471,11 @@ export function TransactionProvider({
       // The configRef check is self-healing defense: LOADING with no live
       // session has nothing to restore, so fall through to a fresh launch
       // instead of blocking forever.
-      if (txStatusRef.current === TxStatus.LOADING && configRef.current) {
+      // A sequence waiting on its next wallet prompt after a mined step is in progress too.
+      const inProgress =
+        txStatusRef.current === TxStatus.LOADING ||
+        (txStatusRef.current === TxStatus.INITIALIZED && hasMinedStepRef.current);
+      if (inProgress && configRef.current) {
         setMinimized(false);
         toastWithClose(
           () => (
@@ -508,6 +514,7 @@ export function TransactionProvider({
       txHashRef.current = undefined;
       setCurrentStep(0);
       setHasMinedStep(false);
+      hasMinedStepRef.current = false;
       preludeStepsRef.current = null;
       setPreludeSteps(null);
       gateCopyRef.current = null;
@@ -633,6 +640,7 @@ export function TransactionProvider({
     txStatusRef.current = TxStatus.IDLE;
     setCurrentStep(0);
     setHasMinedStep(false);
+    hasMinedStepRef.current = false;
     preludeStepsRef.current = null;
     setPreludeSteps(null);
     gateCopyRef.current = null;
@@ -951,10 +959,17 @@ export function TransactionProvider({
   );
 
   const handleRetry = useCallback(() => {
+    const preludeBefore = preludeStepsRef.current?.length ?? 0;
     // The reset lives inside the gate: a denied retry must leave the failure
     // view in place, not clear it and then do nothing.
     runGated('retry', () => {
-      resetTransactionProgress();
+      if (hasMinedStep) {
+        // The engine resumes at the failed write; shift past any prelude the gate dropped.
+        const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
+        if (dropped > 0) setCurrentStep(s => s - dropped);
+      } else {
+        resetTransactionProgress();
+      }
 
       if (configRef.current?.onRetry) {
         configRef.current.onRetry();
@@ -963,7 +978,7 @@ export function TransactionProvider({
 
       configRef.current?.onConfirm();
     });
-  }, [runGated, resetTransactionProgress]);
+  }, [runGated, resetTransactionProgress, hasMinedStep]);
 
   // A settle callback belongs to the running session only if BOTH its closure
   // and the write it reports on were made in the current generation (see
@@ -1011,7 +1026,10 @@ export function TransactionProvider({
       }
       // A sequential engine dispatches the next call only once the previous
       // receipt landed, so a write arriving over LOADING means a step mined.
-      if (txStatusRef.current === TxStatus.LOADING) setHasMinedStep(true);
+      if (txStatusRef.current === TxStatus.LOADING) {
+        setHasMinedStep(true);
+        hasMinedStepRef.current = true;
+      }
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;
