@@ -63,9 +63,10 @@ test('withdraws the full stake and the position goes inactive with a reopen CTA'
   await confirm.click();
   await confirmTransactionModal(isolatedPage);
 
-  // Emptied urn → Inactive chip, reopen CTA, withdraw disabled (F6 states).
+  // Emptied urn → Inactive chip, reopen CTA, close disabled and no withdraw row.
   await gotoManagePosition(isolatedPage, 0);
   await expect(isolatedPage.getByTestId('stake-position-inactive-chip')).toBeVisible({ timeout: 15_000 });
   await expect(isolatedPage.getByTestId('stake-manage-cta-reopen')).toBeVisible();
-  await expect(isolatedPage.getByTestId('stake-manage-menu-withdraw')).toBeDisabled();
+  await expect(isolatedPage.getByTestId('stake-manage-menu-close-position')).toBeDisabled();
+  await expect(isolatedPage.getByTestId('stake-manage-menu-withdraw')).toHaveCount(0);
 });

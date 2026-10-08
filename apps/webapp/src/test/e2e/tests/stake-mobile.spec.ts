@@ -254,7 +254,7 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   await expect(sheet).toBeVisible();
   const sheetMenu = isolatedPage
     .getByTestId('stake-manage-menu-manage-sheet')
-    .or(isolatedPage.getByTestId('stake-manage-menu-withdraw-sheet'));
+    .or(isolatedPage.getByTestId('stake-manage-menu-claim-sheet'));
   await expect(sheetMenu).toBeVisible();
   const sheetPrimary = isolatedPage
     .getByTestId('stake-manage-cta-claim-sheet')
