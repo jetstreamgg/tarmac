@@ -134,7 +134,7 @@ function PositionLtvCell({ position }: { position: StakeUserPosition }) {
 
 /**
  * Borrowed cell: LIVE debt (principal + accrued interest). `position.usdsDebt`
- * is the Vat's `art × rate` from `useStakeUrnVaults` — the same figure
+ * is `art × accrued rate` from `useStakeUrnVaults` — the same figure
  * `useVault` derives — so no per-row read is needed here.
  */
 function PositionBorrowedCell({ position }: { position: StakeUserPosition }) {

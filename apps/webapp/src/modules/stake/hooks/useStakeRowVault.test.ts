@@ -19,7 +19,8 @@ const ILK = {
 };
 
 // The minimum position: 1,440,000.01 SKY against the 30,000 USDS dust.
-vi.mock('./useStakeUrnVaults', () => ({
+vi.mock('./useStakeUrnVaults', async importOriginal => ({
+  ...(await importOriginal<typeof import('./useStakeUrnVaults')>()),
   useStakeUrnVaults: () => ({
     data: [
       {

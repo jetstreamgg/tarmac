@@ -4,7 +4,7 @@ import { calculateVaultInfo } from '@/hooks/vaults/calculateVaultInfo';
 import { useSimulatedDripRate } from '@/hooks/vaults/useSimulatedDripRate';
 import { COLLATERAL_PRICE_SYMBOL } from '@/hooks/vaults/vaults.constants';
 import { math } from '@/utils';
-import { useStakeUrnVaults } from './useStakeUrnVaults';
+import { accruedRate, useStakeUrnVaults } from './useStakeUrnVaults';
 
 /**
  * Vault figures for one positions-table row, computed from the list's own
@@ -45,8 +45,7 @@ export function useStakeRowVaultLookup(): {
     const urn = urnVaults?.find(entry => entry.index === index);
     if (!urn || !ilk || isLoadingDrip) return undefined;
 
-    // A tx drips after the drip simulation was cached, so never go below the stored rate.
-    const rate = drippedRate && drippedRate > ilk.rate ? drippedRate : ilk.rate;
+    const rate = accruedRate(ilk.rate, drippedRate);
     const info = calculateVaultInfo({ ...ilk, rate, art: urn.art, ink: urn.skyLocked, marketPrice });
     const minCollateralForDust =
       info.dust && ilk.mat && info.delayedPrice

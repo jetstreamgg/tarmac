@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { readContract, readContracts, type Config } from '@wagmi/core';
 import { stringToHex } from 'viem';
 import { useChainId, useConfig, useConnection } from 'wagmi';
 import { getIlkName, mcdVatAbi, mcdVatAddress, stakeModuleAbi, stakeModuleAddress } from '@/hooks';
 import { mcdSpotAbi, mcdSpotAddress } from '@/hooks/generated';
+import { useSimulatedDripRate } from '@/hooks/vaults/useSimulatedDripRate';
 import { math } from '@/utils';
 
 /** Live Vat state of one staking urn, keyed by its owner-scoped index. */
@@ -14,7 +16,7 @@ export type StakeUrnVault = {
   skyLocked: bigint;
   /** Vat `art` — normalised debt, WAD; `useStakeRowVault` recomputes the risk figures from it. */
   art: bigint;
-  /** Vat `art × ilk.rate` — USDS debt, WAD. */
+  /** `art × accrued rate` — USDS debt with the interest since the last drip, WAD. */
   usdsDebt: bigint;
 };
 
@@ -43,6 +45,15 @@ export type StakeUrnVaultsResult = {
   error: Error | null;
   mutate: () => void;
 };
+
+/**
+ * The rate debt is shown with: `jug.drip`'s simulated result, as `useVault`
+ * uses, or the stored one when the simulation failed. A tx drips after the
+ * simulation was cached, so never below the stored rate.
+ */
+export function accruedRate(storedRate: bigint, drippedRate: bigint | undefined): bigint {
+  return drippedRate && drippedRate > storedRate ? drippedRate : storedRate;
+}
 
 /** Query-key prefix; `invalidateStakeQueries` refetches it after every stake tx. */
 export const STAKE_URN_VAULTS_KEY = 'stake-urn-vaults';
@@ -159,11 +170,22 @@ export function useStakeUrnVaults(): StakeUrnVaultsResult {
     queryKey: [STAKE_URN_VAULTS_KEY, chainId, address],
     queryFn: () => readStakeUrnVaults(config, chainId, address!)
   });
+  const { data: drippedRate, isLoading: isLoadingDrip } = useSimulatedDripRate(
+    stringToHex(getIlkName(2), { size: 32 })
+  );
+
+  // Hold the rows until the drip lands so the list never paints the stored-rate debt first.
+  const urns = useMemo(() => {
+    if (!data || isLoadingDrip) return undefined;
+    if (!data.ilk) return data.urns;
+    const rate = accruedRate(data.ilk.rate, drippedRate);
+    return data.urns.map(urn => ({ ...urn, usdsDebt: math.debtValue(urn.art, rate) }));
+  }, [data, drippedRate, isLoadingDrip]);
 
   return {
-    data: data?.urns,
+    data: urns,
     ilk: data?.ilk,
-    isLoading,
+    isLoading: isLoading || isLoadingDrip,
     isFetching,
     error: (error as Error | null) ?? null,
     mutate: () => {
