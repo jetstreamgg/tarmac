@@ -3,25 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useChainId, useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
 import {
-  TransactionNotFoundError,
-  TransactionReceiptNotFoundError,
   UserRejectedRequestError,
   WaitForTransactionReceiptTimeoutError,
-  type Client,
   type Hash,
-  type ReplacementReason,
   type ReplacementReturnType,
-  type Transaction,
   type TransactionReceipt
 } from 'viem';
-import {
-  getBlock,
-  getBlockNumber,
-  getTransaction,
-  getTransactionCount,
-  getTransactionReceipt,
-  waitForTransactionReceipt
-} from 'viem/actions';
+import { waitForTransactionReceipt } from 'viem/actions';
 
 /** Ceiling on the gap between attempts while the RPC keeps failing. */
 const MAX_RETRY_DELAY_MS = 30_000;
@@ -42,83 +30,6 @@ type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementRet
  */
 export class TransactionReplacedError extends UserRejectedRequestError {
   override name = 'TransactionReplacedError' as const;
-}
-type SentTransaction = { transaction: Transaction; seenAtBlock: bigint };
-
-/**
- * The transaction as first seen pending, kept across attempts. viem detects a
- * speed-up or cancel only through the original it fetched in the same call, so
- * once the original is gone (replaced while an attempt was failing), a fresh
- * attempt can't find it and would wait forever.
- */
-const sentTransactions = new Map<string, SentTransaction>();
-
-const orUndefinedIfNotFound = <T>(request: Promise<T>) =>
-  request.catch(error => {
-    if (error instanceof TransactionNotFoundError || error instanceof TransactionReceiptNotFoundError) {
-      return undefined;
-    }
-    throw error;
-  });
-
-// Same classification as viem's own replacement detection.
-function replacementReason(sent: Transaction, mined: Transaction): ReplacementReason {
-  if (mined.to === sent.to && mined.value === sent.value && mined.input === sent.input) return 'repriced';
-  if (mined.from === mined.to && mined.value === 0n) return 'cancelled';
-  return 'replaced';
-}
-
-/** The sent transaction's nonce has been used without its receipt: find what used it. */
-async function settledByNonce(
-  client: Client,
-  hash: Hash,
-  { transaction: sent, seenAtBlock }: SentTransaction
-) {
-  // The first block after which the sender's nonce is past the sent one.
-  let low = seenAtBlock;
-  let high = await getBlockNumber(client);
-  while (low < high) {
-    const mid = (low + high) / 2n;
-    const nonce = await getTransactionCount(client, { address: sent.from, blockNumber: mid });
-    if (nonce > sent.nonce) high = mid;
-    else low = mid + 1n;
-  }
-  const block = await getBlock(client, { blockNumber: low, includeTransactions: true });
-  const mined = block.transactions.find(tx => tx.from === sent.from && tx.nonce === sent.nonce);
-  if (!mined) throw new Error(`No transaction at nonce ${sent.nonce} in block ${low}`);
-  const receipt = await getTransactionReceipt(client, { hash: mined.hash });
-  if (mined.hash === hash) return { receipt };
-  const reason = replacementReason(sent, mined);
-  return {
-    receipt,
-    replacement: { reason, replacedTransaction: sent, transaction: mined, transactionReceipt: receipt }
-  };
-}
-
-async function watchAttempt(client: Client, hash: Hash, key: string): Promise<ReceiptResult> {
-  const receipt = await orUndefinedIfNotFound(getTransactionReceipt(client, { hash }));
-  if (receipt) return { receipt };
-
-  let sent = sentTransactions.get(key);
-  if (!sent) {
-    const transaction = await orUndefinedIfNotFound(getTransaction(client, { hash }));
-    if (transaction) {
-      sent = { transaction, seenAtBlock: await getBlockNumber(client) };
-      sentTransactions.set(key, sent);
-    }
-  }
-  if (sent) {
-    const nonce = await getTransactionCount(client, { address: sent.transaction.from, blockTag: 'latest' });
-    if (nonce > sent.transaction.nonce) return settledByNonce(client, hash, sent);
-  }
-
-  let replacement: ReplacementReturnType | undefined;
-  const mined = await waitForTransactionReceipt(client, {
-    hash,
-    timeout: ATTEMPT_TIMEOUT_MS,
-    onReplaced: r => (replacement = r)
-  });
-  return { receipt: mined, replacement };
 }
 
 export type TransactionReceiptState = {
@@ -164,10 +75,13 @@ export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?
     queryFn: async () => {
       const client = getPublicClient(config, { chainId: watchChainId });
       if (!client) throw new Error(`No client for chain ${watchChainId}`);
-      const key = `${watchChainId}:${hash}`;
-      const result = await watchAttempt(client, hash!, key);
-      sentTransactions.delete(key);
-      return result;
+      let replacement: ReplacementReturnType | undefined;
+      const receipt = await waitForTransactionReceipt(client, {
+        hash: hash!,
+        timeout: ATTEMPT_TIMEOUT_MS,
+        onReplaced: r => (replacement = r)
+      });
+      return { receipt, replacement };
     },
     // Unlimited while watched; TanStack stops retrying once nothing observes the query.
     retry: true,
