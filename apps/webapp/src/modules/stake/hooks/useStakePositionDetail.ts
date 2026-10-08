@@ -99,6 +99,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     rewardContract && rewardContract !== ZERO_ADDRESS ? rewardContract : undefined
   );
 
+  const rewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
+
   const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: rewardContract && rewardContract !== ZERO_ADDRESS ? [rewardContract] : []
   });
@@ -126,7 +128,9 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const claimableSymbols =
     positiveClaimables.length > 0
       ? [...new Set(positiveClaimables.map(reward => reward.rewardSymbol))]
-      : ['SKY'];
+      : rewardSymbol
+        ? [rewardSymbol]
+        : [];
   const claimableTokenAmount = positiveClaimables
     .filter(reward => reward.rewardSymbol === claimableSymbols[0])
     .reduce((total, reward) => total + reward.claimBalance, 0n);
@@ -159,7 +163,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
       : urnVault !== undefined && isInactiveStakePosition(urnVault),
     hasBorrowHistory: hasStakeBorrowHistory(urnHistory),
     rewardContract,
-    rewardSymbol: rewardContractTokens?.rewardsToken?.symbol,
+    rewardSymbol,
     rewardDeprecated:
       !!rewardContract && rewardContract !== ZERO_ADDRESS && isDeprecatedStakeReward(rewardContract, chainId),
     voteDelegate,
