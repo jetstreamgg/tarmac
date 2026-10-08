@@ -42,7 +42,7 @@ const QUOTE: PendleConvertQuote = {
 type BatchCallbacks = {
   onMutate?: () => void;
   onStart?: (hash?: string) => void;
-  onSuccess?: (hash?: string) => void;
+  onSuccess?: (hash?: string, blockNumber?: bigint) => void;
   onError?: (error: Error, hash?: string) => void;
 };
 
@@ -385,9 +385,10 @@ describe('PendleModalForm', () => {
       expect(started.data.isBatchTx).toBe(true);
 
       act(() => {
-        hoisted.batchArgs?.onSuccess?.('0xhash');
+        hoisted.batchArgs?.onSuccess?.('0xhash', 7n);
       });
-      expect(hoisted.txCallbacks.onSuccess).toHaveBeenCalledWith('0xhash');
+      // The receipt block rides through to the history refresh.
+      expect(hoisted.txCallbacks.onSuccess).toHaveBeenCalledWith('0xhash', 7n);
       expect(hoisted.analyticsSpy).toHaveBeenCalledWith(
         expect.objectContaining({ event: 'transaction_completed', action: 'supply', txHash: '0xhash' })
       );

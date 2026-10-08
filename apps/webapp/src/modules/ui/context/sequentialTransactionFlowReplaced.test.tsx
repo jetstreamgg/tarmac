@@ -8,7 +8,13 @@ const wagmi = vi.hoisted(() => ({
   onReplaced: undefined as
     undefined | ((replacement: { reason: string; transaction: { hash: `0x${string}` } }) => void),
   mutationHash: undefined as `0x${string}` | undefined,
-  receipt: { isLoading: false, isSuccess: false, error: null as Error | null, failureReason: null }
+  receipt: {
+    isLoading: false,
+    isSuccess: false,
+    error: null as Error | null,
+    failureReason: null,
+    data: undefined as { blockNumber: bigint } | undefined
+  }
 }));
 
 vi.mock('wagmi', () => ({
@@ -58,7 +64,13 @@ const mineReplaced = (failOnReplaced: boolean | undefined, reason: string) => {
   // viem reports the replacement, then resolves with the replacing tx's receipt.
   act(() => {
     wagmi.onReplaced?.({ reason, transaction: { hash: '0xrepriced' } });
-    wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    wagmi.receipt = {
+      isLoading: false,
+      isSuccess: true,
+      error: null,
+      failureReason: null,
+      data: { blockNumber: 42n }
+    };
   });
   rerender();
   return { onStart, onSuccess, onError };
@@ -69,7 +81,7 @@ describe('useSequentialTransactionFlow, a transaction replaced before it mined',
     wagmi.onWriteSuccess = undefined;
     wagmi.onReplaced = undefined;
     wagmi.mutationHash = undefined;
-    wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+    wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null, data: undefined };
   });
 
   it.each(['cancelled', 'replaced'])(
@@ -85,19 +97,19 @@ describe('useSequentialTransactionFlow, a transaction replaced before it mined',
   it('with failOnReplaced, a repriced transaction (same call, new fee) succeeds under the hash that mined', () => {
     const { onStart, onSuccess, onError } = mineReplaced(true, 'repriced');
     expect(onStart).toHaveBeenLastCalledWith('0xrepriced');
-    expect(onSuccess).toHaveBeenCalledWith('0xrepriced');
+    expect(onSuccess).toHaveBeenCalledWith('0xrepriced', 42n);
     expect(onError).not.toHaveBeenCalled();
   });
 
   it('without the option, a repriced transaction succeeds under its first hash as before', () => {
     const { onStart, onSuccess } = mineReplaced(undefined, 'repriced');
     expect(onStart).toHaveBeenCalledTimes(1);
-    expect(onSuccess).toHaveBeenCalledWith('0xclaim');
+    expect(onSuccess).toHaveBeenCalledWith('0xclaim', 42n);
   });
 
   it('without the option, a replaced transaction succeeds as before', () => {
     const { onSuccess, onError } = mineReplaced(undefined, 'cancelled');
-    expect(onSuccess).toHaveBeenCalledWith('0xclaim');
+    expect(onSuccess).toHaveBeenCalledWith('0xclaim', 42n);
     expect(onError).not.toHaveBeenCalled();
   });
 });
