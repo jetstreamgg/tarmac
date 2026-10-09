@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { parseSafeTx, readSafeConfig, readSafeTxProgress, safeTxProgress, type SafeMultisigTx } from './safe';
+import {
+  parseSafeTx,
+  readSafeActionProgress,
+  readSafeConfig,
+  readSafeTxProgress,
+  SAFE_ACTION_MISSING_MS,
+  safeTxProgress,
+  type SafeMultisigTx
+} from './safe';
 
 const queued: SafeMultisigTx = {
   safe: '0x0000000000000000000000000000000000005afe',
@@ -152,6 +160,84 @@ describe('readSafeTxProgress', () => {
   it('has nothing to say for a chain without a service', async () => {
     const fetchSpy = respond({});
     expect(await read({ chainId: 43114 })).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('readSafeActionProgress', () => {
+  const SENT_AT = 1_800_000_000_000;
+  const sent = {
+    action: 'claim' as const,
+    txHash: '0xsafe',
+    at: SENT_AT,
+    status: 'sent' as const,
+    safe: true as const
+  };
+  const read = (now = SENT_AT + 60_000, chainId = 8453) => readSafeActionProgress({ chainId, sent, now });
+
+  const atNonce = `/safes/${queued.safe}/multisig-transactions/?nonce=7&executed=true`;
+  const nonceMoved = { [`/safes/${queued.safe}/`]: { status: 200, body: { nonce: '8' } } };
+
+  it('confirms the action under its on-chain hash once the Safe executed it', async () => {
+    const executionDate = '2027-01-15T08:00:00Z';
+    respond({
+      '/multisig-transactions/0xsafe/': {
+        status: 200,
+        body: { ...queued, isExecuted: true, isSuccessful: true, transactionHash: '0xexec', executionDate }
+      }
+    });
+    expect(await read()).toEqual({
+      kind: 'action-confirmed',
+      action: 'claim',
+      txHash: '0xexec',
+      at: Date.parse(executionDate)
+    });
+  });
+
+  it('drops the action when the Safe execution reverted', async () => {
+    respond({
+      '/multisig-transactions/0xsafe/': {
+        status: 200,
+        body: { ...queued, isExecuted: true, isSuccessful: false, transactionHash: '0xexec' }
+      }
+    });
+    expect(await read()).toEqual({ kind: 'action-dropped', txHash: '0xsafe' });
+  });
+
+  it('drops the action when another transaction executed at its nonce', async () => {
+    respond({
+      '/multisig-transactions/0xsafe/': { status: 200, body: queued },
+      ...nonceMoved,
+      [atNonce]: {
+        status: 200,
+        body: { results: [{ ...queued, safeTxHash: '0xother', isExecuted: true, isSuccessful: true }] }
+      }
+    });
+    expect(await read()).toEqual({ kind: 'action-dropped', txHash: '0xsafe' });
+  });
+
+  it('keeps it sent while it waits for signatures', async () => {
+    respond({ '/multisig-transactions/0xsafe/': { status: 200, body: queued } });
+    expect(await read()).toBeNull();
+  });
+
+  it('drops a proposal the service no longer has, once it has had time to see it', async () => {
+    respond({});
+    expect(await read(SENT_AT + SAFE_ACTION_MISSING_MS)).toBeNull();
+    expect(await read(SENT_AT + SAFE_ACTION_MISSING_MS + 1)).toEqual({
+      kind: 'action-dropped',
+      txHash: '0xsafe'
+    });
+  });
+
+  it('keeps it sent through service errors, however long ago it was sent', async () => {
+    respond({ '/multisig-transactions/0xsafe/': { status: 500 } });
+    expect(await read(SENT_AT + 10 * SAFE_ACTION_MISSING_MS)).toBeNull();
+  });
+
+  it('has nothing to say for a chain without a service', async () => {
+    const fetchSpy = respond({});
+    expect(await read(SENT_AT + 10 * SAFE_ACTION_MISSING_MS, 43114)).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

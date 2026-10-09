@@ -1,6 +1,7 @@
 import { useCallback, useId, useLayoutEffect, useRef } from 'react';
 import { useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
+import { useIsSafeWallet } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
@@ -55,6 +56,7 @@ export function useDestinationActionLaunch() {
   const { launch: launchModal, txCallbacks } = useTransaction();
   const sessionId = useId();
   const chains = useChains();
+  const isSafe = useIsSafeWallet();
   const { scope, familyChainId } = usePendingScope();
   const { locked } = useMinimizedSessionLock(sessionId);
 
@@ -109,8 +111,9 @@ export function useDestinationActionLaunch() {
             (change: (current: PendingBridge, txHash: string) => PendingBridge) => (txHash: string) =>
               pendingBridgeStore.update(scope, bridge.id, current => change(current, txHash));
           const callbacks = withActionRecording(() => callbacksRef.current, {
+            // A Safe reports its Safe tx hash here; the tracker settles it if this flow can't.
             onSent: record((current, txHash) =>
-              recordActionSent(current, { action, txHash, at: Date.now() })
+              recordActionSent(current, { action, txHash, at: Date.now(), ...(isSafe && { safe: true }) })
             ),
             onConfirmed: record((current, txHash) =>
               recordAction(current, { action, txHash, at: Date.now() })
@@ -126,7 +129,7 @@ export function useDestinationActionLaunch() {
         chainGuardReason: 'launch-chain'
       });
     },
-    [launchModal, sessionId, scope, pinChainId]
+    [launchModal, sessionId, scope, pinChainId, isSafe]
   );
 
   return { launch, canLaunch, locked };

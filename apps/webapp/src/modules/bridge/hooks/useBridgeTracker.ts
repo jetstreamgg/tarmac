@@ -2,7 +2,7 @@ import { useQueries } from '@tanstack/react-query';
 import { isSettled, pollIntervalMs } from '../model/pendingTransitions';
 import { bridgeChainId } from '../model/networks';
 import { getBridgeAdapter } from '../adapters/registry';
-import { readSafeTxProgress } from '../adapters/safe';
+import { readSafeActionProgress, readSafeTxProgress } from '../adapters/safe';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { trackBridge } from '../tracking/trackBridge';
 import { useBridgeHistory } from './useBridgeHistory';
@@ -32,6 +32,11 @@ export function useBridgeTracker() {
             return chainId === undefined
               ? null
               : readSafeTxProgress({ chainId, safeTxHash: entry.safeTxHash });
+          },
+          // Destination actions run on the destination network.
+          readSafeAction: async (entry, sent) => {
+            const chainId = bridgeChainId(entry.to, familyChainId);
+            return chainId === undefined ? null : readSafeActionProgress({ chainId, sent, now: Date.now() });
           }
         });
         return progress?.kind ?? null;

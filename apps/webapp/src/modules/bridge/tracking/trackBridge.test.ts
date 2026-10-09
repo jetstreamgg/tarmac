@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
+import {
+  applyProgress,
+  canLaunchAction,
+  createPendingBridge,
+  recordAction,
+  recordActionSent
+} from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { createPendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { mockAdapter, MOCK_STAGE_MS } from '../adapters/mockAdapter';
@@ -35,8 +41,31 @@ describe('trackBridge', () => {
   const run = (
     id: string,
     adapter: BridgeAdapter = mockAdapter,
-    readSafeTx = vi.fn(async (): Promise<BridgeProgress | null> => null)
-  ) => trackBridge({ store, scope: SCOPE, id, now: () => now, getAdapter: () => adapter, readSafeTx });
+    readSafeTx = vi.fn(async (): Promise<BridgeProgress | null> => null),
+    readSafeAction = vi.fn(async (): Promise<BridgeProgress | null> => null)
+  ) =>
+    trackBridge({
+      store,
+      scope: SCOPE,
+      id,
+      now: () => now,
+      getAdapter: () => adapter,
+      readSafeTx,
+      readSafeAction
+    });
+
+  const seedSentClaim = (safe: boolean) => {
+    const ready = applyProgress(seed({ txHash: '0xsource' }), { kind: 'ready', nextAction: 'claim' }, NOW);
+    store.upsert(
+      SCOPE,
+      recordActionSent(ready, {
+        action: 'claim',
+        txHash: '0xsafeclaim',
+        at: NOW,
+        ...(safe && { safe: true })
+      })
+    );
+  };
 
   beforeEach(() => {
     now = NOW;
@@ -114,6 +143,54 @@ describe('trackBridge', () => {
     };
     expect(await run('0xsource', adapter)).toBeNull();
     expect(store.getSnapshot(SCOPE)[0]).toMatchObject({ status: 'pending', nextAction: 'finalize' });
+  });
+
+  it('drops a Safe action the service rules out, so it can be sent again', async () => {
+    seedSentClaim(true);
+    const adapter = { checkProgress: vi.fn(async () => null) };
+    const readSafeAction = vi.fn(async () => ({ kind: 'action-dropped' as const, txHash: '0xsafeclaim' }));
+    await run('0xsource', adapter, undefined, readSafeAction);
+    expect(readSafeAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '0xsource' }),
+      expect.objectContaining({ txHash: '0xsafeclaim', safe: true })
+    );
+    expect(store.getSnapshot(SCOPE)[0].actions).toEqual([]);
+    expect(canLaunchAction(store.getSnapshot(SCOPE)[0])).toBe(true);
+  });
+
+  it('confirms a Safe action under the hash it executed with', async () => {
+    seedSentClaim(true);
+    await run(
+      '0xsource',
+      mockAdapter,
+      undefined,
+      vi.fn(async () => ({
+        kind: 'action-confirmed' as const,
+        action: 'claim' as const,
+        txHash: '0xexec',
+        at: NOW
+      }))
+    );
+    expect(store.getSnapshot(SCOPE)[0]).toMatchObject({
+      status: 'claimed',
+      actions: [{ action: 'claim', txHash: '0xexec', at: NOW }]
+    });
+  });
+
+  it('asks the route adapter while a Safe action still waits for its signers', async () => {
+    seedSentClaim(true);
+    const adapter = { checkProgress: vi.fn(async () => ({ kind: 'arrived' as const })) };
+    await run('0xsource', adapter);
+    expect(adapter.checkProgress).toHaveBeenCalled();
+    expect(store.getSnapshot(SCOPE)[0]).toMatchObject({ status: 'claimed' });
+  });
+
+  it('leaves an action sent from a regular wallet to the route adapter', async () => {
+    seedSentClaim(false);
+    const readSafeAction = vi.fn(async () => ({ kind: 'action-dropped' as const, txHash: '0xsafeclaim' }));
+    await run('0xsource', mockAdapter, undefined, readSafeAction);
+    expect(readSafeAction).not.toHaveBeenCalled();
+    expect(store.getSnapshot(SCOPE)[0].actions).toHaveLength(1);
   });
 
   it('skips settled and unknown bridges', async () => {
