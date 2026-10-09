@@ -160,6 +160,11 @@ export type UseSequentialTransactionFlowParameters = {
   onError?: (error: Error, hash: string) => void;
   gcTime?: number;
   chainId?: number;
+  /**
+   * A transaction cancelled or replaced by another call before it mined fails instead of succeeding.
+   * A repriced one (same call, new fee) is announced again at `onStart` and settles under its new hash.
+   */
+  failOnReplaced?: boolean;
 };
 
 export type SequentialTransactionHook = {

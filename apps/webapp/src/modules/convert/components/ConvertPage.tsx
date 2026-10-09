@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -8,6 +8,10 @@ import { IllustrationStaked, IllustrationStakingLogomark } from '@/modules/icons
 import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BRIDGE_ENABLED, QueryParams } from '@/lib/constants';
+import { useAppSearchParams } from '@/lib/navigation';
+import { BridgePanel } from '@/modules/bridge/components/BridgePanel';
 import { useConvertForm } from '../hooks/useConvertForm';
 import { useConvertLaunch } from '../hooks/useConvertLaunch';
 import type { PsmConversionDisabledReason } from '../hooks/usePsmConversion.helpers';
@@ -84,6 +88,44 @@ export function ConvertPage() {
     form.isConnected &&
     (form.isZero || form.insufficient || form.debouncePending || !!conversion.disabledReason);
 
+  // Form column: the middle 6 columns of the design grid (624px @1280)
+  // minus 48px breathing room each side, per the Convert mock.
+  const swapPanel = (
+    <div className="flex w-full max-w-[528px] flex-col gap-4">
+      {/* Inert while this flow's transaction is minimized (APP-448). */}
+      <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="convert-form">
+        <ConvertCard form={form} />
+      </div>
+
+      {locked ? (
+        <Text className="text-textSecondary text-sm" dataTestId="convert-locked">
+          <Trans>A transaction is in progress. Open it to continue.</Trans>
+        </Text>
+      ) : form.insufficient ? (
+        <Text className="text-error text-sm" dataTestId="convert-error">
+          <Trans>Insufficient funds</Trans>
+        </Text>
+      ) : (
+        disabledReasonText && (
+          <Text className="text-error text-sm" dataTestId="convert-error">
+            {disabledReasonText}
+          </Text>
+        )
+      )}
+
+      <Button
+        variant="primary"
+        size="xl"
+        className={CTA_CLASSES}
+        disabled={!locked && reviewDisabled}
+        onClick={locked ? restore : launchOrConnect}
+        data-testid={locked ? 'convert-open-transaction' : 'convert-review-cta'}
+      >
+        {locked ? <Trans>Open transaction</Trans> : <Trans>Review</Trans>}
+      </Button>
+    </div>
+  );
+
   return (
     <div className="flex w-full flex-col items-center gap-8 py-4 md:py-10" data-testid="convert-page">
       {/* Patterns/Headers, Convert type 5044:35419. Desktop comp 1222:15248
@@ -111,41 +153,43 @@ export function ConvertPage() {
         subtitleClassName="max-w-[459px]"
       />
 
-      {/* Form column: the middle 6 columns of the design grid (624px @1280)
-          minus 48px breathing room each side, per the Convert mock. */}
-      <div className="flex w-full max-w-[528px] flex-col gap-4">
-        {/* Inert while this flow's transaction is minimized (APP-448). */}
-        <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="convert-form">
-          <ConvertCard form={form} />
-        </div>
-
-        {locked ? (
-          <Text className="text-textSecondary text-sm" dataTestId="convert-locked">
-            <Trans>A transaction is in progress. Open it to continue.</Trans>
-          </Text>
-        ) : form.insufficient ? (
-          <Text className="text-error text-sm" dataTestId="convert-error">
-            <Trans>Insufficient funds</Trans>
-          </Text>
-        ) : (
-          disabledReasonText && (
-            <Text className="text-error text-sm" dataTestId="convert-error">
-              {disabledReasonText}
-            </Text>
-          )
-        )}
-
-        <Button
-          variant="primary"
-          size="xl"
-          className={CTA_CLASSES}
-          disabled={!locked && reviewDisabled}
-          onClick={locked ? restore : launchOrConnect}
-          data-testid={locked ? 'convert-open-transaction' : 'convert-review-cta'}
-        >
-          {locked ? <Trans>Open transaction</Trans> : <Trans>Review</Trans>}
-        </Button>
-      </div>
+      {BRIDGE_ENABLED ? <ConvertTabs swap={swapPanel} /> : swapPanel}
     </div>
+  );
+}
+
+type ConvertTab = 'swap' | 'bridge';
+
+/** Swap | Bridge pills (Figma Tabs3 3831:127371), synced to `?tab=`. */
+function ConvertTabs({ swap }: { swap: ReactNode }) {
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  const tab: ConvertTab = searchParams.get(QueryParams.Tab) === 'bridge' ? 'bridge' : 'swap';
+  const onTabChange = (value: string) => {
+    setSearchParams(
+      params => {
+        params.set(QueryParams.Tab, value);
+        return params;
+      },
+      { replace: true }
+    );
+  };
+
+  return (
+    <Tabs value={tab} onValueChange={onTabChange} className="flex w-full max-w-[528px] flex-col">
+      <TabsList variant="nav" className="w-full gap-3" data-testid="convert-tabs">
+        <TabsTrigger value="swap" variant="nav" className="flex-1" data-testid="convert-tab-swap">
+          <Trans>Swap</Trans>
+        </TabsTrigger>
+        <TabsTrigger value="bridge" variant="nav" className="flex-1" data-testid="convert-tab-bridge">
+          <Trans>Bridge</Trans>
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="swap" className="mt-6">
+        {swap}
+      </TabsContent>
+      <TabsContent value="bridge" className="mt-6">
+        <BridgePanel />
+      </TabsContent>
+    </Tabs>
   );
 }

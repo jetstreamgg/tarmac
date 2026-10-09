@@ -12,6 +12,14 @@ export function isRevertedError(
   return false;
 }
 
+/** A transaction the wallet cancelled or replaced with another call before it mined; it never landed. */
+export class TransactionReplacedError extends Error {
+  constructor() {
+    super('The transaction was cancelled or replaced.');
+    this.name = 'TransactionReplacedError';
+  }
+}
+
 // EIP-1193 "user rejected request". Wallets nest this at varying depths in the
 // viem cause chain (and don't always set err.name), so we walk the chain.
 const USER_REJECTED_CODE = 4001;
