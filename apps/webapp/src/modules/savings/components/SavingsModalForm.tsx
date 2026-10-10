@@ -251,6 +251,7 @@ export function SavingsModalForm({
     execute,
     nextCalls,
     callMatches: PSM_SWAP_BOUNDS,
+    dispatchBlocked: !!usdcBlockedReason,
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,

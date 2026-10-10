@@ -144,11 +144,13 @@ export function useConvertLaunch({
   // and `getConfirmDisabled`).
   const nextCallsRef = useRef<Call[]>([]);
   const confirmDisabledRef = useRef(true);
+  const dispatchBlockedRef = useRef(false);
   // A layout effect, so a confirm click can never run the previous render's execute.
   useLayoutEffect(() => {
     executeRef.current = () => conversion.execute();
     nextCallsRef.current = conversion.nextCalls;
     confirmDisabledRef.current = confirmDisabled;
+    dispatchBlockedRef.current = !!conversion.disabledReason;
   });
 
   // Engine reads (allowance / liquidity / halted flags) refetch on success before
@@ -239,6 +241,7 @@ export function useConvertLaunch({
       onConfirm: () => executeRef.current(),
       getNextCalls: () => nextCallsRef.current,
       getConfirmDisabled: () => confirmDisabledRef.current,
+      getDispatchBlocked: () => dispatchBlockedRef.current,
       onSuccess: handleSuccess,
       sessionId,
       // Both legs are $1-pegged (USDC/USDS); the amount is fixed at launch

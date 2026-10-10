@@ -87,6 +87,8 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
    * exact comparison.
    */
   callMatches?: CallMatcher;
+  /** See `TransactionConfig.getDispatchBlocked`. */
+  dispatchBlocked?: boolean;
 };
 
 /**
@@ -105,6 +107,7 @@ export function useModalEntryBody({
   execute,
   nextCalls,
   callMatches,
+  dispatchBlocked,
   confirmDisabled,
   confirmLabel,
   confirmAction,
@@ -140,6 +143,11 @@ export function useModalEntryBody({
     confirmDisabledRef.current = confirmDisabled;
   }, [confirmDisabled]);
   const getConfirmDisabled = useCallback(() => confirmDisabledRef.current, []);
+  const dispatchBlockedRef = useRef(dispatchBlocked);
+  useLayoutEffect(() => {
+    dispatchBlockedRef.current = dispatchBlocked;
+  }, [dispatchBlocked]);
+  const getDispatchBlocked = useCallback(() => !!dispatchBlockedRef.current, []);
 
   // Keep the shared modal's confirm gating + handler + wallet summary (+ optional
   // step labels / toast titles) live. Merged into the entry (never replacing
@@ -171,6 +179,7 @@ export function useModalEntryBody({
       getNextCalls,
       callMatches,
       getConfirmDisabled,
+      getDispatchBlocked,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
@@ -197,6 +206,7 @@ export function useModalEntryBody({
     getNextCalls,
     callMatches,
     getConfirmDisabled,
+    getDispatchBlocked,
     updateModalContent
   ]);
 

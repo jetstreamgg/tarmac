@@ -593,6 +593,29 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('refuses a retry after a mined step once the flow blocks dispatch', () => {
+    const onConfirm = vi.fn();
+    const psm = { feeRaised: false };
+    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
+    const cb = renderWithGate(() => ({ allow: true }), {
+      ...config,
+      getDispatchBlocked: () => psm.feeRaised
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('rejected in wallet')));
+
+    live.calls = [swap(900n)];
+    psm.feeRaised = true;
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('retries when the flow still allows the confirm', () => {
     const onConfirm = vi.fn();
     const { config } = driftingFlow(onConfirm, [swap(900n)]);

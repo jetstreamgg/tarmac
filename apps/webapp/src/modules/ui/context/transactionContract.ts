@@ -215,6 +215,12 @@ export type TransactionConfig = {
    * confirmed calls.
    */
   getConfirmDisabled?: () => boolean;
+  /**
+   * Refuses a deferred dispatch on every trigger, including a retry after a
+   * mined step: for state the calldata doesn't carry and the run itself never
+   * moves, such as a PSM fee `sellGem` has no min-out against.
+   */
+  getDispatchBlocked?: () => boolean;
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
@@ -313,6 +319,7 @@ export type LiveModalUpdate = Partial<
     | 'getNextCalls'
     | 'callMatches'
     | 'getConfirmDisabled'
+    | 'getDispatchBlocked'
     | 'steps'
     | 'toast'
     | 'analytics'

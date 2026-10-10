@@ -1054,7 +1054,11 @@ export function TransactionProvider({
         // stalled step is unprepared until the engine re-simulates it. What is
         // left to send is still held to the confirmed calls.
         const gateApplies = trigger !== 'retry' || !hasMinedStepRef.current;
-        if (!callsStillConfirmed() || (gateApplies && configRef.current?.getConfirmDisabled?.())) {
+        if (
+          !callsStillConfirmed() ||
+          configRef.current?.getDispatchBlocked?.() ||
+          (gateApplies && configRef.current?.getConfirmDisabled?.())
+        ) {
           notifyReviewAgainOnChangedCalls(sendBackToReview());
           return;
         }
