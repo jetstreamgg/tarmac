@@ -397,6 +397,25 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
   const lastDispatchedCall = () =>
     (wagmi.writeContract.mock.calls.at(-1)?.[0] as { functionName?: string } | undefined)?.functionName;
 
+  const mineApproveAndBroadcastSupply = (flow: { execute: () => void }, rerender: () => void) => {
+    act(() => flow.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+  };
+
   it('a rejection of the FIRST call drops the snapshot: the next confirm dispatches the rebuilt call', () => {
     let calls: Call[] = [SUPPLY];
     const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls }));
@@ -457,23 +476,7 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     let calls: Call[] = [APPROVE, SUPPLY];
     const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onError }));
 
-    act(() => result.current.execute());
-    act(() => {
-      wagmi.mutationHash = '0xapprove';
-      wagmi.onWriteSuccess?.('0xapprove');
-    });
-    rerender();
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
-    });
-    rerender();
-
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
-      wagmi.mutationHash = '0xsupply';
-      wagmi.onWriteSuccess?.('0xsupply');
-    });
-    rerender();
+    mineApproveAndBroadcastSupply(result.current, rerender);
     act(() => {
       wagmi.receipt = {
         isLoading: false,
@@ -499,25 +502,10 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
       useSequentialTransactionFlow({ calls, onError, onSuccess })
     );
 
-    act(() => result.current.execute());
-    act(() => {
-      wagmi.mutationHash = '0xapprove';
-      wagmi.onWriteSuccess?.('0xapprove');
-    });
-    rerender();
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
-    });
-    rerender();
+    mineApproveAndBroadcastSupply(result.current, rerender);
     expect(result.current.currentCallIndex).toBe(1);
 
-    // The supply is broadcast and reverts on-chain.
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
-      wagmi.mutationHash = '0xsupply';
-      wagmi.onWriteSuccess?.('0xsupply');
-    });
-    rerender();
+    // The supply reverts on-chain.
     act(() => {
       wagmi.receipt = {
         isLoading: false,

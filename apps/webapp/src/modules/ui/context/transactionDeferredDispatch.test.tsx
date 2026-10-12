@@ -152,6 +152,34 @@ function driftingFlow(onConfirm: () => void, calls: Call[]) {
 
 const lastToastTitle = () => renderLastToast().getByText('Transaction details changed');
 
+const bareConfig = (onConfirm: () => void): TransactionConfig => ({
+  title: 'Claim',
+  usdValue: 0,
+  supportedChainIds: [1],
+  onConfirm
+});
+
+const heldGate = () => {
+  let resolve!: (v: { allow: boolean }) => void;
+  const gate: PreTransactionGate = () => new Promise(r => (resolve = r));
+  return { gate, resolve: () => resolve({ allow: true }) };
+};
+
+const failUnmined = (cb: TxCallbacks, message = 'execution reverted') => {
+  fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+  act(() => cb.onMutate());
+  act(() => cb.onError(new Error(message)));
+};
+
+// The approve mined, the swap is in the wallet.
+const failAfterMinedStep = (cb: TxCallbacks) => {
+  fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+  act(() => cb.onMutate());
+  act(() => cb.onStart('0xapprove'));
+  act(() => cb.onMutate());
+  act(() => cb.onError(new Error('rejected in wallet')));
+};
+
 describe('TransactionProvider deferred dispatch re-validation', () => {
   beforeEach(() => {
     i18n.activate('en');
@@ -159,79 +187,47 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
   });
   afterEach(() => vi.clearAllMocks());
 
-  it('refuses a retry from a different account than the one that confirmed', () => {
+  it.each([
+    { address: ACCOUNT_B, title: 'Account changed', body: /Review the details and confirm again/ },
+    { address: undefined, title: 'Wallet disconnected', body: /Reconnect and confirm again/ }
+  ])('refuses a retry once the wallet shows "$title"', ({ address, title, body }) => {
     const onConfirm = vi.fn();
     // No reported calls: an account switch must be caught even when the
     // calldata never names the sender.
-    const cb = renderWithGate(() => ({ allow: true }), {
-      title: 'Claim',
-      usdValue: 0,
-      supportedChainIds: [1],
-      onConfirm
-    });
+    const cb = renderWithGate(() => ({ allow: true }), bareConfig(onConfirm));
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('execution reverted')));
+    failUnmined(cb);
 
-    switchAccount(ACCOUNT_B);
+    switchAccount(address);
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
     const toast = renderLastToast();
-    expect(toast.getByText('Account changed')).toBeTruthy();
-    expect(toast.getByText(/Review the details and confirm again/)).toBeTruthy();
+    expect(toast.getByText(title)).toBeTruthy();
+    expect(toast.getByText(body)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
   });
 
   it('refuses an async allow when the account switched while the verdict was pending', async () => {
     const onConfirm = vi.fn();
-    let resolveVerdict!: (v: { allow: boolean }) => void;
-    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const { gate, resolve } = heldGate();
     const { config } = driftingFlow(onConfirm, [swap(900n)]);
     renderWithGate(gate, config);
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     switchAccount(ACCOUNT_B);
-    resolveVerdict({ allow: true });
+    resolve();
     await flush();
 
     expect(onConfirm).not.toHaveBeenCalled();
     expect(renderLastToast().getByText('Account changed')).toBeTruthy();
   });
 
-  it('names a disconnect as a disconnect, not an account switch', () => {
-    const onConfirm = vi.fn();
-    const cb = renderWithGate(() => ({ allow: true }), {
-      title: 'Claim',
-      usdValue: 0,
-      supportedChainIds: [1],
-      onConfirm
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('execution reverted')));
-
-    switchAccount(undefined);
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(renderLastToast().getByText('Wallet disconnected')).toBeTruthy();
-  });
-
   it('a confirm from the new account goes through', () => {
     const onConfirm = vi.fn();
-    const cb = renderWithGate(() => ({ allow: true }), {
-      title: 'Claim',
-      usdValue: 0,
-      supportedChainIds: [1],
-      onConfirm
-    });
+    const cb = renderWithGate(() => ({ allow: true }), bareConfig(onConfirm));
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('execution reverted')));
+    failUnmined(cb);
     switchAccount(ACCOUNT_B);
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
@@ -241,14 +237,13 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
 
   it('refuses an async allow when the calls changed while the verdict was pending', async () => {
     const onConfirm = vi.fn();
-    let resolveVerdict!: (v: { allow: boolean }) => void;
-    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const { gate, resolve } = heldGate();
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     renderWithGate(gate, config);
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     live.calls = [approve, swap(350n)];
-    resolveVerdict({ allow: true });
+    resolve();
     await flush();
 
     expect(onConfirm).not.toHaveBeenCalled();
@@ -257,27 +252,15 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(screen.getByRole('button', { name: /confirm/i })).not.toBeNull();
   });
 
-  it('runs an async allow when the calls are unchanged', async () => {
-    const onConfirm = vi.fn();
-    const { config } = driftingFlow(onConfirm, [approve, swap(900n)]);
-    renderWithGate(async () => ({ allow: true }), config);
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    await flush();
-
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-  });
-
   it('runs an async allow when only the approve dropped off the front', async () => {
     const onConfirm = vi.fn();
-    let resolveVerdict!: (v: { allow: boolean }) => void;
-    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const { gate, resolve } = heldGate();
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     renderWithGate(gate, config);
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     live.calls = [swap(900n)];
-    resolveVerdict({ allow: true });
+    resolve();
     await flush();
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -288,10 +271,8 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     const cb = renderWithGate(() => ({ allow: true }), config);
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    failUnmined(cb);
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('execution reverted')));
 
     live.calls = [swap(350n)];
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
@@ -306,9 +287,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     const cb = renderWithGate(() => ({ allow: true }), config);
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('rejected in wallet')));
+    failUnmined(cb, 'rejected in wallet');
 
     live.calls = [swap(900n)];
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
@@ -323,11 +302,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     const { config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     const cb = renderWithGate(() => ({ allow: true }), config);
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xapprove'));
-    act(() => cb.onMutate()); // the approve mined, the swap is in the wallet
-    act(() => cb.onError(new Error('rejected in wallet')));
+    failAfterMinedStep(cb);
 
     switchAccount(ACCOUNT_B);
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
@@ -349,11 +324,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     };
     const cb = renderWithGate(gate, config);
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xapprove'));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('rejected in wallet')));
+    failAfterMinedStep(cb);
 
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
@@ -363,16 +334,17 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
 
   it('closes on changed calls after a mined step too', () => {
     const onConfirm = vi.fn();
+    const gating = { disabled: false };
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
-    const cb = renderWithGate(() => ({ allow: true }), config);
+    const cb = renderWithGate(() => ({ allow: true }), {
+      ...config,
+      getConfirmDisabled: () => gating.disabled
+    });
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xapprove'));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('rejected in wallet')));
+    failAfterMinedStep(cb);
 
     live.calls = [swap(350n)];
+    gating.disabled = true;
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -401,50 +373,32 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
 
   it("lets a flow's callMatches accept a tighter bound", async () => {
     const callMatches = tightensOnly({ transferFrom: { index: 2, kind: 'min' } });
-    let resolveVerdict!: (v: { allow: boolean }) => void;
-    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const { gate, resolve } = heldGate();
     const onConfirm = vi.fn();
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     renderWithGate(gate, { ...config, callMatches });
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     live.calls = [approve, swap(905n)];
-    resolveVerdict({ allow: true });
+    resolve();
     await flush();
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it("refuses a looser bound under the flow's callMatches", async () => {
-    const callMatches = tightensOnly({ transferFrom: { index: 2, kind: 'min' } });
-    let resolveVerdict!: (v: { allow: boolean }) => void;
-    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
-    const onConfirm = vi.fn();
-    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
-    renderWithGate(gate, { ...config, callMatches });
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    live.calls = [approve, swap(899n)];
-    resolveVerdict({ allow: true });
-    await flush();
-    expect(onConfirm).not.toHaveBeenCalled();
-    expect(lastToastTitle()).toBeTruthy();
-  });
-
   it('a fresh confirm after being sent back re-captures the new calls', async () => {
     const onConfirm = vi.fn();
-    let resolveVerdict!: (v: { allow: boolean }) => void;
-    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
+    const { gate, resolve } = heldGate();
     const { live, config } = driftingFlow(onConfirm, [swap(900n)]);
     renderWithGate(gate, config);
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     live.calls = [swap(350n)];
-    resolveVerdict({ allow: true });
+    resolve();
     await flush();
     expect(onConfirm).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    resolveVerdict({ allow: true });
+    resolve();
     await flush();
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
@@ -458,9 +412,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
       getConfirmDisabled: () => gating.disabled
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('rejected in wallet')));
+    failUnmined(cb, 'rejected in wallet');
 
     // e.g. an acknowledgement lapsed or the module halted since the confirm.
     gating.disabled = true;
@@ -468,22 +420,6 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(renderLastToast().getByText('Transaction details changed')).toBeTruthy();
-  });
-
-  it('refuses an async allow once the flow no longer allows the confirm', async () => {
-    const onConfirm = vi.fn();
-    const gating = { disabled: false };
-    let resolveVerdict!: (v: { allow: boolean }) => void;
-    const gate: PreTransactionGate = () => new Promise(resolve => (resolveVerdict = resolve));
-    const { config } = driftingFlow(onConfirm, [swap(900n)]);
-    renderWithGate(gate, { ...config, getConfirmDisabled: () => gating.disabled });
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    gating.disabled = true;
-    resolveVerdict({ allow: true });
-    await flush();
-
-    expect(onConfirm).not.toHaveBeenCalled();
   });
 
   // The run itself moves what the form checks (a conversion leg spends the
@@ -498,11 +434,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
       getConfirmDisabled: () => gating.disabled
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xapprove'));
-    act(() => cb.onMutate()); // the approve mined, the swap is in the wallet
-    act(() => cb.onError(new Error('rejected in wallet')));
+    failAfterMinedStep(cb);
 
     live.calls = [swap(900n)];
     gating.disabled = true;
@@ -534,24 +466,6 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });
 
-  it('closes when a retry of a stalled run is refused', () => {
-    const onConfirm = vi.fn();
-    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
-    const cb = renderWithGate(() => ({ allow: true }), config);
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xapprove'));
-    live.calls = [swap(900n)];
-    act(() => cb.onError(markStalledStep(new Error('simulation reverted')), ''));
-
-    switchAccount(ACCOUNT_B);
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
   // Live calls also shrink or empty without anything mining (an expired quote,
   // an allowance landing from elsewhere): a plain rejection stays unmined.
   it('returns to the review when a refused retry follows a rejection with fewer live calls', () => {
@@ -570,29 +484,6 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
 
-  it('still holds a retry after a mined step to the confirmed calls', () => {
-    const onConfirm = vi.fn();
-    const gating = { disabled: false };
-    const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
-    const cb = renderWithGate(() => ({ allow: true }), {
-      ...config,
-      getConfirmDisabled: () => gating.disabled
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xapprove'));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('rejected in wallet')));
-
-    live.calls = [swap(350n)];
-    gating.disabled = true;
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
   it('refuses a retry after a mined step once the flow blocks dispatch', () => {
     const onConfirm = vi.fn();
     const psm = { feeRaised: false };
@@ -602,11 +493,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
       getDispatchBlocked: () => psm.feeRaised
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xapprove'));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('rejected in wallet')));
+    failAfterMinedStep(cb);
 
     live.calls = [swap(900n)];
     psm.feeRaised = true;
@@ -616,31 +503,11 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('retries when the flow still allows the confirm', () => {
-    const onConfirm = vi.fn();
-    const { config } = driftingFlow(onConfirm, [swap(900n)]);
-    const cb = renderWithGate(() => ({ allow: true }), { ...config, getConfirmDisabled: () => false });
-
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('rejected in wallet')));
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-
-    expect(onConfirm).toHaveBeenCalledTimes(2);
-  });
-
   it('leaves flows that report no calls to the gate alone', () => {
     const onConfirm = vi.fn();
-    const cb = renderWithGate(() => ({ allow: true }), {
-      title: 'Supply',
-      usdValue: 0,
-      supportedChainIds: [1],
-      onConfirm
-    });
+    const cb = renderWithGate(() => ({ allow: true }), { ...bareConfig(onConfirm), title: 'Supply' });
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
-    act(() => cb.onMutate());
-    act(() => cb.onError(new Error('execution reverted')));
+    failUnmined(cb);
     fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(2);

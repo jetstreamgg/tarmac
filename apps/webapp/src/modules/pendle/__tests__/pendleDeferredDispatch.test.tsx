@@ -220,7 +220,6 @@ vi.mock('@/hooks', async io => {
     ...actual,
     useDebounce: <T,>(value: T) => value,
     useIsSafeWallet: () => false,
-    useIsBatchSupported: () => ({ data: false, isLoading: false }),
     useIsTouchDevice: () => false,
     usePendleUserPtBalances: () => ({ ...stable.read, data: balances }),
     usePendleMarketsApiData: () => ({ ...stable.read, data: marketsApi }),
@@ -381,20 +380,6 @@ describe('Pendle — deferred dispatch', () => {
       await release();
 
       expect(h.writes).toHaveLength(0);
-      expect(lastToastTitle()).toBe('Transaction details changed');
-      expectOnReview();
-    });
-
-    it('sends nothing on Retry once the quote moved', () => {
-      renderWith(() => ({ allow: true }), <OpenSupply />);
-
-      supplyAndConfirm();
-      expect(h.writes).toHaveLength(1);
-      failLastWrite();
-      act(() => setQuote(quote('swapExactTokenForPt', MIN_OUT_B, T0)));
-      fireEvent.click(screen.getByRole('button', { name: /retry|try again/i }));
-
-      expect(h.writes).toHaveLength(1);
       expect(lastToastTitle()).toBe('Transaction details changed');
       expectOnReview();
     });

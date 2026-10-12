@@ -5,6 +5,8 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { maxUint256, parseUnits } from 'viem';
 import type { PreTransactionGate } from '@/modules/ui/context/preTransactionGate';
+import { STUSDS_PROVIDER_CONFIG } from '@/hooks/stusds/providers/constants';
+import { calculateMinOutputWithSlippage } from '@/hooks/stusds/providers/rateComparison';
 
 // The real stUSDS modal end to end — provider, form, launch hook, Curve engine,
 // sequential flow — with wagmi stubbed at its edges. `writeContract` is the
@@ -17,6 +19,7 @@ const ADDRESS = '0x0000000000000000000000000000000000000001';
 const AMOUNT = parseUnits('100000', 18);
 const QUOTE_A = parseUnits('92000', 18);
 const QUOTE_B = parseUnits('35000', 18);
+const REVIEWED_MIN_OUT = calculateMinOutputWithSlippage(QUOTE_A, STUSDS_PROVIDER_CONFIG.maxSlippageBps);
 // The rate-driven drift between polls: a slightly better quote.
 const QUOTE_A_UP = parseUnits('92001', 18);
 
@@ -114,7 +117,6 @@ const idleEngine = {
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
   useIsSafeWallet: () => false,
-  useIsBatchSupported: () => ({ data: false, isLoading: false }),
   useIsTouchDevice: () => false,
   useStUsdsAllowance: () => ({ data: 0n }),
   useBatchStUsdsDeposit: () => idleEngine,
@@ -306,31 +308,10 @@ describe('stUSDS Curve supply — deferred dispatch', () => {
     expect(h.writes).toHaveLength(1);
     expect(h.writes[0].functionName).toBe('exchange');
     expect(h.writes[0].args[2]).toBe(AMOUNT);
-  });
-
-  it('sends nothing when the quote moves while the gate holds', async () => {
-    const reviewed = heldGate();
-    renderModal(reviewed.gate);
-
-    toReviewAndConfirm();
-    act(() => setQuote(QUOTE_B));
-    await reviewed.release();
-
-    expect(h.writes).toHaveLength(0);
-    expect(lastToastTitle()).toBe('Transaction details changed');
-    expectOnReview();
+    expect(minOutOf(h.writes[0])).toBe(REVIEWED_MIN_OUT);
   });
 
   it('sends the tighter min-out when the quote improves while the gate holds', async () => {
-    // The min-out the reviewed quote produces, as the baseline.
-    const held = heldGate();
-    renderModal(held.gate);
-    toReviewAndConfirm();
-    await held.release();
-    const reviewedMinOut = minOutOf(h.writes[0]);
-    cleanup();
-    h.writes = [];
-
     const improved = heldGate();
     renderModal(improved.gate);
     toReviewAndConfirm();
@@ -338,7 +319,7 @@ describe('stUSDS Curve supply — deferred dispatch', () => {
     await improved.release();
 
     expect(h.writes).toHaveLength(1);
-    expect(minOutOf(h.writes[0])).toBeGreaterThan(reviewedMinOut);
+    expect(minOutOf(h.writes[0])).toBeGreaterThan(REVIEWED_MIN_OUT);
     expect(toastWithCloseMock).not.toHaveBeenCalled();
   });
 
