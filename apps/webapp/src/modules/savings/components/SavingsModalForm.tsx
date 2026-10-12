@@ -37,11 +37,12 @@ const USDS_DECIMALS = 18;
 // approve amount moves with it and may likewise only shrink (applied to every
 // savings approve; a smaller one can at worst revert). Every other savings call
 // must still match byte for byte.
-const PSM_SWAP_BOUNDS = tightensOnly({
+export const PSM_SWAP_BOUND_ARGS = {
   swapExactIn: { index: 3, kind: 'min' },
   swapExactOut: { index: 3, kind: 'max' },
   approve: { index: 1, kind: 'max' }
-});
+} as const;
+const PSM_SWAP_BOUNDS = tightensOnly(PSM_SWAP_BOUND_ARGS);
 
 const formatUsds = (value: bigint) =>
   formatNumber(parseFloat(formatUnits(value, USDS_DECIMALS)), { maxDecimals: 2 });

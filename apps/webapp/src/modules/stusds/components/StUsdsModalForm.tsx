@@ -34,7 +34,8 @@ const DECIMALS = 18;
 
 // A Curve `min_dy` follows the live quote. It may only tighten after the
 // confirm: the pool moving against the user loosens it and is refused.
-const CURVE_SWAP_BOUNDS = tightensOnly({ exchange: { index: 3, kind: 'min' } });
+export const CURVE_SWAP_BOUND_ARGS = { exchange: { index: 3, kind: 'min' } } as const;
+const CURVE_SWAP_BOUNDS = tightensOnly(CURVE_SWAP_BOUND_ARGS);
 
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
 const formatUsds = (units: bigint) =>
