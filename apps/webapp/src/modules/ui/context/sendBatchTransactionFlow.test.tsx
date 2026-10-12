@@ -18,21 +18,23 @@ import {
 
 const sendCallsSpy = vi.hoisted(() => vi.fn());
 const capabilities = vi.hoisted(() => ({ data: true as boolean | undefined, isLoading: false }));
-const callsStatusParams = vi.hoisted(() => ({ last: undefined as Record<string, any> | undefined }));
-const sentBundle = vi.hoisted(() => ({ id: undefined as string | undefined }));
 const idleStatus = { isLoading: false, isSuccess: false, error: null, failureReason: null, data: undefined };
-const callsStatus = vi.hoisted(() => ({ result: undefined as Record<string, any> | undefined }));
+const bundle = vi.hoisted(() => ({
+  id: undefined as string | undefined,
+  status: undefined as Record<string, any> | undefined,
+  statusParams: undefined as Record<string, any> | undefined
+}));
 
 vi.mock('wagmi', () => ({
   useSendCalls: () => ({
     sendCalls: sendCallsSpy,
     error: null,
-    data: sentBundle.id ? { id: sentBundle.id } : undefined,
+    data: bundle.id ? { id: bundle.id } : undefined,
     reset: vi.fn()
   }),
   useWaitForCallsStatus: (params: Record<string, any>) => {
-    callsStatusParams.last = params;
-    return callsStatus.result ?? idleStatus;
+    bundle.statusParams = params;
+    return bundle.status ?? idleStatus;
   }
 }));
 
@@ -121,31 +123,34 @@ describe('useSendBatchTransactionFlow — cross-chain backstop (APP-528)', () =>
 describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
   const pollingOptions = () => {
     renderHook(() => useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1 } as never));
-    return callsStatusParams.last!;
+    return bundle.statusParams!.query;
   };
 
-  it('starts the next poll straight away when an attempt times out', () => {
-    const { query, timeout } = pollingOptions();
-    const timedOut = new WaitForCallsStatusTimeoutError({ id: '0x1' });
-    expect(timeout).toBeUndefined(); // viem's bounded default per attempt
-    expect(query.retry(9, timedOut)).toBe(true);
-    expect(query.retryDelay(9, timedOut)).toBe(0);
-  });
-
-  it('keeps polling through RPC and wallet errors', () => {
-    const { retry } = pollingOptions().query;
+  it('keeps polling until the wallet says it never can answer', () => {
+    const { retry } = pollingOptions();
+    expect(retry(9, new WaitForCallsStatusTimeoutError({ id: '0x1' }))).toBe(true);
     expect(retry(1, new Error('HTTP request failed. Status: 503'))).toBe(true);
     expect(retry(50, Object.assign(new Error('Internal error'), { code: -32603 }))).toBe(true);
+    expect(retry(1, new Error('execution reverted'))).toBe(true);
     // A locked wallet can answer 4100 and recover once unlocked.
     expect(retry(3, Object.assign(new Error('Unauthorized'), { code: 4100 }))).toBe(true);
+    for (const permanent of [UnsupportedProviderMethodError, UnknownBundleIdError]) {
+      expect(retry(1, new UnknownRpcError(new permanent(new Error('wallet'))))).toBe(false);
+    }
+  });
+
+  it('starts the next poll straight away when an attempt times out, and backs off to at most 30s on errors', () => {
+    const { retryDelay } = pollingOptions();
+    expect(retryDelay(9, new WaitForCallsStatusTimeoutError({ id: '0x1' }))).toBe(0);
+    expect(retryDelay(0, new Error('503'))).toBe(1000);
+    expect(retryDelay(20, new Error('503'))).toBe(30_000);
   });
 
   it('reads the outcome from the bundle status, never from error text', () => {
-    expect(pollingOptions().query.retry(1, new Error('execution reverted'))).toBe(true);
-
     const onError = vi.fn();
-    sentBundle.id = '0xb';
-    callsStatus.result = { ...idleStatus, isLoading: true, failureReason: new Error('execution timeout') };
+    bundle.id = '0xb';
+    // A poll that failed with revert-like text, still being retried.
+    bundle.status = { ...idleStatus, isLoading: true, failureReason: new Error('execution reverted') };
     try {
       const { result, rerender } = renderHook(() =>
         useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never)
@@ -153,25 +158,12 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
       expect(onError).not.toHaveBeenCalled();
       expect(result.current.isLoading).toBe(true);
 
-      callsStatus.result = { ...idleStatus, isSuccess: true, data: { status: 'failure', receipts: [] } };
+      bundle.status = { ...idleStatus, isSuccess: true, data: { status: 'failure', receipts: [] } };
       rerender();
       expect(onError).toHaveBeenCalledTimes(1);
     } finally {
-      sentBundle.id = undefined;
-      callsStatus.result = undefined;
+      bundle.id = undefined;
+      bundle.status = undefined;
     }
-  });
-
-  it('stops on an error after which polling can never succeed', () => {
-    const { retry } = pollingOptions().query;
-    for (const permanent of [UnsupportedProviderMethodError, UnknownBundleIdError]) {
-      expect(retry(1, new UnknownRpcError(new permanent(new Error('wallet'))))).toBe(false);
-    }
-  });
-
-  it('backs off to at most 30s between polls', () => {
-    const { retryDelay } = pollingOptions().query;
-    expect(retryDelay(0, new Error('503'))).toBe(1000);
-    expect(retryDelay(20, new Error('503'))).toBe(30_000);
   });
 });

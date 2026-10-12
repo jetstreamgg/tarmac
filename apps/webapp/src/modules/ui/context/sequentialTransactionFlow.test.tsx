@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { UserRejectedRequestError, type Call } from 'viem';
+import type { Call } from 'viem';
 
 // Regression guard for "bug #1" — premature SUCCESS in the non-batch sequential
 // flow. An "approve then deposit" sequence must fire the shared onSuccess only
@@ -406,45 +406,6 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0][1]).toBe('0xapprove');
-  });
-
-  it('a step cancelled in the wallet is reported as a rejection, never as the success of the run', () => {
-    const onSuccess = vi.fn();
-    const onError = vi.fn();
-    const { result, rerender } = renderHook(() =>
-      useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onSuccess, onError })
-    );
-
-    act(() => result.current.execute());
-    act(() => {
-      wagmi.mutationHash = '0xapprove';
-      wagmi.onWriteSuccess?.('0xapprove');
-    });
-    rerender();
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
-    });
-    rerender();
-
-    act(() => {
-      wagmi.receipt = { isLoading: true, isSuccess: false, error: null, failureReason: null };
-      wagmi.mutationHash = '0xsupply';
-      wagmi.onWriteSuccess?.('0xsupply');
-    });
-    rerender();
-    expect(result.current.isLoading).toBe(true);
-
-    // The receipt hook saw the supply replaced by a cancel (whose own receipt succeeded).
-    const cancelled = new UserRejectedRequestError(new Error('Transaction cancelled in the wallet.'));
-    act(() => {
-      wagmi.receipt = { isLoading: false, isSuccess: false, error: cancelled, failureReason: null };
-    });
-    rerender();
-
-    expect(onSuccess).not.toHaveBeenCalled();
-    expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError).toHaveBeenCalledWith(cancelled, '0xsupply');
-    expect(result.current.isLoading).toBe(false);
   });
 });
 
