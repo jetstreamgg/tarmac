@@ -57,6 +57,10 @@ export type TransactionReceiptState = {
  * error text. A speed-up counts as the same transaction; a cancel or any other
  * replacement does not, though its receipt reads `success`.
  *
+ * Not wagmi's hook with `retry: true`: on a revert it throws instead of
+ * returning the receipt, so a revert and an RPC failure arrive as the same kind
+ * of error and only guessing from the error tells them apart.
+ *
  * The chain is fixed when a hash first appears: the wallet can switch chains
  * while the transaction is pending, and the hash only exists on the chain it
  * was sent to.
