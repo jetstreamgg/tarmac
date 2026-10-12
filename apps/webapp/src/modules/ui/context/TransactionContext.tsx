@@ -28,6 +28,7 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionReceipt';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {
@@ -1168,11 +1169,18 @@ export function TransactionProvider({
 
       if (shouldCaptureTransactionError(normalizedError)) {
         const flowAnalytics = configRef.current?.analytics;
+        const flow = flowAnalytics?.flow ?? 'unknown';
+        const action = flowAnalytics?.action ?? 'unknown';
         reportError(normalizedError, {
           module: 'transactions',
-          flow: flowAnalytics?.flow ?? 'unknown',
-          action: flowAnalytics?.action ?? 'unknown',
+          flow,
+          action,
           type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
+          // Every revert has the same message; one issue per flow and action instead of one for all.
+          fingerprint:
+            normalizedError instanceof TransactionRevertedError
+              ? ['transaction-reverted', flow, action]
+              : undefined,
           extra: {
             chainId,
             txHash: hash,

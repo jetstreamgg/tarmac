@@ -32,6 +32,14 @@ export class TransactionReplacedError extends UserRejectedRequestError {
   override name = 'TransactionReplacedError' as const;
 }
 
+/** A mined transaction whose receipt reads `reverted`. */
+export class TransactionRevertedError extends Error {
+  override name = 'TransactionRevertedError' as const;
+  constructor() {
+    super('Transaction reverted on-chain.');
+  }
+}
+
 export type TransactionReceiptState = {
   /** A hash is being watched and has no outcome yet, including while the RPC is failing. */
   isPending: boolean;
@@ -105,7 +113,7 @@ export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?
     if (data.replacement && data.replacement.reason !== 'repriced') {
       return new TransactionReplacedError(new Error(`Transaction ${data.replacement.reason} in the wallet.`));
     }
-    return data.receipt.status === 'reverted' ? new Error('Transaction reverted on-chain.') : null;
+    return data.receipt.status === 'reverted' ? new TransactionRevertedError() : null;
   }, [data]);
 
   return {
