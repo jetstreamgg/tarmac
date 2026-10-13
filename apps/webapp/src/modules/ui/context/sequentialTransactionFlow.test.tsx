@@ -24,6 +24,8 @@ const wagmi = vi.hoisted(() => ({
   resetWrite: vi.fn(),
   // functionName → error its simulation fails with
   simulationErrors: {} as Record<string, Error>,
+  // When set, a refetch resolves only after this promise does (a slow RPC).
+  refetchGate: undefined as Promise<void> | undefined,
   // current write mutation hash (drives useWaitForTransactionReceipt)
   mutationHash: undefined as `0x${string}` | undefined,
   // current receipt state, keyed off the active hash by the test driver
@@ -57,13 +59,12 @@ vi.mock('wagmi', () => ({
           };
     };
     // Like TanStack Query, a failed refetch keeps the last good data.
-    const refetch = () => {
+    const refetch = async () => {
+      if (wagmi.refetchGate) await wagmi.refetchGate;
       const result = simulate();
-      return Promise.resolve(
-        result.error
-          ? { ...result, data: { request: { __mock: 'request', functionName: params.functionName } } }
-          : result
-      );
+      return result.error
+        ? { ...result, data: { request: { __mock: 'request', functionName: params.functionName } } }
+        : result;
     };
     return { ...simulate(), refetch };
   },
@@ -113,6 +114,7 @@ function resetWagmi() {
   wagmi.writeContract = vi.fn();
   wagmi.resetWrite = vi.fn();
   wagmi.simulationErrors = {};
+  wagmi.refetchGate = undefined;
   wagmi.mutationHash = undefined;
   wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
 }
@@ -708,6 +710,69 @@ describe('useSequentialTransactionFlow — a later step that fails to simulate',
     await act(async () => result.current.execute());
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
     expect(wagmi.writeContract).toHaveBeenLastCalledWith(expect.objectContaining({ functionName: 'supply' }));
+  });
+
+  function renderStalledSupply(gate = { enabled: true }) {
+    const onError = vi.fn();
+    const hook = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError, enabled: gate.enabled })
+    );
+    act(() => hook.result.current.execute());
+    wagmi.simulationErrors = { supply: new Error('RPC unavailable') };
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    hook.rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    hook.rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+    return { ...hook, onError };
+  }
+
+  it('Retry of a stalled step sends nothing when the caller disables the engine mid re-simulation', async () => {
+    const gate = { enabled: true };
+    const { result, rerender, onError } = renderStalledSupply(gate);
+
+    wagmi.simulationErrors = {};
+    act(() => result.current.execute());
+    gate.enabled = false;
+    rerender();
+    await act(async () => {});
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
+  // A new run can reach the same step before the old re-simulation lands.
+  it('drops a stalled-step re-simulation that lands after a reset, even once a new run reached that step', async () => {
+    const { result, rerender } = renderStalledSupply();
+    let release!: () => void;
+    wagmi.refetchGate = new Promise(r => (release = r));
+    wagmi.simulationErrors = {};
+
+    act(() => result.current.execute());
+    act(() => result.current.reset());
+
+    // The new run: approve, then the supply auto-dispatches.
+    wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+    rerender();
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove2';
+      wagmi.onWriteSuccess?.('0xapprove2');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3); // approve, approve, supply
+
+    await act(async () => release());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
   });
 
   it('Retry of a stalled step sends nothing when the caller disabled the engine, and reports it', async () => {

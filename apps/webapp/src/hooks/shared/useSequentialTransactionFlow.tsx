@@ -49,7 +49,7 @@ export function useSequentialTransactionFlow(
   // Retry: a simulation that recovers on its own must not send it behind the
   // error screen.
   const reportedSimulationIndexRef = useRef(-1);
-  // The step whose send reverted on-chain, and its Retry's in-flight re-simulation
+  // The step whose send reverted on-chain, and a Retry's in-flight re-simulation
   // (a token, so a reset or unmount drops a result that settles afterwards).
   const revertedIndexRef = useRef(-1);
   const resimulationRef = useRef<object | null>(null);
@@ -294,39 +294,42 @@ export function useSequentialTransactionFlow(
       return;
     }
 
-    // A Retry that re-simulates before sending. `claim` takes the step's
-    // in-flight latch and returns its release, which reports whether the result
-    // still belongs to this run (a reset or unmount drops it). A failed refetch
-    // keeps the last good `data`, so only a refetch without an error may send.
-    const resimulateAndSend = (claim: () => (sent: boolean) => boolean) => {
+    // A Retry that re-simulates before sending. The token is the in-flight
+    // latch, so a second click is a no-op and a reset or unmount (which clears
+    // it) drops a result that lands afterwards, even if a new run has reached
+    // the same step. A failed refetch keeps the last good `data`, so only a
+    // refetch without an error may send.
+    const resimulateAndSend = ({ onSent, onFailed }: { onSent?: () => void; onFailed?: () => void }) => {
+      if (resimulationRef.current) return;
       if (!enabled) {
         onError(notSendable(), '');
         return;
       }
-      const release = claim();
+      const token = {};
+      resimulationRef.current = token;
       void refetchSimulation().then(({ data, error }) => {
-        const request = enabledRef.current && !error ? data?.request : undefined;
-        if (!release(!!request)) return;
-        if (request) writeContract(request as Parameters<typeof writeContract>[0]);
-        else onError(enabledRef.current ? resimulationFailure(error) : notSendable(), '');
+        if (resimulationRef.current !== token) return;
+        resimulationRef.current = null;
+        const live = enabledRef.current;
+        const request = live && !error ? data?.request : undefined;
+        if (request) {
+          onSent?.();
+          writeContract(request as Parameters<typeof writeContract>[0]);
+        } else {
+          onFailed?.();
+          onError(live ? resimulationFailure(error) : notSendable(), '');
+        }
       });
     };
 
     if (isResume && revertedIndexRef.current === currentIndex) {
       // Retry of a step that reverted on-chain: the held simulation predates the
       // revert, so re-simulate rather than re-send what just failed. The index
-      // stays claimed (the auto-execute effect must not fire), so in-flight is
-      // tracked separately.
-      if (resimulationRef.current) return;
-      resimulateAndSend(() => {
-        const token = {};
-        resimulationRef.current = token;
-        return sent => {
-          if (resimulationRef.current !== token) return false;
-          resimulationRef.current = null;
-          if (sent) revertedIndexRef.current = -1;
-          return true;
-        };
+      // stays claimed, so the auto-execute effect doesn't fire meanwhile.
+      resimulateAndSend({
+        onSent: () => {
+          revertedIndexRef.current = -1;
+        }
       });
     } else if (simulationData?.request) {
       if (!isResume) {
@@ -341,18 +344,16 @@ export function useSequentialTransactionFlow(
     } else if (isResume && simulationError) {
       // Retry of a step that failed to simulate: the stored error may be stale
       // (e.g. a transient RPC failure), so re-simulate and act on the result.
-      // The index claim is the latch: a second click while this is in flight is
-      // a no-op, and a failure releases it for the next Retry.
+      // Claiming the index keeps the auto-execute effect from sending it
+      // meanwhile; a failure releases it for the next Retry.
       if (dispatchedIndexRef.current === currentIndex) return;
-      resimulateAndSend(() => {
-        const index = currentIndex;
-        dispatchedIndexRef.current = index;
-        return sent => {
-          if (dispatchedIndexRef.current !== index) return false;
-          if (!sent) dispatchedIndexRef.current = -1;
-          return true;
-        };
+      const index = currentIndex;
+      resimulateAndSend({
+        onFailed: () => {
+          if (dispatchedIndexRef.current === index) dispatchedIndexRef.current = -1;
+        }
       });
+      if (resimulationRef.current) dispatchedIndexRef.current = index;
     } else {
       console.error(`ERROR: Transaction ${currentIndex} is not ready to execute.
       contract address: ${currentTransaction.to}
