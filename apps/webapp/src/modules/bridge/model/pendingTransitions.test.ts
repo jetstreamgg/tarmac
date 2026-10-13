@@ -9,7 +9,8 @@ import {
   dropSentAction,
   pollIntervalMs,
   recordAction,
-  recordActionSent
+  recordActionSent,
+  showsActionButton
 } from './pendingTransitions';
 import { resolveBridgeRoute } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
@@ -534,5 +535,88 @@ describe('a queued Safe bridge can be dismissed, nothing else can', () => {
       NOW
     );
     expect(canDismiss(failed)).toBe(false);
+  });
+});
+
+describe('a deposit whose L2 execution failed (redeem on Arbitrum, replay on OP Stack)', () => {
+  const depositTo = (to: BridgeNetworkId) =>
+    createPendingBridge({
+      account: ACCOUNT,
+      amount: 1n,
+      from: 'ethereum',
+      to,
+      route: routeFor('ethereum', to),
+      txHash: '0xdeposit',
+      now: NOW
+    });
+  const readyRedeem = () =>
+    applyProgress(depositTo('arbitrum'), { kind: 'ready', nextAction: 'redeem' }, NOW + MINUTE);
+
+  it('a deposit that arrives on its own never shows an action button', () => {
+    const waiting = depositTo('base');
+    expect(showsActionButton(waiting)).toBe(false);
+    expect(showsActionButton(applyProgress(waiting, { kind: 'arrived' }, NOW))).toBe(false);
+  });
+
+  it('a failed Arbitrum deposit offers Redeem, and a failed OP Stack deposit offers Replay', () => {
+    const redeem = readyRedeem();
+    expect(redeem).toMatchObject({ status: 'ready', nextAction: 'redeem' });
+    expect(showsActionButton(redeem)).toBe(true);
+    expect(canLaunchAction(redeem)).toBe(true);
+    const replay = applyProgress(depositTo('optimism'), { kind: 'ready', nextAction: 'replay' }, NOW);
+    expect(showsActionButton(replay)).toBe(true);
+  });
+
+  it('a mined redeem does not settle the bridge: it waits for the chain to say the USDS arrived', () => {
+    const sent = recordActionSent(readyRedeem(), { action: 'redeem', txHash: '0xredeem', at: NOW });
+    expect(canLaunchAction(sent)).toBe(false);
+    const mined = recordAction(sent, { action: 'redeem', txHash: '0xredeem', at: NOW + MINUTE });
+    expect(mined).toMatchObject({ status: 'pending', nextAction: undefined });
+    expect(mined.settledAt).toBeUndefined();
+    expect(mined.actions).toEqual([{ action: 'redeem', txHash: '0xredeem', at: NOW + MINUTE }]);
+    expect(showsActionButton(mined)).toBe(false);
+    expect(applyProgress(mined, { kind: 'arrived' }, NOW + 2 * MINUTE)).toMatchObject({
+      status: 'arrived',
+      settledAt: NOW + 2 * MINUTE
+    });
+  });
+
+  it('a redeem whose retry failed again is offered again', () => {
+    const mined = recordAction(readyRedeem(), { action: 'redeem', txHash: '0xredeem', at: NOW });
+    const again = applyProgress(mined, { kind: 'ready', nextAction: 'redeem' }, NOW + MINUTE);
+    expect(again).toMatchObject({ status: 'ready', nextAction: 'redeem' });
+    expect(canLaunchAction(again)).toBe(true);
+  });
+
+  it('a redeem seen from chain (anyone can redeem) is recorded the same way', () => {
+    const seen = applyProgress(
+      readyRedeem(),
+      { kind: 'action-confirmed', action: 'redeem', txHash: '0xother', at: NOW },
+      NOW
+    );
+    expect(seen).toMatchObject({ status: 'pending', nextAction: undefined });
+    expect(seen.actions).toHaveLength(1);
+  });
+
+  it('a replay on an Arbitrum deposit, or a redeem on an OP Stack one, is ignored', () => {
+    const redeem = readyRedeem();
+    expect(recordAction(redeem, { action: 'replay', txHash: '0xr', at: NOW })).toBe(redeem);
+    const op = depositTo('base');
+    expect(recordActionSent(op, { action: 'redeem', txHash: '0xr', at: NOW })).toBe(op);
+  });
+
+  it('an expired ticket settles as expired, with no action, and ignores later progress', () => {
+    const expired = applyProgress(readyRedeem(), { kind: 'expired' }, NOW + HOUR);
+    expect(expired).toMatchObject({ status: 'expired', nextAction: undefined, settledAt: NOW + HOUR });
+    expect(showsActionButton(expired)).toBe(false);
+    expect(canLaunchAction(expired)).toBe(false);
+    expect(pollIntervalMs(expired, NOW + HOUR)).toBeUndefined();
+    expect(applyProgress(expired, { kind: 'ready', nextAction: 'redeem' }, NOW + 2 * HOUR)).toBe(expired);
+  });
+
+  it('a claim route still shows its action button before it is ready', () => {
+    const withdrawal = create(routeFor('base', 'ethereum'));
+    expect(withdrawal.nextAction).toBe('claim');
+    expect(showsActionButton(withdrawal)).toBe(true);
   });
 });

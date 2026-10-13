@@ -52,6 +52,17 @@ describe('buildPendingBridgeRows', () => {
     });
   });
 
+  it('a deposit that needs a redeem or replay has no arrival time, and an expired one never arrives', () => {
+    for (const nextAction of ['redeem', 'replay'] as const) {
+      const row = buildPendingBridgeRows({ ...base, status: 'ready', nextAction }, 0, 1)[1];
+      expect(row.map(cell => 'value' in cell && cell.value)).toEqual(['Action needed', NO_VALUE]);
+    }
+    const expired = buildPendingBridgeRows({ ...base, status: 'expired' }, 0, 1)[1];
+    expect(expired.map(cell => 'value' in cell && cell.value)).toEqual(['Expired', NO_VALUE]);
+    expect(nextActionLabel('redeem')).toBe('Redeem');
+    expect(nextActionLabel('replay')).toBe('Replay');
+  });
+
   it('shows a queued Safe transaction as awaiting signatures', () => {
     const queued = { ...base, txHash: undefined, safeTxHash: '0xsafe' };
     expect(buildPendingBridgeRows(queued, 0, 1)[2][1]).toMatchObject({

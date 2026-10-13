@@ -42,6 +42,22 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
         error: t`Finalize failed`,
         failure: t`The withdrawal hasn't been finalized.`
       };
+    case 'redeem':
+      return {
+        step: t`Redeem`,
+        loading: t`Redeeming the deposit of ${amount} USDS`,
+        success: t`Redeem sent!`,
+        error: t`Redeem failed`,
+        failure: t`The deposit hasn't been redeemed.`
+      };
+    case 'replay':
+      return {
+        step: t`Replay`,
+        loading: t`Replaying the deposit of ${amount} USDS`,
+        success: t`Replay sent!`,
+        error: t`Replay failed`,
+        failure: t`The deposit hasn't been replayed.`
+      };
   }
 };
 

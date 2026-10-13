@@ -1,5 +1,5 @@
 import type { BridgeNetworkId } from './networks';
-import { destinationActions } from './resolveRoute';
+import { destinationActions, isRecoveryAction, recoveryActions } from './resolveRoute';
 import type { BridgeRoute, PendingBridge, PendingBridgeAction, PendingBridgeNextAction } from './types';
 
 const MINUTE = 60_000;
@@ -23,6 +23,8 @@ export type BridgeProgress =
   | { kind: 'ready'; nextAction: PendingBridgeNextAction; routeData?: Record<string, string> }
   /** Funds landed, automatically or through an action someone else sent. */
   | { kind: 'arrived' }
+  /** The Arbitrum ticket is gone without a successful redeem (expired or canceled): nothing was delivered. */
+  | { kind: 'expired' }
   /** The source send moved no funds (reverted, or a Safe tx replaced); Activity leaves it out. */
   | { kind: 'failed'; reason: string }
   /** A sent destination action mined, read from chain (a Safe reports its on-chain hash). */
@@ -33,7 +35,16 @@ export type BridgeProgress =
   | { kind: 'action-invalidated'; action: PendingBridgeNextAction };
 
 export const isSettled = (bridge: PendingBridge): boolean =>
-  bridge.status === 'arrived' || bridge.status === 'claimed' || bridge.status === 'failed';
+  bridge.status === 'arrived' ||
+  bridge.status === 'claimed' ||
+  bridge.status === 'failed' ||
+  bridge.status === 'expired';
+
+/** Every action a bridge can record: its ordered destination steps, then its recovery actions. */
+const bridgeActions = (bridge: PendingBridge): PendingBridgeNextAction[] => [
+  ...destinationActions(bridge.routeKind, bridge.from),
+  ...recoveryActions(bridge.routeKind, bridge.from, bridge.to)
+];
 
 export function createPendingBridge({
   account,
@@ -78,8 +89,11 @@ export function createPendingBridge({
   };
 }
 
+// A recovery action can be needed again after it mined (its L2 execution failed once more), so only the chain settles it.
 const isConfirmed = (bridge: PendingBridge, action: PendingBridgeNextAction | undefined) =>
-  !!action && bridge.actions.some(done => done.action === action && done.status === undefined);
+  !!action &&
+  !isRecoveryAction(action) &&
+  bridge.actions.some(done => done.action === action && done.status === undefined);
 
 const mergeRouteData = (bridge: PendingBridge, routeData: Record<string, string> | undefined) =>
   routeData ? { ...bridge.routeData, ...routeData } : bridge.routeData;
@@ -135,6 +149,8 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
         nextAction: undefined,
         settledAt: now
       };
+    case 'expired':
+      return { ...bridge, status: 'expired', nextAction: undefined, settledAt: now };
     case 'failed':
       return { ...bridge, status: 'failed', failureReason: progress.reason, settledAt: now };
   }
@@ -144,7 +160,7 @@ const isSent = (action: PendingBridgeAction) => action.status === 'sent';
 
 /** A destination action broadcast but not yet confirmed: it blocks a second launch, not the bridge's progress. */
 export function recordActionSent(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
-  if (!destinationActions(bridge.routeKind, bridge.from).includes(action.action)) return bridge;
+  if (!bridgeActions(bridge).includes(action.action)) return bridge;
   if (bridge.actions.some(sent => sent.txHash === action.txHash)) return bridge;
   return { ...bridge, actions: [...bridge.actions, { ...action, status: 'sent' }] };
 }
@@ -174,14 +190,19 @@ export const canLaunchAction = (bridge: PendingBridge): boolean =>
   !!bridge.nextAction &&
   !bridge.actions.some(sent => isSent(sent) && sent.action === bridge.nextAction);
 
+/** The card shows the next action's button: always for a claim route, only once ready for a recovery. */
+export const showsActionButton = (bridge: PendingBridge): boolean =>
+  !isSettled(bridge) &&
+  !!bridge.nextAction &&
+  (isRecoveryAction(bridge.nextAction) ? bridge.status === 'ready' : bridge.requiresClaim);
+
 /** A Safe bridge still waiting to execute: nothing on chain yet, so the user may drop it. */
 export const canDismiss = (bridge: PendingBridge): boolean =>
   bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash;
 
 /** A destination action the user sent and the transaction flow confirmed. */
 export function recordAction(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
-  const remaining = destinationActions(bridge.routeKind, bridge.from);
-  if (!remaining.includes(action.action)) return bridge;
+  if (!bridgeActions(bridge).includes(action.action)) return bridge;
   if (bridge.actions.some(sent => !isSent(sent) && sent.txHash === action.txHash)) return bridge;
   // A Safe confirms with the on-chain hash, not the Safe tx hash it was sent with.
   const actions = [
@@ -189,7 +210,11 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
     { action: action.action, txHash: action.txHash, at: action.at }
   ];
   if (isSettled(bridge)) return { ...bridge, actions };
-  const next = remaining[remaining.indexOf(action.action) + 1];
+  // The tx mining doesn't mean its L2 execution succeeded: wait for the adapter to read it.
+  const done = action.action;
+  if (isRecoveryAction(done)) return { ...bridge, actions, status: 'pending', nextAction: undefined };
+  const remaining = destinationActions(bridge.routeKind, bridge.from);
+  const next = remaining[remaining.indexOf(done) + 1];
   return next
     ? { ...bridge, actions, status: 'pending', nextAction: next }
     : { ...bridge, actions, status: 'claimed', nextAction: undefined, settledAt: action.at };

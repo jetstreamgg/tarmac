@@ -27,9 +27,14 @@ export type BridgeRoute = {
   fallbackReason?: BridgeFallbackReason;
 };
 
-export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 'failed';
+/** `expired`: an Arbitrum ticket that was never redeemed (expired or canceled); the funds were not delivered. */
+export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 'failed' | 'expired';
 
-export type PendingBridgeNextAction = 'claim' | 'prove' | 'finalize';
+/** `redeem` (Arbitrum ticket) and `replay` (OP Stack message) recover a deposit whose L2 execution failed. */
+export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay';
+
+/** A destination action every bridge of its route goes through, in order. */
+export type PendingBridgeStepAction = 'claim' | 'prove' | 'finalize';
 
 /** A destination-side transaction the user sent for a bridge. */
 export type PendingBridgeAction = {

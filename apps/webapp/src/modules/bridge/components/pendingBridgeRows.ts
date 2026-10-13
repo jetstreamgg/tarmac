@@ -36,6 +36,8 @@ const statusLabel = (status: PendingBridgeStatus): string => {
       return t`Claimed`;
     case 'failed':
       return t`Failed`;
+    case 'expired':
+      return t`Expired`;
   }
 };
 
@@ -47,6 +49,10 @@ export const nextActionLabel = (action: PendingBridgeNextAction): string => {
       return t`Prove`;
     case 'finalize':
       return t`Finalize`;
+    case 'redeem':
+      return t`Redeem`;
+    case 'replay':
+      return t`Replay`;
   }
 };
 
@@ -58,6 +64,9 @@ const readyLabel = (action: PendingBridgeNextAction): string => {
       return t`Ready to prove`;
     case 'finalize':
       return t`Ready to finalize`;
+    case 'redeem':
+    case 'replay':
+      return t`Action needed`;
   }
 };
 
@@ -72,10 +81,13 @@ export const formatBridgeDate = (ms: number): string => {
 };
 
 const arrivalText = (bridge: PendingBridge, now: number): string => {
-  if (bridge.status === 'failed') return NO_VALUE;
+  if (bridge.status === 'failed' || bridge.status === 'expired') return NO_VALUE;
   // A ready prove or finalize still has a step before the funds land.
   if (bridge.status === 'ready' && (bridge.nextAction === 'prove' || bridge.nextAction === 'finalize'))
     return t`Ready`;
+  // A failed deposit lands only once the user redeems or replays it.
+  if (bridge.status === 'ready' && (bridge.nextAction === 'redeem' || bridge.nextAction === 'replay'))
+    return NO_VALUE;
   if (bridge.status !== 'pending') return t`Arrived`;
   // A queued Safe transaction: the clock starts once it executes.
   if (!bridge.txHash) return NO_VALUE;

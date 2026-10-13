@@ -8,7 +8,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
-import { canDismiss, isSettled } from '../model/pendingTransitions';
+import { canDismiss, showsActionButton } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeStatus } from '../model/types';
 import { formatBigInt } from '@/utils';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -25,7 +25,8 @@ const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
   ready: 'bg-statusBrandBg text-statusBrand',
   arrived: 'bg-statusSuccessBg text-statusSuccess',
   claimed: 'bg-statusSuccessBg text-statusSuccess',
-  failed: 'bg-statusErrorBg text-statusError'
+  failed: 'bg-statusErrorBg text-statusError',
+  expired: 'bg-statusErrorBg text-statusError'
 };
 
 const valueClassName = 'font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]';
@@ -123,9 +124,8 @@ function PendingBridgeCard({
             <Trans>Dismiss</Trans>
           </Button>
         ) : (
-          bridge.requiresClaim &&
-          bridge.nextAction &&
-          !isSettled(bridge) && (
+          showsActionButton(bridge) &&
+          bridge.nextAction && (
             <Button
               variant="primary"
               size="m"

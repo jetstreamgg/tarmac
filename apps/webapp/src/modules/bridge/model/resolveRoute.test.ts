@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { resolveBridgeRoute, toRouteFact } from './resolveRoute';
+import { isRecoveryAction, recoveryActions, resolveBridgeRoute, toRouteFact } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
 
 const usds = (value: string) => parseUnits(value, 18);
@@ -264,5 +264,26 @@ describe('toRouteFact', () => {
 
   it('a successful read with no data is an error, not an open route', () => {
     expect(toRouteFact({ status: 'success', data: undefined })).toBe('error');
+  });
+});
+
+describe('recoveryActions', () => {
+  it('a native deposit can need a redeem on Arbitrum and a replay on the OP Stack chains', () => {
+    expect(recoveryActions('native', 'ethereum', 'arbitrum')).toEqual(['redeem']);
+    for (const to of ['base', 'optimism', 'unichain'] as const) {
+      expect(recoveryActions('native', 'ethereum', to)).toEqual(['replay']);
+    }
+  });
+
+  it('withdrawals, CCTP and LayerZero have none', () => {
+    expect(recoveryActions('native', 'base', 'ethereum')).toEqual([]);
+    expect(recoveryActions('cctp', 'arbitrum', 'ethereum')).toEqual([]);
+    expect(recoveryActions('layerzero', 'ethereum', 'avalanche')).toEqual([]);
+  });
+
+  it('only redeem and replay are recovery actions', () => {
+    expect(['redeem', 'replay', 'claim', 'prove', 'finalize'].map(a => isRecoveryAction(a as never))).toEqual(
+      [true, true, false, false, false]
+    );
   });
 });
