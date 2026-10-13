@@ -8,6 +8,7 @@ import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RollingDigits } from '@/components/ui/rolling-digits';
 import { InfoTooltip } from '@/components/InfoTooltip';
+import { StakeLtvInfoTooltip } from './StakeLtvInfoTooltip';
 import { RiskMeter } from '@/components/product/RiskMeter';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 import { BorrowCardMode } from '../hooks/useStakeManageFlowState';
@@ -50,12 +51,28 @@ const RISK_PILL: Record<RiskLevel, string> = {
   [RiskLevel.LIQUIDATION]: 'bg-statusError/10 text-statusError'
 };
 
-export function RiskPill({ riskLevel, dataTestId }: { riskLevel: RiskLevel; dataTestId?: string }) {
+// Table cell pill (comp 3617:24391) is a size up: 24px tall on Label 6.
+const RISK_PILL_SIZE = {
+  s: 'h-[18px] px-1.5 text-[11px] leading-3 tracking-[-0.22px]',
+  m: 'h-6 px-2 text-xs leading-[14px] tracking-[-0.24px]'
+};
+
+export function RiskPill({
+  riskLevel,
+  size = 's',
+  dataTestId
+}: {
+  riskLevel: RiskLevel;
+  size?: keyof typeof RISK_PILL_SIZE;
+  dataTestId?: string;
+}) {
   return (
     <span
       data-testid={dataTestId}
+      data-risk={riskLevel}
       className={cn(
-        'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+        'font-circle flex w-fit items-center rounded-full font-medium',
+        RISK_PILL_SIZE[size],
         RISK_PILL[riskLevel]
       )}
     >
@@ -166,7 +183,8 @@ export function StakeManageBorrowCard({
     headroom: debtCeilingReached || borrowDead ? 0n : maxBorrowable,
     disabled: borrowDead,
     amount,
-    onAmountChange
+    onAmountChange,
+    partialMax: existingVault?.maxPartialRepay
   });
   const inputDisabled = isRepay ? existingDebt === 0n : minCollateralNotMet || slider.disabled;
   const hasAmount = amount > 0n;
@@ -280,12 +298,13 @@ export function StakeManageBorrowCard({
           onAmountChange={value => {
             // Typing the displayed (2dp) debt means "all of it": the live debt
             // carries more decimals, so snap to wipeAll instead of a dust error.
-            const displayedDebt = (existingDebt / DISPLAY_STEP) * DISPLAY_STEP;
+            // The display rounds, so accept both cents around the live debt.
+            const debtFloor = (existingDebt / DISPLAY_STEP) * DISPLAY_STEP;
             const typedFull =
               isRepay &&
               existingDebt > 0n &&
-              value >= displayedDebt &&
-              value <= existingDebt &&
+              value >= debtFloor &&
+              value <= debtFloor + DISPLAY_STEP &&
               maxRepayable >= existingDebt;
             if (typedFull) onAmountChange(existingDebt, true);
             else onAmountChange(value);
@@ -299,6 +318,7 @@ export function StakeManageBorrowCard({
           // The repay 100% chip stages the wei-precise live debt — cap only the
           // DISPLAY (the staged value stays exact for wipeAll/buffer math).
           maxDisplayDecimals={2}
+          roundDisplay
           dataTestId="stake-manage-borrow-amount"
           // Comp 1036:213928 draws the position line above the chips; borrow
           // adds the headroom so the cap stays visible with no slider (zero debt).
@@ -425,12 +445,7 @@ export function StakeManageBorrowCard({
             label={
               <>
                 <Trans>Loan-to-value</Trans>
-                <InfoTooltip
-                  title={t`Loan-to-value (LTV)`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
-                  content={t`Your debt as a share of your collateral's value. The higher it climbs, the closer the position is to liquidation.`}
-                />
+                <StakeLtvInfoTooltip />
               </>
             }
             current={

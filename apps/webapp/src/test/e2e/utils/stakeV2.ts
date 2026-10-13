@@ -24,3 +24,7 @@ export async function openStakePosition(
 export async function gotoManagePosition(page: Page, urnIndex = 0) {
   await new StakePage(page).gotoManage(urnIndex);
 }
+
+export async function openManageSheet(page: Page, urnIndex = 0) {
+  await new StakePage(page).openManageSheet(urnIndex);
+}

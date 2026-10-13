@@ -28,6 +28,8 @@ export interface StakePositionDetail {
   urnAddress: `0x${string}` | undefined;
   vault: Vault | undefined;
   vaultLoading: boolean;
+  /** Re-reads the vault and the dripped rate; stable across renders. */
+  refetchVault: () => void;
   /**
    * Active/inactive and debt/no-debt are still unknown, so the menu and CTA
    * shape can't be committed. Falls back to the positions table's warm Vat read
@@ -82,7 +84,11 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const ilkName = getIlkName(2);
 
   const { data: urnAddress } = useStakeUrnAddress(BigInt(urnIndex));
-  const { data: vault, isLoading: vaultLoading } = useVault(urnAddress || ZERO_ADDRESS, ilkName);
+  const {
+    data: vault,
+    isLoading: vaultLoading,
+    mutate: refetchVault
+  } = useVault(urnAddress || ZERO_ADDRESS, ilkName);
   const { data: urnVaults } = useStakeUrnVaults();
   const urnVault = urnVaults?.find(entry => entry.index === urnIndex);
   const { data: collateralData } = useCollateralData(ilkName);
@@ -92,6 +98,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const { data: rewardContractTokens } = useRewardContractTokens(
     rewardContract && rewardContract !== ZERO_ADDRESS ? rewardContract : undefined
   );
+
+  const rewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
   const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: rewardContract && rewardContract !== ZERO_ADDRESS ? [rewardContract] : []
@@ -120,7 +128,9 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const claimableSymbols =
     positiveClaimables.length > 0
       ? [...new Set(positiveClaimables.map(reward => reward.rewardSymbol))]
-      : ['SKY'];
+      : rewardSymbol
+        ? [rewardSymbol]
+        : [];
   const claimableTokenAmount = positiveClaimables
     .filter(reward => reward.rewardSymbol === claimableSymbols[0])
     .reduce((total, reward) => total + reward.claimBalance, 0n);
@@ -144,6 +154,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
     urnAddress,
     vault,
     vaultLoading,
+    refetchVault,
     shapeLoading: vaultLoading && urnVault === undefined,
     hasDebt: vault ? (vault.debtValue ?? 0n) > 0n : (urnVault?.usdsDebt ?? 0n) > 0n,
     canBorrow: !isMinCollateralNotMet(vault),
@@ -152,7 +163,7 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
       : urnVault !== undefined && isInactiveStakePosition(urnVault),
     hasBorrowHistory: hasStakeBorrowHistory(urnHistory),
     rewardContract,
-    rewardSymbol: rewardContractTokens?.rewardsToken?.symbol,
+    rewardSymbol,
     rewardDeprecated:
       !!rewardContract && rewardContract !== ZERO_ADDRESS && isDeprecatedStakeReward(rewardContract, chainId),
     voteDelegate,

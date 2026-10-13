@@ -9,7 +9,7 @@ import { formatDecimalPercentage } from '@/utils';
 import { StakeCardMode } from '../hooks/useStakeManageFlowState';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ReachedBadge, StakeManageCard, StakeManageStatRow, StakeManageStatRows } from './StakeManageCard';
-import { StakeTakeoverAmountField } from './StakeTakeoverAmountField';
+import { AmountChip, StakeTakeoverAmountField } from './StakeTakeoverAmountField';
 import { NO_VALUE } from '@/lib/constants';
 
 /**
@@ -36,7 +36,8 @@ export function StakeManageStakeCard({
   minStakeToBorrow,
   minStakeToBorrowLoading,
   minStakeReached,
-  error
+  error,
+  errorAction
 }: {
   mode: StakeCardMode;
   onModeChange: (mode: StakeCardMode) => void;
@@ -65,6 +66,7 @@ export function StakeManageStakeCard({
   /** Collateral after the staged change clears `minStakeToBorrow`. */
   minStakeReached?: boolean;
   error?: string;
+  errorAction?: AmountChip;
 }) {
   const isStake = mode === 'stake';
   const base = (isStake ? walletBalance : stakedAmount) ?? 0n;
@@ -111,6 +113,7 @@ export function StakeManageStakeCard({
           onPercentClick={onPercentClick}
           label={isStake ? <Trans>Staked amount</Trans> : <Trans>Withdraw amount</Trans>}
           error={error}
+          errorAction={errorAction}
           maxDisplayDecimals={2}
           dataTestId="stake-manage-stake-amount"
           // Comp 1036:213881: the balance line sits above the chips.

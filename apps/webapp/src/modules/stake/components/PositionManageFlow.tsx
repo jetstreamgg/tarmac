@@ -10,6 +10,7 @@ import { ManagePositionTakeover } from './ManagePositionTakeover';
 import { StakeClaimModal } from './StakeClaimModal';
 import { StakeChangeRewardModal, StakeChangeDelegateModal } from './StakeChangeSelectionModal';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 /**
  * Menu action → sheet pre-toggle mapping (UX B.3 deep links). Reward and
@@ -26,6 +27,8 @@ export function manageActionInit(action: StakeManageAction): StakeManageFlowInit
       return { borrowCard: 'borrow' };
     case 'repay':
       return { borrowCard: 'repay' };
+    case 'close':
+      return { stakeCard: 'withdraw', borrowCard: 'repay', closePosition: true };
     case 'reward':
     case 'delegate':
       return null;
@@ -51,7 +54,7 @@ function parseUrnIndex(value: string | null): number | null {
 type ManageView =
   | { name: 'details'; scrimHandoff?: boolean }
   | { name: 'sheet'; init: StakeManageFlowInit; scrimHandoff?: boolean }
-  | { name: 'claim' }
+  | { name: 'claim'; direct?: boolean }
   | { name: 'reward' }
   | { name: 'delegate' }
   | { name: 'reopen'; borrowExpanded: boolean };
@@ -70,12 +73,16 @@ type ManageView =
  * (legacy deep-link contract) opens the sheet directly, and so does
  * `initialSheetInit` (a caller-staged pre-toggle, e.g. a remediation CTA
  * clicked before this flow was even mounted) — it takes priority over both.
+ * `initialClaim` (the Rewards section's Claim) opens the claim modal directly;
+ * its × then closes the flow instead of returning to the details modal.
  */
 export function PositionManageFlow({
   initialSheetInit,
+  initialClaim,
   onInitialSheetInitConsumed
 }: {
   initialSheetInit?: StakeManageFlowInit;
+  initialClaim?: boolean;
   onInitialSheetInitConsumed?: () => void;
 } = {}) {
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -83,6 +90,7 @@ export function PositionManageFlow({
 
   const [view, setView] = useState<ManageView>(() => {
     if (initialSheetInit) return { name: 'sheet', init: initialSheetInit };
+    if (initialClaim) return { name: 'claim', direct: true };
     const init = stakeTabInit(searchParams.get(QueryParams.StakeTab));
     return init ? { name: 'sheet', init } : { name: 'details' };
   });
@@ -90,20 +98,17 @@ export function PositionManageFlow({
   // The lazy useState initializer above already captured initialSheetInit into
   // `view` — this only tells the parent its pending state is now redundant.
   useEffect(() => {
-    if (initialSheetInit) onInitialSheetInitConsumed?.();
+    if (initialSheetInit || initialClaim) onInitialSheetInitConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const close = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.delete(QueryParams.Flow);
-        params.delete(QueryParams.UrnIndex);
-        params.delete(QueryParams.StakeTab);
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.delete(QueryParams.Flow);
+      params.delete(QueryParams.UrnIndex);
+      params.delete(QueryParams.StakeTab);
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams]);
 
   const onAction = useCallback((action: StakeManageAction) => {
@@ -177,7 +182,13 @@ export function PositionManageFlow({
     if (currentView.name === 'claim') {
       // Portalled into the transaction modal's entry slot, so it leaves with
       // that modal rather than on its own.
-      return isOpen ? <StakeClaimModal key="claim" urnIndex={index} onClose={onBack} /> : null;
+      return isOpen ? (
+        <StakeClaimModal
+          key="claim"
+          selection={{ urnIndex: index }}
+          onClose={currentView.direct ? close : onBack}
+        />
+      ) : null;
     }
 
     if (currentView.name === 'reward') {

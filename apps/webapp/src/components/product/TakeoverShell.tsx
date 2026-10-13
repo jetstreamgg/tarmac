@@ -108,7 +108,8 @@ export function TakeoverShell({
     container.addEventListener('keydown', onKeyDown);
     return () => {
       container.removeEventListener('keydown', onKeyDown);
-      previouslyFocused?.focus();
+      // preventScroll, as Radix's FocusScope does: a trigger below the fold would scroll the page on close.
+      previouslyFocused?.focus({ preventScroll: true });
     };
   }, []);
 

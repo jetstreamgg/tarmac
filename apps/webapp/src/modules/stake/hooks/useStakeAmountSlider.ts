@@ -73,6 +73,7 @@ export function useStakeAmountSlider({
   headroom,
   amount,
   onAmountChange,
+  partialMax,
   disabled: forcedDisabled = false
 }: {
   mode: 'borrow' | 'repay';
@@ -82,6 +83,8 @@ export function useStakeAmountSlider({
   headroom: bigint;
   amount: bigint;
   onAmountChange: (amount: bigint, wipeAll?: boolean) => void;
+  /** Repay only: the largest partial `wipe` accepts (stored rate); falls back to debt − dust. */
+  partialMax?: bigint;
   disabled?: boolean;
 }): StakeAmountSlider {
   const minBorrow = dust ?? 0n;
@@ -89,7 +92,9 @@ export function useStakeAmountSlider({
   if (mode === 'repay') {
     const max = existingDebt;
     // Debt under dust (dust raised after the draw): no partial zone, only the full repay.
-    const gapStart = max > minBorrow ? max - minBorrow : 0n;
+    const projectedGapStart = max > minBorrow ? max - minBorrow : 0n;
+    const gapStart =
+      partialMax !== undefined && partialMax < projectedGapStart ? partialMax : projectedGapStart;
     // The partial-repay zone keeps at least MIN_PARTIAL_STEPS of the track when
     // there is at least 1 USDS to stage in it, and the dust gap keeps at least
     // MIN_SNAP_STEPS when there is one; the natural share applies in between.
