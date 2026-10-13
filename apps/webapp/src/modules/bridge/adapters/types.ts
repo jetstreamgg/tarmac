@@ -1,5 +1,15 @@
+import type { PublicClient } from 'viem';
 import type { BridgeProgress } from '../model/pendingTransitions';
+import type { BridgeNetworkId } from '../model/networks';
 import type { PendingBridge } from '../model/types';
+
+/** The chain reads a route adapter makes. */
+export type ChainReader = Pick<PublicClient, 'getTransactionReceipt' | 'readContract'>;
+
+export type AdapterContext = {
+  /** The network's configured client; undefined when the app has none for it. */
+  getClient: (network: BridgeNetworkId) => ChainReader | undefined;
+};
 
 /**
  * What a route ticket implements for its bridge kind. The tracker calls
@@ -13,5 +23,9 @@ import type { PendingBridge } from '../model/types';
  */
 export type BridgeAdapter = {
   /** Reads where a bridge stands; null when nothing changed since the last poll. */
-  checkProgress: (bridge: PendingBridge, now: number) => Promise<BridgeProgress | null>;
+  checkProgress: (
+    bridge: PendingBridge,
+    now: number,
+    context: AdapterContext
+  ) => Promise<BridgeProgress | null>;
 };

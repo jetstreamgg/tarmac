@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address }),
   useChainId: () => 1,
-  useChains: () => [{ id: 1 }]
+  useChains: () => [{ id: 1 }],
+  useConfig: () => ({})
 }));
 vi.mock('../adapters/registry', () => ({
   getBridgeAdapter: () => ({ checkProgress: mocks.checkProgress })
@@ -48,8 +49,7 @@ const seed = (ids: { txHash?: string; safeTxHash?: string }) => {
   return bridge;
 };
 
-const renderTracker = () => {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const renderTracker = (client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
@@ -70,6 +70,21 @@ describe('useBridgeTracker', () => {
     seed({ txHash: '0xsource' });
     renderTracker();
     await waitFor(() => expect(stored('0xsource')).toMatchObject({ status: 'ready', nextAction: 'claim' }));
+  });
+
+  it('marks the balances read on the destination chain stale once a bridge arrived', async () => {
+    mocks.checkProgress.mockResolvedValue({ kind: 'arrived' });
+    seed({ txHash: '0xsource' });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const balanceOn = (chainId: number) => [
+      'readContracts',
+      { contracts: [{ chainId, functionName: 'balanceOf' }] }
+    ];
+    client.setQueryData(balanceOn(1), [1n, 18]);
+    client.setQueryData(balanceOn(8453), [1n, 18]);
+    renderTracker(client);
+    await waitFor(() => expect(client.getQueryState(balanceOn(1))?.isInvalidated).toBe(true));
+    expect(client.getQueryState(balanceOn(8453))?.isInvalidated).toBe(false);
   });
 
   it('asks the Safe service on the source chain for a queued Safe bridge', async () => {

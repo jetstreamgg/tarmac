@@ -4,8 +4,11 @@ import { createPendingBridge } from '../model/pendingTransitions';
 import type { BridgeNetworkId } from '../model/networks';
 import { MOCK_STAGE_MS, mockAdapter } from './mockAdapter';
 import { getBridgeAdapter } from './registry';
+import type { AdapterContext } from './types';
 
 const NOW = 1_700_000_000_000;
+// No chain to read: a real deposit must not move on its own.
+const NO_CHAINS: AdapterContext = { getClient: () => undefined };
 
 const pending = (from: BridgeNetworkId, to: BridgeNetworkId) => {
   const result = resolveBridgeRoute({ from, to, amount: 1n, facts: { cctp: { isOpen: true } } });
@@ -29,14 +32,14 @@ describe('getBridgeAdapter', () => {
     async to => {
       const bridge = pending('ethereum', to);
       expect(bridge.routeKind).toBe('native');
-      await expect(getBridgeAdapter('native').checkProgress(bridge, later)).resolves.toBeNull();
+      await expect(getBridgeAdapter('native').checkProgress(bridge, later, NO_CHAINS)).resolves.toBeNull();
     }
   );
 
   it('keeps native withdrawals on the mock until their adapters land', async () => {
     const bridge = pending('base', 'ethereum');
-    const progress = await getBridgeAdapter('native').checkProgress(bridge, later);
+    const progress = await getBridgeAdapter('native').checkProgress(bridge, later, NO_CHAINS);
     expect(progress).not.toBeNull();
-    expect(progress).toEqual(await mockAdapter.checkProgress(bridge, later));
+    expect(progress).toEqual(await mockAdapter.checkProgress(bridge, later, NO_CHAINS));
   });
 });
