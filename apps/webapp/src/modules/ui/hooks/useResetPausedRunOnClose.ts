@@ -26,8 +26,10 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 export function useResetPausedRunOnClose(reset: () => void, refetchReads?: () => void): void {
   const { isModalOpen, txStatus } = useTransaction();
   // Close hides the modal and returns the status to IDLE in one render, so an
-  // unfinished run has to be remembered from before. A success ends the run
-  // itself; minimize keeps the modal open, so a running one is never reset here.
+  // unfinished run has to be remembered from before. The provider closes in
+  // the same batch as it sets SUCCESS, so a success usually resets here too,
+  // harmlessly: the engine has already finished. Minimize keeps the modal open,
+  // so a running one is never reset here.
   const unfinishedRef = useRef(false);
   useEffect(() => {
     if (txStatus === TxStatus.SUCCESS) unfinishedRef.current = false;

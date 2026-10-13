@@ -1021,7 +1021,6 @@ export function TransactionProvider({
       // Returns whether it closed the modal rather than returning to the review.
       const sendBackToReview = (): boolean => {
         const closes = !!configRef.current?.skipReview || hasMinedStepRef.current;
-        if (controls.isStale()) return closes;
         controls.setPreludeSteps(null);
         controls.setGateStatus('idle');
         if (closes) handleCloseRef.current();
