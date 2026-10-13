@@ -210,9 +210,9 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
   });
 
-  // Calls that can't be encoded can't be sent either, so the engine reports
-  // them; refusing would loop every confirm on "details changed".
-  it('hands unencodable calls to the engine and reports them', async () => {
+  // Unencodable calls fail closed, refusing every confirm of the flow, so the
+  // loop has to be reported to be seen.
+  it('refuses unencodable calls and reports them', async () => {
     const onConfirm = vi.fn();
     const broken = { to: TOKEN, abi: erc20Abi, functionName: 'approve', args: [POOL] } as unknown as Call;
     const { gate, resolve } = heldGate();
@@ -221,10 +221,13 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     await act(async () => resolve());
 
-    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
     expect(reportErrorMock).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'Confirmed calls could not be encoded' }),
-      expect.objectContaining({ type: 'call_snapshot_unencodable' })
+      expect.objectContaining({
+        type: 'call_snapshot_unencodable',
+        extra: { calls: [{ to: TOKEN, functionName: 'approve' }] }
+      })
     );
   });
 

@@ -427,9 +427,9 @@ export function TransactionProvider({
   // stay joined even if navigation rotates the live flow id mid-transaction.
   const flowIdRef = useRef<string | undefined>(undefined);
   // The calls the user confirmed, encoded, captured at the click (see
-  // `getNextCalls` in the contract). Undefined when there is nothing to hold
-  // later sends to (see the confirm in runGated).
-  const confirmedCallsRef = useRef<EncodedCall[] | undefined>(undefined);
+  // `getNextCalls` in the contract). Undefined when the flow doesn't report
+  // its calls; null when they couldn't be encoded, which fails closed.
+  const confirmedCallsRef = useRef<EncodedCall[] | null | undefined>(undefined);
   // The account that confirmed, captured with the calls: calldata that never
   // names the sender (a bare claim, a position addressed by index) encodes the
   // same for every account, so the calls alone can't tell who signs.
@@ -1015,19 +1015,19 @@ export function TransactionProvider({
       // the calls and the account; a retry re-sends what was already confirmed.
       if (trigger !== 'retry') {
         const getNextCalls = configRef.current?.getNextCalls;
-        // Calls that can't be encoded can't be sent either: the engine fails
-        // them with its own error and report, where refusing every confirm as
-        // "details changed" would loop the user with nothing reported.
-        const confirmed = getNextCalls ? encodeCalls(getNextCalls()) : undefined;
-        if (confirmed === null) {
+        const calls = getNextCalls?.();
+        confirmedCallsRef.current = calls ? encodeCalls(calls) : undefined;
+        // Fails closed, so every confirm of this flow is refused: report it, or
+        // the loop is invisible.
+        if (calls && confirmedCallsRef.current === null) {
           reportError(new Error('Confirmed calls could not be encoded'), {
             module: 'transactions',
             flow: configRef.current?.analytics?.flow ?? 'unknown',
             action: configRef.current?.analytics?.action ?? 'unknown',
-            type: 'call_snapshot_unencodable'
+            type: 'call_snapshot_unencodable',
+            extra: { calls: calls.map(call => ({ to: call.to, functionName: call.functionName })) }
           });
         }
-        confirmedCallsRef.current = confirmed ?? undefined;
         confirmedAddressRef.current = addressRef.current;
       }
       // Back to the review to confirm again, at IDLE so it re-renders against
@@ -1052,10 +1052,10 @@ export function TransactionProvider({
       // Retry arriving after the quote moved does not.
       const callsStillConfirmed = () => {
         const getNextCalls = configRef.current?.getNextCalls;
+        if (!getNextCalls) return true;
         const confirmed = confirmedCallsRef.current;
-        if (!getNextCalls || !confirmed) return true;
         const live = encodeCalls(getNextCalls());
-        return !!live && isTailOf(live, confirmed, configRef.current?.callMatches);
+        return !!confirmed && !!live && isTailOf(live, confirmed, configRef.current?.callMatches);
       };
       const dispatch = () => {
         if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
