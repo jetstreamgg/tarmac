@@ -209,7 +209,7 @@ describe('ProductTransactionsTable — mobile cards (M5)', () => {
       fireEvent.click(screen.getByLabelText('Go to next page'));
       expect(scrollIntoView).toHaveBeenCalledTimes(1);
       expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByText('card-7').closest('.scroll-mt-36'));
-      expect(scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'instant' });
     });
 
     it('leaves the scroll alone when the card list top is in view', () => {

@@ -34,9 +34,6 @@ function EmptyLabel({ emptyLabel, isConnected }: { emptyLabel?: ReactNode; isCon
  * Sections, e.g. 486:20827) — same rows, loading/empty/error and pagination.
  */
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
 /** Placeholder rows/cards rendered while `isLoading`. */
 const LOADING_ROWS = 4;
 
@@ -186,7 +183,8 @@ export function ProductTransactionsTable<T>({
       list &&
       list.getBoundingClientRect().top < (parseFloat(getComputedStyle(list).scrollMarginTop) || 0)
     ) {
-      list.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+      // Instant: a motion height measure (e.g. row banners) restores the pre-measure scroll and would cancel a smooth one.
+      list.scrollIntoView({ block: 'start', behavior: 'instant' });
     }
   };
   const showPagination = !isLoading && !error && totalPages > 1;
