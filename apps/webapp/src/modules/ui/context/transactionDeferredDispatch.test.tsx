@@ -451,6 +451,7 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     const cb = renderWithGate(() => ({ allow: true }), {
       ...config,
+      steps: ['Approve', 'Swap'],
       getConfirmDisabled: () => gating.disabled
     });
 
@@ -460,8 +461,10 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     live.calls = [swap(900n)];
     gating.disabled = true; // the stalled step is unprepared
     act(() => cb.onError(markStalledStep(new Error('simulation reverted')), ''));
+    expect(screen.queryByText('Swap failed')).not.toBeNull();
+    expect(screen.queryByText('Approve failed')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });

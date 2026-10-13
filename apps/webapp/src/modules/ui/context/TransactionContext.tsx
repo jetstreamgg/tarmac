@@ -1135,7 +1135,7 @@ export function TransactionProvider({
     // The reset lives inside the gate: a denied retry must leave the failure
     // view in place, not clear it and then do nothing.
     runGated('retry', () => {
-      if (hasMinedStep) {
+      if (hasMinedStepRef.current) {
         // The engine resumes at the failed write; shift past any prelude the gate dropped.
         const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
         if (dropped > 0) setCurrentStep(s => s - dropped);
@@ -1150,7 +1150,7 @@ export function TransactionProvider({
 
       configRef.current?.onConfirm();
     });
-  }, [runGated, resetTransactionProgress, hasMinedStep]);
+  }, [runGated, resetTransactionProgress]);
 
   // A settle callback belongs to the running session only if BOTH its closure
   // and the write it reports on were made in the current generation (see
@@ -1332,8 +1332,12 @@ export function TransactionProvider({
         txHashRef.current = hash;
       }
       // A run that stalls after a mined step never hands its next call to the
-      // wallet, so no write reports the mined step; the engine's error does.
-      if (isStalledStep(error)) markMinedStep();
+      // wallet, so no write reports the mined step or moves the stepper onto
+      // the step that stalled; the engine's error does both.
+      if (isStalledStep(error)) {
+        markMinedStep();
+        setCurrentStep(s => s + 1);
+      }
 
       // Track transaction completed (error). Bounded classification props only —
       // never the raw message, which can embed addresses and calldata. A wallet

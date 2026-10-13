@@ -56,7 +56,16 @@ vi.mock('wagmi', () => ({
             error: null
           };
     };
-    return { ...simulate(), refetch: () => Promise.resolve(simulate()) };
+    // Like TanStack Query, a failed refetch keeps the last good data.
+    const refetch = () => {
+      const result = simulate();
+      return Promise.resolve(
+        result.error
+          ? { ...result, data: { request: { __mock: 'request', functionName: params.functionName } } }
+          : result
+      );
+    };
+    return { ...simulate(), refetch };
   },
   useWriteContract: (opts: {
     mutation: {

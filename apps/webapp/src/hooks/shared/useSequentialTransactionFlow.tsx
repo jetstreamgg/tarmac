@@ -42,9 +42,10 @@ export function useSequentialTransactionFlow(
   // Retry: a simulation that recovers on its own must not send it behind the
   // error screen.
   const reportedSimulationIndexRef = useRef(-1);
-  // The step whose send reverted on-chain, and whether its Retry is re-simulating.
+  // The step whose send reverted on-chain, and its Retry's in-flight re-simulation
+  // (a token, so a reset or unmount drops a result that settles afterwards).
   const revertedIndexRef = useRef(-1);
-  const resimulatingRef = useRef(false);
+  const resimulationRef = useRef<object | null>(null);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
@@ -163,6 +164,7 @@ export function useSequentialTransactionFlow(
       lastProcessedTxHash.current = undefined;
       dispatchedIndexRef.current = -1;
       revertedIndexRef.current = -1;
+      resimulationRef.current = null;
     };
   }, []);
 
@@ -256,6 +258,7 @@ export function useSequentialTransactionFlow(
     dispatchedIndexRef.current = -1;
     reportedSimulationIndexRef.current = -1;
     revertedIndexRef.current = -1;
+    resimulationRef.current = null;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution
@@ -284,14 +287,15 @@ export function useSequentialTransactionFlow(
       // Retry of a step that reverted on-chain: the held simulation predates the
       // revert, so re-simulate rather than re-send what just failed. The index
       // stays claimed (the auto-execute effect must not fire), so in-flight is
-      // tracked separately, and a reset or unmount clears the step to drop it.
-      if (resimulatingRef.current) return;
-      resimulatingRef.current = true;
-      const index = currentIndex;
+      // tracked separately. A failed refetch keeps the last good `data`, the
+      // request that reverted, so only a refetch without an error may send.
+      if (resimulationRef.current) return;
+      const token = {};
+      resimulationRef.current = token;
       void refetchSimulation().then(({ data, error }) => {
-        resimulatingRef.current = false;
-        if (revertedIndexRef.current !== index) return;
-        if (data?.request) {
+        if (resimulationRef.current !== token) return;
+        resimulationRef.current = null;
+        if (!error && data?.request) {
           revertedIndexRef.current = -1;
           writeContract(data.request as Parameters<typeof writeContract>[0]);
         } else {
@@ -318,7 +322,7 @@ export function useSequentialTransactionFlow(
       dispatchedIndexRef.current = index;
       void refetchSimulation().then(({ data, error }) => {
         if (dispatchedIndexRef.current !== index) return;
-        if (data?.request) {
+        if (!error && data?.request) {
           writeContract(data.request as Parameters<typeof writeContract>[0]);
         } else {
           dispatchedIndexRef.current = -1;
