@@ -465,10 +465,10 @@ describe('StakePositionsTable — mobile cards (M5)', () => {
     expect(mockSearchParams.get('urn_index')).toBe('0');
   });
 
-  it('opens the manage flow from View more while text is selected, once', () => {
+  it('opens the manage flow from Details while text is selected, once', () => {
     renderTable();
 
-    withTextSelection(() => fireEvent.click(screen.getAllByRole('button', { name: 'View more' })[1]));
+    withTextSelection(() => fireEvent.click(screen.getAllByRole('button', { name: 'Details' })[1]));
 
     expect(mockSearchParams.get('urn_index')).toBe('1');
     expect(setSearchParamsMock).toHaveBeenCalledTimes(1);

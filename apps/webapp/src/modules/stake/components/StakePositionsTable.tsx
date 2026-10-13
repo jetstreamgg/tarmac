@@ -239,7 +239,7 @@ const manageColumn = (
         onClick={ownAction(() => onManage(position))}
         data-testid={`stake-position-manage-${position.index}`}
       >
-        <Trans>Manage</Trans>
+        <Trans>Details</Trans>
       </Button>
     </div>
   )
@@ -285,9 +285,9 @@ function buildColumns(
 
 // Mobile position card (comp 1222:16771 / 1295:21684): 36px position iconbox
 // with a Label 4 title, equal-column CardField pairs split by centered
-// hairlines, and a full-width secondary "View more" footer. The card wrapper
+// hairlines, and a full-width secondary "Details" footer. The card wrapper
 // owns the tap-to-manage behavior (the engine wires onRowClick to it); the
-// button runs the same handler on its own, like the desktop Manage.
+// button runs the same handler on its own, like the desktop Details.
 function PositionIconbox({ position }: { position: StakeUserPosition }) {
   const tone = useStakePositionTone(position);
   return (
@@ -337,7 +337,7 @@ const renderCard = (position: StakeUserPosition, onManage: (position: StakeUserP
           </CardFieldRow>
         </div>
         <Button variant="secondary" size="m" className="w-full" onClick={ownAction(() => onManage(position))}>
-          <Trans>View more</Trans>
+          <Trans>Details</Trans>
         </Button>
       </>
     }

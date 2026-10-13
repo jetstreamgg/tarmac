@@ -264,7 +264,7 @@ export function StakeSummaryCard({ positions }: { positions?: StakeUserPosition[
             {hasDebt && <SummaryLiquidationRisk position={singlePosition} />}
             <ProductActions>
               <Button variant="secondary" size="xl" onClick={onManage} data-testid="stake-summary-manage-cta">
-                <Trans>Manage</Trans>
+                <Trans>Details</Trans>
               </Button>
             </ProductActions>
           </div>

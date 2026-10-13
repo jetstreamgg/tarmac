@@ -225,23 +225,23 @@ test('populated positions tab stacks per the mobile comp', async ({ isolatedPage
   expect(summaryBox!.y).toBeLessThan(positionsBox!.y);
   expect(positionsBox!.y).toBeLessThan(activityBox!.y);
 
-  // The summary's Manage CTA is single-position only.
+  // The summary's Details CTA is single-position only.
   await expect(summary.getByTestId('stake-summary-manage-cta')).not.toBeVisible();
 
-  // Position cards: one "View more" per active urn; the emptied urn stays
+  // Position cards: one "Details" per active urn; the emptied urn stays
   // behind the Show inactive toggle.
-  const viewMore = isolatedPage.getByRole('button', { name: 'View more' });
-  await expect(viewMore).toHaveCount(4, { timeout: 15_000 });
+  const detailsButtons = isolatedPage.getByRole('button', { name: 'Details' });
+  await expect(detailsButtons).toHaveCount(4, { timeout: 15_000 });
   await isolatedPage.getByTestId('stake-show-inactive-toggle').click();
-  await expect(viewMore).toHaveCount(5);
+  await expect(detailsButtons).toHaveCount(5);
   await isolatedPage.getByTestId('stake-show-inactive-toggle').click();
 
-  // Tapping View more opens the manage flow for that urn (bubbles to the
+  // Tapping Details opens the manage flow for that urn (bubbles to the
   // card's row handler). At the phone tier the details modal hides the menu
   // panel behind a pinned footer pair (comp 1292:63278); Manage position
   // raises the menu as a bottom sheet (comp 1222:16239) whose close returns
   // to the details view underneath.
-  await viewMore.first().click();
+  await detailsButtons.first().click();
   const details = isolatedPage.getByTestId('stake-position-details');
   await expect(details).toBeVisible({ timeout: 30_000 });
   // Assert the footer-pair shape, not the specific primary verb.
