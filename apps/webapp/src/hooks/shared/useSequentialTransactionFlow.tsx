@@ -4,6 +4,10 @@ import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } fro
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
+// A refetch runs even while the query is disabled, so a Retry that re-simulates
+// checks the caller's `enabled` gate itself.
+const notSendable = () => new Error('The transaction can no longer be sent');
+
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
 ): SequentialTransactionHook {
@@ -286,6 +290,10 @@ export function useSequentialTransactionFlow(
       // tracked separately. A failed refetch keeps the last good `data`, the
       // request that reverted, so only a refetch without an error may send.
       if (resimulationRef.current) return;
+      if (!enabled) {
+        onError(notSendable(), '');
+        return;
+      }
       const token = {};
       resimulationRef.current = token;
       void refetchSimulation().then(({ data, error }) => {
@@ -295,7 +303,7 @@ export function useSequentialTransactionFlow(
           revertedIndexRef.current = -1;
           writeContract(data.request as Parameters<typeof writeContract>[0]);
         } else {
-          onError(toError(error ?? simulationError), '');
+          onError(error ? toError(error) : new Error('The simulation returned no request'), '');
         }
       });
     } else if (simulationData?.request) {
@@ -314,6 +322,10 @@ export function useSequentialTransactionFlow(
       // Claim the index up front so a second click while this is in flight is a
       // no-op, and drop the result if reset or unmount released the claim.
       if (dispatchedIndexRef.current === currentIndex) return;
+      if (!enabled) {
+        onError(notSendable(), '');
+        return;
+      }
       const index = currentIndex;
       dispatchedIndexRef.current = index;
       void refetchSimulation().then(({ data, error }) => {
@@ -322,7 +334,7 @@ export function useSequentialTransactionFlow(
           writeContract(data.request as Parameters<typeof writeContract>[0]);
         } else {
           dispatchedIndexRef.current = -1;
-          onError(toError(error ?? simulationError), '');
+          onError(error ? toError(error) : new Error('The simulation returned no request'), '');
         }
       });
     } else {
