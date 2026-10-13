@@ -385,6 +385,28 @@ export const contracts: {
       [mainnet.id]: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0',
       [TENDERLY_CHAIN_ID]: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0'
     }
+  },
+  // Bridge module: ABIs only, the proxies per L2 are in modules/bridge
+  {
+    name: 'skyL1TokenBridgeImplementation',
+    address: {
+      [mainnet.id]: '0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6',
+      [TENDERLY_CHAIN_ID]: '0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6'
+    }
+  },
+  {
+    name: 'skyL1TokenGatewayImplementation',
+    address: {
+      [mainnet.id]: '0x12eDe82637d5507026D4CDb3515B4b022Ed157b1',
+      [TENDERLY_CHAIN_ID]: '0x12eDe82637d5507026D4CDb3515B4b022Ed157b1'
+    }
+  },
+  {
+    name: 'arbitrumInboxImplementation',
+    address: {
+      [mainnet.id]: '0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10',
+      [TENDERLY_CHAIN_ID]: '0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10'
+    }
   }
 ];
 
