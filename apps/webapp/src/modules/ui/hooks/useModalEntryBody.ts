@@ -77,9 +77,10 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
    * The calls `execute` would send now (the engine's `nextCalls`). REQUIRED, like
    * `usdValue`: the provider re-validates every deferred dispatch against what the
    * user confirmed (see `TransactionConfig.getNextCalls`), and an editable body is
-   * exactly where calldata keeps moving after the review freezes.
+   * exactly where calldata keeps moving after the review freezes. `null` opts out,
+   * explicitly, for calldata that can't move against the user (a claim to self).
    */
-  nextCalls: readonly Call[];
+  nextCalls: readonly Call[] | null;
   /**
    * Relaxes the dispatch-time comparison of `nextCalls` (see
    * `TransactionConfig.callMatches`). Module-level or memoized: the sync effect
@@ -137,7 +138,8 @@ export function useModalEntryBody({
   useLayoutEffect(() => {
     nextCallsRef.current = nextCalls;
   }, [nextCalls]);
-  const getNextCalls = useCallback(() => nextCallsRef.current, []);
+  const stableGetNextCalls = useCallback(() => nextCallsRef.current ?? [], []);
+  const getNextCalls = nextCalls === null ? undefined : stableGetNextCalls;
   const confirmDisabledRef = useRef(confirmDisabled);
   useLayoutEffect(() => {
     confirmDisabledRef.current = confirmDisabled;

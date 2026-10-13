@@ -49,6 +49,8 @@ const analytics = vi.hoisted(() => ({
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => analytics
 }));
+const reportErrorMock = vi.hoisted(() => vi.fn());
+vi.mock('@/modules/sentry/reportError', () => ({ reportError: reportErrorMock }));
 const toastWithCloseMock = vi.hoisted(() => vi.fn());
 vi.mock('@/components/ui/use-toast', () => ({
   toast: { dismiss: vi.fn() },
@@ -206,6 +208,24 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(toast.getByText(title)).toBeTruthy();
     expect(toast.getByText(body)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
+  });
+
+  // Calls that can't be encoded can't be sent either, so the engine reports
+  // them; refusing would loop every confirm on "details changed".
+  it('hands unencodable calls to the engine and reports them', async () => {
+    const onConfirm = vi.fn();
+    const broken = { to: TOKEN, abi: erc20Abi, functionName: 'approve', args: [POOL] } as unknown as Call;
+    const { gate, resolve } = heldGate();
+    renderWithGate(gate, { ...bareConfig(onConfirm), getNextCalls: () => [broken] });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await act(async () => resolve());
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Confirmed calls could not be encoded' }),
+      expect.objectContaining({ type: 'call_snapshot_unencodable' })
+    );
   });
 
   it('refuses an async allow when the account switched while the verdict was pending', async () => {

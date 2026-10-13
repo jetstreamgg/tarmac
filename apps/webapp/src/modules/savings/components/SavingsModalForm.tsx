@@ -31,12 +31,14 @@ export type { SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 
 const USDS_DECIMALS = 18;
 
-// The L2 PSM swaps carry a bound from the live sUSDS rate: a refetch while the
-// user signs moves it, but between oracle updates only ever tighter (the rate
-// rises). A specific-amount withdraw approves exactly its max-in, so the
-// approve amount moves with it and may likewise only shrink (applied to every
-// savings approve; a smaller one can at worst revert). Every other savings call
-// must still match byte for byte.
+// The L2 PSM swaps carry a bound from the sUSDS rate. A withdraw's max-in is
+// previewed on-chain, so a refetch while the user signs only shrinks it (the
+// rate rises). A supply's min-out is projected from the oracle's last update, so
+// it holds until the next one and then drops: a send held across an oracle
+// update is refused. A specific-amount withdraw approves exactly its max-in, so
+// the approve amount moves with it and may likewise only shrink (applied to
+// every savings approve; a smaller one can at worst revert). Every other
+// savings call must still match byte for byte.
 export const PSM_SWAP_BOUND_ARGS = {
   swapExactIn: { index: 3, kind: 'min' },
   swapExactOut: { index: 3, kind: 'max' },

@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
+import type { Call } from 'viem';
 
 const h = {
   txStatus: 'idle' as string,
@@ -24,7 +25,8 @@ function Host({
   confirmAction,
   errorMessage,
   analytics,
-  usdValue
+  usdValue,
+  nextCalls = []
 }: {
   steps?: TransactionStep[];
   transactionContent?: ReactNode;
@@ -33,11 +35,12 @@ function Host({
   errorMessage?: string;
   analytics?: TransactionAnalytics;
   usdValue?: number;
+  nextCalls?: readonly Call[] | null;
 }) {
   const renderInSlot = useModalEntryBody({
     sessionId: 's1',
     execute: () => {},
-    nextCalls: [],
+    nextCalls,
     confirmDisabled: false,
     confirmLabel,
     confirmAction,
@@ -56,6 +59,20 @@ describe('useModalEntryBody — live-push freeze once the tx leaves IDLE', () =>
   beforeEach(() => {
     h.txStatus = TxStatus.IDLE;
     h.updateModalContent.mockClear();
+  });
+
+  it('pushes the call getter, or none for a body that opts out with null', () => {
+    const view = render(<Host />);
+    expect(h.updateModalContent).toHaveBeenLastCalledWith(
+      's1',
+      expect.objectContaining({ getNextCalls: expect.any(Function) })
+    );
+
+    view.rerender(<Host nextCalls={null} />);
+    expect(h.updateModalContent).toHaveBeenLastCalledWith(
+      's1',
+      expect.objectContaining({ getNextCalls: undefined })
+    );
   });
 
   it('pushes the live config while the tx is IDLE', () => {
