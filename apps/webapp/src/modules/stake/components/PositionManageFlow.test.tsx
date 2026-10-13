@@ -90,6 +90,11 @@ describe('manageActionInit', () => {
     expect(manageActionInit('withdraw')).toEqual({ stakeCard: 'withdraw' });
     expect(manageActionInit('borrow')).toEqual({ borrowCard: 'borrow' });
     expect(manageActionInit('repay')).toEqual({ borrowCard: 'repay' });
+    expect(manageActionInit('close')).toEqual({
+      stakeCard: 'withdraw',
+      borrowCard: 'repay',
+      closePosition: true
+    });
     // Reward/delegate open their own modals, not the sheet.
     expect(manageActionInit('reward')).toBeNull();
     expect(manageActionInit('delegate')).toBeNull();
@@ -234,7 +239,7 @@ describe('PositionManageFlow', () => {
 
     act(() => (h.modalProps!.onClaim as () => void)());
     expect(screen.getByTestId('claim-modal-stub')).toBeTruthy();
-    expect(h.claimProps?.urnIndex).toBe(2);
+    expect(h.claimProps?.selection).toEqual({ urnIndex: 2 });
 
     act(() => (h.claimProps!.onClose as () => void)());
     expect(screen.getByTestId('details-modal-stub')).toBeTruthy();
@@ -294,6 +299,7 @@ describe('PositionManageFlow', () => {
     expect(mockSearchParams.get('flow')).toBeNull();
     expect(mockSearchParams.get('urn_index')).toBeNull();
     expect(mockSearchParams.get('stake_tab')).toBeNull();
+    expect(setSearchParamsMock.mock.calls.at(-1)?.[1]).toEqual({ replace: true, resetScroll: false });
   });
 
   it('opens the sheet directly on initialSheetInit, ahead of stake_tab and details', () => {

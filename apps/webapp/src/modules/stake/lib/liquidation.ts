@@ -55,3 +55,29 @@ export function maxWithdrawWithinRisk({
   const minCollateral = math.minSafeCollateralAmount(debtValue, liquidationRatio, price);
   return collateral > minCollateral ? math.removeDecimalPartOfWad(collateral - minCollateral) : 0n;
 }
+
+/**
+ * Least USDS repay, to the cent, after which `maxWithdrawWithinRisk` allows
+ * withdrawing `withdraw`. Undefined when even a debt-free position can't.
+ */
+export function repayToWithdraw({
+  withdraw,
+  ...risk
+}: Parameters<typeof maxWithdrawWithinRisk>[0] & { withdraw: bigint }): bigint | undefined {
+  const allows = (repay: bigint) =>
+    maxWithdrawWithinRisk({
+      ...risk,
+      debtValue: risk.debtValue > repay ? risk.debtValue - repay : 0n
+    }) >= withdraw;
+  const CENT = 10n ** 16n;
+  let hi = (risk.debtValue + CENT - 1n) / CENT;
+  if (!allows(hi * CENT)) return undefined;
+  let lo = 0n;
+  // Monotonic in the repay: binary search over whole cents.
+  while (lo < hi) {
+    const mid = (lo + hi) / 2n;
+    if (allows(mid * CENT)) hi = mid;
+    else lo = mid + 1n;
+  }
+  return lo * CENT;
+}

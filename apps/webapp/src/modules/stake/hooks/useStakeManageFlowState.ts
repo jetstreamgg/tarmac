@@ -33,6 +33,8 @@ export type StakeManageFlowAction =
 export interface StakeManageFlowInit {
   stakeCard?: StakeCardMode;
   borrowCard?: BorrowCardMode;
+  /** Close position (Figma 3644:62026): the sheet stages a full withdraw and repay once the vault loads. */
+  closePosition?: boolean;
 }
 
 export function initStakeManageFlowState({
