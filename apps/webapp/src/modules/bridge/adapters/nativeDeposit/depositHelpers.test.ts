@@ -3,6 +3,7 @@ import {
   decodeAbiParameters,
   decodeFunctionData,
   encodeFunctionData,
+  erc20Abi,
   getAddress,
   zeroAddress,
   type Address,
@@ -16,14 +17,23 @@ import {
   arbitrumRetryableTicket,
   retryableQuote
 } from './arbitrum';
-import { ARBITRUM_DEPOSIT, OP_STACK_DEPOSIT } from './contracts';
+import { ARBITRUM_DEPOSIT, L1_USDS, OP_STACK_DEPOSIT } from './contracts';
 import {
   ARBITRUM_DEPOSIT_LOGS,
   ARBITRUM_DEPOSIT_TX,
   BASE_DEPOSIT_LOGS,
-  BASE_DEPOSIT_TX
+  BASE_DEPOSIT_TX,
+  OPTIMISM_DEPOSIT_LOGS,
+  OPTIMISM_DEPOSIT_TX,
+  UNICHAIN_DEPOSIT_LOGS,
+  UNICHAIN_DEPOSIT_TX
 } from './depositFixtures';
-import { OP_STACK_MIN_GAS_LIMIT, opStackDepositCall, opStackDepositMessage } from './opStack';
+import {
+  OP_STACK_MIN_GAS_LIMIT,
+  opStackDepositCall,
+  opStackDepositCalls,
+  opStackDepositMessage
+} from './opStack';
 
 const SUSDS = '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD';
 
@@ -76,6 +86,93 @@ describe('OP Stack deposit (golden: Base mainnet deposit 0x36f35ee8…537f)', ()
       opStackDepositMessage([...BASE_DEPOSIT_LOGS, BASE_DEPOSIT_LOGS[portalIndex]], 'base')
     ).toBeUndefined();
     expect(opStackDepositMessage([], 'base')).toBeUndefined();
+  });
+});
+
+describe.each([
+  {
+    network: 'optimism' as const,
+    tx: OPTIMISM_DEPOSIT_TX,
+    logs: OPTIMISM_DEPOSIT_LOGS,
+    msgHash: '0x1e0fa0ae74e4b247bb776bf2bd5af5e608bf34484072c87b0c873e5638ad6d1a'
+  },
+  {
+    network: 'unichain' as const,
+    tx: UNICHAIN_DEPOSIT_TX,
+    logs: UNICHAIN_DEPOSIT_LOGS,
+    msgHash: '0xfd61cf18045fc72f8c1b911e1a28004c30a5904f53b2a50b2b1f8ef9835ff8af'
+  }
+])('OP Stack deposit to $network (golden: a real mainnet deposit)', ({ network, tx, logs, msgHash }) => {
+  it('builds the same bridgeERC20To call as the real deposit, with no ETH and at least its gas', () => {
+    const real = decodeFunctionData({ abi: skyL1TokenBridgeImplementationAbi, data: tx.input });
+    const [, , recipient, amount, minGasLimit, extraData] = real.args as readonly [
+      Address,
+      Address,
+      Address,
+      bigint,
+      number,
+      Hex
+    ];
+    expect(tx.value).toBe(0n);
+    // The real deposit forwarded 200k; ours forwards at least as much.
+    expect(OP_STACK_MIN_GAS_LIMIT).toBeGreaterThanOrEqual(minGasLimit);
+    const call = opStackDepositCall({ network, recipient, amount });
+    expect(call.address).toBe(OP_STACK_DEPOSIT[network].l1TokenBridge);
+    const [token, l2Token, to, value] = call.args;
+    expect(encodeFunctionData({ ...call, args: [token, l2Token, to, value, minGasLimit, extraData] })).toBe(
+      tx.input
+    );
+  });
+
+  it('reads the msgHash the L2 messenger relayed', () => {
+    expect(opStackDepositMessage(logs, network)?.msgHash).toBe(msgHash);
+  });
+
+  it('ignores the deposit on the other OP Stack networks', () => {
+    for (const other of (['base', 'optimism', 'unichain'] as const).filter(n => n !== network))
+      expect(opStackDepositMessage(logs, other)).toBeUndefined();
+  });
+});
+
+describe('opStackDepositCalls', () => {
+  const recipient = getAddress('0x2546BcD3c84621e976D8185a91A922aE77ECEc30');
+  const amount = 25n * 10n ** 18n;
+  const callData = (call: unknown) => encodeFunctionData(call as Parameters<typeof encodeFunctionData>[0]);
+
+  it.each(['base', 'optimism', 'unichain'] as const)(
+    'to %s approves exactly the amount to its L1 bridge, then deposits with no ETH',
+    network => {
+      const [approve, deposit, ...rest] = opStackDepositCalls({
+        network,
+        allowance: amount - 1n,
+        amount,
+        recipient
+      });
+      expect(rest).toEqual([]);
+      expect(approve.to).toBe(L1_USDS);
+      expect(approve.value).toBeUndefined();
+      expect(decodeFunctionData({ abi: erc20Abi, data: callData(approve) })).toEqual({
+        functionName: 'approve',
+        args: [OP_STACK_DEPOSIT[network].l1TokenBridge, amount]
+      });
+      const { address, ...single } = opStackDepositCall({ network, recipient, amount });
+      expect(deposit.to).toBe(address);
+      expect(deposit.value).toBeUndefined();
+      expect(callData(deposit)).toBe(callData({ to: address, ...single }));
+    }
+  );
+
+  it('skips the approve when the allowance covers the amount', () => {
+    for (const allowance of [amount, amount + 1n]) {
+      const calls = opStackDepositCalls({ network: 'base', allowance, amount, recipient });
+      expect(calls.map(call => call.functionName)).toEqual(['bridgeERC20To']);
+    }
+  });
+
+  it('builds nothing for the zero address', () => {
+    expect(() =>
+      opStackDepositCalls({ network: 'base', allowance: 0n, amount, recipient: zeroAddress })
+    ).toThrow();
   });
 });
 

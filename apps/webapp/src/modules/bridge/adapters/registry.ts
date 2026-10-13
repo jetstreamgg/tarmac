@@ -1,11 +1,12 @@
 import type { BridgeRouteKind } from '../model/types';
+import { isNativeDepositNetwork } from './nativeDeposit/contracts';
 import { mockAdapter } from './mockAdapter';
 import type { BridgeAdapter } from './types';
 
-// Ethereum to Arbitrum deposits are real: they wait for the ticket reader, as the mock's timed "arrived" would be false.
+// Native deposits from Ethereum are real: they wait for their readers, as the mock's timed "arrived" would be false.
 const nativeAdapter: BridgeAdapter = {
   checkProgress: (bridge, now) =>
-    bridge.from === 'ethereum' && bridge.to === 'arbitrum'
+    bridge.from === 'ethereum' && isNativeDepositNetwork(bridge.to)
       ? Promise.resolve(null)
       : mockAdapter.checkProgress(bridge, now)
 };

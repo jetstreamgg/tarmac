@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { createPendingBridge } from '../model/pendingTransitions';
 import type { BridgeNetworkId } from '../model/networks';
-import { MOCK_STAGE_MS } from './mockAdapter';
+import { MOCK_STAGE_MS, mockAdapter } from './mockAdapter';
 import { getBridgeAdapter } from './registry';
 
 const NOW = 1_700_000_000_000;
@@ -24,16 +24,19 @@ const pending = (from: BridgeNetworkId, to: BridgeNetworkId) => {
 describe('getBridgeAdapter', () => {
   const later = NOW + MOCK_STAGE_MS * 100;
 
-  it('never reports a real Ethereum to Arbitrum deposit as arrived on a timer', async () => {
-    const bridge = pending('ethereum', 'arbitrum');
-    expect(bridge.routeKind).toBe('native');
-    await expect(getBridgeAdapter('native').checkProgress(bridge, later)).resolves.toBeNull();
-  });
+  it.each(['arbitrum', 'base', 'optimism', 'unichain'] as const)(
+    'never reports a real Ethereum to %s deposit as arrived on a timer',
+    async to => {
+      const bridge = pending('ethereum', to);
+      expect(bridge.routeKind).toBe('native');
+      await expect(getBridgeAdapter('native').checkProgress(bridge, later)).resolves.toBeNull();
+    }
+  );
 
-  it('keeps the other native routes on the mock until their adapters land', async () => {
-    const bridge = pending('ethereum', 'base');
-    await expect(getBridgeAdapter('native').checkProgress(bridge, later)).resolves.toEqual({
-      kind: 'arrived'
-    });
+  it('keeps native withdrawals on the mock until their adapters land', async () => {
+    const bridge = pending('base', 'ethereum');
+    const progress = await getBridgeAdapter('native').checkProgress(bridge, later);
+    expect(progress).not.toBeNull();
+    expect(progress).toEqual(await mockAdapter.checkProgress(bridge, later));
   });
 });

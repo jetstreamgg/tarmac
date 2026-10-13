@@ -1,4 +1,12 @@
-import { decodeFunctionData, isAddressEqual, keccak256, type Address, type Hex, type Log } from 'viem';
+import {
+  decodeFunctionData,
+  isAddressEqual,
+  keccak256,
+  type Address,
+  type Call,
+  type Hex,
+  type Log
+} from 'viem';
 import {
   extractTransactionDepositedLogs,
   getL2TransactionHash,
@@ -11,6 +19,7 @@ import {
   L2_CROSS_DOMAIN_MESSENGER,
   OP_STACK_DEPOSIT,
   l2CrossDomainMessengerAbi,
+  withApprove,
   type OpStackNetworkId
 } from './contracts';
 
@@ -34,6 +43,27 @@ export const opStackDepositCall = ({
     args: [L1_USDS, OP_STACK_DEPOSIT[network].l2Usds, recipient, amount, OP_STACK_MIN_GAS_LIMIT, '0x']
   } as const;
 };
+
+/** The source calls of a deposit: an approve of exactly `amount` to the L1 bridge when short, then the deposit (no ETH). */
+export function opStackDepositCalls({
+  network,
+  allowance,
+  amount,
+  recipient
+}: {
+  network: OpStackNetworkId;
+  allowance: bigint;
+  amount: bigint;
+  recipient: Address;
+}): Call[] {
+  const { address, ...deposit } = opStackDepositCall({ network, recipient, amount });
+  return withApprove({
+    allowance,
+    amount,
+    spender: OP_STACK_DEPOSIT[network].l1TokenBridge,
+    deposit: { to: address, ...deposit } as unknown as Call
+  });
+}
 
 export type OpStackDepositMessage = {
   /** The messenger's key for the message: `successfulMessages` and `failedMessages` read it. */

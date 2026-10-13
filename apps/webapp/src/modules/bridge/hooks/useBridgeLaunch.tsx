@@ -20,14 +20,15 @@ import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withSourceRecording } from '../tracking/sourceRecording';
 import type { BridgeFormModel } from './useBridgeForm';
-import { ARBITRUM_DEPOSIT_FUNCTION, useArbitrumDepositLegs } from './useArbitrumDepositLegs';
+import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
+import { nativeDepositFunction, useNativeDepositLegs } from './useNativeDepositLegs';
 import { usePendingScope } from './usePendingScope';
 
 /**
  * The seam between the Bridge tab and `TransactionContext.launch()` (mirrors
  * `useConvertLaunch`). Confirm runs the source legs (approve + send) and
  * stores the pending bridge once the send is broadcast, or queued for a Safe.
- * Ethereum to Arbitrum deposits run their real calls; the other routes run on
+ * Native deposits from Ethereum run their real calls; the other routes run on
  * the mock executor until their tickets add theirs.
  */
 export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
@@ -45,11 +46,15 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     chainIds: chains.map(chain => chain.id)
   });
 
-  const isArbitrumDeposit = route?.kind === 'native' && from === 'ethereum' && to === 'arbitrum';
+  const depositTo =
+    route?.kind === 'native' && from === 'ethereum' && isNativeDepositNetwork(to) ? to : undefined;
+  const isNativeDeposit = depositTo !== undefined;
   // The session callbacks of the Confirm that started the legs.
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
-  const deposit = useArbitrumDepositLegs({
-    enabled: isArbitrumDeposit && form.isConnected && !form.reviewBlocked,
+  const deposit = useNativeDepositLegs({
+    enabled: isNativeDeposit && form.isConnected && !form.reviewBlocked,
+    // Any network while disabled.
+    to: depositTo ?? 'arbitrum',
     chainId: pinnedChainId,
     account,
     recipient,
@@ -66,10 +71,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   // A real deposit approves only when its allowance is short.
   const sourceActions = useMemo(
     () =>
-      isArbitrumDeposit
+      isNativeDeposit
         ? routeActions.filter(action => action !== 'approve' || deposit.needsApprove)
         : routeActions,
-    [isArbitrumDeposit, routeActions, deposit.needsApprove]
+    [isNativeDeposit, routeActions, deposit.needsApprove]
   );
   const steps = useMemo<TransactionStep[]>(
     () =>
@@ -99,7 +104,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         !account ||
         !scope ||
         pinnedChainId === undefined ||
-        (isArbitrumDeposit && !deposit.ready)
+        (isNativeDeposit && !deposit.ready)
       ) {
         callbacksRef.current.onError(new Error('The bridge is not ready to send.'));
         return;
@@ -123,7 +128,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       const recording = withSourceRecording(() => callbacksRef.current, {
         isSafe,
         // The mock names each leg after its step.
-        bridgeFunctionName: isArbitrumDeposit ? ARBITRUM_DEPOSIT_FUNCTION : 'send',
+        bridgeFunctionName: depositTo ? nativeDepositFunction(depositTo) : 'send',
         onSent: txHash => {
           sentRef.current = true;
           unresolvedRef.current = txHash;
@@ -164,15 +169,14 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           recording.onSuccess(hash, blockNumber);
         }
       };
-      if (isArbitrumDeposit) {
+      if (isNativeDeposit) {
         legCallbacksRef.current = callbacks;
         deposit.execute();
       } else void runMockLegs(sourceActions, () => callbacks);
     };
   });
 
-  const bridgeFee =
-    isArbitrumDeposit && deposit.maxFee !== undefined ? formatMaxEthFee(deposit.maxFee) : undefined;
+  const bridgeFee = deposit.maxFee !== undefined ? formatMaxEthFee(deposit.maxFee) : undefined;
   const transactionContent = useMemo(
     () =>
       route && (
@@ -193,10 +197,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   );
 
   const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
-  const confirmDisabled = !form.isConnected || form.reviewBlocked || (isArbitrumDeposit && !deposit.ready);
-  const errorMessage = isArbitrumDeposit
-    ? enginePrepareErrorMessage(deposit.ready, deposit.error)
-    : undefined;
+  const confirmDisabled = !form.isConnected || form.reviewBlocked || (isNativeDeposit && !deposit.ready);
+  const errorMessage = isNativeDeposit ? enginePrepareErrorMessage(deposit.ready, deposit.error) : undefined;
 
   const launch = useCallback(() => {
     // No chain to guard: an empty guard would let the legs run on any chain.

@@ -8,22 +8,31 @@ import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransa
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { retryableQuote } from '../adapters/nativeDeposit/arbitrum';
 import { arbitrumDepositCalls, readRetryableEstimates } from '../adapters/nativeDeposit/arbitrumQuote';
-import { ARBITRUM_DEPOSIT, L1_USDS } from '../adapters/nativeDeposit/contracts';
+import {
+  ARBITRUM_DEPOSIT,
+  L1_USDS,
+  OP_STACK_DEPOSIT,
+  type NativeDepositNetwork
+} from '../adapters/nativeDeposit/contracts';
+import { opStackDepositCalls } from '../adapters/nativeDeposit/opStack';
 
-export const ARBITRUM_DEPOSIT_FUNCTION = 'outboundTransferCustomRefund';
+/** The deposit leg's function, which the source recording keys on. */
+export const nativeDepositFunction = (to: NativeDepositNetwork) =>
+  to === 'arbitrum' ? 'outboundTransferCustomRefund' : 'bridgeERC20To';
 
 const toAddress = (value: string | undefined): Address | undefined =>
   value && isAddress(value) ? getAddress(value) : undefined;
 
 /**
- * The source legs of an Ethereum to Arbitrum deposit: the ticket's price,
- * read for this sender, recipient and amount, and the approve (when the
- * allowance is short) and deposit calls built from it. No calls while any read
- * is loading or failed. The callbacks are read through `getCallbacks` so each
- * leg reports to the latest session.
+ * The source legs of a native deposit from Ethereum: the approve (when the
+ * allowance is short) and the deposit. An Arbitrum deposit also reads its
+ * ticket's price for this sender, recipient and amount; an OP Stack deposit
+ * needs none. No calls while any read is loading or failed. The callbacks are
+ * read through `getCallbacks` so each leg reports to the latest session.
  */
-export function useArbitrumDepositLegs({
+export function useNativeDepositLegs({
   enabled,
+  to: network,
   chainId,
   account,
   recipient,
@@ -31,10 +40,11 @@ export function useArbitrumDepositLegs({
   getCallbacks
 }: {
   enabled: boolean;
+  to: NativeDepositNetwork;
   /** The Ethereum chain the deposit is sent on (the Tenderly fork in dev). */
   chainId: number | undefined;
   account: string | undefined;
-  /** The Arbitrum recipient; the sender when none was entered. */
+  /** The L2 recipient; the sender when none was entered. */
   recipient: string | undefined;
   amount: bigint;
   getCallbacks: () => TxCallbacks;
@@ -44,14 +54,15 @@ export function useArbitrumDepositLegs({
   const l1 = usePublicClient({ chainId });
   const l2 = usePublicClient({ chainId: arbitrum.id });
   const active = enabled && chainId !== undefined && !!from && !!to && amount > 0n;
-
+  const isArbitrum = network === 'arbitrum';
+  // A disabled query still returns its cached result: an OP Stack deposit reads none of it.
   const quote = useQuery({
     queryKey: ['arbitrum-deposit-quote', chainId, from, to, amount.toString()],
     queryFn: async () =>
       retryableQuote(
         await readRetryableEstimates({ l1: l1!, l2: l2!, from: from!, refundTo: to!, recipient: to!, amount })
       ),
-    enabled: active && !!l1 && !!l2,
+    enabled: active && isArbitrum && !!l1 && !!l2,
     // Arbitrum's gas price moves: Review keeps a recent one.
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -62,23 +73,24 @@ export function useArbitrumDepositLegs({
     chainId: chainId ?? 0,
     contractAddress: active ? L1_USDS : undefined,
     owner: from,
-    spender: ARBITRUM_DEPOSIT.l1Gateway
+    spender: isArbitrum ? ARBITRUM_DEPOSIT.l1Gateway : OP_STACK_DEPOSIT[network].l1TokenBridge
   });
 
-  const calls = useMemo(
-    () =>
-      active && quote.data && allowance.data !== undefined
-        ? // Unspent ETH is refunded to the recipient on Arbitrum, as the gateway's own outboundTransfer does.
-          arbitrumDepositCalls({
-            allowance: allowance.data,
-            amount,
-            recipient: to!,
-            refundTo: to!,
-            quote: quote.data
-          })
-        : [],
-    [active, quote.data, allowance.data, amount, to]
-  );
+  const calls = useMemo(() => {
+    if (!active || allowance.data === undefined) return [];
+    if (!isArbitrum)
+      return opStackDepositCalls({ network, allowance: allowance.data, amount, recipient: to! });
+    // Unspent ETH is refunded to the recipient on Arbitrum, as the gateway's own outboundTransfer does.
+    return quote.data
+      ? arbitrumDepositCalls({
+          allowance: allowance.data,
+          amount,
+          recipient: to!,
+          refundTo: to!,
+          quote: quote.data
+        })
+      : [];
+  }, [active, isArbitrum, network, quote.data, allowance.data, amount, to]);
 
   const flow = useSequentialTransactionFlow({
     calls,
@@ -93,13 +105,14 @@ export function useArbitrumDepositLegs({
 
   return {
     calls,
-    /** The most ETH the deposit sends for the ticket; the unspent part is refunded on Arbitrum. */
-    maxFee: quote.data?.value,
+    /** Arbitrum only: the most ETH the deposit sends for the ticket; the unspent part is refunded on Arbitrum. */
+    maxFee: isArbitrum ? quote.data?.value : undefined,
     needsApprove: calls.length > 1,
     /** Confirm can send the first leg. */
     ready: calls.length > 0 && flow.prepared,
     /** A read or the first leg's simulation failed. */
-    error: (active && (quote.error ?? allowance.error)) || (calls.length > 0 ? flow.error : null),
+    error:
+      (active && ((isArbitrum && quote.error) || allowance.error)) || (calls.length > 0 ? flow.error : null),
     execute: flow.execute,
     reset: flow.reset,
     refetchAllowance: allowance.mutate

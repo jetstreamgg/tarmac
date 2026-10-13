@@ -38,7 +38,12 @@ const mocks = vi.hoisted(() => ({
     maxFee: undefined as bigint | undefined,
     error: null as Error | null,
     execute: vi.fn(),
-    args: [] as { enabled: boolean; chainId: number | undefined; getCallbacks: () => TxCallbacks }[]
+    args: [] as {
+      enabled: boolean;
+      to: string;
+      chainId: number | undefined;
+      getCallbacks: () => TxCallbacks;
+    }[]
   }
 }));
 
@@ -84,9 +89,10 @@ vi.mock('../adapters/mockAdapter', () => ({
     return new Promise<string>(() => undefined);
   }
 }));
-vi.mock('./useArbitrumDepositLegs', () => ({
-  ARBITRUM_DEPOSIT_FUNCTION: 'outboundTransferCustomRefund',
-  useArbitrumDepositLegs: (args: (typeof mocks.deposit.args)[number]) => {
+vi.mock('./useNativeDepositLegs', () => ({
+  nativeDepositFunction: (to: string) =>
+    to === 'arbitrum' ? 'outboundTransferCustomRefund' : 'bridgeERC20To',
+  useNativeDepositLegs: (args: (typeof mocks.deposit.args)[number]) => {
     mocks.deposit.args.push(args);
     const { ready, needsApprove, maxFee, error, execute } = mocks.deposit;
     return { ready, needsApprove, maxFee, error, execute, reset: vi.fn(), refetchAllowance: vi.fn() };
@@ -140,6 +146,12 @@ async function moveWallet(view: ReturnType<typeof renderBridge>, chainId: number
   view.rerender();
   await settle();
 }
+
+// The default route, Ethereum to Base, runs the real deposit.
+const BRIDGE_CALL = 'bridgeERC20To';
+/** Each Confirm that started the source legs, on the real deposit or on the mock. */
+const runCount = () => mocks.legs.length + mocks.deposit.execute.mock.calls.length;
+const firstRunCallbacks = () => (mocks.legs[0]?.getCallbacks ?? mocks.deposit.args.at(-1)!.getCallbacks)();
 
 async function confirmDisabledFor(amount: string, recipient?: string) {
   const view = renderBridge();
@@ -315,7 +327,7 @@ describe('useBridgeLaunch Confirm gate', () => {
     act(() => view.result.current.form.setRecipient(SOLANA_RECIPIENT));
     await settle();
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    expect(mocks.legs).toHaveLength(0);
+    expect(runCount()).toBe(0);
     expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
   });
 
@@ -325,16 +337,16 @@ describe('useBridgeLaunch Confirm gate', () => {
     await settle();
     act(() => view.result.current.launch());
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    const callbacks = mocks.legs[0].getCallbacks();
+    const callbacks = firstRunCallbacks();
     callbacks.onMutate({ functionName: 'approve' });
     callbacks.onStart('0xapprove');
-    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onMutate({ functionName: BRIDGE_CALL });
     callbacks.onStart('0xsend');
     callbacks.onError(new Error('rpc timeout'), '0xsend');
 
     // TransactionContext.handleRetry calls onConfirm when the flow has no onRetry.
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    expect(mocks.legs).toHaveLength(1);
+    expect(runCount()).toBe(1);
     expect(mocks.onError).toHaveBeenCalledTimes(2);
     const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
     expect(pendingBridgeStore.getSnapshot(scope).filter(bridge => bridge.amount === ONE)).toHaveLength(1);
@@ -346,10 +358,10 @@ describe('useBridgeLaunch Confirm gate', () => {
     await settle();
     act(() => view.result.current.launch());
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    const callbacks = mocks.legs[0].getCallbacks();
+    const callbacks = firstRunCallbacks();
     callbacks.onMutate({ functionName: 'approve' });
     callbacks.onStart('0xapprove1');
-    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onMutate({ functionName: BRIDGE_CALL });
     callbacks.onStart('0xsend1');
     const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
     const stored = () => pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.txHash === '0xsend1');
@@ -359,7 +371,7 @@ describe('useBridgeLaunch Confirm gate', () => {
     expect(stored()?.status).toBe('failed');
 
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    expect(mocks.legs).toHaveLength(2);
+    expect(runCount()).toBe(2);
   });
 
   it('a send sped up in the wallet is tracked under the hash that mines', async () => {
@@ -368,8 +380,8 @@ describe('useBridgeLaunch Confirm gate', () => {
     await settle();
     act(() => view.result.current.launch());
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    const callbacks = mocks.legs[0].getCallbacks();
-    callbacks.onMutate({ functionName: 'send' });
+    const callbacks = firstRunCallbacks();
+    callbacks.onMutate({ functionName: BRIDGE_CALL });
     callbacks.onStart('0xslow');
     callbacks.onStart('0xfast');
     const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
@@ -386,8 +398,8 @@ describe('useBridgeLaunch Confirm gate', () => {
       await settle();
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      const callbacks = mocks.legs[0].getCallbacks();
-      callbacks.onMutate({ functionName: 'send' });
+      const callbacks = firstRunCallbacks();
+      callbacks.onMutate({ functionName: BRIDGE_CALL });
       callbacks.onStart('0xunknown');
       callbacks.onError(new Error('Timed out while waiting for transaction'), '0xunknown');
       return { view, callbacks, scope: pendingScopeKey({ account: SENDER, familyChainId: 1 }) };
@@ -397,7 +409,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       const { view } = await sendWithUnknownOutcome();
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      expect(mocks.legs).toHaveLength(1);
+      expect(runCount()).toBe(1);
       expect((mocks.onError.mock.calls.at(-1)?.[0] as Error).message).toMatch(/still pending/);
     });
 
@@ -406,7 +418,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       pendingBridgeStore.update(scope, '0xunknown', bridge => ({ ...bridge, status: 'failed' }));
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      expect(mocks.legs).toHaveLength(2);
+      expect(runCount()).toBe(2);
     });
 
     it('can send again after a flow that succeeded, while that bridge is still in flight', async () => {
@@ -415,8 +427,8 @@ describe('useBridgeLaunch Confirm gate', () => {
       await settle();
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      const callbacks = mocks.legs[0].getCallbacks();
-      callbacks.onMutate({ functionName: 'send' });
+      const callbacks = firstRunCallbacks();
+      callbacks.onMutate({ functionName: BRIDGE_CALL });
       callbacks.onStart('0xdone');
       callbacks.onSuccess('0xdone', 42n);
       // The block lets the history refresh wait for the indexer.
@@ -424,7 +436,7 @@ describe('useBridgeLaunch Confirm gate', () => {
 
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      expect(mocks.legs).toHaveLength(2);
+      expect(runCount()).toBe(2);
     });
 
     it('a Safe can queue another bridge while the first waits for its co-signers', async () => {
@@ -434,14 +446,14 @@ describe('useBridgeLaunch Confirm gate', () => {
       await settle();
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      const callbacks = mocks.legs[0].getCallbacks();
-      callbacks.onMutate({ functionName: 'send' });
+      const callbacks = firstRunCallbacks();
+      callbacks.onMutate({ functionName: BRIDGE_CALL });
       callbacks.onStart('0xsafequeued');
 
       // The modal closed before the Safe executed: no verdict reached the flow.
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      expect(mocks.legs).toHaveLength(2);
+      expect(runCount()).toBe(2);
     });
   });
 
@@ -451,16 +463,16 @@ describe('useBridgeLaunch Confirm gate', () => {
     await settle();
     act(() => view.result.current.launch());
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    const callbacks = mocks.legs[0].getCallbacks();
+    const callbacks = firstRunCallbacks();
     callbacks.onMutate({ functionName: 'swapExactIn' });
     callbacks.onStart('0xswap');
-    callbacks.onMutate({ functionName: 'send' });
+    callbacks.onMutate({ functionName: BRIDGE_CALL });
     callbacks.onError(new Error('User rejected the request.'), '0xswap');
     const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
     expect(pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.id === '0xswap')).toBeUndefined();
 
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    expect(mocks.legs).toHaveLength(2);
+    expect(runCount()).toBe(2);
   });
 
   it('Retry after a rejected approve runs the legs again', async () => {
@@ -469,12 +481,12 @@ describe('useBridgeLaunch Confirm gate', () => {
     await settle();
     act(() => view.result.current.launch());
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    const callbacks = mocks.legs[0].getCallbacks();
+    const callbacks = firstRunCallbacks();
     callbacks.onMutate({ functionName: 'approve' });
     callbacks.onError(new Error('User rejected the request.'));
 
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    expect(mocks.legs).toHaveLength(2);
+    expect(runCount()).toBe(2);
   });
 
   it('a dismissed Safe bridge that executes anyway comes back with its on-chain hash', async () => {
@@ -484,8 +496,8 @@ describe('useBridgeLaunch Confirm gate', () => {
     await settle();
     act(() => view.result.current.launch());
     act(() => mocks.launched.at(-1)!.onConfirm!());
-    const callbacks = mocks.legs[0].getCallbacks();
-    callbacks.onMutate({ functionName: 'send' });
+    const callbacks = firstRunCallbacks();
+    callbacks.onMutate({ functionName: BRIDGE_CALL });
     callbacks.onStart('0xsafequeued');
     const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
     const stored = () =>
@@ -568,18 +580,65 @@ describe('useBridgeLaunch Confirm gate', () => {
       const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
       expect(content.props.bridgeFee).toBe('Up to 0.0000048 ETH');
     });
+  });
 
-    it('other routes stay on the mock', async () => {
+  describe('an Ethereum to OP Stack deposit', () => {
+    async function reviewDeposit(to: 'base' | 'optimism' | 'unichain') {
       const view = renderBridge();
       act(() => view.result.current.form.onInput('1'));
+      act(() => view.result.current.form.selectTo(to));
       await settle();
-      expect(view.result.current.form.to).not.toBe('arbitrum');
+      expect(view.result.current.form).toMatchObject({ from: 'ethereum', to });
       act(() => view.result.current.launch());
+      return view;
+    }
+
+    it.each(['base', 'optimism', 'unichain'] as const)(
+      'to %s reads and runs the deposit on the pinned Ethereum chain',
+      async to => {
+        await reviewDeposit(to);
+        expect(mocks.deposit.args.at(-1)).toMatchObject({ enabled: true, to, chainId: 1 });
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.deposit.execute).toHaveBeenCalledTimes(1);
+        expect(mocks.legs).toHaveLength(0);
+      }
+    );
+
+    it('stores the deposit under the bridgeERC20To hash, not the approve', async () => {
+      await reviewDeposit('optimism');
       act(() => mocks.launched.at(-1)!.onConfirm!());
-      expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
-      expect(mocks.deposit.execute).not.toHaveBeenCalled();
-      expect(mocks.legs).toHaveLength(1);
-      expect(mocks.launched.at(-1)?.errorMessage).toBeUndefined();
+      const callbacks = mocks.deposit.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'approve' });
+      callbacks.onStart('0xopapprove');
+      callbacks.onMutate({ functionName: 'bridgeERC20To' });
+      callbacks.onStart('0xopdeposit');
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const snapshot = pendingBridgeStore.getSnapshot(scope);
+      expect(snapshot.find(bridge => bridge.txHash === '0xopapprove')).toBeUndefined();
+      expect(snapshot.find(bridge => bridge.txHash === '0xopdeposit')).toMatchObject({
+        from: 'ethereum',
+        to: 'optimism',
+        amount: ONE
+      });
     });
+
+    it('shows no bridge fee', async () => {
+      await reviewDeposit('base');
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
+      expect(content.props.bridgeFee).toBeUndefined();
+    });
+  });
+
+  it('withdrawals stay on the mock', async () => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await moveWallet(view, 8453);
+    expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum' });
+    act(() => view.result.current.launch());
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
+    expect(mocks.deposit.execute).not.toHaveBeenCalled();
+    expect(mocks.legs).toHaveLength(1);
+    expect(mocks.launched.at(-1)?.errorMessage).toBeUndefined();
   });
 });

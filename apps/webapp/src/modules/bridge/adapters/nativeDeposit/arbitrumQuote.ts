@@ -1,14 +1,4 @@
-import {
-  erc20Abi,
-  getAddress,
-  numberToHex,
-  pad,
-  parseEther,
-  size,
-  type Address,
-  type Call,
-  type Hex
-} from 'viem';
+import { getAddress, numberToHex, pad, parseEther, size, type Address, type Call, type Hex } from 'viem';
 import { arbitrumInboxImplementationAbi } from '@/hooks/generated';
 import {
   arbitrumDepositCall,
@@ -16,7 +6,7 @@ import {
   type RetryableEstimates,
   type RetryableQuote
 } from './arbitrum';
-import { ARBITRUM_DEPOSIT, L1_USDS, NODE_INTERFACE, nodeInterfaceAbi } from './contracts';
+import { ARBITRUM_DEPOSIT, NODE_INTERFACE, nodeInterfaceAbi, withApprove } from './contracts';
 
 type L1Reader = {
   readContract: (args: {
@@ -129,13 +119,10 @@ export function arbitrumDepositCalls({
   quote: RetryableQuote;
 }): Call[] {
   const { address, ...deposit } = arbitrumDepositCall({ recipient, refundTo, amount, quote });
-  const depositCall = { to: address, ...deposit } as unknown as Call;
-  if (allowance >= amount) return [depositCall];
-  const approve = {
-    to: L1_USDS,
-    abi: erc20Abi,
-    functionName: 'approve',
-    args: [ARBITRUM_DEPOSIT.l1Gateway, amount]
-  } as unknown as Call;
-  return [approve, depositCall];
+  return withApprove({
+    allowance,
+    amount,
+    spender: ARBITRUM_DEPOSIT.l1Gateway,
+    deposit: { to: address, ...deposit } as unknown as Call
+  });
 }

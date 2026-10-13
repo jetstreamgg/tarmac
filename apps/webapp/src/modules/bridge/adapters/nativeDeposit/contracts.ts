@@ -1,5 +1,6 @@
-import { isAddressEqual, parseAbi, zeroAddress, type Address } from 'viem';
+import { erc20Abi, isAddressEqual, parseAbi, zeroAddress, type Address, type Call } from 'viem';
 import { base, optimism, unichain } from 'viem/chains';
+import type { BridgeNetworkId } from '../../model/networks';
 
 export const L1_USDS: Address = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
 
@@ -8,7 +9,33 @@ export function assertRecipient(address: Address) {
   if (isAddressEqual(address, zeroAddress)) throw new Error('A bridge deposit needs a recipient');
 }
 
+/** The deposit, after an approve of exactly `amount` to `spender` when the allowance is short. */
+export function withApprove({
+  allowance,
+  amount,
+  spender,
+  deposit
+}: {
+  allowance: bigint;
+  amount: bigint;
+  spender: Address;
+  deposit: Call;
+}): Call[] {
+  if (allowance >= amount) return [deposit];
+  const approve = { to: L1_USDS, abi: erc20Abi, functionName: 'approve', args: [spender, amount] };
+  return [approve as unknown as Call, deposit];
+}
+
 export type OpStackNetworkId = 'base' | 'optimism' | 'unichain';
+
+export const isOpStackNetwork = (network: BridgeNetworkId): network is OpStackNetworkId =>
+  network === 'base' || network === 'optimism' || network === 'unichain';
+
+/** The networks Sky's native bridges deposit to from Ethereum. */
+export type NativeDepositNetwork = 'arbitrum' | OpStackNetworkId;
+
+export const isNativeDepositNetwork = (network: BridgeNetworkId): network is NativeDepositNetwork =>
+  network === 'arbitrum' || isOpStackNetwork(network);
 
 /** Sky's OP Stack token bridges; the portal emits the L2 deposit transaction. */
 export const OP_STACK_DEPOSIT: Record<

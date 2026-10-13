@@ -8,8 +8,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress, parseEther, type Call } from 'viem';
 import { arbitrum } from 'wagmi/chains';
 import { retryableQuote } from '../adapters/nativeDeposit/arbitrum';
-import { ARBITRUM_DEPOSIT, L1_USDS } from '../adapters/nativeDeposit/contracts';
-import { useArbitrumDepositLegs } from './useArbitrumDepositLegs';
+import { ARBITRUM_DEPOSIT, L1_USDS, OP_STACK_DEPOSIT } from '../adapters/nativeDeposit/contracts';
+import { OP_STACK_MIN_GAS_LIMIT } from '../adapters/nativeDeposit/opStack';
+import { useNativeDepositLegs } from './useNativeDepositLegs';
 
 const SENDER = getAddress('0x71C7656EC7ab88b098defB751B7401B5f6d8976F');
 const RECIPIENT = getAddress('0x2546BcD3c84621e976D8185a91A922aE77ECEc30');
@@ -58,22 +59,26 @@ vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
 
 const callbacks = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
 
-function renderLegs(props: Partial<Parameters<typeof useArbitrumDepositLegs>[0]> = {}) {
+type LegsProps = Partial<Parameters<typeof useNativeDepositLegs>[0]>;
+
+function renderLegs(props: LegsProps = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
   return renderHook(
-    () =>
-      useArbitrumDepositLegs({
+    (rerendered: LegsProps) =>
+      useNativeDepositLegs({
         enabled: true,
+        to: 'arbitrum',
         chainId: 1,
         account: SENDER,
         recipient: undefined,
         amount: AMOUNT,
         getCallbacks: () => callbacks,
-        ...props
+        ...props,
+        ...rerendered
       }),
-    { wrapper }
+    { wrapper, initialProps: {} }
   );
 }
 
@@ -82,7 +87,7 @@ const settle = async () => {
   for (let i = 0; i < 5; i++) await act(() => new Promise(resolve => setTimeout(resolve, 0)));
 };
 
-describe('useArbitrumDepositLegs', () => {
+describe('useNativeDepositLegs', () => {
   beforeEach(() => {
     mocks.fee.mockReset().mockResolvedValue(ESTIMATES.submissionFee);
     Object.assign(mocks, {
@@ -197,5 +202,62 @@ describe('useArbitrumDepositLegs', () => {
     (mocks.flowArgs.at(-1) as unknown as { onStart: (hash: string) => void }).onStart('0xabc');
     expect(next.onStart).toHaveBeenCalledWith('0xabc');
     expect(callbacks.onStart).not.toHaveBeenCalled();
+  });
+
+  describe('to an OP Stack network', () => {
+    it.each(['base', 'optimism', 'unichain'] as const)(
+      'to %s approves its L1 bridge and calls bridgeERC20To for the recipient, with no ETH and no quote',
+      async network => {
+        const { result } = renderLegs({ to: network, recipient: RECIPIENT.toLowerCase() });
+        await settle();
+        const { l1TokenBridge, l2Usds } = OP_STACK_DEPOSIT[network];
+        expect(mocks.fee).not.toHaveBeenCalled();
+        expect(mocks.allowanceArgs.at(-1)).toMatchObject({
+          chainId: 1,
+          contractAddress: L1_USDS,
+          owner: SENDER,
+          spender: l1TokenBridge
+        });
+        const [approve, deposit] = result.current.calls;
+        expect(approve).toMatchObject({
+          to: L1_USDS,
+          functionName: 'approve',
+          args: [l1TokenBridge, AMOUNT]
+        });
+        expect(deposit).toMatchObject({
+          to: l1TokenBridge,
+          functionName: 'bridgeERC20To',
+          args: [L1_USDS, l2Usds, RECIPIENT, AMOUNT, OP_STACK_MIN_GAS_LIMIT, '0x']
+        });
+        expect(deposit.value).toBeUndefined();
+        expect(result.current).toMatchObject({
+          maxFee: undefined,
+          needsApprove: true,
+          ready: true,
+          error: null
+        });
+        expect(mocks.flowArgs.at(-1)).toMatchObject({ enabled: true, chainId: 1, failOnReplaced: true });
+      }
+    );
+
+    it('sends to the sender when no recipient was entered, and skips a covered approve', async () => {
+      mocks.allowance = AMOUNT;
+      const { result } = renderLegs({ to: 'base' });
+      await settle();
+      expect(result.current.calls.map(call => call.functionName)).toEqual(['bridgeERC20To']);
+      expect((result.current.calls[0].args as readonly unknown[])[2]).toBe(SENDER);
+      expect(result.current.needsApprove).toBe(false);
+    });
+
+    it('shows no Arbitrum fee or quote error once switched to an OP Stack network', async () => {
+      const { result, rerender } = renderLegs();
+      await settle();
+      expect(result.current.maxFee).toBeDefined();
+      // The Arbitrum quote stays cached in the disabled query.
+      rerender({ to: 'base' });
+      await settle();
+      expect(result.current).toMatchObject({ maxFee: undefined, ready: true, error: null });
+      expect(result.current.calls.at(-1)?.functionName).toBe('bridgeERC20To');
+    });
   });
 });
