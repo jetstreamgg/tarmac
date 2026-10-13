@@ -624,6 +624,19 @@ describe('useSequentialTransactionFlow — Retry after an on-chain revert', () =
     expect(onError).toHaveBeenCalledTimes(2);
   });
 
+  it('sends nothing when the caller disables the engine while the re-simulation is in flight', async () => {
+    const gate = { enabled: true };
+    const { result, rerender, onError } = renderRevertedSupply(gate);
+
+    act(() => result.current.execute());
+    gate.enabled = false;
+    rerender();
+    await act(async () => {});
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
   it('a double-clicked Retry re-simulates and sends once', async () => {
     const { result } = renderRevertedSupply();
 

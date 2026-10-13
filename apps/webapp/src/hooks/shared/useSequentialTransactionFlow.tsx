@@ -5,8 +5,11 @@ import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
 // A refetch runs even while the query is disabled, so a Retry that re-simulates
-// checks the caller's `enabled` gate itself.
+// checks the caller's `enabled` gate itself, at the click and again when the
+// result lands.
 const notSendable = () => new Error('The transaction can no longer be sent');
+const resimulationFailure = (error: Error | null) =>
+  error ? toError(error) : new Error('The simulation returned no request');
 
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
@@ -50,6 +53,10 @@ export function useSequentialTransactionFlow(
   // (a token, so a reset or unmount drops a result that settles afterwards).
   const revertedIndexRef = useRef(-1);
   const resimulationRef = useRef<object | null>(null);
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
@@ -299,11 +306,13 @@ export function useSequentialTransactionFlow(
       void refetchSimulation().then(({ data, error }) => {
         if (resimulationRef.current !== token) return;
         resimulationRef.current = null;
-        if (!error && data?.request) {
+        if (!enabledRef.current) {
+          onError(notSendable(), '');
+        } else if (!error && data?.request) {
           revertedIndexRef.current = -1;
           writeContract(data.request as Parameters<typeof writeContract>[0]);
         } else {
-          onError(error ? toError(error) : new Error('The simulation returned no request'), '');
+          onError(resimulationFailure(error), '');
         }
       });
     } else if (simulationData?.request) {
@@ -330,11 +339,11 @@ export function useSequentialTransactionFlow(
       dispatchedIndexRef.current = index;
       void refetchSimulation().then(({ data, error }) => {
         if (dispatchedIndexRef.current !== index) return;
-        if (!error && data?.request) {
+        if (enabledRef.current && !error && data?.request) {
           writeContract(data.request as Parameters<typeof writeContract>[0]);
         } else {
           dispatchedIndexRef.current = -1;
-          onError(error ? toError(error) : new Error('The simulation returned no request'), '');
+          onError(enabledRef.current ? resimulationFailure(error) : notSendable(), '');
         }
       });
     } else {
