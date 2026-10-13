@@ -81,6 +81,12 @@ export const shellHeaderClasses = () =>
     'vt-shell-header'
   );
 
+/**
+ * Sticky side rail on product pages: pins flush under the 88px header bar, no
+ * gap (comp 3686:10990).
+ */
+export const stickyRailClasses = 'lg:sticky lg:top-22 lg:self-start';
+
 /** The header row content (logo + TopNav) inside the full-bleed bar. */
 export const shellHeaderContentClasses = () =>
   cn(

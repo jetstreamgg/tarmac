@@ -15,6 +15,7 @@ import {
   fetchPendlePnlGainedPositions,
   fetchPendlePnlTransactionsForUser
 } from '../../../hooks/pendle/pendleApiClient';
+import { EXTERNAL_HISTORY_META } from '../../../hooks/constants';
 import { pendlePnlQueryKey } from '../../../hooks/pendle/usePendleAllPnlTransactions';
 import { fetchBaLabsHistoricDailyPrices } from '../../../hooks/prices/baLabsHistoricPrices';
 import { usePrices } from '../../../hooks/prices/usePrices';
@@ -234,11 +235,14 @@ export function useWalletEarnings(): WalletEarnings {
   // Shared key with the Pendle history hooks: one /v1/pnl/transactions call
   // serves both; this consumer reads the RAW rows (no select) because the
   // monthly profit lives on LP/reward actions the history normalizer drops.
+  // Same `meta` as the history hook: a query keeps the options of whichever
+  // observer fetched last, and without the tag the post-tx refresh skips it.
   const pendleRowsQuery = useQuery({
     queryKey: pendlePnlQueryKey(address as `0x${string}` | undefined),
     queryFn: () => fetchPendlePnlTransactionsForUser(address as `0x${string}`, { chainId: mainnet.id }),
     enabled: connected,
-    staleTime: PENDLE_STALE_MS
+    staleTime: PENDLE_STALE_MS,
+    meta: EXTERNAL_HISTORY_META
   });
 
   const pendleGainedQuery = useQuery({

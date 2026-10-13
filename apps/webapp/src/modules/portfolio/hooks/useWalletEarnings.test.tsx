@@ -74,6 +74,7 @@ import {
   usdsGroveRewardAddress,
   usdsSpkRewardAddress
 } from '../../../hooks/generated';
+import { EXTERNAL_HISTORY_META } from '../../../hooks/constants';
 import { MORPHO_VAULTS, MorphoTransactionType } from '../../../hooks/morpho/constants';
 import type { MorphoUserVaultV2Position, MorphoVaultV2Transaction } from '../../../hooks/morpho/morpho';
 import type { MerklClaimRaw, MerklUserRewardRaw } from '../../../hooks/morpho/merklEarnedClient';
@@ -466,6 +467,11 @@ describe('useWalletEarnings', () => {
     // The raw Pendle rows land under the SHARED history-hook cache key, so the
     // single /v1/pnl/transactions call serves both this hook and the history UI.
     expect(queryClient.getQueryData(pendlePnlQueryKey(USER as `0x${string}`))).toBe(pendleRawRows);
+    // ...and keep the history tag: the last observer to fetch sets the query's
+    // options, and an untagged one would drop it from the post-tx refresh.
+    expect(
+      queryClient.getQueryCache().find({ queryKey: pendlePnlQueryKey(USER as `0x${string}`) })?.meta
+    ).toEqual(EXTERNAL_HISTORY_META);
   });
 
   it('degrades only the failing source to source-error, keeping the others intact', async () => {

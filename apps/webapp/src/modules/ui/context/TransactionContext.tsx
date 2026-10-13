@@ -21,6 +21,8 @@ import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSucc
 import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
+import { refreshHistoryAfterTx } from '@/lib/historyRefresh';
+import { queryClient } from '@/lib/queryClient';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -571,7 +573,11 @@ export function TransactionProvider({
       // The configRef check is self-healing defense: LOADING with no live
       // session has nothing to restore, so fall through to a fresh launch
       // instead of blocking forever.
-      if (txStatusRef.current === TxStatus.LOADING && configRef.current) {
+      // A sequence waiting on its next wallet prompt after a mined step is in progress too.
+      const inProgress =
+        txStatusRef.current === TxStatus.LOADING ||
+        (txStatusRef.current === TxStatus.INITIALIZED && hasMinedStepRef.current);
+      if (inProgress && configRef.current) {
         setMinimized(false);
         toastWithClose(
           () => (
@@ -1125,10 +1131,17 @@ export function TransactionProvider({
   );
 
   const handleRetry = useCallback(() => {
+    const preludeBefore = preludeStepsRef.current?.length ?? 0;
     // The reset lives inside the gate: a denied retry must leave the failure
     // view in place, not clear it and then do nothing.
     runGated('retry', () => {
-      resetTransactionProgress();
+      if (hasMinedStep) {
+        // The engine resumes at the failed write; shift past any prelude the gate dropped.
+        const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
+        if (dropped > 0) setCurrentStep(s => s - dropped);
+      } else {
+        resetTransactionProgress();
+      }
 
       if (configRef.current?.onRetry) {
         configRef.current.onRetry();
@@ -1137,7 +1150,7 @@ export function TransactionProvider({
 
       configRef.current?.onConfirm();
     });
-  }, [runGated, resetTransactionProgress]);
+  }, [runGated, resetTransactionProgress, hasMinedStep]);
 
   // A settle callback belongs to the running session only if BOTH its closure
   // and the write it reports on were made in the current generation (see
@@ -1220,7 +1233,12 @@ export function TransactionProvider({
   );
 
   const onSuccess = useCallback(
-    (hash?: string) => {
+    (hash?: string, blockNumber?: bigint) => {
+      // Ahead of the session guard: a transaction that mined after its modal
+      // was closed still lands in the history tables, which lag the receipt
+      // by the indexer's catch-up. The session's latched chain, not the
+      // config's: a batch receipt can land after a network switch.
+      void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current, blockNumber });
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;

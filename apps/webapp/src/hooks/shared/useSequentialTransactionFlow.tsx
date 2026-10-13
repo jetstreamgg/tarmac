@@ -125,7 +125,8 @@ export function useSequentialTransactionFlow(
     isLoading: isMining,
     isSuccess,
     error: miningError,
-    failureReason
+    failureReason,
+    data: receipt
   } = useWaitForTransactionReceipt({
     hash: txHash
   });
@@ -167,7 +168,7 @@ export function useSequentialTransactionFlow(
 
   // The consumer's callbacks are read through effect events: the completion
   // effect must not re-run because a caller passed a new inline function.
-  const emitSuccess = useEffectEvent((hash: string) => onSuccess(hash));
+  const emitSuccess = useEffectEvent((hash: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
 
   // A later step is only sent once its simulation succeeds, so a step that
@@ -204,7 +205,7 @@ export function useSequentialTransactionFlow(
       // Done only when every expected call has produced a hash, not merely when the index reaches the count.
       if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
-        emitSuccess(txHash);
+        emitSuccess(txHash, receipt?.blockNumber);
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
@@ -242,6 +243,7 @@ export function useSequentialTransactionFlow(
     failureReason,
     txHash,
     txReverted,
+    receipt?.blockNumber,
     currentIndex,
     transactionHashes
   ]);

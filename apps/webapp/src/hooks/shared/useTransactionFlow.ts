@@ -61,9 +61,9 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
   const commonTransactionParameters = {
     calls,
     onStart,
-    onSuccess: (hash: string | undefined) => {
+    onSuccess: (hash: string | undefined, blockNumber?: bigint) => {
       setSendRoute(null);
-      onSuccess?.(hash);
+      onSuccess?.(hash, blockNumber);
     },
     chainId
   };

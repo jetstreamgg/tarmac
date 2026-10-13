@@ -98,6 +98,23 @@ describe('TakeoverShell', () => {
     trigger.remove();
   });
 
+  it('restores focus without scrolling the page to the trigger', () => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+    const focusSpy = vi.spyOn(trigger, 'focus');
+
+    const { unmount } = render(
+      <TakeoverShell title="t" onClose={vi.fn()} dataTestId="stake-takeover">
+        <div />
+      </TakeoverShell>
+    );
+    unmount();
+
+    expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+    trigger.remove();
+  });
+
   it('wraps Tab at the dialog edges instead of escaping the overlay', () => {
     renderShell();
 

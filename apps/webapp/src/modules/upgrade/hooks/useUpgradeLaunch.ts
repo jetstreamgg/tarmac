@@ -64,9 +64,9 @@ export function useUpgradeLaunch({
   }, [onSuccess]);
   const providerOnSuccess = txCallbacks.onSuccess;
   const handleSuccess = useCallback(
-    (hash?: string) => {
+    (hash?: string, blockNumber?: bigint) => {
       onSuccessRef.current?.();
-      providerOnSuccess(hash);
+      providerOnSuccess(hash, blockNumber);
     },
     [providerOnSuccess]
   );

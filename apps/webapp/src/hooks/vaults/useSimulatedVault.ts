@@ -102,7 +102,9 @@ export function useSimulatedVault(
 
   const minCollateralForDust =
     dataAtMaxBorrow?.dust && mat && dataAtMaxBorrow?.delayedPrice
-      ? math.minSafeCollateralAmount(dataAtMaxBorrow.dust, mat, dataAtMaxBorrow.delayedPrice)
+      ? math.nextCentAboveWad(
+          math.minSafeCollateralAmount(dataAtMaxBorrow.dust, mat, dataAtMaxBorrow.delayedPrice)
+        )
       : undefined;
 
   const insufficientCollateral =

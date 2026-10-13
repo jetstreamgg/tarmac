@@ -137,7 +137,7 @@ function renderLauncher() {
   const view = render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <StakeClaimModal urnIndex={1} onClose={onClose} />
+        <StakeClaimModal selection={{ urnIndex: 1 }} onClose={onClose} />
       </TooltipProvider>
     </I18nProvider>
   );
@@ -296,7 +296,7 @@ describe('StakeClaimModal', () => {
     view.rerender(
       <I18nProvider i18n={i18n}>
         <TooltipProvider>
-          <StakeClaimModal urnIndex={1} onClose={onClose} />
+          <StakeClaimModal selection={{ urnIndex: 1 }} onClose={onClose} />
         </TooltipProvider>
       </I18nProvider>
     );
@@ -310,13 +310,7 @@ describe('StakeClaimModal', () => {
 
     const invalidated = h.invalidateMock.mock.calls.map(call => call[0].queryKey[0]);
     expect(invalidated).toEqual(
-      expect.arrayContaining([
-        'stake-user-positions',
-        'stake-history',
-        'readContract',
-        'readContracts',
-        'simulateDrip'
-      ])
+      expect.arrayContaining(['stake-urn-vaults', 'readContract', 'readContracts', 'simulateDrip'])
     );
 
     const updater = h.setSearchParamsMock.mock.calls[0][0];
