@@ -42,6 +42,9 @@ export function useSequentialTransactionFlow(
   // Retry: a simulation that recovers on its own must not send it behind the
   // error screen.
   const reportedSimulationIndexRef = useRef(-1);
+  // The step whose send reverted on-chain, and whether its Retry is re-simulating.
+  const revertedIndexRef = useRef(-1);
+  const resimulatingRef = useRef(false);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
@@ -158,6 +161,7 @@ export function useSequentialTransactionFlow(
     return () => {
       lastProcessedTxHash.current = undefined;
       dispatchedIndexRef.current = -1;
+      revertedIndexRef.current = -1;
     };
   }, []);
 
@@ -207,6 +211,7 @@ export function useSequentialTransactionFlow(
         lastProcessedTxHash.current = undefined; // Reset ref on completion
         dispatchedIndexRef.current = -1; // next flow starts from a clean latch
         reportedSimulationIndexRef.current = -1;
+        revertedIndexRef.current = -1;
       } else {
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
@@ -226,6 +231,7 @@ export function useSequentialTransactionFlow(
       // error (an RPC failing to poll) can leave the tx pending, and resuming
       // would sign it a second time.
       const paused = currentIndex > 0 && txReverted;
+      if (paused) revertedIndexRef.current = currentIndex;
       setIsExecuting(paused);
       setHasFailed(paused);
     }
@@ -247,6 +253,7 @@ export function useSequentialTransactionFlow(
     setHasFailed(false);
     dispatchedIndexRef.current = -1;
     reportedSimulationIndexRef.current = -1;
+    revertedIndexRef.current = -1;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution
@@ -271,7 +278,25 @@ export function useSequentialTransactionFlow(
       return;
     }
 
-    if (simulationData?.request) {
+    if (isResume && revertedIndexRef.current === currentIndex) {
+      // Retry of a step that reverted on-chain: the held simulation predates the
+      // revert, so re-simulate rather than re-send what just failed. The index
+      // stays claimed (the auto-execute effect must not fire), so in-flight is
+      // tracked separately, and a reset or unmount clears the step to drop it.
+      if (resimulatingRef.current) return;
+      resimulatingRef.current = true;
+      const index = currentIndex;
+      void refetchSimulation().then(({ data, error }) => {
+        resimulatingRef.current = false;
+        if (revertedIndexRef.current !== index) return;
+        if (data?.request) {
+          revertedIndexRef.current = -1;
+          writeContract(data.request as Parameters<typeof writeContract>[0]);
+        } else {
+          onError(toError(error ?? simulationError), '');
+        }
+      });
+    } else if (simulationData?.request) {
       if (!isResume) {
         setFrozenCalls(calls); // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check

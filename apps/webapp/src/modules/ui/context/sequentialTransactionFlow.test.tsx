@@ -494,7 +494,7 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + the one supply
   });
 
-  it('an on-chain revert AFTER a mined step keeps the snapshot too: nextCalls holds the call and the retry dispatches it', () => {
+  it('an on-chain revert AFTER a mined step keeps the snapshot too: nextCalls holds the call and the retry re-simulates and dispatches it', async () => {
     const onError = vi.fn();
     const onSuccess = vi.fn();
     let calls: Call[] = [APPROVE, SUPPLY];
@@ -523,7 +523,7 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     rerender();
     expect(result.current.nextCalls.map(c => c.functionName)).toEqual(['supply']);
 
-    act(() => result.current.execute());
+    await act(async () => result.current.execute());
     expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
     expect(lastDispatchedCall()).toBe('supply');
 
@@ -539,6 +539,75 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     rerender();
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(result.current.currentCallIndex).toBe(0);
+  });
+});
+
+describe('useSequentialTransactionFlow — Retry after an on-chain revert', () => {
+  beforeEach(resetWagmi);
+  afterEach(() => vi.clearAllMocks());
+
+  function renderRevertedSupply() {
+    const onError = vi.fn();
+    const hook = renderHook(() => useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError }));
+    act(() => hook.result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    hook.rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    hook.rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    hook.rerender();
+    act(() => {
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: false,
+        error: null,
+        failureReason: new Error('execution reverted')
+      };
+    });
+    hook.rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+    return { ...hook, onError };
+  }
+
+  it('sends nothing when the re-simulation still fails, and reports it', async () => {
+    const { result, onError } = renderRevertedSupply();
+
+    wagmi.simulationErrors = { supply: new Error('execution reverted') };
+    await act(async () => result.current.execute());
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + the reverted supply
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
+  it('a double-clicked Retry re-simulates and sends once', async () => {
+    const { result } = renderRevertedSupply();
+
+    await act(async () => {
+      result.current.execute();
+      result.current.execute();
+    });
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
+  });
+
+  it('a Retry still re-simulating when the run resets sends nothing', async () => {
+    const { result } = renderRevertedSupply();
+
+    await act(async () => {
+      result.current.execute();
+      result.current.reset();
+    });
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
   });
 });
 
