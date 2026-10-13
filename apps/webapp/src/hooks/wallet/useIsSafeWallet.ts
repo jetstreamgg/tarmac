@@ -1,15 +1,8 @@
 import { useConnection, useChainId } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import { SAFE_TRANSACTION_SERVICE_URL } from '../shared/constants';
+import { safeAccountQuery } from './safeAccount';
 import { useIsSafeApp } from './useIsSafeApp';
-
-// 200 is a Safe and 404 is not; any other reply throws so the answer stays unknown.
-const isSafeWalletFound = async (url: URL) => {
-  const res = await fetch(url);
-  if (res.status === 200) return true;
-  if (res.status === 404) return false;
-  throw new Error(`Safe Transaction Service replied ${res.status}`);
-};
 
 export type SafeWalletStatus = 'safe' | 'not-safe' | 'checking' | 'unknown';
 
@@ -24,29 +17,21 @@ export const useSafeWalletStatus = (): SafeWalletStatus => {
   const chainId = useChainId();
 
   const isSafeApp = useIsSafeApp() && !!address;
-  const baseUrl = SAFE_TRANSACTION_SERVICE_URL[chainId];
-  let url: URL | undefined;
-  if (baseUrl) {
-    const endpoint = `${baseUrl}/api/v1/safes/${address}`;
-    url = new URL(endpoint);
-  }
+  const hasService = !!SAFE_TRANSACTION_SERVICE_URL[chainId];
 
-  // Safe-ness of an address doesn't change — cache the answer for the session
-  // and skip the call when we already know the wallet is a Safe via the connector.
-  const { data: isAddressSafeWallet, isError } = useQuery({
-    enabled: Boolean(url && address) && !isSafeApp,
-    queryKey: ['is-safe-wallet-found', address, chainId],
-    queryFn: () => isSafeWalletFound(url!),
+  // Safe-ness of an address doesn't change: never refetch it, and skip the call
+  // when the connector already says it is a Safe.
+  const { data: safeAccount, isError } = useQuery({
+    ...safeAccountQuery({ address, chainId }),
+    enabled: hasService && !!address && !isSafeApp,
     staleTime: Infinity,
-    gcTime: Infinity,
-    // An outage reads as unknown, which blocks callers that fail closed: say so quickly.
-    retry: 1
+    gcTime: Infinity
   });
 
   if (isSafeApp) return 'safe';
   if (!address) return 'not-safe';
-  if (!url) return 'unknown';
-  if (isAddressSafeWallet !== undefined) return isAddressSafeWallet ? 'safe' : 'not-safe';
+  if (!hasService) return 'unknown';
+  if (safeAccount !== undefined) return safeAccount ? 'safe' : 'not-safe';
   return isError ? 'unknown' : 'checking';
 };
 

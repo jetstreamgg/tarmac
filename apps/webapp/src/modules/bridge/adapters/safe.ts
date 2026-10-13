@@ -1,7 +1,6 @@
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import type { BridgeProgress } from '../model/pendingTransitions';
 import type { PendingBridgeAction } from '../model/types';
-import type { SafeConfig } from '../model/recipient';
 
 export type SafeMultisigTx = {
   safe: string;
@@ -151,32 +150,4 @@ async function resolveSafeTx(base: string, tx: SafeMultisigTx): Promise<BridgePr
     .map(parseSafeTx)
     .filter((other): other is SafeMultisigTx => other !== null && other.nonce === tx.nonce);
   return safeTxProgress(tx, executedAtNonce);
-}
-
-/**
- * The Safe at `address` on `chainId`: its config, or null when the service
- * says there is none. Throws when it can't tell (no service for the chain,
- * network error), which the recipient policy treats as unverified.
- */
-export async function readSafeConfig({
-  chainId,
-  address
-}: {
-  chainId: number;
-  address: string;
-}): Promise<SafeConfig | null> {
-  const base = SAFE_TRANSACTION_SERVICE_URL[chainId];
-  if (!base) throw new Error(`No Safe Transaction Service for chain ${chainId}`);
-  const { status, body } = await getJson(`${base}/api/v1/safes/${address}/`);
-  if (status === 404) return null;
-  const safe = body as { owners?: unknown; threshold?: unknown } | undefined;
-  if (
-    !safe ||
-    !Array.isArray(safe.owners) ||
-    !safe.owners.every(owner => typeof owner === 'string') ||
-    typeof safe.threshold !== 'number'
-  ) {
-    throw new Error(`Unreadable Safe response (${status})`);
-  }
-  return { owners: safe.owners as string[], threshold: safe.threshold };
 }

@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   parseSafeTx,
   readSafeActionProgress,
-  readSafeConfig,
   readSafeTxProgress,
   SAFE_ACTION_MISSING_MS,
   safeTxProgress,
@@ -239,22 +238,5 @@ describe('readSafeActionProgress', () => {
     const fetchSpy = respond({});
     expect(await read(SENT_AT + 10 * SAFE_ACTION_MISSING_MS, 43114)).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
-  });
-});
-
-describe('readSafeConfig', () => {
-  it('returns owners and threshold, or null when there is no Safe', async () => {
-    respond({ '/safes/0xa/': { status: 200, body: { owners: ['0x1', '0x2'], threshold: 2, nonce: 3 } } });
-    expect(await readSafeConfig({ chainId: 1, address: '0xa' })).toEqual({
-      owners: ['0x1', '0x2'],
-      threshold: 2
-    });
-    expect(await readSafeConfig({ chainId: 1, address: '0xb' })).toBeNull();
-  });
-
-  it('throws when it cannot tell, so the recipient policy fails closed', async () => {
-    respond({ '/safes/0xa/': { status: 500 } });
-    await expect(readSafeConfig({ chainId: 1, address: '0xa' })).rejects.toThrow();
-    await expect(readSafeConfig({ chainId: 43114, address: '0xa' })).rejects.toThrow();
   });
 });

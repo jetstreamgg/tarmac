@@ -1,4 +1,5 @@
 import { isAddress, zeroAddress } from 'viem';
+import type { SafeConfig } from '@/hooks/wallet/safeAccount';
 import type { BridgeNetwork } from './networks';
 
 const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -7,7 +8,7 @@ const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 export const isValidRecipient = (value: string, family: BridgeNetwork['family']): boolean =>
   family === 'solana' ? SOLANA_ADDRESS.test(value) : isAddress(value) && value.toLowerCase() !== zeroAddress;
 
-export type SafeConfig = { owners: string[]; threshold: number };
+export type { SafeConfig };
 
 /** A Safe lookup: the config, `null` when no Safe exists there, `undefined` when unknown. */
 export type SafeLookup = SafeConfig | null | undefined;
