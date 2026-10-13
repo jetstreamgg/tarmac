@@ -129,84 +129,53 @@ function notifyReviewAgainOnChainChange() {
   );
 }
 
-// A deferred dispatch (a gate verdict, Retry) was refused because the flow's
-// calls no longer match what the user confirmed (a quote moved while the review
-// was frozen) or its own confirm gating turned against them. `closed`: the
-// modal closed instead of returning to the review (a skipReview flow, or after
-// a step of the session mined).
-function notifyReviewAgainOnChangedCalls(closed: boolean) {
-  toastWithClose(
-    () =>
-      closed ? (
-        <TransactionNoticeToast
-          icon={<Cancel />}
-          title={<Trans>Transaction closed</Trans>}
-          description={
-            <Trans>
-              The details changed while you were confirming. Start again to see the current details.
-            </Trans>
-          }
-        />
-      ) : (
-        <TransactionNoticeToast
-          icon={<Refresh />}
-          title={<Trans>Transaction details changed</Trans>}
-          description={
-            <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>
-          }
-        />
-      ),
-    { id: ABANDONED_TOAST_ID, duration: 8000 }
-  );
-}
+// Why a deferred dispatch (a gate verdict, Retry) was refused: the flow's calls
+// or its own confirm gating no longer match what the user confirmed (a quote
+// moved while the review was frozen), or the wallet moved to another account
+// (what the user reviewed belonged to the confirming one) or disconnected.
+const DISPATCH_REFUSAL_COPY = {
+  calls: () => ({
+    icon: <Refresh />,
+    title: <Trans>Transaction details changed</Trans>,
+    description: <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>,
+    closedDescription: (
+      <Trans>The details changed while you were confirming. Start again to see the current details.</Trans>
+    )
+  }),
+  account: () => ({
+    icon: <Refresh />,
+    title: <Trans>Account changed</Trans>,
+    description: (
+      <Trans>Your wallet switched accounts while confirming. Review the details and confirm again.</Trans>
+    ),
+    closedDescription: (
+      <Trans>Your wallet switched accounts. Start again from the account you want to use.</Trans>
+    )
+  }),
+  disconnect: () => ({
+    icon: <Cancel />,
+    title: <Trans>Wallet disconnected</Trans>,
+    description: <Trans>Your wallet disconnected while confirming. Reconnect and confirm again.</Trans>,
+    closedDescription: <Trans>Your wallet disconnected. Reconnect and start again.</Trans>
+  })
+};
 
-// The wallet moved to another account between the confirm and a deferred
-// dispatch (a gate verdict, Retry), so the dispatch was refused: what the user
-// reviewed — balances, position, receiver — belonged to the confirming account.
-function notifyReviewAgainOnAccountChange(closed: boolean) {
+// `closed`: the modal closed instead of returning to the review (a skipReview
+// flow, or after a step of the session mined).
+function notifyDispatchRefused(reason: keyof typeof DISPATCH_REFUSAL_COPY, closed: boolean) {
   toastWithClose(
-    () =>
-      closed ? (
+    () => {
+      const copy = DISPATCH_REFUSAL_COPY[reason]();
+      return closed ? (
         <TransactionNoticeToast
           icon={<Cancel />}
           title={<Trans>Transaction closed</Trans>}
-          description={
-            <Trans>Your wallet switched accounts. Start again from the account you want to use.</Trans>
-          }
+          description={copy.closedDescription}
         />
       ) : (
-        <TransactionNoticeToast
-          icon={<Refresh />}
-          title={<Trans>Account changed</Trans>}
-          description={
-            <Trans>
-              Your wallet switched accounts while confirming. Review the details and confirm again.
-            </Trans>
-          }
-        />
-      ),
-    { id: ABANDONED_TOAST_ID, duration: 8000 }
-  );
-}
-
-// The wallet disconnected between the confirm and a deferred dispatch, so the
-// dispatch was refused.
-function notifyReviewAgainOnDisconnect(closed: boolean) {
-  toastWithClose(
-    () =>
-      closed ? (
-        <TransactionNoticeToast
-          icon={<Cancel />}
-          title={<Trans>Transaction closed</Trans>}
-          description={<Trans>Your wallet disconnected. Reconnect and start again.</Trans>}
-        />
-      ) : (
-        <TransactionNoticeToast
-          icon={<Cancel />}
-          title={<Trans>Wallet disconnected</Trans>}
-          description={<Trans>Your wallet disconnected while confirming. Reconnect and confirm again.</Trans>}
-        />
-      ),
+        <TransactionNoticeToast icon={copy.icon} title={copy.title} description={copy.description} />
+      );
+    },
     { id: ABANDONED_TOAST_ID, duration: 8000 }
   );
 }
@@ -1060,8 +1029,7 @@ export function TransactionProvider({
       const dispatch = () => {
         if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
           const closed = sendBackToReview();
-          if (addressRef.current) notifyReviewAgainOnAccountChange(closed);
-          else notifyReviewAgainOnDisconnect(closed);
+          notifyDispatchRefused(addressRef.current ? 'account' : 'disconnect', closed);
           return;
         }
         // The calls can hold steady while the flow's own gating turns against
@@ -1076,7 +1044,7 @@ export function TransactionProvider({
           configRef.current?.getDispatchBlocked?.() ||
           (gateApplies && configRef.current?.getConfirmDisabled?.())
         ) {
-          notifyReviewAgainOnChangedCalls(sendBackToReview());
+          notifyDispatchRefused('calls', sendBackToReview());
           return;
         }
         action();

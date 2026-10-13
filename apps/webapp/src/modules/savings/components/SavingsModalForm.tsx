@@ -254,7 +254,10 @@ export function SavingsModalForm({
     execute,
     nextCalls,
     callMatches: PSM_SWAP_BOUNDS,
-    dispatchBlocked: !!usdcBlockedReason,
+    // Only while the swap is still to send: once `sellGem` mined, the USDS
+    // approve and deposit left don't touch the PSM, and refusing them would
+    // strand the swapped USDS.
+    dispatchBlocked: !!usdcBlockedReason && nextCalls.some(call => call.functionName === 'sellGem'),
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,
