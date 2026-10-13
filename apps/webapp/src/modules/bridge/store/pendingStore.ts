@@ -1,14 +1,37 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
 import { canDismiss, isSettled } from '../model/pendingTransitions';
-import type { PendingBridge } from '../model/types';
+import type {
+  BridgeRouteKind,
+  PendingBridge,
+  PendingBridgeNextAction,
+  PendingBridgeStatus
+} from '../model/types';
 
 const KEY_PREFIX = 'bridgePending:v1:';
 const SETTLED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
-const STATUSES = new Set(['pending', 'ready', 'arrived', 'claimed', 'failed']);
-const ROUTE_KINDS = new Set(['native', 'cctp', 'layerzero']);
+// Keyed by the types so a new status or action can't be left out: an entry with an unknown one is dropped on load.
+const keysOf = (record: Record<string, true>) => new Set<unknown>(Object.keys(record));
+const STATUSES = keysOf({
+  pending: true,
+  ready: true,
+  arrived: true,
+  claimed: true,
+  failed: true,
+  expired: true
+} satisfies Record<PendingBridgeStatus, true>);
+const ROUTE_KINDS = keysOf({ native: true, cctp: true, layerzero: true } satisfies Record<
+  BridgeRouteKind,
+  true
+>);
 const NETWORKS = new Set<unknown>(BRIDGE_NETWORKS.map(network => network.id));
-const NEXT_ACTIONS = new Set<unknown>(['claim', 'prove', 'finalize']);
+const NEXT_ACTIONS = keysOf({
+  claim: true,
+  prove: true,
+  finalize: true,
+  redeem: true,
+  replay: true
+} satisfies Record<PendingBridgeNextAction, true>);
 
 type Listener = () => void;
 
@@ -44,8 +67,8 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     entry.token !== 'USDS' ||
     !NETWORKS.has(entry.from) ||
     !NETWORKS.has(entry.to) ||
-    !STATUSES.has(entry.status as string) ||
-    !ROUTE_KINDS.has(entry.routeKind as string) ||
+    !STATUSES.has(entry.status) ||
+    !ROUTE_KINDS.has(entry.routeKind) ||
     typeof entry.requiresClaim !== 'boolean' ||
     typeof entry.startedAt !== 'number' ||
     typeof entry.etaAt !== 'number' ||
