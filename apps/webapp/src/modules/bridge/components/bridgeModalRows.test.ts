@@ -5,7 +5,7 @@ import { resolveBridgeRoute } from '../model/resolveRoute';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
 import { bridgeFootnote } from './BridgeReviewContent';
-import { buildBridgeModalRows, formatEta } from './bridgeModalRows';
+import { buildBridgeModalRows, formatEta, formatMaxEthFee } from './bridgeModalRows';
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
@@ -34,6 +34,18 @@ describe('buildBridgeModalRows', () => {
   it('shows no bridge fee until the route quotes one', () => {
     const [, , [fee]] = buildBridgeModalRows({ route: routeFor('ethereum', 'avalanche'), networkFee: '' });
     expect(fee).toMatchObject({ value: NO_VALUE });
+  });
+
+  it("shows a deposit's ETH fee as its most, with no exponent for tiny amounts", () => {
+    const route = routeFor('ethereum', 'arbitrum');
+    const [, , [fee]] = buildBridgeModalRows({
+      route,
+      networkFee: '',
+      bridgeFee: formatMaxEthFee(4_784_940_682_440n)
+    });
+    expect(fee).toMatchObject({ value: 'Up to 0.0000048 ETH' });
+    expect(formatMaxEthFee(480_000_000_000n)).toBe('Up to 0.00000048 ETH');
+    expect(formatMaxEthFee(12_345_000_000_000_000n)).toBe('Up to 0.012 ETH');
   });
 });
 

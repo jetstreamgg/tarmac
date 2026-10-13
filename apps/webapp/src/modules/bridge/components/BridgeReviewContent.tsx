@@ -50,11 +50,19 @@ type BridgeReviewContentProps = {
   to: BridgeNetworkId;
   route: BridgeRoute;
   networkFee: string;
+  bridgeFee?: string;
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
-export function BridgeReviewContent({ amount, from, to, route, networkFee }: BridgeReviewContentProps) {
-  const rows = buildBridgeModalRows({ route, networkFee });
+export function BridgeReviewContent({
+  amount,
+  from,
+  to,
+  route,
+  networkFee,
+  bridgeFee
+}: BridgeReviewContentProps) {
+  const rows = buildBridgeModalRows({ route, networkFee, bridgeFee });
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
       <BridgeTransferHero amount={amount} from={from} to={to} />

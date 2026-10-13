@@ -4,6 +4,7 @@
  * Labels and pairing are the Figma contract, asserted in `bridgeModalRows.test.ts`.
  */
 
+import { formatEther } from 'viem';
 import { plural, t } from '@lingui/core/macro';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import { networkFeeCell } from '@/components/product/ModalGridCells';
@@ -41,12 +42,21 @@ export const formatEtaWords = (minutes: number): string => {
 
 export const formatSlippage = (slippage: number): string => `${(slippage * 100).toFixed(2)}%`;
 
+/** The most ETH a deposit pays for its L2 delivery, at two significant digits: "Up to 0.0000048 ETH". */
+export const formatMaxEthFee = (wei: bigint): string => {
+  const eth = Number(formatEther(wei)).toLocaleString('en-US', { maximumSignificantDigits: 2 });
+  return t`Up to ${eth} ETH`;
+};
+
 export function buildBridgeModalRows({
   route,
-  networkFee
+  networkFee,
+  bridgeFee
 }: {
   route: BridgeRoute;
   networkFee: string;
+  /** Overrides the route's USD fee, for a route that charges it in ETH. */
+  bridgeFee?: string;
 }): ModalGridCell[][] {
   return [
     [
@@ -61,7 +71,7 @@ export function buildBridgeModalRows({
       {
         kind: 'single',
         label: t`Bridge fee`,
-        value: route.bridgeFeeUsd === undefined ? NO_VALUE : formatUsd(route.bridgeFeeUsd)
+        value: bridgeFee ?? (route.bridgeFeeUsd === undefined ? NO_VALUE : formatUsd(route.bridgeFeeUsd))
       },
       networkFeeCell(networkFee)
     ]

@@ -31,7 +31,15 @@ const mocks = vi.hoisted(() => ({
   onError: vi.fn(),
   onSuccess: vi.fn(),
   appChainId: 1,
-  legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[]
+  legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[],
+  deposit: {
+    ready: true,
+    needsApprove: true,
+    maxFee: undefined as bigint | undefined,
+    error: null as Error | null,
+    execute: vi.fn(),
+    args: [] as { enabled: boolean; chainId: number | undefined; getCallbacks: () => TxCallbacks }[]
+  }
 }));
 
 vi.mock('wagmi', async io => ({
@@ -74,6 +82,14 @@ vi.mock('../adapters/mockAdapter', () => ({
   runMockLegs: (names: string[], getCallbacks: () => TxCallbacks) => {
     mocks.legs.push({ names, getCallbacks });
     return new Promise<string>(() => undefined);
+  }
+}));
+vi.mock('./useArbitrumDepositLegs', () => ({
+  ARBITRUM_DEPOSIT_FUNCTION: 'outboundTransferCustomRefund',
+  useArbitrumDepositLegs: (args: (typeof mocks.deposit.args)[number]) => {
+    mocks.deposit.args.push(args);
+    const { ready, needsApprove, maxFee, error, execute } = mocks.deposit;
+    return { ready, needsApprove, maxFee, error, execute, reset: vi.fn(), refetchAllowance: vi.fn() };
   }
 }));
 vi.mock('../components/BridgeReviewContent', () => ({
@@ -152,6 +168,14 @@ describe('useBridgeLaunch Confirm gate', () => {
       appChainId: 1,
       legs: []
     });
+    Object.assign(mocks.deposit, {
+      ready: true,
+      needsApprove: true,
+      maxFee: undefined,
+      error: null,
+      args: []
+    });
+    mocks.deposit.execute.mockClear();
     mocks.onError.mockClear();
     mocks.onSuccess.mockClear();
   });
@@ -473,5 +497,89 @@ describe('useBridgeLaunch Confirm gate', () => {
 
     callbacks.onSuccess('0xsafeexecuted');
     expect(stored()?.txHash).toBe('0xsafeexecuted');
+  });
+
+  describe('an Ethereum to Arbitrum deposit', () => {
+    async function reviewDeposit() {
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      act(() => view.result.current.form.selectTo('arbitrum'));
+      await settle();
+      expect(view.result.current.form).toMatchObject({ from: 'ethereum', to: 'arbitrum' });
+      act(() => view.result.current.launch());
+      return view;
+    }
+    const stepLabels = () =>
+      (mocks.launched.at(-1)?.steps ?? []).map(step => (typeof step === 'string' ? step : step.label));
+
+    it('reads the deposit on the pinned Ethereum chain', async () => {
+      await reviewDeposit();
+      expect(mocks.deposit.args.at(-1)).toMatchObject({ enabled: true, chainId: 1 });
+    });
+
+    it('blocks Confirm until the deposit is priced, says why, and sends nothing', async () => {
+      Object.assign(mocks.deposit, {
+        ready: false,
+        error: new Error('The Arbitrum deposit could not be priced')
+      });
+      await reviewDeposit();
+      const config = mocks.launched.at(-1)!;
+      expect(config.confirmDisabled).toBe(true);
+      expect(config.errorMessage).toBeTruthy();
+      act(() => config.onConfirm!());
+      expect(mocks.deposit.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+      expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it('Confirm runs the deposit, not the mock, and stores the deposit under its own hash', async () => {
+      await reviewDeposit();
+      expect(mocks.launched.at(-1)?.confirmDisabled).toBe(false);
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.deposit.execute).toHaveBeenCalledTimes(1);
+      expect(mocks.legs).toHaveLength(0);
+
+      const callbacks = mocks.deposit.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'approve' });
+      callbacks.onStart('0xarbapprove');
+      callbacks.onMutate({ functionName: 'outboundTransferCustomRefund' });
+      callbacks.onStart('0xarbdeposit');
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const snapshot = pendingBridgeStore.getSnapshot(scope);
+      expect(snapshot.find(bridge => bridge.txHash === '0xarbapprove')).toBeUndefined();
+      expect(snapshot.find(bridge => bridge.txHash === '0xarbdeposit')).toMatchObject({
+        from: 'ethereum',
+        to: 'arbitrum',
+        amount: ONE
+      });
+    });
+
+    it('drops the Approve step when the allowance covers the amount', async () => {
+      await reviewDeposit();
+      expect(stepLabels()).toEqual(['Approve', 'Bridge']);
+      mocks.deposit.needsApprove = false;
+      await reviewDeposit();
+      expect(stepLabels()).toEqual(['Bridge']);
+    });
+
+    it("shows the ticket's most ETH as the bridge fee", async () => {
+      mocks.deposit.maxFee = 4_800_000_000_000n;
+      await reviewDeposit();
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
+      expect(content.props.bridgeFee).toBe('Up to 0.0000048 ETH');
+    });
+
+    it('other routes stay on the mock', async () => {
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      await settle();
+      expect(view.result.current.form.to).not.toBe('arbitrum');
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
+      expect(mocks.deposit.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(1);
+      expect(mocks.launched.at(-1)?.errorMessage).toBeUndefined();
+    });
   });
 });
