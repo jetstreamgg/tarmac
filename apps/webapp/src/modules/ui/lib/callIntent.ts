@@ -41,19 +41,21 @@ export const exactMatch: CallMatcher = (live, confirmed) => {
   return !!encoded && sameBytes(encoded[0], encoded[1]);
 };
 
+type Bound = { index: number; kind: 'min' | 'max' };
+
 /**
  * A matcher for calls whose only post-confirm drift is a slippage bound the
  * contract enforces (a min-out or max-in that follows a live quote). A listed
- * call matches when everything but that argument is byte-equal and the bound
- * moved only in the user's favour: a min-out up, a max-in down. A tighter bound
- * can at worst revert; a looser one, or any other change, is refused. Calls not
- * listed by function name fall back to `exactMatch`.
+ * call matches when everything but its bound arguments is byte-equal and each
+ * bound moved only in the user's favour: a min-out up, a max-in down. A tighter
+ * bound can at worst revert; a looser one, or any other change, is refused.
+ * Calls not listed by function name fall back to `exactMatch`.
  */
-export function tightensOnly(bounds: Record<string, { index: number; kind: 'min' | 'max' }>): CallMatcher {
+export function tightensOnly(bounds: Record<string, Bound | readonly Bound[]>): CallMatcher {
   return (live, confirmed) => {
-    const bound = 'functionName' in live ? bounds[live.functionName as string] : undefined;
+    const listed = 'functionName' in live ? bounds[live.functionName as string] : undefined;
     if (
-      !bound ||
+      !listed ||
       !('functionName' in confirmed) ||
       confirmed.functionName !== live.functionName ||
       !Array.isArray(live.args) ||
@@ -61,16 +63,20 @@ export function tightensOnly(bounds: Record<string, { index: number; kind: 'min'
     ) {
       return exactMatch(live, confirmed);
     }
-    const liveBound = live.args[bound.index];
-    const confirmedBound = confirmed.args[bound.index];
-    if (typeof liveBound !== 'bigint' || typeof confirmedBound !== 'bigint') return false;
-    const withoutBound = (call: Call) =>
+    const fnBounds = 'index' in listed ? [listed] : listed;
+    for (const { index, kind } of fnBounds) {
+      const liveBound = live.args[index];
+      const confirmedBound = confirmed.args[index];
+      if (typeof liveBound !== 'bigint' || typeof confirmedBound !== 'bigint') return false;
+      if (kind === 'min' ? liveBound < confirmedBound : liveBound > confirmedBound) return false;
+    }
+    const indexes = new Set(fnBounds.map(b => b.index));
+    const withoutBounds = (call: Call) =>
       ({
         ...call,
-        args: (call.args as readonly unknown[]).map((arg, i) => (i === bound.index ? 0n : arg))
+        args: (call.args as readonly unknown[]).map((arg, i) => (indexes.has(i) ? 0n : arg))
       }) as Call;
-    if (!exactMatch(withoutBound(live), withoutBound(confirmed))) return false;
-    return bound.kind === 'min' ? liveBound >= confirmedBound : liveBound <= confirmedBound;
+    return exactMatch(withoutBounds(live), withoutBounds(confirmed));
   };
 }
 

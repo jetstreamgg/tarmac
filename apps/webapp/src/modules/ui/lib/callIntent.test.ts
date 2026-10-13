@@ -190,6 +190,30 @@ describe('tightensOnly with a paired approve', () => {
   });
 });
 
+describe('tightensOnly with several bounds on one call', () => {
+  const matches = tightensOnly({
+    swapExactIn: [
+      { index: 2, kind: 'max' },
+      { index: 3, kind: 'min' }
+    ]
+  });
+
+  it('accepts each bound moving in the user favour, alone or together', () => {
+    expect(matches(swapIn(999n, 990n), swapIn(1000n, 990n))).toBe(true);
+    expect(matches(swapIn(1000n, 991n), swapIn(1000n, 990n))).toBe(true);
+    expect(matches(swapIn(999n, 991n), swapIn(1000n, 990n))).toBe(true);
+  });
+
+  it('refuses when any bound loosens, even if another tightens', () => {
+    expect(matches(swapIn(1001n, 991n), swapIn(1000n, 990n))).toBe(false);
+    expect(matches(swapIn(999n, 989n), swapIn(1000n, 990n))).toBe(false);
+  });
+
+  it('still compares every other argument byte for byte', () => {
+    expect(matches(swapIn(999n, 991n, OTHER), swapIn(1000n, 990n))).toBe(false);
+  });
+});
+
 describe('exactMatch', () => {
   it('matches only identical calls and fails closed on an unencodable one', () => {
     expect(exactMatch(transfer(1n), transfer(1n))).toBe(true);

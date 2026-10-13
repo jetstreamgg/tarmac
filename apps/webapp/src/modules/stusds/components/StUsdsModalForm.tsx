@@ -32,9 +32,18 @@ export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
 const DECIMALS = 18;
 
-// A Curve `min_dy` follows the live quote. It may only tighten after the
-// confirm: the pool moving against the user loosens it and is refused.
-export const CURVE_SWAP_BOUND_ARGS = { exchange: { index: 3, kind: 'min' } } as const;
+// The Curve swap follows the live quote: `min_dy` on a supply or Max withdraw,
+// and on a specific-amount withdraw the stUSDS spent (`dx`, and the approve
+// for it). Each may only move in the user's favour after the confirm, `min_dy`
+// up and `dx` down; the pool moving against the user is refused. A supply's
+// `dx` and approve are the entered amount, so they never move.
+export const CURVE_SWAP_BOUND_ARGS = {
+  exchange: [
+    { index: 2, kind: 'max' },
+    { index: 3, kind: 'min' }
+  ],
+  approve: { index: 1, kind: 'max' }
+} as const;
 const CURVE_SWAP_BOUNDS = tightensOnly(CURVE_SWAP_BOUND_ARGS);
 
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
