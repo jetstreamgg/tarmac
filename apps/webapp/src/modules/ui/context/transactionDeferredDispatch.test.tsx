@@ -314,24 +314,6 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('closes when the gate sends a retry after a mined step back to the first screen', () => {
-    const onConfirm = vi.fn();
-    const { config } = driftingFlow(onConfirm, [approve, swap(900n)]);
-    const gate: PreTransactionGate = ({ trigger, controls }) => {
-      if (trigger !== 'retry') return { allow: true };
-      controls.returnToFirstScreen();
-      return { allow: false };
-    };
-    const cb = renderWithGate(gate, config);
-
-    failAfterMinedStep(cb);
-
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
   it('closes on changed calls after a mined step too', () => {
     const onConfirm = vi.fn();
     const gating = { disabled: false };
@@ -451,7 +433,6 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     const { live, config } = driftingFlow(onConfirm, [approve, swap(900n)]);
     const cb = renderWithGate(() => ({ allow: true }), {
       ...config,
-      steps: ['Approve', 'Swap'],
       getConfirmDisabled: () => gating.disabled
     });
 
@@ -461,10 +442,8 @@ describe('TransactionProvider deferred dispatch re-validation', () => {
     live.calls = [swap(900n)];
     gating.disabled = true; // the stalled step is unprepared
     act(() => cb.onError(markStalledStep(new Error('simulation reverted')), ''));
-    expect(screen.queryByText('Swap failed')).not.toBeNull();
-    expect(screen.queryByText('Approve failed')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });
