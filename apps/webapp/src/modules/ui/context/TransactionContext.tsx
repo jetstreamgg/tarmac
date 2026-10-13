@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { InProgress, Cancel } from '@/modules/icons';
-import { toError, type TxMutateVariables } from '@/hooks';
+import { isStalledStep, toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
@@ -251,8 +251,11 @@ export function TransactionProvider({
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
-  // Ref twin for launch(), which reads it synchronously.
   const hasMinedStepRef = useRef(false);
+  const markMinedStep = useCallback(() => {
+    setHasMinedStep(true);
+    hasMinedStepRef.current = true;
+  }, []);
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
@@ -851,8 +854,10 @@ export function TransactionProvider({
           setGateCopy(null);
           // A skipReview flow has no first screen: the denial hands the user
           // back to the surface that launched it, which renders the same
-          // hold through useTransactionPreflight.
-          if (configRef.current?.skipReview) handleCloseRef.current();
+          // hold through useTransactionPreflight. Nor, in effect, does a
+          // session with a mined step: the entry would be editable while the
+          // engine's paused run still resumes the calls confirmed before.
+          if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
           else returnToFirstScreenRef.current?.();
         },
         reportSignatureRejected: () => {
@@ -963,7 +968,7 @@ export function TransactionProvider({
     // The reset lives inside the gate: a denied retry must leave the failure
     // view in place, not clear it and then do nothing.
     runGated('retry', () => {
-      if (hasMinedStep) {
+      if (hasMinedStepRef.current) {
         // The engine resumes at the failed write; shift past any prelude the gate dropped.
         const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
         if (dropped > 0) setCurrentStep(s => s - dropped);
@@ -978,7 +983,7 @@ export function TransactionProvider({
 
       configRef.current?.onConfirm();
     });
-  }, [runGated, resetTransactionProgress, hasMinedStep]);
+  }, [runGated, resetTransactionProgress]);
 
   // A settle callback belongs to the running session only if BOTH its closure
   // and the write it reports on were made in the current generation (see
@@ -1026,10 +1031,7 @@ export function TransactionProvider({
       }
       // A sequential engine dispatches the next call only once the previous
       // receipt landed, so a write arriving over LOADING means a step mined.
-      if (txStatusRef.current === TxStatus.LOADING) {
-        setHasMinedStep(true);
-        hasMinedStepRef.current = true;
-      }
+      if (txStatusRef.current === TxStatus.LOADING) markMinedStep();
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;
@@ -1047,7 +1049,7 @@ export function TransactionProvider({
         });
       }
     },
-    [sessionGen, chainId, trackTransactionStarted]
+    [sessionGen, chainId, trackTransactionStarted, markMinedStep]
   );
 
   const onStart = useCallback(
@@ -1162,6 +1164,13 @@ export function TransactionProvider({
       if (hash) {
         txHashRef.current = hash;
       }
+      // A run that stalls after a mined step never hands its next call to the
+      // wallet, so no write reports the mined step or moves the stepper onto
+      // the step that stalled; the engine's error does both.
+      if (isStalledStep(error)) {
+        markMinedStep();
+        setCurrentStep(s => s + 1);
+      }
 
       // Track transaction completed (error). Bounded classification props only —
       // never the raw message, which can embed addresses and calldata. A wallet
@@ -1207,7 +1216,16 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [sessionGen, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
+    [
+      sessionGen,
+      chainId,
+      isSafeWallet,
+      trackTransactionCompleted,
+      startNewFlow,
+      isStaleWrite,
+      isForeignHash,
+      markMinedStep
+    ]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is

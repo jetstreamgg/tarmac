@@ -522,8 +522,8 @@ export function TransactionModal({
   // Hand the provider the same back-to-first-screen the header arrow uses, so
   // the gate's returnToFirstScreen control (enhanced-screening denials) lands
   // on an identical screen state — onBack's progress reset included. (For a
-  // skipReview flow the provider closes the modal instead — there is no first
-  // screen to return to.)
+  // skipReview flow, or once a step has mined, the provider closes the modal
+  // instead.)
   useEffect(() => {
     registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);

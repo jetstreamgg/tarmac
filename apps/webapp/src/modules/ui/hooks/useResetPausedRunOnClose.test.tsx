@@ -41,7 +41,7 @@ describe('useResetPausedRunOnClose', () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves the engine alone when the modal closes without a failure', () => {
+  it('leaves the engine alone when the modal closes unconfirmed or after a success', () => {
     const reset = vi.fn();
     const go = renderWith(reset);
     go(true, TxStatus.IDLE);
@@ -63,6 +63,18 @@ describe('useResetPausedRunOnClose', () => {
     go(true, TxStatus.SUCCESS);
     go(false, TxStatus.IDLE);
     expect(reset).not.toHaveBeenCalled();
+  });
+
+  // Closed while a later step waits in the wallet: the wallet's rejection then
+  // pauses the run with no ERROR ever reaching this session.
+  it('resets the engine when the modal closes mid-run, without a failure shown', () => {
+    const reset = vi.fn();
+    const go = renderWith(reset);
+    go(true, TxStatus.INITIALIZED);
+    go(true, TxStatus.LOADING);
+    go(true, TxStatus.INITIALIZED);
+    go(false, TxStatus.IDLE);
+    expect(reset).toHaveBeenCalledTimes(1);
   });
 
   it('refetches the engine reads with the reset, so a mined approve drops out of the next launch', () => {
