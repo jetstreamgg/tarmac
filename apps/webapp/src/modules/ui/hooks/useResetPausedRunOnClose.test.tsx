@@ -41,28 +41,39 @@ describe('useResetPausedRunOnClose', () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves the engine alone when the modal closes unconfirmed or after a success', () => {
+  // An approve signed after the close would mine behind a reset engine and a
+  // refetched allowance, and the next launch would ask for it again.
+  it('leaves the engine alone when the modal closes before anything went out', () => {
     const reset = vi.fn();
     const go = renderWith(reset);
     go(true, TxStatus.IDLE);
     go(false, TxStatus.IDLE);
     go(true, TxStatus.IDLE);
     go(true, TxStatus.INITIALIZED);
-    go(true, TxStatus.LOADING);
-    go(true, TxStatus.SUCCESS);
     go(false, TxStatus.IDLE);
     expect(reset).not.toHaveBeenCalled();
   });
 
-  it('a failure that was retried and succeeded no longer counts at close', () => {
+  it('a failure followed by Back and a fresh confirm no longer counts at close', () => {
     const reset = vi.fn();
     const go = renderWith(reset);
-    go(true, TxStatus.ERROR);
     go(true, TxStatus.INITIALIZED);
-    go(true, TxStatus.LOADING);
-    go(true, TxStatus.SUCCESS);
+    go(true, TxStatus.ERROR);
+    go(true, TxStatus.IDLE);
+    go(true, TxStatus.INITIALIZED);
     go(false, TxStatus.IDLE);
     expect(reset).not.toHaveBeenCalled();
+  });
+
+  it('a Retry after a mined step still counts at close', () => {
+    const reset = vi.fn();
+    const go = renderWith(reset);
+    go(true, TxStatus.INITIALIZED);
+    go(true, TxStatus.LOADING);
+    go(true, TxStatus.ERROR);
+    go(true, TxStatus.INITIALIZED);
+    go(false, TxStatus.IDLE);
+    expect(reset).toHaveBeenCalledTimes(1);
   });
 
   // Closed while a later step waits in the wallet: the wallet's rejection then

@@ -26,14 +26,22 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 export function useResetPausedRunOnClose(reset: () => void, refetchReads?: () => void): void {
   const { isModalOpen, txStatus } = useTransaction();
   // Close hides the modal and returns the status to IDLE in one render, so an
-  // unfinished run has to be remembered from before. The provider closes in
-  // the same batch as it sets SUCCESS, so a success usually resets here too,
-  // harmlessly: the engine has already finished. Minimize keeps the modal open,
-  // so a running one is never reset here.
+  // unfinished run has to be remembered from before. It starts once a write
+  // goes out or fails: a close while the first prompt is still open must not
+  // reset, or an approve signed after the close mines behind a reset engine
+  // and a refetched allowance, and the next launch asks for it again. A fresh
+  // confirm (INITIALIZED from IDLE) starts over. The provider closes in the
+  // same batch as it sets SUCCESS, so a success resets here too, harmlessly:
+  // the engine has already finished. Minimize keeps the modal open, so a
+  // running one is never reset here.
   const unfinishedRef = useRef(false);
+  const prevStatusRef = useRef(txStatus);
   useEffect(() => {
-    if (txStatus === TxStatus.SUCCESS) unfinishedRef.current = false;
-    else if (txStatus !== TxStatus.IDLE) unfinishedRef.current = true;
+    if (txStatus === TxStatus.LOADING || txStatus === TxStatus.ERROR) unfinishedRef.current = true;
+    else if (txStatus === TxStatus.INITIALIZED && prevStatusRef.current === TxStatus.IDLE) {
+      unfinishedRef.current = false;
+    }
+    prevStatusRef.current = txStatus;
     if (isModalOpen || !unfinishedRef.current) return;
     unfinishedRef.current = false;
     reset();

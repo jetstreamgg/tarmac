@@ -567,9 +567,11 @@ describe('useSequentialTransactionFlow — Retry after an on-chain revert', () =
   beforeEach(resetWagmi);
   afterEach(() => vi.clearAllMocks());
 
-  function renderRevertedSupply() {
+  function renderRevertedSupply(gate = { enabled: true }) {
     const onError = vi.fn();
-    const hook = renderHook(() => useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError }));
+    const hook = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError, enabled: gate.enabled })
+    );
     act(() => hook.result.current.execute());
     act(() => {
       wagmi.mutationHash = '0xapprove';
@@ -606,6 +608,20 @@ describe('useSequentialTransactionFlow — Retry after an on-chain revert', () =
     await act(async () => result.current.execute());
 
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + the reverted supply
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
+  // A refetch runs even while the query is disabled, so the caller's gate (the
+  // USDC supply's PSM fee gate) would otherwise be skipped.
+  it('sends nothing when the caller disabled the engine since the revert, and reports it', async () => {
+    const gate = { enabled: true };
+    const { result, rerender, onError } = renderRevertedSupply(gate);
+
+    gate.enabled = false;
+    rerender();
+    await act(async () => result.current.execute());
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
     expect(onError).toHaveBeenCalledTimes(2);
   });
 
@@ -679,6 +695,36 @@ describe('useSequentialTransactionFlow — a later step that fails to simulate',
     await act(async () => result.current.execute());
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
     expect(wagmi.writeContract).toHaveBeenLastCalledWith(expect.objectContaining({ functionName: 'supply' }));
+  });
+
+  it('Retry of a stalled step sends nothing when the caller disabled the engine, and reports it', async () => {
+    const onError = vi.fn();
+    const gate = { enabled: true };
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError, enabled: gate.enabled })
+    );
+
+    act(() => result.current.execute());
+    wagmi.simulationErrors = { supply: new Error('RPC unavailable') };
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    // A disabled query keeps its last result; only the refetch would recover it.
+    gate.enabled = false;
+    rerender();
+    wagmi.simulationErrors = {};
+    await act(async () => result.current.execute());
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledTimes(2);
   });
 
   it('Retry re-simulates a step whose stored failure is stale', async () => {
