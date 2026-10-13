@@ -47,7 +47,10 @@ const CTA_CLASSES =
 /** The Bridge tab body: form card, Review CTA, then the pending bridges list. */
 export function BridgePanel() {
   const form = useBridgeForm();
-  const { launch, locked, restore } = useBridgeLaunch(form, form.reset);
+  const { launch, locked, restore } = useBridgeLaunch(form, () => {
+    form.refetchBalances();
+    form.reset();
+  });
   const launchOrConnect = useConnectThenAct(launch);
   const {
     launch: launchAction,

@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   appChainId: 1,
   canSwitchChain: true,
   safeStatus: 'not-safe' as 'safe' | 'not-safe',
-  switched: [] as number[]
+  switched: [] as number[],
+  refetched: [] as number[]
 }));
 
 vi.mock('wagmi', () => ({
@@ -20,7 +21,11 @@ vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
   useAppChainId: () => mocks.appChainId,
   useSafeWalletStatus: () => mocks.safeStatus,
-  useTokenBalance: () => ({ data: { value: 10n ** 18n }, isLoading: false })
+  useTokenBalance: ({ chainId }: { chainId: number }) => ({
+    data: { value: 10n ** 18n },
+    isLoading: false,
+    refetch: () => mocks.refetched.push(chainId)
+  })
 }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
@@ -77,5 +82,24 @@ describe('useBridgeForm: a destination that moves the source keeps the picked de
     rerender();
     expect(result.current.from).toBe('ethereum');
     expect(result.current.to).toBe('arbitrum');
+  });
+});
+
+describe('useBridgeForm: refetchBalances', () => {
+  beforeEach(() => {
+    Object.assign(mocks, {
+      appChainId: 1,
+      canSwitchChain: true,
+      safeStatus: 'not-safe',
+      switched: [],
+      refetched: []
+    });
+  });
+
+  it('rereads the source and destination balances', () => {
+    const { result } = renderHook(() => useBridgeForm());
+    act(() => result.current.selectTo('optimism'));
+    act(() => result.current.refetchBalances());
+    expect(mocks.refetched).toEqual([1, 10]);
   });
 });

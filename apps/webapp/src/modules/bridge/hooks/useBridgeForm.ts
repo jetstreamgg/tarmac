@@ -23,13 +23,15 @@ function useUsdsBalance(address: `0x${string}` | undefined, chainId: number | un
   const chains = useChains();
   const token = chainId === undefined ? undefined : TOKENS.usds.address[chainId];
   const readable = chainId !== undefined && chains.some(chain => chain.id === chainId);
-  const { data, isLoading } = useTokenBalance({
+  const { data, isLoading, refetch } = useTokenBalance({
     address,
     token,
     chainId: chainId ?? 0,
     enabled: readable && !!token
   });
-  return readable && token ? { value: data?.value, isLoading } : { value: undefined, isLoading: false };
+  return readable && token
+    ? { value: data?.value, isLoading, refetch }
+    : { value: undefined, isLoading: false, refetch: undefined };
 }
 
 const AMOUNT_PATTERN = /^\d*\.?\d{0,18}$/;
@@ -112,7 +114,14 @@ export function useBridgeForm() {
   const destinationChainId = bridgeChainId(to, familyChainId);
   const source = useUsdsBalance(isConnected ? address : undefined, sourceChainId);
   const sourceBalance = source.value;
-  const destinationBalance = useUsdsBalance(isConnected ? address : undefined, destinationChainId).value;
+  const destination = useUsdsBalance(isConnected ? address : undefined, destinationChainId);
+  const destinationBalance = destination.value;
+  const { refetch: refetchSource } = source;
+  const { refetch: refetchDestination } = destination;
+  const refetchBalances = useCallback(() => {
+    refetchSource?.();
+    refetchDestination?.();
+  }, [refetchSource, refetchDestination]);
 
   const setPercent = useCallback(
     (percent: number) => {
@@ -197,6 +206,8 @@ export function useBridgeForm() {
     onInput,
     setPercent,
     setRecipient,
+    /** Rereads both balances, after a send moved the source funds. */
+    refetchBalances,
     reset: () => setValue('')
   };
 }
