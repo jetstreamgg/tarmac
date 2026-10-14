@@ -145,6 +145,10 @@ const route = (
   ...(fallbackReason && { fallbackReason })
 });
 
+/** The open native deposit route from Ethereum to `to`, as the resolver builds it. */
+export const nativeDepositRoute = (to: NativeNetworkId): BridgeRoute =>
+  route('native', routeSteps('native', 'ethereum', to), DEPOSIT_ETA_MINUTES[to], 0);
+
 const ok = (resolved: BridgeRoute): ResolvedBridgeRoute => ({ status: 'ok', route: resolved });
 const blocked = (reason: BridgeBlockReason): ResolvedBridgeRoute => ({ status: 'blocked', reason });
 
