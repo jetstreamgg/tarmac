@@ -999,14 +999,14 @@ export function TransactionProvider({
         }
         confirmedAddressRef.current = addressRef.current;
       }
-      // Back to the review to confirm again, at IDLE so it re-renders against
-      // the current figures. A skipReview flow has no review here; it closes
+      // Refuses a deferred dispatch: back to the review to confirm again, at IDLE
+      // so it re-renders against the current figures. A skipReview flow has no review here; it closes
       // back to the surface that launched it, like the gate's denials. So does
       // a session with a mined step: the engine's paused run would resume the
       // calls confirmed before the refusal, not what the review re-renders, so
       // the user reopens the flow and it rebuilds from the current state.
       // Returns whether it closed the modal rather than returning to the review.
-      const sendBackToReview = (): boolean => {
+      const refuseDispatch = (): boolean => {
         const closes = !!configRef.current?.skipReview || hasMinedStepRef.current;
         controls.setPreludeSteps(null);
         controls.setGateStatus('idle');
@@ -1028,7 +1028,7 @@ export function TransactionProvider({
       };
       const dispatch = () => {
         if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
-          const closed = sendBackToReview();
+          const closed = refuseDispatch();
           notifyDispatchRefused(addressRef.current ? 'account' : 'disconnect', closed);
           return;
         }
@@ -1038,13 +1038,13 @@ export function TransactionProvider({
         // balances the form checks (a conversion leg spends the input), and a
         // stalled step is unprepared until the engine re-simulates it. What is
         // left to send is still held to the confirmed calls.
-        const gateApplies = trigger !== 'retry' || !hasMinedStepRef.current;
+        const checkFormGating = trigger !== 'retry' || !hasMinedStepRef.current;
         if (
           !callsStillConfirmed() ||
           configRef.current?.getDispatchBlocked?.() ||
-          (gateApplies && configRef.current?.getConfirmDisabled?.())
+          (checkFormGating && configRef.current?.getConfirmDisabled?.())
         ) {
-          notifyDispatchRefused('calls', sendBackToReview());
+          notifyDispatchRefused('calls', refuseDispatch());
           return;
         }
         action();
