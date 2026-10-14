@@ -11,6 +11,7 @@ import {
 } from 'viem';
 import { extractTransactionDepositedLogs, opaqueDataToDepositData } from 'viem/op-stack';
 import {
+  L1_USDS,
   OP_STACK_DEPOSIT,
   l1BridgeIsOpenAbi,
   type OpStackNetworkId
@@ -101,6 +102,16 @@ export async function l2UsdsBalance(network: OpStackNetworkId, account: Address)
     functionName: 'balanceOf',
     args: [account]
   });
+}
+
+/** The account's Ethereum nonce and USDS balance: what any sent leg would move. */
+export async function l1AccountState(account: Address) {
+  const l1 = await client(NetworkName.mainnet);
+  const [nonce, usds] = await Promise.all([
+    l1.getTransactionCount({ address: account }),
+    l1.readContract({ address: L1_USDS, abi: erc20Abi, functionName: 'balanceOf', args: [account] })
+  ]);
+  return { nonce, usds };
 }
 
 const pad = (value: bigint | number) => toHex(value, { size: 32 });

@@ -1,9 +1,12 @@
-import { parseUnits } from 'viem';
+import { type Page } from '@playwright/test';
+import { parseUnits, type Address } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
+import { L1_USDS } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import {
   closeOpStackBridge,
+  l1AccountState,
   l2UsdsBalance,
   pendingDepositTxHash,
   relayOpStackDeposit
@@ -138,21 +141,96 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     }
   });
 
-  test('A rejected bridge leaves nothing pending', async ({ isolatedPage }) => {
+  test('A send rejected in the wallet leaves nothing pending, and Try again sends it once', async ({
+    isolatedPage,
+    testAccount
+  }) => {
     const bridge = new BridgePage(isolatedPage);
     await bridge.gotoConnected();
     await bridge.selectDestination('unichain');
+    const before = await l1AccountState(testAccount);
     await bridge.openReview('1');
 
-    await isolatedPage.route('https://virtual.**.rpc.tenderly.co/**', route =>
-      route.request().postData()?.includes('eth_sendTransaction') ? route.abort() : route.fallback()
+    // EIP-1193 4001, what a wallet returns when the user rejects.
+    await isolatedPage.route(TENDERLY_RPC, route =>
+      isSend(route.request().postData())
+        ? route.fulfill({
+            json: { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'User rejected the request.' } }
+          })
+        : route.fallback()
     );
     await bridge.confirmButton().click();
+    await expect(isolatedPage.getByRole('dialog')).toContainText(
+      'You declined the bundled transaction in your wallet.',
+      { timeout: 60_000 }
+    );
 
-    await expect(isolatedPage.getByRole('dialog')).toContainText(/failed|rejected|error/i, {
-      timeout: 60_000
+    await expectNothingSent(bridge, isolatedPage, testAccount, before);
+    await retryOnce(bridge, isolatedPage, testAccount, before);
+  });
+
+  test('A send that fails after the approve leaves nothing pending, and Try again sends it once', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected();
+    await bridge.selectDestination('unichain');
+    const before = await l1AccountState(testAccount);
+    await bridge.openReview('1');
+
+    // The mock wallet sends a batch leg by leg: any approve mines, the deposit never reaches the node.
+    let approves = 0;
+    let deposits = 0;
+    await isolatedPage.route(TENDERLY_RPC, route => {
+      const body = route.request().postData();
+      if (!isSend(body)) return route.fallback();
+      const to = JSON.parse(body!).params[0].to as string;
+      if (to.toLowerCase() === L1_USDS.toLowerCase()) {
+        approves++;
+        return route.fallback();
+      }
+      deposits++;
+      return route.abort();
     });
-    expect(await pendingDepositTxHash(isolatedPage, 'unichain')).toBeUndefined();
-    await expect(bridge.cards()).toHaveCount(0);
+    await bridge.confirmButton().click();
+    await expect(isolatedPage.getByRole('dialog')).toContainText('Transaction failed', { timeout: 60_000 });
+    expect(deposits).toBe(1);
+
+    await expectNothingSent(bridge, isolatedPage, testAccount, before, { approves });
+    await retryOnce(bridge, isolatedPage, testAccount, before);
   });
 });
+
+const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
+const isSend = (body: string | null) => !!body?.includes('"eth_sendTransaction"');
+
+/** No deposit left Ethereum: no pending entry, no card, the USDS untouched. */
+async function expectNothingSent(
+  bridge: BridgePage,
+  page: Page,
+  account: Address,
+  before: Awaited<ReturnType<typeof l1AccountState>>,
+  { approves = 0 } = {}
+) {
+  expect(await pendingDepositTxHash(page, 'unichain')).toBeUndefined();
+  await expect(bridge.cards()).toHaveCount(0);
+  const after = await l1AccountState(account);
+  expect(after.usds).toBe(before.usds);
+  expect(after.nonce).toBe(before.nonce + approves);
+}
+
+/** Try again with the wallet working sends exactly one deposit of the reviewed amount. */
+async function retryOnce(
+  bridge: BridgePage,
+  page: Page,
+  account: Address,
+  before: Awaited<ReturnType<typeof l1AccountState>>
+) {
+  await page.unroute(TENDERLY_RPC);
+  await page.getByRole('dialog').getByRole('button', { name: 'Try again' }).click();
+  await expectTransactionSuccess(page, { title: 'Bridge initiated!', timeout: 90_000 });
+  await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
+  expect(await pendingDepositTxHash(page, 'unichain')).toBeTruthy();
+  expect((await l1AccountState(account)).usds).toBe(before.usds - parseUnits('1', 18));
+}
