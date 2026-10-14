@@ -1,6 +1,7 @@
 import { TransactionReceiptNotFoundError, type Hex } from 'viem';
 import type { BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
+import { safeExecutionFailed } from '../safe';
 import type { AdapterContext, ChainReader } from '../types';
 import { L2_CROSS_DOMAIN_MESSENGER, l2CrossDomainMessengerAbi, type OpStackNetworkId } from './contracts';
 import { opStackDepositMessage } from './opStack';
@@ -29,8 +30,9 @@ const readMessage = (l2: ChainReader, functionName: 'successfulMessages' | 'fail
 /**
  * Where an Ethereum to OP Stack deposit stands: its message is read from the
  * Ethereum receipt and looked up on the L2 messenger. Arrived only once the
- * messenger relayed it; a failed relay is offered as a replay. Any read that
- * fails, or a receipt with no Sky message, is null: nothing changes.
+ * messenger relayed it; a failed relay is offered as a replay. A receipt with
+ * no Sky message fails only when the sender's Safe reported its execution
+ * failed; any other such receipt, or a failed read, is null: nothing changes.
  */
 export async function opStackDepositProgress(
   bridge: PendingBridge & { to: OpStackNetworkId },
@@ -50,7 +52,10 @@ export async function opStackDepositProgress(
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });
     if (receipt.status === 'reverted') return { kind: 'failed', reason: 'source-tx-reverted' };
     const message = opStackDepositMessage(receipt.logs, bridge.to);
-    if (!message) return null;
+    if (!message)
+      return safeExecutionFailed(receipt.logs, bridge.account)
+        ? { kind: 'failed', reason: 'safe-tx-reverted' }
+        : null;
     // A replayed message stays in failedMessages, so success is read first.
     const [successful, failed] = await Promise.all([
       readMessage(l2, 'successfulMessages', message.msgHash),

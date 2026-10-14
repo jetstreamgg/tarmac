@@ -5,7 +5,7 @@ import { resolveBridgeRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
 import type { AdapterContext, ChainReader } from '../types';
 import { getBridgeAdapter } from '../registry';
-import { BASE_DEPOSIT_LOGS } from './depositFixtures';
+import { BASE_DEPOSIT_LOGS, SAFE_EXECUTION_FAILURE } from './depositFixtures';
 import { L2_CROSS_DOMAIN_MESSENGER } from './contracts';
 import { opStackDepositMessage } from './opStack';
 import { opStackDepositProgress } from './opStackProgress';
@@ -110,10 +110,24 @@ describe('opStackDepositProgress', () => {
     });
   });
 
+  it.each(['1.3.0', '1.4.1'] as const)(
+    'fails a Safe deposit whose inner call failed (Safe %s), as it moved nothing',
+    async version => {
+      const { safe, logs } = SAFE_EXECUTION_FAILURE[version];
+      const { context, l2 } = chains({ l1Logs: logs });
+      await expect(opStackDepositProgress({ ...seed(), account: safe }, context)).resolves.toEqual({
+        kind: 'failed',
+        reason: 'safe-tx-reverted'
+      });
+      expect(l2.readContract).not.toHaveBeenCalled();
+    }
+  );
+
   it.each([
     ['the Ethereum receipt is not there yet', { l1Status: 'missing' as const }],
     ['the Ethereum receipt read fails', { l1Status: 'error' as const }],
     ['the receipt holds no Sky message', { l1Logs: [] }],
+    ["another Safe's execution failed", { l1Logs: SAFE_EXECUTION_FAILURE['1.4.1'].logs }],
     ['the L2 messenger read fails', { messages: 'error' as const }]
   ])('changes nothing when %s', async (_, setup) => {
     const { context } = chains(setup);

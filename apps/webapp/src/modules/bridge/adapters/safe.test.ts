@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BASE_DEPOSIT_LOGS, SAFE_EXECUTION_FAILURE } from './nativeDeposit/depositFixtures';
 import {
   parseSafeTx,
   readSafeActionProgress,
   readSafeTxProgress,
   SAFE_ACTION_MISSING_MS,
+  safeExecutionFailed,
   safeTxProgress,
   type SafeMultisigTx
 } from './safe';
@@ -26,6 +28,20 @@ const respond = (routes: Record<string, { status: number; body?: unknown }>) =>
   });
 
 afterEach(() => vi.restoreAllMocks());
+
+describe('safeExecutionFailed', () => {
+  it.each(['1.3.0', '1.4.1'] as const)("reads a Safe %s's ExecutionFailure, in any address case", version => {
+    const { safe, logs } = SAFE_EXECUTION_FAILURE[version];
+    expect(safeExecutionFailed(logs, safe)).toBe(true);
+    expect(safeExecutionFailed(logs, safe.toUpperCase().replace('0X', '0x'))).toBe(true);
+  });
+
+  it('ignores another address and a receipt with no failure', () => {
+    const { logs } = SAFE_EXECUTION_FAILURE['1.4.1'];
+    expect(safeExecutionFailed(logs, SAFE_EXECUTION_FAILURE['1.3.0'].safe)).toBe(false);
+    expect(safeExecutionFailed(BASE_DEPOSIT_LOGS, BASE_DEPOSIT_LOGS[0].address)).toBe(false);
+  });
+});
 
 describe('safeTxProgress', () => {
   const other = {

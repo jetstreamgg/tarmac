@@ -1,3 +1,4 @@
+import { isAddressEqual, toEventSelector, type Log } from 'viem';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import type { BridgeProgress } from '../model/pendingTransitions';
 import type { PendingBridgeAction } from '../model/types';
@@ -11,6 +12,15 @@ export type SafeMultisigTx = {
   transactionHash: string | null;
   executedAt?: number;
 };
+
+// Safe 1.3 and 1.4 share the selector; 1.4 indexes the Safe tx hash.
+const EXECUTION_FAILURE = toEventSelector('event ExecutionFailure(bytes32 txHash, uint256 payment)');
+
+/** The Safe's execTransaction mined but its inner call failed, so the transaction moved nothing. */
+export const safeExecutionFailed = (logs: Pick<Log, 'address' | 'topics'>[], safe: string): boolean =>
+  logs.some(
+    log => log.topics[0] === EXECUTION_FAILURE && isAddressEqual(log.address, safe as Log['address'])
+  );
 
 const sameHash = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
