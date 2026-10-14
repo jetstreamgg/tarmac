@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
-import { formatUnits } from 'viem';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { i18n } from '@lingui/core';
 import {
   useBatchStakeMulticall,
   useRewardContractTokens,
@@ -14,31 +12,23 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
-import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
-// Legacy msgid generators double as e2e anchors — reused, not forked (UI Spec §3).
-import { getStakeTitle, StakeFlow } from '../lib/constants';
-import { TxStatus } from '@/widgets/shared/constants';
+import { StakeFlow } from '../lib/constants';
 import {
   calculateStakeApprovalAmounts,
   needsDelegateUpdate,
   needsRewardUpdate,
   useStakeCalldata
 } from './useStakeCalldata';
-import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
-import {
-  useStakeConfirmContent,
-  type StakeLaunchContent,
-  type StakeLaunchContentContext
-} from './useStakeConfirmContent';
+import { toLaunchResult, useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
+import { launchStakeModal } from './useStakeLaunch';
+import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
 
-import { stakeUsdNotional } from '../lib/stakeUsdNotional';
-
-export type { StakeLaunchContentContext };
+import { stakeUsdNotional, wadToFloat } from '../lib/stakeUsdNotional';
 
 /**
  * Manage confirm-modal step labels, derived from the calldata set in the manage
@@ -140,7 +130,15 @@ export interface UseStakeManageLaunchParams {
   transactionContent?: StakeLaunchContent;
   /** Compact wallet/status-screen summary; omitted, the full body carries over. */
   transactionScreenContent?: ReactNode;
+  /** Push `transactionContent` as the wallet-screen summary only (entry-first sessions). */
+  transactionContentAsScreen?: boolean;
   onSuccess?: () => void;
+  /**
+   * Session of an already-launched modal (the change reward / delegate modals
+   * mount their picker as the modal's entry and fire `execute` from its CTA).
+   * Omitted, the hook owns its own session and `launch()` opens the modal.
+   */
+  sessionId?: string;
 }
 
 /**
@@ -172,10 +170,13 @@ export function useStakeManageLaunch({
   claimSymbols,
   transactionContent,
   transactionScreenContent,
-  onSuccess
+  transactionContentAsScreen = false,
+  onSuccess,
+  sessionId: sharedSessionId
 }: UseStakeManageLaunchParams) {
   const { launch: launchModal, txCallbacks } = useTransaction();
-  const sessionId = useId();
+  const ownSessionId = useId();
+  const sessionId = sharedSessionId ?? ownSessionId;
   const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
@@ -269,7 +270,8 @@ export function useStakeManageLaunch({
     isBatch: !!engine.isBatch,
     legCount,
     content: transactionContent,
-    screenContent: transactionScreenContent
+    screenContent: transactionScreenContent,
+    screenOnly: transactionContentAsScreen
   });
 
   const hasLock = skyToLock > 0n;
@@ -305,7 +307,7 @@ export function useStakeManageLaunch({
 
   // The moved legs (lock or free, borrow or wipe; a delegate-only change moves
   // nothing and values at $0). Live (not computed at launch) because the sheet
-  // runs the enhanced-screening preflight on it while the user is editing.
+  // runs the screening preflight on it while the user is editing.
   const usdValue = useMemo(
     () =>
       stakeUsdNotional(
@@ -319,17 +321,9 @@ export function useStakeManageLaunch({
   const launch = useCallback(() => {
     // Legacy stakeData shape (M15): signed amount collapses lock/free, signed
     // borrowAmount collapses borrow/repay; manage carries the urn index.
-    const skyAmount = hasLock
-      ? Number(formatUnits(skyToLock, 18))
-      : hasFree
-        ? -Number(formatUnits(skyToFree, 18))
-        : undefined;
+    const skyAmount = hasLock ? wadToFloat(skyToLock) : hasFree ? -wadToFloat(skyToFree) : undefined;
     const stakeAction = hasLock ? 'stake' : hasFree ? 'unstake' : undefined;
-    const borrowAmount = hasBorrow
-      ? Number(formatUnits(usdsToBorrow, 18))
-      : hasWipe
-        ? -Number(formatUnits(usdsToWipe, 18))
-        : undefined;
+    const borrowAmount = hasBorrow ? wadToFloat(usdsToBorrow) : hasWipe ? -wadToFloat(usdsToWipe) : undefined;
     const borrowAction = hasBorrow ? 'borrow' : hasWipe ? 'repay' : undefined;
 
     const stakeData: Record<string, unknown> = {
@@ -345,13 +339,8 @@ export function useStakeManageLaunch({
       ...(borrowAmount != null && { borrowAmount, borrowAction })
     };
 
-    launchModal({
+    launchStakeModal(launchModal, StakeFlow.MANAGE, {
       usdValue,
-      // Staking is mainnet-only — guard the modal off any L2 (APP-528).
-      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-      // The sheet is the review (Design QA 2800:91832): open on the wallet
-      // screen, gate first. The titles below are the minimized-toast fallback.
-      skipReview: true,
       // Confirm-modal titles by staged action set (M7, UX 1104:*).
       title: isDelegateOnly
         ? t`Confirm delegate change`
@@ -360,7 +349,6 @@ export function useStakeManageLaunch({
           : isBorrowOnly
             ? t`Confirm borrow`
             : t`Confirm`,
-      transactionTitle: i18n._(getStakeTitle(TxStatus.INITIALIZED, StakeFlow.MANAGE)),
       // Manage toast copy is not in the UX file — flagged on APP-312 (M16).
       toast: {
         loading: t`Changing position`,
@@ -371,15 +359,9 @@ export function useStakeManageLaunch({
       transactionContent: confirmContent,
       transactionScreenContent,
       steps,
-      confirmLabel: t`Confirm`,
       onConfirm: () => executeRef.current(),
       onSuccess,
-      analytics: {
-        widgetName: 'stake',
-        flow: 'manage',
-        action: 'multicall',
-        data: stakeData
-      }
+      stakeData
     });
   }, [
     launchModal,
@@ -414,17 +396,12 @@ export function useStakeManageLaunch({
     restore,
     /** Live USD notional of the staged changes, for the sheet's own preflight. */
     usdValue,
-    execute: engine.execute,
-    steps,
     calldata,
-    calls: engine.calls ?? [],
-    isBatch: !!engine.isBatch,
+    legCount,
     hasRewardChange,
     hasDelegateChange,
     urnSelectedVoteDelegate,
     shouldUseBatch,
-    prepared: engine.prepared,
-    isLoading: engine.isLoading,
-    error: engine.error
+    ...toLaunchResult(engine, steps)
   };
 }

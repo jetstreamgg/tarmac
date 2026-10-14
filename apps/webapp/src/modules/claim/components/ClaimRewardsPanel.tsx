@@ -302,4 +302,3 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
 }
 
 // Re-exported for the wallet-screen summary reuse / tests.
-export type { ClaimableReward };

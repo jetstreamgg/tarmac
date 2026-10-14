@@ -18,8 +18,8 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 // class, so the properties it sets carry Tailwind's important marker.
 
 const SONNER_DEFAULT_OFFSET = 32;
-const BANNER_BOTTOM_MARGIN = 16; // banner's bottom-4
-const BANNER_TOAST_GAP = 12;
+export const BANNER_BOTTOM_MARGIN = 16; // banner's bottom-4
+export const BANNER_TOAST_GAP = 12;
 
 const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
   const { bannerHeight } = useCookieConsent();

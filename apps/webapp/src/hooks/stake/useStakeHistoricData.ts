@@ -1,9 +1,10 @@
 import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { useQuery } from '@tanstack/react-query';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { baLabsDataSource } from '../constants';
 import { formatBaLabsUrl } from '../helpers';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
+import { fetchJson } from '../shared/fetchJson';
 
 type ApiStakeHistoricData = {
   date: string;
@@ -33,13 +34,7 @@ type StakeHistoricData = {
 
 const fetchStakeHistoricData = async (url: URL): Promise<StakeHistoricData[] | undefined> => {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    const data: ApiStakeHistoricData[] = await response.json();
+    const data = await fetchJson<ApiStakeHistoricData[]>(url, { label: 'Stake historic data' });
     return data.map(item => ({
       date: item.date,
       datetime: item.datetime,
@@ -79,13 +74,6 @@ export function useStakeHistoricData(): ReadHook & { data?: StakeHistoricData[] 
     isLoading,
     error,
     mutate: refetch,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
+    dataSources: [baLabsDataSource(url)]
   };
 }

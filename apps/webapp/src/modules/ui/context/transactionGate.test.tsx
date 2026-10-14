@@ -11,7 +11,12 @@ import type { PreTransactionGate } from './preTransactionGate';
 // The provider needs a live wagmi tree; these suites exercise the transaction
 // state machine, so the shared chain switch is stubbed inert.
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+  useNetworkSwitch: () => ({
+    handleSwitchChain: vi.fn(),
+    isSwitchPending: false,
+    switchVariables: undefined,
+    canSwitchChain: true
+  })
 }));
 
 vi.mock('wagmi', async io => ({
@@ -281,6 +286,40 @@ describe('TransactionProvider pre-transaction gate', () => {
     // Inline failure applies to the lone prelude step too.
     expect(screen.getByText('Terms signature failed')).not.toBeNull();
     expect(screen.getByRole('button', { name: /try again/i })).not.toBeNull();
+  });
+
+  it('a retry after a mined step keeps the stepper on the failed write when the gate drops a signed prelude', async () => {
+    // First confirm owes the terms signature; the retry finds it signed and clears the prelude.
+    const gate: PreTransactionGate = ({ controls, trigger }) => {
+      if (trigger === 'retry') {
+        controls.setPreludeSteps(null);
+        return { allow: true };
+      }
+      controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
+      controls.setGateStatus('signature');
+      return Promise.resolve({ allow: true });
+    };
+    const cb = renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm: () => {},
+      steps: ['Approve', 'Supply']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await flush();
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('User rejected the request'), ''));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    act(() => cb.onMutate());
+    expect(screen.queryByText('Terms signature')).toBeNull();
+    // Approve shows its checkmark, Supply its number.
+    expect(screen.queryByText('1')).toBeNull();
+    expect(screen.queryByText('2')).not.toBeNull();
   });
 
   it('gate copy overrides the status message and subtitle while set', async () => {

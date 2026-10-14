@@ -1,6 +1,5 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import {
   type Token,
@@ -8,38 +7,42 @@ import {
   getTokenDecimals,
   useErc4626VaultData,
   useTokenBalance,
-  useVaultMarketData,
-  type VaultProvider
+  useVaultMarketData
 } from '@/hooks';
-import { formatNumber } from '@/utils';
-import { parseAmountInput } from '@/lib/amountInput';
+import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 /** Seeds the form's initial amount (e.g. a Portfolio quick-deposit shortcut). */
 export type VaultModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDC supplied!"). */
-export type VaultToastTitles = { loading: string; success: string; error: string };
+export type VaultToastTitles = AmountToastTitles;
 
 export interface VaultTransactionForm {
   isConnected: boolean;
   isSupply: boolean;
   decimals: number;
   value: string;
+  /** The parsed input as typed — validation (`isZero`, `insufficient`) reads this. */
   amount: bigint;
+  /** The settled amount (500ms): drives the engine, the fee/simulation reads, and every amount display. */
+  debouncedAmount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / max withdraw (withdraw). */
   available: bigint;
   /** The `available` read has resolved — display and validation wait on it. */
   availableKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
+  /** The typed amount hasn't settled yet — `amountReady` holds until it does. */
+  debouncePending: boolean;
   amountReady: boolean;
   /** Supplied position in asset units (ERC-4626 `userAssets`) — feeds the entry deltas. */
   position: bigint;
   /** Withdraw-relevant: vault liquidity currently caps the input below the position. */
   isLiquidityConstrained: boolean;
-  /** Withdraw-relevant: the provider's liquidity source settled without a figure. */
+  /** Withdraw-relevant: the market liquidity read settled without a figure. */
   isLiquidityDataUnavailable: boolean;
   engineParams: VaultEngineParams;
   toast: VaultToastTitles;
@@ -62,13 +65,11 @@ export function useVaultTransactionForm({
   flow,
   vaultAddress,
   assetToken,
-  provider = 'morpho',
   preset
 }: {
   flow: VaultLaunchFlow;
   vaultAddress: `0x${string}`;
   assetToken: Token;
-  provider?: VaultProvider;
   preset?: VaultModalPreset;
 }): VaultTransactionForm {
   const chainId = useChainId();
@@ -76,26 +77,16 @@ export function useVaultTransactionForm({
   const isSupply = flow === 'supply';
   const decimals = getTokenDecimals(assetToken, chainId);
 
-  const [value, setValue] = useState(preset?.amount ?? '');
-  // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
-  const [max, setMax] = useState(false);
-
-  const amount = parseAmountInput(value, decimals);
-
   const { data: walletBalance } = useTokenBalance({
     address,
     chainId,
     token: assetToken.address[chainId]
   });
-  const { data: vaultData } = useErc4626VaultData({ vaultAddress, provider });
+  const { data: vaultData } = useErc4626VaultData({ vaultAddress });
   // Morpho publishes the vault's withdrawable liquidity through its market API;
   // its on-chain `maxWithdraw`/`maxRedeem` are stubs that read 0 for everyone
-  // (APP-456 #7). `computeVaultLimits` owns that provider split, shared with the
-  // widget's supply/withdraw pane so both surfaces agree per vault.
-  const { data: marketData, isLoading: isMarketDataLoading } = useVaultMarketData({
-    provider,
-    vaultAddress
-  });
+  // (APP-456 #7). `computeVaultLimits` owns that rule.
+  const { data: marketData, isLoading: isMarketDataLoading } = useVaultMarketData({ vaultAddress });
 
   const {
     maxDepositInput,
@@ -105,13 +96,9 @@ export function useVaultTransactionForm({
     isFullPositionWithdrawable,
     isLiquidityDataUnavailable
   } = computeVaultLimits({
-    provider,
     assetBalance: walletBalance?.value,
-    maxDeposit: vaultData?.maxDeposit,
     userAssets: vaultData?.userAssets,
     userShares: vaultData?.userShares,
-    maxWithdraw: vaultData?.maxWithdraw,
-    maxRedeem: vaultData?.maxRedeem,
     availableLiquidity: marketData?.liquidity,
     liquidityKnown: !isMarketDataLoading
   });
@@ -122,71 +109,56 @@ export function useVaultTransactionForm({
   const available = isSupply ? maxDepositInput : (maxWithdrawInput ?? position);
   // Never validate against the unresolved balance/position read's 0n fallback.
   const availableKnown = isSupply ? walletBalance !== undefined : vaultData !== undefined;
-  const isZero = amount === 0n;
-  const insufficient = availableKnown && amount > available;
-  const amountReady = isConnected && amount > 0n && availableKnown && !insufficient;
 
-  const onInput = (next: string) => {
-    setMax(false);
-    setValue(next);
-  };
-  const setMaxAmount = () => {
-    setValue(formatUnits(available, decimals));
+  const {
+    value,
+    amount,
+    debouncedAmount,
+    debouncePending,
+    max,
+    isZero,
+    insufficient,
+    amountReady,
+    toast,
+    onInput,
+    setMaxAmount,
+    setPercentAmount,
+    clearAmount
+  } = useAmountForm({
+    decimals,
+    available,
+    availableKnown,
+    symbol: assetToken.symbol,
+    isSupply,
+    preset,
     // Max redeems the whole share balance (no dust) only when the full position
     // is withdrawable; under a liquidity constraint the engine runs a plain
     // withdraw of the cap instead — a redeem-all would revert (APP-488).
-    setMax(!isSupply && isFullPositionWithdrawable);
-  };
-  const setPercentAmount = (pct: number) => {
-    if (pct >= 100) return setMaxAmount();
-    setMax(false);
-    setValue(formatUnits((available * BigInt(pct)) / 100n, decimals));
-  };
-  const clearAmount = () => {
-    setValue('');
-    setMax(false);
-  };
+    maxRedeems: !isSupply && isFullPositionWithdrawable
+  });
 
+  const runActive = useTransactionRunActive();
   const engineParams: VaultEngineParams = {
     flow,
     vaultAddress,
     assetToken,
-    provider,
-    amount,
+    amount: debouncedAmount,
     max,
-    shares: redeemShares
+    shares: redeemShares,
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive
   };
-
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${assetToken.symbol}`;
-  // Memoized so the modal-content sync effect in VaultModalForm has stable deps —
-  // an unmemoized object/element here recreates every render and loops
-  // updateModalContent → setActiveConfig → re-render (matches the savings form).
-  const toast = useMemo<VaultToastTitles>(
-    () =>
-      isSupply
-        ? {
-            loading: t`Supplying ${amountLabel}`,
-            success: t`${amountLabel} supplied!`,
-            error: t`Supply failed`
-          }
-        : {
-            loading: t`Withdrawing ${amountLabel}`,
-            success: t`${amountLabel} withdrawn!`,
-            error: t`Withdrawal failed`
-          },
-    [isSupply, amountLabel]
-  );
 
   const transactionScreenContent = useMemo(
     () => (
       <VaultAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
         assetToken={assetToken}
-        amount={amount}
+        amount={debouncedAmount}
         decimals={decimals}
       />
     ),
-    [isSupply, assetToken, amount, decimals]
+    [isSupply, assetToken, debouncedAmount, decimals]
   );
 
   return {
@@ -195,10 +167,12 @@ export function useVaultTransactionForm({
     decimals,
     value,
     amount,
+    debouncedAmount,
     available,
     availableKnown,
     isZero,
     insufficient,
+    debouncePending,
     amountReady,
     position,
     isLiquidityConstrained,

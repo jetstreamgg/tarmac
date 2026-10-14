@@ -3,16 +3,9 @@ import { formatUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import {
-  TOKENS,
-  useMkrSkyFee,
-  useDebounce,
-  useSkyPrice,
-  useTokenBalance,
-  type UpgradeSourceToken
-} from '@/hooks';
+import { TOKENS, useMkrSkyFee, useSkyPrice, useTokenBalance, type UpgradeSourceToken } from '@/hooks';
 import { formatNumber, math } from '@/utils';
-import { PopoverRateInfo } from '@/widgets';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField, type PercentPreset } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -21,6 +14,7 @@ import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
@@ -32,6 +26,7 @@ import { buildUpgradeModalRows } from './upgradeModalRows';
 import { NO_VALUE } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 const UPGRADE_SOURCE_TOKENS = [TOKENS.dai, TOKENS.mkr];
 
@@ -69,8 +64,7 @@ export function UpgradeModalForm({
   const [value, setValue] = useState('');
 
   const amount = parseAmountInput(value, DECIMALS);
-  const debouncedAmount = useDebounce(amount);
-  const debouncePending = debouncedAmount !== amount;
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount, token);
 
   const isMkr = token === 'MKR';
   const target = UPGRADE_TARGET[token];
@@ -94,9 +88,12 @@ export function UpgradeModalForm({
   const insufficient = amount > 0n && balance !== undefined && amount > balance.value;
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
+  const runActive = useTransactionRunActive();
   const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
     amount: debouncedAmount,
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive,
     // The wallet balance is chain state the engine's success doesn't refetch —
     // sync it so the entry screen shows the post-upgrade balance if revisited.
     // Hung off the engine, not the context's txStatus: a confirmed transaction
@@ -107,7 +104,14 @@ export function UpgradeModalForm({
 
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, chainId, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    chainId,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
   // Disconnected (APP-446): the modal still opens — the CTA becomes an enabled
   // "Connect wallet" that opens the connect modal in place (no screen advance,
   // see `confirmAction`), and reverts to the gated "Continue" once connected.

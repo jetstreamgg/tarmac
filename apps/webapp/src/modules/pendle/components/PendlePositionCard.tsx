@@ -7,6 +7,7 @@ import { Trans } from '@lingui/react/macro';
 import {
   isMarketMatured,
   TOKENS,
+  useNow,
   usePendleMarketsApiData,
   usePendleMaturedPositionEarnings,
   usePendleRedeemPreview,
@@ -17,7 +18,8 @@ import {
 import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
-import { Pendle, PopoverRateInfo } from '@/widgets';
+import { Pendle } from '@/modules/icons/PendleSymbol';
+import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { RateInfo } from '@/components/product/RateInfo';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';
@@ -30,8 +32,10 @@ import {
   ProductStatPair,
   ProductSupplyCard
 } from '@/components/product/ProductCard';
+import { InlineTokenLabel } from '@/components/product/InlineTokenLabel';
+import { formatIdleBalance, SupplyCardStats } from '@/components/product/SupplyCardStats';
+import { AccruedToDateStat } from '@/components/product/AccruedToDateStat';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
 import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 
@@ -77,22 +81,13 @@ function PendleSupplyCard({
   });
 
   const rate = fixedApy !== undefined ? formatDecimalPercentage(fixedApy) : NO_VALUE;
-  const idleBalance =
-    isConnected && balance
-      ? formatNumber(parseFloat(formatUnits(balance.value, 18)), { maxDecimals: 2 })
-      : NO_VALUE;
-
-  const inlineToken = (symbol: string) => (
-    <span className="whitespace-nowrap">
-      <TokenIcon
-        token={{ symbol }}
-        width={24}
-        showChainIcon={false}
-        className="mr-1 inline-block h-5 w-5 -translate-y-0.5 align-middle md:h-6 md:w-6"
-      />
-      {symbol}
-    </span>
+  const idleBalance = formatIdleBalance(
+    isConnected && balance ? parseFloat(formatUnits(balance.value, 18)) : undefined
   );
+
+  // Built outside <Trans> so each cluster stays a single message placeholder.
+  const usdsLabel = <InlineTokenLabel symbol="USDS" />;
+  const usdcLabel = <InlineTokenLabel symbol="USDC" />;
 
   return (
     <ProductSupplyCard
@@ -110,7 +105,7 @@ function PendleSupplyCard({
       }
       title={
         <Trans>
-          Supply {inlineToken('USDS')} / {inlineToken('USDC')} at {rate} APY
+          Supply {usdsLabel} / {usdcLabel} at {rate} APY
         </Trans>
       }
       description={
@@ -120,9 +115,10 @@ function PendleSupplyCard({
         </>
       }
       stats={
-        <ProductStatPair>
-          <ProductStat size="lg" label={<Trans>Current Rate</Trans>}>
-            <ProductFigure value={rate}>
+        <SupplyCardStats
+          rate={rate}
+          rateFigure={
+            <>
               {rate}
               <TokenIcon
                 token={{ symbol: `PT-${market.underlyingSymbol}` }}
@@ -131,20 +127,18 @@ function PendleSupplyCard({
                 className="h-4 w-4 shrink-0"
               />
               <PopoverRateInfo type="fixedYield" width={14} height={14} iconClassName="text-fgSecondary" />
-            </ProductFigure>
-          </ProductStat>
-          <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
-            <ProductFigure value={idleBalance}>
-              {idleBalance}
-              <TokenIcon
-                token={{ symbol: 'USDS' }}
-                width={16}
-                showChainIcon={false}
-                className="h-4 w-4 shrink-0"
-              />
-            </ProductFigure>
-          </ProductStat>
-        </ProductStatPair>
+            </>
+          }
+          idle={idleBalance}
+          idleIcon={
+            <TokenIcon
+              token={{ symbol: 'USDS' }}
+              width={16}
+              showChainIcon={false}
+              className="h-4 w-4 shrink-0"
+            />
+          }
+        />
       }
       cta={
         <Button
@@ -260,7 +254,8 @@ function PendleMaturedCard({
   // pegged market), so it carries the underlying symbol — as on the Portfolio card.
 
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
-  // opens (usePendleRedeemModal); Safe wallets disable with the hint instead.
+  // opens (usePendleRedeemModal); a Safe can't be switched from the dapp, so it
+  // disables with the hint instead.
   const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
     usePendleRedeemModal(market);
 
@@ -343,7 +338,8 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
   const stats = marketsApi?.[market.marketAddress];
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const remainingDays = remainingDaysToMaturity(expirySec, Date.now());
+  const nowMs = useNow();
+  const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const claimDateLabel = formatMaturity(expirySec);
 
   const refresh = useCallback(() => {
@@ -410,18 +406,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
       stats={
         <>
           <ProductStatPair grow>
-            <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <EarningsFigureValue
-                figure={accrued?.totalEarned ?? null}
-                missing={accrued?.missingFromTotal}
-                coverage={accrued?.coverage}
-                pendleSplit={accrued?.pendleSplit}
-                variant="plain"
-                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
-                skeletonClassName="h-4 w-14"
-                testId="pendle-accrued-to-date"
-              />
-            </ProductStat>
+            <AccruedToDateStat accrued={accrued} testId="pendle-accrued-to-date" />
             <ProductStat label={<Trans>You&apos;ll claim</Trans>}>
               <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
               {claimAmount}

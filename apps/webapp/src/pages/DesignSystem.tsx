@@ -271,6 +271,10 @@ const TOKEN_GROUPS: { group: string; tokens: { name: string; cls: string }[] }[]
       { name: 'slider-brand-end', cls: 'bg-slider-brand-end' },
       { name: 'slider-yellow-start', cls: 'bg-slider-yellow-start' },
       { name: 'slider-yellow-end', cls: 'bg-slider-yellow-end' },
+      { name: 'slider-green-start', cls: 'bg-slider-green-start' },
+      { name: 'slider-green-end', cls: 'bg-slider-green-end' },
+      { name: 'slider-red-start', cls: 'bg-slider-red-start' },
+      { name: 'slider-red-end', cls: 'bg-slider-red-end' },
       { name: 'sliderAmber', cls: 'bg-sliderAmber' },
       { name: 'sliderMarker', cls: 'bg-sliderMarker' },
       { name: 'sliderLine', cls: 'bg-sliderLine' },
@@ -983,7 +987,7 @@ function TablesSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <CellSpecimenRow name="Text (TableCell default)">$4.23b</CellSpecimenRow>
+            <CellSpecimenRow name="Text (TableCell default)">$4.23B</CellSpecimenRow>
             <CellSpecimenRow name="Percent">
               <CellPercent value="3.75" />
             </CellSpecimenRow>
@@ -1219,7 +1223,7 @@ function TablesSection() {
               <TableCell>
                 <CellPercent value="3.81" />
               </TableCell>
-              <TableCell>$4.23b</TableCell>
+              <TableCell>$4.23B</TableCell>
               <TableCell>$2,500.00</TableCell>
             </TableRow>
             <TableRow className="cursor-pointer">

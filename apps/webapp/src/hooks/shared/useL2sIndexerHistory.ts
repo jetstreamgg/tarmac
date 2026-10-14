@@ -1,14 +1,13 @@
 import { useMemo } from 'react';
 import { request, gql } from 'graphql-request';
-import { useInfiniteQuery } from '@tanstack/react-query';
 import { useConnection } from 'wagmi';
-import { HISTORY_STALE_TIME } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { l2SavingsHistoryFragments, mapL2SavingsRows } from '../psm/useL2SavingsHistory';
 import { psmTradeFragment, mapPsmTradeRows } from '../psm/usePsmTradeHistory';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
 import { CombinedHistoryItem } from './shared';
+import { useHistoryPagination } from './useHistoryPagination';
 import { chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
 
 // The chains whose PSM `Swap` history feeds the all-networks views. All of
@@ -93,29 +92,10 @@ export function useL2sIndexerHistory({ enabled = true }: { enabled?: boolean } =
     [baseTokens, arbitrumTokens, optimismTokens, unichainTokens]
   );
 
-  const { data, error, refetch, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      enabled: Boolean(urlIndexer && address) && enabled,
-      staleTime: HISTORY_STALE_TIME,
-      queryKey: ['l2s-indexer-history', urlIndexer, address, L2_HISTORY_CHAIN_IDS.join('-')],
-      initialPageParam: undefined as number | undefined,
-      queryFn: ({ pageParam }) =>
-        fetchL2sIndexerHistoryPage(urlIndexer, address || '', tokenAddressMaps, pageParam),
-      getNextPageParam: lastPage => lastPage.nextCursor
-    });
-
-  const items = useMemo(() => data?.pages.flatMap(page => page.items) ?? [], [data]);
-  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor;
-
-  return {
-    data: data ? items : undefined,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
-    mutate: refetch,
-    /** Completeness floor (seconds); undefined once history is fully loaded. */
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage
-  };
+  return useHistoryPagination({
+    enabled: Boolean(urlIndexer && address) && enabled,
+    queryKey: ['l2s-indexer-history', urlIndexer, address, L2_HISTORY_CHAIN_IDS.join('-')],
+    fetchPage: beforeTimestamp =>
+      fetchL2sIndexerHistoryPage(urlIndexer, address || '', tokenAddressMaps, beforeTimestamp)
+  });
 }

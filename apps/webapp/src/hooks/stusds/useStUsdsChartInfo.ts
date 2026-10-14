@@ -1,10 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
 import { parseEther } from 'viem';
-import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-
-import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
+import { useBaLabsHistoric } from '../shared/useBaLabsHistoric';
 
 type StUsdsChartInfo = {
   date: string;
@@ -40,53 +36,18 @@ function transformBaLabsChartData(results: StUsdsChartInfo[]): StUsdsChartInfoPa
   return parsed;
 }
 
-async function fetchStUsdsChartInfo(url: URL): Promise<StUsdsChartInfoParsed[]> {
-  try {
-    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for.
-    return transformBaLabsChartData(await fetchBaLabsPages<StUsdsChartInfo>(url));
-  } catch (error) {
-    console.error('Error fetching BaLabs data:', error);
-    return [];
-  }
-}
-
 export function useStUsdsChartInfo(
   options: { limit?: number } = { limit: 100 }
 ): ReadHook & { data?: StUsdsChartInfoParsed[] } {
   const { limit } = options;
-  const baseUrl = getBaLabsApiUrl() || '';
-  let url: URL | undefined;
-  if (baseUrl) {
-    // `p_size` is required: without it the endpoint serves its 100-row default,
-    // which silently clipped the detail chart's 1Y and All ranges to the last
-    // ~100 days (APP-456 #5).
-    const endpoint = `${baseUrl}/overall/historic/?p_size=${limit}`;
-    url = formatBaLabsUrl(new URL(endpoint));
-  }
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(baseUrl),
-    queryKey: ['stusds-chart', url],
-    queryFn: () => (url ? fetchStUsdsChartInfo(url) : Promise.resolve([]))
+  // `p_size` is required: without it the endpoint serves its 100-row default,
+  // which silently clipped the detail chart's 1Y and All ranges to the last
+  // ~100 days (APP-456 #5).
+  return useBaLabsHistoric<StUsdsChartInfo, StUsdsChartInfoParsed>({
+    path: '/overall/historic/',
+    limit,
+    queryKey: 'stusds-chart',
+    transform: transformBaLabsChartData
   });
-
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
 }

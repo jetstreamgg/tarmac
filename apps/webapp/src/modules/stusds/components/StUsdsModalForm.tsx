@@ -76,6 +76,7 @@ export function StUsdsModalForm({
     insufficient,
     blocked,
     amountReady,
+    debouncePending,
     rate,
     position,
     engineParams,
@@ -96,7 +97,13 @@ export function StUsdsModalForm({
   const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
-  const feeCell = useModalFeeCell({ calls, shouldUseBatch: isBatch, enabled: amountReady });
+  // Kept on while a new amount settles, showing the settled one's fee: turning it off
+  // blanks the row (and the bundle toggle) on every keystroke.
+  const feeCell = useModalFeeCell({
+    calls,
+    shouldUseBatch: isBatch,
+    enabled: amountReady || debouncePending
+  });
 
   const disabled =
     !amountReady ||
@@ -150,6 +157,8 @@ export function StUsdsModalForm({
   // percent while the user sits on review (the checkbox lives on the entry
   // screen) — this line explains the disabled confirm in place.
   const impactLapsed = needsImpactAcknowledgement && !impactAccepted;
+  // Resolved outside the memo so it keys on the string, not the i18n object.
+  const withdrawalLabel = i18n._(withdrawalWording('stusds', flow));
   const transactionContent = useMemo(
     () => (
       <div className="flex flex-col gap-8 sm:gap-12" data-testid={`stusds-modal-${flow}-review`}>
@@ -164,7 +173,7 @@ export function StUsdsModalForm({
                 rate: rateDisplay,
                 route: isCurveRoute ? t`Curve` : t`Native`,
                 routeDetail: isCurveRoute ? t`Curve pool` : t`stUSDS module`,
-                withdrawal: i18n._(withdrawalWording('stusds', flow)),
+                withdrawal: withdrawalLabel,
                 network: networkName,
                 networkFee: feeCell.fee?.formatted ?? NO_VALUE
               }),
@@ -198,7 +207,8 @@ export function StUsdsModalForm({
       networkName,
       feeCell,
       impactLapsed,
-      impactPercent
+      impactPercent,
+      withdrawalLabel
     ]
   );
 

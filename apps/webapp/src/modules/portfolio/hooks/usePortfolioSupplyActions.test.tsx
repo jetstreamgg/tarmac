@@ -18,7 +18,7 @@ const h = vi.hoisted(() => ({
   chains: [{ id: 1 }, { id: 8453 }, { id: 10 }] as { id: number }[],
   // Geo modules disabled for the region; empty = unrestricted (the default).
   geoDisabledModules: new Set<string>(),
-  isSafeWallet: false,
+  canSwitchChain: true,
   switchChainAsync: vi.fn(),
   setIsAutoSwitching: vi.fn(),
   setAutoSwitchIntent: vi.fn()
@@ -43,21 +43,20 @@ vi.mock('@/modules/geo-config/hooks/useGeoConfig', () => ({
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     setIsAutoSwitching: h.setIsAutoSwitching,
-    setAutoSwitchIntent: h.setAutoSwitchIntent
+    setAutoSwitchIntent: h.setAutoSwitchIntent,
+    canSwitchChain: h.canSwitchChain
   })
 }));
 
 vi.mock('@/hooks', () => ({
   TOKENS: { cle: { symbol: 'CLE' } },
-  useIsSafeWallet: () => h.isSafeWallet,
   VAULTS: [
     {
       provider: 'morpho',
       name: 'USDC Risk Capital',
       vaultAddress: { 1: '0xABC' },
       assetToken: { symbol: 'USDC' }
-    },
-    { provider: 'sky', name: 'Tether Savings', vaultAddress: { 1: '0xDEF' }, assetToken: { symbol: 'USDT' } }
+    }
   ],
   getPendleMarketByAddress: (address: string) =>
     address.toLowerCase() === h.pendleMarket.marketAddress.toLowerCase() ? h.pendleMarket : undefined,
@@ -148,7 +147,7 @@ describe('usePortfolioSupplyActions', () => {
     h.chainId = 1;
     h.chains = [{ id: 1 }, { id: 8453 }, { id: 10 }];
     h.geoDisabledModules.clear();
-    h.isSafeWallet = false;
+    h.canSwitchChain = true;
     h.pendleMarket.expiry = 4102444800;
   });
   afterEach(() => cleanup());
@@ -239,9 +238,9 @@ describe('usePortfolioSupplyActions', () => {
     });
   });
 
-  it('returns undefined for a Spark (non-Morpho) vault position (no in-place modal)', () => {
+  it('returns undefined for a vault position outside the Morpho registry (no in-place modal)', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
-    expect(result.current(position('vault', { id: 'vault-sky-0xdef' }))).toBeUndefined();
+    expect(result.current(position('vault', { id: 'vault-other-0xdef' }))).toBeUndefined();
   });
 
   it('resolves a rewards position to an opener that launches the rewards modal with its config', () => {
@@ -350,7 +349,7 @@ describe('usePortfolioSupplyActions', () => {
     // A Safe can't switch networks from the dapp: resolving to the switching
     // handler would leave a button that silently no-ops forever (APP-486).
     h.chainId = 8453;
-    h.isSafeWallet = true;
+    h.canSwitchChain = false;
     const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
 
     expect(result.current(position('savings', { chainId: 1 }))).toBeUndefined();
@@ -359,7 +358,7 @@ describe('usePortfolioSupplyActions', () => {
   });
 
   it('still resolves an in-place opener for a Safe when the position is on the connected chain', () => {
-    h.isSafeWallet = true;
+    h.canSwitchChain = false;
     const { result } = renderHook(() => usePortfolioSupplyActions(), { wrapper: AnalyticsFlowProvider });
     const handler = result.current(position('savings'));
 

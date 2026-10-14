@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { baLabsDataSource } from '../constants';
 
 import { formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
+import { toReadHook } from './toReadHook';
+import { fetchJson } from './fetchJson';
 
 type OverallSkyApiResponse = {
   sky_savings_rate_apy?: string;
@@ -82,14 +84,7 @@ function transformOverallSkyData(data: OverallSkyApiResponse[]): OverallSkyData 
 
 async function fetchOverallSkyData(url: URL): Promise<OverallSkyData> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const data: OverallSkyApiResponse[] = await response.json();
+    const data = await fetchJson<OverallSkyApiResponse[]>(url, { label: 'Overall Sky data' });
     return transformOverallSkyData(data);
   } catch (error) {
     console.error('Error fetching Overall Sky data:', error);
@@ -105,29 +100,11 @@ export function useOverallSkyData(): ReadHook & { data?: OverallSkyData } {
     url = formatBaLabsUrl(new URL(endpoint));
   }
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     enabled: Boolean(baseUrl),
     queryKey: ['overall-sky-data', url],
     queryFn: () => (url ? fetchOverallSkyData(url) : Promise.reject('No URL available'))
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [baLabsDataSource(url)]);
 }

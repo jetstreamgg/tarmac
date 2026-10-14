@@ -44,6 +44,8 @@ vi.mock('../hooks/useRewardsTransactionForm', async importOriginal => {
       decimals: 18,
       value: '25',
       amount: h.amount,
+      debouncedAmount: h.amount,
+      debouncePending: false,
       available: parseUnits('100', 18),
       position: parseUnits('50', 18),
       isZero: h.amount === 0n,

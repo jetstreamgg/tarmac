@@ -2,7 +2,7 @@ import { usdsSkyRewardAbi } from '../generated';
 import { useBlockNumber, useReadContract } from 'wagmi';
 import { ZERO_ADDRESS } from '../constants';
 import { ReadHook } from '../hooks';
-import { useEffect } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 type UseRewardsRewardsBalanceResponse = ReadHook & {
@@ -32,9 +32,13 @@ export function useRewardsRewardsBalance({
     }
   });
 
-  // Since the `watch` property of wagmi hooks is deprecated, we need to manually invalidate the query
-  useEffect(() => {
+  // Since the `watch` property of wagmi hooks is deprecated, we need to manually invalidate the query.
+  // An effect event: the key is rebuilt every render, so listing it would invalidate on every render.
+  const invalidate = useEffectEvent(() => {
     queryClient.invalidateQueries({ queryKey });
+  });
+  useEffect(() => {
+    invalidate();
   }, [blockNumber]);
 
   return {

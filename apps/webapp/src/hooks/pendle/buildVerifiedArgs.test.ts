@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildVerifiedArgs, buildMaturedRedeemVerifiedArgs } from './buildVerifiedArgs';
+import { buildVerifiedArgs } from './buildVerifiedArgs';
 import { PENDLE_EMPTY_LIMIT, PENDLE_EMPTY_SWAP_DATA, PendleConvertSide } from './constants';
 import type { PendleConvertQuote } from './pendle';
 
@@ -1239,46 +1239,5 @@ describe('buildVerifiedArgs — apiMinOut slippage floor', () => {
       slippage: 0.002
     };
     expect(() => buildVerifiedArgs(exitQuote, EXIT_KNOWN_LOCAL)).toThrow(/below the local slippage floor/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// buildMaturedRedeemVerifiedArgs (quote-less)
-// ---------------------------------------------------------------------------
-
-describe('buildMaturedRedeemVerifiedArgs', () => {
-  const ctx = {
-    receiver: RECEIVER,
-    market: MARKET,
-    ptToken: PT_USDG,
-    underlyingToken: USDG,
-    amountIn: 100_000_000n
-  };
-
-  it('produces an exitPostExpToToken VerifiedCall', () => {
-    const verified = buildMaturedRedeemVerifiedArgs(ctx);
-    expect(verified.functionName).toBe('exitPostExpToToken');
-    expect(verified.side).toBe(PendleConvertSide.WITHDRAW);
-  });
-
-  it('sets minTokenOut to 0 (matured redeem is deterministic 1:1)', () => {
-    const verified = buildMaturedRedeemVerifiedArgs(ctx);
-    expect(verified.args[4].minTokenOut).toBe(0n);
-  });
-
-  it('forces netLpIn to 0', () => {
-    const verified = buildMaturedRedeemVerifiedArgs(ctx);
-    expect(verified.args[3]).toBe(0n);
-  });
-
-  it('forces tokenRedeemSy === underlyingToken (no-aggregator invariant)', () => {
-    const verified = buildMaturedRedeemVerifiedArgs(ctx);
-    expect(verified.args[4].tokenRedeemSy).toBe(USDG);
-    expect(verified.args[4].pendleSwap).toBe(ZERO);
-    expect(verified.args[4].swapData).toEqual(PENDLE_EMPTY_SWAP_DATA);
-  });
-
-  it('throws when amountIn is zero', () => {
-    expect(() => buildMaturedRedeemVerifiedArgs({ ...ctx, amountIn: 0n })).toThrow(/amountIn is zero/);
   });
 });

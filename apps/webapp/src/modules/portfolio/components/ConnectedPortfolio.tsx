@@ -17,6 +17,9 @@ import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { useWalletEarnings } from '../hooks/useWalletEarnings';
 import { filterWalletEarnings } from '../earnings/filterWalletEarnings';
+import type { BreakdownProduct } from '../earnings/earningsBreakdown';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
+import { isMarketMatured } from '@/hooks/pendle/helpers';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
@@ -54,6 +57,22 @@ export function ConnectedPortfolio() {
     const hidden = new Set(rows.filter(row => !visible.has(row.id)).map(row => row.id));
     return filterWalletEarnings(walletEarnings, hidden);
   }, [walletEarnings, rows, visibleRows]);
+  // Products that name the earnings popup rows (APP-589). A matured Pendle
+  // market leaves the marketplace but its closed position keeps its figure in
+  // the combined total, so it gets a row too — otherwise the rows wouldn't add
+  // up to the total above them.
+  const breakdownProducts = useMemo<BreakdownProduct[]>(
+    () => [
+      ...visibleRows,
+      ...PENDLE_MARKETS.filter(m => isMarketMatured(m.expiry)).map(m => ({
+        id: `fixed-${m.marketAddress.toLowerCase()}`,
+        name: m.name,
+        tokenSymbol: m.underlyingSymbol,
+        kind: 'fixed' as const
+      }))
+    ],
+    [visibleRows]
+  );
   const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
   const savingsAvailable = isGeoLoading || isModuleEnabled('savings');
   // The optimistic default above is safe for the settle path (the callout is
@@ -224,6 +243,7 @@ export function ConnectedPortfolio() {
           idleLoading={balancesLoading}
           savingsRate={savingsAvailable ? savingsRate : undefined}
           earnings={earnings}
+          products={breakdownProducts}
           tab={tab}
           onTabChange={setUserTab}
         />

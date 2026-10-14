@@ -1,6 +1,6 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { indexerDataSource } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
@@ -59,6 +59,15 @@ async function fetchDelegates(
   return parsedDelegates.map(parseDelegatesFn);
 }
 
+const ORDER_BY_FIELDS = [
+  'blockTimestamp',
+  'blockNumber',
+  'totalDelegated',
+  'ownerAddress',
+  'id',
+  'delegators'
+];
+
 export function useDelegates({
   indexerUrl,
   chainId,
@@ -85,15 +94,7 @@ export function useDelegates({
 }): ReadHook & { data?: DelegateInfo[] } {
   const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(chainId) || '';
 
-  const orderByFields = [
-    'blockTimestamp',
-    'blockNumber',
-    'totalDelegated',
-    'ownerAddress',
-    'id',
-    'delegators'
-  ];
-  const randomOrderBy = useMemo(() => (random ? getRandomItem(orderByFields) : undefined), [random]);
+  const randomOrderBy = useMemo(() => (random ? getRandomItem(ORDER_BY_FIELDS) : undefined), [random]);
   const randomOrderDirection = useMemo(() => (random ? getRandomItem(['asc', 'desc']) : undefined), [random]);
 
   const {
@@ -142,13 +143,6 @@ export function useDelegates({
     data,
     error,
     mutate,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
+    dataSources: [indexerDataSource(urlIndexer)]
   };
 }

@@ -55,9 +55,12 @@ mixing them up is the highest-impact bug class this module has had.
 ### Refresh semantics
 
 The four transaction success handlers (`OpenPositionTakeover`, `ManagePositionTakeover`,
-`StakeClaimModal`, `LiquidationPostMortemModal`) invalidate the same key set:
-`['stake-user-positions']`, `['stake-history']`, `['readContract']`, `['readContracts']`,
-`['simulateDrip']`. The last two were added by this audit — wagmi's batched `useReadContracts`
+`StakeClaimModal`, `LiquidationPostMortemModal`) invalidate the same on-chain key set:
+`['stake-urn-vaults']` (again 5s and 15s later, for RPC lag), `['readContract']`, `['readContracts']`,
+`['simulateDrip']`. The indexer-backed `['stake-user-positions']` and `['stake-history']` are
+refreshed by the transaction context instead: on every confirmed transaction it waits (up to 60s)
+for `_meta.progressBlock` on every indexer the tables read to reach the receipt's block, then refetches every query
+tagged `INDEXER_HISTORY_META` (`refreshHistoryAfterTx`). The last two on-chain keys were added by this audit — wagmi's batched `useReadContracts`
 keys under `['readContracts', …]` (plural), a **different top-level key** from the singular
 `['readContract', …]`, so claimable rewards, wallet balances, and the live total-debt aggregate
 were previously never refreshed by any stake transaction; `['simulateDrip']` feeds the live `rate`
@@ -67,12 +70,12 @@ Price/analytics feeds (`['prices']`, `['stake-historic-data']`, `['reward-charts
 `['stakeRewardContracts']`) are deliberately not tied to tx success — they are market data, not
 urn state.
 
-Key inventory (✅ = invalidated by all four success handlers):
+Key inventory (✅ = invalidated by all four success handlers; ✅ (transaction context) = refetched by `refreshHistoryAfterTx`):
 
 | Key                                                                                         | Hook                                                                      | Post-tx                    |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------- |
-| `['stake-user-positions', …]`                                                               | `useStakeUserPositions`                                                   | ✅                         |
-| `['stake-history', …]`                                                                      | `useStakeHistory`                                                         | ✅                         |
+| `['stake-user-positions', …]`                                                               | `useStakeUserPositions`                                                   | ✅ (transaction context)   |
+| `['stake-history', …]`                                                                      | `useStakeHistory`                                                         | ✅ (transaction context)   |
 | `['readContract', …]`                                                                       | every singular `useReadContract` (vault, urn selections, allowances)      | ✅                         |
 | `['readContracts', …]`                                                                      | `useRewardContractsToClaim`, `useTokenBalance`, `useRewardContractTokens` | ✅ (this audit)            |
 | `['simulateDrip', …]`                                                                       | `useCollateralData`'s drip simulation                                     | ✅ (this audit)            |
@@ -96,14 +99,14 @@ Key inventory (✅ = invalidated by all four success handlers):
 
 ## Summary card (`StakeSummaryCard`)
 
-| Data point           | States                                   | Source                                                                                    | Price                                             | Transform / format                                                                                                                                               | Verdict                                                                           |
-| -------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Total Staked hero    | —                                        | VAT `Σ ink` (`useStakeUrnVaults`)                                                         | —                                                 | bigint sum, `formatStakeAmount` (zero-case aligned by this audit)                                                                                                | Verified (live)                                                                   |
-| ~USD subtext         | price loading → skeleton; missing → `–`  | same                                                                                      | MKT (SKY)                                         | `Number(formatUnits) × price`, `formatUsd`                                                                                                                       | Verified (live)                                                                   |
-| Claimable rewards    | loading → skeleton                       | ENG `earned` across **all** urns (`ownerUrns` enumeration)                                | MKT                                               | same reduce as table cell                                                                                                                                        | Verified (live) · error → `–` (this audit) · AUD-16                               |
-| Total rewards earned | loading → skeleton (claimable ‖ history) | SG `StakingGetReward` events + live claimables                                            | MKT (today's price for historical events — AUD-8) | claimed events mapped through a hardcoded 3-farm symbol map (AUD-6), + claimable USD                                                                             | AUD-6, AUD-8                                                                      |
-| Total borrowed       | skeleton with the positions list         | VAT `Σ usdsDebt` over the `useStakeUrnVaults` rows                                        | PAR                                               | `formatUsd`                                                                                                                                                      | Verified (live) · AUD-5 closed                                                    |
-| Net APY              | `–` when rate missing or nothing staked  | BAA `apr` (highest live farm) + BAA `borrow_rate` (latest point) + the two USD legs above | MKT + PAR legs                                    | `(rewardsRate × stakedUsd − borrowRate × borrowedUsd) / stakedUsd` — borrow drag weighted by leverage, honestly negative; `+`-prefixed `formatDecimalPercentage` | Verified (pinned) · AUD-18 (rewards leg = highest system-wide farm APR by design) |
+| Data point           | States                                           | Source                                                                 | Price                                             | Transform / format                                                                   | Verdict                                             |
+| -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| Total Staked hero    | —                                                | VAT `Σ ink` (`useStakeUrnVaults`)                                      | —                                                 | bigint sum, `formatStakeAmount` (zero-case aligned by this audit)                    | Verified (live)                                     |
+| ~USD subtext         | price loading → skeleton; missing → `–`          | same                                                                   | MKT (SKY)                                         | `Number(formatUnits) × price`, `formatUsd`                                           | Verified (live)                                     |
+| Claimable rewards    | loading → skeleton                               | ENG `earned` across **all** urns (`ownerUrns` enumeration)             | MKT                                               | same reduce as table cell                                                            | Verified (live) · error → `–` (this audit) · AUD-16 |
+| Total rewards earned | loading → skeleton (claimable ‖ history)         | SG `StakingGetReward` events + live claimables                         | MKT (today's price for historical events — AUD-8) | claimed events mapped through a hardcoded 3-farm symbol map (AUD-6), + claimable USD | AUD-6, AUD-8                                        |
+| Total borrowed       | skeleton with the positions list                 | VAT `Σ usdsDebt` over the `useStakeUrnVaults` rows                     | —                                                 | `formatStakeAmount` (USDS)                                                           | Verified (live) · AUD-5 closed                      |
+| Est. earnings (1Y)   | loading → skeleton; rates or price missing → `–` | ENG `urnFarms` per urn + BAA `apr` (each urn's own farm, latest point) | MKT (SKY)                                         | `Σ ink × farmRate × skyPrice`; urns with no farm add 0                               | New (APP-600)                                       |
 
 ## Details strip (`StakeDetailsStrip`, Statistics tab)
 
@@ -145,7 +148,7 @@ Key inventory (✅ = invalidated by all four success handlers):
 | ~USD sub                               | blank while price loads                                    | same                                           | MKT                         | `formatUsd`                                                                           | Verified (live)          |
 | Rewards rate                           | `–` when missing                                           | BAA `apr` of the urn's farm                    | —                           | `formatDecimalPercentage`                                                             | Verified                 |
 | Reward token                           | `–`                                                        | ENG `urnFarms` → `rewardsToken()` → `symbol()` | —                           | string + icon                                                                         | Verified                 |
-| Delegating to                          | `–` when none                                              | ENG `urnVoteDelegates`                         | —                           | shortened + vote-portal link                                                          | Verified (live)          |
+| Delegating to                          | `–` when none                                              | ENG `urnVoteDelegates`                         | —                           | name, else shortened (shadow) + vote-portal link                                      | Verified (live)          |
 | Claimable rewards                      | skeleton                                                   | ENG claimables (urn-scoped)                    | MKT                         | `formatUsd` + icon per distinct symbol                                                | Verified (live) · AUD-16 |
 | Est. annual rewards                    | inactive → flat `$0.00`; `–` when inputs missing           | `skyLocked × rate` (1e9-scaled bigint math)    | MKT                         | `formatUsd`, `+`-prefixed; conversion truncates below 1e-6 SKY (harmless at 2dp USD)  | Verified                 |
 | Rewards earned                         | skeleton (history ‖ claimables — gate added by this audit) | SG claim events + claimables                   | MKT (today's price — AUD-8) | `formatUsd`, `+`-prefixed                                                             | AUD-6, AUD-8             |
@@ -286,7 +289,7 @@ transaction was sent through the mock wallet. 28/28 checks passed:
   unit, warning banner "dropped to 0%" with liquidation price $0.0101, risk meter fully lit,
   no liquidated badge (barks empty). Debt-free rows unlit with `0.00`.
 - **Summary card**: total staked 4,108,092; ~$216,660.75 = exactly `4,108,091.6 × $0.05274`(the MKT price at run time — proves the MKT attribution); total borrowed $30,022.49 live;
-claimable $123.39 =`123.45 × $0.99953` (MKT USDS — not the $1 peg, correct per source);
+  claimable $123.39 =`123.45 × $0.99953` (MKT USDS — not the $1 peg, correct per source);
   Net APY −1.14% reproduced the formula exactly with the run's inputs.
 - **Details modal**: Protocol SKY Price $0.0025 (OSM, unmoved by the 21× market divergence),
   liquidation price $0.0101, risk pill "liquidation" (the OSM guard, since market price sat far

@@ -22,6 +22,8 @@ export type PortfolioDecision = {
 
 const KEY_PREFIX = 'portfolioDecision:v1:';
 // `$` can't appear in an address, so the pointer key never collides.
+// Mirrored in vite.preloadRouteChunks.ts (with the TTL below), which reads it
+// from index.html to preload the landing page for "/".
 const LAST_KEY = 'portfolioDecision:v1:$last';
 
 /**

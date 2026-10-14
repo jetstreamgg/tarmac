@@ -3,8 +3,7 @@ import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCookieConsent } from '@/modules/analytics/context/CookieConsentContext';
 
-const BANNER_BOTTOM_MARGIN = 16;
-const BANNER_TOAST_GAP = 12;
+import { BANNER_BOTTOM_MARGIN, BANNER_TOAST_GAP } from '@/components/ui/sonner';
 
 // Close All button positioned above the toast stack
 // Only shows when there are active toasts

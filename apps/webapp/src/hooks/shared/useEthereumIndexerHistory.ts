@@ -6,7 +6,6 @@ import { upgradeHistoryFragments, mapUpgradeHistoryResponse } from '../upgrade/u
 import { stakeHistoryFragments, mapStakeHistoryResponse } from '../stake/useStakeHistory';
 import { rewardsHistoryFragments, mapRewardsHistoryResponse } from '../rewards/useAllRewardsUserHistory';
 import { stusdsHistoryFragments, mapStusdsHistoryResponse } from '../stusds/useStUsdsHistory';
-import { susdtHistoryFragments, mapSusdtHistoryResponse } from '../vaults/spark/useSusdtVaultHistory';
 import { psmTradeFragment, mapPsmTradeRows } from '../psm/usePsmTradeHistory';
 import { useAvailableTokenRewardContracts } from '../rewards/useAvailableTokenRewardContracts';
 import { RewardContract } from '../rewards/rewards';
@@ -55,7 +54,6 @@ async function fetchEthereumIndexerHistoryPage(
       ${stakeHistoryFragments({ owner, chainId, beforeTimestamp })}
       ${rewardsHistoryFragments({ user: owner, rewardContracts, chainId, beforeTimestamp })}
       ${stusdsHistoryFragments({ owner, chainId, beforeTimestamp })}
-      ${susdtHistoryFragments({ owner, chainId, beforeTimestamp })}
       ${psmTradeFragment({ alias: 'swaps', wallet: owner, chainId, beforeTimestamp })}
     }
   `;
@@ -68,7 +66,6 @@ async function fetchEthereumIndexerHistoryPage(
     ...mapStakeHistoryResponse(response, chainId),
     ...(mapRewardsHistoryResponse(response, chainId) || []),
     ...mapStusdsHistoryResponse(response, chainId),
-    ...mapSusdtHistoryResponse(response, chainId),
     // The mainnet PSM (USDC ⇄ USDS conversions, APP-558) — indexed as the
     // same `Swap` entity the L2 PSM3 trades come from.
     ...mapPsmTradeRows(response.swaps ?? [], chainId, tokenAddressMap)
@@ -80,7 +77,7 @@ async function fetchEthereumIndexerHistoryPage(
 
 /**
  * Every mainnet history entity family — savings, upgrade, stake, rewards,
- * stUSDS (incl. Curve), the sUSDT vault and the PSM conversions — fetched as ONE indexer document
+ * stUSDS (incl. Curve) and the PSM conversions — fetched as ONE indexer document
  * per page instead of the historical one-request-per-family fan-out. Pages are
  * keyset-paginated on blockTimestamp (see historyQueryHelpers), so `data` is
  * complete and correctly interleaved down to `nextCursor`.

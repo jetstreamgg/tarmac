@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, type AnyRouter } from '@tanstack/react-router';
 import { createAppRouter } from '@/pages/router';
 import { Intent } from '@/lib/enums';
-import { ROUTES } from '@/lib/routes';
+import { pathToIntent, ROUTES } from '@/lib/routes';
 import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 import { MORPHO_VAULTS } from '@/hooks/morpho/constants';
 import { QueryClient } from '@tanstack/react-query';
@@ -374,5 +374,38 @@ describe('unmatched paths', () => {
   it('resolves an unknown top-level path at the root', async () => {
     const router = await routerAt('/bogus');
     expect(matchedRouteIds(router).some(id => id.startsWith('/_shell'))).toBe(false);
+  });
+});
+
+// `useAppOrchestration` derives its intent from the pathname (`pathToIntent`)
+// but gates its search-param work on the committed route's `staticData.intent`
+// (APP-562): the two must name the same intent on every route, or that gate
+// never opens and the page silently skips search validation. Walk the real
+// route tree so a new route cannot break the correspondence unnoticed.
+describe("pathToIntent agrees with every route's staticData intent", () => {
+  it('on every route in the tree', async () => {
+    const router = await routerAt(ROUTES.PORTFOLIO);
+    type RouteNode = {
+      id: string;
+      fullPath: string;
+      options: { staticData?: { intent?: Intent } };
+      parentRoute?: RouteNode;
+    };
+    const deepestIntent = (route: RouteNode | undefined): Intent | undefined => {
+      for (let node = route; node; node = node.parentRoute) {
+        const intent = node.options.staticData?.intent;
+        if (intent !== undefined) return intent;
+      }
+      return undefined;
+    };
+    const routes = Object.values(router.routesById as Record<string, RouteNode>).filter(
+      route => route.id !== '__root__'
+    );
+    expect(routes.length).toBeGreaterThan(10);
+    for (const route of routes) {
+      expect
+        .soft(pathToIntent(route.fullPath) ?? Intent.BALANCES_INTENT, `${route.id} (${route.fullPath})`)
+        .toBe(deepestIntent(route) ?? Intent.BALANCES_INTENT);
+    }
   });
 });

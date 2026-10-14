@@ -1,4 +1,6 @@
-import { render } from '@testing-library/react';
+import { Intent } from '@/lib/enums';
+import { act, render } from '@testing-library/react';
+import { useSyncExternalStore } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chainId as chainIdMap } from '@/utils/chainId';
 
@@ -25,6 +27,9 @@ const CHAINS = [
 // Mutable per-test state the mocked hooks read through. vi.mock is hoisted, so
 // module-level lets are the way to vary a mocked hook between renders.
 let mockPathname = '/earn';
+// The route the outlet is showing. Undefined = in step with the pathname (the
+// settled state); set it to stage a transition mid-flight.
+let mockCommittedPathname: string | undefined;
 let mockConfigChainId = TENDERLY;
 let mockWalletChainId: number | undefined = TENDERLY;
 let mockRewardContracts: { contractAddress: string }[] | undefined = [];
@@ -34,6 +39,7 @@ let mockIsModalOpen = false;
 const mockNavigate = vi.fn();
 const mockSwitchChain = vi.fn();
 let switchMutation: { onSuccess?: () => void; onError?: () => void } = {};
+let mockIsSwitchPending = false;
 
 // A stand-in for the connector's event emitter, which is how a wallet-side
 // chain change reaches the app.
@@ -51,8 +57,12 @@ function walletEmitsChainChange(chainId: number) {
 
 // A real URLSearchParams. `network=` is no longer app state, but an incoming
 // one is still honoured once and then stripped, so the tests need a store that
-// can actually be read and written.
+// can actually be read and written. This is the COMMITTED match's search (what
+// `useAppSearchParams` hands out); the location's search is derived from it
+// unless a test stages the two apart.
 let search = new URLSearchParams();
+// The location's parsed search. Undefined = in step with `search` (settled).
+let mockLocationSearch: Record<string, string> | undefined;
 const setSearchParams = vi.fn((updater: (p: URLSearchParams) => URLSearchParams) => {
   search = new URLSearchParams(updater(new URLSearchParams(search)));
 });
@@ -60,21 +70,44 @@ const setSearchParams = vi.fn((updater: (p: URLSearchParams) => URLSearchParams)
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
   useRouterState: ({ select }: { select: (s: unknown) => unknown }) =>
-    select({ location: { pathname: mockPathname } })
+    select({
+      location: { pathname: mockPathname, search: mockLocationSearch ?? Object.fromEntries(search) }
+    })
 }));
-vi.mock('@/lib/navigation', () => ({
-  keepSearch: (prev: Record<string, string>) => prev,
-  useAppSearchParams: () => [search, setSearchParams],
-  useRouteEntityParams: () => ({ rewardContract: undefined })
-}));
+vi.mock('@/lib/navigation', async () => {
+  const { pathToIntent } = await import('@/lib/routes');
+  const { Intent } = await import('@/lib/enums');
+  return {
+    keepSearch: (prev: Record<string, string>) => prev,
+    useAppSearchParams: () => [search, setSearchParams],
+    useRouteEntityParams: () => ({ rewardContract: undefined }),
+    useRouteIntent: () => pathToIntent(mockCommittedPathname ?? mockPathname) ?? Intent.BALANCES_INTENT
+  };
+});
 vi.mock('wagmi', () => ({
   useChainId: () => mockConfigChainId,
   useChains: () => CHAINS,
   useConnection: () => ({ connector: { emitter }, chainId: mockWalletChainId, status: mockConnectionStatus }),
-  useSwitchChain: ({ mutation }: { mutation: typeof switchMutation }) => {
-    switchMutation = mutation;
-    return { switchChain: mockSwitchChain };
-  }
+  // The settle callbacks ride on each call, and only the latest request's
+  // fire — the same as TanStack's per-call mutate callbacks.
+  // A request stays pending until a test settles it through those callbacks.
+  useSwitchChain: () => ({
+    isPending: mockIsSwitchPending,
+    switchChain: (vars: { chainId: number }, callbacks?: typeof switchMutation) => {
+      mockIsSwitchPending = true;
+      switchMutation = {
+        onSuccess: () => {
+          mockIsSwitchPending = false;
+          callbacks?.onSuccess?.();
+        },
+        onError: () => {
+          mockIsSwitchPending = false;
+          callbacks?.onError?.();
+        }
+      };
+      mockSwitchChain(vars);
+    }
+  })
 }));
 vi.mock('@/hooks', () => ({
   useAvailableTokenRewardContracts: () => mockRewardContracts,
@@ -87,8 +120,9 @@ vi.mock('@/hooks', () => ({
 }));
 
 // Everything below is orchestration the chain rules don't touch.
+const mockValidateSearchParams = vi.fn<(p: URLSearchParams, intent: unknown) => URLSearchParams>(p => p);
 vi.mock('@/modules/utils/validateSearchParams', () => ({
-  validateSearchParams: (p: URLSearchParams) => p
+  validateSearchParams: (p: URLSearchParams, intent: unknown) => mockValidateSearchParams(p, intent)
 }));
 vi.mock('@/modules/ui/context/ConnectedContext', () => ({
   useConnectedContext: () => ({ isAuthorized: true })
@@ -96,9 +130,57 @@ vi.mock('@/modules/ui/context/ConnectedContext', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ closeOnNavigation: vi.fn(), isModalOpen: mockIsModalOpen })
 }));
-vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ setIsSwitchingNetwork: vi.fn(), setIsAutoSwitching: vi.fn() })
-}));
+// The pending switch lives on NetworkSwitchContext, which the hook both writes
+// and reads back (through `useTargetChainId`). A small external store stands in
+// for the provider's state so a write re-renders the hook as the real one does.
+type PendingSwitch = { from: number; to: number } | undefined;
+let pendingSwitchState: PendingSwitch;
+const pendingSwitchListeners = new Set<() => void>();
+const pendingSwitchStore = {
+  subscribe: (fn: () => void) => {
+    pendingSwitchListeners.add(fn);
+    return () => pendingSwitchListeners.delete(fn);
+  },
+  get: () => pendingSwitchState,
+  set: (next: PendingSwitch) => {
+    pendingSwitchState = next;
+    pendingSwitchListeners.forEach(fn => fn());
+  }
+};
+const mockSetIsSwitchingNetwork = vi.fn();
+const mockSetIsAutoSwitching = vi.fn();
+function useMockPendingSwitch() {
+  const pending = useSyncExternalStore(pendingSwitchStore.subscribe, pendingSwitchStore.get);
+  // The provider's own rule: any wallet move off `from` (or a disconnect) ends
+  // the wait. It adjusts during render; reading through the guard is enough here.
+  return pending !== undefined && mockWalletChainId !== pending.from ? undefined : pending;
+}
+vi.mock('@/modules/ui/context/NetworkSwitchContext', async () => {
+  const { getRouteChainAction } = await import('@/lib/widget-network-map');
+  const canWaitOnPendingSwitch = (intent: Intent, pending: { to: number }, chains: { id: number }[]) =>
+    getRouteChainAction(intent, pending.to, { chains }).kind === 'render';
+  return {
+    canWaitOnPendingSwitch,
+    useNetworkSwitch: () => ({
+      setIsSwitchingNetwork: mockSetIsSwitchingNetwork,
+      setIsAutoSwitching: mockSetIsAutoSwitching,
+      pendingSwitch: useMockPendingSwitch(),
+      setPendingSwitch: pendingSwitchStore.set
+    }),
+    useTargetChainId: (intent: Intent) => {
+      const pending = useMockPendingSwitch();
+      // The real one reads `useAppChainId`, whose rule is inlined in the
+      // '@/hooks' mock above.
+      const appChainId =
+        mockWalletChainId !== undefined && !CHAINS.some(c => c.id === mockWalletChainId)
+          ? mockWalletChainId
+          : mockConfigChainId;
+      return pending !== undefined && canWaitOnPendingSwitch(intent, pending, CHAINS)
+        ? pending.to
+        : appChainId;
+    }
+  };
+});
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => ({ trackNetworkAutoSwitched: vi.fn() })
 }));
@@ -135,6 +217,8 @@ const redirectedHome = () =>
 
 beforeEach(() => {
   mockPathname = '/earn';
+  mockCommittedPathname = undefined;
+  mockLocationSearch = undefined;
   mockIsModalOpen = false;
   mockConfigChainId = TENDERLY;
   mockWalletChainId = TENDERLY;
@@ -143,6 +227,9 @@ beforeEach(() => {
   search = new URLSearchParams();
   listeners.clear();
   switchMutation = {};
+  mockIsSwitchPending = false;
+  pendingSwitchState = undefined;
+  pendingSwitchListeners.clear();
 });
 
 afterEach(() => {
@@ -271,6 +358,128 @@ describe('useAppOrchestration — chain resolution', () => {
     // route gives way rather than asking twice.
     expect(mockSwitchChain).not.toHaveBeenCalled();
     expect(redirectedHome()).toBe(true);
+  });
+});
+
+// A switch the wallet has not answered: a prompt still open while the user
+// clicks around, or a wallet stuck "connecting" to the chain it is on that
+// never answers at all (APP-591). The request stays the wallet's to answer;
+// the app keeps pointing at its target and never queues a second one behind it.
+describe('useAppOrchestration — a switch the wallet has not answered', () => {
+  // /earn with the wallet moved to Polygon, then Savings: one switch goes out
+  // and the wallet sits on it.
+  function parkWithUnansweredSwitch() {
+    const view = mount();
+    walletEmitsChainChange(POLYGON);
+    view.refresh();
+    mockPathname = '/earn/savings';
+    view.refresh();
+    expect(mockSwitchChain).toHaveBeenCalledTimes(1);
+    expect(pendingSwitchState).toEqual({ from: POLYGON, to: TENDERLY });
+    mockSwitchChain.mockClear();
+    mockNavigate.mockClear();
+    return view;
+  }
+
+  it('keeps pointing at the target on the next module, without asking again', () => {
+    const { refresh } = parkWithUnansweredSwitch();
+    mockPathname = '/earn';
+    refresh();
+
+    mockPathname = '/earn/rewards/0xabc';
+    mockRewardContracts = [{ contractAddress: '0xabc' }];
+    refresh();
+
+    // Judged against the target the request is still waiting on: the reward
+    // route stays (its page resolves on that same chain) and no second prompt
+    // queues behind the first.
+    expect(pendingSwitchState).toEqual({ from: POLYGON, to: TENDERLY });
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('falls back home when the user then refuses the waiting request', () => {
+    const { refresh } = parkWithUnansweredSwitch();
+    mockPathname = '/stake';
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+
+    // The wallet's answer to the Savings request arrives on Stake: no.
+    act(() => switchMutation.onError?.());
+    refresh();
+
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(redirectedHome()).toBe(true);
+  });
+
+  it('settles on the target when the wallet finally moves there', () => {
+    const { refresh } = parkWithUnansweredSwitch();
+    mockPathname = '/stake';
+    refresh();
+
+    walletEmitsChainChange(TENDERLY);
+    refresh();
+
+    // (The provider ends the wait on the move; NetworkSwitchContext.test.)
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(redirectedHome()).toBe(false);
+  });
+
+  // Only a link's `network=` switch can target a chain a later module can't
+  // run on. Its wait ends on that module, which is judged against the wallet's
+  // real chain — but the request is still out, so nothing is stacked on it.
+  it('releases a target the next module cannot use, and redirects rather than stacking a request', () => {
+    const { refresh } = mount();
+    walletEmitsChainChange(POLYGON);
+    refresh();
+    search = new URLSearchParams('network=tenderlybase');
+    refresh();
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: BASE });
+    expect(pendingSwitchState).toEqual({ from: POLYGON, to: BASE });
+    mockSwitchChain.mockClear();
+    mockNavigate.mockClear();
+
+    mockPathname = '/stake'; // mainnet only
+    refresh();
+
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(redirectedHome()).toBe(true);
+  });
+
+  it('keeps a wallet whose chain the next module runs on when the target is released', () => {
+    // The release lands a render after the navigation. The render that sees
+    // the new route must already judge it against the wallet's chain, not the
+    // released target, or it redirects a wallet that was fine where it was.
+    const { refresh } = mount();
+    search = new URLSearchParams('network=tenderlybase');
+    refresh();
+    expect(pendingSwitchState).toEqual({ from: TENDERLY, to: BASE });
+    mockSwitchChain.mockClear();
+    mockNavigate.mockClear();
+
+    mockPathname = '/stake'; // mainnet only, and the wallet is on it
+    refresh();
+
+    expect(pendingSwitchState).toBeUndefined();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('leaves the switching flags alone on a navigation', () => {
+    // In-place flows (Portfolio supply, Pendle redeem) raise `isAutoSwitching`
+    // for switches of their own; a navigation must not pull it out from under
+    // them.
+    const { refresh } = parkWithUnansweredSwitch();
+    mockSetIsAutoSwitching.mockClear();
+    mockSetIsSwitchingNetwork.mockClear();
+
+    mockPathname = '/portfolio';
+    refresh();
+
+    expect(mockSetIsAutoSwitching).not.toHaveBeenCalled();
+    expect(mockSetIsSwitchingNetwork).not.toHaveBeenCalled();
   });
 });
 
@@ -424,5 +633,101 @@ describe('useAppOrchestration — reload with a persisted L2 session', () => {
     expect(mockSwitchChain).toHaveBeenCalledTimes(1);
     expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: TENDERLY });
     expect(redirectedHome()).toBe(false);
+  });
+});
+
+// A page transition writes the location a render before the outlet swaps, and
+// `useAppSearchParams` reads the COMMITTED match (APP-562): for that render the
+// pathname (and the intent derived from it) belongs to the incoming page while
+// the search params still belong to the outgoing one.
+describe('useAppOrchestration — search params mid-transition', () => {
+  it('skips the redundant validation pass while the outlet lags the pathname', () => {
+    const { refresh } = mount();
+    expect(mockValidateSearchParams).toHaveBeenCalledWith(expect.anything(), Intent.BALANCES_INTENT);
+    mockValidateSearchParams.mockClear();
+
+    // /earn -> /stake, outlet still on /earn. The write would be correct even
+    // here (the functional setter reads the live location), but the commit
+    // re-runs it a render later, so this pass is skipped rather than doubled.
+    mockPathname = '/stake';
+    mockCommittedPathname = '/earn';
+    refresh();
+    expect(mockValidateSearchParams).not.toHaveBeenCalled();
+
+    // The commit swaps the outlet and hands the hook the new page's search:
+    // exactly one validation, under the new intent.
+    mockCommittedPathname = undefined;
+    search = new URLSearchParams();
+    refresh();
+    expect(mockValidateSearchParams).toHaveBeenCalledTimes(1);
+    expect(mockValidateSearchParams).toHaveBeenCalledWith(expect.anything(), Intent.STAKE_INTENT);
+  });
+
+  it('does not spend a network param the outgoing page carried once the wallet settles mid-transition', () => {
+    mockConnectionStatus = 'reconnecting';
+    search = new URLSearchParams('network=tenderlybase');
+    const { refresh } = mount();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+
+    // The wallet connects while /earn?network=tenderlybase is on its way out
+    // to /stake: the location has already dropped the param, only the
+    // committed (outgoing) match still carries it. Not honoured.
+    mockConnectionStatus = 'connected';
+    mockPathname = '/stake';
+    mockCommittedPathname = '/earn';
+    mockLocationSearch = {};
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+    expect(search.get('network')).toBe('tenderlybase');
+
+    // Settled on /stake with its own (empty) search: nothing to honour.
+    mockCommittedPathname = undefined;
+    mockLocationSearch = undefined;
+    search = new URLSearchParams();
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+  });
+
+  // The same skew between two routes that share an intent (one reward contract
+  // to another): an intent comparison cannot tell the transition is in flight,
+  // so the effect has to read the param off the location itself.
+  it('does not spend a network param mid-transition between same-intent routes', () => {
+    mockConnectionStatus = 'reconnecting';
+    mockPathname = '/earn/rewards/0xabc';
+    search = new URLSearchParams('network=tenderlybase');
+    const { refresh } = mount();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+
+    mockConnectionStatus = 'connected';
+    mockPathname = '/earn/rewards/0xdef';
+    mockCommittedPathname = '/earn/rewards/0xabc';
+    mockLocationSearch = {};
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+
+    mockCommittedPathname = undefined;
+    mockLocationSearch = undefined;
+    search = new URLSearchParams();
+    refresh();
+    expect(mockSwitchChain).not.toHaveBeenCalled();
+  });
+
+  // The counterpart: a link the user actually opened is honoured off the
+  // location as soon as the wallet settles, even if the outlet has not caught
+  // up yet.
+  it('honours a network param the current URL carries even while the outlet lags', () => {
+    mockConnectionStatus = 'reconnecting';
+    mockPathname = '/portfolio';
+    search = new URLSearchParams();
+    const { refresh } = mount();
+
+    // /portfolio -> /earn?network=tenderlybase (Earn runs on Base; Stake
+    // would not, and the route chain guard would refuse the switch instead).
+    mockConnectionStatus = 'connected';
+    mockPathname = '/earn';
+    mockCommittedPathname = '/portfolio';
+    mockLocationSearch = { network: 'tenderlybase' };
+    refresh();
+    expect(mockSwitchChain).toHaveBeenCalledWith({ chainId: BASE });
   });
 });

@@ -39,6 +39,7 @@ export function useModalFeeCell({ legCount, ...params }: UseModalFeeCellParamete
     // are absent on purpose: the bundling promo card is gone, so the saving is
     // computed but never rendered — listing it would churn the memo for a value
     // nothing can display.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scalar deps by design, see the hook comment
     [fee?.formatted, isLoading, state.ready, state.settled, state.failed, state.canBundle]
   );
 }

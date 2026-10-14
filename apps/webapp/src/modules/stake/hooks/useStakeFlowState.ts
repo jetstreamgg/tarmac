@@ -23,6 +23,7 @@ export type StakeFlowAction =
   | { type: 'setBorrowEnabled'; enabled: boolean }
   | { type: 'setUsdsToBorrow'; amount: bigint }
   | { type: 'setDelegateEnabled'; enabled: boolean }
+  | { type: 'resetDelegate'; enabled: boolean }
   | { type: 'selectDelegate'; delegate: `0x${string}` }
   | { type: 'selectRewardContract'; rewardContract: `0x${string}` | undefined };
 
@@ -64,6 +65,9 @@ export function stakeFlowReducer(state: StakeFlowState, action: StakeFlowAction)
         delegateEnabled: action.enabled,
         selectedDelegate: action.enabled ? state.selectedDelegate : undefined
       };
+    case 'resetDelegate':
+      // Reopen: seeds the card from the urn's live delegate on the first touch.
+      return { ...state, delegateEnabled: action.enabled, selectedDelegate: undefined };
     case 'selectDelegate':
       // Single-select, click-again-to-deselect — legacy DelegateCard parity.
       return {

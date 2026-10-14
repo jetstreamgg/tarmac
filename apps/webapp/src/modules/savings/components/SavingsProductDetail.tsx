@@ -79,14 +79,16 @@ export function SavingsProductDetail() {
     <DetailValue
       loading={overallLoading}
       value={
-        overall?.skySavingsRateTvl ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}` : undefined
+        overall?.skySavingsRateTvl
+          ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl), { maxDecimals: 0 })}`
+          : undefined
       }
     />
   );
   const users = (
     <DetailValue
       loading={overallLoading}
-      value={overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : undefined}
+      value={overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers, { maxDecimals: 0 }) : undefined}
     />
   );
 

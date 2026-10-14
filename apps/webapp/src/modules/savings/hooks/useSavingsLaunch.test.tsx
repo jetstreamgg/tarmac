@@ -69,7 +69,7 @@ vi.mock('@/hooks/savings/useReadSavingsUsds', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks/savings/useReadSavingsUsds')>();
   return {
     ...actual,
-    useReadSavingsUsdsMaxWithdraw: () => ({ data: undefined, queryKey: ['maxWithdraw'] })
+    useReadSavingsUsdsBalanceOf: () => ({ data: undefined })
   };
 });
 
@@ -312,5 +312,23 @@ describe('useSavingsLaunch — routing + steps', () => {
       { label: 'Supply', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been supplied." }
     ]);
     b.unmount();
+  });
+});
+
+describe('useSavingsLaunch — form validity gates the engines', () => {
+  beforeEach(() => {
+    h.capturedCalls = [];
+    h.allowance = 0n;
+  });
+  afterEach(() => cleanup());
+
+  it('never arms an engine while the form says the amount is not ready', () => {
+    // An over-balance amount would simulate, revert, and report to Sentry for
+    // nothing — the form already knows. `enabled: false` reaches every engine.
+    const { unmount } = renderHook(() =>
+      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, enabled: false })
+    );
+    expect(h.capturedCalls).toEqual([]);
+    unmount();
   });
 });

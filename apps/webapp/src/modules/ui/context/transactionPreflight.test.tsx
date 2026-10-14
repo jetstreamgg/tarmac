@@ -11,7 +11,12 @@ import type { PreflightHook, PreTransactionGate, TransactionPreflight } from './
 // The provider needs a live wagmi tree; these suites exercise the transaction
 // state machine, so the shared chain switch is stubbed inert.
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+  useNetworkSwitch: () => ({
+    handleSwitchChain: vi.fn(),
+    isSwitchPending: false,
+    switchVariables: undefined,
+    canSwitchChain: true
+  })
 }));
 
 vi.mock('wagmi', async io => ({
@@ -97,7 +102,7 @@ const flush = () => act(async () => {});
 const BLOCKED_MESSAGE = 'This wallet didn’t pass the enhanced verification.';
 const blocked = (): TransactionPreflight => ({ kind: 'blocked', message: BLOCKED_MESSAGE });
 
-describe('TransactionProvider enhanced-screening preflight', () => {
+describe('TransactionProvider screening preflight', () => {
   beforeEach(() => {
     i18n.activate('en');
     preflightState = { kind: 'clear' };

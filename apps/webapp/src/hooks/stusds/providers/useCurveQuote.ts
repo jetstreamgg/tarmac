@@ -254,4 +254,3 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
 }
 
 // Legacy type exports for backwards compatibility with existing code
-export type { CurveQuoteParams as LegacyCurveQuoteParams };

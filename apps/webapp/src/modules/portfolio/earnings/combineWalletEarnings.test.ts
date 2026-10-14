@@ -23,7 +23,7 @@ const merkl = protocol({
   earnedThisMonth: notAvailable('merkl-monthly-unsupported')
 });
 const pendle = protocol({
-  id: 'pendle',
+  id: 'pendle-market-0xmkt',
   totalEarned: ok({ usd: 916.82 }),
   earnedThisMonth: ok({ usd: 635.39 }),
   pendleSplit: { realizedUsd: 895.05, markToMarketUsd: 916.82 }
@@ -73,7 +73,7 @@ describe('combineWalletEarnings', () => {
 
   it('sums negative figures signed (Pendle MTM can be negative)', () => {
     const losing = protocol({
-      id: 'pendle',
+      id: 'pendle-market-0xmkt',
       totalEarned: ok({ usd: -2998.4 }),
       earnedThisMonth: ok({ usd: -12.5 })
     });

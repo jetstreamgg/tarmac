@@ -1,4 +1,5 @@
 import { formatNumber } from '@/utils';
+import { formatUsdCompact } from './formatUsdCompact';
 
 /**
  * When the protocol started operating, as claimed by the Earn hero (APP-432
@@ -28,13 +29,9 @@ export function yearsOperating(now: Date = new Date()): number {
   return Math.max(years, 0);
 }
 
-/**
- * USD total in the hero badge's style (`$11.02B`). Deliberately *not*
- * `formatUsdCompact` — the earn table comps lowercase the magnitude suffix
- * (`$4.71b`), the hero badge (APP-432 item 3) uppercases it.
- */
+/** USD total in the hero badge's style (`$11.02B`). */
 export function formatCirculation(totalUsd: number): string {
-  return `$${formatNumber(totalUsd, { compact: true, amount: totalUsd })}`;
+  return formatUsdCompact(totalUsd);
 }
 
 /**
@@ -49,7 +46,6 @@ export function formatCirculation(totalUsd: number): string {
 export function formatCirculationCoarse(totalUsd: number): string {
   return `$${formatNumber(totalUsd, {
     compact: true,
-    amount: totalUsd,
     maxDecimals: 0,
     roundingMode: 'floor'
   })}`;

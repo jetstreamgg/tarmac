@@ -55,7 +55,7 @@ export const PendleMaturedPositionCard = ({
 
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
   // opens (usePendleRedeemModal) — so isPrepared only gates on the right chain.
-  // Safe wallets can't switch from the dapp, so their off-chain Claim disables
+  // A Safe can't be switched from the dapp, so its off-chain Claim disables
   // with the hint below instead (APP-486).
   const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
     usePendleRedeemModal(market);

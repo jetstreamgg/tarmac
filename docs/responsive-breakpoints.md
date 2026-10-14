@@ -128,16 +128,9 @@ What guarantees it, so it stays true:
 - **Tooltips never open on touch** (`components/ui/tooltip.tsx`; the touch
   affordance is M4.3). `InfoTooltip`'s touch fallback renders through the
   clamped popover. Tooltip `max-w-*` values stay ≤ 320px.
-- **In-flow widget widths are content-sized.** The widest fixed value in
-  `src/widgets/` is `max-w-[160px]` (`TokenSelector` truncation cap); the rest
-  are icon/skeleton dimensions. Keep it that way — new widget UI takes its
-  width from the container, fixed values only as `max-w` truncation caps well
-  under 280px (the sheet's content width at a 320px viewport).
-
-Widget inventory note: the V2 modal forms live in `modules/*` and only reuse
-`widgets/shared` pieces; `TradeWidget`, `L2TradeWidget` and `UpgradeWidget`
-are parked pending E3 (no live consumers), `VaultWidget` and `BalancesWidget`
-still render in the legacy pane (M8 routes).
+- **In-flow widths are content-sized.** New UI takes its width from the
+  container, fixed values only as `max-w` truncation caps well under 280px (the
+  sheet's content width at a 320px viewport).
 
 ## Viewport height units (`dvh` / `svh`)
 

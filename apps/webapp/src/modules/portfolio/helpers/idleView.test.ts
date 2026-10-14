@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Intent } from '@/lib/enums';
 import type { EarnProductRow } from '@/hooks';
-import { resolveTokenColor } from '@/widgets/shared/constants';
 import { buildIdleSupplyInfo, buildIdleView, type StablecoinBalance } from './idleView';
 
 const balances: StablecoinBalance[] = [
@@ -26,7 +25,7 @@ describe('buildIdleView', () => {
     const view = buildIdleView(balances);
     expect(view.tokens[0]).toMatchObject({ symbol: 'USDS', name: 'Sky USD' });
     expect(view.tokens.find(t => t.symbol === 'USDC')?.name).toBe('USD Coin');
-    expect(view.tokens[0].color).toBe(resolveTokenColor('USDS'));
+    expect(view.tokens[0].color).toBe('#d2a679');
   });
 
   it('excludes zero/negative balances from tokens and the count', () => {

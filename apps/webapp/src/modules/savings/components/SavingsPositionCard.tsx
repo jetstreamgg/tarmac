@@ -19,7 +19,7 @@ import {
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo } from '@/components/product/RateInfo';
-import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { AccruedToDateStat } from '@/components/product/AccruedToDateStat';
 import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { useSavingsModal } from '../hooks/useSavingsModal';
@@ -112,17 +112,7 @@ export function SavingsPositionCard() {
       stats={
         <>
           <ProductStatPair grow>
-            <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <EarningsFigureValue
-                figure={accrued?.totalEarned ?? null}
-                missing={accrued?.missingFromTotal}
-                coverage={accrued?.coverage}
-                variant="plain"
-                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
-                skeletonClassName="h-4 w-14"
-                testId="savings-accrued-to-date"
-              />
-            </ProductStat>
+            <AccruedToDateStat accrued={accrued} testId="savings-accrued-to-date" />
             <ProductStat label={<Trans>Est. 1Y yield (at current rate)</Trans>}>
               {rateValue === undefined && rateLoading ? (
                 <Skeleton className="h-4 w-14" />

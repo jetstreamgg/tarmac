@@ -1,6 +1,6 @@
 import type { MorphoIdleLiquidityAllocation, MorphoMarketAllocation } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
-import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/widgets/shared/constants';
+import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/modules/ui/lib/tokenColors';
 
 /**
  * Fill for the unutilized-liquidity segment — the chart track, i.e. the

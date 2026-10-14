@@ -13,13 +13,40 @@
  */
 export type MorphoVaultSourceId = `morpho-vault-${string}`;
 
-export type EarningsSourceId = MorphoVaultSourceId | 'merkl' | 'pendle' | 'savings' | 'stusds';
+/**
+ * One earnings source per Pendle market, keyed by the lowercased market
+ * address like the Morpho vaults, so each market's row (and a legend bucket
+ * folding some of them) reads only its own figure.
+ */
+export type PendleMarketSourceId = `pendle-market-${string}`;
+
+/**
+ * One earnings source per Sky Token Rewards farm (APP-589: every live,
+ * USD-priced farm is tracked automatically), keyed by the lowercased farm
+ * address like the Morpho vaults.
+ */
+export type RewardFarmSourceId = `reward-farm-${string}`;
+
+export type EarningsSourceId =
+  MorphoVaultSourceId | PendleMarketSourceId | RewardFarmSourceId | 'merkl' | 'savings' | 'stusds';
 
 export const morphoVaultSourceId = (vaultAddress: string): MorphoVaultSourceId =>
   `morpho-vault-${vaultAddress.toLowerCase()}`;
 
 export const isMorphoVaultSourceId = (id: EarningsSourceId): id is MorphoVaultSourceId =>
   id.startsWith('morpho-vault-');
+
+export const pendleMarketSourceId = (marketAddress: string): PendleMarketSourceId =>
+  `pendle-market-${marketAddress.toLowerCase()}`;
+
+export const isPendleMarketSourceId = (id: EarningsSourceId): id is PendleMarketSourceId =>
+  id.startsWith('pendle-market-');
+
+export const rewardFarmSourceId = (farmAddress: string): RewardFarmSourceId =>
+  `reward-farm-${farmAddress.toLowerCase()}`;
+
+export const isRewardFarmSourceId = (id: EarningsSourceId): id is RewardFarmSourceId =>
+  id.startsWith('reward-farm-');
 
 export type TokenAmount = { amount: number; symbol: string };
 

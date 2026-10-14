@@ -13,9 +13,13 @@ export type VaultParams = {
   maxSafeBorrowableIntAmount?: bigint;
   maxSafeBorrowableIntAmountNoCap?: bigint;
   liquidationProximityPercentage?: number;
+  /** Price the liquidation proximity is measured against: market, else the delayed (OSM) price. */
+  riskPrice?: bigint;
   liquidationRatio?: bigint;
   riskLevel?: RiskLevel;
   minCollateralForDust?: bigint;
+  /** Largest partial repay `wipe` accepts (stored rate; the projected debt overstates it). */
+  maxPartialRepay?: bigint;
 };
 
 export type Vault = VaultParams & {

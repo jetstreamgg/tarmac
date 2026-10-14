@@ -17,9 +17,13 @@ const SHARES = parseUnits('950', 18);
 const h = vi.hoisted(() => ({
   vaultData: undefined as Record<string, unknown> | undefined,
   marketData: undefined as Record<string, unknown> | undefined,
-  marketLoading: false
+  marketLoading: false,
+  // When set, useDebounce returns this instead of the live value — simulates
+  // the settle window after an amount change.
+  debounceLagged: undefined as bigint | undefined
 }));
 
+vi.mock('@/modules/ui/hooks/useTransactionRunActive', () => ({ useTransactionRunActive: () => false }));
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
@@ -36,6 +40,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     getTokenDecimals: () => 18,
+    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value),
     useTokenBalance: () => ({ data: { value: 0n } }),
     useErc4626VaultData: () => ({ data: h.vaultData }),
     useVaultMarketData: () => ({ data: h.marketData, isLoading: h.marketLoading })
@@ -71,6 +76,7 @@ const setVaultState = ({
   h.vaultData = morphoVaultData;
   h.marketData = liquidity === undefined ? {} : { liquidity };
   h.marketLoading = marketLoading;
+  h.debounceLagged = undefined;
 };
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -78,10 +84,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 const renderForm = (flow: 'supply' | 'withdraw' = 'withdraw') =>
-  renderHook(
-    () => useVaultTransactionForm({ flow, vaultAddress: VAULT, assetToken: ASSET, provider: 'morpho' }),
-    { wrapper }
-  );
+  renderHook(() => useVaultTransactionForm({ flow, vaultAddress: VAULT, assetToken: ASSET }), { wrapper });
 
 describe('useVaultTransactionForm Max routing (APP-488)', () => {
   afterEach(() => cleanup());
@@ -140,6 +143,7 @@ describe('useVaultTransactionForm Max routing (APP-488)', () => {
 
     expect(result.current.engineParams.max).toBe(false);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
   });
 
   it('liquidity figure unknown after settling: input stays open and Max still redeems all', () => {
@@ -207,6 +211,7 @@ describe('useVaultTransactionForm amount gating (APP-492)', () => {
     act(() => result.current.onInput('-5'));
     expect(result.current.amount).toBe(0n);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
   });
 
   it('exponential and multi-dot strings parse to zero and keep the form unready', () => {
@@ -216,10 +221,12 @@ describe('useVaultTransactionForm amount gating (APP-492)', () => {
     act(() => result.current.onInput('1e9'));
     expect(result.current.amount).toBe(0n);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
 
     act(() => result.current.onInput('1.2.3'));
     expect(result.current.amount).toBe(0n);
     expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
   });
 
   it('a plain positive amount within the balance readies the form', () => {
@@ -229,5 +236,35 @@ describe('useVaultTransactionForm amount gating (APP-492)', () => {
     act(() => result.current.onInput('250'));
     expect(result.current.amount).toBe(parseUnits('250', 18));
     expect(result.current.amountReady).toBe(true);
+    expect(result.current.engineParams.enabled).toBe(true);
+  });
+});
+
+describe('useVaultTransactionForm debounce (APP-537)', () => {
+  afterEach(() => cleanup());
+
+  it('holds the confirm and hands the engine the lagged amount until the debounce settles', () => {
+    setVaultState({ liquidity: parseUnits('5000', 18) });
+    const { result, rerender } = renderForm();
+
+    act(() => result.current.onInput('100'));
+    expect(result.current.amountReady).toBe(true);
+
+    // The user keeps typing: the raw amount moves, the debounced one lags.
+    h.debounceLagged = parseUnits('100', 18);
+    act(() => result.current.onInput('250'));
+    expect(result.current.amount).toBe(parseUnits('250', 18));
+    expect(result.current.debouncePending).toBe(true);
+    expect(result.current.amountReady).toBe(false);
+    expect(result.current.engineParams.enabled).toBe(false);
+    expect(result.current.engineParams.amount).toBe(parseUnits('100', 18));
+
+    // Settled: the engine sees the typed value and the form re-arms.
+    h.debounceLagged = undefined;
+    rerender();
+    expect(result.current.debouncePending).toBe(false);
+    expect(result.current.engineParams.amount).toBe(parseUnits('250', 18));
+    expect(result.current.amountReady).toBe(true);
+    expect(result.current.engineParams.enabled).toBe(true);
   });
 });

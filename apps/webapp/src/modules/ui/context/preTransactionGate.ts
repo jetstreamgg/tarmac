@@ -142,15 +142,16 @@ export type PreTransactionGate = (context: {
 export const allowAllGate: PreTransactionGate = () => ({ allow: true });
 
 /**
- * The modal-side half of the enhanced-screening surface (APP-517): a hook the
- * provider calls every render with the active session's live USD value. At or
- * above the threshold it warms the enhanced verdict so the gate can pass
- * synchronously at Confirm, and its result drives the first-screen CTAs — a
+ * The modal-side half of address screening: a hook the provider calls every
+ * render with the active session's live USD value. It warms the verdict of
+ * the tier that value calls for (standard, or enhanced at/above the threshold,
+ * APP-517) so the gate can pass synchronously at Confirm, and its result
+ * drives the first-screen CTAs — a
  * transaction cannot be fired while the check is pending, failed, or risky.
  * The message renders inside the modal, above the CTA.
  *
  * Injectable (like `gate`) so the provider stays policy-free and tests can
- * exercise each state; the app mounts `useEnhancedScreeningPreflight`.
+ * exercise each state; the app mounts `useScreeningPreflight`.
  */
 export type TransactionPreflight =
   /** No check owed (below threshold / no session / checks skipped), or it passed. */

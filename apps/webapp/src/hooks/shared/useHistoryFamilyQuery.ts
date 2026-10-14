@@ -1,15 +1,12 @@
 import { useMemo } from 'react';
 import { request } from 'graphql-request';
-import { useInfiniteQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
-import { HISTORY_STALE_TIME } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { savingsHistoryFragments, mapSavingsHistoryResponse } from '../savings/useEthereumSavingsHistory';
 import { upgradeHistoryFragments, mapUpgradeHistoryResponse } from '../upgrade/useUpgradeHistory';
 import { stakeHistoryFragments, mapStakeHistoryResponse } from '../stake/useStakeHistory';
 import { rewardsHistoryFragments, mapRewardsHistoryResponse } from '../rewards/useAllRewardsUserHistory';
 import { stusdsHistoryFragments, mapStusdsHistoryResponse } from '../stusds/useStUsdsHistory';
-import { susdtHistoryFragments, mapSusdtHistoryResponse } from '../vaults/spark/useSusdtVaultHistory';
 import { l2SavingsHistoryFragments, mapL2SavingsRows } from '../psm/useL2SavingsHistory';
 import { psmTradeFragment, mapPsmTradeRows } from '../psm/usePsmTradeHistory';
 import { useAvailableTokenRewardContracts } from '../rewards/useAvailableTokenRewardContracts';
@@ -18,6 +15,7 @@ import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
 import { L2_HISTORY_CHAIN_IDS, tradeCutoffTimestamp } from './useL2sIndexerHistory';
 import { CombinedHistoryItem } from './shared';
+import { useHistoryPagination } from './useHistoryPagination';
 import { familyMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**
@@ -27,7 +25,7 @@ import { familyMainnetId, chainId as chainIdMap } from '@/utils';
  * (the merged all-families documents clamp every page at the densest family's
  * frontier, hiding a sparse family's older rows until many pages load).
  */
-export type HistoryFamily = 'savings' | 'upgrade' | 'stake' | 'rewards' | 'stusds' | 'susdt' | 'psmTrades';
+export type HistoryFamily = 'savings' | 'upgrade' | 'stake' | 'rewards' | 'stusds' | 'psmTrades';
 
 // Every family has a mainnet document; savings and psmTrades (the mainnet
 // PSM conversions, APP-558) additionally have their L2 `Swap` legs.
@@ -53,8 +51,6 @@ function mainnetFamilyFragments(
       return rewardsHistoryFragments({ user: owner, rewardContracts, chainId, beforeTimestamp });
     case 'stusds':
       return stusdsHistoryFragments({ owner, chainId, beforeTimestamp });
-    case 'susdt':
-      return susdtHistoryFragments({ owner, chainId, beforeTimestamp });
     default:
       return '';
   }
@@ -79,8 +75,6 @@ function mapMainnetFamilyResponse(
       return mapRewardsHistoryResponse(response, chainId) || [];
     case 'stusds':
       return mapStusdsHistoryResponse(response, chainId);
-    case 'susdt':
-      return mapSusdtHistoryResponse(response, chainId);
     default:
       return [];
   }
@@ -214,43 +208,30 @@ export function useHistoryFamilyQuery({
     [mainnetChainId, mainnetTokens, baseTokens, arbitrumTokens, optimismTokens, unichainTokens]
   );
 
-  const { data, error, refetch, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      enabled: Boolean(address) && enabled && hasScope,
-      staleTime: HISTORY_STALE_TIME,
-      queryKey: ['history-family', family, chainId ?? 'all', address, mainnetChainId],
-      initialPageParam: undefined as number | undefined,
-      queryFn: ({ pageParam }) =>
-        fetchHistoryFamilyPage(
-          {
-            family,
-            owner: (address || '').toLowerCase(),
-            mainnetUrl: getIndexerUrl(mainnetChainId) || '',
-            l2Url: getIndexerUrl(chainIdMap.base) || '',
-            mainnetChainId,
-            includeMainnet,
-            l2ChainIds,
-            rewardContracts,
-            tokenAddressMaps
-          },
-          pageParam
-        ),
-      getNextPageParam: lastPage => lastPage.nextCursor
-    });
-
-  const items = useMemo(() => data?.pages.flatMap(page => page.items) ?? [], [data]);
-  const nextCursor = data?.pages[data.pages.length - 1]?.nextCursor;
+  const history = useHistoryPagination({
+    enabled: Boolean(address) && enabled && hasScope,
+    queryKey: ['history-family', family, chainId ?? 'all', address, mainnetChainId],
+    fetchPage: beforeTimestamp =>
+      fetchHistoryFamilyPage(
+        {
+          family,
+          owner: (address || '').toLowerCase(),
+          mainnetUrl: getIndexerUrl(mainnetChainId) || '',
+          l2Url: getIndexerUrl(chainIdMap.base) || '',
+          mainnetChainId,
+          includeMainnet,
+          l2ChainIds,
+          rewardContracts,
+          tokenAddressMaps
+        },
+        beforeTimestamp
+      )
+  });
 
   return {
+    ...history,
     // Out-of-scope combinations (mainnet-only family on an L2) are just empty.
-    data: hasScope ? (data ? items : undefined) : [],
-    isLoading: hasScope && !data && isLoading,
-    error: error as Error | null,
-    mutate: refetch,
-    /** Completeness floor (seconds); undefined once history is fully loaded. */
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage
+    data: hasScope ? history.data : [],
+    isLoading: hasScope && history.isLoading
   };
 }

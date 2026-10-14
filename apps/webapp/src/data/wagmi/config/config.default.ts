@@ -3,7 +3,6 @@ import { mainnet, base, arbitrum, optimism, unichain } from 'wagmi/chains';
 import { metaMask, safe, walletConnect, coinbaseWallet, baseAccount } from 'wagmi/connectors';
 import { getWagmiConnectorV2 } from '@binance/w3w-wagmi-connector-v2';
 import { TENDERLY_CHAIN_ID, TENDERLY_RPC_URL } from './testTenderlyChain';
-import { isTestnetId } from '@/utils';
 import { createProxyTransport } from './proxyTransport';
 
 const tenderly = {
@@ -100,10 +99,3 @@ export const wagmiConfigMainnet = createConfig({
 // Re-exported from its own module so the engine layer can import the family
 // helper without this file's module-scope wallet connectors.
 export { getSupportedChainIds } from './chainFamily';
-
-export const getMainnetChainName = (chainId: number) => {
-  if (isTestnetId(chainId)) {
-    return tenderly.name;
-  }
-  return mainnet.name;
-};

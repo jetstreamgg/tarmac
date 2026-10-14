@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { formatNumber } from '@/utils';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
@@ -24,6 +24,12 @@ export interface UseConvertLaunchParams {
   amount: bigint;
   /** Refetch balances / reset the form after a successful conversion. */
   onSuccess?: () => void;
+  /**
+   * Form validity (amount entered, within balance, any product gate open). Gates the
+   * engines' prepare-time simulation: an input the form already knows is invalid is
+   * never simulated, so no RPC round trip and no Sentry event for a foregone revert.
+   */
+  enabled?: boolean;
 }
 
 export interface UseConvertLaunchResult {
@@ -55,7 +61,8 @@ export interface UseConvertLaunchResult {
 export function useConvertLaunch({
   direction,
   amount,
-  onSuccess
+  onSuccess,
+  enabled = true
 }: UseConvertLaunchParams): UseConvertLaunchResult {
   const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
   // Per-instance id so the provider ignores live updates from stale launches.
@@ -69,6 +76,7 @@ export function useConvertLaunch({
   const conversion = usePsmConversion({
     direction,
     amount,
+    enabled,
     referralCode: REFERRAL_CODE,
     shouldUseBatch: !!batchEnabled,
     ...txCallbacks
@@ -126,13 +134,16 @@ export function useConvertLaunch({
     calls: conversion.calls,
     chainId,
     shouldUseBatch: conversion.isBatch,
-    enabled: amount > 0n
+    enabled: enabled && amount > 0n
   });
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be live-updated,
   // but the ref always points at the latest engine execute.
   const executeRef = useRef<() => void>(() => undefined);
-  executeRef.current = () => conversion.execute();
+  // A layout effect, so a confirm click can never run the previous render's execute.
+  useLayoutEffect(() => {
+    executeRef.current = () => conversion.execute();
+  });
 
   // Engine reads (allowance / liquidity / halted flags) refetch on success before
   // the page-level refetch (balances + form reset) runs.

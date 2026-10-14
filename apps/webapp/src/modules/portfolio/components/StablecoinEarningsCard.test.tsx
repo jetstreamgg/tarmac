@@ -108,10 +108,18 @@ const walletEarnings = (protocols: ProtocolEarnings[], isLoading = false): Walle
 const EARNINGS = walletEarnings([
   proto('morpho-vault-0xflagship', ['vault-morpho-0xflagship'], ok({ usd: 20 }), ok({ usd: 10 })),
   proto('merkl', ['vault-morpho-0xflagship'], ok({ usd: 4 }), notAvailable('merkl-monthly-unsupported')),
-  proto('pendle', ['fixed-0xmkt'], ok({ usd: 70 }), ok({ usd: 7 })),
+  proto('pendle-market-0xmkt', ['fixed-0xmkt'], ok({ usd: 70 }), ok({ usd: 7 })),
   proto('savings', ['savings'], ok({ usd: 46.4 }), ok({ usd: 5 })),
   proto('stusds', ['stusds'], ok({ usd: 30 }), ok({ usd: 3 }))
 ]);
+
+// The visible marketplace products naming the breakdown popup rows (APP-589).
+const PRODUCTS = [
+  { id: 'savings', name: 'Sky Savings Rate', tokenSymbol: 'sUSDS', kind: 'savings' as const },
+  { id: 'vault-morpho-0xflagship', name: 'USDS Flagship', tokenSymbol: 'USDS', kind: 'vault' as const },
+  { id: 'fixed-0xmkt', name: 'Fixed Yield', tokenSymbol: 'sUSDS', kind: 'fixed' as const },
+  { id: 'stusds', name: 'Staked USDS', tokenSymbol: 'stUSDS', kind: 'stusds' as const }
+];
 
 const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> = {}) =>
   render(
@@ -123,6 +131,7 @@ const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> 
         idleLoading={false}
         savingsRate={0.0375}
         earnings={EARNINGS}
+        products={PRODUCTS}
         tab="supplied"
         onTabChange={() => {}}
         {...over}
@@ -189,6 +198,7 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
           idleLoading={false}
           savingsRate={0.0375}
           earnings={EARNINGS}
+          products={PRODUCTS}
           tab="supplied"
           onTabChange={() => {}}
         />
@@ -265,6 +275,18 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(2);
   });
 
+  // APP-589: a reward farm settles its total before the month-start block search.
+  it('shows the total while a source is still loading its month figure', () => {
+    renderCard({
+      earnings: walletEarnings([
+        ...EARNINGS.protocols,
+        proto('reward-farm-0xspk', ['rewards-spk'], ok({ usd: 6 }), notAvailable('loading'))
+      ])
+    });
+    expect(totalText()).toBe('+$176.40');
+    expect(screen.getAllByTestId('earnings-stat-skeleton')).toHaveLength(1);
+  });
+
   // The footer stats render the bare figures: the gap glyph beside
   // "Total accrued" / "Accrued this month" was dropped (2026-08-31), even when
   // a source is missing from the sum. The position cards still carry it.
@@ -308,7 +330,9 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
 
   it('renders a negative combined total signed with a minus', () => {
     const pendleUnderwater = walletEarnings(
-      EARNINGS.protocols.map(p => (p.id === 'pendle' ? { ...p, totalEarned: ok({ usd: -130 }) } : p))
+      EARNINGS.protocols.map(p =>
+        p.id === 'pendle-market-0xmkt' ? { ...p, totalEarned: ok({ usd: -130 }) } : p
+      )
     );
     renderCard({ earnings: pendleUnderwater });
     // 20 + 4 - 130 + 46.4 + 30 = -29.6.
@@ -404,6 +428,48 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     expect(screen.getByText(/Not included:/)).toBeTruthy();
   });
 
+  // APP-589: the combined figure itself opens the per-product breakdown.
+  it('opens the per-product breakdown from the combined total', () => {
+    touch.isTouch = true;
+    renderCard();
+    fireEvent.click(screen.getByTestId('earnings-total-value-breakdown-trigger'));
+
+    const breakdown = screen.getByTestId('earnings-breakdown');
+    expect(within(breakdown).getByText('$170.40')).toBeTruthy();
+    // Largest first; the Flagship row folds Morpho PnL and Merkl rewards (20 + 4).
+    expect(
+      within(breakdown)
+        .getAllByTestId('earnings-breakdown-row')
+        .map(row => row.textContent)
+    ).toEqual(['Fixed Yield$70.00', 'Sky Savings Rate$46.40', 'Staked USDS$30.00', 'USDS Flagship$24.00']);
+  });
+
+  it('lists a held product without an earnings source at $0.00, badged Not tracked', () => {
+    touch.isTouch = true;
+    renderCard({
+      suppliedView: {
+        ...SUPPLIED,
+        positions: [
+          ...SUPPLIED.positions,
+          { ...SUPPLIED.positions[0], id: 'rewards-cle:1', rowId: 'rewards-cle', name: 'Chronicle Points' }
+        ]
+      },
+      products: [
+        ...PRODUCTS,
+        { id: 'rewards-cle', name: 'Chronicle Points', tokenSymbol: 'CLE', kind: 'rewards' as const }
+      ]
+    });
+    fireEvent.click(screen.getByTestId('earnings-month-value-breakdown-trigger'));
+
+    const rows = within(screen.getByTestId('earnings-breakdown')).getAllByTestId('earnings-breakdown-row');
+    // Merkl has no monthly figure, so the Flagship row is the vault alone; the
+    // untracked row sorts last.
+    expect(rows.find(row => row.textContent?.startsWith('USDS Flagship'))?.textContent).toBe(
+      'USDS Flagship$10.00'
+    );
+    expect(rows.at(-1)?.textContent).toBe('Chronicle PointsNot tracked$0.00');
+  });
+
   // Hover-focused figures render bare too: no glyph for their missing contributors.
 
   it("shows the hovered position's figure without a glyph for its announced gap", () => {
@@ -457,5 +523,96 @@ describe('StablecoinEarningsCard earnings footer (APP-450)', () => {
     renderCard({ earnings: tiny });
     expect(totalText()).toBe('+<$0.01');
     expect(monthText()).toBe('+<$0.01');
+  });
+});
+
+describe('StablecoinEarningsCard Others bucket (Figma 3356:52120)', () => {
+  const position = (rowId: string, name: string, amountUsd: number, rate: number) => ({
+    ...SUPPLIED.positions[0],
+    id: `${rowId}:1`,
+    rowId,
+    name,
+    amountUsd,
+    rate,
+    share: amountUsd / 1000,
+    multichain: false
+  });
+  // Six positions: the 4 largest keep their rows, the last two fold into
+  // Others ($15 = 1.5%), one tracked (stUSDS) and one without a source (SKY).
+  const SIX: SuppliedView = {
+    ...SUPPLIED,
+    positions: [
+      position('savings', 'Sky Savings Rate', 850, 0.04),
+      position('vault-morpho-0xflagship', 'USDS Flagship', 60, 0.05),
+      position('fixed-0xmkt', 'Fixed Yield', 50, 0.06),
+      position('vault-other-0xdead', 'Other Vault', 25, 0.05),
+      position('stusds', 'stUSDS', 10, 0.1),
+      position('rewards-sky', 'SKY Rewards', 5, 0.05)
+    ],
+    totalSupplied: 1000,
+    activePositions: 6
+  };
+
+  it('folds the tail into an Others row with its combined share', () => {
+    renderCard({ suppliedView: SIX });
+    expect(screen.getByRole('button', { name: /Other Vault/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /stUSDS/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /SKY Rewards/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Others (2%)' })).toBeTruthy();
+    expect(screen.getByText('6')).toBeTruthy();
+  });
+
+  it('focuses the card on the folded positions combined while Others is hovered', () => {
+    renderCard({ suppliedView: SIX });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'Others (2%)' }));
+    // The headline rolls over, so the outgoing figure is still in the DOM.
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toContain('$15.00');
+    // stUSDS's figures; SKY Rewards has no source and adds nothing.
+    expect(screen.getByTestId('earnings-total-value').textContent).toBe('+$30.00');
+    expect(screen.getByTestId('earnings-month-value').textContent).toBe('+$3.00');
+    // Supply-weighted: (10 × 10% + 5 × 5%) / 15.
+    expect(screen.getByText('8.33%')).toBeTruthy();
+  });
+
+  it('drops a hover whose row a refetch removed instead of keeping the card focused on it', () => {
+    const { rerender } = renderCard({ suppliedView: SIX });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'Others (2%)' }));
+    const three = { ...SIX, positions: SIX.positions.slice(0, 3), activePositions: 3 };
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <StablecoinEarningsCard
+          suppliedView={three}
+          suppliedLoading={false}
+          idleView={IDLE}
+          idleLoading={false}
+          savingsRate={0.0375}
+          earnings={EARNINGS}
+          products={PRODUCTS}
+          tab="supplied"
+          onTabChange={() => {}}
+        />
+      </I18nProvider>
+    );
+    expect(screen.queryByRole('button', { name: /Others/ })).toBeNull();
+    // No row stays dimmed against a hover target that is gone.
+    for (const row of screen.getAllByRole('button', { name: /\(\d+%\)/ })) {
+      expect(row.className).not.toContain('opacity-50');
+    }
+  });
+
+  it('keeps every row when there are only 3 positions, however small', () => {
+    renderCard({
+      suppliedView: {
+        ...SIX,
+        positions: [
+          position('savings', 'Sky Savings Rate', 990, 0.04),
+          position('stusds', 'stUSDS', 6, 0.1),
+          position('rewards-sky', 'SKY Rewards', 4, 0.05)
+        ]
+      }
+    });
+    expect(screen.getByRole('button', { name: /stUSDS \(<1%\)/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /SKY Rewards \(<1%\)/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Others/ })).toBeNull();
   });
 });

@@ -1,11 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
 import { parseEther } from 'viem';
-import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { useChainId } from 'wagmi';
-import { fetchBaLabsPages, formatBaLabsUrl } from '../helpers';
 import { sUsdsAddress } from './useReadSavingsUsds';
 import { ReadHook } from '../hooks';
+import { useBaLabsHistoric } from '../shared/useBaLabsHistoric';
 
 type SavingsChartInfo = {
   date: string;
@@ -28,16 +25,6 @@ function transformBaLabsChartData(results: SavingsChartInfo[]): SavingsChartInfo
   return parsed;
 }
 
-async function fetchSavingsChartInfo(url: URL): Promise<SavingsChartInfoParsed[]> {
-  try {
-    // Paged: this endpoint caps a response at 1000 rows whatever p_size asks for.
-    return transformBaLabsChartData(await fetchBaLabsPages<SavingsChartInfo>(url));
-  } catch (error) {
-    console.error('Error fetching BaLabs data:', error);
-    return [];
-  }
-}
-
 export function useSavingsChartInfo(
   paramChainId?: number,
   options: { limit?: number } = { limit: 100 }
@@ -45,37 +32,13 @@ export function useSavingsChartInfo(
   const { limit } = options;
   const wagmiChainId = useChainId();
   const chainId = paramChainId || wagmiChainId;
-  const baseUrl = getBaLabsApiUrl() || '';
   const savingsAddress = sUsdsAddress[chainId as keyof typeof sUsdsAddress];
-  let url: URL | undefined;
-  if (baseUrl && savingsAddress) {
-    const endpoint = `${baseUrl}/overall/historic/?p_size=${limit}`;
-    url = formatBaLabsUrl(new URL(endpoint));
-  }
 
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    enabled: Boolean(baseUrl && savingsAddress),
-    queryKey: ['savings-chart', url],
-    queryFn: () => (url ? fetchSavingsChartInfo(url) : Promise.resolve([]))
+  return useBaLabsHistoric<SavingsChartInfo, SavingsChartInfoParsed>({
+    path: '/overall/historic/',
+    limit,
+    queryKey: 'savings-chart',
+    transform: transformBaLabsChartData,
+    enabled: Boolean(savingsAddress)
   });
-
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'BA Labs API',
-        href: url?.href || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
 }

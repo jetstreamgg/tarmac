@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildRewardsSupplyModalRows,
+  buildRewardsEntryRows,
   buildRewardsSupplyReviewRows,
-  buildRewardsWithdrawModalRows,
   buildRewardsWithdrawReviewRows,
   type RewardsModalCell,
   type RewardsModalGridRow
@@ -25,9 +24,9 @@ const flat = (rows: RewardsModalGridRow[]) => rows.flat();
 const byLabel = (rows: RewardsModalGridRow[]): Record<string, RewardsModalCell> =>
   Object.fromEntries(flat(rows).map(cell => [cell.label, cell]));
 
-describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings shape, no own comp)', () => {
+describe('buildRewardsEntryRows(supply) — "Supply to {farm}" entry grid (Savings shape, no own comp)', () => {
   it('produces exactly the adapted grid pairing, in order', () => {
-    const rows = buildRewardsSupplyModalRows({ ...ENTRY_INPUT, rewardsIn: 'SPK' });
+    const rows = buildRewardsEntryRows('supply', { ...ENTRY_INPUT, rewardsIn: 'SPK' });
     expect(gridLabels(rows)).toEqual([
       ['Rate', 'Network'],
       ['Supply', 'Est. 1Y yield (at current rate)'],
@@ -36,7 +35,7 @@ describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings
   });
 
   it('marks Supply and Est. earnings as before→after deltas once an amount is entered', () => {
-    const cells = byLabel(buildRewardsSupplyModalRows({ ...ENTRY_INPUT, rewardsIn: 'SPK' }));
+    const cells = byLabel(buildRewardsEntryRows('supply', { ...ENTRY_INPUT, rewardsIn: 'SPK' }));
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '110', token: 'USDS' });
     expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({
       kind: 'delta',
@@ -46,13 +45,13 @@ describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings
   });
 
   it('collapses the delta cells to their current value with no amount', () => {
-    const cells = byLabel(buildRewardsSupplyModalRows({ ...ENTRY_INPUT, hasAmount: false }));
+    const cells = byLabel(buildRewardsEntryRows('supply', { ...ENTRY_INPUT, hasAmount: false }));
     expect(cells['Supply']).toMatchObject({ kind: 'single', value: '100' });
     expect(cells['Est. 1Y yield (at current rate)']).toMatchObject({ kind: 'single', value: '$4.50' });
   });
 
   it('threads the single-value cells with their presentation hints', () => {
-    const cells = byLabel(buildRewardsSupplyModalRows({ ...ENTRY_INPUT, rewardsIn: 'SPK' }));
+    const cells = byLabel(buildRewardsEntryRows('supply', { ...ENTRY_INPUT, rewardsIn: 'SPK' }));
     expect(cells['Rate']).toMatchObject({ kind: 'single', value: '4.50%', rateAccent: 'savings' });
     expect(cells['Network']).toMatchObject({ kind: 'single', value: 'Ethereum', network: true });
     expect(cells['Rewards in']).toMatchObject({ kind: 'single', value: 'SPK', token: 'SPK' });
@@ -60,7 +59,7 @@ describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings
   });
 
   it('drops the Rewards in cell for point farms (no reward token)', () => {
-    expect(gridLabels(buildRewardsSupplyModalRows(ENTRY_INPUT))).toEqual([
+    expect(gridLabels(buildRewardsEntryRows('supply', ENTRY_INPUT))).toEqual([
       ['Rate', 'Network'],
       ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Network fee']
@@ -68,9 +67,9 @@ describe('buildRewardsSupplyModalRows — "Supply to {farm}" entry grid (Savings
   });
 });
 
-describe('buildRewardsWithdrawModalRows — "Withdraw from {farm}" entry grid', () => {
+describe('buildRewardsEntryRows(withdraw) — "Withdraw from {farm}" entry grid', () => {
   it('mirrors the supply grid pairing without the Rewards in cell', () => {
-    expect(gridLabels(buildRewardsWithdrawModalRows({ ...ENTRY_INPUT, supplyAfter: '90' }))).toEqual([
+    expect(gridLabels(buildRewardsEntryRows('withdraw', { ...ENTRY_INPUT, supplyAfter: '90' }))).toEqual([
       ['Rate', 'Network'],
       ['Supply', 'Est. 1Y yield (at current rate)'],
       ['Network fee']
@@ -78,7 +77,7 @@ describe('buildRewardsWithdrawModalRows — "Withdraw from {farm}" entry grid', 
   });
 
   it('keeps Rate single (a withdrawal never moves the rate) and deltas the position', () => {
-    const cells = byLabel(buildRewardsWithdrawModalRows({ ...ENTRY_INPUT, supplyAfter: '90' }));
+    const cells = byLabel(buildRewardsEntryRows('withdraw', { ...ENTRY_INPUT, supplyAfter: '90' }));
     expect(cells['Rate']).toMatchObject({ kind: 'single', value: '4.50%', rateAccent: 'savings' });
     expect(cells['Supply']).toMatchObject({ kind: 'delta', before: '100', after: '90' });
   });

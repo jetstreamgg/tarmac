@@ -10,7 +10,12 @@ import type { TransactionConfig, TransactionContextValue, TxCallbacks } from './
 // The provider needs a live wagmi tree; these suites exercise the transaction
 // state machine, so the shared chain switch is stubbed inert.
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+  useNetworkSwitch: () => ({
+    handleSwitchChain: vi.fn(),
+    isSwitchPending: false,
+    switchVariables: undefined,
+    canSwitchChain: true
+  })
 }));
 
 vi.mock('wagmi', async io => ({
@@ -64,7 +69,7 @@ vi.mock('motion/react', async io => {
 });
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
-import { TxStatus } from '@/widgets';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -228,6 +233,27 @@ describe('TransactionModal abandon vs minimize (state-dependent dismissal)', () 
     expect(screen.queryByText('Supply USDS')).not.toBeNull();
     expect(screen.queryByText('Stake SKY')).toBeNull();
     expect(toastWithCloseMock).toHaveBeenCalled();
+    const blocked = renderLastToast();
+    expect(blocked.getByText('Transaction in progress')).toBeDefined();
+  });
+
+  it('launching a new flow while a minimized sequence waits on its next wallet prompt restores it, not abandons it', () => {
+    const ctx = renderFlow({ ...SUPPLY_CONFIG, steps: ['Approve', 'Supply'] });
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove')); // LOADING
+    act(() => ctx.minimize());
+    // The approve mined; the engine hands the supply to the wallet while minimized.
+    act(() => cb.onMutate());
+    analytics.trackTransactionCompleted.mockClear();
+    toastWithCloseMock.mockClear();
+
+    act(() => ctx.launch(STAKE_CONFIG));
+
+    expect(screen.queryByText('Supply USDS')).not.toBeNull();
+    expect(screen.queryByText('Stake SKY')).toBeNull();
+    expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
     const blocked = renderLastToast();
     expect(blocked.getByText('Transaction in progress')).toBeDefined();
   });

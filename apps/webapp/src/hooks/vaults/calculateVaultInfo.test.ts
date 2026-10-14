@@ -27,8 +27,8 @@ const computeLiquidationProximity = (
     return 100;
   }
 
-  const proximityPercentage = Number(((marketPrice - liquidationPrice) * 100n) / marketPrice);
-  return 100 - proximityPercentage;
+  const proximityPercentage = Number(((marketPrice - liquidationPrice) * 10_000n) / marketPrice) / 100;
+  return Math.round((100 - proximityPercentage) * 100) / 100;
 };
 
 const deriveRiskLevel = (liquidationProximityPercentage: number): RiskLevel => {
