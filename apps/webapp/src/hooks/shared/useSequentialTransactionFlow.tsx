@@ -60,6 +60,7 @@ export function useSequentialTransactionFlow(
       args: currentTransaction?.args,
       // A payable call's ETH; dropped here, the wallet would send none.
       value: currentTransaction?.value,
+      gas: currentTransaction?.gas,
       query: {
         // Only enable simulation for the first transaction initially, or for subsequent transactions after previous success
         enabled:

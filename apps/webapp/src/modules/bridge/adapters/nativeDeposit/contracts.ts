@@ -82,6 +82,7 @@ export const l2CrossDomainMessengerAbi = parseAbi([
   'function relayMessage(uint256 nonce, address sender, address target, uint256 value, uint256 minGasLimit, bytes message) payable',
   'function successfulMessages(bytes32 msgHash) view returns (bool)',
   'function failedMessages(bytes32 msgHash) view returns (bool)',
+  'function baseGas(bytes message, uint32 minGasLimit) pure returns (uint64)',
   'event RelayedMessage(bytes32 indexed msgHash)',
   'event FailedRelayedMessage(bytes32 indexed msgHash)'
 ]);

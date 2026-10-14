@@ -5,6 +5,7 @@ import {
   encodeFunctionData,
   erc20Abi,
   getAddress,
+  keccak256,
   zeroAddress,
   type Address,
   type Hex,
@@ -17,7 +18,13 @@ import {
   arbitrumRetryableTicket,
   retryableQuote
 } from './arbitrum';
-import { ARBITRUM_DEPOSIT, L1_USDS, OP_STACK_DEPOSIT } from './contracts';
+import {
+  ARBITRUM_DEPOSIT,
+  L1_USDS,
+  L2_CROSS_DOMAIN_MESSENGER,
+  l2CrossDomainMessengerAbi,
+  OP_STACK_DEPOSIT
+} from './contracts';
 import {
   ARBITRUM_DEPOSIT_LOGS,
   ARBITRUM_DEPOSIT_TX,
@@ -32,7 +39,10 @@ import {
   OP_STACK_MIN_GAS_LIMIT,
   opStackDepositCall,
   opStackDepositCalls,
-  opStackDepositMessage
+  opStackDepositMessage,
+  opStackReplay,
+  opStackReplayCall,
+  opStackReplayGas
 } from './opStack';
 
 const SUSDS = '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD';
@@ -131,6 +141,83 @@ describe.each([
   it('ignores the deposit on the other OP Stack networks', () => {
     for (const other of (['base', 'optimism', 'unichain'] as const).filter(n => n !== network))
       expect(opStackDepositMessage(logs, other)).toBeUndefined();
+  });
+});
+
+describe.each([
+  { network: 'base' as const, logs: BASE_DEPOSIT_LOGS },
+  { network: 'optimism' as const, logs: OPTIMISM_DEPOSIT_LOGS },
+  { network: 'unichain' as const, logs: UNICHAIN_DEPOSIT_LOGS }
+])('opStackReplay on $network (golden: a real mainnet deposit message)', ({ network, logs }) => {
+  const message = opStackDepositMessage(logs, network)!;
+  const routeData = { msgHash: message.msgHash, relayCalldata: message.relayCalldata };
+  const relay = (patch: (args: readonly unknown[]) => readonly unknown[]) => {
+    const { args } = decodeFunctionData({ abi: l2CrossDomainMessengerAbi, data: message.relayCalldata });
+    const relayCalldata = encodeFunctionData({
+      abi: l2CrossDomainMessengerAbi,
+      functionName: 'relayMessage',
+      args: patch(args) as readonly [bigint, Address, Address, bigint, bigint, Hex]
+    });
+    return { msgHash: keccak256(relayCalldata), relayCalldata };
+  };
+
+  it('re-sends the exact relayMessage the portal deposited, priced by its message and gas limit', () => {
+    const { args, baseGasArgs } = opStackReplay(network, routeData);
+    const call = opStackReplayCall({ args, gas: 712_090n });
+    expect(call).toMatchObject({ to: L2_CROSS_DOMAIN_MESSENGER, gas: 712_090n });
+    expect(encodeFunctionData(call as unknown as Parameters<typeof encodeFunctionData>[0])).toBe(
+      message.relayCalldata
+    );
+    expect(baseGasArgs).toEqual([args[5], Number(args[4])]);
+  });
+
+  it('accepts an upper-case msgHash', () => {
+    expect(() =>
+      opStackReplay(network, { ...routeData, msgHash: message.msgHash.toUpperCase().replace('0X', '0x') })
+    ).not.toThrow();
+  });
+
+  it.each([
+    ['no routeData', undefined],
+    ['no msgHash', { relayCalldata: message.relayCalldata }],
+    ['a msgHash of other calldata', { ...routeData, msgHash: keccak256('0x01') }],
+    [
+      'calldata that is not a relay',
+      (() => {
+        const data = encodeFunctionData({
+          abi: l2CrossDomainMessengerAbi,
+          functionName: 'successfulMessages',
+          args: [message.msgHash]
+        });
+        return { msgHash: keccak256(data), relayCalldata: data };
+      })()
+    ],
+    ['a relay from another sender', relay(([nonce, , ...rest]) => [nonce, zeroAddress, ...rest])],
+    [
+      'a relay to another target',
+      relay(([nonce, sender, , ...rest]) => [nonce, sender, zeroAddress, ...rest])
+    ],
+    [
+      'a relay carrying ETH',
+      relay(([nonce, sender, target, , ...rest]) => [nonce, sender, target, 1n, ...rest])
+    ],
+    [
+      'a gas limit beyond uint32',
+      relay(([nonce, sender, target, value, , data]) => [nonce, sender, target, value, 2n ** 32n, data])
+    ]
+  ])('refuses %s', (_, data) => {
+    expect(() => opStackReplay(network, data)).toThrow();
+  });
+
+  it('refuses the message on the other OP Stack networks', () => {
+    for (const other of (['base', 'optimism', 'unichain'] as const).filter(n => n !== network))
+      expect(() => opStackReplay(other, routeData)).toThrow();
+  });
+});
+
+describe('opStackReplayGas', () => {
+  it("adds a 20% margin to the messenger's baseGas", () => {
+    expect(opStackReplayGas(593_409n)).toBe(712_090n);
   });
 });
 

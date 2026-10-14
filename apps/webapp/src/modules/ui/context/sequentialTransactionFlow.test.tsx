@@ -45,13 +45,20 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: undefined }),
   // Echo the simulated call back on the request so a test can see WHICH call a
   // dispatch was prepared from.
-  useSimulateContract: (params: { functionName?: string; value?: bigint }) => {
+  useSimulateContract: (params: { functionName?: string; value?: bigint; gas?: bigint }) => {
     const simulate = () => {
       const error = params.functionName ? wagmi.simulationErrors[params.functionName] : undefined;
       return error
         ? { data: undefined, isLoading: false, error }
         : {
-            data: { request: { __mock: 'request', functionName: params.functionName, value: params.value } },
+            data: {
+              request: {
+                __mock: 'request',
+                functionName: params.functionName,
+                value: params.value,
+                gas: params.gas
+              }
+            },
             isLoading: false,
             error: null
           };
@@ -200,6 +207,16 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
     expect(wagmi.writeContract).toHaveBeenLastCalledWith(
       expect.objectContaining({ functionName: 'deposit', value: 7n })
+    );
+  });
+
+  it("simulates and sends a call with its explicit gas instead of the wallet's estimate", () => {
+    const relay = { ...makeCall('relayMessage'), gas: 712_090n };
+    const { result } = renderHook(() => useSequentialTransactionFlow({ calls: [relay] }));
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ functionName: 'relayMessage', gas: 712_090n })
     );
   });
 

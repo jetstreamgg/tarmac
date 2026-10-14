@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
@@ -73,6 +74,18 @@ function CellValue({ cell }: CellValueProps) {
   }
 }
 
+type ActionHintTextProps = { hint: DestinationActionHint };
+
+function ActionHintText({ hint }: ActionHintTextProps) {
+  if (hint.kind === 'safe-executing') return <Trans>Waiting for your Safe to execute it.</Trans>;
+  const network = getBridgeNetwork(hint.network).name;
+  return hint.safe ? (
+    <Trans>Switch your Safe to {network} to continue.</Trans>
+  ) : (
+    <Trans>Switch your wallet to {network} to continue.</Trans>
+  );
+}
+
 type PendingBridgeCardProps = {
   bridge: PendingBridge;
   now: number;
@@ -80,6 +93,7 @@ type PendingBridgeCardProps = {
   onAction: (bridge: PendingBridge) => void;
   onDismiss: (bridge: PendingBridge) => void;
   canAction: (bridge: PendingBridge) => boolean;
+  actionHint: (bridge: PendingBridge) => DestinationActionHint | undefined;
   actionLocked: boolean;
 };
 
@@ -90,9 +104,11 @@ function PendingBridgeCard({
   onAction,
   onDismiss,
   canAction,
+  actionHint,
   actionLocked
 }: PendingBridgeCardProps) {
   const dismissible = canDismiss(bridge);
+  const hint = dismissible ? undefined : actionHint(bridge);
   const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <div
@@ -145,6 +161,11 @@ function PendingBridgeCard({
           <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
         </Text>
       )}
+      {hint && (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-action-hint">
+          <ActionHintText hint={hint} />
+        </Text>
+      )}
 
       <div className="flex flex-col gap-6">
         {buildPendingBridgeRows(bridge, now, familyChainId).map((row, rowIndex) => (
@@ -169,12 +190,14 @@ type PendingBridgesProps = {
   onAction: (bridge: PendingBridge) => void;
   /** The next action can be sent now, on a network the app can switch to. */
   canAction: (bridge: PendingBridge) => boolean;
+  /** Why the action can't be sent from here, if the user has to act in the wallet. */
+  actionHint: (bridge: PendingBridge) => DestinationActionHint | undefined;
   /** An action's session is minimized: it must be restored, not launched again. */
   actionLocked: boolean;
 };
 
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
-export function PendingBridges({ onAction, canAction, actionLocked }: PendingBridgesProps) {
+export function PendingBridges({ onAction, canAction, actionHint, actionLocked }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
   const { familyChainId, scope } = usePendingScope();
@@ -193,6 +216,7 @@ export function PendingBridges({ onAction, canAction, actionLocked }: PendingBri
           familyChainId={familyChainId}
           onAction={onAction}
           canAction={canAction}
+          actionHint={actionHint}
           onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
           actionLocked={actionLocked}
         />

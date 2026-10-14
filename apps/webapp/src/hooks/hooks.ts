@@ -152,7 +152,8 @@ export type UseTransactionFlowParameters = {
 };
 
 export type UseSequentialTransactionFlowParameters = {
-  calls: Call[];
+  /** A call's `gas` replaces the wallet's estimate, for a call whose estimate is known to be too low. */
+  calls: (Call & { gas?: bigint })[];
   enabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;

@@ -55,6 +55,7 @@ export function BridgePanel() {
   const {
     launch: launchAction,
     canLaunch: canLaunchAction,
+    actionHint,
     locked: actionLocked
   } = useDestinationActionLaunch();
 
@@ -117,7 +118,12 @@ export function BridgePanel() {
         </Button>
       </div>
 
-      <PendingBridges onAction={launchAction} canAction={canLaunchAction} actionLocked={actionLocked} />
+      <PendingBridges
+        onAction={launchAction}
+        canAction={canLaunchAction}
+        actionHint={actionHint}
+        actionLocked={actionLocked}
+      />
     </div>
   );
 }
