@@ -4,7 +4,7 @@
  * Labels and pairing are the Figma contract, asserted in `pendingBridgeRows.test.ts`.
  */
 
-import { t } from '@lingui/core/macro';
+import { plural, t } from '@lingui/core/macro';
 import { getAddress, isAddress } from 'viem';
 import { NO_VALUE } from '@/lib/constants';
 import { formatAddress } from '@/utils';
@@ -144,3 +144,60 @@ export function buildPendingBridgeRows(
     ]
   ];
 }
+
+/** Arbitrum's tool to check and redeem a ticket from any wallet. */
+const ARBITRUM_RETRYABLES_URL = 'https://portal.arbitrum.io/build/retryables';
+const ARBITRUM_ONE_CHAIN_ID = 42161;
+export const SKY_DISCORD_URL = 'https://discord.gg/skyecosystem';
+/** Below this the redeem note escalates: a Safe's signers need time too. */
+export const REDEEM_URGENT_MINUTES = 48 * 60;
+
+/** A note under an Ethereum to Arbitrum card whose ticket needs a redeem, or expired. */
+export type PendingBridgeNote =
+  | {
+      kind: 'redeem';
+      /** Whole minutes until the ticket's timeout, 0 once it passed; undefined when unknown. */
+      minutesLeft?: number;
+      urgent: boolean;
+      retryablesHref?: string;
+    }
+  | { kind: 'expired'; retryablesHref?: string; supportHref: string };
+
+// The tool looks the ticket up by the Ethereum tx that created it.
+const retryablesHref = (txHash: string | undefined) =>
+  txHash &&
+  `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(ARBITRUM_ONE_CHAIN_ID), tx: txHash })}`;
+
+const ticketTimeoutMs = (timeout: string | undefined) =>
+  timeout && /^\d{1,15}$/.test(timeout) ? Number(timeout) * 1000 : undefined;
+
+export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
+  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum' || bridge.to !== 'arbitrum')
+    return undefined;
+  if (bridge.status === 'expired')
+    return { kind: 'expired', retryablesHref: retryablesHref(bridge.txHash), supportHref: SKY_DISCORD_URL };
+  if (bridge.status !== 'ready' || bridge.nextAction !== 'redeem') return undefined;
+  const timeoutMs = ticketTimeoutMs(bridge.routeData?.timeout);
+  // Floored, so the time left is never overstated.
+  const minutesLeft =
+    timeoutMs === undefined ? undefined : Math.max(0, Math.floor((timeoutMs - now) / 60_000));
+  return {
+    kind: 'redeem',
+    minutesLeft,
+    urgent: minutesLeft !== undefined && minutesLeft < REDEEM_URGENT_MINUTES,
+    retryablesHref: retryablesHref(bridge.txHash)
+  };
+}
+
+/** "6 days 4 hours", "5 hours 12 minutes", "3 minutes", floored. */
+export const formatTimeLeft = (minutes: number): string => {
+  const days = Math.floor(minutes / (24 * 60));
+  const hours = Math.floor((minutes % (24 * 60)) / 60);
+  const rest = minutes % 60;
+  const dayWords = plural(days, { one: '# day', other: '# days' });
+  const hourWords = plural(hours, { one: '# hour', other: '# hours' });
+  const minuteWords = plural(rest, { one: '# minute', other: '# minutes' });
+  if (days > 0) return hours > 0 ? t`${dayWords} ${hourWords}` : dayWords;
+  if (hours > 0) return rest > 0 ? t`${hourWords} ${minuteWords}` : hourWords;
+  return minuteWords;
+};

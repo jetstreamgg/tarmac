@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,11 @@ import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
   buildPendingBridgeRows,
   formatBridgeDate,
+  formatTimeLeft,
   nextActionLabel,
-  type PendingBridgeCell
+  pendingBridgeNote,
+  type PendingBridgeCell,
+  type PendingBridgeNote
 } from './pendingBridgeRows';
 
 const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
@@ -86,6 +89,84 @@ function ActionHintText({ hint }: ActionHintTextProps) {
   );
 }
 
+type NoteLinkProps = { href: string; testId: string; children: ReactNode };
+
+function NoteLink({ href, testId, children }: NoteLinkProps) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-fgPrimary inline-flex items-center gap-1 font-medium hover:underline"
+      data-testid={testId}
+    >
+      {children}
+      <LinkExternal boxSize={12} className="text-fgSecondary shrink-0" />
+    </a>
+  );
+}
+
+type RedeemNoteTextProps = { note: Extract<PendingBridgeNote, { kind: 'redeem' }> };
+
+function RedeemNoteText({ note }: RedeemNoteTextProps) {
+  if (note.minutesLeft === 0)
+    return <Trans>The time to redeem is up. Checking the ticket on Arbitrum.</Trans>;
+  if (note.minutesLeft === undefined)
+    return <Trans>Redeem on Arbitrum to deliver the funds. It needs ETH on Arbitrum for gas.</Trans>;
+  const timeLeft = formatTimeLeft(note.minutesLeft);
+  return note.urgent ? (
+    <Trans>
+      Only {timeLeft} left to redeem. After that the funds can&apos;t be delivered. It needs ETH on Arbitrum
+      for gas.
+    </Trans>
+  ) : (
+    <Trans>Redeem on Arbitrum within {timeLeft}. It needs ETH on Arbitrum for gas.</Trans>
+  );
+}
+
+type BridgeNoteProps = { note: PendingBridgeNote };
+
+/** What a stuck Arbitrum deposit needs, and how to finish it without this app. */
+function BridgeNote({ note }: BridgeNoteProps) {
+  const urgent = note.kind === 'expired' || note.urgent;
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-1 text-xs leading-[18px]',
+        urgent ? 'text-statusError' : 'text-fgSecondary'
+      )}
+      data-testid="pending-bridge-note"
+    >
+      <Text className="text-xs leading-[18px] text-inherit">
+        {note.kind === 'redeem' ? (
+          <RedeemNoteText note={note} />
+        ) : (
+          <Trans>
+            The Arbitrum ticket expired or was canceled before it was redeemed, so the funds were not
+            delivered.
+          </Trans>
+        )}
+      </Text>
+      <span className="flex flex-wrap gap-x-4 gap-y-1">
+        {note.retryablesHref && (
+          <NoteLink href={note.retryablesHref} testId="pending-bridge-retryables-link">
+            {note.kind === 'redeem' ? (
+              <Trans>Redeem from another wallet</Trans>
+            ) : (
+              <Trans>Check it on Arbitrum</Trans>
+            )}
+          </NoteLink>
+        )}
+        {note.kind === 'expired' && (
+          <NoteLink href={note.supportHref} testId="pending-bridge-support-link">
+            <Trans>Ask for help in the Sky Discord</Trans>
+          </NoteLink>
+        )}
+      </span>
+    </div>
+  );
+}
+
 type PendingBridgeCardProps = {
   bridge: PendingBridge;
   now: number;
@@ -109,6 +190,7 @@ function PendingBridgeCard({
 }: PendingBridgeCardProps) {
   const dismissible = canDismiss(bridge);
   const hint = dismissible ? undefined : actionHint(bridge);
+  const note = pendingBridgeNote(bridge, now);
   const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <div
@@ -166,6 +248,7 @@ function PendingBridgeCard({
           <ActionHintText hint={hint} />
         </Text>
       )}
+      {note && <BridgeNote note={note} />}
 
       <div className="flex flex-col gap-6">
         {buildPendingBridgeRows(bridge, now, familyChainId).map((row, rowIndex) => (
