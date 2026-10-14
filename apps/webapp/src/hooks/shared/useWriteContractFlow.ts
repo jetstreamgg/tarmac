@@ -2,7 +2,7 @@ import { UseSimulateContractParameters, useSimulateContract, useWriteContract } 
 import { useEffect, useEffectEvent, useMemo } from 'react';
 import { Config, ResolvedRegister } from '@wagmi/core';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
-import { useTransactionReceipt } from './useTransactionReceipt';
+import { useTransactionOutcome } from './useTransactionOutcome';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
 import type { Abi, Call, ContractFunctionArgs, ContractFunctionName } from 'viem';
 
@@ -72,9 +72,9 @@ export function useWriteContractFlow<
   const {
     isPending: isMining,
     isSuccess,
-    failure: miningError,
+    failure: txFailure,
     receipt
-  } = useTransactionReceipt({ hash: txHash, chainId: parameters.chainId });
+  } = useTransactionOutcome({ hash: txHash, chainId: parameters.chainId });
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
@@ -84,11 +84,11 @@ export function useWriteContractFlow<
     if (txHash) {
       if (isSuccess) {
         emitSuccess(txHash, receipt?.blockNumber);
-      } else if (miningError) {
-        emitError(miningError, txHash);
+      } else if (txFailure) {
+        emitError(txFailure, txHash);
       }
     }
-  }, [isSuccess, miningError, txHash, receipt?.blockNumber]);
+  }, [isSuccess, txFailure, txHash, receipt?.blockNumber]);
 
   // The single call this hook sends, in the same contract form the batch engines use.
   // Exposed read-only so a flow that routes through here can still be fee-estimated;
@@ -115,7 +115,7 @@ export function useWriteContractFlow<
     },
     data: txHash,
     isLoading: isSimulationLoading || isMining,
-    error: writeError || miningError,
+    error: writeError || txFailure,
     prepareError: simulationError,
     prepared: !!simulationData?.request,
     retryPrepare: refetch

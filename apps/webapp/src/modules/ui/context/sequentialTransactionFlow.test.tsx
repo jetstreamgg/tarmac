@@ -78,11 +78,11 @@ vi.mock('wagmi', () => ({
 }));
 
 // Safe-connector hash workaround is irrelevant here (connector is undefined).
-// The receipt hook reports only final outcomes (a success, or a revert / wallet
+// The outcome hook reports only final outcomes (a success, or a revert / wallet
 // cancel as `failure`); an RPC error while watching never reaches the engine.
 // `receipt.error` / `failureReason` stand in for that final failure.
-vi.mock('@/hooks/shared/useTransactionReceipt', () => ({
-  useTransactionReceipt: () => ({
+vi.mock('@/hooks/shared/useTransactionOutcome', () => ({
+  useTransactionOutcome: () => ({
     isPending: wagmi.receipt.isLoading,
     isSuccess: wagmi.receipt.isSuccess,
     failure: wagmi.receipt.error ?? wagmi.receipt.failureReason,

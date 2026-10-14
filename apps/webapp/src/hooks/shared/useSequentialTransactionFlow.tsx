@@ -2,7 +2,7 @@ import { useSimulateContract, useWriteContract } from 'wagmi';
 import { toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
-import { useTransactionReceipt } from './useTransactionReceipt';
+import { useTransactionOutcome } from './useTransactionOutcome';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
 export function useSequentialTransactionFlow(
@@ -116,9 +116,9 @@ export function useSequentialTransactionFlow(
   const {
     isPending: isMining,
     isSuccess,
-    failure: miningError,
+    failure: txFailure,
     receipt
-  } = useTransactionReceipt({ hash: txHash, chainId });
+  } = useTransactionOutcome({ hash: txHash, chainId });
 
   // Check if current transaction is prepared
   const prepared = useMemo(() => {
@@ -202,15 +202,15 @@ export function useSequentialTransactionFlow(
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
       }
-    } else if (txHash && miningError && lastProcessedTxHash.current !== txHash) {
+    } else if (txHash && txFailure && lastProcessedTxHash.current !== txHash) {
       lastProcessedTxHash.current = txHash;
       // Transaction failed: reverted, or cancelled/replaced in the wallet. Never
-      // an RPC error while watching — the receipt hook keeps watching through
+      // an RPC error while watching — the outcome hook keeps watching through
       // those, since the tx may still land.
-      emitError(miningError, txHash);
+      emitError(txFailure, txHash);
       setIsExecuting(false);
     }
-  }, [isExecuting, isSuccess, miningError, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
+  }, [isExecuting, isSuccess, txFailure, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
 
   const reset = useCallback(() => {
     setIsExecuting(false);
@@ -298,7 +298,7 @@ export function useSequentialTransactionFlow(
     execute,
     isLoading: isSimulationLoading || isMining || (isExecuting && !hasWriteError),
     prepared,
-    error: writeError || miningError || simulationError,
+    error: writeError || txFailure || simulationError,
     currentCallIndex: currentIndex,
     reset
   };

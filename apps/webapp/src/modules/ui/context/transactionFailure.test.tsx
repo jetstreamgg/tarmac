@@ -68,7 +68,7 @@ vi.mock('motion/react', async io => {
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
 import { reportError } from '@/modules/sentry/reportError';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionReceipt';
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 
 i18n.load('en', {});
 i18n.activate('en');

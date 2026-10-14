@@ -28,7 +28,7 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionReceipt';
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {

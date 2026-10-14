@@ -40,7 +40,7 @@ export class TransactionRevertedError extends Error {
   }
 }
 
-export type TransactionReceiptState = {
+export type TransactionOutcomeState = {
   /** A hash is being watched and has no outcome yet, including while the RPC is failing. */
   isPending: boolean;
   isSuccess: boolean;
@@ -73,7 +73,7 @@ export type TransactionReceiptState = {
  * while the transaction is pending, and the hash only exists on the chain it
  * was sent to.
  */
-export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?: number }) {
+export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?: number }) {
   const config = useConfig();
   const currentChainId = useChainId();
   const sendChainId = chainId ?? currentChainId;
@@ -82,7 +82,7 @@ export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?
   const watchChainId = hash === watched.hash ? watched.chainId : sendChainId;
 
   const { data, isSuccess: settled } = useQuery<ReceiptResult>({
-    queryKey: ['transactionReceipt', watchChainId, hash],
+    queryKey: ['transactionOutcome', watchChainId, hash],
     enabled: !!hash,
     queryFn: async () => {
       const client = getPublicClient(config, { chainId: watchChainId });
@@ -121,5 +121,5 @@ export function useTransactionReceipt({ hash, chainId }: { hash?: Hash; chainId?
     isSuccess: settled && !failure,
     failure,
     receipt: data?.receipt
-  } satisfies TransactionReceiptState;
+  } satisfies TransactionOutcomeState;
 }

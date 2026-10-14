@@ -1,5 +1,5 @@
 import { isUserRejection, extractErrorCode } from '@/hooks/helpers';
-import { TransactionReplacedError } from '@/hooks/shared/useTransactionReceipt';
+import { TransactionReplacedError } from '@/hooks/shared/useTransactionOutcome';
 
 export type WidgetErrorKind = 'user_rejected' | 'reverted' | 'wallet_error' | 'unknown';
 

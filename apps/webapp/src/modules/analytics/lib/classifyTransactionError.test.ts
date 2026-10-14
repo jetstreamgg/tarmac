@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TransactionReplacedError } from '@/hooks/shared/useTransactionReceipt';
+import { TransactionReplacedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from './classifyTransactionError';
 
 // Error-like shapes mirroring what viem/wallets actually throw. Wallets nest the

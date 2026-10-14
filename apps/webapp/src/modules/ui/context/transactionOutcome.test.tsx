@@ -19,7 +19,7 @@ vi.mock('@wagmi/core', () => ({
 }));
 
 import { WaitForTransactionReceiptTimeoutError } from 'viem';
-import { useTransactionReceipt } from '@/hooks/shared/useTransactionReceipt';
+import { useTransactionOutcome } from '@/hooks/shared/useTransactionOutcome';
 
 const HASH = '0xabc' as const;
 const receipt = (status: 'success' | 'reverted') => ({ status, transactionHash: HASH });
@@ -29,10 +29,10 @@ function render(props: { hash?: `0x${string}`; chainId?: number } = { hash: HASH
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return renderHook(p => useTransactionReceipt(p), { wrapper, initialProps: props });
+  return renderHook(p => useTransactionOutcome(p), { wrapper, initialProps: props });
 }
 
-describe('useTransactionReceipt', () => {
+describe('useTransactionOutcome', () => {
   afterEach(() => {
     vi.clearAllMocks();
     chain.current = 1;
