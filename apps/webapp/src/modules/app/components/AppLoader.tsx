@@ -307,7 +307,10 @@ export function useAppLoader(): {
         outcome,
         tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
       });
-      if (sort.surface && !released) {
+      // The surface was captured at connect. Only land them if they are still
+      // on it — a product flow opened since (stake, convert) must not be
+      // yanked back to Portfolio when this settle finally arrives.
+      if (sort.surface && pathname === sort.surface && !released) {
         const target = landingFor(outcome);
         // viewTransition: false — the swap happens under the cover (or the
         // transaction modal's scrim), and a view transition's snapshots paint
@@ -317,7 +320,18 @@ export function useAppLoader(): {
       }
     }
     setReleased(true);
-  }, [sort, holdElapsed, decisionLoading, decisionError, address, depositedUsd, idleUsd, released, navigate]);
+  }, [
+    sort,
+    holdElapsed,
+    decisionLoading,
+    decisionError,
+    address,
+    depositedUsd,
+    idleUsd,
+    released,
+    navigate,
+    pathname
+  ]);
 
   return { phase, coverMode, released, revealAnimated, endCover };
 }

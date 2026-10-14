@@ -157,7 +157,7 @@ describe('StakeSummaryCard', () => {
     expect(screen.queryByTestId('stake-open-new-position-cta')).toBeNull();
   });
 
-  it('drops Manage when there are several urns (comp 3617:25235)', () => {
+  it('drops Details when there are several urns (comp 3617:25235)', () => {
     renderCard();
 
     expect(screen.queryByTestId('stake-summary-manage-cta')).toBeNull();
@@ -176,14 +176,16 @@ describe('StakeSummaryCard', () => {
     expect(mockSearchParams.get('urn_index')).toBe('0');
   });
 
-  it('Manage opens the manage modal for a single urn', () => {
+  it('Details opens the manage modal for a single urn', () => {
     render(
       <I18nProvider i18n={i18n}>
         <StakeSummaryCard positions={[POSITIONS[1]]} />
       </I18nProvider>
     );
 
-    fireEvent.click(screen.getByTestId('stake-summary-manage-cta'));
+    const details = screen.getByTestId('stake-summary-manage-cta');
+    expect(details.textContent).toBe('Details');
+    fireEvent.click(details);
 
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('1');

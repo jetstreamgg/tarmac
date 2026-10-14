@@ -42,7 +42,7 @@ const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-
  * One supplied position in the Portfolio carousel: a 64px ringed status iconbox,
  * the network badge (one chain — a product held on several chains is several
  * cards, APP-547), a 2×2 stats block split by per-row dividers, and
- * Supply/Manage actions. Presentational — the caller owns each action
+ * Supply/Details actions. Presentational — the caller owns each action
  * (`onSupply` opens the product's supply modal in place, switching networks
  * first when needed; products without a modal route to the product page).
  */
@@ -165,7 +165,7 @@ export function PositionCard({
           onClick={onManage}
           data-testid="position-card-manage"
         >
-          <Trans>Manage</Trans>
+          <Trans>Details</Trans>
         </Button>
       </div>
     </Card>

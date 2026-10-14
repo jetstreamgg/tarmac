@@ -228,11 +228,13 @@ describe('PortfolioPositionsSection — supply routing', () => {
     expect(h.navigate.mock.calls[0][0].to).toBe('/earn/vault');
   });
 
-  it('Manage always routes to the product page, even on the savings card', () => {
+  it('Details always routes to the product page, even on the savings card', () => {
     renderSection([SAVINGS, VAULT]);
     const savingsCard = screen.getAllByTestId('position-card')[0];
 
-    fireEvent.click(within(savingsCard).getByTestId('position-card-manage'));
+    const details = within(savingsCard).getByTestId('position-card-manage');
+    expect(details.textContent).toBe('Details');
+    fireEvent.click(details);
 
     expect(h.openSupply).not.toHaveBeenCalled();
     expect(h.navigate).toHaveBeenCalledTimes(1);

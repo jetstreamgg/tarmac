@@ -233,17 +233,19 @@ describe('StakePositionsTable', () => {
     expect(noDebtRow.querySelector('[data-testid="stake-position-risk-none"]')).toBeTruthy();
   });
 
-  it('opens the manage flow from the row Manage button', () => {
+  it('opens the manage flow from the row Details button', () => {
     renderTable();
 
-    fireEvent.click(screen.getByTestId('stake-position-manage-1'));
+    const details = screen.getByTestId('stake-position-manage-1');
+    expect(details.textContent).toBe('Details');
+    fireEvent.click(details);
 
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('1');
     expect(setSearchParamsMock.mock.calls[0][1]).toEqual({ replace: true, resetScroll: false });
   });
 
-  it('opens the manage flow from Manage while text is selected, once', () => {
+  it('opens the manage flow from Details while text is selected, once', () => {
     renderTable();
 
     withTextSelection(() => fireEvent.click(screen.getByTestId('stake-position-manage-1')));
