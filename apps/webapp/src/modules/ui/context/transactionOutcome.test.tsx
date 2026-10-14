@@ -18,7 +18,6 @@ vi.mock('@wagmi/core', () => ({
   }
 }));
 
-import { WaitForTransactionReceiptTimeoutError } from 'viem';
 import { useTransactionOutcome } from '@/hooks/shared/useTransactionOutcome';
 
 const HASH = '0xabc' as const;
@@ -68,13 +67,12 @@ describe('useTransactionOutcome', () => {
     expect(viem.waitForTransactionReceipt).toHaveBeenCalledTimes(2);
   });
 
-  it('starts the next attempt straight away when one times out', async () => {
-    viem.waitForTransactionReceipt
-      .mockRejectedValueOnce(new WaitForTransactionReceiptTimeoutError({ hash: HASH }))
-      .mockResolvedValueOnce(receipt('success'));
+  it('watches in one attempt with no time limit, so viem can spot a speed-up or cancel', async () => {
+    viem.waitForTransactionReceipt.mockResolvedValue(receipt('success'));
     const { result } = render();
-    // Well inside the 1s an RPC failure would wait.
-    await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 500 });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(viem.waitForTransactionReceipt).toHaveBeenCalledTimes(1);
+    expect(viem.waitForTransactionReceipt.mock.calls[0][1]).toMatchObject({ timeout: 0 });
   });
 
   it('counts a speed-up as the same transaction', async () => {

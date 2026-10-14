@@ -4,7 +4,6 @@ import { useChainId, useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
 import {
   UserRejectedRequestError,
-  WaitForTransactionReceiptTimeoutError,
   type Hash,
   type ReplacementReturnType,
   type TransactionReceipt
@@ -13,12 +12,6 @@ import { waitForTransactionReceipt } from 'viem/actions';
 
 /** Ceiling on the gap between attempts while the RPC keeps failing. */
 const MAX_RETRY_DELAY_MS = 30_000;
-/**
- * Longest single attempt. Attempts repeat for as long as the hash is watched;
- * bounding each one is what lets a watch that nobody observes any more end
- * (TanStack stops retrying, but can't stop viem's poller mid-attempt).
- */
-const ATTEMPT_TIMEOUT_MS = 60_000;
 
 type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementReturnType };
 
@@ -69,6 +62,11 @@ export type TransactionOutcomeState = {
  * returning the receipt, so a revert and an RPC failure arrive as the same kind
  * of error and only guessing from the error tells them apart.
  *
+ * One attempt has no time limit, as in wagmi: viem spots a speed-up or cancel
+ * only within a single attempt (it needs the original transaction, which nodes
+ * drop once it's replaced), and TanStack pauses retries in a hidden tab. A new
+ * attempt starts only after an RPC error.
+ *
  * The chain is fixed when a hash first appears: the wallet can switch chains
  * while the transaction is pending, and the hash only exists on the chain it
  * was sent to.
@@ -90,18 +88,14 @@ export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?
       let replacement: ReplacementReturnType | undefined;
       const receipt = await waitForTransactionReceipt(client, {
         hash: hash!,
-        timeout: ATTEMPT_TIMEOUT_MS,
+        timeout: 0,
         onReplaced: r => (replacement = r)
       });
       return { receipt, replacement };
     },
     // Unlimited while watched; TanStack stops retrying once nothing observes the query.
     retry: true,
-    // An attempt that simply ran out of time continues at once; an RPC failure backs off.
-    retryDelay: (attempt, error) =>
-      error instanceof WaitForTransactionReceiptTimeoutError
-        ? 0
-        : Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY_MS),
+    retryDelay: attempt => Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY_MS),
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
