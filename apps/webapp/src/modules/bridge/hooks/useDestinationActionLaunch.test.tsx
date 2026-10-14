@@ -236,11 +236,14 @@ describe('useDestinationActionLaunch', () => {
     ]);
   });
 
-  it('tells a Safe its sent action waits for execution, and an EOA nothing', () => {
+  it('tells a Safe its sent action waits for execution, and an EOA that it waits to confirm', () => {
     seedReadyClaim();
     const { result, rerender } = renderHook(() => useDestinationActionLaunch());
     launchAndConfirm(result.current.launch).onStart('0xclaim');
-    expect(result.current.actionHint(stored('0xsource'))).toBeUndefined();
+    expect(result.current.actionHint(stored('0xsource'))).toEqual({
+      kind: 'action-sent',
+      network: 'ethereum'
+    });
 
     mocks.isSafe = true;
     mocks.launched = [];
@@ -389,15 +392,20 @@ describe('useDestinationActionLaunch', () => {
 
     it('records the replay it sends, as for any destination action', () => {
       mocks.replay.ready = true;
-      launchReplay();
+      const { result } = launchReplay();
       act(() => mocks.launched[0].onConfirm!());
       const callbacks = mocks.replay.params!.getCallbacks();
       callbacks.onStart('0xreplay');
       expect(stored('0xdeposit').actions).toEqual([
         { action: 'replay', txHash: '0xreplay', at: expect.any(Number), status: 'sent' }
       ]);
+      expect(result.current.actionHint(stored('0xdeposit'))).toEqual({
+        kind: 'action-sent',
+        network: 'base'
+      });
       callbacks.onSuccess('0xreplay');
       expect(stored('0xdeposit')).toMatchObject({ status: 'pending', nextAction: undefined });
+      expect(result.current.actionHint(stored('0xdeposit'))).toBeUndefined();
     });
 
     it('waits for the switch before building, so the simulation runs on the L2', () => {
@@ -513,6 +521,11 @@ describe('useDestinationActionLaunch', () => {
       expect(stored('0xarbdeposit').actions).toEqual([
         { action: 'keepalive', txHash: '0xkeep', at: expect.any(Number), status: 'sent' }
       ]);
+      // Sent from the redeem's card: the card says so while it mines.
+      expect(result.current.actionHint(stored('0xarbdeposit'))).toEqual({
+        kind: 'action-sent',
+        network: 'arbitrum'
+      });
       // A retry of the confirm must not send it again.
       act(() => mocks.launched[0].onConfirm!());
       expect(mocks.session.onError).toHaveBeenCalledWith(new Error('This action was already sent.'));

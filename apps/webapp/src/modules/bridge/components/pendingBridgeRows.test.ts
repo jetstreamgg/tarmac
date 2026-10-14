@@ -220,7 +220,7 @@ describe('pendingBridgeNote (Ethereum to Arbitrum)', () => {
   it('is only for an Ethereum to Arbitrum deposit that needs a redeem or expired', () => {
     expect(pendingBridgeNote({ ...redeem, status: 'pending' }, 0)).toBeUndefined();
     expect(pendingBridgeNote({ ...redeem, status: 'arrived', nextAction: undefined }, 0)).toBeUndefined();
-    expect(pendingBridgeNote({ ...redeem, to: 'base', nextAction: 'replay' }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...redeem, to: 'base', nextAction: 'redeem' }, 0)).toBeUndefined();
     expect(pendingBridgeNote({ ...redeem, from: 'arbitrum', to: 'ethereum' }, 0)).toBeUndefined();
     expect(pendingBridgeNote({ ...redeem, routeKind: 'cctp' }, 0)).toBeUndefined();
   });
@@ -229,6 +229,23 @@ describe('pendingBridgeNote (Ethereum to Arbitrum)', () => {
     expect(pendingBridgeNote({ ...redeem, txHash: undefined }, 0)).toMatchObject({
       retryablesHref: undefined
     });
+  });
+});
+
+describe('pendingBridgeNote (Ethereum to OP Stack)', () => {
+  const replay: PendingBridge = { ...base, to: 'base', status: 'ready', nextAction: 'replay' };
+
+  it.each(['base', 'optimism', 'unichain'] as const)('explains the replay a %s deposit needs', to => {
+    expect(pendingBridgeNote({ ...replay, to }, 0)).toEqual({ kind: 'replay', network: to });
+  });
+
+  it('is only for a ready replay of a native deposit', () => {
+    expect(pendingBridgeNote({ ...replay, status: 'pending', nextAction: undefined }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...replay, status: 'arrived', nextAction: undefined }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...replay, routeKind: 'cctp' }, 0)).toBeUndefined();
+    expect(
+      pendingBridgeNote({ ...replay, from: 'base', to: 'ethereum', nextAction: 'claim' }, 0)
+    ).toBeUndefined();
   });
 });
 

@@ -244,7 +244,9 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
     delete routeData.timeout;
     return { ...bridge, actions, routeData, readyAt: action.at };
   }
-  if (isRecoveryAction(done)) return { ...bridge, actions, status: 'pending', nextAction: undefined };
+  // The L2 execution runs inside the recovery tx, so the next read settles it.
+  if (isRecoveryAction(done))
+    return { ...bridge, actions, status: 'pending', nextAction: undefined, etaAt: action.at + MINUTE };
   const remaining = destinationActions(bridge.routeKind, bridge.from);
   const next = remaining[remaining.indexOf(done) + 1];
   return next

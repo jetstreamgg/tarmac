@@ -11,6 +11,7 @@ import { formatAddress } from '@/utils';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
+import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
@@ -154,7 +155,7 @@ const ARBITRUM_RETRYABLES_URL = 'https://portal.arbitrum.io/build/retryables';
 const ARBITRUM_ONE_CHAIN_ID = 42161;
 export const SKY_DISCORD_URL = 'https://discord.gg/skyecosystem';
 
-/** A note under an Ethereum to Arbitrum card whose ticket needs a redeem, or expired. */
+/** A note under an Ethereum deposit card that needs a redeem or a replay, or whose Arbitrum ticket expired. */
 export type PendingBridgeNote =
   | {
       kind: 'redeem';
@@ -163,7 +164,8 @@ export type PendingBridgeNote =
       urgent: boolean;
       retryablesHref?: string;
     }
-  | { kind: 'expired'; retryablesHref?: string; supportHref: string };
+  | { kind: 'expired'; retryablesHref?: string; supportHref: string }
+  | { kind: 'replay'; network: OpStackNetworkId };
 
 // The tool looks the ticket up by the Ethereum tx that created it.
 const retryablesHref = (txHash: string | undefined) =>
@@ -171,8 +173,12 @@ const retryablesHref = (txHash: string | undefined) =>
   `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(ARBITRUM_ONE_CHAIN_ID), tx: txHash })}`;
 
 export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
-  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum' || bridge.to !== 'arbitrum')
-    return undefined;
+  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum') return undefined;
+  if (isOpStackNetwork(bridge.to))
+    return bridge.status === 'ready' && bridge.nextAction === 'replay'
+      ? { kind: 'replay', network: bridge.to }
+      : undefined;
+  if (bridge.to !== 'arbitrum') return undefined;
   if (bridge.status === 'expired')
     return { kind: 'expired', retryablesHref: retryablesHref(bridge.txHash), supportHref: SKY_DISCORD_URL };
   if (bridge.status !== 'ready' || bridge.nextAction !== 'redeem') return undefined;

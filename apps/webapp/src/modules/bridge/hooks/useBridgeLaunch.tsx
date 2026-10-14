@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 
 import { useChains } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
-import { useIsSafeWallet } from '@/hooks';
+import { useIsSafeWallet, useNetworkFee } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -177,6 +177,14 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   });
 
   const bridgeFee = deposit.maxFee !== undefined ? formatMaxEthFee(deposit.maxFee) : undefined;
+  // Gas only, signed one leg at a time; the Arbitrum ticket's ETH is the bridge fee.
+  const { data: networkFee } = useNetworkFee({
+    calls: deposit.calls,
+    chainId: pinnedChainId,
+    shouldUseBatch: false,
+    enabled: isNativeDeposit && deposit.calls.length > 0
+  });
+  const networkFeeText = networkFee?.formatted ?? NO_VALUE;
   const transactionContent = useMemo(
     () =>
       route && (
@@ -185,11 +193,11 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           from={from}
           to={to}
           route={route}
-          networkFee={NO_VALUE}
+          networkFee={networkFeeText}
           bridgeFee={bridgeFee}
         />
       ),
-    [amount, from, to, route, bridgeFee]
+    [amount, from, to, route, networkFeeText, bridgeFee]
   );
   const transactionScreenContent = useMemo(
     () => <BridgeTransferHero amount={amount} from={from} to={to} testId="bridge-modal-screen-summary" />,

@@ -31,12 +31,14 @@ const mocks = vi.hoisted(() => ({
   onError: vi.fn(),
   onSuccess: vi.fn(),
   appChainId: 1,
+  networkFee: [] as { calls: unknown[]; chainId?: number; shouldUseBatch?: boolean; enabled?: boolean }[],
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[],
   deposit: {
     ready: true,
     needsApprove: true,
     maxFee: undefined as bigint | undefined,
     error: null as Error | null,
+    calls: [{ to: '0xdeposit' }] as unknown[],
     execute: vi.fn(),
     args: [] as {
       enabled: boolean;
@@ -62,6 +64,10 @@ vi.mock('wagmi', async io => ({
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
   useAppChainId: () => mocks.appChainId,
+  useNetworkFee: (args: (typeof mocks.networkFee)[number]) => {
+    mocks.networkFee.push(args);
+    return { data: args.enabled ? { formatted: '$0.42' } : undefined };
+  },
   useTokenBalance: () => ({
     data: mocks.balance === undefined ? undefined : { value: mocks.balance },
     isLoading: mocks.balanceLoading
@@ -98,8 +104,8 @@ vi.mock('./useNativeDepositLegs', () => ({
     to === 'arbitrum' ? 'outboundTransferCustomRefund' : 'bridgeERC20To',
   useNativeDepositLegs: (args: (typeof mocks.deposit.args)[number]) => {
     mocks.deposit.args.push(args);
-    const { ready, needsApprove, maxFee, error, execute } = mocks.deposit;
-    return { ready, needsApprove, maxFee, error, execute, reset: vi.fn(), refetchAllowance: vi.fn() };
+    const { ready, needsApprove, maxFee, error, execute, calls } = mocks.deposit;
+    return { calls, ready, needsApprove, maxFee, error, execute, reset: vi.fn(), refetchAllowance: vi.fn() };
   }
 }));
 vi.mock('../components/BridgeReviewContent', () => ({
@@ -182,6 +188,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       launched: [],
       updates: [],
       appChainId: 1,
+      networkFee: [],
       legs: []
     });
     Object.assign(mocks.deposit, {
@@ -189,6 +196,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       needsApprove: true,
       maxFee: undefined,
       error: null,
+      calls: [{ to: '0xdeposit' }],
       args: []
     });
     mocks.deposit.execute.mockClear();
@@ -584,6 +592,25 @@ describe('useBridgeLaunch Confirm gate', () => {
       const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
       expect(content.props.bridgeFee).toBe('Up to 0.0000048 ETH');
     });
+
+    it("prices the legs' gas, one at a time, on the pinned chain", async () => {
+      await reviewDeposit();
+      expect(mocks.networkFee.at(-1)).toEqual({
+        calls: mocks.deposit.calls,
+        chainId: 1,
+        shouldUseBatch: false,
+        enabled: true
+      });
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
+      expect(content.props.networkFee).toBe('$0.42');
+    });
+
+    it('shows no network fee before the legs are built', async () => {
+      mocks.deposit.calls = [];
+      await reviewDeposit();
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
+      expect(content.props.networkFee).toBe('–');
+    });
   });
 
   describe('an Ethereum to OP Stack deposit', () => {
@@ -641,6 +668,7 @@ describe('useBridgeLaunch Confirm gate', () => {
     act(() => view.result.current.launch());
     act(() => mocks.launched.at(-1)!.onConfirm!());
     expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
+    expect(mocks.networkFee.at(-1)?.enabled).toBe(false);
     expect(mocks.deposit.execute).not.toHaveBeenCalled();
     expect(mocks.legs).toHaveLength(1);
     expect(mocks.launched.at(-1)?.errorMessage).toBeUndefined();

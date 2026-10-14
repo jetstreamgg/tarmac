@@ -54,7 +54,9 @@ const recoveryOf = (
 
 /** Why a card's action button is disabled, when the user has to act elsewhere. */
 export type DestinationActionHint =
-  { kind: 'safe-executing' } | { kind: 'switch-network'; network: BridgeNetworkId; safe: boolean };
+  | { kind: 'safe-executing' }
+  | { kind: 'action-sent'; network: BridgeNetworkId }
+  | { kind: 'switch-network'; network: BridgeNetworkId; safe: boolean };
 
 const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
   switch (action) {
@@ -217,10 +219,11 @@ export function useDestinationActionLaunch() {
   const actionHint = useCallback(
     (bridge: PendingBridge): DestinationActionHint | undefined => {
       if (!showsActionButton(bridge)) return undefined;
-      if (
-        bridge.actions.some(sent => sent.status === 'sent' && sent.safe && sent.action === bridge.nextAction)
-      )
-        return { kind: 'safe-executing' };
+      // The keepalive is sent from the redeem's card too.
+      const sent = bridge.actions.find(
+        done => done.status === 'sent' && (done.action === bridge.nextAction || done.action === 'keepalive')
+      );
+      if (sent) return sent.safe ? { kind: 'safe-executing' } : { kind: 'action-sent', network: bridge.to };
       const pinned = pinChainId(bridge);
       if (canLaunchAction(bridge) && pinned !== undefined && walletChainId !== pinned && !canSwitchChain)
         return { kind: 'switch-network', network: bridge.to, safe: isSafe };

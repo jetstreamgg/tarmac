@@ -578,6 +578,9 @@ describe('a deposit whose L2 execution failed (redeem on Arbitrum, replay on OP 
     expect(mined.settledAt).toBeUndefined();
     expect(mined.actions).toEqual([{ action: 'redeem', txHash: '0xredeem', at: NOW + MINUTE }]);
     expect(showsActionButton(mined)).toBe(false);
+    // Delivered inside the redeem: the card reads "~1 min" and the tracker polls fast, not "taking longer".
+    expect(mined.etaAt).toBe(NOW + 2 * MINUTE);
+    expect(pollIntervalMs(mined, NOW + MINUTE)).toBe(15_000);
     expect(applyProgress(mined, { kind: 'arrived' }, NOW + 2 * MINUTE)).toMatchObject({
       status: 'arrived',
       settledAt: NOW + 2 * MINUTE

@@ -82,6 +82,7 @@ type ActionHintTextProps = { hint: DestinationActionHint };
 function ActionHintText({ hint }: ActionHintTextProps) {
   if (hint.kind === 'safe-executing') return <Trans>Waiting for your Safe to execute it.</Trans>;
   const network = getBridgeNetwork(hint.network).name;
+  if (hint.kind === 'action-sent') return <Trans>Waiting for the transaction to confirm on {network}.</Trans>;
   return hint.safe ? (
     <Trans>Switch your Safe to {network} to continue.</Trans>
   ) : (
@@ -130,8 +131,19 @@ type BridgeNoteProps = {
   canExtend: boolean;
 };
 
-/** What a stuck Arbitrum deposit needs, and how to finish it without this app. */
+/** What a stuck deposit needs, and for Arbitrum how to finish it without this app. */
 function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
+  if (note.kind === 'replay') {
+    const network = getBridgeNetwork(note.network).name;
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        <Trans>
+          The deposit reached {network} but wasn&apos;t delivered. Replay it on {network} to deliver the
+          funds. It needs ETH on {network} for gas.
+        </Trans>
+      </Text>
+    );
+  }
   const urgent = note.kind === 'expired' || note.urgent;
   // A keepalive can't revive a ticket whose time is up.
   const extendable = note.kind === 'redeem' && note.urgent && note.minutesLeft !== 0;
