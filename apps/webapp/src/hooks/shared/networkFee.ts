@@ -52,7 +52,7 @@ const OP_STACK_CHAIN_IDS: readonly number[] = [base.id, optimism.id, unichain.id
 
 export const isOpStackChain = (chainId: number): boolean => OP_STACK_CHAIN_IDS.includes(chainId);
 
-const multicall3Abi = parseAbi([
+export const multicall3Abi = parseAbi([
   'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[])',
   'function aggregate3Value((address target, bool allowFailure, uint256 value, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[])'
 ]);
@@ -87,8 +87,22 @@ export function isDelegated(code: Hex | undefined): boolean {
   return !!code && code.toLowerCase().startsWith(DELEGATION_INDICATOR_PREFIX);
 }
 
-/** Calldata for the stand-in executor. `aggregate3Value` only when a call carries ETH. */
-export function encodeBatchExecutorData(calls: readonly Call[]): Hex {
+/**
+ * Calldata for the stand-in executor. `aggregate3Value` only when a call carries ETH.
+ *
+ * `allowFailure` picks what a reverting sub-call does to the bundle. The fee estimate
+ * leaves it off: Multicall3 then re-raises and the whole simulation fails, which is the
+ * right answer for a price. The pre-send validator turns it ON: Multicall3's own re-raise
+ * is the string `"Multicall3: call failed"`, and the sub-call's real reason (an
+ * `Error(string)`, a custom error, a Panic) is lost with it — whereas with failures
+ * allowed the call *returns*, and each entry's `(success, returnData)` carries exactly
+ * what a per-call `eth_call` would have thrown. Simulation-only: the wallet's send-time
+ * bundle stays atomic either way.
+ */
+export function encodeBatchExecutorData(
+  calls: readonly Call[],
+  { allowFailure = false }: { allowFailure?: boolean } = {}
+): Hex {
   const hasValue = calls.some(call => !!call.value);
   return hasValue
     ? encodeFunctionData({
@@ -97,7 +111,7 @@ export function encodeBatchExecutorData(calls: readonly Call[]): Hex {
         args: [
           calls.map(call => ({
             target: call.to,
-            allowFailure: false,
+            allowFailure,
             value: call.value ?? 0n,
             callData: getCallData(call)
           }))
@@ -106,7 +120,7 @@ export function encodeBatchExecutorData(calls: readonly Call[]): Hex {
     : encodeFunctionData({
         abi: multicall3Abi,
         functionName: 'aggregate3',
-        args: [calls.map(call => ({ target: call.to, allowFailure: false, callData: getCallData(call) }))]
+        args: [calls.map(call => ({ target: call.to, allowFailure, callData: getCallData(call) }))]
       });
 }
 

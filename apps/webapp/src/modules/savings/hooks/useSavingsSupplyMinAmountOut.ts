@@ -7,7 +7,7 @@ import {
   useReadSsrAuthOracleGetSsr
 } from '@/hooks';
 import { math } from '@/utils';
-import { EPOCH_LENGTH } from '@/widgets/shared/constants';
+import { EPOCH_LENGTH } from '@/modules/savings/constants';
 
 /**
  * The minimum sUSDS out (slippage floor) for an L2 PSM supply (`swapExactIn`).

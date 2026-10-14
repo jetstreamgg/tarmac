@@ -9,47 +9,34 @@
  */
 
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
-import { vaultRateInfo } from '@/components/product/RateInfo';
-import type { VaultProvider } from '@/hooks';
+import { estEarningsTrendCell, productCell, rateCell } from '@/components/product/ModalGridCells';
 import {
-  EST_EARNINGS_LABEL,
-  estEarningsTrendCell,
-  networkCell,
-  networkFeeCell,
-  productCell,
-  rateCell,
-  singleOrDelta,
-  withdrawalCell
-} from '@/components/product/ModalGridCells';
+  buildEarnEntryRows,
+  buildEarnReviewRows,
+  type EarnEntryRowInput,
+  type EarnReviewRowInput
+} from '@/components/product/earnModalRows';
 
 /** One grid row: a full-width single cell, or a pair split by the vertical hairline. */
 export type VaultModalGridRow = ModalGridCell[];
 
-/** Display strings for the vault supply/withdraw entry screens (Figma 859:38105 / 859:38297). */
-export type VaultEntryRowInput = {
-  /** Vault provider - picks the rate explainer (Morpho vs Spark/Tether copy). */
-  provider?: VaultProvider;
+/** The rate inputs both vault grids share. */
+type VaultRateInput = {
   /** Net rate, formatted (e.g. "4.10%"). */
   rate: string;
   /** Append the morpho stars glyph to the rate (rewards-boosted, per the rate popover). */
   boostedRate: boolean;
-  /** Network the transaction runs on (e.g. "Ethereum"). */
-  network: string;
-  /** The vault's underlying asset symbol for the 12px value icons (e.g. "USDC"). */
-  assetSymbol: string;
-  /** Supplied position value before the action. */
-  supplyBefore: string;
-  /** Supplied position value after the action. */
-  supplyAfter: string;
-  /** 1Y projected earnings on the position before the action. */
-  earningsBefore: string;
-  /** 1Y projected earnings on the position after the action. */
-  earningsAfter: string;
-  /** When false the Supply / Est. earnings cells collapse to their `before` value (no delta drawn). */
-  hasAmount: boolean;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
-  networkFee: string;
 };
+
+const vaultRateCell = ({ rate, boostedRate }: VaultRateInput) =>
+  rateCell('Rate', rate, boostedRate ? 'morpho' : undefined, 'morpho');
+
+/** Display strings for the vault supply/withdraw entry screens (Figma 859:38105 / 859:38297). */
+export type VaultEntryRowInput = EarnEntryRowInput &
+  VaultRateInput & {
+    /** The vault's underlying asset symbol for the 12px value icons (e.g. "USDC"). */
+    assetSymbol: string;
+  };
 
 /**
  * Grid for the vault entry screens — one shape for both flows (Figma draws
@@ -58,52 +45,27 @@ export type VaultEntryRowInput = {
  * Network fee full-width.
  */
 export function buildVaultEntryRows(input: VaultEntryRowInput): VaultModalGridRow[] {
-  return [
-    [
-      rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined, vaultRateInfo(input.provider)),
-      networkCell(input.network)
-    ],
-    [
-      singleOrDelta(
-        { label: 'Supply', token: input.assetSymbol },
-        input.supplyBefore,
-        input.supplyAfter,
-        input.hasAmount
-      ),
-      singleOrDelta(
-        { label: EST_EARNINGS_LABEL, token: input.assetSymbol },
-        input.earningsBefore,
-        input.earningsAfter,
-        input.hasAmount
-      )
-    ],
-    [networkFeeCell(input.networkFee)]
-  ];
+  return buildEarnEntryRows(input, {
+    rate: vaultRateCell(input),
+    supplyToken: input.assetSymbol,
+    earningsToken: input.assetSymbol
+  });
 }
 
 /** Display strings for the vault review stages (Figma 859:38553 supply / 859:38234 withdrawal). */
-export type VaultReviewRowInput = {
-  /** Vault provider - picks the rate explainer (Morpho vs Spark/Tether copy). */
-  provider?: VaultProvider;
-  /** Entered amount, formatted (the 12px asset icon carries the denomination). */
-  amount: string;
-  /** The vault's underlying asset symbol (e.g. "USDC"). */
-  assetSymbol: string;
-  /** 1Y projected earnings on the position after the action. */
-  estEarnings: string;
-  /** Vault display name (e.g. "USDC Risk Capital"). */
-  product: string;
-  /** Net rate, formatted. */
-  rate: string;
-  /** Append the morpho stars glyph to the rate. */
-  boostedRate: boolean;
-  /** Withdrawal availability — "Liquidity based" per the risk sheet (RiskTierDetails); diverges from the comp's "Anytime"/"Instant". */
-  withdrawal: string;
-  /** Network the transaction runs on. */
-  network: string;
-  /** Network fee, formatted — stubbed until a gas estimate is wired. */
-  networkFee: string;
-};
+export type VaultReviewRowInput = EarnReviewRowInput &
+  VaultRateInput & {
+    /** Entered amount, formatted (the 12px asset icon carries the denomination). */
+    amount: string;
+    /** The vault's underlying asset symbol (e.g. "USDC"). */
+    assetSymbol: string;
+    /** 1Y projected earnings on the position after the action. */
+    estEarnings: string;
+    /** Vault display name (e.g. "USDC Risk Capital"). */
+    product: string;
+    /** Withdrawal availability — "Liquidity based" per the risk sheet (RiskTierDetails); diverges from the comp's "Anytime"/"Instant". */
+    withdrawal: string;
+  };
 
 /**
  * Grid for the vault review stages: [You'll supply|receive | Est. earnings
@@ -115,8 +77,8 @@ export function buildVaultReviewRows(
   flow: 'supply' | 'withdraw',
   input: VaultReviewRowInput
 ): VaultModalGridRow[] {
-  return [
-    [
+  return buildEarnReviewRows(input, {
+    leading: [
       {
         kind: 'single',
         label: flow === 'supply' ? "You'll supply" : "You'll receive",
@@ -125,11 +87,7 @@ export function buildVaultReviewRows(
       },
       estEarningsTrendCell(input.estEarnings, input.assetSymbol)
     ],
-    [
-      productCell(input.product, input.assetSymbol, 'morpho'),
-      rateCell('Rate', input.rate, input.boostedRate ? 'morpho' : undefined, vaultRateInfo(input.provider))
-    ],
-    [withdrawalCell(input.withdrawal), networkCell(input.network)],
-    [networkFeeCell(input.networkFee)]
-  ];
+    product: productCell(input.product, input.assetSymbol, 'morpho'),
+    rate: vaultRateCell(input)
+  });
 }

@@ -2,16 +2,14 @@ import { useMemo } from 'react';
 import { useChainId, useConnection, useReadContracts } from 'wagmi';
 import { useQueries } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
-import { mainnet } from 'viem/chains';
 import {
   familyMainnetId as resolveFamilyMainnetId,
   calculateApyFromStr,
-  formatDecimalPercentage,
-  math
+  formatDecimalPercentage
 } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { ZERO_ADDRESS } from '../constants';
-import { usdsSkyRewardAbi, sparkUsdtVaultAddress } from '../generated';
+import { usdsSkyRewardAbi } from '../generated';
 import { usePrices } from '../prices/usePrices';
 import { useOverallSkyData } from '../shared/useOverallSkyData';
 import { trailingAverageRate, type DailyRatePoint } from '../shared/trailingRate';
@@ -26,9 +24,6 @@ import { useMorphoVaultMultipleRateApiData } from '../morpho/useMorphoVaultRateA
 import { useMorphoVaultsTrailingRates } from '../morpho/useMorphoVaultsTrailingRates';
 import { fetchMorphoVaultMarketData } from '../morpho/useMorphoVaultMarketApiData';
 import { useAllMorphoVaultsUserAssets } from '../morpho/useAllMorphoVaultsUserAssets';
-import { VAULTS } from '../vaults/constants';
-import { useSparkVaultResolvedRate } from '../vaults/spark/useSparkVaultResolvedRate';
-import { useSparkVaultApiData } from '../vaults/spark/useSparkVaultApiData';
 import { isMarketMatured } from '../pendle/helpers';
 import { PENDLE_MARKETS } from '../pendle/constants';
 import { usePendleMarketsApiData } from '../pendle/usePendleMarketsApiData';
@@ -162,7 +157,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     ]
   );
 
-  // --- Vaults (Morpho + Spark via the unified VAULTS registry)
+  // --- Vaults (via the unified VAULTS registry)
   const morphoVaultAddresses = useMemo(
     () => MORPHO_VAULTS.map(v => v.vaultAddress[familyMainnetId]),
     [familyMainnetId]
@@ -183,8 +178,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     }))
   });
   // Trailing rates come from the Morpho historical API in a single request for
-  // all vaults; the Spark vault carries its own daily series inside
-  // `sparkMarket.data.history`, so it needs no extra fetch.
+  // all vaults.
   const morphoVaultAddressesForHistory = useMemo(
     () => morphoVaultAddresses.filter((address): address is `0x${string}` => !!address),
     [morphoVaultAddresses]
@@ -193,9 +187,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     vaultAddresses: morphoVaultAddressesForHistory,
     days: TRAILING_DAYS
   });
-  const sparkRate = useSparkVaultResolvedRate({ vaultAddress: sparkUsdtVaultAddress[mainnet.id] });
-  const sparkMarket = useSparkVaultApiData({ vaultAddress: sparkUsdtVaultAddress[mainnet.id] });
-  // Despite the name, iterates the unified VAULTS registry (Morpho + Spark).
+  // Despite the name, iterates the unified VAULTS registry.
   const {
     data: vaultUserAssets,
     isLoading: vaultUserAssetsLoading,
@@ -324,44 +316,18 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
             };
           }
           case 'vault': {
-            const vault = VAULTS.find(v => v.vaultAddress[familyMainnetId] === product.address);
-            const isSpark = vault?.provider === 'sky';
-            let rate: EarnRate;
-            let rate30d: EarnRate;
-            let tvlUsd: number | undefined;
-            if (isSpark) {
-              rate = toRate(
-                sparkRate.formattedRate !== undefined ? parseFloat(sparkRate.formattedRate) / 100 : undefined
-              );
-              // Spark's API returns its daily series alongside the current
-              // figures, so the history is already loaded here.
-              rate30d = trailing(
-                (sparkMarket.data?.history ?? []).flatMap(point =>
-                  point.apy !== undefined ? [{ rate: point.apy, timestampSec: point.blockTimestamp }] : []
-                )
-              );
-              tvlUsd = sparkMarket.data?.totalAssetsUsd;
-              if (tvlUsd === undefined && sparkMarket.data?.totalAssets !== undefined && vault) {
-                const decimals = math.resolveDecimals(vault.assetToken.decimals, familyMainnetId);
-                tvlUsd = bigintToUsd(
-                  math.scaleToBaseDecimals(sparkMarket.data.totalAssets, decimals),
-                  priceFor(vault.assetToken.symbol)
-                );
-              }
-            } else {
-              const morphoRate = morphoRates?.find(
-                r => r.address.toLowerCase() === product.address?.toLowerCase()
-              );
-              rate = toRate(morphoRate?.netRate);
-              // Already averaged by the hook (one request covers every vault).
-              rate30d = toRate(
-                product.address ? morphoTrailingRates?.[product.address.toLowerCase()] : undefined
-              );
-              const morphoIndex = MORPHO_VAULTS.findIndex(
-                v => v.vaultAddress[familyMainnetId] === product.address
-              );
-              tvlUsd = morphoMarketResults[morphoIndex]?.data?.totalAssetsUsd;
-            }
+            const morphoRate = morphoRates?.find(
+              r => r.address.toLowerCase() === product.address?.toLowerCase()
+            );
+            const rate = toRate(morphoRate?.netRate);
+            // Already averaged by the hook (one request covers every vault).
+            const rate30d = toRate(
+              product.address ? morphoTrailingRates?.[product.address.toLowerCase()] : undefined
+            );
+            const morphoIndex = MORPHO_VAULTS.findIndex(
+              v => v.vaultAddress[familyMainnetId] === product.address
+            );
+            const tvlUsd = morphoMarketResults[morphoIndex]?.data?.totalAssetsUsd;
             const userVault = vaultUserAssets.vaults.find(v => v.vaultAddress === product.address);
             const positionUsd =
               connected && userVault
@@ -375,14 +341,12 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               position:
                 positionUsd !== undefined ? singleChainAmount(familyMainnetId, positionUsd) : undefined,
               isLoading:
-                (isSpark
-                  ? sparkRate.isLoading || sparkMarket.isLoading
-                  : morphoRatesLoading ||
-                    morphoTrailingRatesLoading ||
-                    morphoMarketResults.some(r => r.isLoading)) ||
+                morphoRatesLoading ||
+                morphoTrailingRatesLoading ||
+                morphoMarketResults.some(r => r.isLoading) ||
                 vaultUserAssetsLoading ||
                 pricesLoading,
-              error: (isSpark ? sparkMarket.error : morphoRatesError) || vaultUserAssetsError || null
+              error: morphoRatesError || vaultUserAssetsError || null
             };
           }
           case 'fixed': {
@@ -465,8 +429,6 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     morphoTrailingRates,
     morphoTrailingRatesLoading,
     morphoMarketResults,
-    sparkRate,
-    sparkMarket,
     vaultUserAssets,
     vaultUserAssetsLoading,
     vaultUserAssetsError,

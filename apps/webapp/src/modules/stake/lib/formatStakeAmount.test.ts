@@ -7,6 +7,6 @@ describe('formatStakeAmount', () => {
   });
 
   it('delegates non-zero amounts to the app-wide formatter', () => {
-    expect(formatStakeAmount(30000n * 10n ** 18n)).toBe('30,000');
+    expect(formatStakeAmount(30000n * 10n ** 18n)).toBe('30,000.00');
   });
 });

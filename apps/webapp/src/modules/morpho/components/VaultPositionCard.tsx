@@ -3,13 +3,7 @@ import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import {
-  useVaultMarketData,
-  useErc4626VaultData,
-  getTokenDecimals,
-  type Token,
-  type VaultProvider
-} from '@/hooks';
+import { useVaultMarketData, useErc4626VaultData, getTokenDecimals, type Token } from '@/hooks';
 import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,7 +16,7 @@ import {
   ProductStatPair
 } from '@/components/product/ProductCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import { AccruedToDateStat } from '@/components/product/AccruedToDateStat';
 import { earningsForPosition } from '@/modules/portfolio/earnings/earningsForPosition';
 import { useWalletEarnings } from '@/modules/portfolio/hooks/useWalletEarnings';
 import { merklAdapter, useClaimRewardsModal } from '@/modules/claim';
@@ -42,23 +36,17 @@ import { NO_VALUE } from '@/lib/constants';
 export function VaultPositionCard({
   vaultAddress,
   assetToken,
-  vaultName,
-  provider
+  vaultName
 }: {
   vaultAddress: `0x${string}`;
   assetToken: Token;
   vaultName: string;
-  /** Gates the Morpho branding on the no-position card. */
-  provider: VaultProvider;
 }) {
   const chainId = useChainId();
   const { isConnected } = useConnection();
   const decimals = getTokenDecimals(assetToken, chainId);
 
-  const { data: marketData, isLoading: rateLoading } = useVaultMarketData({
-    provider: 'morpho',
-    vaultAddress
-  });
+  const { data: marketData, isLoading: rateLoading } = useVaultMarketData({ vaultAddress });
   const netRate = marketData?.rate?.netRate;
 
   const { data: vaultData, error: vaultError, mutate: mutateVault } = useErc4626VaultData({ vaultAddress });
@@ -89,9 +77,7 @@ export function VaultPositionCard({
   const accrued = earningsForPosition(walletEarnings, `vault-morpho-${vaultAddress.toLowerCase()}`);
 
   // Per-vault inputs for the supply/withdraw modal (passed at open time).
-  // `provider` drives the analytics module name — omitting it silently fell back
-  // to the form's 'morpho' default and mislabelled the Sky-provider vaults.
-  const modalArgs = { vaultAddress, assetToken, vaultName, netRate, provider };
+  const modalArgs = { vaultAddress, assetToken, vaultName, netRate };
 
   // Hold the card slot until the position read resolves — deciding on the 0n
   // fallback flashes the supply pitch at users who hold a position. A failed
@@ -111,7 +97,6 @@ export function VaultPositionCard({
       <VaultSupplyCard
         assetToken={assetToken}
         vaultName={vaultName}
-        provider={provider}
         netRate={netRate}
         rateData={marketData?.rate}
         onSupply={() => openSupply(modalArgs)}
@@ -171,17 +156,7 @@ export function VaultPositionCard({
             </ProductStat>
           </ProductStatPair>
           <ProductStatPair grow>
-            <ProductStat label={<Trans>Accrued to date</Trans>}>
-              <EarningsFigureValue
-                figure={accrued?.totalEarned ?? null}
-                missing={accrued?.missingFromTotal}
-                coverage={accrued?.coverage}
-                variant="plain"
-                className={accrued?.totalEarned?.status === 'ok' ? undefined : 'text-fgSecondary'}
-                skeletonClassName="h-4 w-14"
-                testId="vault-accrued-to-date"
-              />
-            </ProductStat>
+            <AccruedToDateStat accrued={accrued} testId="vault-accrued-to-date" />
             <ProductStat label={<Trans>Claimable rewards</Trans>}>
               {reward ? (
                 <>

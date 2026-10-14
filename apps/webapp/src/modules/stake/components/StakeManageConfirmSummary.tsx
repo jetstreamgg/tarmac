@@ -1,6 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { formatBigInt, formatUsd } from '@/utils';
-import { formatUnits } from 'viem';
+import { wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 
 /**
@@ -62,8 +62,7 @@ export function StakeManageConfirmSummary({
   usdsToWipe: bigint;
   skyPriceUsd: number | null;
 }) {
-  const skyUsd = (amount: bigint) =>
-    skyPriceUsd !== null ? Number(formatUnits(amount, 18)) * skyPriceUsd : null;
+  const skyUsd = (amount: bigint) => (skyPriceUsd !== null ? wadToUsd(amount, skyPriceUsd) : null);
 
   return (
     <div data-testid="stake-manage-confirm-summary" className="flex flex-col gap-5">
@@ -90,7 +89,7 @@ export function StakeManageConfirmSummary({
           label={<Trans>Borrow amount</Trans>}
           amount={usdsToBorrow}
           symbol="USDS"
-          usdValue={Number(formatUnits(usdsToBorrow, 18))}
+          usdValue={wadToFloat(usdsToBorrow)}
           dataTestId="stake-manage-summary-borrow"
         />
       )}
@@ -99,7 +98,7 @@ export function StakeManageConfirmSummary({
           label={<Trans>Repay amount</Trans>}
           amount={usdsToWipe}
           symbol="USDS"
-          usdValue={Number(formatUnits(usdsToWipe, 18))}
+          usdValue={wadToFloat(usdsToWipe)}
           dataTestId="stake-manage-summary-repay"
         />
       )}

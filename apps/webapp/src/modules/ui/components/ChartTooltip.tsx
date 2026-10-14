@@ -61,6 +61,10 @@ function useTooltipPlacement(
   // `useFollow` owns `transform`; it must stay out of the style prop below.
   const panelRef = useFollow<HTMLDivElement>(x, y);
 
+  // Deliberately without a dependency list: the boxes are re-measured after
+  // every render (see the hook comment), and both setters return the previous
+  // value when nothing changed, so this cannot loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- measured every render by design
   useLayoutEffect(() => {
     const panel = panelRef.current;
     if (panel) {
@@ -224,19 +228,17 @@ export function ChartTooltip({
   // unmounting the panel each time blinked the card and its token icon. The
   // lift releases the hold — an inactive tooltip then hides as before.
   const [held, setHeld] = useState<typeof live>(null);
-  useEffect(() => {
-    if (!live) return;
-    // Same datum → keep the previous snapshot, so this cannot loop on the new
-    // object recharts hands over every render.
-    setHeld(prev =>
-      prev &&
-      prev.label.getTime() === live.label.getTime() &&
-      prev.coordinate?.x === live.coordinate?.x &&
-      prev.coordinate?.y === live.coordinate?.y
-        ? prev
-        : live
-    );
-  }, [live]);
+  // Same datum → keep the previous snapshot, so this cannot loop on the new
+  // object recharts hands over every render.
+  const holdsLive =
+    !!live &&
+    !!held &&
+    held.label.getTime() === live.label.getTime() &&
+    held.coordinate?.x === live.coordinate?.x &&
+    held.coordinate?.y === live.coordinate?.y;
+  if (live && !holdsLive) {
+    setHeld(live);
+  }
   const shown = live ?? (pressedInside ? held : null);
 
   const { panelRef, style } = useTooltipPlacement(shown?.coordinate, anchorRef);

@@ -1,18 +1,17 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { type Token, getTokenDecimals, useRewardsSuppliedBalance, useTokenBalance } from '@/hooks';
-import { formatNumber } from '@/utils';
-import { parseAmountInput } from '@/lib/amountInput';
+import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { RewardsAmountSummary } from '../components/RewardsAmountSummary';
 import type { RewardsEngineParams, RewardsLaunchFlow } from './useRewardsLaunch';
+import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 
 /** Seeds the form's initial amount (e.g. a Portfolio quick-supply shortcut). */
 export type RewardsModalPreset = { amount?: string };
 
 /** Minimized-toast titles, amount-aware (e.g. "10,000.00 USDS supplied!"). */
-export type RewardsToastTitles = { loading: string; success: string; error: string };
+export type RewardsToastTitles = AmountToastTitles;
 
 export interface RewardsTransactionForm {
   isConnected: boolean;
@@ -20,6 +19,8 @@ export interface RewardsTransactionForm {
   decimals: number;
   value: string;
   amount: bigint;
+  /** Debounce-settled amount driving the engine params + amount-derived display. */
+  debouncedAmount: bigint;
   /** Spendable balance for the flow: wallet balance (supply) / staked balance (withdraw). */
   available: bigint;
   /** The `available` read has resolved — display and validation wait on it. */
@@ -30,6 +31,8 @@ export interface RewardsTransactionForm {
   positionKnown: boolean;
   isZero: boolean;
   insufficient: boolean;
+  /** Input typed but the debounced amount hasn't settled yet. */
+  debouncePending: boolean;
   amountReady: boolean;
   engineParams: RewardsEngineParams;
   toast: RewardsToastTitles;
@@ -64,10 +67,6 @@ export function useRewardsTransactionForm({
   const isSupply = flow === 'supply';
   const decimals = getTokenDecimals(supplyToken, chainId);
 
-  const [value, setValue] = useState(preset?.amount ?? '');
-
-  const amount = parseAmountInput(value, decimals);
-
   const { data: walletBalance } = useTokenBalance({
     address,
     chainId,
@@ -80,50 +79,51 @@ export function useRewardsTransactionForm({
   // Never validate against the unresolved balance's 0n fallback.
   const availableKnown = isSupply ? walletBalance !== undefined : suppliedBalance !== undefined;
   const positionKnown = suppliedBalance !== undefined;
-  const isZero = amount === 0n;
-  const insufficient = availableKnown && amount > available;
-  const amountReady = isConnected && !isZero && availableKnown && !insufficient;
 
-  const onInput = setValue;
-  const setMaxAmount = () => setValue(formatUnits(available, decimals));
-  // The 25/50/100% chips — 100% is the old Max (`withdraw(amount)` is exact, so
-  // the full balance carries no dust risk); the partial presets are plain amounts.
-  const setPercentAmount = (pct: number) =>
-    setValue(formatUnits(pct >= 100 ? available : (available * BigInt(pct)) / 100n, decimals));
-  const clearAmount = () => setValue('');
+  // No Max flag: `withdraw(amount)` is exact, so the full balance carries no
+  // dust risk and Max / the 100% chip simply fill the staked balance.
+  const {
+    value,
+    amount,
+    debouncedAmount,
+    debouncePending,
+    isZero,
+    insufficient,
+    amountReady,
+    toast,
+    onInput,
+    setMaxAmount,
+    setPercentAmount,
+    clearAmount
+  } = useAmountForm({
+    decimals,
+    available,
+    availableKnown,
+    symbol: supplyToken.symbol,
+    isSupply,
+    preset
+  });
 
-  const engineParams: RewardsEngineParams = { flow, contractAddress, supplyToken, amount };
-
-  const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, decimals)), { maxDecimals: 2 })} ${supplyToken.symbol}`;
-  // Memoized so the modal-content sync effect in RewardsModalForm has stable deps —
-  // an unmemoized object/element here recreates every render and loops
-  // updateModalContent → setActiveConfig → re-render (matches the savings/vault forms).
-  const toast = useMemo<RewardsToastTitles>(
-    () =>
-      isSupply
-        ? {
-            loading: t`Supplying ${amountLabel}`,
-            success: t`${amountLabel} supplied!`,
-            error: t`Supply failed`
-          }
-        : {
-            loading: t`Withdrawing ${amountLabel}`,
-            success: t`${amountLabel} withdrawn!`,
-            error: t`Withdrawal failed`
-          },
-    [isSupply, amountLabel]
-  );
+  const runActive = useTransactionRunActive();
+  const engineParams: RewardsEngineParams = {
+    flow,
+    contractAddress,
+    supplyToken,
+    amount: debouncedAmount,
+    // Held on through a run the amount check no longer passes (see useTransactionRunActive).
+    enabled: amountReady || runActive
+  };
 
   const transactionScreenContent = useMemo(
     () => (
       <RewardsAmountSummary
         label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
         supplyToken={supplyToken}
-        amount={amount}
+        amount={debouncedAmount}
         decimals={decimals}
       />
     ),
-    [isSupply, supplyToken, amount, decimals]
+    [isSupply, supplyToken, debouncedAmount, decimals]
   );
 
   return {
@@ -132,12 +132,14 @@ export function useRewardsTransactionForm({
     decimals,
     value,
     amount,
+    debouncedAmount,
     available,
     availableKnown,
     position,
     positionKnown,
     isZero,
     insufficient,
+    debouncePending,
     amountReady,
     engineParams,
     toast,

@@ -21,6 +21,11 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: undefined }),
   useSwitchChain: () => ({ switchChain: vi.fn(), isPending: false, variables: undefined })
 }));
+// The provider now derives `canSwitchChain`, which reads the Safe lookup; not under test here.
+vi.mock('@/hooks', async io => ({
+  ...(await io<typeof import('@/hooks')>()),
+  useIsSafeWallet: () => false
+}));
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => ({ trackNetworkSwitchRequested: vi.fn(), trackNetworkSwitchCompleted: vi.fn() })
 }));
@@ -122,6 +127,26 @@ describe('useNetworkChangeToast', () => {
     rerender({ intent: Intent.SAVINGS_INTENT });
     expect(h.showNetworkToast).toHaveBeenCalledTimes(1);
     expect(h.showNetworkToast.mock.calls[0][0]).toMatchObject({ isAutoSwitch: false });
+  });
+
+  it('announces a change once: not on mount, and not again on unrelated re-renders', () => {
+    // The change is announced from a one-shot record set in the render that
+    // sees the new chain, so renders that carry nothing new must stay quiet.
+    const { rerender } = renderToastHook(Intent.STAKE_INTENT);
+    expect(h.showNetworkToast).not.toHaveBeenCalled();
+
+    h.chainId = 1;
+    rerender({ intent: Intent.STAKE_INTENT });
+    expect(h.showNetworkToast).toHaveBeenCalledTimes(1);
+
+    rerender({ intent: Intent.STAKE_INTENT });
+    rerender({ intent: Intent.SAVINGS_INTENT });
+    expect(h.showNetworkToast).toHaveBeenCalledTimes(1);
+
+    // Going back is a new change of its own.
+    h.chainId = 8453;
+    rerender({ intent: Intent.SAVINGS_INTENT });
+    expect(h.showNetworkToast).toHaveBeenCalledTimes(2);
   });
 
   it('still announces a wallet-side change that lands elsewhere than the pending request', () => {

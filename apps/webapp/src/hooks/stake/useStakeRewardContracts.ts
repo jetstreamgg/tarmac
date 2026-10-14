@@ -2,7 +2,7 @@ import request, { gql } from 'graphql-request';
 import { useChainId, useConfig } from 'wagmi';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
-import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum, indexerDataSource } from '../constants';
 import { ReadHook } from '../hooks';
 import {
   stakeModuleAbi,
@@ -132,14 +132,7 @@ export function useStakeRewardContracts({
   const isLoading = graphqlError ? isValidationLoading : isGraphqlLoading;
 
   // Build data sources
-  const dataSources = [
-    {
-      title: 'Sky Ecosystem indexer',
-      href: urlIndexer,
-      onChain: false,
-      trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-    }
-  ];
+  const dataSources = [indexerDataSource(urlIndexer)];
 
   // Add on-chain data source if using fallback
   if (graphqlError && validatedData) {

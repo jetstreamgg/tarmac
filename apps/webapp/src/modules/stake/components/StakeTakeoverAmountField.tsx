@@ -4,23 +4,33 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountFieldHairline } from '@/components/product/amountFieldHairline';
-import { parseAmountInput, sanitizeAmountInput } from '@/lib/amountInput';
+import { AmountInput } from '@/components/product/AmountInput';
+import { parseAmountInput } from '@/lib/amountInput';
 import { formatAmountForInput } from '../lib/amountInput';
 
 // SKY and USDS are 18-decimal on every deployment the stake module runs on.
 const DECIMALS = 18;
 
 const PERCENT_CHIPS = [25, 50, 100] as const;
-// Borrow caps the top chip at 75% (APP-426): staging the exact max puts the
-// position on the liquidation boundary, where fee accrual alone tips it
-// underwater.
-export const BORROW_PERCENT_CHIPS = [25, 50, 75] as const;
+// Borrow-more chips (Figma 3015:58333): 25/50/100 of the remaining headroom.
+export const BORROW_PERCENT_CHIPS = [25, 50, 100] as const;
+
+const AMOUNT_TYPE =
+  'font-circle text-text placeholder:text-fgSecondary text-[22px] leading-6 font-medium tracking-[-0.44px] md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]';
+
+/** Labelled chip (Figma "Min" / "Max"): renders in place of the percent chips. */
+export type AmountChip = { key: string; label: ReactNode; onClick: () => void };
 
 /**
  * Takeover amount row (hi-fi 486:32657): "Amount" label with a right-aligned
  * balance/max line, a big icon+numeric input, and percent chips (25/50/100
  * unless overridden). Text is held locally while typing; programmatic amounts
  * (chips, slider) re-render the field through the exact re-parseable formatter.
+ *
+ * The figure reads grouped (`17,640.49`) and turns over digit by digit as the
+ * slider or a chip moves it (Design QA 3314:135843, the global number
+ * animation); a typed digit pops in instead (3450:121929). Both come from the
+ * shared AmountInput; this wrapper only owns the bigint round trip.
  */
 export function StakeTakeoverAmountField({
   tokenSymbol,
@@ -30,9 +40,12 @@ export function StakeTakeoverAmountField({
   topRight,
   onPercentClick,
   percentChips = PERCENT_CHIPS,
+  chips,
   disabled = false,
   error,
+  errorAction,
   maxDisplayDecimals,
+  roundDisplay = false,
   dataTestId
 }: {
   tokenSymbol: string;
@@ -43,22 +56,33 @@ export function StakeTakeoverAmountField({
   topRight?: ReactNode;
   onPercentClick?: (percent: number) => void;
   percentChips?: readonly number[];
+  /** Labelled chips; when given they replace the percent chips. */
+  chips?: readonly AmountChip[];
   disabled?: boolean;
   error?: string;
+  /** A way out of `error`, shown under it (e.g. stage the repay that unblocks a withdraw). */
+  errorAction?: AmountChip;
   /** Display-only decimal cap for programmatic amounts (exact-max staging). */
   maxDisplayDecimals?: number;
+  /** Round the capped display half-up instead of truncating it. */
+  roundDisplay?: boolean;
   dataTestId: string;
 }) {
   const [text, setText] = useState('');
+  // The amount the last keystroke set out from: the parent may deliver the
+  // typed amount a render later, and until then the field is still typing.
+  const [typedFrom, setTypedFrom] = useState<bigint | null>(null);
   const errorId = `${dataTestId}-error`;
   // Controlled from outside: when the prop no longer matches the typed text
   // (chip click, slider drag, toggle reset), re-derive the text from the amount.
-  const displayText =
-    parseAmountInput(text, DECIMALS) === amount ? text : formatAmountForInput(amount, maxDisplayDecimals);
+  const settled = parseAmountInput(text, DECIMALS) === amount;
+  if (settled && typedFrom !== null) setTypedFrom(null);
+  const typed = settled || amount === typedFrom;
+  const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals, roundDisplay);
 
-  const onChange = (raw: string) => {
-    const sanitized = sanitizeAmountInput(raw, DECIMALS);
+  const onChange = (sanitized: string) => {
     setText(sanitized);
+    setTypedFrom(amount);
     onAmountChange(parseAmountInput(sanitized, DECIMALS));
   };
 
@@ -76,40 +100,45 @@ export function StakeTakeoverAmountField({
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <TokenIcon token={{ symbol: tokenSymbol }} width={24} className="h-6 w-6" showChainIcon={false} />
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={displayText}
-              onChange={event => onChange(event.target.value)}
+            <AmountInput
+              value={maskedText}
+              onChange={onChange}
+              decimals={DECIMALS}
               disabled={disabled}
-              data-testid={dataTestId}
-              aria-invalid={!!error}
-              aria-describedby={error ? errorId : undefined}
-              className="text-text placeholder:text-fgSecondary font-circle w-full min-w-0 bg-transparent text-[22px] leading-6 font-medium tracking-[-0.44px] outline-none disabled:opacity-50 md:text-[28px] md:leading-[30px] md:tracking-[-0.56px]"
+              ariaInvalid={!!error}
+              ariaDescribedBy={error ? errorId : undefined}
+              className={AMOUNT_TYPE}
+              dataTestId={dataTestId}
             />
           </div>
-          {onPercentClick && (
+          {(chips || onPercentClick) && (
             <div className="flex shrink-0 items-center gap-1">
-              {percentChips.map(percent => (
+              {(
+                chips ??
+                percentChips.map(percent => ({
+                  key: `percent-${percent}`,
+                  label: `${percent}%`,
+                  onClick: () => onPercentClick?.(percent)
+                }))
+              ).map(chip => (
                 // Design-system Button / Mini (Figma 5051:168712); the base
                 // recipe's solid disabled fill is swapped back for the field's
                 // subtler faded look. Both tiers carry the comps' Label 6 digit
                 // (1222:19764 · 1294:37495) — mobile on a 32px chip, md+ on the
                 // 8/6 inset the takeover draws.
                 <button
-                  key={percent}
+                  key={chip.key}
                   type="button"
                   disabled={disabled}
-                  onClick={() => onPercentClick(percent)}
-                  data-testid={`${dataTestId}-percent-${percent}`}
+                  onClick={chip.onClick}
+                  data-testid={`${dataTestId}-${chip.key}`}
                   className={cn(
                     buttonVariants({ variant: 'mini', size: 'mini' }),
                     'h-8 px-2.5 text-xs leading-[14px] tracking-[-0.24px] md:h-auto md:px-2 md:py-1.5',
                     'disabled:text-text disabled:bg-transparent disabled:opacity-50'
                   )}
                 >
-                  {percent}%
+                  {chip.label}
                 </button>
               ))}
             </div>
@@ -125,6 +154,19 @@ export function StakeTakeoverAmountField({
             <span id={errorId} data-testid={errorId} className="text-statusError text-sm">
               {error}
             </span>
+          )}
+          {error && errorAction && (
+            <button
+              type="button"
+              onClick={errorAction.onClick}
+              data-testid={`${dataTestId}-${errorAction.key}`}
+              className={cn(
+                buttonVariants({ variant: 'mini', size: 'mini' }),
+                'mt-1 h-8 self-start px-2.5 text-xs leading-[14px] tracking-[-0.24px] md:h-auto md:px-2 md:py-1.5'
+              )}
+            >
+              {errorAction.label}
+            </button>
           )}
         </div>
       </div>

@@ -38,9 +38,10 @@ export function WalletChip() {
     isCheckingTerms
   } = useConnectedContext();
 
-  // The connect-time compliance checks run back to back — address screening,
-  // then the terms check — and each used to raise its own "Please wait" card,
-  // so a connect showed two in a row. One cover spans both, mounted here
+  // The connect-time compliance checks run back to back — the terms check,
+  // then (only when the terms must be shown) address screening — and each
+  // used to raise its own "Please wait" card, so a connect showed two in a
+  // row. One cover spans both, mounted here
   // because this is the single place that owns both gates (UnauthorizedPage
   // also mounts inside AuthWrapper, so a cover living in it would stack).
   //
@@ -49,9 +50,9 @@ export function WalletChip() {
   // for an already-accepted wallet must not throw a scrim over the app.
   //
   // It is gated on `isAuthorized` as well, because the two checks do not agree
-  // on when they are done: the terms check fires on address screening alone,
-  // while a region block comes from the separate VPN query. A clean address in
-  // a restricted region is therefore blocked *and* checking terms at once, and
+  // on when they are done: the terms check fires on connection alone, while a
+  // region block comes from the separate VPN query. An address in a
+  // restricted region is therefore blocked *and* checking terms at once, and
   // without this term the cover would sit on top of the Access-blocked dialog.
   // Pre-cover that gate was implicit — the terms wait lived in TermsModal,
   // which only mounts in the authorized branch below.

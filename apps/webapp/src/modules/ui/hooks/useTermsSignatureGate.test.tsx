@@ -1,4 +1,4 @@
-import { renderHook, render, act, screen, fireEvent } from '@testing-library/react';
+import { renderHook, render, act, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -300,6 +300,31 @@ describe('useTermsSignatureGate', () => {
     expect(mocks.signTerms).not.toHaveBeenCalled();
   });
 
+  // Nothing screens on connect, so for a returning wallet an empty cache is
+  // the common case at Confirm — and the app-level wall only covers the
+  // pre-terms check, so the gate's dialog is the surface here too.
+  it('a failed screening with no cached verdict surfaces the gate-owned dialog', async () => {
+    queryClient.removeQueries();
+    mocks.fetchAddressScreening.mockRejectedValue(new Error('screening down'));
+
+    let gateRef!: ReturnType<typeof useTermsSignatureGate>;
+    const Host = () => {
+      gateRef = useTermsSignatureGate();
+      return <>{gateRef.screeningDialog}</>;
+    };
+    render(<Host />, { wrapper });
+    const controls = makeControls();
+
+    await act(async () => {
+      await expect(gateRef.gate({ trigger: 'confirm', usdValue: SUB_THRESHOLD, controls })).resolves.toEqual({
+        allow: false
+      });
+    });
+
+    expect(controls.closeModal).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/unable to verify this wallet/i)).not.toBeNull();
+  });
+
   it('a failed re-screen over a stale cached verdict surfaces the gate-owned dialog', async () => {
     seedScreening(true, FOUR_HOURS + 1);
     mocks.fetchAddressScreening.mockRejectedValue(new Error('screening down'));
@@ -320,10 +345,17 @@ describe('useTermsSignatureGate', () => {
     });
 
     expect(screen.getByText(/unable to verify this wallet/i)).not.toBeNull();
-    // "Check again" re-runs the access checks and dismisses.
+    // "Check again" re-runs the access checks — screening included, since the
+    // access-check retry alone only re-screens ahead of the terms — and dismisses.
+    const screeningsBefore = mocks.fetchAddressScreening.mock.calls.length;
+    mocks.fetchAddressScreening.mockResolvedValue({ addressAllowed: true });
     fireEvent.click(screen.getByRole('button', { name: /check again/i }));
     expect(mocks.retryAccessChecks).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(/unable to verify this wallet/i)).toBeNull();
+    await waitFor(() =>
+      expect(queryClient.getQueryData(addressScreeningQueryKey(ADDRESS))).toEqual({ addressAllowed: true })
+    );
+    expect(mocks.fetchAddressScreening.mock.calls.length).toBe(screeningsBefore + 1);
   });
 
   it('the screening-failure dialog clears when the address changes', async () => {

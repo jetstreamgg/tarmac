@@ -5,7 +5,7 @@ import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdsAddress } from '../generated';
 import { Call, erc20Abi } from 'viem';
-import { useTransactionFlow } from '../shared/useTransactionFlow';
+import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 
 export function useBatchSavingsSupply({
   amount,
@@ -53,7 +53,7 @@ export function useBatchSavingsSupply({
     activeTabEnabled &&
     !!connectedAddress;
 
-  const transactionFlowResults = useTransactionFlow({
+  return useBatchWriteFlow({
     calls,
     chainId,
     enabled,
@@ -61,11 +61,7 @@ export function useBatchSavingsSupply({
     onMutate,
     onSuccess,
     onError,
-    onStart
+    onStart,
+    allowanceError: allowanceError
   });
-
-  return {
-    ...transactionFlowResults,
-    error: transactionFlowResults.error || allowanceError
-  };
 }

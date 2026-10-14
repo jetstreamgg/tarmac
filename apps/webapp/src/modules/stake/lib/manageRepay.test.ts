@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { calculateMaxRepayable } from './manageRepay';
+import { calculateMaxRepayable, repayGapOptions } from './manageRepay';
 
 const usds = (value: string) => parseUnits(value, 18);
 
@@ -51,5 +51,78 @@ describe('calculateMaxRepayable — legacy Repay.tsx math, verbatim', () => {
     expect(calculateMaxRepayable({ debtValue: usds('30000'), dust: DUST, balance: usds('1') })).toBe(0n);
     // debt below dust (already sub-dust urn) → debt−dust is negative → 0.
     expect(calculateMaxRepayable({ debtValue: usds('29000'), dust: DUST, balance: usds('1000') })).toBe(0n);
+  });
+});
+
+describe('stored-rate partial max', () => {
+  // Projected (dripped) debt 30,003.74 but wipe only accepts 2.46 at the stored rate.
+  const debtValue = usds('30003.74');
+  const partialMax = usds('2.46');
+
+  it('caps the max repayable at the stored-rate partial max', () => {
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('3.74'), partialMax })).toEqual(
+      partialMax
+    );
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('1'), partialMax })).toEqual(
+      usds('1')
+    );
+  });
+
+  it('still offers the full projected debt when the wallet covers it', () => {
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('50000'), partialMax })).toEqual(
+      debtValue
+    );
+    expect(repayGapOptions({ debtValue, dust: DUST, balance: usds('50000'), partialMax })).toEqual({
+      partialMax,
+      partial: true,
+      full: true
+    });
+  });
+
+  it('has no partial option when the stored-rate max is 0', () => {
+    expect(calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('3'), partialMax: 0n })).toBe(0n);
+    expect(repayGapOptions({ debtValue, dust: DUST, balance: usds('3'), partialMax: 0n }).partial).toBe(
+      false
+    );
+  });
+
+  it('never raises the max above debt − dust', () => {
+    expect(
+      calculateMaxRepayable({ debtValue, dust: DUST, balance: usds('5'), partialMax: usds('4') })
+    ).toEqual(usds('3.74'));
+  });
+});
+
+describe('repayGapOptions — ways out of the dust gap', () => {
+  const dust = DUST;
+
+  it('offers both when a partial max exists and the wallet covers the debt', () => {
+    expect(repayGapOptions({ debtValue: usds('50000'), dust, balance: usds('60000') })).toEqual({
+      partialMax: usds('20000'),
+      partial: true,
+      full: true
+    });
+  });
+
+  it('drops the close option when the wallet is short of the debt', () => {
+    expect(repayGapOptions({ debtValue: usds('50000'), dust, balance: usds('40000') }).full).toBe(false);
+  });
+
+  it('caps the partial figure at the wallet', () => {
+    expect(repayGapOptions({ debtValue: usds('50000'), dust, balance: usds('15000') })).toEqual({
+      partialMax: usds('15000'),
+      partial: true,
+      full: false
+    });
+    expect(repayGapOptions({ debtValue: usds('50000'), dust, balance: 0n }).partial).toBe(false);
+  });
+
+  it('has no partial option when the debt sits at or under dust', () => {
+    expect(repayGapOptions({ debtValue: dust, dust, balance: dust }).partial).toBe(false);
+    expect(repayGapOptions({ debtValue: dust - 1n, dust, balance: undefined })).toEqual({
+      partialMax: -1n,
+      partial: false,
+      full: false
+    });
   });
 });

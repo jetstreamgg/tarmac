@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import {
   MORPHO_API_CHAIN_ID,
-  MORPHO_API_URL,
   VAULT_V2_HISTORICAL_QUERY,
-  VAULT_V2_HISTORICAL_HOURLY_QUERY
+  VAULT_V2_HISTORICAL_HOURLY_QUERY,
+  morphoDataSource
 } from './constants';
 
-const HOUR_IN_SECONDS = 3600;
+import { SECONDS_PER_HOUR } from '@/utils';
+import { toReadHook } from '../shared/toReadHook';
+import { morphoGraphql } from './morphoGraphql';
 const WEEK_IN_SECONDS = 604800;
 const MONTH_IN_SECONDS = 2592000;
 
@@ -85,7 +86,7 @@ async function fetchMorphoVaultChartInfo(
   // Fetch one extra hour of data to ensure the first point isn't excluded
   // by the parser's independently calculated startTimestamp
   const hourlyStartTimestamp =
-    endTimestamp - (hourlyWindow === 'w' ? WEEK_IN_SECONDS : MONTH_IN_SECONDS) - HOUR_IN_SECONDS;
+    endTimestamp - (hourlyWindow === 'w' ? WEEK_IN_SECONDS : MONTH_IN_SECONDS) - SECONDS_PER_HOUR;
 
   const variables = useHourlyInterval
     ? {
@@ -100,22 +101,10 @@ async function fetchMorphoVaultChartInfo(
         endTimestamp
       };
 
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query: useHourlyInterval ? VAULT_V2_HISTORICAL_HOURLY_QUERY : VAULT_V2_HISTORICAL_QUERY,
-      variables
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const result: MorphoVaultHistoricalApiResponse = await response.json();
+  const result = await morphoGraphql<MorphoVaultHistoricalApiResponse>(
+    useHourlyInterval ? VAULT_V2_HISTORICAL_HOURLY_QUERY : VAULT_V2_HISTORICAL_QUERY,
+    variables
+  );
 
   if (!result.data.vaultV2ByAddress) {
     return [];
@@ -148,12 +137,7 @@ export function useMorphoVaultChartInfo({
   /** Skip the fetch when false — e.g. for non-Morpho vaults that must not hit the Morpho API. */
   enabled?: boolean;
 }): MorphoVaultChartInfoHook {
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
+  const query = useQuery({
     enabled,
     queryKey: ['morpho-vault-chart', vaultAddress, useHourlyInterval, hourlyWindow],
     queryFn: () =>
@@ -162,18 +146,5 @@ export function useMorphoVaultChartInfo({
     gcTime: 60_000 // 1 minute
   });
 
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error,
-    mutate,
-    dataSources: [
-      {
-        title: 'Morpho API',
-        href: MORPHO_API_URL,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
+  return toReadHook(query, [morphoDataSource()]);
 }

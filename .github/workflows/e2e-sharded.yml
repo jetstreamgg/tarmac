@@ -11,11 +11,6 @@ on:
   #     - main
   workflow_dispatch:
     inputs:
-      shards:
-        description: 'Number of shards'
-        required: false
-        default: '6'
-        type: string
       workers_per_shard:
         description: 'Workers per shard'
         required: false
@@ -126,7 +121,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
 
     env:
       VITE_ENV_NAME: development
@@ -141,7 +136,7 @@ jobs:
       VITE_TERMS_ENDPOINT: 'https://staging-api.sky.money/terms-acceptance'
       VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
-      PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '6' }}
+      PLAYWRIGHT_SHARD_TOTAL: '6' # must match the test-shards matrix above
       TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '1' }}
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
@@ -180,9 +175,9 @@ jobs:
           ls -lh apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
           echo "✅ VNet files ready"
 
-      - name: Run E2E tests (Shard ${{ matrix.shard }}/${{ github.event.inputs.shards || '4' }})
+      - name: Run E2E tests (Shard ${{ matrix.shard }}/6)
         run: |
-          echo "🔀 Running shard ${{ matrix.shard }} of ${{ github.event.inputs.shards || '4' }}"
+          echo "🔀 Running shard ${{ matrix.shard }} of 6"
           echo "Workers per shard: $TEST_WORKERS"
 
           # Run the parallel tests with retry script
@@ -228,8 +223,8 @@ jobs:
         run: |
           echo "## Sharded E2E Test Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total Shards**: ${{ github.event.inputs.shards || '4' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Workers per Shard**: ${{ github.event.inputs.workers_per_shard || '2' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Shards**: 6" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers per Shard**: ${{ github.event.inputs.workers_per_shard || '1' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Networks**: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 

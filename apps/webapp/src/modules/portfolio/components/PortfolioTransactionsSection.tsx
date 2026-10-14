@@ -41,15 +41,15 @@ const ALL = 'all';
 /**
  * The products the history is grouped by, in dropdown order.
  *
- * A product is not always one module: Morpho and sUSDT are both "Vault", and
- * keying the filter by module put two identical "Vault" rows in the dropdown
- * (APP-443 item 21). One entry per product, each owning its module(s), is also
- * the single source of truth for the Product column's label.
+ * A product is not always one module, and keying the filter by module put two
+ * identical rows in the dropdown (APP-443 item 21). One entry per product, each
+ * owning its module(s), is also the single source of truth for the Product
+ * column's label.
  */
 export const PRODUCT_GROUPS: { id: string; modules: ModuleEnum[]; label: () => string }[] = [
   { id: 'savings', modules: [ModuleEnum.SAVINGS], label: () => t`Savings` },
   { id: 'stusds', modules: [ModuleEnum.STUSDS], label: () => t`stUSDS` },
-  { id: 'vault', modules: [ModuleEnum.MORPHO, ModuleEnum.SUSDT], label: () => t`Vault` },
+  { id: 'vault', modules: [ModuleEnum.MORPHO], label: () => t`Vault` },
   { id: 'fixed', modules: [ModuleEnum.PENDLE], label: () => t`Fixed Yield` },
   { id: 'rewards', modules: [ModuleEnum.REWARDS], label: () => t`Rewards` },
   { id: 'stake', modules: [ModuleEnum.STAKE], label: () => t`Staking` },
@@ -180,8 +180,8 @@ export function PortfolioTransactionsView({
 
   // Filter options derived from what's actually present, so we never offer an
   // empty filter. Stablecoins are limited to rows that carry a USD value.
-  // Products are grouped, so two modules that share a name (Morpho / sUSDT →
-  // "Vault") offer one row that selects both.
+  // Products are grouped, so two modules that share a name offer one row that
+  // selects both.
   const { networks, stablecoins, products } = useMemo(() => {
     const net = new Map<string, ReactNode>();
     const stable = new Map<string, ReactNode>();

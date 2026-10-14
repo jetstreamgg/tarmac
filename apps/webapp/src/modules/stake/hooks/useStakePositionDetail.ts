@@ -1,5 +1,4 @@
-import { useCallback, useMemo } from 'react';
-import { formatUnits } from 'viem';
+import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import {
   getIlkName,
@@ -19,13 +18,28 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { calculateClaimedRewardsUsd, hasStakeBorrowHistory } from '../lib/positionDetail';
+import { isMinCollateralNotMet } from '../lib/maxBorrow';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';
+import { useStakeUrnVaults } from './useStakeUrnVaults';
+import { isInactiveStakePosition } from './useStakeUserPositions';
+import { priceOfFromPrices, sumRewardsUsd, wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 
 export interface StakePositionDetail {
   urnAddress: `0x${string}` | undefined;
   vault: Vault | undefined;
   vaultLoading: boolean;
+  /** Re-reads the vault and the dripped rate; stable across renders. */
+  refetchVault: () => void;
+  /**
+   * Active/inactive and debt/no-debt are still unknown, so the menu and CTA
+   * shape can't be committed. Falls back to the positions table's warm Vat read
+   * (`useStakeUrnVaults`) while `useVault` is cold, so the modal opens at its
+   * final height on the first visit instead of growing when the vault lands.
+   */
+  shapeLoading: boolean;
   hasDebt: boolean;
+  /** The stake covers the dust minimum, so the borrow flow has something to offer. */
+  canBorrow: boolean;
   /** Emptied urn (C13): the vault loaded with zero collateral. Urns are never deleted. */
   isInactive: boolean;
   /** Whether the urn EVER drew debt (C14, subgraph) — the inactive borrow block + reopen shape. */
@@ -70,7 +84,13 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const ilkName = getIlkName(2);
 
   const { data: urnAddress } = useStakeUrnAddress(BigInt(urnIndex));
-  const { data: vault, isLoading: vaultLoading } = useVault(urnAddress || ZERO_ADDRESS, ilkName);
+  const {
+    data: vault,
+    isLoading: vaultLoading,
+    mutate: refetchVault
+  } = useVault(urnAddress || ZERO_ADDRESS, ilkName);
+  const { data: urnVaults } = useStakeUrnVaults();
+  const urnVault = urnVaults?.find(entry => entry.index === urnIndex);
   const { data: collateralData } = useCollateralData(ilkName);
 
   const { data: rewardContract } = useStakeUrnSelectedRewardContract({ urn: urnAddress || ZERO_ADDRESS });
@@ -78,6 +98,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const { data: rewardContractTokens } = useRewardContractTokens(
     rewardContract && rewardContract !== ZERO_ADDRESS ? rewardContract : undefined
   );
+
+  const rewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
   const { data: rewardsChartInfo, isLoading: rateLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: rewardContract && rewardContract !== ZERO_ADDRESS ? [rewardContract] : []
@@ -97,11 +119,8 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   // must surface here and in the claim modal alike. SKY-first order.
   const { claimables, isLoading: claimableLoading } = useStakeUrnClaimables(BigInt(urnIndex));
   const { data: prices, isLoading: pricesLoading } = usePrices();
-  const priceOf = useCallback((symbol: string) => parseFloat(prices?.[symbol]?.price ?? '0'), [prices]);
-  const claimableUsd = claimables.reduce(
-    (total, reward) => total + Number(formatUnits(reward.claimBalance, 18)) * priceOf(reward.rewardSymbol),
-    0
-  );
+  const priceOf = useMemo(() => priceOfFromPrices(prices), [prices]);
+  const claimableUsd = sumRewardsUsd(claimables, priceOf);
   // The chip renders ONE amount next to ONE symbol, so its figure must be that
   // token's own balance — never a sum across different reward tokens (residual
   // claimables from a previous farm can put two tokens on the same urn).
@@ -109,7 +128,9 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
   const claimableSymbols =
     positiveClaimables.length > 0
       ? [...new Set(positiveClaimables.map(reward => reward.rewardSymbol))]
-      : ['SKY'];
+      : rewardSymbol
+        ? [rewardSymbol]
+        : [];
   const claimableTokenAmount = positiveClaimables
     .filter(reward => reward.rewardSymbol === claimableSymbols[0])
     .reduce((total, reward) => total + reward.claimBalance, 0n);
@@ -125,19 +146,24 @@ export function useStakePositionDetail(urnIndex: number): StakePositionDetail {
 
   const { priceString: skyPriceString } = useSkyPrice();
   const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
-  const stakedUsd = skyPriceUsd !== null ? Number(formatUnits(skyLocked, 18)) * skyPriceUsd : null;
+  const stakedUsd = skyPriceUsd !== null ? wadToUsd(skyLocked, skyPriceUsd) : null;
   // USDS at parity — the module-wide convention.
-  const borrowedUsd = Number(formatUnits(vault?.debtValue ?? 0n, 18));
+  const borrowedUsd = wadToFloat(vault?.debtValue ?? 0n);
 
   return {
     urnAddress,
     vault,
     vaultLoading,
-    hasDebt: (vault?.debtValue ?? 0n) > 0n,
-    isInactive: !!urnAddress && !vaultLoading && vault !== undefined && (vault.collateralAmount ?? 0n) === 0n,
+    refetchVault,
+    shapeLoading: vaultLoading && urnVault === undefined,
+    hasDebt: vault ? (vault.debtValue ?? 0n) > 0n : (urnVault?.usdsDebt ?? 0n) > 0n,
+    canBorrow: !isMinCollateralNotMet(vault),
+    isInactive: vault
+      ? !!urnAddress && !vaultLoading && (vault.collateralAmount ?? 0n) === 0n
+      : urnVault !== undefined && isInactiveStakePosition(urnVault),
     hasBorrowHistory: hasStakeBorrowHistory(urnHistory),
     rewardContract,
-    rewardSymbol: rewardContractTokens?.rewardsToken?.symbol,
+    rewardSymbol,
     rewardDeprecated:
       !!rewardContract && rewardContract !== ZERO_ADDRESS && isDeprecatedStakeReward(rewardContract, chainId),
     voteDelegate,

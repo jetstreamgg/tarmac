@@ -6,6 +6,7 @@ import {
   BORROW_SPEC_SKY,
   confirmTransactionModal,
   gotoManagePosition,
+  openManageSheet,
   openStakePosition,
   stakeDeepLink
 } from '../utils/stakeV2.ts';
@@ -96,9 +97,7 @@ test('borrows more against an existing position through the manage sheet', async
   expect(initialDebt).toBeGreaterThanOrEqual(parseUnits('30000', 18));
   expect(initialDebt).toBeLessThan(parseUnits('30100', 18));
 
-  await gotoManagePosition(isolatedPage, urnIndex);
-  await isolatedPage.getByTestId('stake-manage-menu-borrow').click();
-  await expect(isolatedPage.getByTestId('stake-manage-takeover')).toBeVisible();
+  await openManageSheet(isolatedPage, urnIndex);
 
   // Borrow card arrives enabled in borrow mode; stage an extra 5K USDS.
   await expect(isolatedPage.getByTestId('stake-manage-borrow-card-mode-borrow')).toHaveAttribute(
@@ -119,7 +118,7 @@ test('borrows more against an existing position through the manage sheet', async
   expect(debt).toBeLessThan(initialDebt + borrowMore + parseUnits('1000', 18));
 
   await gotoManagePosition(isolatedPage, urnIndex);
-  await expect(isolatedPage.getByTestId('stake-manage-menu-borrow')).toBeVisible();
+  await expect(isolatedPage.getByTestId('stake-manage-menu-manage')).toBeVisible();
 });
 
 test('risk slider two-way sync in the takeover borrow card', async ({ isolatedPage }) => {
@@ -130,8 +129,10 @@ test('risk slider two-way sync in the takeover borrow card', async ({ isolatedPa
   await isolatedPage.getByTestId('stake-takeover-borrow-card-toggle').click();
   await isolatedPage.getByTestId('stake-takeover-borrow-amount').fill('20000');
 
+  // The thumb is a zero-size focus anchor (the bar is the visual), so it is
+  // attached and carries the aria value without being visible.
   const slider = isolatedPage.getByTestId('stake-takeover-borrow-slider').locator('[role="slider"]');
-  await expect(slider).toBeVisible();
+  await expect(slider).toBeAttached();
   await isolatedPage.waitForTimeout(500);
   const initial = Number(await slider.getAttribute('aria-valuenow'));
 

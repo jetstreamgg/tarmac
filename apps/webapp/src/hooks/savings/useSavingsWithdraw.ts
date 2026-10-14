@@ -1,13 +1,11 @@
-import { useConnection, useBlockNumber, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useSavingsData } from './useSavingsData';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import {
   useReadSavingsUsds,
   sUsdsAddress,
   sUsdsImplementationAbi,
-  useReadSavingsUsdsMaxWithdraw
+  useReadSavingsUsdsBalanceOf
 } from './useReadSavingsUsds';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
@@ -28,11 +26,10 @@ export function useSavingsWithdraw({
   const chainId = useChainId();
   const { data: savingsData } = useSavingsData();
 
-  const queryClient = useQueryClient();
-  const { data: blockNumber } = useBlockNumber({ chainId, watch: true });
-
-  // When 'max' is true, use the maxWithdrawBalance to avoid leaving dust
-  const { data: maxWithdraw, queryKey } = useReadSavingsUsdsMaxWithdraw({
+  // Max redeems the whole share balance rather than withdrawing `maxWithdraw`
+  // assets: the share count doesn't accrue, so the call stays the same block to
+  // block and burns every share, leaving no dust.
+  const { data: shares } = useReadSavingsUsdsBalanceOf({
     args: connectedAddress ? [connectedAddress] : undefined,
     chainId: chainId as keyof typeof useReadSavingsUsds,
     query: {
@@ -40,28 +37,20 @@ export function useSavingsWithdraw({
     }
   });
 
-  // Since the `watch` property of wagmi hooks is deprecated, we need to manually invalidate the query
-  useEffect(() => {
-    queryClient.invalidateQueries({ queryKey });
-  }, [blockNumber]);
-
-  const withdrawAmount = max ? (maxWithdraw ?? amount) : amount;
-
-  // Only enabled if user has a balance in Savings which is GTE the amount to withdraw
   const enabled =
     isConnected &&
-    !!savingsData &&
-    savingsData?.userSavingsBalance > 0n &&
-    savingsData?.userSavingsBalance >= withdrawAmount &&
-    withdrawAmount > 0n &&
     activeTabEnabled &&
-    !!connectedAddress;
+    !!connectedAddress &&
+    (max
+      ? !!shares && shares > 0n
+      : // Only enabled if user has a balance in Savings which is GTE the amount to withdraw
+        !!savingsData && savingsData.userSavingsBalance >= amount && amount > 0n);
 
   return useWriteContractFlow({
     address: sUsdsAddress[chainId as keyof typeof sUsdsAddress],
     abi: sUsdsImplementationAbi,
-    functionName: 'withdraw',
-    args: [withdrawAmount, connectedAddress!, connectedAddress!],
+    functionName: max ? 'redeem' : 'withdraw',
+    args: [max ? (shares ?? 0n) : amount, connectedAddress!, connectedAddress!],
     chainId,
     gas,
     enabled,

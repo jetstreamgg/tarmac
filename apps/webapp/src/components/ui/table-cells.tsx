@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Loader } from '@/components/ui/loader';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
-import { IconboxAction, IconboxPosition, IconboxStatus } from './iconbox';
+import { IconboxAction, IconboxPosition, IconboxStatus, type IconboxPositionTone } from './iconbox';
 
 // Design-system typed table cells (Figma Table Cell 5032:9625, 17 types).
 // These are cell *contents*: the surface, height and padding live on the
@@ -32,12 +32,18 @@ const body6 = 'font-graphik text-xs leading-[18px] font-normal';
 // token logo, IconboxAction/IconboxPosition draw an inner 30px disc around a
 // 16px glyph.
 
-/** Title-row chip of the Token Idle cell (rate / 1:1-parity badges). */
+const cellBadgeTone = {
+  success: 'bg-statusSuccessBg text-statusSuccess',
+  warning: 'bg-statusWarningBg text-statusWarning',
+  neutral: 'bg-bgTertiary text-fgSecondary'
+} as const;
+
+/** Title-row chip of the Token Idle cell (rate / 1:1-parity badges), also the earnings-breakdown "Not tracked" badge. */
 export function CellBadge({
   tone = 'neutral',
   children
 }: {
-  tone?: 'success' | 'neutral';
+  tone?: keyof typeof cellBadgeTone;
   children: ReactNode;
 }) {
   return (
@@ -45,7 +51,7 @@ export function CellBadge({
       className={cn(
         label7,
         'inline-flex h-[18px] shrink-0 items-center rounded-full px-1.5',
-        tone === 'success' ? 'bg-statusSuccessBg text-statusSuccess' : 'bg-bgTertiary text-fgSecondary'
+        cellBadgeTone[tone]
       )}
     >
       {children}
@@ -222,15 +228,19 @@ export function CellTokenIdle({
 export function CellPosition({
   icon,
   label,
-  inactive = false
+  inactive = false,
+  tone
 }: {
   icon: ReactNode;
   label: ReactNode;
   inactive?: boolean;
+  tone?: IconboxPositionTone;
 }) {
   return (
     <span className="flex items-center gap-3">
-      <IconboxPosition inactive={inactive}>{icon}</IconboxPosition>
+      <IconboxPosition inactive={inactive} tone={tone}>
+        {icon}
+      </IconboxPosition>
       <span className={cn(label5, 'text-fgPrimary whitespace-nowrap')}>{label}</span>
     </span>
   );
@@ -283,9 +293,19 @@ export function CellProduct({ icon, label }: { icon?: ReactNode; label: ReactNod
 }
 
 /** Type=Amount: two-line amount — 12px logo + value over a Body 6 USD line. */
-export function CellAmount({ icon, amount, usd }: { icon?: ReactNode; amount: ReactNode; usd?: ReactNode }) {
+export function CellAmount({
+  icon,
+  amount,
+  usd,
+  className
+}: {
+  icon?: ReactNode;
+  amount: ReactNode;
+  usd?: ReactNode;
+  className?: string;
+}) {
   return (
-    <span className="flex flex-col gap-0.5">
+    <span className={cn('flex flex-col gap-0.5', className)}>
       <span className="flex items-center gap-1 whitespace-nowrap">
         {icon}
         {amount}

@@ -1,6 +1,7 @@
 import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
-import { Fragment, ReactNode, useState } from 'react';
+import { AriaAttributes, Fragment, ReactNode, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { useAccount } from 'wagmi';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,6 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CustomPagination } from '@/modules/ui/components/CustomPagination';
 import { TransactionCardSkeleton } from './TransactionCard';
 import { paginate } from './paginate';
+
+/**
+ * Empty-state copy: a disconnected user has no history to show, so the
+ * message asks for a wallet instead of claiming they have no transactions.
+ */
+function EmptyLabel({ emptyLabel, isConnected }: { emptyLabel?: ReactNode; isConnected: boolean }) {
+  if (!isConnected) return <Trans>Connect your wallet to see your transactions.</Trans>;
+  return <>{emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}</>;
+}
 
 /**
  * Reusable transactions table for product-detail pages (Figma Table/
@@ -24,8 +34,6 @@ import { paginate } from './paginate';
  * Sections, e.g. 486:20827) — same rows, loading/empty/error and pagination.
  */
 
-export type ProductTransactionStatus = 'pending' | 'completed';
-
 /** Placeholder rows/cards rendered while `isLoading`. */
 const LOADING_ROWS = 4;
 
@@ -37,6 +45,8 @@ export interface ProductTransactionColumn<T> {
   cell: (row: T) => ReactNode;
   /** Set false for icon/affordance columns (chevrons, network icons) so loading doesn't paint a text bar there. */
   skeleton?: boolean;
+  /** Set on the sorted column when the header sorts (see SortHeaderButton). */
+  ariaSort?: AriaAttributes['aria-sort'];
 }
 
 export interface ProductTransactionsTableProps<T> {
@@ -55,6 +65,8 @@ export interface ProductTransactionsTableProps<T> {
   onPageChange?: (page: number, totalPages: number) => void;
   /** Makes rows interactive (button semantics + pointer cursor). */
   onRowClick?: (row: T) => void;
+  /** The user is about to open a row (hover, focus, touch) — a hook for warming what the click will need. */
+  onRowIntent?: (row: T) => void;
   /**
    * Explorer link for a row: the whole row opens it in a new tab, like the
    * hash cell does (Figma 2800:92277). Rows it returns nothing for stay inert
@@ -69,6 +81,8 @@ export interface ProductTransactionsTableProps<T> {
   renderCard?: (row: T) => ReactNode;
   /** Loading stand-in matching the consumer's card shape; defaults to a 1-field-row TransactionCardSkeleton. */
   cardSkeleton?: ReactNode;
+  /** Skeleton rows while loading; pass the expected row count when known so the table does not resize on data. */
+  loadingRows?: number;
 }
 
 // The legacy grid API declared tracks ('1.5fr', '140px'); a <table> wants
@@ -102,6 +116,13 @@ function StateCard({ children }: { children: ReactNode }) {
   );
 }
 
+// Focused rows outline in fgBrand (pagination precedent) instead of the browser default.
+const ROW_FOCUS_CLASS =
+  'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-fgBrand';
+// Piecewise ring in the same color for a row followed by a rendered banner (see usage).
+const BANNER_ROW_FOCUS_CLASS =
+  '[&:has(+tr>td>*):focus-visible]:outline-hidden [&:has(+tr>td>*):focus-visible>td]:shadow-[inset_0_2px_0_0_var(--color-fgBrand)] [&:has(+tr>td>*):focus-visible>td:first-child]:shadow-[inset_2px_2px_0_0_var(--color-fgBrand)] [&:has(+tr>td>*):focus-visible>td:last-child]:shadow-[inset_-2px_2px_0_0_var(--color-fgBrand)]';
+
 export function ProductTransactionsTable<T>({
   columns,
   rows,
@@ -114,11 +135,13 @@ export function ProductTransactionsTable<T>({
   pageSize = 7,
   onPageChange,
   onRowClick,
+  onRowIntent,
   rowHref,
   rowTestId,
   renderBelowRow,
   renderCard,
-  cardSkeleton = <TransactionCardSkeleton />
+  cardSkeleton = <TransactionCardSkeleton />,
+  loadingRows = LOADING_ROWS
 }: ProductTransactionsTableProps<T>) {
   // One activation per row: the consumer's handler wins, else the explorer
   // link; undefined leaves the row inert.
@@ -129,6 +152,14 @@ export function ProductTransactionsTable<T>({
   };
   // A click that ends a text-selection drag is the selection, not a request
   // to open the row; keyboard activation never carries one.
+  const intentProps = (row: T) =>
+    onRowIntent
+      ? {
+          onPointerEnter: () => onRowIntent(row),
+          onTouchStart: () => onRowIntent(row),
+          onFocus: () => onRowIntent(row)
+        }
+      : undefined;
   const clickAction = (activate: (() => void) | undefined) =>
     activate
       ? () => {
@@ -139,28 +170,42 @@ export function ProductTransactionsTable<T>({
   const allRows = rows ?? [];
   const [page, setPage] = useState(1);
   const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
+  const { bpi } = useBreakpointIndex();
+  const isCards = !!renderCard && bpi < BP.md;
+  const cardListRef = useRef<HTMLDivElement>(null);
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage);
     onPageChange?.(nextPage, totalPages);
+    // A shorter page of tall cards would otherwise leave the viewport below the list.
+    const list = cardListRef.current;
+    if (
+      isCards &&
+      list &&
+      list.getBoundingClientRect().top < (parseFloat(getComputedStyle(list).scrollMarginTop) || 0)
+    ) {
+      // Instant: a motion height measure (e.g. row banners) restores the pre-measure scroll and would cancel a smooth one.
+      list.scrollIntoView({ block: 'start', behavior: 'instant' });
+    }
   };
   const showPagination = !isLoading && !error && totalPages > 1;
   const widths = columnWidths(columns);
-  const { bpi } = useBreakpointIndex();
+  const { isConnected } = useAccount();
 
-  if (renderCard && bpi < BP.md) {
+  if (isCards) {
     return (
       <>
         {/* 2px gaps + outer-corners-only rounding mirror the desktop table
             surface (border-spacing-y + first/last cell radii). */}
-        <div data-testid={dataTestId} className="flex w-full flex-col gap-0.5">
+        {/* scroll-mt-36 keeps the sticky navbar off the section heading when paging scrolls back up. */}
+        <div ref={cardListRef} data-testid={dataTestId} className="flex w-full scroll-mt-36 flex-col gap-0.5">
           {isLoading ? (
-            Array.from({ length: LOADING_ROWS }).map((_, index) => (
+            Array.from({ length: loadingRows }).map((_, index) => (
               <div
                 key={index}
                 className={cn(
                   'overflow-hidden',
                   index === 0 && 'rounded-t-[20px]',
-                  index === LOADING_ROWS - 1 && 'rounded-b-[20px]'
+                  index === loadingRows - 1 && 'rounded-b-[20px]'
                 )}
               >
                 {cardSkeleton}
@@ -173,17 +218,26 @@ export function ProductTransactionsTable<T>({
           ) : allRows.length === 0 ? (
             <StateCard>
               <EmptyState illustration={emptyIllustration}>
-                {emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}
+                <EmptyLabel emptyLabel={emptyLabel} isConnected={isConnected} />
               </EmptyState>
             </StateCard>
           ) : (
             pageRows.map((row, index) => {
               const activate = rowAction(row);
               return (
-                <Fragment key={rowKey(row)}>
+                // The below-row content shares its card's outer corners.
+                <div
+                  key={rowKey(row)}
+                  className={cn(
+                    'overflow-hidden',
+                    index === 0 && 'rounded-t-[20px]',
+                    index === pageRows.length - 1 && 'rounded-b-[20px]'
+                  )}
+                >
                   <div
                     data-testid={rowTestId?.(row)}
                     tabIndex={activate ? 0 : undefined}
+                    {...intentProps(row)}
                     onClick={clickAction(activate)}
                     onKeyDown={
                       activate
@@ -196,17 +250,12 @@ export function ProductTransactionsTable<T>({
                           }
                         : undefined
                     }
-                    className={cn(
-                      'overflow-hidden',
-                      index === 0 && 'rounded-t-[20px]',
-                      index === pageRows.length - 1 && 'rounded-b-[20px]',
-                      activate && 'cursor-pointer'
-                    )}
+                    className={cn(activate && 'cursor-pointer')}
                   >
                     {renderCard(row)}
                   </div>
                   {renderBelowRow?.(row)}
-                </Fragment>
+                </div>
               );
             })
           )}
@@ -231,7 +280,7 @@ export function ProductTransactionsTable<T>({
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (
-              <TableHead key={column.id} style={{ width: widths[index] }}>
+              <TableHead key={column.id} style={{ width: widths[index] }} aria-sort={column.ariaSort}>
                 {column.header}
               </TableHead>
             ))}
@@ -239,7 +288,7 @@ export function ProductTransactionsTable<T>({
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            Array.from({ length: LOADING_ROWS }).map((_, index) => (
+            Array.from({ length: loadingRows }).map((_, index) => (
               <TableRow key={index} className="pointer-events-none">
                 {columns.map(column => (
                   <TableCell key={column.id}>
@@ -255,7 +304,7 @@ export function ProductTransactionsTable<T>({
           ) : allRows.length === 0 ? (
             <StateRow colSpan={columns.length}>
               <EmptyState illustration={emptyIllustration}>
-                {emptyLabel ?? <Trans>You don&apos;t have any transactions made yet.</Trans>}
+                <EmptyLabel emptyLabel={emptyLabel} isConnected={isConnected} />
               </EmptyState>
             </StateRow>
           ) : (
@@ -270,6 +319,7 @@ export function ProductTransactionsTable<T>({
                     // No role="button": overriding the native row role breaks
                     // table navigation for assistive tech (CodeRabbit).
                     tabIndex={activate ? 0 : undefined}
+                    {...intentProps(row)}
                     onClick={clickAction(activate)}
                     onKeyDown={
                       activate
@@ -285,15 +335,23 @@ export function ProductTransactionsTable<T>({
                         : undefined
                     }
                     className={cn(
+                      ROW_FOCUS_CLASS,
                       activate && 'cursor-pointer',
                       // A banner carrier row (below) becomes tbody's real last
                       // <tr> and takes the shared table selectors' bottom
                       // corners with it — visibly squaring the last data row
                       // (worst with a single position). Re-pin the radii to the
-                      // last *data* row whenever carriers are in play.
+                      // last *data* row when its carrier rendered nothing; a
+                      // rendered banner is the visible bottom edge instead.
+                      // Hovering the row's banner tints the row too, so the pair reads as one surface.
+                      renderBelowRow && '[&:has(+tr:hover)>td]:bg-bgTertiary',
+                      // A focus outline can't span two <tr>s, so when the banner
+                      // rendered the ring is drawn in pieces: the row's cells take
+                      // the top and sides, the banner the bottom and sides.
+                      renderBelowRow && BANNER_ROW_FOCUS_CLASS,
                       renderBelowRow &&
                         index === pageRows.length - 1 &&
-                        '[&>td:first-child]:rounded-bl-[24px] [&>td:last-child]:rounded-br-[24px]'
+                        '[&:has(+tr>td:empty)>td:first-child]:rounded-bl-[24px] [&:has(+tr>td:empty)>td:last-child]:rounded-br-[24px]'
                     )}
                   >
                     {columns.map(column => (
@@ -302,15 +360,21 @@ export function ProductTransactionsTable<T>({
                   </TableRow>
                   {belowRow && (
                     // Chrome-less carrier row: transparent (the ! outranks the
-                    // row hover tint) and outside the clickable surface. If it
-                    // lands last it takes the last-row corner slot — banners
-                    // are rare and the radius loss is invisible on a
-                    // transparent cell.
-                    <TableRow>
+                    // row hover tint). It activates like the row above so the
+                    // pair acts as one cell; the banner's own CTAs stop
+                    // propagation to keep priority. The banner paints the row
+                    // surface itself (and rounds its own bottom corners when it
+                    // lands last). The banner decides internally whether to
+                    // render, so an empty carrier is hidden — otherwise it
+                    // would double the 2px row spacing.
+                    <TableRow
+                      className={cn('[&:not(:has(td>*))]:hidden', activate && 'cursor-pointer')}
+                      onClick={clickAction(activate)}
+                    >
                       <TableCell
                         colSpan={columns.length}
-                        className="h-auto bg-transparent! p-0"
-                        onClick={event => event.stopPropagation()}
+                        // p-0! also cancels the first column's pl-6 — the banner runs flush (Figma 1036:218966).
+                        className="h-auto bg-transparent! p-0!"
                       >
                         {belowRow}
                       </TableCell>

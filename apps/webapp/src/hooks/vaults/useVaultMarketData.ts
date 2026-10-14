@@ -1,13 +1,11 @@
 import { useMorphoVaultMarketApiData } from '../morpho/useMorphoVaultMarketApiData';
 import type { MorphoVaultRateData } from '../morpho/useMorphoVaultRateApiData';
 import type { ReadHook } from '../hooks';
-import { useSparkVaultApiData } from './spark/useSparkVaultApiData';
-import type { VaultProvider } from './types';
 
 /**
  * One allocation bucket in the provider-neutral normalized shape.
  * Provider-optional (Morpho exposes richer market allocations via its own
- * Morpho-specific hook; Spark fills this when its payload carries allocations).
+ * Morpho-specific hook).
  */
 export type NormalizedVaultAllocation = {
   /** Human-readable label for the allocation bucket */
@@ -43,8 +41,7 @@ export type NormalizedVaultHistoryPoint = {
  * Provider-neutral normalized market-data contract consumed across providers.
  *
  * Every field is optional: providers fill what they have and the UI degrades
- * cleanly when a field is absent (e.g. an unset Spark endpoint yields all
- * `undefined`). The Morpho market-data shape is a structural superset, so the
+ * cleanly when a field is absent. The Morpho market-data shape is a structural superset, so the
  * Morpho hook's result is assignable here untouched (no Morpho regression).
  *
  * Shape per ADR-0001 / APP-266 issue 04: `{ rate, totalAssets, allocations? }`,
@@ -57,17 +54,16 @@ export type NormalizedVaultMarketData = {
   totalAssets?: bigint;
   /** Total assets held by the vault in USD */
   totalAssetsUsd?: number;
-  /** Vault-level available liquidity (Morpho market API; Spark sums the API's `liquidity[]`) */
+  /** Vault-level available liquidity (Morpho market API) */
   liquidity?: bigint;
-  /** Provider-optional deposit cap, in the smallest asset unit (Spark surfaces it via the API) */
+  /** Provider-optional deposit cap, in the smallest asset unit */
   depositCap?: bigint;
-  /** Provider-optional allocations breakdown (lit up for Spark in slice 05) */
+  /** Provider-optional allocations breakdown */
   allocations?: NormalizedVaultAllocation[];
   /**
    * Provider-optional TVL/rate history series for the metrics chart. Morpho
    * sources its chart from the dedicated `useMorphoVaultChartInfo` hook and
-   * leaves this undefined; Spark carries its history here in the single
-   * normalized payload.
+   * leaves this undefined.
    */
   history?: NormalizedVaultHistoryPoint[];
 };
@@ -78,30 +74,13 @@ export type VaultMarketDataHook = ReadHook & {
 };
 
 export type UseVaultMarketDataParams = {
-  provider: VaultProvider;
   vaultAddress?: `0x${string}`;
 };
 
 /**
  * Provider-neutral dispatcher for vault market data (rate / TVL / allocations).
- *
  * Routes to the provider's data source and returns the normalized shape above.
- * Rules of Hooks forbid calling hooks conditionally, so both provider hooks run
- * every render; the inactive one is handed `vaultAddress: undefined` so its
- * query stays disabled (no wrong-provider fetch) and it returns a clean
- * empty/non-loading state.
  */
-export function useVaultMarketData({
-  provider,
-  vaultAddress
-}: UseVaultMarketDataParams): VaultMarketDataHook {
-  const morphoData = useMorphoVaultMarketApiData({
-    vaultAddress: provider === 'morpho' ? vaultAddress : undefined
-  });
-
-  const sparkData = useSparkVaultApiData({
-    vaultAddress: provider === 'sky' ? vaultAddress : undefined
-  });
-
-  return provider === 'sky' ? sparkData : morphoData;
+export function useVaultMarketData({ vaultAddress }: UseVaultMarketDataParams): VaultMarketDataHook {
+  return useMorphoVaultMarketApiData({ vaultAddress });
 }

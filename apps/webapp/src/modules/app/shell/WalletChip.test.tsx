@@ -7,7 +7,7 @@ import {
   Outlet,
   RouterProvider
 } from '@tanstack/react-router';
-import { I18nWidgetProvider } from '@/widgets/context/I18nWidgetProvider';
+import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
 import { WalletChip } from './WalletChip';
 
 const ADDRESS = '0x1234567890abcdef1234567890abcdef12345678';

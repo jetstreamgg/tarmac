@@ -1,4 +1,5 @@
-import { Morpho, Pendle } from '@/widgets';
+import { Morpho } from '@/modules/icons';
+import { Pendle } from '@/modules/icons/PendleSymbol';
 import {
   RING_PENDLE,
   isMorphoVault,

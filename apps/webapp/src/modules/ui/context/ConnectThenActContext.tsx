@@ -76,6 +76,7 @@ export function ConnectThenActProvider({ children }: { children: ReactNode }) {
       // whether it survives.
       return () => clearTimeout(timeout);
     }
+    return undefined;
   }, [isConnectedAndAcceptedTerms, startNewFlow, trackGatedActionResolved]);
 
   return <ConnectThenActContext.Provider value={{ runOrConnect }}>{children}</ConnectThenActContext.Provider>;

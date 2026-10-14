@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Switch } from '@/components/ui/switch';
-import { cn } from '@/lib/cn';
+import { StakeCardBody } from './StakeCardBody';
+import { StakeCardToggle } from './StakeCardToggle';
 
 /**
  * Numbered takeover card (Modal / 10 · 12 · 17, 1036:209510+): circled step
@@ -16,6 +16,8 @@ export function StakeTakeoverCard({
   optional = false,
   enabled = true,
   onEnabledChange,
+  toggleDisabled,
+  toggleDisabledHint,
   dataTestId,
   children
 }: {
@@ -24,23 +26,17 @@ export function StakeTakeoverCard({
   optional?: boolean;
   enabled?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
+  /** The switch can't be turned on yet; `toggleDisabledHint` says why (hover/tap). */
+  toggleDisabled?: boolean;
+  toggleDisabledHint?: ReactNode;
   dataTestId: string;
   children: ReactNode;
 }) {
   return (
     <section
       data-testid={dataTestId}
-      className={cn(
-        // The C1 annotation ("bg-secondary looks very dark") is a dark-mode-only
-        // complaint: bgTertiary (10% dark / 40% light) reads correctly against
-        // the dark page, but its 40% light value is noticeably thinner than the
-        // 60% white glassSurface/card/bgSecondary already share, and washes out
-        // against the pale light-mode page background. So the swap is scoped to
-        // dark; light keeps the pre-existing glassSurface value. Don't collapse
-        // this back to one token.
-        'bg-bgTertiary rounded-card flex flex-col gap-6 p-5 backdrop-blur-[20px] md:gap-8 md:p-8',
-        'light:bg-glassSurface'
-      )}
+      // Design QA 3445:58550: every card fills with bg-secondary in both themes.
+      className="bg-bgSecondary rounded-card flex flex-col p-5 md:p-8"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -57,10 +53,16 @@ export function StakeTakeoverCard({
           </h3>
         </div>
         {optional && (
-          <Switch checked={enabled} onCheckedChange={onEnabledChange} data-testid={`${dataTestId}-toggle`} />
+          <StakeCardToggle
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            disabled={toggleDisabled}
+            disabledHint={toggleDisabledHint}
+            dataTestId={`${dataTestId}-toggle`}
+          />
         )}
       </div>
-      {enabled && children}
+      <StakeCardBody open={enabled}>{children}</StakeCardBody>
     </section>
   );
 }

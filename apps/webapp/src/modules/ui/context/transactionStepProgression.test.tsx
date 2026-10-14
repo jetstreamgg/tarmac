@@ -10,7 +10,12 @@ import type { TxCallbacks } from './transactionContract';
 // The provider needs a live wagmi tree; these suites exercise the transaction
 // state machine, so the shared chain switch is stubbed inert.
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: vi.fn(), isSwitchPending: false, switchVariables: undefined })
+  useNetworkSwitch: () => ({
+    handleSwitchChain: vi.fn(),
+    isSwitchPending: false,
+    switchVariables: undefined,
+    canSwitchChain: true
+  })
 }));
 
 vi.mock('wagmi', async io => ({
@@ -131,6 +136,36 @@ describe('TransactionModal step progression', () => {
     act(() => cb.onStart('0xsupply'));
     act(() => cb.onSuccess('0xsupply'));
     modalClosed();
+  });
+
+  it('sequential flow: Try again after a mined step keeps the mined step completed', () => {
+    const cb = renderFlow(['Approve', 'Supply']);
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('User rejected the request'), ''));
+
+    // The engine resumes at the rejected step, so the stepper must not restart at step 1.
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    act(() => cb.onMutate());
+    stepComplete(1);
+    stepIncomplete(2);
+
+    act(() => cb.onStart('0xsupply'));
+    act(() => cb.onSuccess('0xsupply'));
+    modalClosed();
+  });
+
+  it('sequential flow: Try again before any step mined restarts at step 1', () => {
+    const cb = renderFlow(['Approve', 'Supply']);
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('User rejected the request'), ''));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    act(() => cb.onMutate());
+    stepIncomplete(1);
+    stepIncomplete(2);
+    expect(screen.queryByText('Approve failed')).toBeNull();
   });
 
   it('batch flow: a single mutation never advances steps until the bundle succeeds', () => {

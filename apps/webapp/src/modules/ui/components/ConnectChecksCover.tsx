@@ -1,12 +1,21 @@
+import { useEffect, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Trans } from '@lingui/react/macro';
 import { SkyLogomarkSpinner } from '@/modules/app/components/SkyLogomarkSpinner';
+import { cn } from '@/lib/cn';
+
+// APP-595: a close shorter than this is a blip between checks, not the end of them.
+const CLOSE_HOLD_MS = 300;
+
+// Module scope so it survives a remount of the tree above the cover.
+let recentlyVisible = false;
+let recentlyVisibleTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
  * The gap between "wallet connected" and "we know what to ask you". Two checks
- * run back to back there — address screening (`/address/status` + `/ip/status`,
- * behind UnauthorizedPage) and then the terms `/check` — and neither has
- * anything to put in a card yet.
+ * run back to back there — the terms `/check`, then, when the terms must be
+ * shown, address screening (`/address/status`, behind UnauthorizedPage, with
+ * `/ip/status` alongside) — and neither has anything to put in a card yet.
  *
  * Both used to raise their own 300px "Please wait" card, so a connect showed
  * two of them in sequence and then grew into the 610px terms card.
@@ -29,10 +38,53 @@ import { SkyLogomarkSpinner } from '@/modules/app/components/SkyLogomarkSpinner'
  *
  * Escape and outside interaction are inert: `open` is derived from the checks
  * in flight, so there is nothing for a dismissal to change.
+ *
+ * `open` dropping for a render, or the cover remounting, used to restart the
+ * fade-in and flash the page (APP-595). A close is held for CLOSE_HOLD_MS, and
+ * the cover skips the fade-in when it is open from its first render (a reload
+ * with a remembered wallet: wagmi restores the address before first paint, so
+ * screening is already running) or reopens right after being visible.
  */
 export function ConnectChecksCover({ open }: { open: boolean }) {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [holding, setHolding] = useState(false);
+  // The update below lands next render; read it now so `visible` never drops for a pass.
+  let nextHolding = holding;
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    nextHolding = !open;
+    setHolding(nextHolding);
+  }
+  const visible = open || nextHolding;
+
+  useEffect(() => {
+    if (!holding) return;
+    const id = setTimeout(() => setHolding(false), CLOSE_HOLD_MS);
+    return () => clearTimeout(id);
+  }, [holding]);
+
+  const [prevVisible, setPrevVisible] = useState(visible);
+  const [skipFade, setSkipFade] = useState(open);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    // Only a fresh open picks its entrance: swapping the fade classes on an
+    // element already open would restart the fade from opacity 0.
+    if (visible) setSkipFade(recentlyVisible);
+  }
+
+  useEffect(() => {
+    if (!visible) return;
+    return () => {
+      recentlyVisible = true;
+      clearTimeout(recentlyVisibleTimer);
+      recentlyVisibleTimer = setTimeout(() => (recentlyVisible = false), CLOSE_HOLD_MS);
+    };
+  }, [visible]);
+
+  const fadeIn = !skipFade && 'data-[state=open]:animate-in data-[state=open]:fade-in-0';
+
   return (
-    <DialogPrimitive.Root open={open} modal>
+    <DialogPrimitive.Root open={visible} modal>
       <DialogPrimitive.Portal>
         {/* The scrim leaves 150ms LATER than it fades (`[animation-delay]`, not
             `delay-*` — that utility is transition-delay and does nothing to an
@@ -40,7 +92,12 @@ export function ConnectChecksCover({ open }: { open: boolean }) {
             straight across sum to less than either alone, so the page would
             brighten mid-handoff; holding this one at full strength while the
             modal's own overlay ramps up keeps the frost monotonic. */}
-        <DialogPrimitive.Overlay className="bg-modalOverlay app-loader-cover-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed inset-0 z-50 backdrop-blur-[100px] data-[state=closed]:duration-150 data-[state=closed]:[animation-delay:150ms] data-[state=open]:duration-300" />
+        <DialogPrimitive.Overlay
+          className={cn(
+            'bg-modalOverlay app-loader-cover-hidden data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed inset-0 z-50 backdrop-blur-[100px] data-[state=closed]:duration-150 data-[state=closed]:[animation-delay:150ms] data-[state=open]:duration-300',
+            fadeIn
+          )}
+        />
         {/* The logomark leaves on its own, undelayed: it must be gone before
             the terms card finishes rising, not linger over it. */}
         <DialogPrimitive.Content
@@ -52,7 +109,10 @@ export function ConnectChecksCover({ open }: { open: boolean }) {
           // its own lock, and the token lands a frame after it mounts), and
           // wears transition-none: the duration variants also set
           // transition-duration, and a moving inset would tween.
-          className="app-loader-cover-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed inset-0 right-[var(--page-scrollbar-gutter,0px)] z-50 flex items-center justify-center outline-hidden transition-none data-[state=closed]:duration-150 data-[state=open]:duration-300"
+          className={cn(
+            'app-loader-cover-hidden data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:ease-out-quint data-[state=closed]:ease-in-out-quart fixed inset-0 right-[var(--page-scrollbar-gutter,0px)] z-50 flex items-center justify-center outline-hidden transition-none data-[state=closed]:duration-150 data-[state=open]:duration-300',
+            fadeIn
+          )}
           // Auto-focus is deliberately NOT prevented. The cover has no focusable
           // children, and Radix's FocusScope only arms its trap from whatever it
           // focused on mount: preventing it leaves `lastFocusedElementRef` null,

@@ -20,8 +20,7 @@ interface ConnectModalContextType {
 
 export const ConnectModalContext = createContext<ConnectModalContextType | undefined>(undefined);
 
-/** Matches the dismissal in `components/ui/dialog.tsx`. */
-const MODAL_EXIT_MS = 300;
+import { MODAL_EXIT_MS } from '@/modules/ui/animation/constants';
 
 export function ConnectModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);

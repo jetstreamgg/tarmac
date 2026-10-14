@@ -1,6 +1,6 @@
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NetworkBadge, NetworkSelect, useIsNetworkSelectStatic, useNetworkTitleBadge } from './NetworkSelect';
+import { NetworkBadge, NetworkSelect, useNetworkTitleBadge } from './NetworkSelect';
 import { BP } from '@/hooks/ui/useBreakpoint';
 import { renderHook } from '@testing-library/react';
 
@@ -13,7 +13,7 @@ import { renderHook } from '@testing-library/react';
 // this control reaches for router context these renders start throwing — which
 // is the bug where the savings modal never opened and the page just re-rendered.
 
-const mocks = vi.hoisted(() => ({ walletChainId: 1, isSafeWallet: false, bpi: 3 }));
+const mocks = vi.hoisted(() => ({ walletChainId: 1, canSwitchChain: true, bpi: 3 }));
 
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
@@ -29,19 +29,18 @@ vi.mock('wagmi', async io => ({
 vi.mock('@/hooks', async () => ({
   // The real enum, so the tier comparison under test is the shipped one.
   BP: (await import('@/hooks/ui/useBreakpoint')).BP,
-  useIsSafeWallet: () => mocks.isSafeWallet,
   useAppChainId: () => mocks.walletChainId,
   useBreakpointIndex: () => ({ bpi: mocks.bpi })
 }));
 
 const mockHandleSwitchChain = vi.fn();
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
-  useNetworkSwitch: () => ({ handleSwitchChain: mockHandleSwitchChain })
+  useNetworkSwitch: () => ({ handleSwitchChain: mockHandleSwitchChain, canSwitchChain: mocks.canSwitchChain })
 }));
 
 beforeEach(() => {
   mocks.walletChainId = 1;
-  mocks.isSafeWallet = false;
+  mocks.canSwitchChain = true;
   mocks.bpi = BP.desktop;
   mockHandleSwitchChain.mockClear();
 });
@@ -99,8 +98,8 @@ describe('NetworkSelect', () => {
     expect(screen.getByTestId('net').textContent).toContain('Ethereum');
   });
 
-  it('goes static for a Safe wallet — its chain is fixed by the Safe app', () => {
-    mocks.isSafeWallet = true;
+  it('goes static when the dapp must not switch the wallet (a Safe)', () => {
+    mocks.canSwitchChain = false;
 
     render(<NetworkSelect chainIds={[1, 8453]} dataTestId="net" />);
 
@@ -110,14 +109,7 @@ describe('NetworkSelect', () => {
 
 // The phone-tier stand-in for a static control (1295:20810): the chain named
 // as a title-suffix badge, not a control-shaped pill with nothing to switch.
-describe('NetworkBadge + useIsNetworkSelectStatic', () => {
-  it('is static for one chain or a Safe wallet, interactive otherwise', () => {
-    expect(renderHook(() => useIsNetworkSelectStatic([1])).result.current).toBe(true);
-    expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(false);
-    mocks.isSafeWallet = true;
-    expect(renderHook(() => useIsNetworkSelectStatic([1, 8453])).result.current).toBe(true);
-  });
-
+describe('NetworkBadge', () => {
   it('names the product’s chain as a plain badge, never the wallet’s', () => {
     mocks.walletChainId = 42161;
     render(<NetworkBadge chainIds={[1]} dataTestId="badge" />);
@@ -145,7 +137,7 @@ describe('NetworkSelect — needs no router', () => {
 });
 
 // The tier half of the same rule, now that both header builders ask for it
-// here rather than each pairing the breakpoint with `useIsNetworkSelectStatic`.
+// here rather than each pairing the breakpoint with the static-control check.
 describe('useNetworkTitleBadge', () => {
   it('stands in for the control only on a phone with nothing to switch', () => {
     mocks.bpi = BP.sm;

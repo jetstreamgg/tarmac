@@ -75,7 +75,7 @@ vi.mock('@/hooks/savings/useReadSavingsUsds', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks/savings/useReadSavingsUsds')>();
   return {
     ...actual,
-    useReadSavingsUsdsMaxWithdraw: () => ({ data: undefined, queryKey: ['maxWithdraw'] })
+    useReadSavingsUsdsBalanceOf: () => ({ data: undefined })
   };
 });
 

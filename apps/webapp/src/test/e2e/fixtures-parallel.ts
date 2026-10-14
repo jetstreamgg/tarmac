@@ -3,6 +3,7 @@ import { accountPool } from './utils/accountPoolManager';
 import { mockRpcCalls } from './mock-rpc-call';
 import { unmockedIpStatusHandler } from './mock-vpn-check';
 import { mockGeoConfig } from './mock-geo-config';
+import { unmockedAddressScreeningHandler } from './mock-terms-gate';
 
 type TestFixtures = {
   testAccount: `0x${string}`;
@@ -86,6 +87,16 @@ export const test = playwrightTest.extend<TestFixtures>({
     // from the test browser and the fetch fallback disables several modules.
     await page.route('**/geo-config', mockGeoConfig);
 
+    // Address screening never fires in the default skip-auth build either, and
+    // a spec that forces the checks on mocks it (mockAddressScreening takes
+    // precedence). Anything reaching this handler is recorded and fails the
+    // test below: a screening leak costs a billed provider call per run.
+    const unmockedScreenings: string[] = [];
+    await page.route(/\/address\/status/, route => {
+      unmockedScreenings.push(new URL(route.request().url()).pathname);
+      return unmockedAddressScreeningHandler(route);
+    });
+
     // Set environment variable for server-side access (if needed)
     process.env.VITE_TEST_ACCOUNT = testAccount;
     process.env.VITE_TEST_WORKER_INDEX = testInfo.workerIndex.toString();
@@ -98,6 +109,11 @@ export const test = playwrightTest.extend<TestFixtures>({
 
     // Close context
     await context.close();
+
+    expect(
+      unmockedScreenings,
+      'address screening was requested without a mock — the skip-auth build screened, or a spec forced the checks on without mockAddressScreening'
+    ).toEqual([]);
   }
 });
 

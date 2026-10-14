@@ -14,8 +14,6 @@ type WithdrawalFlow = 'supply' | 'withdraw';
  * but the withdraw review's market sell executes now) or on instant-exit
  * products, whose supply review uses the comps' friendlier future-looking
  * "Anytime" for the same fact.
- * 'vault-tether-savings' is PLACEHOLDER copy pending a product assessment,
- * like its RiskTierDetails entry.
  */
 const WITHDRAWAL_AVAILABILITY: Record<
   EarnRiskProfileId,
@@ -29,7 +27,6 @@ const WITHDRAWAL_AVAILABILITY: Record<
   'rewards-cle': { sheet: msg`Instant`, supply: msg`Anytime` },
   'vault-flagship': { sheet: msg`Liquidity based` },
   'vault-usdt-savings': { sheet: msg`Liquidity based` },
-  'vault-tether-savings': { sheet: msg`Instant`, supply: msg`Anytime` },
   'vault-risk-capital': { sheet: msg`Liquidity based` },
   fixed: { sheet: msg`At maturity or via market sell`, withdraw: msg`Instant` },
   stusds: { sheet: msg`Liquidity based` },

@@ -2,7 +2,8 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PendleFlow, usePendleSlippage, type PendleSlippageMode } from '@/widgets';
+import { PendleFlow } from '@/modules/pendle/lib/constants';
+import { usePendleSlippage, type PendleSlippageMode } from '@/modules/pendle/hooks/usePendleSlippage';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
 
 i18n.load('en', {});

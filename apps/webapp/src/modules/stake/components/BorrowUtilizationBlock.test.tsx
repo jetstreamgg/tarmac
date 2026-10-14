@@ -53,8 +53,8 @@ describe('BorrowUtilizationBlock', () => {
 
     expect(screen.getByText('Borrowed (USDS)')).toBeTruthy();
     expect(screen.getByText('Available (USDS)')).toBeTruthy();
-    expect(screen.getByText('250')).toBeTruthy();
-    expect(screen.getByText('750')).toBeTruthy();
+    expect(screen.getByText('250.00')).toBeTruthy();
+    expect(screen.getByText('750.00')).toBeTruthy();
   });
 
   it('colors the Borrowed legend dot and bar fill brand purple, Available gray (hi-fi 486:31955)', () => {

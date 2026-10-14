@@ -42,7 +42,7 @@ const QUOTE: PendleConvertQuote = {
 type BatchCallbacks = {
   onMutate?: () => void;
   onStart?: (hash?: string) => void;
-  onSuccess?: (hash?: string) => void;
+  onSuccess?: (hash?: string, blockNumber?: bigint) => void;
   onError?: (error: Error, hash?: string) => void;
 };
 
@@ -53,6 +53,9 @@ const hoisted = vi.hoisted(() => ({
   analyticsSpy: vi.fn(),
   // Router allowance for the input token — 0n means every amount needs approval.
   allowance: 0n,
+  // When set, useDebounce returns this instead of the live amount — simulates
+  // the settle window after a keystroke. Unset = identity passthrough.
+  debounceLagged: undefined as bigint | undefined,
   // Optional hook a test can set to mimic the real provider (every push
   // re-renders the tree) — the loop regression below relies on it.
   onPush: undefined as (() => void) | undefined,
@@ -93,6 +96,7 @@ vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
+    useDebounce: <T,>(value: T) => (hoisted.debounceLagged !== undefined ? hoisted.debounceLagged : value),
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
@@ -158,13 +162,9 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-vi.mock('@/widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/widgets')>();
-  return {
-    ...actual,
-    usePendleUsdValue: () => (_symbol: string, amount: number) => amount
-  };
-});
+vi.mock('@/modules/pendle/hooks/usePendleUsdValue', () => ({
+  usePendleUsdValue: () => (_symbol: string, amount: number) => amount
+}));
 
 vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
   useWidgetAnalytics: () => hoisted.analyticsSpy
@@ -230,6 +230,7 @@ describe('PendleModalForm', () => {
     hoisted.batchArgs = undefined;
     hoisted.onPush = undefined;
     hoisted.allowance = 0n;
+    hoisted.debounceLagged = undefined;
   });
 
   it('settles its content pushes when every push re-renders the host (regression: max update depth)', () => {
@@ -288,7 +289,10 @@ describe('PendleModalForm', () => {
       // Market implied rate before an amount, the quote's effective rate after.
       expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.20%');
       typeAmount('100');
-      expect(screen.getByTestId('pendle-modal-row-Fixed rate').textContent).toContain('4.90%');
+      // The old digits are still rolling out of the cell; read only what stays.
+      const cell = screen.getByTestId('pendle-modal-row-Fixed rate').cloneNode(true) as HTMLElement;
+      cell.querySelectorAll('[data-testid="rolling-digit-out"]').forEach(el => el.remove());
+      expect(cell.textContent).toContain('4.90%');
       expect(screen.getByTestId('pendle-modal-row-Claim date').textContent).toBeTruthy();
       expect(screen.getByTestId('pendle-modal-row-Network fee')).toBeTruthy();
     });
@@ -320,6 +324,25 @@ describe('PendleModalForm', () => {
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
     });
 
+    it('holds the quote, the engine and confirm on the settled amount while the debounce lags', () => {
+      // The typed 100 hasn't settled yet: the debounce still reports the prior 50.
+      hoisted.debounceLagged = parseUnits('50', 6);
+      renderForm('supply');
+      typeAmount('100');
+
+      expect(hoisted.quoteArgs?.amountIn).toBe(parseUnits('50', 6));
+      expect(hoisted.batchArgs?.amountIn).toBe(parseUnits('50', 6));
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+
+      // Settled: the live amount flows through and confirm re-arms.
+      hoisted.debounceLagged = undefined;
+      typeAmount('100.0');
+
+      expect(hoisted.quoteArgs?.amountIn).toBe(parseUnits('100', 6));
+      expect(hoisted.batchArgs?.amountIn).toBe(parseUnits('100', 6));
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
+    });
+
     it('disables confirm when the amount exceeds the wallet balance', () => {
       renderForm('supply');
       typeAmount('2000');
@@ -331,7 +354,7 @@ describe('PendleModalForm', () => {
       renderForm('supply');
       fireEvent.click(screen.getByTestId('pendle-modal-max'));
 
-      expect((screen.getByTestId('pendle-modal-amount-input') as HTMLInputElement).value).toBe('1000');
+      expect((screen.getByTestId('pendle-modal-amount-input') as HTMLInputElement).value).toBe('1,000');
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
     });
 
@@ -362,9 +385,10 @@ describe('PendleModalForm', () => {
       expect(started.data.isBatchTx).toBe(true);
 
       act(() => {
-        hoisted.batchArgs?.onSuccess?.('0xhash');
+        hoisted.batchArgs?.onSuccess?.('0xhash', 7n);
       });
-      expect(hoisted.txCallbacks.onSuccess).toHaveBeenCalledWith('0xhash');
+      // The receipt block rides through to the history refresh.
+      expect(hoisted.txCallbacks.onSuccess).toHaveBeenCalledWith('0xhash', 7n);
       expect(hoisted.analyticsSpy).toHaveBeenCalledWith(
         expect.objectContaining({ event: 'transaction_completed', action: 'supply', txHash: '0xhash' })
       );
@@ -403,8 +427,8 @@ describe('PendleModalForm', () => {
       typeAmount('100');
 
       expect(lastToastUpdate()).toEqual({
-        loading: 'Supplying 100 USDG',
-        success: '100 USDG supplied!',
+        loading: 'Supplying 100.00 USDG',
+        success: '100.00 USDG supplied!',
         error: 'Supply failed'
       });
     });
@@ -454,8 +478,8 @@ describe('PendleModalForm', () => {
       typeAmount('200');
 
       expect(lastToastUpdate()).toEqual({
-        loading: 'Withdrawing 200 PT-USDG',
-        success: '200 PT-USDG withdrawn!',
+        loading: 'Withdrawing 200.00 PT-USDG',
+        success: '200.00 PT-USDG withdrawn!',
         error: 'Withdrawal failed'
       });
     });

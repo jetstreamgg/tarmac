@@ -1,5 +1,4 @@
-import { useCallback, useMemo } from 'react';
-import { formatUnits } from 'viem';
+import { useCallback, useMemo, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -9,11 +8,11 @@ import {
   lsSkySkyRewardAddress,
   TOKENS,
   useCollateralData,
-  useDebounce,
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   useSimulatedVault,
   useSkyPrice,
+  filterDeprecatedRewards,
   useStakeRewardContracts,
   useStakeUrnAddress,
   useStakeUrnSelectedRewardContract,
@@ -21,6 +20,7 @@ import {
   useTokenBalance,
   ZERO_ADDRESS
 } from '@/hooks';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatDecimalPercentage } from '@/utils';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
-import { useStakeFlowState } from '../hooks/useStakeFlowState';
+import { StakeFlowAction, useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
 import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
@@ -37,12 +37,14 @@ import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { formatSimulationErrorMessage } from '../lib/simulationErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { StakeTakeoverStakeCard } from './StakeTakeoverStakeCard';
-import { StakeTakeoverRewardCard } from './StakeTakeoverRewardCard';
+import { StakeTakeoverRewardField } from './StakeTakeoverRewardCard';
 import { StakeTakeoverBorrowCard } from './StakeTakeoverBorrowCard';
 import { StakeTakeoverDelegateCard } from './StakeTakeoverDelegateCard';
 import { StakeTakeoverConfirmSummary } from './StakeTakeoverConfirmSummary';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
-import { calculateAvailableBorrow, isMinCollateralNotMet } from '../lib/maxBorrow';
+import { calculateAvailableBorrow, isMinCollateralNotMet, isMinCollateralReached } from '../lib/maxBorrow';
+import { wadToFloat } from '../lib/stakeUsdNotional';
+import { FLOW_NAV_OPTIONS } from '../lib/flowNavigation';
 
 const FOOTER_NOTE_CLASSES =
   'flex-1 text-center text-xs leading-[18px] md:max-w-[237px] md:flex-none md:text-left';
@@ -72,7 +74,8 @@ export interface ReopenContext {
  * picker baselines, and the selectFarm/selectVoteDelegate legs only fire when
  * the user stages a DIFFERENT selection — an untouched form must never emit
  * either (C18: with `undefined` the delegate leg would silently undelegate the
- * urn). The frames keep the "Open a position" header (C17a).
+ * urn). Switching the delegate card off is the one explicit undelegate. The
+ * frames keep the "Open a position" header (C17a).
  */
 export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const chainId = useChainId();
@@ -96,6 +99,19 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const currentUrnDelegate =
     reopen && urnVoteDelegate && urnVoteDelegate !== ZERO_ADDRESS ? urnVoteDelegate : undefined;
   const reopenDelegateBaseline = reopen ? urnVoteDelegate : undefined;
+  // Reopen: until the user touches the card for THIS urn it mirrors the urn's
+  // live delegate (on when it has one, UX 1194:21595) and stages nothing.
+  const [delegateTouchedUrn, setDelegateTouchedUrn] = useState<`0x${string}`>();
+  const delegateTouched = !reopen || (!!reopenUrn && delegateTouchedUrn === reopenUrn);
+  const delegateCardEnabled = delegateTouched ? state.delegateEnabled : !!currentUrnDelegate;
+  const stagedDelegate = delegateTouched ? state.selectedDelegate : undefined;
+  const dispatchDelegate = (action: StakeFlowAction) => {
+    if (!delegateTouched && reopenUrn) {
+      setDelegateTouchedUrn(reopenUrn);
+      dispatch({ type: 'resetDelegate', enabled: !!currentUrnDelegate });
+    }
+    dispatch(action);
+  };
 
   const ilkName = getIlkName(2);
   const { data: skyBalance, isLoading: balanceLoading } = useTokenBalance({
@@ -106,8 +122,8 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
 
   // Debounced amounts drive approval sizing, calldata and validation — the
   // legacy widget's exact arrangement (typing doesn't thrash the RPC reads).
-  const debouncedSkyToLock = useDebounce(state.skyToLock);
-  const debouncedUsdsToBorrow = useDebounce(state.usdsToBorrow);
+  const { debouncedAmount: debouncedSkyToLock } = useSettledAmount(state.skyToLock);
+  const { debouncedAmount: debouncedUsdsToBorrow } = useSettledAmount(state.usdsToBorrow);
 
   // Live simulation for the slider and display surfaces: useSimulatedVault's
   // per-amount work is pure math over cached chain reads, so it can track the
@@ -118,8 +134,6 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     0n,
     ilkName
   );
-  // Same simulation with no new debt — feeds the slider's floor math.
-  const { data: vaultNoBorrow } = useSimulatedVault(state.skyToLock, 0n, 0n, ilkName);
   // Debounced simulation for validation, so errors wait for typing to settle.
   const {
     data: debouncedVault,
@@ -131,11 +145,13 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // The reward picker card stages `selectedRewardContract`; the engine requires
   // a selectFarm call for rewards to accrue, so the card is always-on with the
   // SKY farm pre-selected (A-Q2 resolved by APP-516).
+  // Falls back to the first farm the picker actually shows, never a hidden deprecated one.
   const { data: rewardContracts } = useStakeRewardContracts();
+  const visibleFarms = filterDeprecatedRewards(rewardContracts ?? [], chainId);
   const skyFarm = lsSkySkyRewardAddress[chainId as keyof typeof lsSkySkyRewardAddress];
   const defaultRewardContract =
-    rewardContracts?.find(contract => contract.contractAddress.toLowerCase() === skyFarm?.toLowerCase())
-      ?.contractAddress ?? rewardContracts?.[0]?.contractAddress;
+    visibleFarms.find(contract => contract.contractAddress.toLowerCase() === skyFarm?.toLowerCase())
+      ?.contractAddress ?? visibleFarms[0]?.contractAddress;
   // Reopen (C18): the urn's farm is the selection baseline — an untouched
   // picker passes the raw urn read through so the manage seam emits no
   // selectFarm leg; a never-farmed urn falls back to the SKY default (which
@@ -172,7 +188,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   const skyPriceUsd = skyPriceString ? parseFloat(skyPriceString) : null;
   const estAnnualRewardsUsd =
     rewardsRate !== null && skyPriceUsd !== null && state.skyToLock > 0n
-      ? Number(formatUnits(state.skyToLock, 18)) * rewardsRate * skyPriceUsd
+      ? wadToFloat(state.skyToLock) * rewardsRate * skyPriceUsd
       : null;
 
   const { fromDebtCeiling: availableBorrowFromDebtCeiling, balance: availableBorrowBalance } =
@@ -211,19 +227,16 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet) && rewardBaselineResolved;
 
   const closeOpenFlow = useCallback(() => {
-    setSearchParams(
-      params => {
-        params.delete(QueryParams.Flow);
-        return params;
-      },
-      { replace: true }
-    );
+    setSearchParams(params => {
+      params.delete(QueryParams.Flow);
+      return params;
+    }, FLOW_NAV_OPTIONS);
   }, [setSearchParams]);
   const close = reopen ? reopen.onClose : closeOpenFlow;
 
   const onSuccess = useCallback(() => {
-    // Fresh positions/activity on return — the subgraph hooks re-query along
-    // the shared lag trail; on-chain reads refetch once.
+    // Fresh on-chain reads on return; the indexer-backed positions rows and
+    // activity refetch once the indexer has the tx (refreshHistoryAfterTx).
     invalidateStakeQueries(queryClient);
     setSearchParams(
       params => {
@@ -246,7 +259,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     [debouncedSkyToLock, debouncedUsdsToBorrow]
   );
 
-  const effectiveDelegate = state.selectedDelegate ?? reopenDelegateBaseline;
+  // Reopen: switching the card off undelegates an urn that has a delegate.
+  const undelegate = delegateTouched && !!currentUrnDelegate && !state.delegateEnabled;
+  const effectiveDelegate = undelegate ? ZERO_ADDRESS : (stagedDelegate ?? reopenDelegateBaseline);
   // Memoized so the review body below keeps its identity across renders — it
   // is a dep of the launch descriptor.
   const rewardFrom = useMemo(
@@ -425,19 +440,35 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         rewardsRate={rewardsRate !== null ? formatDecimalPercentage(rewardsRate) : null}
         rateLoading={rateLoading}
         estAnnualRewardsUsd={estAnnualRewardsUsd}
-        minStakeToBorrow={state.borrowEnabled ? simulatedVault?.minCollateralForDust : undefined}
+        minStakeToBorrow={simulatedVault?.minCollateralForDust}
+        minStakeLoading={liveSimLoading}
+        minStakeReached={isMinCollateralReached(state.skyToLock, simulatedVault?.minCollateralForDust)}
         error={stakeError}
-      />
-
-      <StakeTakeoverRewardCard
-        selectedRewardContract={selectedRewardContract}
-        onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
-        keepAddress={reopenRewardBaseline}
+        rewardPicker={
+          <StakeTakeoverRewardField
+            selectedRewardContract={selectedRewardContract}
+            onSelect={rewardContract => dispatch({ type: 'selectRewardContract', rewardContract })}
+            keepAddress={reopenRewardBaseline}
+          />
+        }
       />
 
       <StakeTakeoverBorrowCard
         enabled={state.borrowEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setBorrowEnabled', enabled })}
+        onEnabledChange={enabled => {
+          dispatch({ type: 'setBorrowEnabled', enabled });
+          // Figma 3015:59185: the dust minimum is pre-selected once the stake threshold is met.
+          const dust = simulatedVault?.dust;
+          if (
+            enabled &&
+            dust !== undefined &&
+            !simulationError &&
+            !minCollateralNotMet &&
+            state.usdsToBorrow === 0n
+          ) {
+            dispatch({ type: 'setUsdsToBorrow', amount: dust });
+          }
+        }}
         usdsToBorrow={state.usdsToBorrow}
         onAmountChange={amount => dispatch({ type: 'setUsdsToBorrow', amount })}
         maxBorrowable={availableBorrowBalance}
@@ -447,19 +478,18 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         skyToLock={debouncedSkyToLock}
         simulatedVault={simulatedVault}
         simulationLoading={liveSimLoading}
-        vaultNoBorrow={vaultNoBorrow}
         collateralData={collateralData}
         collateralLoading={collateralLoading}
         error={borrowError}
       />
 
       <StakeTakeoverDelegateCard
-        enabled={state.delegateEnabled}
-        onEnabledChange={enabled => dispatch({ type: 'setDelegateEnabled', enabled })}
+        enabled={delegateCardEnabled}
+        onEnabledChange={enabled => dispatchDelegate({ type: 'setDelegateEnabled', enabled })}
         // Reopen shows the urn's preserved delegate as the selection baseline
         // (UX 1194:21595); staging a different one is the only way to change it.
-        selectedDelegate={state.selectedDelegate ?? currentUrnDelegate}
-        onSelect={delegate => dispatch({ type: 'selectDelegate', delegate })}
+        selectedDelegate={stagedDelegate ?? currentUrnDelegate}
+        onSelect={delegate => dispatchDelegate({ type: 'selectDelegate', delegate })}
       />
     </TakeoverShell>
   );

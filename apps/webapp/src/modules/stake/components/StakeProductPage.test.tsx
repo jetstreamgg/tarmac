@@ -35,7 +35,7 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-// The page reads the positions query only to pick the default tab (statistics
+// The page reads the positions query only to pick the default tab (overview
 // for disconnected/known-empty states); the tab bodies themselves stay stubbed.
 vi.mock('../hooks/useStakeUserPositions', async importOriginal => {
   const actual = await importOriginal<typeof import('../hooks/useStakeUserPositions')>();
@@ -63,16 +63,11 @@ vi.mock('@/modules/ui/components/NetworkSelect', () => ({
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-// The Statistics tab body is hook-driven (useQuery/wagmi reads); Radix keeps
+// The Overview tab body is hook-driven (useQuery/wagmi reads); Radix keeps
 // every panel mounted, so stub it to keep this shell test scoped to tab/param
 // behavior rather than standing up query/wallet providers.
-vi.mock('./StakeStatisticsTab', () => ({
-  StakeStatisticsTab: () => <div data-testid="stake-statistics-tab-stub" />
-}));
-
-// Same rationale for the About tab body (corpus + engine-card reads).
-vi.mock('./StakeAboutTab', () => ({
-  StakeAboutTab: () => <div data-testid="stake-about-tab-stub" />
+vi.mock('./StakeOverviewTab', () => ({
+  StakeOverviewTab: () => <div data-testid="stake-overview-tab-stub" />
 }));
 
 const h = vi.hoisted(() => ({
@@ -80,20 +75,8 @@ const h = vi.hoisted(() => ({
   manageFlowProps: undefined as Record<string, unknown> | undefined,
   address: '0x1234567890123456789012345678901234567890' as string | undefined,
   positions: [{ index: 0 }] as unknown[] | undefined,
-  positionsLoading: false,
-  pathname: '/stake'
+  positionsLoading: false
 }));
-
-// The page reads only the location pathname off the router (to tell an
-// outgoing render from a live one); no router is stood up here.
-vi.mock('@tanstack/react-router', async importOriginal => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
-  return {
-    ...actual,
-    useRouterState: ({ select }: { select: (s: { location: { pathname: string } }) => unknown }) =>
-      select({ location: { pathname: h.pathname } })
-  };
-});
 
 // And for the My positions tab body (subgraph + per-urn reads).
 vi.mock('./StakePositionsTab', () => ({
@@ -134,7 +117,7 @@ const renderPage = () =>
 // Radix keeps every tab panel mounted and toggles `data-state`/`hidden`, so
 // "which tab is selected" is the panel whose state is active.
 const activeTab = () =>
-  (['positions', 'statistics', 'about'] as const).find(
+  (['overview', 'positions'] as const).find(
     t => screen.getByTestId(`stake-tab-content-${t}`).getAttribute('data-state') === 'active'
   );
 
@@ -147,7 +130,6 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     h.address = '0x1234567890123456789012345678901234567890';
     h.positions = [{ index: 0 }];
     h.positionsLoading = false;
-    h.pathname = '/stake';
   });
 
   afterEach(cleanup);
@@ -157,15 +139,21 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
 
     expect(screen.getByTestId('stake-product-page')).toBeTruthy();
     expect(screen.getByTestId('stake-tabs')).toBeTruthy();
-    expect(screen.getByTestId('stake-tab-positions')).toBeTruthy();
-    expect(screen.getByTestId('stake-tab-statistics')).toBeTruthy();
-    expect(screen.getByTestId('stake-tab-about')).toBeTruthy();
+    const triggers = screen.getByTestId('stake-tabs').querySelectorAll('[role="tab"]');
+    expect(Array.from(triggers).map(t => t.textContent)).toEqual(['Overview', 'My positions']);
+    expect(screen.getByTestId('stake-tab-content-overview')).toBeTruthy();
     expect(screen.getByTestId('stake-tab-content-positions')).toBeTruthy();
-    expect(screen.getByTestId('stake-tab-content-statistics')).toBeTruthy();
-    expect(screen.getByTestId('stake-tab-content-about')).toBeTruthy();
     expect(screen.getByTestId('stake-header-icon')).toBeTruthy();
     expect(screen.getByTestId('chain-modal-stub')).toBeTruthy();
     expect(screen.getByText('SKY Staking')).toBeTruthy();
+  });
+
+  it('renders the header description', () => {
+    renderPage();
+
+    expect(screen.getByTestId('stake-header-description').textContent?.replace(/\s+/g, ' ')).toBe(
+      'Stake SKY to accrue rewards, have a voting power in Sky Protocol and optionally borrow USDS against your staked position. Unstake anytime: there is no lockup period.'
+    );
   });
 
   it('defaults to the positions tab when no tab param is present', () => {
@@ -174,19 +162,19 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(activeTab()).toBe('positions');
   });
 
-  it('defaults to the statistics tab when disconnected', () => {
+  it('defaults to the overview tab when disconnected', () => {
     h.address = undefined;
     h.positions = undefined;
     renderPage();
 
-    expect(activeTab()).toBe('statistics');
+    expect(activeTab()).toBe('overview');
   });
 
-  it('defaults to the statistics tab when the positions query settles empty', () => {
+  it('defaults to the overview tab when the positions query settles empty', () => {
     h.positions = [];
     renderPage();
 
-    expect(activeTab()).toBe('statistics');
+    expect(activeTab()).toBe('overview');
   });
 
   it('stays on the positions tab while the positions query is still loading', () => {
@@ -197,7 +185,7 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(activeTab()).toBe('positions');
   });
 
-  it('lets an explicit tab=positions param beat the statistics default', () => {
+  it('lets an explicit tab=positions param beat the overview default', () => {
     h.address = undefined;
     h.positions = undefined;
     mockSearchParams = new URLSearchParams('tab=positions');
@@ -217,7 +205,7 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(mockSearchParams.get('tab')).toBe('positions');
 
     // … so when the query settles empty, the pinned tab wins over the
-    // statistics default.
+    // overview default.
     h.positions = [];
     h.positionsLoading = false;
     view.rerender(
@@ -228,70 +216,25 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
     expect(activeTab()).toBe('positions');
   });
 
-  it('keeps following the tab param on a case-variant pathname (/Stake matches the route too)', () => {
-    // The router matches `/Stake` but reports it verbatim; a raw compare
-    // against ROUTES.STAKE read that as "leaving" for the page's whole life
-    // and froze the tab latch — the URL moved on a click, the view did not.
-    h.pathname = '/Stake';
-    mockSearchParams = new URLSearchParams('tab=about');
-    const view = renderPage();
-    expect(activeTab()).toBe('about');
-
-    mockSearchParams = new URLSearchParams('tab=statistics');
-    view.rerender(
-      <I18nProvider i18n={i18n}>
-        <StakeProductPage />
-      </I18nProvider>
-    );
-    expect(activeTab()).toBe('statistics');
-    h.pathname = '/stake';
-  });
-
-  it('selects the About tab when tab=about is in the URL', () => {
-    mockSearchParams = new URLSearchParams('tab=about');
+  it.each(['overview', 'statistics', 'about'])('selects Overview when tab=%s is in the URL', value => {
+    mockSearchParams = new URLSearchParams(`tab=${value}`);
     renderPage();
 
-    expect(activeTab()).toBe('about');
+    expect(activeTab()).toBe('overview');
   });
 
-  it('keeps the selected tab while the page renders against the next route', () => {
-    // A navigation away commits the destination's pathname + search (no
-    // `tab`) one render before this page unmounts; the view transition
-    // snapshots that render, so it must still show the tab the user was on.
-    mockSearchParams = new URLSearchParams('tab=about');
+  it('follows the tab param when it changes', () => {
+    mockSearchParams = new URLSearchParams('tab=overview');
     const view = renderPage();
-    expect(activeTab()).toBe('about');
 
-    mockSearchParams = new URLSearchParams();
-    h.pathname = '/earn';
+    mockSearchParams = new URLSearchParams('tab=positions');
     view.rerender(
       <I18nProvider i18n={i18n}>
         <StakeProductPage />
       </I18nProvider>
     );
 
-    expect(activeTab()).toBe('about');
-  });
-
-  it('follows the URL again once the tab param changes on the stake path', () => {
-    mockSearchParams = new URLSearchParams('tab=about');
-    const view = renderPage();
-
-    mockSearchParams = new URLSearchParams('tab=statistics');
-    view.rerender(
-      <I18nProvider i18n={i18n}>
-        <StakeProductPage />
-      </I18nProvider>
-    );
-
-    expect(activeTab()).toBe('statistics');
-  });
-
-  it('selects the Statistics tab when tab=statistics is in the URL', () => {
-    mockSearchParams = new URLSearchParams('tab=statistics');
-    renderPage();
-
-    expect(activeTab()).toBe('statistics');
+    expect(activeTab()).toBe('positions');
   });
 
   it('falls back to positions when the tab param is invalid', () => {
@@ -304,11 +247,11 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
   it('writes the tab param with replace when a trigger is clicked', () => {
     renderPage();
 
-    fireEvent.mouseDown(screen.getByTestId('stake-tab-statistics'));
+    fireEvent.mouseDown(screen.getByTestId('stake-tab-overview'));
 
     expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
     expect(setSearchParamsMock.mock.calls[0][1]).toEqual({ replace: true });
-    expect(mockSearchParams.get('tab')).toBe('statistics');
+    expect(mockSearchParams.get('tab')).toBe('overview');
   });
 
   it('mounts the open-position takeover only when flow=open', () => {
@@ -353,6 +296,7 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
 
     expect(mockSearchParams.get('flow')).toBe('manage');
     expect(mockSearchParams.get('urn_index')).toBe('3');
+    expect(setSearchParamsMock.mock.calls.at(-1)?.[1]).toEqual({ replace: true, resetScroll: false });
     expect(h.manageFlowProps?.initialSheetInit).toEqual({ borrowCard: 'repay' });
   });
 

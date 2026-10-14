@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import {
   usePageScrollbarGutter,
+  publishPageScrollbarGutter,
   PAGE_SCROLLBAR_GUTTER_VAR,
   PAGE_SCROLLBAR_ATTR
 } from './usePageScrollbarGutter';
@@ -96,5 +97,33 @@ describe('usePageScrollbarGutter', () => {
     setWidths(1400, 1440);
     renderHook(() => usePageScrollbarGutter());
     expect(gutter()).toBe('0px');
+  });
+
+  // Reading body's width forces a layout; on mount that would be the whole
+  // first page's, so the reading main.tsx took before React mounted stands.
+  it('does not read on mount once main.tsx has published the value', () => {
+    publishPageScrollbarGutter();
+    let reads = 0;
+    Object.defineProperty(document.body, 'clientWidth', {
+      configurable: true,
+      get: () => (reads++, 1429)
+    });
+    renderHook(() => usePageScrollbarGutter());
+    expect(reads).toBe(0);
+    expect(gutter()).toBe('11px');
+    resizeCallbacks.forEach(cb => cb());
+    expect(reads).toBe(1);
+  });
+
+  // A write to the root invalidates every element's style, so a re-read that
+  // finds the same value (the observer's first callback) must not write.
+  it('does not rewrite an unchanged value', () => {
+    renderHook(() => usePageScrollbarGutter());
+    const setProperty = vi.spyOn(document.documentElement.style, 'setProperty');
+    const setAttribute = vi.spyOn(document.documentElement, 'setAttribute');
+    resizeCallbacks.forEach(cb => cb());
+    expect(setProperty).not.toHaveBeenCalled();
+    expect(setAttribute).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 });

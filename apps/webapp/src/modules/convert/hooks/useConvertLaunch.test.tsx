@@ -186,8 +186,8 @@ describe('useConvertLaunch', () => {
         }
       ],
       toast: {
-        loading: 'Converting 100 USDS',
-        success: '100 USDS converted to USDC!',
+        loading: 'Converting 100.00 USDS',
+        success: '100.00 USDS converted to USDC!',
         error: 'Conversion failed'
       },
       analytics: {
@@ -261,5 +261,17 @@ describe('useConvertLaunch', () => {
 
     expect(h.updateMock).not.toHaveBeenCalled();
     h.txStatus = 'idle';
+  });
+});
+
+describe('useConvertLaunch — form validity gates the engine', () => {
+  afterEach(() => cleanup());
+
+  it('passes the form gate through to the engine and defaults it open', () => {
+    renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS, enabled: false }));
+    expect(h.engineParams?.enabled).toBe(false);
+
+    renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
+    expect(h.engineParams?.enabled).toBe(true);
   });
 });

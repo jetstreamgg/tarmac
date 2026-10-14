@@ -1,21 +1,13 @@
-import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { StUsdsHistoryItem } from './stusds';
-import { request, gql } from 'graphql-request';
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';
-import { getIndexerUrl } from '../helpers/getIndexerUrl';
-import {
-  historyQueryArgs,
-  historyPageBoundary,
-  clampHistoryPage,
-  HistoryPage
-} from '../shared/historyQueryHelpers';
-import { useHistoryPagination, PaginatedHistory } from '../shared/useHistoryPagination';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { familyMainnetId } from '@/utils';
+import { historyQueryArgs, secondsToDate } from '../shared/historyQueryHelpers';
+import { PaginatedHistory } from '../shared/useHistoryPagination';
+import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
 import { CURVE_POOL_TOKEN_INDICES } from './providers/constants';
 import { StUsdsProviderType } from './providers/types';
+import { mapIndexerRows, safeBigInt } from '@/utils/indexerRows';
 
 // Native stUSDS deposits/withdrawals plus Curve pool swaps in/out of stUSDS.
 export function stusdsHistoryFragments({
@@ -58,39 +50,49 @@ export function stusdsHistoryFragments({
 }
 
 export function mapStusdsHistoryResponse(response: any, chainId: number) {
-  const supplies = (response.stusdsDeposits || []).map((d: any) => ({
-    assets: BigInt(d.assets),
-    blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
-    transactionHash: d.transactionHash,
-    module: ModuleEnum.STUSDS,
-    type: TransactionTypeEnum.SUPPLY,
-    token: TOKENS.usds,
-    chainId,
-    provider: StUsdsProviderType.NATIVE
-  }));
+  const supplies = mapIndexerRows(response?.stusdsDeposits, (d: any) => {
+    const assets = safeBigInt(d.assets);
+    if (assets === undefined) return undefined;
+    return {
+      assets,
+      blockTimestamp: secondsToDate(d.blockTimestamp),
+      transactionHash: d.transactionHash,
+      module: ModuleEnum.STUSDS,
+      type: TransactionTypeEnum.SUPPLY,
+      token: TOKENS.usds,
+      chainId,
+      provider: StUsdsProviderType.NATIVE
+    };
+  });
 
-  const withdraws = (response.stusdsWithdraws || []).map((w: any) => ({
-    assets: -BigInt(w.assets),
-    blockTimestamp: new Date(parseInt(w.blockTimestamp) * 1000),
-    transactionHash: w.transactionHash,
-    module: ModuleEnum.STUSDS,
-    type: TransactionTypeEnum.WITHDRAW,
-    token: TOKENS.usds,
-    chainId,
-    provider: StUsdsProviderType.NATIVE
-  }));
+  const withdraws = mapIndexerRows(response?.stusdsWithdraws, (w: any) => {
+    const assets = safeBigInt(w.assets);
+    if (assets === undefined) return undefined;
+    return {
+      assets: -assets,
+      blockTimestamp: secondsToDate(w.blockTimestamp),
+      transactionHash: w.transactionHash,
+      module: ModuleEnum.STUSDS,
+      type: TransactionTypeEnum.WITHDRAW,
+      token: TOKENS.usds,
+      chainId,
+      provider: StUsdsProviderType.NATIVE
+    };
+  });
 
-  const curveSwaps = (response.curveTokenExchanges || []).map((c: any) => {
+  const curveSwaps = mapIndexerRows(response?.curveTokenExchanges, (c: any) => {
     const soldId = parseInt(c.soldId);
     // If user sold USDS (index 0), it's a supply (USDS → stUSDS)
     // If user sold stUSDS (index 1), it's a withdraw (stUSDS → USDS)
     const isSupply = soldId === CURVE_POOL_TOKEN_INDICES.USDS;
+    const usdsAmount = safeBigInt(isSupply ? c.amountSold : c.amountBought);
+    if (usdsAmount === undefined) return undefined;
 
     return {
       // For supply: positive USDS amount sold
       // For withdraw: negative USDS amount received
-      assets: isSupply ? BigInt(c.amountSold) : -BigInt(c.amountBought),
-      blockTimestamp: new Date(parseInt(c.blockTimestamp) * 1000),
+      assets: isSupply ? usdsAmount : -usdsAmount,
+      blockTimestamp: secondsToDate(c.blockTimestamp),
       transactionHash: c.transactionHash,
       module: ModuleEnum.STUSDS,
       type: isSupply ? TransactionTypeEnum.SUPPLY : TransactionTypeEnum.WITHDRAW,
@@ -107,23 +109,6 @@ export function mapStusdsHistoryResponse(response: any, chainId: number) {
   );
 }
 
-async function fetchStusdsHistoryPage(
-  urlIndexer: string,
-  chainId: number,
-  address?: string,
-  beforeTimestamp?: number
-): Promise<HistoryPage<StUsdsHistoryItem>> {
-  if (!address) return { items: [], nextCursor: undefined };
-  const query = gql`
-    {
-      ${stusdsHistoryFragments({ owner: address.toLowerCase(), chainId, beforeTimestamp })}
-    }
-  `;
-  const response = (await request(urlIndexer, query)) as any;
-  const nextCursor = historyPageBoundary(response);
-  return { items: clampHistoryPage(mapStusdsHistoryResponse(response, chainId), nextCursor), nextCursor };
-}
-
 export type StUsdsHistoryHook = ReadHook &
   PaginatedHistory & {
     data?: StUsdsHistoryItem[];
@@ -136,34 +121,12 @@ export function useStUsdsHistory({
   indexerUrl?: string;
   enabled?: boolean;
 } = {}): StUsdsHistoryHook {
-  const { address } = useConnection();
-  const currentChainId = useChainId();
-  const urlIndexer = indexerUrl ? indexerUrl : getIndexerUrl(currentChainId) || '';
-  const chainIdToUse = familyMainnetId(currentChainId);
-
-  const { data, isLoading, error, mutate, nextCursor, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useHistoryPagination({
-      enabled: Boolean(urlIndexer) && enabled,
-      queryKey: ['stusds-history', urlIndexer, address, chainIdToUse],
-      fetchPage: beforeTimestamp => fetchStusdsHistoryPage(urlIndexer, chainIdToUse, address, beforeTimestamp)
-    });
-
-  return {
-    data,
-    isLoading,
-    error: error as Error,
-    mutate,
-    nextCursor,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
-    dataSources: [
-      {
-        title: 'Sky Ecosystem indexer',
-        href: urlIndexer,
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
-      }
-    ]
-  };
+  return useIndexerFamilyHistory<StUsdsHistoryItem>({
+    indexerUrl,
+    familyMainnet: true,
+    enabled,
+    queryKey: ({ urlIndexer, address, chainId }) => ['stusds-history', urlIndexer, address, chainId],
+    fragments: stusdsHistoryFragments,
+    mapPage: mapStusdsHistoryResponse
+  });
 }

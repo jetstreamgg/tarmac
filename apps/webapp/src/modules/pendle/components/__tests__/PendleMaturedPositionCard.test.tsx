@@ -125,7 +125,7 @@ describe('PendleMaturedPositionCard', () => {
 
   it('disables Claim off-chain in a Safe and explains why, leaving View details usable', () => {
     h.chainId = 8453;
-    h.switchBlocked = true; // Safe wallets can't switch from the dapp (APP-486)
+    h.switchBlocked = true; // the dapp must not switch a Safe (APP-486)
     renderCard();
 
     expect((screen.getByTestId('pendle-matured-redeem-button') as HTMLButtonElement).disabled).toBe(true);

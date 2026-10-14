@@ -15,11 +15,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Close } from '@/modules/icons';
-import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL, USER_RISKS_URL } from '@/lib/constants';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 import { cn } from '@/lib/cn';
-
-const USER_RISK_DOCS_URL = 'https://docs.sky.money/user-risks';
 
 // Inline prose link — links must be visibly distinguished from body text
 // (APP-500 AC), and fg-brand is the comp's link color (Figma 1868:80725).
@@ -72,7 +70,7 @@ const getKeyPoints = (): { title: ReactNode; body: ReactNode }[] => [
       <Trans>
         Interacting with blockchain protocols can result in the loss of your assets. Rates shown are variable,
         set by Sky governance, and not guaranteed by Skybase International. See the{' '}
-        <TermsLink href={USER_RISK_DOCS_URL}>User Risk Documentation</TermsLink>.
+        <TermsLink href={USER_RISKS_URL}>User Risk Documentation</TermsLink>.
       </Trans>
     )
   },

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { pageWindow } from '@/widgets/shared/components/ui/pagination/pageWindow';
+import { pageWindow } from '@/modules/ui/components/pageWindow';
 import {
   Pagination,
   PaginationContent,

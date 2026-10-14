@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Text } from '@/modules/layout/components/Typography';
-import { PopoverRateInfo, resolvePopoverTooltipKey } from '@/widgets';
+import { PopoverRateInfo, resolvePopoverTooltipKey } from '@/modules/ui/components/PopoverRateInfo';
 import { Trans } from '@lingui/react/macro';
 
 /**

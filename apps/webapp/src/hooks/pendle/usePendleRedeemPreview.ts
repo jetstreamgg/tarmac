@@ -1,6 +1,6 @@
 import { useChainId, useReadContract } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { isTestnetId } from '@/utils';
+import { isTestnetId, WAD } from '@/utils';
 import type { PendleMarketConfig } from './pendle';
 
 const SY_PREVIEW_REDEEM_ABI = [
@@ -25,8 +25,6 @@ const YT_PYINDEX_ABI = [
     outputs: [{ name: '', type: 'uint256' }]
   }
 ] as const;
-
-const ONE = 1_000_000_000_000_000_000n;
 
 /**
  * Computes the actual amount of underlying the user will receive when
@@ -61,7 +59,7 @@ export function usePendleRedeemPreview(market: PendleMarketConfig, ptBalance: bi
 
   const syAmount =
     enabled && pyIndex !== undefined && (pyIndex as bigint) > 0n
-      ? (ptBalance! * ONE) / (pyIndex as bigint)
+      ? (ptBalance! * WAD) / (pyIndex as bigint)
       : undefined;
 
   const { data: previewAmount, isLoading: previewLoading } = useReadContract({

@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { RateBadge } from '@/components/ui/RateBadge';
+import { RATE_BADGE_GRADIENT_TEXT_CLASSES, RateBadge } from '@/components/ui/RateBadge';
 import { RollingValue } from '@/components/ui/rolling-value';
 import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
@@ -25,7 +25,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { easeOutExpo } from '../animation/timingFunctions';
+import { easeInRoll, easeOutExpo, springSettle } from '../animation/timingFunctions';
 import { positionAnimations } from '../animation/presets';
 import { AnimationLabels } from '../animation/constants';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
@@ -213,6 +213,7 @@ function useChartTooltipPortal(): HTMLElement | null {
       element.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:101';
       document.body.appendChild(element);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the layer is a DOM node this effect creates on mount; nothing exists to derive it from during render
     setPortal(element);
   }, []);
 
@@ -358,7 +359,6 @@ interface ChartProps {
    */
   prefix?: string;
   isPercentage?: boolean;
-  hidePercentChange?: boolean;
   onTimeFrameChange?: (tf: TimeFrame) => void;
   isLoading?: boolean;
   error?: Error | null;
@@ -390,7 +390,7 @@ interface ChartProps {
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
-  const formatted = `${formatNumber(percentage, { maxDecimals: 2, compact: isLarge ? false : true })}%`;
+  const formatted = `${formatNumber(percentage, { minDecimals: 0, maxDecimals: 2, compact: isLarge ? false : true })}%`;
   if (formatted === '-0%') {
     return '0%';
   }
@@ -407,7 +407,6 @@ function CardTitleContent({
   formattedPercentage,
   isZeroPercentage,
   isLoading,
-  hidePercentChange,
   displayValue,
   icons
 }: {
@@ -420,7 +419,6 @@ function CardTitleContent({
   formattedPercentage: string;
   isZeroPercentage: boolean;
   isLoading: boolean;
-  hidePercentChange?: boolean;
   displayValue?: number;
   icons?: React.ReactNode;
 }) {
@@ -457,31 +455,29 @@ function CardTitleContent({
                 compact: true
               })}${isLarge && !isPercentage && symbol ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
             </Text>
-            {!hidePercentChange && (
-              <HStack
-                gap={1}
-                className={`items-center justify-center overflow-clip lg:max-w-none ${isZeroPercentage ? '' : percentage >= 0 ? 'text-bullish' : 'text-error'}`}
-              >
-                <Text className="max-w-28 text-base text-ellipsis lg:max-w-none lg:text-lg">
-                  {percentage > 10000 ? (
-                    <>
-                      <span className="align-middle text-[0.6em]">▲</span> 10,000+%
-                    </>
-                  ) : percentage > 0 && !isZeroPercentage ? (
-                    <>
-                      <span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}
-                    </>
-                  ) : percentage < 0 && !isZeroPercentage ? (
-                    <>
-                      <span className="align-middle text-[0.6em]">▼</span>{' '}
-                      {formattedPercentage.replace('-', '')}
-                    </>
-                  ) : (
-                    formattedPercentage
-                  )}
-                </Text>
-              </HStack>
-            )}
+            <HStack
+              gap={1}
+              className={`items-center justify-center overflow-clip lg:max-w-none ${isZeroPercentage ? '' : percentage >= 0 ? 'text-bullish' : 'text-error'}`}
+            >
+              <Text className="max-w-28 text-base text-ellipsis lg:max-w-none lg:text-lg">
+                {percentage > 10000 ? (
+                  <>
+                    <span className="align-middle text-[0.6em]">▲</span> 10,000+%
+                  </>
+                ) : percentage > 0 && !isZeroPercentage ? (
+                  <>
+                    <span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}
+                  </>
+                ) : percentage < 0 && !isZeroPercentage ? (
+                  <>
+                    <span className="align-middle text-[0.6em]">▼</span>{' '}
+                    {formattedPercentage.replace('-', '')}
+                  </>
+                ) : (
+                  formattedPercentage
+                )}
+              </Text>
+            </HStack>
           </HStack>
         </motion.div>
       </AnimatePresence>
@@ -497,6 +493,53 @@ function CardTitleContent({
  */
 export function detailFigureLineBox(mobile: boolean): string {
   return mobile ? 'h-[26px] leading-[26px]' : 'h-12 leading-[48px]';
+}
+
+/** The hero roll's clock (`RollingValue` speed `hero`), shared by the marks
+ *  that slide in and out beside the figure so the whole data point moves as
+ *  one. */
+const HEADER_PIECE_SECONDS = 0.6;
+
+/**
+ * A mark beside the headline figure (the token logo before it, the rate
+ * suffix / trend badge after it) that a metric swap adds or removes: it
+ * unfolds from zero width as it fades in and folds away again on exit, so the
+ * figure and its neighbours glide to their new spots instead of jumping
+ * (Figma 1598:76582 — the data point animates as a whole). The 8px gap to the
+ * figure lives inside the fold, so it collapses with it.
+ */
+function HeaderPiece({
+  show,
+  side,
+  children
+}: {
+  show: boolean;
+  side: 'leading' | 'trailing';
+  children: React.ReactNode;
+}) {
+  const reduceMotion = useReducedMotion();
+  const seconds = reduceMotion ? 0 : HEADER_PIECE_SECONDS;
+  return (
+    <AnimatePresence initial={false}>
+      {show && (
+        <motion.span
+          key="piece"
+          className="inline-flex shrink-0 items-center overflow-hidden"
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: 'auto', opacity: 1 }}
+          exit={{ width: 0, opacity: 0 }}
+          transition={{
+            width: { duration: seconds, ease: springSettle },
+            opacity: { duration: seconds * 0.6, ease: show ? springSettle : easeInRoll }
+          }}
+        >
+          <span className={cn('inline-flex shrink-0 items-center', side === 'leading' ? 'pr-2' : 'pl-2')}>
+            {children}
+          </span>
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
 }
 
 /** detail-variant headline: just the formatted value (no % change / timestamp). */
@@ -558,10 +601,15 @@ function DetailHeaderValue({
       // Desktop is Heading 2 (44/48, Circular Medium — Figma 859:35718, whose
       // header block measures 22px of label over a 48px figure); the phone tier
       // keeps its own Heading 5 from M6.3.
+      // The line box comes AFTER the size class on purpose: tailwind-merge
+      // treats a font-size utility as also owning line-height (v3's `text-2xl`
+      // set both), so `text-[44px]` listed later dropped `leading-[48px]` and
+      // the glyph took the inherited 1.5 (66px) — its line box overran the
+      // 48px block and the figure sat ~9px below the icon and badge.
       className={cn(
         'text-text font-circle font-medium',
-        detailFigureLineBox(mobile),
-        mobile ? 'text-2xl tracking-[-0.48px]' : 'text-[44px] tracking-[-0.88px]'
+        mobile ? 'text-2xl tracking-[-0.48px]' : 'text-[44px] tracking-[-0.88px]',
+        detailFigureLineBox(mobile)
       )}
     >
       {/* The figure rolls over when the metric or timeframe swaps it rather
@@ -570,13 +618,20 @@ function DetailHeaderValue({
       <RollingValue value={formatted} />
     </span>
   );
-  if (!icons && !valueSuffix && !trend) return figure;
+  // Always the full row, even for a bare figure: the marks a metric swap
+  // brings need a row that stays mounted to fold in and out of.
   return (
-    <span className="flex items-center gap-2">
-      {icons}
+    <span className="flex items-center">
+      <HeaderPiece show={!!icons} side="leading">
+        {icons}
+      </HeaderPiece>
       {figure}
-      {valueSuffix}
-      {trend}
+      <HeaderPiece show={!!valueSuffix} side="trailing">
+        {valueSuffix}
+      </HeaderPiece>
+      <HeaderPiece show={!!trend} side="trailing">
+        {trend}
+      </HeaderPiece>
     </span>
   );
 }
@@ -593,16 +648,24 @@ function TrendBadge({ percentage, formatted }: { percentage: number; formatted: 
   // default header caps it — a series that starts tiny on the All timeframe
   // would otherwise print a nine-digit pill. A fall cannot pass -100%.
   const label = percentage > 10000 ? '+10,000+%' : `${isDown ? '-' : '+'}${formatted}`;
-  if (!isDown) {
-    return <RateBadge data-testid="chart-trend-badge">{label}</RateBadge>;
-  }
+  // The pill's figure rolls over on a timeframe swap the same way the headline
+  // does — on a TVL series the headline is the latest sample whichever window
+  // is picked, so the change was the only figure moving and it snapped while
+  // the rest of the data point animated. Stat clock: it's a 12px figure.
+  // One `RateBadge` for both directions (its `tone` restyles in place): a
+  // sign flip between timeframes used to swap elements, which remounted the
+  // figure and skipped the roll.
   return (
-    <span
-      data-testid="chart-trend-badge"
-      className="border-error/50 bg-error/10 text-error font-circle inline-flex shrink-0 items-center rounded-full border-[0.5px] px-1.5 py-[3px] text-[11px] leading-3 font-medium tracking-[-0.24px] md:text-xs md:leading-[14px]"
-    >
-      {label}
-    </span>
+    <RateBadge data-testid="chart-trend-badge" tone={isDown ? 'error' : 'success'}>
+      <RollingValue
+        value={label}
+        speed="stat"
+        // The glyphs are transformed, so the badge's gradient clip can't paint
+        // them from above — each glyph carries it (the error tone is a plain
+        // colour and inherits).
+        glyphClassName={isDown ? undefined : RATE_BADGE_GRADIENT_TEXT_CLASSES}
+      />
+    </RateBadge>
   );
 }
 
@@ -763,7 +826,6 @@ export function Chart({
   prefix,
   onTimeFrameChange,
   isPercentage = false,
-  hidePercentChange = false,
   isLoading = false,
   error,
   dataTestId,
@@ -936,7 +998,6 @@ export function Chart({
                   formattedPercentage={formattedPercentage}
                   isZeroPercentage={isZeroPercentage}
                   isLoading={isLoading}
-                  hidePercentChange={hidePercentChange}
                   displayValue={displayValue}
                   icons={icons}
                 />

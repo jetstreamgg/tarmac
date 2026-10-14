@@ -39,7 +39,6 @@ export const localeImports: LocaleImport = {
   enIE: () => import('date-fns/locale/en-IE'),
   enIN: () => import('date-fns/locale/en-IN'),
   enNZ: () => import('date-fns/locale/en-NZ'),
-  enUS: () => import('date-fns/locale/en-US'),
   enZA: () => import('date-fns/locale/en-ZA'),
   eo: () => import('date-fns/locale/eo'),
   es: () => import('date-fns/locale/es'),

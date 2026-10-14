@@ -28,14 +28,3 @@ export function calculateApyFromStr(str: bigint): number {
     return ratePerSecond * secondsInYear * 100;
   }
 }
-
-/**
- * Formats str as APY string with decimals
- * @param str - Per-second yield rate scaled by 1e27 (ray)
- * @param decimals - Number of decimal places (default: 2)
- * @returns Formatted APY string (e.g., "5.20%")
- */
-export function formatStrAsApy(str: bigint, decimals: number = 2): string {
-  const apy = calculateApyFromStr(str);
-  return `${apy.toFixed(decimals)}%`;
-}

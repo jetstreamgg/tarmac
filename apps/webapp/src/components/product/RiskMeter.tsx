@@ -42,15 +42,16 @@ export function RiskMeter({
 }
 
 // The four risk zones, ascending across the DS Progress Steps bar (Figma
-// 5246:24677). Their boundaries are the REAL liquidation-proximity thresholds
-// (0 / 25 / 40 / 80%, `RISK_LEVEL_THRESHOLDS`), not even quarters: the fill
-// encodes the position's actual proximity, so a Medium position (say 33%)
-// has to land inside the zone labelled Medium (APP-545).
+// 3199:81157): each gets an equal quarter of the bar. The zone boundaries are
+// the REAL liquidation-proximity thresholds (0 / 25 / 40 / 80%,
+// `RISK_LEVEL_THRESHOLDS`), so a value is mapped piecewise onto the quarters:
+// a Medium position (say 33%) still lands inside the quarter labelled Medium
+// (APP-545).
 const RISK_ZONES = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.LIQUIDATION] as const;
 
 const zoneStart = (level: RiskLevel) =>
   (RISK_LEVEL_THRESHOLDS.find(t => t.level === level)?.threshold ?? 0) / 100;
-/** [start, end) of each zone as 0–1 fractions of the bar: each starts at its threshold and ends at the next zone's. */
+/** [start, end) of each zone as 0–1 proximity fractions: each starts at its threshold and ends at the next zone's. */
 const RISK_ZONE_BOUNDS = Object.fromEntries(
   RISK_ZONES.map((zone, i) => [
     zone,
@@ -58,15 +59,16 @@ const RISK_ZONE_BOUNDS = Object.fromEntries(
   ])
 ) as Record<RiskLevel, [number, number]>;
 
-// The fill takes the DS Badges/Risk palette (components/badges/bg-risk-*) so
-// the bar and the risk pill beside it name the same level in the same colour
-// (APP-545: the pill read Medium in amber over a blue bar). Liquidation is
-// the one step past High: the status error red.
-const RISK_ZONE_FILL: Record<RiskLevel, string> = {
-  [RiskLevel.LOW]: 'bg-riskLow',
-  [RiskLevel.MEDIUM]: 'bg-riskMedium',
-  [RiskLevel.HIGH]: 'bg-riskHigh',
-  [RiskLevel.LIQUIDATION]: 'bg-statusError'
+const QUARTER = 1 / RISK_ZONES.length;
+
+// The fill is the DS gradient-slider of the zone (Progress Steps 3199:81157:
+// green for Low, yellow for Medium, red for High and Liquidation), so the bar
+// reads like the borrow slider beside it (Design QA 3324:143419).
+export const RISK_ZONE_FILL: Record<RiskLevel, string> = {
+  [RiskLevel.LOW]: 'from-slider-green-start to-slider-green-end',
+  [RiskLevel.MEDIUM]: 'from-slider-yellow-start to-slider-yellow-end',
+  [RiskLevel.HIGH]: 'from-slider-red-start to-slider-red-end',
+  [RiskLevel.LIQUIDATION]: 'from-slider-red-start to-slider-red-end'
 };
 
 const RISK_ZONE_LABEL: Record<RiskLevel, ReactNode> = {
@@ -78,50 +80,54 @@ const RISK_ZONE_LABEL: Record<RiskLevel, ReactNode> = {
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
+// The last zone whose start the value has reached (LOW starts at 0, so a
+// value always lands somewhere).
+const valueZoneIndex = (v: number) =>
+  RISK_ZONES.filter(zone => clamp01(v) >= RISK_ZONE_BOUNDS[zone][0]).length - 1;
+
+/** Proximity fraction → position on the equal-quarter bar. */
+const toBarFraction = (v: number) => {
+  const index = valueZoneIndex(v);
+  const [start, end] = RISK_ZONE_BOUNDS[RISK_ZONES[index]];
+  return (index + (clamp01(v) - start) / (end - start)) * QUARTER;
+};
+
 /**
- * DS "Charts / Progress Steps" (Figma 5246:24677): a value-driven risk bar -
- * a rounded track split into four zones (Low → Liquidation) at the real risk
- * thresholds, with a fill whose length encodes the risk and whose colour is
- * the zone's DS risk colour, dot-markers at the zone boundaries, and a tick at
- * the liquidation threshold. Distinct from the compact table-cell `RiskMeter`
- * pill above.
+ * DS "Charts / Progress Steps" (Figma 3199:81157): a value-driven risk bar -
+ * a rounded track split into four equal zones (Low → Liquidation), with a
+ * fill whose length encodes the risk and whose gradient is the zone's slider
+ * colour, a faint 2px dot centred in each zone and a tick where Liquidation
+ * starts. Distinct from the compact table-cell `RiskMeter` pill above.
  *
  * Drive it with a discrete `level` (fills to the end of that zone) or a
- * continuous `value` (0–1 fraction; the colour follows whichever zone the
- * value lands in). Pass both to fill to `value` while tinting by `level`. With
- * neither it renders the empty legend (track + labels). Decorative unless
- * `label` names the state for assistive tech.
+ * continuous `value` (0–1 liquidation proximity; the colour follows whichever
+ * zone the value lands in). Pass both to fill to `value` while tinting by
+ * `level`. With neither it renders the empty legend (track + labels).
+ * `showLabels={false}` drops the zone labels (summary card, comp 3617:24493).
+ * Decorative unless `label` names the state for assistive tech.
  */
 export function RiskScaleMeter({
   level,
   value,
   label,
+  showLabels = true,
   className
 }: {
   level?: RiskLevel;
   value?: number;
   label?: string;
+  showLabels?: boolean;
   className?: string;
 }) {
   const levelIndex = level ? RISK_ZONES.indexOf(level) : -1;
 
   // Zone/tint prefers an explicit `level`; otherwise the zone the value lands
-  // in (thresholds, not quarters). Fill length prefers a continuous `value`;
-  // otherwise the level's zone end (Liquidation → the threshold tick - Figma
-  // 5246:24677 leaves a tail past it rather than filling the whole bar).
-  // Passing both fills to `value` but tints by `level`, e.g. the stake
-  // liquidation indicator (real proximity, real risk level).
-  // The last zone whose start the value has reached (LOW starts at 0, so a
-  // value always lands somewhere).
-  const valueZoneIndex = (v: number) =>
-    RISK_ZONES.filter(zone => clamp01(v) >= RISK_ZONE_BOUNDS[zone][0]).length - 1;
+  // in. Fill length prefers a continuous `value`; otherwise the level's zone
+  // end — Liquidation to the end of the bar, so it stays distinguishable from
+  // High (whose zone ends where Liquidation's starts).
   const activeIndex = levelIndex >= 0 ? levelIndex : value !== undefined ? valueZoneIndex(value) : -1;
   const activeZone = activeIndex >= 0 ? RISK_ZONES[activeIndex] : undefined;
-
-  // A discrete level fills to the end of its zone — Liquidation to the end of
-  // the bar, so it stays distinguishable from High (whose zone ends where
-  // Liquidation's starts).
-  const fillFraction = value !== undefined ? clamp01(value) : level ? RISK_ZONE_BOUNDS[level][1] : 0;
+  const fillFraction = value !== undefined ? toBarFraction(value) : level ? (levelIndex + 1) * QUARTER : 0;
 
   return (
     <div
@@ -130,49 +136,54 @@ export function RiskScaleMeter({
       aria-hidden={label ? undefined : true}
       className={cn('flex w-full flex-col gap-1.5', className)}
     >
-      <div className="bg-fgQuaternary/30 relative h-1 w-full rounded-full">
+      <div className="bg-sliderTrack relative h-1 w-full rounded-full">
+        {/* Design QA 3324:143419 "Dots styling": the DS bar draws no boundary
+            markers, only a 2px dot in the track's own tint centred in each
+            zone (under its label) and a 2×14 fg-line tick where Liquidation
+            starts. The dots come first in the DOM so the fill covers them;
+            the tick draws over both. */}
+        {RISK_ZONES.map((zone, i) => (
+          <span
+            key={zone}
+            data-testid="risk-scale-dot"
+            className="bg-sliderTrack absolute top-1/2 size-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ left: `${(i + 0.5) * QUARTER * 100}%` }}
+          />
+        ))}
         {activeZone && fillFraction > 0 && (
           <span
             data-testid="risk-scale-fill"
             data-zone={activeZone}
-            className={cn('absolute inset-y-0 left-0 rounded-full', RISK_ZONE_FILL[activeZone])}
+            className={cn(
+              'absolute inset-y-0 left-0 rounded-full bg-linear-to-r',
+              RISK_ZONE_FILL[activeZone]
+            )}
             style={{ width: `${fillFraction * 100}%` }}
           />
         )}
-        {/* Zone boundary markers at the real thresholds (25 / 40 / 80% — the
-            last one IS the liquidation threshold, so there is no separate
-            tick), drawn OVER the fill so they read as notches on the covered
-            stretch too — a Medium position must still show where Low ended
-            (APP-545 follow-up). The ring is the opaque page colour: the card
-            tokens are translucent and vanish over the fill. */}
-        {RISK_ZONES.slice(1).map(zone => (
-          <span
-            key={zone}
-            data-testid="risk-scale-marker"
-            className="bg-fgSecondary ring-pageBackground absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2"
-            style={{ left: `${RISK_ZONE_BOUNDS[zone][0] * 100}%` }}
-          />
-        ))}
+        <span
+          data-testid="risk-scale-liquidation-tick"
+          className="bg-sliderLine absolute -inset-y-[5px] w-0.5 -translate-x-1/2"
+          style={{ left: `${(RISK_ZONES.length - 1) * QUARTER * 100}%` }}
+        />
       </div>
-      {/* Each label spans its own zone, so it sits over the stretch of bar it
-          names — the Medium label over 25–40%, not over the second quarter. */}
-      <div className="flex">
-        {RISK_ZONES.map((zone, i) => (
-          <span
-            key={zone}
-            // min-w-0: a narrow zone (Medium is 15% of the bar) must not grow
-            // its box past its share and push the labels after it off their
-            // zones — the word may overhang its box, centred, instead.
-            className={cn(
-              'min-w-0 text-center text-xs whitespace-nowrap',
-              i <= activeIndex ? 'text-fgSecondary' : 'text-fgQuaternary'
-            )}
-            style={{ width: `${(RISK_ZONE_BOUNDS[zone][1] - RISK_ZONE_BOUNDS[zone][0]) * 100}%` }}
-          >
-            {RISK_ZONE_LABEL[zone]}
-          </span>
-        ))}
-      </div>
+      {showLabels && (
+        <div className="flex">
+          {RISK_ZONES.map(zone => (
+            <span
+              key={zone}
+              // Only the Liquidation label is dimmed (fg-tertiary) in the DS
+              // comp; the others stay fg-secondary whatever the fill reaches.
+              className={cn(
+                'min-w-0 flex-1 text-center text-xs leading-[18px] whitespace-nowrap',
+                zone === RiskLevel.LIQUIDATION ? 'text-fgTertiary' : 'text-fgSecondary'
+              )}
+            >
+              {RISK_ZONE_LABEL[zone]}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

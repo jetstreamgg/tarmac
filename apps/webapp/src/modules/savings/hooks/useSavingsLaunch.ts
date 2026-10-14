@@ -57,6 +57,12 @@ export interface UseSavingsLaunchParams {
   sUsdsBalance?: bigint;
   minAmountOutForWithdrawAll?: bigint;
   maxAmountInForWithdraw?: bigint;
+  /**
+   * Form validity (amount entered, within balance, any product gate open). Gates the
+   * engines' prepare-time simulation: an input the form already knows is invalid is
+   * never simulated, so no RPC round trip and no Sentry event for a foregone revert.
+   */
+  enabled?: boolean;
 }
 
 export type UseSavingsLaunchResult = EngineLaunchResult;
@@ -76,7 +82,7 @@ export type UseSavingsLaunchResult = EngineLaunchResult;
  *    the PSM standing in for the upgrade, armed only while `useUsdcSupplyGate` is open
  *  - supply        (L2)      → `useBatchPsmSwapExactIn` (optional approve →
  *    psm.swapExactIn(token → sUSDS), referralCode as bigint)
- *  - withdraw      (mainnet) → `useSavingsWithdraw` (`max` resolves via maxWithdraw(owner))
+ *  - withdraw      (mainnet) → `useSavingsWithdraw` (`max` redeems the whole sUSDS share balance)
  *
  * The engines own all calldata. Allowance reads here are READ ONLY — they label
  * the modal's approve steps; the approve/deposit/swap calls (and the USDT/allowance
@@ -91,7 +97,8 @@ export function useSavingsLaunch({
   minAmountOut,
   sUsdsBalance,
   minAmountOutForWithdrawAll,
-  maxAmountInForWithdraw
+  maxAmountInForWithdraw,
+  enabled = true
 }: UseSavingsLaunchParams): UseSavingsLaunchResult {
   const { txCallbacks } = useTransaction();
   const { address } = useAccount();
@@ -176,21 +183,21 @@ export function useSavingsLaunch({
   const supplyHook = useBatchSavingsSupply({
     amount,
     ref: referralCode,
-    enabled: isSupply && !isL2 && !isDai && !isMainnetUsdc,
+    enabled: enabled && isSupply && !isL2 && !isDai && !isMainnetUsdc,
     shouldUseBatch,
     ...txCallbacks
   });
   const upgradeHook = useBatchUpgradeAndSavingsSupply({
     amount,
     ref: referralCode,
-    enabled: isDai,
+    enabled: enabled && isDai,
     shouldUseBatch,
     ...txCallbacks
   });
   const usdcSupplyHook = useBatchPsmSwapAndSavingsSupply({
     amount,
     ref: referralCode,
-    enabled: isMainnetUsdc && usdcGateOpen,
+    enabled: enabled && isMainnetUsdc && usdcGateOpen,
     shouldUseBatch,
     ...txCallbacks
   });
@@ -200,7 +207,7 @@ export function useSavingsLaunch({
     amountIn: amount,
     minAmountOut: minAmountOut ?? 0n,
     referralCode: psmReferralCode,
-    enabled: isSupply && isL2,
+    enabled: enabled && isSupply && isL2,
     shouldUseBatch,
     ...txCallbacks
   });
@@ -211,7 +218,7 @@ export function useSavingsLaunch({
     amountIn: sUsdsBalance ?? 0n,
     minAmountOut: minAmountOutForWithdrawAll ?? 0n,
     referralCode: psmReferralCode,
-    enabled: isL2Withdraw && max,
+    enabled: enabled && isL2Withdraw && max,
     shouldUseBatch,
     ...txCallbacks
   });
@@ -223,14 +230,14 @@ export function useSavingsLaunch({
     amountOut: amount,
     maxAmountIn: maxAmountInForWithdraw ?? 0n,
     referralCode: psmReferralCode,
-    enabled: isL2Withdraw && !max,
+    enabled: enabled && isL2Withdraw && !max,
     shouldUseBatch,
     ...txCallbacks
   });
   const withdrawHook = useSavingsWithdraw({
     amount,
     max,
-    enabled: !isSupply && !isL2,
+    enabled: enabled && !isSupply && !isL2,
     ...txCallbacks
   });
 

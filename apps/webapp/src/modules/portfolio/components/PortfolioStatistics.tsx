@@ -25,10 +25,7 @@ export function PortfolioStatistics() {
   const { data: overallSkyData } = useOverallSkyData();
 
   const totalSupply = usdsDaiData?.[0]
-    ? `${parseFloat(usdsDaiData[0].total).toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      })} USDS`
+    ? `${formatNumber(parseFloat(usdsDaiData[0].total), { maxDecimals: 0 })} USDS`
     : undefined;
   const savingsTvl = compactUsd(overallSkyData?.skySavingsRateTvl);
   const rewardsTvl = compactUsd(overallSkyData?.totalRewardTvl);

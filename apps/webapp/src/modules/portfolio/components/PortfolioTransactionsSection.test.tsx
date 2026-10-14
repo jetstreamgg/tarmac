@@ -16,7 +16,8 @@ vi.mock('wagmi', async importOriginal => {
     useChains: () => [
       { id: 1, name: 'Ethereum' },
       { id: 8453, name: 'Base' }
-    ]
+    ],
+    useAccount: () => ({ isConnected: true })
   };
 });
 
@@ -140,13 +141,11 @@ describe('PortfolioTransactionsView', () => {
     expect(within(table).queryByText('Staking')).not.toBeNull(); // stake product label
   });
 
-  // APP-443 item 21: Morpho and sUSDT are both "Vault", and keying the filter
-  // by module listed that name twice.
-  it('offers one Vault row for the two vault modules, and filters on both', () => {
+  // APP-443 item 21: the product filter is keyed by product group, not module.
+  it('offers one Vault row for the vault module, and filters on it', () => {
     renderView([
       row({ id: 'a', module: ModuleEnum.SAVINGS, action: 'Savings Supply' }),
-      row({ id: 'b', module: ModuleEnum.MORPHO, action: 'Morpho Withdraw' }),
-      row({ id: 'c', module: ModuleEnum.SUSDT, action: 'Susdt Supply' })
+      row({ id: 'b', module: ModuleEnum.MORPHO, action: 'Morpho Withdraw' })
     ]);
 
     const productFilter = screen.getByTestId('portfolio-tx-filter-product');
@@ -158,7 +157,6 @@ describe('PortfolioTransactionsView', () => {
     fireEvent.change(productFilter, { target: { value: 'vault' } });
     const table = screen.getByTestId('portfolio-transactions-table');
     expect(within(table).queryByText('Morpho Withdraw')).not.toBeNull();
-    expect(within(table).queryByText('Susdt Supply')).not.toBeNull();
     expect(within(table).queryByText('Savings Supply')).toBeNull();
   });
 });
