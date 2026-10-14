@@ -21,7 +21,7 @@ import { ARBITRUM_DEPOSIT, L1_USDS, NODE_INTERFACE, arbitrumBridgeAbi } from './
 import { ARBITRUM_DEPOSIT_LOGS, ARBITRUM_DEPOSIT_TX } from './depositFixtures';
 
 const FROM = ARBITRUM_DEPOSIT_TX.from;
-const RECIPIENT: Address = '0x000000000000000000000000000000000000dEaD';
+const RECIPIENT: Address = '0x2546BcD3c84621e976D8185a91A922aE77ECEc30';
 const AMOUNT = parseEther('25');
 
 const clients = (overrides: Partial<Record<'fee' | 'gas' | 'price', () => Promise<bigint>>> = {}) => ({

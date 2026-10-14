@@ -1,12 +1,14 @@
-import { erc20Abi, isAddressEqual, parseAbi, zeroAddress, type Address, type Call } from 'viem';
+import { erc20Abi, parseAbi, type Address, type Call } from 'viem';
 import { base, optimism, unichain } from 'viem/chains';
 import type { BridgeNetworkId } from '../../model/networks';
+import { isSystemAddress } from '../../model/systemAddresses';
 
 export const L1_USDS: Address = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
 
-/** The L2 mint to the zero address reverts and strands the deposit, so no deposit is built for it. */
+/** The L2 mint to the zero address or a system or bridge contract reverts or traps the deposit, so none is built. */
 export function assertRecipient(address: Address) {
-  if (isAddressEqual(address, zeroAddress)) throw new Error('A bridge deposit needs a recipient');
+  if (isSystemAddress(address, NATIVE_DEPOSIT_CONTRACTS))
+    throw new Error('A bridge deposit needs a recipient that can hold USDS');
 }
 
 /** The deposit, after an approve of exactly `amount` to `spender` when the allowance is short. */
@@ -69,6 +71,9 @@ export const ARBITRUM_DEPOSIT = {
   l2Usds: '0x6491c05A82219b8D1479057361ff1654749b876b',
   inbox: '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f',
   bridge: '0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a',
+  /** Arbitrum's gateway routers, which the deposit skips; listed only so they can't receive one. */
+  l1Router: '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef',
+  l2Router: '0x5288c571Fd7aD117beA99bF60FE0846C4E84F933',
   /** ArbOS chain id, part of every ticket id (a fork keeps it). */
   chainId: 42161n
 } as const satisfies Record<string, Address | bigint>;
@@ -109,3 +114,13 @@ export const nodeInterfaceAbi = parseAbi([
 export const arbitrumBridgeAbi = parseAbi([
   'event MessageDelivered(uint256 indexed messageIndex, bytes32 indexed beforeInboxAcc, address inbox, uint8 kind, address sender, bytes32 messageDataHash, uint256 baseFeeL1, uint64 timestamp)'
 ]);
+
+/** Every contract the native deposits touch on either side; none of them can receive one. */
+export const NATIVE_DEPOSIT_CONTRACTS: readonly Address[] = [
+  L1_USDS,
+  ...Object.values(OP_STACK_DEPOSIT).flatMap(contracts => Object.values(contracts)),
+  ...Object.values(ARBITRUM_DEPOSIT).flatMap(value => (typeof value === 'string' ? [value] : [])),
+  L2_CROSS_DOMAIN_MESSENGER,
+  ARB_RETRYABLE_TX,
+  NODE_INTERFACE
+];

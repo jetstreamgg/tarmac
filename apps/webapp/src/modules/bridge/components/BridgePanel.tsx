@@ -20,8 +20,39 @@ function RecipientHint({ reason }: RecipientHintProps) {
       return (
         <Trans>Your Safe has different owners on the destination network. Add a recipient address.</Trans>
       );
+    case 'contract-not-on-destination':
+      return (
+        <Trans>
+          Your wallet is a smart contract that doesn&apos;t exist on the destination network. Add a recipient
+          address.
+        </Trans>
+      );
+    case 'contract-unverified':
+      return (
+        <Trans>We couldn&apos;t check your wallet on the destination network. Add a recipient address.</Trans>
+      );
     default:
       return <Trans>We could not check your Safe on the destination network. Add a recipient address.</Trans>;
+  }
+}
+
+type RecipientProblemMessageProps = { problem: ReturnType<typeof useBridgeForm>['recipientProblem'] };
+
+function RecipientProblemMessage({ problem }: RecipientProblemMessageProps) {
+  switch (problem) {
+    case 'system-contract':
+      return (
+        <Trans>This address is a token or bridge contract and can&apos;t receive funds. Change it.</Trans>
+      );
+    case 'contract-not-on-destination':
+      return (
+        <Trans>
+          This address is a smart contract that doesn&apos;t exist on the destination network. Funds sent
+          there can&apos;t be recovered. Change it.
+        </Trans>
+      );
+    default:
+      return <Trans>We couldn&apos;t check the recipient address. Try again in a moment.</Trans>;
   }
 }
 
@@ -96,6 +127,12 @@ export function BridgePanel() {
           <Text className="text-error text-sm" dataTestId="bridge-recipient-invalid">
             <Trans>The recipient address doesn&apos;t match the destination network. Change it.</Trans>
           </Text>
+        ) : form.recipientProblem ? (
+          !form.recipientChecking && (
+            <Text className="text-error text-sm" dataTestId="bridge-recipient-blocked">
+              <RecipientProblemMessage problem={form.recipientProblem} />
+            </Text>
+          )
         ) : (
           form.isConnected &&
           form.needsRecipient &&

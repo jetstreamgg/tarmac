@@ -13,9 +13,10 @@ import {
   type BridgeNetworkId
 } from '../model/networks';
 import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
-import { isValidRecipient, recipientRequirement, sendsToOther } from '../model/recipient';
+import { isValidRecipient, recipientProblem, recipientRequirement, sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
+import { useAddressCode } from './useAddressCode';
 import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
 
@@ -149,12 +150,22 @@ export function useBridgeForm() {
   const checkSafe = isConnected && isSafe && destinationFamily === 'evm' && !sendsToOther(recipient, address);
   const sourceSafe = useSafeConfig({ address, chainId: sourceChainId, enabled: checkSafe });
   const destinationSafe = useSafeConfig({ address, chainId: destinationChainId, enabled: checkSafe });
+  // The address the destination pays: a typed recipient, else the wallet.
+  const typedOther = sendsToOther(recipient, address);
+  const payee =
+    destinationFamily !== 'evm' || recipientInvalid ? undefined : typedOther ? recipient : address;
+  const payeeOnSource = useAddressCode({ address: payee, chainId: sourceChainId });
+  const payeeOnDestination = useAddressCode({ address: payee, chainId: destinationChainId });
+  const payeeCode = { source: payeeOnSource.code, destination: payeeOnDestination.code };
   const recipientRule = recipientRequirement({
     destinationFamily,
     sender: address,
     recipient,
-    safe: isSafe ? { source: sourceSafe.lookup, destination: destinationSafe.lookup } : undefined
+    safe: isSafe ? { source: sourceSafe.lookup, destination: destinationSafe.lookup } : undefined,
+    code: payeeCode
   });
+  const problem = typedOther && payee ? recipientProblem(payee, payeeCode) : undefined;
+  const codeChecking = payeeOnSource.isChecking || payeeOnDestination.isChecking;
 
   const balanceLoading = isConnected && source.isLoading;
   // An unread balance (failed, or a network the app can't read) never passes as enough.
@@ -188,9 +199,11 @@ export function useBridgeForm() {
     sourceUnavailable,
     /** The saved recipient is not a valid address on the destination network. */
     recipientInvalid,
+    /** Why the destination can't deliver to the typed recipient. */
+    recipientProblem: problem,
     needsRecipient: recipientRule.required,
-    /** The Safe lookups behind `needsRecipient` are still in flight. */
-    recipientChecking: checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking),
+    /** The lookups behind `needsRecipient` and `recipientProblem` are still in flight. */
+    recipientChecking: codeChecking || (checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking)),
     recipientReason: recipientRule.required ? recipientRule.reason : undefined,
     /** The Safe check failed, so the wallet type is unknown. */
     safeCheckFailed: isConnected && safeStatus === 'unknown',
@@ -202,6 +215,7 @@ export function useBridgeForm() {
       balanceUnknown ||
       sourceUnavailable ||
       recipientInvalid ||
+      !!problem ||
       recipientRule.required ||
       walletUnchecked ||
       !route,

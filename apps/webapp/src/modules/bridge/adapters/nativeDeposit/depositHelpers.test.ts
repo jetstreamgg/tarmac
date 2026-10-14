@@ -19,6 +19,7 @@ import {
   retryableQuote
 } from './arbitrum';
 import {
+  ARB_RETRYABLE_TX,
   ARBITRUM_DEPOSIT,
   L1_USDS,
   L2_CROSS_DOMAIN_MESSENGER,
@@ -35,6 +36,7 @@ import {
   UNICHAIN_DEPOSIT_LOGS,
   UNICHAIN_DEPOSIT_TX
 } from './depositFixtures';
+import { isBlockedRecipient } from '../../model/recipient';
 import {
   OP_STACK_MIN_GAS_LIMIT,
   opStackDepositCall,
@@ -99,6 +101,8 @@ describe('OP Stack deposit (golden: Base mainnet deposit 0x36f35ee8…537f)', ()
   });
 });
 
+const STAND_IN_RECIPIENT: Address = '0x2546BcD3c84621e976D8185a91A922aE77ECEc30';
+
 describe.each([
   {
     network: 'optimism' as const,
@@ -126,11 +130,18 @@ describe.each([
     expect(tx.value).toBe(0n);
     // The real deposit forwarded 200k; ours forwards at least as much.
     expect(OP_STACK_MIN_GAS_LIMIT).toBeGreaterThanOrEqual(minGasLimit);
-    const call = opStackDepositCall({ network, recipient, amount });
+    // These fork deposits went to a low system address, which the builder now refuses; swap in an EOA.
+    const payee = isBlockedRecipient(recipient) ? STAND_IN_RECIPIENT : recipient;
+    const expected = encodeFunctionData({
+      abi: skyL1TokenBridgeImplementationAbi,
+      functionName: 'bridgeERC20To',
+      args: [real.args[0], real.args[1], payee, amount, minGasLimit, extraData]
+    } as Parameters<typeof encodeFunctionData>[0]);
+    const call = opStackDepositCall({ network, recipient: payee, amount });
     expect(call.address).toBe(OP_STACK_DEPOSIT[network].l1TokenBridge);
     const [token, l2Token, to, value] = call.args;
     expect(encodeFunctionData({ ...call, args: [token, l2Token, to, value, minGasLimit, extraData] })).toBe(
-      tx.input
+      expected
     );
   });
 
@@ -344,6 +355,25 @@ describe('deposit builders', () => {
     expect(() =>
       arbitrumDepositCall({ recipient: someone, refundTo: zeroAddress, amount: 1n, quote })
     ).toThrow();
+  });
+
+  it('build no deposit to a system address or a bridge contract on either side', () => {
+    const quote = retryableQuote({ submissionFee: 1n, gasEstimate: 1n, l2GasPrice: 1n });
+    const blocked = [
+      '0x000000000000000000000000000000000000dEaD',
+      L2_CROSS_DOMAIN_MESSENGER,
+      ARB_RETRYABLE_TX,
+      L1_USDS,
+      OP_STACK_DEPOSIT.base.l2Usds,
+      OP_STACK_DEPOSIT.optimism.l2TokenBridge,
+      ARBITRUM_DEPOSIT.l2Usds,
+      ARBITRUM_DEPOSIT.l2Gateway,
+      ARBITRUM_DEPOSIT.l2Router
+    ] as const;
+    for (const recipient of blocked) {
+      expect(() => opStackDepositCall({ network: 'base', recipient, amount: 1n })).toThrow();
+      expect(() => arbitrumDepositCall({ recipient, refundTo: recipient, amount: 1n, quote })).toThrow();
+    }
   });
 });
 

@@ -12,7 +12,11 @@ const mocks = vi.hoisted(() => ({
   switched: [] as number[],
   refetched: [] as number[],
   isOpen: { status: 'success', data: 1n } as { status: 'pending' | 'error' | 'success'; data?: bigint },
-  reads: [] as { chainId?: number; address?: string; functionName: string; enabled?: boolean }[]
+  reads: [] as { chainId?: number; address?: string; functionName: string; enabled?: boolean }[],
+  /** Code by `chainId:address`; an address not listed has none. */
+  code: {} as Record<string, 'contract' | 'none' | undefined>,
+  codeChecking: false,
+  codeReads: [] as string[]
 }));
 
 vi.mock('wagmi', () => ({
@@ -45,6 +49,15 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 vi.mock('./useSafeConfig', () => ({ useSafeConfig: () => ({ lookup: undefined, isChecking: false }) }));
+vi.mock('./useAddressCode', () => ({
+  useAddressCode: ({ address, chainId }: { address?: string; chainId?: number }) => {
+    if (!address || chainId === undefined) return { code: undefined, isChecking: false };
+    const key = `${chainId}:${address.toLowerCase()}`;
+    mocks.codeReads.push(key);
+    if (mocks.codeChecking) return { code: undefined, isChecking: true };
+    return { code: key in mocks.code ? mocks.code[key] : 'none', isChecking: false };
+  }
+}));
 
 describe('useBridgeForm: a source the app cannot switch (Safe) stays on the wallet network', () => {
   beforeEach(() => {
@@ -181,5 +194,80 @@ describe('useBridgeForm: the L1 bridge isOpen gate', () => {
     expect(result.current.from).toBe('base');
     expect(lastRead()).toMatchObject({ address: undefined, enabled: false });
     expect(result.current.route?.kind).toBe('cctp');
+  });
+});
+
+const WALLET = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+const OTHER = '0x2546bcd3c84621e976d8185a91a922ae77ecec30';
+
+describe('useBridgeForm: the recipient code check', () => {
+  beforeEach(() => {
+    Object.assign(mocks, {
+      appChainId: 1,
+      canSwitchChain: true,
+      safeStatus: 'not-safe',
+      switched: [],
+      isOpen: { status: 'success', data: 1n },
+      reads: [],
+      code: {},
+      codeChecking: false,
+      codeReads: []
+    });
+  });
+
+  const typed = (recipient: string) => {
+    const { result } = renderHook(() => useBridgeForm());
+    act(() => {
+      result.current.onInput('1');
+      result.current.setRecipient(recipient);
+    });
+    return result;
+  };
+
+  it('reads a typed recipient on the source and destination and passes an EOA', () => {
+    const result = typed(OTHER);
+    expect(mocks.codeReads).toEqual(expect.arrayContaining([`1:${OTHER}`, `8453:${OTHER}`]));
+    expect(result.current.recipientProblem).toBeUndefined();
+    expect(result.current.reviewBlocked).toBe(false);
+  });
+
+  it('blocks a typed recipient that is a contract on Ethereum with no code on the destination', () => {
+    mocks.code = { [`1:${OTHER}`]: 'contract', [`8453:${OTHER}`]: 'none' };
+    const result = typed(OTHER);
+    expect(result.current.recipientProblem).toBe('contract-not-on-destination');
+    expect(result.current.reviewBlocked).toBe(true);
+  });
+
+  it('blocks a token or bridge contract typed as recipient', () => {
+    const result = typed('0x820C137fa70C8691f0e44Dc420a5e53c168921Dc');
+    expect(result.current.recipientProblem).toBe('system-contract');
+    expect(result.current.reviewBlocked).toBe(true);
+  });
+
+  it('fails closed when the recipient code is unknown, and while it loads', () => {
+    mocks.code = { [`1:${OTHER}`]: undefined };
+    expect(typed(OTHER).current.recipientProblem).toBe('unverified');
+    mocks.codeChecking = true;
+    const loading = typed(OTHER);
+    expect(loading.current.recipientChecking).toBe(true);
+    expect(loading.current.reviewBlocked).toBe(true);
+  });
+
+  it('asks a contract wallet without code on the destination for a recipient', () => {
+    mocks.code = { [`1:${WALLET}`]: 'contract', [`8453:${WALLET}`]: 'none' };
+    const { result } = renderHook(() => useBridgeForm());
+    act(() => result.current.onInput('1'));
+    expect(mocks.codeReads).toEqual(expect.arrayContaining([`1:${WALLET}`, `8453:${WALLET}`]));
+    expect(result.current.needsRecipient).toBe(true);
+    expect(result.current.recipientReason).toBe('contract-not-on-destination');
+    expect(result.current.reviewBlocked).toBe(true);
+  });
+
+  it('lets that wallet through once it types an EOA recipient', () => {
+    mocks.code = { [`1:${WALLET}`]: 'contract', [`8453:${WALLET}`]: 'none' };
+    const result = typed(OTHER);
+    expect(result.current.needsRecipient).toBe(false);
+    expect(result.current.recipientProblem).toBeUndefined();
+    expect(result.current.reviewBlocked).toBe(false);
   });
 });

@@ -91,6 +91,8 @@ vi.mock('../adapters/mockAdapter', () => ({
     return new Promise<string>(() => undefined);
   }
 }));
+// Every address is an EOA; the code check has its own tests in useBridgeForm.
+vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('./useNativeDepositLegs', () => ({
   nativeDepositFunction: (to: string) =>
     to === 'arbitrum' ? 'outboundTransferCustomRefund' : 'bridgeERC20To',
