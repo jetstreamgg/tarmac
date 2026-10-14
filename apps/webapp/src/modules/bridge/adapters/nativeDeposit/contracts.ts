@@ -73,6 +73,9 @@ export const ARBITRUM_DEPOSIT = {
   chainId: 42161n
 } as const satisfies Record<string, Address | bigint>;
 
+/** Governance's switch on the L1 bridge and gateway: deposits need it at exactly 1. */
+export const l1BridgeIsOpenAbi = parseAbi(['function isOpen() view returns (uint256)']);
+
 // Chain system contracts: predeploys and precompiles with no Etherscan-verified ABI for the wagmi generation.
 export const L2_CROSS_DOMAIN_MESSENGER: Address = '0x4200000000000000000000000000000000000007';
 export const ARB_RETRYABLE_TX: Address = '0x000000000000000000000000000000000000006E';

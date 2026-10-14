@@ -16,6 +16,7 @@ import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model
 import { isValidRecipient, recipientRequirement, sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
+import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
 
 /** USDS balance of `address` on a bridge network the app can read; `value` is undefined otherwise. */
@@ -132,8 +133,12 @@ export function useBridgeForm() {
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
-  // Route facts (open/paused, limits, liquidity, fee quote) come from the route tickets, through toRouteFact.
-  const resolved = useMemo(() => resolveBridgeRoute({ from, to, amount, facts: {} }), [from, to, amount]);
+  const nativeGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
+  // The other route facts (CCTP, LayerZero, withdrawals) come from their tickets, through toRouteFact.
+  const resolved = useMemo(
+    () => resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate } }),
+    [from, to, amount, nativeGate]
+  );
   const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;

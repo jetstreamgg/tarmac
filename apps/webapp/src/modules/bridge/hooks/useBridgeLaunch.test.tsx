@@ -55,7 +55,9 @@ vi.mock('wagmi', async io => ({
     connector: mocks.isConnected ? { id: 'injected' } : undefined
   }),
   useChainId: () => mocks.appChainId,
-  useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id }))
+  useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id })),
+  // The L1 bridges are open.
+  useReadContract: () => ({ status: 'success', data: 1n })
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
