@@ -90,7 +90,7 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
         baseURL: 'http://localhost:3101'
       },
-      testMatch: ['**/bridge-native.spec.ts']
+      testMatch: ['**/bridge-native*.spec.ts']
     }
     // {
     //   name: 'chromium-alternate',

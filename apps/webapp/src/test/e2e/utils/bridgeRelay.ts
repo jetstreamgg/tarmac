@@ -5,15 +5,20 @@ import {
   encodeFunctionData,
   http,
   parseAbi,
+  size,
   toHex,
   type Address,
-  type Hash
+  type Hash,
+  type Hex
 } from 'viem';
+import { arbitrumInboxImplementationAbi } from '@/hooks/generated';
 import { extractTransactionDepositedLogs, opaqueDataToDepositData } from 'viem/op-stack';
 import {
+  ARBITRUM_DEPOSIT,
   L1_USDS,
   OP_STACK_DEPOSIT,
   l1BridgeIsOpenAbi,
+  type NativeDepositNetwork,
   type OpStackNetworkId
 } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
@@ -94,10 +99,10 @@ export async function relayOpStackDeposit(
   });
 }
 
-export async function l2UsdsBalance(network: OpStackNetworkId, account: Address) {
+export async function l2UsdsBalance(network: NativeDepositNetwork, account: Address) {
   const l2 = await client(NetworkName[network]);
   return l2.readContract({
-    address: OP_STACK_DEPOSIT[network].l2Usds,
+    address: network === 'arbitrum' ? ARBITRUM_DEPOSIT.l2Usds : OP_STACK_DEPOSIT[network].l2Usds,
     abi: erc20Abi,
     functionName: 'balanceOf',
     args: [account]
@@ -140,4 +145,16 @@ export async function closeOpStackBridge(network: OpStackNetworkId) {
     await rpc(NetworkName.mainnet, 'tenderly_setStorageAt', [bridge, pad(slot), pad(1)]);
   }
   throw new Error(`isOpen slot not found on the ${network} L1 bridge`);
+}
+
+/** Inbox.calculateRetryableSubmissionFee for `data` at an Ethereum block, its base fee read there. */
+export async function arbitrumSubmissionFee(data: Hex, blockNumber: bigint) {
+  const l1 = await client(NetworkName.mainnet);
+  return l1.readContract({
+    address: ARBITRUM_DEPOSIT.inbox,
+    abi: arbitrumInboxImplementationAbi,
+    functionName: 'calculateRetryableSubmissionFee',
+    args: [BigInt(size(data)), 0n],
+    blockNumber
+  });
 }
