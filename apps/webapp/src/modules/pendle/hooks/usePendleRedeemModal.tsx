@@ -33,7 +33,7 @@ import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
 import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
@@ -127,7 +127,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   });
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
-  useResetPausedRunOnClose(writeHook.reset, mutateAllowance);
+  useResetUnfinishedRunOnClose(writeHook.reset, mutateAllowance);
   const steps = useMemo<TransactionStep[]>(() => {
     const claimStep = {
       label: t`Claim`,

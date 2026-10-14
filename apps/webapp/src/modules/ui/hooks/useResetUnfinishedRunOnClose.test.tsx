@@ -7,10 +7,10 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ isModalOpen: ctx.isModalOpen, txStatus: ctx.txStatus })
 }));
 
-import { useResetPausedRunOnClose } from './useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from './useResetUnfinishedRunOnClose';
 
 function renderWith(reset: () => void, refetch?: () => void) {
-  const { rerender } = renderHook(() => useResetPausedRunOnClose(reset, refetch));
+  const { rerender } = renderHook(() => useResetUnfinishedRunOnClose(reset, refetch));
   return (isModalOpen: boolean, txStatus: TxStatus) => {
     ctx.isModalOpen = isModalOpen;
     ctx.txStatus = txStatus;
@@ -18,7 +18,7 @@ function renderWith(reset: () => void, refetch?: () => void) {
   };
 }
 
-describe('useResetPausedRunOnClose', () => {
+describe('useResetUnfinishedRunOnClose', () => {
   afterEach(() => {
     ctx.isModalOpen = false;
     ctx.txStatus = 'idle';
