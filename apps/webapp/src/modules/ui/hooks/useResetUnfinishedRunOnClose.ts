@@ -23,7 +23,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
  * pre-approval value (APP-563 #3). `refetchReads` runs alongside the reset
  * for that: the engine's allowance refetchers.
  */
-export function useResetPausedRunOnClose(reset: () => void, refetchReads?: () => void): void {
+export function useResetUnfinishedRunOnClose(reset: () => void, refetchReads?: () => void): void {
   const { isModalOpen, txStatus } = useTransaction();
   // Close hides the modal and returns the status to IDLE in one render, so an
   // unfinished run has to be remembered from before. The provider closes in

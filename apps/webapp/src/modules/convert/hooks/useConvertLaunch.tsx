@@ -7,7 +7,7 @@ import { formatNumber } from '@/utils';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
@@ -83,7 +83,7 @@ export function useConvertLaunch({
   });
   // The allowance refetch is what drops a mined approve out of the next
   // launch's step list once a later leg fails (APP-563 #3).
-  useResetPausedRunOnClose(conversion.reset, conversion.mutateAllowance);
+  useResetUnfinishedRunOnClose(conversion.reset, conversion.mutateAllowance);
   const { locked, restore } = useMinimizedSessionLock(sessionId);
 
   const originSymbol = conversion.originToken?.symbol ?? '';
