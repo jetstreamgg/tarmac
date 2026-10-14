@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { allowedDestinations, isAllowedPair, pickFrom, pickTo } from './pairs';
+import {
+  allowedDestinations,
+  isAllowedPair,
+  isLivePair,
+  liveDestinations,
+  liveSources,
+  pickFrom,
+  pickTo
+} from './pairs';
 
 describe('bridge pairs', () => {
   it('Ethereum reaches every other network', () => {
@@ -41,5 +49,16 @@ describe('bridge pairs', () => {
       from: 'ethereum',
       to: 'arbitrum'
     });
+  });
+
+  it('only Ethereum to the native deposit networks is live', () => {
+    expect(liveSources()).toEqual(['ethereum']);
+    expect(liveDestinations('ethereum')).toEqual(['base', 'arbitrum', 'optimism', 'unichain']);
+    for (const to of ['avalanche', 'solana'] as const)
+      expect(isLivePair({ from: 'ethereum', to })).toBe(false);
+    for (const from of ['base', 'arbitrum', 'optimism', 'unichain', 'avalanche', 'solana'] as const) {
+      expect(isLivePair({ from, to: 'ethereum' })).toBe(false);
+      expect(liveDestinations(from)).toEqual([]);
+    }
   });
 });

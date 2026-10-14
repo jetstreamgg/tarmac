@@ -193,7 +193,20 @@ describe('useBridgeForm: the L1 bridge isOpen gate', () => {
     const { result } = renderHook(() => useBridgeForm());
     expect(result.current.from).toBe('base');
     expect(lastRead()).toMatchObject({ address: undefined, enabled: false });
-    expect(result.current.route?.kind).toBe('cctp');
+  });
+
+  it('blocks the routes that are not live yet', () => {
+    mocks.appChainId = 8453;
+    const { result } = renderHook(() => useBridgeForm());
+    expect(result.current.route).toBeUndefined();
+    expect(result.current.blockedReason).toBe('pair-not-allowed');
+    expect(result.current.reviewBlocked).toBe(true);
+  });
+
+  it('does not offer a flip into a route that is not live', () => {
+    const { result } = renderHook(() => useBridgeForm());
+    expect(result.current.route?.kind).toBe('native');
+    expect(result.current.canFlip).toBe(false);
   });
 });
 

@@ -660,17 +660,16 @@ describe('useBridgeLaunch Confirm gate', () => {
     });
   });
 
-  it('withdrawals stay on the mock', async () => {
+  it('withdrawals are not live yet and send nothing', async () => {
     const view = renderBridge();
     act(() => view.result.current.form.onInput('1'));
     await moveWallet(view, 8453);
-    expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum' });
+    expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum', route: undefined });
+    expect(view.result.current.form.reviewBlocked).toBe(true);
     act(() => view.result.current.launch());
-    act(() => mocks.launched.at(-1)!.onConfirm!());
+    mocks.launched.at(-1)?.onConfirm?.();
     expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
-    expect(mocks.networkFee.at(-1)?.enabled).toBe(false);
     expect(mocks.deposit.execute).not.toHaveBeenCalled();
-    expect(mocks.legs).toHaveLength(1);
-    expect(mocks.launched.at(-1)?.errorMessage).toBeUndefined();
+    expect(mocks.legs).toHaveLength(0);
   });
 });

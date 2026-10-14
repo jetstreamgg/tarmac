@@ -13,6 +13,20 @@ export const allowedDestinations = (from: BridgeNetworkId): BridgeNetworkId[] =>
 
 export const isAllowedPair = ({ from, to }: BridgePair): boolean => allowedDestinations(from).includes(to);
 
+// Pairs whose route sends real calls; the rest stay off until their route tickets land (APP-614 to APP-618).
+const LIVE_DESTINATIONS: Partial<Record<BridgeNetworkId, BridgeNetworkId[]>> = {
+  ethereum: ['base', 'arbitrum', 'optimism', 'unichain']
+};
+
+export const isLivePair = ({ from, to }: BridgePair): boolean =>
+  isAllowedPair({ from, to }) && !!LIVE_DESTINATIONS[from]?.includes(to);
+
+export const liveDestinations = (from: BridgeNetworkId): BridgeNetworkId[] =>
+  allowedDestinations(from).filter(to => isLivePair({ from, to }));
+
+export const liveSources = (): BridgeNetworkId[] =>
+  BRIDGE_NETWORKS.map(network => network.id).filter(id => liveDestinations(id).length > 0);
+
 /**
  * The pair after picking `from`. Picking the current destination swaps the
  * two sides; otherwise the destination is kept when still allowed, else it

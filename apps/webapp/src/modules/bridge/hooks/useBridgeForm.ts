@@ -12,7 +12,7 @@ import {
   guardChainId,
   type BridgeNetworkId
 } from '../model/networks';
-import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
+import { allowedDestinations, isLivePair, pickFrom, pickTo, type BridgePair } from '../model/pairs';
 import { isValidRecipient, recipientProblem, recipientRequirement, sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
@@ -137,7 +137,10 @@ export function useBridgeForm() {
   const nativeGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
   // The other route facts (CCTP, LayerZero, withdrawals) come from their tickets, through toRouteFact.
   const resolved = useMemo(
-    () => resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate } }),
+    () =>
+      isLivePair({ from, to })
+        ? resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate } })
+        : ({ status: 'blocked', reason: 'pair-not-allowed' } as const),
     [from, to, amount, nativeGate]
   );
   const route = resolved.status === 'ok' ? resolved.route : undefined;
@@ -180,6 +183,8 @@ export function useBridgeForm() {
     to,
     /** The source can't be changed: the wallet can't be switched by the app (Safe). */
     isSourceStatic: !canSwitchChain,
+    /** The flipped pair has a live route. */
+    canFlip: isLivePair({ from: to, to: from }),
     value,
     amount,
     route,
