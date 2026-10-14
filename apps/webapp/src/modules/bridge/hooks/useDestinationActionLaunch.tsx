@@ -24,8 +24,27 @@ import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
+import { useArbitrumRedeemLegs } from './useArbitrumRedeemLegs';
 import { useOpStackReplayLegs } from './useOpStackReplayLegs';
 import { usePendingScope } from './usePendingScope';
+
+/** The deposit recovery the legs build: a replay on an OP Stack L2, or a redeem on Arbitrum. */
+type Recovery =
+  | { kind: 'replay'; network: OpStackNetworkId; routeData?: Record<string, string>; chainId: number }
+  | { kind: 'redeem'; routeData?: Record<string, string>; chainId: number };
+
+const recoveryOf = (
+  bridge: PendingBridge,
+  action: PendingBridgeNextAction,
+  chainId: number
+): Recovery | undefined => {
+  if (bridge.from !== 'ethereum') return undefined;
+  if (action === 'replay' && isOpStackNetwork(bridge.to))
+    return { kind: 'replay', network: bridge.to, routeData: bridge.routeData, chainId };
+  if (action === 'redeem' && bridge.to === 'arbitrum')
+    return { kind: 'redeem', routeData: bridge.routeData, chainId };
+  return undefined;
+};
 
 /** Why a card's action button is disabled, when the user has to act elsewhere. */
 export type DestinationActionHint =
@@ -81,8 +100,9 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
  * 3574:64565): the modal opens straight on the "Confirm" wallet screen with
  * the amount hero and a single action. A wallet on another network is switched
  * first, as the modal confirms on open. The replay of an Ethereum to OP Stack
- * deposit sends its real call once prepared; the other actions run on the mock
- * executor until the route tickets add their calls. `locked` is true while its
+ * deposit and the redeem of an Ethereum to Arbitrum one send their real call
+ * once prepared; the other actions run on the mock executor until the route
+ * tickets add their calls. `locked` is true while its
  * session is minimized; `canLaunch` is false when the action can't be sent or
  * its network can't be pinned or switched to, and `actionHint` says why when
  * the user has to act in the wallet (a Safe switches networks in Safe).
@@ -94,13 +114,11 @@ export function useDestinationActionLaunch() {
   const isSafe = useIsSafeWallet();
   const { scope, familyChainId } = usePendingScope();
   const { locked } = useMinimizedSessionLock(sessionId);
-  const { chainId: walletChainId } = useConnection();
+  const { chainId: walletChainId, address } = useConnection();
   const { canSwitchChain, handleSwitchChain } = useNetworkSwitch();
 
-  // The deposit whose replay the legs build, and the card waiting on a network switch to launch.
-  const [replay, setReplay] = useState<
-    { network: OpStackNetworkId; routeData?: Record<string, string>; chainId: number } | undefined
-  >();
+  // The deposit whose recovery the legs build, and the card waiting on a network switch to launch.
+  const [recovery, setRecovery] = useState<Recovery>();
   const [awaitingSwitch, setAwaitingSwitch] = useState<{
     card: PendingBridge;
     scope: string;
@@ -108,21 +126,32 @@ export function useDestinationActionLaunch() {
   }>();
   const launchedSwitchRef = useRef(awaitingSwitch);
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
-  // Confirm ran before the replay was prepared: it is sent once it is.
+  // Confirm ran before the recovery was prepared: it is sent once it is.
   const confirmPendingRef = useRef(false);
-  const legs = useOpStackReplayLegs({
+  const replay = recovery?.kind === 'replay' ? recovery : undefined;
+  const redeem = recovery?.kind === 'redeem' ? recovery : undefined;
+  const replayLegs = useOpStackReplayLegs({
     enabled: !!replay && walletChainId === replay.chainId,
     network: replay?.network,
     routeData: replay?.routeData,
     chainId: replay?.chainId,
     getCallbacks: () => legCallbacksRef.current
   });
-  const resetLegs = legs.reset;
-  // A failed replay is built afresh on the next launch, so a stale simulation error isn't reported again.
+  const redeemLegs = useArbitrumRedeemLegs({
+    enabled: !!redeem && walletChainId === redeem.chainId,
+    routeData: redeem?.routeData,
+    chainId: redeem?.chainId,
+    account: address,
+    getCallbacks: () => legCallbacksRef.current
+  });
+  const legs = redeem ? redeemLegs : replayLegs;
+  const resetReplay = replayLegs.reset;
+  const resetRedeem = redeemLegs.reset;
+  // A failed recovery is built afresh on the next launch, so a stale simulation error isn't reported again.
   useResetPausedRunOnClose(
     useCallback(() => {
       confirmPendingRef.current = false;
-      setReplay(undefined);
+      setRecovery(undefined);
     }, [])
   );
 
@@ -190,15 +219,12 @@ export function useDestinationActionLaunch() {
         });
         return;
       }
-      const isReplay = action === 'replay' && bridge.from === 'ethereum' && isOpStackNetwork(bridge.to);
-      if (isReplay) {
-        resetLegs();
+      const nextRecovery = recoveryOf(bridge, action, pinnedChainId);
+      if (nextRecovery) {
+        resetReplay();
+        resetRedeem();
         confirmPendingRef.current = false;
-        setReplay({
-          network: bridge.to as OpStackNetworkId,
-          routeData: bridge.routeData,
-          chainId: pinnedChainId
-        });
+        setRecovery(nextRecovery);
       }
       launchModal({
         title: t`Confirm`,
@@ -233,7 +259,7 @@ export function useDestinationActionLaunch() {
             ),
             onReverted: record(dropSentAction)
           });
-          if (!isReplay) {
+          if (!nextRecovery) {
             void runMockLegs([action], () => callbacks);
             return;
           }
@@ -248,7 +274,7 @@ export function useDestinationActionLaunch() {
         chainGuardReason: 'launch-chain'
       });
     },
-    [launchModal, sessionId, pinChainId, isSafe, walletChainId, handleSwitchChain, resetLegs]
+    [launchModal, sessionId, pinChainId, isSafe, walletChainId, handleSwitchChain, resetReplay, resetRedeem]
   );
 
   const launch = useCallback(

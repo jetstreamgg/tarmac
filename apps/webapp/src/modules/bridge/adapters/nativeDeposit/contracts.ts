@@ -94,6 +94,7 @@ export const arbRetryableTxAbi = parseAbi([
   'function getLifetime() view returns (uint256)',
   'event TicketCreated(bytes32 indexed ticketId)',
   'event RedeemScheduled(bytes32 indexed ticketId, bytes32 indexed retryTxHash, uint64 indexed sequenceNum, uint64 donatedGas, address gasDonor, uint256 maxRefund, uint256 submissionFeeRefund)',
+  'event LifetimeExtended(bytes32 indexed ticketId, uint256 newTimeout)',
   'error NoTicketWithID()'
 ]);
 

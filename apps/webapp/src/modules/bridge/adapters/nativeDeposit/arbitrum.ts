@@ -6,6 +6,7 @@ import {
   getAddress,
   hexToBigInt,
   isAddressEqual,
+  isHex,
   keccak256,
   numberToHex,
   pad,
@@ -13,11 +14,19 @@ import {
   slice,
   toRlp,
   type Address,
+  type Call,
   type Hex,
   type Log
 } from 'viem';
 import { arbitrumInboxImplementationAbi, skyL1TokenGatewayImplementationAbi } from '@/hooks/generated';
-import { ARBITRUM_DEPOSIT, L1_USDS, arbitrumBridgeAbi, assertRecipient } from './contracts';
+import {
+  ARBITRUM_DEPOSIT,
+  ARB_RETRYABLE_TX,
+  L1_USDS,
+  arbRetryableTxAbi,
+  arbitrumBridgeAbi,
+  assertRecipient
+} from './contracts';
 
 /** The L2 call the retryable ticket makes: the L2 gateway's mint to the recipient. */
 export const arbitrumOutboundCalldata = ({
@@ -183,3 +192,24 @@ export function arbitrumRetryableTicket(logs: Log[]): RetryableTicket | undefine
   });
   return tickets.length === 1 ? tickets[0] : undefined;
 }
+
+/** The ticket a stored deposit redeems; throws unless routeData holds a 32-byte ticket id. */
+export function arbitrumRedeemTicket(routeData: Record<string, string> | undefined): Hex {
+  const ticketId = routeData?.ticketId;
+  if (!ticketId || !isHex(ticketId, { strict: true }) || size(ticketId) !== 32)
+    throw new Error('The deposit has no ticket to redeem');
+  return ticketId;
+}
+
+/** A redeem's gas: the L2 estimate, which runs the scheduled retry, with a margin. Below it the retry fails again. */
+export const arbitrumRedeemGas = (estimate: bigint) => (estimate * 12n) / 10n;
+
+/** The redeem on ArbRetryableTx; the gas the redeem doesn't use goes to the retry. */
+export const arbitrumRedeemCall = ({ ticketId, gas }: { ticketId: Hex; gas?: bigint }) =>
+  ({
+    to: ARB_RETRYABLE_TX,
+    abi: arbRetryableTxAbi,
+    functionName: 'redeem',
+    args: [ticketId],
+    ...(gas !== undefined && { gas })
+  }) as unknown as Call & { gas?: bigint };

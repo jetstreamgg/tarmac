@@ -285,3 +285,38 @@ export const SAFE_EXECUTION_FAILURE: Record<
     ] as unknown as Log[]
   }
 };
+
+/**
+ * Arbitrum One receipts of ticket 0xfb3d3159…903b: its creation scheduled no
+ * auto-redeem (TicketCreated only); a manual redeem 0xb0412bfa…45ad scheduled
+ * retry 0xe4b317a9…f202, which succeeded.
+ */
+export const ARBITRUM_TICKET = {
+  ticketId: '0xfb3d315976766e2cb2c21fcdc3d20dac98a4e9791889f282839a42f3cfb7903b',
+  creationBlock: 309_441_621n,
+  creationLogs: [
+    {
+      address: '0x000000000000000000000000000000000000006e',
+      topics: [
+        '0x7c793cced5743dc5f531bbe2bfb5a9fa3f40adef29231e6ab165c08a29e3dd89',
+        '0xfb3d315976766e2cb2c21fcdc3d20dac98a4e9791889f282839a42f3cfb7903b'
+      ],
+      data: '0x'
+    }
+  ] as unknown as Log[],
+  redeemTxHash: '0xb0412bfa9b1fc2f13028b2d34d416bda24ea6127644d9fc9be6f09ddfbca45ad',
+  redeemBlock: 310_702_983n,
+  redeemLogs: [
+    {
+      address: '0x000000000000000000000000000000000000006e',
+      topics: [
+        '0x5ccd009502509cf28762c67858994d85b163bb6e451f5e9df7c5e18c9c2e123e',
+        '0xfb3d315976766e2cb2c21fcdc3d20dac98a4e9791889f282839a42f3cfb7903b',
+        '0xe4b317a97e193f0e48742217ddbd7ebc33ec7425e0ec2d4e399ded99220df202',
+        '0x0000000000000000000000000000000000000000000000000000000000000000'
+      ],
+      data: '0x000000000000000000000000000000000000000000000000000000000001264400000000000000000000000082d0d9a777294ea5719aea33aa95a81c9b36c723ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000'
+    }
+  ] as unknown as Log[],
+  retryTxHash: '0xe4b317a97e193f0e48742217ddbd7ebc33ec7425e0ec2d4e399ded99220df202'
+} as const;

@@ -1,4 +1,5 @@
 import type { BridgeRouteKind } from '../model/types';
+import { arbitrumDepositProgress } from './nativeDeposit/arbitrumProgress';
 import { isNativeDepositNetwork, isOpStackNetwork } from './nativeDeposit/contracts';
 import { opStackDepositProgress } from './nativeDeposit/opStackProgress';
 import { mockAdapter } from './mockAdapter';
@@ -10,8 +11,9 @@ const nativeAdapter: BridgeAdapter = {
     const { to } = bridge;
     if (bridge.from !== 'ethereum' || !isNativeDepositNetwork(to))
       return mockAdapter.checkProgress(bridge, now, context);
-    // Arbitrum deposits wait for their ticket reader.
-    return isOpStackNetwork(to) ? opStackDepositProgress({ ...bridge, to }, context) : Promise.resolve(null);
+    return isOpStackNetwork(to)
+      ? opStackDepositProgress({ ...bridge, to }, context)
+      : arbitrumDepositProgress(bridge, context);
   }
 };
 

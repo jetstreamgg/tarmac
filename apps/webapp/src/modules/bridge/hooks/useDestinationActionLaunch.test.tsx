@@ -34,6 +34,21 @@ const mocks = vi.hoisted(() => ({
     error: null as Error | null,
     execute: (() => undefined) as () => void,
     reset: (() => undefined) as () => void
+  },
+  redeem: {
+    params: undefined as
+      | undefined
+      | {
+          enabled: boolean;
+          routeData?: Record<string, string>;
+          chainId?: number;
+          account?: string;
+          getCallbacks: () => TxCallbacks;
+        },
+    ready: false,
+    error: null as Error | null,
+    execute: (() => undefined) as () => void,
+    reset: (() => undefined) as () => void
   }
 }));
 
@@ -69,6 +84,13 @@ vi.mock('./useOpStackReplayLegs', () => ({
     return { ready, error, execute, reset };
   }
 }));
+vi.mock('./useArbitrumRedeemLegs', () => ({
+  useArbitrumRedeemLegs: (params: NonNullable<typeof mocks.redeem.params>) => {
+    mocks.redeem.params = params;
+    const { ready, error, execute, reset } = mocks.redeem;
+    return { ready, error, execute, reset };
+  }
+}));
 vi.mock('../adapters/mockAdapter', () => ({
   runMockLegs: (names: string[], getCallbacks: () => TxCallbacks) => {
     mocks.legs.push({ names, getCallbacks });
@@ -100,6 +122,27 @@ const seedReadyReplay = () => {
     applyProgress(bridge, { kind: 'ready', nextAction: 'replay', routeData: ROUTE_DATA }, NOW)
   );
   return stored('0xdeposit');
+};
+
+const TICKET_DATA = { ticketId: `0x${'f'.repeat(64)}`, timeout: '1800000000' };
+
+const seedReadyRedeem = () => {
+  const resolved = resolveBridgeRoute({ from: 'ethereum', to: 'arbitrum', amount: 1n, facts: {} });
+  if (resolved.status !== 'ok') throw new Error(resolved.reason);
+  const bridge = createPendingBridge({
+    account: mocks.address,
+    amount: 10n ** 18n,
+    from: 'ethereum',
+    to: 'arbitrum',
+    route: resolved.route,
+    txHash: '0xarbdeposit',
+    now: NOW
+  });
+  pendingBridgeStore.upsert(
+    scope(),
+    applyProgress(bridge, { kind: 'ready', nextAction: 'redeem', routeData: TICKET_DATA }, NOW)
+  );
+  return stored('0xarbdeposit');
 };
 
 const seedReadyClaim = () => {
@@ -144,6 +187,7 @@ describe('useDestinationActionLaunch', () => {
     mocks.session = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
     mocks.legs = [];
     mocks.replay = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
+    mocks.redeem = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
   });
 
   it("can't launch, and the card disables its button, when the destination network can't be pinned", () => {
@@ -363,6 +407,63 @@ describe('useDestinationActionLaunch', () => {
       act(() => result.current.launch(card));
       expect(mocks.replay.params?.enabled).toBe(false);
       expect(mocks.switches.map(({ chainId }) => chainId)).toEqual([8453]);
+    });
+  });
+
+  describe('the redeem of an Ethereum to Arbitrum deposit', () => {
+    const launchRedeem = () => {
+      const card = seedReadyRedeem();
+      mocks.chainIds = [1, 42161];
+      mocks.walletChainId = 42161;
+      const hook = renderHook(() => useDestinationActionLaunch());
+      act(() => hook.result.current.launch(card));
+      return hook;
+    };
+
+    it('builds the redeem legs on Arbitrum from the stored ticket, for the connected account', () => {
+      launchRedeem();
+      expect(mocks.redeem.reset).toHaveBeenCalled();
+      expect(mocks.redeem.params).toMatchObject({
+        enabled: true,
+        routeData: TICKET_DATA,
+        chainId: 42161,
+        account: mocks.address
+      });
+      expect(mocks.replay.params?.enabled).toBe(false);
+      expect(mocks.launched).toHaveLength(1);
+    });
+
+    it('sends the redeem once prepared, never the replay or the mock executor', () => {
+      const { rerender } = launchRedeem();
+      act(() => mocks.launched[0].onConfirm!());
+      expect(mocks.redeem.execute).not.toHaveBeenCalled();
+      mocks.redeem.ready = true;
+      rerender();
+      expect(mocks.redeem.execute).toHaveBeenCalledTimes(1);
+      expect(mocks.replay.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+    });
+
+    it('reports a ticket, estimate or simulation failure to the modal', () => {
+      const { rerender } = launchRedeem();
+      act(() => mocks.launched[0].onConfirm!());
+      mocks.redeem.error = new Error('NoTicketWithID');
+      rerender();
+      expect(mocks.redeem.execute).not.toHaveBeenCalled();
+      expect(mocks.session.onError).toHaveBeenCalledWith(mocks.redeem.error, '');
+    });
+
+    it('records the redeem it sends, which only the chain settles', () => {
+      mocks.redeem.ready = true;
+      launchRedeem();
+      act(() => mocks.launched[0].onConfirm!());
+      const callbacks = mocks.redeem.params!.getCallbacks();
+      callbacks.onStart('0xredeem');
+      expect(stored('0xarbdeposit').actions).toEqual([
+        { action: 'redeem', txHash: '0xredeem', at: expect.any(Number), status: 'sent' }
+      ]);
+      callbacks.onSuccess('0xredeem');
+      expect(stored('0xarbdeposit')).toMatchObject({ status: 'pending', nextAction: undefined });
     });
   });
 });
