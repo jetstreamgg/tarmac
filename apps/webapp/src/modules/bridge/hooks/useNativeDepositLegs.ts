@@ -1,17 +1,18 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAddress, isAddress, type Address } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
 import { useTokenAllowance } from '@/hooks';
+import { toError } from '@/hooks/helpers';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { retryableQuote } from '../adapters/nativeDeposit/arbitrum';
 import { arbitrumDepositCalls, readRetryableEstimates } from '../adapters/nativeDeposit/arbitrumQuote';
 import {
-  ARBITRUM_DEPOSIT,
   L1_USDS,
-  OP_STACK_DEPOSIT,
+  l1BridgeIsOpenAbi,
+  l1DepositBridge,
   type NativeDepositNetwork
 } from '../adapters/nativeDeposit/contracts';
 import { opStackDepositCalls } from '../adapters/nativeDeposit/opStack';
@@ -73,7 +74,7 @@ export function useNativeDepositLegs({
     chainId: chainId ?? 0,
     contractAddress: active ? L1_USDS : undefined,
     owner: from,
-    spender: isArbitrum ? ARBITRUM_DEPOSIT.l1Gateway : OP_STACK_DEPOSIT[network].l1TokenBridge
+    spender: l1DepositBridge(network)
   });
 
   const calls = useMemo(() => {
@@ -103,6 +104,26 @@ export function useNativeDepositLegs({
     onError: (error, hash) => getCallbacks().onError(error, hash)
   });
 
+  // The gate polls every minute: read it again before the wallet prompt, so a bridge that just closed costs no gas.
+  const checkingRef = useRef(false);
+  const { execute: executeFlow } = flow;
+  const execute = useCallback(() => {
+    if (checkingRef.current) return;
+    if (!l1) return getCallbacks().onError(new Error('The bridge is not ready to send.'), '');
+    checkingRef.current = true;
+    l1.readContract({ address: l1DepositBridge(network), abi: l1BridgeIsOpenAbi, functionName: 'isOpen' })
+      .then(
+        isOpen =>
+          isOpen === 1n
+            ? executeFlow()
+            : getCallbacks().onError(new Error('The bridge is closed to new deposits.'), ''),
+        error => getCallbacks().onError(toError(error), '')
+      )
+      .finally(() => {
+        checkingRef.current = false;
+      });
+  }, [l1, network, executeFlow, getCallbacks]);
+
   return {
     calls,
     /** Arbitrum only: the most ETH the deposit sends for the ticket; the unspent part is refunded on Arbitrum. */
@@ -113,7 +134,7 @@ export function useNativeDepositLegs({
     /** A read or the first leg's simulation failed. */
     error:
       (active && ((isArbitrum && quote.error) || allowance.error)) || (calls.length > 0 ? flow.error : null),
-    execute: flow.execute,
+    execute,
     reset: flow.reset,
     refetchAllowance: allowance.mutate
   };

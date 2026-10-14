@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { useReadContract } from 'wagmi';
 import {
-  ARBITRUM_DEPOSIT,
-  OP_STACK_DEPOSIT,
   isNativeDepositNetwork,
-  l1BridgeIsOpenAbi
+  l1BridgeIsOpenAbi,
+  l1DepositBridge
 } from '../adapters/nativeDeposit/contracts';
 import type { BridgeNetworkId } from '../model/networks';
 import { toRouteFact, type BridgeRouteFacts } from '../model/resolveRoute';
@@ -27,12 +26,7 @@ export function useNativeDepositGate({
   const network = from === 'ethereum' && isNativeDepositNetwork(to) ? to : undefined;
   const { status, data } = useReadContract({
     chainId,
-    address:
-      network === undefined
-        ? undefined
-        : network === 'arbitrum'
-          ? ARBITRUM_DEPOSIT.l1Gateway
-          : OP_STACK_DEPOSIT[network].l1TokenBridge,
+    address: network === undefined ? undefined : l1DepositBridge(network),
     abi: l1BridgeIsOpenAbi,
     functionName: 'isOpen',
     query: { enabled: network !== undefined && chainId !== undefined, refetchInterval: 60_000 }

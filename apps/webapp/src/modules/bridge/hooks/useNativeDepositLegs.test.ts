@@ -19,6 +19,8 @@ const ESTIMATES = { submissionFee: 510_224_272_976n, gasEstimate: 116_946n, l2Ga
 
 const mocks = vi.hoisted(() => ({
   fee: vi.fn<() => Promise<bigint>>(),
+  isOpen: vi.fn<() => Promise<bigint>>(),
+  flowExecute: vi.fn(),
   allowance: undefined as bigint | undefined,
   allowanceError: null as Error | null,
   allowanceArgs: [] as { chainId: number; contractAddress?: string; owner?: string; spender?: string }[],
@@ -37,7 +39,10 @@ vi.mock('wagmi', async io => ({
           estimateGas: () => Promise.resolve(ESTIMATES.gasEstimate),
           getGasPrice: () => Promise.resolve(ESTIMATES.l2GasPrice)
         }
-      : { readContract: () => mocks.fee() };
+      : {
+          readContract: ({ functionName }: { functionName: string }) =>
+            functionName === 'isOpen' ? mocks.isOpen() : mocks.fee()
+        };
   }
 }));
 vi.mock('@/hooks', () => ({
@@ -53,7 +58,7 @@ vi.mock('@/hooks', () => ({
 vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
   useSequentialTransactionFlow: (args: (typeof mocks.flowArgs)[number]) => {
     mocks.flowArgs.push(args);
-    return { ...mocks.flow, execute: vi.fn(), reset: vi.fn() };
+    return { ...mocks.flow, execute: mocks.flowExecute, reset: vi.fn() };
   }
 }));
 
@@ -90,6 +95,9 @@ const settle = async () => {
 describe('useNativeDepositLegs', () => {
   beforeEach(() => {
     mocks.fee.mockReset().mockResolvedValue(ESTIMATES.submissionFee);
+    mocks.isOpen.mockReset().mockResolvedValue(1n);
+    mocks.flowExecute.mockReset();
+    vi.clearAllMocks();
     Object.assign(mocks, {
       allowance: 0n,
       allowanceError: null,
@@ -202,6 +210,51 @@ describe('useNativeDepositLegs', () => {
     (mocks.flowArgs.at(-1) as unknown as { onStart: (hash: string) => void }).onStart('0xabc');
     expect(next.onStart).toHaveBeenCalledWith('0xabc');
     expect(callbacks.onStart).not.toHaveBeenCalled();
+  });
+
+  describe('on Confirm, reads the bridge switch again', () => {
+    it.each(['arbitrum', 'base'] as const)('to %s sends only while it is open', async to => {
+      const { result } = renderLegs({ to });
+      await settle();
+      act(() => result.current.execute());
+      await waitFor(() => expect(mocks.flowExecute).toHaveBeenCalledTimes(1));
+      expect(callbacks.onError).not.toHaveBeenCalled();
+    });
+
+    it('sends nothing and reports it once the bridge closed', async () => {
+      mocks.isOpen.mockResolvedValue(0n);
+      const { result } = renderLegs();
+      await settle();
+      act(() => result.current.execute());
+      await waitFor(() => expect(callbacks.onError).toHaveBeenCalledTimes(1));
+      expect(callbacks.onError.mock.calls[0][0].message).toMatch(/closed/);
+      expect(mocks.flowExecute).not.toHaveBeenCalled();
+    });
+
+    it('sends nothing when the switch cannot be read', async () => {
+      mocks.isOpen.mockRejectedValue(new Error('rpc down'));
+      const { result } = renderLegs();
+      await settle();
+      act(() => result.current.execute());
+      await waitFor(() => expect(callbacks.onError).toHaveBeenCalledTimes(1));
+      expect(mocks.flowExecute).not.toHaveBeenCalled();
+    });
+
+    it('sends once on a second Confirm during the read', async () => {
+      const { result } = renderLegs();
+      await settle();
+      act(() => {
+        result.current.execute();
+        result.current.execute();
+      });
+      await waitFor(() => expect(mocks.flowExecute).toHaveBeenCalledTimes(1));
+      await settle();
+      expect(mocks.flowExecute).toHaveBeenCalledTimes(1);
+      // Read again on a later Confirm.
+      act(() => result.current.execute());
+      await waitFor(() => expect(mocks.flowExecute).toHaveBeenCalledTimes(2));
+      expect(mocks.isOpen).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('to an OP Stack network', () => {

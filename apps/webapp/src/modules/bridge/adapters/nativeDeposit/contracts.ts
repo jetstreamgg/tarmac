@@ -81,6 +81,10 @@ export const ARBITRUM_DEPOSIT = {
 /** Governance's switch on the L1 bridge and gateway: deposits need it at exactly 1. */
 export const l1BridgeIsOpenAbi = parseAbi(['function isOpen() view returns (uint256)']);
 
+/** The L1 contract a deposit to `network` approves and calls: Sky's OP Stack bridge or Arbitrum gateway. */
+export const l1DepositBridge = (network: NativeDepositNetwork): Address =>
+  network === 'arbitrum' ? ARBITRUM_DEPOSIT.l1Gateway : OP_STACK_DEPOSIT[network].l1TokenBridge;
+
 // Chain system contracts: predeploys and precompiles with no Etherscan-verified ABI for the wagmi generation.
 export const L2_CROSS_DOMAIN_MESSENGER: Address = '0x4200000000000000000000000000000000000007';
 export const ARB_RETRYABLE_TX: Address = '0x000000000000000000000000000000000000006E';
