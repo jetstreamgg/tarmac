@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TransactionReceiptNotFoundError, type Hex } from 'viem';
+import { TransactionNotFoundError, TransactionReceiptNotFoundError, type Hex } from 'viem';
 import { applyProgress, createPendingBridge, recordActionSent } from '../../model/pendingTransitions';
 import { resolveBridgeRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
+import { SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { getBridgeAdapter } from '../registry';
 import { BASE_DEPOSIT_LOGS, SAFE_EXECUTION_FAILURE } from './depositFixtures';
@@ -57,6 +58,9 @@ const chains = ({
         throw new TransactionReceiptNotFoundError({ hash });
       return { status: replayStatus, logs: [] };
     }),
+    getTransaction: vi.fn(async ({ hash }: { hash: Hex }) => {
+      throw new TransactionNotFoundError({ hash });
+    }),
     readContract: vi.fn(async ({ functionName, args }: { functionName: string; args: [Hex] }) => {
       if (messages === 'error') throw new Error('rpc down');
       expect(args).toEqual([MESSAGE.msgHash]);
@@ -73,7 +77,7 @@ const chains = ({
 describe('opStackDepositProgress', () => {
   it('waits while the L2 messenger has not relayed the message', async () => {
     const { context, l2 } = chains();
-    await expect(opStackDepositProgress(seed(), context)).resolves.toEqual({ kind: 'waiting' });
+    await expect(opStackDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'waiting' });
     expect(l2.readContract).toHaveBeenCalledWith(
       expect.objectContaining({ address: L2_CROSS_DOMAIN_MESSENGER, functionName: 'successfulMessages' })
     );
@@ -81,17 +85,17 @@ describe('opStackDepositProgress', () => {
 
   it('is arrived only once the messenger relayed the message', async () => {
     const { context } = chains({ messages: { successful: true } });
-    await expect(opStackDepositProgress(seed(), context)).resolves.toEqual({ kind: 'arrived' });
+    await expect(opStackDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'arrived' });
   });
 
   it('is arrived after a replay, though the message stays in failedMessages', async () => {
     const { context } = chains({ messages: { successful: true, failed: true } });
-    await expect(opStackDepositProgress(seed(), context)).resolves.toEqual({ kind: 'arrived' });
+    await expect(opStackDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'arrived' });
   });
 
   it('offers a replay of a failed relay, with the message to send again', async () => {
     const { context } = chains({ messages: { failed: true } });
-    await expect(opStackDepositProgress(seed(), context)).resolves.toEqual({
+    await expect(opStackDepositProgress(seed(), context, NOW)).resolves.toEqual({
       kind: 'ready',
       nextAction: 'replay',
       routeData: {
@@ -104,7 +108,7 @@ describe('opStackDepositProgress', () => {
 
   it('fails a deposit whose Ethereum transaction reverted', async () => {
     const { context } = chains({ l1Status: 'reverted' });
-    await expect(opStackDepositProgress(seed(), context)).resolves.toEqual({
+    await expect(opStackDepositProgress(seed(), context, NOW)).resolves.toEqual({
       kind: 'failed',
       reason: 'source-tx-reverted'
     });
@@ -115,7 +119,7 @@ describe('opStackDepositProgress', () => {
     async version => {
       const { safe, logs } = SAFE_EXECUTION_FAILURE[version];
       const { context, l2 } = chains({ l1Logs: logs });
-      await expect(opStackDepositProgress({ ...seed(), account: safe }, context)).resolves.toEqual({
+      await expect(opStackDepositProgress({ ...seed(), account: safe }, context, NOW)).resolves.toEqual({
         kind: 'failed',
         reason: 'safe-tx-reverted'
       });
@@ -131,11 +135,11 @@ describe('opStackDepositProgress', () => {
     ['the L2 messenger read fails', { messages: 'error' as const }]
   ])('changes nothing when %s', async (_, setup) => {
     const { context } = chains(setup);
-    await expect(opStackDepositProgress(seed(), context)).resolves.toBeNull();
+    await expect(opStackDepositProgress(seed(), context, NOW)).resolves.toBeNull();
   });
 
   it('changes nothing without a client for either network', async () => {
-    await expect(opStackDepositProgress(seed(), { getClient: () => undefined })).resolves.toBeNull();
+    await expect(opStackDepositProgress(seed(), { getClient: () => undefined }, NOW)).resolves.toBeNull();
   });
 
   describe('a sent replay', () => {
@@ -149,7 +153,7 @@ describe('opStackDepositProgress', () => {
 
     it('is confirmed by its mined L2 receipt', async () => {
       const { context } = chains({ messages: { successful: true }, replayStatus: 'success' });
-      await expect(opStackDepositProgress(withSentReplay(), context)).resolves.toEqual({
+      await expect(opStackDepositProgress(withSentReplay(), context, NOW)).resolves.toEqual({
         kind: 'action-confirmed',
         action: 'replay',
         txHash: REPLAY
@@ -158,7 +162,7 @@ describe('opStackDepositProgress', () => {
 
     it('is dropped when it reverted', async () => {
       const { context } = chains({ messages: { failed: true }, replayStatus: 'reverted' });
-      await expect(opStackDepositProgress(withSentReplay(), context)).resolves.toEqual({
+      await expect(opStackDepositProgress(withSentReplay(), context, NOW)).resolves.toEqual({
         kind: 'action-dropped',
         txHash: REPLAY
       });
@@ -166,15 +170,22 @@ describe('opStackDepositProgress', () => {
 
     it('leaves the message read to go on while it is not mined', async () => {
       const { context } = chains({ messages: { failed: true }, replayStatus: 'missing' });
-      await expect(opStackDepositProgress(withSentReplay(), context)).resolves.toMatchObject({
+      await expect(opStackDepositProgress(withSentReplay(), context, NOW)).resolves.toMatchObject({
         kind: 'ready',
         nextAction: 'replay'
       });
     });
 
+    it('is dropped once the L2 still does not know it after the drop window', async () => {
+      const { context } = chains({ messages: { failed: true }, replayStatus: 'missing' });
+      await expect(
+        opStackDepositProgress(withSentReplay(), context, NOW + SENT_ACTION_DROPPED_MS)
+      ).resolves.toEqual({ kind: 'action-dropped', txHash: REPLAY });
+    });
+
     it('is left to the tracker when a Safe sent it', async () => {
       const { context, l2 } = chains({ messages: { failed: true } });
-      await opStackDepositProgress(withSentReplay(true), context);
+      await opStackDepositProgress(withSentReplay(true), context, NOW);
       expect(l2.getTransactionReceipt).not.toHaveBeenCalled();
     });
 

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ContractFunctionExecutionError,
   ContractFunctionRevertedError,
+  TransactionNotFoundError,
   TransactionReceiptNotFoundError,
   pad,
   toEventSelector,
@@ -16,6 +17,7 @@ import {
 } from '../../model/pendingTransitions';
 import { resolveBridgeRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
+import { SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { getBridgeAdapter } from '../registry';
 import { ARBITRUM_DEPOSIT_LOGS, ARBITRUM_TICKET, SAFE_EXECUTION_FAILURE } from './depositFixtures';
@@ -112,6 +114,9 @@ const chains = ({
       if (!receipt) throw new TransactionReceiptNotFoundError({ hash });
       return receipt;
     }),
+    getTransaction: vi.fn(async ({ hash }: { hash: Hex }) => {
+      throw new TransactionNotFoundError({ hash });
+    }),
     readContract: vi.fn(async ({ functionName, args }: { functionName: string; args?: [Hex] }) => {
       if (functionName === 'getLifetime') return LIFETIME;
       expect(args).toEqual([ticketId]);
@@ -156,7 +161,7 @@ const CREATED: Receipt = {
 describe('arbitrumDepositProgress', () => {
   it('waits while ArbOS has not created the ticket', async () => {
     const { context, l2 } = chains();
-    await expect(arbitrumDepositProgress(seed(), context)).resolves.toEqual({ kind: 'waiting' });
+    await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'waiting' });
     expect(l2.getTransactionReceipt).toHaveBeenCalledWith({ hash: ticketId });
     expect(l2.readContract).not.toHaveBeenCalled();
   });
@@ -168,7 +173,7 @@ describe('arbitrumDepositProgress', () => {
         [RETRY]: { status: 'success', logs: [] }
       }
     });
-    await expect(arbitrumDepositProgress(seed(), context)).resolves.toEqual({ kind: 'arrived' });
+    await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'arrived' });
     expect(l2.readContract).not.toHaveBeenCalled();
   });
 
@@ -180,7 +185,7 @@ describe('arbitrumDepositProgress', () => {
       },
       timeout: CREATED_AT + LIFETIME
     });
-    await expect(arbitrumDepositProgress(seed(), context)).resolves.toEqual({
+    await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({
       kind: 'ready',
       nextAction: 'redeem',
       routeData: { ticketId, timeout: (CREATED_AT + LIFETIME).toString() }
@@ -190,7 +195,7 @@ describe('arbitrumDepositProgress', () => {
   it('reads the ticket at the block the scan ends on', async () => {
     const latest = ARBITRUM_TICKET.creationBlock + 10n;
     const { context, l2 } = chains({ receipts: { [ticketId]: CREATED }, timeout: 1n, latest });
-    await arbitrumDepositProgress(seed(), context);
+    await arbitrumDepositProgress(seed(), context, NOW);
     expect(l2.readContract).toHaveBeenCalledWith(
       expect.objectContaining({ functionName: 'getTimeout', blockNumber: latest })
     );
@@ -210,7 +215,7 @@ describe('arbitrumDepositProgress', () => {
       },
       timeout: 1n
     });
-    await expect(arbitrumDepositProgress(seed(), context)).resolves.toMatchObject({ kind: 'ready' });
+    await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toMatchObject({ kind: 'ready' });
   });
 
   describe('a ticket ArbOS no longer has', () => {
@@ -226,7 +231,7 @@ describe('arbitrumDepositProgress', () => {
           }
         ]
       });
-      await expect(arbitrumDepositProgress(seed(), context)).resolves.toEqual({ kind: 'arrived' });
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'arrived' });
       expect(l2.getLogs).toHaveBeenCalledWith(
         expect.objectContaining({
           address: ARB_RETRYABLE_TX,
@@ -239,7 +244,7 @@ describe('arbitrumDepositProgress', () => {
 
     it('expires after a clean scan a day past the timeout, without reading to the latest block', async () => {
       const { context, l2 } = chains({ receipts: { [ticketId]: CREATED } });
-      await expect(arbitrumDepositProgress(seed(), context)).resolves.toEqual({ kind: 'expired' });
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'expired' });
       // The scan stops in the chunk that passes 8 days; the latest block is 30 days out.
       const scanned = l2.getLogs.mock.calls.map(([params]) => Number(params.toBlock));
       expect(Math.max(...scanned)).toBeGreaterThan(Number(blockAfter(8n * DAY)));
@@ -257,7 +262,7 @@ describe('arbitrumDepositProgress', () => {
           { event: 'RedeemScheduled', block: redeemBlock, retryTxHash: RETRY }
         ]
       });
-      await expect(arbitrumDepositProgress(seed(), context)).resolves.toEqual({ kind: 'arrived' });
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'arrived' });
     });
 
     it('expires when the only retries failed (a canceled or expired ticket)', async () => {
@@ -268,7 +273,7 @@ describe('arbitrumDepositProgress', () => {
           { event: 'RedeemScheduled', block: ARBITRUM_TICKET.creationBlock + 50n, retryTxHash: RETRY }
         ]
       });
-      await expect(arbitrumDepositProgress(seed(), context)).resolves.toEqual({ kind: 'expired' });
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'expired' });
     });
 
     it('changes nothing when the scan fails part way', async () => {
@@ -276,7 +281,7 @@ describe('arbitrumDepositProgress', () => {
         receipts: { [ticketId]: CREATED },
         failGetLogsFrom: ARBITRUM_TICKET.creationBlock + TICKET_SCAN_CHUNK_BLOCKS
       });
-      await expect(arbitrumDepositProgress(seed(), context)).resolves.toBeNull();
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toBeNull();
     });
 
     it('changes nothing when a found retry receipt fails to read', async () => {
@@ -286,32 +291,34 @@ describe('arbitrumDepositProgress', () => {
           { event: 'RedeemScheduled', block: ARBITRUM_TICKET.creationBlock + 5n, retryTxHash: RETRY }
         ]
       });
-      await expect(arbitrumDepositProgress(seed(), context)).resolves.toBeNull();
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toBeNull();
     });
   });
 
   it('changes nothing on a failed ticket read', async () => {
     const { context } = chains({ receipts: { [ticketId]: CREATED }, timeout: 'error' });
-    await expect(arbitrumDepositProgress(seed(), context)).resolves.toBeNull();
+    await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toBeNull();
   });
 
   it('never ends on a failed ticket creation', async () => {
     const { context } = chains({ receipts: { [ticketId]: { ...CREATED, status: 'reverted' } } });
-    await expect(arbitrumDepositProgress(seed(), context)).resolves.toBeNull();
+    await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toBeNull();
   });
 
   it('fails a reverted deposit, and a Safe deposit whose execution failed', async () => {
-    await expect(arbitrumDepositProgress(seed(), chains({ l1Status: 'reverted' }).context)).resolves.toEqual({
+    await expect(
+      arbitrumDepositProgress(seed(), chains({ l1Status: 'reverted' }).context, NOW)
+    ).resolves.toEqual({
       kind: 'failed',
       reason: 'source-tx-reverted'
     });
     const { safe, logs } = SAFE_EXECUTION_FAILURE['1.4.1'];
     const bridge = { ...seed(), account: safe.toLowerCase() };
-    await expect(arbitrumDepositProgress(bridge, chains({ l1Logs: logs }).context)).resolves.toEqual({
+    await expect(arbitrumDepositProgress(bridge, chains({ l1Logs: logs }).context, NOW)).resolves.toEqual({
       kind: 'failed',
       reason: 'safe-tx-reverted'
     });
-    await expect(arbitrumDepositProgress(seed(), chains({ l1Logs: logs }).context)).resolves.toBeNull();
+    await expect(arbitrumDepositProgress(seed(), chains({ l1Logs: logs }).context, NOW)).resolves.toBeNull();
   });
 
   describe('a redeem this bridge sent', () => {
@@ -323,13 +330,23 @@ describe('arbitrumDepositProgress', () => {
 
     it('is confirmed or dropped by its receipt', async () => {
       const mined = chains({ receipts: { [REDEEM]: { status: 'success', logs: [] } } });
-      await expect(arbitrumDepositProgress(sent(), mined.context)).resolves.toEqual({
+      await expect(arbitrumDepositProgress(sent(), mined.context, NOW)).resolves.toEqual({
         kind: 'action-confirmed',
         action: 'redeem',
         txHash: REDEEM
       });
       const reverted = chains({ receipts: { [REDEEM]: { status: 'reverted', logs: [] } } });
-      await expect(arbitrumDepositProgress(sent(), reverted.context)).resolves.toEqual({
+      await expect(arbitrumDepositProgress(sent(), reverted.context, NOW)).resolves.toEqual({
+        kind: 'action-dropped',
+        txHash: REDEEM
+      });
+    });
+
+    it('waits while not mined, then is dropped once Arbitrum still does not know it', async () => {
+      const { context } = chains();
+      // Not settled: the ticket's own read goes on.
+      await expect(arbitrumDepositProgress(sent(), context, NOW)).resolves.toEqual({ kind: 'waiting' });
+      await expect(arbitrumDepositProgress(sent(), context, NOW + SENT_ACTION_DROPPED_MS)).resolves.toEqual({
         kind: 'action-dropped',
         txHash: REDEEM
       });
@@ -337,7 +354,7 @@ describe('arbitrumDepositProgress', () => {
 
     it('is left to the tracker when a Safe sent it', async () => {
       const { context } = chains({ receipts: { [REDEEM]: { status: 'success', logs: [] } } });
-      await expect(arbitrumDepositProgress(sent(true), context)).resolves.toEqual({ kind: 'waiting' });
+      await expect(arbitrumDepositProgress(sent(true), context, NOW)).resolves.toEqual({ kind: 'waiting' });
     });
 
     it('arrives on its own retry once confirmed, without a scan', async () => {
@@ -349,7 +366,7 @@ describe('arbitrumDepositProgress', () => {
           [RETRY]: { status: 'success', logs: [] }
         }
       });
-      await expect(arbitrumDepositProgress(confirmed, context)).resolves.toEqual({ kind: 'arrived' });
+      await expect(arbitrumDepositProgress(confirmed, context, NOW)).resolves.toEqual({ kind: 'arrived' });
       expect(l2.getLogs).not.toHaveBeenCalled();
     });
 
@@ -363,7 +380,7 @@ describe('arbitrumDepositProgress', () => {
         },
         timeout: CREATED_AT + LIFETIME
       });
-      const progress = await arbitrumDepositProgress(confirmed, context);
+      const progress = await arbitrumDepositProgress(confirmed, context, NOW);
       expect(progress).toMatchObject({ kind: 'ready', nextAction: 'redeem' });
       expect(applyProgress(confirmed, progress!, NOW)).toMatchObject({
         status: 'ready',
@@ -387,14 +404,14 @@ describe('arbitrumDepositProgress', () => {
 
     it('is confirmed or dropped by its receipt', async () => {
       const mined = chains({ receipts: { [KEEPALIVE]: { status: 'success', logs: [] } } });
-      await expect(arbitrumDepositProgress(sent(), mined.context)).resolves.toEqual({
+      await expect(arbitrumDepositProgress(sent(), mined.context, NOW)).resolves.toEqual({
         kind: 'action-confirmed',
         action: 'keepalive',
         txHash: KEEPALIVE
       });
       // A ticket redeemed or expired before it mined reverts it with NoTicketWithID.
       const reverted = chains({ receipts: { [KEEPALIVE]: { status: 'reverted', logs: [] } } });
-      await expect(arbitrumDepositProgress(sent(), reverted.context)).resolves.toEqual({
+      await expect(arbitrumDepositProgress(sent(), reverted.context, NOW)).resolves.toEqual({
         kind: 'action-dropped',
         txHash: KEEPALIVE
       });
@@ -408,7 +425,7 @@ describe('arbitrumDepositProgress', () => {
         receipts: { [ticketId]: CREATED, [KEEPALIVE]: { status: 'success', logs: [] } },
         timeout: OLD + LIFETIME
       });
-      const progress = await arbitrumDepositProgress(confirmed, context);
+      const progress = await arbitrumDepositProgress(confirmed, context, NOW);
       // Its receipt is no redeem: the deadline is read from the chain.
       expect(progress).toEqual({
         kind: 'ready',

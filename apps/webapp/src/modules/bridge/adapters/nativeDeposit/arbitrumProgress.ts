@@ -12,6 +12,7 @@ import {
 import type { BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
+import { settleSentAction } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { ARB_RETRYABLE_TX, arbRetryableTxAbi } from './contracts';
 import { arbitrumRetryableTicket } from './arbitrum';
@@ -128,7 +129,8 @@ async function scanForRedeem(l2: ChainReader, ticketId: Hex, fromBlock: bigint, 
  */
 export async function arbitrumDepositProgress(
   bridge: PendingBridge,
-  context: AdapterContext
+  context: AdapterContext,
+  now: number
 ): Promise<BridgeProgress | null> {
   const l1 = context.getClient('ethereum');
   const l2 = context.getClient('arbitrum');
@@ -141,11 +143,8 @@ export async function arbitrumDepositProgress(
         !action.safe &&
         (action.action === 'redeem' || action.action === 'keepalive')
     );
-    const sentReceipt = sent && (await receiptOf(l2, sent.txHash));
-    if (sent && sentReceipt)
-      return sentReceipt.status === 'success'
-        ? { kind: 'action-confirmed', action: sent.action, txHash: sent.txHash }
-        : { kind: 'action-dropped', txHash: sent.txHash };
+    const settled = sent && (await settleSentAction(l2, sent, now));
+    if (settled) return settled;
 
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });
     if (receipt.status === 'reverted') return { kind: 'failed', reason: 'source-tx-reverted' };

@@ -12,8 +12,8 @@ const nativeAdapter: BridgeAdapter = {
     if (bridge.from !== 'ethereum' || !isNativeDepositNetwork(to))
       return mockAdapter.checkProgress(bridge, now, context);
     return isOpStackNetwork(to)
-      ? opStackDepositProgress({ ...bridge, to }, context)
-      : arbitrumDepositProgress(bridge, context);
+      ? opStackDepositProgress({ ...bridge, to }, context, now)
+      : arbitrumDepositProgress(bridge, context, now);
   }
 };
 

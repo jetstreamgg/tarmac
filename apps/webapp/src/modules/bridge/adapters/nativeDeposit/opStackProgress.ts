@@ -1,23 +1,11 @@
-import { TransactionReceiptNotFoundError, type Hex } from 'viem';
+import type { Hex } from 'viem';
 import type { BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
+import { settleSentAction } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { L2_CROSS_DOMAIN_MESSENGER, l2CrossDomainMessengerAbi, type OpStackNetworkId } from './contracts';
 import { opStackDepositMessage } from './opStack';
-
-/** A sent replay's L2 receipt settles it; undefined while it isn't mined. */
-async function settleReplay(l2: ChainReader, txHash: string): Promise<BridgeProgress | undefined> {
-  try {
-    const receipt = await l2.getTransactionReceipt({ hash: txHash as Hex });
-    return receipt.status === 'success'
-      ? { kind: 'action-confirmed', action: 'replay', txHash }
-      : { kind: 'action-dropped', txHash };
-  } catch (error) {
-    if (error instanceof TransactionReceiptNotFoundError) return undefined;
-    throw error;
-  }
-}
 
 const readMessage = (l2: ChainReader, functionName: 'successfulMessages' | 'failedMessages', msgHash: Hex) =>
   l2.readContract({
@@ -36,7 +24,8 @@ const readMessage = (l2: ChainReader, functionName: 'successfulMessages' | 'fail
  */
 export async function opStackDepositProgress(
   bridge: PendingBridge & { to: OpStackNetworkId },
-  context: AdapterContext
+  context: AdapterContext,
+  now: number
 ): Promise<BridgeProgress | null> {
   const l1 = context.getClient('ethereum');
   const l2 = context.getClient(bridge.to);
@@ -46,7 +35,7 @@ export async function opStackDepositProgress(
     const sent = bridge.actions.find(
       action => action.status === 'sent' && !action.safe && action.action === 'replay'
     );
-    const settled = sent && (await settleReplay(l2, sent.txHash));
+    const settled = sent && (await settleSentAction(l2, sent, now));
     if (settled) return settled;
 
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });

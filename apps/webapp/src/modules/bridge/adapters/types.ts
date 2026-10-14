@@ -6,7 +6,7 @@ import type { PendingBridge } from '../model/types';
 /** The chain reads a route adapter makes. */
 export type ChainReader = Pick<
   PublicClient,
-  'getTransactionReceipt' | 'readContract' | 'getBlock' | 'getBlockNumber' | 'getLogs'
+  'getTransactionReceipt' | 'getTransaction' | 'readContract' | 'getBlock' | 'getBlockNumber' | 'getLogs'
 >;
 
 export type AdapterContext = {
