@@ -80,6 +80,17 @@ export default defineConfig({
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]
+    },
+    {
+      // The bridge ships behind VITE_BRIDGE_ENABLED, so its specs run against
+      // their own server with the flag on; the green track keeps the flag off.
+      name: 'bridge',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        baseURL: 'http://localhost:3101'
+      },
+      testMatch: ['**/bridge-native.spec.ts']
     }
     // {
     //   name: 'chromium-alternate',
@@ -93,14 +104,25 @@ export default defineConfig({
     // }
   ],
 
-  webServer: {
-    // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
-    command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
-    port: 3000,
-    timeout: 120000,
-    reuseExistingServer: !process.env.CI,
-    // Wait for the server to be fully ready
-    stdout: 'pipe',
-    stderr: 'pipe'
-  }
+  webServer: [
+    {
+      // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
+      command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
+      port: 3000,
+      timeout: 120000,
+      reuseExistingServer: !process.env.CI,
+      // Wait for the server to be fully ready
+      stdout: 'pipe',
+      stderr: 'pipe'
+    },
+    {
+      // The `bridge` project's server: the same build with the bridge flag on.
+      command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true VITE_BRIDGE_ENABLED=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock --port 3101 --strictPort`,
+      port: 3101,
+      timeout: 120000,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'pipe',
+      stderr: 'pipe'
+    }
+  ]
 });

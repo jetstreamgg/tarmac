@@ -1,0 +1,132 @@
+import { type Page } from '@playwright/test';
+import {
+  createPublicClient,
+  decodeEventLog,
+  encodeFunctionData,
+  http,
+  parseAbi,
+  toHex,
+  type Address,
+  type Hash
+} from 'viem';
+import { extractTransactionDepositedLogs, opaqueDataToDepositData } from 'viem/op-stack';
+import {
+  OP_STACK_DEPOSIT,
+  l1BridgeIsOpenAbi,
+  type OpStackNetworkId
+} from '@/modules/bridge/adapters/nativeDeposit/contracts';
+import { getRpcUrlFromFile } from './getRpcUrlFromFile';
+import { NetworkName } from './constants';
+
+const erc20Abi = parseAbi(['function balanceOf(address) view returns (uint256)']);
+const messengerAbi = parseAbi([
+  'event RelayedMessage(bytes32 indexed msgHash)',
+  'event FailedRelayedMessage(bytes32 indexed msgHash)'
+]);
+
+const rpc = async <T>(network: NetworkName, method: string, params: unknown[]): Promise<T> => {
+  const response = await fetch(await getRpcUrlFromFile(network), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+  });
+  const body = await response.json();
+  if (body.error) throw new Error(`${method} on ${network}: ${body.error.message}`);
+  return body.result as T;
+};
+
+const client = async (network: NetworkName) =>
+  createPublicClient({ transport: http(await getRpcUrlFromFile(network)) });
+
+/** The source tx hash of the newest pending bridge to `to`, read from the page's pending store. */
+export const pendingDepositTxHash = (page: Page, to: string) =>
+  page.evaluate(destination => {
+    const entries = Object.keys(localStorage)
+      .filter(key => key.startsWith('bridgePending:v1:') && !key.endsWith(':unreadable'))
+      .flatMap(
+        key =>
+          JSON.parse(localStorage.getItem(key) ?? '[]') as {
+            to: string;
+            txHash?: string;
+            startedAt: number;
+          }[]
+      )
+      .filter(entry => entry.to === destination && entry.txHash)
+      .sort((a, b) => b.startedAt - a.startedAt);
+    return entries[0]?.txHash as `0x${string}` | undefined;
+  }, to);
+
+/**
+ * Plays the sequencer's part on the L2 fork, which never derives deposits from
+ * the L1 fork: sends the exact deposit tx from the L1 deposit's
+ * TransactionDeposited log. A `gas` below the message's needs makes the
+ * messenger record a FailedRelayedMessage, the state a user replays from.
+ */
+export async function relayOpStackDeposit(
+  network: OpStackNetworkId,
+  l1TxHash: Hash,
+  { gas }: { gas?: bigint } = {}
+) {
+  const l1 = await client(NetworkName.mainnet);
+  const l2 = await client(NetworkName[network]);
+  const receipt = await l1.getTransactionReceipt({ hash: l1TxHash });
+  const [log] = extractTransactionDepositedLogs({ logs: receipt.logs });
+  if (!log) throw new Error(`No TransactionDeposited log in ${l1TxHash}`);
+  const deposit = opaqueDataToDepositData(log.args.opaqueData);
+  await rpc(NetworkName[network], 'tenderly_setBalance', [[log.args.from], toHex(10n ** 18n)]);
+  const hash = await rpc<Hash>(NetworkName[network], 'eth_sendTransaction', [
+    {
+      from: log.args.from,
+      to: log.args.to,
+      gas: toHex(gas ?? deposit.gas),
+      value: toHex(deposit.value),
+      data: deposit.data
+    }
+  ]);
+  const relay = await l2.waitForTransactionReceipt({ hash });
+  return relay.logs.flatMap(entry => {
+    try {
+      return [decodeEventLog({ abi: messengerAbi, ...entry }).eventName];
+    } catch {
+      return [];
+    }
+  });
+}
+
+export async function l2UsdsBalance(network: OpStackNetworkId, account: Address) {
+  const l2 = await client(NetworkName[network]);
+  return l2.readContract({
+    address: OP_STACK_DEPOSIT[network].l2Usds,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [account]
+  });
+}
+
+const pad = (value: bigint | number) => toHex(value, { size: 32 });
+
+/**
+ * Closes a route's L1 bridge by zeroing the storage slot behind `isOpen()`,
+ * found by probing; returns a restore that reopens it. Fork only.
+ */
+export async function closeOpStackBridge(network: OpStackNetworkId) {
+  const bridge = OP_STACK_DEPOSIT[network].l1TokenBridge;
+  const isOpen = async () =>
+    BigInt(
+      await rpc<string>(NetworkName.mainnet, 'eth_call', [
+        { to: bridge, data: encodeFunctionData({ abi: l1BridgeIsOpenAbi, functionName: 'isOpen' }) },
+        'latest'
+      ])
+    );
+  for (let slot = 0; slot < 16; slot++) {
+    const value = BigInt(
+      await rpc<string>(NetworkName.mainnet, 'eth_getStorageAt', [bridge, pad(slot), 'latest'])
+    );
+    if (value !== 1n) continue;
+    await rpc(NetworkName.mainnet, 'tenderly_setStorageAt', [bridge, pad(slot), pad(0)]);
+    if ((await isOpen()) === 0n)
+      return () => rpc(NetworkName.mainnet, 'tenderly_setStorageAt', [bridge, pad(slot), pad(1)]);
+    await rpc(NetworkName.mainnet, 'tenderly_setStorageAt', [bridge, pad(slot), pad(1)]);
+  }
+  throw new Error(`isOpen slot not found on the ${network} L1 bridge`);
+}
