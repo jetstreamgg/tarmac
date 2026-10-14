@@ -190,6 +190,32 @@ export const canLaunchAction = (bridge: PendingBridge): boolean =>
   !!bridge.nextAction &&
   !bridge.actions.some(sent => isSent(sent) && sent.action === bridge.nextAction);
 
+/** Under this an Arbitrum redeem is urgent and its ticket can be kept alive: a Safe's signers need time too. */
+export const REDEEM_URGENT_MINUTES = 48 * 60;
+
+const ticketTimeoutMs = (timeout: string | undefined) =>
+  timeout && /^\d{1,15}$/.test(timeout) ? Number(timeout) * 1000 : undefined;
+
+/** Whole minutes until a ready Arbitrum redeem's ticket times out, floored, 0 once it passed; undefined when unknown. */
+export function ticketMinutesLeft(bridge: PendingBridge, now: number): number | undefined {
+  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum' || bridge.to !== 'arbitrum')
+    return undefined;
+  if (bridge.status !== 'ready' || bridge.nextAction !== 'redeem') return undefined;
+  const timeoutMs = ticketTimeoutMs(bridge.routeData?.timeout);
+  return timeoutMs === undefined ? undefined : Math.max(0, Math.floor((timeoutMs - now) / 60_000));
+}
+
+/** The ticket can be kept alive: urgent, not yet timed out, and no redeem or keepalive in flight. */
+export function canLaunchKeepalive(bridge: PendingBridge, now: number): boolean {
+  const minutesLeft = ticketMinutesLeft(bridge, now);
+  return (
+    minutesLeft !== undefined &&
+    minutesLeft > 0 &&
+    minutesLeft < REDEEM_URGENT_MINUTES &&
+    !bridge.actions.some(sent => isSent(sent) && (sent.action === 'keepalive' || sent.action === 'redeem'))
+  );
+}
+
 /** The card shows the next action's button: always for a claim route, only once ready for a recovery. */
 export const showsActionButton = (bridge: PendingBridge): boolean =>
   !isSettled(bridge) &&
@@ -212,6 +238,12 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
   if (isSettled(bridge)) return { ...bridge, actions };
   // The tx mining doesn't mean its L2 execution succeeded: wait for the adapter to read it.
   const done = action.action;
+  // The redeem stays offered; the new deadline is read from the chain, and the stale one offers no second keepalive.
+  if (done === 'keepalive') {
+    const routeData = { ...bridge.routeData };
+    delete routeData.timeout;
+    return { ...bridge, actions, routeData, readyAt: action.at };
+  }
   if (isRecoveryAction(done)) return { ...bridge, actions, status: 'pending', nextAction: undefined };
   const remaining = destinationActions(bridge.routeKind, bridge.from);
   const next = remaining[remaining.indexOf(done) + 1];

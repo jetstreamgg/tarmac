@@ -372,6 +372,56 @@ describe('arbitrumDepositProgress', () => {
     });
   });
 
+  describe('a keepalive this bridge sent', () => {
+    const KEEPALIVE = `0x${'9'.repeat(64)}` as Hex;
+    const OLD = CREATED_AT + LIFETIME;
+    const sent = () =>
+      recordActionSent(
+        applyProgress(
+          seed(),
+          { kind: 'ready', nextAction: 'redeem', routeData: { ticketId, timeout: OLD.toString() } },
+          NOW
+        ),
+        { action: 'keepalive', txHash: KEEPALIVE, at: NOW }
+      );
+
+    it('is confirmed or dropped by its receipt', async () => {
+      const mined = chains({ receipts: { [KEEPALIVE]: { status: 'success', logs: [] } } });
+      await expect(arbitrumDepositProgress(sent(), mined.context)).resolves.toEqual({
+        kind: 'action-confirmed',
+        action: 'keepalive',
+        txHash: KEEPALIVE
+      });
+      // A ticket redeemed or expired before it mined reverts it with NoTicketWithID.
+      const reverted = chains({ receipts: { [KEEPALIVE]: { status: 'reverted', logs: [] } } });
+      await expect(arbitrumDepositProgress(sent(), reverted.context)).resolves.toEqual({
+        kind: 'action-dropped',
+        txHash: KEEPALIVE
+      });
+    });
+
+    it('keeps the redeem offered with the extended deadline once confirmed', async () => {
+      const confirmed = recordAction(sent(), { action: 'keepalive', txHash: KEEPALIVE, at: NOW });
+      expect(confirmed).toMatchObject({ status: 'ready', nextAction: 'redeem', readyAt: NOW });
+      expect(confirmed.routeData).toEqual({ ticketId });
+      const { context } = chains({
+        receipts: { [ticketId]: CREATED, [KEEPALIVE]: { status: 'success', logs: [] } },
+        timeout: OLD + LIFETIME
+      });
+      const progress = await arbitrumDepositProgress(confirmed, context);
+      // Its receipt is no redeem: the deadline is read from the chain.
+      expect(progress).toEqual({
+        kind: 'ready',
+        nextAction: 'redeem',
+        routeData: { ticketId, timeout: (OLD + LIFETIME).toString() }
+      });
+      expect(applyProgress(confirmed, progress!, NOW + 1)).toMatchObject({
+        status: 'ready',
+        routeData: { ticketId, timeout: (OLD + LIFETIME).toString() }
+      });
+    });
+  });
+
   it('is the native adapter for Ethereum to Arbitrum', async () => {
     const { context } = chains();
     await expect(getBridgeAdapter('native').checkProgress(seed(), NOW, context)).resolves.toEqual({

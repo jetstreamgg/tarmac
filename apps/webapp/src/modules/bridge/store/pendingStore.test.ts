@@ -58,6 +58,14 @@ describe('createPendingBridgeStore', () => {
     [
       'pending after a redeem tx',
       { status: 'pending', nextAction: 'redeem', actions: [{ action: 'redeem', txHash: '0xab', at: NOW }] }
+    ],
+    [
+      'with a sent keepalive',
+      {
+        status: 'ready',
+        nextAction: 'redeem',
+        actions: [{ action: 'keepalive', txHash: '0xcd', at: NOW, status: 'sent' }]
+      }
     ]
   ])('round-trips a deposit %s', (_, overrides) => {
     const deposit = bridge({

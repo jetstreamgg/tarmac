@@ -5,26 +5,29 @@ import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransa
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { ARB_RETRYABLE_TX, arbRetryableTxAbi } from '../adapters/nativeDeposit/contracts';
 import {
-  arbitrumRedeemCall,
   arbitrumRedeemGas,
-  arbitrumRedeemTicket
+  arbitrumRedeemTicket,
+  arbitrumTicketCall,
+  type ArbitrumTicketAction
 } from '../adapters/nativeDeposit/arbitrum';
 
 /**
- * The redeem leg of a deposit whose Arbitrum ticket wasn't auto-redeemed:
- * ArbRetryableTx.redeem from the user's wallet, at an explicit gas above the
- * Arbitrum estimate (which runs the scheduled retry), so the retry isn't sent
- * with the bare minimum. No call while the ticket id is missing or the
+ * The redeem or keepalive leg of a deposit whose Arbitrum ticket wasn't
+ * auto-redeemed: ArbRetryableTx.redeem (or .keepalive) from the user's wallet,
+ * at an explicit gas above the Arbitrum estimate (a redeem's runs the
+ * scheduled retry), so the retry isn't sent with the bare minimum. No call while the ticket id is missing or the
  * estimate is loading. Only enabled with the wallet on `chainId`, as the
  * simulation runs on the connected chain.
  */
 export function useArbitrumRedeemLegs({
+  action = 'redeem',
   enabled,
   routeData,
   chainId,
   account,
   getCallbacks
 }: {
+  action?: ArbitrumTicketAction;
   enabled: boolean;
   routeData: Record<string, string> | undefined;
   /** Arbitrum (its Tenderly fork in dev). */
@@ -45,7 +48,7 @@ export function useArbitrumRedeemLegs({
   const estimate = useEstimateGas({
     to: ARB_RETRYABLE_TX,
     data: ticketId
-      ? encodeFunctionData({ abi: arbRetryableTxAbi, functionName: 'redeem', args: [ticketId] })
+      ? encodeFunctionData({ abi: arbRetryableTxAbi, functionName: action, args: [ticketId] })
       : undefined,
     account,
     chainId,
@@ -55,9 +58,9 @@ export function useArbitrumRedeemLegs({
   const calls = useMemo(
     () =>
       ticketId && estimate.data !== undefined
-        ? [arbitrumRedeemCall({ ticketId, gas: arbitrumRedeemGas(estimate.data) })]
+        ? [arbitrumTicketCall({ action, ticketId, gas: arbitrumRedeemGas(estimate.data) })]
         : [],
-    [ticketId, estimate.data]
+    [action, ticketId, estimate.data]
   );
 
   const flow = useSequentialTransactionFlow({
@@ -72,7 +75,7 @@ export function useArbitrumRedeemLegs({
   });
 
   return {
-    /** Confirm can send the redeem. */
+    /** Confirm can send the call. */
     ready: calls.length > 0 && flow.prepared,
     /** The ticket, the estimate or the simulation failed. */
     error: ticket?.error ?? (ticketId ? estimate.error : null) ?? (calls.length > 0 ? flow.error : null),

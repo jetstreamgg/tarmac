@@ -201,15 +201,26 @@ export function arbitrumRedeemTicket(routeData: Record<string, string> | undefin
   return ticketId;
 }
 
-/** A redeem's gas: the L2 estimate, which runs the scheduled retry, with a margin. Below it the retry fails again. */
+/** A ticket call's gas: the L2 estimate (a redeem's runs the scheduled retry) with a margin. Below it the retry fails again. */
 export const arbitrumRedeemGas = (estimate: bigint) => (estimate * 12n) / 10n;
 
-/** The redeem on ArbRetryableTx; the gas the redeem doesn't use goes to the retry. */
-export const arbitrumRedeemCall = ({ ticketId, gas }: { ticketId: Hex; gas?: bigint }) =>
+/** What a stored deposit can call on its ticket: redeem it, or extend its deadline. */
+export type ArbitrumTicketAction = 'redeem' | 'keepalive';
+
+/** A redeem or keepalive on ArbRetryableTx; the gas a redeem doesn't use goes to the retry. */
+export const arbitrumTicketCall = ({
+  action,
+  ticketId,
+  gas
+}: {
+  action: ArbitrumTicketAction;
+  ticketId: Hex;
+  gas?: bigint;
+}) =>
   ({
     to: ARB_RETRYABLE_TX,
     abi: arbRetryableTxAbi,
-    functionName: 'redeem',
+    functionName: action,
     args: [ticketId],
     ...(gas !== undefined && { gas })
   }) as unknown as Call & { gas?: bigint };

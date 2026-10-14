@@ -14,6 +14,7 @@ import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDepos
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
 import {
   canLaunchAction,
+  canLaunchKeepalive,
   dropSentAction,
   recordAction,
   recordActionSent,
@@ -28,10 +29,15 @@ import { useArbitrumRedeemLegs } from './useArbitrumRedeemLegs';
 import { useOpStackReplayLegs } from './useOpStackReplayLegs';
 import { usePendingScope } from './usePendingScope';
 
-/** The deposit recovery the legs build: a replay on an OP Stack L2, or a redeem on Arbitrum. */
+/** The deposit recovery the legs build: a replay on an OP Stack L2, or a redeem or keepalive on Arbitrum. */
 type Recovery =
   | { kind: 'replay'; network: OpStackNetworkId; routeData?: Record<string, string>; chainId: number }
-  | { kind: 'redeem'; routeData?: Record<string, string>; chainId: number };
+  | {
+      kind: 'redeem';
+      action: 'redeem' | 'keepalive';
+      routeData?: Record<string, string>;
+      chainId: number;
+    };
 
 const recoveryOf = (
   bridge: PendingBridge,
@@ -41,8 +47,8 @@ const recoveryOf = (
   if (bridge.from !== 'ethereum') return undefined;
   if (action === 'replay' && isOpStackNetwork(bridge.to))
     return { kind: 'replay', network: bridge.to, routeData: bridge.routeData, chainId };
-  if (action === 'redeem' && bridge.to === 'arbitrum')
-    return { kind: 'redeem', routeData: bridge.routeData, chainId };
+  if ((action === 'redeem' || action === 'keepalive') && bridge.to === 'arbitrum')
+    return { kind: 'redeem', action, routeData: bridge.routeData, chainId };
   return undefined;
 };
 
@@ -92,8 +98,22 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
         error: t`Replay failed`,
         failure: t`The deposit hasn't been replayed.`
       };
+    case 'keepalive':
+      return {
+        step: t`Extend`,
+        loading: t`Extending the redeem deadline of the deposit of ${amount} USDS`,
+        success: t`Deadline extended!`,
+        error: t`Extend failed`,
+        failure: t`The deadline hasn't been extended.`
+      };
   }
 };
+
+/** `action` can be sent now: the next action, or a keepalive of the ticket it redeems. */
+const launchable = (bridge: PendingBridge, action: PendingBridgeNextAction) =>
+  action === 'keepalive'
+    ? canLaunchKeepalive(bridge, Date.now())
+    : bridge.nextAction === action && canLaunchAction(bridge);
 
 /**
  * The bridge's next destination action (claim, prove or finalize; Figma
@@ -101,8 +121,9 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
  * the amount hero and a single action. A wallet on another network is switched
  * first, as the modal confirms on open. The replay of an Ethereum to OP Stack
  * deposit and the redeem of an Ethereum to Arbitrum one send their real call
- * once prepared; the other actions run on the mock executor until the route
- * tickets add their calls. `locked` is true while its
+ * once prepared, as does the keepalive that extends that ticket's deadline;
+ * the other actions run on the mock executor until the route tickets add
+ * their calls. `locked` is true while its
  * session is minimized; `canLaunch` is false when the action can't be sent or
  * its network can't be pinned or switched to, and `actionHint` says why when
  * the user has to act in the wallet (a Safe switches networks in Safe).
@@ -121,6 +142,7 @@ export function useDestinationActionLaunch() {
   const [recovery, setRecovery] = useState<Recovery>();
   const [awaitingSwitch, setAwaitingSwitch] = useState<{
     card: PendingBridge;
+    action?: PendingBridgeNextAction;
     scope: string;
     chainId: number;
   }>();
@@ -138,6 +160,7 @@ export function useDestinationActionLaunch() {
     getCallbacks: () => legCallbacksRef.current
   });
   const redeemLegs = useArbitrumRedeemLegs({
+    action: redeem?.action,
     enabled: !!redeem && walletChainId === redeem.chainId,
     routeData: redeem?.routeData,
     chainId: redeem?.chainId,
@@ -179,9 +202,14 @@ export function useDestinationActionLaunch() {
   );
 
   const canLaunch = useCallback(
-    (bridge: PendingBridge) => {
+    (bridge: PendingBridge, action = bridge.nextAction) => {
       const pinned = pinChainId(bridge);
-      return canLaunchAction(bridge) && pinned !== undefined && (walletChainId === pinned || canSwitchChain);
+      return (
+        !!action &&
+        launchable(bridge, action) &&
+        pinned !== undefined &&
+        (walletChainId === pinned || canSwitchChain)
+      );
     },
     [pinChainId, walletChainId, canSwitchChain]
   );
@@ -203,11 +231,11 @@ export function useDestinationActionLaunch() {
 
   // The card's scope, read where it was clicked: a switch to an L2 fork moves the dev scope.
   const launchIn = useCallback(
-    (card: PendingBridge, scope: string) => {
+    (card: PendingBridge, scope: string, requested?: PendingBridgeNextAction) => {
       // The card can predate a broadcast; the store has the sent action.
       const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === card.id);
-      const action = bridge?.nextAction;
-      if (!bridge || !action || !canLaunchAction(bridge)) return;
+      const action = requested ?? bridge?.nextAction;
+      if (!bridge || !action || !launchable(bridge, action)) return;
       const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
       const copy = actionCopy(action, amount);
       const pinnedChainId = pinChainId(bridge);
@@ -215,7 +243,7 @@ export function useDestinationActionLaunch() {
       if (walletChainId !== pinnedChainId) {
         handleSwitchChain({
           chainId: pinnedChainId,
-          onSuccess: () => setAwaitingSwitch({ card, scope, chainId: pinnedChainId })
+          onSuccess: () => setAwaitingSwitch({ card, action: requested, scope, chainId: pinnedChainId })
         });
         return;
       }
@@ -242,7 +270,7 @@ export function useDestinationActionLaunch() {
         onConfirm: () => {
           // Retry calls onConfirm again; an action already sent must not go out twice.
           const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
-          if (!current || current.nextAction !== action || !canLaunchAction(current)) {
+          if (!current || !launchable(current, action)) {
             callbacksRef.current.onError(new Error('This action was already sent.'));
             return;
           }
@@ -278,8 +306,8 @@ export function useDestinationActionLaunch() {
   );
 
   const launch = useCallback(
-    (card: PendingBridge) => {
-      if (scope) launchIn(card, scope);
+    (card: PendingBridge, action?: PendingBridgeNextAction) => {
+      if (scope) launchIn(card, scope, action);
     },
     [launchIn, scope]
   );
@@ -289,7 +317,7 @@ export function useDestinationActionLaunch() {
     if (!awaitingSwitch || walletChainId !== awaitingSwitch.chainId) return;
     if (launchedSwitchRef.current === awaitingSwitch) return;
     launchedSwitchRef.current = awaitingSwitch;
-    launchIn(awaitingSwitch.card, awaitingSwitch.scope);
+    launchIn(awaitingSwitch.card, awaitingSwitch.scope, awaitingSwitch.action);
   }, [awaitingSwitch, walletChainId, launchIn]);
 
   return { launch, canLaunch, actionHint, locked };

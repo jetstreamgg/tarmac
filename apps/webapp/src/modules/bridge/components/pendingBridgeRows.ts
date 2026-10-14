@@ -12,6 +12,7 @@ import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
+import { REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
 
@@ -53,6 +54,8 @@ export const nextActionLabel = (action: PendingBridgeNextAction): string => {
       return t`Redeem`;
     case 'replay':
       return t`Replay`;
+    case 'keepalive':
+      return t`Extend`;
   }
 };
 
@@ -66,6 +69,7 @@ const readyLabel = (action: PendingBridgeNextAction): string => {
       return t`Ready to finalize`;
     case 'redeem':
     case 'replay':
+    case 'keepalive':
       return t`Action needed`;
   }
 };
@@ -149,8 +153,6 @@ export function buildPendingBridgeRows(
 const ARBITRUM_RETRYABLES_URL = 'https://portal.arbitrum.io/build/retryables';
 const ARBITRUM_ONE_CHAIN_ID = 42161;
 export const SKY_DISCORD_URL = 'https://discord.gg/skyecosystem';
-/** Below this the redeem note escalates: a Safe's signers need time too. */
-export const REDEEM_URGENT_MINUTES = 48 * 60;
 
 /** A note under an Ethereum to Arbitrum card whose ticket needs a redeem, or expired. */
 export type PendingBridgeNote =
@@ -168,19 +170,13 @@ const retryablesHref = (txHash: string | undefined) =>
   txHash &&
   `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(ARBITRUM_ONE_CHAIN_ID), tx: txHash })}`;
 
-const ticketTimeoutMs = (timeout: string | undefined) =>
-  timeout && /^\d{1,15}$/.test(timeout) ? Number(timeout) * 1000 : undefined;
-
 export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
   if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum' || bridge.to !== 'arbitrum')
     return undefined;
   if (bridge.status === 'expired')
     return { kind: 'expired', retryablesHref: retryablesHref(bridge.txHash), supportHref: SKY_DISCORD_URL };
   if (bridge.status !== 'ready' || bridge.nextAction !== 'redeem') return undefined;
-  const timeoutMs = ticketTimeoutMs(bridge.routeData?.timeout);
-  // Floored, so the time left is never overstated.
-  const minutesLeft =
-    timeoutMs === undefined ? undefined : Math.max(0, Math.floor((timeoutMs - now) / 60_000));
+  const minutesLeft = ticketMinutesLeft(bridge, now);
   return {
     kind: 'redeem',
     minutesLeft,

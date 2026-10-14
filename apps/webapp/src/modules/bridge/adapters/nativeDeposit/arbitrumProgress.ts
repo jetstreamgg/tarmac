@@ -134,14 +134,17 @@ export async function arbitrumDepositProgress(
   const l2 = context.getClient('arbitrum');
   if (!l1 || !l2 || !bridge.txHash) return null;
   try {
-    // A Safe's sent redeem is settled by the tracker.
+    // A Safe's sent redeem or keepalive is settled by the tracker.
     const sent = bridge.actions.find(
-      action => action.status === 'sent' && !action.safe && action.action === 'redeem'
+      action =>
+        action.status === 'sent' &&
+        !action.safe &&
+        (action.action === 'redeem' || action.action === 'keepalive')
     );
     const sentReceipt = sent && (await receiptOf(l2, sent.txHash));
     if (sent && sentReceipt)
       return sentReceipt.status === 'success'
-        ? { kind: 'action-confirmed', action: 'redeem', txHash: sent.txHash }
+        ? { kind: 'action-confirmed', action: sent.action, txHash: sent.txHash }
         : { kind: 'action-dropped', txHash: sent.txHash };
 
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });

@@ -34,6 +34,8 @@ vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
 const ACCOUNT = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
 // redeem(bytes32) on ArbRetryableTx, as Arbitrum's retryables tool sends it for this ticket.
 const REDEEM_CALLDATA = `0xeda1122c${ARBITRUM_TICKET.ticketId.slice(2)}`;
+// keepalive(bytes32), the selector of the mainnet keepalive 0x4055f635…9834.
+const KEEPALIVE_CALLDATA = `0xf0b21a41${ARBITRUM_TICKET.ticketId.slice(2)}`;
 const getCallbacks = () => ({}) as TxCallbacks;
 
 const render = (overrides: Partial<Parameters<typeof useArbitrumRedeemLegs>[0]> = {}) =>
@@ -72,6 +74,24 @@ describe('useArbitrumRedeemLegs', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({ to: ARB_RETRYABLE_TX, gas: 191_971n });
     expect(encodeFunctionData(calls[0])).toBe(REDEEM_CALLDATA);
+  });
+
+  it('sends keepalive(ticketId) on ArbRetryableTx with 1.2x the Arbitrum estimate', () => {
+    mocks.gas = 152_254n;
+    expect(render({ action: 'keepalive' }).ready).toBe(true);
+    expect(mocks.estimate).toMatchObject({ to: ARB_RETRYABLE_TX, data: KEEPALIVE_CALLDATA });
+    const calls = mocks.flow!.calls as Parameters<typeof encodeFunctionData>[0][];
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ to: ARB_RETRYABLE_TX, gas: 182_704n });
+    expect(encodeFunctionData(calls[0])).toBe(KEEPALIVE_CALLDATA);
+  });
+
+  it('reports a keepalive whose ticket is gone (its estimate reverts)', () => {
+    mocks.gas = undefined;
+    mocks.estimateError = new Error('NoTicketWithID');
+    const legs = render({ action: 'keepalive' });
+    expect(legs).toMatchObject({ ready: false, error: mocks.estimateError });
+    expect(mocks.flow).toMatchObject({ calls: [], enabled: false });
   });
 
   it('builds no call while the estimate is loading', () => {

@@ -30,7 +30,8 @@ const NEXT_ACTIONS = keysOf({
   prove: true,
   finalize: true,
   redeem: true,
-  replay: true
+  replay: true,
+  keepalive: true
 } satisfies Record<PendingBridgeNextAction, true>);
 
 type Listener = () => void;

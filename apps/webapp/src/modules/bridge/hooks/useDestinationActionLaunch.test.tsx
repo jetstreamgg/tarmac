@@ -126,7 +126,7 @@ const seedReadyReplay = () => {
 
 const TICKET_DATA = { ticketId: `0x${'f'.repeat(64)}`, timeout: '1800000000' };
 
-const seedReadyRedeem = () => {
+const seedReadyRedeem = (routeData: Record<string, string> = TICKET_DATA) => {
   const resolved = resolveBridgeRoute({ from: 'ethereum', to: 'arbitrum', amount: 1n, facts: {} });
   if (resolved.status !== 'ok') throw new Error(resolved.reason);
   const bridge = createPendingBridge({
@@ -140,7 +140,7 @@ const seedReadyRedeem = () => {
   });
   pendingBridgeStore.upsert(
     scope(),
-    applyProgress(bridge, { kind: 'ready', nextAction: 'redeem', routeData: TICKET_DATA }, NOW)
+    applyProgress(bridge, { kind: 'ready', nextAction: 'redeem', routeData }, NOW)
   );
   return stored('0xarbdeposit');
 };
@@ -464,6 +464,66 @@ describe('useDestinationActionLaunch', () => {
       ]);
       callbacks.onSuccess('0xredeem');
       expect(stored('0xarbdeposit')).toMatchObject({ status: 'pending', nextAction: undefined });
+    });
+  });
+
+  describe('the keepalive of an Ethereum to Arbitrum ticket close to its deadline', () => {
+    // canLaunchKeepalive reads the wall clock.
+    const timeoutIn = (seconds: number) => String(Math.floor(Date.now() / 1000) + seconds);
+    const URGENT = { ticketId: TICKET_DATA.ticketId, timeout: timeoutIn(3600) };
+    const render = (routeData = URGENT) => {
+      const card = seedReadyRedeem(routeData);
+      mocks.chainIds = [1, 42161];
+      mocks.walletChainId = 42161;
+      return { card, ...renderHook(() => useDestinationActionLaunch()) };
+    };
+
+    it('is offered under 48 hours left, next to the redeem', () => {
+      const { card, result } = render();
+      expect(result.current.canLaunch(card, 'keepalive')).toBe(true);
+      expect(result.current.canLaunch(card)).toBe(true);
+    });
+
+    it('is not offered, nor launched, with 48 hours or more left', () => {
+      const { card, result } = render({ ...URGENT, timeout: timeoutIn(49 * 3600) });
+      expect(result.current.canLaunch(card, 'keepalive')).toBe(false);
+      act(() => result.current.launch(card, 'keepalive'));
+      expect(mocks.launched).toHaveLength(0);
+    });
+
+    it('builds the keepalive legs and sends them once prepared', () => {
+      const { card, result, rerender } = render();
+      act(() => result.current.launch(card, 'keepalive'));
+      expect(mocks.redeem.params).toMatchObject({ action: 'keepalive', enabled: true, chainId: 42161 });
+      expect(mocks.launched[0]).toMatchObject({ steps: [{ label: 'Extend' }] });
+      act(() => mocks.launched[0].onConfirm!());
+      mocks.redeem.ready = true;
+      rerender();
+      expect(mocks.redeem.execute).toHaveBeenCalledTimes(1);
+      expect(mocks.legs).toHaveLength(0);
+    });
+
+    it('records the keepalive, keeps the redeem offered, and is not sent twice', () => {
+      mocks.redeem.ready = true;
+      const { card, result } = render();
+      act(() => result.current.launch(card, 'keepalive'));
+      act(() => mocks.launched[0].onConfirm!());
+      const callbacks = mocks.redeem.params!.getCallbacks();
+      callbacks.onStart('0xkeep');
+      expect(stored('0xarbdeposit').actions).toEqual([
+        { action: 'keepalive', txHash: '0xkeep', at: expect.any(Number), status: 'sent' }
+      ]);
+      // A retry of the confirm must not send it again.
+      act(() => mocks.launched[0].onConfirm!());
+      expect(mocks.session.onError).toHaveBeenCalledWith(new Error('This action was already sent.'));
+      callbacks.onSuccess('0xkeep');
+      expect(stored('0xarbdeposit')).toMatchObject({
+        status: 'ready',
+        nextAction: 'redeem',
+        routeData: { ticketId: TICKET_DATA.ticketId }
+      });
+      expect(result.current.canLaunch(stored('0xarbdeposit'), 'keepalive')).toBe(false);
+      expect(result.current.canLaunch(stored('0xarbdeposit'))).toBe(true);
     });
   });
 });

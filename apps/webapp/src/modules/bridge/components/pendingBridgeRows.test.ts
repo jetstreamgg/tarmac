@@ -12,9 +12,9 @@ import {
   formatTimeLeft,
   nextActionLabel,
   pendingBridgeNote,
-  REDEEM_URGENT_MINUTES,
   SKY_DISCORD_URL
 } from './pendingBridgeRows';
+import { REDEEM_URGENT_MINUTES } from '../model/pendingTransitions';
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 

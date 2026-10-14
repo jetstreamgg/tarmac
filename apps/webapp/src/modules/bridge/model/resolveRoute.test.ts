@@ -268,8 +268,8 @@ describe('toRouteFact', () => {
 });
 
 describe('recoveryActions', () => {
-  it('a native deposit can need a redeem on Arbitrum and a replay on the OP Stack chains', () => {
-    expect(recoveryActions('native', 'ethereum', 'arbitrum')).toEqual(['redeem']);
+  it('a native deposit can need a redeem (or a keepalive) on Arbitrum and a replay on the OP Stack chains', () => {
+    expect(recoveryActions('native', 'ethereum', 'arbitrum')).toEqual(['redeem', 'keepalive']);
     for (const to of ['base', 'optimism', 'unichain'] as const) {
       expect(recoveryActions('native', 'ethereum', to)).toEqual(['replay']);
     }
@@ -281,9 +281,9 @@ describe('recoveryActions', () => {
     expect(recoveryActions('layerzero', 'ethereum', 'avalanche')).toEqual([]);
   });
 
-  it('only redeem and replay are recovery actions', () => {
-    expect(['redeem', 'replay', 'claim', 'prove', 'finalize'].map(a => isRecoveryAction(a as never))).toEqual(
-      [true, true, false, false, false]
-    );
+  it('only redeem, replay and keepalive are recovery actions', () => {
+    expect(
+      ['redeem', 'replay', 'keepalive', 'claim', 'prove', 'finalize'].map(a => isRecoveryAction(a as never))
+    ).toEqual([true, true, true, false, false, false]);
   });
 });

@@ -6,11 +6,14 @@ import {
   isPendingBridgeVisible,
   canDismiss,
   canLaunchAction,
+  canLaunchKeepalive,
   dropSentAction,
   pollIntervalMs,
   recordAction,
   recordActionSent,
-  showsActionButton
+  REDEEM_URGENT_MINUTES,
+  showsActionButton,
+  ticketMinutesLeft
 } from './pendingTransitions';
 import { resolveBridgeRoute } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
@@ -618,5 +621,80 @@ describe('a deposit whose L2 execution failed (redeem on Arbitrum, replay on OP 
     const withdrawal = create(routeFor('base', 'ethereum'));
     expect(withdrawal.nextAction).toBe('claim');
     expect(showsActionButton(withdrawal)).toBe(true);
+  });
+});
+
+describe('an Arbitrum ticket close to its deadline can be kept alive', () => {
+  const timeoutIn = (minutes: number) => String(Math.floor((NOW + minutes * MINUTE) / 1000));
+  const ready = (timeout = timeoutIn(REDEEM_URGENT_MINUTES - 1), to: BridgeNetworkId = 'arbitrum') =>
+    applyProgress(
+      createPendingBridge({
+        account: ACCOUNT,
+        amount: 1n,
+        from: 'ethereum',
+        to,
+        route: routeFor('ethereum', to),
+        txHash: '0xdeposit',
+        now: NOW
+      }),
+      {
+        kind: 'ready',
+        nextAction: 'redeem',
+        routeData: { ticketId: '0xticket', ...(timeout && { timeout }) }
+      },
+      NOW
+    );
+
+  it('only under 48 hours left, and not once the time is up', () => {
+    expect(ticketMinutesLeft(ready(), NOW)).toBe(REDEEM_URGENT_MINUTES - 1);
+    expect(canLaunchKeepalive(ready(), NOW)).toBe(true);
+    expect(canLaunchKeepalive(ready(timeoutIn(REDEEM_URGENT_MINUTES)), NOW)).toBe(false);
+    expect(canLaunchKeepalive(ready(timeoutIn(1)), NOW)).toBe(true);
+    expect(canLaunchKeepalive(ready(timeoutIn(0)), NOW)).toBe(false);
+    expect(canLaunchKeepalive(ready(timeoutIn(-5)), NOW)).toBe(false);
+  });
+
+  it('never with an unknown deadline, or off a ready Arbitrum redeem', () => {
+    expect(canLaunchKeepalive(ready(''), NOW)).toBe(false);
+    expect(canLaunchKeepalive(ready('soon'), NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), status: 'pending' }, NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), nextAction: 'replay' }, NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), to: 'base' }, NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), routeKind: 'layerzero' }, NOW)).toBe(false);
+  });
+
+  it('not while a redeem or keepalive is in flight', () => {
+    for (const action of ['redeem', 'keepalive'] as const)
+      expect(canLaunchKeepalive(recordActionSent(ready(), { action, txHash: '0xsent', at: NOW }), NOW)).toBe(
+        false
+      );
+  });
+
+  it('a mined keepalive keeps the redeem offered and drops the stale deadline, so it is not offered twice', () => {
+    const sent = recordActionSent(ready(), { action: 'keepalive', txHash: '0xkeep', at: NOW });
+    // The redeem itself can still go out.
+    expect(canLaunchAction(sent)).toBe(true);
+    const mined = recordAction(sent, { action: 'keepalive', txHash: '0xkeep', at: NOW + MINUTE });
+    expect(mined).toMatchObject({ status: 'ready', nextAction: 'redeem', readyAt: NOW + MINUTE });
+    expect(mined.routeData).toEqual({ ticketId: '0xticket' });
+    expect(mined.settledAt).toBeUndefined();
+    expect(mined.actions).toEqual([{ action: 'keepalive', txHash: '0xkeep', at: NOW + MINUTE }]);
+    expect(canLaunchKeepalive(mined, NOW + MINUTE)).toBe(false);
+    expect(canLaunchAction(mined)).toBe(true);
+    const extended = applyProgress(
+      mined,
+      {
+        kind: 'ready',
+        nextAction: 'redeem',
+        routeData: { ticketId: '0xticket', timeout: timeoutIn(8 * 24 * 60) }
+      },
+      NOW + 2 * MINUTE
+    );
+    expect(ticketMinutesLeft(extended, NOW + MINUTE)).toBeGreaterThan(REDEEM_URGENT_MINUTES);
+  });
+
+  it('is never the next action, and is ignored off Arbitrum', () => {
+    const op = ready('', 'base');
+    expect(recordActionSent(op, { action: 'keepalive', txHash: '0xkeep', at: NOW })).toBe(op);
   });
 });

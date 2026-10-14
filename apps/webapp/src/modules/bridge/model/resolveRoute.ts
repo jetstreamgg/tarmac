@@ -115,13 +115,13 @@ export const recoveryActions = (
   to: BridgeNetworkId
 ): PendingBridgeNextAction[] => {
   if (kind !== 'native' || from !== 'ethereum') return [];
-  return to === 'arbitrum' ? ['redeem'] : ['replay'];
+  return to === 'arbitrum' ? ['redeem', 'keepalive'] : ['replay'];
 };
 
 export const isRecoveryAction = (
   action: PendingBridgeNextAction
 ): action is Exclude<PendingBridgeNextAction, PendingBridgeStepAction> =>
-  action === 'redeem' || action === 'replay';
+  action === 'redeem' || action === 'replay' || action === 'keepalive';
 
 const routeSteps = (kind: BridgeRouteKind, from: BridgeNetworkId, to: BridgeNetworkId): BridgeStep[] => [
   ...sourceSteps(from),

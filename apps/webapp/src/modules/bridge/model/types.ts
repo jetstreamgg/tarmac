@@ -30,8 +30,11 @@ export type BridgeRoute = {
 /** `expired`: an Arbitrum ticket that was never redeemed (expired or canceled); the funds were not delivered. */
 export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 'failed' | 'expired';
 
-/** `redeem` (Arbitrum ticket) and `replay` (OP Stack message) recover a deposit whose L2 execution failed. */
-export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay';
+/**
+ * `redeem` (Arbitrum ticket) and `replay` (OP Stack message) recover a deposit whose L2 execution failed;
+ * `keepalive` extends an Arbitrum ticket's deadline and is never the next action.
+ */
+export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay' | 'keepalive';
 
 /** A destination action every bridge of its route goes through, in order. */
 export type PendingBridgeStepAction = 'claim' | 'prove' | 'finalize';

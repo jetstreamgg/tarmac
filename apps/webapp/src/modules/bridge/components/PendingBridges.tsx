@@ -10,7 +10,7 @@ import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
 import { canDismiss, showsActionButton } from '../model/pendingTransitions';
-import type { PendingBridge, PendingBridgeStatus } from '../model/types';
+import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { formatBigInt } from '@/utils';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
@@ -116,19 +116,25 @@ function RedeemNoteText({ note }: RedeemNoteTextProps) {
   const timeLeft = formatTimeLeft(note.minutesLeft);
   return note.urgent ? (
     <Trans>
-      Only {timeLeft} left to redeem. After that the funds can&apos;t be delivered. It needs ETH on Arbitrum
-      for gas.
+      Only {timeLeft} left to redeem. After that the funds can&apos;t be delivered. Redeem now, or extend the
+      deadline if you can&apos;t yet. Both need ETH on Arbitrum for gas.
     </Trans>
   ) : (
     <Trans>Redeem on Arbitrum within {timeLeft}. It needs ETH on Arbitrum for gas.</Trans>
   );
 }
 
-type BridgeNoteProps = { note: PendingBridgeNote };
+type BridgeNoteProps = {
+  note: PendingBridgeNote;
+  onExtend: () => void;
+  canExtend: boolean;
+};
 
 /** What a stuck Arbitrum deposit needs, and how to finish it without this app. */
-function BridgeNote({ note }: BridgeNoteProps) {
+function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
   const urgent = note.kind === 'expired' || note.urgent;
+  // A keepalive can't revive a ticket whose time is up.
+  const extendable = note.kind === 'redeem' && note.urgent && note.minutesLeft !== 0;
   return (
     <div
       className={cn(
@@ -148,6 +154,17 @@ function BridgeNote({ note }: BridgeNoteProps) {
         )}
       </Text>
       <span className="flex flex-wrap gap-x-4 gap-y-1">
+        {extendable && (
+          <button
+            type="button"
+            className="text-fgPrimary font-medium enabled:hover:underline disabled:opacity-50"
+            disabled={!canExtend}
+            onClick={onExtend}
+            data-testid="pending-bridge-keepalive"
+          >
+            <Trans>Extend the deadline</Trans>
+          </button>
+        )}
         {note.retryablesHref && (
           <NoteLink href={note.retryablesHref} testId="pending-bridge-retryables-link">
             {note.kind === 'redeem' ? (
@@ -171,9 +188,9 @@ type PendingBridgeCardProps = {
   bridge: PendingBridge;
   now: number;
   familyChainId: number;
-  onAction: (bridge: PendingBridge) => void;
+  onAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => void;
   onDismiss: (bridge: PendingBridge) => void;
-  canAction: (bridge: PendingBridge) => boolean;
+  canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
   actionHint: (bridge: PendingBridge) => DestinationActionHint | undefined;
   actionLocked: boolean;
 };
@@ -248,7 +265,13 @@ function PendingBridgeCard({
           <ActionHintText hint={hint} />
         </Text>
       )}
-      {note && <BridgeNote note={note} />}
+      {note && (
+        <BridgeNote
+          note={note}
+          onExtend={() => onAction(bridge, 'keepalive')}
+          canExtend={!actionLocked && canAction(bridge, 'keepalive')}
+        />
+      )}
 
       <div className="flex flex-col gap-6">
         {buildPendingBridgeRows(bridge, now, familyChainId).map((row, rowIndex) => (
@@ -270,9 +293,9 @@ function PendingBridgeCard({
 }
 
 type PendingBridgesProps = {
-  onAction: (bridge: PendingBridge) => void;
+  onAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => void;
   /** The next action can be sent now, on a network the app can switch to. */
-  canAction: (bridge: PendingBridge) => boolean;
+  canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
   /** Why the action can't be sent from here, if the user has to act in the wallet. */
   actionHint: (bridge: PendingBridge) => DestinationActionHint | undefined;
   /** An action's session is minimized: it must be restored, not launched again. */

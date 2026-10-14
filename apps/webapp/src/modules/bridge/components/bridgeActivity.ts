@@ -28,6 +28,8 @@ export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
       return t`Deposit redeem`;
     case 'replay':
       return t`Deposit replay`;
+    case 'keepalive':
+      return t`Deadline extension`;
   }
 };
 
