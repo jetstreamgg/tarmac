@@ -141,6 +141,28 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     }
   });
 
+  test('A bridge that closes after Review sends nothing on Confirm, and Try again sends once it reopens', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected();
+    await bridge.selectDestination('unichain');
+    const before = await l1AccountState(testAccount);
+    await bridge.openReview('1');
+
+    // Closed after the gate's last poll: only the read on Confirm can see it.
+    const reopen = await closeOpStackBridge('unichain');
+    try {
+      await bridge.confirmButton().click();
+      await expect(isolatedPage.getByRole('dialog')).toContainText('Transaction failed', { timeout: 60_000 });
+      await expectNothingSent(bridge, isolatedPage, testAccount, before);
+    } finally {
+      await reopen();
+    }
+    await retryOnce(bridge, isolatedPage, testAccount, before);
+  });
+
   test('A send rejected in the wallet leaves nothing pending, and Try again sends it once', async ({
     isolatedPage,
     testAccount
