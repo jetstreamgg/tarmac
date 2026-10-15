@@ -308,6 +308,50 @@ describe('useDestinationActionLaunch', () => {
       expect(mocks.launched).toHaveLength(1);
     });
 
+    it('opens nothing for an abandoned switch once the wallet went to another network first', () => {
+      const card = seedReadyClaim();
+      mocks.walletChainId = 8453;
+      const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card));
+      act(() => mocks.switches[0].onSuccess!());
+      // The wallet acknowledged but kept reporting Base; the user moved on to another network.
+      rerender();
+      mocks.walletChainId = 42161;
+      rerender();
+      mocks.walletChainId = 1;
+      rerender();
+      expect(mocks.launched).toHaveLength(0);
+    });
+
+    it('opens nothing for an earlier switch once a later launch was rejected', () => {
+      const card = seedReadyClaim();
+      mocks.walletChainId = 8453;
+      const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card));
+      act(() => mocks.switches[0].onSuccess!());
+      rerender();
+      act(() => result.current.launch(card));
+      expect(mocks.switches).toHaveLength(2);
+      mocks.walletChainId = 1;
+      rerender();
+      expect(mocks.launched).toHaveLength(0);
+    });
+
+    it('opens the modal once, and not again after the wallet leaves and comes back', () => {
+      const card = seedReadyClaim();
+      mocks.walletChainId = 8453;
+      const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card));
+      act(() => mocks.switches[0].onSuccess!());
+      mocks.walletChainId = 1;
+      rerender();
+      mocks.walletChainId = 8453;
+      rerender();
+      mocks.walletChainId = 1;
+      rerender();
+      expect(mocks.launched).toHaveLength(1);
+    });
+
     it('opens nothing when the switch is rejected', () => {
       const card = seedReadyClaim();
       mocks.walletChainId = 8453;

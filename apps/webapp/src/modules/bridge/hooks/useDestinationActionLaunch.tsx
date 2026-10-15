@@ -155,8 +155,13 @@ export function useDestinationActionLaunch() {
     action?: PendingBridgeNextAction;
     scope: string;
     chainId: number;
+    /** The wallet's network when the switch was asked for. */
+    from: number | undefined;
+    launchId: number;
   }>();
   const launchedSwitchRef = useRef(awaitingSwitch);
+  // Bumped on every launch: only the latest one's switch may open the modal.
+  const launchIdRef = useRef(0);
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
   // Confirm ran before the recovery was prepared: it is sent once it is.
   const confirmPendingRef = useRef(false);
@@ -251,6 +256,7 @@ export function useDestinationActionLaunch() {
   // The card's scope, read where it was clicked: a switch to an L2 fork moves the dev scope.
   const launchIn = useCallback(
     (card: PendingBridge, scope: string, requested?: PendingBridgeNextAction) => {
+      const launchId = ++launchIdRef.current;
       // The card can predate a broadcast; the store has the sent action.
       const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === card.id);
       const action = requested ?? bridge?.nextAction;
@@ -262,7 +268,15 @@ export function useDestinationActionLaunch() {
       if (walletChainId !== pinnedChainId) {
         handleSwitchChain({
           chainId: pinnedChainId,
-          onSuccess: () => setAwaitingSwitch({ card, action: requested, scope, chainId: pinnedChainId })
+          onSuccess: () =>
+            setAwaitingSwitch({
+              card,
+              action: requested,
+              scope,
+              chainId: pinnedChainId,
+              from: walletChainId,
+              launchId
+            })
         });
         return;
       }
@@ -338,8 +352,22 @@ export function useDestinationActionLaunch() {
 
   // Launched once the wallet reports the switched network, so the modal's chain guard reads it on open.
   useEffect(() => {
-    if (!awaitingSwitch || walletChainId !== awaitingSwitch.chainId) return;
-    if (launchedSwitchRef.current === awaitingSwitch) return;
+    if (
+      !awaitingSwitch ||
+      launchedSwitchRef.current === awaitingSwitch ||
+      awaitingSwitch.launchId !== launchIdRef.current
+    )
+      return;
+    // The wallet went elsewhere: the switch was abandoned and never opens the modal.
+    if (
+      walletChainId !== undefined &&
+      walletChainId !== awaitingSwitch.chainId &&
+      walletChainId !== awaitingSwitch.from
+    ) {
+      launchedSwitchRef.current = awaitingSwitch;
+      return;
+    }
+    if (walletChainId !== awaitingSwitch.chainId) return;
     launchedSwitchRef.current = awaitingSwitch;
     launchIn(awaitingSwitch.card, awaitingSwitch.scope, awaitingSwitch.action);
   }, [awaitingSwitch, walletChainId, launchIn]);
