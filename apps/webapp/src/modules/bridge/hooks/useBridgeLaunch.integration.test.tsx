@@ -14,6 +14,7 @@ import { applyProgress } from '../model/pendingTransitions';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeForm } from './useBridgeForm';
 import { useBridgeLaunch } from './useBridgeLaunch';
+import { nativeDepositFunction } from './useNativeDepositLegs';
 
 // The real modal, form, launch, deposit legs and sequential engine; only the wallet and chain I/O is faked.
 const SENDER = getAddress('0x71C7656EC7ab88b098defB751B7401B5f6d8976F');
@@ -1005,6 +1006,31 @@ describe('a native deposit through the real modal and engine', () => {
       expect(deposits(from)).toHaveLength(1);
     });
   });
+
+  it.each(['arbitrum', 'base'] as const)(
+    'a Safe over WalletConnect to %s whose receipt wait gives up before it executes: Retry sends nothing and its card stays pending',
+    async to => {
+      env.safe = true;
+      env.allowance[SENDER] = parseEther('1000');
+      renderApp();
+      await review(to);
+      await confirm();
+      await wallet.sign('0xwcsafetx');
+      // The engine waits on the safeTxHash, which never mines: it fails as viem's 180 s timeout does.
+      act(() => {
+        env.receiptFailed.add('0xwcsafetx');
+        env.bump();
+      });
+      await settle();
+      fireEvent.click(screen.getByRole('button', { name: /^(retry|try again)$/i }));
+      await settle();
+
+      expect(env.writes.map(write => write.functionName)).toEqual([nativeDepositFunction(to)]);
+      expect(pendingBridgeStore.getSnapshot(scope)).toMatchObject([
+        { safeTxHash: '0xwcsafetx', to, status: 'pending' }
+      ]);
+    }
+  );
 
   it('an approve that mined before an account switch is not asked for again after switching back', async () => {
     renderApp();
