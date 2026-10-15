@@ -555,4 +555,87 @@ describe('useDestinationActionLaunch', () => {
       expect(result.current.canLaunch(stored('0xarbdeposit'))).toBe(true);
     });
   });
+
+  describe("a card's prompt signed or rejected after another card's Confirm", () => {
+    const seedRedeem = (txHash: string) => {
+      const resolved = resolveBridgeRoute({ from: 'ethereum', to: 'arbitrum', amount: 1n, facts: {} });
+      if (resolved.status !== 'ok') throw new Error(resolved.reason);
+      const bridge = createPendingBridge({
+        account: mocks.address,
+        amount: 10n ** 18n,
+        from: 'ethereum',
+        to: 'arbitrum',
+        route: resolved.route,
+        txHash,
+        now: NOW
+      });
+      pendingBridgeStore.upsert(
+        scope(),
+        applyProgress(bridge, { kind: 'ready', nextAction: 'redeem', routeData: TICKET_DATA }, NOW)
+      );
+      return stored(txHash);
+    };
+
+    // Card A's Confirm, then card B's: returns the callbacks A's prompt was opened with.
+    const confirmAThenB = () => {
+      const [a, b] = [seedRedeem('0xdepositA'), seedRedeem('0xdepositB')];
+      mocks.chainIds = [1, 42161];
+      mocks.walletChainId = 42161;
+      mocks.redeem.ready = true;
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(a));
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacksA = mocks.redeem.params!.getCallbacks();
+      act(() => result.current.launch(b));
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      return callbacksA;
+    };
+
+    it("records A's late hash on card A without reaching the modal that follows B", () => {
+      const callbacksA = confirmAThenB();
+      callbacksA.onStart('0xlateA');
+      expect(mocks.session.onStart).not.toHaveBeenCalledWith('0xlateA');
+      expect(stored('0xdepositA').actions).toMatchObject([
+        { action: 'redeem', txHash: '0xlateA', status: 'sent' }
+      ]);
+      expect(stored('0xdepositB').actions).toEqual([]);
+    });
+
+    it("never reports A's late rejection to the modal that follows B", () => {
+      const callbacksA = confirmAThenB();
+      callbacksA.onError(new Error('User rejected'), '');
+      expect(mocks.session.onError).not.toHaveBeenCalled();
+    });
+
+    it("never reports A's late hash to another transaction opened after A's modal closed", () => {
+      const card = seedRedeem('0xdepositA');
+      mocks.chainIds = [1, 42161];
+      mocks.walletChainId = 42161;
+      mocks.redeem.ready = true;
+      const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card));
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacksA = mocks.redeem.params!.getCallbacks();
+      mocks.isModalOpen = false;
+      rerender();
+      // Any other widget's transaction now follows the modal.
+      const other = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
+      mocks.session = other;
+      mocks.isModalOpen = true;
+      rerender();
+      callbacksA.onStart('0xlateA');
+      callbacksA.onError(new Error('User rejected'), '');
+      expect(other.onStart).not.toHaveBeenCalled();
+      expect(other.onError).not.toHaveBeenCalled();
+      expect(stored('0xdepositA').actions).toMatchObject([
+        { action: 'redeem', txHash: '0xlateA', status: 'sent' }
+      ]);
+    });
+
+    it("control: B's own callbacks reach the modal", () => {
+      confirmAThenB();
+      mocks.redeem.params!.getCallbacks().onStart('0xB');
+      expect(mocks.session.onStart).toHaveBeenCalledWith('0xB');
+    });
+  });
 });

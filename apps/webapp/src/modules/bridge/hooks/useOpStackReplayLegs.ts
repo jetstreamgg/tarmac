@@ -8,6 +8,7 @@ import {
   type OpStackNetworkId
 } from '../adapters/nativeDeposit/contracts';
 import { opStackReplay, opStackReplayCall, opStackReplayGas } from '../adapters/nativeDeposit/opStack';
+import { usePromptIssuers } from './usePromptIssuers';
 
 /**
  * The replay leg of a deposit whose OP Stack relay failed: relayMessage on the
@@ -58,15 +59,16 @@ export function useOpStackReplayLegs({
     [value, baseGas.data]
   );
 
+  const { onMutate, issuerOf } = usePromptIssuers(getCallbacks);
   const flow = useSequentialTransactionFlow({
     calls,
     enabled: calls.length > 0,
     chainId,
     failOnReplaced: true,
-    onMutate: variables => getCallbacks().onMutate(variables),
-    onStart: hash => getCallbacks().onStart(hash),
+    onMutate,
+    onStart: (hash, variables) => issuerOf(variables).onStart(hash),
     onSuccess: (hash, blockNumber) => getCallbacks().onSuccess(hash, blockNumber),
-    onError: (error, hash) => getCallbacks().onError(error, hash)
+    onError: (error, hash, variables) => issuerOf(variables).onError(error, hash)
   });
 
   return {

@@ -10,6 +10,7 @@ import {
   arbitrumTicketCall,
   type ArbitrumTicketAction
 } from '../adapters/nativeDeposit/arbitrum';
+import { usePromptIssuers } from './usePromptIssuers';
 
 /**
  * The redeem or keepalive leg of a deposit whose Arbitrum ticket wasn't
@@ -63,15 +64,16 @@ export function useArbitrumRedeemLegs({
     [action, ticketId, estimate.data]
   );
 
+  const { onMutate, issuerOf } = usePromptIssuers(getCallbacks);
   const flow = useSequentialTransactionFlow({
     calls,
     enabled: calls.length > 0,
     chainId,
     failOnReplaced: true,
-    onMutate: variables => getCallbacks().onMutate(variables),
-    onStart: hash => getCallbacks().onStart(hash),
+    onMutate,
+    onStart: (hash, variables) => issuerOf(variables).onStart(hash),
     onSuccess: (hash, blockNumber) => getCallbacks().onSuccess(hash, blockNumber),
-    onError: (error, hash) => getCallbacks().onError(error, hash)
+    onError: (error, hash, variables) => issuerOf(variables).onError(error, hash)
   });
 
   return {

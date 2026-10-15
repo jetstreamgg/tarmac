@@ -111,6 +111,14 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
   }
 };
 
+// Where a card's callbacks go once they no longer own the modal.
+const DETACHED: TxCallbacks = {
+  onMutate: () => undefined,
+  onStart: () => undefined,
+  onSuccess: () => undefined,
+  onError: () => undefined
+};
+
 /** `action` can be sent now: the next action, or a keepalive of the ticket it redeems. */
 const launchable = (bridge: PendingBridge, action: PendingBridgeNextAction) =>
   action === 'keepalive'
@@ -181,9 +189,12 @@ export function useDestinationActionLaunch() {
   );
 
   const callbacksRef = useRef(txCallbacks);
+  // The Confirm whose callbacks may still reach the modal; none once the modal closes.
+  const modalOwnerRef = useRef<TxCallbacks | undefined>(undefined);
   const sendReplayRef = useRef(() => undefined as void);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
+    if (!isModalOpen) modalOwnerRef.current = undefined;
     sendReplayRef.current = () => {
       if (!confirmPendingRef.current) return;
       // A closed modal drops the pending Confirm: nothing may reach the wallet behind it.
@@ -285,21 +296,26 @@ export function useDestinationActionLaunch() {
           const record =
             (change: (current: PendingBridge, txHash: string) => PendingBridge) => (txHash: string) =>
               pendingBridgeStore.update(scope, bridge.id, current => change(current, txHash));
-          const callbacks = withActionRecording(() => callbacksRef.current, {
-            // A Safe reports its Safe tx hash here; the tracker settles it if this flow can't.
-            onSent: record((current, txHash) =>
-              recordActionSent(current, { action, txHash, at: Date.now(), ...(isSafe && { safe: true }) })
-            ),
-            onConfirmed: record((current, txHash) =>
-              recordAction(current, { action, txHash, at: Date.now() })
-            ),
-            onReverted: record(dropSentAction)
-          });
+          // Once another Confirm took over or the modal closed, a late prompt is recorded on the card but leaves the modal alone.
+          const callbacks: TxCallbacks = withActionRecording(
+            () => (!nextRecovery || modalOwnerRef.current === callbacks ? callbacksRef.current : DETACHED),
+            {
+              // A Safe reports its Safe tx hash here; the tracker settles it if this flow can't.
+              onSent: record((current, txHash) =>
+                recordActionSent(current, { action, txHash, at: Date.now(), ...(isSafe && { safe: true }) })
+              ),
+              onConfirmed: record((current, txHash) =>
+                recordAction(current, { action, txHash, at: Date.now() })
+              ),
+              onReverted: record(dropSentAction)
+            }
+          );
           if (!nextRecovery) {
             void runMockLegs([action], () => callbacks);
             return;
           }
           legCallbacksRef.current = callbacks;
+          modalOwnerRef.current = callbacks;
           confirmPendingRef.current = true;
           sendReplayRef.current();
         },
