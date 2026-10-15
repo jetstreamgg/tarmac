@@ -25,7 +25,8 @@ const run = (
   deposits: DiscoveredDeposit[],
   progress: BridgeProgress | null,
   store = createPendingBridgeStore({ now: () => NOW }),
-  blockTime = vi.fn(async (): Promise<number | undefined> => MINED_AT)
+  blockTime = vi.fn(async (): Promise<number | undefined> => MINED_AT),
+  settled = new Set<string>()
 ) => {
   const checkProgress = vi.fn<BridgeAdapter['checkProgress']>(async () => progress);
   const added = recoverDeposits({
@@ -36,9 +37,10 @@ const run = (
     now: () => NOW,
     blockTime,
     adapter: { checkProgress },
-    context: { getClient: () => undefined }
+    context: { getClient: () => undefined },
+    settled
   });
-  return { store, added, checkProgress };
+  return { store, added, checkProgress, settled };
 };
 
 describe('recoverDeposits', () => {
@@ -79,6 +81,52 @@ describe('recoverDeposits', () => {
       expect(await added).toBe(0);
       expect(store.getSnapshot(SCOPE)).toEqual([]);
     }
+  });
+
+  it('never checks a deposit that arrived or moved no funds again', async () => {
+    for (const progress of [{ kind: 'arrived' }, { kind: 'failed', reason: 'reverted' }] as const) {
+      localStorage.clear();
+      const first = run([deposit({ txHash: '0xDEPOSIT' })], progress);
+      await first.added;
+      expect(first.settled).toEqual(new Set(['0xdeposit']));
+      const again = run([deposit()], progress, undefined, undefined, first.settled);
+      expect(await again.added).toBe(0);
+      expect(again.checkProgress).not.toHaveBeenCalled();
+    }
+  });
+
+  it('checks a deposit still under way again on the next run', async () => {
+    for (const progress of [null, { kind: 'ready', nextAction: 'redeem' }] as const) {
+      localStorage.clear();
+      const { added, settled } = run([deposit()], progress);
+      await added;
+      expect(settled.size).toBe(0);
+    }
+  });
+
+  it('checks the deposits in parallel', async () => {
+    let release = () => {};
+    const gate = new Promise<void>(resolve => (release = resolve));
+    const checkProgress = vi.fn<BridgeAdapter['checkProgress']>(async () => {
+      await gate;
+      return null;
+    });
+    const store = createPendingBridgeStore({ now: () => NOW });
+    const added = recoverDeposits({
+      store,
+      scope: SCOPE,
+      account: ACCOUNT,
+      deposits: [deposit(), deposit({ txHash: '0xsecond', to: 'base' })],
+      now: () => NOW,
+      blockTime: async () => MINED_AT,
+      adapter: { checkProgress },
+      context: { getClient: () => undefined },
+      settled: new Set()
+    });
+    await vi.waitFor(() => expect(checkProgress).toHaveBeenCalledTimes(2));
+    release();
+    expect(await added).toBe(2);
+    expect(store.getSnapshot(SCOPE)).toHaveLength(2);
   });
 
   it('keeps a recipient other than the account', async () => {
@@ -158,7 +206,8 @@ describe('recoverDeposits', () => {
       now: () => NOW,
       blockTime: async () => MINED_AT,
       adapter: { checkProgress },
-      context: { getClient: () => undefined }
+      context: { getClient: () => undefined },
+      settled: new Set()
     });
     expect(added).toBe(0);
     expect(store.getSnapshot(SCOPE)).toEqual([launched]);

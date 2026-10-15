@@ -11,10 +11,18 @@ import { usePendingScope } from './usePendingScope';
 
 const RECOVERY_INTERVAL_MS = 30 * 60_000;
 
+// Per scope: deposits found settled are never read again this session.
+const settledByScope = new Map<string, Set<string>>();
+const settledFor = (scope: string) => {
+  const settled = settledByScope.get(scope) ?? new Set<string>();
+  settledByScope.set(scope, settled);
+  return settled;
+};
+
 /**
  * Scans Ethereum for the connected account's recent native deposits and adds
  * the ones the store lacks, so the tracker picks them up. Runs on connect and
- * every 30 minutes.
+ * every 30 minutes; a deposit found arrived is not checked again.
  */
 export function useDepositRecovery() {
   const { account, scope, familyChainId } = usePendingScope();
@@ -52,7 +60,8 @@ export function useDepositRecovery() {
           }
         },
         adapter: getBridgeAdapter('native'),
-        context
+        context,
+        settled: settledFor(scope)
       });
     },
     enabled: !!scope && ethereumChainId !== undefined,

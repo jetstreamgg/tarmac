@@ -41,7 +41,8 @@ vi.mock('wagmi', async io => ({
         }
       : {
           readContract: ({ functionName }: { functionName: string }) =>
-            functionName === 'isOpen' ? mocks.isOpen() : mocks.fee()
+            functionName === 'isOpen' ? mocks.isOpen() : mocks.fee(),
+          getBlock: () => Promise.resolve({ baseFeePerGas: 2_000_000_000n })
         };
   }
 }));
@@ -199,6 +200,30 @@ describe('useNativeDepositLegs', () => {
     expect(mocks.fee).not.toHaveBeenCalled();
     expect(mocks.allowanceArgs.at(-1)?.contractAddress).toBeUndefined();
     expect(result.current).toMatchObject({ calls: [], ready: false, error: null });
+  });
+
+  it('prices a typed amount once it stops changing, and builds nothing for a stale price', async () => {
+    const { result, rerender } = renderLegs();
+    await settle();
+    expect(mocks.fee).toHaveBeenCalledTimes(1);
+    for (const typed of ['1', '12', '125']) {
+      rerender({ amount: parseEther(typed) });
+      await settle();
+    }
+    expect(mocks.fee).toHaveBeenCalledTimes(1);
+    expect(result.current).toMatchObject({ calls: [], ready: false, maxFee: undefined });
+    await waitFor(() => expect(result.current.calls).toHaveLength(2));
+    expect(mocks.fee).toHaveBeenCalledTimes(2);
+    expect((result.current.calls[1].args as readonly unknown[])[3]).toBe(parseEther('125'));
+  });
+
+  it('offers no fee once disabled, though the quote stays cached', async () => {
+    const { result, rerender } = renderLegs();
+    await settle();
+    expect(result.current.maxFee).toBeDefined();
+    rerender({ enabled: false });
+    await settle();
+    expect(result.current.maxFee).toBeUndefined();
   });
 
   it("reports each leg to the latest session's callbacks", async () => {

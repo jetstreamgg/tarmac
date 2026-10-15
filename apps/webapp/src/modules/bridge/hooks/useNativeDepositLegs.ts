@@ -4,6 +4,7 @@ import { getAddress, isAddress, type Address } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
 import { useTokenAllowance } from '@/hooks';
+import { useDebounce } from '@/hooks/ui/useDebounce';
 import { toError } from '@/hooks/helpers';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -56,14 +57,17 @@ export function useNativeDepositLegs({
   const l2 = usePublicClient({ chainId: arbitrum.id });
   const active = enabled && chainId !== undefined && !!from && !!to && amount > 0n;
   const isArbitrum = network === 'arbitrum';
+  // Priced once typing stops; a price for another amount is never used.
+  const quoteAmount = useDebounce(amount);
+  const quoteCurrent = quoteAmount === amount;
   // A disabled query still returns its cached result: an OP Stack deposit reads none of it.
   const quote = useQuery({
-    queryKey: ['arbitrum-deposit-quote', chainId, from, to, amount.toString()],
+    queryKey: ['arbitrum-deposit-quote', chainId, from, to, quoteAmount.toString()],
     queryFn: async () =>
       retryableQuote(
         await readRetryableEstimates({ l1: l1!, l2: l2!, from: from!, refundTo: to!, recipient: to!, amount })
       ),
-    enabled: active && isArbitrum && !!l1 && !!l2,
+    enabled: active && isArbitrum && quoteCurrent && !!l1 && !!l2,
     // Arbitrum's gas price moves: Review keeps a recent one.
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -82,7 +86,7 @@ export function useNativeDepositLegs({
     if (!isArbitrum)
       return opStackDepositCalls({ network, allowance: allowance.data, amount, recipient: to! });
     // Unspent ETH is refunded to the recipient on Arbitrum, as the gateway's own outboundTransfer does.
-    return quote.data
+    return quote.data && quoteCurrent
       ? arbitrumDepositCalls({
           allowance: allowance.data,
           amount,
@@ -91,7 +95,7 @@ export function useNativeDepositLegs({
           quote: quote.data
         })
       : [];
-  }, [active, isArbitrum, network, quote.data, allowance.data, amount, to]);
+  }, [active, isArbitrum, network, quote.data, quoteCurrent, allowance.data, amount, to]);
 
   const flow = useSequentialTransactionFlow({
     calls,
@@ -127,13 +131,14 @@ export function useNativeDepositLegs({
   return {
     calls,
     /** Arbitrum only: the most ETH the deposit sends for the ticket; the unspent part is refunded on Arbitrum. */
-    maxFee: isArbitrum ? quote.data?.value : undefined,
+    maxFee: active && isArbitrum && quoteCurrent ? quote.data?.value : undefined,
     needsApprove: calls.length > 1,
     /** Confirm can send the first leg. */
     ready: calls.length > 0 && flow.prepared,
     /** A read or the first leg's simulation failed. */
     error:
-      (active && ((isArbitrum && quote.error) || allowance.error)) || (calls.length > 0 ? flow.error : null),
+      (active && ((isArbitrum && quoteCurrent && quote.error) || allowance.error)) ||
+      (calls.length > 0 ? flow.error : null),
     execute,
     reset: flow.reset,
     refetchAllowance: allowance.mutate

@@ -24,7 +24,8 @@ const mayBeQueued = (stored: PendingBridge[], deposit: DiscoveredDeposit) =>
  * Adds the account's discovered deposits that the store lacks (storage
  * cleared, another browser), so one that needs a redeem or a replay is
  * offered before its ticket expires. A deposit that already arrived adds
- * nothing; an unknown progress adds it as pending. Returns how many it added.
+ * nothing and joins `settled`, which later runs skip; an unknown progress adds
+ * it as pending. Checks the deposits in parallel. Returns how many it added.
  */
 export async function recoverDeposits({
   store,
@@ -34,7 +35,8 @@ export async function recoverDeposits({
   now,
   blockTime,
   adapter,
-  context
+  context,
+  settled
 }: {
   store: Pick<PendingBridgeStore, 'getSnapshot' | 'upsert'>;
   scope: string;
@@ -45,11 +47,14 @@ export async function recoverDeposits({
   blockTime: (blockNumber: bigint) => Promise<number | undefined>;
   adapter: BridgeAdapter;
   context: Parameters<BridgeAdapter['checkProgress']>[2];
+  /** Lowercase hashes of deposits that arrived or moved no funds. */
+  settled: Set<string>;
 }): Promise<number> {
-  let added = 0;
-  for (const deposit of deposits) {
+  const recover = async (deposit: DiscoveredDeposit) => {
+    const hash = deposit.txHash.toLowerCase();
+    if (settled.has(hash)) return false;
     const stored = store.getSnapshot(scope);
-    if (isStored(stored, deposit) || mayBeQueued(stored, deposit)) continue;
+    if (isStored(stored, deposit) || mayBeQueued(stored, deposit)) return false;
     const startedAt = (await blockTime(deposit.blockNumber)) ?? now();
     const bridge = createPendingBridge({
       account,
@@ -62,11 +67,14 @@ export async function recoverDeposits({
       now: startedAt
     });
     const progress = await adapter.checkProgress(bridge, now(), context);
-    if (progress?.kind === 'arrived' || progress?.kind === 'failed') continue;
+    if (progress?.kind === 'arrived' || progress?.kind === 'failed') {
+      settled.add(hash);
+      return false;
+    }
     // Read again: the launch or another tab may have stored it during the reads.
-    if (isStored(store.getSnapshot(scope), deposit)) continue;
+    if (isStored(store.getSnapshot(scope), deposit)) return false;
     store.upsert(scope, progress ? applyProgress(bridge, progress, now()) : bridge);
-    added += 1;
-  }
-  return added;
+    return true;
+  };
+  return (await Promise.all(deposits.map(recover))).filter(Boolean).length;
 }
