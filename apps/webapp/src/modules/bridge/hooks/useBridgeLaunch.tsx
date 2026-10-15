@@ -15,6 +15,7 @@ import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeRev
 import { formatMaxEthFee } from '../components/bridgeModalRows';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
+import { sendsToOther } from '../model/recipient';
 import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
@@ -255,6 +256,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     enabled: isNativeDeposit && deposit.calls.length > 0
   });
   const networkFeeText = networkFee?.formatted ?? NO_VALUE;
+  // Arbitrum refunds a contract's unused fee to its L2 alias, which a Safe reaches only through Ethereum.
+  const aliasedRefund = isSafe && depositTo === 'arbitrum' && !sendsToOther(recipient, account);
   const transactionContent = useMemo(
     () =>
       route && (
@@ -265,9 +268,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           route={route}
           networkFee={networkFeeText}
           bridgeFee={bridgeFee}
+          aliasedRefund={aliasedRefund}
         />
       ),
-    [amount, from, to, route, networkFeeText, bridgeFee]
+    [amount, from, to, route, networkFeeText, bridgeFee, aliasedRefund]
   );
   const transactionScreenContent = useMemo(
     () => <BridgeTransferHero amount={amount} from={from} to={to} testId="bridge-modal-screen-summary" />,

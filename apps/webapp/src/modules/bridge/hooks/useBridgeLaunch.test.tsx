@@ -660,6 +660,28 @@ describe('useBridgeLaunch Confirm gate', () => {
     });
   });
 
+  it.each([
+    ['a Safe to Arbitrum', true, 'arbitrum', undefined, true],
+    ['a Safe to Base', true, 'base', undefined, false],
+    ['a wallet to Arbitrum', false, 'arbitrum', undefined, false],
+    ['a Safe to another recipient on Arbitrum', true, 'arbitrum', OWNER, false]
+  ] as const)(
+    'Review from %s says whether the unused fee is refunded to an aliased address',
+    async (_, safe, to, recipient, shown) => {
+      mocks.safe = safe
+        ? { [MAINNET]: 200, [BASE]: 200, ['safe-transaction-arbitrum.safe.global']: 200 }
+        : {};
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      act(() => view.result.current.form.selectTo(to));
+      if (recipient) act(() => view.result.current.form.setRecipient(recipient));
+      await settle();
+      act(() => view.result.current.launch());
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { aliasedRefund?: boolean } };
+      expect(!!content.props.aliasedRefund).toBe(shown);
+    }
+  );
+
   describe('an Ethereum to OP Stack deposit', () => {
     async function reviewDeposit(to: 'base' | 'optimism' | 'unichain') {
       const view = renderBridge();

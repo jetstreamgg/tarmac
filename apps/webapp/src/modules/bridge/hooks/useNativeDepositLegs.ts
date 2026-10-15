@@ -28,7 +28,7 @@ const toAddress = (value: string | undefined): Address | undefined =>
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-/** The hash a Safe tx executed under, polled like `useWaitForSafeTxHash`: every 2 s for 5 minutes, while `isWanted`. */
+/** The hash a Safe tx executed under, polled like `useWaitForSafeTxHash`: every 2 s up to 150 times (about 5 minutes), while `isWanted`. */
 async function safeExecutedHash(chainId: number | undefined, safeTxHash: string, isWanted: () => boolean) {
   const base = chainId === undefined ? undefined : SAFE_TRANSACTION_SERVICE_URL[chainId];
   for (let attempt = 0; base && attempt < 150 && isWanted(); attempt++) {
@@ -52,7 +52,7 @@ async function safeExecutedHash(chainId: number | undefined, safeTxHash: string,
  * signed after its run ended or after a later Confirm reports its hash and
  * any sped-up hash to the callbacks `getCallbacks` returned when it opened,
  * and its receipt while they are still current (inside the Safe App, only
- * once the Safe executes it within 5 minutes); a late approve or rejection
+ * once the Safe executes it within about 5 minutes); a late approve or rejection
  * is dropped.
  */
 export function useNativeDepositLegs({
