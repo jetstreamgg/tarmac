@@ -33,7 +33,8 @@ export function useIsBatchSupported(): ReadHook & {
   });
 
   const atomicCapabilityStatus = capabilities?.[chainId]?.atomic?.status;
-  // The pre-v2 draft of EIP-5792 (older Safe versions only answer with this one)
+  // The pre-v2 draft of EIP-5792. The Safe connector (`safe-apps-provider`) answers with this
+  // one only, so the fallback below is what keeps Safe bundling.
   const atomicBatchSupported: boolean | undefined = capabilities?.[chainId]?.atomicBatch?.supported;
 
   // When the wallet reports `atomic`, it decides. Ambire answers `atomicBatch: true` for every

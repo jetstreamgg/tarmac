@@ -34,11 +34,12 @@ describe('useIsBatchSupported', () => {
     expect(render({ atomicBatch: { supported: true }, atomic: { status: 'unsupported' } })).toBe(false);
   });
 
-  it('keeps bundling for a wallet that reports both as supported (Safe)', () => {
+  it('keeps bundling for a wallet that reports both as supported (Safe{Wallet} over WalletConnect)', () => {
     expect(render({ atomicBatch: { supported: true }, atomic: { status: 'supported' } })).toBe(true);
   });
 
-  it('falls back to `atomicBatch` when the wallet does not report `atomic`', () => {
+  it('falls back to `atomicBatch` when the wallet does not report `atomic` (the Safe connector)', () => {
+    // `safe-apps-provider`'s exact answer: removing the fallback stops every Safe user bundling.
     expect(render({ atomicBatch: { supported: true } })).toBe(true);
     expect(render({ atomicBatch: { supported: false } })).toBe(false);
   });

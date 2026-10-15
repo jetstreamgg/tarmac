@@ -203,4 +203,12 @@ describe('useSendBatchTransactionFlow — settling', () => {
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
   });
+
+  it('reports the reverted leg of a partially failed bundle', () => {
+    const { onSuccess, onError } = settle('failure', ['success', 'reverted']);
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][1]).toBe('0x2');
+  });
 });
