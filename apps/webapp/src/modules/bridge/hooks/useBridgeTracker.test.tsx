@@ -80,11 +80,20 @@ describe('useBridgeTracker', () => {
       'readContracts',
       { contracts: [{ chainId, functionName: 'balanceOf' }] }
     ];
-    client.setQueryData(balanceOn(1), [1n, 18]);
-    client.setQueryData(balanceOn(8453), [1n, 18]);
+    // The app's multi-token balances, keyed by a chain-to-tokens map.
+    const tokensOn = (...chainIds: number[]) => [
+      'token-balances',
+      mocks.address,
+      Object.fromEntries(chainIds.map(chainId => [chainId, [{ symbol: 'USDS' }]]))
+    ];
+    for (const key of [balanceOn(1), balanceOn(8453), tokensOn(1), tokensOn(1, 8453), tokensOn(8453)])
+      client.setQueryData(key, [1n, 18]);
     renderTracker(client);
     await waitFor(() => expect(client.getQueryState(balanceOn(1))?.isInvalidated).toBe(true));
+    expect(client.getQueryState(tokensOn(1))?.isInvalidated).toBe(true);
+    expect(client.getQueryState(tokensOn(1, 8453))?.isInvalidated).toBe(true);
     expect(client.getQueryState(balanceOn(8453))?.isInvalidated).toBe(false);
+    expect(client.getQueryState(tokensOn(8453))?.isInvalidated).toBe(false);
   });
 
   it('asks the Safe service on the source chain for a queued Safe bridge', async () => {

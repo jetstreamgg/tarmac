@@ -1,4 +1,4 @@
-import { useQueries, useQueryClient, type Query } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
 import { isSettled, pollIntervalMs } from '../model/pendingTransitions';
@@ -8,22 +8,9 @@ import { readSafeActionProgress, readSafeTxProgress } from '../adapters/safe';
 import type { AdapterContext } from '../adapters/types';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { trackBridge } from '../tracking/trackBridge';
+import { readsBalanceOn } from './balanceQueries';
 import { useBridgeHistory } from './useBridgeHistory';
 import { usePendingScope } from './usePendingScope';
-
-/** Token balance reads on a chain; a bridge that arrived there makes them stale. */
-export const readsBalanceOn =
-  (chainId: number) =>
-  ({ queryKey }: Pick<Query, 'queryKey'>): boolean => {
-    const [kind, params] = queryKey as [
-      unknown,
-      { contracts?: { chainId?: number; functionName?: string }[] }?
-    ];
-    return (
-      kind === 'readContracts' &&
-      !!params?.contracts?.some(read => read.chainId === chainId && read.functionName === 'balanceOf')
-    );
-  };
 
 /**
  * Polls every active bridge of the connected account, on any page, so a
