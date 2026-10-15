@@ -6,6 +6,7 @@
 
 import { plural, t } from '@lingui/core/macro';
 import { getAddress, isAddress } from 'viem';
+import { arbitrum } from 'viem/chains';
 import { NO_VALUE } from '@/lib/constants';
 import { formatAddress } from '@/utils';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
@@ -13,6 +14,7 @@ import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
+import { DAY_MINUTES } from '../model/resolveRoute';
 import { REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
@@ -152,7 +154,6 @@ export function buildPendingBridgeRows(
 
 /** Arbitrum's tool to check and redeem a ticket from any wallet. */
 const ARBITRUM_RETRYABLES_URL = 'https://portal.arbitrum.io/build/retryables';
-const ARBITRUM_ONE_CHAIN_ID = 42161;
 export const SKY_DISCORD_URL = 'https://discord.gg/skyecosystem';
 
 /** A note under an Ethereum deposit card that needs a redeem or a replay, or whose Arbitrum ticket expired. */
@@ -169,8 +170,7 @@ export type PendingBridgeNote =
 
 // The tool looks the ticket up by the Ethereum tx that created it.
 const retryablesHref = (txHash: string | undefined) =>
-  txHash &&
-  `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(ARBITRUM_ONE_CHAIN_ID), tx: txHash })}`;
+  txHash && `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(arbitrum.id), tx: txHash })}`;
 
 export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
   if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum') return undefined;
@@ -193,8 +193,8 @@ export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBr
 
 /** "6 days 4 hours", "5 hours 12 minutes", "3 minutes", floored. */
 export const formatTimeLeft = (minutes: number): string => {
-  const days = Math.floor(minutes / (24 * 60));
-  const hours = Math.floor((minutes % (24 * 60)) / 60);
+  const days = Math.floor(minutes / DAY_MINUTES);
+  const hours = Math.floor((minutes % DAY_MINUTES) / 60);
   const rest = minutes % 60;
   const dayWords = plural(days, { one: '# day', other: '# days' });
   const hourWords = plural(hours, { one: '# hour', other: '# hours' });

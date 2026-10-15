@@ -5,10 +5,10 @@ import { getPublicClient } from '@wagmi/core';
 import { discoverNativeDeposits } from '../adapters/nativeDeposit/discovery';
 import { getBridgeAdapter } from '../adapters/registry';
 import { executedSafeTxHashes } from '../adapters/safe';
-import type { AdapterContext } from '../adapters/types';
 import { bridgeChainId } from '../model/networks';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { recoverDeposits } from '../tracking/recoverDeposits';
+import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
 
 const RECOVERY_INTERVAL_MS = 30 * 60_000;
@@ -40,12 +40,6 @@ export function useDepositRecovery() {
       if (!account || !scope || ethereumChainId === undefined) return { complete: true };
       const l1 = getPublicClient(config, { chainId: ethereumChainId });
       if (!l1) return { complete: true };
-      const context: AdapterContext = {
-        getClient: network => {
-          const chainId = bridgeChainId(network, familyChainId);
-          return chainId === undefined ? undefined : getPublicClient(config, { chainId });
-        }
-      };
       const { deposits, complete } = await discoverNativeDeposits({
         l1,
         account,
@@ -65,7 +59,7 @@ export function useDepositRecovery() {
           }
         },
         adapter: getBridgeAdapter('native'),
-        context,
+        context: wagmiAdapterContext(config, familyChainId),
         settled: settledFor(scope),
         executedSafeTxHashes: async txHash => {
           try {

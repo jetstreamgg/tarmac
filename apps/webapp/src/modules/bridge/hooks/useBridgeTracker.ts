@@ -1,14 +1,13 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useConfig } from 'wagmi';
-import { getPublicClient } from '@wagmi/core';
 import { isSettled, pollIntervalMs } from '../model/pendingTransitions';
 import { bridgeChainId } from '../model/networks';
 import { getBridgeAdapter } from '../adapters/registry';
 import { readSafeActionProgress, readSafeTxProgress } from '../adapters/safe';
-import type { AdapterContext } from '../adapters/types';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { trackBridge } from '../tracking/trackBridge';
 import { readsBalanceOn } from './balanceQueries';
+import { wagmiAdapterContext } from './adapterContext';
 import { useBridgeHistory } from './useBridgeHistory';
 import { usePendingScope } from './usePendingScope';
 
@@ -20,12 +19,7 @@ export function useBridgeTracker() {
   const { scope, familyChainId } = usePendingScope();
   const config = useConfig();
   const queryClient = useQueryClient();
-  const context: AdapterContext = {
-    getClient: network => {
-      const chainId = bridgeChainId(network, familyChainId);
-      return chainId === undefined ? undefined : getPublicClient(config, { chainId });
-    }
-  };
+  const context = wagmiAdapterContext(config, familyChainId);
   const active = useBridgeHistory().filter(bridge => !isSettled(bridge));
 
   useQueries({

@@ -76,7 +76,7 @@ export const ARBITRUM_DEPOSIT = {
   l1Router: '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef',
   l2Router: '0x5288c571Fd7aD117beA99bF60FE0846C4E84F933',
   /** ArbOS chain id, part of every ticket id (a fork keeps it). */
-  chainId: 42161n
+  chainId: BigInt(arbitrum.id)
 } as const satisfies Record<string, Address | bigint>;
 
 /** Governance's switch on the L1 bridge and gateway: deposits need it at exactly 1. */
