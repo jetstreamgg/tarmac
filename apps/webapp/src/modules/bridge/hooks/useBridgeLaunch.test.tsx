@@ -24,6 +24,8 @@ const mocks = vi.hoisted(() => ({
   isConnected: true,
   balance: undefined as bigint | undefined,
   balanceLoading: false,
+  bridgeOpen: 1n,
+  refetchAllowance: vi.fn(),
   safe: {} as Record<string, SafeReply>,
   isModalOpen: false,
   launched: [] as TransactionConfig[],
@@ -58,8 +60,8 @@ vi.mock('wagmi', async io => ({
   }),
   useChainId: () => mocks.appChainId,
   useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id })),
-  // The L1 bridges are open.
-  useReadContract: () => ({ status: 'success', data: 1n })
+  // The L1 bridges' isOpen.
+  useReadContract: () => ({ status: 'success', data: mocks.bridgeOpen })
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
@@ -105,7 +107,16 @@ vi.mock('./useNativeDepositLegs', () => ({
   useNativeDepositLegs: (args: (typeof mocks.deposit.args)[number]) => {
     mocks.deposit.args.push(args);
     const { ready, needsApprove, maxFee, error, execute, calls } = mocks.deposit;
-    return { calls, ready, needsApprove, maxFee, error, execute, reset: vi.fn(), refetchAllowance: vi.fn() };
+    return {
+      calls,
+      ready,
+      needsApprove,
+      maxFee,
+      error,
+      execute,
+      reset: vi.fn(),
+      refetchAllowance: mocks.refetchAllowance
+    };
   }
 }));
 vi.mock('../components/BridgeReviewContent', () => ({
@@ -133,13 +144,14 @@ function renderBridge() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
-  return renderHook(
+  const view = renderHook(
     () => {
       const form = useBridgeForm();
       return { form, ...useBridgeLaunch(form) };
     },
     { wrapper }
   );
+  return Object.assign(view, { queryClient });
 }
 
 // Lets the Safe service replies land and the hooks re-render.
@@ -183,6 +195,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       isConnected: true,
       balance: 10n * ONE,
       balanceLoading: false,
+      bridgeOpen: 1n,
       safe: {},
       isModalOpen: false,
       launched: [],
@@ -202,6 +215,7 @@ describe('useBridgeLaunch Confirm gate', () => {
     mocks.deposit.execute.mockClear();
     mocks.onError.mockClear();
     mocks.onSuccess.mockClear();
+    mocks.refetchAllowance.mockClear();
   });
 
   afterEach(() => {
@@ -576,6 +590,39 @@ describe('useBridgeLaunch Confirm gate', () => {
         to: 'arbitrum',
         amount: ONE
       });
+    });
+
+    it.each([
+      ['the balance reloads', () => (mocks.balanceLoading = true)],
+      ['the bridge closes', () => (mocks.bridgeOpen = 0n)]
+    ])('keeps the started legs running when %s between the approve and the deposit', async (_, change) => {
+      const view = await reviewDeposit();
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacks = mocks.deposit.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'approve' });
+      callbacks.onStart('0xarbapprove');
+      change();
+      view.rerender();
+      await settle();
+      expect(view.result.current.form.reviewBlocked).toBe(true);
+      expect(mocks.deposit.args.at(-1)).toMatchObject({ enabled: true, to: 'arbitrum', chainId: 1 });
+
+      // The run is over: the legs follow the form again, on the allowance and balances the deposit left.
+      const tokensOn = (chainId: number) => [
+        'token-balances',
+        '0xowner',
+        { [chainId]: [{ symbol: 'USDS' }] }
+      ];
+      view.queryClient.setQueryData(tokensOn(1), []);
+      view.queryClient.setQueryData(tokensOn(42161), []);
+      expect(mocks.refetchAllowance).not.toHaveBeenCalled();
+      act(() => callbacks.onSuccess('0xarbdeposit'));
+      await settle();
+      expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
+      expect(mocks.refetchAllowance).toHaveBeenCalled();
+      expect(view.queryClient.getQueryState(tokensOn(1))?.isInvalidated).toBe(true);
+      // Nothing arrived on Arbitrum yet: the tracker refreshes it on arrival.
+      expect(view.queryClient.getQueryState(tokensOn(42161))?.isInvalidated).toBe(false);
     });
 
     it('drops the Approve step when the allowance covers the amount', async () => {

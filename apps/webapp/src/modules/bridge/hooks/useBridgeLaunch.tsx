@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useChains } from 'wagmi';
+import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
 import { useIsSafeWallet, useNetworkFee } from '@/hooks';
@@ -20,9 +21,10 @@ import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withSourceRecording } from '../tracking/sourceRecording';
 import type { BridgeFormModel } from './useBridgeForm';
-import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
+import { isNativeDepositNetwork, type NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { nativeDepositFunction, useNativeDepositLegs } from './useNativeDepositLegs';
 import { usePendingScope } from './usePendingScope';
+import { readsBalanceOn } from './balanceQueries';
 
 /**
  * The seam between the Bridge tab and `TransactionContext.launch()` (mirrors
@@ -36,6 +38,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const sessionId = useId();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
+  const queryClient = useQueryClient();
   const { account, scope, familyChainId } = usePendingScope();
   const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { amount, from, to, route, recipient } = form;
@@ -46,13 +49,16 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     chainIds: chains.map(chain => chain.id)
   });
 
+  // The deposit a Confirm started: its later legs run even if the form stops passing Review.
+  const [runningTo, setRunningTo] = useState<NativeDepositNetwork | undefined>(undefined);
   const depositTo =
-    route?.kind === 'native' && from === 'ethereum' && isNativeDepositNetwork(to) ? to : undefined;
+    runningTo ??
+    (route?.kind === 'native' && from === 'ethereum' && isNativeDepositNetwork(to) ? to : undefined);
   const isNativeDeposit = depositTo !== undefined;
   // The session callbacks of the Confirm that started the legs.
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
   const deposit = useNativeDepositLegs({
-    enabled: isNativeDeposit && form.isConnected && !form.reviewBlocked,
+    enabled: isNativeDeposit && form.isConnected && (runningTo !== undefined || !form.reviewBlocked),
     // Any network while disabled.
     to: depositTo ?? 'arbitrum',
     chainId: pinnedChainId,
@@ -61,7 +67,12 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     amount,
     getCallbacks: () => legCallbacksRef.current
   });
-  useResetPausedRunOnClose(deposit.reset, deposit.refetchAllowance);
+  const { reset: resetDeposit } = deposit;
+  const resetRun = useCallback(() => {
+    setRunningTo(undefined);
+    resetDeposit();
+  }, [resetDeposit]);
+  useResetPausedRunOnClose(resetRun, deposit.refetchAllowance);
 
   // Only the source-side legs run here; destination actions are their own modal.
   const routeActions = useMemo(
@@ -166,11 +177,17 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         ...recording,
         onSuccess: (hash, blockNumber) => {
           unresolvedRef.current = undefined;
+          setRunningTo(undefined);
+          // The next deposit's approve depends on what this one spent.
+          deposit.refetchAllowance();
+          if (pinnedChainId !== undefined)
+            void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
           recording.onSuccess(hash, blockNumber);
         }
       };
-      if (isNativeDeposit) {
+      if (depositTo) {
         legCallbacksRef.current = callbacks;
+        setRunningTo(depositTo);
         deposit.execute();
       } else void runMockLegs(sourceActions, () => callbacks);
     };

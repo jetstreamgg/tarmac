@@ -131,7 +131,7 @@ const launchable = (bridge: PendingBridge, action: PendingBridgeNextAction) =>
  * the user has to act in the wallet (a Safe switches networks in Safe).
  */
 export function useDestinationActionLaunch() {
-  const { launch: launchModal, txCallbacks } = useTransaction();
+  const { launch: launchModal, txCallbacks, isModalOpen } = useTransaction();
   const sessionId = useId();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
@@ -186,6 +186,11 @@ export function useDestinationActionLaunch() {
     callbacksRef.current = txCallbacks;
     sendReplayRef.current = () => {
       if (!confirmPendingRef.current) return;
+      // A closed modal drops the pending Confirm: nothing may reach the wallet behind it.
+      if (!isModalOpen) {
+        confirmPendingRef.current = false;
+        return;
+      }
       if (legs.ready) {
         confirmPendingRef.current = false;
         legs.execute();
@@ -195,7 +200,7 @@ export function useDestinationActionLaunch() {
       }
     };
   });
-  useEffect(() => sendReplayRef.current(), [legs.ready, legs.error]);
+  useEffect(() => sendReplayRef.current(), [legs.ready, legs.error, isModalOpen]);
 
   const pinChainId = useCallback(
     (bridge: PendingBridge) =>

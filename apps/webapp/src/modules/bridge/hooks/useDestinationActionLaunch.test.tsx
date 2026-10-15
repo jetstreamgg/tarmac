@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   canSwitchChain: true,
   switches: [] as { chainId: number; onSuccess?: () => void }[],
   launched: [] as TransactionConfig[],
+  isModalOpen: true,
   session: {} as TxCallbacks,
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[],
   replay: {
@@ -65,6 +66,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: (config: TransactionConfig) => mocks.launched.push(config),
     txCallbacks: mocks.session,
+    isModalOpen: mocks.isModalOpen,
     isMinimized: false,
     activeSessionId: undefined,
     restore: vi.fn()
@@ -184,6 +186,7 @@ describe('useDestinationActionLaunch', () => {
     mocks.switches = [];
     mocks.isSafe = false;
     mocks.launched = [];
+    mocks.isModalOpen = true;
     mocks.session = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
     mocks.legs = [];
     mocks.replay = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
@@ -372,6 +375,19 @@ describe('useDestinationActionLaunch', () => {
       rerender();
       expect(mocks.replay.execute).toHaveBeenCalledTimes(1);
       expect(mocks.legs).toHaveLength(0);
+    });
+
+    it('sends nothing once the modal closed before the replay was prepared', () => {
+      const { rerender } = launchReplay();
+      act(() => mocks.launched[0].onConfirm!());
+      mocks.isModalOpen = false;
+      rerender();
+      mocks.replay.ready = true;
+      rerender();
+      mocks.isModalOpen = true;
+      rerender();
+      expect(mocks.replay.execute).not.toHaveBeenCalled();
+      expect(mocks.session.onError).not.toHaveBeenCalled();
     });
 
     it('sends at once when already prepared', () => {
