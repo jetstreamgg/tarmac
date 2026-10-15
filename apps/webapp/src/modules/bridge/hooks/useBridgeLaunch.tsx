@@ -19,12 +19,20 @@ import { applyProgress, createPendingBridge } from '../model/pendingTransitions'
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
+import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { withSourceRecording } from '../tracking/sourceRecording';
 import type { BridgeFormModel } from './useBridgeForm';
 import { isNativeDepositNetwork, type NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { nativeDepositFunction, useNativeDepositLegs } from './useNativeDepositLegs';
 import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
+
+const DETACHED: TxCallbacks = {
+  onMutate: () => {},
+  onStart: () => {},
+  onSuccess: () => {},
+  onError: () => {}
+};
 
 /**
  * The seam between the Bridge tab and `TransactionContext.launch()` (mirrors
@@ -38,6 +46,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const sessionId = useId();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
+  const isSafeApp = useIsSafeApp();
   const queryClient = useQueryClient();
   const { account, scope, familyChainId } = usePendingScope();
   const { locked, restore } = useMinimizedSessionLock(sessionId);
@@ -65,14 +74,15 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     account,
     recipient,
     amount,
+    isSafeApp,
     getCallbacks: () => legCallbacksRef.current
   });
-  const { reset: resetDeposit } = deposit;
+  const { reset: resetDeposit, refetchAllowance } = deposit;
   const resetRun = useCallback(() => {
     setRunningTo(undefined);
     resetDeposit();
   }, [resetDeposit]);
-  useResetPausedRunOnClose(resetRun, deposit.refetchAllowance);
+  useResetPausedRunOnClose(resetRun, refetchAllowance);
 
   // Only the source-side legs run here; destination actions are their own modal.
   const routeActions = useMemo(
@@ -101,12 +111,32 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const executeRef = useRef<() => void>(() => undefined);
   // The chain the open modal guards; the source legs must run on it.
   const launchedChainIdRef = useRef<number | undefined>(undefined);
-  // Set once this Review's bridge leg is broadcast or queued; Retry must not send it again.
+  // The account the Review was opened for; only it may sign the legs.
+  const launchedAccountRef = useRef<string | undefined>(undefined);
+  // Read at launch: connect-then-act calls a launch from before the wallet connected.
+  const accountRef = useRef(account);
+  const scopeRef = useRef(scope);
+  // Set once a bridge leg from here is broadcast, queued or executed, unless a later Review confirmed; Confirm and Retry then send nothing.
   const sentRef = useRef(false);
+  // Advanced by each Review: a prompt from an earlier Review signed late marks this one sent only until it confirms.
+  const launchRef = useRef(0);
+  // The Review of the latest Confirm.
+  const confirmedLaunchRef = useRef(0);
+  // A Confirm whose bridge leg wasn't sent ends with its modal, so the next Review can't resume it.
+  const wasOpenRef = useRef(isModalOpen);
+  useEffect(() => {
+    const closed = wasOpenRef.current && !isModalOpen;
+    wasOpenRef.current = isModalOpen;
+    if (!closed || runningTo === undefined || sentRef.current) return;
+    resetRun();
+    refetchAllowance();
+  }, [isModalOpen, runningTo, resetRun, refetchAllowance]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
   const unresolvedRef = useRef<string | undefined>(undefined);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
+    accountRef.current = account;
+    scopeRef.current = scope;
     executeRef.current = () => {
       if (
         !form.isConnected ||
@@ -134,24 +164,42 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         callbacksRef.current.onError(new Error('The source network changed after Review.'));
         return;
       }
+      if (account !== launchedAccountRef.current) {
+        callbacksRef.current.onError(new Error('The wallet account changed after Review.'));
+        return;
+      }
       // Snapshot at Confirm: the form may change or reset before the legs finish.
       const record = { account, amount, from, to, recipient, route };
-      const recording = withSourceRecording(() => callbacksRef.current, {
+      // A prompt this Confirm opened can be signed after a later Confirm: the modal hears from it only while it is current.
+      const isCurrent = () => !depositTo || legCallbacksRef.current === callbacks;
+      const launchId = launchRef.current;
+      confirmedLaunchRef.current = launchId;
+      // Unless a later Review already confirmed, it marks the bridge sent; a Retry of its own Review then ends and the modal follows this send.
+      const markSent = (txHash?: string) => {
+        if (confirmedLaunchRef.current > launchId) return;
+        const first = !sentRef.current;
+        sentRef.current = true;
+        if (txHash) unresolvedRef.current = txHash;
+        if (first && !isCurrent()) {
+          deposit.stop();
+          legCallbacksRef.current = callbacks;
+        }
+      };
+      const recording = withSourceRecording(() => (isCurrent() ? callbacksRef.current : DETACHED), {
         isSafe,
         // The mock names each leg after its step.
         bridgeFunctionName: depositTo ? nativeDepositFunction(depositTo) : 'send',
         onSent: txHash => {
-          sentRef.current = true;
-          unresolvedRef.current = txHash;
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
+          markSent(txHash);
         },
         onQueued: safeTxHash => {
           // Not unresolved: it waits for co-signers, and a Safe may queue several bridges.
-          sentRef.current = true;
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() }));
+          markSent();
         },
         onExecuted: (txHash, safeTxHash) => {
-          sentRef.current = true;
+          markSent();
           if (safeTxHash) {
             // A no-op unless the queued bridge was dismissed: it executed anyway, so it comes back.
             pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() }));
@@ -166,8 +214,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash })),
         // The funds never left, so Retry may send again.
         onFailed: (txHash, reason) => {
-          sentRef.current = false;
-          unresolvedRef.current = undefined;
+          if (unresolvedRef.current === txHash) {
+            sentRef.current = false;
+            unresolvedRef.current = undefined;
+          }
           pendingBridgeStore.update(scope, txHash, bridge =>
             applyProgress(bridge, { kind: 'failed', reason }, Date.now())
           );
@@ -228,11 +278,14 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const launch = useCallback(() => {
     // No chain to guard: an empty guard would let the legs run on any chain.
     if (pinnedChainId === undefined) return;
+    launchRef.current += 1;
     launchedChainIdRef.current = pinnedChainId;
+    launchedAccountRef.current = accountRef.current;
     // A send whose outcome is unknown (a failed receipt wait) may still land: wait for its card to settle.
+    const launchScope = scopeRef.current;
     const unresolved =
-      unresolvedRef.current && scope
-        ? pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.id === unresolvedRef.current)
+      unresolvedRef.current && launchScope
+        ? pendingBridgeStore.getSnapshot(launchScope).find(bridge => bridge.id === unresolvedRef.current)
         : undefined;
     if (unresolved?.status !== 'pending') {
       unresolvedRef.current = undefined;
@@ -272,8 +325,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     onSuccess,
     sessionId,
     amount,
-    pinnedChainId,
-    scope
+    pinnedChainId
   ]);
 
   useEffect(() => {
