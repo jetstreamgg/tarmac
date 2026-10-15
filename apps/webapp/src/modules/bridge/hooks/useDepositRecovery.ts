@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import type { Hex } from 'viem';
 import { useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
 import { discoverNativeDeposits } from '../adapters/nativeDeposit/discovery';
 import { getBridgeAdapter } from '../adapters/registry';
+import { executedSafeTxHashes } from '../adapters/safe';
 import type { AdapterContext } from '../adapters/types';
 import { bridgeChainId } from '../model/networks';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -61,7 +63,17 @@ export function useDepositRecovery() {
         },
         adapter: getBridgeAdapter('native'),
         context,
-        settled: settledFor(scope)
+        settled: settledFor(scope),
+        executedSafeTxHashes: async txHash => {
+          try {
+            return executedSafeTxHashes(
+              (await l1.getTransactionReceipt({ hash: txHash as Hex })).logs,
+              account
+            );
+          } catch {
+            return undefined;
+          }
+        }
       });
     },
     enabled: !!scope && ethereumChainId !== undefined,

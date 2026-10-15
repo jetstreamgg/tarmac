@@ -250,3 +250,83 @@ describe('recoverDeposits', () => {
     expect(store.getSnapshot(SCOPE)).toEqual([launched]);
   });
 });
+
+describe('recoverDeposits, with the Safe transactions each deposit executed', () => {
+  beforeEach(() => localStorage.clear());
+
+  const queued = () => {
+    const store = createPendingBridgeStore({ now: () => NOW });
+    store.upsert(
+      SCOPE,
+      createPendingBridge({
+        account: ACCOUNT,
+        amount: deposit().amount,
+        from: 'ethereum',
+        to: 'arbitrum',
+        route: nativeDepositRoute('arbitrum'),
+        safeTxHash: '0xSAFE',
+        now: MINED_AT - 10 * 60_000
+      })
+    );
+    return store;
+  };
+  const recover = (
+    store: ReturnType<typeof queued>,
+    deposits: DiscoveredDeposit[],
+    executed: (txHash: string) => Promise<string[] | undefined>
+  ) =>
+    recoverDeposits({
+      store,
+      scope: SCOPE,
+      account: ACCOUNT,
+      deposits,
+      now: () => NOW,
+      blockTime: async () => MINED_AT,
+      adapter: { checkProgress: async () => ({ kind: 'ready', nextAction: 'redeem' }) },
+      context: { getClient: () => undefined },
+      settled: new Set(),
+      executedSafeTxHashes: executed
+    });
+
+  it('adds a deposit that executed another Safe transaction than the queued bridge', async () => {
+    const store = queued();
+    expect(await recover(store, [deposit()], async () => ['0xother'])).toBe(1);
+    expect(store.getSnapshot(SCOPE).map(bridge => bridge.txHash)).toContain('0xdeposit');
+  });
+
+  it('lets the queued bridge cover the next deposit when the first executed another Safe transaction', async () => {
+    const store = queued();
+    const deposits = [deposit(), deposit({ txHash: '0xsecond', blockNumber: 101n })];
+    const executed = async (txHash: string) => (txHash === '0xdeposit' ? ['0xother'] : ['0xsafe']);
+    expect(await recover(store, deposits, executed)).toBe(1);
+    expect(store.getSnapshot(SCOPE).map(bridge => bridge.txHash)).toContain('0xdeposit');
+  });
+
+  it("still skips the deposit that executed the queued bridge's Safe transaction", async () => {
+    expect(await recover(queued(), [deposit()], async () => ['0xsafe'])).toBe(0);
+  });
+
+  it("still skips a deposit whose Safe transactions can't be read", async () => {
+    expect(await recover(queued(), [deposit()], async () => undefined)).toBe(0);
+    expect(await recover(queued(), [deposit()], async () => [])).toBe(0);
+  });
+
+  it("gives the queued bridge its own deposit over an earlier one whose Safe transactions can't be read", async () => {
+    const store = queued();
+    const deposits = [deposit(), deposit({ txHash: '0xsecond', blockNumber: 101n })];
+    const executed = async (txHash: string) => (txHash === '0xdeposit' ? undefined : ['0xsafe']);
+    expect(await recover(store, deposits, executed)).toBe(1);
+    expect(
+      store
+        .getSnapshot(SCOPE)
+        .filter(bridge => bridge.txHash)
+        .map(bridge => bridge.txHash)
+    ).toEqual(['0xdeposit']);
+  });
+
+  it('reads only the deposits a queued bridge may be', async () => {
+    const executed = vi.fn(async () => ['0xother']);
+    await recover(queued(), [deposit({ to: 'base' })], executed);
+    expect(executed).not.toHaveBeenCalled();
+  });
+});

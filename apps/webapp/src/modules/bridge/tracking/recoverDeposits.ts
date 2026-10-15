@@ -23,6 +23,9 @@ const mayBeQueued = (bridge: PendingBridge, deposit: DiscoveredDeposit, minedAt:
   bridge.amount === deposit.amount &&
   (minedAt === undefined || minedAt >= bridge.startedAt - CLOCK_SKEW_MS);
 
+const executedIt = (bridge: PendingBridge, executed: string[] | undefined) =>
+  !!executed?.some(hash => hash.toLowerCase() === bridge.safeTxHash?.toLowerCase());
+
 /**
  * Adds the account's discovered deposits that the store lacks (storage
  * cleared, another browser), so one that needs a redeem or a replay is
@@ -39,7 +42,8 @@ export async function recoverDeposits({
   blockTime,
   adapter,
   context,
-  settled
+  settled,
+  executedSafeTxHashes
 }: {
   store: Pick<PendingBridgeStore, 'getSnapshot' | 'upsert'>;
   scope: string;
@@ -52,19 +56,36 @@ export async function recoverDeposits({
   context: Parameters<BridgeAdapter['checkProgress']>[2];
   /** Lowercase hashes of deposits that arrived or moved no funds. */
   settled: Set<string>;
+  /** The Safe tx hashes the deposit's transaction executed; undefined when unread, empty when none was logged. */
+  executedSafeTxHashes?: (txHash: string) => Promise<string[] | undefined>;
 }): Promise<number> {
   const stored = store.getSnapshot(scope);
   const unknown = deposits.filter(
     deposit => !settled.has(deposit.txHash.toLowerCase()) && !isStored(stored, deposit)
   );
   const minedAt = await Promise.all(unknown.map(deposit => blockTime(deposit.blockNumber)));
-  // Each queued bridge may be only one deposit: the earliest it can be.
+  const executed = await Promise.all(
+    unknown.map((deposit, i) =>
+      executedSafeTxHashes && stored.some(bridge => mayBeQueued(bridge, deposit, minedAt[i]))
+        ? executedSafeTxHashes(deposit.txHash)
+        : undefined
+    )
+  );
+  // Each queued bridge may be only one deposit: the one that executed its Safe tx, else the earliest unread one.
   const covered = new Set<number>();
   const order = unknown
     .map((_, i) => i)
     .sort((a, b) => Number(unknown[a].blockNumber - unknown[b].blockNumber));
-  for (const bridge of stored) {
-    const i = order.find(i => !covered.has(i) && mayBeQueued(bridge, unknown[i], minedAt[i]));
+  const open = (bridge: PendingBridge, i: number) =>
+    !covered.has(i) && mayBeQueued(bridge, unknown[i], minedAt[i]);
+  const queued = stored.filter(bridge => order.some(i => open(bridge, i)));
+  const unmatched = queued.filter(bridge => {
+    const i = order.find(i => open(bridge, i) && executedIt(bridge, executed[i]));
+    if (i !== undefined) covered.add(i);
+    return i === undefined;
+  });
+  for (const bridge of unmatched) {
+    const i = order.find(i => open(bridge, i) && !executed[i]?.length);
     if (i !== undefined) covered.add(i);
   }
 

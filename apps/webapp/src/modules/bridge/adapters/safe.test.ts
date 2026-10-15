@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { encodeAbiParameters, toEventSelector, type Hex } from 'viem';
 import { BASE_DEPOSIT_LOGS, SAFE_EXECUTION_FAILURE } from './nativeDeposit/depositFixtures';
 import {
+  executedSafeTxHashes,
   parseSafeTx,
   readSafeActionProgress,
   readSafeTxProgress,
@@ -254,5 +256,39 @@ describe('readSafeActionProgress', () => {
     const fetchSpy = respond({});
     expect(await read(SENT_AT + 10 * SAFE_ACTION_MISSING_MS, 43114)).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+const EXEC_SAFE = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+const OTHER_SAFE = '0x2546BcD3c84621e976D8185a91A922aE77ECEc30';
+const SAFE_TX = ('0x' + 'a1'.repeat(32)) as Hex;
+const TOPIC = toEventSelector('ExecutionSuccess(bytes32,uint256)');
+const data = encodeAbiParameters([{ type: 'bytes32' }, { type: 'uint256' }], [SAFE_TX, 0n]);
+
+describe('executedSafeTxHashes', () => {
+  it("reads the Safe tx hash from the Safe's ExecutionSuccess log", () => {
+    expect(executedSafeTxHashes([{ address: EXEC_SAFE, topics: [TOPIC], data }], EXEC_SAFE)).toEqual([
+      SAFE_TX
+    ]);
+  });
+
+  it('reads an indexed Safe tx hash', () => {
+    const payment = encodeAbiParameters([{ type: 'uint256' }], [0n]);
+    expect(
+      executedSafeTxHashes([{ address: EXEC_SAFE, topics: [TOPIC, SAFE_TX], data: payment }], EXEC_SAFE)
+    ).toEqual([SAFE_TX]);
+  });
+
+  it("ignores another Safe's executions and other events", () => {
+    const other = toEventSelector('ExecutionFailure(bytes32,uint256)');
+    expect(
+      executedSafeTxHashes(
+        [
+          { address: OTHER_SAFE, topics: [TOPIC], data },
+          { address: EXEC_SAFE, topics: [other], data }
+        ],
+        EXEC_SAFE
+      )
+    ).toEqual([]);
   });
 });

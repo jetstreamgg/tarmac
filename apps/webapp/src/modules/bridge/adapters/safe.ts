@@ -1,4 +1,4 @@
-import { isAddressEqual, toEventSelector, type Log } from 'viem';
+import { isAddressEqual, slice, toEventSelector, type Log } from 'viem';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import type { BridgeProgress } from '../model/pendingTransitions';
 import type { PendingBridgeAction } from '../model/types';
@@ -21,6 +21,20 @@ export const safeExecutionFailed = (logs: Pick<Log, 'address' | 'topics'>[], saf
   logs.some(
     log => log.topics[0] === EXECUTION_FAILURE && isAddressEqual(log.address, safe as Log['address'])
   );
+
+const EXECUTION_SUCCESS = toEventSelector('event ExecutionSuccess(bytes32 txHash, uint256 payment)');
+
+/** The Safe tx hashes `safe` executed among a receipt's logs. */
+export const executedSafeTxHashes = (
+  logs: Pick<Log, 'address' | 'topics' | 'data'>[],
+  safe: string
+): string[] =>
+  logs.flatMap(log => {
+    if (log.topics[0] !== EXECUTION_SUCCESS || !isAddressEqual(log.address, safe as Log['address']))
+      return [];
+    const hash = log.topics[1] ?? (log.data.length >= 66 ? slice(log.data, 0, 32) : undefined);
+    return hash ? [hash] : [];
+  });
 
 const sameHash = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
