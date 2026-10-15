@@ -48,11 +48,12 @@ const scheduledRetries = (logs: Log[], ticketId: Hex): Hex[] =>
     }
   });
 
-// A retry that executed the ticket's mint; a missing receipt is not one yet.
-const anyRetrySucceeded = async (l2: ChainReader, retries: Hex[]) =>
-  (await Promise.all(retries.map(hash => receiptOf(l2, hash)))).some(
-    receipt => receipt?.status === 'success'
-  );
+/** A retry executed the ticket's mint: true; none did: false; null when a retry has no receipt yet. */
+const anyRetrySucceeded = async (l2: ChainReader, retries: Hex[]) => {
+  const receipts = await Promise.all(retries.map(hash => receiptOf(l2, hash)));
+  if (receipts.some(receipt => receipt?.status === 'success')) return true;
+  return receipts.some(receipt => !receipt) ? null : false;
+};
 
 /** The ticket's timeout at `blockNumber`; undefined when ArbOS has no live ticket (redeemed, expired or canceled). */
 async function readTimeout(l2: ChainReader, ticketId: Hex, blockNumber: bigint) {
@@ -77,7 +78,8 @@ async function readTimeout(l2: ChainReader, ticketId: Hex, blockNumber: bigint) 
  * Whether a retry of the ticket succeeded between its creation and
  * `toBlock`, from ArbRetryableTx's RedeemScheduled logs. The scan stops once
  * it is a day past the ticket's timeout, extended by every keepalive it saw,
- * as nothing can redeem it after that. Throws when any read fails.
+ * as nothing can redeem it after that. Null when a retry it found has no
+ * receipt yet; throws when any read fails.
  */
 async function scanForRedeem(l2: ChainReader, ticketId: Hex, fromBlock: bigint, toBlock: bigint) {
   const [created, lifetime] = await Promise.all([
@@ -90,6 +92,7 @@ async function scanForRedeem(l2: ChainReader, ticketId: Hex, fromBlock: bigint, 
     })
   ]);
   let timeout = created.timestamp + lifetime;
+  let unknown = false;
   for (let start = fromBlock; start <= toBlock; start += TICKET_SCAN_CHUNK_BLOCKS) {
     const end =
       start + TICKET_SCAN_CHUNK_BLOCKS - 1n < toBlock ? start + TICKET_SCAN_CHUNK_BLOCKS - 1n : toBlock;
@@ -104,26 +107,25 @@ async function scanForRedeem(l2: ChainReader, ticketId: Hex, fromBlock: bigint, 
       l2.getLogs({ ...range, event: REDEEM_SCHEDULED }),
       l2.getLogs({ ...range, event: LIFETIME_EXTENDED })
     ]);
-    if (
-      await anyRetrySucceeded(
-        l2,
-        scheduled.map(log => log.args.retryTxHash)
-      )
-    )
-      return true;
+    const succeeded = await anyRetrySucceeded(
+      l2,
+      scheduled.map(log => log.args.retryTxHash)
+    );
+    if (succeeded) return true;
+    if (succeeded === null) unknown = true;
     for (const log of extended) if (log.args.newTimeout > timeout) timeout = log.args.newTimeout;
-    if (end === toBlock) return false;
+    if (end === toBlock) break;
     const block = await l2.getBlock({ blockNumber: end });
-    if (block.timestamp > timeout + TICKET_SCAN_MARGIN_S) return false;
+    if (block.timestamp > timeout + TICKET_SCAN_MARGIN_S) break;
   }
-  return false;
+  return unknown ? null : false;
 }
 
 /**
  * Where an Ethereum to Arbitrum deposit stands, from the retryable ticket its
  * Ethereum receipt created. Arrived only once a retry of the ticket succeeded
  * on Arbitrum; a live ticket is offered as a redeem; expired only when ArbOS
- * has no ticket and a complete scan found no successful retry. A receipt
+ * has no ticket and a complete scan found every retry failed. A receipt
  * with no Sky ticket fails only when the sender's Safe reported its execution
  * failed. Any failed read is null: nothing changes.
  */
@@ -169,16 +171,18 @@ export async function arbitrumDepositProgress(
     const retries = [creation, ...redeems].flatMap(entry =>
       entry ? scheduledRetries(entry.logs, ticketId) : []
     );
-    if (await anyRetrySucceeded(l2, retries)) return { kind: 'arrived' };
+    const succeeded = await anyRetrySucceeded(l2, retries);
+    if (succeeded) return { kind: 'arrived' };
 
     // The ticket read and the scan share one block, so a redeem can't fall between them.
     const blockNumber = await l2.getBlockNumber();
     const timeout = await readTimeout(l2, ticketId, blockNumber);
     if (timeout !== undefined)
       return { kind: 'ready', nextAction: 'redeem', routeData: { ticketId, timeout: timeout.toString() } };
-    return (await scanForRedeem(l2, ticketId, creation.blockNumber, blockNumber))
-      ? { kind: 'arrived' }
-      : { kind: 'expired' };
+    const redeemed = await scanForRedeem(l2, ticketId, creation.blockNumber, blockNumber);
+    if (redeemed) return { kind: 'arrived' };
+    // A retry with no receipt yet may have delivered: never expired on it.
+    return redeemed === false && succeeded === false ? { kind: 'expired' } : null;
   } catch {
     return null;
   }

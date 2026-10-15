@@ -24,8 +24,19 @@ const FROM = ARBITRUM_DEPOSIT_TX.from;
 const RECIPIENT: Address = '0x2546BcD3c84621e976D8185a91A922aE77ECEc30';
 const AMOUNT = parseEther('25');
 
-const clients = (overrides: Partial<Record<'fee' | 'gas' | 'price', () => Promise<bigint>>> = {}) => ({
-  l1: { readContract: vi.fn(overrides.fee ?? (() => Promise.resolve(510_224_272_976n))) },
+const BASE_FEE = 2_000_000_000n;
+
+const clients = (
+  overrides: Partial<
+    Record<'fee' | 'gas' | 'price', () => Promise<bigint>> & { baseFee: () => Promise<bigint | null> }
+  > = {}
+) => ({
+  l1: {
+    readContract: vi.fn(overrides.fee ?? (() => Promise.resolve(510_224_272_976n))),
+    getBlock: vi.fn(() =>
+      (overrides.baseFee ?? (() => Promise.resolve(BASE_FEE)))().then(baseFeePerGas => ({ baseFeePerGas }))
+    )
+  },
   l2: {
     estimateContractGas: vi.fn(overrides.gas ?? (() => Promise.resolve(116_946n))),
     estimateGas: vi.fn(() => Promise.resolve(120_000n)),
@@ -56,7 +67,7 @@ describe('readRetryableEstimates', () => {
       expect.objectContaining({
         address: ARBITRUM_DEPOSIT.inbox,
         functionName: 'calculateRetryableSubmissionFee',
-        args: [BigInt(size(data)), 0n]
+        args: [BigInt(size(data)), BASE_FEE]
       })
     );
     expect(c.l2.estimateContractGas).toHaveBeenCalledWith(
@@ -77,9 +88,16 @@ describe('readRetryableEstimates', () => {
     expect(c.l2.estimateGas).not.toHaveBeenCalled();
   });
 
-  it.each(['fee', 'gas', 'price'] as const)('throws when the %s read fails or reads zero', async read_ => {
-    await expect(read(clients({ [read_]: () => Promise.reject(new Error('rpc down')) }))).rejects.toThrow();
-    await expect(read(clients({ [read_]: () => Promise.resolve(0n) }))).rejects.toThrow();
+  it.each(['fee', 'gas', 'price', 'baseFee'] as const)(
+    'throws when the %s read fails or reads zero',
+    async read_ => {
+      await expect(read(clients({ [read_]: () => Promise.reject(new Error('rpc down')) }))).rejects.toThrow();
+      await expect(read(clients({ [read_]: () => Promise.resolve(0n) }))).rejects.toThrow();
+    }
+  );
+
+  it('throws on a block with no base fee', async () => {
+    await expect(read(clients({ baseFee: () => Promise.resolve(null) }))).rejects.toThrow();
   });
 
   it("the fork estimator asks for the mint from the gateway's L2 alias", async () => {

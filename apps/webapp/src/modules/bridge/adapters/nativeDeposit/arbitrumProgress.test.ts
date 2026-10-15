@@ -284,6 +284,36 @@ describe('arbitrumDepositProgress', () => {
       await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toBeNull();
     });
 
+    it('changes nothing while a retry found by the scan has no receipt yet', async () => {
+      const { context } = chains({
+        receipts: { [ticketId]: CREATED },
+        latest: ARBITRUM_TICKET.creationBlock + 100n,
+        scanLogs: [
+          { event: 'RedeemScheduled', block: ARBITRUM_TICKET.creationBlock + 50n, retryTxHash: RETRY }
+        ]
+      });
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toBeNull();
+    });
+
+    it("changes nothing while the auto-redeem's retry has no receipt yet", async () => {
+      const { context } = chains({
+        receipts: { [ticketId]: { ...CREATED, logs: [...CREATED.logs, redeemScheduled(RETRY)] } }
+      });
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toBeNull();
+    });
+
+    it('arrives on a later successful retry even when an earlier one has no receipt', async () => {
+      const { context } = chains({
+        receipts: { [ticketId]: CREATED, [REDEEM]: { status: 'success', logs: [] } },
+        latest: ARBITRUM_TICKET.creationBlock + 100n,
+        scanLogs: [
+          { event: 'RedeemScheduled', block: ARBITRUM_TICKET.creationBlock + 10n, retryTxHash: RETRY },
+          { event: 'RedeemScheduled', block: ARBITRUM_TICKET.creationBlock + 50n, retryTxHash: REDEEM }
+        ]
+      });
+      await expect(arbitrumDepositProgress(seed(), context, NOW)).resolves.toEqual({ kind: 'arrived' });
+    });
+
     it('changes nothing when a found retry receipt fails to read', async () => {
       const { context } = chains({
         receipts: { [ticketId]: CREATED, [RETRY]: 'error' },

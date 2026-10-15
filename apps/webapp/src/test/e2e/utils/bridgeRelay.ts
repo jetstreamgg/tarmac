@@ -150,11 +150,12 @@ export async function closeOpStackBridge(network: OpStackNetworkId) {
 /** Inbox.calculateRetryableSubmissionFee for `data` at an Ethereum block, its base fee read there. */
 export async function arbitrumSubmissionFee(data: Hex, blockNumber: bigint) {
   const l1 = await client(NetworkName.mainnet);
+  const { baseFeePerGas } = await l1.getBlock({ blockNumber });
   return l1.readContract({
     address: ARBITRUM_DEPOSIT.inbox,
     abi: arbitrumInboxImplementationAbi,
     functionName: 'calculateRetryableSubmissionFee',
-    args: [BigInt(size(data)), 0n],
+    args: [BigInt(size(data)), baseFeePerGas ?? 0n],
     blockNumber
   });
 }

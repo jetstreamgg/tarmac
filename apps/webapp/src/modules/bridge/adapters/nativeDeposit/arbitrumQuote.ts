@@ -15,6 +15,7 @@ type L1Reader = {
     functionName: 'calculateRetryableSubmissionFee';
     args: readonly [bigint, bigint];
   }) => Promise<bigint>;
+  getBlock: () => Promise<{ baseFeePerGas: bigint | null }>;
 };
 
 type L2Reader = {
@@ -62,8 +63,10 @@ export const aliasedGatewayGas: RetryableGasEstimator = ({ l2, data }) =>
     data
   });
 
+const unpriced = () => new Error('The Arbitrum deposit could not be priced');
+
 /**
- * Reads what one deposit's ticket costs: the submission fee on Ethereum, and
+ * Reads what one deposit's ticket costs: the submission fee at Ethereum's latest base fee, and
  * the auto-redeem's gas and the gas price on Arbitrum. Throws when any read
  * fails or comes back zero, so no deposit is built without a price.
  */
@@ -85,19 +88,21 @@ export async function readRetryableEstimates({
   estimateGas?: RetryableGasEstimator;
 }): Promise<RetryableEstimates> {
   const data = arbitrumOutboundCalldata({ from, to: recipient, amount });
-  const [submissionFee, gasEstimate, l2GasPrice] = await Promise.all([
-    // A zero base fee reads the block's own.
-    l1.readContract({
-      address: ARBITRUM_DEPOSIT.inbox,
-      abi: arbitrumInboxImplementationAbi,
-      functionName: 'calculateRetryableSubmissionFee',
-      args: [BigInt(size(data)), 0n]
-    }),
+  const [block, gasEstimate, l2GasPrice] = await Promise.all([
+    l1.getBlock(),
     estimateGas({ l2, from, refundTo, data }),
     l2.getGasPrice()
   ]);
-  if (submissionFee <= 0n || gasEstimate <= 0n || l2GasPrice <= 0n)
-    throw new Error('The Arbitrum deposit could not be priced');
+  const baseFee = block.baseFeePerGas ?? 0n;
+  if (baseFee <= 0n || gasEstimate <= 0n || l2GasPrice <= 0n) throw unpriced();
+  // Passed explicitly: an eth_call without a gas price runs with a zero block.basefee, which prices the fee at 0.
+  const submissionFee = await l1.readContract({
+    address: ARBITRUM_DEPOSIT.inbox,
+    abi: arbitrumInboxImplementationAbi,
+    functionName: 'calculateRetryableSubmissionFee',
+    args: [BigInt(size(data)), baseFee]
+  });
+  if (submissionFee <= 0n) throw unpriced();
   return { submissionFee, gasEstimate, l2GasPrice };
 }
 
