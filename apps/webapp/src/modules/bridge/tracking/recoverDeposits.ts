@@ -1,6 +1,6 @@
 import type { DiscoveredDeposit } from '../adapters/nativeDeposit/discovery';
 import type { BridgeAdapter } from '../adapters/types';
-import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
+import { applyProgress, createPendingBridge, isSettled } from '../model/pendingTransitions';
 import { nativeDepositRoute } from '../model/resolveRoute';
 import type { PendingBridge } from '../model/types';
 import type { PendingBridgeStore } from '../store/pendingStore';
@@ -10,15 +10,18 @@ const isStored = (stored: PendingBridge[], deposit: DiscoveredDeposit) => {
   return stored.some(bridge => bridge.id.toLowerCase() === hash || bridge.txHash?.toLowerCase() === hash);
 };
 
-// A queued Safe bridge that executed has no hash until its tracker reads one; it may be this deposit.
-const mayBeQueued = (stored: PendingBridge[], deposit: DiscoveredDeposit) =>
-  stored.some(
-    bridge =>
-      !bridge.txHash &&
-      bridge.from === 'ethereum' &&
-      bridge.to === deposit.to &&
-      bridge.amount === deposit.amount
-  );
+// The device clock that stamped a queued bridge may run ahead of the chain's.
+const CLOCK_SKEW_MS = 60 * 60_000;
+
+// A queued Safe bridge that executed has no hash until its tracker reads one: it may be one deposit of its network and amount, mined after it was queued.
+const mayBeQueued = (bridge: PendingBridge, deposit: DiscoveredDeposit, minedAt: number | undefined) =>
+  !bridge.txHash &&
+  !!bridge.safeTxHash &&
+  !isSettled(bridge) &&
+  bridge.from === 'ethereum' &&
+  bridge.to === deposit.to &&
+  bridge.amount === deposit.amount &&
+  (minedAt === undefined || minedAt >= bridge.startedAt - CLOCK_SKEW_MS);
 
 /**
  * Adds the account's discovered deposits that the store lacks (storage
@@ -50,12 +53,25 @@ export async function recoverDeposits({
   /** Lowercase hashes of deposits that arrived or moved no funds. */
   settled: Set<string>;
 }): Promise<number> {
-  const recover = async (deposit: DiscoveredDeposit) => {
+  const stored = store.getSnapshot(scope);
+  const unknown = deposits.filter(
+    deposit => !settled.has(deposit.txHash.toLowerCase()) && !isStored(stored, deposit)
+  );
+  const minedAt = await Promise.all(unknown.map(deposit => blockTime(deposit.blockNumber)));
+  // Each queued bridge may be only one deposit: the earliest it can be.
+  const covered = new Set<number>();
+  const order = unknown
+    .map((_, i) => i)
+    .sort((a, b) => Number(unknown[a].blockNumber - unknown[b].blockNumber));
+  for (const bridge of stored) {
+    const i = order.find(i => !covered.has(i) && mayBeQueued(bridge, unknown[i], minedAt[i]));
+    if (i !== undefined) covered.add(i);
+  }
+
+  const recover = async (deposit: DiscoveredDeposit, i: number) => {
+    if (covered.has(i)) return false;
     const hash = deposit.txHash.toLowerCase();
-    if (settled.has(hash)) return false;
-    const stored = store.getSnapshot(scope);
-    if (isStored(stored, deposit) || mayBeQueued(stored, deposit)) return false;
-    const startedAt = (await blockTime(deposit.blockNumber)) ?? now();
+    const startedAt = minedAt[i] ?? now();
     const bridge = createPendingBridge({
       account,
       amount: deposit.amount,
@@ -76,5 +92,5 @@ export async function recoverDeposits({
     store.upsert(scope, progress ? applyProgress(bridge, progress, now()) : bridge);
     return true;
   };
-  return (await Promise.all(deposits.map(recover))).filter(Boolean).length;
+  return (await Promise.all(unknown.map(recover))).filter(Boolean).length;
 }

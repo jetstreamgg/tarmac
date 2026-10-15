@@ -3,6 +3,7 @@ import type { DiscoveredDeposit } from '../adapters/nativeDeposit/discovery';
 import type { BridgeAdapter } from '../adapters/types';
 import { createPendingBridge, type BridgeProgress } from '../model/pendingTransitions';
 import { nativeDepositRoute } from '../model/resolveRoute';
+import type { PendingBridge } from '../model/types';
 import { createPendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { recoverDeposits } from './recoverDeposits';
 
@@ -174,13 +175,49 @@ describe('recoverDeposits', () => {
       to: 'arbitrum',
       route: nativeDepositRoute('arbitrum'),
       safeTxHash: '0xsafe',
-      now: NOW
+      now: MINED_AT
     });
     store.upsert(SCOPE, queued);
     expect(await run([deposit()], null, store).added).toBe(0);
     // A different amount or network is another deposit.
     expect(await run([deposit({ txHash: '0xother', amount: amount + 1n })], null, store).added).toBe(1);
     expect(await run([deposit({ txHash: '0xthird', to: 'base' })], null, store).added).toBe(1);
+  });
+
+  describe('a queued Safe bridge never hides a deposit it cannot be', () => {
+    const queuedAt = (startedAt: number, overrides: Partial<PendingBridge> = {}) => {
+      const store = createPendingBridgeStore({ now: () => NOW });
+      store.upsert(SCOPE, {
+        ...createPendingBridge({
+          account: ACCOUNT,
+          amount: deposit().amount,
+          from: 'ethereum',
+          to: 'arbitrum',
+          route: nativeDepositRoute('arbitrum'),
+          safeTxHash: '0xsafe',
+          now: startedAt
+        }),
+        ...overrides
+      });
+      return store;
+    };
+
+    it('a deposit mined long before the Safe bridge was queued', async () => {
+      const store = queuedAt(MINED_AT + 24 * 60 * 60_000);
+      expect(await run([deposit()], null, store).added).toBe(1);
+    });
+
+    it('a second deposit of the same amount', async () => {
+      const store = queuedAt(MINED_AT - 60_000);
+      const deposits = [deposit(), deposit({ txHash: '0xsecond', blockNumber: 101n })];
+      expect(await run(deposits, null, store).added).toBe(1);
+      expect(store.getSnapshot(SCOPE).filter(bridge => bridge.txHash)).toHaveLength(1);
+    });
+
+    it('once the Safe bridge settled', async () => {
+      const store = queuedAt(MINED_AT - 60_000, { status: 'failed', settledAt: NOW });
+      expect(await run([deposit()], null, store).added).toBe(1);
+    });
   });
 
   it('does not overwrite a bridge stored while it was reading', async () => {
