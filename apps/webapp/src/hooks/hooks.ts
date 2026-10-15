@@ -156,9 +156,11 @@ export type UseSequentialTransactionFlowParameters = {
   calls: (Call & { gas?: bigint })[];
   enabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
-  onStart?: (hash: string) => void;
+  /** `variables` is the object `onMutate` got for the prompt that was signed, which may predate the run in flight. */
+  onStart?: (hash: string, variables?: TxMutateVariables) => void;
   onSuccess?: (hash: string, blockNumber?: bigint) => void;
-  onError?: (error: Error, hash: string) => void;
+  /** `variables` is set for a wallet error, as in `onStart`. */
+  onError?: (error: Error, hash: string, variables?: TxMutateVariables) => void;
   gcTime?: number;
   chainId?: number;
   /**
