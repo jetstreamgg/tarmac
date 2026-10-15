@@ -10,7 +10,7 @@ import { PendingBridges } from './PendingBridges';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
 
-function RecipientHint({ reason }: RecipientHintProps) {
+export function RecipientHint({ reason }: RecipientHintProps) {
   switch (reason) {
     case 'other-family':
       return <Trans>Add a Solana address to receive the funds.</Trans>;
@@ -28,11 +28,9 @@ function RecipientHint({ reason }: RecipientHintProps) {
         </Trans>
       );
     case 'contract-unverified':
-      return (
-        <Trans>We couldn&apos;t check your wallet on the destination network. Add a recipient address.</Trans>
-      );
+      return <Trans>We couldn&apos;t check your wallet. Add a recipient address.</Trans>;
     default:
-      return <Trans>We could not check your Safe on the destination network. Add a recipient address.</Trans>;
+      return <Trans>We couldn&apos;t check your Safe. Add a recipient address.</Trans>;
   }
 }
 
