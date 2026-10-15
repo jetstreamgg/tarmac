@@ -10,6 +10,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { getAddress, parseEther, UserRejectedRequestError, type Address } from 'viem';
 import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { l1DepositBridge, type NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
+import { applyProgress } from '../model/pendingTransitions';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeForm } from './useBridgeForm';
 import { useBridgeLaunch } from './useBridgeLaunch';
@@ -686,6 +687,53 @@ describe('a native deposit through the real modal and engine', () => {
 
       expect(cards()).toMatchObject({ '0xr3twolate': 'arbitrum' });
       expect(cards()).not.toHaveProperty('0xr3twoapprove');
+    });
+
+    it.each([
+      ['approve', 0n],
+      ['deposit', parseEther('1000')]
+    ])(
+      'signed after the Base %s prompt was rejected: Retry sends no deposit while the Arbitrum one is pending',
+      async (_, allowance) => {
+        const stale = await abandonArbitrumDeposit(allowance);
+        await review('base');
+        await confirm();
+        await wallet.reject();
+        const from = env.writes.length;
+        await wallet.sign('0xr3f3late', stale);
+        expect(cards()).toMatchObject({ '0xr3f3late': 'arbitrum' });
+        fireEvent.click(screen.getByRole('button', { name: /^(retry|try again)$/i }));
+        await settle();
+        // Whatever the Retry opens is signed and mined.
+        for (let i = 0; env.writes.length > from + i && i < 2; i++) {
+          const hash = `0xr3f3retry${i}` as `0x${string}`;
+          await wallet.sign(hash, env.prompts.at(-1));
+          await wallet.mine(hash);
+        }
+
+        expect(env.writes.slice(from).filter(isDeposit)).toEqual([]);
+      }
+    );
+
+    it('signed after the Base deposit prompt was rejected, then reverted: the next Review can send', async () => {
+      const stale = await abandonArbitrumDeposit(parseEther('1000'));
+      await review('base');
+      await confirm();
+      await wallet.reject();
+      await wallet.sign('0xr3f3reverted', stale);
+      // As the bridge tracker records the reverted receipt.
+      act(() =>
+        pendingBridgeStore.update(scope, '0xr3f3reverted', bridge =>
+          applyProgress(bridge, { kind: 'failed', reason: 'source-tx-reverted' }, Date.now())
+        )
+      );
+      await settle();
+      await closeModal();
+      await review('base');
+      const from = env.writes.length;
+      await confirm();
+
+      expect(env.writes.slice(from).filter(isDeposit)).toHaveLength(1);
     });
 
     it('rejected late: the Base run keeps going and sends its deposit', async () => {

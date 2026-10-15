@@ -150,7 +150,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         callbacksRef.current.onError(new Error('The bridge is not ready to send.'));
         return;
       }
-      if (sentRef.current) {
+      if (sentRef.current || unresolvedRef.current) {
         callbacksRef.current.onError(
           new Error(
             unresolvedRef.current
@@ -174,9 +174,12 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       const isCurrent = () => !depositTo || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
       confirmedLaunchRef.current = launchId;
-      // Unless a later Review already confirmed, it marks the bridge sent; a Retry of its own Review then ends and the modal follows this send.
+      // Marks the bridge sent; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
       const markSent = (txHash?: string) => {
-        if (confirmedLaunchRef.current > launchId) return;
+        if (confirmedLaunchRef.current > launchId) {
+          if (txHash && !sentRef.current) unresolvedRef.current = txHash;
+          return;
+        }
         const first = !sentRef.current;
         sentRef.current = true;
         if (txHash) unresolvedRef.current = txHash;
