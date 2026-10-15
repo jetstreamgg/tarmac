@@ -53,6 +53,12 @@ export function useSequentialTransactionFlow(
   // (a token, so a reset or unmount drops a result that settles afterwards).
   const revertedIndexRef = useRef(-1);
   const resimulationRef = useRef<object | null>(null);
+  // Set by a reset() that found a write out (the modal closed mid-run): that
+  // write settles and reports, nothing after it is sent, then the run clears.
+  // The run stays loading meanwhile, so no second write can overlap it: a
+  // replaced write still fires the mutation's callbacks when it settles.
+  const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+  const finishDetachedRef = useRef(() => {});
   const enabledRef = useRef(enabled);
   useEffect(() => {
     enabledRef.current = enabled;
@@ -98,6 +104,7 @@ export function useSequentialTransactionFlow(
     writeContract,
     error: writeError,
     data: mutationHash,
+    isPending: isWritePending,
     reset: resetWrite
   } = useWriteContract({
     mutation: {
@@ -113,6 +120,7 @@ export function useSequentialTransactionFlow(
         // pre-rejection call after the user went back and edited it (APP-448).
         if (currentIndex === 0) setIsExecuting(false);
         onError(err, mutationHash || '');
+        if (detachedRef.current) finishDetachedRef.current();
       }
     }
   });
@@ -140,6 +148,16 @@ export function useSequentialTransactionFlow(
   });
 
   const txReverted = isRevertedError(failureReason);
+
+  // A write in the wallet, awaiting a Safe's co-signers, or mining.
+  const writeOut =
+    !!isWritePending ||
+    (!!mutationHash && !txHash) ||
+    (!!txHash && !isSuccess && !miningError && !txReverted);
+  const writeOutRef = useRef(writeOut);
+  useEffect(() => {
+    writeOutRef.current = writeOut;
+  }, [writeOut]);
 
   // Check if current transaction is prepared
   const prepared = useMemo(() => {
@@ -222,6 +240,9 @@ export function useSequentialTransactionFlow(
         dispatchedIndexRef.current = -1; // next flow starts from a clean latch
         reportedSimulationIndexRef.current = -1;
         revertedIndexRef.current = -1;
+        if (detachedRef.current) finishDetachedRef.current();
+      } else if (detachedRef.current) {
+        finishDetachedRef.current();
       } else {
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
@@ -240,6 +261,10 @@ export function useSequentialTransactionFlow(
       // come up empty and leave nothing to retry. Only a revert: any other receipt
       // error (an RPC failing to poll) can leave the tx pending, and resuming
       // would sign it a second time.
+      if (detachedRef.current) {
+        finishDetachedRef.current();
+        return;
+      }
       const paused = currentIndex > 0 && txReverted;
       if (paused) revertedIndexRef.current = currentIndex;
       setIsExecuting(paused);
@@ -257,7 +282,8 @@ export function useSequentialTransactionFlow(
     transactionHashes
   ]);
 
-  const reset = useCallback(() => {
+  const clearRun = useCallback(() => {
+    detachedRef.current = null;
     setIsExecuting(false);
     setCurrentIndex(0);
     setTransactionHashes([]);
@@ -270,6 +296,26 @@ export function useSequentialTransactionFlow(
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution
   }, [resetWrite]);
+
+  useEffect(() => {
+    finishDetachedRef.current = () => {
+      const onCleared = detachedRef.current?.onCleared;
+      clearRun();
+      onCleared?.();
+    };
+  }, [clearRun]);
+
+  const reset = useCallback(
+    (onCleared?: () => void) => {
+      if (writeOutRef.current) {
+        detachedRef.current = { onCleared };
+        return;
+      }
+      clearRun();
+      onCleared?.();
+    },
+    [clearRun]
+  );
 
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {

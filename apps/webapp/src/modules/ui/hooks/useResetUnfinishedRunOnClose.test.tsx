@@ -77,16 +77,19 @@ describe('useResetUnfinishedRunOnClose', () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
-  it('refetches the engine reads with the reset, so a mined approve drops out of the next launch', () => {
-    const reset = vi.fn();
+  it('refetches the engine reads once the reset has cleared the run, so a mined approve drops out of the next launch', () => {
+    let onCleared: (() => void) | undefined;
+    const reset = vi.fn((cleared?: () => void) => (onCleared = cleared));
     const refetch = vi.fn();
     const go = renderWith(reset, refetch);
     go(true, TxStatus.INITIALIZED);
     go(true, TxStatus.ERROR);
-    expect(refetch).not.toHaveBeenCalled();
-
     go(false, TxStatus.IDLE);
     expect(reset).toHaveBeenCalledTimes(1);
+    // A write still out holds the clear back: the reads wait for it.
+    expect(refetch).not.toHaveBeenCalled();
+
+    onCleared?.();
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 });

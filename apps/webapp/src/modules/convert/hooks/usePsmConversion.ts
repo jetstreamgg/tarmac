@@ -65,7 +65,7 @@ export interface UsePsmConversionResult {
   error: Error | null;
   execute: () => void;
   currentCallIndex: number;
-  reset: () => void;
+  reset: (onCleared?: () => void) => void;
   /** The routed engine's calls, for estimating the conversion's network fee. */
   calls: Call[];
   /** Whether those calls go out bundled — the batch costs less than the sequence. */

@@ -12,7 +12,9 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
  * — signing the pre-edit amount while the page shows the edited one (APP-448).
  * Not only a close on a failure: a close while a later step waits in the
  * wallet abandons the session, and the wallet's rejection then pauses the run
- * with no ERROR ever shown.
+ * with no ERROR ever shown. A write still out at the close settles first
+ * (see the engine's reset), so a signed transaction still reports its receipt
+ * and the provider still refreshes history, but nothing after it is sent.
  *
  * Only for engines whose calls before the last are allowance-gated approves,
  * which a reset never re-runs — provided the allowance read is fresh. It is
@@ -20,10 +22,14 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
  * an explicit refetch refreshes, and a page-hosted engine never remounts. So
  * an approve that mined before the failed leg stayed invisible, and the next
  * launch rebuilt the Approve step (and the engine its approve call) from the
- * pre-approval value (APP-563 #3). `refetchReads` runs alongside the reset
- * for that: the engine's allowance refetchers.
+ * pre-approval value (APP-563 #3). `refetchReads` runs once the reset has
+ * cleared the run, after any write still out has landed: the engine's
+ * allowance refetchers.
  */
-export function useResetUnfinishedRunOnClose(reset: () => void, refetchReads?: () => void): void {
+export function useResetUnfinishedRunOnClose(
+  reset: (onCleared?: () => void) => void,
+  refetchReads?: () => void
+): void {
   const { isModalOpen, txStatus } = useTransaction();
   // Close hides the modal and returns the status to IDLE in one render, so an
   // unfinished run has to be remembered from before. The provider closes in
@@ -36,7 +42,6 @@ export function useResetUnfinishedRunOnClose(reset: () => void, refetchReads?: (
     else if (txStatus !== TxStatus.IDLE) unfinishedRef.current = true;
     if (isModalOpen || !unfinishedRef.current) return;
     unfinishedRef.current = false;
-    reset();
-    refetchReads?.();
+    reset(refetchReads);
   }, [isModalOpen, txStatus, reset, refetchReads]);
 }
