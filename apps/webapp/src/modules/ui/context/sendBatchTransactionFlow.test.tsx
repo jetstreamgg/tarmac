@@ -1,6 +1,10 @@
 import { renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  InvalidParamsRpcError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  ResourceNotFoundRpcError,
   UnknownBundleIdError,
   UnknownRpcError,
   UnsupportedProviderMethodError,
@@ -134,7 +138,14 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
     expect(retry(1, new Error('execution reverted'))).toBe(true);
     // A locked wallet can answer 4100 and recover once unlocked.
     expect(retry(3, Object.assign(new Error('Unauthorized'), { code: 4100 }))).toBe(true);
-    for (const permanent of [UnsupportedProviderMethodError, UnknownBundleIdError]) {
+    for (const permanent of [
+      UnsupportedProviderMethodError,
+      MethodNotFoundRpcError,
+      MethodNotSupportedRpcError,
+      UnknownBundleIdError,
+      InvalidParamsRpcError,
+      ResourceNotFoundRpcError
+    ]) {
       expect(retry(1, new UnknownRpcError(new permanent(new Error('wallet'))))).toBe(false);
     }
   });

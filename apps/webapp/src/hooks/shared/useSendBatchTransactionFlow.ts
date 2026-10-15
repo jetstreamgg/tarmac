@@ -4,6 +4,10 @@ import { useEffect, useEffectEvent } from 'react';
 import type { Call } from 'viem';
 import {
   BaseError,
+  InvalidParamsRpcError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  ResourceNotFoundRpcError,
   UnknownBundleIdError,
   UnsupportedProviderMethodError,
   WaitForCallsStatusTimeoutError
@@ -14,12 +18,20 @@ import { useSimulateBatch } from './useSimulateBatch';
 
 /** Ceiling on the gap between status polls while the wallet keeps erroring. */
 const MAX_STATUS_RETRY_DELAY_MS = 30_000;
-// Errors after which polling can never succeed: method unsupported (4200),
-// unknown bundle id (5730). Not 4100 (unauthorized): a locked wallet can answer
-// that and work again once unlocked.
+// Errors after which polling can never succeed: the method unsupported (4200,
+// -32601, -32004) or the bundle id unknown (5730, and the -32602 / -32001 some
+// wallets answer with instead). Not 4100 (unauthorized): a locked wallet can
+// answer that and work again once unlocked.
+const PERMANENT_STATUS_ERRORS = [
+  UnsupportedProviderMethodError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  UnknownBundleIdError,
+  InvalidParamsRpcError,
+  ResourceNotFoundRpcError
+];
 const isPermanentStatusError = (error: unknown) =>
-  error instanceof BaseError &&
-  error.walk(e => e instanceof UnsupportedProviderMethodError || e instanceof UnknownBundleIdError) !== null;
+  error instanceof BaseError && error.walk(e => PERMANENT_STATUS_ERRORS.some(c => e instanceof c)) !== null;
 
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
