@@ -328,6 +328,12 @@ export function useSequentialTransactionFlow(
         }
       });
     } else if (simulationData?.request) {
+      // The held request outlives the gate: a Retry after a wallet rejection
+      // must not send it once `enabled` has gone false.
+      if (isResume && !enabled) {
+        onError(notSendable(), '');
+        return;
+      }
       if (!isResume) {
         setFrozenCalls(calls); // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check

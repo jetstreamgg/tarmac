@@ -494,6 +494,36 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     expect(result.current.currentCallIndex).toBe(1);
   });
 
+  it('a retry after a rejection AFTER a mined step sends nothing once the caller disabled the engine, and reports it', () => {
+    const onError = vi.fn();
+    const gate = { enabled: true };
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError, enabled: gate.enabled })
+    );
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    act(() => {
+      wagmi.mutationHash = undefined;
+      wagmi.onWriteError?.(new Error('User rejected the request'));
+    });
+    gate.enabled = false;
+    rerender();
+    onError.mockClear();
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenCalledWith(new Error('The transaction can no longer be sent'), '');
+  });
+
   it('a receipt error that is not a revert AFTER a mined step ends the run: Retry must not re-sign a tx that may still be pending', () => {
     const onError = vi.fn();
     let calls: Call[] = [APPROVE, SUPPLY];
