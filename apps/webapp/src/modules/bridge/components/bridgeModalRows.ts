@@ -42,9 +42,19 @@ export const formatEtaWords = (minutes: number): string => {
 
 export const formatSlippage = (slippage: number): string => `${(slippage * 100).toFixed(2)}%`;
 
-/** The most ETH a deposit pays for its L2 delivery, at two significant digits: "Up to 0.0000048 ETH". */
+/** Rounds up to `digits` significant digits, so a shown maximum is never below the real one. */
+const ceilSignificant = (wei: bigint, digits: number): bigint => {
+  const dropped = wei.toString().length - digits;
+  if (dropped <= 0) return wei;
+  const unit = 10n ** BigInt(dropped);
+  return ((wei + unit - 1n) / unit) * unit;
+};
+
+/** The most ETH a deposit pays for its L2 delivery, rounded up to two significant digits: "Up to 0.0000048 ETH". */
 export const formatMaxEthFee = (wei: bigint): string => {
-  const eth = Number(formatEther(wei)).toLocaleString('en-US', { maximumSignificantDigits: 2 });
+  const eth = Number(formatEther(ceilSignificant(wei, 2))).toLocaleString('en-US', {
+    maximumSignificantDigits: 2
+  });
   return t`Up to ${eth} ETH`;
 };
 
