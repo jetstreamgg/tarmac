@@ -19,6 +19,20 @@ const simulation = vi.hoisted(() => ({
 const simulateSpy = vi.hoisted(() => vi.fn());
 const sendCalls = vi.hoisted(() => vi.fn());
 
+const sent = vi.hoisted(() => ({ id: undefined as string | undefined }));
+const callsStatus = vi.hoisted(() => ({
+  isLoading: false,
+  isSuccess: false,
+  error: null,
+  failureReason: null,
+  data: undefined as
+    | {
+        status: 'success' | 'failure';
+        receipts: { status: 'success' | 'reverted'; transactionHash: string; blockNumber: bigint }[];
+      }
+    | undefined
+}));
+
 vi.mock('./useIsBatchSupported', () => ({
   useIsBatchSupported: () => capabilities
 }));
@@ -31,14 +45,13 @@ vi.mock('./useSimulateBatch', () => ({
 }));
 
 vi.mock('wagmi', () => ({
-  useSendCalls: () => ({ sendCalls, error: null, data: undefined, reset: () => {} }),
-  useWaitForCallsStatus: () => ({
-    isLoading: false,
-    isSuccess: false,
+  useSendCalls: () => ({
+    sendCalls,
     error: null,
-    failureReason: null,
-    data: undefined
-  })
+    data: sent.id ? { id: sent.id } : undefined,
+    reset: () => {}
+  }),
+  useWaitForCallsStatus: () => callsStatus
 }));
 
 import { useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
@@ -61,6 +74,9 @@ beforeEach(() => {
   simulation.isLoading = true;
   simulation.error = null;
   simulation.structuralFailure = false;
+  sent.id = undefined;
+  callsStatus.isSuccess = false;
+  callsStatus.data = undefined;
 });
 
 afterEach(cleanup);
@@ -142,5 +158,49 @@ describe('useSendBatchTransactionFlow — when the simulation runs', () => {
 
     expect(simulateSpy.mock.lastCall?.[0].enabled).toBe(true);
     expect(simulateSpy.mock.lastCall?.[0].calls).toBe(calls);
+  });
+});
+
+describe('useSendBatchTransactionFlow — settling', () => {
+  const settle = (
+    status: 'success' | 'failure',
+    receiptStatuses: ('success' | 'reverted')[]
+  ): { onSuccess: ReturnType<typeof vi.fn>; onError: ReturnType<typeof vi.fn> } => {
+    sent.id = '0xbundle';
+    callsStatus.isSuccess = true;
+    callsStatus.data = {
+      status,
+      receipts: receiptStatuses.map((receiptStatus, i) => ({
+        status: receiptStatus,
+        transactionHash: `0x${i + 1}`,
+        blockNumber: BigInt(i + 1)
+      }))
+    };
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    renderHook(() => useSendBatchTransactionFlow({ calls, enabled: true, onSuccess, onError }));
+    return { onSuccess, onError };
+  };
+
+  it('reports success when every leg landed', () => {
+    const { onSuccess, onError } = settle('success', ['success', 'success']);
+
+    expect(onSuccess).toHaveBeenCalledWith('0x1', 2n);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('reports a failure when a leg reverted under an overall success (Ambire on an EOA, APP-637)', () => {
+    const { onSuccess, onError } = settle('success', ['success', 'reverted']);
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][1]).toBe('0x2');
+  });
+
+  it('reports a failure when the wallet says the bundle failed', () => {
+    const { onSuccess, onError } = settle('failure', []);
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 });

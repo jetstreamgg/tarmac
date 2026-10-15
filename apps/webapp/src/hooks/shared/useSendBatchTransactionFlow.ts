@@ -78,7 +78,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
   useEffect(() => {
     if (mutationData?.id) {
-      if (isSuccess && data.status === 'success') {
+      // A wallet that runs the bundle as separate transactions can report the whole bundle as
+      // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
+      const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
+      if (isSuccess && revertedReceipt) {
+        emitError(new Error('ERROR: Batch transaction failed'), revertedReceipt.transactionHash);
+      } else if (isSuccess && data.status === 'success') {
         // A non-atomic bundle can land across blocks; the history refresh waits for the last.
         const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);
         emitSuccess(
