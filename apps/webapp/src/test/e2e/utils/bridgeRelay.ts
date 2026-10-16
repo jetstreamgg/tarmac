@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import {
   createPublicClient,
   decodeEventLog,
@@ -61,6 +61,15 @@ export const pendingDepositTxHash = (page: Page, to: string) =>
       .sort((a, b) => b.startedAt - a.startedAt);
     return entries[0]?.txHash as `0x${string}` | undefined;
   }, to);
+
+/** Waits for that hash: a bundle's card only gets it from the deposit scan, once the bundle is mined. */
+export async function awaitDepositTxHash(page: Page, to: string) {
+  let hash: Hash | undefined;
+  await expect
+    .poll(async () => (hash = await pendingDepositTxHash(page, to)), { timeout: 60_000 })
+    .toBeTruthy();
+  return hash!;
+}
 
 /**
  * Plays the sequencer's part on the L2 fork, which never derives deposits from

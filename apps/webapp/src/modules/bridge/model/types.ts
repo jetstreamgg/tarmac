@@ -54,7 +54,7 @@ export type PendingBridgeAction = {
 };
 
 export type PendingBridge = {
-  /** The first source identifier known: the tx hash, or the Safe tx hash for a queued Safe transaction. */
+  /** The first source identifier known: the tx hash, the Safe tx hash for a queued Safe transaction, or the bundle id. */
   id: string;
   /** Sender, lowercase. */
   account: string;
@@ -76,6 +76,10 @@ export type PendingBridge = {
   /** On-chain source tx; undefined while a Safe transaction waits for its signatures. */
   txHash?: string;
   safeTxHash?: string;
+  /** Local id of a wallet bundle (EIP-5792) the wallet accepted; its tx hash is read from the chain once mined. */
+  bundleId?: string;
+  /** The wallet's id for that bundle, to read its status after a reload. */
+  callsId?: string;
   actions: PendingBridgeAction[];
   /** Route-specific tracking ids (CCTP message hash, withdrawal hash, LayerZero guid). */
   routeData?: Record<string, string>;

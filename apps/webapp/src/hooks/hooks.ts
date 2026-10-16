@@ -122,6 +122,8 @@ export type UseSendBatchTransactionFlowParameters<
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string | undefined) => void;
+  /** The wallet accepted the bundle, under its EIP-5792 id; called right before `onStart`. */
+  onCallsSent?: (id: string) => void;
 };
 
 export type ReadHookParams<TData = unknown> = Omit<UseQueryOptions<TData>, 'queryKey' | 'queryFn'>;

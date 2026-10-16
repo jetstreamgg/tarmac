@@ -63,6 +63,7 @@ vi.mock('wagmi', async io => ({
   }),
   useChainId: () => mocks.appChainId,
   useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id })),
+  usePublicClient: () => undefined,
   // The L1 bridges' isOpen.
   useReadContract: () => ({ status: 'success', data: mocks.bridgeOpen })
 }));
@@ -85,6 +86,7 @@ vi.mock('@/hooks', async io => ({
     };
   }
 }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({ canSwitchChain: true, handleSwitchChain: vi.fn() })
 }));
@@ -124,6 +126,7 @@ vi.mock('./useNativeDepositLegs', () => ({
       maxFee,
       error,
       execute,
+      isBatch: false,
       reset: vi.fn(),
       refetchAllowance: mocks.refetchAllowance
     };

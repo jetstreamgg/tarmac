@@ -214,6 +214,18 @@ vi.mock('wagmi', async io => {
     }
   };
 });
+// The batch engine stays off: these runs are sequential.
+vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
+  useSendBatchTransactionFlow: () => ({
+    execute: vi.fn(),
+    reset: vi.fn(),
+    prepared: false,
+    isLoading: false,
+    error: null,
+    currentCallIndex: 0,
+    batchUnavailable: false
+  })
+}));
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
   useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })
 }));

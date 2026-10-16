@@ -5,6 +5,7 @@ import { BridgePage } from '../pages/BridgePage';
 import { L1_USDS } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import {
+  awaitDepositTxHash,
   closeOpStackBridge,
   l1AccountState,
   l2UsdsBalance,
@@ -53,17 +54,19 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await expect(bridge.modalRow('Bridge type')).toContainText('Native');
     await expect(bridge.modalRow('Network fee')).toContainText(/\$\d/, { timeout: 30_000 });
 
+    const bundles = countBundles(isolatedPage);
     await bridge.confirmButton().click();
     await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
+    expect(bundles()).toBe(1);
 
     const card = bridge.card('Base');
     await expect(card.getByTestId('pending-bridge-status')).toHaveText('Pending', { timeout: 30_000 });
 
-    const txHash = await pendingDepositTxHash(isolatedPage, 'base');
-    expect(txHash).toBeTruthy();
-    expect(await relayOpStackDeposit('base', txHash!)).toContain('RelayedMessage');
+    const txHash = await awaitDepositTxHash(isolatedPage, 'base');
+    expect(await relayOpStackDeposit('base', txHash)).toContain('RelayedMessage');
 
     await expect(card.getByTestId('pending-bridge-status')).toHaveText('Arrived', { timeout: 60_000 });
+    await expect(bridge.cards()).toHaveCount(1);
     expect((await l2UsdsBalance('base', testAccount)) - before).toBe(parseUnits('5', 18));
   });
 
@@ -80,10 +83,9 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.confirmButton().click();
     await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
 
-    const txHash = await pendingDepositTxHash(isolatedPage, 'optimism');
-    expect(txHash).toBeTruthy();
+    const txHash = await awaitDepositTxHash(isolatedPage, 'optimism');
     // Too little gas for the token bridge's mint: the messenger records the message as failed.
-    expect(await relayOpStackDeposit('optimism', txHash!, { gas: 150_000n })).toContain(
+    expect(await relayOpStackDeposit('optimism', txHash, { gas: 150_000n })).toContain(
       'FailedRelayedMessage'
     );
 
@@ -222,10 +224,75 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await expectNothingSent(bridge, isolatedPage, testAccount, before, { approves });
     await retryOnce(bridge, isolatedPage, testAccount, before);
   });
+
+  test('A wallet without bundles signs each leg on its own, and the card gets the deposit hash', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected({ batch: false });
+    await bridge.selectDestination('unichain');
+    const before = await l1AccountState(testAccount);
+    await bridge.openReview('1');
+
+    let sends = 0;
+    await isolatedPage.route(TENDERLY_RPC, route => {
+      if (isSend(route.request().postData())) sends++;
+      return route.fallback();
+    });
+    await bridge.confirmButton().click();
+    await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
+    await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
+    expect(await pendingDepositTxHash(isolatedPage, 'unichain')).toBeTruthy();
+
+    const after = await l1AccountState(testAccount);
+    expect(after.usds).toBe(before.usds - parseUnits('1', 18));
+    expect(sends).toBeGreaterThanOrEqual(1);
+    expect(after.nonce).toBe(before.nonce + sends);
+  });
+
+  test('A bundle whose receipt never reached the tab keeps its card, and the deposit scan fills it after a reload', async ({
+    isolatedPage
+  }) => {
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected();
+    await bridge.selectDestination('base');
+    await bridge.openReview('2');
+
+    // The wallet sends the bundle, but its status never comes back: the tab closes before the receipt.
+    await isolatedPage.route(TENDERLY_RPC, route =>
+      route.request().postData()?.includes('"eth_getTransactionReceipt"') ? undefined : route.fallback()
+    );
+    await bridge.confirmButton().click();
+    const card = bridge.card('Base');
+    await expect(card).toContainText('Confirming on Ethereum', { timeout: 60_000 });
+    expect(await pendingDepositTxHash(isolatedPage, 'base')).toBeUndefined();
+
+    await isolatedPage.unrouteAll({ behavior: 'ignoreErrors' });
+    await bridge.gotoConnected();
+    const txHash = await awaitDepositTxHash(isolatedPage, 'base');
+    await expect(bridge.card('Base')).not.toContainText('Confirming on Ethereum');
+    // The scan fills the bundle's card instead of adding a second one for its deposit.
+    await expect(bridge.cards()).toHaveCount(1);
+    expect(await relayOpStackDeposit('base', txHash)).toContain('RelayedMessage');
+    await expect(bridge.card('Base').getByTestId('pending-bridge-status')).toHaveText('Arrived', {
+      timeout: 60_000
+    });
+    await expect(bridge.cards()).toHaveCount(1);
+  });
 });
 
 const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
 const isSend = (body: string | null) => !!body?.includes('"eth_sendTransaction"');
+
+/** Counts the bundles the batch mock wallet was asked to send (it logs every request). */
+function countBundles(page: Page) {
+  let bundles = 0;
+  page.on('console', message => {
+    if (message.text().startsWith('extendedMock request: wallet_sendCalls')) bundles++;
+  });
+  return () => bundles;
+}
 
 /** No deposit left Ethereum: no pending entry, no card, the USDS untouched. */
 async function expectNothingSent(
@@ -253,6 +320,6 @@ async function retryOnce(
   await page.getByRole('dialog').getByRole('button', { name: 'Try again' }).click();
   await expectTransactionSuccess(page, { title: 'Bridge initiated!', timeout: 90_000 });
   await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
-  expect(await pendingDepositTxHash(page, 'unichain')).toBeTruthy();
+  await awaitDepositTxHash(page, 'unichain');
   expect((await l1AccountState(account)).usds).toBe(before.usds - parseUnits('1', 18));
 }

@@ -56,6 +56,18 @@ vi.mock('@/hooks', () => ({
     };
   }
 }));
+// The batch engine stays off: these runs are sequential.
+vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
+  useSendBatchTransactionFlow: () => ({
+    execute: vi.fn(),
+    reset: vi.fn(),
+    prepared: false,
+    isLoading: false,
+    error: null,
+    currentCallIndex: 0,
+    batchUnavailable: false
+  })
+}));
 vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
   useSequentialTransactionFlow: (args: (typeof mocks.flowArgs)[number]) => {
     mocks.flowArgs.push(args);

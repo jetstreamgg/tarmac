@@ -55,6 +55,8 @@ export function createPendingBridge({
   route,
   txHash,
   safeTxHash,
+  bundleId,
+  callsId,
   now
 }: {
   account: string;
@@ -65,10 +67,12 @@ export function createPendingBridge({
   route: BridgeRoute;
   txHash?: string;
   safeTxHash?: string;
+  bundleId?: string;
+  callsId?: string;
   now: number;
 }): PendingBridge {
-  const id = txHash ?? safeTxHash;
-  if (!id) throw new Error('A pending bridge needs a tx hash or a Safe tx hash');
+  const id = txHash ?? safeTxHash ?? bundleId;
+  if (!id) throw new Error('A pending bridge needs a tx hash, a Safe tx hash or a bundle id');
   return {
     id,
     account: account.toLowerCase(),
@@ -85,6 +89,8 @@ export function createPendingBridge({
     etaAt: now + route.etaMinutes * MINUTE,
     ...(txHash && { txHash }),
     ...(safeTxHash && { safeTxHash }),
+    ...(bundleId && { bundleId }),
+    ...(callsId && { callsId }),
     actions: []
   };
 }
@@ -222,9 +228,29 @@ export const showsActionButton = (bridge: PendingBridge): boolean =>
   !!bridge.nextAction &&
   (isRecoveryAction(bridge.nextAction) ? bridge.status === 'ready' : bridge.requiresClaim);
 
-/** A Safe bridge still waiting to execute: nothing on chain yet, so the user may drop it. */
-export const canDismiss = (bridge: PendingBridge): boolean =>
-  bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash;
+/** After this a wallet bundle with no deposit found on chain may be dismissed. */
+export const BUNDLE_UNSEEN_MS = 30 * MINUTE;
+
+/** A wallet bundle whose deposit hasn't been found on chain for `BUNDLE_UNSEEN_MS`. */
+export const isBundleUnseen = (bridge: PendingBridge, now: number): boolean =>
+  bridge.status === 'pending' &&
+  !!bridge.bundleId &&
+  !bridge.txHash &&
+  now - bridge.startedAt >= BUNDLE_UNSEEN_MS;
+
+/**
+ * Nothing on chain yet, so the user may drop it: a Safe bridge still waiting
+ * to execute, or (given `now`) a wallet bundle unseen for 30 minutes.
+ */
+export const canDismiss = (bridge: PendingBridge, now?: number): boolean =>
+  (bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash) ||
+  (now !== undefined && isBundleUnseen(bridge, now));
+
+/** A wallet bundle that moved no funds; once its deposit was found on chain, only the tracker settles it. */
+export const failBundle = (bridge: PendingBridge, reason: string, now: number): PendingBridge =>
+  isSettled(bridge) || !bridge.bundleId || bridge.txHash
+    ? bridge
+    : { ...bridge, status: 'failed', failureReason: reason, settledAt: now };
 
 /** A destination action the user sent and the transaction flow confirmed. */
 export function recordAction(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
@@ -261,7 +287,7 @@ export const isPendingBridgeVisible = (bridge: PendingBridge, now: number): bool
 /** How often the tracker checks a bridge; undefined once settled. */
 export function pollIntervalMs(bridge: PendingBridge, now: number): number | undefined {
   if (isSettled(bridge)) return undefined;
-  // A queued Safe transaction: signers usually act soon, but can take days.
+  // A queued Safe transaction: signers usually act soon, but can take days. A bundle's hash comes from recovery.
   if (!bridge.txHash) return now - bridge.startedAt <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
   // Anyone can send the next action, so a ready bridge can still settle without us; one left for hours backs off.
   if (bridge.status === 'ready') {

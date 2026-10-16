@@ -1,18 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Hex } from 'viem';
 import { useConfig } from 'wagmi';
-import { getPublicClient } from '@wagmi/core';
+import { getCallsStatus, getPublicClient } from '@wagmi/core';
 import { discoverNativeDeposits } from '../adapters/nativeDeposit/discovery';
 import { getBridgeAdapter } from '../adapters/registry';
 import { executedSafeTxHashes } from '../adapters/safe';
 import { bridgeChainId } from '../model/networks';
+import { isSettled } from '../model/pendingTransitions';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { recoverDeposits } from '../tracking/recoverDeposits';
 import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
 
 const RECOVERY_INTERVAL_MS = 30 * 60_000;
-// A scan that skipped an unreadable block range is retried sooner.
+// A scan that skipped an unreadable block range, or a bundle still without its hash, is retried sooner.
 const PARTIAL_RETRY_MS = 2 * 60_000;
 
 // Per scope: deposits found settled are never read again this session.
@@ -23,11 +24,16 @@ const settledFor = (scope: string) => {
   return settled;
 };
 
+const hasUnminedBundle = (scope: string) =>
+  pendingBridgeStore
+    .getSnapshot(scope)
+    .some(bridge => bridge.bundleId && !bridge.txHash && !isSettled(bridge));
+
 /**
  * Scans Ethereum for the connected account's recent native deposits and adds
  * the ones the store lacks, so the tracker picks them up. Runs on connect and
- * every 30 minutes (2 after a partial scan); a deposit found arrived is not
- * checked again.
+ * every 30 minutes (2 after a partial scan or while a bundle has no hash); a
+ * deposit found arrived is not checked again.
  */
 export function useDepositRecovery() {
   const { account, scope, familyChainId } = usePendingScope();
@@ -40,20 +46,26 @@ export function useDepositRecovery() {
       if (!account || !scope || ethereumChainId === undefined) return { complete: true };
       const l1 = getPublicClient(config, { chainId: ethereumChainId });
       if (!l1) return { complete: true };
-      const { deposits, complete } = await discoverNativeDeposits({
-        l1,
-        account,
-        toBlock: await l1.getBlockNumber()
-      });
+      const blockTime = async (blockNumber: bigint) => {
+        try {
+          return Number((await l1.getBlock({ blockNumber })).timestamp) * 1000;
+        } catch {
+          return undefined;
+        }
+      };
+      const toBlock = await l1.getBlockNumber();
+      const { deposits, complete } = await discoverNativeDeposits({ l1, account, toBlock });
       await recoverDeposits({
         store: pendingBridgeStore,
         scope,
         account,
         deposits,
         now: Date.now,
-        blockTime: async blockNumber => {
+        blockTime,
+        chainNow: await blockTime(toBlock),
+        callsStatus: async id => {
           try {
-            return Number((await l1.getBlock({ blockNumber })).timestamp) * 1000;
+            return await getCallsStatus(config, { id });
           } catch {
             return undefined;
           }
@@ -77,7 +89,9 @@ export function useDepositRecovery() {
     enabled: !!scope && ethereumChainId !== undefined,
     staleTime: RECOVERY_INTERVAL_MS,
     refetchInterval: query =>
-      query.state.data?.complete === false ? PARTIAL_RETRY_MS : RECOVERY_INTERVAL_MS,
+      query.state.data?.complete === false || (!!scope && hasUnminedBundle(scope))
+        ? PARTIAL_RETRY_MS
+        : RECOVERY_INTERVAL_MS,
     refetchOnWindowFocus: false,
     retry: false
   });

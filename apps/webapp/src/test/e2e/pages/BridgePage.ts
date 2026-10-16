@@ -8,9 +8,9 @@ import { locate } from './locate';
 export class BridgePage {
   constructor(private readonly page: Page) {}
 
-  async gotoConnected() {
+  async gotoConnected({ batch = true }: { batch?: boolean } = {}) {
     await this.page.goto('/convert?tab=bridge');
-    await connectAndVerify(this.page, { batch: true });
+    await connectAndVerify(this.page, { batch });
     await expect(this.panel()).toBeVisible();
     await this.expectBalanceLoaded();
   }

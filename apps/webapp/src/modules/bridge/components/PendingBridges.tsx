@@ -217,7 +217,7 @@ function PendingBridgeCard({
   actionHint,
   actionLocked
 }: PendingBridgeCardProps) {
-  const dismissible = canDismiss(bridge);
+  const dismissible = canDismiss(bridge, now);
   const hint = dismissible ? undefined : actionHint(bridge);
   const note = pendingBridgeNote(bridge, now);
   const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
@@ -267,7 +267,7 @@ function PendingBridgeCard({
         )}
       </div>
 
-      {dismissible && (
+      {dismissible && bridge.safeTxHash && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
           <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
         </Text>

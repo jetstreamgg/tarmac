@@ -1,5 +1,5 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { canDismiss, isSettled } from '../model/pendingTransitions';
+import { applyProgress, canDismiss, isSettled } from '../model/pendingTransitions';
 import type {
   BridgeRouteKind,
   PendingBridge,
@@ -78,6 +78,8 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.nextAction, action => NEXT_ACTIONS.has(action)) ||
     !optional(entry.txHash, isString) ||
     !optional(entry.safeTxHash, isString) ||
+    !optional(entry.bundleId, isString) ||
+    !optional(entry.callsId, isString) ||
     !optional(entry.recipient, isString) ||
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
     !optional(entry.readyAt, at => typeof at === 'number') ||
@@ -240,16 +242,45 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       );
     },
     /**
-     * Drops a queued Safe bridge the user dismissed; entries this bundle can't parse stay.
+     * Drops a bridge the user dismissed (see `canDismiss`); entries this bundle can't parse stay.
      * Checks the latest entry, so a bridge another tab saw execute is kept.
      */
     dismiss(scope: string, id: string) {
       const current = latest(scope);
       const existing = current.find(entry => entry.id === id);
-      if (!existing || !canDismiss(existing)) return;
+      if (!existing || !canDismiss(existing, now())) return;
       write(
         scope,
         current.filter(entry => entry.id !== id),
+        id
+      );
+    },
+    /**
+     * Gives a wallet bundle's card the hash its deposit mined under, at `executedAt`
+     * when known. Drops the card instead when another one already tracks that deposit.
+     */
+    resolveBundle(scope: string, id: string, txHash: string, executedAt?: number) {
+      const current = latest(scope);
+      const existing = current.find(entry => entry.id === id);
+      if (!existing?.bundleId || existing.txHash || isSettled(existing)) return;
+      const hash = txHash.toLowerCase();
+      const tracked = current.some(
+        entry =>
+          entry !== existing && (entry.id.toLowerCase() === hash || entry.txHash?.toLowerCase() === hash)
+      );
+      if (tracked) {
+        write(
+          scope,
+          current.filter(entry => entry !== existing),
+          id
+        );
+        return;
+      }
+      const next = applyProgress(existing, { kind: 'source-executed', txHash, executedAt }, now());
+      if (next === existing) return;
+      write(
+        scope,
+        current.map(entry => (entry === existing ? next : entry)),
         id
       );
     },

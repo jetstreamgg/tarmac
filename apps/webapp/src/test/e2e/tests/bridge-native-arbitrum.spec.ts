@@ -19,7 +19,7 @@ import {
   arbRetryableTxAbi
 } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
-import { arbitrumSubmissionFee, l2UsdsBalance, pendingDepositTxHash } from '../utils/bridgeRelay';
+import { arbitrumSubmissionFee, awaitDepositTxHash, l2UsdsBalance } from '../utils/bridgeRelay';
 import { installArbitrumShim } from '../utils/arbitrumShim';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 import { NetworkName } from '../utils/constants';
@@ -39,9 +39,8 @@ async function deposit(page: Page, amount: string) {
   await expectTransactionSuccess(page, { title: 'Bridge initiated!', timeout: 90_000 });
   const card = bridge.card('Arbitrum One');
   await expect(card.getByTestId('pending-bridge-status')).toHaveText('Pending', { timeout: 30_000 });
-  const txHash = await pendingDepositTxHash(page, 'arbitrum');
-  expect(txHash).toBeTruthy();
-  return { shim, bridge, card, txHash: txHash! };
+  const txHash = await awaitDepositTxHash(page, 'arbitrum');
+  return { shim, bridge, card, txHash };
 }
 
 // A recovery leaves the wallet on Arbitrum, outside the Ethereum fork's pending scope.

@@ -13,7 +13,10 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * skipped approve or a Retry that resumes at the bridge leg still records it.
  * `onFailed` gets the sent hash when it reverted or was cancelled or replaced;
  * a Safe's execution is read by its tracker instead. A send sped up in the
- * wallet starts again under a new hash, passed to `onRepriced`.
+ * wallet starts again under a new hash, passed to `onRepriced`. A wallet
+ * bundle has no hash when accepted: `onBundled` records it under the id it
+ * returns, `onBundleMined` gets that id and the hash the bundle reported once
+ * it mines, and a failed bundle is passed to `onFailed` with that id.
  */
 export function withSourceRecording(
   getCallbacks: () => TxCallbacks,
@@ -24,7 +27,9 @@ export function withSourceRecording(
     onQueued,
     onExecuted,
     onFailed,
-    onRepriced
+    onRepriced,
+    onBundled,
+    onBundleMined
   }: {
     isSafe: boolean;
     /** The function name of the call that moves the funds, e.g. `depositForBurn`. */
@@ -34,10 +39,14 @@ export function withSourceRecording(
     onExecuted: (txHash: string, safeTxHash: string | undefined) => void;
     onFailed: (txHash: string, reason: string) => void;
     onRepriced: (txHash: string, newTxHash: string) => void;
+    /** Records an accepted wallet bundle and returns its card id. */
+    onBundled?: () => string;
+    onBundleMined?: (bundleId: string, hash: string | undefined) => void;
   }
 ): TxCallbacks {
   let isBridgeLeg = true;
   let recorded: string | undefined;
+  let bundled = false;
   // The hash the recorded send will mine under.
   let current: string | undefined;
   return {
@@ -51,6 +60,9 @@ export function withSourceRecording(
         recorded = current = hash;
         if (isSafe) onQueued(hash);
         else onSent(hash);
+      } else if (!hash && isBridgeLeg && !isSafe && !recorded && onBundled) {
+        recorded = onBundled();
+        bundled = true;
       } else if (hash && isBridgeLeg && !isSafe && recorded && hash !== current) {
         current = hash;
         onRepriced(recorded, hash);
@@ -58,13 +70,17 @@ export function withSourceRecording(
       getCallbacks().onStart(hash);
     },
     onSuccess: (hash, blockNumber) => {
-      if (hash && isSafe) onExecuted(hash, recorded);
+      // A bundle's success hash can be another call's, e.g. the approve.
+      if (bundled && recorded) onBundleMined?.(recorded, hash);
+      else if (hash && isSafe) onExecuted(hash, recorded);
       else if (hash && !recorded) onSent(hash);
       getCallbacks().onSuccess(hash, blockNumber);
     },
     // Recorded only for the sent hash: the sequential flow can pass the previous leg's hash, and a batch its call id.
     onError: (error, hash) => {
-      if (!isSafe && recorded && (hash === recorded || hash === current)) {
+      if (bundled && recorded) {
+        if (isBundleFailure(error)) onFailed(recorded, 'source-tx-reverted');
+      } else if (!isSafe && recorded && (hash === recorded || hash === current)) {
         if (error instanceof TransactionReplacedError) onFailed(recorded, 'source-tx-replaced');
         else if (isRevertedError(error as WaitForTransactionReceiptErrorType))
           onFailed(recorded, 'source-tx-reverted');
@@ -73,3 +89,13 @@ export function withSourceRecording(
     }
   };
 }
+
+/** The batch engine's error for a bundle that settled as failed, or a reverted receipt. */
+function isBundleFailure(error: unknown): boolean {
+  return (
+    (error instanceof Error && error.message === BATCH_FAILED_MESSAGE) ||
+    isRevertedError(error as WaitForTransactionReceiptErrorType)
+  );
+}
+
+const BATCH_FAILED_MESSAGE = 'ERROR: Batch transaction failed';

@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useChains } from 'wagmi';
+import { useChains, usePublicClient } from 'wagmi';
+import type { Hex } from 'viem';
 import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
-import { useIsSafeWallet, useNetworkFee, useTokenBalance } from '@/hooks';
+import { useIsSafeWallet, useNetworkFee, useSafeWalletStatus, useTokenBalance } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
+import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
@@ -16,12 +18,13 @@ import { formatEthCeil, formatMaxEthFee } from '../components/bridgeModalRows';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
 import { sendsToOther } from '../model/recipient';
-import { applyProgress, createPendingBridge } from '../model/pendingTransitions';
+import { applyProgress, createPendingBridge, failBundle } from '../model/pendingTransitions';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { withSourceRecording } from '../tracking/sourceRecording';
+import { bundleDepositIn } from '../tracking/bundleDeposit';
 import type { BridgeFormModel } from './useBridgeForm';
 import { isNativeDepositNetwork, type NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { nativeDepositFunction, useNativeDepositLegs } from './useNativeDepositLegs';
@@ -47,6 +50,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const sessionId = useId();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
+  const safeStatus = useSafeWalletStatus();
   const isSafeApp = useIsSafeApp();
   const queryClient = useQueryClient();
   const { account, scope, familyChainId } = usePendingScope();
@@ -67,6 +71,11 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const isNativeDeposit = depositTo !== undefined;
   // The session callbacks of the Confirm that started the legs.
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
+  // A Safe, or a wallet not known yet not to be one, signs one leg at a time.
+  const batch = useShouldUseBatch(safeStatus === 'not-safe');
+  // The wallet's id of the bundle it just accepted, set right before the bundle's onStart records it.
+  const callsIdRef = useRef<string | undefined>(undefined);
+  const l1 = usePublicClient({ chainId: pinnedChainId });
   const deposit = useNativeDepositLegs({
     enabled: isNativeDeposit && form.isConnected && (runningTo !== undefined || !form.reviewBlocked),
     // Any network while disabled.
@@ -76,6 +85,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     recipient,
     amount,
     isSafeApp,
+    batch,
+    onCallsSent: id => {
+      callsIdRef.current = id;
+    },
     getCallbacks: () => legCallbacksRef.current
   });
   const { reset: resetDeposit, refetchAllowance } = deposit;
@@ -187,15 +200,15 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       const isCurrent = () => !depositTo || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
       confirmedLaunchRef.current = launchId;
-      // Marks the bridge sent; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
-      const markSent = (txHash?: string) => {
+      // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
+      const markSent = (id?: string) => {
         if (confirmedLaunchRef.current > launchId) {
-          if (txHash && !sentRef.current) unresolvedRef.current = txHash;
+          if (id && !sentRef.current) unresolvedRef.current = id;
           return;
         }
         const first = !sentRef.current;
         sentRef.current = true;
-        if (txHash) unresolvedRef.current = txHash;
+        if (id) unresolvedRef.current = id;
         if (first && !isCurrent()) {
           deposit.stop();
           legCallbacksRef.current = callbacks;
@@ -225,18 +238,56 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           } else
             pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
         },
+        // A bundle has no hash until it mines.
+        onBundled: () => {
+          const bundleId = `bundle-${crypto.randomUUID()}`;
+          const callsId = callsIdRef.current;
+          callsIdRef.current = undefined;
+          pendingBridgeStore.upsert(
+            scope,
+            createPendingBridge({ ...record, bundleId, callsId, now: Date.now() })
+          );
+          markSent(bundleId);
+          return bundleId;
+        },
+        // Its card gets the deposit's hash from the receipt; recovery reads it from the chain when that fails.
+        onBundleMined: (bundleId, hash) =>
+          void (async () => {
+            const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bundleId);
+            try {
+              const receipt = bridge && hash && (await l1?.getTransactionReceipt({ hash: hash as Hex }));
+              const deposit = bridge && receipt ? bundleDepositIn(bridge, [receipt]) : undefined;
+              if (deposit) {
+                pendingBridgeStore.resolveBundle(scope, bundleId, deposit.txHash);
+                const hash = deposit.txHash.toLowerCase();
+                // Untracked when a scan gave its card another deposit like it: recovery gives this one its own card.
+                const tracked = pendingBridgeStore
+                  .getSnapshot(scope)
+                  .some(entry => entry.id.toLowerCase() === hash || entry.txHash?.toLowerCase() === hash);
+                if (tracked) return;
+              }
+            } catch {
+              // Read by recovery.
+            }
+            void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
+          })(),
         // Sped up in the wallet: the tracker reads the hash that will mine.
         onRepriced: (txHash, newTxHash) =>
           pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash })),
         // The funds never left, so Retry may send again.
-        onFailed: (txHash, reason) => {
-          if (unresolvedRef.current === txHash) {
+        onFailed: (id, reason) => {
+          if (unresolvedRef.current === id) {
             sentRef.current = false;
             unresolvedRef.current = undefined;
           }
-          pendingBridgeStore.update(scope, txHash, bridge =>
-            applyProgress(bridge, { kind: 'failed', reason }, Date.now())
+          pendingBridgeStore.update(scope, id, bridge =>
+            bridge.bundleId
+              ? failBundle(bridge, reason, Date.now())
+              : applyProgress(bridge, { kind: 'failed', reason }, Date.now())
           );
+          // A wallet that broke the bundle up may have sent the deposit anyway.
+          if (id.startsWith('bundle-'))
+            void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
         }
       });
       const callbacks: TxCallbacks = {
@@ -260,11 +311,11 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   });
 
   const bridgeFee = deposit.maxFee !== undefined ? formatMaxEthFee(deposit.maxFee) : undefined;
-  // Gas only, signed one leg at a time; the Arbitrum ticket's ETH is the bridge fee.
+  // Gas only; the Arbitrum ticket's ETH is the bridge fee.
   const { data: networkFee } = useNetworkFee({
     calls: deposit.calls,
     chainId: pinnedChainId,
-    shouldUseBatch: false,
+    shouldUseBatch: deposit.isBatch,
     enabled: isNativeDeposit && deposit.calls.length > 0
   });
   const networkFeeText = networkFee?.formatted ?? NO_VALUE;
@@ -293,6 +344,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
   const confirmDisabled =
     !form.isConnected || form.reviewBlocked || (isNativeDeposit && !deposit.ready) || feeShort;
+  // The mock routes send one leg at a time.
+  const bundled = isNativeDeposit && deposit.isBatch;
   const feeText = deposit.maxFee !== undefined ? formatEthCeil(deposit.maxFee) : NO_VALUE;
   const errorMessage =
     feeShort && ethBalance
@@ -330,6 +383,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       steps,
       confirmLabel: t`Confirm`,
       confirmDisabled,
+      bundled,
       errorMessage,
       onConfirm: () => executeRef.current(),
       onSuccess,
@@ -347,6 +401,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     transactionScreenContent,
     steps,
     confirmDisabled,
+    bundled,
     errorMessage,
     onSuccess,
     sessionId,
@@ -360,6 +415,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       transactionContent,
       transactionScreenContent,
       confirmDisabled,
+      bundled,
       errorMessage,
       steps
     });
@@ -371,6 +427,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     transactionContent,
     transactionScreenContent,
     confirmDisabled,
+    bundled,
     errorMessage,
     steps
   ]);

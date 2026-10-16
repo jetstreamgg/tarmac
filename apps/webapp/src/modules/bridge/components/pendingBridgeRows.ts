@@ -15,7 +15,7 @@ import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { DAY_MINUTES } from '../model/resolveRoute';
-import { REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
+import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
 
@@ -96,7 +96,7 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
   if (bridge.status === 'ready' && (bridge.nextAction === 'redeem' || bridge.nextAction === 'replay'))
     return NO_VALUE;
   if (bridge.status !== 'pending') return t`Arrived`;
-  // A queued Safe transaction: the clock starts once it executes.
+  // A queued Safe transaction or an unmined bundle: the clock starts once it executes.
   if (!bridge.txHash) return NO_VALUE;
   // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
   const elapsedFrom = Math.max(now, bridge.startedAt);
@@ -136,18 +136,24 @@ export function buildPendingBridgeRows(
           }
         : bridge.status === 'failed'
           ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }
-          : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
-            {
-              kind: 'link',
-              label: t`Transaction`,
-              value: t`Awaiting signatures`,
-              href:
-                sourceChainId !== undefined &&
-                bridge.safeTxHash &&
-                SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
-                  ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
-                  : undefined
-            }
+          : bridge.bundleId
+            ? {
+                kind: 'text',
+                label: t`Transaction`,
+                value: isBundleUnseen(bridge, now) ? t`Not found on Ethereum yet` : t`Confirming on Ethereum`
+              }
+            : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
+              {
+                kind: 'link',
+                label: t`Transaction`,
+                value: t`Awaiting signatures`,
+                href:
+                  sourceChainId !== undefined &&
+                  bridge.safeTxHash &&
+                  SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
+                    ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
+                    : undefined
+              }
     ]
   ];
 }

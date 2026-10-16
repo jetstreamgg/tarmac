@@ -1396,6 +1396,7 @@ export function TransactionProvider({
             txStatus={modalView.txStatus}
             confirmLabel={modalView.config.confirmLabel}
             confirmDisabled={modalView.config.confirmDisabled}
+            bundled={modalView.config.bundled}
             errorMessage={modalView.config.errorMessage}
             successLabel={modalView.config.successLabel}
             errorLabel={modalView.config.errorLabel}
