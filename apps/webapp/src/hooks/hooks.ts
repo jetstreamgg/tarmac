@@ -91,6 +91,13 @@ export type BatchWriteHook = {
   calls?: Call[];
   /** Whether those calls will go out bundled, which changes what the flow costs. */
   isBatch?: boolean;
+  /**
+   * The calls `execute()` would send from here: the remainder of the sequence frozen at
+   * the run's start while a sequential run is in progress (including paused after a
+   * mined step), the live calls otherwise.
+   * What the modal re-validates a deferred dispatch against.
+   */
+  nextCalls?: Call[];
 };
 
 export type BatchTransactionFlowHook = BatchWriteHook & {
@@ -179,4 +186,6 @@ export type SequentialTransactionHook = {
    * once the run is clear, immediately when nothing was out.
    */
   reset: (onCleared?: () => void) => void;
+  /** See `BatchWriteHook.nextCalls`. */
+  nextCalls: Call[];
 };
