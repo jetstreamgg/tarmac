@@ -1,4 +1,4 @@
-import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useConnection, useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { isRevertedError, markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
@@ -10,6 +10,7 @@ import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } fro
 const notSendable = () => new Error('The transaction can no longer be sent');
 const resimulationFailure = (error: Error | null) =>
   error ? toError(error) : new Error('The simulation returned no request');
+const accountSwitched = () => new Error('The wallet switched accounts during the run');
 
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
@@ -63,6 +64,17 @@ export function useSequentialTransactionFlow(
   useEffect(() => {
     enabledRef.current = enabled;
   }, [enabled]);
+  // The account that started the run. A later step is only sent from it: the
+  // frozen calls can name the starting account (a deposit's receiver), so
+  // another account signing them would pay into that account's position.
+  const { address } = useConnection();
+  const runAccountRef = useRef<string | undefined>(undefined);
+  const addressRef = useRef(address);
+  useEffect(() => {
+    addressRef.current = address;
+  }, [address]);
+  const isRunAccount = (account: string | undefined) =>
+    account?.toLowerCase() === runAccountRef.current?.toLowerCase();
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
@@ -178,12 +190,21 @@ export function useSequentialTransactionFlow(
       currentIndex < stableTransactions.length &&
       dispatchedIndexRef.current !== currentIndex && // one dispatch per index — see the ref
       reportedSimulationIndexRef.current !== currentIndex &&
+      isRunAccount(address) && // see the account-switch pause below
       !transactionHashes[currentIndex] // Only execute if not already executed
     ) {
       dispatchedIndexRef.current = currentIndex;
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     }
-  }, [currentIndex, prepared, simulationData, stableTransactions.length, transactionHashes, writeContract]);
+  }, [
+    currentIndex,
+    prepared,
+    simulationData,
+    stableTransactions.length,
+    transactionHashes,
+    writeContract,
+    address
+  ]);
 
   const lastProcessedTxHash = useRef<string | undefined>(undefined);
 
@@ -220,6 +241,23 @@ export function useSequentialTransactionFlow(
     setHasFailed(true);
     emitError(markStalledStep(simulationError), '');
   }, [isExecuting, currentIndex, simulationError]);
+
+  // The wallet moved to another account after a step mined. Pause like a
+  // stalled step, so Retry goes through the modal's dispatch checks, which
+  // refuse it unless the wallet is back on the starting account.
+  useEffect(() => {
+    if (
+      !isExecuting ||
+      currentIndex === 0 ||
+      isRunAccount(address) ||
+      dispatchedIndexRef.current === currentIndex ||
+      reportedSimulationIndexRef.current === currentIndex
+    )
+      return;
+    reportedSimulationIndexRef.current = currentIndex;
+    setHasFailed(true);
+    emitError(markStalledStep(accountSwitched()), '');
+  }, [isExecuting, currentIndex, address]);
 
   // Handle transaction completion
   useEffect(() => {
@@ -357,13 +395,14 @@ export function useSequentialTransactionFlow(
         if (resimulationRef.current !== token) return;
         resimulationRef.current = null;
         const live = enabledRef.current;
-        const request = live && !error ? data?.request : undefined;
+        const sameAccount = isRunAccount(addressRef.current);
+        const request = live && sameAccount && !error ? data?.request : undefined;
         if (request) {
           onSent?.();
           writeContract(request as Parameters<typeof writeContract>[0]);
         } else {
           onFailed?.();
-          onError(live ? resimulationFailure(error) : notSendable(), '');
+          onError(!live ? notSendable() : !sameAccount ? accountSwitched() : resimulationFailure(error), '');
         }
       });
     };
@@ -387,6 +426,7 @@ export function useSequentialTransactionFlow(
       if (!isResume) {
         setFrozenCalls(calls); // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check
+        runAccountRef.current = addressRef.current;
       }
       // This call is dispatched here, so claim its index before the auto-execute
       // effect can see it (a retry re-enters at a non-zero currentIndex).
