@@ -1,6 +1,7 @@
 import { Outlet } from '@tanstack/react-router';
 import { useChainId } from 'wagmi';
 import { Layout } from '@/modules/layout/components/Layout';
+import { BridgeTracker } from '@/modules/bridge/components/BridgeTracker';
 import { AppContainer } from './AppContainer';
 import { useAppOrchestration } from '../hooks/useAppOrchestration';
 import { useWidgetItems } from '../hooks/useWidgetItems';
@@ -29,6 +30,8 @@ export function AppShell() {
 
   return (
     <Layout>
+      {/* Tracks pending bridges on every route, not only the Bridge tab. */}
+      <BridgeTracker />
       {/* Pages render bare — directly on the page background, no container
           card (V2 Figma) — and scroll on the document. */}
       <AppContainer>

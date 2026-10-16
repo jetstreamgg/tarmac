@@ -1,8 +1,12 @@
 import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { isRevertedError, toError } from '../helpers';
+import { isRevertedError, toError, TransactionReplacedError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
-import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
+import {
+  SequentialTransactionHook,
+  TxMutateVariables,
+  UseSequentialTransactionFlowParameters
+} from '../hooks';
 
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
@@ -15,7 +19,8 @@ export function useSequentialTransactionFlow(
     onSuccess = () => null,
     onError = () => null,
     gcTime = 30000,
-    chainId
+    chainId,
+    failOnReplaced = false
   } = parameters;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -57,6 +62,9 @@ export function useSequentialTransactionFlow(
       abi: currentTransaction?.abi,
       functionName: currentTransaction?.functionName,
       args: currentTransaction?.args,
+      // A payable call's ETH; dropped here, the wallet would send none.
+      value: currentTransaction?.value,
+      gas: currentTransaction?.gas,
       query: {
         // Only enable simulation for the first transaction initially, or for subsequent transactions after previous success
         enabled:
@@ -77,28 +85,46 @@ export function useSequentialTransactionFlow(
     refetch: refetchSimulation
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
 
+  // The request of the latest wallet prompt. Each dispatch gets its own object, so the
+  // variables wagmi passes back tell a prompt signed late from the one in flight.
+  const latestRequestRef = useRef<object | undefined>(undefined);
+  const isLatest = (variables?: object) => !variables || variables === latestRequestRef.current;
+  const emitStart = (hash: string, variables?: TxMutateVariables) =>
+    variables ? onStart(hash, variables) : onStart(hash);
   const {
-    writeContract,
+    writeContract: writeContractMutation,
     error: writeError,
     data: mutationHash,
+    variables: writeVariables,
     reset: resetWrite
   } = useWriteContract({
     mutation: {
       onMutate,
-      onSuccess: (hash: `0x${string}`) => {
-        setHasWriteError(false);
-        onStart(hash);
+      onSuccess: (hash: `0x${string}`, variables) => {
+        if (isLatest(variables)) setHasWriteError(false);
+        emitStart(hash, variables);
       },
-      onError: (err: Error) => {
-        setHasWriteError(true);
-        // Nothing has mined after a first-call rejection, so there is nothing to
-        // resume — and a snapshot kept here would have the next confirm sign the
-        // pre-rejection call after the user went back and edited it (APP-448).
-        if (currentIndex === 0) setIsExecuting(false);
-        onError(err, mutationHash || '');
+      onError: (err: Error, variables) => {
+        // An earlier prompt settling late must not stop the run in flight.
+        if (isLatest(variables)) {
+          setHasWriteError(true);
+          // Nothing has mined after a first-call rejection, so there is nothing to
+          // resume — and a snapshot kept here would have the next confirm sign the
+          // pre-rejection call after the user went back and edited it (APP-448).
+          if (currentIndex === 0) setIsExecuting(false);
+        }
+        onError(err, mutationHash || '', variables);
       }
     }
   });
+  const writeContract = useCallback(
+    (request: Parameters<typeof writeContractMutation>[0]) => {
+      const fresh = { ...request };
+      latestRequestRef.current = fresh;
+      writeContractMutation(fresh);
+    },
+    [writeContractMutation]
+  );
 
   // Workaround to get `txHash` from Safe connector
   const { transactionHash: eventHash, isSafeApp: isSafeConnector } = useWaitForSafeTxHash({
@@ -111,6 +137,12 @@ export function useSequentialTransactionFlow(
     [eventHash, mutationHash, isSafeConnector]
   );
 
+  // The hash viem saw cancelled or replaced; its receipt is the replacing tx's.
+  const replacedHashRef = useRef<string | undefined>(undefined);
+  // With failOnReplaced, a repriced tx (same call, new fee) is reported under the hash that mines.
+  const repricedRef = useRef<{ from: string; to: string } | undefined>(undefined);
+  const minedHash = (hash: string) => (repricedRef.current?.from === hash ? repricedRef.current.to : hash);
+
   // Monitor current transaction
   const {
     isLoading: isMining,
@@ -119,7 +151,14 @@ export function useSequentialTransactionFlow(
     failureReason,
     data: receipt
   } = useWaitForTransactionReceipt({
-    hash: txHash
+    hash: txHash,
+    onReplaced: replacement => {
+      if (replacement.reason !== 'repriced') replacedHashRef.current = txHash;
+      else if (failOnReplaced && txHash) {
+        repricedRef.current = { from: txHash, to: replacement.transaction.hash };
+        emitStart(replacement.transaction.hash, writeVariables);
+      }
+    }
   });
 
   const txReverted = isRevertedError(failureReason);
@@ -185,7 +224,17 @@ export function useSequentialTransactionFlow(
     // Only process if we're executing
     if (!isExecuting) return;
 
-    if (txHash && isSuccess && !txReverted && lastProcessedTxHash.current !== txHash) {
+    if (
+      failOnReplaced &&
+      txHash &&
+      isSuccess &&
+      replacedHashRef.current === txHash &&
+      lastProcessedTxHash.current !== txHash
+    ) {
+      lastProcessedTxHash.current = txHash;
+      emitError(new TransactionReplacedError(), txHash);
+      setIsExecuting(false);
+    } else if (txHash && isSuccess && !txReverted && lastProcessedTxHash.current !== txHash) {
       lastProcessedTxHash.current = txHash;
 
       const newHashes = [...transactionHashes];
@@ -195,7 +244,7 @@ export function useSequentialTransactionFlow(
       // Done only when every expected call has produced a hash, not merely when the index reaches the count.
       if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
-        emitSuccess(txHash, receipt?.blockNumber);
+        emitSuccess(minedHash(txHash), receipt?.blockNumber);
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
@@ -213,7 +262,7 @@ export function useSequentialTransactionFlow(
     ) {
       lastProcessedTxHash.current = txHash;
       // Transaction failed
-      emitError(toError(miningError || failureReason), txHash);
+      emitError(toError(miningError || failureReason), minedHash(txHash));
       setIsExecuting(false);
     }
   }, [
@@ -225,7 +274,8 @@ export function useSequentialTransactionFlow(
     txReverted,
     receipt?.blockNumber,
     currentIndex,
-    transactionHashes
+    transactionHashes,
+    failOnReplaced
   ]);
 
   const reset = useCallback(() => {
@@ -235,6 +285,7 @@ export function useSequentialTransactionFlow(
     setHasWriteError(false);
     dispatchedIndexRef.current = -1;
     reportedSimulationIndexRef.current = -1;
+    latestRequestRef.current = undefined;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution

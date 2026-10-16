@@ -123,6 +123,8 @@ export type TransactionModalProps = {
   confirmLabel?: string;
   /** Disables the Confirm button (e.g. while a quote is refetching). */
   confirmDisabled?: boolean;
+  /** Whether the steps go out as one wallet bundle; unset, read from the batch toggle and the wallet. */
+  bundled?: boolean;
   /**
    * User-readable engine/prepare failure rendered above the review screen's
    * confirm button; the entry screen reads `entry.errorMessage` instead (same
@@ -230,6 +232,7 @@ export function TransactionModal({
   txStatus,
   confirmLabel,
   confirmDisabled,
+  bundled,
   errorMessage,
   successLabel,
   errorLabel,
@@ -277,7 +280,7 @@ export function TransactionModal({
   // Same expression the launch hooks use for `shouldUseBatch` — when true the
   // whole flow is one EIP-5792 bundle, rendered as the DS Bundle variant (all
   // steps active together, "Bundled" header badge).
-  const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
+  const isBundled = bundled ?? !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
   // Failures render inside the step list (retitled step + inline "Try again",
   // Figma 1030:139111) and drop the bottom status row/buttons — the header
