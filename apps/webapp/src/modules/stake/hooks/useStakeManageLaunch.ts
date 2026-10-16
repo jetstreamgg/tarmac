@@ -13,7 +13,7 @@ import {
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -246,7 +246,7 @@ export function useStakeManageLaunch({
     enabled: enabled && calldata.length > 0,
     ...txCallbacks
   });
-  useResetPausedRunOnClose(engine.reset, refetchAllowances);
+  useResetUnfinishedRunOnClose(engine.reset, refetchAllowances);
 
   // Live execute ref: launch() must never snapshot onConfirm state.
   const executeRef = useRef(engine.execute);

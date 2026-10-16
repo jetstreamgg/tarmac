@@ -1,8 +1,15 @@
 import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { isRevertedError, toError } from '../helpers';
+import { isRevertedError, markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
+
+// A refetch runs even while the query is disabled, so a Retry that re-simulates
+// checks the caller's `enabled` gate itself, at the click and again when the
+// result lands.
+const notSendable = () => new Error('The transaction can no longer be sent');
+const resimulationFailure = (error: Error | null) =>
+  error ? toError(error) : new Error('The simulation returned no request');
 
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
@@ -21,7 +28,9 @@ export function useSequentialTransactionFlow(
   const [currentIndex, setCurrentIndex] = useState(0);
   const [transactionHashes, setTransactionHashes] = useState<string[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [hasWriteError, setHasWriteError] = useState(false);
+  // The current call failed, in the wallet or on-chain: ends the loading state while a
+  // paused run (isExecuting held after a mined step) waits for Retry.
+  const [hasFailed, setHasFailed] = useState(false);
 
   // Snapshot of `calls` frozen at execute() time — keeps a refetching quote
   // from swapping in different args after the user clicked Confirm.
@@ -40,6 +49,20 @@ export function useSequentialTransactionFlow(
   // Retry: a simulation that recovers on its own must not send it behind the
   // error screen.
   const reportedSimulationIndexRef = useRef(-1);
+  // The step whose send reverted on-chain, and a Retry's in-flight re-simulation
+  // (a token, so a reset or unmount drops a result that settles afterwards).
+  const revertedIndexRef = useRef(-1);
+  const resimulationRef = useRef<object | null>(null);
+  // Set by a reset() that found a write out (the modal closed mid-run): that
+  // write settles and reports, nothing after it is sent, then the run clears.
+  // The run stays loading meanwhile, so no second write can overlap it: a
+  // replaced write still fires the mutation's callbacks when it settles.
+  const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+  const finishDetachedRef = useRef(() => {});
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? frozenCalls : calls;
@@ -81,21 +104,23 @@ export function useSequentialTransactionFlow(
     writeContract,
     error: writeError,
     data: mutationHash,
+    isPending: isWritePending,
     reset: resetWrite
   } = useWriteContract({
     mutation: {
       onMutate,
       onSuccess: (hash: `0x${string}`) => {
-        setHasWriteError(false);
+        setHasFailed(false);
         onStart(hash);
       },
       onError: (err: Error) => {
-        setHasWriteError(true);
+        setHasFailed(true);
         // Nothing has mined after a first-call rejection, so there is nothing to
         // resume — and a snapshot kept here would have the next confirm sign the
         // pre-rejection call after the user went back and edited it (APP-448).
         if (currentIndex === 0) setIsExecuting(false);
         onError(err, mutationHash || '');
+        if (detachedRef.current) finishDetachedRef.current();
       }
     }
   });
@@ -123,6 +148,16 @@ export function useSequentialTransactionFlow(
   });
 
   const txReverted = isRevertedError(failureReason);
+
+  // A write in the wallet, awaiting a Safe's co-signers, or mining.
+  const writeOut =
+    !!isWritePending ||
+    (!!mutationHash && !txHash) ||
+    (!!txHash && !isSuccess && !miningError && !txReverted);
+  const writeOutRef = useRef(writeOut);
+  useEffect(() => {
+    writeOutRef.current = writeOut;
+  }, [writeOut]);
 
   // Check if current transaction is prepared
   const prepared = useMemo(() => {
@@ -153,6 +188,8 @@ export function useSequentialTransactionFlow(
     return () => {
       lastProcessedTxHash.current = undefined;
       dispatchedIndexRef.current = -1;
+      revertedIndexRef.current = -1;
+      resimulationRef.current = null;
     };
   }, []);
 
@@ -176,8 +213,8 @@ export function useSequentialTransactionFlow(
     )
       return;
     reportedSimulationIndexRef.current = currentIndex;
-    setHasWriteError(true);
-    emitError(simulationError, '');
+    setHasFailed(true);
+    emitError(markStalledStep(simulationError), '');
   }, [isExecuting, currentIndex, simulationError]);
 
   // Handle transaction completion
@@ -202,6 +239,10 @@ export function useSequentialTransactionFlow(
         lastProcessedTxHash.current = undefined; // Reset ref on completion
         dispatchedIndexRef.current = -1; // next flow starts from a clean latch
         reportedSimulationIndexRef.current = -1;
+        revertedIndexRef.current = -1;
+        if (detachedRef.current) finishDetachedRef.current();
+      } else if (detachedRef.current) {
+        finishDetachedRef.current();
       } else {
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
@@ -214,7 +255,20 @@ export function useSequentialTransactionFlow(
       lastProcessedTxHash.current = txHash;
       // Transaction failed
       emitError(toError(miningError || failureReason), txHash);
-      setIsExecuting(false);
+      // Like a wallet rejection (see the write's onError), a revert after a mined
+      // step keeps the run paused so Retry resumes the frozen remainder: the live
+      // `calls` has dropped the mined approve, so slicing it at currentIndex would
+      // come up empty and leave nothing to retry. Only a revert: any other receipt
+      // error (an RPC failing to poll) can leave the tx pending, and resuming
+      // would sign it a second time.
+      if (detachedRef.current) {
+        finishDetachedRef.current();
+        return;
+      }
+      const paused = currentIndex > 0 && txReverted;
+      if (paused) revertedIndexRef.current = currentIndex;
+      setIsExecuting(paused);
+      setHasFailed(paused);
     }
   }, [
     isExecuting,
@@ -228,17 +282,40 @@ export function useSequentialTransactionFlow(
     transactionHashes
   ]);
 
-  const reset = useCallback(() => {
+  const clearRun = useCallback(() => {
+    detachedRef.current = null;
     setIsExecuting(false);
     setCurrentIndex(0);
     setTransactionHashes([]);
-    setHasWriteError(false);
+    setHasFailed(false);
     dispatchedIndexRef.current = -1;
     reportedSimulationIndexRef.current = -1;
+    revertedIndexRef.current = -1;
+    resimulationRef.current = null;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution
   }, [resetWrite]);
+
+  useEffect(() => {
+    finishDetachedRef.current = () => {
+      const onCleared = detachedRef.current?.onCleared;
+      clearRun();
+      onCleared?.();
+    };
+  }, [clearRun]);
+
+  const reset = useCallback(
+    (onCleared?: () => void) => {
+      if (writeOutRef.current) {
+        detachedRef.current = { onCleared };
+        return;
+      }
+      clearRun();
+      onCleared?.();
+    },
+    [clearRun]
+  );
 
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
@@ -259,7 +336,50 @@ export function useSequentialTransactionFlow(
       return;
     }
 
-    if (simulationData?.request) {
+    // A Retry that re-simulates before sending. The token is the in-flight
+    // latch, so a second click is a no-op and a reset or unmount (which clears
+    // it) drops a result that lands afterwards, even if a new run has reached
+    // the same step. A failed refetch keeps the last good `data`, so only a
+    // refetch without an error may send.
+    const resimulateAndSend = ({ onSent, onFailed }: { onSent?: () => void; onFailed?: () => void }) => {
+      if (resimulationRef.current) return;
+      if (!enabled) {
+        onError(notSendable(), '');
+        return;
+      }
+      const token = {};
+      resimulationRef.current = token;
+      void refetchSimulation().then(({ data, error }) => {
+        if (resimulationRef.current !== token) return;
+        resimulationRef.current = null;
+        const live = enabledRef.current;
+        const request = live && !error ? data?.request : undefined;
+        if (request) {
+          onSent?.();
+          writeContract(request as Parameters<typeof writeContract>[0]);
+        } else {
+          onFailed?.();
+          onError(live ? resimulationFailure(error) : notSendable(), '');
+        }
+      });
+    };
+
+    if (isResume && revertedIndexRef.current === currentIndex) {
+      // Retry of a step that reverted on-chain: the held simulation predates the
+      // revert, so re-simulate rather than re-send what just failed. The index
+      // stays claimed, so the auto-execute effect doesn't fire meanwhile.
+      resimulateAndSend({
+        onSent: () => {
+          revertedIndexRef.current = -1;
+        }
+      });
+    } else if (simulationData?.request) {
+      // The held request outlives the gate: a Retry after a wallet rejection
+      // must not send it once `enabled` has gone false.
+      if (isResume && !enabled) {
+        onError(notSendable(), '');
+        return;
+      }
       if (!isResume) {
         setFrozenCalls(calls); // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check
@@ -272,20 +392,16 @@ export function useSequentialTransactionFlow(
     } else if (isResume && simulationError) {
       // Retry of a step that failed to simulate: the stored error may be stale
       // (e.g. a transient RPC failure), so re-simulate and act on the result.
-      // Claim the index up front so a second click while this is in flight is a
-      // no-op, and drop the result if reset or unmount released the claim.
+      // Claiming the index keeps the auto-execute effect from sending it
+      // meanwhile; a failure releases it for the next Retry.
       if (dispatchedIndexRef.current === currentIndex) return;
       const index = currentIndex;
-      dispatchedIndexRef.current = index;
-      void refetchSimulation().then(({ data, error }) => {
-        if (dispatchedIndexRef.current !== index) return;
-        if (data?.request) {
-          writeContract(data.request as Parameters<typeof writeContract>[0]);
-        } else {
-          dispatchedIndexRef.current = -1;
-          onError(toError(error ?? simulationError), '');
+      resimulateAndSend({
+        onFailed: () => {
+          if (dispatchedIndexRef.current === index) dispatchedIndexRef.current = -1;
         }
       });
+      if (resimulationRef.current) dispatchedIndexRef.current = index;
     } else {
       console.error(`ERROR: Transaction ${currentIndex} is not ready to execute.
       contract address: ${currentTransaction.to}
@@ -312,7 +428,7 @@ export function useSequentialTransactionFlow(
 
   return {
     execute,
-    isLoading: isSimulationLoading || (isMining && !txReverted) || (isExecuting && !hasWriteError),
+    isLoading: isSimulationLoading || (isMining && !txReverted) || (isExecuting && !hasFailed),
     prepared,
     error: writeError || miningError || simulationError,
     currentCallIndex: currentIndex,

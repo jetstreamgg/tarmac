@@ -56,6 +56,22 @@ export function toError(value: unknown): Error {
   return new Error(String(value));
 }
 
+const stalledStepErrors = new WeakSet<Error>();
+
+/**
+ * Tags the error a sequential run reports when it pauses because a call after a
+ * mined one stopped simulating. That call never reaches the wallet, so no write
+ * tells the modal the step before it mined; the tag does.
+ */
+export function markStalledStep(error: Error): Error {
+  stalledStepErrors.add(error);
+  return error;
+}
+
+export function isStalledStep(error: Error): boolean {
+  return stalledStepErrors.has(error);
+}
+
 export function formatBaLabsUrl(url: URL) {
   url.searchParams.append('format', 'json');
 

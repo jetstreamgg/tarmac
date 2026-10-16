@@ -1,6 +1,6 @@
 import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
-import { useEffect, useEffectEvent } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import type { Call } from 'viem';
 import { isRevertedError, toError } from '../helpers';
 import { Config } from '@wagmi/core';
@@ -36,11 +36,18 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     enabled: simulateEnabled
   });
 
+  // Set by a reset() that found the bundle out (the modal closed mid-send):
+  // it settles and reports, then the send clears. The send stays loading
+  // meanwhile, so no second bundle can overlap it: a replaced send still fires
+  // the mutation's callbacks when it settles.
+  const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+
   // Initiate hook to send the batch transaction
   const {
     sendCalls,
     error: sendError,
     data: mutationData,
+    isPending: isSendPending,
     reset: resetSendCalls
   } = useSendCalls({
     mutation: {
@@ -55,6 +62,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         if (onError) {
           onError(err, mutationData?.id);
         }
+        if (detachedRef.current) finishDetached();
       }
     }
   });
@@ -71,6 +79,32 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   });
 
   const txReverted = isRevertedError(failureReason);
+
+  const finishDetached = useCallback(() => {
+    const onCleared = detachedRef.current?.onCleared;
+    detachedRef.current = null;
+    resetSendCalls();
+    onCleared?.();
+  }, [resetSendCalls]);
+
+  const sendInFlightRef = useRef(false);
+  const sendInFlight =
+    isSendPending || (!!mutationData?.id && !isSuccess && !miningError && !(failureReason && txReverted));
+  useEffect(() => {
+    sendInFlightRef.current = sendInFlight;
+  }, [sendInFlight]);
+  const reset = useCallback(
+    (onCleared?: () => void) => {
+      if (sendInFlightRef.current) {
+        detachedRef.current = { onCleared };
+        return;
+      }
+      detachedRef.current = null;
+      resetSendCalls();
+      onCleared?.();
+    },
+    [resetSendCalls]
+  );
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
@@ -94,9 +128,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         emitError(miningError, data?.receipts?.[0]?.transactionHash);
       } else if (failureReason && txReverted) {
         emitError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
+      } else {
+        return;
       }
+      if (detachedRef.current) finishDetached();
     }
-  }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data]);
+  }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data, finishDetached]);
 
   return {
     execute: () => {
@@ -148,12 +185,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       }
     },
     data: data?.receipts?.[0]?.transactionHash,
-    isLoading: isLoadingCapabilities || simulation.isLoading || (isMining && !txReverted),
+    isLoading: isLoadingCapabilities || simulation.isLoading || isSendPending || (isMining && !txReverted),
     prepared:
       !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError && simulation.prepared,
     error: sendError || miningError || simulation.error,
     currentCallIndex: 0,
-    reset: resetSendCalls,
+    reset,
     batchUnavailable: simulation.structuralFailure
   };
 }
