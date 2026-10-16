@@ -95,7 +95,7 @@ export function RewardsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useRewardsLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useRewardsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
   const errorMessage = enginePrepareErrorMessage(prepared, error);
 
@@ -210,6 +210,7 @@ export function RewardsModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,

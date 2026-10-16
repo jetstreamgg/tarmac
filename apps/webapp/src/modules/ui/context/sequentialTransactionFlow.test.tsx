@@ -22,6 +22,8 @@ const wagmi = vi.hoisted(() => ({
   onWriteError: undefined as undefined | ((err: Error) => void),
   writeContract: vi.fn(),
   resetWrite: vi.fn(),
+  // the connected account
+  address: undefined as string | undefined,
   // functionName → error its simulation fails with
   simulationErrors: {} as Record<string, Error>,
   // When set, a refetch resolves only after this promise does (a slow RPC).
@@ -46,7 +48,7 @@ const wagmi = vi.hoisted(() => ({
 }));
 
 vi.mock('wagmi', () => ({
-  useConnection: () => ({ connector: undefined }),
+  useConnection: () => ({ connector: undefined, address: wagmi.address }),
   // Echo the simulated call back on the request so a test can see WHICH call a
   // dispatch was prepared from.
   useSimulateContract: (params: { functionName?: string }) => {
@@ -119,6 +121,8 @@ function makeCall(functionName: string): Call {
   } as unknown as Call;
 }
 const APPROVE = makeCall('approve');
+const ACCOUNT_A = '0x00000000000000000000000000000000000000aA';
+const ACCOUNT_B = '0x00000000000000000000000000000000000000bB';
 const SUPPLY = makeCall('supply');
 
 function resetWagmi() {
@@ -127,6 +131,7 @@ function resetWagmi() {
   wagmi.onWriteError = undefined;
   wagmi.writeContract = vi.fn();
   wagmi.resetWrite = vi.fn();
+  wagmi.address = ACCOUNT_A;
   wagmi.simulationErrors = {};
   wagmi.refetchGate = undefined;
   wagmi.mutationHash = undefined;
@@ -539,7 +544,7 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     expect(onError).toHaveBeenCalledWith(new Error('The transaction can no longer be sent'), '');
   });
 
-  it('an on-chain revert AFTER a mined step keeps the snapshot too: the retry re-simulates and dispatches the held call', async () => {
+  it('an on-chain revert AFTER a mined step keeps the snapshot too: nextCalls holds the call and the retry re-simulates and dispatches it', async () => {
     const onError = vi.fn();
     const onSuccess = vi.fn();
     let calls: Call[] = [APPROVE, SUPPLY];
@@ -566,6 +571,7 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     // The allowance refetch drops the mined approve from the live calls.
     calls = [SUPPLY];
     rerender();
+    expect(result.current.nextCalls.map(c => c.functionName)).toEqual(['supply']);
 
     await act(async () => result.current.execute());
     expect(wagmi.writeContract).toHaveBeenCalledTimes(3);
@@ -681,6 +687,82 @@ describe('useSequentialTransactionFlow — Retry after an on-chain revert', () =
     });
 
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('useSequentialTransactionFlow — the wallet switches accounts mid-run', () => {
+  beforeEach(resetWagmi);
+  afterEach(() => vi.clearAllMocks());
+
+  function mineApprove(hook: { rerender: () => void }) {
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    hook.rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    hook.rerender();
+  }
+
+  // The frozen supply can name account A (its receiver), so B must not sign it.
+  it('pauses instead of sending the next step from the new account, and Retry sends it once back on the starting one', () => {
+    const onError = vi.fn();
+    const hook = renderHook(() => useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError }));
+
+    act(() => hook.result.current.execute());
+    wagmi.address = ACCOUNT_B;
+    mineApprove(hook);
+
+    expect(hook.result.current.currentCallIndex).toBe(1);
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(isStalledStep(onError.mock.calls[0][0])).toBe(true);
+    expect(hook.result.current.isLoading).toBe(false);
+
+    // Back on A, nothing is sent behind the error screen until the user retries.
+    wagmi.address = ACCOUNT_A.toLowerCase();
+    hook.rerender();
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
+
+    act(() => hook.result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(expect.objectContaining({ functionName: 'supply' }));
+  });
+
+  it('a Retry re-simulating a reverted step sends nothing when the account switches before it lands', async () => {
+    const onError = vi.fn();
+    const hook = renderHook(() => useSequentialTransactionFlow({ calls: [APPROVE, SUPPLY], onError }));
+    act(() => hook.result.current.execute());
+    mineApprove(hook);
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    hook.rerender();
+    act(() => {
+      wagmi.receipt = {
+        isLoading: false,
+        isSuccess: false,
+        error: null,
+        failureReason: new Error('execution reverted')
+      };
+    });
+    hook.rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    let release = () => {};
+    wagmi.refetchGate = new Promise<void>(resolve => (release = resolve));
+    act(() => hook.result.current.execute());
+    wagmi.address = ACCOUNT_B;
+    hook.rerender();
+    await act(async () => release());
+
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + the reverted supply
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(onError.mock.calls[1][0].message).toMatch(/switched accounts/);
   });
 });
 
