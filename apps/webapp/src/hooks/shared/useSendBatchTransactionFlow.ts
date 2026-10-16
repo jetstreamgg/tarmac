@@ -1,6 +1,6 @@
 import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
-import { useEffect, useEffectEvent } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import type { Call } from 'viem';
 import {
   BaseError,
@@ -62,11 +62,18 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     enabled: simulateEnabled
   });
 
+  // Set by a reset() that found the bundle out (the modal closed mid-send):
+  // it settles and reports, then the send clears. The send stays loading
+  // meanwhile, so no second bundle can overlap it: a replaced send still fires
+  // the mutation's callbacks when it settles.
+  const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+
   // Initiate hook to send the batch transaction
   const {
     sendCalls,
     error: sendError,
     data: mutationData,
+    isPending: isSendPending,
     reset: resetSendCalls
   } = useSendCalls({
     mutation: {
@@ -81,6 +88,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         if (onError) {
           onError(err, mutationData?.id);
         }
+        if (detachedRef.current) finishDetached();
       }
     }
   });
@@ -90,8 +98,8 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   // it's with the wallet whatever the poll says (a Safe waits on co-signers for
   // as long as it takes), and reporting it put Retry on screen, which sends the
   // bundle a second time. Each attempt keeps viem's 60s timeout so a bundle
-  // nobody watches any more stops being polled. A revert comes back as
-  // `status: 'failure'`, never as a poll error.
+  // nobody watches any more stops being polled. A revert comes back in the
+  // status (`failure`, or a reverted receipt), never as a poll error.
   const {
     isLoading: isMining,
     isSuccess,
@@ -108,26 +116,57 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     }
   });
 
+  const finishDetached = useCallback(() => {
+    const onCleared = detachedRef.current?.onCleared;
+    detachedRef.current = null;
+    resetSendCalls();
+    onCleared?.();
+  }, [resetSendCalls]);
+
+  const sendInFlightRef = useRef(false);
+  const sendInFlight = isSendPending || (!!mutationData?.id && !isSuccess && !miningError);
+  useEffect(() => {
+    sendInFlightRef.current = sendInFlight;
+  }, [sendInFlight]);
+  const reset = useCallback(
+    (onCleared?: () => void) => {
+      if (sendInFlightRef.current) {
+        detachedRef.current = { onCleared };
+        return;
+      }
+      detachedRef.current = null;
+      resetSendCalls();
+      onCleared?.();
+    },
+    [resetSendCalls]
+  );
+
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
   const emitSuccess = useEffectEvent((hash?: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
   useEffect(() => {
     if (mutationData?.id) {
-      if (isSuccess && data.status === 'success') {
+      // A wallet that runs the bundle as separate transactions can report the whole bundle as
+      // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
+      const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
+      if (isSuccess && (revertedReceipt || data.status === 'failure')) {
+        emitError(new Error('ERROR: Batch transaction failed'), revertedReceipt?.transactionHash);
+      } else if (isSuccess && data.status === 'success') {
         // A non-atomic bundle can land across blocks; the history refresh waits for the last.
         const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);
         emitSuccess(
           data.receipts?.[0]?.transactionHash,
           blockNumbers.length > 0 ? blockNumbers.reduce((a, b) => (b > a ? b : a)) : undefined
         );
-      } else if (isSuccess && data.status === 'failure') {
-        emitError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (miningError) {
         emitError(miningError, data?.receipts?.[0]?.transactionHash);
+      } else {
+        return;
       }
+      if (detachedRef.current) finishDetached();
     }
-  }, [isSuccess, miningError, mutationData?.id, data]);
+  }, [isSuccess, miningError, mutationData?.id, data, finishDetached]);
 
   return {
     execute: () => {
@@ -179,12 +218,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       }
     },
     data: data?.receipts?.[0]?.transactionHash,
-    isLoading: isLoadingCapabilities || simulation.isLoading || isMining,
+    isLoading: isLoadingCapabilities || simulation.isLoading || isSendPending || isMining,
     prepared:
       !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError && simulation.prepared,
     error: sendError || miningError || simulation.error,
     currentCallIndex: 0,
-    reset: resetSendCalls,
+    reset,
     batchUnavailable: simulation.structuralFailure
   };
 }
