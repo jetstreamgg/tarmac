@@ -2,7 +2,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trans } from '@lingui/react/macro';
 import { BalancesHistory } from './activity/BalancesHistory';
 import { WalletDrawerAssets } from './WalletDrawerAssets';
-import { BRIDGE_ENABLED } from '@/lib/constants';
 import { useBridgeActivityRows } from '@/modules/bridge/hooks/useBridgeActivityRows';
 
 enum WalletDrawerTab {
@@ -33,7 +32,7 @@ export function WalletDrawerTabs() {
           showAllNetworks={true}
           className="mt-0"
           useInfiniteScroll={true}
-          extraRows={BRIDGE_ENABLED ? bridgeRows : undefined}
+          extraRows={bridgeRows}
         />
       </TabsContent>
     </Tabs>

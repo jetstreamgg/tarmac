@@ -9,7 +9,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BRIDGE_ENABLED, QueryParams } from '@/lib/constants';
+import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { BridgePanel } from '@/modules/bridge/components/BridgePanel';
 import { useConvertForm } from '../hooks/useConvertForm';
@@ -153,7 +153,7 @@ export function ConvertPage() {
         subtitleClassName="max-w-[459px]"
       />
 
-      {BRIDGE_ENABLED ? <ConvertTabs swap={swapPanel} /> : swapPanel}
+      <ConvertTabs swap={swapPanel} />
     </div>
   );
 }

@@ -6,10 +6,14 @@ import {
   isPendingBridgeVisible,
   canDismiss,
   canLaunchAction,
+  canLaunchKeepalive,
   dropSentAction,
   pollIntervalMs,
   recordAction,
-  recordActionSent
+  recordActionSent,
+  REDEEM_URGENT_MINUTES,
+  showsActionButton,
+  ticketMinutesLeft
 } from './pendingTransitions';
 import { resolveBridgeRoute } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
@@ -534,5 +538,166 @@ describe('a queued Safe bridge can be dismissed, nothing else can', () => {
       NOW
     );
     expect(canDismiss(failed)).toBe(false);
+  });
+});
+
+describe('a deposit whose L2 execution failed (redeem on Arbitrum, replay on OP Stack)', () => {
+  const depositTo = (to: BridgeNetworkId) =>
+    createPendingBridge({
+      account: ACCOUNT,
+      amount: 1n,
+      from: 'ethereum',
+      to,
+      route: routeFor('ethereum', to),
+      txHash: '0xdeposit',
+      now: NOW
+    });
+  const readyRedeem = () =>
+    applyProgress(depositTo('arbitrum'), { kind: 'ready', nextAction: 'redeem' }, NOW + MINUTE);
+
+  it('a deposit that arrives on its own never shows an action button', () => {
+    const waiting = depositTo('base');
+    expect(showsActionButton(waiting)).toBe(false);
+    expect(showsActionButton(applyProgress(waiting, { kind: 'arrived' }, NOW))).toBe(false);
+  });
+
+  it('a failed Arbitrum deposit offers Redeem, and a failed OP Stack deposit offers Replay', () => {
+    const redeem = readyRedeem();
+    expect(redeem).toMatchObject({ status: 'ready', nextAction: 'redeem' });
+    expect(showsActionButton(redeem)).toBe(true);
+    expect(canLaunchAction(redeem)).toBe(true);
+    const replay = applyProgress(depositTo('optimism'), { kind: 'ready', nextAction: 'replay' }, NOW);
+    expect(showsActionButton(replay)).toBe(true);
+  });
+
+  it('a mined redeem does not settle the bridge: it waits for the chain to say the USDS arrived', () => {
+    const sent = recordActionSent(readyRedeem(), { action: 'redeem', txHash: '0xredeem', at: NOW });
+    expect(canLaunchAction(sent)).toBe(false);
+    const mined = recordAction(sent, { action: 'redeem', txHash: '0xredeem', at: NOW + MINUTE });
+    expect(mined).toMatchObject({ status: 'pending', nextAction: undefined });
+    expect(mined.settledAt).toBeUndefined();
+    expect(mined.actions).toEqual([{ action: 'redeem', txHash: '0xredeem', at: NOW + MINUTE }]);
+    expect(showsActionButton(mined)).toBe(false);
+    // Delivered inside the redeem: the card reads "~1 min" and the tracker polls fast, not "taking longer".
+    expect(mined.etaAt).toBe(NOW + 2 * MINUTE);
+    expect(pollIntervalMs(mined, NOW + MINUTE)).toBe(15_000);
+    expect(applyProgress(mined, { kind: 'arrived' }, NOW + 2 * MINUTE)).toMatchObject({
+      status: 'arrived',
+      settledAt: NOW + 2 * MINUTE
+    });
+  });
+
+  it('a redeem whose retry failed again is offered again', () => {
+    const mined = recordAction(readyRedeem(), { action: 'redeem', txHash: '0xredeem', at: NOW });
+    const again = applyProgress(mined, { kind: 'ready', nextAction: 'redeem' }, NOW + MINUTE);
+    expect(again).toMatchObject({ status: 'ready', nextAction: 'redeem' });
+    expect(canLaunchAction(again)).toBe(true);
+  });
+
+  it('a redeem seen from chain (anyone can redeem) is recorded the same way', () => {
+    const seen = applyProgress(
+      readyRedeem(),
+      { kind: 'action-confirmed', action: 'redeem', txHash: '0xother', at: NOW },
+      NOW
+    );
+    expect(seen).toMatchObject({ status: 'pending', nextAction: undefined });
+    expect(seen.actions).toHaveLength(1);
+  });
+
+  it('a replay on an Arbitrum deposit, or a redeem on an OP Stack one, is ignored', () => {
+    const redeem = readyRedeem();
+    expect(recordAction(redeem, { action: 'replay', txHash: '0xr', at: NOW })).toBe(redeem);
+    const op = depositTo('base');
+    expect(recordActionSent(op, { action: 'redeem', txHash: '0xr', at: NOW })).toBe(op);
+  });
+
+  it('an expired ticket settles as expired, with no action, and ignores later progress', () => {
+    const expired = applyProgress(readyRedeem(), { kind: 'expired' }, NOW + HOUR);
+    expect(expired).toMatchObject({ status: 'expired', nextAction: undefined, settledAt: NOW + HOUR });
+    expect(showsActionButton(expired)).toBe(false);
+    expect(canLaunchAction(expired)).toBe(false);
+    expect(pollIntervalMs(expired, NOW + HOUR)).toBeUndefined();
+    expect(applyProgress(expired, { kind: 'ready', nextAction: 'redeem' }, NOW + 2 * HOUR)).toBe(expired);
+  });
+
+  it('a claim route still shows its action button before it is ready', () => {
+    const withdrawal = create(routeFor('base', 'ethereum'));
+    expect(withdrawal.nextAction).toBe('claim');
+    expect(showsActionButton(withdrawal)).toBe(true);
+  });
+});
+
+describe('an Arbitrum ticket close to its deadline can be kept alive', () => {
+  const timeoutIn = (minutes: number) => String(Math.floor((NOW + minutes * MINUTE) / 1000));
+  const ready = (timeout = timeoutIn(REDEEM_URGENT_MINUTES - 1), to: BridgeNetworkId = 'arbitrum') =>
+    applyProgress(
+      createPendingBridge({
+        account: ACCOUNT,
+        amount: 1n,
+        from: 'ethereum',
+        to,
+        route: routeFor('ethereum', to),
+        txHash: '0xdeposit',
+        now: NOW
+      }),
+      {
+        kind: 'ready',
+        nextAction: 'redeem',
+        routeData: { ticketId: '0xticket', ...(timeout && { timeout }) }
+      },
+      NOW
+    );
+
+  it('only under 48 hours left, and not once the time is up', () => {
+    expect(ticketMinutesLeft(ready(), NOW)).toBe(REDEEM_URGENT_MINUTES - 1);
+    expect(canLaunchKeepalive(ready(), NOW)).toBe(true);
+    expect(canLaunchKeepalive(ready(timeoutIn(REDEEM_URGENT_MINUTES)), NOW)).toBe(false);
+    expect(canLaunchKeepalive(ready(timeoutIn(1)), NOW)).toBe(true);
+    expect(canLaunchKeepalive(ready(timeoutIn(0)), NOW)).toBe(false);
+    expect(canLaunchKeepalive(ready(timeoutIn(-5)), NOW)).toBe(false);
+  });
+
+  it('never with an unknown deadline, or off a ready Arbitrum redeem', () => {
+    expect(canLaunchKeepalive(ready(''), NOW)).toBe(false);
+    expect(canLaunchKeepalive(ready('soon'), NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), status: 'pending' }, NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), nextAction: 'replay' }, NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), to: 'base' }, NOW)).toBe(false);
+    expect(canLaunchKeepalive({ ...ready(), routeKind: 'layerzero' }, NOW)).toBe(false);
+  });
+
+  it('not while a redeem or keepalive is in flight', () => {
+    for (const action of ['redeem', 'keepalive'] as const)
+      expect(canLaunchKeepalive(recordActionSent(ready(), { action, txHash: '0xsent', at: NOW }), NOW)).toBe(
+        false
+      );
+  });
+
+  it('a mined keepalive keeps the redeem offered and drops the stale deadline, so it is not offered twice', () => {
+    const sent = recordActionSent(ready(), { action: 'keepalive', txHash: '0xkeep', at: NOW });
+    // The redeem itself can still go out.
+    expect(canLaunchAction(sent)).toBe(true);
+    const mined = recordAction(sent, { action: 'keepalive', txHash: '0xkeep', at: NOW + MINUTE });
+    expect(mined).toMatchObject({ status: 'ready', nextAction: 'redeem', readyAt: NOW + MINUTE });
+    expect(mined.routeData).toEqual({ ticketId: '0xticket' });
+    expect(mined.settledAt).toBeUndefined();
+    expect(mined.actions).toEqual([{ action: 'keepalive', txHash: '0xkeep', at: NOW + MINUTE }]);
+    expect(canLaunchKeepalive(mined, NOW + MINUTE)).toBe(false);
+    expect(canLaunchAction(mined)).toBe(true);
+    const extended = applyProgress(
+      mined,
+      {
+        kind: 'ready',
+        nextAction: 'redeem',
+        routeData: { ticketId: '0xticket', timeout: timeoutIn(8 * 24 * 60) }
+      },
+      NOW + 2 * MINUTE
+    );
+    expect(ticketMinutesLeft(extended, NOW + MINUTE)).toBeGreaterThan(REDEEM_URGENT_MINUTES);
+  });
+
+  it('is never the next action, and is ignored off Arbitrum', () => {
+    const op = ready('', 'base');
+    expect(recordActionSent(op, { action: 'keepalive', txHash: '0xkeep', at: NOW })).toBe(op);
   });
 });

@@ -4,14 +4,18 @@
  * Labels and pairing are the Figma contract, asserted in `pendingBridgeRows.test.ts`.
  */
 
-import { t } from '@lingui/core/macro';
+import { plural, t } from '@lingui/core/macro';
 import { getAddress, isAddress } from 'viem';
+import { arbitrum } from 'viem/chains';
 import { NO_VALUE } from '@/lib/constants';
 import { formatAddress } from '@/utils';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
+import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
+import { DAY_MINUTES } from '../model/resolveRoute';
+import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
 
@@ -36,6 +40,8 @@ const statusLabel = (status: PendingBridgeStatus): string => {
       return t`Claimed`;
     case 'failed':
       return t`Failed`;
+    case 'expired':
+      return t`Expired`;
   }
 };
 
@@ -47,6 +53,12 @@ export const nextActionLabel = (action: PendingBridgeNextAction): string => {
       return t`Prove`;
     case 'finalize':
       return t`Finalize`;
+    case 'redeem':
+      return t`Redeem`;
+    case 'replay':
+      return t`Replay`;
+    case 'keepalive':
+      return t`Extend`;
   }
 };
 
@@ -58,6 +70,10 @@ const readyLabel = (action: PendingBridgeNextAction): string => {
       return t`Ready to prove`;
     case 'finalize':
       return t`Ready to finalize`;
+    case 'redeem':
+    case 'replay':
+    case 'keepalive':
+      return t`Action needed`;
   }
 };
 
@@ -72,12 +88,15 @@ export const formatBridgeDate = (ms: number): string => {
 };
 
 const arrivalText = (bridge: PendingBridge, now: number): string => {
-  if (bridge.status === 'failed') return NO_VALUE;
+  if (bridge.status === 'failed' || bridge.status === 'expired') return NO_VALUE;
   // A ready prove or finalize still has a step before the funds land.
   if (bridge.status === 'ready' && (bridge.nextAction === 'prove' || bridge.nextAction === 'finalize'))
     return t`Ready`;
+  // A failed deposit lands only once the user redeems or replays it.
+  if (bridge.status === 'ready' && (bridge.nextAction === 'redeem' || bridge.nextAction === 'replay'))
+    return NO_VALUE;
   if (bridge.status !== 'pending') return t`Arrived`;
-  // A queued Safe transaction: the clock starts once it executes.
+  // A queued Safe transaction or an unmined bundle: the clock starts once it executes.
   if (!bridge.txHash) return NO_VALUE;
   // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
   const elapsedFrom = Math.max(now, bridge.startedAt);
@@ -117,18 +136,76 @@ export function buildPendingBridgeRows(
           }
         : bridge.status === 'failed'
           ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }
-          : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
-            {
-              kind: 'link',
-              label: t`Transaction`,
-              value: t`Awaiting signatures`,
-              href:
-                sourceChainId !== undefined &&
-                bridge.safeTxHash &&
-                SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
-                  ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
-                  : undefined
-            }
+          : bridge.bundleId
+            ? {
+                kind: 'text',
+                label: t`Transaction`,
+                value: isBundleUnseen(bridge, now) ? t`Not found on Ethereum yet` : t`Confirming on Ethereum`
+              }
+            : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
+              {
+                kind: 'link',
+                label: t`Transaction`,
+                value: t`Awaiting signatures`,
+                href:
+                  sourceChainId !== undefined &&
+                  bridge.safeTxHash &&
+                  SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
+                    ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
+                    : undefined
+              }
     ]
   ];
 }
+
+/** Arbitrum's tool to check and redeem a ticket from any wallet. */
+const ARBITRUM_RETRYABLES_URL = 'https://portal.arbitrum.io/build/retryables';
+export const SKY_DISCORD_URL = 'https://discord.gg/skyecosystem';
+
+/** A note under an Ethereum deposit card that needs a redeem or a replay, or whose Arbitrum ticket expired. */
+export type PendingBridgeNote =
+  | {
+      kind: 'redeem';
+      /** Whole minutes until the ticket's timeout, 0 once it passed; undefined when unknown. */
+      minutesLeft?: number;
+      urgent: boolean;
+      retryablesHref?: string;
+    }
+  | { kind: 'expired'; retryablesHref?: string; supportHref: string }
+  | { kind: 'replay'; network: OpStackNetworkId };
+
+// The tool looks the ticket up by the Ethereum tx that created it.
+const retryablesHref = (txHash: string | undefined) =>
+  txHash && `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(arbitrum.id), tx: txHash })}`;
+
+export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
+  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum') return undefined;
+  if (isOpStackNetwork(bridge.to))
+    return bridge.status === 'ready' && bridge.nextAction === 'replay'
+      ? { kind: 'replay', network: bridge.to }
+      : undefined;
+  if (bridge.to !== 'arbitrum') return undefined;
+  if (bridge.status === 'expired')
+    return { kind: 'expired', retryablesHref: retryablesHref(bridge.txHash), supportHref: SKY_DISCORD_URL };
+  if (bridge.status !== 'ready' || bridge.nextAction !== 'redeem') return undefined;
+  const minutesLeft = ticketMinutesLeft(bridge, now);
+  return {
+    kind: 'redeem',
+    minutesLeft,
+    urgent: minutesLeft !== undefined && minutesLeft < REDEEM_URGENT_MINUTES,
+    retryablesHref: retryablesHref(bridge.txHash)
+  };
+}
+
+/** "6 days 4 hours", "5 hours 12 minutes", "3 minutes", floored. */
+export const formatTimeLeft = (minutes: number): string => {
+  const days = Math.floor(minutes / DAY_MINUTES);
+  const hours = Math.floor((minutes % DAY_MINUTES) / 60);
+  const rest = minutes % 60;
+  const dayWords = plural(days, { one: '# day', other: '# days' });
+  const hourWords = plural(hours, { one: '# hour', other: '# hours' });
+  const minuteWords = plural(rest, { one: '# minute', other: '# minutes' });
+  if (days > 0) return hours > 0 ? t`${dayWords} ${hourWords}` : dayWords;
+  if (hours > 0) return rest > 0 ? t`${hourWords} ${minuteWords}` : hourWords;
+  return minuteWords;
+};

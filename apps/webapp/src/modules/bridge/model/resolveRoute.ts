@@ -5,7 +5,8 @@ import type {
   BridgeRoute,
   BridgeRouteKind,
   BridgeStep,
-  PendingBridgeNextAction
+  PendingBridgeNextAction,
+  PendingBridgeStepAction
 } from './types';
 
 type RouteGate = {
@@ -97,12 +98,30 @@ const sourceSteps = (from: BridgeNetworkId): BridgeStep[] => [
 export const destinationActions = (
   kind: BridgeRouteKind,
   from: BridgeNetworkId
-): PendingBridgeNextAction[] => {
+): PendingBridgeStepAction[] => {
   if (kind === 'cctp') return ['claim'];
   if (kind === 'layerzero' || from === 'ethereum') return [];
   // OP Stack withdrawals prove then finalize; Arbitrum executes once on the outbox.
   return from === 'arbitrum' ? ['finalize'] : ['prove', 'finalize'];
 };
+
+/**
+ * Actions offered only when a deposit's L2 execution failed; unordered and
+ * repeatable, so the adapter settles them from the chain.
+ */
+export const recoveryActions = (
+  kind: BridgeRouteKind,
+  from: BridgeNetworkId,
+  to: BridgeNetworkId
+): PendingBridgeNextAction[] => {
+  if (kind !== 'native' || from !== 'ethereum') return [];
+  return to === 'arbitrum' ? ['redeem', 'keepalive'] : ['replay'];
+};
+
+export const isRecoveryAction = (
+  action: PendingBridgeNextAction
+): action is Exclude<PendingBridgeNextAction, PendingBridgeStepAction> =>
+  action === 'redeem' || action === 'replay' || action === 'keepalive';
 
 const routeSteps = (kind: BridgeRouteKind, from: BridgeNetworkId, to: BridgeNetworkId): BridgeStep[] => [
   ...sourceSteps(from),
@@ -125,6 +144,10 @@ const route = (
   requiresClaim: steps.some(step => step.network !== steps[0].network),
   ...(fallbackReason && { fallbackReason })
 });
+
+/** The open native deposit route from Ethereum to `to`, as the resolver builds it. */
+export const nativeDepositRoute = (to: NativeNetworkId): BridgeRoute =>
+  route('native', routeSteps('native', 'ethereum', to), DEPOSIT_ETA_MINUTES[to], 0);
 
 const ok = (resolved: BridgeRoute): ResolvedBridgeRoute => ({ status: 'ok', route: resolved });
 const blocked = (reason: BridgeBlockReason): ResolvedBridgeRoute => ({ status: 'blocked', reason });

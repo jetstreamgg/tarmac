@@ -1,7 +1,7 @@
+import { isAddressEqual, slice, toEventSelector, type Log } from 'viem';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import type { BridgeProgress } from '../model/pendingTransitions';
 import type { PendingBridgeAction } from '../model/types';
-import type { SafeConfig } from '../model/recipient';
 
 export type SafeMultisigTx = {
   safe: string;
@@ -12,6 +12,29 @@ export type SafeMultisigTx = {
   transactionHash: string | null;
   executedAt?: number;
 };
+
+// Safe 1.3 and 1.4 share the selector; 1.4 indexes the Safe tx hash.
+const EXECUTION_FAILURE = toEventSelector('event ExecutionFailure(bytes32 txHash, uint256 payment)');
+
+/** The Safe's execTransaction mined but its inner call failed, so the transaction moved nothing. */
+export const safeExecutionFailed = (logs: Pick<Log, 'address' | 'topics'>[], safe: string): boolean =>
+  logs.some(
+    log => log.topics[0] === EXECUTION_FAILURE && isAddressEqual(log.address, safe as Log['address'])
+  );
+
+const EXECUTION_SUCCESS = toEventSelector('event ExecutionSuccess(bytes32 txHash, uint256 payment)');
+
+/** The Safe tx hashes `safe` executed among a receipt's logs. */
+export const executedSafeTxHashes = (
+  logs: Pick<Log, 'address' | 'topics' | 'data'>[],
+  safe: string
+): string[] =>
+  logs.flatMap(log => {
+    if (log.topics[0] !== EXECUTION_SUCCESS || !isAddressEqual(log.address, safe as Log['address']))
+      return [];
+    const hash = log.topics[1] ?? (log.data.length >= 66 ? slice(log.data, 0, 32) : undefined);
+    return hash ? [hash] : [];
+  });
 
 const sameHash = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
@@ -151,32 +174,4 @@ async function resolveSafeTx(base: string, tx: SafeMultisigTx): Promise<BridgePr
     .map(parseSafeTx)
     .filter((other): other is SafeMultisigTx => other !== null && other.nonce === tx.nonce);
   return safeTxProgress(tx, executedAtNonce);
-}
-
-/**
- * The Safe at `address` on `chainId`: its config, or null when the service
- * says there is none. Throws when it can't tell (no service for the chain,
- * network error), which the recipient policy treats as unverified.
- */
-export async function readSafeConfig({
-  chainId,
-  address
-}: {
-  chainId: number;
-  address: string;
-}): Promise<SafeConfig | null> {
-  const base = SAFE_TRANSACTION_SERVICE_URL[chainId];
-  if (!base) throw new Error(`No Safe Transaction Service for chain ${chainId}`);
-  const { status, body } = await getJson(`${base}/api/v1/safes/${address}/`);
-  if (status === 404) return null;
-  const safe = body as { owners?: unknown; threshold?: unknown } | undefined;
-  if (
-    !safe ||
-    !Array.isArray(safe.owners) ||
-    !safe.owners.every(owner => typeof owner === 'string') ||
-    typeof safe.threshold !== 'number'
-  ) {
-    throw new Error(`Unreadable Safe response (${status})`);
-  }
-  return { owners: safe.owners as string[], threshold: safe.threshold };
 }

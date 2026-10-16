@@ -10,7 +10,7 @@ import { PendingBridges } from './PendingBridges';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
 
-function RecipientHint({ reason }: RecipientHintProps) {
+export function RecipientHint({ reason }: RecipientHintProps) {
   switch (reason) {
     case 'other-family':
       return <Trans>Add a Solana address to receive the funds.</Trans>;
@@ -20,8 +20,37 @@ function RecipientHint({ reason }: RecipientHintProps) {
       return (
         <Trans>Your Safe has different owners on the destination network. Add a recipient address.</Trans>
       );
+    case 'contract-not-on-destination':
+      return (
+        <Trans>
+          Your wallet is a smart contract that doesn&apos;t exist on the destination network. Add a recipient
+          address.
+        </Trans>
+      );
+    case 'contract-unverified':
+      return <Trans>We couldn&apos;t check your wallet. Add a recipient address.</Trans>;
     default:
-      return <Trans>We could not check your Safe on the destination network. Add a recipient address.</Trans>;
+      return <Trans>We couldn&apos;t check your Safe. Add a recipient address.</Trans>;
+  }
+}
+
+type RecipientProblemMessageProps = { problem: ReturnType<typeof useBridgeForm>['recipientProblem'] };
+
+function RecipientProblemMessage({ problem }: RecipientProblemMessageProps) {
+  switch (problem) {
+    case 'system-contract':
+      return (
+        <Trans>This address is a token or bridge contract and can&apos;t receive funds. Change it.</Trans>
+      );
+    case 'contract-not-on-destination':
+      return (
+        <Trans>
+          This address is a smart contract that doesn&apos;t exist on the destination network. Funds sent
+          there can&apos;t be recovered. Change it.
+        </Trans>
+      );
+    default:
+      return <Trans>We couldn&apos;t check the recipient address. Try again in a moment.</Trans>;
   }
 }
 
@@ -47,11 +76,15 @@ const CTA_CLASSES =
 /** The Bridge tab body: form card, Review CTA, then the pending bridges list. */
 export function BridgePanel() {
   const form = useBridgeForm();
-  const { launch, locked, restore } = useBridgeLaunch(form, form.reset);
+  const { launch, locked, restore } = useBridgeLaunch(form, () => {
+    form.refetchBalances();
+    form.reset();
+  });
   const launchOrConnect = useConnectThenAct(launch);
   const {
     launch: launchAction,
     canLaunch: canLaunchAction,
+    actionHint,
     locked: actionLocked
   } = useDestinationActionLaunch();
 
@@ -92,6 +125,12 @@ export function BridgePanel() {
           <Text className="text-error text-sm" dataTestId="bridge-recipient-invalid">
             <Trans>The recipient address doesn&apos;t match the destination network. Change it.</Trans>
           </Text>
+        ) : form.recipientProblem ? (
+          !form.recipientChecking && (
+            <Text className="text-error text-sm" dataTestId="bridge-recipient-blocked">
+              <RecipientProblemMessage problem={form.recipientProblem} />
+            </Text>
+          )
         ) : (
           form.isConnected &&
           form.needsRecipient &&
@@ -114,7 +153,12 @@ export function BridgePanel() {
         </Button>
       </div>
 
-      <PendingBridges onAction={launchAction} canAction={canLaunchAction} actionLocked={actionLocked} />
+      <PendingBridges
+        onAction={launchAction}
+        canAction={canLaunchAction}
+        actionHint={actionHint}
+        actionLocked={actionLocked}
+      />
     </div>
   );
 }

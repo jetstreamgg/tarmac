@@ -50,11 +50,22 @@ type BridgeReviewContentProps = {
   to: BridgeNetworkId;
   route: BridgeRoute;
   networkFee: string;
+  bridgeFee?: string;
+  /** A Safe's unused Arbitrum fee is refunded to its L2 alias. */
+  aliasedRefund?: boolean;
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
-export function BridgeReviewContent({ amount, from, to, route, networkFee }: BridgeReviewContentProps) {
-  const rows = buildBridgeModalRows({ route, networkFee });
+export function BridgeReviewContent({
+  amount,
+  from,
+  to,
+  route,
+  networkFee,
+  bridgeFee,
+  aliasedRefund
+}: BridgeReviewContentProps) {
+  const rows = buildBridgeModalRows({ route, networkFee, bridgeFee });
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
       <BridgeTransferHero amount={amount} from={from} to={to} />
@@ -63,6 +74,11 @@ export function BridgeReviewContent({ amount, from, to, route, networkFee }: Bri
         <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-footnote">
           {bridgeFootnote(route)}
         </p>
+        {aliasedRefund && (
+          <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-aliased-refund">
+            {t`Unused ETH from the bridge fee is refunded to your Safe's aliased address on Arbitrum, not to your Safe.`}
+          </p>
+        )}
       </div>
     </div>
   );

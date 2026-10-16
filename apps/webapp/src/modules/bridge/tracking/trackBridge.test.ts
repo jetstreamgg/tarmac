@@ -50,6 +50,7 @@ describe('trackBridge', () => {
       id,
       now: () => now,
       getAdapter: () => adapter,
+      context: { getClient: () => undefined },
       readSafeTx,
       readSafeAction
     });

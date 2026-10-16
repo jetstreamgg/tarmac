@@ -1,23 +1,27 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { getBridgeNetwork } from '../model/networks';
-import { canDismiss, isSettled } from '../model/pendingTransitions';
-import type { PendingBridge, PendingBridgeStatus } from '../model/types';
+import { canDismiss, showsActionButton } from '../model/pendingTransitions';
+import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { formatBigInt } from '@/utils';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import {
   buildPendingBridgeRows,
   formatBridgeDate,
+  formatTimeLeft,
   nextActionLabel,
-  type PendingBridgeCell
+  pendingBridgeNote,
+  type PendingBridgeCell,
+  type PendingBridgeNote
 } from './pendingBridgeRows';
 
 const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
@@ -25,7 +29,8 @@ const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
   ready: 'bg-statusBrandBg text-statusBrand',
   arrived: 'bg-statusSuccessBg text-statusSuccess',
   claimed: 'bg-statusSuccessBg text-statusSuccess',
-  failed: 'bg-statusErrorBg text-statusError'
+  failed: 'bg-statusErrorBg text-statusError',
+  expired: 'bg-statusErrorBg text-statusError'
 };
 
 const valueClassName = 'font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]';
@@ -72,13 +77,133 @@ function CellValue({ cell }: CellValueProps) {
   }
 }
 
+type ActionHintTextProps = { hint: DestinationActionHint };
+
+function ActionHintText({ hint }: ActionHintTextProps) {
+  if (hint.kind === 'safe-executing') return <Trans>Waiting for your Safe to execute it.</Trans>;
+  const network = getBridgeNetwork(hint.network).name;
+  if (hint.kind === 'action-sent') return <Trans>Waiting for the transaction to confirm on {network}.</Trans>;
+  return hint.safe ? (
+    <Trans>Switch your Safe to {network} to continue.</Trans>
+  ) : (
+    <Trans>Switch your wallet to {network} to continue.</Trans>
+  );
+}
+
+type NoteLinkProps = { href: string; testId: string; children: ReactNode };
+
+function NoteLink({ href, testId, children }: NoteLinkProps) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-fgPrimary inline-flex items-center gap-1 font-medium hover:underline"
+      data-testid={testId}
+    >
+      {children}
+      <LinkExternal boxSize={12} className="text-fgSecondary shrink-0" />
+    </a>
+  );
+}
+
+type RedeemNoteTextProps = { note: Extract<PendingBridgeNote, { kind: 'redeem' }> };
+
+function RedeemNoteText({ note }: RedeemNoteTextProps) {
+  if (note.minutesLeft === 0)
+    return <Trans>The time to redeem is up. Checking the ticket on Arbitrum.</Trans>;
+  if (note.minutesLeft === undefined)
+    return <Trans>Redeem on Arbitrum to deliver the funds. It needs ETH on Arbitrum for gas.</Trans>;
+  const timeLeft = formatTimeLeft(note.minutesLeft);
+  return note.urgent ? (
+    <Trans>
+      Only {timeLeft} left to redeem. After that the funds can&apos;t be delivered. Redeem now, or extend the
+      deadline if you can&apos;t yet. Both need ETH on Arbitrum for gas.
+    </Trans>
+  ) : (
+    <Trans>Redeem on Arbitrum within {timeLeft}. It needs ETH on Arbitrum for gas.</Trans>
+  );
+}
+
+type BridgeNoteProps = {
+  note: PendingBridgeNote;
+  onExtend: () => void;
+  canExtend: boolean;
+};
+
+/** What a stuck deposit needs, and for Arbitrum how to finish it without this app. */
+function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
+  if (note.kind === 'replay') {
+    const network = getBridgeNetwork(note.network).name;
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        <Trans>
+          The deposit reached {network} but wasn&apos;t delivered. Replay it on {network} to deliver the
+          funds. It needs ETH on {network} for gas.
+        </Trans>
+      </Text>
+    );
+  }
+  const urgent = note.kind === 'expired' || note.urgent;
+  // A keepalive can't revive a ticket whose time is up.
+  const extendable = note.kind === 'redeem' && note.urgent && note.minutesLeft !== 0;
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-1 text-xs leading-[18px]',
+        urgent ? 'text-statusError' : 'text-fgSecondary'
+      )}
+      data-testid="pending-bridge-note"
+    >
+      <Text className="text-xs leading-[18px] text-inherit">
+        {note.kind === 'redeem' ? (
+          <RedeemNoteText note={note} />
+        ) : (
+          <Trans>
+            The Arbitrum ticket expired or was canceled before it was redeemed, so the funds were not
+            delivered.
+          </Trans>
+        )}
+      </Text>
+      <span className="flex flex-wrap gap-x-4 gap-y-1">
+        {extendable && (
+          <button
+            type="button"
+            className="text-fgPrimary font-medium enabled:hover:underline disabled:opacity-50"
+            disabled={!canExtend}
+            onClick={onExtend}
+            data-testid="pending-bridge-keepalive"
+          >
+            <Trans>Extend the deadline</Trans>
+          </button>
+        )}
+        {note.retryablesHref && (
+          <NoteLink href={note.retryablesHref} testId="pending-bridge-retryables-link">
+            {note.kind === 'redeem' ? (
+              <Trans>Redeem from another wallet</Trans>
+            ) : (
+              <Trans>Check it on Arbitrum</Trans>
+            )}
+          </NoteLink>
+        )}
+        {note.kind === 'expired' && (
+          <NoteLink href={note.supportHref} testId="pending-bridge-support-link">
+            <Trans>Ask for help in the Sky Discord</Trans>
+          </NoteLink>
+        )}
+      </span>
+    </div>
+  );
+}
+
 type PendingBridgeCardProps = {
   bridge: PendingBridge;
   now: number;
   familyChainId: number;
-  onAction: (bridge: PendingBridge) => void;
+  onAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => void;
   onDismiss: (bridge: PendingBridge) => void;
-  canAction: (bridge: PendingBridge) => boolean;
+  canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
+  actionHint: (bridge: PendingBridge) => DestinationActionHint | undefined;
   actionLocked: boolean;
 };
 
@@ -89,9 +214,12 @@ function PendingBridgeCard({
   onAction,
   onDismiss,
   canAction,
+  actionHint,
   actionLocked
 }: PendingBridgeCardProps) {
-  const dismissible = canDismiss(bridge);
+  const dismissible = canDismiss(bridge, now);
+  const hint = dismissible ? undefined : actionHint(bridge);
+  const note = pendingBridgeNote(bridge, now);
   const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <div
@@ -123,9 +251,8 @@ function PendingBridgeCard({
             <Trans>Dismiss</Trans>
           </Button>
         ) : (
-          bridge.requiresClaim &&
-          bridge.nextAction &&
-          !isSettled(bridge) && (
+          showsActionButton(bridge) &&
+          bridge.nextAction && (
             <Button
               variant="primary"
               size="m"
@@ -140,10 +267,22 @@ function PendingBridgeCard({
         )}
       </div>
 
-      {dismissible && (
+      {dismissible && bridge.safeTxHash && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
           <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
         </Text>
+      )}
+      {hint && (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-action-hint">
+          <ActionHintText hint={hint} />
+        </Text>
+      )}
+      {note && (
+        <BridgeNote
+          note={note}
+          onExtend={() => onAction(bridge, 'keepalive')}
+          canExtend={!actionLocked && canAction(bridge, 'keepalive')}
+        />
       )}
 
       <div className="flex flex-col gap-6">
@@ -166,15 +305,17 @@ function PendingBridgeCard({
 }
 
 type PendingBridgesProps = {
-  onAction: (bridge: PendingBridge) => void;
+  onAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => void;
   /** The next action can be sent now, on a network the app can switch to. */
-  canAction: (bridge: PendingBridge) => boolean;
+  canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
+  /** Why the action can't be sent from here, if the user has to act in the wallet. */
+  actionHint: (bridge: PendingBridge) => DestinationActionHint | undefined;
   /** An action's session is minimized: it must be restored, not launched again. */
   actionLocked: boolean;
 };
 
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
-export function PendingBridges({ onAction, canAction, actionLocked }: PendingBridgesProps) {
+export function PendingBridges({ onAction, canAction, actionHint, actionLocked }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
   const { familyChainId, scope } = usePendingScope();
@@ -193,6 +334,7 @@ export function PendingBridges({ onAction, canAction, actionLocked }: PendingBri
           familyChainId={familyChainId}
           onAction={onAction}
           canAction={canAction}
+          actionHint={actionHint}
           onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
           actionLocked={actionLocked}
         />

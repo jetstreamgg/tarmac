@@ -27,9 +27,17 @@ export type BridgeRoute = {
   fallbackReason?: BridgeFallbackReason;
 };
 
-export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 'failed';
+/** `expired`: an Arbitrum ticket that was never redeemed (expired or canceled); the funds were not delivered. */
+export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 'failed' | 'expired';
 
-export type PendingBridgeNextAction = 'claim' | 'prove' | 'finalize';
+/**
+ * `redeem` (Arbitrum ticket) and `replay` (OP Stack message) recover a deposit whose L2 execution failed;
+ * `keepalive` extends an Arbitrum ticket's deadline and is never the next action.
+ */
+export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay' | 'keepalive';
+
+/** A destination action every bridge of its route goes through, in order. */
+export type PendingBridgeStepAction = 'claim' | 'prove' | 'finalize';
 
 /** A destination-side transaction the user sent for a bridge. */
 export type PendingBridgeAction = {
@@ -46,7 +54,7 @@ export type PendingBridgeAction = {
 };
 
 export type PendingBridge = {
-  /** The first source identifier known: the tx hash, or the Safe tx hash for a queued Safe transaction. */
+  /** The first source identifier known: the tx hash, the Safe tx hash for a queued Safe transaction, or the bundle id. */
   id: string;
   /** Sender, lowercase. */
   account: string;
@@ -68,6 +76,10 @@ export type PendingBridge = {
   /** On-chain source tx; undefined while a Safe transaction waits for its signatures. */
   txHash?: string;
   safeTxHash?: string;
+  /** Local id of a wallet bundle (EIP-5792) the wallet accepted; its tx hash is read from the chain once mined. */
+  bundleId?: string;
+  /** The wallet's id for that bundle, to read its status after a reload. */
+  callsId?: string;
   actions: PendingBridgeAction[];
   /** Route-specific tracking ids (CCTP message hash, withdrawal hash, LayerZero guid). */
   routeData?: Record<string, string>;

@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { encodeAbiParameters, toEventSelector, type Hex } from 'viem';
+import { BASE_DEPOSIT_LOGS, SAFE_EXECUTION_FAILURE } from './nativeDeposit/depositFixtures';
 import {
+  executedSafeTxHashes,
   parseSafeTx,
   readSafeActionProgress,
-  readSafeConfig,
   readSafeTxProgress,
   SAFE_ACTION_MISSING_MS,
+  safeExecutionFailed,
   safeTxProgress,
   type SafeMultisigTx
 } from './safe';
@@ -27,6 +30,20 @@ const respond = (routes: Record<string, { status: number; body?: unknown }>) =>
   });
 
 afterEach(() => vi.restoreAllMocks());
+
+describe('safeExecutionFailed', () => {
+  it.each(['1.3.0', '1.4.1'] as const)("reads a Safe %s's ExecutionFailure, in any address case", version => {
+    const { safe, logs } = SAFE_EXECUTION_FAILURE[version];
+    expect(safeExecutionFailed(logs, safe)).toBe(true);
+    expect(safeExecutionFailed(logs, safe.toUpperCase().replace('0X', '0x'))).toBe(true);
+  });
+
+  it('ignores another address and a receipt with no failure', () => {
+    const { logs } = SAFE_EXECUTION_FAILURE['1.4.1'];
+    expect(safeExecutionFailed(logs, SAFE_EXECUTION_FAILURE['1.3.0'].safe)).toBe(false);
+    expect(safeExecutionFailed(BASE_DEPOSIT_LOGS, BASE_DEPOSIT_LOGS[0].address)).toBe(false);
+  });
+});
 
 describe('safeTxProgress', () => {
   const other = {
@@ -242,19 +259,36 @@ describe('readSafeActionProgress', () => {
   });
 });
 
-describe('readSafeConfig', () => {
-  it('returns owners and threshold, or null when there is no Safe', async () => {
-    respond({ '/safes/0xa/': { status: 200, body: { owners: ['0x1', '0x2'], threshold: 2, nonce: 3 } } });
-    expect(await readSafeConfig({ chainId: 1, address: '0xa' })).toEqual({
-      owners: ['0x1', '0x2'],
-      threshold: 2
-    });
-    expect(await readSafeConfig({ chainId: 1, address: '0xb' })).toBeNull();
+const EXEC_SAFE = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+const OTHER_SAFE = '0x2546BcD3c84621e976D8185a91A922aE77ECEc30';
+const SAFE_TX = ('0x' + 'a1'.repeat(32)) as Hex;
+const TOPIC = toEventSelector('ExecutionSuccess(bytes32,uint256)');
+const data = encodeAbiParameters([{ type: 'bytes32' }, { type: 'uint256' }], [SAFE_TX, 0n]);
+
+describe('executedSafeTxHashes', () => {
+  it("reads the Safe tx hash from the Safe's ExecutionSuccess log", () => {
+    expect(executedSafeTxHashes([{ address: EXEC_SAFE, topics: [TOPIC], data }], EXEC_SAFE)).toEqual([
+      SAFE_TX
+    ]);
   });
 
-  it('throws when it cannot tell, so the recipient policy fails closed', async () => {
-    respond({ '/safes/0xa/': { status: 500 } });
-    await expect(readSafeConfig({ chainId: 1, address: '0xa' })).rejects.toThrow();
-    await expect(readSafeConfig({ chainId: 43114, address: '0xa' })).rejects.toThrow();
+  it('reads an indexed Safe tx hash', () => {
+    const payment = encodeAbiParameters([{ type: 'uint256' }], [0n]);
+    expect(
+      executedSafeTxHashes([{ address: EXEC_SAFE, topics: [TOPIC, SAFE_TX], data: payment }], EXEC_SAFE)
+    ).toEqual([SAFE_TX]);
+  });
+
+  it("ignores another Safe's executions and other events", () => {
+    const other = toEventSelector('ExecutionFailure(bytes32,uint256)');
+    expect(
+      executedSafeTxHashes(
+        [
+          { address: OTHER_SAFE, topics: [TOPIC], data },
+          { address: EXEC_SAFE, topics: [other], data }
+        ],
+        EXEC_SAFE
+      )
+    ).toEqual([]);
   });
 });

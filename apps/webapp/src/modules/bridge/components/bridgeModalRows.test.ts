@@ -1,11 +1,12 @@
 import { i18n } from '@lingui/core';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { parseEther } from 'viem';
 import { NO_VALUE } from '@/lib/constants';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
 import { bridgeFootnote } from './BridgeReviewContent';
-import { buildBridgeModalRows, formatEta } from './bridgeModalRows';
+import { buildBridgeModalRows, formatEta, formatMaxEthFee } from './bridgeModalRows';
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
@@ -35,6 +36,35 @@ describe('buildBridgeModalRows', () => {
     const [, , [fee]] = buildBridgeModalRows({ route: routeFor('ethereum', 'avalanche'), networkFee: '' });
     expect(fee).toMatchObject({ value: NO_VALUE });
   });
+
+  it("shows a deposit's ETH fee as its most, with no exponent for tiny amounts", () => {
+    const route = routeFor('ethereum', 'arbitrum');
+    const [, , [fee]] = buildBridgeModalRows({
+      route,
+      networkFee: '',
+      bridgeFee: formatMaxEthFee(4_784_940_682_440n)
+    });
+    expect(fee).toMatchObject({ value: 'Up to 0.0000048 ETH' });
+    expect(formatMaxEthFee(480_000_000_000n)).toBe('Up to 0.00000048 ETH');
+    expect(formatMaxEthFee(12_345_000_000_000_000n)).toBe('Up to 0.013 ETH');
+  });
+});
+
+// The ticket's ETH is a ceiling: the copy must never show less than the deposit sends.
+describe('formatMaxEthFee never shows less than the maximum', () => {
+  const shownWei = (copy: string): bigint => {
+    const match = copy.match(/^Up to ([\d.,]+) ETH$/);
+    if (!match) throw new Error(`unexpected copy: ${copy}`);
+    return parseEther(match[1].replace(/,/g, ''));
+  };
+
+  it.each([4_440_000_000_000n, 4_449_999_999_999n, 12_449_000_000_000_000n, 1_049_000_000_000_000n])(
+    '%s wei',
+    wei => {
+      const copy = formatMaxEthFee(wei);
+      expect(shownWei(copy), copy).toBeGreaterThanOrEqual(wei);
+    }
+  );
 });
 
 describe('formatEta', () => {

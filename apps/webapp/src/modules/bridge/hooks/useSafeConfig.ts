@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { safeAccountQuery } from '@/hooks/wallet/safeAccount';
 import type { SafeLookup } from '../model/recipient';
-import { readSafeConfig } from '../adapters/safe';
 
 /**
  * The Safe at `address` on `chainId`: `lookup` is the config, null for none,
  * undefined while unknown; `isChecking` while the first read is in flight.
+ * Shares its cache entry with `useSafeWalletStatus`.
  */
 export function useSafeConfig({
   address,
@@ -16,11 +17,10 @@ export function useSafeConfig({
   enabled: boolean;
 }): { lookup: SafeLookup; isChecking: boolean } {
   const { data, isLoading } = useQuery({
-    queryKey: ['bridge-safe-config', address?.toLowerCase(), chainId],
-    queryFn: () => readSafeConfig({ chainId: chainId!, address: address! }),
+    ...safeAccountQuery({ address, chainId }),
     enabled: enabled && !!address && chainId !== undefined,
-    staleTime: 5 * 60_000,
-    retry: 1
+    // Owners and threshold can change, unlike Safe-ness.
+    staleTime: 5 * 60_000
   });
-  return { lookup: data, isChecking: isLoading };
+  return { lookup: data === undefined ? undefined : data && data.config, isChecking: isLoading };
 }

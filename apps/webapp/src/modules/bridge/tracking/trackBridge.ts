@@ -1,6 +1,6 @@
 import { applyProgress, isSettled, type BridgeProgress } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeAction } from '../model/types';
-import type { BridgeAdapter } from '../adapters/types';
+import type { AdapterContext, BridgeAdapter } from '../adapters/types';
 import type { PendingBridgeStore } from '../store/pendingStore';
 
 const fingerprint = (bridge: PendingBridge) =>
@@ -17,6 +17,7 @@ export async function trackBridge({
   id,
   now,
   getAdapter,
+  context,
   readSafeTx,
   readSafeAction
 }: {
@@ -25,6 +26,7 @@ export async function trackBridge({
   id: string;
   now: () => number;
   getAdapter: (bridge: PendingBridge) => BridgeAdapter;
+  context: AdapterContext;
   readSafeTx: (bridge: PendingBridge & { safeTxHash: string }) => Promise<BridgeProgress | null>;
   readSafeAction: (bridge: PendingBridge, sent: PendingBridgeAction) => Promise<BridgeProgress | null>;
 }): Promise<BridgeProgress | null> {
@@ -34,7 +36,7 @@ export async function trackBridge({
   const safeAction = bridge.actions.find(sent => sent.status === 'sent' && sent.safe);
   const progress = bridge.txHash
     ? ((safeAction && (await readSafeAction(bridge, safeAction))) ??
-      (await getAdapter(bridge).checkProgress(bridge, now())))
+      (await getAdapter(bridge).checkProgress(bridge, now(), context)))
     : bridge.safeTxHash
       ? await readSafeTx({ ...bridge, safeTxHash: bridge.safeTxHash })
       : null;

@@ -1,10 +1,13 @@
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useConfig } from 'wagmi';
 import { isSettled, pollIntervalMs } from '../model/pendingTransitions';
 import { bridgeChainId } from '../model/networks';
 import { getBridgeAdapter } from '../adapters/registry';
 import { readSafeActionProgress, readSafeTxProgress } from '../adapters/safe';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { trackBridge } from '../tracking/trackBridge';
+import { readsBalanceOn } from './balanceQueries';
+import { wagmiAdapterContext } from './adapterContext';
 import { useBridgeHistory } from './useBridgeHistory';
 import { usePendingScope } from './usePendingScope';
 
@@ -14,6 +17,9 @@ import { usePendingScope } from './usePendingScope';
  */
 export function useBridgeTracker() {
   const { scope, familyChainId } = usePendingScope();
+  const config = useConfig();
+  const queryClient = useQueryClient();
+  const context = wagmiAdapterContext(config, familyChainId);
   const active = useBridgeHistory().filter(bridge => !isSettled(bridge));
 
   useQueries({
@@ -27,6 +33,7 @@ export function useBridgeTracker() {
           id: bridge.id,
           now: Date.now,
           getAdapter: entry => getBridgeAdapter(entry.routeKind),
+          context,
           readSafeTx: async entry => {
             const chainId = bridgeChainId(entry.from, familyChainId);
             return chainId === undefined
@@ -39,6 +46,9 @@ export function useBridgeTracker() {
             return chainId === undefined ? null : readSafeActionProgress({ chainId, sent, now: Date.now() });
           }
         });
+        const destinationChainId = bridgeChainId(bridge.to, familyChainId);
+        if (progress?.kind === 'arrived' && destinationChainId !== undefined)
+          void queryClient.invalidateQueries({ predicate: readsBalanceOn(destinationChainId) });
         return progress?.kind ?? null;
       },
       enabled: !!scope,

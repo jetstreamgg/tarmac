@@ -5,7 +5,16 @@ import { NO_VALUE } from '@/lib/constants';
 import type { PendingBridge } from '../model/types';
 import { chainId } from '@/utils/chainId';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
-import { bridgeTxHref, buildPendingBridgeRows, formatBridgeDate, nextActionLabel } from './pendingBridgeRows';
+import {
+  bridgeTxHref,
+  buildPendingBridgeRows,
+  formatBridgeDate,
+  formatTimeLeft,
+  nextActionLabel,
+  pendingBridgeNote,
+  SKY_DISCORD_URL
+} from './pendingBridgeRows';
+import { REDEEM_URGENT_MINUTES } from '../model/pendingTransitions';
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
@@ -50,6 +59,17 @@ describe('buildPendingBridgeRows', () => {
     expect(buildPendingBridgeRows({ ...base, status: 'failed' }, 0, 1)[1][1]).toMatchObject({
       value: NO_VALUE
     });
+  });
+
+  it('a deposit that needs a redeem or replay has no arrival time, and an expired one never arrives', () => {
+    for (const nextAction of ['redeem', 'replay'] as const) {
+      const row = buildPendingBridgeRows({ ...base, status: 'ready', nextAction }, 0, 1)[1];
+      expect(row.map(cell => 'value' in cell && cell.value)).toEqual(['Action needed', NO_VALUE]);
+    }
+    const expired = buildPendingBridgeRows({ ...base, status: 'expired' }, 0, 1)[1];
+    expect(expired.map(cell => 'value' in cell && cell.value)).toEqual(['Expired', NO_VALUE]);
+    expect(nextActionLabel('redeem')).toBe('Redeem');
+    expect(nextActionLabel('replay')).toBe('Replay');
   });
 
   it('shows a queued Safe transaction as awaiting signatures', () => {
@@ -146,5 +166,95 @@ describe('transaction links follow the app chain', () => {
     expect(bridgeTxHref('base', '0xabc', chainId.tenderly)).toBe(
       getEtherscanLink(chainId.base, '0xabc', 'tx')
     );
+  });
+});
+
+describe('pendingBridgeNote (Ethereum to Arbitrum)', () => {
+  // The golden deposit: the portal resolves this Ethereum hash to ticket 0xfb3d…903b (checked live).
+  const DEPOSIT_TX = '0x7bad421efd4f10f92c69e0563b76192b4302373996796e1a252ecce2458713d4';
+  const RETRYABLES = `https://portal.arbitrum.io/build/retryables?chainId=42161&tx=${DEPOSIT_TX}`;
+  const TIMEOUT_S = 1_760_000_000;
+  const redeem: PendingBridge = {
+    ...base,
+    to: 'arbitrum',
+    status: 'ready',
+    nextAction: 'redeem',
+    txHash: DEPOSIT_TX,
+    routeData: { ticketId: `0x${'1'.repeat(64)}`, timeout: String(TIMEOUT_S) }
+  };
+  const at = (minutesBefore: number) => TIMEOUT_S * 1000 - minutesBefore * 60_000;
+
+  it("gives the floored time left and the any-wallet link to Arbitrum's retryables tool", () => {
+    expect(pendingBridgeNote(redeem, at(6 * 24 * 60 + 4 * 60) - 59_000)).toEqual({
+      kind: 'redeem',
+      minutesLeft: 6 * 24 * 60 + 4 * 60,
+      urgent: false,
+      retryablesHref: RETRYABLES
+    });
+  });
+
+  it('escalates under 48 hours and says time is up once the timeout passed, without expiring the card', () => {
+    expect(pendingBridgeNote(redeem, at(REDEEM_URGENT_MINUTES))).toMatchObject({ urgent: false });
+    expect(pendingBridgeNote(redeem, at(REDEEM_URGENT_MINUTES - 1))).toMatchObject({ urgent: true });
+    expect(pendingBridgeNote(redeem, at(-30))).toMatchObject({ minutesLeft: 0, urgent: true });
+  });
+
+  it.each([undefined, '', 'soon', '-1', '1.5', '1e9'])('shows no time left for a timeout of %o', timeout => {
+    const note = pendingBridgeNote({ ...redeem, routeData: { ...redeem.routeData, timeout: timeout! } }, 0);
+    expect(note).toEqual({
+      kind: 'redeem',
+      minutesLeft: undefined,
+      urgent: false,
+      retryablesHref: RETRYABLES
+    });
+  });
+
+  it('links an expired deposit to the tool and to support', () => {
+    expect(pendingBridgeNote({ ...redeem, status: 'expired', nextAction: undefined }, 0)).toEqual({
+      kind: 'expired',
+      retryablesHref: RETRYABLES,
+      supportHref: SKY_DISCORD_URL
+    });
+  });
+
+  it('is only for an Ethereum to Arbitrum deposit that needs a redeem or expired', () => {
+    expect(pendingBridgeNote({ ...redeem, status: 'pending' }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...redeem, status: 'arrived', nextAction: undefined }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...redeem, to: 'base', nextAction: 'redeem' }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...redeem, from: 'arbitrum', to: 'ethereum' }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...redeem, routeKind: 'cctp' }, 0)).toBeUndefined();
+  });
+
+  it('builds no link without the Ethereum tx', () => {
+    expect(pendingBridgeNote({ ...redeem, txHash: undefined }, 0)).toMatchObject({
+      retryablesHref: undefined
+    });
+  });
+});
+
+describe('pendingBridgeNote (Ethereum to OP Stack)', () => {
+  const replay: PendingBridge = { ...base, to: 'base', status: 'ready', nextAction: 'replay' };
+
+  it.each(['base', 'optimism', 'unichain'] as const)('explains the replay a %s deposit needs', to => {
+    expect(pendingBridgeNote({ ...replay, to }, 0)).toEqual({ kind: 'replay', network: to });
+  });
+
+  it('is only for a ready replay of a native deposit', () => {
+    expect(pendingBridgeNote({ ...replay, status: 'pending', nextAction: undefined }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...replay, status: 'arrived', nextAction: undefined }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...replay, routeKind: 'cctp' }, 0)).toBeUndefined();
+    expect(
+      pendingBridgeNote({ ...replay, from: 'base', to: 'ethereum', nextAction: 'claim' }, 0)
+    ).toBeUndefined();
+  });
+});
+
+describe('formatTimeLeft', () => {
+  it('floors to the two largest units', () => {
+    expect(formatTimeLeft(6 * 24 * 60 + 4 * 60 + 59)).toBe('6 days 4 hours');
+    expect(formatTimeLeft(24 * 60)).toBe('1 day');
+    expect(formatTimeLeft(5 * 60 + 12)).toBe('5 hours 12 minutes');
+    expect(formatTimeLeft(60)).toBe('1 hour');
+    expect(formatTimeLeft(1)).toBe('1 minute');
   });
 });

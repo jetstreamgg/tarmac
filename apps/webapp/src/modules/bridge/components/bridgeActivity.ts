@@ -24,6 +24,12 @@ export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
       return t`Withdrawal proof`;
     case 'finalize':
       return t`Withdrawal finalization`;
+    case 'redeem':
+      return t`Deposit redeem`;
+    case 'replay':
+      return t`Deposit replay`;
+    case 'keepalive':
+      return t`Deadline extension`;
   }
 };
 

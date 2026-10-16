@@ -1,14 +1,38 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { canDismiss, isSettled } from '../model/pendingTransitions';
-import type { PendingBridge } from '../model/types';
+import { applyProgress, canDismiss, isSettled } from '../model/pendingTransitions';
+import type {
+  BridgeRouteKind,
+  PendingBridge,
+  PendingBridgeNextAction,
+  PendingBridgeStatus
+} from '../model/types';
 
 const KEY_PREFIX = 'bridgePending:v1:';
 const SETTLED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
-const STATUSES = new Set(['pending', 'ready', 'arrived', 'claimed', 'failed']);
-const ROUTE_KINDS = new Set(['native', 'cctp', 'layerzero']);
+// Keyed by the types so a new status or action can't be left out: an entry with an unknown one is dropped on load.
+const keysOf = (record: Record<string, true>) => new Set<unknown>(Object.keys(record));
+const STATUSES = keysOf({
+  pending: true,
+  ready: true,
+  arrived: true,
+  claimed: true,
+  failed: true,
+  expired: true
+} satisfies Record<PendingBridgeStatus, true>);
+const ROUTE_KINDS = keysOf({ native: true, cctp: true, layerzero: true } satisfies Record<
+  BridgeRouteKind,
+  true
+>);
 const NETWORKS = new Set<unknown>(BRIDGE_NETWORKS.map(network => network.id));
-const NEXT_ACTIONS = new Set<unknown>(['claim', 'prove', 'finalize']);
+const NEXT_ACTIONS = keysOf({
+  claim: true,
+  prove: true,
+  finalize: true,
+  redeem: true,
+  replay: true,
+  keepalive: true
+} satisfies Record<PendingBridgeNextAction, true>);
 
 type Listener = () => void;
 
@@ -44,8 +68,8 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     entry.token !== 'USDS' ||
     !NETWORKS.has(entry.from) ||
     !NETWORKS.has(entry.to) ||
-    !STATUSES.has(entry.status as string) ||
-    !ROUTE_KINDS.has(entry.routeKind as string) ||
+    !STATUSES.has(entry.status) ||
+    !ROUTE_KINDS.has(entry.routeKind) ||
     typeof entry.requiresClaim !== 'boolean' ||
     typeof entry.startedAt !== 'number' ||
     typeof entry.etaAt !== 'number' ||
@@ -54,6 +78,8 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.nextAction, action => NEXT_ACTIONS.has(action)) ||
     !optional(entry.txHash, isString) ||
     !optional(entry.safeTxHash, isString) ||
+    !optional(entry.bundleId, isString) ||
+    !optional(entry.callsId, isString) ||
     !optional(entry.recipient, isString) ||
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
     !optional(entry.readyAt, at => typeof at === 'number') ||
@@ -216,16 +242,45 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       );
     },
     /**
-     * Drops a queued Safe bridge the user dismissed; entries this bundle can't parse stay.
+     * Drops a bridge the user dismissed (see `canDismiss`); entries this bundle can't parse stay.
      * Checks the latest entry, so a bridge another tab saw execute is kept.
      */
     dismiss(scope: string, id: string) {
       const current = latest(scope);
       const existing = current.find(entry => entry.id === id);
-      if (!existing || !canDismiss(existing)) return;
+      if (!existing || !canDismiss(existing, now())) return;
       write(
         scope,
         current.filter(entry => entry.id !== id),
+        id
+      );
+    },
+    /**
+     * Gives a wallet bundle's card the hash its deposit mined under, at `executedAt`
+     * when known. Drops the card instead when another one already tracks that deposit.
+     */
+    resolveBundle(scope: string, id: string, txHash: string, executedAt?: number) {
+      const current = latest(scope);
+      const existing = current.find(entry => entry.id === id);
+      if (!existing?.bundleId || existing.txHash || isSettled(existing)) return;
+      const hash = txHash.toLowerCase();
+      const tracked = current.some(
+        entry =>
+          entry !== existing && (entry.id.toLowerCase() === hash || entry.txHash?.toLowerCase() === hash)
+      );
+      if (tracked) {
+        write(
+          scope,
+          current.filter(entry => entry !== existing),
+          id
+        );
+        return;
+      }
+      const next = applyProgress(existing, { kind: 'source-executed', txHash, executedAt }, now());
+      if (next === existing) return;
+      write(
+        scope,
+        current.map(entry => (entry === existing ? next : entry)),
         id
       );
     },

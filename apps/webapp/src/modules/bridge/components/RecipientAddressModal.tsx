@@ -11,7 +11,7 @@ import {
 import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import type { BridgeNetwork } from '../model/networks';
-import { isValidRecipient } from '../model/recipient';
+import { isBlockedRecipient, isValidRecipient } from '../model/recipient';
 
 type RecipientAddressModalProps = {
   open: boolean;
@@ -64,6 +64,7 @@ function RecipientForm({ recipient, family, onClose, onSave }: RecipientFormProp
   const [draft, setDraft] = useState(recipient ?? '');
   const trimmed = draft.trim();
   const invalid = trimmed !== '' && !isValidRecipient(trimmed, family);
+  const blocked = !invalid && trimmed !== '' && family === 'evm' && isBlockedRecipient(trimmed);
 
   return (
     <>
@@ -103,7 +104,7 @@ function RecipientForm({ recipient, family, onClose, onSave }: RecipientFormProp
                 placeholder={family === 'solana' ? t`Solana address` : '0x…'}
                 spellCheck={false}
                 autoComplete="off"
-                aria-invalid={invalid}
+                aria-invalid={invalid || blocked}
                 data-testid="bridge-recipient-input"
                 className="text-fgPrimary font-circle placeholder:text-fgTertiary w-full min-w-0 bg-transparent text-lg leading-5.5 font-medium tracking-[-0.36px] outline-none"
               />
@@ -130,13 +131,18 @@ function RecipientForm({ recipient, family, onClose, onSave }: RecipientFormProp
             )}
           </Text>
         )}
+        {blocked && (
+          <Text className="text-error -mt-6 text-sm" dataTestId="bridge-recipient-error">
+            <Trans>This address is a token or bridge contract and can&apos;t receive funds.</Trans>
+          </Text>
+        )}
       </div>
 
       <Button
         variant="primary"
         size="xl"
         className="w-full"
-        disabled={invalid}
+        disabled={invalid || blocked}
         onClick={() => onSave(trimmed === '' ? undefined : trimmed)}
         data-testid="bridge-recipient-save"
       >

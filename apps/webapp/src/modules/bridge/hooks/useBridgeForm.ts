@@ -12,10 +12,12 @@ import {
   guardChainId,
   type BridgeNetworkId
 } from '../model/networks';
-import { allowedDestinations, pickFrom, pickTo, type BridgePair } from '../model/pairs';
-import { isValidRecipient, recipientRequirement, sendsToOther } from '../model/recipient';
+import { allowedDestinations, isLivePair, pickFrom, pickTo, type BridgePair } from '../model/pairs';
+import { isValidRecipient, recipientProblem, recipientRequirement, sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
+import { useAddressCode } from './useAddressCode';
+import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
 
 /** USDS balance of `address` on a bridge network the app can read; `value` is undefined otherwise. */
@@ -23,13 +25,15 @@ function useUsdsBalance(address: `0x${string}` | undefined, chainId: number | un
   const chains = useChains();
   const token = chainId === undefined ? undefined : TOKENS.usds.address[chainId];
   const readable = chainId !== undefined && chains.some(chain => chain.id === chainId);
-  const { data, isLoading } = useTokenBalance({
+  const { data, isLoading, refetch } = useTokenBalance({
     address,
     token,
     chainId: chainId ?? 0,
     enabled: readable && !!token
   });
-  return readable && token ? { value: data?.value, isLoading } : { value: undefined, isLoading: false };
+  return readable && token
+    ? { value: data?.value, isLoading, refetch }
+    : { value: undefined, isLoading: false, refetch: undefined };
 }
 
 const AMOUNT_PATTERN = /^\d*\.?\d{0,18}$/;
@@ -112,7 +116,14 @@ export function useBridgeForm() {
   const destinationChainId = bridgeChainId(to, familyChainId);
   const source = useUsdsBalance(isConnected ? address : undefined, sourceChainId);
   const sourceBalance = source.value;
-  const destinationBalance = useUsdsBalance(isConnected ? address : undefined, destinationChainId).value;
+  const destination = useUsdsBalance(isConnected ? address : undefined, destinationChainId);
+  const destinationBalance = destination.value;
+  const { refetch: refetchSource } = source;
+  const { refetch: refetchDestination } = destination;
+  const refetchBalances = useCallback(() => {
+    refetchSource?.();
+    refetchDestination?.();
+  }, [refetchSource, refetchDestination]);
 
   const setPercent = useCallback(
     (percent: number) => {
@@ -123,8 +134,15 @@ export function useBridgeForm() {
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
-  // Route facts (open/paused, limits, liquidity, fee quote) come from the route tickets, through toRouteFact.
-  const resolved = useMemo(() => resolveBridgeRoute({ from, to, amount, facts: {} }), [from, to, amount]);
+  const nativeGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
+  // The other route facts (CCTP, LayerZero, withdrawals) come from their tickets, through toRouteFact.
+  const resolved = useMemo(
+    () =>
+      isLivePair({ from, to })
+        ? resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate } })
+        : ({ status: 'blocked', reason: 'pair-not-allowed' } as const),
+    [from, to, amount, nativeGate]
+  );
   const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;
@@ -135,12 +153,22 @@ export function useBridgeForm() {
   const checkSafe = isConnected && isSafe && destinationFamily === 'evm' && !sendsToOther(recipient, address);
   const sourceSafe = useSafeConfig({ address, chainId: sourceChainId, enabled: checkSafe });
   const destinationSafe = useSafeConfig({ address, chainId: destinationChainId, enabled: checkSafe });
+  // The address the destination pays: a typed recipient, else the wallet.
+  const typedOther = sendsToOther(recipient, address);
+  const payee =
+    destinationFamily !== 'evm' || recipientInvalid ? undefined : typedOther ? recipient : address;
+  const payeeOnSource = useAddressCode({ address: payee, chainId: sourceChainId });
+  const payeeOnDestination = useAddressCode({ address: payee, chainId: destinationChainId });
+  const payeeCode = { source: payeeOnSource.code, destination: payeeOnDestination.code };
   const recipientRule = recipientRequirement({
     destinationFamily,
     sender: address,
     recipient,
-    safe: isSafe ? { source: sourceSafe.lookup, destination: destinationSafe.lookup } : undefined
+    safe: isSafe ? { source: sourceSafe.lookup, destination: destinationSafe.lookup } : undefined,
+    code: payeeCode
   });
+  const problem = typedOther && payee ? recipientProblem(payee, payeeCode) : undefined;
+  const codeChecking = payeeOnSource.isChecking || payeeOnDestination.isChecking;
 
   const balanceLoading = isConnected && source.isLoading;
   // An unread balance (failed, or a network the app can't read) never passes as enough.
@@ -155,6 +183,8 @@ export function useBridgeForm() {
     to,
     /** The source can't be changed: the wallet can't be switched by the app (Safe). */
     isSourceStatic: !canSwitchChain,
+    /** The flipped pair has a live route. */
+    canFlip: isLivePair({ from: to, to: from }),
     value,
     amount,
     route,
@@ -174,9 +204,11 @@ export function useBridgeForm() {
     sourceUnavailable,
     /** The saved recipient is not a valid address on the destination network. */
     recipientInvalid,
+    /** Why the destination can't deliver to the typed recipient. */
+    recipientProblem: problem,
     needsRecipient: recipientRule.required,
-    /** The Safe lookups behind `needsRecipient` are still in flight. */
-    recipientChecking: checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking),
+    /** The lookups behind `needsRecipient` and `recipientProblem` are still in flight. */
+    recipientChecking: codeChecking || (checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking)),
     recipientReason: recipientRule.required ? recipientRule.reason : undefined,
     /** The Safe check failed, so the wallet type is unknown. */
     safeCheckFailed: isConnected && safeStatus === 'unknown',
@@ -188,6 +220,7 @@ export function useBridgeForm() {
       balanceUnknown ||
       sourceUnavailable ||
       recipientInvalid ||
+      !!problem ||
       recipientRule.required ||
       walletUnchecked ||
       !route,
@@ -197,6 +230,8 @@ export function useBridgeForm() {
     onInput,
     setPercent,
     setRecipient,
+    /** Rereads both balances, after a send moved the source funds. */
+    refetchBalances,
     reset: () => setValue('')
   };
 }

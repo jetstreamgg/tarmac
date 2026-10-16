@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('wagmi', () => ({
   useConnection: () => ({ address: mocks.address }),
   useChainId: () => 1,
-  useChains: () => [{ id: 1 }]
+  useChains: () => [{ id: 1 }],
+  useConfig: () => ({})
 }));
 vi.mock('../adapters/registry', () => ({
   getBridgeAdapter: () => ({ checkProgress: mocks.checkProgress })
@@ -48,8 +49,7 @@ const seed = (ids: { txHash?: string; safeTxHash?: string }) => {
   return bridge;
 };
 
-const renderTracker = () => {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const renderTracker = (client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
@@ -70,6 +70,30 @@ describe('useBridgeTracker', () => {
     seed({ txHash: '0xsource' });
     renderTracker();
     await waitFor(() => expect(stored('0xsource')).toMatchObject({ status: 'ready', nextAction: 'claim' }));
+  });
+
+  it('marks the balances read on the destination chain stale once a bridge arrived', async () => {
+    mocks.checkProgress.mockResolvedValue({ kind: 'arrived' });
+    seed({ txHash: '0xsource' });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const balanceOn = (chainId: number) => [
+      'readContracts',
+      { contracts: [{ chainId, functionName: 'balanceOf' }] }
+    ];
+    // The app's multi-token balances, keyed by a chain-to-tokens map.
+    const tokensOn = (...chainIds: number[]) => [
+      'token-balances',
+      mocks.address,
+      Object.fromEntries(chainIds.map(chainId => [chainId, [{ symbol: 'USDS' }]]))
+    ];
+    for (const key of [balanceOn(1), balanceOn(8453), tokensOn(1), tokensOn(1, 8453), tokensOn(8453)])
+      client.setQueryData(key, [1n, 18]);
+    renderTracker(client);
+    await waitFor(() => expect(client.getQueryState(balanceOn(1))?.isInvalidated).toBe(true));
+    expect(client.getQueryState(tokensOn(1))?.isInvalidated).toBe(true);
+    expect(client.getQueryState(tokensOn(1, 8453))?.isInvalidated).toBe(true);
+    expect(client.getQueryState(balanceOn(8453))?.isInvalidated).toBe(false);
+    expect(client.getQueryState(tokensOn(8453))?.isInvalidated).toBe(false);
   });
 
   it('asks the Safe service on the source chain for a queued Safe bridge', async () => {

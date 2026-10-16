@@ -2,7 +2,11 @@ import { useSimulateContract, useWaitForTransactionReceipt, useWriteContract } f
 import { isRevertedError, toError, TransactionReplacedError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
-import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
+import {
+  SequentialTransactionHook,
+  TxMutateVariables,
+  UseSequentialTransactionFlowParameters
+} from '../hooks';
 
 export function useSequentialTransactionFlow(
   parameters: UseSequentialTransactionFlowParameters
@@ -58,6 +62,9 @@ export function useSequentialTransactionFlow(
       abi: currentTransaction?.abi,
       functionName: currentTransaction?.functionName,
       args: currentTransaction?.args,
+      // A payable call's ETH; dropped here, the wallet would send none.
+      value: currentTransaction?.value,
+      gas: currentTransaction?.gas,
       query: {
         // Only enable simulation for the first transaction initially, or for subsequent transactions after previous success
         enabled:
@@ -78,28 +85,46 @@ export function useSequentialTransactionFlow(
     refetch: refetchSimulation
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
 
+  // The request of the latest wallet prompt. Each dispatch gets its own object, so the
+  // variables wagmi passes back tell a prompt signed late from the one in flight.
+  const latestRequestRef = useRef<object | undefined>(undefined);
+  const isLatest = (variables?: object) => !variables || variables === latestRequestRef.current;
+  const emitStart = (hash: string, variables?: TxMutateVariables) =>
+    variables ? onStart(hash, variables) : onStart(hash);
   const {
-    writeContract,
+    writeContract: writeContractMutation,
     error: writeError,
     data: mutationHash,
+    variables: writeVariables,
     reset: resetWrite
   } = useWriteContract({
     mutation: {
       onMutate,
-      onSuccess: (hash: `0x${string}`) => {
-        setHasWriteError(false);
-        onStart(hash);
+      onSuccess: (hash: `0x${string}`, variables) => {
+        if (isLatest(variables)) setHasWriteError(false);
+        emitStart(hash, variables);
       },
-      onError: (err: Error) => {
-        setHasWriteError(true);
-        // Nothing has mined after a first-call rejection, so there is nothing to
-        // resume — and a snapshot kept here would have the next confirm sign the
-        // pre-rejection call after the user went back and edited it (APP-448).
-        if (currentIndex === 0) setIsExecuting(false);
-        onError(err, mutationHash || '');
+      onError: (err: Error, variables) => {
+        // An earlier prompt settling late must not stop the run in flight.
+        if (isLatest(variables)) {
+          setHasWriteError(true);
+          // Nothing has mined after a first-call rejection, so there is nothing to
+          // resume — and a snapshot kept here would have the next confirm sign the
+          // pre-rejection call after the user went back and edited it (APP-448).
+          if (currentIndex === 0) setIsExecuting(false);
+        }
+        onError(err, mutationHash || '', variables);
       }
     }
   });
+  const writeContract = useCallback(
+    (request: Parameters<typeof writeContractMutation>[0]) => {
+      const fresh = { ...request };
+      latestRequestRef.current = fresh;
+      writeContractMutation(fresh);
+    },
+    [writeContractMutation]
+  );
 
   // Workaround to get `txHash` from Safe connector
   const { transactionHash: eventHash, isSafeApp: isSafeConnector } = useWaitForSafeTxHash({
@@ -131,7 +156,7 @@ export function useSequentialTransactionFlow(
       if (replacement.reason !== 'repriced') replacedHashRef.current = txHash;
       else if (failOnReplaced && txHash) {
         repricedRef.current = { from: txHash, to: replacement.transaction.hash };
-        onStart(replacement.transaction.hash);
+        emitStart(replacement.transaction.hash, writeVariables);
       }
     }
   });
@@ -260,6 +285,7 @@ export function useSequentialTransactionFlow(
     setHasWriteError(false);
     dispatchedIndexRef.current = -1;
     reportedSimulationIndexRef.current = -1;
+    latestRequestRef.current = undefined;
     resetWrite();
     // Do NOT clear lastProcessedTxHash — it guards against
     // stale hash being replayed during multi-step execution

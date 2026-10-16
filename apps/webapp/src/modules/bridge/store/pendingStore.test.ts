@@ -50,6 +50,35 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([bridge()]);
   });
 
+  // A deposit that needs a redeem or replay must stay listed: hidden, its Arbitrum ticket expires undelivered.
+  it.each<[string, Partial<PendingBridge>]>([
+    ['ready to redeem', { status: 'ready', nextAction: 'redeem' }],
+    ['ready to replay', { status: 'ready', nextAction: 'replay' }],
+    ['expired', { status: 'expired', nextAction: undefined, settledAt: NOW }],
+    [
+      'pending after a redeem tx',
+      { status: 'pending', nextAction: 'redeem', actions: [{ action: 'redeem', txHash: '0xab', at: NOW }] }
+    ],
+    [
+      'with a sent keepalive',
+      {
+        status: 'ready',
+        nextAction: 'redeem',
+        actions: [{ action: 'keepalive', txHash: '0xcd', at: NOW, status: 'sent' }]
+      }
+    ]
+  ])('round-trips a deposit %s', (_, overrides) => {
+    const deposit = bridge({
+      from: 'ethereum',
+      to: 'arbitrum',
+      routeKind: 'native',
+      requiresClaim: false,
+      ...overrides
+    });
+    make().upsert(SCOPE, deposit);
+    expect(make().getSnapshot(SCOPE)).toEqual([deposit]);
+  });
+
   it('keeps scopes apart', () => {
     const store = make();
     store.upsert(SCOPE, bridge());

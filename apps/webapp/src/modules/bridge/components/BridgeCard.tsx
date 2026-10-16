@@ -11,8 +11,8 @@ import { AmountInput } from '@/components/product/AmountInput';
 import { RollingValue } from '@/components/ui/rolling-value';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
-import { BRIDGE_NETWORKS, getBridgeNetwork } from '../model/networks';
-import { allowedDestinations } from '../model/pairs';
+import { getBridgeNetwork } from '../model/networks';
+import { liveDestinations, liveSources } from '../model/pairs';
 import type { BridgeFormModel } from '../hooks/useBridgeForm';
 import { USDS_DECIMALS } from '../model/usds';
 import { BridgeNetworkSelect } from './BridgeNetworkSelect';
@@ -45,6 +45,11 @@ export function BridgeCard({ form }: BridgeCardProps) {
   const isMobile = bpi < BP.md;
   const [recipientOpen, setRecipientOpen] = useState(false);
   const destinationFamily = getBridgeNetwork(form.to).family;
+  // Only live routes are offered; a wallet on another network still shows as the source.
+  const sources = liveSources();
+  const fromOptions = sources.includes(form.from) ? sources : [form.from, ...sources];
+  const destinations = liveDestinations(form.from);
+  const toOptions = destinations.length > 0 ? destinations : [form.to];
 
   const percentButtons = form.isConnected && (
     <span className="flex items-center gap-1">
@@ -75,7 +80,7 @@ export function BridgeCard({ form }: BridgeCardProps) {
             </Text>
             <BridgeNetworkSelect
               value={form.from}
-              options={BRIDGE_NETWORKS.map(network => network.id)}
+              options={fromOptions}
               onChange={form.selectFrom}
               isStatic={form.isSourceStatic}
               dataTestId="bridge-from-network"
@@ -109,7 +114,7 @@ export function BridgeCard({ form }: BridgeCardProps) {
             </Text>
             <BridgeNetworkSelect
               value={form.to}
-              options={allowedDestinations(form.from)}
+              options={toOptions}
               onChange={form.selectTo}
               dataTestId="bridge-to-network"
             />
@@ -148,7 +153,7 @@ export function BridgeCard({ form }: BridgeCardProps) {
       <button
         type="button"
         onClick={form.flip}
-        disabled={form.isSourceStatic}
+        disabled={form.isSourceStatic || !form.canFlip}
         aria-label={t`Flip bridge direction`}
         data-testid="bridge-flip"
         className="bg-flipSurface border-flipRing text-textSecondary hover:text-text absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors disabled:pointer-events-none disabled:opacity-50"
