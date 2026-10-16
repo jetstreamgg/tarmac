@@ -12,6 +12,7 @@ export type ReportContext = {
   level?: Sentry.SeverityLevel;
   extra?: Record<string, unknown>;
   contexts?: Record<string, Record<string, unknown>>;
+  fingerprint?: string[];
 };
 
 export function reportError(error: unknown, ctx: ReportContext): void {
@@ -48,6 +49,10 @@ export function reportError(error: unknown, ctx: ReportContext): void {
       Object.entries(ctx.contexts).forEach(([key, value]) => {
         scope.setContext(key, value);
       });
+    }
+
+    if (ctx.fingerprint) {
+      scope.setFingerprint(ctx.fingerprint);
     }
 
     Sentry.captureException(normalizedError);

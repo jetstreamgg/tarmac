@@ -29,6 +29,7 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {
@@ -1218,7 +1219,8 @@ export function TransactionProvider({
       // was closed still lands in the history tables, which lag the receipt
       // by the indexer's catch-up. The session's latched chain, not the
       // config's: a batch receipt can land after a network switch.
-      void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current, blockNumber });
+      const txChainId = sessionChainRef.current;
+      void refreshHistoryAfterTx(queryClient, { chainId: txChainId, blockNumber });
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
@@ -1231,7 +1233,7 @@ export function TransactionProvider({
       if (analytics) {
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
-          chainId,
+          chainId: txChainId,
           txStatus: 'success',
           txHash: hash,
           action: analytics.action,
@@ -1265,7 +1267,7 @@ export function TransactionProvider({
             <TransactionSuccessToast
               title={successTitle}
               hash={txHash}
-              href={txHash ? getTransactionLink(chainId, address, txHash, isSafeWallet) : undefined}
+              href={txHash ? getTransactionLink(txChainId, address, txHash, isSafeWallet) : undefined}
             />
           ),
           { id: SUCCESS_TOAST_ID, duration: 10000 }
@@ -1277,16 +1279,7 @@ export function TransactionProvider({
       // handoff reads as the modal leaving, not blinking out.
       handleCloseRef.current();
     },
-    [
-      sessionGen,
-      chainId,
-      address,
-      isSafeWallet,
-      trackTransactionCompleted,
-      startNewFlow,
-      isStaleWrite,
-      isForeignHash
-    ]
+    [sessionGen, address, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
   );
 
   const onError = useCallback(
@@ -1328,7 +1321,7 @@ export function TransactionProvider({
         const classification = classifyTransactionError(error, !!hash);
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
-          chainId,
+          chainId: sessionChainRef.current,
           txStatus: classification.is_user_rejection ? 'cancelled' : 'error',
           txHash: hash,
           action: analytics.action,
@@ -1342,13 +1335,20 @@ export function TransactionProvider({
 
       if (shouldCaptureTransactionError(normalizedError)) {
         const flowAnalytics = configRef.current?.analytics;
+        const flow = flowAnalytics?.flow ?? 'unknown';
+        const action = flowAnalytics?.action ?? 'unknown';
         reportError(normalizedError, {
           module: 'transactions',
-          flow: flowAnalytics?.flow ?? 'unknown',
-          action: flowAnalytics?.action ?? 'unknown',
+          flow,
+          action,
           type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
+          // Every revert has the same message; one issue per flow and action instead of one for all.
+          fingerprint:
+            normalizedError instanceof TransactionRevertedError
+              ? ['transaction-reverted', flow, action]
+              : undefined,
           extra: {
-            chainId,
+            chainId: sessionChainRef.current,
             txHash: hash,
             isSafeWallet,
             widget: flowAnalytics?.widgetName ?? 'unknown',
@@ -1365,7 +1365,6 @@ export function TransactionProvider({
     },
     [
       sessionGen,
-      chainId,
       isSafeWallet,
       trackTransactionCompleted,
       startNewFlow,

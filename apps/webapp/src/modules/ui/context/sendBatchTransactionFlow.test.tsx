@@ -1,6 +1,17 @@
 import { act, renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { erc20Abi, type Call } from 'viem';
+import {
+  InvalidParamsRpcError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  ResourceNotFoundRpcError,
+  UnknownBundleIdError,
+  UnknownRpcError,
+  UnsupportedProviderMethodError,
+  WaitForCallsStatusTimeoutError,
+  erc20Abi,
+  type Call
+} from 'viem';
 
 // The cross-chain-calldata backstop (APP-528): the shared batch flow itself
 // must refuse a batch whose target address resolved to `undefined` — the shape
@@ -11,12 +22,13 @@ import { erc20Abi, type Call } from 'viem';
 
 const sendCallsSpy = vi.hoisted(() => vi.fn());
 const capabilities = vi.hoisted(() => ({ data: true as boolean | undefined, isLoading: false }));
-
+const idleStatus = { isLoading: false, isSuccess: false, error: null, failureReason: null, data: undefined };
 // The send and its status, settable per test (read during render).
 const bundle = vi.hoisted(() => ({
   isPending: false,
   id: undefined as string | undefined,
-  status: undefined as { status: 'success' | 'failure'; receipts?: [] } | undefined,
+  status: undefined as Record<string, any> | undefined,
+  statusParams: undefined as Record<string, any> | undefined,
   reset: vi.fn(),
   onError: undefined as undefined | ((err: Error) => void)
 }));
@@ -32,13 +44,10 @@ vi.mock('wagmi', () => ({
       reset: bundle.reset
     };
   },
-  useWaitForCallsStatus: () => ({
-    isLoading: !!bundle.id && !bundle.status,
-    isSuccess: !!bundle.status,
-    error: null,
-    failureReason: null,
-    data: bundle.status
-  })
+  useWaitForCallsStatus: (params: Record<string, any>) => {
+    bundle.statusParams = params;
+    return bundle.status ?? idleStatus;
+  }
 }));
 
 vi.mock('@/hooks/shared/useSimulateBatch', () => ({
@@ -127,6 +136,61 @@ describe('useSendBatchTransactionFlow — cross-chain backstop (APP-528)', () =>
   });
 });
 
+describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
+  const pollingOptions = () => {
+    renderHook(() => useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1 } as never));
+    return bundle.statusParams!.query;
+  };
+
+  it('keeps polling until the wallet says it never can answer', () => {
+    const { retry } = pollingOptions();
+    expect(retry(9, new WaitForCallsStatusTimeoutError({ id: '0x1' }))).toBe(true);
+    expect(retry(1, new Error('HTTP request failed. Status: 503'))).toBe(true);
+    expect(retry(50, Object.assign(new Error('Internal error'), { code: -32603 }))).toBe(true);
+    expect(retry(1, new Error('execution reverted'))).toBe(true);
+    // A locked wallet can answer 4100 and recover once unlocked.
+    expect(retry(3, Object.assign(new Error('Unauthorized'), { code: 4100 }))).toBe(true);
+    for (const permanent of [
+      UnsupportedProviderMethodError,
+      MethodNotFoundRpcError,
+      MethodNotSupportedRpcError,
+      UnknownBundleIdError,
+      InvalidParamsRpcError,
+      ResourceNotFoundRpcError
+    ]) {
+      expect(retry(1, new UnknownRpcError(new permanent(new Error('wallet'))))).toBe(false);
+    }
+  });
+
+  it('starts the next poll straight away when an attempt times out, and backs off to at most 30s on errors', () => {
+    const { retryDelay } = pollingOptions();
+    expect(retryDelay(9, new WaitForCallsStatusTimeoutError({ id: '0x1' }))).toBe(0);
+    expect(retryDelay(0, new Error('503'))).toBe(1000);
+    expect(retryDelay(20, new Error('503'))).toBe(30_000);
+  });
+
+  it('reads the outcome from the bundle status, never from error text', () => {
+    const onError = vi.fn();
+    bundle.id = '0xb';
+    // A poll that failed with revert-like text, still being retried.
+    bundle.status = { ...idleStatus, isLoading: true, failureReason: new Error('execution reverted') };
+    try {
+      const { result, rerender } = renderHook(() =>
+        useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never)
+      );
+      expect(onError).not.toHaveBeenCalled();
+      expect(result.current.isLoading).toBe(true);
+
+      bundle.status = { ...idleStatus, isSuccess: true, data: { status: 'failure', receipts: [] } };
+      rerender();
+      expect(onError).toHaveBeenCalledTimes(1);
+    } finally {
+      bundle.id = undefined;
+      bundle.status = undefined;
+    }
+  });
+});
+
 describe('useSendBatchTransactionFlow — reset while the bundle is out (the modal closed mid-send)', () => {
   const render = (onSuccess = vi.fn(), onError = vi.fn()) =>
     renderHook(() =>
@@ -154,7 +218,7 @@ describe('useSendBatchTransactionFlow — reset while the bundle is out (the mod
     rerender();
     expect(onCleared).not.toHaveBeenCalled();
 
-    bundle.status = { status: 'success', receipts: [] };
+    bundle.status = { ...idleStatus, isSuccess: true, data: { status: 'success', receipts: [] } };
     rerender();
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(bundle.reset).toHaveBeenCalledTimes(1);

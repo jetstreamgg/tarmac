@@ -28,7 +28,7 @@ const wagmi = vi.hoisted(() => ({
   simulationErrors: {} as Record<string, Error>,
   // When set, a refetch resolves only after this promise does (a slow RPC).
   refetchGate: undefined as Promise<void> | undefined,
-  // current write mutation hash (drives useWaitForTransactionReceipt)
+  // current write mutation hash (drives the receipt hook)
   mutationHash: undefined as `0x${string}` | undefined,
   // a write waiting in the wallet
   isPending: false,
@@ -89,11 +89,22 @@ vi.mock('wagmi', () => ({
       isPending: wagmi.isPending,
       reset: wagmi.resetWrite
     };
-  },
-  useWaitForTransactionReceipt: () => wagmi.receipt
+  }
 }));
 
 // Safe-connector hash workaround is irrelevant here (connector is undefined).
+// The outcome hook reports only final outcomes (a success, or a revert / wallet
+// cancel as `failure`); an RPC error while watching never reaches the engine.
+// `receipt.error` / `failureReason` stand in for that final failure.
+vi.mock('@/hooks/shared/useTransactionOutcome', () => ({
+  useTransactionOutcome: () => ({
+    isPending: wagmi.receipt.isLoading,
+    isSuccess: wagmi.receipt.isSuccess,
+    failure: wagmi.receipt.error ?? wagmi.receipt.failureReason,
+    receipt: wagmi.receipt.data
+  })
+}));
+
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
   useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })
 }));
@@ -148,7 +159,7 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(wagmi.writeContract).toHaveBeenCalledTimes(1);
 
     // The approve mutation lands: wallet returns its hash → onStart, hash becomes
-    // visible to useWaitForTransactionReceipt on the next render.
+    // visible to the receipt hook on the next render.
     act(() => {
       wagmi.mutationHash = '0xapprove';
       wagmi.onWriteSuccess?.('0xapprove');
@@ -531,29 +542,6 @@ describe('useSequentialTransactionFlow — retry after a wallet rejection (APP-4
     act(() => result.current.execute());
     expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
     expect(onError).toHaveBeenCalledWith(new Error('The transaction can no longer be sent'), '');
-  });
-
-  it('a receipt error that is not a revert AFTER a mined step ends the run: Retry must not re-sign a tx that may still be pending', () => {
-    const onError = vi.fn();
-    let calls: Call[] = [APPROVE, SUPPLY];
-    const { result, rerender } = renderHook(() => useSequentialTransactionFlow({ calls, onError }));
-
-    mineApproveAndBroadcastSupply(result.current, rerender);
-    act(() => {
-      wagmi.receipt = {
-        isLoading: false,
-        isSuccess: false,
-        error: new Error('HTTP request failed'),
-        failureReason: null
-      };
-    });
-    rerender();
-    expect(onError).toHaveBeenCalledTimes(1);
-
-    calls = [SUPPLY];
-    rerender();
-    act(() => result.current.execute());
-    expect(wagmi.writeContract).toHaveBeenCalledTimes(2); // approve + the one supply
   });
 
   it('an on-chain revert AFTER a mined step keeps the snapshot too: nextCalls holds the call and the retry re-simulates and dispatches it', async () => {

@@ -165,14 +165,12 @@ vi.mock('wagmi', async io => ({
     data: undefined,
     reset: () => {}
   }),
-  useWaitForTransactionReceipt: () => ({
-    isLoading: false,
-    isSuccess: false,
-    error: null,
-    failureReason: null
-  }),
   useSendCalls: () => ({ sendCalls: vi.fn(), data: undefined, error: null, reset: () => {} }),
   useWaitForCallsStatus: () => ({ data: undefined, isSuccess: false, error: null, failureReason: null })
+}));
+vi.mock('@/hooks/shared/useTransactionOutcome', async io => ({
+  ...(await io<typeof import('@/hooks/shared/useTransactionOutcome')>()),
+  useTransactionOutcome: () => ({ isPending: false, isSuccess: false, failure: null })
 }));
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
   useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })

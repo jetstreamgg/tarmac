@@ -1,17 +1,3 @@
-import { WaitForTransactionReceiptErrorType, WaitForCallsStatusErrorType } from 'viem';
-
-export function isRevertedError(
-  failureReason: WaitForTransactionReceiptErrorType | WaitForCallsStatusErrorType | null
-): boolean {
-  if (
-    failureReason?.toString().toLowerCase().includes('revert') ||
-    failureReason?.toString().toLowerCase().includes('execution')
-  ) {
-    return true;
-  }
-  return false;
-}
-
 // EIP-1193 "user rejected request". Wallets nest this at varying depths in the
 // viem cause chain (and don't always set err.name), so we walk the chain.
 const USER_REJECTED_CODE = 4001;

@@ -2,10 +2,36 @@ import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
 import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import type { Call } from 'viem';
-import { isRevertedError, toError } from '../helpers';
+import {
+  BaseError,
+  InvalidParamsRpcError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  ResourceNotFoundRpcError,
+  UnknownBundleIdError,
+  UnsupportedProviderMethodError,
+  WaitForCallsStatusTimeoutError
+} from 'viem';
 import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
 import { useSimulateBatch } from './useSimulateBatch';
+
+/** Ceiling on the gap between status polls while the wallet keeps erroring. */
+const MAX_STATUS_RETRY_DELAY_MS = 30_000;
+// Errors after which polling can never succeed: the method unsupported (4200,
+// -32601, -32004) or the bundle id unknown (5730, and the -32602 / -32001 some
+// wallets answer with instead). Not 4100 (unauthorized): a locked wallet can
+// answer that and work again once unlocked.
+const PERMANENT_STATUS_ERRORS = [
+  UnsupportedProviderMethodError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  UnknownBundleIdError,
+  InvalidParamsRpcError,
+  ResourceNotFoundRpcError
+];
+const isPermanentStatusError = (error: unknown) =>
+  error instanceof BaseError && error.walk(e => PERMANENT_STATUS_ERRORS.some(c => e instanceof c)) !== null;
 
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
@@ -67,18 +93,28 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     }
   });
 
-  // Monitor tx, this is also compatible with Safe wallets
+  // Monitor tx, this is also compatible with Safe wallets. A timed-out or failed
+  // poll is retried rather than reported, for as long as the bundle is watched:
+  // it's with the wallet whatever the poll says (a Safe waits on co-signers for
+  // as long as it takes), and reporting it put Retry on screen, which sends the
+  // bundle a second time. Each attempt keeps viem's 60s timeout so a bundle
+  // nobody watches any more stops being polled. A revert comes back in the
+  // status (`failure`, or a reverted receipt), never as a poll error.
   const {
     isLoading: isMining,
     isSuccess,
     error: miningError,
-    failureReason,
     data
   } = useWaitForCallsStatus({
-    id: mutationData?.id
+    id: mutationData?.id,
+    query: {
+      retry: (_count, error) => !isPermanentStatusError(error),
+      retryDelay: (attempt, error) =>
+        error instanceof WaitForCallsStatusTimeoutError
+          ? 0
+          : Math.min(1000 * 2 ** attempt, MAX_STATUS_RETRY_DELAY_MS)
+    }
   });
-
-  const txReverted = isRevertedError(failureReason);
 
   const finishDetached = useCallback(() => {
     const onCleared = detachedRef.current?.onCleared;
@@ -88,8 +124,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   }, [resetSendCalls]);
 
   const sendInFlightRef = useRef(false);
-  const sendInFlight =
-    isSendPending || (!!mutationData?.id && !isSuccess && !miningError && !(failureReason && txReverted));
+  const sendInFlight = isSendPending || (!!mutationData?.id && !isSuccess && !miningError);
   useEffect(() => {
     sendInFlightRef.current = sendInFlight;
   }, [sendInFlight]);
@@ -126,14 +161,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         );
       } else if (miningError) {
         emitError(miningError, data?.receipts?.[0]?.transactionHash);
-      } else if (failureReason && txReverted) {
-        emitError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
       } else {
         return;
       }
       if (detachedRef.current) finishDetached();
     }
-  }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data, finishDetached]);
+  }, [isSuccess, miningError, mutationData?.id, data, finishDetached]);
 
   return {
     execute: () => {
@@ -185,7 +218,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       }
     },
     data: data?.receipts?.[0]?.transactionHash,
-    isLoading: isLoadingCapabilities || simulation.isLoading || isSendPending || (isMining && !txReverted),
+    isLoading: isLoadingCapabilities || simulation.isLoading || isSendPending || isMining,
     prepared:
       !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError && simulation.prepared,
     error: sendError || miningError || simulation.error,
