@@ -59,7 +59,7 @@ export class StakePage {
 
   manageTakeover = () => locate(this.page, { testId: 'stake-manage-takeover' }, stakeManageFlowContract);
 
-  manageMenuBorrow = () => locate(this.page, { testId: 'stake-manage-menu-borrow' }, stakeManageFlowContract);
+  manageMenuManage = () => locate(this.page, { testId: 'stake-manage-menu-manage' }, stakeManageFlowContract);
 
   manageBorrowAmount = () =>
     locate(this.page, { testId: 'stake-manage-borrow-amount' }, stakeManageFlowContract);
@@ -130,6 +130,13 @@ export class StakePage {
   async gotoManage(urnIndex = 0) {
     await this.deepLink(`flow=manage&urn_index=${urnIndex}`);
     await expect(this.positionDetails()).toBeVisible({ timeout: 30_000 });
+  }
+
+  /** Details modal → Manage position → the stake/borrow sheet (stake mode). */
+  async openManageSheet(urnIndex = 0) {
+    await this.gotoManage(urnIndex);
+    await this.manageMenuManage().click();
+    await expect(this.manageTakeover()).toBeVisible();
   }
 
   repairContext(

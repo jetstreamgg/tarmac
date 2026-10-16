@@ -43,7 +43,9 @@ export function StakeTakeoverAmountField({
   chips,
   disabled = false,
   error,
+  errorAction,
   maxDisplayDecimals,
+  roundDisplay = false,
   dataTestId
 }: {
   tokenSymbol: string;
@@ -58,8 +60,12 @@ export function StakeTakeoverAmountField({
   chips?: readonly AmountChip[];
   disabled?: boolean;
   error?: string;
+  /** A way out of `error`, shown under it (e.g. stage the repay that unblocks a withdraw). */
+  errorAction?: AmountChip;
   /** Display-only decimal cap for programmatic amounts (exact-max staging). */
   maxDisplayDecimals?: number;
+  /** Round the capped display half-up instead of truncating it. */
+  roundDisplay?: boolean;
   dataTestId: string;
 }) {
   const [text, setText] = useState('');
@@ -72,7 +78,7 @@ export function StakeTakeoverAmountField({
   const settled = parseAmountInput(text, DECIMALS) === amount;
   if (settled && typedFrom !== null) setTypedFrom(null);
   const typed = settled || amount === typedFrom;
-  const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals);
+  const maskedText = typed ? text : formatAmountForInput(amount, maxDisplayDecimals, roundDisplay);
 
   const onChange = (sanitized: string) => {
     setText(sanitized);
@@ -148,6 +154,19 @@ export function StakeTakeoverAmountField({
             <span id={errorId} data-testid={errorId} className="text-statusError text-sm">
               {error}
             </span>
+          )}
+          {error && errorAction && (
+            <button
+              type="button"
+              onClick={errorAction.onClick}
+              data-testid={`${dataTestId}-${errorAction.key}`}
+              className={cn(
+                buttonVariants({ variant: 'mini', size: 'mini' }),
+                'mt-1 h-8 self-start px-2.5 text-xs leading-[14px] tracking-[-0.24px] md:h-auto md:px-2 md:py-1.5'
+              )}
+            >
+              {errorAction.label}
+            </button>
           )}
         </div>
       </div>

@@ -107,6 +107,26 @@ describe('useStakeAmountSlider — repay axis', () => {
     expect(slider.hidden).toBe(false);
   });
 
+  it('moves the partial ceiling to the stored-rate max when it is lower', () => {
+    const onAmountChange = vi.fn();
+    const slider = useStakeAmountSlider({
+      ...base,
+      amount: usds(25_990),
+      onAmountChange,
+      partialMax: usds(25_990)
+    });
+    expect(slider.axis.marker).toEqual(usds(25_990));
+    expect(slider.outOfRange).toBe(false);
+    expect(
+      useStakeAmountSlider({ ...base, amount: usds(26_000), onAmountChange, partialMax: usds(25_990) })
+        .outOfRange
+    ).toBe(true);
+    // A higher override never widens the zone past debt − dust.
+    expect(
+      useStakeAmountSlider({ ...base, amount: 0n, onAmountChange, partialMax: usds(27_000) }).axis.marker
+    ).toEqual(usds(26_000));
+  });
+
   it('stages the full debt with wipeAll at the right end', () => {
     const onAmountChange = vi.fn();
     const slider = useStakeAmountSlider({ ...base, amount: 0n, onAmountChange });

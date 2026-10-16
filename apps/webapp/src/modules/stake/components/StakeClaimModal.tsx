@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePrices } from '@/hooks';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { formatUsd } from '@/utils';
@@ -19,6 +20,9 @@ import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionCo
 import { stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
+import { useStakeUrnsClaims, type StakeClaimTarget } from '../hooks/useStakeUrnsClaims';
+import { groupClaimsByToken, tokenClaimToReward, urnClaimToReward } from '../lib/stakeClaims';
+import { priceOfFromPrices } from '../lib/stakeUsdNotional';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 // Legacy msgids double as e2e anchors — reused, not forked (UI Spec §3).
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
@@ -60,16 +64,26 @@ function heroFor(reward: ClaimableReward, testIdPrefix: string, label?: boolean)
  * flow claims the urn's full claimable set (the old checkbox list is gone,
  * same call as the generalized claim modal).
  */
-function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: string }) {
+function StakeClaimPanel({
+  selected,
+  heroes,
+  isLoading,
+  urnIndex,
+  sessionId
+}: {
+  /** Per-urn rewards the claim calls consume. */
+  selected: ClaimableReward[];
+  /** One hero per reward token (a token claimed from several urns is summed). */
+  heroes: ClaimableReward[];
+  isLoading: boolean;
+  /** Set when the selection is a single urn — the only case that offers restake. */
+  urnIndex: bigint | undefined;
+  sessionId: string;
+}) {
   const chainId = useChainId();
   const { updateModalContent, txStatus } = useTransaction();
   const entrySlot = useEntrySlot();
-
-  const { rewards: unsortedRewards, isLoading } = stakeAdapter.useClaimable({
-    kind: 'stake',
-    index: BigInt(urnIndex)
-  });
-  const rewards = useMemo(() => sortSkyFirst(unsortedRewards), [unsortedRewards]);
+  const rewards = heroes;
 
   const {
     confirm,
@@ -82,9 +96,9 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
     calls,
     isBatch
   } = useStakeClaimLaunch({
-    urnIndex: BigInt(urnIndex),
-    selected: rewards,
-    enabled: rewards.length > 0,
+    urnIndex,
+    selected,
+    enabled: selected.length > 0,
     sessionId
   });
 
@@ -193,6 +207,60 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
   return entrySlot ? createPortal(body, entrySlot) : body;
 }
 
+/** One urn's full claimable set (the position-details Claim rewards). */
+function UrnClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: string }) {
+  const { rewards, isLoading } = stakeAdapter.useClaimable({ kind: 'stake', index: BigInt(urnIndex) });
+  const sorted = useMemo(() => sortSkyFirst(rewards), [rewards]);
+  return (
+    <StakeClaimPanel
+      selected={sorted}
+      heroes={sorted}
+      isLoading={isLoading}
+      urnIndex={BigInt(urnIndex)}
+      sessionId={sessionId}
+    />
+  );
+}
+
+/** Several urns' claimables, optionally one token's contracts (the Rewards section). */
+function TargetsClaimPanel({
+  targets,
+  rewardContracts,
+  sessionId
+}: {
+  targets: StakeClaimTarget[];
+  rewardContracts?: `0x${string}`[];
+  sessionId: string;
+}) {
+  const chainId = useChainId();
+  const { claims, isLoading } = useStakeUrnsClaims(targets, rewardContracts);
+  const { data: prices, isLoading: pricesLoading } = usePrices();
+
+  const { selected, heroes, urnIndex } = useMemo(() => {
+    const priceOf = priceOfFromPrices(prices);
+    const groups = groupClaimsByToken(claims);
+    const urnIndices = new Set(claims.map(claim => claim.urnIndex));
+    return {
+      selected: groups.flatMap(group => group.claims.map(claim => urnClaimToReward(claim, priceOf, chainId))),
+      heroes: groups.map(group => tokenClaimToReward(group, priceOf, chainId)),
+      urnIndex: urnIndices.size === 1 ? [...urnIndices][0] : undefined
+    };
+  }, [claims, prices, chainId]);
+
+  return (
+    <StakeClaimPanel
+      selected={selected}
+      heroes={heroes}
+      isLoading={isLoading || pricesLoading}
+      urnIndex={urnIndex}
+      sessionId={sessionId}
+    />
+  );
+}
+
+export type StakeClaimSelection =
+  { urnIndex: number } | { targets: StakeClaimTarget[]; rewardContracts?: `0x${string}`[] };
+
 /**
  * Claim-rewards modal launcher (Figma 1036:213978 entry → 1036:214007 confirm),
  * on the shared TransactionModal. Launches at mount — the entry body lives in
@@ -200,7 +268,16 @@ function StakeClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId:
  * when the shared modal closes; a successful claim clears the manage-flow
  * params and lands on the positions tab (C20) before this ever unmounts.
  */
-export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClose: () => void }) {
+export function StakeClaimModal({
+  selection,
+  onClose,
+  closeAfterSuccess = false
+}: {
+  selection: StakeClaimSelection;
+  onClose: () => void;
+  /** Also call `onClose` once a successful claim's modal closes (no details modal to return to). */
+  closeAfterSuccess?: boolean;
+}) {
   const { launch, isModalOpen } = useTransaction();
   const queryClient = useQueryClient();
   const [, setSearchParams] = useAppSearchParams();
@@ -223,6 +300,13 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
       { replace: true }
     );
   }, [queryClient, setSearchParams]);
+
+  const urnIndex =
+    'urnIndex' in selection
+      ? selection.urnIndex
+      : selection.targets.length === 1
+        ? Number(selection.targets[0].urnIndex)
+        : undefined;
 
   const launchedRef = useRef(false);
   useEffect(() => {
@@ -248,7 +332,16 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
       },
       sessionId,
       entry: { confirmLabel: t`Claim`, confirmDisabled: true },
-      backgroundContent: <StakeClaimPanel urnIndex={urnIndex} sessionId={sessionId} />,
+      backgroundContent:
+        'urnIndex' in selection ? (
+          <UrnClaimPanel urnIndex={selection.urnIndex} sessionId={sessionId} />
+        ) : (
+          <TargetsClaimPanel
+            targets={selection.targets}
+            rewardContracts={selection.rewardContracts}
+            sessionId={sessionId}
+          />
+        ),
       onConfirm: () => {},
       onSuccess,
       // The panel pushes the precise claimAction + amounts at confirm time.
@@ -256,10 +349,10 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
         widgetName: 'stake',
         flow: 'manage',
         action: 'claim',
-        data: { module: 'stake', urnIndex }
+        data: { module: 'stake', ...(urnIndex !== undefined && { urnIndex }) }
       }
     });
-  }, [launch, sessionId, urnIndex, onSuccess]);
+  }, [launch, sessionId, selection, urnIndex, onSuccess]);
 
   // Return to the details modal when the shared modal closes — unless the
   // claim succeeded. Success routes away instead, but through an ASYNC router
@@ -273,8 +366,8 @@ export function StakeClaimModal({ urnIndex, onClose }: { urnIndex: number; onClo
       wasOpenRef.current = true;
       return;
     }
-    if (wasOpenRef.current && !succeededRef.current) onClose();
-  }, [isModalOpen, onClose]);
+    if (wasOpenRef.current && (closeAfterSuccess || !succeededRef.current)) onClose();
+  }, [isModalOpen, onClose, closeAfterSuccess]);
 
   return null;
 }

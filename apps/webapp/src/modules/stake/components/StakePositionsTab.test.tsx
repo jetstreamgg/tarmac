@@ -29,6 +29,9 @@ vi.mock('./StakePositionsTable', () => ({
     return <div data-testid="stake-positions-table-stub" />;
   }
 }));
+vi.mock('./StakeRewardsSection', () => ({
+  StakeRewardsSection: () => <div data-testid="stake-rewards-section-stub" />
+}));
 vi.mock('./StakeActivityTable', () => ({
   StakeActivityTable: () => <div data-testid="stake-activity-table-stub" />
 }));
@@ -66,5 +69,21 @@ describe('StakePositionsTab', () => {
     expect(screen.getByTestId('stake-positions-table-stub')).toBeTruthy();
     expect(screen.getByTestId('stake-activity-table-stub')).toBeTruthy();
     expect(screen.getByTestId('stake-rail-card-stub')).toBeTruthy();
+  });
+
+  it('keeps the stack through the tablet seam and splits only from desktop', () => {
+    mockPositions = { data: [], isLoading: false, error: null };
+    renderTab();
+
+    const grid = screen.getByTestId('stake-positions-tab');
+    expect(grid.className).toContain('desktop:grid-cols-3');
+    expect(grid.innerHTML).not.toMatch(/\blg:/);
+  });
+
+  it('caps the stacked track at the container so a wide row cannot push the card off a phone', () => {
+    mockPositions = { data: [], isLoading: false, error: null };
+    renderTab();
+
+    expect(screen.getByTestId('stake-positions-tab').className).toMatch(/(^| )grid-cols-1( |$)/);
   });
 });
