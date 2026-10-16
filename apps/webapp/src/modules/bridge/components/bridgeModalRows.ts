@@ -51,10 +51,12 @@ const ceilSignificant = (wei: bigint, digits: number): bigint => {
 };
 
 /** The most ETH a deposit pays for its L2 delivery, rounded up to two significant digits: "Up to 0.0000048 ETH". */
+/** ETH rounded up to two significant digits, so it never reads less than `wei`. */
+export const formatEthCeil = (wei: bigint): string =>
+  Number(formatEther(ceilSignificant(wei, 2))).toLocaleString('en-US', { maximumSignificantDigits: 2 });
+
 export const formatMaxEthFee = (wei: bigint): string => {
-  const eth = Number(formatEther(ceilSignificant(wei, 2))).toLocaleString('en-US', {
-    maximumSignificantDigits: 2
-  });
+  const eth = formatEthCeil(wei);
   return t`Up to ${eth} ETH`;
 };
 

@@ -3,7 +3,7 @@ import { useChains } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
-import { useIsSafeWallet, useNetworkFee } from '@/hooks';
+import { useIsSafeWallet, useNetworkFee, useTokenBalance } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -12,7 +12,7 @@ import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOn
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeReviewContent';
-import { formatMaxEthFee } from '../components/bridgeModalRows';
+import { formatEthCeil, formatMaxEthFee } from '../components/bridgeModalRows';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
 import { sendsToOther } from '../model/recipient';
@@ -79,6 +79,17 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     getCallbacks: () => legCallbacksRef.current
   });
   const { reset: resetDeposit, refetchAllowance } = deposit;
+  // The Arbitrum ticket's ETH comes from the sender on Ethereum; unknown while loading, so Confirm waits.
+  const { data: ethBalance } = useTokenBalance({
+    address: account,
+    chainId: pinnedChainId ?? 0,
+    isNative: true,
+    enabled: depositTo === 'arbitrum' && pinnedChainId !== undefined
+  });
+  const feeShort =
+    depositTo === 'arbitrum' &&
+    deposit.maxFee !== undefined &&
+    (ethBalance === undefined || ethBalance.value < deposit.maxFee);
   const resetRun = useCallback(() => {
     setRunningTo(undefined);
     resetDeposit();
@@ -146,7 +157,8 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         !account ||
         !scope ||
         pinnedChainId === undefined ||
-        (isNativeDeposit && !deposit.ready)
+        (isNativeDeposit && !deposit.ready) ||
+        feeShort
       ) {
         callbacksRef.current.onError(new Error('The bridge is not ready to send.'));
         return;
@@ -279,8 +291,15 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   );
 
   const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
-  const confirmDisabled = !form.isConnected || form.reviewBlocked || (isNativeDeposit && !deposit.ready);
-  const errorMessage = isNativeDeposit ? enginePrepareErrorMessage(deposit.ready, deposit.error) : undefined;
+  const confirmDisabled =
+    !form.isConnected || form.reviewBlocked || (isNativeDeposit && !deposit.ready) || feeShort;
+  const feeText = deposit.maxFee !== undefined ? formatEthCeil(deposit.maxFee) : NO_VALUE;
+  const errorMessage =
+    feeShort && ethBalance
+      ? t`You need at least ${feeText} ETH on Ethereum to pay the Arbitrum bridge fee.`
+      : isNativeDeposit
+        ? enginePrepareErrorMessage(deposit.ready, deposit.error)
+        : undefined;
 
   const launch = useCallback(() => {
     // No chain to guard: an empty guard would let the legs run on any chain.

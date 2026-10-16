@@ -24,6 +24,9 @@ const mocks = vi.hoisted(() => ({
   isConnected: true,
   balance: undefined as bigint | undefined,
   balanceLoading: false,
+  // The Ethereum ETH balance; undefined reads `balance`.
+  ethBalance: undefined as bigint | undefined,
+  ethLoading: false,
   bridgeOpen: 1n,
   refetchAllowance: vi.fn(),
   safe: {} as Record<string, SafeReply>,
@@ -70,10 +73,17 @@ vi.mock('@/hooks', async io => ({
     mocks.networkFee.push(args);
     return { data: args.enabled ? { formatted: '$0.42' } : undefined };
   },
-  useTokenBalance: () => ({
-    data: mocks.balance === undefined ? undefined : { value: mocks.balance },
-    isLoading: mocks.balanceLoading
-  })
+  useTokenBalance: ({ isNative }: { isNative?: boolean }) => {
+    const value = isNative
+      ? mocks.ethLoading
+        ? undefined
+        : (mocks.ethBalance ?? mocks.balance)
+      : mocks.balance;
+    return {
+      data: value === undefined ? undefined : { value },
+      isLoading: isNative ? mocks.ethLoading : mocks.balanceLoading
+    };
+  }
 }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({ canSwitchChain: true, handleSwitchChain: vi.fn() })
@@ -740,5 +750,56 @@ describe('useBridgeLaunch Confirm gate', () => {
     expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
     expect(mocks.deposit.execute).not.toHaveBeenCalled();
     expect(mocks.legs).toHaveLength(0);
+  });
+
+  describe('the ETH an Arbitrum deposit sends', () => {
+    const FEE = 4_800_000_000_000n;
+    beforeEach(() => {
+      mocks.deposit.maxFee = FEE;
+    });
+    afterEach(() => {
+      Object.assign(mocks, { ethBalance: undefined, ethLoading: false });
+    });
+
+    async function reviewTo(to: 'arbitrum' | 'base') {
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      act(() => view.result.current.form.selectTo(to));
+      await settle();
+      act(() => view.result.current.launch());
+      return mocks.launched.at(-1)!;
+    }
+
+    it('blocks Confirm before any approve when the wallet holds less ETH than the fee, and says why', async () => {
+      mocks.ethBalance = FEE - 1n;
+      const config = await reviewTo('arbitrum');
+      expect(config.confirmDisabled).toBe(true);
+      expect(config.errorMessage).toBe(
+        'You need at least 0.0000048 ETH on Ethereum to pay the Arbitrum bridge fee.'
+      );
+      act(() => config.onConfirm!());
+      expect(mocks.deposit.execute).not.toHaveBeenCalled();
+    });
+
+    it('allows Confirm when the wallet holds the fee', async () => {
+      mocks.ethBalance = FEE;
+      const config = await reviewTo('arbitrum');
+      expect(config.confirmDisabled).toBe(false);
+      expect(config.errorMessage).toBeFalsy();
+    });
+
+    it('blocks Confirm while the ETH balance loads', async () => {
+      mocks.ethLoading = true;
+      const config = await reviewTo('arbitrum');
+      expect(config.confirmDisabled).toBe(true);
+    });
+
+    it('never blocks a Base deposit, which sends no ETH', async () => {
+      mocks.deposit.maxFee = undefined;
+      mocks.ethBalance = 0n;
+      const config = await reviewTo('base');
+      expect(config.confirmDisabled).toBe(false);
+      expect(config.errorMessage).toBeFalsy();
+    });
   });
 });
