@@ -15,6 +15,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { tightensOnly } from '@/modules/ui/lib/callIntent';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
 import { useStUsdsLaunch, type StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
@@ -30,6 +31,20 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 export type { StUsdsModalPreset } from '../hooks/useStUsdsTransactionForm';
 
 const DECIMALS = 18;
+
+// The Curve swap follows the live quote: `min_dy` on a supply or Max withdraw,
+// and on a specific-amount withdraw the stUSDS spent (`dx`, and the approve
+// for it). Each may only move in the user's favour after the confirm, `min_dy`
+// up and `dx` down; the pool moving against the user is refused. A supply's
+// `dx` and approve are the entered amount, so they never move.
+export const CURVE_SWAP_BOUND_ARGS = {
+  exchange: [
+    { index: 2, kind: 'max' },
+    { index: 3, kind: 'min' }
+  ],
+  approve: { index: 1, kind: 'max' }
+} as const;
+const CURVE_SWAP_BOUNDS = tightensOnly(CURVE_SWAP_BOUND_ARGS);
 
 // Decision-12 standard: amounts pin two decimals (hero + grid + balance line).
 const formatUsds = (units: bigint) =>
@@ -94,7 +109,7 @@ export function StUsdsModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useStUsdsLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   // Kept on while a new amount settles, showing the settled one's fee: turning it off
@@ -238,6 +253,8 @@ export function StUsdsModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
+    callMatches: CURVE_SWAP_BOUNDS,
     confirmDisabled: disabled,
     transactionContent,
     transactionScreenContent,
