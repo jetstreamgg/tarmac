@@ -139,10 +139,15 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
   // consumers that key effects on it see no extra changes.
   const selected = useBatch ? batchResults : sequentialResults;
   const { reset: selectedReset } = selected;
-  const reset = useCallback(() => {
-    setSendRoute(null);
-    selectedReset();
-  }, [selectedReset]);
+  const reset = useCallback(
+    (onCleared?: () => void) => {
+      selectedReset(() => {
+        setSendRoute(null);
+        onCleared?.();
+      });
+    },
+    [selectedReset]
+  );
 
   return {
     ...selected,

@@ -1,4 +1,4 @@
-import { renderHook, cleanup } from '@testing-library/react';
+import { act, renderHook, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { erc20Abi, type Call } from 'viem';
 
@@ -12,19 +12,32 @@ import { erc20Abi, type Call } from 'viem';
 const sendCallsSpy = vi.hoisted(() => vi.fn());
 const capabilities = vi.hoisted(() => ({ data: true as boolean | undefined, isLoading: false }));
 
+// The send and its status, settable per test (read during render).
+const bundle = vi.hoisted(() => ({
+  isPending: false,
+  id: undefined as string | undefined,
+  status: undefined as { status: 'success' | 'failure'; receipts?: [] } | undefined,
+  reset: vi.fn(),
+  onError: undefined as undefined | ((err: Error) => void)
+}));
+
 vi.mock('wagmi', () => ({
-  useSendCalls: () => ({
-    sendCalls: sendCallsSpy,
-    error: null,
-    data: undefined,
-    reset: vi.fn()
-  }),
+  useSendCalls: (opts: { mutation: { onError?: (err: Error) => void } }) => {
+    bundle.onError = opts.mutation.onError;
+    return {
+      sendCalls: sendCallsSpy,
+      error: null,
+      data: bundle.id ? { id: bundle.id } : undefined,
+      isPending: bundle.isPending,
+      reset: bundle.reset
+    };
+  },
   useWaitForCallsStatus: () => ({
-    isLoading: false,
-    isSuccess: false,
+    isLoading: !!bundle.id && !bundle.status,
+    isSuccess: !!bundle.status,
     error: null,
     failureReason: null,
-    data: undefined
+    data: bundle.status
   })
 }));
 
@@ -67,6 +80,10 @@ const nullTargetCall = (): Call =>
 
 beforeEach(() => {
   sendCallsSpy.mockClear();
+  bundle.isPending = false;
+  bundle.id = undefined;
+  bundle.status = undefined;
+  bundle.reset = vi.fn();
   capabilities.data = true;
   capabilities.isLoading = false;
 });
@@ -107,5 +124,59 @@ describe('useSendBatchTransactionFlow — cross-chain backstop (APP-528)', () =>
     expect((error as Error).message).toMatch(/no target address/);
     expect(hash).toBeUndefined();
     errorSpy.mockRestore();
+  });
+});
+
+describe('useSendBatchTransactionFlow — reset while the bundle is out (the modal closed mid-send)', () => {
+  const render = (onSuccess = vi.fn(), onError = vi.fn()) =>
+    renderHook(() =>
+      useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onSuccess, onError } as never)
+    );
+
+  it('clears straight away when nothing is out', () => {
+    const onCleared = vi.fn();
+    const { result } = render();
+    act(() => result.current.reset(onCleared));
+    expect(bundle.reset).toHaveBeenCalledTimes(1);
+    expect(onCleared).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps watching a bundle signed after the close until it lands and reports, then clears', () => {
+    const onSuccess = vi.fn();
+    const onCleared = vi.fn();
+    bundle.isPending = true;
+    const { result, rerender } = render(onSuccess);
+    act(() => result.current.reset(onCleared));
+    expect(bundle.reset).not.toHaveBeenCalled();
+
+    bundle.isPending = false;
+    bundle.id = '0xbundle';
+    rerender();
+    expect(onCleared).not.toHaveBeenCalled();
+
+    bundle.status = { status: 'success', receipts: [] };
+    rerender();
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(bundle.reset).toHaveBeenCalledTimes(1);
+    expect(onCleared).toHaveBeenCalledTimes(1);
+  });
+
+  it('is loading while the wallet prompt is open, so no second bundle can overlap it', () => {
+    bundle.isPending = true;
+    const { result } = render();
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it('clears once the wallet rejects a bundle the close left in its prompt', () => {
+    const onError = vi.fn();
+    const onCleared = vi.fn();
+    bundle.isPending = true;
+    const { result } = render(vi.fn(), onError);
+    act(() => result.current.reset(onCleared));
+
+    act(() => bundle.onError?.(new Error('User rejected the request')));
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(bundle.reset).toHaveBeenCalledTimes(1);
+    expect(onCleared).toHaveBeenCalledTimes(1);
   });
 });
