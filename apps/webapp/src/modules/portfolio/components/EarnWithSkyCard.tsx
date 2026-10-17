@@ -84,7 +84,7 @@ export function EarnWithSkyCard({ product, onStart }: { product: EarnWithSkyProd
                 // A real button so the pill is focusable and opens on Enter/Space too.
                 <button
                   type="button"
-                  className="focus-visible:ring-ring inline-flex cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden"
+                  className="focus-visible:ring-focusRing inline-flex cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden"
                   aria-label={t`About this rate`}
                 >
                   <RateBadge data-testid="earn-with-sky-card-rate">

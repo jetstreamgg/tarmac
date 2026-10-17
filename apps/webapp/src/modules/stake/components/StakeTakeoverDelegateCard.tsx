@@ -62,7 +62,11 @@ export function DelegateList({
   return (
     <div className="flex flex-col gap-6 md:gap-8">
       {/* Search row over its hairline (Frame 2087328600, 1036:209801). */}
-      <div className="border-borderPrimary flex items-center gap-2 border-b pb-3">
+      <div className="group/search relative flex items-center gap-2 pb-3">
+        <div
+          aria-hidden
+          className="bg-borderPrimary group-focus-within/search:from-slider-brand-start group-focus-within/search:to-slider-brand-end absolute inset-x-0 bottom-0 h-px group-focus-within/search:bg-linear-to-r"
+        />
         <Search className="text-fgSecondary h-4 w-4 shrink-0" aria-hidden />
         <input
           type="text"

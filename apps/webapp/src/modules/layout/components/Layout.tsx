@@ -63,7 +63,11 @@ export function Layout({
                   logo sits in a 1fr flank; without it the anchor stretches
                   across the whole track and empty header space becomes
                   clickable. */}
-                <AppLink to="/" title="Home page" className="min-w-[96px] lg:justify-self-start">
+                <AppLink
+                  to="/"
+                  title="Home page"
+                  className="focus-visible:outline-focusRing min-w-[96px] rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2 lg:justify-self-start"
+                >
                   {/* Theme-specific logo: dark is the default; light swaps in under
                     [data-theme='light'] (the `light:` variant). */}
                   <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />

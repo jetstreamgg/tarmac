@@ -16,7 +16,7 @@ const buttonVariants = cva(
   // font-circle on the base (not only the xl/l/m/s size recipes): defaultVariants
   // sets size='default', so a <Button> with no size prop would otherwise fall
   // through to Graphik. Every button in the comps is Circular.
-  'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-circle text-sm font-medium ring-offset-background transition-[background-color,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-xl font-circle text-sm font-medium transition-[background-color,--tw-gradient-from,--tw-gradient-to,opacity,border-color,color] duration-250 ease-out-expo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focusRing disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
   {
     variants: {
       variant: {
@@ -25,8 +25,8 @@ const buttonVariants = cva(
         // gradient and only moves the stop colors (solid fills = equal stops):
         // background-image can't interpolate, so swapping the gradient out for
         // a plain color would flash transparent mid-transition, while the
-        // @property-registered stops cross-fade. Focus ring hugs the edge
-        // (offset-0 overrides base).
+        // @property-registered stops cross-fade. Focus ring sits 2px off the
+        // edge with a see-through gap (Figma State=Focused).
         // bg-origin-border spans the gradient across the border box: the
         // translucent border must blend over the local gradient color (Figma
         // fill + inner stroke); by default the gradient tiles from the padding
@@ -36,13 +36,13 @@ const buttonVariants = cva(
         // re-rasterizes the button, soft and off-scale, while its stops
         // transition, which reads as the button shrinking on hover (APP-485).
         primary:
-          'relative isolate rounded-full border border-glassBorder bg-origin-border bg-linear-to-b from-button-gradient-start to-button-gradient-end text-fgConsistent focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary after:absolute after:-inset-px after:-z-10 after:rounded-full after:border after:border-glassBorder after:bg-brandHover after:opacity-0 after:transition-opacity after:duration-250 after:ease-out-expo hover:after:opacity-100 active:after:bg-brandPressed active:after:opacity-100 disabled:after:opacity-0',
+          'relative isolate rounded-full border border-glassBorder bg-origin-border bg-linear-to-b from-button-gradient-start to-button-gradient-end text-fgConsistent disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary after:absolute after:-inset-px after:-z-10 after:rounded-full after:border after:border-glassBorder after:bg-brandHover after:opacity-0 after:transition-opacity after:duration-250 after:ease-out-expo hover:after:opacity-100 active:after:bg-brandPressed active:after:opacity-100 disabled:after:opacity-0',
         primaryAlt:
           'bg-radial-(--gradient-position) from-primary-alt-start/100 to-primary-alt-end/100 border text-text hover:from-primary-alt-start/60 hover:to-primary-alt-end/60 active:from-primary-alt-start/45 active:to-primary-alt-end/45 focus:from-primary-alt-start/45 focus:to-primary-alt-end/45 disabled:from-primary-alt-start/35 disabled:to-primary-alt-end/35',
         connectPrimary:
           'bg-radial-(--gradient-position) text-text border border-[rgb(127,92,246)] from-primary-start/100 to-primary-end/100 hover:from-primary-start/60 hover:to-primary-end/60 hover:border-[rgb(101,70,222)] focus:from-primary-start/40 focus:to-primary-end/40 focus:border-[rgb(92,62,209)]',
         secondary:
-          'rounded-full border border-glassBadge bg-origin-border bg-linear-to-b from-white/0 to-white/8 text-text hover:from-glassBadge hover:to-glassBadge active:from-glassBorder active:to-glassBorder focus-visible:ring-focusRing focus-visible:ring-offset-0 disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
+          'rounded-full border border-glassBadge bg-origin-border bg-linear-to-b from-white/0 to-white/8 text-text hover:from-glassBadge hover:to-glassBadge active:from-glassBorder active:to-glassBorder disabled:border-transparent disabled:from-glassSurface disabled:to-glassSurface disabled:text-fgTertiary',
         pill: 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text rounded-full hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 bg-blend-overlay hover:bg-white/10 focus:border-transparent focus:bg-white/15 active:bg-white/15',
         chip: 'bg-secondary text-text rounded-full hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
         link: 'text-textSecondary no-underline hover:text-white light:hover:text-text active:text-[rgba(198,194,255,0.5)]',
@@ -60,17 +60,17 @@ const buttonVariants = cva(
         // gradient. Active answers both aria-current="page" (nav links) and
         // data-state=open (Radix triggers / manual drawer state).
         navbar:
-          'text-fgPrimary border border-glassBorder bg-origin-border hover:border-borderTertiary focus-visible:ring-focusRing focus-visible:ring-offset-0 aria-[current=page]:border-borderBrandDim aria-[current=page]:bg-linear-to-b aria-[current=page]:from-brand2-start aria-[current=page]:to-brand2-end data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
+          'text-fgPrimary border border-glassBorder bg-origin-border hover:border-borderTertiary aria-[current=page]:border-borderBrandDim aria-[current=page]:bg-linear-to-b aria-[current=page]:from-brand2-start aria-[current=page]:to-brand2-end data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
         // Design-system Button / Dropdown (Figma 5019:4105): same glass pill,
         // but hover also fills (bg-tertiary) and active means "menu open".
         dropdown:
-          'text-fgPrimary border border-glassBorder bg-origin-border hover:border-borderTertiary hover:bg-glassBadge focus-visible:ring-focusRing focus-visible:ring-offset-0 data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
+          'text-fgPrimary border border-glassBorder bg-origin-border hover:border-borderTertiary hover:bg-glassBadge data-[state=open]:border-borderBrandDim data-[state=open]:bg-linear-to-b data-[state=open]:from-brand2-start data-[state=open]:to-brand2-end',
         // Design-system Button / Mini (Figma 5051:168712): compact chip.
         // Hover/pressed drop the border in Figma; border-transparent keeps the
         // geometry stable while the fill shows through (bg paints the border
         // box by default). Pressed 0.2 fill reuses glassBorder as a fill, same
         // call as the secondary button's pressed state.
-        mini: 'text-text border border-glassBorder hover:border-transparent hover:bg-glassBadge active:border-transparent active:bg-glassBorder focus-visible:ring-focusRing focus-visible:ring-offset-0'
+        mini: 'text-text border border-glassBorder hover:border-transparent hover:bg-glassBadge active:border-transparent active:bg-glassBorder'
       },
       size: {
         default: 'h-10 px-4 py-2',

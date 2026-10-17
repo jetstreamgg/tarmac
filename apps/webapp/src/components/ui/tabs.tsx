@@ -49,20 +49,20 @@ const tabsTriggerVariants = cva('', {
   variants: {
     variant: {
       default:
-        'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary light:text-textSecondary ring-offset-background transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text disabled:text-opacity duration-250 ease-out-expo',
+        'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary light:text-textSecondary transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focusRing disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text disabled:text-opacity duration-250 ease-out-expo',
       // Tabs item (5029:51762) — Label 5 chip: 12x8 padding, glass border.
       // State=Disabled swaps to a bg-secondary fill, fg-secondary text and no
       // border at full opacity; Disabled Active keeps the glass border so the
       // last selection still reads (non-Radix pill consumers set `disabled`
       // and data-state themselves).
-      pill: 'font-circle text-text inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-2 text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focusRing border-glassBorder data-[state=inactive]:hover:border-borderTertiary data-[state=inactive]:hover:bg-glassBadge data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end disabled:pointer-events-none disabled:bg-bgSecondary disabled:text-fgSecondary disabled:border-transparent data-[state=active]:disabled:border-glassBorder data-[state=active]:disabled:bg-none',
+      pill: 'font-circle text-text inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-2 text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focusRing border-glassBorder data-[state=inactive]:hover:border-borderTertiary data-[state=inactive]:hover:bg-glassBadge data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end disabled:pointer-events-none disabled:bg-bgSecondary disabled:text-fgSecondary disabled:border-transparent data-[state=active]:disabled:border-glassBorder data-[state=active]:disabled:bg-none',
       // Tabs2 item (5039:73516) — Label 6, 28px tall, borderless until active
       // (a transparent border keeps the geometry stable across states).
       segmented:
-        'font-circle text-fgSecondary inline-flex h-7 items-center justify-center whitespace-nowrap rounded-full border border-transparent px-3 text-xs leading-3.5 font-medium tracking-[-0.24px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focusRing data-[state=inactive]:hover:bg-glassBadge data-[state=inactive]:hover:text-text data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end data-[state=active]:text-text',
+        'font-circle text-fgSecondary inline-flex h-7 items-center justify-center whitespace-nowrap rounded-full border border-transparent px-3 text-xs leading-3.5 font-medium tracking-[-0.24px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focusRing data-[state=inactive]:hover:bg-glassBadge data-[state=inactive]:hover:text-text data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end data-[state=active]:text-text',
       // Tabs3 item (5043:59420) — Label 5 nav pill: 44px tall, 20px inline
       // padding, brand text on hover.
-      nav: 'font-circle text-text inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border px-5 text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focusRing border-glassBorder data-[state=inactive]:hover:border-borderTertiary data-[state=inactive]:hover:bg-glassBadge data-[state=inactive]:hover:text-fgBrand data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end',
+      nav: 'font-circle text-text inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border px-5 text-sm leading-4 font-medium tracking-[-0.28px] bg-origin-border transition-colors duration-250 ease-out-expo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focusRing border-glassBorder data-[state=inactive]:hover:border-borderTertiary data-[state=inactive]:hover:bg-glassBadge data-[state=inactive]:hover:text-fgBrand data-[state=active]:border-borderBrandDim data-[state=active]:bg-linear-to-b data-[state=active]:from-brand2-start data-[state=active]:to-brand2-end',
       icons:
         'text-xs text-textSecondary flex flex-col gap-1 items-center justify-center px-2 py-2.5 rounded-xl w-[72px] md:w-16 data-[state=active]:text-text bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 border border-transparent data-[state=active]:from-primary-start/100 data-[state=active]:to-primary-end/100 data-[state=active]:border-border hover:from-primary-start/50 hover:to-primary-end/50 disabled:hover:from-primary-start/0 disabled:hover:to-primary-end/0 transition-[background-color,background-image,opacity,border-color,color] duration-250 ease-out-expo relative'
     },
@@ -100,7 +100,7 @@ const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      'focus-visible:ring-ring ring-offset-background focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden',
+      'focus-visible:outline-focusRing focus-visible:outline-2 focus-visible:outline-offset-2',
       className
     )}
     {...props}
