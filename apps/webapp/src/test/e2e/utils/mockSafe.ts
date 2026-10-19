@@ -119,6 +119,8 @@ export type MockSafeTx = {
   nonce: bigint;
   /** The calls the Safe App asked for; one direct call, or the MultiSendCallOnly legs. */
   calls: Call[];
+  /** The packed legs `data` passes to multiSend; null for a direct call. */
+  multiSendTransactions: Hex | null;
   submissionDate: string;
   execution: MockSafeExecution | null;
 };
@@ -258,14 +260,14 @@ const parseSafeTxGas = (gas: unknown) =>
 
 // What the tx service decodes for a MultiSendCallOnly batch; a direct call gets null (we have no ABIs).
 function decodedData(tx: MockSafeTx) {
-  if (tx.operation !== 1) return null;
+  if (!tx.multiSendTransactions) return null;
   return {
     method: 'multiSend',
     parameters: [
       {
         name: 'transactions',
         type: 'bytes',
-        value: encodeMultiSend(tx.calls),
+        value: tx.multiSendTransactions,
         valueDecoded: tx.calls.map(call => ({
           operation: 0,
           to: call.to,
@@ -319,24 +321,24 @@ export async function enableSafeMode(
   const readNonce = async (on: NetworkName) =>
     (await getFork(on)).publicClient.readContract({ address, abi: safeAbi, functionName: 'nonce' });
 
-  // One proposal at a time, so sends made at once get consecutive nonces.
-  let proposing: Promise<unknown> = Promise.resolve();
-  function queue(calls: Call[], safeTxGas: bigint): Promise<MockSafeTx> {
-    const tx = proposing.then(() => propose(calls, safeTxGas));
-    proposing = tx.catch(() => undefined);
-    return tx;
+  // One proposal or execution at a time, so no execution lands between a nonce read and the queue count.
+  let last: Promise<unknown> = Promise.resolve();
+  function serialize<T>(work: () => Promise<T>): Promise<T> {
+    const run = last.then(work);
+    last = run.catch(() => undefined);
+    return run;
   }
 
-  async function propose(calls: Call[], safeTxGas: bigint): Promise<MockSafeTx> {
-    const batch = calls.length > 1;
-    const to = batch ? SAFE_1_4_1.multiSendCallOnly : calls[0].to;
-    const value = batch ? 0n : calls[0].value;
-    const data = batch
-      ? encodeFunctionData({ abi: multiSendAbi, functionName: 'multiSend', args: [encodeMultiSend(calls)] })
+  async function propose(on: NetworkName, calls: Call[], safeTxGas: bigint): Promise<MockSafeTx> {
+    const multiSendTransactions = calls.length > 1 ? encodeMultiSend(calls) : null;
+    const to = multiSendTransactions ? SAFE_1_4_1.multiSendCallOnly : calls[0].to;
+    const value = multiSendTransactions ? 0n : calls[0].value;
+    const data = multiSendTransactions
+      ? encodeFunctionData({ abi: multiSendAbi, functionName: 'multiSend', args: [multiSendTransactions] })
       : calls[0].data;
-    const operation = batch ? 1 : 0;
-    const nonce = (await readNonce(current)) + BigInt(queuedOn(current).length);
-    const { publicClient } = await getFork(current);
+    const operation = multiSendTransactions ? 1 : 0;
+    const nonce = (await readNonce(on)) + BigInt(queuedOn(on).length);
+    const { publicClient } = await getFork(on);
     const safeTxHash = await publicClient.readContract({
       address,
       abi: safeAbi,
@@ -344,7 +346,7 @@ export async function enableSafeMode(
       args: [to, value, data, operation, safeTxGas, 0n, 0n, zeroAddress, zeroAddress, nonce]
     });
     const tx: MockSafeTx = {
-      network: current,
+      network: on,
       safeTxHash,
       to,
       value,
@@ -353,6 +355,7 @@ export async function enableSafeMode(
       safeTxGas,
       nonce,
       calls,
+      multiSendTransactions,
       submissionDate: isoNow(),
       execution: null
     };
@@ -374,6 +377,8 @@ export async function enableSafeMode(
           isReadOnly: false
         };
       case 'sendTransactions': {
+        // The network the page sent from, before a switch can move `current`.
+        const on = current;
         const { txs: requested, params } = request.params;
         if (requested.length === 0) throw new Error('Mock Safe: no transactions to send');
         const calls = requested.map(tx => ({
@@ -381,7 +386,7 @@ export async function enableSafeMode(
           value: BigInt(tx.value || 0),
           data: (tx.data || '0x') as Hex
         }));
-        const tx = await queue(calls, parseSafeTxGas(params?.safeTxGas));
+        const tx = await serialize(() => propose(on, calls, parseSafeTxGas(params?.safeTxGas)));
         return { safeTxHash: tx.safeTxHash };
       }
       case 'getTxBySafeTxHash': {
@@ -499,8 +504,13 @@ export async function enableSafeMode(
     });
   }
 
-  async function execute(safeTxHash?: Hex): Promise<MockSafeTx> {
-    const tx = safeTxHash ? findTx(safeTxHash, current) : queuedOn(current)[0];
+  function execute(safeTxHash?: Hex): Promise<MockSafeTx> {
+    const on = current;
+    return serialize(() => executeOn(on, safeTxHash));
+  }
+
+  async function executeOn(on: NetworkName, safeTxHash?: Hex): Promise<MockSafeTx> {
+    const tx = safeTxHash ? findTx(safeTxHash, on) : queuedOn(on)[0];
     if (!tx) throw new Error('Mock Safe: nothing to execute');
     if (tx.execution) throw new Error('Mock Safe: transaction already executed');
     // A v=1 signature from msg.sender skips the hash check, so a wrong nonce would
@@ -579,10 +589,11 @@ export async function enableSafeMode(
     address,
     queued: () => queuedOn(current),
     async waitForQueued({ timeout = 30_000 } = {}) {
+      const on = current;
       await expect
-        .poll(() => queuedOn(current).length, { message: 'Mock Safe: no transaction queued', timeout })
+        .poll(() => queuedOn(on).length, { message: 'Mock Safe: no transaction queued', timeout })
         .toBeGreaterThan(0);
-      return queuedOn(current)[0];
+      return queuedOn(on)[0];
     },
     execute,
     async switchNetwork(next: NetworkName) {
