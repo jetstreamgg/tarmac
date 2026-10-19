@@ -5,6 +5,7 @@ import { getTestTenderlyChains, TENDERLY_CHAIN_ID } from './testTenderlyChain';
 import { mock, MockParameters } from 'wagmi/connectors';
 import { TEST_WALLET_ADDRESSES, getTestWalletAddress } from '@/test/e2e/utils/testWallets';
 import { arbitrum, base, optimism, unichain } from 'viem/chains';
+import { safeMock, type MockSafeHost } from './safeMockConnector';
 
 const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';
 
@@ -112,6 +113,7 @@ declare global {
     __MOCK_SWITCH_CHAIN__?: (chainName: string) => Promise<number>;
     __MOCK_PARK_WALLET_ON__?: (chainId: number) => void;
     __MOCK_APP_CHAIN__?: () => { id: number; name: string };
+    __MOCK_SAFE_HOST__?: MockSafeHost;
   }
 }
 
@@ -198,6 +200,9 @@ export function createMockWagmiConfig() {
   const [tenderlyMainnet, tenderlyBase, tenderlyArbitrum, tenderlyOptimism, tenderlyUnichain] =
     getTestTenderlyChains();
   const workerAccounts = getWorkerAccounts();
+  // Safe mode (APP-642): a spec that installs the Safe{Wallet} host binding gets a
+  // third connector, `safe`, which reconnects on load the way the Safe iframe does.
+  const safeHost = typeof window !== 'undefined' ? window.__MOCK_SAFE_HOST__ : undefined;
 
   const mockWagmiConfig = createConfig({
     chains: [tenderlyMainnet, tenderlyBase, tenderlyArbitrum, tenderlyOptimism, tenderlyUnichain],
@@ -218,7 +223,8 @@ export function createMockWagmiConfig() {
             reconnect: false // Disable reconnect to prevent using old cached accounts
           }
         })
-      )
+      ),
+      ...(typeof safeHost === 'function' ? [safeMock({ host: safeHost })] : [])
     ],
     transports: {
       [tenderlyMainnet.id]: http(),

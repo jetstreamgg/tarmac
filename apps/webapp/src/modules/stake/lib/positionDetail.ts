@@ -46,16 +46,6 @@ export function calculateClaimedRewardsUsd(
 }
 
 /**
- * The warning-sentence percentage (M14): how far the collateral price can fall
- * before liquidation — the complement of the vault's liquidation proximity, so
- * the sentence and the risk meter can never disagree. Null while loading.
- */
-export function liquidationDropPercent(liquidationProximityPercentage: number | undefined): number | null {
-  if (liquidationProximityPercentage === undefined) return null;
-  return Math.min(100, Math.max(0, Math.round(100 - liquidationProximityPercentage)));
-}
-
-/**
  * The C.2 "has borrow history" predicate: whether the urn EVER drew debt,
  * from its subgraph history slice. Drives the inactive modal's borrow block
  * and the Reopen CTA's borrow-expanded pre-configuration — an emptied urn

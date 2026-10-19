@@ -46,6 +46,11 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null }),
+    useCollateralData: () => ({
+      data: { delayedPrice: 60_000_000_000_000_000n },
+      isLoading: false,
+      error: null
+    }),
     useStakeRewardContracts: () => ({ data: [{ contractAddress: '0xfarm' }], isLoading: false }),
     useMultipleRewardsChartInfo: () => ({ data: [FARM], isLoading: false, error: null })
   };
@@ -71,7 +76,7 @@ describe('StakeDetailsStrip', () => {
     expect(screen.getByText('Borrow Rate')).toBeTruthy();
     expect(screen.getByText('Total SKY staked')).toBeTruthy();
     expect(screen.getByText('TVL')).toBeTruthy();
-    expect(screen.getByText('SKY Price')).toBeTruthy();
+    expect(screen.getByText('Capped OSM SKY price')).toBeTruthy();
     expect(screen.getByText('Users')).toBeTruthy();
   });
 
@@ -82,13 +87,19 @@ describe('StakeDetailsStrip', () => {
     expect(screen.getByText('10.00%')).toBeTruthy();
   });
 
-  it('renders the latest historic borrow rate, total staked, TVL, price and users', () => {
+  it('renders the latest historic borrow rate, total staked, TVL and users', () => {
     renderStrip();
 
     expect(screen.getByText('8.10%')).toBeTruthy();
     expect(screen.getByText('17,106,043,933')).toBeTruthy();
     expect(screen.getByText('$1,000')).toBeTruthy();
-    expect(screen.getByText('$0.0804')).toBeTruthy();
     expect(screen.getByText('50')).toBeTruthy();
+  });
+
+  it('shows the onchain capped OSM price, not the indexer price', () => {
+    renderStrip();
+
+    expect(screen.getByText('$0.0600')).toBeTruthy();
+    expect(screen.queryByText('$0.0804')).toBeNull();
   });
 });

@@ -29,4 +29,9 @@ describe('RollingValue', () => {
     expect(screen.queryByTestId('rolling-value-out')).toBeNull();
     expect(screen.queryByTestId('rolling-value-in')).toBeNull();
   });
+
+  it('clips only vertically so a width glide never cuts the trailing digits', () => {
+    render(<RollingValue value="5,000,000.00" />);
+    expect(screen.getByTestId('rolling-value').className).toContain('[clip-path:inset(0_-100vw_-0.15em_0)]');
+  });
 });

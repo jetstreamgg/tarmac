@@ -14,7 +14,7 @@ import {
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
-import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
+import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { parseStakeId, stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { calculateStakeApprovalAmounts, useStakeCalldata } from './useStakeCalldata';
@@ -31,13 +31,16 @@ import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 export function buildStakeClaimSteps({
   needsSkyAllowance,
   claimSymbols,
-  restake
+  restake,
+  shouldUseBatch = true
 }: {
   needsSkyAllowance: boolean;
   claimSymbols: string[];
   restake: boolean;
+  /** Unbundled restake is approve + one multicall, so its claim/restake rows share a write. */
+  shouldUseBatch?: boolean;
 }): TransactionStep[] {
-  return [
+  const steps = [
     restake &&
       needsSkyAllowance && {
         label: t`Approve`,
@@ -51,10 +54,29 @@ export function buildStakeClaimSteps({
     })),
     restake && { label: t`Restake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.restake('SKY') }
   ].filter(Boolean) as TransactionStep[];
+  return restake && !shouldUseBatch ? assignSequentialWrites(steps, needsSkyAllowance ? 1 : 0) : steps;
+}
+
+/**
+ * Unbundled plain claim: one row per `getReward` in call order, since each is its own
+ * wallet prompt. A selection spanning urns names each row's position.
+ */
+export function buildStakeSequentialClaimSteps(selected: ClaimableReward[]): TransactionStep[] {
+  const urnIndexes = selected.map(reward => parseStakeId(reward.id).urnIndex);
+  const multiUrn = new Set(urnIndexes).size > 1;
+  return selected.map((reward, i) => {
+    const position = Number(urnIndexes[i]) + 1;
+    return {
+      label: multiUrn ? t`Position ${position}: Claim` : t`Claim`,
+      tokenSymbol: reward.tokenSymbol,
+      failureDetail: stepFailureDetail.claim(reward.tokenSymbol)
+    };
+  });
 }
 
 export interface UseStakeClaimLaunchParams {
-  urnIndex: bigint;
+  /** The single urn claimed; undefined for a multi-urn selection, which offers no restake. */
+  urnIndex: bigint | undefined;
   /** Stake-source rewards the modal claims (adapter ids carry urn+contract). */
   selected: ClaimableReward[];
   /** Selection non-empty and the modal ready — gates both engines' prepare. */
@@ -119,7 +141,37 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   const skyClaim = claimables.find(claim => claim.rewardSymbol?.toUpperCase?.() === 'SKY');
   const isSkyRewardPosition = !!skyClaim;
   const restakeSkyAmount = skyClaim?.claimBalance ?? 0n;
-  const restakeAvailable = selectedClaims.some(claim => claim.rewardSymbol?.toUpperCase?.() === 'SKY');
+  const restakeAvailable =
+    urnIndex !== undefined && selectedClaims.some(claim => claim.rewardSymbol?.toUpperCase?.() === 'SKY');
+
+  // Claimed amounts per reward contract, SKY first: the urn's raw balances, or
+  // for a multi-urn selection the selected rewards summed per contract.
+  const claimedTokens = useMemo(() => {
+    if (urnIndex !== undefined) {
+      return selectedClaims.map(claim => ({
+        tokenSymbol: claim.rewardSymbol,
+        amount: wadToFloat(claim.claimBalance),
+        rewardContractAddress: claim.contractAddress
+      }));
+    }
+    const byContract = new Map<
+      string,
+      { tokenSymbol: string; amount: number; rewardContractAddress: `0x${string}` }
+    >();
+    for (const reward of selected) {
+      const { rewardContract } = parseStakeId(reward.id);
+      const key = rewardContract.toLowerCase();
+      byContract.set(key, {
+        tokenSymbol: reward.tokenSymbol,
+        amount: (byContract.get(key)?.amount ?? 0) + reward.amount,
+        rewardContractAddress: rewardContract
+      });
+    }
+    const isSky = (symbol: string) => symbol.toUpperCase() === 'SKY';
+    return [...byContract.values()].sort(
+      (a, b) => Number(isSky(b.tokenSymbol)) - Number(isSky(a.tokenSymbol))
+    );
+  }, [urnIndex, selectedClaims, selected]);
 
   // ── Plain claim: D5 adapter calls → the shared transaction flow (C2).
   // Ordered before the restake engine so tests can capture the two flows
@@ -133,6 +185,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
     enabled: enabled && claimCalls.length > 0,
     ...txCallbacks
   });
+  const plainIsBatch = !!plainFlow.isBatch;
 
   // ── Claim & Restake: the F1 seam (C3), reward/delegate passed through (C4).
   const { data: urnSelectedRewardContract } = useStakeUrnSelectedRewardContract({
@@ -145,7 +198,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   const { calldata } = useStakeCalldata({
     flow: 'manage',
     ownerAddress: address ?? ZERO_ADDRESS,
-    urnIndex,
+    urnIndex: urnIndex ?? 0n,
     urnAddress,
     skyToLock: 0n,
     skyToFree: 0n,
@@ -195,7 +248,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
     restakeExecuteRef.current = restakeEngine.execute;
   }, [restakeEngine.execute]);
 
-  const claimSymbols = useMemo(() => selectedClaims.map(claim => claim.rewardSymbol), [selectedClaims]);
+  const claimSymbols = useMemo(() => claimedTokens.map(claim => claim.tokenSymbol), [claimedTokens]);
 
   const { data: rewardContractTokens } = useRewardContractTokens(
     urnSelectedRewardContract && urnSelectedRewardContract !== ZERO_ADDRESS
@@ -213,13 +266,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
 
       // Legacy claimTransactionCallbacks parity (C8): claimedRewards carry the
       // raw claim amounts; the action name encodes count × restake.
-      const claimedRewards = selectedClaims
-        .filter(claim => claim.claimBalance > 0n)
-        .map(claim => ({
-          tokenSymbol: claim.rewardSymbol,
-          amount: wadToFloat(claim.claimBalance),
-          rewardContractAddress: claim.contractAddress
-        }));
+      const claimedRewards = claimedTokens.filter(claim => claim.amount > 0);
       const claimAction =
         claimedRewards.length === 0
           ? undefined
@@ -235,7 +282,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
         module: 'stake',
         assetSymbol: 'SKY',
         borrowSymbol: 'USDS',
-        urnIndex: Number(urnIndex),
+        ...(urnIndex !== undefined && { urnIndex: Number(urnIndex) }),
         selectedRewardContract: urnSelectedRewardContract,
         selectedRewardSymbol,
         isDelegating: false,
@@ -252,7 +299,10 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
       // provider applies them to its config ref synchronously, so the engine's
       // onMutate (fired in this same click) tracks the right claimAction.
       updateModalContent(sessionId, {
-        steps: buildStakeClaimSteps({ needsSkyAllowance, claimSymbols, restake }),
+        steps:
+          restake || plainIsBatch
+            ? buildStakeClaimSteps({ needsSkyAllowance, claimSymbols, restake, shouldUseBatch })
+            : buildStakeSequentialClaimSteps(selected),
         analytics: {
           widgetName: 'stake',
           flow: 'manage',
@@ -266,11 +316,13 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
       updateModalContent,
       sessionId,
       urnIndex,
-      selectedClaims,
+      claimedTokens,
       claimSymbols,
       needsSkyAllowance,
       restakeSkyAmount,
       shouldUseBatch,
+      plainIsBatch,
+      selected,
       urnSelectedRewardContract,
       selectedRewardSymbol
     ]
@@ -295,6 +347,6 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
     // always available. Restake's extra cost is not represented — a design gap, not an
     // oversight.
     calls: plainFlow.calls ?? [],
-    isBatch: !!plainFlow.isBatch
+    isBatch: plainIsBatch
   };
 }

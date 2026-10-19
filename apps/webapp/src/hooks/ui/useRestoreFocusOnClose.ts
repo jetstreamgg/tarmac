@@ -76,10 +76,10 @@ export function restoreFocus(candidates: (HTMLElement | null)[], closing: Node |
   if (dialogs.some(dialog => dialog.contains(active) && !(closing && dialog.contains(closing)))) return true;
 
   const openModals = dialogs.filter(dialog => dialog.getAttribute('aria-modal') === 'true').reverse();
-  for (const [index, candidate] of [...candidates, ...openModals].entries()) {
+  for (const candidate of [...candidates, ...openModals]) {
     if (!candidate?.isConnected || candidate.closest('[inert]')) continue;
     if (closing && (candidate.contains(closing) || closing.contains(candidate))) continue;
-    candidate.focus({ preventScroll: index > 0 });
+    candidate.focus({ preventScroll: true });
     if (document.activeElement === candidate) return true;
   }
   return false;

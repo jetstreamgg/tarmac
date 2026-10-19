@@ -4,6 +4,7 @@ import type { StakeUrnClaimable } from './useStakeUrnClaimables';
 
 const h = vi.hoisted(() => ({
   claimables: [] as { contractAddress: string; claimBalance: bigint; rewardSymbol: string }[],
+  rewardSymbol: undefined as string | undefined,
   vaultLoading: false,
   urnVaults: undefined as
     { index: number; urnAddress: `0x${string}`; skyLocked: bigint; usdsDebt: bigint }[] | undefined
@@ -22,9 +23,13 @@ vi.mock('@/hooks', async importOriginal => {
     useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111' }),
     useVault: () => ({ data: undefined, isLoading: h.vaultLoading, error: null }),
     useCollateralData: () => ({ data: undefined, isLoading: false, error: null }),
-    useStakeUrnSelectedRewardContract: () => ({ data: undefined }),
+    useStakeUrnSelectedRewardContract: () => ({
+      data: h.rewardSymbol ? '0x3333333333333333333333333333333333333333' : undefined
+    }),
     useStakeUrnSelectedVoteDelegate: () => ({ data: undefined }),
-    useRewardContractTokens: () => ({ data: undefined }),
+    useRewardContractTokens: () => ({
+      data: h.rewardSymbol ? { rewardsToken: { symbol: h.rewardSymbol } } : undefined
+    }),
     useMultipleRewardsChartInfo: () => ({ data: [] }),
     useHighestRateFromChartData: () => null,
     usePrices: () => ({ data: {}, isLoading: false, error: null }),
@@ -62,6 +67,7 @@ const claimable = (rewardSymbol: string, claimBalance: bigint) => ({
 describe('useStakePositionDetail — claim chip amount', () => {
   beforeEach(() => {
     h.claimables = [];
+    h.rewardSymbol = undefined;
     h.vaultLoading = false;
     h.urnVaults = undefined;
   });
@@ -85,10 +91,19 @@ describe('useStakePositionDetail — claim chip amount', () => {
     expect(result.current.claimableTokenAmount).toBe(7n * 10n ** 18n);
   });
 
-  it('reports zero with the SKY fallback symbol when nothing is claimable', () => {
+  it("falls back to the urn's own reward token when nothing is claimable", () => {
+    h.rewardSymbol = 'USDS';
+
     const { result } = renderHook(() => useStakePositionDetail(0));
 
-    expect(result.current.claimableSymbols).toEqual(['SKY']);
+    expect(result.current.claimableSymbols).toEqual(['USDS']);
+    expect(result.current.claimableTokenAmount).toBe(0n);
+  });
+
+  it('shows no token when nothing is claimable and the urn has no farm', () => {
+    const { result } = renderHook(() => useStakePositionDetail(0));
+
+    expect(result.current.claimableSymbols).toEqual([]);
     expect(result.current.claimableTokenAmount).toBe(0n);
   });
 });

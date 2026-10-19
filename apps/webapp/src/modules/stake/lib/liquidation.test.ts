@@ -3,6 +3,7 @@ import { math } from '@/utils';
 import {
   isAtRiskOfLiquidation,
   maxWithdrawWithinRisk,
+  repayToWithdraw,
   STAKE_LIQUIDATION_WARNING_PROXIMITY_THRESHOLD
 } from './liquidation';
 
@@ -80,5 +81,70 @@ describe('maxWithdrawWithinRisk', () => {
 
   it('is 0 when the position is already past the threshold', () => {
     expect(maxWithdrawWithinRisk({ ...args, collateral: 700_000n * WAD })).toBe(0n);
+  });
+});
+
+describe('repayToWithdraw', () => {
+  const WAD = 10n ** 18n;
+  const RAY = 10n ** 27n;
+  const CENT = 10n ** 16n;
+  const mat = (125n * RAY) / 100n;
+  const price = (25n * WAD) / 1000n; // 0.025
+  const risk = {
+    collateral: 1_440_010n * WAD,
+    debtValue: 30_000_870_000_000_000_000_000n, // 30,000.87
+    liquidationRatio: mat,
+    delayedPrice: price,
+    riskPrice: price,
+    threshold: 80
+  };
+
+  it('is the least cent repay that unblocks the withdraw', () => {
+    const withdraw = 9n * WAD;
+    expect(maxWithdrawWithinRisk(risk)).toBeLessThan(withdraw);
+    const repay = repayToWithdraw({ ...risk, withdraw })!;
+    expect(repay % CENT).toBe(0n);
+    expect(maxWithdrawWithinRisk({ ...risk, debtValue: risk.debtValue - repay })).toBeGreaterThanOrEqual(
+      withdraw
+    );
+    expect(maxWithdrawWithinRisk({ ...risk, debtValue: risk.debtValue - repay + CENT })).toBeLessThan(
+      withdraw
+    );
+  });
+
+  it('is zero when the withdraw already fits', () => {
+    expect(repayToWithdraw({ ...risk, debtValue: 1_000n * WAD, withdraw: 9n * WAD })).toBe(0n);
+  });
+
+  it('asks for the whole debt when only a debt-free position can withdraw it all', () => {
+    expect(repayToWithdraw({ ...risk, withdraw: risk.collateral })).toBe(
+      ((risk.debtValue + CENT - 1n) / CENT) * CENT
+    );
+  });
+
+  it('is undefined past the collateral', () => {
+    expect(repayToWithdraw({ ...risk, withdraw: risk.collateral + WAD })).toBeUndefined();
+  });
+
+  it('holds the least-repay property across random positions', () => {
+    let seed = 7;
+    const rand = (n: number) => {
+      seed = (seed * 1103515245 + 12345) % 2 ** 31;
+      return BigInt(seed % n);
+    };
+    for (let i = 0; i < 2000; i++) {
+      const p = {
+        ...risk,
+        collateral: (1_000_000n + rand(9_000_000)) * WAD,
+        debtValue: (20_000n + rand(80_000)) * WAD + rand(100) * CENT + rand(1000)
+      };
+      const withdraw = (1n + rand(Number(p.collateral / WAD))) * WAD;
+      const repay = repayToWithdraw({ ...p, withdraw });
+      if (repay === undefined) continue;
+      const after = (r: bigint) =>
+        maxWithdrawWithinRisk({ ...p, debtValue: p.debtValue > r ? p.debtValue - r : 0n });
+      expect(after(repay)).toBeGreaterThanOrEqual(withdraw);
+      if (repay > 0n) expect(after(repay - CENT)).toBeLessThan(withdraw);
+    }
   });
 });

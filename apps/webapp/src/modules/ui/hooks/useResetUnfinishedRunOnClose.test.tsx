@@ -7,10 +7,10 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ isModalOpen: ctx.isModalOpen, txStatus: ctx.txStatus })
 }));
 
-import { useResetPausedRunOnClose } from './useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from './useResetUnfinishedRunOnClose';
 
 function renderWith(reset: () => void, refetch?: () => void) {
-  const { rerender } = renderHook(() => useResetPausedRunOnClose(reset, refetch));
+  const { rerender } = renderHook(() => useResetUnfinishedRunOnClose(reset, refetch));
   return (isModalOpen: boolean, txStatus: TxStatus) => {
     ctx.isModalOpen = isModalOpen;
     ctx.txStatus = txStatus;
@@ -18,7 +18,7 @@ function renderWith(reset: () => void, refetch?: () => void) {
   };
 }
 
-describe('useResetPausedRunOnClose', () => {
+describe('useResetUnfinishedRunOnClose', () => {
   afterEach(() => {
     ctx.isModalOpen = false;
     ctx.txStatus = 'idle';
@@ -41,7 +41,7 @@ describe('useResetPausedRunOnClose', () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves the engine alone when the modal closes without a failure', () => {
+  it('leaves the engine alone when the modal closes unconfirmed or after a success', () => {
     const reset = vi.fn();
     const go = renderWith(reset);
     go(true, TxStatus.IDLE);
@@ -65,16 +65,31 @@ describe('useResetPausedRunOnClose', () => {
     expect(reset).not.toHaveBeenCalled();
   });
 
-  it('refetches the engine reads with the reset, so a mined approve drops out of the next launch', () => {
+  // Closed while a later step waits in the wallet: the wallet's rejection then
+  // pauses the run with no ERROR ever reaching this session.
+  it('resets the engine when the modal closes mid-run, without a failure shown', () => {
     const reset = vi.fn();
+    const go = renderWith(reset);
+    go(true, TxStatus.INITIALIZED);
+    go(true, TxStatus.LOADING);
+    go(true, TxStatus.INITIALIZED);
+    go(false, TxStatus.IDLE);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  it('refetches the engine reads once the reset has cleared the run, so a mined approve drops out of the next launch', () => {
+    let onCleared: (() => void) | undefined;
+    const reset = vi.fn((cleared?: () => void) => (onCleared = cleared));
     const refetch = vi.fn();
     const go = renderWith(reset, refetch);
     go(true, TxStatus.INITIALIZED);
     go(true, TxStatus.ERROR);
-    expect(refetch).not.toHaveBeenCalled();
-
     go(false, TxStatus.IDLE);
     expect(reset).toHaveBeenCalledTimes(1);
+    // A write still out holds the clear back: the reads wait for it.
+    expect(refetch).not.toHaveBeenCalled();
+
+    onCleared?.();
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 });
