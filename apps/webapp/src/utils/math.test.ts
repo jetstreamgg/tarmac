@@ -387,4 +387,58 @@ describe('USDC rounding functions', () => {
       expect(roundDownLastTwelveDigits(complex)).toBe(expectedComplex);
     });
   });
+
+  it('nextCentAboveWad rounds strictly up to the next cent', () => {
+    const WAD = 10n ** 18n;
+    expect(math.nextCentAboveWad(1_440_000n * WAD)).toBe(1_440_000n * WAD + WAD / 100n);
+    expect(math.nextCentAboveWad(1_440_000n * WAD + 25n)).toBe(1_440_000n * WAD + WAD / 100n);
+    expect(math.nextCentAboveWad(0n)).toBe(WAD / 100n);
+  });
+
+  it('maxPartialWipe never lets wipe (stored rate) take the urn under dust', () => {
+    const WAD = 10n ** 18n;
+    const RAY = 10n ** 27n;
+    const rate = 1177919341322923122018057181n;
+    const dust = 30_000n * WAD * RAY;
+    const minArt = (dust + rate - 1n) / rate;
+    for (const art of [minArt, minArt + 1n, minArt + 3n * WAD, minArt + 12_345n * WAD + 7n]) {
+      const wad = math.maxPartialWipe(art, rate, dust);
+      const dart = (wad * RAY) / rate;
+      expect((art - dart) * rate >= dust).toBe(true);
+      // Tight: one more cent would cross the floor whenever there is room.
+      if (art > minArt + WAD) expect((art - ((wad + WAD / 100n) * RAY) / rate) * rate < dust).toBe(true);
+    }
+    expect(math.maxPartialWipe(minArt, rate, dust)).toBe(0n);
+    expect(math.maxPartialWipe(minArt - 1n, rate, dust)).toBe(0n);
+    expect(math.maxPartialWipe(minArt, 0n, dust)).toBe(0n);
+  });
+
+  it('maxPartialWipe holds across random urns and rates', () => {
+    const WAD = 10n ** 18n;
+    const RAY = 10n ** 27n;
+    const CENT = WAD / 100n;
+    let seed = 0x2545f491n;
+    const rand = (bound: bigint) => {
+      seed = (seed * 6364136223846793005n + 1442695040888963407n) & ((1n << 64n) - 1n);
+      return ((seed >> 11n) * bound) >> 53n;
+    };
+    for (let i = 0; i < 5000; i++) {
+      const rate = RAY + rand(RAY);
+      const dust = (1_000n + rand(100_000n)) * WAD * RAY;
+      const minArt = (dust + rate - 1n) / rate;
+      const art = minArt + rand(200_000n * WAD) - 10n * WAD;
+      const wad = math.maxPartialWipe(art, rate, dust);
+      if (art <= minArt) {
+        expect(wad).toBe(0n);
+        continue;
+      }
+      const left = art - (wad * RAY) / rate;
+      expect(left * rate >= dust).toBe(true);
+      // The figure quoted in the UI (floored to the cent) is also safe.
+      expect((art - ((wad / CENT) * CENT * RAY) / rate) * rate >= dust).toBe(true);
+      if (art - minArt > (CENT * RAY) / rate + 1n) {
+        expect((art - ((wad + CENT) * RAY) / rate) * rate < dust).toBe(true);
+      }
+    }
+  });
 });

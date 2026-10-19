@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
+import { stickyRailClasses } from '@/modules/layout/components/shellLayoutClasses';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppLink } from '@/lib/navigation';
 import { ROUTES } from '@/lib/routes';
@@ -409,9 +410,8 @@ export function ProductDetailTemplate({
         {/* Figma 2829:138694 ("Sticky component following the user's viewport"):
             from the tablet seam up (lg, where the two panes sit side by side)
             the position card pins while the left pane scrolls past it.
-            `top-32` (128px) = the 88px navbar bar + the same 40px inset the
-            page keeps under it (`md:pt-10`), so the stuck card sits exactly
-            where it rested before the scroll. Sticky needs every
+            It sticks flush under the 88px navbar, no gap (comp 3686:10990).
+            Sticky needs every
             ancestor up to the document to NOT be a scroll container — which is
             why AppContainer clips horizontal overflow with `overflow-x-clip`
             rather than `-hidden` (hidden forces overflow-y to auto). A card
@@ -420,7 +420,10 @@ export function ProductDetailTemplate({
             gets that tall at this tier. Below the tablet seam the card leads
             the stack and scrolls normally. */}
         <div
-          className="desktop:col-span-4 desktop:col-start-9 order-1 col-span-full lg:sticky lg:top-32 lg:col-span-3 lg:col-start-6 lg:row-start-1 lg:self-start"
+          className={cn(
+            'desktop:col-span-4 desktop:col-start-9 order-1 col-span-full lg:col-span-3 lg:col-start-6 lg:row-start-1',
+            stickyRailClasses
+          )}
           data-testid="product-detail-right-pane"
         >
           {position}

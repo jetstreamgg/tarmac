@@ -11,6 +11,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { tightensOnly } from '@/modules/ui/lib/callIntent';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -29,6 +30,21 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 export type { SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 
 const USDS_DECIMALS = 18;
+
+// The L2 PSM swaps carry a bound from the sUSDS rate. A withdraw's max-in is
+// previewed on-chain, so a refetch while the user signs only shrinks it (the
+// rate rises). A supply's min-out is projected from the oracle's last update, so
+// it holds until the next one and then drops: a send held across an oracle
+// update is refused. A specific-amount withdraw approves exactly its max-in, so
+// the approve amount moves with it and may likewise only shrink (applied to
+// every savings approve; a smaller one can at worst revert). Every other
+// savings call must still match byte for byte.
+export const PSM_SWAP_BOUND_ARGS = {
+  swapExactIn: { index: 3, kind: 'min' },
+  swapExactOut: { index: 3, kind: 'max' },
+  approve: { index: 1, kind: 'max' }
+} as const;
+const PSM_SWAP_BOUNDS = tightensOnly(PSM_SWAP_BOUND_ARGS);
 
 const formatUsds = (value: bigint) =>
   formatNumber(parseFloat(formatUnits(value, USDS_DECIMALS)), { maxDecimals: 2 });
@@ -93,7 +109,7 @@ export function SavingsModalForm({
     switchOrigin
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useSavingsLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
   const errorMessage = enginePrepareErrorMessage(prepared, error);
 
@@ -236,6 +252,12 @@ export function SavingsModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
+    callMatches: PSM_SWAP_BOUNDS,
+    // Only while the swap is still to send: once `sellGem` mined, the USDS
+    // approve and deposit left don't touch the PSM, and refusing them would
+    // strand the swapped USDS.
+    dispatchBlocked: !!usdcBlockedReason && nextCalls.some(call => call.functionName === 'sellGem'),
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,

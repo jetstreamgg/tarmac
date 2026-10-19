@@ -1,6 +1,7 @@
 import { useStakeUserPositions, StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { StakePositionsTable } from './StakePositionsTable';
 import { StakeActivityTable } from './StakeActivityTable';
+import { StakeRewardsSection } from './StakeRewardsSection';
 import { StakeRailCard, type StakeRailCardProps } from './StakeRailCard';
 
 /**
@@ -21,17 +22,21 @@ export function StakePositionsTab({
 
   // Mobile comp 1222:16771 leads with the rail content (summary hero / promo
   // card) before the tables, so the phone tier reorders via `order-*` while
-  // the lg grid keeps its DOM placement.
+  // the desktop grid keeps its DOM placement. Two panes only from desktop:
+  // the tables and hero figure can't fit a 912-1199 split (APP-606).
   return (
-    <div data-testid="stake-positions-tab" className="grid items-start gap-10 lg:grid-cols-3 lg:gap-8">
-      {/* Two panes at lg (ProductDetailTemplate's pattern): the left pane is a
+    <div
+      data-testid="stake-positions-tab"
+      className="desktop:grid-cols-3 desktop:gap-8 grid grid-cols-1 items-start gap-10"
+    >
+      {/* Two panes at desktop (ProductDetailTemplate's pattern): the left pane is a
           real column so positions → activity follow its normal flow beside the
-          self-heighted rail. Below lg the pane dissolves (`contents`) and
+          self-heighted rail. Below desktop the pane dissolves (`contents`) and
           `order` restores the stacked sequence summary → positions → activity.
-          Positions→activity is 80px at lg (Figma Annotations R2 A3, measured)
+          Positions→activity is 80px at desktop (Figma Annotations R2 A3, measured)
           — owned by this wrapper's own gap, so it doesn't touch the outer
-          grid's gap-10, which also sets the rail's spacing below lg. */}
-      <div className="contents lg:col-span-2 lg:flex lg:flex-col lg:gap-20">
+          grid's gap-10, which also sets the rail's spacing below desktop. */}
+      <div className="desktop:col-span-2 desktop:flex desktop:flex-col desktop:gap-20 contents">
         <div className="order-2">
           <StakePositionsTable
             positions={positions}
@@ -41,13 +46,15 @@ export function StakePositionsTab({
             onRemediate={onRemediate}
           />
         </div>
+        {/* Renders nothing (and takes no gap) when nothing is claimable. */}
+        <StakeRewardsSection positions={positions} />
         <div className="order-3">
           <StakeActivityTable positions={positions} />
         </div>
       </div>
       {/* The rail pins at the two-pane tier (Figma 2829:138694 — sticky
-          position card); `top-32` mirrors ProductDetailTemplate's offset. */}
-      <div className="order-1 lg:sticky lg:top-32 lg:order-none lg:col-span-1">
+          position card), same offset as stickyRailClasses. */}
+      <div className="desktop:sticky desktop:top-22 desktop:self-start desktop:order-none desktop:col-span-1 order-1">
         <StakeRailCard {...rail} />
       </div>
     </div>

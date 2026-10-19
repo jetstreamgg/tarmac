@@ -18,6 +18,10 @@ import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
 import { OptimismChain } from './OptimismChain';
 import { Stake } from './Stake';
+import { ActivityStake } from './ActivityStake';
+import { ActivityUnstake } from './ActivityUnstake';
+import { ActivityBorrow } from './ActivityBorrow';
+import { ActivityRepay } from './ActivityRepay';
 import { StakeSky } from './StakeSky';
 import { Expert } from './Expert';
 import { Delegate } from './Delegate';
@@ -42,7 +46,7 @@ import { Morpho } from './Morpho';
 import { NoResults } from './NoResults';
 import { CurveLogo } from './CurveLogo';
 import { Info } from './Info';
-import { InProgress, SuccessCheck, FailedX, Cancel } from './Icons';
+import { InProgress, SuccessCheck, FailedX, Cancel, Refresh } from './Icons';
 
 export {
   ArrowDown,
@@ -65,6 +69,10 @@ export {
   MainnetChain,
   OptimismChain,
   Stake,
+  ActivityStake,
+  ActivityUnstake,
+  ActivityBorrow,
+  ActivityRepay,
   StakeSky,
   Expert,
   Delegate,
@@ -92,5 +100,6 @@ export {
   InProgress,
   SuccessCheck,
   FailedX,
-  Cancel
+  Cancel,
+  Refresh
 };

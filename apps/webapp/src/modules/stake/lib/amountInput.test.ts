@@ -23,4 +23,10 @@ describe('formatAmountForInput', () => {
     // Trailing zeros inside the cap still trim.
     expect(formatAmountForInput(parseUnits('1.10001', 18), 2)).toBe('1.1');
   });
+
+  it('rounds the capped display half-up when asked, like the summary amounts', () => {
+    expect(formatAmountForInput(parseUnits('35029.6351', 18), 2, true)).toBe('35029.64');
+    expect(formatAmountForInput(parseUnits('35029.6349', 18), 2, true)).toBe('35029.63');
+    expect(formatAmountForInput(parseUnits('99.996', 18), 2, true)).toBe('100');
+  });
 });

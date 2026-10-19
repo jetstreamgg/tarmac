@@ -18,6 +18,8 @@ export type VaultParams = {
   liquidationRatio?: bigint;
   riskLevel?: RiskLevel;
   minCollateralForDust?: bigint;
+  /** Largest partial repay `wipe` accepts (stored rate; the projected debt overstates it). */
+  maxPartialRepay?: bigint;
 };
 
 export type Vault = VaultParams & {

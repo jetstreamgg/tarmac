@@ -5,6 +5,7 @@ import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from './transactionContract';
 import type { PreTransactionGate } from './preTransactionGate';
+import { markStalledStep } from '@/hooks/helpers';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads.
@@ -286,6 +287,91 @@ describe('TransactionProvider pre-transaction gate', () => {
     // Inline failure applies to the lone prelude step too.
     expect(screen.getByText('Terms signature failed')).not.toBeNull();
     expect(screen.getByRole('button', { name: /try again/i })).not.toBeNull();
+  });
+
+  it('a retry after a mined step keeps the stepper on the failed write when the gate drops a signed prelude', async () => {
+    // First confirm owes the terms signature; the retry finds it signed and clears the prelude.
+    const gate: PreTransactionGate = ({ controls, trigger }) => {
+      if (trigger === 'retry') {
+        controls.setPreludeSteps(null);
+        return { allow: true };
+      }
+      controls.setPreludeSteps([{ label: 'Terms signature', kind: 'signature' }]);
+      controls.setGateStatus('signature');
+      return Promise.resolve({ allow: true });
+    };
+    const cb = renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm: () => {},
+      steps: ['Approve', 'Supply']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    await flush();
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('User rejected the request'), ''));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    act(() => cb.onMutate());
+    expect(screen.queryByText('Terms signature')).toBeNull();
+    // Approve shows its checkmark, Supply its number.
+    expect(screen.queryByText('1')).toBeNull();
+    expect(screen.queryByText('2')).not.toBeNull();
+  });
+
+  // The engine's paused run would resume the calls confirmed before, so the
+  // inputs it would reopen can't be edited into a different transaction.
+  it('a retry after a mined step closes when the gate sends it back to the first screen', () => {
+    const onConfirm = vi.fn();
+    const gate: PreTransactionGate = ({ trigger, controls }) => {
+      if (trigger !== 'retry') return { allow: true };
+      controls.returnToFirstScreen();
+      return { allow: false };
+    };
+    const cb = renderWithGate(gate, {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm,
+      steps: ['Approve', 'Supply']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onMutate());
+    act(() => cb.onError(new Error('User rejected the request'), ''));
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  // A step that fails to simulate after one mined never reaches the wallet, so
+  // no write reports the mined step; the engine's tagged error does.
+  it('a run that stalls after a mined step fails on the stalled step, and Retry resumes it', () => {
+    const onConfirm = vi.fn();
+    const cb = renderWithGate(() => ({ allow: true }), {
+      title: 'Supply',
+      usdValue: 0,
+      supportedChainIds: [1],
+      onConfirm,
+      steps: ['Approve', 'Supply']
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xapprove'));
+    act(() => cb.onError(markStalledStep(new Error('simulation reverted')), ''));
+    expect(screen.queryByText('Supply failed')).not.toBeNull();
+    expect(screen.queryByText('Approve failed')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onConfirm).toHaveBeenCalledTimes(2);
   });
 
   it('gate copy overrides the status message and subtitle while set', async () => {
