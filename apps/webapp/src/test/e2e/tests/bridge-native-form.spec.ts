@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { type Page, type Route } from '@playwright/test';
 import {
   encodeFunctionData,
   erc20Abi,
@@ -31,18 +31,19 @@ const BALANCE_OF = toFunctionSelector('balanceOf(address)').slice(2);
 
 type Sent = { to: Address; data: string; value: bigint };
 
-/** Every transaction the wallet sends from this page, in order. */
+/** Every transaction the wallet sends from this page, in order, and the removal of the recorder. */
 async function recordSends(page: Page) {
   const sent: Sent[] = [];
-  await page.route(TENDERLY_RPC, route => {
+  const handler = (route: Route) => {
     const body = route.request().postData();
     if (body?.includes('"eth_sendTransaction"')) {
       const tx = JSON.parse(body).params[0];
       sent.push({ to: getAddress(tx.to), data: tx.data ?? tx.input, value: BigInt(tx.value ?? 0) });
     }
     return route.fallback();
-  });
-  return sent;
+  };
+  await page.route(TENDERLY_RPC, handler);
+  return { sent, stop: () => page.unroute(TENDERLY_RPC, handler) };
 }
 
 /** Answers the page's `eth_call`s whose calldata matches with an RPC error while `failing()` holds. */
@@ -206,12 +207,14 @@ test.describe('Bridge: form and route resolution', () => {
     await bridge.gotoConnected();
     await bridge.selectDestination('optimism');
     await bridge.openReview('1');
-    const sent = await recordSends(isolatedPage);
+    const { sent } = await recordSends(isolatedPage);
 
     await switchWalletNetwork(isolatedPage, tenderlyChainLabel(NetworkName.base));
-    const confirm = bridge.confirmButton();
-    if (await confirm.isVisible()) await confirm.click({ timeout: 5_000 }).catch(() => undefined);
-    await isolatedPage.waitForTimeout(5_000);
+    const mainnet = tenderlyChainLabel(NetworkName.mainnet);
+    const dialog = isolatedPage.getByRole('dialog');
+    await expect(dialog).toContainText(`This transaction was prepared on ${mainnet}.`);
+    await expect(dialog.getByRole('button', { name: `Switch to ${mainnet}` })).toBeVisible();
+    await expect(bridge.confirmButton()).toHaveCount(0);
     expect(sent).toEqual([]);
   });
 
@@ -250,7 +253,7 @@ test.describe('Bridge: form and route resolution', () => {
     const bridge = new BridgePage(isolatedPage);
     await bridge.gotoConnected({ batch: false });
     await bridge.selectDestination('optimism');
-    const sent = await recordSends(isolatedPage);
+    const { sent } = await recordSends(isolatedPage);
 
     const short = await watchDeposit({ to: 'optimism', sender: account });
     await bridge.openReview('1');
@@ -291,7 +294,7 @@ test.describe('Bridge: form and route resolution', () => {
     for (const batch of [true, false]) {
       await bridge.gotoConnected({ batch });
       await bridge.selectDestination('optimism');
-      const sent = await recordSends(isolatedPage);
+      const { sent, stop } = await recordSends(isolatedPage);
       const funds = await watchDeposit({ to: 'optimism', sender: account });
       await bridge.openReview('1');
       await bridge.confirmButton().click();
@@ -302,7 +305,7 @@ test.describe('Bridge: form and route resolution', () => {
       expect(await relayOpStackDeposit('optimism', txHash)).toContain('RelayedMessage');
       await funds.expectArrived(amount);
       runs.push([...sent]);
-      await isolatedPage.unrouteAll({ behavior: 'ignoreErrors' });
+      await stop();
     }
     expect(runs[0]).toEqual(runs[1]);
   });

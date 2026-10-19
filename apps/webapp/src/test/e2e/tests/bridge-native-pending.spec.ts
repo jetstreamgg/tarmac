@@ -1,11 +1,8 @@
 import { type BrowserContext, type Page } from '@playwright/test';
 import { getAddress, keccak256, parseUnits, toHex, type Address } from 'viem';
-import { expect, test } from '../fixtures-parallel';
+import { expect, expectNoFixtureLeaks, installFixtureRoutes, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
-import { mockRpcCalls } from '../mock-rpc-call';
-import { mockGeoConfig } from '../mock-geo-config';
-import { isSafeServiceUrl, noSafeServiceHandler } from '../mock-safe-service';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { watchDeposit } from '../utils/bridgeFunds';
 import { awaitDepositTxHash, relayOpStackDeposit } from '../utils/bridgeRelay';
@@ -26,13 +23,10 @@ const keepPendingBridgesOnLoad = (context: BrowserContext) =>
     };
   }, KEY_PREFIX);
 
-/** Another tab in the same browser, with the fixture's mocks. */
+/** Another tab in the same browser, with the fixture's mocks; check its `leaks` before the test ends. */
 async function secondTab(page: Page) {
   const tab = await page.context().newPage();
-  await tab.route(TENDERLY_RPC, mockRpcCalls);
-  await tab.route('**/geo-config', mockGeoConfig);
-  await tab.route(isSafeServiceUrl, noSafeServiceHandler([]));
-  return tab;
+  return { tab, leaks: await installFixtureRoutes(tab) };
 }
 
 async function deposit(bridge: BridgePage, page: Page, to: 'optimism' | 'arbitrum') {
@@ -120,7 +114,7 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
     await keepPendingBridgesOnLoad(isolatedPage.context());
     const { card, funds } = await depositNeedingReplay(isolatedPage, getAddress(testAccount));
 
-    const tab = await secondTab(isolatedPage);
+    const { tab, leaks } = await secondTab(isolatedPage);
     const otherSends: string[] = [];
     tab.on('request', request => {
       if (request.postData()?.includes('"eth_sendTransaction"')) otherSends.push(request.url());
@@ -145,6 +139,7 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
     await expect(otherAction).toHaveCount(0);
     expect(otherSends).toEqual([]);
     await expect(() => funds.expectArrived(AMOUNT)).toPass({ timeout: 30_000 });
+    expectNoFixtureLeaks(leaks);
   });
 
   test('Only the connected account on its chain family sees its bridges', async ({

@@ -20,12 +20,14 @@ const REJECTED = { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'User re
 const sendTo = (body: string | null) =>
   body?.includes('"eth_sendTransaction"') ? getAddress(JSON.parse(body).params[0].to) : undefined;
 
-/** Routes each wallet send through `handle`, by its target; anything else goes to the fork. */
+/** Routes each wallet send through `handle`, by its target; anything else goes to the fork. Returns the removal. */
 async function onSends(page: Page, handle: (to: Address, route: Route) => unknown) {
-  await page.route(TENDERLY_RPC, route => {
+  const handler = (route: Route) => {
     const to = sendTo(route.request().postData());
     return to ? handle(to, route) : route.fallback();
-  });
+  };
+  await page.route(TENDERLY_RPC, handler);
+  return () => page.unroute(TENDERLY_RPC, handler);
 }
 
 async function usdsAllowance(owner: Address, spender: Address) {
@@ -92,7 +94,7 @@ test.describe('Bridge: wallets', () => {
     await bridge.openReview('1');
 
     const sent: Address[] = [];
-    await onSends(isolatedPage, (to, route) => {
+    const stopRejecting = await onSends(isolatedPage, (to, route) => {
       sent.push(to);
       return to === L1_USDS ? route.fallback() : route.fulfill({ json: REJECTED });
     });
@@ -106,7 +108,7 @@ test.describe('Bridge: wallets', () => {
     // The approve mined: the allowance stays on chain, for the retry to use.
     expect(await usdsAllowance(account, spender)).toBe(AMOUNT);
 
-    await isolatedPage.unroute(TENDERLY_RPC);
+    await stopRejecting();
     sent.length = 0;
     await onSends(isolatedPage, (to, route) => {
       sent.push(to);
@@ -135,7 +137,9 @@ test.describe('Bridge: wallets', () => {
 
     // The bridge send waits in the wallet; the disconnect drops it unsigned.
     const held: Route[] = [];
-    await onSends(isolatedPage, (to, route) => (to === L1_USDS ? route.fallback() : held.push(route)));
+    const stopHolding = await onSends(isolatedPage, (to, route) =>
+      to === L1_USDS ? route.fallback() : held.push(route)
+    );
     await bridge.confirmButton().click();
     await expect.poll(() => held.length, { timeout: 60_000 }).toBe(1);
 
@@ -149,7 +153,7 @@ test.describe('Bridge: wallets', () => {
 
     await expect(bridge.cards()).toHaveCount(0);
     expect(await pendingDepositTxHash(isolatedPage, 'optimism')).toBeUndefined();
-    await isolatedPage.unroute(TENDERLY_RPC);
+    await stopHolding();
     await bridge.gotoConnected({ batch: false });
     await expectNoBridge(bridge, isolatedPage, account, before, { approves: 1 });
     expect(await usdsAllowance(account, spender)).toBe(AMOUNT);
