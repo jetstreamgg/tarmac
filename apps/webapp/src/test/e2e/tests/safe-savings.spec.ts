@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test';
 import { isAddressEqual } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { SavingsProductPage } from '../pages/SavingsProductPage';
@@ -12,20 +11,13 @@ import { expectAppChain, tenderlyChainLabel } from '../utils/switchWalletNetwork
 
 // APP-642: the app inside the Safe{Wallet} iframe, against a real 1-of-1 Safe on the forks.
 
-// SavingsProductPage.reviewAndConfirm waits for the toast; a Safe tx needs executing first.
-async function reviewAndConfirm(page: Page) {
-  await page.getByText('Review').first().click();
-  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
-  await expect(confirm).toBeEnabled({ timeout: 60_000 });
-  await confirm.click();
-}
-
 test('Supply and withdraw from Savings as a Safe App', async ({ isolatedPage, testAccount }) => {
   const owners = [testAccount];
+  const networks = [NetworkName.mainnet];
   // A fresh Safe per run: no allowance yet, so the supply is always an approve + supply batch.
-  const safe = await deploySafe({ owners, saltNonce: BigInt(Date.now()) });
+  const safe = await deploySafe({ owners, saltNonce: BigInt(Date.now()), networks });
   await setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '1', 18, NetworkName.mainnet, safe);
-  const safeMode = await enableSafeMode(isolatedPage, { safe, owners });
+  const safeMode = await enableSafeMode(isolatedPage, { safe, owners, networks });
 
   const savings = new SavingsProductPage(isolatedPage);
   await savings.goto();
@@ -37,7 +29,8 @@ test('Supply and withdraw from Savings as a Safe App', async ({ isolatedPage, te
 
   await savings.openSupplyModal();
   await savings.fillAmount('.02');
-  await reviewAndConfirm(isolatedPage);
+  // No success toast until the queued Safe tx is executed below.
+  await savings.reviewAndConfirm({ waitForSuccess: false });
   const supply = await safeMode.waitForQueued();
   expect(supply.operation).toBe(1);
   expect(isAddressEqual(supply.to, SAFE_1_4_1.multiSendCallOnly)).toBe(true);
@@ -47,7 +40,7 @@ test('Supply and withdraw from Savings as a Safe App', async ({ isolatedPage, te
 
   await savings.openWithdrawModal();
   await savings.fillAmount('.01');
-  await reviewAndConfirm(isolatedPage);
+  await savings.reviewAndConfirm({ waitForSuccess: false });
   const withdraw = await safeMode.waitForQueued();
   expect(withdraw.operation).toBe(0);
   expect(withdraw.calls).toHaveLength(1);
@@ -60,8 +53,9 @@ test('Supply and withdraw from Savings as a Safe App', async ({ isolatedPage, te
 
 test('A Safe App follows the network Safe{Wallet} opens it on', async ({ isolatedPage, testAccount }) => {
   const owners = [testAccount];
-  const safe = await deploySafe({ owners, saltNonce: BigInt(Date.now()) });
-  const safeMode = await enableSafeMode(isolatedPage, { safe, owners });
+  const networks = [NetworkName.mainnet, NetworkName.base];
+  const safe = await deploySafe({ owners, saltNonce: BigInt(Date.now()), networks });
+  const safeMode = await enableSafeMode(isolatedPage, { safe, owners, networks });
 
   const savings = new SavingsProductPage(isolatedPage);
   await savings.goto();

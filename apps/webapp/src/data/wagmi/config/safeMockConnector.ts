@@ -109,7 +109,7 @@ export function createMockSafeSdk(host: MockSafeHost): SafeAppsSDK {
  * transport to the parent frame is replaced, by `host`.
  */
 export function safeMock({ host }: { host: MockSafeHost }) {
-  let provider_: SafeAppProvider | undefined;
+  let provider_: Promise<SafeAppProvider> | undefined;
 
   return createConnector<SafeAppProvider>(config => ({
     id: SAFE_CONNECTOR_ID,
@@ -133,7 +133,8 @@ export function safeMock({ host }: { host: MockSafeHost }) {
       );
     },
     async getProvider() {
-      if (!provider_) {
+      // The promise is cached so overlapping first calls share one provider; a failure is not.
+      provider_ ??= (async () => {
         const safe = (await host({ method: 'getSafeInfo' })) as SafeInfo;
         // Unwrapped the way wagmi's `safe()` does it, for Vite's CJS interop.
         const Provider = await import('@safe-global/safe-apps-provider');
@@ -142,8 +143,11 @@ export function safeMock({ host }: { host: MockSafeHost }) {
           typeof (Provider as unknown as { default: typeof Provider }).default?.SafeAppProvider === 'function'
             ? (Provider as unknown as { default: typeof Provider }).default.SafeAppProvider
             : Provider.SafeAppProvider;
-        provider_ = new SafeAppProviderClass(safe, createMockSafeSdk(host));
-      }
+        return new SafeAppProviderClass(safe, createMockSafeSdk(host));
+      })().catch(error => {
+        provider_ = undefined;
+        throw error;
+      });
       return provider_;
     },
     async getChainId() {

@@ -69,6 +69,20 @@ describe('safeMock', () => {
     expect(hostCalls(host, 'getSafeInfo')).toHaveLength(1);
   });
 
+  it('builds one provider when the first calls overlap', async () => {
+    const { host, connector } = setup();
+    const [first, second] = await Promise.all([connector.getProvider(), connector.getProvider()]);
+    expect(first).toBe(second);
+    expect(hostCalls(host, 'getSafeInfo')).toHaveLength(1);
+  });
+
+  it('asks the host again after a failed first call', async () => {
+    const { host, connector } = setup();
+    host.mockRejectedValueOnce(new Error('no parent frame'));
+    expect(await connector.isAuthorized()).toBe(false);
+    expect(await connector.isAuthorized()).toBe(true);
+  });
+
   it('is authorized when the host answers, and not when it fails', async () => {
     expect(await setup().connector.isAuthorized()).toBe(true);
 

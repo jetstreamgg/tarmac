@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test';
+import { expect, type Page, type Route } from '@playwright/test';
 import {
   concat,
   createPublicClient,
@@ -17,11 +17,14 @@ import {
   zeroAddress,
   zeroHash,
   type Address,
+  type BaseError,
+  type EIP1193RequestFn,
   type Hex,
   type PublicClient
 } from 'viem';
 import { arbitrum, base, optimism, unichain } from 'viem/chains';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
+import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import type { MockSafeHostRequest, MockSafeTxDetails } from '@/data/wagmi/config/safeMockConnector';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
@@ -49,17 +52,9 @@ const CHAIN_ID: Record<NetworkName, number> = {
   [NetworkName.unichain]: unichain.id
 };
 
-// api.safe.global/tx-service/{shortName}; the legacy hosts are safe-transaction-{NetworkName}.
-const TX_SERVICE_SHORT_NAME: Record<string, NetworkName> = {
-  eth: NetworkName.mainnet,
-  base: NetworkName.base,
-  arb1: NetworkName.arbitrum,
-  oeth: NetworkName.optimism,
-  unichain: NetworkName.unichain
-};
-
-const TX_SERVICE_URL =
-  /^https:\/\/(safe-transaction-[a-z0-9]+\.safe\.global|api\.safe\.global\/tx-service)\//;
+// Matched against the app's own tx-service hosts, so a host change there can't bypass the mock.
+const txServiceNetwork = (url: URL) =>
+  Object.values(NetworkName).find(network => SAFE_TRANSACTION_SERVICE_URL[CHAIN_ID[network]] === url.origin);
 
 // Tenderly accepts unsigned sends; the gas mirrors what mockRpcCalls gives the page.
 const FORK_GAS = 0x7a1200n;
@@ -147,10 +142,17 @@ const forkClients = new Map<NetworkName, Promise<{ rpcUrl: string; publicClient:
 function getFork(network: NetworkName) {
   let fork = forkClients.get(network);
   if (!fork) {
-    fork = getRpcUrlFromFile(network).then(rpcUrl => ({
-      rpcUrl,
-      publicClient: createPublicClient({ transport: http(rpcUrl), pollingInterval: 500 })
-    }));
+    fork = getRpcUrlFromFile(network).then(
+      rpcUrl => ({
+        rpcUrl,
+        publicClient: createPublicClient({ transport: http(rpcUrl), pollingInterval: 500 })
+      }),
+      error => {
+        // Not cached, so the next call reads the file again.
+        forkClients.delete(network);
+        throw error;
+      }
+    );
     forkClients.set(network, fork);
   }
   return fork;
@@ -301,7 +303,7 @@ export async function enableSafeMode(
     threshold?: number;
     /** The network the Safe App opens on. */
     network?: NetworkName;
-    /** Where the Safe is deployed; the tx service knows it only there. */
+    /** Where the Safe is deployed, and so where `switchNetwork` may go. */
     networks?: NetworkName[];
   }
 ): Promise<MockSafeController> {
@@ -317,7 +319,15 @@ export async function enableSafeMode(
   const readNonce = async (on: NetworkName) =>
     (await getFork(on)).publicClient.readContract({ address, abi: safeAbi, functionName: 'nonce' });
 
-  async function queue(calls: Call[], safeTxGas: bigint): Promise<MockSafeTx> {
+  // One proposal at a time, so sends made at once get consecutive nonces.
+  let proposing: Promise<unknown> = Promise.resolve();
+  function queue(calls: Call[], safeTxGas: bigint): Promise<MockSafeTx> {
+    const tx = proposing.then(() => propose(calls, safeTxGas));
+    proposing = tx.catch(() => undefined);
+    return tx;
+  }
+
+  async function propose(calls: Call[], safeTxGas: bigint): Promise<MockSafeTx> {
     const batch = calls.length > 1;
     const to = batch ? SAFE_1_4_1.multiSendCallOnly : calls[0].to;
     const value = batch ? 0n : calls[0].value;
@@ -400,16 +410,15 @@ export async function enableSafeMode(
           unmockedRequests.push(`host rpcCall ${call}`);
           throw new Error(`Mock Safe: ${call} is not supported`);
         }
-        const { rpcUrl } = await getFork(current);
-        const response = await fetch(rpcUrl, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: call, params })
-        });
-        const body = (await response.json()) as { result?: unknown; error?: { message?: string } };
-        if (body.error)
-          throw new Error(`Mock Safe: ${call} failed: ${body.error.message ?? 'unknown error'}`);
-        return body.result ?? null;
+        const { publicClient } = await getFork(current);
+        try {
+          return (await (publicClient.request as EIP1193RequestFn)({ method: call, params })) ?? null;
+        } catch (error) {
+          // The page gets only this message: `details` is the node's error, without the RPC URL.
+          throw new Error(`Mock Safe: ${call} failed: ${(error as BaseError).details ?? 'unknown error'}`, {
+            cause: error
+          });
+        }
       }
       default: {
         const method = (request as { method: string }).method;
@@ -466,93 +475,27 @@ export async function enableSafeMode(
     };
   }
 
-  async function txServiceAnswer(on: NetworkName, url: URL, path: string) {
-    const isThisSafe = (candidate: string) =>
-      networks.includes(on) && isAddressEqual(candidate as Address, address);
-
-    const safeInfo = path.match(/^\/api\/v1\/safes\/(0x[0-9a-fA-F]{40})\/?$/);
-    if (safeInfo) {
-      if (!isThisSafe(safeInfo[1])) return { status: 404, body: '' };
-      return {
-        status: 200,
-        body: {
-          address,
-          nonce: (await readNonce(on)).toString(),
-          threshold,
-          owners: checksummedOwners,
-          masterCopy: SAFE_1_4_1.singleton,
-          modules: [],
-          fallbackHandler: SAFE_1_4_1.fallbackHandler,
-          guard: zeroAddress,
-          moduleGuard: zeroAddress,
-          version: '1.4.1'
-        }
-      };
-    }
-
-    const single = path.match(/^\/api\/v1\/multisig-transactions\/(0x[0-9a-fA-F]{64})\/?$/);
-    if (single) {
-      const tx = findTx(single[1], on);
-      if (!tx) return { status: 404, body: { detail: 'No MultisigTransaction matches the given query.' } };
-      return { status: 200, body: txServiceTx(tx) };
-    }
-
-    const list = path.match(/^\/api\/v1\/safes\/(0x[0-9a-fA-F]{40})\/multisig-transactions\/?$/);
-    if (list) {
-      const { searchParams } = url;
-      const nonce = searchParams.get('nonce');
-      const executed = searchParams.get('executed');
-      const ascending = searchParams.get('ordering') === 'nonce';
-      const results = (isThisSafe(list[1]) ? txs.filter(tx => tx.network === on) : [])
-        .filter(tx => nonce === null || tx.nonce.toString() === nonce)
-        .filter(tx => executed === null || String(!!tx.execution) === executed)
-        .sort((a, b) => (ascending ? 1 : -1) * Number(a.nonce - b.nonce));
-      const limit = Number(searchParams.get('limit') ?? 100);
-      const offset = Number(searchParams.get('offset') ?? 0);
-      const pageUrl = (at: number) => {
-        const next = new URL(url);
-        next.searchParams.set('offset', String(at));
-        return next.toString();
-      };
-      return {
-        status: 200,
-        body: {
-          count: results.length,
-          countUniqueNonce: new Set(results.map(tx => tx.nonce)).size,
-          next: offset + limit < results.length ? pageUrl(offset + limit) : null,
-          previous: offset > 0 ? pageUrl(Math.max(0, offset - limit)) : null,
-          results: results.slice(offset, offset + limit).map(txServiceTx)
-        }
-      };
-    }
-    return undefined;
-  }
-
   async function txService(route: Route) {
     const request = route.request();
     const headers = { 'Access-Control-Allow-Origin': '*' };
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
 
     const url = new URL(request.url());
-    const legacy = url.hostname.match(/^safe-transaction-([a-z0-9]+)\.safe\.global$/);
-    const gateway = url.pathname.match(/^\/tx-service\/([a-z0-9]+)(\/.*)$/);
-    const on = legacy
-      ? Object.values(NetworkName).find(name => name === legacy[1])
-      : gateway
-        ? TX_SERVICE_SHORT_NAME[gateway[1]]
-        : undefined;
-    const path = legacy ? url.pathname : (gateway?.[2] ?? '');
-
-    const answer = on && request.method() === 'GET' ? await txServiceAnswer(on, url, path) : undefined;
-    if (!answer) {
+    const on = txServiceNetwork(url);
+    // The app only reads a transaction by its safeTxHash (useWaitForSafeTxHash).
+    const single = url.pathname.match(/^\/api\/v1\/multisig-transactions\/(0x[0-9a-fA-F]{64})\/?$/);
+    if (!on || !single || request.method() !== 'GET') {
       unmockedRequests.push(maskHex(`${request.method()} ${url.hostname}${url.pathname}`));
       return route.fulfill({ status: 404, headers, contentType: 'application/json', body: '' });
     }
+    const tx = findTx(single[1], on);
     return route.fulfill({
-      status: answer.status,
+      status: tx ? 200 : 404,
       headers,
       contentType: 'application/json',
-      body: typeof answer.body === 'string' ? answer.body : JSON.stringify(answer.body)
+      body: JSON.stringify(
+        tx ? txServiceTx(tx) : { detail: 'No MultisigTransaction matches the given query.' }
+      )
     });
   }
 
@@ -612,6 +555,8 @@ export async function enableSafeMode(
     }).find(log => log.args.txHash === tx.safeTxHash);
     if (!outcome) throw new Error('Mock Safe: no ExecutionSuccess or ExecutionFailure for this safeTxHash');
 
+    // The tx ran on chain, so nothing past this point may throw and leave it queued.
+    const gasPrice = receipt.effectiveGasPrice ?? 0n;
     tx.execution = {
       transactionHash: receipt.transactionHash,
       blockNumber: Number(receipt.blockNumber),
@@ -619,8 +564,8 @@ export async function enableSafeMode(
       executionDate: isoNow(),
       isSuccessful: outcome.eventName === 'ExecutionSuccess',
       gasUsed: Number(receipt.gasUsed),
-      fee: (receipt.gasUsed * receipt.effectiveGasPrice).toString(),
-      ethGasPrice: receipt.effectiveGasPrice.toString(),
+      fee: (receipt.gasUsed * gasPrice).toString(),
+      ethGasPrice: gasPrice.toString(),
       signers,
       signatures
     };
@@ -628,19 +573,16 @@ export async function enableSafeMode(
   }
 
   await page.exposeFunction('__MOCK_SAFE_HOST__', host);
-  await page.route(TX_SERVICE_URL, txService);
+  await page.route(url => txServiceNetwork(url) !== undefined, txService);
 
   return {
     address,
     queued: () => queuedOn(current),
     async waitForQueued({ timeout = 30_000 } = {}) {
-      const deadline = Date.now() + timeout;
-      while (Date.now() < deadline) {
-        const [next] = queuedOn(current);
-        if (next) return next;
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      throw new Error(`Mock Safe: no transaction queued within ${timeout}ms`);
+      await expect
+        .poll(() => queuedOn(current).length, { message: 'Mock Safe: no transaction queued', timeout })
+        .toBeGreaterThan(0);
+      return queuedOn(current)[0];
     },
     execute,
     async switchNetwork(next: NetworkName) {
