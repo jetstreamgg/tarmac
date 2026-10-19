@@ -62,6 +62,9 @@ const FORK_GAS = 0x7a1200n;
 const safeAbi = parseAbi([
   'function setup(address[] _owners, uint256 _threshold, address to, bytes data, address fallbackHandler, address paymentToken, uint256 payment, address paymentReceiver)',
   'function nonce() view returns (uint256)',
+  'function getOwners() view returns (address[])',
+  'function getThreshold() view returns (uint256)',
+  'function addOwnerWithThreshold(address owner, uint256 _threshold)',
   'function getTransactionHash(address to, uint256 value, bytes data, uint8 operation, uint256 safeTxGas, uint256 baseGas, uint256 gasPrice, address gasToken, address refundReceiver, uint256 _nonce) view returns (bytes32)',
   'function approveHash(bytes32 hashToApprove)',
   'function execTransaction(address to, uint256 value, bytes data, uint8 operation, uint256 safeTxGas, uint256 baseGas, uint256 gasPrice, address gasToken, address refundReceiver, bytes signatures) payable returns (bool success)',
@@ -242,6 +245,41 @@ export async function deploySafe({
 
   if (new Set(addresses).size !== 1) throw new Error('Mock Safe: the Safe address differs across forks');
   return addresses[0];
+}
+
+/**
+ * Adds `newOwner` to a 1-of-n Safe on one fork only, so the same address has
+ * different owners there: what a Safe that was set up on its own per network looks like.
+ */
+export async function addSafeOwner({
+  safe,
+  owner,
+  newOwner,
+  network
+}: {
+  safe: Address;
+  owner: Address;
+  newOwner: Address;
+  network: NetworkName;
+}) {
+  const { publicClient } = await getFork(network);
+  const data = encodeFunctionData({
+    abi: safeAbi,
+    functionName: 'addOwnerWithThreshold',
+    args: [newOwner, 1n]
+  });
+  const receipt = await sendFromOwner(network, owner, {
+    address: safe,
+    data: encodeFunctionData({
+      abi: safeAbi,
+      functionName: 'execTransaction',
+      args: [safe, 0n, data, 0, 0n, 0n, 0n, zeroAddress, zeroAddress, concat([pad(owner), zeroHash, '0x01'])]
+    })
+  });
+  const owners = await publicClient.readContract({ address: safe, abi: safeAbi, functionName: 'getOwners' });
+  if (receipt.status !== 'success' || !owners.some(other => isAddressEqual(other, newOwner))) {
+    throw new Error(`Mock Safe: adding an owner on ${network} failed`);
+  }
 }
 
 const encodeMultiSend = (calls: Call[]): Hex =>
@@ -480,6 +518,30 @@ export async function enableSafeMode(
     };
   }
 
+  // SafeInfoResponse from the fork: 404 where this Safe has no code, as for a Safe never deployed there.
+  async function safeInfo(on: NetworkName) {
+    const { publicClient } = await getFork(on);
+    if (!(await publicClient.getCode({ address }))) return null;
+    const read = <F extends 'nonce' | 'getThreshold' | 'getOwners'>(functionName: F) =>
+      publicClient.readContract({ address, abi: safeAbi, functionName });
+    const [nonce, threshold, owners] = await Promise.all([
+      read('nonce'),
+      read('getThreshold'),
+      read('getOwners')
+    ]);
+    return {
+      address,
+      nonce: nonce.toString(),
+      threshold: Number(threshold),
+      owners: owners.map(owner => getAddress(owner)),
+      masterCopy: SAFE_1_4_1.singleton,
+      modules: [],
+      fallbackHandler: SAFE_1_4_1.fallbackHandler,
+      guard: zeroAddress,
+      version: '1.4.1'
+    };
+  }
+
   async function txService(route: Route) {
     const request = route.request();
     const headers = { 'Access-Control-Allow-Origin': '*' };
@@ -487,8 +549,27 @@ export async function enableSafeMode(
 
     const url = new URL(request.url());
     const on = txServiceNetwork(url);
-    // The app only reads a transaction by its safeTxHash (useWaitForSafeTxHash).
+    const json = (status: number, body: unknown) =>
+      route.fulfill({ status, headers, contentType: 'application/json', body: JSON.stringify(body) });
+    const isThisSafe = (path: string) => isAddressEqual(path as Address, address);
+    // The app reads a transaction by its safeTxHash, the Safe itself, and what executed at a nonce.
     const single = url.pathname.match(/^\/api\/v1\/multisig-transactions\/(0x[0-9a-fA-F]{64})\/?$/);
+    const safePath = url.pathname.match(/^\/api\/v1\/safes\/(0x[0-9a-fA-F]{40})\/?$/);
+    const atNonce = url.pathname.match(/^\/api\/v1\/safes\/(0x[0-9a-fA-F]{40})\/multisig-transactions\/?$/);
+    if (on && request.method() === 'GET' && safePath && isThisSafe(safePath[1])) {
+      const info = await safeInfo(on);
+      return json(info ? 200 : 404, info ?? { detail: 'Not found.' });
+    }
+    if (on && request.method() === 'GET' && atNonce && isThisSafe(atNonce[1])) {
+      const nonce = url.searchParams.get('nonce');
+      const executed = url.searchParams.get('executed');
+      const results = txs
+        .filter(tx => tx.network === on)
+        .filter(tx => nonce === null || tx.nonce.toString() === nonce)
+        .filter(tx => executed === null || String(!!tx.execution) === executed)
+        .map(txServiceTx);
+      return json(200, { count: results.length, next: null, previous: null, results });
+    }
     if (!on || !single || request.method() !== 'GET') {
       unmockedRequests.push(maskHex(`${request.method()} ${url.hostname}${url.pathname}`));
       return route.fulfill({ status: 404, headers, contentType: 'application/json', body: '' });

@@ -1,9 +1,10 @@
-import { type Page } from '@playwright/test';
+import { type Page, type Route } from '@playwright/test';
 import { parseUnits, type Address } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
 import { L1_USDS } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
+import { watchDeposit } from '../utils/bridgeFunds';
 import {
   awaitDepositTxHash,
   closeOpStackBridge,
@@ -48,6 +49,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.gotoConnected();
     await bridge.selectDestination('base');
     const before = await l2UsdsBalance('base', testAccount);
+    const funds = await watchDeposit({ to: 'base', sender: testAccount });
 
     await bridge.openReview('5');
     await expect(isolatedPage.getByRole('dialog')).toContainText('Review USDS bridge');
@@ -63,11 +65,13 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await expect(card.getByTestId('pending-bridge-status')).toHaveText('Pending', { timeout: 30_000 });
 
     const txHash = await awaitDepositTxHash(isolatedPage, 'base');
+    await funds.expectEscrowed(txHash, parseUnits('5', 18));
     expect(await relayOpStackDeposit('base', txHash)).toContain('RelayedMessage');
 
     await expect(card.getByTestId('pending-bridge-status')).toHaveText('Arrived', { timeout: 60_000 });
     await expect(bridge.cards()).toHaveCount(1);
     expect((await l2UsdsBalance('base', testAccount)) - before).toBe(parseUnits('5', 18));
+    await funds.expectArrived(parseUnits('5', 18));
   });
 
   test('OP Mainnet: a failed relay asks for a Replay that delivers the funds', async ({
@@ -78,12 +82,14 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.gotoConnected();
     await bridge.selectDestination('optimism');
     const before = await l2UsdsBalance('optimism', testAccount);
+    const funds = await watchDeposit({ to: 'optimism', sender: testAccount });
 
     await bridge.openReview('3');
     await bridge.confirmButton().click();
     await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
 
     const txHash = await awaitDepositTxHash(isolatedPage, 'optimism');
+    await funds.expectEscrowed(txHash, parseUnits('3', 18));
     // Too little gas for the token bridge's mint: the messenger records the message as failed.
     expect(await relayOpStackDeposit('optimism', txHash, { gas: 150_000n })).toContain(
       'FailedRelayedMessage'
@@ -103,6 +109,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await expect
       .poll(async () => (await l2UsdsBalance('optimism', testAccount)) - before, { timeout: 30_000 })
       .toBe(parseUnits('3', 18));
+    await funds.expectArrived(parseUnits('3', 18));
   });
 
   test('Recipients that would trap the funds are refused', async ({ isolatedPage }) => {
@@ -176,7 +183,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.openReview('1');
 
     // EIP-1193 4001, what a wallet returns when the user rejects.
-    await isolatedPage.route(TENDERLY_RPC, route =>
+    const stop = await routeRpc(isolatedPage, route =>
       isSend(route.request().postData())
         ? route.fulfill({
             json: { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'User rejected the request.' } }
@@ -190,6 +197,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     );
 
     await expectNothingSent(bridge, isolatedPage, testAccount, before);
+    await stop();
     await retryOnce(bridge, isolatedPage, testAccount, before);
   });
 
@@ -206,7 +214,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     // The mock wallet sends a batch leg by leg: any approve mines, the deposit never reaches the node.
     let approves = 0;
     let deposits = 0;
-    await isolatedPage.route(TENDERLY_RPC, route => {
+    const stop = await routeRpc(isolatedPage, route => {
       const body = route.request().postData();
       if (!isSend(body)) return route.fallback();
       const to = JSON.parse(body!).params[0].to as string;
@@ -222,6 +230,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     expect(deposits).toBe(1);
 
     await expectNothingSent(bridge, isolatedPage, testAccount, before, { approves });
+    await stop();
     await retryOnce(bridge, isolatedPage, testAccount, before);
   });
 
@@ -233,6 +242,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.gotoConnected({ batch: false });
     await bridge.selectDestination('unichain');
     const before = await l1AccountState(testAccount);
+    const funds = await watchDeposit({ to: 'unichain', sender: testAccount });
     await bridge.openReview('1');
 
     let sends = 0;
@@ -243,7 +253,9 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.confirmButton().click();
     await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
     await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
-    expect(await pendingDepositTxHash(isolatedPage, 'unichain')).toBeTruthy();
+    const txHash = await pendingDepositTxHash(isolatedPage, 'unichain');
+    expect(txHash).toBeTruthy();
+    await funds.expectEscrowed(txHash!, parseUnits('1', 18));
 
     const after = await l1AccountState(testAccount);
     expect(after.usds).toBe(before.usds - parseUnits('1', 18));
@@ -252,15 +264,17 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
   });
 
   test('A bundle whose receipt never reached the tab keeps its card, and the deposit scan fills it after a reload', async ({
-    isolatedPage
+    isolatedPage,
+    testAccount
   }) => {
     const bridge = new BridgePage(isolatedPage);
     await bridge.gotoConnected();
     await bridge.selectDestination('base');
+    const funds = await watchDeposit({ to: 'base', sender: testAccount });
     await bridge.openReview('2');
 
     // The wallet sends the bundle, but its status never comes back: the tab closes before the receipt.
-    await isolatedPage.route(TENDERLY_RPC, route =>
+    const stop = await routeRpc(isolatedPage, route =>
       route.request().postData()?.includes('"eth_getTransactionReceipt"') ? undefined : route.fallback()
     );
     await bridge.confirmButton().click();
@@ -268,22 +282,30 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await expect(card).toContainText('Confirming on Ethereum', { timeout: 60_000 });
     expect(await pendingDepositTxHash(isolatedPage, 'base')).toBeUndefined();
 
-    await isolatedPage.unrouteAll({ behavior: 'ignoreErrors' });
+    await stop();
     await bridge.gotoConnected();
     const txHash = await awaitDepositTxHash(isolatedPage, 'base');
     await expect(bridge.card('Base')).not.toContainText('Confirming on Ethereum');
     // The scan fills the bundle's card instead of adding a second one for its deposit.
     await expect(bridge.cards()).toHaveCount(1);
+    await funds.expectEscrowed(txHash, parseUnits('2', 18));
     expect(await relayOpStackDeposit('base', txHash)).toContain('RelayedMessage');
     await expect(bridge.card('Base').getByTestId('pending-bridge-status')).toHaveText('Arrived', {
       timeout: 60_000
     });
     await expect(bridge.cards()).toHaveCount(1);
+    await funds.expectArrived(parseUnits('2', 18));
   });
 });
 
 const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
 const isSend = (body: string | null) => !!body?.includes('"eth_sendTransaction"');
+
+/** Routes the fork's RPC through `handler`. Returns its removal, which leaves the fixture's routes in place. */
+async function routeRpc(page: Page, handler: (route: Route) => unknown) {
+  await page.route(TENDERLY_RPC, handler);
+  return () => page.unroute(TENDERLY_RPC, handler);
+}
 
 /** Counts the bundles the batch mock wallet was asked to send (it logs every request). */
 function countBundles(page: Page) {
@@ -316,7 +338,6 @@ async function retryOnce(
   account: Address,
   before: Awaited<ReturnType<typeof l1AccountState>>
 ) {
-  await page.unroute(TENDERLY_RPC);
   await page.getByRole('dialog').getByRole('button', { name: 'Try again' }).click();
   await expectTransactionSuccess(page, { title: 'Bridge initiated!', timeout: 90_000 });
   await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });

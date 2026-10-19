@@ -15,7 +15,17 @@ export class BridgePage {
     await this.expectBalanceLoaded();
   }
 
+  /** Inside the Safe{Wallet} iframe the Safe connects on load; call `enableSafeMode` first. */
+  async gotoAsSafe() {
+    await this.page.goto('/convert?tab=bridge');
+    await expect(this.page.getByTestId('wallet-chip')).toContainText('safe:0x', { timeout: 15_000 });
+    await expect(this.panel()).toBeVisible();
+    await this.expectBalanceLoaded();
+  }
+
   panel = () => locate(this.page, { testId: 'bridge-panel' }, bridgeNativeFlowContract);
+
+  fromNetwork = () => locate(this.page, { testId: 'bridge-from-network' }, bridgeNativeFlowContract);
 
   toNetwork = () => locate(this.page, { testId: 'bridge-to-network' }, bridgeNativeFlowContract);
 
@@ -40,6 +50,8 @@ export class BridgePage {
   recipientSave = () => locate(this.page, { testId: 'bridge-recipient-save' }, bridgeNativeBlocksContract);
 
   recipientError = () => locate(this.page, { testId: 'bridge-recipient-error' }, bridgeNativeBlocksContract);
+
+  recipientHint = () => locate(this.page, { testId: 'bridge-recipient-hint' }, bridgeNativeBlocksContract);
 
   recipientBlocked = () =>
     locate(this.page, { testId: 'bridge-recipient-blocked' }, bridgeNativeBlocksContract);
