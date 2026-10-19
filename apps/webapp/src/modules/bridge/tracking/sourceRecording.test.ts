@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { TransactionReplacedError } from '@/hooks/helpers';
+import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { withSourceRecording } from './sourceRecording';
 
 // The engine reports each leg's function name at onMutate, before its start.
@@ -158,11 +158,14 @@ describe('withSourceRecording, a route with more legs than approve and send', ()
 });
 
 describe('withSourceRecording, a send that never landed', () => {
-  const reverted = new Error('Transaction receipt: execution reverted');
+  const reverted = new TransactionRevertedError();
 
   it.each([
     ['reverted', reverted],
-    ['was cancelled or replaced', new TransactionReplacedError()]
+    [
+      'was cancelled or replaced',
+      new TransactionReplacedError(new Error('Transaction replaced in the wallet.'))
+    ]
   ])('fails the stored bridge when its send %s', (_, error) => {
     const { inner, onFailed, callbacks } = setup(false);
     callbacks.onMutate(send);
@@ -213,7 +216,7 @@ describe('withSourceRecording, a send sped up in the wallet', () => {
 
   it('fails the stored bridge when the faster send reverts', () => {
     const { onFailed, callbacks } = speedUp();
-    callbacks.onError(new Error('Transaction receipt: execution reverted'), '0xfaster');
+    callbacks.onError(new TransactionRevertedError(), '0xfaster');
     expect(onFailed).toHaveBeenCalledWith('0xsend', 'source-tx-reverted');
   });
 

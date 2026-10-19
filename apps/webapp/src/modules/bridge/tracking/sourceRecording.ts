@@ -1,5 +1,4 @@
-import type { WaitForTransactionReceiptErrorType } from 'viem';
-import { isRevertedError, TransactionReplacedError } from '@/hooks/helpers';
+import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 
 /**
@@ -82,8 +81,7 @@ export function withSourceRecording(
         if (isBundleFailure(error)) onFailed(recorded, 'source-tx-reverted');
       } else if (!isSafe && recorded && (hash === recorded || hash === current)) {
         if (error instanceof TransactionReplacedError) onFailed(recorded, 'source-tx-replaced');
-        else if (isRevertedError(error as WaitForTransactionReceiptErrorType))
-          onFailed(recorded, 'source-tx-reverted');
+        else if (error instanceof TransactionRevertedError) onFailed(recorded, 'source-tx-reverted');
       }
       getCallbacks().onError(error, hash);
     }
@@ -94,7 +92,7 @@ export function withSourceRecording(
 function isBundleFailure(error: unknown): boolean {
   return (
     (error instanceof Error && error.message === BATCH_FAILED_MESSAGE) ||
-    isRevertedError(error as WaitForTransactionReceiptErrorType)
+    error instanceof TransactionRevertedError
   );
 }
 

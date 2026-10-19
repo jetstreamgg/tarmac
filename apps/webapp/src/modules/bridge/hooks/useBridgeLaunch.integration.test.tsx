@@ -55,7 +55,7 @@ const env = vi.hoisted(() => {
     reverted: new Set<string>(),
     // A receipt wait with viem's default timeout gives up on these hashes.
     timedOut: new Set<string>(),
-    // The engine's receipt wait fails on these hashes (an RPC error).
+    // The engine's receipt wait hits RPC errors on these hashes; it keeps watching.
     receiptFailed: new Set<string>(),
     // A hash sped up in the wallet, and its replacement.
     repriced: new Map<string, string>(),
@@ -198,18 +198,34 @@ vi.mock('wagmi', async io => {
         variables: env.current?.variables,
         reset: resetWrite
       };
-    },
-    useWaitForTransactionReceipt: ({ hash }: { hash?: string }) => {
-      useEnv();
+    }
+  };
+});
+// The engine's receipt watcher: an RPC error keeps it watching, as useTransactionOutcome does.
+vi.mock('@/hooks/shared/useTransactionOutcome', async io => {
+  const React = await import('react');
+  const actual = await io<typeof import('@/hooks/shared/useTransactionOutcome')>();
+  return {
+    ...actual,
+    useTransactionOutcome: ({ hash }: { hash?: string }) => {
+      React.useSyncExternalStore(
+        listener => {
+          env.listeners.add(listener);
+          return () => env.listeners.delete(listener);
+        },
+        () => env.version
+      );
       const mined = !!hash && env.mined.has(hash);
       const reverted = !!hash && env.reverted.has(hash);
-      const failed = !!hash && env.receiptFailed.has(hash);
+      const failure = React.useMemo(
+        () => (reverted ? new actual.TransactionRevertedError() : null),
+        [reverted]
+      );
       return {
-        isLoading: !!hash && !mined && !reverted && !failed,
+        isPending: !!hash && !mined && !reverted,
         isSuccess: mined,
-        error: failed ? new Error('HTTP request failed.') : null,
-        failureReason: reverted ? new Error('execution reverted') : null,
-        data: mined ? { blockNumber: 1n } : undefined
+        failure,
+        receipt: mined || reverted ? { blockNumber: 1n, transactionHash: hash } : undefined
       };
     }
   };
@@ -1020,7 +1036,7 @@ describe('a native deposit through the real modal and engine', () => {
   });
 
   it.each(['arbitrum', 'base'] as const)(
-    'a Safe over WalletConnect to %s whose receipt wait gives up before it executes: Retry sends nothing and its card stays pending',
+    'a Safe over WalletConnect to %s whose receipt wait hits RPC errors before it executes: no Retry, and its card stays pending',
     async to => {
       env.safe = true;
       env.allowance[SENDER] = parseEther('1000');
@@ -1028,14 +1044,13 @@ describe('a native deposit through the real modal and engine', () => {
       await review(to);
       await confirm();
       await wallet.sign('0xwcsafetx');
-      // The engine waits on the safeTxHash, which never mines: it fails as viem's 180 s timeout does.
+      // The engine waits on the safeTxHash, which never mines; an RPC error does not end that wait.
       act(() => {
         env.receiptFailed.add('0xwcsafetx');
         env.bump();
       });
       await settle();
-      fireEvent.click(screen.getByRole('button', { name: /^(retry|try again)$/i }));
-      await settle();
+      expect(screen.queryByRole('button', { name: /^(retry|try again)$/i })).toBeNull();
 
       expect(env.writes.map(write => write.functionName)).toEqual([nativeDepositFunction(to)]);
       expect(pendingBridgeStore.getSnapshot(scope)).toMatchObject([
@@ -1078,7 +1093,8 @@ describe('a native deposit through the real modal and engine', () => {
     await wallet.switchAccount(SENDER);
     act(() => launchAtClick());
     await settle();
-    await confirm();
+    // The engine keeps watching through an RPC error, so there is no Confirm to send again.
+    expect(screen.queryByRole('button', { name: /^confirm$/i })).toBeNull();
 
     expect(env.writes.map(write => write.functionName)).toEqual(['bridgeERC20To']);
   });

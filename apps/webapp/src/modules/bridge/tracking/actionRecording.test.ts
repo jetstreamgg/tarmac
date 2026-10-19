@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { TransactionReplacedError } from '@/hooks/helpers';
+import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { withActionRecording } from './actionRecording';
 
 const setup = () => {
@@ -12,7 +12,7 @@ const setup = () => {
   return { inner, onSent, onConfirmed, onReverted, callbacks };
 };
 
-const reverted = new Error('Transaction receipt: execution reverted');
+const reverted = new TransactionRevertedError();
 
 describe('withActionRecording', () => {
   it('records the action as sent at broadcast, then confirms it once mined', () => {
@@ -65,7 +65,10 @@ describe('withActionRecording, a sent action cancelled or replaced in the wallet
   it('drops the sent action, so the user can claim again', () => {
     const { onReverted, callbacks } = setup();
     callbacks.onStart('0xclaim');
-    callbacks.onError(new TransactionReplacedError(), '0xclaim');
+    callbacks.onError(
+      new TransactionReplacedError(new Error('Transaction replaced in the wallet.')),
+      '0xclaim'
+    );
     expect(onReverted).toHaveBeenCalledWith('0xclaim');
   });
 });

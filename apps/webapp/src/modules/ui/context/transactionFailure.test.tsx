@@ -67,6 +67,8 @@ vi.mock('motion/react', async io => {
 });
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
+import { reportError } from '@/modules/sentry/reportError';
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -251,5 +253,18 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByText('Approve')).toBeNull();
     expect(screen.queryByText('Supply')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('groups on-chain reverts in Sentry by flow and action, and leaves other errors to the default grouping', () => {
+    renderFailedFlow(supplySteps, () => {}, new TransactionRevertedError());
+    expect(vi.mocked(reportError).mock.calls[0][1].fingerprint).toEqual([
+      'transaction-reverted',
+      'unknown',
+      'unknown'
+    ]);
+
+    vi.mocked(reportError).mockClear();
+    renderFailedFlow(supplySteps);
+    expect(vi.mocked(reportError).mock.calls[0][1].fingerprint).toBeUndefined();
   });
 });

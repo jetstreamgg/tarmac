@@ -18,13 +18,14 @@ const wagmi = vi.hoisted(() => ({
   writeContract: undefined as unknown as ReturnType<typeof import('vitest').vi.fn>,
   onWriteSuccess: undefined as undefined | ((hash: `0x${string}`) => void),
   mutationHash: undefined as `0x${string}` | undefined,
-  receipt: { isLoading: false, isSuccess: false, error: null, failureReason: null } as {
-    isLoading: boolean;
+  receipt: { isPending: false, isSuccess: false, failure: null } as {
+    isPending: boolean;
     isSuccess: boolean;
-    error: Error | null;
-    failureReason: Error | null;
+    failure: Error | null;
   },
-  simulated: [] as string[]
+  simulated: [] as string[],
+  // The wallet's account, as the engine reads it.
+  account: undefined as string | undefined
 }));
 
 vi.mock('wagmi', async io => ({
@@ -54,7 +55,11 @@ vi.mock('wagmi', async io => ({
     wagmi.onWriteSuccess = opts.mutation.onSuccess;
     return { writeContract: wagmi.writeContract, error: null, data: wagmi.mutationHash, reset: vi.fn() };
   },
-  useWaitForTransactionReceipt: () => wagmi.receipt
+  useConnection: () => ({ address: wagmi.account })
+}));
+vi.mock('@/hooks/shared/useTransactionOutcome', async io => ({
+  ...(await io<typeof import('@/hooks/shared/useTransactionOutcome')>()),
+  useTransactionOutcome: () => wagmi.receipt
 }));
 // The batch engine stays off: these runs are sequential.
 vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
@@ -93,7 +98,7 @@ describe('a started Arbitrum deposit when the wallet account changes after the a
     wagmi.writeContract = vi.fn();
     wagmi.onWriteSuccess = undefined;
     wagmi.mutationHash = undefined;
-    wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+    wagmi.receipt = { isPending: false, isSuccess: false, failure: null };
     wagmi.simulated = [];
   });
 
@@ -108,8 +113,9 @@ describe('a started Arbitrum deposit when the wallet account changes after the a
       const wrapper = ({ children }: { children: ReactNode }) =>
         createElement(QueryClientProvider, { client: queryClient }, children);
       const { result, rerender } = renderHook(
-        ({ account }: Props) =>
-          useNativeDepositLegs({
+        ({ account }: Props) => {
+          wagmi.account = account;
+          return useNativeDepositLegs({
             enabled: true,
             to: 'arbitrum',
             chainId: 1,
@@ -117,7 +123,8 @@ describe('a started Arbitrum deposit when the wallet account changes after the a
             recipient: undefined,
             amount: AMOUNT,
             getCallbacks: () => callbacks
-          }),
+          });
+        },
         { wrapper, initialProps: { account: SENDER } as Props }
       );
       await settle();
@@ -143,11 +150,11 @@ describe('a started Arbitrum deposit when the wallet account changes after the a
 
       // The approve mines.
       act(() => {
-        wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+        wagmi.receipt = { isPending: false, isSuccess: true, failure: null };
       });
       rerender({ account: after });
       act(() => {
-        wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
+        wagmi.receipt = { isPending: false, isSuccess: false, failure: null };
       });
       rerender({ account: after });
       await settle();

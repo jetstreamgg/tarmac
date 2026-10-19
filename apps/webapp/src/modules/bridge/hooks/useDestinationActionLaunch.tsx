@@ -5,7 +5,7 @@ import { useIsSafeWallet } from '@/hooks';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -186,7 +186,7 @@ export function useDestinationActionLaunch() {
   const resetReplay = replayLegs.reset;
   const resetRedeem = redeemLegs.reset;
   // A failed recovery is built afresh on the next launch, so a stale simulation error isn't reported again.
-  useResetPausedRunOnClose(
+  useResetUnfinishedRunOnClose(
     useCallback(() => {
       confirmPendingRef.current = false;
       setRecovery(undefined);

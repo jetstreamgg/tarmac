@@ -1,5 +1,4 @@
-import type { WaitForTransactionReceiptErrorType } from 'viem';
-import { isRevertedError, TransactionReplacedError } from '@/hooks/helpers';
+import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 
 /**
@@ -40,8 +39,7 @@ export function withActionRecording(
     },
     onError: (error, hash) => {
       const neverLands =
-        error instanceof TransactionReplacedError ||
-        isRevertedError(error as WaitForTransactionReceiptErrorType);
+        error instanceof TransactionReplacedError || error instanceof TransactionRevertedError;
       if (sent && (hash === sent || hash === current) && neverLands) {
         onReverted(sent);
       }

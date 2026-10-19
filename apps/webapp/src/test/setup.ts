@@ -43,13 +43,15 @@ vi.mock('@sentry/react', async () => {
         setExtras: (extras: Record<string, unknown>) => void;
         setLevel: (level: string) => void;
         setTag: (key: string, value: string) => void;
+        setFingerprint: (fingerprint: string[]) => void;
       }) => void
     ) =>
       callback({
         setContext: vi.fn(),
         setExtras: vi.fn(),
         setLevel: vi.fn(),
-        setTag: vi.fn()
+        setTag: vi.fn(),
+        setFingerprint: vi.fn()
       })
   );
 

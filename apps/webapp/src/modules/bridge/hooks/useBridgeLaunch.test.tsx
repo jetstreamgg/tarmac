@@ -1,6 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { createElement, type ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -406,7 +407,7 @@ describe('useBridgeLaunch Confirm gate', () => {
     const stored = () => pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.txHash === '0xsend1');
     expect(stored()?.status).toBe('pending');
 
-    callbacks.onError(new Error('Transaction receipt: execution reverted'), '0xsend1');
+    callbacks.onError(new TransactionRevertedError(), '0xsend1');
     expect(stored()?.status).toBe('failed');
 
     act(() => mocks.launched.at(-1)!.onConfirm!());

@@ -5,7 +5,8 @@ import { usePublicClient } from 'wagmi';
 import { arbitrum } from 'wagmi/chains';
 import { useTokenAllowance } from '@/hooks';
 import { useDebounce } from '@/hooks/ui/useDebounce';
-import { toError, TransactionReplacedError } from '@/hooks/helpers';
+import { toError } from '@/hooks/helpers';
+import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { useSendBatchTransactionFlow } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
@@ -190,8 +191,12 @@ export function useNativeDepositLegs({
           }
         });
         if (!isFollowed()) return;
-        if (replaced) issuer.onError(new TransactionReplacedError(), hash);
-        else if (receipt.status === 'reverted') issuer.onError(new Error('The transaction reverted.'), sent);
+        if (replaced)
+          issuer.onError(
+            new TransactionReplacedError(new Error('Transaction replaced in the wallet.')),
+            hash
+          );
+        else if (receipt.status === 'reverted') issuer.onError(new TransactionRevertedError(), sent);
         else issuer.onSuccess(sent, receipt.blockNumber);
         return;
       } catch (error) {
@@ -331,17 +336,20 @@ export function useNativeDepositLegs({
   const { execute: executeFlow } = flow;
   const { reset: resetBatch } = batchFlow;
   const { reset: resetSequential } = sequentialFlow;
-  const reset = useCallback(() => {
-    runRef.current += 1;
-    checkingRef.current = false;
-    runFromRef.current = undefined;
-    pausedRef.current = false;
-    broadcastRef.current = false;
-    setSendRoute(null);
-    // A reset detaches the engine from its send: an accepted bundle, or one the wallet still shows, would never be polled.
-    if (!acceptedIssuerRef.current && bundlePromptsRef.current.length === 0) resetBatch();
-    resetSequential();
-  }, [resetBatch, resetSequential]);
+  const reset = useCallback(
+    (onCleared?: () => void) => {
+      runRef.current += 1;
+      checkingRef.current = false;
+      runFromRef.current = undefined;
+      pausedRef.current = false;
+      broadcastRef.current = false;
+      setSendRoute(null);
+      // A reset detaches the engine from its send: an accepted bundle, or one the wallet still shows, would never be polled.
+      if (!acceptedIssuerRef.current && bundlePromptsRef.current.length === 0) resetBatch();
+      resetSequential(onCleared);
+    },
+    [resetBatch, resetSequential]
+  );
   const execute = useCallback(() => {
     if (checkingRef.current) return;
     if (!l1 || !from) return getCallbacks().onError(new Error('The bridge is not ready to send.'), '');

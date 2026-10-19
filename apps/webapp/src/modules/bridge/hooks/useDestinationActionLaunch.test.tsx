@@ -1,6 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { act, renderHook } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -78,7 +79,9 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
     handleSwitchChain: (request: { chainId: number; onSuccess?: () => void }) => mocks.switches.push(request)
   })
 }));
-vi.mock('@/modules/ui/hooks/useResetPausedRunOnClose', () => ({ useResetPausedRunOnClose: () => undefined }));
+vi.mock('@/modules/ui/hooks/useResetUnfinishedRunOnClose', () => ({
+  useResetUnfinishedRunOnClose: () => undefined
+}));
 vi.mock('./useOpStackReplayLegs', () => ({
   useOpStackReplayLegs: (params: NonNullable<typeof mocks.replay.params>) => {
     mocks.replay.params = params;
@@ -261,7 +264,7 @@ describe('useDestinationActionLaunch', () => {
     const { result } = renderHook(() => useDestinationActionLaunch());
     const callbacks = launchAndConfirm(result.current.launch);
     callbacks.onStart('0xclaim');
-    callbacks.onError(new Error('execution reverted'), '0xclaim');
+    callbacks.onError(new TransactionRevertedError(), '0xclaim');
     expect(stored('0xsource').actions).toEqual([]);
     act(() => result.current.launch(stored('0xsource')));
     expect(mocks.launched).toHaveLength(2);

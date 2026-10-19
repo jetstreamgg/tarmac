@@ -10,7 +10,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeReviewContent';
@@ -103,11 +103,14 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     depositTo === 'arbitrum' &&
     deposit.maxFee !== undefined &&
     (ethBalance === undefined || ethBalance.value < deposit.maxFee);
-  const resetRun = useCallback(() => {
-    setRunningTo(undefined);
-    resetDeposit();
-  }, [resetDeposit]);
-  useResetPausedRunOnClose(resetRun, refetchAllowance);
+  const resetRun = useCallback(
+    (onCleared?: () => void) => {
+      setRunningTo(undefined);
+      resetDeposit(onCleared);
+    },
+    [resetDeposit]
+  );
+  useResetUnfinishedRunOnClose(resetRun, refetchAllowance);
 
   // Only the source-side legs run here; destination actions are their own modal.
   const routeActions = useMemo(

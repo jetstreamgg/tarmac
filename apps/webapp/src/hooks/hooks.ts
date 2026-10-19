@@ -81,11 +81,23 @@ export type BatchWriteHook = {
   prepared: boolean;
   execute: () => void;
   currentCallIndex: number;
-  reset: () => void;
+  /**
+   * Drops the run. A write still out (in the wallet or mining) is left to
+   * settle and report first, and nothing after it is sent; `onCleared` runs
+   * once the run is clear, immediately when nothing was out.
+   */
+  reset: (onCleared?: () => void) => void;
   /** The calls this hook will send — read-only, for estimating the flow's network fee. */
   calls?: Call[];
   /** Whether those calls will go out bundled, which changes what the flow costs. */
   isBatch?: boolean;
+  /**
+   * The calls `execute()` would send from here: the remainder of the sequence frozen at
+   * the run's start while a sequential run is in progress (including paused after a
+   * mined step), the live calls otherwise.
+   * What the modal re-validates a deferred dispatch against.
+   */
+  nextCalls?: Call[];
 };
 
 export type BatchTransactionFlowHook = BatchWriteHook & {
@@ -165,10 +177,7 @@ export type UseSequentialTransactionFlowParameters = {
   onError?: (error: Error, hash: string, variables?: TxMutateVariables) => void;
   gcTime?: number;
   chainId?: number;
-  /**
-   * A transaction cancelled or replaced by another call before it mined fails instead of succeeding.
-   * A repriced one (same call, new fee) is announced again at `onStart` and settles under its new hash.
-   */
+  /** A repriced transaction (same call, new fee) is announced again at `onStart` and settles under its new hash. */
   failOnReplaced?: boolean;
 };
 
@@ -178,5 +187,12 @@ export type SequentialTransactionHook = {
   execute: () => void;
   prepared: boolean;
   currentCallIndex: number;
-  reset: () => void;
+  /**
+   * Drops the run. A write still out (in the wallet or mining) is left to
+   * settle and report first, and nothing after it is sent; `onCleared` runs
+   * once the run is clear, immediately when nothing was out.
+   */
+  reset: (onCleared?: () => void) => void;
+  /** See `BatchWriteHook.nextCalls`. */
+  nextCalls: Call[];
 };
