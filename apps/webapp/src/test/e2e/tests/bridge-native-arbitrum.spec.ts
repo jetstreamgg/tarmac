@@ -19,6 +19,7 @@ import {
   arbRetryableTxAbi
 } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
+import { watchDeposit } from '../utils/bridgeFunds';
 import { arbitrumSubmissionFee, awaitDepositTxHash, l2UsdsBalance } from '../utils/bridgeRelay';
 import { installArbitrumShim } from '../utils/arbitrumShim';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
@@ -54,7 +55,9 @@ test.describe('Bridge: Ethereum to Arbitrum native deposits', () => {
     const account = getAddress(testAccount);
     const amount = parseUnits('2', 18);
     const before = await l2UsdsBalance('arbitrum', account);
+    const funds = await watchDeposit({ to: 'arbitrum', sender: account });
     const { shim, card, txHash } = await deposit(isolatedPage, '2');
+    await funds.expectEscrowed(txHash, amount);
     const outbound = arbitrumOutboundCalldata({ from: account, to: account, amount });
 
     const estimate = shim.seen.estimates.at(-1)!;
@@ -100,6 +103,7 @@ test.describe('Bridge: Ethereum to Arbitrum native deposits', () => {
 
     await expect(card.getByTestId('pending-bridge-status')).toHaveText('Arrived', { timeout: 60_000 });
     expect((await l2UsdsBalance('arbitrum', account)) - before).toBe(amount);
+    await funds.expectArrived(amount);
   });
 
   test('A failed auto-redeem asks for a Redeem that delivers the funds', async ({
@@ -108,7 +112,9 @@ test.describe('Bridge: Ethereum to Arbitrum native deposits', () => {
   }) => {
     const account = getAddress(testAccount);
     const before = await l2UsdsBalance('arbitrum', account);
+    const funds = await watchDeposit({ to: 'arbitrum', sender: account });
     const { shim, card, txHash } = await deposit(isolatedPage, '2');
+    await funds.expectEscrowed(txHash, parseUnits('2', 18));
     const relay = await shim.relay(txHash, { failAutoRedeem: true });
     expect(relay.minted).toBe(false);
 
@@ -132,6 +138,7 @@ test.describe('Bridge: Ethereum to Arbitrum native deposits', () => {
     await backToEthereum(isolatedPage);
     await expect(card.getByTestId('pending-bridge-status')).toHaveText('Arrived', { timeout: 60_000 });
     expect((await l2UsdsBalance('arbitrum', account)) - before).toBe(parseUnits('2', 18));
+    await funds.expectArrived(parseUnits('2', 18));
   });
 
   test('Near its deadline the ticket offers Extend, and the keepalive moves the deadline', async ({

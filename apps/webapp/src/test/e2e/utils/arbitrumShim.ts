@@ -7,6 +7,8 @@ import {
   encodeFunctionResult,
   keccak256,
   multicall3Abi,
+  parseAbi,
+  toFunctionSelector,
   toHex,
   zeroHash,
   type Address,
@@ -96,6 +98,19 @@ const redeemScheduled = (receipt: RpcReceipt, ticketId: Hex, retryTxHash: Hex, s
       [0n, ALIASED_GATEWAY, 0n, 0n]
     )
   );
+
+const safeExecAbi = parseAbi([
+  'function execTransaction(address to, uint256 value, bytes data, uint8 operation, uint256 safeTxGas, uint256 baseGas, uint256 gasPrice, address gasToken, address refundReceiver, bytes signatures) payable returns (bool success)'
+]);
+
+/** The call the gateway got: the tx itself, or the one a Safe's execTransaction made. */
+function gatewayCall(tx: { to: string; input: Hex; value: string }) {
+  if (!tx.input.startsWith(toFunctionSelector(safeExecAbi[0]))) {
+    return { to: tx.to as Address, data: tx.input, value: BigInt(tx.value) };
+  }
+  const [to, value, data] = decodeFunctionData({ abi: safeExecAbi, data: tx.input }).args;
+  return { to, data, value };
+}
 
 /**
  * Plays ArbOS's retryable tickets on the Arbitrum fork, which runs ArbRetryableTx's
@@ -326,7 +341,8 @@ export async function installArbitrumShim(page: Page) {
     ]);
     const ticket = arbitrumRetryableTicket(l1Receipt.logs);
     if (!ticket) throw new Error(`No Sky retryable ticket in ${l1TxHash}`);
-    const deposit = decodeFunctionData({ abi: skyL1TokenGatewayImplementationAbi, data: l1Tx.input });
+    const call = gatewayCall(l1Tx);
+    const deposit = decodeFunctionData({ abi: skyL1TokenGatewayImplementationAbi, data: call.data });
     if (deposit.functionName !== 'outboundTransferCustomRefund')
       throw new Error(`Unexpected deposit call ${deposit.functionName}`);
     const maxGas = deposit.args[4] as bigint;
@@ -367,7 +383,7 @@ export async function installArbitrumShim(page: Page) {
     return {
       ticket,
       minted,
-      deposit: { to: l1Tx.to as Address, args: deposit.args, value: BigInt(l1Tx.value) },
+      deposit: { to: call.to, args: deposit.args, value: call.value },
       blockNumber: BigInt(l1Receipt.blockNumber)
     };
   }
