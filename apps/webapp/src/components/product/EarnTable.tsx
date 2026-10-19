@@ -529,7 +529,15 @@ export function EarnTable({
               data-first={index === 0 ? true : undefined}
               data-last={index === rows.length - 1 ? true : undefined}
               data-hover={handleRowSelect ? undefined : 'off'}
-              className={cn(handleRowSelect && 'cursor-pointer', dimmed && '[&>td]:text-fgTertiary')}
+              className={cn(
+                handleRowSelect && 'cursor-pointer focus-visible:outline-hidden',
+                // The ring is drawn on the cell surfaces, not the tr: the tr also
+                // spans the 2px slit above the surface, and the surfaces carry
+                // the first and last rows' rounded corners.
+                handleRowSelect &&
+                  '[&:focus-visible>td:first-child>div>div]:shadow-[inset_2px_0_0_0_var(--color-focusRing),inset_0_2px_0_0_var(--color-focusRing),inset_0_-2px_0_0_var(--color-focusRing)] [&:focus-visible>td:last-child>div>div]:shadow-[inset_-2px_0_0_0_var(--color-focusRing),inset_0_2px_0_0_var(--color-focusRing),inset_0_-2px_0_0_var(--color-focusRing)] [&:focus-visible>td>div>div]:shadow-[inset_0_2px_0_0_var(--color-focusRing),inset_0_-2px_0_0_var(--color-focusRing)]',
+                dimmed && '[&>td]:text-fgTertiary'
+              )}
             >
               {/* The Figma active-position iconbox (CellToken `active`) is not
                 wired here on purpose: its trigger follows product logic that

@@ -17,7 +17,7 @@ import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
 import { formatAddress } from '@/utils';
 
 const iconButtonClasses =
-  'flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 bg-origin-border text-[#f2f3f7] transition-colors hover:bg-white/10';
+  'flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 bg-origin-border text-[#f2f3f7] transition-colors hover:bg-white/10 focus-visible:outline-focusRing focus-visible:outline-2 focus-visible:outline-offset-2';
 
 interface WalletPreviewHeaderProps {
   ensName?: string | null;

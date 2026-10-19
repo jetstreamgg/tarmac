@@ -25,7 +25,12 @@ import { cn } from '@/lib/cn';
 // a plain anchor. Also used by the transaction signature step's helper copy
 // (APP-501), which carries the same two links.
 export const TermsLink = ({ href, children }: { href: string; children: ReactNode }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer" className="text-fgBrand hover:underline">
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-fgBrand focus-visible:outline-focusRing rounded-xs hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+  >
     {children}
   </a>
 );

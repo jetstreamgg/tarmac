@@ -116,12 +116,14 @@ function StateCard({ children }: { children: ReactNode }) {
   );
 }
 
-// Focused rows outline in fgBrand (pagination precedent) instead of the browser default.
+// Focused rows take the app's focus ring instead of the browser default, drawn
+// on the cells: they are the row's surface, and an outline on the tr would sit
+// outside them and miss the rounded corners.
 const ROW_FOCUS_CLASS =
-  'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-fgBrand';
+  'focus-visible:outline-hidden [&:focus-visible>td]:shadow-[inset_0_2px_0_0_var(--color-focusRing),inset_0_-2px_0_0_var(--color-focusRing)] [&:focus-visible>td:first-child]:shadow-[inset_2px_0_0_0_var(--color-focusRing),inset_0_2px_0_0_var(--color-focusRing),inset_0_-2px_0_0_var(--color-focusRing)] [&:focus-visible>td:last-child]:shadow-[inset_-2px_0_0_0_var(--color-focusRing),inset_0_2px_0_0_var(--color-focusRing),inset_0_-2px_0_0_var(--color-focusRing)]';
 // Piecewise ring in the same color for a row followed by a rendered banner (see usage).
 const BANNER_ROW_FOCUS_CLASS =
-  '[&:has(+tr>td>*):focus-visible]:outline-hidden [&:has(+tr>td>*):focus-visible>td]:shadow-[inset_0_2px_0_0_var(--color-fgBrand)] [&:has(+tr>td>*):focus-visible>td:first-child]:shadow-[inset_2px_2px_0_0_var(--color-fgBrand)] [&:has(+tr>td>*):focus-visible>td:last-child]:shadow-[inset_-2px_2px_0_0_var(--color-fgBrand)]';
+  '[&:has(+tr>td>*):focus-visible]:outline-hidden [&:has(+tr>td>*):focus-visible>td]:shadow-[inset_0_2px_0_0_var(--color-focusRing)] [&:has(+tr>td>*):focus-visible>td:first-child]:shadow-[inset_2px_2px_0_0_var(--color-focusRing)] [&:has(+tr>td>*):focus-visible>td:last-child]:shadow-[inset_-2px_2px_0_0_var(--color-focusRing)]';
 
 export function ProductTransactionsTable<T>({
   columns,

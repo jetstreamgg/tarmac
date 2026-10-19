@@ -529,7 +529,7 @@ export function StakePositionsTable({
             type="button"
             onClick={onOpenPosition}
             data-testid="stake-open-position-card"
-            className="border-glassBorder text-fgSecondary hover:text-fgPrimary font-circle flex h-[88px] w-full items-center justify-center gap-2 rounded-3xl border border-dashed text-sm leading-4 font-medium tracking-[-0.28px] backdrop-blur-[20px] transition-colors"
+            className="border-glassBorder text-fgSecondary hover:text-fgPrimary font-circle focus-visible:outline-focusRing flex h-[88px] w-full items-center justify-center gap-2 rounded-3xl border border-dashed text-sm leading-4 font-medium tracking-[-0.28px] backdrop-blur-[20px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <Plus className="size-4" aria-hidden />
             <Trans>Open a new position</Trans>

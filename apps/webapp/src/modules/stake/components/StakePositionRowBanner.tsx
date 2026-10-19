@@ -28,7 +28,7 @@ export function ownAction(action: () => void) {
 // Below md it continues the mobile card instead: same padding and blur, no slit to cover.
 const REVEAL_CLASS = 'overflow-clip md:-mt-0.5';
 const CARRIER_CLASS =
-  'bg-bgSecondary w-full px-5 pb-5 backdrop-blur-[20px] transition-colors md:px-6 md:backdrop-blur-none [tr:last-child>td>div>&]:rounded-b-[24px] [tr:hover+tr>td>div>&]:bg-bgTertiary [tr:hover>td>div>&]:bg-bgTertiary [tr:focus-visible+tr>td>div>&]:shadow-[inset_2px_0_0_0_var(--color-fgBrand),inset_-2px_0_0_0_var(--color-fgBrand),inset_0_-2px_0_0_var(--color-fgBrand)]';
+  'bg-bgSecondary w-full px-5 pb-5 backdrop-blur-[20px] transition-colors md:px-6 md:backdrop-blur-none [tr:last-child>td>div>&]:rounded-b-[24px] [tr:hover+tr>td>div>&]:bg-bgTertiary [tr:hover>td>div>&]:bg-bgTertiary [tr:focus-visible+tr>td>div>&]:shadow-[inset_2px_0_0_0_var(--color-focusRing),inset_-2px_0_0_0_var(--color-focusRing),inset_0_-2px_0_0_var(--color-focusRing)]';
 // Status infobox inside the cell (comp 3617:193974): red at every tier, icon on the title line; CTAs drop below the copy on a phone.
 const INFOBOX_CLASS =
   'bg-statusErrorBg flex w-full flex-col items-stretch gap-4 rounded-xl px-5 py-4 sm:flex-row sm:items-center';

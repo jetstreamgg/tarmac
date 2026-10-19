@@ -66,7 +66,7 @@ export function Layout({
                 <AppLink
                   to="/"
                   title="Home page"
-                  className="focus-visible:outline-focusRing min-w-[96px] rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2 lg:justify-self-start"
+                  className="focus-visible:outline-focusRing min-w-[96px] rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 lg:justify-self-start"
                 >
                   {/* Theme-specific logo: dark is the default; light swaps in under
                     [data-theme='light'] (the `light:` variant). */}
