@@ -4,6 +4,7 @@ import { mockRpcCalls } from './mock-rpc-call';
 import { unmockedIpStatusHandler } from './mock-vpn-check';
 import { mockGeoConfig } from './mock-geo-config';
 import { unmockedAddressScreeningHandler } from './mock-terms-gate';
+import { isSafeServiceUrl, noSafeServiceHandler } from './mock-safe-service';
 
 type TestFixtures = {
   testAccount: `0x${string}`;
@@ -97,6 +98,10 @@ export const test = playwrightTest.extend<TestFixtures>({
       return unmockedAddressScreeningHandler(route);
     });
 
+    // No address is a Safe unless the spec calls enableSafeMode (see mock-safe-service).
+    const unmockedSafeService: string[] = [];
+    await page.route(isSafeServiceUrl, noSafeServiceHandler(unmockedSafeService));
+
     // Set environment variable for server-side access (if needed)
     process.env.VITE_TEST_ACCOUNT = testAccount;
     process.env.VITE_TEST_WORKER_INDEX = testInfo.workerIndex.toString();
@@ -113,6 +118,10 @@ export const test = playwrightTest.extend<TestFixtures>({
     expect(
       unmockedScreenings,
       'address screening was requested without a mock — the skip-auth build screened, or a spec forced the checks on without mockAddressScreening'
+    ).toEqual([]);
+    expect(
+      unmockedSafeService,
+      'the Safe Transaction Service was asked for more than a Safe lookup without enableSafeMode'
     ).toEqual([]);
   }
 });
