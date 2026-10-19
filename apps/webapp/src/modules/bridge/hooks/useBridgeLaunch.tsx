@@ -176,7 +176,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         (isNativeDeposit && !deposit.ready) ||
         feeShort
       ) {
-        callbacksRef.current.onError(new Error('The bridge is not ready to send.'));
+        const prepareError = isNativeDeposit
+          ? enginePrepareErrorMessage(deposit.ready, deposit.error)
+          : undefined;
+        callbacksRef.current.onError(new Error(prepareError ?? 'The bridge is not ready to send.'));
         return;
       }
       if (sentRef.current || unresolvedRef.current) {
