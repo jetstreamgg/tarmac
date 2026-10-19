@@ -89,7 +89,7 @@ export function UpgradeModalForm({
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
   const runActive = useTransactionRunActive();
-  const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
     amount: debouncedAmount,
     // Held on through a run the amount check no longer passes (see useTransactionRunActive).
@@ -199,6 +199,7 @@ export function UpgradeModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
     confirmAction: isConnected ? undefined : connectAction,

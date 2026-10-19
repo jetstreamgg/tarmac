@@ -214,7 +214,7 @@ export {
 } from './constants';
 
 export { getIlkName } from './vaults/helpers';
-export { toError } from './helpers';
+export { toError, isStalledStep } from './helpers';
 
 export { TOKENS, getTokenDecimals } from './tokens/tokens.constants';
 
