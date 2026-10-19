@@ -162,7 +162,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     test: {
       exclude: [
         ...configDefaults.exclude,
-        '**/test/e2e/**',
+        '**/test/e2e/tests/**',
         // Inlined hooks (formerly @jetstreamgg/sky-hooks) are vnet-backed integration tests.
         // They run via vitest.hooks.config.ts, not the fast suite below.
         path.resolve(__dirname, 'src/hooks/**/*.test.{ts,tsx}')
