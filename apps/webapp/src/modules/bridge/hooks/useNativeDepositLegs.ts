@@ -29,6 +29,8 @@ const toAddress = (value: string | undefined): Address | undefined =>
   value && isAddress(value) ? getAddress(value) : undefined;
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Ceiling on the gap between receipt attempts while the RPC keeps failing, as the engine's.
+const MAX_RETRY_DELAY_MS = 30_000;
 
 /** The hash a Safe tx executed under, polled like `useWaitForSafeTxHash`: every 2 s up to 150 times (about 5 minutes), while `isWanted`. */
 async function safeExecutedHash(chainId: number | undefined, safeTxHash: string, isWanted: () => boolean) {
@@ -167,9 +169,17 @@ export function useNativeDepositLegs({
   useLayoutEffect(() => {
     isSafeAppRef.current = isSafeApp;
   });
+  // Unmounted, a late deposit's receipt is left to its card's tracker.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   // The engine waits only for its run's prompts: a late deposit's receipt reaches its Confirm while the modal follows it.
   const followLate = async (hash: `0x${string}`, issuer: TxCallbacks) => {
-    const isFollowed = () => issuer === getCallbacks();
+    const isFollowed = () => mountedRef.current && issuer === getCallbacks();
     const onChain = isSafeAppRef.current ? await safeExecutedHash(chainId, hash, isFollowed) : hash;
     if (!onChain || !l1) return;
     let sent = onChain;
@@ -199,12 +209,10 @@ export function useNativeDepositLegs({
         else if (receipt.status === 'reverted') issuer.onError(new TransactionRevertedError(), sent);
         else issuer.onSuccess(sent, receipt.blockNumber);
         return;
-      } catch (error) {
-        if (attempt < 3) await sleep(1000 * 2 ** attempt);
-        else {
-          if (isFollowed()) issuer.onError(toError(error), sent);
-          return;
-        }
+      } catch {
+        // Until the modal stops following it: an RPC error never settles a sent deposit.
+        if (!isFollowed()) return;
+        await sleep(Math.min(1000 * 2 ** attempt, MAX_RETRY_DELAY_MS));
       }
     }
   };

@@ -338,7 +338,7 @@ const settle = async () => {
 
 function renderApp() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+  return render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <QueryClientProvider client={queryClient}>
@@ -787,8 +787,9 @@ describe('a native deposit through the real modal and engine', () => {
       await settle();
     };
     /** Base Review: approve mined, deposit prompt open; switching away and back fails the run. */
-    async function strandDepositPrompt() {
-      renderApp();
+    async function strandDepositPrompt(onRender?: (app: ReturnType<typeof renderApp>) => void) {
+      const app = renderApp();
+      onRender?.(app);
       await review('base');
       await confirm();
       await wallet.sign('0xs1approve');
@@ -898,6 +899,48 @@ describe('a native deposit through the real modal and engine', () => {
       await wallet.mine('0xs11late');
 
       await vi.waitFor(() => expect(screen.queryByText('Review USDS bridge')).toBeNull(), { timeout: 3000 });
+    });
+
+    it('signed after its run ended, then RPC errors on its receipt for a while: no failure is shown, then it is followed to its receipt', async () => {
+      const stale = await strandDepositPrompt();
+      env.rpcErrors['0xs12late'] = 6;
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        await wallet.sign('0xs12late', stale);
+        await act(() => vi.advanceTimersByTimeAsync(120_000));
+        expect(document.body.textContent).not.toMatch(/failed|declined|rolled back/i);
+        expect(env.rpcErrors['0xs12late']).toBe(0);
+        await wallet.mine('0xs12late');
+        await act(() => vi.advanceTimersByTimeAsync(60_000));
+      } finally {
+        vi.useRealTimers();
+      }
+
+      await vi.waitFor(() => expect(screen.queryByText('Review USDS bridge')).toBeNull(), { timeout: 3000 });
+    });
+
+    it('signed after its run ended, its receipt erroring, then the bridge unmounts: it stops polling and its card stays pending', async () => {
+      let app!: ReturnType<typeof renderApp>;
+      const stale = await strandDepositPrompt(rendered => (app = rendered));
+      env.rpcErrors['0xs13late'] = 1_000;
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        await wallet.sign('0xs13late', stale);
+        await act(() => vi.advanceTimersByTimeAsync(10_000));
+        expect(env.rpcErrors['0xs13late']).toBeLessThan(1_000);
+        app.unmount();
+        // The backoff sleep under way when it unmounts ends in one more attempt at most.
+        await act(() => vi.advanceTimersByTimeAsync(30_000));
+        const left = env.rpcErrors['0xs13late'];
+        await act(() => vi.advanceTimersByTimeAsync(300_000));
+        expect(env.rpcErrors['0xs13late']).toBe(left);
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(
+        pendingBridgeStore.getSnapshot(scope).find(bridge => bridge.txHash === '0xs13late')?.status
+      ).toBe('pending');
     });
 
     it('signed after the Retry sent the bridge, then sped up in the wallet: its card follows the hash that mines', async () => {
