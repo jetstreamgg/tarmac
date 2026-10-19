@@ -59,13 +59,17 @@ const focusFallbackFor = (element: HTMLElement | null) =>
  * - the dialog the opener sits in (a takeover whose Confirm is disabled while
  *   its transaction is pending);
  * - the element focused before the opener, outside its dialog (the More
- *   button, when Upgrade opened from its menu and the menu has closed).
+ *   button, when Upgrade opened from its menu and the menu has closed);
+ * - the element focused last outside every open dialog (the position row, when
+ *   the phone manage sheet opened from position details hands off to the
+ *   manage takeover and both have closed).
  */
 export function captureFocusOrigin() {
   const active = document.activeElement;
   const opener = active instanceof HTMLElement && active !== document.body ? active : lastFocusOutside([]);
   const openerDialog = opener?.closest<HTMLElement>('[role="dialog"]') ?? null;
-  return [opener, openerDialog, focusFallbackFor(opener)];
+  const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'));
+  return [opener, openerDialog, focusFallbackFor(opener), lastFocusOutside([opener, ...openDialogs])];
 }
 
 /**

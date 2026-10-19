@@ -165,6 +165,48 @@ const SwitchHarness = () => {
   );
 };
 
+// The phone manage flow: position details opens the manage sheet, whose item
+// opens the takeover and closes both while it rises, so nothing but the row is
+// left on close.
+const ChainedHandOffHarness = () => {
+  const [details, setDetails] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const [takeover, setTakeover] = useState(false);
+  return (
+    <>
+      <button onClick={() => setDetails(true)}>row</button>
+      <Dialog open={details} onOpenChange={setDetails}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Details</DialogTitle>
+          <button onClick={() => setSheet(true)}>manage</button>
+        </DialogContent>
+      </Dialog>
+      <Sheet open={sheet} onOpenChange={setSheet}>
+        <SheetContent aria-describedby={undefined}>
+          <SheetTitle>Sheet</SheetTitle>
+          <button
+            onClick={() => {
+              setTakeover(true);
+              setTimeout(() => {
+                setSheet(false);
+                setDetails(false);
+              }, 20);
+            }}
+          >
+            manage position
+          </button>
+        </SheetContent>
+      </Sheet>
+      <Dialog open={takeover} onOpenChange={setTakeover}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Takeover</DialogTitle>
+          <button onClick={() => setTakeover(false)}>close takeover</button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 // Connecting a wallet: the Connect Wallet button that opened the dialog is
 // swapped for the wallet chip in the same slot before the dialog closes.
 const SwappedOpenerHarness = () => {
@@ -300,6 +342,25 @@ describe('focus on open and close', () => {
 
     await waitFor(() => expect(screen.queryByText('borrow')).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('takeover')));
+  });
+
+  it('falls back past every closed dialog to the page control that started the chain', async () => {
+    render(<ChainedHandOffHarness />);
+    const row = screen.getByText('row');
+    row.focus();
+    fireEvent.click(row);
+    const manage = await screen.findByText('manage');
+    manage.focus();
+    fireEvent.click(manage);
+    const item = await screen.findByText('manage position');
+    item.focus();
+    fireEvent.click(item);
+    await waitFor(() => expect(screen.queryByText('Details')).toBeNull());
+
+    fireEvent.click(await screen.findByText('close takeover'));
+
+    await waitFor(() => expect(screen.queryByText('close takeover')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(row));
   });
 
   it('falls back to the control that replaced the opener in its slot', async () => {
