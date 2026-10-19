@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { type Page, type Route } from '@playwright/test';
 import { parseUnits, type Address } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
@@ -183,7 +183,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.openReview('1');
 
     // EIP-1193 4001, what a wallet returns when the user rejects.
-    await isolatedPage.route(TENDERLY_RPC, route =>
+    const stop = await routeRpc(isolatedPage, route =>
       isSend(route.request().postData())
         ? route.fulfill({
             json: { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'User rejected the request.' } }
@@ -197,6 +197,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     );
 
     await expectNothingSent(bridge, isolatedPage, testAccount, before);
+    await stop();
     await retryOnce(bridge, isolatedPage, testAccount, before);
   });
 
@@ -213,7 +214,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     // The mock wallet sends a batch leg by leg: any approve mines, the deposit never reaches the node.
     let approves = 0;
     let deposits = 0;
-    await isolatedPage.route(TENDERLY_RPC, route => {
+    const stop = await routeRpc(isolatedPage, route => {
       const body = route.request().postData();
       if (!isSend(body)) return route.fallback();
       const to = JSON.parse(body!).params[0].to as string;
@@ -229,6 +230,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     expect(deposits).toBe(1);
 
     await expectNothingSent(bridge, isolatedPage, testAccount, before, { approves });
+    await stop();
     await retryOnce(bridge, isolatedPage, testAccount, before);
   });
 
@@ -272,7 +274,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await bridge.openReview('2');
 
     // The wallet sends the bundle, but its status never comes back: the tab closes before the receipt.
-    await isolatedPage.route(TENDERLY_RPC, route =>
+    const stop = await routeRpc(isolatedPage, route =>
       route.request().postData()?.includes('"eth_getTransactionReceipt"') ? undefined : route.fallback()
     );
     await bridge.confirmButton().click();
@@ -280,7 +282,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await expect(card).toContainText('Confirming on Ethereum', { timeout: 60_000 });
     expect(await pendingDepositTxHash(isolatedPage, 'base')).toBeUndefined();
 
-    await isolatedPage.unrouteAll({ behavior: 'ignoreErrors' });
+    await stop();
     await bridge.gotoConnected();
     const txHash = await awaitDepositTxHash(isolatedPage, 'base');
     await expect(bridge.card('Base')).not.toContainText('Confirming on Ethereum');
@@ -298,6 +300,12 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
 
 const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
 const isSend = (body: string | null) => !!body?.includes('"eth_sendTransaction"');
+
+/** Routes the fork's RPC through `handler`. Returns its removal, which leaves the fixture's routes in place. */
+async function routeRpc(page: Page, handler: (route: Route) => unknown) {
+  await page.route(TENDERLY_RPC, handler);
+  return () => page.unroute(TENDERLY_RPC, handler);
+}
 
 /** Counts the bundles the batch mock wallet was asked to send (it logs every request). */
 function countBundles(page: Page) {
@@ -330,7 +338,6 @@ async function retryOnce(
   account: Address,
   before: Awaited<ReturnType<typeof l1AccountState>>
 ) {
-  await page.unroute(TENDERLY_RPC);
   await page.getByRole('dialog').getByRole('button', { name: 'Try again' }).click();
   await expectTransactionSuccess(page, { title: 'Bridge initiated!', timeout: 90_000 });
   await expect(bridge.cards()).toHaveCount(1, { timeout: 30_000 });
