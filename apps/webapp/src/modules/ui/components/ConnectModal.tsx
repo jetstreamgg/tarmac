@@ -502,7 +502,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
           </div>
           {/* DS Button / Icon, secondary at 40px. */}
           <DialogClose asChild>
-            <Button variant="secondary" size="iconM" data-testid="connect-modal-close">
+            <Button variant="secondary" size="iconM" aria-label={t`Close`} data-testid="connect-modal-close">
               <Close aria-hidden />
             </Button>
           </DialogClose>

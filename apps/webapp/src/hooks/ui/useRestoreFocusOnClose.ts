@@ -11,7 +11,12 @@ export const FOCUSABLE_SELECTOR =
 // button on click, so without them the newest entry could be something the
 // user left long ago, far down the page.
 const focusHistory: HTMLElement[] = [];
+// Where each recorded control sat, for when it's been swapped out since:
+// Connect Wallet becomes the wallet chip once a wallet connects.
+const slotOf = new WeakMap<HTMLElement, HTMLElement>();
 const record = (element: HTMLElement) => {
+  const slot = element.parentElement;
+  if (slot && slot !== document.body && !element.closest('[role="dialog"]')) slotOf.set(element, slot);
   if (focusHistory.at(-1) === element) return;
   focusHistory.push(element);
   if (focusHistory.length > 50) focusHistory.shift();
@@ -66,8 +71,9 @@ export function captureFocusOrigin() {
 /**
  * Hands focus back from the dialog `closing` to the first of `candidates` that
  * takes it, then to the topmost open modal (a takeover that replaced position
- * details, whose row is inert behind it). Leaves focus alone when another
- * dialog already holds it: that one opened while this one animated out.
+ * details, whose row is inert behind it), then to whatever replaced the
+ * user's last control. Leaves focus alone when another dialog already holds
+ * it: that one opened while this one animated out.
  * Returns whether focus is settled.
  */
 export function restoreFocus(candidates: (HTMLElement | null)[], closing: Node | null) {
@@ -81,6 +87,19 @@ export function restoreFocus(candidates: (HTMLElement | null)[], closing: Node |
     if (closing && (candidate.contains(closing) || closing.contains(candidate))) continue;
     candidate.focus({ preventScroll: true });
     if (document.activeElement === candidate) return true;
+  }
+
+  // Everything above is gone: take the control now standing where the user's
+  // last one was (connecting from the Connect Wallet button, through the
+  // connect and terms modals, ends on the wallet chip in its place).
+  for (let i = focusHistory.length - 1; i >= 0; i--) {
+    const slot = slotOf.get(focusHistory[i]);
+    if (focusHistory[i].isConnected || !slot?.isConnected || slot.closest('[inert]')) continue;
+    if (closing && (slot.contains(closing) || closing.contains(slot))) continue;
+    const replacement = slot.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    if (!replacement) continue;
+    replacement.focus({ preventScroll: true });
+    if (document.activeElement === replacement) return true;
   }
   return false;
 }

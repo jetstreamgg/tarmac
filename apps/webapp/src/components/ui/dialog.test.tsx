@@ -165,6 +165,40 @@ const SwitchHarness = () => {
   );
 };
 
+// Connecting a wallet: the Connect Wallet button that opened the dialog is
+// swapped for the wallet chip in the same slot before the dialog closes.
+const SwappedOpenerHarness = () => {
+  const [open, setOpen] = useState(false);
+  const [connected, setConnected] = useState(false);
+  return (
+    <>
+      <a href="#top">logo</a>
+      <div>
+        {connected ? (
+          <button key="chip">wallet chip</button>
+        ) : (
+          <button key="connect" onClick={() => setOpen(true)}>
+            connect
+          </button>
+        )}
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Title</DialogTitle>
+          <button
+            onClick={() => {
+              setConnected(true);
+              setOpen(false);
+            }}
+          >
+            pick wallet
+          </button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 describe('DialogContent', () => {
   it('caps its height and scrolls internally so tall modals fit the viewport', () => {
     render(
@@ -266,6 +300,19 @@ describe('focus on open and close', () => {
 
     await waitFor(() => expect(screen.queryByText('borrow')).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('takeover')));
+  });
+
+  it('falls back to the control that replaced the opener in its slot', async () => {
+    render(<SwappedOpenerHarness />);
+    const opener = screen.getByText('connect');
+    opener.focus();
+    fireEvent.click(opener);
+    await waitFor(() => expect(screen.getByText('pick wallet')).toBeTruthy());
+
+    fireEvent.click(screen.getByText('pick wallet'));
+
+    await waitFor(() => expect(screen.queryByText('pick wallet')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText('wallet chip')));
   });
 
   it('returns focus to a pressed opener that never took focus, not an older focus', async () => {
