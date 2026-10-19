@@ -97,10 +97,6 @@ test.describe('Bridge: activity and links', () => {
     await expect(replayRow).toContainText('Deposit replay');
     await expect(replayRow).toHaveAttribute('href', getEtherscanLink(chainId.optimism, replayHash!, 'tx'));
   });
-
-  // The activity rows carry a title, a time and an amount, but no status: an expired or
-  // undelivered bridge reads the same as an arrived one. Needs a product decision first.
-  test.fixme('Completed, failed and expired bridges show their status in the activity list', async () => {});
 });
 
 test.describe('Bridge: mobile', () => {

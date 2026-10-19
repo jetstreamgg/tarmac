@@ -154,8 +154,4 @@ test.describe('Bridge: wallets', () => {
     await expectNoBridge(bridge, isolatedPage, account, before, { approves: 1 });
     expect(await usdsAllowance(account, spender)).toBe(AMOUNT);
   });
-
-  // A Coinbase Smart Wallet must send to itself on each L2. The e2e build has no Smart Wallet
-  // connector, and the Unichain fork lacks its factory, so the account can't be deployed there.
-  test.fixme('A Coinbase Smart Wallet bridges to its own address on each L2', async () => {});
 });

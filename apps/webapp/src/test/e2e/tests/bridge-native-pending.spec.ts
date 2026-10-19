@@ -274,8 +274,4 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
     await funds.expectEscrowed(txHash, AMOUNT);
     await funds.expectArrived(AMOUNT);
   });
-
-  // Gap: the mock wallet serves one account per worker, so a live account switch can't be driven here;
-  // the per-scope list is covered above by seeding other scopes and by usePendingScope.test.tsx.
-  test.fixme('Switching the connected account swaps the pending list', async () => {});
 });

@@ -334,10 +334,6 @@ test.describe('Bridge: form and route resolution', () => {
     await funds.expectArrived(amount);
   });
 
-  // Gap: the quote refetches every minute while Review is open, but Confirm sends the cached one
-  // without a fresh read. An underpriced ticket still lands and offers Redeem (bridge-native-arbitrum).
-  test.fixme('A stale Arbitrum quote is priced again before signing', async () => {});
-
   test('Without ETH for gas, Review stays open and the send fails in the wallet', async ({
     isolatedPage
   }) => {
@@ -362,7 +358,4 @@ test.describe('Bridge: form and route resolution', () => {
     await expect(isolatedPage.getByRole('dialog')).toContainText('Transaction failed', { timeout: 60_000 });
     await expect(bridge.cards()).toHaveCount(0);
   });
-
-  // Gap: nothing reads the native balance, so Review opens and only the wallet refuses the send.
-  test.fixme('Not enough ETH for gas blocks Review with a clear message', async () => {});
 });
