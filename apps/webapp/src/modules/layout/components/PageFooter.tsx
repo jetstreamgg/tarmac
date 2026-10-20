@@ -52,9 +52,8 @@ export function PageFooter() {
               // Same hover as these links get in the More menu (`moreItemClasses`),
               // which is where the other half of `VITE_FOOTER_LINKS` renders — they
               // dim to fg-secondary rather than picking up an underline. The
-              // focus ring is the app's standard one, so keyboard users get a
-              // visible target the pointer hover alone wouldn't give them.
-              className="text-fgPrimary hover:text-fgSecondary focus-visible:ring-focusRing rounded-xs transition-colors focus-visible:ring-2 focus-visible:outline-hidden"
+              // focus ring is ExternalLink's standard one.
+              className="text-fgPrimary hover:text-fgSecondary transition-colors"
             >
               {link.name}
             </ExternalLink>
