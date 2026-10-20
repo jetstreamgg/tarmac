@@ -648,6 +648,9 @@
 
   * {
     @apply border-border;
+    /* Rings set their colour under focus-visible:, so on controls with
+       transition-colors the outline faded in from currentColor (a white flash). */
+    outline-color: var(--color-focusRing);
   }
   /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
      grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
