@@ -22,14 +22,28 @@ import { applyProgress, createPendingBridge, failBundle } from '../model/pending
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
+import type { UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { isStorageWritable } from '../store/storageWritable';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { withSourceRecording } from '../tracking/sourceRecording';
 import { bundleDepositIn } from '../tracking/bundleDeposit';
 import type { BridgeFormModel } from './useBridgeForm';
 import { isNativeDepositNetwork, type NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { nativeDepositFunction, useNativeDepositLegs } from './useNativeDepositLegs';
+import { cctpL2Contracts, isCctpL2Network, type CctpL2NetworkId } from '../adapters/cctp/contracts';
+import { CCTP_BURN_FUNCTION, useCctpBurnLegs } from './useCctpBurnLegs';
 import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
+
+const cctpUsds = (network: CctpL2NetworkId | undefined) =>
+  network ? cctpL2Contracts(network).usds : undefined;
+
+/** What the launch reads from the form. */
+export type BridgeLaunchForm = Pick<
+  BridgeFormModel,
+  'amount' | 'from' | 'to' | 'route' | 'recipient' | 'isConnected' | 'reviewBlocked'
+> &
+  Partial<Pick<BridgeFormModel, 'senderIsContract'>>;
 
 const DETACHED: TxCallbacks = {
   onMutate: () => {},
@@ -42,10 +56,11 @@ const DETACHED: TxCallbacks = {
  * The seam between the Bridge tab and `TransactionContext.launch()` (mirrors
  * `useConvertLaunch`). Confirm runs the source legs (approve + send) and
  * stores the pending bridge once the send is broadcast, or queued for a Safe.
- * Native deposits from Ethereum run their real calls; the other routes run on
- * the mock executor until their tickets add theirs.
+ * Native deposits from Ethereum and CCTP burns to Ethereum run their real
+ * calls; the other routes run on the mock executor until their tickets add theirs.
+ * With `resume`, the burn continues a CCTP swap sent before, for that swap's USDC.
  */
-export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
+export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, resume?: UnfinishedCctpSwap) {
   const { launch: launchModal, updateModalContent, isModalOpen, txCallbacks, txStatus } = useTransaction();
   const sessionId = useId();
   const chains = useChains();
@@ -69,13 +84,39 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     runningTo ??
     (route?.kind === 'native' && from === 'ethereum' && isNativeDepositNetwork(to) ? to : undefined);
   const isNativeDeposit = depositTo !== undefined;
+  const [runningBurn, setRunningBurn] = useState<CctpL2NetworkId | undefined>(undefined);
+  const burnFrom =
+    runningBurn ??
+    (runningTo === undefined && route?.kind === 'cctp' && to === 'ethereum' && isCctpL2Network(from)
+      ? from
+      : undefined);
+  const isCctpBurn = burnFrom !== undefined;
+  // A route whose source legs are real calls.
+  const isReal = isNativeDeposit || isCctpBurn;
+  // A CCTP claim is sent on Ethereum by the address it mints to.
+  const claimedByOther = isCctpBurn && sendsToOther(recipient, account);
+  const needsContractAccept = isCctpBurn && !claimedByOther && !!form.senderIsContract;
+  const [contractAccepted, setContractAccepted] = useState(false);
+  const contractUnaccepted = needsContractAccept && !contractAccepted;
+  // The burn legs refuse it too: only this browser can bring the recipient the claim link again.
+  const storageRefused = useMemo(() => claimedByOther && !isStorageWritable(), [claimedByOther]);
+  const contractWallet = useMemo(
+    () =>
+      needsContractAccept ? { accepted: contractAccepted, onAcceptedChange: setContractAccepted } : undefined,
+    [needsContractAccept, contractAccepted]
+  );
+  const ethereumChainId = guardChainId({
+    network: 'ethereum',
+    familyChainId,
+    chainIds: chains.map(chain => chain.id)
+  });
   // The session callbacks of the Confirm that started the legs.
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
   // A Safe, or a wallet not known yet not to be one, signs one leg at a time.
   const batch = useShouldUseBatch(safeStatus === 'not-safe');
   // The wallet's id of the bundle it just accepted, set right before the bundle's onStart records it.
   const callsIdRef = useRef<string | undefined>(undefined);
-  const l1 = usePublicClient({ chainId: pinnedChainId });
+  const sourceClient = usePublicClient({ chainId: pinnedChainId });
   const deposit = useNativeDepositLegs({
     enabled: isNativeDeposit && form.isConnected && (runningTo !== undefined || !form.reviewBlocked),
     // Any network while disabled.
@@ -91,7 +132,29 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     },
     getCallbacks: () => legCallbacksRef.current
   });
-  const { reset: resetDeposit, refetchAllowance } = deposit;
+  const burn = useCctpBurnLegs({
+    enabled: isCctpBurn && form.isConnected && (runningBurn !== undefined || !form.reviewBlocked),
+    // Any network while disabled.
+    from: burnFrom ?? 'base',
+    chainId: pinnedChainId,
+    ethereumChainId,
+    account,
+    recipient,
+    amount,
+    scope,
+    resume,
+    isSafeApp,
+    isSafeWallet: isSafe,
+    batch,
+    onCallsSent: id => {
+      callsIdRef.current = id;
+    },
+    getCallbacks: () => legCallbacksRef.current
+  });
+  const legs = isCctpBurn ? burn : deposit;
+  const { reset: resetDeposit } = deposit;
+  const { reset: resetBurn } = burn;
+  const refetchAllowance = isCctpBurn ? burn.refetchAllowance : deposit.refetchAllowance;
   // The Arbitrum ticket's ETH comes from the sender on Ethereum; unknown while loading, so Confirm waits.
   const { data: ethBalance } = useTokenBalance({
     address: account,
@@ -106,9 +169,17 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const resetRun = useCallback(
     (onCleared?: () => void) => {
       setRunningTo(undefined);
-      resetDeposit(onCleared);
+      setRunningBurn(undefined);
+      // The reads refresh once the active engine's write still out has landed.
+      if (isCctpBurn) {
+        resetDeposit();
+        resetBurn(onCleared);
+      } else {
+        resetBurn();
+        resetDeposit(onCleared);
+      }
     },
-    [resetDeposit]
+    [isCctpBurn, resetDeposit, resetBurn]
   );
   useResetUnfinishedRunOnClose(resetRun, refetchAllowance);
 
@@ -125,14 +196,34 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         : routeActions,
     [isNativeDeposit, routeActions, deposit.needsApprove]
   );
+  // A burn signs one step per call: its approves, the swap to USDC and the burn.
+  const burnSteps = useMemo<TransactionStep[]>(
+    () =>
+      burn.calls.map(call => {
+        const { functionName, to: target } = call as { functionName?: string; to?: string };
+        if (functionName === 'swapExactIn')
+          return {
+            label: t`Swap to USDC`,
+            tokenSymbol: 'USDS',
+            failureDetail: t`The USDS hasn't been swapped.`
+          };
+        if (functionName === CCTP_BURN_FUNCTION)
+          return { label: t`Bridge`, tokenSymbol: 'USDC', failureDetail: t`The USDC hasn't been bridged.` };
+        const symbol = target?.toLowerCase() === cctpUsds(burnFrom)?.toLowerCase() ? 'USDS' : 'USDC';
+        return { label: t`Approve`, tokenSymbol: symbol, failureDetail: stepFailureDetail.approve(symbol) };
+      }),
+    [burn.calls, burnFrom]
+  );
   const steps = useMemo<TransactionStep[]>(
     () =>
-      sourceActions.map(action =>
-        action === 'approve'
-          ? { label: t`Approve`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.approve('USDS') }
-          : { label: t`Bridge`, tokenSymbol: 'USDS', failureDetail: t`The USDS hasn't been bridged.` }
-      ),
-    [sourceActions]
+      isCctpBurn && burnSteps.length > 0
+        ? burnSteps
+        : sourceActions.map(action =>
+            action === 'approve'
+              ? { label: t`Approve`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.approve('USDS') }
+              : { label: t`Bridge`, tokenSymbol: 'USDS', failureDetail: t`The USDS hasn't been bridged.` }
+          ),
+    [isCctpBurn, burnSteps, sourceActions]
   );
 
   const callbacksRef = useRef(txCallbacks);
@@ -155,10 +246,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   useEffect(() => {
     const closed = wasOpenRef.current && !isModalOpen;
     wasOpenRef.current = isModalOpen;
-    if (!closed || runningTo === undefined || sentRef.current) return;
+    if (!closed || (runningTo === undefined && runningBurn === undefined) || sentRef.current) return;
     resetRun();
     refetchAllowance();
-  }, [isModalOpen, runningTo, resetRun, refetchAllowance]);
+  }, [isModalOpen, runningTo, runningBurn, resetRun, refetchAllowance]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
   const unresolvedRef = useRef<string | undefined>(undefined);
   useLayoutEffect(() => {
@@ -173,12 +264,11 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         !account ||
         !scope ||
         pinnedChainId === undefined ||
-        (isNativeDeposit && !deposit.ready) ||
-        feeShort
+        (isReal && !legs.ready) ||
+        feeShort ||
+        contractUnaccepted
       ) {
-        const prepareError = isNativeDeposit
-          ? enginePrepareErrorMessage(deposit.ready, deposit.error)
-          : undefined;
+        const prepareError = isReal ? enginePrepareErrorMessage(legs.ready, legs.error) : undefined;
         callbacksRef.current.onError(new Error(prepareError ?? 'The bridge is not ready to send.'));
         return;
       }
@@ -203,7 +293,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       // Snapshot at Confirm: the form may change or reset before the legs finish.
       const record = { account, amount, from, to, recipient, route };
       // A prompt this Confirm opened can be signed after a later Confirm: the modal hears from it only while it is current.
-      const isCurrent = () => !depositTo || legCallbacksRef.current === callbacks;
+      const isCurrent = () => !isReal || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
       confirmedLaunchRef.current = launchId;
       // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
@@ -216,14 +306,18 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         sentRef.current = true;
         if (id) unresolvedRef.current = id;
         if (first && !isCurrent()) {
-          deposit.stop();
+          legs.stop();
           legCallbacksRef.current = callbacks;
         }
       };
       const recording = withSourceRecording(() => (isCurrent() ? callbacksRef.current : DETACHED), {
         isSafe,
         // The mock names each leg after its step.
-        bridgeFunctionName: depositTo ? nativeDepositFunction(depositTo) : 'send',
+        bridgeFunctionName: depositTo
+          ? nativeDepositFunction(depositTo)
+          : burnFrom
+            ? CCTP_BURN_FUNCTION
+            : 'send',
         onSent: txHash => {
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
           markSent(txHash);
@@ -261,7 +355,9 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           void (async () => {
             const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bundleId);
             try {
-              const receipt = bridge && hash && (await l1?.getTransactionReceipt({ hash: hash as Hex }));
+              // The source chain's client: Ethereum for a deposit, the L2 for a burn.
+              const receipt =
+                bridge && hash && (await sourceClient?.getTransactionReceipt({ hash: hash as Hex }));
               const deposit = bridge && receipt ? bundleDepositIn(bridge, [receipt]) : undefined;
               if (deposit) {
                 pendingBridgeStore.resolveBundle(scope, bundleId, deposit.txHash);
@@ -301,8 +397,9 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         onSuccess: (hash, blockNumber) => {
           unresolvedRef.current = undefined;
           setRunningTo(undefined);
-          // The next deposit's approve depends on what this one spent.
-          deposit.refetchAllowance();
+          setRunningBurn(undefined);
+          // The next bridge's approve depends on what this one spent.
+          legs.refetchAllowance();
           if (pinnedChainId !== undefined)
             void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
           recording.onSuccess(hash, blockNumber);
@@ -312,6 +409,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
         legCallbacksRef.current = callbacks;
         setRunningTo(depositTo);
         deposit.execute();
+      } else if (burnFrom) {
+        legCallbacksRef.current = callbacks;
+        setRunningBurn(burnFrom);
+        burn.execute();
       } else void runMockLegs(sourceActions, () => callbacks);
     };
   });
@@ -319,10 +420,10 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
   const bridgeFee = deposit.maxFee !== undefined ? formatMaxEthFee(deposit.maxFee) : undefined;
   // Gas only; the Arbitrum ticket's ETH is the bridge fee.
   const { data: networkFee } = useNetworkFee({
-    calls: deposit.calls,
+    calls: legs.calls,
     chainId: pinnedChainId,
-    shouldUseBatch: deposit.isBatch,
-    enabled: isNativeDeposit && deposit.calls.length > 0
+    shouldUseBatch: legs.isBatch,
+    enabled: isReal && legs.calls.length > 0
   });
   const networkFeeText = networkFee?.formatted ?? NO_VALUE;
   // Arbitrum refunds a contract's unused fee to its L2 alias, which a Safe reaches only through Ethereum.
@@ -338,9 +439,11 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
           networkFee={networkFeeText}
           bridgeFee={bridgeFee}
           aliasedRefund={aliasedRefund}
+          recipientWarning={claimedByOther}
+          contractWallet={contractWallet}
         />
       ),
-    [amount, from, to, route, networkFeeText, bridgeFee, aliasedRefund]
+    [amount, from, to, route, networkFeeText, bridgeFee, aliasedRefund, claimedByOther, contractWallet]
   );
   const transactionScreenContent = useMemo(
     () => <BridgeTransferHero amount={amount} from={from} to={to} testId="bridge-modal-screen-summary" />,
@@ -349,15 +452,16 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
 
   const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
   const confirmDisabled =
-    !form.isConnected || form.reviewBlocked || (isNativeDeposit && !deposit.ready) || feeShort;
+    !form.isConnected || form.reviewBlocked || (isReal && !legs.ready) || feeShort || contractUnaccepted;
   // The mock routes send one leg at a time.
-  const bundled = isNativeDeposit && deposit.isBatch;
+  const bundled = isReal && legs.isBatch;
   const feeText = deposit.maxFee !== undefined ? formatEthCeil(deposit.maxFee) : NO_VALUE;
-  const errorMessage =
-    feeShort && ethBalance
+  const errorMessage = storageRefused
+    ? t`Browser storage is unavailable here, so this bridge can only go to your own address. Allow site data, or use another browser, to send it to another address.`
+    : feeShort && ethBalance
       ? t`You need at least ${feeText} ETH on Ethereum to pay the Arbitrum bridge fee.`
-      : isNativeDeposit
-        ? enginePrepareErrorMessage(deposit.ready, deposit.error)
+      : isReal
+        ? enginePrepareErrorMessage(legs.ready, legs.error)
         : undefined;
 
   const launch = useCallback(() => {
@@ -376,9 +480,12 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       unresolvedRef.current = undefined;
       sentRef.current = false;
     }
+    const title = resume ? t`Continue USDS bridge` : t`Review USDS bridge`;
+    // Each Review asks again; its content follows once the modal is open.
+    setContractAccepted(false);
     launchModal({
-      title: t`Review USDS bridge`,
-      transactionTitle: t`Review USDS bridge`,
+      title,
+      transactionTitle: title,
       toast: {
         loading: t`Bridging ${amountLabel}`,
         success: t`Bridge initiated!`,
@@ -388,7 +495,7 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
       transactionScreenContent,
       steps,
       confirmLabel: t`Confirm`,
-      confirmDisabled,
+      confirmDisabled: confirmDisabled || needsContractAccept,
       bundled,
       errorMessage,
       onConfirm: () => executeRef.current(),
@@ -407,12 +514,14 @@ export function useBridgeLaunch(form: BridgeFormModel, onSuccess?: () => void) {
     transactionScreenContent,
     steps,
     confirmDisabled,
+    needsContractAccept,
     bundled,
     errorMessage,
     onSuccess,
     sessionId,
     amount,
-    pinnedChainId
+    pinnedChainId,
+    resume
   ]);
 
   useEffect(() => {

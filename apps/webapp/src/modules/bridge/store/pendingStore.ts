@@ -31,7 +31,8 @@ const NEXT_ACTIONS = keysOf({
   finalize: true,
   redeem: true,
   replay: true,
-  keepalive: true
+  keepalive: true,
+  convert: true
 } satisfies Record<PendingBridgeNextAction, true>);
 
 type Listener = () => void;
@@ -229,6 +230,21 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       };
     },
     getSnapshot,
+    /** Every account's scope with a list in this chain family, stored or only in this session. */
+    scopesIn(familyChainId: number): string[] {
+      const prefix = `${familyChainId}:`;
+      const scopes = new Set([...unsaved.keys()].filter(scope => scope.startsWith(prefix)));
+      try {
+        for (let index = 0; index < localStorage.length; index++) {
+          const key = localStorage.key(index);
+          if (!key?.startsWith(`${KEY_PREFIX}${prefix}`) || key.endsWith(':unreadable')) continue;
+          scopes.add(key.slice(KEY_PREFIX.length));
+        }
+      } catch {
+        // storage can't be read: only this session's lists
+      }
+      return [...scopes];
+    },
     /** Adds a bridge, or fills the gaps of the one with the same id, Safe tx hash or tx hash. */
     upsert(scope: string, bridge: PendingBridge) {
       const current = latest(scope);

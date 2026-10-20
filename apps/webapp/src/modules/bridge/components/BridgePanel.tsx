@@ -4,8 +4,10 @@ import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useBridgeForm } from '../hooks/useBridgeForm';
 import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
+import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
 import { BridgeCard } from './BridgeCard';
+import { CctpClaimLookup } from './CctpClaimLookup';
 import { PendingBridges } from './PendingBridges';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
@@ -83,10 +85,12 @@ export function BridgePanel() {
   const launchOrConnect = useConnectThenAct(launch);
   const {
     launch: launchAction,
+    launchIn: launchActionIn,
     canLaunch: canLaunchAction,
     actionHint,
     locked: actionLocked
   } = useDestinationActionLaunch();
+  const { launch: continueBridge } = useCctpResumeLaunch();
 
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
@@ -155,10 +159,14 @@ export function BridgePanel() {
 
       <PendingBridges
         onAction={launchAction}
+        onActionIn={launchActionIn}
         canAction={canLaunchAction}
         actionHint={actionHint}
         actionLocked={actionLocked}
+        onContinue={continueBridge}
       />
+
+      <CctpClaimLookup />
     </div>
   );
 }

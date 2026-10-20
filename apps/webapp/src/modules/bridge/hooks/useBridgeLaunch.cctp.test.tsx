@@ -1,0 +1,449 @@
+/**
+ * @vitest-environment happy-dom
+ */
+import { createElement, type ReactElement, type ReactNode } from 'react';
+import { act, renderHook } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { i18n } from '@lingui/core';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getAddress } from 'viem';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
+import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { cctpL2Contracts, TOKEN_MESSENGER_V2 } from '../adapters/cctp/contracts';
+import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { resolveBridgeRoute } from '../model/resolveRoute';
+import type { BridgeNetworkId } from '../model/networks';
+import type { UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
+import type { BridgeFormModel } from './useBridgeForm';
+import { useBridgeLaunch } from './useBridgeLaunch';
+
+const SENDER = getAddress(BASE_BURN_TX.from);
+const AMOUNT = BASE_BURN_AMOUNT * 10n ** 12n;
+const SCOPE = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+const { usds, usdc, psm3 } = cctpL2Contracts('base');
+
+const mocks = vi.hoisted(() => ({
+  launched: [] as TransactionConfig[],
+  modalOpen: false,
+  storageWritable: true,
+  updates: [] as Partial<TransactionConfig>[],
+  onError: vi.fn(),
+  runMockLegs: vi.fn(() => new Promise<string>(() => undefined)),
+  depositExecute: vi.fn(),
+  clients: [] as (number | undefined)[],
+  receipt: undefined as unknown,
+  closeReset: undefined as undefined | ((onCleared?: () => void) => void),
+  depositReset: vi.fn(),
+  burnReset: vi.fn(),
+  burn: {
+    ready: true,
+    error: null as Error | null,
+    isBatch: false,
+    calls: [] as unknown[],
+    execute: vi.fn(),
+    args: [] as {
+      enabled: boolean;
+      from: string;
+      chainId: number | undefined;
+      ethereumChainId: number | undefined;
+      scope: string | undefined;
+      resume: UnfinishedCctpSwap | undefined;
+      getCallbacks: () => TxCallbacks;
+    }[]
+  }
+}));
+
+vi.mock('wagmi', async io => ({
+  ...(await io<typeof import('wagmi')>()),
+  useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id })),
+  usePublicClient: ({ chainId }: { chainId?: number }) => {
+    mocks.clients.push(chainId);
+    return { getTransactionReceipt: async () => mocks.receipt };
+  }
+}));
+vi.mock('@/hooks', async io => ({
+  ...(await io<typeof import('@/hooks')>()),
+  useIsSafeWallet: () => false,
+  useSafeWalletStatus: () => 'not-safe',
+  useNetworkFee: () => ({ data: undefined }),
+  useTokenBalance: () => ({ data: undefined, isLoading: false })
+}));
+vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+vi.mock('@/modules/ui/hooks/useResetUnfinishedRunOnClose', () => ({
+  useResetUnfinishedRunOnClose: (reset: (onCleared?: () => void) => void) => {
+    mocks.closeReset = reset;
+  }
+}));
+vi.mock('@/modules/ui/context/TransactionContext', () => ({
+  useTransaction: () => ({
+    launch: (config: TransactionConfig) => mocks.launched.push(config),
+    updateModalContent: (_id: string, content: Partial<TransactionConfig>) => mocks.updates.push(content),
+    isModalOpen: mocks.modalOpen,
+    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: mocks.onError },
+    txStatus: TxStatus.IDLE
+  })
+}));
+vi.mock('@/modules/ui/hooks/useMinimizedSessionLock', () => ({
+  useMinimizedSessionLock: () => ({ locked: false, restore: vi.fn() })
+}));
+vi.mock('./usePendingScope', async () => {
+  const { pendingScopeKey } = await import('../store/pendingStore');
+  const { getAddress } = await import('viem');
+  const { BASE_BURN_TX } = await import('../adapters/cctp/cctpFixtures');
+  const account = getAddress(BASE_BURN_TX.from);
+  return {
+    usePendingScope: () => ({
+      account,
+      familyChainId: 1,
+      scope: pendingScopeKey({ account, familyChainId: 1 })
+    })
+  };
+});
+vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => mocks.storageWritable }));
+vi.mock('../adapters/mockAdapter', () => ({ runMockLegs: mocks.runMockLegs }));
+vi.mock('./useNativeDepositLegs', () => {
+  const idle = {
+    calls: [],
+    maxFee: undefined,
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: mocks.depositExecute,
+    reset: mocks.depositReset,
+    stop: () => {},
+    refetchAllowance: () => {}
+  };
+  return { nativeDepositFunction: () => 'bridgeERC20To', useNativeDepositLegs: () => idle };
+});
+vi.mock('./useCctpBurnLegs', () => ({
+  CCTP_BURN_FUNCTION: 'depositForBurn',
+  useCctpBurnLegs: (args: (typeof mocks.burn.args)[number]) => {
+    mocks.burn.args.push(args);
+    const { ready, error, isBatch, calls, execute } = mocks.burn;
+    return {
+      calls,
+      needsApprove: false,
+      isBatch,
+      ready,
+      error,
+      execute,
+      reset: mocks.burnReset,
+      stop: vi.fn(),
+      refetchAllowance: vi.fn()
+    };
+  }
+}));
+vi.mock('../components/BridgeReviewContent', () => ({
+  BridgeReviewContent: () => null,
+  BridgeTransferHero: () => null
+}));
+
+const BURN_CALLS = [
+  { to: usds, functionName: 'approve', args: [psm3, AMOUNT] },
+  { to: psm3, functionName: 'swapExactIn' },
+  { to: usdc, functionName: 'approve', args: [TOKEN_MESSENGER_V2, BASE_BURN_AMOUNT] },
+  { to: TOKEN_MESSENGER_V2, functionName: 'depositForBurn' }
+];
+
+const formFor = (from: BridgeNetworkId, to: BridgeNetworkId, extra: Partial<BridgeFormModel> = {}) => {
+  const result = resolveBridgeRoute({
+    from,
+    to,
+    amount: AMOUNT,
+    facts: { cctp: { isOpen: true }, native: { isOpen: true } }
+  });
+  if (result.status !== 'ok') throw new Error(result.reason);
+  return {
+    amount: AMOUNT,
+    from,
+    to,
+    route: result.route,
+    recipient: undefined,
+    isConnected: true,
+    reviewBlocked: false,
+    ...extra
+  } as unknown as BridgeFormModel;
+};
+
+function render(
+  from: BridgeNetworkId = 'base',
+  to: BridgeNetworkId = 'ethereum',
+  resume?: UnfinishedCctpSwap,
+  extra?: Partial<BridgeFormModel>
+) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: queryClient }, children);
+  return renderHook(() => useBridgeLaunch(formFor(from, to, extra), undefined, resume), { wrapper });
+}
+
+const SWAP: UnfinishedCctpSwap = {
+  swapTxHash: '0x5a',
+  network: 'base',
+  usdcAmount: BASE_BURN_AMOUNT,
+  recipient: SENDER.toLowerCase(),
+  at: 1
+};
+
+const stepsShown = () => mocks.launched.at(-1)!.steps as { label: string; tokenSymbol?: string }[];
+
+const confirm = (view: ReturnType<typeof render>) => {
+  act(() => view.result.current.launch());
+  act(() => mocks.launched.at(-1)!.onConfirm!());
+  return mocks.burn.args.at(-1)!.getCallbacks();
+};
+
+describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
+  beforeAll(() => {
+    i18n.loadAndActivate({ locale: 'en', messages: {} });
+  });
+
+  beforeEach(() => {
+    // Every test starts from an empty store: storage cleared, and the cached lists dropped as another tab's write would.
+    localStorage.clear();
+    const unsubscribe = pendingBridgeStore.subscribe(() => undefined);
+    window.dispatchEvent(new StorageEvent('storage', { key: null }));
+    unsubscribe();
+    Object.assign(mocks, {
+      launched: [],
+      updates: [],
+      modalOpen: false,
+      storageWritable: true,
+      clients: [],
+      receipt: undefined
+    });
+    Object.assign(mocks.burn, { ready: true, error: null, isBatch: false, calls: BURN_CALLS, args: [] });
+    mocks.burn.execute.mockClear();
+    mocks.depositExecute.mockClear();
+    mocks.runMockLegs.mockClear();
+    mocks.onError.mockClear();
+    mocks.depositReset.mockClear();
+    mocks.burnReset.mockClear();
+  });
+
+  // The reads refresh once the burn engine's write still out has landed, not the idle deposit engine's.
+  it("refreshes the reads after the burn engine's reset when the modal closes mid-run", () => {
+    render();
+    const onCleared = vi.fn();
+    act(() => mocks.closeReset!(onCleared));
+    expect(mocks.burnReset).toHaveBeenCalledWith(onCleared);
+    expect(mocks.depositReset).not.toHaveBeenCalledWith(onCleared);
+  });
+
+  it('builds the burn on the pinned L2 with Ethereum as the claim chain', () => {
+    render();
+    expect(mocks.burn.args.at(-1)).toMatchObject({
+      enabled: true,
+      from: 'base',
+      chainId: 8453,
+      ethereumChainId: 1,
+      // An unfinished swap is remembered under the sender's pending scope.
+      scope: SCOPE
+    });
+  });
+
+  it('runs the burn on Confirm, not the mock or the deposit', () => {
+    confirm(render());
+    expect(mocks.burn.execute).toHaveBeenCalledOnce();
+    expect(mocks.runMockLegs).not.toHaveBeenCalled();
+    expect(mocks.depositExecute).not.toHaveBeenCalled();
+  });
+
+  it('shows one step per call: both approves, the swap and the burn', () => {
+    const view = render();
+    act(() => view.result.current.launch());
+    expect(stepsShown().map(step => [step.label, step.tokenSymbol])).toEqual([
+      ['Approve', 'USDS'],
+      ['Swap to USDC', 'USDS'],
+      ['Approve', 'USDC'],
+      ['Bridge', 'USDC']
+    ]);
+  });
+
+  it('shows no approve the allowances already cover', () => {
+    mocks.burn.calls = BURN_CALLS.filter(call => call.functionName !== 'approve');
+    const view = render();
+    act(() => view.result.current.launch());
+    expect(stepsShown().map(step => step.label)).toEqual(['Swap to USDC', 'Bridge']);
+  });
+
+  it('blocks Confirm and says why while the burn cannot be sent', () => {
+    Object.assign(mocks.burn, { ready: false, error: new Error('CCTP is paused.') });
+    const view = render();
+    act(() => view.result.current.launch());
+    expect(mocks.launched.at(-1)).toMatchObject({ confirmDisabled: true });
+    expect(mocks.launched.at(-1)!.errorMessage).toBeTruthy();
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(mocks.burn.execute).not.toHaveBeenCalled();
+    expect(mocks.onError).toHaveBeenCalled();
+  });
+
+  it('stores the card under the burn hash, never the swap or an approve', () => {
+    const callbacks = confirm(render());
+    act(() => {
+      callbacks.onMutate({ functionName: 'approve' } as never);
+      callbacks.onStart('0xapprove');
+      callbacks.onMutate({ functionName: 'swapExactIn' } as never);
+      callbacks.onStart('0xswap');
+    });
+    expect(pendingBridgeStore.getSnapshot(SCOPE)).toEqual([]);
+    act(() => {
+      callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+      callbacks.onStart(BASE_BURN_TX.hash);
+    });
+    expect(pendingBridgeStore.getSnapshot(SCOPE)).toMatchObject([
+      { txHash: BASE_BURN_TX.hash, from: 'base', to: 'ethereum', amount: AMOUNT }
+    ]);
+  });
+
+  it("gives a mined bundle's card the burn hash read from the L2 receipt", async () => {
+    mocks.receipt = {
+      status: 'success',
+      transactionHash: BASE_BURN_TX.hash,
+      blockNumber: 1n,
+      logs: BASE_BURN_LOGS
+    };
+    const callbacks = confirm(render());
+    act(() => {
+      callbacks.onMutate(undefined as never);
+      callbacks.onStart(undefined);
+    });
+    const [card] = pendingBridgeStore.getSnapshot(SCOPE);
+    expect(card.bundleId).toBeDefined();
+    await act(async () => {
+      callbacks.onSuccess(BASE_BURN_TX.hash, 1n);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(pendingBridgeStore.getSnapshot(SCOPE)).toMatchObject([{ txHash: BASE_BURN_TX.hash }]);
+    // The receipt came from the burn's chain.
+    expect(mocks.clients).toContain(8453);
+  });
+
+  it('leaves the burn engine off on a route from Ethereum', () => {
+    render('ethereum', 'base');
+    expect(mocks.burn.args.at(-1)).toMatchObject({ enabled: false });
+  });
+
+  describe('continuing an unfinished swap', () => {
+    it('builds the burn from the swap, and the form builds a fresh one', () => {
+      render('base', 'ethereum', SWAP);
+      expect(mocks.burn.args.at(-1)).toMatchObject({ enabled: true, from: 'base', resume: SWAP });
+      render();
+      expect(mocks.burn.args.at(-1)!.resume).toBeUndefined();
+    });
+
+    it('titles the review as a continued bridge', () => {
+      const view = render('base', 'ethereum', SWAP);
+      act(() => view.result.current.launch());
+      expect(mocks.launched.at(-1)).toMatchObject({
+        title: 'Continue USDS bridge',
+        transactionTitle: 'Continue USDS bridge'
+      });
+    });
+
+    it('stores the card under the burn hash once the burn is sent', () => {
+      const callbacks = confirm(render('base', 'ethereum', SWAP));
+      expect(mocks.burn.execute).toHaveBeenCalledOnce();
+      act(() => {
+        callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+        callbacks.onStart(BASE_BURN_TX.hash);
+      });
+      expect(pendingBridgeStore.getSnapshot(SCOPE)).toMatchObject([
+        { txHash: BASE_BURN_TX.hash, from: 'base', to: 'ethereum', amount: AMOUNT }
+      ]);
+    });
+  });
+
+  describe('the claim notes in the Review', () => {
+    type ReviewProps = {
+      recipientWarning?: boolean;
+      contractWallet?: { accepted: boolean; onAcceptedChange: (accepted: boolean) => void };
+    };
+    const reviewProps = (config: Partial<TransactionConfig>) =>
+      (config.transactionContent as ReactElement<ReviewProps>).props;
+    const OTHER = '0x00000000000000000000000000000000000b0b01';
+
+    it('warns about a recipient other than the wallet, and not about the wallet in any case', () => {
+      const other = render('base', 'ethereum', undefined, { recipient: OTHER });
+      act(() => other.result.current.launch());
+      expect(reviewProps(mocks.launched.at(-1)!).recipientWarning).toBe(true);
+      const own = render('base', 'ethereum', undefined, { recipient: SENDER.toLowerCase() });
+      act(() => own.result.current.launch());
+      expect(reviewProps(mocks.launched.at(-1)!).recipientWarning).toBe(false);
+      const none = render();
+      act(() => none.result.current.launch());
+      expect(reviewProps(mocks.launched.at(-1)!)).toMatchObject({
+        recipientWarning: false,
+        contractWallet: undefined
+      });
+    });
+
+    it('asks nothing on a route from Ethereum', () => {
+      const view = render('ethereum', 'base', undefined, { recipient: OTHER, senderIsContract: true });
+      act(() => view.result.current.launch());
+      expect(reviewProps(mocks.launched.at(-1)!)).toMatchObject({
+        recipientWarning: false,
+        contractWallet: undefined
+      });
+    });
+
+    it('holds Confirm for a contract wallet until it ticks the box, and refuses to send before', () => {
+      const view = render('base', 'ethereum', undefined, { senderIsContract: true });
+      act(() => view.result.current.launch());
+      const opened = mocks.launched.at(-1)!;
+      expect(opened.confirmDisabled).toBe(true);
+      expect(reviewProps(opened).contractWallet?.accepted).toBe(false);
+      act(() => opened.onConfirm!());
+      expect(mocks.burn.execute).not.toHaveBeenCalled();
+      expect(mocks.onError).toHaveBeenCalled();
+
+      mocks.modalOpen = true;
+      view.rerender();
+      // The open modal keeps Confirm held while the box is unticked.
+      expect(mocks.updates.at(-1)!.confirmDisabled).toBe(true);
+      act(() => reviewProps(opened).contractWallet!.onAcceptedChange(true));
+      const update = mocks.updates.at(-1)!;
+      expect(update.confirmDisabled).toBe(false);
+      expect(reviewProps(update).contractWallet?.accepted).toBe(true);
+      act(() => opened.onConfirm!());
+      expect(mocks.burn.execute).toHaveBeenCalledOnce();
+    });
+
+    it('asks again on the next Review', () => {
+      const view = render('base', 'ethereum', undefined, { senderIsContract: true });
+      act(() => view.result.current.launch());
+      act(() => reviewProps(mocks.launched.at(-1)!).contractWallet!.onAcceptedChange(true));
+      act(() => view.result.current.launch());
+      expect(mocks.launched.at(-1)!.confirmDisabled).toBe(true);
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.burn.execute).not.toHaveBeenCalled();
+    });
+
+    it('says why another recipient is refused when browser storage takes no writes', () => {
+      mocks.storageWritable = false;
+      Object.assign(mocks.burn, { ready: false, error: new Error('needs browser storage') });
+      const other = render('base', 'ethereum', undefined, { recipient: OTHER });
+      act(() => other.result.current.launch());
+      expect(mocks.launched.at(-1)).toMatchObject({ confirmDisabled: true });
+      expect(mocks.launched.at(-1)!.errorMessage).toMatch(/browser storage/i);
+      expect(mocks.launched.at(-1)!.errorMessage).toMatch(/your own address/);
+      // The wallet's own address needs no storage to be claimed.
+      const own = render();
+      act(() => own.result.current.launch());
+      expect(mocks.launched.at(-1)!.errorMessage ?? '').not.toMatch(/browser storage/i);
+    });
+
+    it('asks a contract wallet nothing when another address claims', () => {
+      const view = render('base', 'ethereum', undefined, { senderIsContract: true, recipient: OTHER });
+      act(() => view.result.current.launch());
+      expect(mocks.launched.at(-1)!.confirmDisabled).toBe(false);
+      expect(reviewProps(mocks.launched.at(-1)!)).toMatchObject({
+        recipientWarning: true,
+        contractWallet: undefined
+      });
+    });
+  });
+});

@@ -1,4 +1,7 @@
 import type { BridgeRouteKind } from '../model/types';
+import { cctpProgress } from './cctp/cctpProgress';
+import { isCctpL2Network } from './cctp/contracts';
+import { irisAttestationReader } from './cctp/iris';
 import { arbitrumDepositProgress } from './nativeDeposit/arbitrumProgress';
 import { isNativeDepositNetwork, isOpStackNetwork } from './nativeDeposit/contracts';
 import { opStackDepositProgress } from './nativeDeposit/opStackProgress';
@@ -17,9 +20,21 @@ const nativeAdapter: BridgeAdapter = {
   }
 };
 
+const readIrisAttestations = irisAttestationReader();
+
+// CCTP is real from an L2 to Ethereum, its only pair: it waits for Circle's attestation and the chain.
+const cctpAdapter: BridgeAdapter = {
+  checkProgress: (bridge, now, context) => {
+    const { from } = bridge;
+    if (bridge.to !== 'ethereum' || !isCctpL2Network(from))
+      return mockAdapter.checkProgress(bridge, now, context);
+    return cctpProgress({ ...bridge, from }, context, now, readIrisAttestations);
+  }
+};
+
 const ADAPTERS: Record<BridgeRouteKind, BridgeAdapter> = {
   native: nativeAdapter,
-  cctp: mockAdapter,
+  cctp: cctpAdapter,
   layerzero: mockAdapter
 };
 

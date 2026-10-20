@@ -59,6 +59,8 @@ export const nextActionLabel = (action: PendingBridgeNextAction): string => {
       return t`Replay`;
     case 'keepalive':
       return t`Extend`;
+    case 'convert':
+      return t`Convert to USDS`;
   }
 };
 
@@ -73,6 +75,7 @@ const readyLabel = (action: PendingBridgeNextAction): string => {
     case 'redeem':
     case 'replay':
     case 'keepalive':
+    case 'convert':
       return t`Action needed`;
   }
 };

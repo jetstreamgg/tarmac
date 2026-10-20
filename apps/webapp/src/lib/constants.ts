@@ -38,7 +38,10 @@ export enum QueryParams {
    * Deep link to the Upgrade DAI/MKR modal, e.g. /?upgrade=mkr — consumed
    * (opened + stripped) by useUpgradeDeepLink on any module route.
    */
-  Upgrade = 'upgrade'
+  Upgrade = 'upgrade',
+  /** A CCTP claim link's source network and burn hash, e.g. /convert?tab=bridge&claim_network=base&claim_tx=0x… */
+  ClaimNetwork = 'claim_network',
+  ClaimTx = 'claim_tx'
 }
 
 export enum Environment {

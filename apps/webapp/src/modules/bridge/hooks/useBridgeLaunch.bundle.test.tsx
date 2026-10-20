@@ -115,6 +115,21 @@ vi.mock('@/modules/ui/hooks/useMinimizedSessionLock', () => ({
 }));
 vi.mock('@/hooks/ui/useAppChainId', () => ({ useAppChainId: () => 1 }));
 vi.mock('../adapters/mockAdapter', () => ({ runMockLegs: () => new Promise<string>(() => undefined) }));
+// The CCTP burn engine stays idle on these routes.
+vi.mock('./useCctpBurnLegs', () => {
+  const idle = {
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: () => {},
+    reset: () => {},
+    stop: () => {},
+    refetchAllowance: () => {}
+  };
+  return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
+});
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('./useNativeDepositLegs', () => ({
   nativeDepositFunction: (to: string) =>

@@ -210,6 +210,8 @@ export function useBridgeForm() {
     /** The lookups behind `needsRecipient` and `recipientProblem` are still in flight. */
     recipientChecking: codeChecking || (checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking)),
     recipientReason: recipientRule.required ? recipientRule.reason : undefined,
+    /** The wallet is a contract on the source and the destination pays it, not a typed recipient. */
+    senderIsContract: isConnected && !typedOther && payeeOnSource.code === 'contract',
     /** The Safe check failed, so the wallet type is unknown. */
     safeCheckFailed: isConnected && safeStatus === 'unknown',
     /** Review and Confirm can't go ahead; only meaningful while connected. */

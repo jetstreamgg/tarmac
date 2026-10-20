@@ -112,6 +112,21 @@ vi.mock('../adapters/mockAdapter', () => ({
     return new Promise<string>(() => undefined);
   }
 }));
+// The CCTP burn engine stays idle on these routes.
+vi.mock('./useCctpBurnLegs', () => {
+  const idle = {
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: () => {},
+    reset: () => {},
+    stop: () => {},
+    refetchAllowance: () => {}
+  };
+  return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
+});
 // Every address is an EOA; the code check has its own tests in useBridgeForm.
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('./useNativeDepositLegs', () => ({

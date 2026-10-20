@@ -287,6 +287,21 @@ vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
   useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
 }));
 vi.mock('@/components/ui/use-toast', () => ({ toast: { dismiss: vi.fn() }, toastWithClose: vi.fn() }));
+// The CCTP burn engine stays idle on these routes.
+vi.mock('./useCctpBurnLegs', () => {
+  const idle = {
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: () => {},
+    reset: () => {},
+    stop: () => {},
+    refetchAllowance: () => {}
+  };
+  return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
+});
 // Every address is an EOA; the code check has its own tests in useBridgeForm.
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('../components/BridgeReviewContent', () => ({

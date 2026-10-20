@@ -1,5 +1,11 @@
 import type { BridgeNetworkId } from './networks';
-import { destinationActions, isRecoveryAction, recoveryActions } from './resolveRoute';
+import {
+  destinationActions,
+  followUpActions,
+  isFollowUpAction,
+  isRecoveryAction,
+  recoveryActions
+} from './resolveRoute';
 import type { BridgeRoute, PendingBridge, PendingBridgeAction, PendingBridgeNextAction } from './types';
 
 const MINUTE = 60_000;
@@ -40,10 +46,11 @@ export const isSettled = (bridge: PendingBridge): boolean =>
   bridge.status === 'failed' ||
   bridge.status === 'expired';
 
-/** Every action a bridge can record: its ordered destination steps, then its recovery actions. */
+/** Every action a bridge can record: its ordered destination steps, its recovery actions, then its follow-ups. */
 const bridgeActions = (bridge: PendingBridge): PendingBridgeNextAction[] => [
   ...destinationActions(bridge.routeKind, bridge.from),
-  ...recoveryActions(bridge.routeKind, bridge.from, bridge.to)
+  ...recoveryActions(bridge.routeKind, bridge.from, bridge.to),
+  ...followUpActions(bridge.routeKind, bridge.from, bridge.to)
 ];
 
 export function createPendingBridge({
@@ -196,6 +203,12 @@ export const canLaunchAction = (bridge: PendingBridge): boolean =>
   !!bridge.nextAction &&
   !bridge.actions.some(sent => isSent(sent) && sent.action === bridge.nextAction);
 
+/** The landed USDC of a CCTP transfer to Ethereum can be sold for USDS, once: none sent nor confirmed. */
+export const canLaunchConvert = (bridge: PendingBridge): boolean =>
+  followUpActions(bridge.routeKind, bridge.from, bridge.to).includes('convert') &&
+  (bridge.status === 'claimed' || bridge.status === 'arrived') &&
+  !bridge.actions.some(action => action.action === 'convert');
+
 /** Under this an Arbitrum redeem is urgent and its ticket can be kept alive: a Safe's signers need time too. */
 export const REDEEM_URGENT_MINUTES = 48 * 60;
 
@@ -261,9 +274,9 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
     ...bridge.actions.filter(sent => !(isSent(sent) && sent.action === action.action)),
     { action: action.action, txHash: action.txHash, at: action.at }
   ];
-  if (isSettled(bridge)) return { ...bridge, actions };
-  // The tx mining doesn't mean its L2 execution succeeded: wait for the adapter to read it.
   const done = action.action;
+  if (isSettled(bridge) || isFollowUpAction(done)) return { ...bridge, actions };
+  // The tx mining doesn't mean its L2 execution succeeded: wait for the adapter to read it.
   // The redeem stays offered; the new deadline is read from the chain, and the stale one offers no second keepalive.
   if (done === 'keepalive') {
     const routeData = { ...bridge.routeData };
@@ -280,13 +293,19 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
     : { ...bridge, actions, status: 'claimed', nextAction: undefined, settledAt: action.at };
 }
 
-/** Active bridges always show; settled ones stay for a day. */
-export const isPendingBridgeVisible = (bridge: PendingBridge, now: number): boolean =>
-  !isSettled(bridge) || now - (bridge.settledAt ?? 0) <= SETTLED_VISIBLE_MS;
+const hasSentFollowUp = (bridge: PendingBridge) =>
+  bridge.actions.some(action => isSent(action) && isFollowUpAction(action.action));
 
-/** How often the tracker checks a bridge; undefined once settled. */
+/** The tracker reads it: until it settles, then while a follow-up it sent is unconfirmed. */
+export const isTracked = (bridge: PendingBridge): boolean => !isSettled(bridge) || hasSentFollowUp(bridge);
+
+/** Tracked bridges always show; settled ones stay for a day. */
+export const isPendingBridgeVisible = (bridge: PendingBridge, now: number): boolean =>
+  isTracked(bridge) || now - (bridge.settledAt ?? 0) <= SETTLED_VISIBLE_MS;
+
+/** How often the tracker checks a bridge; undefined once settled with nothing sent. */
 export function pollIntervalMs(bridge: PendingBridge, now: number): number | undefined {
-  if (isSettled(bridge)) return undefined;
+  if (isSettled(bridge)) return hasSentFollowUp(bridge) ? FAST_POLL_MS : undefined;
   // A queued Safe transaction: signers usually act soon, but can take days. A bundle's hash comes from recovery.
   if (!bridge.txHash) return now - bridge.startedAt <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
   // Anyone can send the next action, so a ready bridge can still settle without us; one left for hours backs off.

@@ -32,9 +32,10 @@ export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 
 
 /**
  * `redeem` (Arbitrum ticket) and `replay` (OP Stack message) recover a deposit whose L2 execution failed;
- * `keepalive` extends an Arbitrum ticket's deadline and is never the next action.
+ * `keepalive` extends an Arbitrum ticket's deadline and is never the next action;
+ * `convert` sells a settled CCTP claim's USDC for USDS when the claim didn't, and is never the next action either.
  */
-export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay' | 'keepalive';
+export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay' | 'keepalive' | 'convert';
 
 /** A destination action every bridge of its route goes through, in order. */
 export type PendingBridgeStepAction = 'claim' | 'prove' | 'finalize';

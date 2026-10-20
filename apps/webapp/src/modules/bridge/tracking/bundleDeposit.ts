@@ -1,4 +1,6 @@
-import type { Address, Hex, Log } from 'viem';
+import { isAddress, type Address, type Hex, type Log } from 'viem';
+import { isCctpL2Network } from '../adapters/cctp/contracts';
+import { sourceBurnMessages } from '../adapters/cctp/message';
 import { depositsInLogs, type DiscoveredDeposit } from '../adapters/nativeDeposit/discovery';
 import type { PendingBridge } from '../model/types';
 
@@ -14,14 +16,9 @@ export type BundleReceipt = {
 export const sendsTo = (bridge: PendingBridge, deposit: DiscoveredDeposit) =>
   (bridge.recipient ?? bridge.account).toLowerCase() === deposit.recipient.toLowerCase();
 
-/** The deposit a wallet bundle's card stands for among its receipts: its network, amount and recipient. */
-export function bundleDepositIn(
-  bridge: PendingBridge,
-  receipts: readonly BundleReceipt[]
-): DiscoveredDeposit | undefined {
-  if (bridge.from !== 'ethereum') return undefined;
-  // A wallet's receipt logs carry no hash or block of their own.
-  const logs = receipts
+// A wallet's receipt logs carry no hash or block of their own.
+const minedLogs = (receipts: readonly BundleReceipt[]) =>
+  receipts
     .filter(receipt => receipt.status === 'success')
     .flatMap(receipt =>
       receipt.logs.map(
@@ -34,6 +31,33 @@ export function bundleDepositIn(
           }) as unknown as Log
       )
     );
+
+/**
+ * The send a wallet bundle's card stands for among its receipts: a native
+ * deposit of its network, amount and recipient, or a CCTP burn of its amount
+ * from its account to its recipient. A burn is the bundle's only when exactly
+ * one matches, as the progress reads it.
+ */
+export function bundleDepositIn(
+  bridge: PendingBridge,
+  receipts: readonly BundleReceipt[]
+): Pick<DiscoveredDeposit, 'txHash' | 'blockNumber'> | undefined {
+  const logs = minedLogs(receipts);
+  if (bridge.routeKind === 'cctp' && bridge.to === 'ethereum' && isCctpL2Network(bridge.from)) {
+    const mintRecipient = bridge.recipient ?? bridge.account;
+    if (!isAddress(bridge.account) || !isAddress(mintRecipient)) return undefined;
+    const expected = {
+      from: bridge.from,
+      amount: bridge.amount,
+      sender: bridge.account,
+      mintRecipient
+    };
+    const burns = logs.filter(log => sourceBurnMessages([log], expected).length > 0);
+    return burns.length === 1 && burns[0].transactionHash && burns[0].blockNumber !== null
+      ? { txHash: burns[0].transactionHash, blockNumber: burns[0].blockNumber }
+      : undefined;
+  }
+  if (bridge.from !== 'ethereum') return undefined;
   return depositsInLogs(logs, bridge.account as Address).find(
     deposit => deposit.to === bridge.to && deposit.amount === bridge.amount && sendsTo(bridge, deposit)
   );

@@ -1,4 +1,4 @@
-import { applyProgress, isSettled, type BridgeProgress } from '../model/pendingTransitions';
+import { applyProgress, isTracked, type BridgeProgress } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeAction } from '../model/types';
 import type { AdapterContext, BridgeAdapter } from '../adapters/types';
 import type { PendingBridgeStore } from '../store/pendingStore';
@@ -31,7 +31,7 @@ export async function trackBridge({
   readSafeAction: (bridge: PendingBridge, sent: PendingBridgeAction) => Promise<BridgeProgress | null>;
 }): Promise<BridgeProgress | null> {
   const bridge = store.getSnapshot(scope).find(entry => entry.id === id);
-  if (!bridge || isSettled(bridge)) return null;
+  if (!bridge || !isTracked(bridge)) return null;
   // No route adapter can match a Safe tx hash on chain.
   const safeAction = bridge.actions.find(sent => sent.status === 'sent' && sent.safe);
   const progress = bridge.txHash

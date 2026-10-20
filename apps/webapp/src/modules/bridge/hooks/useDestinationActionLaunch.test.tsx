@@ -61,7 +61,39 @@ vi.mock('wagmi', () => ({
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => mocks.isSafe
+  useIsSafeWallet: () => mocks.isSafe,
+  useSafeWalletStatus: () => (mocks.isSafe ? 'safe' : 'not-safe')
+}));
+vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+// The CCTP claim's legs report through the action's callbacks like the mock executor's.
+vi.mock('./useCctpClaimLegs', () => {
+  let getCallbacks: () => TxCallbacks = () => mocks.session;
+  const legs = {
+    calls: [],
+    isBatch: false,
+    ready: true,
+    error: null,
+    execute: () => mocks.legs.push({ names: ['receiveMessage'], getCallbacks }),
+    reset: () => undefined
+  };
+  return {
+    CCTP_CLAIM_FUNCTION: 'receiveMessage',
+    useCctpClaimLegs: (params: { getCallbacks: () => TxCallbacks }) => {
+      getCallbacks = params.getCallbacks;
+      return legs;
+    }
+  };
+});
+vi.mock('./useCctpConvertLegs', () => ({
+  useCctpConvertLegs: () => ({
+    calls: [],
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: () => undefined,
+    reset: () => undefined
+  })
 }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({

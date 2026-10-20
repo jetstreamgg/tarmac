@@ -120,8 +120,19 @@ export const recoveryActions = (
 
 export const isRecoveryAction = (
   action: PendingBridgeNextAction
-): action is Exclude<PendingBridgeNextAction, PendingBridgeStepAction> =>
+): action is 'redeem' | 'replay' | 'keepalive' =>
   action === 'redeem' || action === 'replay' || action === 'keepalive';
+
+export const isFollowUpAction = (action: PendingBridgeNextAction): action is 'convert' =>
+  action === 'convert';
+
+/** Actions offered once a bridge settled; each runs at most once and never changes the bridge's status. */
+export const followUpActions = (
+  kind: BridgeRouteKind,
+  from: BridgeNetworkId,
+  to: BridgeNetworkId
+): PendingBridgeNextAction[] =>
+  kind === 'cctp' && from !== 'ethereum' && to === 'ethereum' ? ['convert'] : [];
 
 const routeSteps = (kind: BridgeRouteKind, from: BridgeNetworkId, to: BridgeNetworkId): BridgeStep[] => [
   ...sourceSteps(from),
@@ -144,6 +155,10 @@ const route = (
   requiresClaim: steps.some(step => step.network !== steps[0].network),
   ...(fallbackReason && { fallbackReason })
 });
+
+/** The CCTP route from an L2 to Ethereum. */
+export const cctpWithdrawalRoute = (from: BridgeNetworkId): BridgeRoute =>
+  route('cctp', routeSteps('cctp', from, 'ethereum'), CCTP_ETA_MINUTES, 0);
 
 /** The open native deposit route from Ethereum to `to`, as the resolver builds it. */
 export const nativeDepositRoute = (to: NativeNetworkId): BridgeRoute =>
@@ -196,9 +211,7 @@ export function resolveBridgeRoute({
   // No fallback before CCTP is known: the native withdrawal takes days.
   if (isUnread(cctp)) return blocked(unreadReason(cctp));
   const cctpFailure = gateFailure(amount, cctp);
-  if (!cctpFailure) {
-    return ok(route('cctp', routeSteps('cctp', from, to), CCTP_ETA_MINUTES, 0));
-  }
+  if (!cctpFailure) return ok(cctpWithdrawalRoute(from));
   const withdrawalMinutes = nativeEtaMinutes(WITHDRAWAL_ETA_MINUTES, from);
   if (withdrawalMinutes === undefined) return blocked(cctpFailure);
   if (isUnread(native)) return blocked(unreadReason(native));

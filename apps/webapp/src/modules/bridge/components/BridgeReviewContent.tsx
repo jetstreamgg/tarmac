@@ -1,4 +1,6 @@
+import { useId } from 'react';
 import { t } from '@lingui/core/macro';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
@@ -53,6 +55,10 @@ type BridgeReviewContentProps = {
   bridgeFee?: string;
   /** A Safe's unused Arbitrum fee is refunded to its L2 alias. */
   aliasedRefund?: boolean;
+  /** A CCTP claim minting to another address: only its wallet can claim, once told. */
+  recipientWarning?: boolean;
+  /** A contract wallet's CCTP claim to itself, which it confirms it can send on Ethereum. */
+  contractWallet?: { accepted: boolean; onAcceptedChange: (accepted: boolean) => void };
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
@@ -63,9 +69,12 @@ export function BridgeReviewContent({
   route,
   networkFee,
   bridgeFee,
-  aliasedRefund
+  aliasedRefund,
+  recipientWarning,
+  contractWallet
 }: BridgeReviewContentProps) {
   const rows = buildBridgeModalRows({ route, networkFee, bridgeFee });
+  const contractCheckboxId = useId();
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
       <BridgeTransferHero amount={amount} from={from} to={to} />
@@ -78,6 +87,32 @@ export function BridgeReviewContent({
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-aliased-refund">
             {t`Unused ETH from the bridge fee is refunded to your Safe's aliased address on Arbitrum, not to your Safe.`}
           </p>
+        )}
+        {recipientWarning && (
+          <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-recipient-warning">
+            {t`The recipient won't see this transfer automatically. Share the claim link or the transaction hash with them once it's sent. They need to claim on Ethereum from a wallet that controls the recipient address, so an exchange deposit address won't work.`}
+          </p>
+        )}
+        {contractWallet && (
+          <div className="flex flex-col gap-3" data-testid="bridge-modal-contract-wallet">
+            <p className="text-fgSecondary text-xs leading-[18px]">
+              {t`Your wallet is a smart contract wallet. The USDC is minted to the same address on Ethereum and has to be claimed there from that wallet. Continue only if you control this address on Ethereum.`}
+            </p>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id={contractCheckboxId}
+                checked={contractWallet.accepted}
+                onCheckedChange={checked => contractWallet.onAcceptedChange(checked === true)}
+                className="mt-0.5"
+              />
+              <label
+                htmlFor={contractCheckboxId}
+                className="text-fgSecondary cursor-pointer text-xs leading-[18px]"
+              >
+                {t`I control this address on Ethereum and can claim from it there.`}
+              </label>
+            </div>
+          </div>
         )}
       </div>
     </div>
