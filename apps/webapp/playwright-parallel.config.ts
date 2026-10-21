@@ -88,7 +88,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 }
       },
-      testMatch: ['**/bridge-native*.spec.ts']
+      testMatch: ['**/bridge-native*.spec.ts', '**/bridge-cctp*.spec.ts']
     }
     // {
     //   name: 'chromium-alternate',
