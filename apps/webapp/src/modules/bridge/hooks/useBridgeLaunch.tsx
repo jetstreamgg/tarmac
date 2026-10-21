@@ -428,6 +428,11 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const networkFeeText = networkFee?.formatted ?? NO_VALUE;
   // Arbitrum refunds a contract's unused fee to its L2 alias, which a Safe reaches only through Ethereum.
   const aliasedRefund = isSafe && depositTo === 'arbitrum' && !sendsToOther(recipient, account);
+  const addresses = useMemo(
+    () =>
+      account && recipient && sendsToOther(recipient, account) ? { from: account, to: recipient } : undefined,
+    [account, recipient]
+  );
   const transactionContent = useMemo(
     () =>
       route && (
@@ -438,12 +443,24 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           route={route}
           networkFee={networkFeeText}
           bridgeFee={bridgeFee}
+          addresses={addresses}
           aliasedRefund={aliasedRefund}
           recipientWarning={claimedByOther}
           contractWallet={contractWallet}
         />
       ),
-    [amount, from, to, route, networkFeeText, bridgeFee, aliasedRefund, claimedByOther, contractWallet]
+    [
+      amount,
+      from,
+      to,
+      route,
+      networkFeeText,
+      bridgeFee,
+      addresses,
+      aliasedRefund,
+      claimedByOther,
+      contractWallet
+    ]
   );
   const transactionScreenContent = useMemo(
     () => <BridgeTransferHero amount={amount} from={from} to={to} testId="bridge-modal-screen-summary" />,

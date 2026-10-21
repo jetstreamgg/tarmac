@@ -76,3 +76,21 @@ describe('BridgeReviewContent notes for a CCTP claim', () => {
     expect(onAcceptedChange).toHaveBeenLastCalledWith(false);
   });
 });
+
+describe('BridgeReviewContent sender and recipient', () => {
+  afterEach(cleanup);
+
+  const SENDER = '0xA3F0000000000000000000000000000000009d2a';
+  const RECIPIENT = '0x71C00000000000000000000000000000000008b5';
+
+  it('shows no addresses for a bridge to the same wallet', () => {
+    review();
+    expect(screen.queryByText(/0x/)).toBeNull();
+  });
+
+  it('shows the sender under the source amount and the recipient under the destination amount', () => {
+    review({ addresses: { from: SENDER, to: RECIPIENT } });
+    expect(screen.getByText('0xA3F...d2a')).toBeTruthy();
+    expect(screen.getByText('0x71C...8b5')).toBeTruthy();
+  });
+});

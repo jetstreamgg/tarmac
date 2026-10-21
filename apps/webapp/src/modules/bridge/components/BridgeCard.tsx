@@ -143,7 +143,8 @@ export function BridgeCard({ form }: BridgeCardProps) {
                 form.recipient ? 'h-7 text-xs leading-[14px]' : 'size-7 justify-center p-0'
               )}
             >
-              {form.recipient ? formatAddress(form.recipient, 5, 3) : <Wallet className="size-3" />}
+              <Wallet className="size-3" />
+              {form.recipient && formatAddress(form.recipient, 5, 3)}
             </button>
             <TokenBadge symbol="USDS" />
           </span>

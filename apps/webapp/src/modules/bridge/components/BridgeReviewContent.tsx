@@ -6,7 +6,7 @@ import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
-import { formatBigInt } from '@/utils';
+import { formatAddress, formatBigInt } from '@/utils';
 import { buildBridgeModalRows, formatEtaWords } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 
@@ -21,11 +21,13 @@ type BridgeTransferHeroProps = {
   amount: bigint;
   from: BridgeNetworkId;
   to: BridgeNetworkId;
+  /** Sender and recipient, shown under each amount when they differ (Figma 3957:56201). */
+  addresses?: { from: string; to: string };
   testId?: string;
 };
 
 /** USDS from → to hero with each side's network badge (Figma 3574:64110). */
-export function BridgeTransferHero({ amount, from, to, testId }: BridgeTransferHeroProps) {
+export function BridgeTransferHero({ amount, from, to, addresses, testId }: BridgeTransferHeroProps) {
   const formatted = formatBigInt(amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <TokenTransferHero
@@ -33,12 +35,14 @@ export function BridgeTransferHero({ amount, from, to, testId }: BridgeTransferH
         symbol: 'USDS',
         amount: formatted,
         badge: <BridgeNetworkBadge network={from} />,
+        caption: addresses && formatAddress(addresses.from, 5, 3),
         testId: 'bridge-modal-from-amount'
       }}
       to={{
         symbol: 'USDS',
         amount: formatted,
         badge: <BridgeNetworkBadge network={to} />,
+        caption: addresses && formatAddress(addresses.to, 5, 3),
         testId: 'bridge-modal-to-amount'
       }}
       testId={testId}
@@ -53,6 +57,8 @@ type BridgeReviewContentProps = {
   route: BridgeRoute;
   networkFee: string;
   bridgeFee?: string;
+  /** Sender and recipient, when the bridge pays another address. */
+  addresses?: { from: string; to: string };
   /** A Safe's unused Arbitrum fee is refunded to its L2 alias. */
   aliasedRefund?: boolean;
   /** A CCTP claim minting to another address: only its wallet can claim, once told. */
@@ -69,6 +75,7 @@ export function BridgeReviewContent({
   route,
   networkFee,
   bridgeFee,
+  addresses,
   aliasedRefund,
   recipientWarning,
   contractWallet
@@ -77,7 +84,7 @@ export function BridgeReviewContent({
   const contractCheckboxId = useId();
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
-      <BridgeTransferHero amount={amount} from={from} to={to} />
+      <BridgeTransferHero amount={amount} from={from} to={to} addresses={addresses} />
       <div className="flex flex-col gap-6">
         <ModalSummaryGrid rows={toGridCells(rows, 'bridge-modal-row')} dividerClassName="h-6" />
         <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-footnote">
