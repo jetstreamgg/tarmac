@@ -134,7 +134,14 @@ export function RewardsModalForm({
     networkFee: feeCell.fee?.formatted ?? NO_VALUE,
     positionLoading: isConnected && !positionKnown
   };
-  const rows = buildRewardsEntryRows(flow, { ...entryInput, rewardsIn: rewardTokenSymbol });
+  // Built here rather than in the JSX: the React Compiler can't tell `toGridCells`
+  // leaves its inputs alone, so a call after the review memo below makes it skip
+  // the component.
+  const entryCells = toGridCells(
+    buildRewardsEntryRows(flow, { ...entryInput, rewardsIn: rewardTokenSymbol }),
+    'rewards-modal-row',
+    feeCell
+  );
 
   // Review breakdown: the amount hero the wallet screen also draws, over the
   // review grid. The Product cell's iconbox carries the reward token (the
@@ -256,7 +263,7 @@ export function RewardsModalForm({
         maxTestId="rewards-modal-amount-max"
       />
 
-      <ModalSummaryGrid rows={toGridCells(rows, 'rewards-modal-row', feeCell)} dividerClassName="h-8" />
+      <ModalSummaryGrid rows={entryCells} dividerClassName="h-8" />
     </div>
   );
 

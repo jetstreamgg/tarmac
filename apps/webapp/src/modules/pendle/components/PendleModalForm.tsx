@@ -430,41 +430,48 @@ export function PendleModalForm({
       iconSize={12}
     />
   );
-  const entryRows = isSupply
-    ? buildPendleSupplyEntryRows({
-        rate,
-        claimDate,
-        displaySymbol,
-        claimAtMaturity,
-        claimInfo,
-        estEarnings,
-        daysToMaturity,
-        network: networkName,
-        networkChainId: engineChainId,
-        networkFee: feeCell.fee?.formatted ?? NO_VALUE
-      })
-    : buildPendleWithdrawEntryRows({
-        tokenSelector: (
-          <TokenSelectorPill
-            tokens={tokenOptions}
-            selected={selectedToken}
-            onSelect={setSelectedToken}
-            testId="pendle-modal-token-select"
-          />
-        ),
-        receiveAmount,
-        receiveSymbol: selectedToken.symbol,
-        receiveInfo,
-        lost,
-        lostTrend,
-        displaySymbol,
-        lostInfo: lostTooltip ? (
-          <PopoverInfo title={lostTooltip.title} description={lostTooltip.tooltip} iconSize={12} />
-        ) : undefined,
-        network: networkName,
-        networkChainId: engineChainId,
-        networkFee: feeCell.fee?.formatted ?? NO_VALUE
-      });
+  // Built here rather than in the JSX: the React Compiler can't tell `toGridCells`
+  // leaves its inputs alone, so a call after the review memo below makes it skip
+  // the component.
+  const entryCells = toGridCells(
+    isSupply
+      ? buildPendleSupplyEntryRows({
+          rate,
+          claimDate,
+          displaySymbol,
+          claimAtMaturity,
+          claimInfo,
+          estEarnings,
+          daysToMaturity,
+          network: networkName,
+          networkChainId: engineChainId,
+          networkFee: feeCell.fee?.formatted ?? NO_VALUE
+        })
+      : buildPendleWithdrawEntryRows({
+          tokenSelector: (
+            <TokenSelectorPill
+              tokens={tokenOptions}
+              selected={selectedToken}
+              onSelect={setSelectedToken}
+              testId="pendle-modal-token-select"
+            />
+          ),
+          receiveAmount,
+          receiveSymbol: selectedToken.symbol,
+          receiveInfo,
+          lost,
+          lostTrend,
+          displaySymbol,
+          lostInfo: lostTooltip ? (
+            <PopoverInfo title={lostTooltip.title} description={lostTooltip.tooltip} iconSize={12} />
+          ) : undefined,
+          network: networkName,
+          networkChainId: engineChainId,
+          networkFee: feeCell.fee?.formatted ?? NO_VALUE
+        }),
+    'pendle-modal-row',
+    feeCell
+  );
 
   const setMaxAmount = () => setValue(formatUnits(available, inputDecimals));
   const setPercentAmount = (pct: PercentPreset) => {
@@ -649,7 +656,7 @@ export function PendleModalForm({
         maxTestId="pendle-modal-max"
       />
 
-      <ModalSummaryGrid rows={toGridCells(entryRows, 'pendle-modal-row', feeCell)} dividerClassName="h-8" />
+      <ModalSummaryGrid rows={entryCells} dividerClassName="h-8" />
     </div>
   );
 

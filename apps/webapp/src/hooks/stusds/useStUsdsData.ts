@@ -172,20 +172,18 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     return userStUsdsBalance;
   }, [userConvertedAssets, userStUsdsBalance, totalAssets, totalSupply]);
 
+  const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
+  const stakingDuty = stakingEngineRaw?.duty?.value || 0n;
+
   const availableLiquidity = useMemo(() => {
-    const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
     const pendingLiquidations = clipperDue || 0n;
     const assets = totalAssets || 0n;
     const totalDebt = stakingEngineDebt + pendingLiquidations;
     return assets > totalDebt ? assets - totalDebt : 0n;
-  }, [totalAssets, stakingEngineData?.totalDaiDebt, clipperDue]);
+  }, [totalAssets, stakingEngineDebt, clipperDue]);
 
-  const liquidityBuffer = useMemo(() => {
-    if (!totalAssets || !str) return 0n;
-    const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
-    const stakingDuty = stakingEngineRaw?.duty?.value || 0n;
-    return calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
-  }, [totalAssets, str, stakingEngineData?.totalDaiDebt, stakingEngineRaw?.duty]);
+  const liquidityBuffer =
+    totalAssets && str ? calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty) : 0n;
 
   const userMaxWithdrawBuffered = useMemo(() => {
     if (!userMaxWithdraw || !availableLiquidity) return 0n;

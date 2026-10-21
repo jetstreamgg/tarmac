@@ -1,3 +1,4 @@
+import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RiskLevel } from '@/hooks';
 import { useStakeRowVaultLookup } from './useStakeRowVault';
@@ -53,22 +54,24 @@ describe('useStakeRowVaultLookup', () => {
 
   it('rates an urn whose accrued debt crossed the capped price as Liquidation, like the details modal', () => {
     h.drip = { data: (RAY * 1001n) / 1000n, isLoading: false };
-    expect(useStakeRowVaultLookup().vaultOf(0)?.riskLevel).toBe(RiskLevel.LIQUIDATION);
+    expect(renderHook(useStakeRowVaultLookup).result.current.vaultOf(0)?.riskLevel).toBe(
+      RiskLevel.LIQUIDATION
+    );
   });
 
   it('holds the row until the drip simulation lands instead of painting the stored-rate risk', () => {
     h.drip = { data: undefined, isLoading: true };
-    const lookup = useStakeRowVaultLookup();
+    const lookup = renderHook(useStakeRowVaultLookup).result.current;
     expect(lookup.isLoading).toBe(true);
     expect(lookup.vaultOf(0)).toBeUndefined();
   });
 
   it('falls back to the stored rate when the drip simulation fails', () => {
-    expect(useStakeRowVaultLookup().vaultOf(0)?.riskLevel).toBe(RiskLevel.MEDIUM);
+    expect(renderHook(useStakeRowVaultLookup).result.current.vaultOf(0)?.riskLevel).toBe(RiskLevel.MEDIUM);
   });
 
   it('never uses a cached drip rate below the stored one', () => {
     h.drip = { data: RAY - 1n, isLoading: false };
-    expect(useStakeRowVaultLookup().vaultOf(0)?.riskLevel).toBe(RiskLevel.MEDIUM);
+    expect(renderHook(useStakeRowVaultLookup).result.current.vaultOf(0)?.riskLevel).toBe(RiskLevel.MEDIUM);
   });
 });

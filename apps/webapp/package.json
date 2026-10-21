@@ -91,9 +91,11 @@
     "wagmi": "catalog:"
   },
   "devDependencies": {
+    "@babel/core": "catalog:",
     "@lingui/core": "catalog:",
     "@lingui/vite-plugin": "catalog:",
     "@playwright/test": "catalog:",
+    "@rolldown/plugin-babel": "catalog:",
     "@sentry/vite-plugin": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/router-plugin": "catalog:",
@@ -102,6 +104,7 @@
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@wagmi/cli": "catalog:",
+    "babel-plugin-react-compiler": "catalog:",
     "happy-dom": "catalog:",
     "tailwind-merge": "catalog:",
     "tailwindcss": "catalog:",

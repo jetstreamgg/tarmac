@@ -1,3 +1,4 @@
+import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { accruedRate, useStakeUrnVaults } from './useStakeUrnVaults';
 
@@ -6,11 +7,6 @@ const WAD = 10n ** 18n;
 
 const h = vi.hoisted(() => ({
   drip: { data: undefined as bigint | undefined, isLoading: false }
-}));
-
-vi.mock('react', async importOriginal => ({
-  ...(await importOriginal<typeof import('react')>()),
-  useMemo: (fn: () => unknown) => fn()
 }));
 
 vi.mock('wagmi', () => ({
@@ -51,18 +47,18 @@ describe('useStakeUrnVaults', () => {
 
   it('shows the debt with the interest accrued since the last drip, like the details modal', () => {
     h.drip = { data: (RAY * 1001n) / 1000n, isLoading: false };
-    expect(useStakeUrnVaults().data?.[0].usdsDebt).toBe(30_030n * WAD);
+    expect(renderHook(useStakeUrnVaults).result.current.data?.[0].usdsDebt).toBe(30_030n * WAD);
   });
 
   it('holds the rows until the drip simulation lands instead of painting the stored-rate debt', () => {
     h.drip = { data: undefined, isLoading: true };
-    const result = useStakeUrnVaults();
+    const result = renderHook(useStakeUrnVaults).result.current;
     expect(result.isLoading).toBe(true);
     expect(result.data).toBeUndefined();
   });
 
   it('falls back to the stored rate when the drip simulation fails', () => {
-    expect(useStakeUrnVaults().data?.[0].usdsDebt).toBe(30_000n * WAD);
+    expect(renderHook(useStakeUrnVaults).result.current.data?.[0].usdsDebt).toBe(30_000n * WAD);
   });
 });
 

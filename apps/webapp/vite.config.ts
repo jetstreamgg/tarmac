@@ -3,7 +3,8 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 const { version: APP_VERSION } = JSON.parse(readFileSync('./package.json', 'utf-8'));
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import { configDefaults } from 'vitest/config';
 import { lingui } from '@lingui/vite-plugin';
@@ -218,6 +219,10 @@ export default ({ mode }: { mode: modeEnum }) => {
       tailwindcss(),
       preloadRouteChunks(),
       lingui({ macroTransform: true }),
+      // React Compiler. Both this and Lingui's macro transform are `pre`
+      // plugins, so array order decides: the compiler must see the expanded
+      // macros, not the macro calls.
+      babel({ presets: [reactCompilerPreset()] }),
       sentryVitePlugin({
         applicationKey: 'sky-webapp',
         org: process.env.SENTRY_ORG,

@@ -159,18 +159,25 @@ export function VaultModalForm({
           : undefined
     : undefined;
 
-  const rows = buildVaultEntryRows({
-    rate,
-    boostedRate,
-    network: networkName,
-    assetSymbol: assetToken.symbol,
-    supplyBefore: formatAsset(position),
-    supplyAfter: formatAsset(positionAfter),
-    earningsBefore: projectEarnings(position),
-    earningsAfter: projectEarnings(positionAfter),
-    hasAmount: !isZero,
-    networkFee: feeCell.fee?.formatted ?? NO_VALUE
-  });
+  // Built here rather than in the JSX: the React Compiler can't tell `toGridCells`
+  // leaves its inputs alone, so a call after the review memo below makes it skip
+  // the component.
+  const entryCells = toGridCells(
+    buildVaultEntryRows({
+      rate,
+      boostedRate,
+      network: networkName,
+      assetSymbol: assetToken.symbol,
+      supplyBefore: formatAsset(position),
+      supplyAfter: formatAsset(positionAfter),
+      earningsBefore: projectEarnings(position),
+      earningsAfter: projectEarnings(positionAfter),
+      hasAmount: !isZero,
+      networkFee: feeCell.fee?.formatted ?? NO_VALUE
+    }),
+    'vault-modal-row',
+    feeCell
+  );
 
   // Review breakdown (Figma 859:38553 / 859:38234): the amount hero the wallet
   // screen also draws, over the review grid. Scalar deps keep the memo stable
@@ -315,7 +322,7 @@ export function VaultModalForm({
         )}
       </div>
 
-      <ModalSummaryGrid rows={toGridCells(rows, 'vault-modal-row', feeCell)} dividerClassName="h-8" />
+      <ModalSummaryGrid rows={entryCells} dividerClassName="h-8" />
     </div>
   );
 

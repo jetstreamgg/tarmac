@@ -1072,6 +1072,9 @@ function RerenderHost({
   build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig;
   options?: ProviderOptions;
 }) {
+  // Compiled, this host would hand back its memoized provider element and the
+  // bump would re-render nothing below it.
+  'use no memo';
   const [, bump] = useState(0);
   // Assigned in an effect (not during render) so the module-level handle is a
   // side effect that runs after mount — by the time the test calls it, it's set.

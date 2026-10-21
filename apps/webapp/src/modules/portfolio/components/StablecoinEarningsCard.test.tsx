@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
+import { act, render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import type { SuppliedView } from '../helpers/suppliedView';
@@ -16,13 +16,35 @@ vi.mock('@/hooks', async importOriginal => {
   return { ...actual, useIsTouchDevice: () => touch.isTouch };
 });
 
-// Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).
-const breakpoint = vi.hoisted(() => ({ isMobile: false }));
+// Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop). A store,
+// like the real hook's, so a flip re-renders every reader on its own.
+const breakpoint = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  let isMobile = false;
+  return {
+    get isMobile() {
+      return isMobile;
+    },
+    set isMobile(next: boolean) {
+      isMobile = next;
+      listeners.forEach(listener => listener());
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    }
+  };
+});
 vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
+  const { useSyncExternalStore } = await import('react');
   return {
     ...actual,
-    useBreakpointIndex: () => ({ bpi: breakpoint.isMobile ? actual.BP.sm : actual.BP.desktop })
+    useBreakpointIndex: () => ({
+      bpi: useSyncExternalStore(breakpoint.subscribe, () => breakpoint.isMobile)
+        ? actual.BP.sm
+        : actual.BP.desktop
+    })
   };
 });
 
@@ -143,9 +165,9 @@ const renderCard = (over: Partial<Parameters<typeof StablecoinEarningsCard>[0]> 
 const donutBox = () => screen.getByTestId('portfolio-donut').style.width;
 
 afterEach(() => {
+  cleanup();
   breakpoint.isMobile = false;
   touch.isTouch = false;
-  cleanup();
 });
 
 describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
@@ -185,25 +207,12 @@ describe('StablecoinEarningsCard responsive behavior (M6.1)', () => {
 
   it('drops the badge cluster to 24 below md and back to 28 from md up (486:20137)', () => {
     breakpoint.isMobile = true;
-    const { rerender } = renderCard();
+    renderCard();
     expect(screen.getByTestId('icon-stack').getAttribute('data-size')).toBe('24');
 
-    breakpoint.isMobile = false;
-    rerender(
-      <I18nProvider i18n={i18n}>
-        <StablecoinEarningsCard
-          suppliedView={SUPPLIED}
-          suppliedLoading={false}
-          idleView={IDLE}
-          idleLoading={false}
-          savingsRate={0.0375}
-          earnings={EARNINGS}
-          products={PRODUCTS}
-          tab="supplied"
-          onTabChange={() => {}}
-        />
-      </I18nProvider>
-    );
+    act(() => {
+      breakpoint.isMobile = false;
+    });
     expect(screen.getByTestId('icon-stack').getAttribute('data-size')).toBe('28');
   });
 

@@ -46,11 +46,7 @@ export default [
       // `warn` in the recommended preset, raised to `error`: the warn-demotion
       // hid real bugs (a stale close snapshot, dates stuck in the old locale,
       // an L2 savings balance stuck at 0).
-      'react-hooks/exhaustive-deps': 'error',
-      // The React Compiler is not in the build, so a memo
-      // the compiler could not preserve changes nothing at runtime. Turn this
-      // back on when the compiler lands.
-      'react-hooks/preserve-manual-memoization': 'off'
+      'react-hooks/exhaustive-deps': 'error'
     }
   },
   {

@@ -84,12 +84,22 @@ function ModalStepLabelCopy({ children, align }: { children: ReactNode; align: '
   // safe to replay. The handover happens in a layout effect, so the width is on
   // the element before the browser paints the frame it left flow on.
   const [exitWidth, setExitWidth] = useState<number>();
-  // Re-measured on every render it is present for, not just on mount: the same
+  // Observed for as long as it is present, not just measured on mount: the same
   // copy can be re-worded in place (a live `updateModalContent` retitle, a CTA
-  // label swapping to "Connect wallet") or reflow when the webfont lands.
+  // label swapping to "Connect wallet") or reflow when the webfont lands, and a
+  // memoized parent re-renders this copy for neither.
   useLayoutEffect(() => {
-    if (isPresent && nodeRef.current) flowWidth.current = nodeRef.current.getBoundingClientRect().width;
-  });
+    const node = nodeRef.current;
+    if (!isPresent || !node) return;
+    const measure = () => {
+      flowWidth.current = node.getBoundingClientRect().width;
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isPresent]);
   // Handed over once, on the commit that takes this copy out of flow.
   useLayoutEffect(() => {
     if (!isPresent && exitWidth === undefined && flowWidth.current !== undefined) {

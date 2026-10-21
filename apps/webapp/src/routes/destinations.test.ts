@@ -9,6 +9,11 @@ import { QueryClient } from '@tanstack/react-query';
 import { GEO_CONFIG_QUERY_KEY } from '@/modules/geo-config/query';
 import type { GeoConfig, ModuleId } from '@/modules/geo-config/types';
 
+// A spec that boots a route first transforms that route's lazily split chunks,
+// and the React Compiler's Babel pass makes that the slow part: the first boot
+// takes ~3 s locally, too close to the 5 s default on a loaded CI runner.
+vi.setConfig({ testTimeout: 20_000 });
+
 const MODULE_IDS: ModuleId[] = [
   'savings',
   'rewards',

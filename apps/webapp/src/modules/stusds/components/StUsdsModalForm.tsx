@@ -144,16 +144,23 @@ export function StUsdsModalForm({
   // insufficient gate blocks submission anyway).
   const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
 
-  const rows = buildStUsdsEntryRows({
-    rate: rateDisplay,
-    network: networkName,
-    supplyBefore: formatUsds(position),
-    supplyAfter: formatUsds(positionAfter),
-    earningsBefore: projectEarnings(position),
-    earningsAfter: projectEarnings(positionAfter),
-    hasAmount: !isZero,
-    networkFee: feeCell.fee?.formatted ?? NO_VALUE
-  });
+  // Built here rather than in the JSX: the React Compiler can't tell `toGridCells`
+  // leaves its inputs alone, so a call after the review memo below makes it skip
+  // the component.
+  const entryCells = toGridCells(
+    buildStUsdsEntryRows({
+      rate: rateDisplay,
+      network: networkName,
+      supplyBefore: formatUsds(position),
+      supplyAfter: formatUsds(positionAfter),
+      earningsBefore: projectEarnings(position),
+      earningsAfter: projectEarnings(positionAfter),
+      hasAmount: !isZero,
+      networkFee: feeCell.fee?.formatted ?? NO_VALUE
+    }),
+    'stusds-modal-row',
+    feeCell
+  );
 
   // Review breakdown: the from→to hero the wallet screen also draws, over the
   // review grid. Supply's receive cell is the quoted stUSDS out; withdraw
@@ -314,7 +321,7 @@ export function StUsdsModalForm({
       <div className="flex flex-col gap-4">
         <StUsdsProviderNotice providerSelection={providerSelection} flow={flow} />
 
-        <ModalSummaryGrid rows={toGridCells(rows, 'stusds-modal-row', feeCell)} dividerClassName="h-8" />
+        <ModalSummaryGrid rows={entryCells} dividerClassName="h-8" />
 
         {needsImpactAcknowledgement && (
           <div className="flex items-start gap-2 pt-1" data-testid="stusds-modal-impact-acknowledgement">
