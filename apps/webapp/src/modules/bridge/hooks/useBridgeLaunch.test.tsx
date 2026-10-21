@@ -23,6 +23,8 @@ type SafeReply = number | 'hang';
 
 const mocks = vi.hoisted(() => ({
   isConnected: true,
+  // The CCTP gate an L2 source reads; undefined blocks it.
+  cctp: undefined as unknown,
   balance: undefined as bigint | undefined,
   balanceLoading: false,
   // The Ethereum ETH balance; undefined reads `balance`.
@@ -127,6 +129,7 @@ vi.mock('./useCctpBurnLegs', () => {
   };
   return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
 });
+vi.mock('./useCctpGate', () => ({ useCctpGate: () => mocks.cctp }));
 // Every address is an EOA; the code check has its own tests in useBridgeForm.
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('./useNativeDepositLegs', () => ({
@@ -231,7 +234,8 @@ describe('useBridgeLaunch Confirm gate', () => {
       updates: [],
       appChainId: 1,
       networkFee: [],
-      legs: []
+      legs: [],
+      cctp: undefined
     });
     Object.assign(mocks.deposit, {
       ready: true,
@@ -759,6 +763,8 @@ describe('useBridgeLaunch Confirm gate', () => {
   });
 
   it('withdrawals are not live yet and send nothing', async () => {
+    // A closed CCTP is the only way the resolver reaches the native withdrawal.
+    mocks.cctp = { isOpen: false };
     const view = renderBridge();
     act(() => view.result.current.form.onInput('1'));
     await moveWallet(view, 8453);

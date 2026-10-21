@@ -98,6 +98,8 @@ vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
     return mocks.batchSupported && also;
   }
 }));
+// The CCTP form gate has its own suite (useBridgeForm.cctp.test.tsx).
+vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({ canSwitchChain: true, handleSwitchChain: vi.fn() })
 }));

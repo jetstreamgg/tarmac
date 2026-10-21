@@ -267,6 +267,8 @@ vi.mock('@/hooks', async io => ({
 }));
 vi.mock('@/hooks/ui/useAppChainId', () => ({ useAppChainId: () => 1 }));
 vi.mock('@/hooks/ui/useDebounce', () => ({ useDebounce: <T,>(value: T) => value }));
+// The CCTP form gate has its own suite (useBridgeForm.cctp.test.tsx).
+vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
     handleSwitchChain: vi.fn(),

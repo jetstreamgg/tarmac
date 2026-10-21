@@ -50,6 +50,8 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 vi.mock('./useSafeConfig', () => ({ useSafeConfig: () => ({ lookup: undefined, isChecking: false }) }));
+// The CCTP gate has its own suite (useBridgeForm.cctp.test.tsx); unread here, an L2 source blocks.
+vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));
 vi.mock('./useAddressCode', () => ({
   useAddressCode: ({ address, chainId }: { address?: string; chainId?: number }) => {
     if (!address || chainId === undefined) return { code: undefined, isChecking: false };

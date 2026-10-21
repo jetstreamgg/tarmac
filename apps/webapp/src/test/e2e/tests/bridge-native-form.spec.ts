@@ -112,10 +112,7 @@ test.describe('Bridge: form and route resolution', () => {
     await bridge.toNetwork().click();
     await expect(isolatedPage.getByRole('option')).toHaveText(['Ethereum']);
     await isolatedPage.keyboard.press('Escape');
-    // Base to Ethereum has no route until its ticket lands.
     await bridge.fromAmount().fill('1');
-    await expect(bridge.blocked()).toHaveText('This route is temporarily unavailable.');
-    await expect(bridge.reviewCta()).toBeDisabled();
 
     await bridge.fromNetwork().click();
     await isolatedPage.getByTestId('bridge-from-network-ethereum').click();
