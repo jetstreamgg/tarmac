@@ -139,15 +139,19 @@ export function useCctpBurnLegs({
     [network, amountIn, destination, resume, from, swap]
   );
 
-  // The swap the latest run sent, which its burn clears; the recipient it was for.
+  // The swap the latest run sent, which its burn clears; the recipient and continued swap it ran for.
   const sentSwapRef = useRef<{ hash: string; variables: TxMutateVariables } | undefined>(undefined);
-  const runRecipientRef = useRef<Address | undefined>(undefined);
+  const runRef = useRef<{ recipient: Address | undefined; resumed: string | undefined } | undefined>(
+    undefined
+  );
+  // A late callback clears the swap its run continued, not the bridge now on show.
+  const resumedSwap = () => (runRef.current ? runRef.current.resumed : resume?.swapTxHash);
   const onLegSent = (hash: string, variables: TxMutateVariables) => {
     // A Safe returns a safeTxHash, which the chain can't confirm a swap by.
     if (!scope || isSafeApp || isSafeWallet) return;
     if (variables.functionName === CCTP_SWAP_FUNCTION) {
       const usdcAmount = (variables as { args?: readonly unknown[] }).args?.[3];
-      const swapRecipient = runRecipientRef.current ?? to;
+      const swapRecipient = runRef.current?.recipient ?? to;
       if (typeof usdcAmount !== 'bigint' || !swapRecipient) return;
       // A repriced swap comes back with the same variables under the hash that mines.
       const replaced = sentSwapRef.current;
@@ -162,14 +166,15 @@ export function useCctpBurnLegs({
         at: Date.now()
       });
     } else if (variables.functionName === CCTP_BURN_FUNCTION) {
-      const swapTxHash = resume?.swapTxHash ?? sentSwapRef.current?.hash;
+      const swapTxHash = resumedSwap() ?? sentSwapRef.current?.hash;
       sentSwapRef.current = undefined;
       if (swapTxHash) cctpSwapStore.clear(scope, swapTxHash);
     }
   };
   // A bundle is one prompt, with no onLegSent: a continued swap is dropped once the wallet accepts it.
   const onBundleSent = (id: string) => {
-    if (scope && resume) cctpSwapStore.clear(scope, resume.swapTxHash);
+    const resumed = resumedSwap();
+    if (scope && resumed) cctpSwapStore.clear(scope, resumed);
     onCallsSent?.(id);
   };
   const legs = useBridgeCallLegs({
@@ -193,9 +198,9 @@ export function useCctpBurnLegs({
   });
   const { execute: executeLegs } = legs;
   const execute = useCallback(() => {
-    runRecipientRef.current = to;
+    runRef.current = { recipient: to, resumed: resume?.swapTxHash };
     executeLegs();
-  }, [to, executeLegs]);
+  }, [to, resume, executeLegs]);
 
   const { mutate: refetchUsds } = usdsAllowance;
   const { mutate: refetchUsdc } = usdcAllowance;

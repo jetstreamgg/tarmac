@@ -261,6 +261,46 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(onCallsSent).toHaveBeenCalledWith('bundle');
   });
 
+  // One resume launch hosts every Continue card: the bridge on show can change while a send is out.
+  const renderResumable = (overrides: Partial<Parameters<typeof useCctpBurnLegs>[0]>) =>
+    renderHook(
+      ({ resume }: { resume: typeof RESUME }) =>
+        useCctpBurnLegs({
+          enabled: true,
+          from: 'base',
+          chainId: BASE,
+          ethereumChainId: ETHEREUM,
+          account: BASE_BURN_TX.from,
+          recipient: BASE_BURN_MINT_RECIPIENT,
+          amount: AMOUNT,
+          getCallbacks,
+          scope: SCOPE,
+          ...overrides,
+          resume
+        }),
+      { initialProps: { resume: RESUME } }
+    );
+  const OTHER_RESUME = { ...RESUME, swapTxHash: '0x' + '12'.repeat(32) };
+
+  it('drops the continued swap it sent when its bundle is accepted after another bridge is on show', () => {
+    const { result, rerender } = renderResumable({ batch: true });
+    act(() => result.current.execute());
+    rerender({ resume: OTHER_RESUME });
+    (mocks.legs!.onCallsSent as (id: string) => void)('bundle');
+    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
+    expect(mocks.clear).not.toHaveBeenCalledWith(SCOPE, OTHER_RESUME.swapTxHash);
+  });
+
+  it('drops the continued swap it sent when its burn leg is sent after another bridge is on show', () => {
+    const { result, rerender } = renderResumable({});
+    act(() => result.current.execute());
+    const burn = calls()[1];
+    rerender({ resume: OTHER_RESUME });
+    (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(BURN_HASH, burn);
+    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
+    expect(mocks.clear).not.toHaveBeenCalledWith(SCOPE, OTHER_RESUME.swapTxHash);
+  });
+
   it('drops no swap for a bundle that is not a continued bridge', () => {
     render({ scope: SCOPE, batch: true });
     (mocks.legs!.onCallsSent as (id: string) => void)('bundle');
