@@ -16,9 +16,15 @@ export const claimSoldForUsds = (
       isAddressEqual(log.args.to, recipient as `0x${string}`)
   );
 
-/** The hash this app's claim confirmed with: the bundle, the sale of a full run, or the receive of one stopped before it. */
+/** Every hash this app's claim confirmed with: a run signed step by step can confirm its receive and its sale apart. */
+export const confirmedClaimTxHashes = (bridge: PendingBridge): string[] =>
+  bridge.actions
+    .filter(action => action.action === 'claim' && action.status === undefined)
+    .map(action => action.txHash);
+
+/** The first hash this app's claim confirmed with; see `confirmedClaimTxHashes` for all of them. */
 export const confirmedClaimTxHash = (bridge: PendingBridge): string | undefined =>
-  bridge.actions.find(action => action.action === 'claim' && action.status === undefined)?.txHash;
+  confirmedClaimTxHashes(bridge)[0];
 
 /**
  * The USDC (6 decimals) a settled CCTP claim left unsold that `account` can

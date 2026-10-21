@@ -7,7 +7,12 @@ import { createElement, type ReactNode } from 'react';
 import { encodeAbiParameters, encodeEventTopics, erc20Abi, parseUnits, zeroAddress, type Hex } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { L1_USDC, L1_USDS } from '../adapters/cctp/contracts';
-import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
+import {
+  applyProgress,
+  createPendingBridge,
+  recordAction,
+  recordActionSent
+} from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { useCctpConvertOffer } from './useCctpConvertOffer';
 
@@ -139,6 +144,27 @@ describe('useCctpConvertOffer', () => {
     expect(render().current).toBeUndefined();
     expect(mocks.receipt).not.toHaveBeenCalled();
     expect(mocks.balance.params).toMatchObject({ enabled: false });
+  });
+
+  it('offers nothing after a claim signed step by step whose sale mined after the tracker confirmed its receive', async () => {
+    // The receive mines and the tracker confirms it; the sale lands seconds later under its own hash.
+    const sent = recordActionSent(claimed(false), { action: 'claim', txHash: '0xreceive', at: NOW });
+    const received = applyProgress(
+      sent,
+      { kind: 'action-confirmed', action: 'claim', txHash: '0xreceive' },
+      NOW
+    );
+    const sold = recordAction(received, { action: 'claim', txHash: '0xsale', at: NOW + 24_000 });
+    mocks.receipt.mockImplementation(async ({ hash }: { hash: string }) => ({
+      status: 'success',
+      logs: hash === '0xsale' ? [transfer(L1_USDS, ACCOUNT)] : [transfer(L1_USDC, ACCOUNT)]
+    }));
+    // The USDC the account already held must not be offered.
+    mocks.balance.value = USDC('500');
+    const result = render(sold);
+    await waitFor(() => expect(mocks.receipt).toHaveBeenCalled());
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(result.current).toBeUndefined();
   });
 
   it('offers nothing while the balance is unknown', async () => {
