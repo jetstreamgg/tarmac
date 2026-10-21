@@ -182,6 +182,9 @@ export async function cctpResumeRefusal({
   if (!isAddressEqual(receipt.from, account) || !receipt.to || !isAddressEqual(receipt.to, psm3))
     return new Error('This swap is not a bridge of this account.');
   const latest = await client.getBlockNumber();
+  // A node behind the swap would scan nothing and let it through.
+  if (latest < receipt.blockNumber)
+    return new Error("The network isn't synced up to the swap yet. Try again in a moment.");
   const mintRecipient = addressToBytes32(recipient);
   for (let start = receipt.blockNumber; start <= latest; start += RESUME_SCAN_CHUNK_BLOCKS) {
     const end =

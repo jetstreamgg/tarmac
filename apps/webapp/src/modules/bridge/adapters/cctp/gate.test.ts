@@ -556,4 +556,10 @@ describe('cctpResumeRefusal on a provider that caps log queries at 10k blocks', 
   it('fails closed when any part of the range cannot be read', async () => {
     await expect(refusal(capped({ failAt: 150_000n }))).rejects.toThrow('upstream timeout');
   });
+
+  it('never continues on a node that is behind the swap, as nothing after it was read', async () => {
+    const client = capped({ burnAt: SWAP_BLOCK });
+    vi.mocked(client.getBlockNumber).mockResolvedValue(SWAP_BLOCK - 1n);
+    await expect(refusal(client)).resolves.toBeInstanceOf(Error);
+  });
 });
