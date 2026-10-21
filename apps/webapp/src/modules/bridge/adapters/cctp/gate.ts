@@ -150,13 +150,15 @@ export async function cctpBurnRefusal({
 
 /** L2 blocks per log query, within the 10k range many RPC providers cap eth_getLogs at. */
 export const RESUME_SCAN_CHUNK_BLOCKS = 10_000n;
+/** The most L2 blocks a continue scans: about three weeks of Base or OP, three days of Arbitrum. */
+export const RESUME_SCAN_MAX_BLOCKS = 1_000_000n;
 
 /**
  * Read right before continuing a bridge whose swap mined but whose burn was
  * never sent: why its USDC can't be burned, if anything. Only a swap of
  * `account` on PSM3 that mined successfully, with no USDC leaving the wallet
- * since, is continued, so USDC the wallet held before is never burned. A
- * failed read refuses it too.
+ * since, is continued, so USDC the wallet held before is never burned. A swap
+ * older than `RESUME_SCAN_MAX_BLOCKS` is refused, as is a failed read.
  */
 export async function cctpResumeRefusal({
   network,
@@ -181,45 +183,56 @@ export async function cctpResumeRefusal({
     return new Error('The swap of this bridge failed, so there is nothing to bridge.');
   if (!isAddressEqual(receipt.from, account) || !receipt.to || !isAddressEqual(receipt.to, psm3))
     return new Error('This swap is not a bridge of this account.');
-  const latest = await client.getBlockNumber();
+  // viem caches the head for seconds: a burn in that window would go unscanned.
+  const head = () => client.getBlockNumber({ cacheTime: 0 });
+  let latest = await head();
   // A node behind the swap would scan nothing and let it through.
   if (latest < receipt.blockNumber)
     return new Error("The network isn't synced up to the swap yet. Try again in a moment.");
+  if (latest - receipt.blockNumber >= RESUME_SCAN_MAX_BLOCKS)
+    return new Error('This swap is too old for this app to check, so it cannot be continued.');
   const mintRecipient = addressToBytes32(recipient);
-  for (let start = receipt.blockNumber; start <= latest; start += RESUME_SCAN_CHUNK_BLOCKS) {
-    const end =
-      start + RESUME_SCAN_CHUNK_BLOCKS - 1n < latest ? start + RESUME_SCAN_CHUNK_BLOCKS - 1n : latest;
-    const range = { fromBlock: start, toBlock: end } as const;
-    const [burns, outflows] = await Promise.all([
-      client.getContractEvents({
-        address: TOKEN_MESSENGER_V2,
-        abi: tokenMessengerV2Abi,
-        eventName: 'DepositForBurn',
-        args: { burnToken: usdc, depositor: account },
-        ...range
-      }),
-      client.getContractEvents({
-        address: usdc,
-        abi: erc20Abi,
-        eventName: 'Transfer',
-        args: { from: account },
-        ...range
-      })
-    ]);
-    const sent = burns.some(
-      ({ args }) =>
-        args.amount === usdcAmount &&
-        args.destinationDomain === CCTP_DOMAIN.ethereum &&
-        args.mintRecipient?.toLowerCase() === mintRecipient
-    );
-    if (sent) return new Error('This bridge was already sent.');
-    // Every burn moves USDC out too, so this also covers burns of other bridges.
-    if (outflows.length > 0)
-      return new Error(
-        "USDC left this wallet after the swap, so this app can't tell the swapped USDC from USDC held before."
+  const scan = async (from: bigint, to: bigint) => {
+    for (let start = from; start <= to; start += RESUME_SCAN_CHUNK_BLOCKS) {
+      const end = start + RESUME_SCAN_CHUNK_BLOCKS - 1n < to ? start + RESUME_SCAN_CHUNK_BLOCKS - 1n : to;
+      const range = { fromBlock: start, toBlock: end } as const;
+      const [burns, outflows] = await Promise.all([
+        client.getContractEvents({
+          address: TOKEN_MESSENGER_V2,
+          abi: tokenMessengerV2Abi,
+          eventName: 'DepositForBurn',
+          args: { burnToken: usdc, depositor: account },
+          ...range
+        }),
+        client.getContractEvents({
+          address: usdc,
+          abi: erc20Abi,
+          eventName: 'Transfer',
+          args: { from: account },
+          ...range
+        })
+      ]);
+      const sent = burns.some(
+        ({ args }) =>
+          args.amount === usdcAmount &&
+          args.destinationDomain === CCTP_DOMAIN.ethereum &&
+          args.mintRecipient?.toLowerCase() === mintRecipient
       );
-  }
-  return undefined;
+      if (sent) return new Error('This bridge was already sent.');
+      // Every burn moves USDC out too, so this also covers burns of other bridges.
+      if (outflows.length > 0)
+        return new Error(
+          "USDC left this wallet after the swap, so this app can't tell the swapped USDC from USDC held before."
+        );
+    }
+    return undefined;
+  };
+  const refusal = await scan(receipt.blockNumber, latest);
+  if (refusal) return refusal;
+  // Once more up to the head now, for what mined during the scan.
+  const scanned = latest;
+  latest = await head();
+  return latest > scanned ? scan(scanned + 1n, latest) : undefined;
 }
 
 /**

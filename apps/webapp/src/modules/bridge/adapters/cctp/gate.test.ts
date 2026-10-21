@@ -18,6 +18,7 @@ import {
   cctpConvertRefusal,
   cctpGate,
   cctpResumeRefusal,
+  RESUME_SCAN_MAX_BLOCKS,
   type CctpGateReads
 } from './gate';
 
@@ -561,5 +562,71 @@ describe('cctpResumeRefusal on a provider that caps log queries at 10k blocks', 
     const client = capped({ burnAt: SWAP_BLOCK });
     vi.mocked(client.getBlockNumber).mockResolvedValue(SWAP_BLOCK - 1n);
     await expect(refusal(client)).resolves.toBeInstanceOf(Error);
+  });
+});
+
+describe('cctpResumeRefusal against a head that moves or a record that is old', () => {
+  const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+  const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
+  const USDC_AMOUNT = 250n * 10n ** 6n;
+  const { psm3 } = cctpL2Contracts('base');
+  const SWAP_BLOCK = 100_000n;
+  const burn = {
+    args: {
+      amount: USDC_AMOUNT,
+      mintRecipient: `0x${RECIPIENT.slice(2).padStart(64, '0')}`,
+      destinationDomain: 0
+    }
+  };
+  // Like viem, a head read without cacheTime 0 may return the head of a few seconds ago.
+  const chain = ({ heads, stale, burnAt }: { heads: bigint[]; stale?: bigint; burnAt?: bigint }) => {
+    let read = 0;
+    return {
+      getTransactionReceipt: vi.fn(async () => ({
+        status: 'success',
+        from: ACCOUNT,
+        to: psm3,
+        blockNumber: SWAP_BLOCK
+      })),
+      getBlockNumber: vi.fn(async ({ cacheTime }: { cacheTime?: number } = {}) =>
+        cacheTime !== 0 && stale !== undefined ? stale : heads[Math.min(read++, heads.length - 1)]
+      ),
+      getContractEvents: vi.fn(
+        async ({ fromBlock, toBlock }: { eventName: string; fromBlock: bigint; toBlock: bigint }) =>
+          burnAt !== undefined && fromBlock <= burnAt && burnAt <= toBlock ? [burn] : []
+      )
+    } as unknown as PublicClient;
+  };
+  const refusal = (client: PublicClient) =>
+    cctpResumeRefusal({
+      network: 'base',
+      swapTxHash: ('0x' + 'ab'.repeat(32)) as Hex,
+      account: ACCOUNT,
+      usdcAmount: USDC_AMOUNT,
+      recipient: RECIPIENT,
+      client
+    });
+
+  it('sees a burn mined after a cached head', async () => {
+    const client = chain({ heads: [SWAP_BLOCK + 20n], stale: SWAP_BLOCK + 10n, burnAt: SWAP_BLOCK + 15n });
+    await expect(refusal(client)).resolves.toHaveProperty('message', expect.stringMatching(/already sent/));
+  });
+
+  it('sees a burn mined while the range was being scanned', async () => {
+    const client = chain({ heads: [SWAP_BLOCK + 20n, SWAP_BLOCK + 30n], burnAt: SWAP_BLOCK + 25n });
+    await expect(refusal(client)).resolves.toHaveProperty('message', expect.stringMatching(/already sent/));
+  });
+
+  it('refuses a swap too old to scan, with a bounded number of reads', async () => {
+    const client = chain({ heads: [SWAP_BLOCK + RESUME_SCAN_MAX_BLOCKS + 1n] });
+    await expect(refusal(client)).resolves.toHaveProperty('message', expect.stringMatching(/too old/));
+    expect(vi.mocked(client.getContractEvents).mock.calls.length).toBeLessThanOrEqual(
+      Number((2n * RESUME_SCAN_MAX_BLOCKS) / 10_000n) + 2
+    );
+  });
+
+  it('still continues a swap just within the scan limit', async () => {
+    const client = chain({ heads: [SWAP_BLOCK + RESUME_SCAN_MAX_BLOCKS - 1n] });
+    await expect(refusal(client)).resolves.toBeUndefined();
   });
 });
