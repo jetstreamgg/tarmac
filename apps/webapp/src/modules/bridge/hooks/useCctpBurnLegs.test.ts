@@ -253,6 +253,20 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
   });
 
+  it('drops the continued swap once the wallet accepts its bundle, and tells the caller', () => {
+    const onCallsSent = vi.fn();
+    render({ scope: SCOPE, resume: RESUME, batch: true, onCallsSent });
+    (mocks.legs!.onCallsSent as (id: string) => void)('bundle');
+    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
+    expect(onCallsSent).toHaveBeenCalledWith('bundle');
+  });
+
+  it('drops no swap for a bundle that is not a continued bridge', () => {
+    render({ scope: SCOPE, batch: true });
+    (mocks.legs!.onCallsSent as (id: string) => void)('bundle');
+    expect(mocks.clear).not.toHaveBeenCalled();
+  });
+
   it('keeps no swap without a scope, or from a Safe by any connector, whose hash the chain cannot confirm', () => {
     render();
     (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(SWAP_HASH, calls()[1]);

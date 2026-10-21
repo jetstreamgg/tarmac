@@ -167,6 +167,11 @@ export function useCctpBurnLegs({
       if (swapTxHash) cctpSwapStore.clear(scope, swapTxHash);
     }
   };
+  // A bundle is one prompt, with no onLegSent: a continued swap is dropped once the wallet accepts it.
+  const onBundleSent = (id: string) => {
+    if (scope && resume) cctpSwapStore.clear(scope, resume.swapTxHash);
+    onCallsSent?.(id);
+  };
   const legs = useBridgeCallLegs({
     calls,
     chainId,
@@ -176,7 +181,7 @@ export function useCctpBurnLegs({
     preflight,
     isSafeApp,
     batch,
-    onCallsSent,
+    onCallsSent: onBundleSent,
     // A cached allowance may predate an approve that mined before the switch.
     onAccountSwitch: () => {
       if (!active) return;

@@ -41,40 +41,83 @@ const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
 /**
  * Unfinished CCTP swaps in localStorage, under the pending bridges' scope
  * (`pendingScopeKey`), so the bridge can be continued after a reload or from
- * another tab. A read or write that fails leaves this session's copy.
+ * another tab. A write that fails keeps this session's change on top of what
+ * storage holds, as the pending store does.
  */
 export function createCctpSwapStore() {
   const listeners = new Set<Listener>();
   const snapshots = new Map<string, UnfinishedCctpSwap[]>();
 
-  const load = (scope: string): UnfinishedCctpSwap[] => {
+  // Swaps whose last change reached only this session's copy (a write failed), by scope.
+  const unsaved = new Map<string, Set<string>>();
+
+  /** The stored list; undefined when storage can't be read. */
+  const load = (scope: string): UnfinishedCctpSwap[] | undefined => {
+    let raw: string | null;
     try {
-      const parsed: unknown = JSON.parse(localStorage.getItem(`${KEY_PREFIX}${scope}`) ?? '[]');
+      raw = localStorage.getItem(`${KEY_PREFIX}${scope}`);
+    } catch {
+      return undefined;
+    }
+    try {
+      const parsed: unknown = JSON.parse(raw ?? '[]');
       return Array.isArray(parsed)
         ? parsed.map(parseEntry).filter((entry): entry is UnfinishedCctpSwap => entry !== null)
         : [];
     } catch {
-      return snapshots.get(scope) ?? [];
+      return [];
     }
   };
 
-  const write = (scope: string, entries: UnfinishedCctpSwap[]) => {
+  /** The stored list with this session's unsaved changes on top: recorded or dropped. */
+  const withUnsaved = (scope: string, stored: UnfinishedCctpSwap[]): UnfinishedCctpSwap[] => {
+    const hashes = unsaved.get(scope);
+    if (!hashes) return stored;
+    const own = (snapshots.get(scope) ?? []).filter(entry => hashes.has(entry.swapTxHash));
+    return [...own, ...stored.filter(entry => !hashes.has(entry.swapTxHash))];
+  };
+
+  const write = (scope: string, entries: UnfinishedCctpSwap[], changedHash: string) => {
     snapshots.set(scope, entries);
     try {
       localStorage.setItem(
         `${KEY_PREFIX}${scope}`,
         JSON.stringify(entries.map(entry => ({ ...entry, usdcAmount: entry.usdcAmount.toString() })))
       );
+      unsaved.delete(scope);
     } catch {
       // ignore storage write failures (private mode, quota); the session copy still updates
+      unsaved.set(scope, new Set(unsaved.get(scope)).add(changedHash));
     }
     listeners.forEach(listener => listener());
   };
 
   const onStorage = (event: StorageEvent) => {
     if (event.key !== null && !event.key.startsWith(KEY_PREFIX)) return;
-    snapshots.clear();
+    snapshots.forEach((_, scope) => {
+      if (!unsaved.has(scope)) {
+        snapshots.delete(scope);
+        return;
+      }
+      const stored = load(scope);
+      if (stored) snapshots.set(scope, withUnsaved(scope, stored));
+    });
     listeners.forEach(listener => listener());
+  };
+
+  const getSnapshot = (scope: string): UnfinishedCctpSwap[] => {
+    let snapshot = snapshots.get(scope);
+    if (!snapshot) {
+      snapshot = load(scope) ?? [];
+      snapshots.set(scope, snapshot);
+    }
+    return snapshot;
+  };
+
+  // Writes start from storage, not this tab's copy, so another tab's write is not lost.
+  const latest = (scope: string): UnfinishedCctpSwap[] => {
+    const stored = load(scope);
+    return stored ? withUnsaved(scope, stored) : getSnapshot(scope);
   };
 
   return {
@@ -86,14 +129,7 @@ export function createCctpSwapStore() {
         if (listeners.size === 0) window.removeEventListener('storage', onStorage);
       };
     },
-    getSnapshot(scope: string): UnfinishedCctpSwap[] {
-      let snapshot = snapshots.get(scope);
-      if (!snapshot) {
-        snapshot = load(scope);
-        snapshots.set(scope, snapshot);
-      }
-      return snapshot;
-    },
+    getSnapshot,
     /** Records a sent swap; one already recorded under its hash is kept. */
     record(scope: string, swap: UnfinishedCctpSwap) {
       const entry = {
@@ -101,18 +137,19 @@ export function createCctpSwapStore() {
         swapTxHash: swap.swapTxHash.toLowerCase(),
         recipient: swap.recipient.toLowerCase()
       };
-      const current = load(scope);
+      const current = latest(scope);
       if (current.some(existing => existing.swapTxHash === entry.swapTxHash)) return;
-      write(scope, [entry, ...current]);
+      write(scope, [entry, ...current], entry.swapTxHash);
     },
     /** Drops a swap: its burn was sent, or the user dismissed it (a reverted swap is refused on Continue). */
     clear(scope: string, swapTxHash: string) {
       const hash = swapTxHash.toLowerCase();
-      const current = load(scope);
+      const current = latest(scope);
       if (!current.some(entry => entry.swapTxHash === hash)) return;
       write(
         scope,
-        current.filter(entry => entry.swapTxHash !== hash)
+        current.filter(entry => entry.swapTxHash !== hash),
+        hash
       );
     }
   };

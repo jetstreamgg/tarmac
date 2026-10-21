@@ -28,10 +28,8 @@ export type CctpGateReads = {
   destinationPaused: readonly [minter: boolean, transmitter: boolean];
   /** The L2 USDC a single burn can carry, in USDC units; 0 when the token can't be burned. */
   burnLimit: bigint;
-  /** USDC the L2 PSM3 holds to swap the USDS for, in USDC units. */
+  /** USDC the L2 PSM3's pocket holds to swap the USDS for, in USDC units. */
   psm3Usdc: bigint;
-  /** Whether PSM3 keeps its USDC itself; a separate pocket holds it elsewhere, so `psm3Usdc` reads none. */
-  psm3HoldsUsdc: boolean;
   /** DAI the LitePSM holds to sell the minted USDC for USDS, in wei. */
   litePsmDai: bigint;
   /** The USDS wrapper's liveness (1 unless caged), its sell fee and its halted value. */
@@ -56,7 +54,7 @@ export function cctpGate(
   { swap = true }: { swap?: boolean } = {}
 ): NonNullable<Exclude<BridgeRouteFacts['cctp'], 'loading' | 'error'>> {
   const paused = [...reads.sourcePaused, ...reads.destinationPaused].some(Boolean);
-  const usdcLiquidity = reads.psm3HoldsUsdc ? reads.psm3Usdc * USDS_PER_USDC_UNIT : 0n;
+  const usdcLiquidity = reads.psm3Usdc * USDS_PER_USDC_UNIT;
   return {
     isOpen: !paused && wrapperSells(reads),
     maxAmount: reads.burnLimit * USDS_PER_USDC_UNIT,
@@ -70,16 +68,24 @@ const pausedReads = [
   { address: MESSAGE_TRANSMITTER_V2, abi: messageTransmitterV2Abi, functionName: 'paused' }
 ] as const;
 
-/** The gate's reads on the L2: both pauses, the burn cap, PSM3's USDC and its pocket. */
+/** The gate's reads on the L2: both pauses, the burn cap and PSM3's pocket. */
 export const cctpSourceGateReads = (network: CctpL2NetworkId) => {
   const { psm3, usdc } = cctpL2Contracts(network);
   return [
     ...pausedReads,
     { address: TOKEN_MINTER_V2, abi: tokenMinterV2Abi, functionName: 'burnLimitsPerMessage', args: [usdc] },
-    { address: usdc, abi: erc20Abi, functionName: 'balanceOf', args: [psm3] },
     { address: psm3, abi: psm3L2Abi, functionName: 'pocket' }
   ] as const;
 };
+
+/** The USDC PSM3 swaps out, held by its pocket (PSM3 itself unless moved), as usePsmLiquidity reads it. */
+export const cctpPocketUsdcRead = (network: CctpL2NetworkId, pocket: Address) =>
+  ({
+    address: cctpL2Contracts(network).usdc,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [pocket]
+  }) as const;
 
 /** The gate's reads on Ethereum: both pauses, the LitePSM's DAI and the wrapper's liveness and sell fee. */
 export const cctpDestinationGateReads = [
@@ -90,20 +96,19 @@ export const cctpDestinationGateReads = [
   { address: USDS_PSM_WRAPPER, abi: usdsPsmWrapperAbi, functionName: 'HALTED' }
 ] as const;
 
-export type CctpSourceResults = readonly [boolean, boolean, bigint, bigint, Address];
+export type CctpSourceResults = readonly [boolean, boolean, bigint, Address];
 export type CctpDestinationResults = readonly [boolean, boolean, bigint, bigint, bigint, bigint];
 
-/** The gate's inputs from the results of both read lists, in their order. */
+/** The gate's inputs from the results of both read lists, in their order, and the pocket's USDC. */
 export const toCctpGateReads = (
-  network: CctpL2NetworkId,
-  [sourceMinter, sourceTransmitter, burnLimit, psm3Usdc, pocket]: CctpSourceResults,
+  [sourceMinter, sourceTransmitter, burnLimit]: CctpSourceResults,
+  psm3Usdc: bigint,
   [destinationMinter, destinationTransmitter, litePsmDai, live, tin, halted]: CctpDestinationResults
 ): CctpGateReads => ({
   sourcePaused: [sourceMinter, sourceTransmitter],
   destinationPaused: [destinationMinter, destinationTransmitter],
   burnLimit,
   psm3Usdc,
-  psm3HoldsUsdc: isAddressEqual(pocket, cctpL2Contracts(network).psm3),
   litePsmDai,
   live,
   tin,
@@ -128,15 +133,12 @@ export async function cctpBurnRefusal({
   destination: PublicClient;
   swap?: boolean;
 }): Promise<Error | undefined> {
-  const [sourceResults, destinationResults] = await Promise.all([
+  const [sourceResults, destinationResults] = (await Promise.all([
     Promise.all(cctpSourceGateReads(network).map(read => source.readContract(read as never))),
     Promise.all(cctpDestinationGateReads.map(read => destination.readContract(read as never)))
-  ]);
-  const reads = toCctpGateReads(
-    network,
-    sourceResults as unknown as CctpSourceResults,
-    destinationResults as unknown as CctpDestinationResults
-  );
+  ])) as unknown as [CctpSourceResults, CctpDestinationResults];
+  const pocketUsdc = await source.readContract(cctpPocketUsdcRead(network, sourceResults[3]));
+  const reads = toCctpGateReads(sourceResults, pocketUsdc, destinationResults);
   const gate = cctpGate(reads);
   if (!gate.isOpen) return new Error('CCTP is paused.');
   if (amount > (gate.maxAmount ?? 0n))
@@ -145,6 +147,9 @@ export async function cctpBurnRefusal({
     return new Error('There is not enough liquidity to bridge this amount.');
   return undefined;
 }
+
+/** L2 blocks per log query, within the 10k range many RPC providers cap eth_getLogs at. */
+export const RESUME_SCAN_CHUNK_BLOCKS = 10_000n;
 
 /**
  * Read right before continuing a bridge whose swap mined but whose burn was
@@ -176,35 +181,41 @@ export async function cctpResumeRefusal({
     return new Error('The swap of this bridge failed, so there is nothing to bridge.');
   if (!isAddressEqual(receipt.from, account) || !receipt.to || !isAddressEqual(receipt.to, psm3))
     return new Error('This swap is not a bridge of this account.');
-  const [burns, outflows] = await Promise.all([
-    client.getContractEvents({
-      address: TOKEN_MESSENGER_V2,
-      abi: tokenMessengerV2Abi,
-      eventName: 'DepositForBurn',
-      args: { burnToken: usdc, depositor: account },
-      fromBlock: receipt.blockNumber
-    }),
-    client.getContractEvents({
-      address: usdc,
-      abi: erc20Abi,
-      eventName: 'Transfer',
-      args: { from: account },
-      fromBlock: receipt.blockNumber
-    })
-  ]);
+  const latest = await client.getBlockNumber();
   const mintRecipient = addressToBytes32(recipient);
-  const sent = burns.some(
-    ({ args }) =>
-      args.amount === usdcAmount &&
-      args.destinationDomain === CCTP_DOMAIN.ethereum &&
-      args.mintRecipient?.toLowerCase() === mintRecipient
-  );
-  if (sent) return new Error('This bridge was already sent.');
-  // Every burn moves USDC out too, so this also covers burns of other bridges.
-  if (outflows.length > 0)
-    return new Error(
-      "USDC left this wallet after the swap, so this app can't tell the swapped USDC from USDC held before."
+  for (let start = receipt.blockNumber; start <= latest; start += RESUME_SCAN_CHUNK_BLOCKS) {
+    const end =
+      start + RESUME_SCAN_CHUNK_BLOCKS - 1n < latest ? start + RESUME_SCAN_CHUNK_BLOCKS - 1n : latest;
+    const range = { fromBlock: start, toBlock: end } as const;
+    const [burns, outflows] = await Promise.all([
+      client.getContractEvents({
+        address: TOKEN_MESSENGER_V2,
+        abi: tokenMessengerV2Abi,
+        eventName: 'DepositForBurn',
+        args: { burnToken: usdc, depositor: account },
+        ...range
+      }),
+      client.getContractEvents({
+        address: usdc,
+        abi: erc20Abi,
+        eventName: 'Transfer',
+        args: { from: account },
+        ...range
+      })
+    ]);
+    const sent = burns.some(
+      ({ args }) =>
+        args.amount === usdcAmount &&
+        args.destinationDomain === CCTP_DOMAIN.ethereum &&
+        args.mintRecipient?.toLowerCase() === mintRecipient
     );
+    if (sent) return new Error('This bridge was already sent.');
+    // Every burn moves USDC out too, so this also covers burns of other bridges.
+    if (outflows.length > 0)
+      return new Error(
+        "USDC left this wallet after the swap, so this app can't tell the swapped USDC from USDC held before."
+      );
+  }
   return undefined;
 }
 

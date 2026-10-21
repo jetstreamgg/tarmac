@@ -29,7 +29,6 @@ const LIVE: CctpGateReads = {
   destinationPaused: [false, false],
   burnLimit: 10n ** 13n,
   psm3Usdc: 999_000n * 10n ** 6n,
-  psm3HoldsUsdc: true,
   litePsmDai: 801_800_000n * 10n ** 18n,
   live: 1n,
   tin: 0n,
@@ -55,7 +54,7 @@ describe('cctpGate', () => {
 
   // A continued bridge burns USDC already swapped: only the LitePSM's DAI limits its sale on Ethereum.
   it('limits a burn with no swap by the LitePSM payout alone', () => {
-    expect(cctpGate({ ...LIVE, psm3HoldsUsdc: false }, { swap: false })).toMatchObject({
+    expect(cctpGate({ ...LIVE, psm3Usdc: 0n }, { swap: false })).toMatchObject({
       isOpen: true,
       liquidity: LIVE.litePsmDai
     });
@@ -63,8 +62,8 @@ describe('cctpGate', () => {
     expect(cctpGate({ ...LIVE, tin: HALTED }, { swap: false }).isOpen).toBe(false);
   });
 
-  it('reads no USDC liquidity once PSM3 moves its USDC to another pocket', () => {
-    expect(cctpGate({ ...LIVE, psm3HoldsUsdc: false })).toMatchObject({ isOpen: true, liquidity: 0n });
+  it('reads no USDC liquidity when PSM3 has no USDC to swap out', () => {
+    expect(cctpGate({ ...LIVE, psm3Usdc: 0n })).toMatchObject({ isOpen: true, liquidity: 0n });
   });
 
   it.each([
@@ -110,13 +109,17 @@ describe('cctpBurnRefusal', () => {
   type Read = { address: string; functionName: string; args?: readonly unknown[] };
   const client = (answer: (read: Read) => unknown) =>
     ({ readContract: vi.fn(async (read: Read) => answer(read)) }) as unknown as PublicClient;
-  const source = (change: Partial<Record<string, unknown>> = {}) =>
-    client(({ address, functionName }) => {
+  // PSM3 swaps out the USDC its pocket holds; `usdcOf` sets a holder's USDC (PSM3 is its own pocket by default).
+  const source = (
+    change: Partial<Record<string, unknown>> = {},
+    usdcOf: Record<string, bigint> = { [psm3]: LIVE.psm3Usdc }
+  ) =>
+    client(({ address, functionName, args }) => {
+      if (address === usdc && functionName === 'balanceOf') return usdcOf[args?.[0] as string] ?? 0n;
       const values: Record<string, unknown> = {
         [`${TOKEN_MINTER_V2}.paused`]: false,
         [`${MESSAGE_TRANSMITTER_V2}.paused`]: false,
         [`${TOKEN_MINTER_V2}.burnLimitsPerMessage`]: LIVE.burnLimit,
-        [`${usdc}.balanceOf`]: LIVE.psm3Usdc,
         [`${psm3}.pocket`]: psm3,
         ...change
       };
@@ -209,6 +212,22 @@ describe('cctpBurnRefusal', () => {
     );
   });
 
+  it('counts the USDC of the pocket PSM3 swaps from, wherever it is', async () => {
+    const pocket = '0x000000000000000000000000000000000000beef';
+    const elsewhere = source({ [`${psm3}.pocket`]: pocket }, { [psm3]: 0n, [pocket]: LIVE.psm3Usdc });
+    await expect(refusal(1000n * UNIT, elsewhere)).resolves.toBeUndefined();
+    await expect(
+      refusal(
+        LIVE.psm3Usdc * UNIT + 1n,
+        source({ [`${psm3}.pocket`]: pocket }, { [psm3]: 0n, [pocket]: LIVE.psm3Usdc })
+      )
+    ).resolves.toHaveProperty('message', expect.stringContaining('not enough liquidity'));
+    // USDC left on PSM3 itself can't be swapped out once another pocket holds the backing.
+    await expect(
+      refusal(2n * UNIT, source({ [`${psm3}.pocket`]: pocket }, { [psm3]: LIVE.psm3Usdc, [pocket]: 1n }))
+    ).resolves.toHaveProperty('message', expect.stringContaining('not enough liquidity'));
+  });
+
   it('rejects when a read fails, so the send is refused', async () => {
     const failing = client(() => {
       throw new Error('rpc down');
@@ -298,6 +317,7 @@ describe('cctpResumeRefusal', () => {
         if (receipt instanceof Error) throw receipt;
         return receipt;
       }),
+      getBlockNumber: vi.fn(async () => 200n),
       getContractEvents: vi.fn(async ({ eventName }: { eventName: string }) => {
         const events = eventName === 'DepositForBurn' ? burns : eventName === 'Transfer' ? outflows : [];
         if (events instanceof Error) throw events;
@@ -457,5 +477,83 @@ describe('cctpConvertRefusal', () => {
       })
     } as unknown as PublicClient;
     await expect(refusal(failing)).rejects.toThrow('rpc down');
+  });
+});
+
+describe('cctpResumeRefusal on a provider that caps log queries at 10k blocks', () => {
+  const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+  const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
+  const USDC_AMOUNT = 250n * 10n ** 6n;
+  const { psm3 } = cctpL2Contracts('base');
+  const LATEST = 200_000n;
+  // About two days of Base blocks before the latest one.
+  const SWAP_BLOCK = 100_000n;
+  const burn = {
+    args: {
+      amount: USDC_AMOUNT,
+      mintRecipient: `0x${RECIPIENT.slice(2).padStart(64, '0')}`,
+      destinationDomain: 0
+    }
+  };
+  const capped = ({
+    burnAt,
+    outflowAt,
+    failAt
+  }: { burnAt?: bigint; outflowAt?: bigint; failAt?: bigint } = {}) =>
+    ({
+      getTransactionReceipt: vi.fn(async () => ({
+        status: 'success',
+        from: ACCOUNT,
+        to: psm3,
+        blockNumber: SWAP_BLOCK
+      })),
+      getBlockNumber: vi.fn(async () => LATEST),
+      getContractEvents: vi.fn(
+        async ({
+          eventName,
+          fromBlock,
+          toBlock
+        }: {
+          eventName: string;
+          fromBlock: bigint;
+          toBlock?: bigint;
+        }) => {
+          if (toBlock === undefined || toBlock - fromBlock >= 10_000n)
+            throw new Error('query exceeds max block range 10000');
+          if (toBlock > LATEST) throw new Error('block range extends beyond current head block');
+          const within = (at?: bigint) => at !== undefined && fromBlock <= at && at <= toBlock;
+          if (within(failAt)) throw new Error('upstream timeout');
+          if (eventName === 'DepositForBurn') return within(burnAt) ? [burn] : [];
+          return within(burnAt) || within(outflowAt) ? [{}] : [];
+        }
+      )
+    }) as unknown as PublicClient;
+  const refusal = (client: PublicClient) =>
+    cctpResumeRefusal({
+      network: 'base',
+      swapTxHash: ('0x' + 'ab'.repeat(32)) as Hex,
+      account: ACCOUNT,
+      usdcAmount: USDC_AMOUNT,
+      recipient: RECIPIENT,
+      client
+    });
+
+  it('continues a swap with no burn and no outflow, however old', async () => {
+    await expect(refusal(capped())).resolves.toBeUndefined();
+  });
+
+  it('still finds the burn or the outflow far after the swap', async () => {
+    await expect(refusal(capped({ burnAt: 195_000n }))).resolves.toHaveProperty(
+      'message',
+      expect.stringMatching(/already sent/)
+    );
+    await expect(refusal(capped({ outflowAt: LATEST }))).resolves.toHaveProperty(
+      'message',
+      expect.stringMatching(/USDC left this wallet/)
+    );
+  });
+
+  it('fails closed when any part of the range cannot be read', async () => {
+    await expect(refusal(capped({ failAt: 150_000n }))).rejects.toThrow('upstream timeout');
   });
 });

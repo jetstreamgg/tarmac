@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
+import type { Address } from 'viem';
 import { useReadContracts } from 'wagmi';
 import { isCctpL2Network } from '../adapters/cctp/contracts';
 import {
   cctpDestinationGateReads,
   cctpGate,
+  cctpPocketUsdcRead,
   cctpSourceGateReads,
   toCctpGateReads,
   type CctpDestinationResults,
@@ -51,17 +53,34 @@ export function useCctpGate({
       refetchInterval: 60_000
     }
   });
+  const split = network === undefined ? 0 : cctpSourceGateReads(network).length;
+  // PSM3 swaps out the USDC its pocket holds, so its balance waits for the pocket.
+  const pocket = (data as readonly unknown[] | undefined)?.[split - 1] as Address | undefined;
+  const pocketContracts = useMemo(
+    () =>
+      network === undefined || pocket === undefined
+        ? []
+        : [{ ...cctpPocketUsdcRead(network, pocket), chainId: sourceChainId }],
+    [network, pocket, sourceChainId]
+  );
+  const { status: pocketStatus, data: pocketData } = useReadContracts({
+    allowFailure: false,
+    contracts: pocketContracts,
+    query: { enabled: pocketContracts.length > 0, refetchInterval: 60_000 }
+  });
   return useMemo(() => {
     if (network === undefined) return undefined;
     const results = data as readonly unknown[] | undefined;
-    const split = cctpSourceGateReads(network).length;
+    const pocketUsdc = (pocketData as readonly bigint[] | undefined)?.[0];
     const reads =
-      results &&
-      toCctpGateReads(
-        network,
-        results.slice(0, split) as unknown as CctpSourceResults,
-        results.slice(split) as unknown as CctpDestinationResults
-      );
-    return toRouteFact({ status, data: reads && cctpGate(reads, { swap }) });
-  }, [network, status, data, swap]);
+      results && pocketUsdc !== undefined
+        ? toCctpGateReads(
+            results.slice(0, split) as unknown as CctpSourceResults,
+            pocketUsdc,
+            results.slice(split) as unknown as CctpDestinationResults
+          )
+        : undefined;
+    const fetched = status === 'error' || pocketStatus === 'error' ? 'error' : reads ? 'success' : 'pending';
+    return toRouteFact({ status: fetched, data: reads && cctpGate(reads, { swap }) });
+  }, [network, status, data, pocketStatus, pocketData, split, swap]);
 }

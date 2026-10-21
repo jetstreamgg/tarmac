@@ -93,3 +93,62 @@ describe('createCctpSwapStore', () => {
     expect(store.getSnapshot(SCOPE)).toHaveLength(1);
   });
 });
+
+describe('createCctpSwapStore when writes fail but reads work', () => {
+  const hash = (n: string) => '0x' + n.repeat(64);
+  // A storage of its own: spies on Storage.prototype don't reliably come off between tests here.
+  const items = new Map<string, string>();
+  let writable = true;
+  const storage = {
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      if (!writable) throw new DOMException('quota', 'QuotaExceededError');
+      items.set(key, value);
+    }
+  };
+  beforeEach(() => {
+    items.clear();
+    writable = false;
+    vi.stubGlobal('localStorage', storage);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('keeps every session-only swap it records', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap({ swapTxHash: hash('a') }));
+    store.record(SCOPE, swap({ swapTxHash: hash('b') }));
+    expect(store.getSnapshot(SCOPE).map(entry => entry.swapTxHash)).toEqual([hash('b'), hash('a')]);
+  });
+
+  it('drops a session-only swap once cleared', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap({ swapTxHash: hash('a') }));
+    store.clear(SCOPE, hash('a'));
+    expect(store.getSnapshot(SCOPE)).toEqual([]);
+  });
+
+  it("drops a stored swap once cleared, though the write didn't reach storage", () => {
+    writable = true;
+    createCctpSwapStore().record(SCOPE, swap({ swapTxHash: hash('a') }));
+    writable = false;
+    const store = createCctpSwapStore();
+    store.clear(SCOPE, hash('a'));
+    store.record(SCOPE, swap({ swapTxHash: hash('b') }));
+    expect(store.getSnapshot(SCOPE).map(entry => entry.swapTxHash)).toEqual([hash('b')]);
+  });
+
+  it("keeps its session-only swaps when another tab writes, with the other tab's", () => {
+    const store = createCctpSwapStore();
+    store.subscribe(() => {});
+    store.record(SCOPE, swap({ swapTxHash: hash('a') }));
+    writable = true;
+    createCctpSwapStore().record(SCOPE, swap({ swapTxHash: hash('c') }));
+    window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
+    expect(
+      store
+        .getSnapshot(SCOPE)
+        .map(entry => entry.swapTxHash)
+        .sort()
+    ).toEqual([hash('a'), hash('c')]);
+  });
+});

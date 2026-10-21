@@ -302,15 +302,16 @@ describe('PendingBridges', () => {
     const convertHint = (hint: DestinationActionHint) =>
       props.actionHint.mockImplementation((_, action) => (action === 'convert' ? hint : undefined));
 
-    it('offers it on a claim that kept its USDC, and says where the USDC is', () => {
+    it('offers it on a claim that kept its USDC, and says how much it converts', () => {
       mocks.bridges = [CLAIMED];
       mocks.offers[CLAIMED.id] = OFFER;
       renderList();
       expect(convertButton().textContent).toBe('Convert to USDS');
       expect(convertButton().disabled).toBe(false);
       expect(props.canAction).toHaveBeenCalledWith(CLAIMED, 'convert');
+      // Never says the USDC is still in the wallet: some of it may have left since the claim.
       expect(screen.getByTestId('pending-bridge-convert-note').textContent).toBe(
-        "Your USDC wasn't converted to USDS. It's still in your wallet."
+        'This claim ended in USDC, not USDS. You can convert 40.00 USDC to USDS.'
       );
     });
 

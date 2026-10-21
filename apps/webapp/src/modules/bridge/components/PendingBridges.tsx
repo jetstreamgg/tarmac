@@ -375,7 +375,10 @@ function PendingBridgeCard({
 
       {convertAmount !== undefined && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-convert-note">
-          <Trans>Your USDC wasn&apos;t converted to USDS. It&apos;s still in your wallet.</Trans>
+          <Trans>
+            This claim ended in USDC, not USDS. You can convert{' '}
+            {formatBigInt(convertAmount, { unit: 6, minDecimals: 2, maxDecimals: 2 })} USDC to USDS.
+          </Trans>
         </Text>
       )}
 
