@@ -29,7 +29,7 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionRefusedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {
@@ -49,7 +49,7 @@ import {
   type PreTransactionGate,
   type TransactionPreflight
 } from './preTransactionGate';
-import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import type { SendRefusal, TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { encodeCalls, isTailOf, type EncodedCall } from '@/modules/ui/lib/callIntent';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
@@ -242,6 +242,8 @@ type TransactionModalView = {
   hasMinedStep: boolean;
   /** The ERROR on screen is a wallet Reject — the modal words it as declined, not rolled back. */
   userRejected: boolean;
+  /** The ERROR on screen is a send refused before the wallet saw it: nothing of this attempt went out. */
+  refusal: SendRefusal | null;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -313,6 +315,8 @@ export function TransactionProvider({
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
+  // Written with it: the ERROR is a send refused before the wallet saw it.
+  const [refusal, setRefusal] = useState<SendRefusal | null>(null);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -695,6 +699,7 @@ export function TransactionProvider({
         currentStep,
         hasMinedStep,
         userRejected,
+        refusal,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -727,7 +732,7 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected, refusal]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -1301,6 +1306,14 @@ export function TransactionProvider({
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
       setUserRejected(isUserRejectedRequestError(error));
+      // A bridge refusal can come on a Retry too, after the first attempt failed.
+      setRefusal(
+        error instanceof TransactionRefusedError
+          ? { reason: error.message, final: error.final }
+          : preWriteRefusal
+            ? { final: false }
+            : null
+      );
       if (hash) {
         txHashRef.current = hash;
       }
@@ -1382,7 +1395,16 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, userRejected, preludeSteps, gateCopy }
+    ? {
+        config: activeConfig,
+        txStatus,
+        currentStep,
+        hasMinedStep,
+        userRejected,
+        refusal,
+        preludeSteps,
+        gateCopy
+      }
     : exitingView;
 
   // Chain guard (APP-528): the modal survives a wallet chain switch (the
@@ -1586,6 +1608,7 @@ export function TransactionProvider({
             steps={modalSteps}
             currentStep={modalView.currentStep}
             userRejected={modalView.userRejected}
+            refusal={modalView.refusal}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}

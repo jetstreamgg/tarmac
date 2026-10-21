@@ -2,7 +2,11 @@ import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useSta
 import type { Address, Call, PublicClient } from 'viem';
 import { toError } from '@/hooks/helpers';
 import type { TxMutateVariables } from '@/hooks';
-import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import {
+  TransactionRefusedError,
+  TransactionReplacedError,
+  TransactionRevertedError
+} from '@/hooks/shared/useTransactionOutcome';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { useSendBatchTransactionFlow } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
@@ -50,6 +54,8 @@ function openBundle(account: string | undefined) {
 const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 const SEND_OUT_MESSAGE =
   'A transaction from your last bridge is still open in your wallet or pending. Wait for it to settle before sending again.';
+const asRefusal = (error: Error) =>
+  error instanceof TransactionRefusedError ? error : new TransactionRefusedError(error.message);
 
 /**
  * The send engine of a bridge's legs on one chain, whatever the route (the source legs or a claim): `calls` go
@@ -315,17 +321,18 @@ export function useBridgeCallLegs({
     // `context` reaches `onLegSent` with every leg this run sends.
     (context?: unknown) => {
       if (checkingRef.current) return;
-      if (!l1 || !from) return getCallbacks().onError(new Error('The bridge is not ready to send.'), '');
+      if (!l1 || !from)
+        return getCallbacks().onError(new TransactionRefusedError('The bridge is not ready to send.'), '');
       // A second send while the wallet still shows a bundle could move the funds twice, under two hashless cards.
       const promptOpen = () => openBundles.has(from.toLowerCase());
       if (promptOpen()) {
         pausedRef.current = true;
-        return getCallbacks().onError(new Error(PROMPT_OPEN_MESSAGE), '');
+        return getCallbacks().onError(new TransactionRefusedError(PROMPT_OPEN_MESSAGE), '');
       }
       // Sent now, the engine would sign the reset run's frozen calls under this Confirm.
       if (busy) {
         pausedRef.current = true;
-        return getCallbacks().onError(new Error(SEND_OUT_MESSAGE), '');
+        return getCallbacks().onError(new TransactionRefusedError(SEND_OUT_MESSAGE), '');
       }
       checkingRef.current = true;
       runContextRef.current = context;
@@ -342,8 +349,9 @@ export function useBridgeCallLegs({
         .then(
           refusal => {
             if (run !== runRef.current) return;
-            if (refusal) return refuse(refusal);
-            if (promptOpen()) return refuse(new Error(PROMPT_OPEN_MESSAGE));
+            // A preflight refusal is written for the user; a failed read is not.
+            if (refusal) return refuse(asRefusal(refusal));
+            if (promptOpen()) return refuse(new TransactionRefusedError(PROMPT_OPEN_MESSAGE));
             dispatchingRef.current = true;
             try {
               executeFlow();

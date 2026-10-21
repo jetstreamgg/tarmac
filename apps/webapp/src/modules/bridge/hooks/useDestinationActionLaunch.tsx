@@ -5,6 +5,7 @@ import { useChains, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useIsSafeWallet, useSafeWalletStatus } from '@/hooks';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
+import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -416,7 +417,9 @@ export function useDestinationActionLaunch() {
           // Retry calls onConfirm again; an action already sent must not go out twice.
           const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
           if (!current || !launchable(current, action, addressRef.current)) {
-            callbacksRef.current.onError(new Error('This action was already sent.'));
+            callbacksRef.current.onError(
+              new TransactionRefusedError('This action was already sent.', { final: true })
+            );
             return;
           }
           const record =

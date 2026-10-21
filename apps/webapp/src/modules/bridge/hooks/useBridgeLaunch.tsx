@@ -4,6 +4,7 @@ import type { Hex } from 'viem';
 import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
+import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { useIsSafeWallet, useNetworkFee, useSafeWalletStatus, useTokenBalance } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -181,7 +182,13 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     },
     [isCctpBurn, resetDeposit, resetBurn]
   );
-  useResetUnfinishedRunOnClose(resetRun, refetchAllowance);
+  // A run that stopped after its swap or approve mined moved funds on the source chain too.
+  const refetchReads = useCallback(() => {
+    refetchAllowance();
+    if (pinnedChainId !== undefined)
+      void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
+  }, [refetchAllowance, pinnedChainId, queryClient]);
+  useResetUnfinishedRunOnClose(resetRun, refetchReads);
 
   // Only the source-side legs run here; destination actions are their own modal.
   const routeActions = useMemo(
@@ -248,8 +255,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     wasOpenRef.current = isModalOpen;
     if (!closed || (runningTo === undefined && runningBurn === undefined) || sentRef.current) return;
     resetRun();
-    refetchAllowance();
-  }, [isModalOpen, runningTo, runningBurn, resetRun, refetchAllowance]);
+    refetchReads();
+  }, [isModalOpen, runningTo, runningBurn, resetRun, refetchReads]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
   const unresolvedRef = useRef<string | undefined>(undefined);
   useLayoutEffect(() => {
@@ -269,25 +276,27 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         contractUnaccepted
       ) {
         const prepareError = isReal ? enginePrepareErrorMessage(legs.ready, legs.error) : undefined;
-        callbacksRef.current.onError(new Error(prepareError ?? 'The bridge is not ready to send.'));
+        callbacksRef.current.onError(
+          new TransactionRefusedError(prepareError ?? 'The bridge is not ready to send.')
+        );
         return;
       }
       if (sentRef.current || unresolvedRef.current) {
         callbacksRef.current.onError(
-          new Error(
-            unresolvedRef.current
-              ? 'The last bridge is still pending. Check it on its card before sending again.'
-              : 'The bridge was already sent.'
-          )
+          unresolvedRef.current
+            ? new TransactionRefusedError(
+                'The last bridge is still pending. Check it on its card before sending again.'
+              )
+            : new TransactionRefusedError('The bridge was already sent.', { final: true })
         );
         return;
       }
       if (pinnedChainId !== launchedChainIdRef.current) {
-        callbacksRef.current.onError(new Error('The source network changed after Review.'));
+        callbacksRef.current.onError(new TransactionRefusedError('The source network changed after Review.'));
         return;
       }
       if (account !== launchedAccountRef.current) {
-        callbacksRef.current.onError(new Error('The wallet account changed after Review.'));
+        callbacksRef.current.onError(new TransactionRefusedError('The wallet account changed after Review.'));
         return;
       }
       // Snapshot at Confirm: the form may change or reset before the legs finish.

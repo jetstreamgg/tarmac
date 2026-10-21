@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionRefusedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { act, renderHook as renderHookIn } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
@@ -633,7 +633,9 @@ describe('useDestinationActionLaunch', () => {
       });
       // A retry of the confirm must not send it again.
       act(() => mocks.launched[0].onConfirm!());
-      expect(mocks.session.onError).toHaveBeenCalledWith(new Error('This action was already sent.'));
+      expect(mocks.session.onError).toHaveBeenCalledWith(
+        new TransactionRefusedError('This action was already sent.', { final: true })
+      );
       callbacks.onSuccess('0xkeep');
       expect(stored('0xarbdeposit')).toMatchObject({
         status: 'ready',

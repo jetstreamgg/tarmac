@@ -9,6 +9,7 @@ import {
   type PublicClient
 } from 'viem';
 import { psm3L2Abi, usdsPsmWrapperAbi } from '@/hooks/generated';
+import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { getPsmDirectionHalted } from '@/modules/convert/hooks/usePsmConversion.helpers';
 import type { BridgeRouteFacts } from '../../model/resolveRoute';
 import {
@@ -157,6 +158,9 @@ export async function cctpBurnRefusal({
   return undefined;
 }
 
+/** A refusal that sending again can't lift. */
+const finalRefusal = (message: string) => new TransactionRefusedError(message, { final: true });
+
 /** L2 blocks per log query, within the 10k range many RPC providers cap eth_getLogs at. */
 export const RESUME_SCAN_CHUNK_BLOCKS = 10_000n;
 /** The most L2 blocks a continue scans: about three weeks of Base or OP, three days of Arbitrum. */
@@ -202,9 +206,9 @@ export async function cctpResumeRefusal({
   const receipt = await client.getTransactionReceipt({ hash: swapTxHash }).catch(() => undefined);
   if (!receipt) return new Error('The swap of this bridge is not confirmed yet.');
   if (receipt.status !== 'success')
-    return new Error('The swap of this bridge failed, so there is nothing to bridge.');
+    return finalRefusal('The swap of this bridge failed, so there is nothing to bridge.');
   if (!isAddressEqual(receipt.from, account) || !receipt.to || !isAddressEqual(receipt.to, psm3))
-    return new Error('This swap is not a bridge of this account.');
+    return finalRefusal('This swap is not a bridge of this account.');
   // viem caches the head for seconds: a burn in that window would go unscanned.
   const reader = oneBackend(client);
   const head = () => reader.getBlockNumber({ cacheTime: 0 });
@@ -213,7 +217,7 @@ export async function cctpResumeRefusal({
   if (latest < receipt.blockNumber)
     return new Error("The network isn't synced up to the swap yet. Try again in a moment.");
   if (latest - receipt.blockNumber >= RESUME_SCAN_MAX_BLOCKS)
-    return new Error('This swap is too old for this app to check, so it cannot be continued.');
+    return finalRefusal('This swap is too old for this app to check, so it cannot be continued.');
   const mintRecipient = addressToBytes32(recipient);
   const scan = async (from: bigint, to: bigint) => {
     for (let start = from; start <= to; start += RESUME_SCAN_CHUNK_BLOCKS) {
@@ -241,10 +245,10 @@ export async function cctpResumeRefusal({
           args.destinationDomain === CCTP_DOMAIN.ethereum &&
           args.mintRecipient?.toLowerCase() === mintRecipient
       );
-      if (sent) return new Error('This bridge was already sent.');
+      if (sent) return finalRefusal('This bridge was already sent.');
       // Every burn moves USDC out too, so this also covers burns of other bridges.
       if (outflows.length > 0)
-        return new Error(
+        return finalRefusal(
           "USDC left this wallet after the swap, so this app can't tell the swapped USDC from USDC held before."
         );
     }
@@ -282,7 +286,7 @@ export async function cctpClaimRefusal({
     }),
     client.getBlockNumber()
   ])) as unknown as [boolean, boolean, bigint, bigint, bigint, bigint, bigint, bigint];
-  if (used !== 0n) return new Error('This transfer was already claimed.');
+  if (used !== 0n) return finalRefusal('This transfer was already claimed.');
   // The receive mines in a block after the latest one.
   if (isCctpMessageExpired(message, block + 1n))
     return new Error('This attestation has expired; wait for a new one.');
