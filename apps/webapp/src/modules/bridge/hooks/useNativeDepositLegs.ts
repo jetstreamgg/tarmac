@@ -132,7 +132,7 @@ export function useNativeDepositLegs({
     preflight,
     isSafeApp,
     batch,
-    onCallsSent,
+    onCallsSent: id => onCallsSent?.(id),
     // A cached allowance may predate an approve that mined before the switch.
     onAccountSwitch: () => {
       if (active) allowance.mutate();

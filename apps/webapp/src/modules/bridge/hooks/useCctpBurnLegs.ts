@@ -148,7 +148,7 @@ export function useCctpBurnLegs({
     safe: boolean;
     sentSwap?: { hash: string; variables: TxMutateVariables };
   };
-  // The latest run, for a bundle: no new run starts while the wallet shows one.
+  // The latest run executed, for a callback that comes with no context; the engine may have refused it.
   const runRef = useRef<Run | undefined>(undefined);
   // A leg reported with no run: one run per recipient and continued swap on show.
   const looseRef = useRef<Run | undefined>(undefined);
@@ -157,8 +157,6 @@ export function useCctpBurnLegs({
     if (loose && loose.recipient === to && loose.resumed === resume?.swapTxHash) return loose;
     return (looseRef.current = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe });
   };
-  // A late callback clears the swap its run continued, not the bridge now on show.
-  const resumedSwap = () => (runRef.current ? runRef.current.resumed : resume?.swapTxHash);
   const onLegSent = (hash: string, variables: TxMutateVariables, context?: unknown) => {
     if (!scope) return;
     // The run whose prompt this leg was signed in, though another run may have started since.
@@ -186,9 +184,10 @@ export function useCctpBurnLegs({
       if (swapTxHash) cctpSwapStore.clear(scope, swapTxHash);
     }
   };
-  // A bundle is one prompt, with no onLegSent: a continued swap is dropped once the wallet accepts it.
-  const onBundleSent = (id: string) => {
-    const resumed = resumedSwap();
+  // A bundle is one prompt, with no onLegSent: the swap its run continued is dropped once the wallet accepts it.
+  const onBundleSent = (id: string, context?: unknown) => {
+    const run = (context as Run | undefined) ?? runRef.current;
+    const resumed = run ? run.resumed : resume?.swapTxHash;
     if (scope && resumed) cctpSwapStore.clear(scope, resumed);
     onCallsSent?.(id);
   };

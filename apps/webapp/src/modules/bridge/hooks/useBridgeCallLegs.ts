@@ -97,8 +97,8 @@ export function useBridgeCallLegs({
   isSafeApp?: boolean;
   /** Bundle the legs when the wallet can: the user's batch setting, never for a Safe. */
   batch?: boolean;
-  /** The wallet accepted a bundle under this EIP-5792 id; called right before its `onStart`. */
-  onCallsSent?: (id: string) => void;
+  /** The wallet accepted a bundle under this EIP-5792 id, with the context its run was executed with; called right before its `onStart`. */
+  onCallsSent?: (id: string, context?: unknown) => void;
   /** The connected account changed. */
   onAccountSwitch?: () => void;
   /** The wallet sent one leg, sequentially, under `hash`, with the context its run was executed with; called for a leg signed after its run ended too. */
@@ -172,6 +172,8 @@ export function useBridgeCallLegs({
   const [sendRoute, setSendRoute] = useState<'batch' | 'sequential' | null>(null);
   // The callbacks of the Confirm whose bundle the wallet has not answered yet.
   const bundleIssuerRef = useRef<TxCallbacks | undefined>(undefined);
+  // The context of the run whose bundle the wallet has not answered yet.
+  const bundleContextRef = useRef<unknown>(undefined);
   // The callbacks of the Confirm whose accepted bundle has not settled yet.
   const acceptedIssuerRef = useRef<TxCallbacks | undefined>(undefined);
   // The releases of the bundle windows open, oldest first.
@@ -193,13 +195,15 @@ export function useBridgeCallLegs({
       pausedRef.current = false;
       setSendRoute('batch');
       bundleIssuerRef.current = getCallbacks();
+      bundleContextRef.current = runContextRef.current;
       getCallbacks().onMutate(undefined);
     },
-    onCallsSent: id => onCallsSent?.(id),
+    onCallsSent: id => onCallsSent?.(id, bundleContextRef.current),
     onStart: () => {
       bundlePromptsRef.current.shift()?.();
       const issuer = bundleIssuerRef.current ?? getCallbacks();
       bundleIssuerRef.current = undefined;
+      bundleContextRef.current = undefined;
       // Set first: its onStart may reset the run, which must keep this bundle's verdict coming.
       acceptedIssuerRef.current = issuer;
       if (issuer === getCallbacks() && runFromRef.current) broadcastRef.current = true;
@@ -228,6 +232,7 @@ export function useBridgeCallLegs({
         release();
         const issuer = bundleIssuerRef.current;
         bundleIssuerRef.current = undefined;
+        bundleContextRef.current = undefined;
         setSendRoute(null);
         // A bundle rejected after its run ended, or opened by an earlier Confirm.
         if (!runFromRef.current || (issuer && issuer !== getCallbacks())) return;
