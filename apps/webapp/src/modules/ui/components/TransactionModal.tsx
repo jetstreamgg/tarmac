@@ -30,6 +30,7 @@ import { deriveTransactionStepItems, type TransactionStep } from './transactionS
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
 import type { GateStatusCopy, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
 import { cn } from '@/lib/cn';
+import { useReleaseForwardTab } from '@/hooks/ui/useReleaseForwardTab';
 
 // The step-list shape lives with its derivation; re-exported so the contract and
 // launch hooks keep importing it from here.
@@ -282,6 +283,8 @@ export function TransactionModal({
   // steps active together, "Bundled" header badge).
   const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
+  const contentRef = useRef<HTMLDivElement>(null);
+  useReleaseForwardTab(contentRef, open && isTransaction && txStatus === TxStatus.INITIALIZED);
   // Failures render inside the step list (retitled step + inline "Try again",
   // Figma 1030:139111) and drop the bottom status row/buttons — the header
   // back arrow still returns to the first screen. Only a flow launched with NO
@@ -692,6 +695,7 @@ export function TransactionModal({
   return (
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
+        ref={contentRef}
         // Popovers, tooltips and selects opened from inside the modal are portalled to
         // the document root, so Radix sees a pointer-down on them as outside the dialog
         // and closes it — which killed the transaction when the bundling switch was used.

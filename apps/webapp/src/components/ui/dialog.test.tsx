@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Dialog, DialogContent, DialogTitle } from './dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Sheet, SheetContent, SheetTitle } from './sheet';
+import { useReleaseForwardTab } from '@/hooks/ui/useReleaseForwardTab';
 
 afterEach(cleanup);
 
@@ -422,5 +423,47 @@ describe('focus on open and close', () => {
     fireEvent.click(screen.getByText('close dialog'));
 
     await waitFor(() => expect(onCloseAutoFocus).toHaveBeenCalledTimes(1));
+  });
+});
+
+const ReleaseForwardTabHarness = ({ enabled }: { enabled: boolean }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useReleaseForwardTab(ref, enabled);
+  return (
+    <Dialog open>
+      <DialogContent ref={ref} aria-describedby={undefined}>
+        <DialogTitle>Title</DialogTitle>
+        <button>first</button>
+        <button>last</button>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const pressTab = (target: HTMLElement, shiftKey = false) =>
+  !fireEvent.keyDown(target, { key: 'Tab', shiftKey });
+
+describe('useReleaseForwardTab', () => {
+  it('lets Tab leave from the last control while enabled', () => {
+    render(<ReleaseForwardTabHarness enabled />);
+    const last = screen.getByRole('button', { name: 'last' });
+    last.focus();
+    expect(pressTab(last)).toBe(false);
+    expect(document.activeElement).toBe(last);
+  });
+
+  it('still wraps Shift+Tab from the first control', () => {
+    render(<ReleaseForwardTabHarness enabled />);
+    const first = screen.getByRole('button', { name: 'first' });
+    first.focus();
+    expect(pressTab(first, true)).toBe(true);
+  });
+
+  it('wraps Tab from the last control while disabled', () => {
+    render(<ReleaseForwardTabHarness enabled={false} />);
+    const last = screen.getByRole('button', { name: 'last' });
+    last.focus();
+    expect(pressTab(last)).toBe(true);
+    expect(document.activeElement).not.toBe(last);
   });
 });
