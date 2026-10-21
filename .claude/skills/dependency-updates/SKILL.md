@@ -155,7 +155,8 @@ When web3-tools moved by more than a patch, smoke-test a transaction flow on a T
 - **The other wallet-connector packages** are deliberately conservative: patch-only with `~` ranges. Do not "helpfully" widen them.
 - **Lingui macros are compiled by `@lingui/vite-plugin` (`macroTransform: true`), not by a Babel or SWC plugin.**
   - The transform is a native binary from `@lingui/native-tools`, installed as a per-platform optional dependency.
-  - If `pnpm build` fails with `Cannot find native binding`, the binary was skipped at install time. Its `engines` field needs a recent Node, so check `node -v` against the repo's `.nvmrc`, then reinstall from a clean `node_modules`.
+  - If `pnpm build` fails with `Cannot find native binding`, the binary was skipped at install time. Its `engines` field (`node >=22.19` in 0.1.x) didn't match the Node that ran the install. pnpm only warns about that and records the package as skipped, so a later `pnpm install` on the right Node won't fetch it. Switch to the `.nvmrc` Node and reinstall from a clean `node_modules`.
+  - The macro output decides the message IDs the app looks up at runtime, while `lingui extract` builds the catalogs separately. When `@lingui/native-tools` changes version, build before and after and compare the `id:` values in `apps/webapp/dist/assets/*.js`. A mismatch makes the app show raw IDs instead of text.
 - **`@tanstack/react-router` and `@tanstack/router-plugin` are exact pins.** Keep them exact and bump them together. `router-plugin` declares a minimum `@tanstack/react-router` version: check it with `npm view @tanstack/router-plugin@<ver> dependencies peerDependencies`.
 - **happy-dom is held below 20.12** by a `versions` ignore rule in `.github/dependabot.yml`.
   - 20.12.0 added `Element.animate()`, so motion runs real Web Animations in tests.
