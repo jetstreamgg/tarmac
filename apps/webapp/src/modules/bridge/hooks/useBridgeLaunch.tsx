@@ -254,8 +254,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     const closed = wasOpenRef.current && !isModalOpen;
     wasOpenRef.current = isModalOpen;
     if (!closed || (runningTo === undefined && runningBurn === undefined) || sentRef.current) return;
-    resetRun();
-    refetchReads();
+    // A write still out lands before the reads refresh.
+    resetRun(refetchReads);
   }, [isModalOpen, runningTo, runningBurn, resetRun, refetchReads]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
   const unresolvedRef = useRef<string | undefined>(undefined);
