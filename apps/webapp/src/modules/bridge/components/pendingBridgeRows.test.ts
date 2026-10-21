@@ -53,7 +53,7 @@ describe('buildPendingBridgeRows', () => {
 
   it('names the ready action and keeps an unfinished withdrawal out of Arrived', () => {
     const claim = buildPendingBridgeRows({ ...base, status: 'ready', nextAction: 'claim' }, 0, 1)[1];
-    expect(claim.map(cell => 'value' in cell && cell.value)).toEqual(['Ready to claim', 'Arrived']);
+    expect(claim.map(cell => 'value' in cell && cell.value)).toEqual(['Ready to claim', 'Ready']);
     const prove = buildPendingBridgeRows({ ...base, status: 'ready', nextAction: 'prove' }, 0, 1)[1];
     expect(prove.map(cell => 'value' in cell && cell.value)).toEqual(['Ready to prove', 'Ready']);
     expect(buildPendingBridgeRows({ ...base, status: 'failed' }, 0, 1)[1][1]).toMatchObject({
@@ -137,7 +137,10 @@ describe('pending bridge copy', () => {
         l => `<${l}>`
       )
     );
-    expect(ready[1].map(cell => 'value' in cell && cell.value)).toEqual(['<Ready to claim>', '<Arrived>']);
+    expect(ready[1].map(cell => 'value' in cell && cell.value)).toEqual(['<Ready to claim>', '<Ready>']);
+    expect(buildPendingBridgeRows({ ...base, status: 'ready' }, 0, 1)[1][1]).toMatchObject({
+      value: '<Arrived>'
+    });
     expect(queued[1][0]).toMatchObject({ value: '<Pending>' });
     expect(queued[2].map(cell => 'value' in cell && cell.value)).toEqual([
       '<Native>',
@@ -256,5 +259,24 @@ describe('formatTimeLeft', () => {
     expect(formatTimeLeft(5 * 60 + 12)).toBe('5 hours 12 minutes');
     expect(formatTimeLeft(60)).toBe('1 hour');
     expect(formatTimeLeft(1)).toBe('1 minute');
+  });
+});
+
+describe('buildPendingBridgeRows for a CCTP bridge still to claim', () => {
+  // Attested and waiting for the recipient's claim: no USDS has landed on Ethereum yet.
+  const readyToClaim: PendingBridge = {
+    ...base,
+    from: 'base',
+    to: 'ethereum',
+    status: 'ready',
+    nextAction: 'claim',
+    routeKind: 'cctp',
+    requiresClaim: true,
+    etaAt: 20 * 60_000
+  };
+
+  it('never reads Arrived before the claim', () => {
+    const [, arrival] = buildPendingBridgeRows(readyToClaim, 30 * 60_000, 1)[1];
+    expect(arrival).not.toMatchObject({ value: 'Arrived' });
   });
 });

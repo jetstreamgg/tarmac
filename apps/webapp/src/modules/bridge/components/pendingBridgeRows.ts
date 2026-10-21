@@ -92,8 +92,11 @@ export const formatBridgeDate = (ms: number): string => {
 
 const arrivalText = (bridge: PendingBridge, now: number): string => {
   if (bridge.status === 'failed' || bridge.status === 'expired') return NO_VALUE;
-  // A ready prove or finalize still has a step before the funds land.
-  if (bridge.status === 'ready' && (bridge.nextAction === 'prove' || bridge.nextAction === 'finalize'))
+  // A ready claim, prove or finalize still has a step before the funds land.
+  if (
+    bridge.status === 'ready' &&
+    (bridge.nextAction === 'claim' || bridge.nextAction === 'prove' || bridge.nextAction === 'finalize')
+  )
     return t`Ready`;
   // A failed deposit lands only once the user redeems or replays it.
   if (bridge.status === 'ready' && (bridge.nextAction === 'redeem' || bridge.nextAction === 'replay'))
