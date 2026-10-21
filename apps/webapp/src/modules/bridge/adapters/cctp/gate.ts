@@ -1,4 +1,13 @@
-import { erc20Abi, isAddressEqual, type Address, type Hex, type PublicClient } from 'viem';
+import {
+  createPublicClient,
+  custom,
+  erc20Abi,
+  isAddressEqual,
+  type Address,
+  type EIP1193RequestFn,
+  type Hex,
+  type PublicClient
+} from 'viem';
 import { psm3L2Abi, usdsPsmWrapperAbi } from '@/hooks/generated';
 import { getPsmDirectionHalted } from '@/modules/convert/hooks/usePsmConversion.helpers';
 import type { BridgeRouteFacts } from '../../model/resolveRoute';
@@ -154,11 +163,24 @@ export const RESUME_SCAN_CHUNK_BLOCKS = 10_000n;
 export const RESUME_SCAN_MAX_BLOCKS = 1_000_000n;
 
 /**
+ * `client` on its first backend only: a fallback transport may answer the head
+ * from one backend and the logs from another that hasn't indexed them yet.
+ */
+function oneBackend(client: PublicClient): PublicClient {
+  const backends = (client.transport as { transports?: readonly { request: EIP1193RequestFn }[] } | undefined)
+    ?.transports;
+  if (!backends?.length) return client;
+  return createPublicClient({ chain: client.chain, transport: custom({ request: backends[0].request }) });
+}
+
+/**
  * Read right before continuing a bridge whose swap mined but whose burn was
  * never sent: why its USDC can't be burned, if anything. Only a swap of
  * `account` on PSM3 that mined successfully, with no USDC leaving the wallet
  * since, is continued, so USDC the wallet held before is never burned. A swap
- * older than `RESUME_SCAN_MAX_BLOCKS` is refused, as is a failed read.
+ * older than `RESUME_SCAN_MAX_BLOCKS` is refused, as is a failed read. The
+ * head and the logs are read from one backend, so an empty answer covers the
+ * blocks up to the head it read.
  */
 export async function cctpResumeRefusal({
   network,
@@ -184,7 +206,8 @@ export async function cctpResumeRefusal({
   if (!isAddressEqual(receipt.from, account) || !receipt.to || !isAddressEqual(receipt.to, psm3))
     return new Error('This swap is not a bridge of this account.');
   // viem caches the head for seconds: a burn in that window would go unscanned.
-  const head = () => client.getBlockNumber({ cacheTime: 0 });
+  const reader = oneBackend(client);
+  const head = () => reader.getBlockNumber({ cacheTime: 0 });
   let latest = await head();
   // A node behind the swap would scan nothing and let it through.
   if (latest < receipt.blockNumber)
@@ -197,14 +220,14 @@ export async function cctpResumeRefusal({
       const end = start + RESUME_SCAN_CHUNK_BLOCKS - 1n < to ? start + RESUME_SCAN_CHUNK_BLOCKS - 1n : to;
       const range = { fromBlock: start, toBlock: end } as const;
       const [burns, outflows] = await Promise.all([
-        client.getContractEvents({
+        reader.getContractEvents({
           address: TOKEN_MESSENGER_V2,
           abi: tokenMessengerV2Abi,
           eventName: 'DepositForBurn',
           args: { burnToken: usdc, depositor: account },
           ...range
         }),
-        client.getContractEvents({
+        reader.getContractEvents({
           address: usdc,
           abi: erc20Abi,
           eventName: 'Transfer',
