@@ -134,9 +134,7 @@ export function RewardsModalForm({
     networkFee: feeCell.fee?.formatted ?? NO_VALUE,
     positionLoading: isConnected && !positionKnown
   };
-  // Built here rather than in the JSX: the React Compiler can't tell `toGridCells`
-  // leaves its inputs alone, so a call after the review memo below makes it skip
-  // the component.
+  // Ahead of the review memo below: see `toGridCells`.
   const entryCells = toGridCells(
     buildRewardsEntryRows(flow, { ...entryInput, rewardsIn: rewardTokenSymbol }),
     'rewards-modal-row',

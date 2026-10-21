@@ -144,9 +144,7 @@ export function StUsdsModalForm({
   // insufficient gate blocks submission anyway).
   const positionAfter = isSupply ? position + amount : position > amount ? position - amount : 0n;
 
-  // Built here rather than in the JSX: the React Compiler can't tell `toGridCells`
-  // leaves its inputs alone, so a call after the review memo below makes it skip
-  // the component.
+  // Ahead of the review memo below: see `toGridCells`.
   const entryCells = toGridCells(
     buildStUsdsEntryRows({
       rate: rateDisplay,

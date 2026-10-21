@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ModalStepBackSlot, ModalStepLabel } from './ModalStepChrome';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('ModalStepLabel', () => {
   it('renders one copy of the label at rest', () => {
@@ -53,9 +56,10 @@ describe('ModalStepLabel', () => {
     // supply"'s box and wrapping to two lines halfway through its own fade.
     // happy-dom reports 0 for every box, so stub the measurement the copy takes
     // on mount, while it is still the one in flow.
-    const rect = vi
-      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockReturnValue({ width: 173, height: 22 } as DOMRect);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      width: 173,
+      height: 22
+    } as DOMRect);
     const { rerender } = render(<ModalStepLabel labelKey="entry">Supply to Sky Savings</ModalStepLabel>);
 
     rerender(<ModalStepLabel labelKey="review">Review supply</ModalStepLabel>);
@@ -64,7 +68,6 @@ describe('ModalStepLabel', () => {
     if (stillThere) expect(stillThere.style.width).toBe('173px');
     // The incoming copy is never pinned to a width — it sizes the box.
     expect(screen.getByText('Review supply').style.width).toBe('');
-    rect.mockRestore();
   });
 
   it('lets a start-aligned title wrap rather than ellipsizing it', () => {

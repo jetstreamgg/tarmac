@@ -456,7 +456,13 @@ export type ModalGridFee = {
   loading?: boolean;
 };
 
-/** Maps builder rows to `ModalSummaryGrid` cells; test ids are `${testIdPrefix}-${label}`. */
+/**
+ * Maps builder rows to `ModalSummaryGrid` cells; test ids are `${testIdPrefix}-${label}`.
+ *
+ * Call it before any `useMemo` that shares its inputs, not inline in the JSX after
+ * one: the React Compiler can't tell this leaves its inputs alone, so a later call
+ * makes it skip the whole component.
+ */
 export const toGridCells = (
   rows: ModalGridCell[][],
   testIdPrefix: string,
