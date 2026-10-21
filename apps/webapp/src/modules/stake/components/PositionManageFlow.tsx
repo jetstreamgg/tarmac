@@ -180,8 +180,7 @@ export function PositionManageFlow({
     }
 
     if (currentView.name === 'claim') {
-      // Portalled into the transaction modal's entry slot, so it leaves with
-      // that modal rather than on its own.
+      // Renders nothing itself: it launches the claim modal and leaves with it.
       return isOpen ? (
         <StakeClaimModal
           key="claim"

@@ -4,6 +4,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import type { ClaimableReward } from '@/modules/claim/types';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -17,7 +18,6 @@ const h = vi.hoisted(() => ({
   launchMock: vi.fn(),
   updateMock: vi.fn(),
   isModalOpen: false,
-  txStatus: 'idle',
   confirmMock: vi.fn(),
   retryMock: vi.fn(),
   launchParams: undefined as Record<string, unknown> | undefined,
@@ -93,6 +93,11 @@ vi.mock('../hooks/useStakeClaimLaunch', () => ({
       plainLoading: false,
       restakePrepared: h.restakePrepared,
       restakeLoading: false,
+      plain: { steps: ['Claim'], analytics: { widgetName: 'stake', flow: 'manage', action: 'claimAll' } },
+      restake: {
+        steps: ['Claim', 'Restake'],
+        analytics: { widgetName: 'stake', flow: 'manage', action: 'claimAllAndRestake' }
+      },
       calldata: [],
       calls: [],
       isBatch: false
@@ -101,20 +106,13 @@ vi.mock('../hooks/useStakeClaimLaunch', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: h.launchMock,
-    updateModalContent: h.updateMock,
-    isModalOpen: h.isModalOpen,
-    txCallbacks: {
-      onMutate: vi.fn(),
-      onStart: vi.fn(),
-      onSuccess: vi.fn(),
-      onError: vi.fn()
-    },
-    txStatus: h.txStatus
-  }),
-  useEntrySlot: () => null
+  useTransaction: () => ({ launch: h.launchMock, isModalOpen: h.isModalOpen })
 }));
+
+// The modal is a props spy: `h.updateMock` records what the flow hands it each render.
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.updateMock)
+);
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
@@ -147,21 +145,21 @@ function renderLauncher() {
 const launchConfig = () => h.launchMock.mock.calls[0][0];
 
 /**
- * The panel body lives in the launch config's backgroundContent — render it to test.
- * TooltipProvider because the grid's fee cell carries the estimate's info tooltip
- * (the app mounts one at the root, `pages/App.tsx`).
+ * Renders the flow the launcher handed the provider. TooltipProvider because the
+ * grid's fee cell carries the estimate's info tooltip (the app mounts one at the
+ * root, `pages/App.tsx`).
  */
 function renderPanel() {
   renderLauncher();
   render(
     <I18nProvider i18n={i18n}>
-      <TooltipProvider>{launchConfig().backgroundContent as ReactNode}</TooltipProvider>
+      <TooltipProvider>{launchConfig().flow as ReactNode}</TooltipProvider>
     </I18nProvider>
   );
 }
 
-/** The last live-update partial the panel pushed. */
-const lastUpdate = () => h.updateMock.mock.calls.at(-1)![1];
+/** What the flow last handed the modal. */
+const lastUpdate = () => h.updateMock.mock.calls.at(-1)![0];
 
 describe('StakeClaimModal', () => {
   beforeEach(() => {
@@ -172,7 +170,6 @@ describe('StakeClaimModal', () => {
     ];
     h.rewardsLoading = false;
     h.isModalOpen = false;
-    h.txStatus = 'idle';
     h.plainPrepared = true;
     h.restakePrepared = true;
     h.launchMock.mockClear();
@@ -185,24 +182,34 @@ describe('StakeClaimModal', () => {
   });
   afterEach(cleanup);
 
-  it('launches the shared modal at mount with the claim config (Figma 1036:213978 / 1036:214007)', () => {
-    renderLauncher();
+  it('launches the claim flow at mount, guarded to mainnet (Figma 1036:213978 / 1036:214007)', () => {
+    renderPanel();
 
     expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = launchConfig();
-    expect(config.title).toBe('Claim rewards');
-    expect(config.transactionTitle).toBe('Confirm claim');
-    // No status subtitles: the wallet/status screens narrate through the
-    // step list and the toast (Design QA, Sep 2026).
-    expect(config.subtitles).toBeUndefined();
-    expect(config.toast).toEqual({
+    expect(launchConfig().supportedChainIds).toEqual(MAINNET_FAMILY_CHAIN_IDS);
+    const props = lastUpdate();
+    expect(props.title).toBe('Claim rewards');
+    expect(props.transactionTitle).toBe('Confirm claim');
+    // No status subtitle: the wallet/status screens narrate through the step list
+    // and the toast (Design QA, Sep 2026).
+    expect(props.subtitle).toBeUndefined();
+    expect(props.toast).toEqual({
       loading: 'Claiming rewards',
       success: 'Claim successful',
       error: 'Claim failed'
     });
-    expect(config.entry).toEqual({ confirmLabel: 'Claim', confirmDisabled: true });
-    expect(config.backgroundContent).toBeTruthy();
-    expect(config.analytics).toMatchObject({ widgetName: 'stake', flow: 'manage' });
+    // Opened over the details modal, which unmounts in this commit.
+    expect(props.scrimHandoff).toBe(true);
+  });
+
+  it('reports the clicked CTA: the restake mode is primary, the plain claim secondary', () => {
+    renderPanel();
+
+    const props = lastUpdate();
+    expect(props.steps).toEqual(['Claim', 'Restake']);
+    expect(props.analytics).toMatchObject({ action: 'claimAllAndRestake' });
+    expect(props.secondarySteps).toEqual(['Claim']);
+    expect(props.secondaryAnalytics).toMatchObject({ action: 'claimAll' });
   });
 
   it('renders a hero row per reward, SKY first, over [Network fee | Network] (Figma 1036:213978)', () => {
@@ -221,7 +228,7 @@ describe('StakeClaimModal', () => {
     expect((h.launchParams?.selected as ClaimableReward[]).map(r => r.tokenSymbol)).toEqual(['SKY', 'SPK']);
   });
 
-  it('pushes the two-CTA entry while SKY is claimable: primary restake, secondary plain claim', () => {
+  it('renders the two-CTA entry while SKY is claimable: primary restake, secondary plain claim', () => {
     renderPanel();
 
     const update = lastUpdate();
@@ -253,7 +260,7 @@ describe('StakeClaimModal', () => {
     expect(h.confirmMock).toHaveBeenLastCalledWith(false);
   });
 
-  it('pushes the relabelled hero summary for the wallet screen (Figma 1036:214012)', () => {
+  it('hands the wallet screen the relabelled hero summary for the wallet screen (Figma 1036:214012)', () => {
     renderPanel();
 
     const summary = render(
@@ -265,16 +272,6 @@ describe('StakeClaimModal', () => {
       'stake-claim-summary-spk'
     ]);
     expect(summary.getAllByText('Claim amount')).toHaveLength(2);
-  });
-
-  it('freezes the live pushes once the transaction leaves the entry screen', () => {
-    // Post-claim, the refetch empties `rewards`; pushing that state would blank
-    // the executed heroes on the wallet/status screens.
-    h.txStatus = 'success';
-    h.rewards = [];
-    renderPanel();
-
-    expect(h.updateMock).not.toHaveBeenCalled();
   });
 
   it('shows the empty message and disables the CTA when nothing is claimable', () => {
@@ -306,7 +303,7 @@ describe('StakeClaimModal', () => {
   it('refreshes positions and returns to the positions tab after a claim succeeds (C20)', () => {
     renderLauncher();
 
-    launchConfig().onSuccess();
+    launchConfig().flow.props.onSuccess();
 
     const invalidated = h.invalidateMock.mock.calls.map(call => call[0].queryKey[0]);
     expect(invalidated).toEqual(

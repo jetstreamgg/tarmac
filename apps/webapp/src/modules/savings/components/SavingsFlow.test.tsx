@@ -144,12 +144,12 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
   }
 }));
 
+// The modal is a props spy: `h.update` records what the flow hands it each render.
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.update)
+);
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  // txStatus stays IDLE: these tests exercise the live entry pushes, which the
-  // shared hook freezes once a tx is in flight.
-  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
-  // No entry slot in these standalone renders → the form renders its body inline.
-  useEntrySlot: () => null
+  useSession: () => ({ status: 'idle' })
 }));
 
 // Stub the origin dropdown as plain option buttons (Radix Select interaction is
@@ -196,7 +196,7 @@ vi.mock('@/modules/ui/components/NetworkSelect', () => ({
   )
 }));
 
-import { SavingsModalForm } from './SavingsModalForm';
+import { SavingsFlow } from './SavingsFlow';
 import { TOKENS } from '@/hooks';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -204,7 +204,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const formTree = (flow: SavingsLaunchFlow) => (
   <I18nProvider i18n={i18n}>
     <TooltipProvider>
-      <SavingsModalForm sessionId="s1" flow={flow} />
+      <SavingsFlow flow={flow} />
     </TooltipProvider>
   </I18nProvider>
 );
@@ -220,19 +220,19 @@ const renderForm = (flow: SavingsLaunchFlow) => {
 
 // The last entry.confirmDisabled pushed to the modal.
 const lastDisabled = () => {
-  const withEntry = h.update.mock.calls.filter(([, patch]) => patch?.entry?.confirmDisabled !== undefined);
-  return withEntry.at(-1)?.[1].entry.confirmDisabled;
+  const withEntry = h.update.mock.calls.filter(([patch]) => patch?.entry?.confirmDisabled !== undefined);
+  return withEntry.at(-1)?.[0].entry.confirmDisabled;
 };
 
 // The last minimized-toast titles pushed to the modal.
 const lastToast = () => {
-  const withToast = h.update.mock.calls.filter(([, patch]) => patch?.toast !== undefined);
-  return withToast.at(-1)?.[1].toast;
+  const withToast = h.update.mock.calls.filter(([patch]) => patch?.toast !== undefined);
+  return withToast.at(-1)?.[0].toast;
 };
 
 const FIGMA_ROWS = ['Savings rate', 'Network', 'Supply', 'Est. 1Y yield (at current rate)', 'Network fee'];
 
-describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
+describe('SavingsFlow — Supply to Sky Savings entry body', () => {
   beforeEach(() => {
     h.chainId = 1;
     h.walletBalance = 100n * 10n ** 18n;
@@ -270,6 +270,24 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     const select = screen.getByTestId('modal-network-select');
     expect(select.textContent).toContain('1');
     expect(select.textContent).toContain('8453');
+  });
+
+  it('opens on the editable entry, then a review whose Confirm fires the engine', () => {
+    renderForm('supply');
+    const props = h.update.mock.calls.at(-1)![0];
+    expect(props.title).toBe('Supply to Sky Savings');
+    expect(props.reviewTitle).toBe('Review supply');
+    expect(props.transactionTitle).toBe('Confirm in the wallet');
+    expect(props.entry?.confirmLabel).toBe('Review');
+    expect(props.confirmLabel).toBe('Confirm');
+    expect(props.onConfirm).toBe(h.execute);
+  });
+
+  it('titles the withdraw flow', () => {
+    renderForm('withdraw');
+    const props = h.update.mock.calls.at(-1)![0];
+    expect(props.title).toBe('Withdraw from Sky Savings');
+    expect(props.reviewTitle).toBe('Review withdrawal');
   });
 
   it('routes the supply flow to useSavingsLaunch', () => {
@@ -391,13 +409,12 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     const view = renderForm('supply');
     fireEvent.click(screen.getByTestId('origin-opt-USDC'));
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
-    const lastGetter = () =>
-      h.update.mock.calls.filter(([, patch]) => patch?.getDispatchBlocked).at(-1)?.[1].getDispatchBlocked;
-    expect(lastGetter()()).toBe(true);
+    const lastBlocked = () => h.update.mock.calls.at(-1)?.[0].dispatch?.blocked;
+    expect(lastBlocked()).toBe(true);
 
     h.nextCalls = [{ functionName: 'deposit' }];
     view.refresh();
-    expect(lastGetter()()).toBe(false);
+    expect(lastBlocked()).toBe(false);
   });
 
   it('blocks a USDC supply when the PSM sell direction is halted', () => {
@@ -475,7 +492,7 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   });
 });
 
-describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
+describe('SavingsFlow — Withdraw from Sky Savings entry body', () => {
   beforeEach(() => {
     h.chainId = 1;
     // A small wallet balance proves withdraw caps on the position, not the wallet.
@@ -525,10 +542,10 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
     renderForm('withdraw');
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
 
-    const review = h.update.mock.calls.filter(([, patch]) => patch?.transactionContent).at(-1);
+    const review = h.update.mock.calls.filter(([patch]) => patch?.transactionContent).at(-1);
     const { container } = render(
       <I18nProvider i18n={i18n}>
-        <TooltipProvider>{review?.[1].transactionContent}</TooltipProvider>
+        <TooltipProvider>{review?.[0].transactionContent}</TooltipProvider>
       </I18nProvider>
     );
     // Scoped to this render — the entry body still on screen carries the same test id.
@@ -564,7 +581,7 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
   });
 });
 
-describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
+describe('SavingsFlow — L2 PSM (Base) supply/withdraw', () => {
   beforeEach(() => {
     h.chainId = 8453; // Base
     h.walletBalance = 100n * 10n ** 18n;
@@ -657,11 +674,11 @@ describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
 
 // The last analytics blob live-merged to the modal (what the provider will emit from).
 const lastAnalytics = () => {
-  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
-  return withAnalytics.at(-1)?.[1].analytics;
+  const withAnalytics = h.update.mock.calls.filter(([patch]) => patch?.analytics !== undefined);
+  return withAnalytics.at(-1)?.[0].analytics;
 };
 
-describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
+describe('SavingsFlow — analytics parity blob (APP-444 B1/B2)', () => {
   beforeEach(() => {
     h.chainId = 1;
     h.walletBalance = 100n * 10n ** 18n;
@@ -714,7 +731,7 @@ describe('SavingsModalForm — analytics parity blob (APP-444 B1/B2)', () => {
   });
 });
 
-describe('SavingsModalForm — a chain switch under the open modal', () => {
+describe('SavingsFlow — a chain switch under the open modal', () => {
   beforeEach(() => {
     h.chainId = 1;
     h.walletBalance = 100n * 10n ** 18n;

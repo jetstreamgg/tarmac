@@ -26,7 +26,7 @@ import { NO_VALUE } from '@/lib/constants';
  * Current Rate / Idle balance stat row, and a full-width Supply CTA.
  *
  * There is no inline amount input anymore: the CTA opens the shared editable modal
- * (`SavingsModalForm` via `useSavingsModal`, wired by the parent and handed in as
+ * (`SavingsFlow` via `useSavingsModal`, wired by the parent and handed in as
  * `onSupply`) where the amount/token are entered — so all input lives in the modal.
  */
 export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {

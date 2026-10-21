@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import {
@@ -12,12 +12,9 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
-import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
+import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
-import { StakeFlow } from '../lib/constants';
 import {
   calculateStakeApprovalAmounts,
   needsDelegateUpdate,
@@ -25,9 +22,6 @@ import {
   useStakeCalldata
 } from './useStakeCalldata';
 import { toLaunchResult, useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
-import { launchStakeModal } from './useStakeLaunch';
-import { useStakeConfirmContent, type StakeLaunchContent } from './useStakeConfirmContent';
-
 import { stakeUsdNotional, wadToFloat } from '../lib/stakeUsdNotional';
 
 /**
@@ -95,7 +89,7 @@ export function buildStakeManageSteps({
   return shouldUseBatch ? steps : assignSequentialWrites(steps, approvals);
 }
 
-export interface UseStakeManageLaunchParams {
+export interface StakeManageParams {
   urnIndex: bigint;
   urnAddress: `0x${string}` | undefined;
   skyToLock: bigint;
@@ -117,36 +111,15 @@ export interface UseStakeManageLaunchParams {
   rewardContractsToClaim?: `0x${string}`[];
   /** Display symbols aligned to `rewardContractsToClaim`, for step labels only. */
   claimSymbols?: string[];
-  /**
-   * Full summary body (the amount heroes over the confirm grid). The sheet is
-   * the review (Design QA 2800:91832), so the modal never shows this as a
-   * review screen — it is the wallet-screen fallback when no
-   * `transactionScreenContent` is passed. Pass a MEMOIZED function to receive
-   * the engine's own routing — the grid prices the live Network fee from it,
-   * which it cannot do from the caller's render (the calls are this hook's
-   * output, the body its input). The body is re-pushed as that routing
-   * changes, until the transaction leaves IDLE.
-   */
-  transactionContent?: StakeLaunchContent;
-  /** Compact wallet/status-screen summary; omitted, the full body carries over. */
-  transactionScreenContent?: ReactNode;
-  /** Push `transactionContent` as the wallet-screen summary only (entry-first sessions). */
-  transactionContentAsScreen?: boolean;
-  onSuccess?: () => void;
-  /**
-   * Session of an already-launched modal (the change reward / delegate modals
-   * mount their picker as the modal's entry and fire `execute` from its CTA).
-   * Omitted, the hook owns its own session and `launch()` opens the modal.
-   */
-  sessionId?: string;
 }
 
 /**
  * The manage seam (Architecture Proposal §4/§5): wires the F1 calldata
  * (`useStakeCalldata`, flow `'manage'`) into the unmodified
- * `useBatchStakeMulticall` engine and describes the confirm modal for
- * `TransactionContext.launch()`. One Confirm stages any combination of
- * repay/withdraw/delegate/stake/borrow — legacy MANAGE multicall semantics.
+ * `useBatchStakeMulticall` engine and describes the confirm modal. One Confirm
+ * stages any combination of repay/withdraw/delegate/stake/borrow — legacy MANAGE
+ * multicall semantics. The page reads it for its own gating; the session's flow
+ * runs it again with the transaction callbacks.
  *
  * The reward contract defaults to the urn's current one so `needsRewardUpdate`
  * only fires when a caller stages a different farm (APP-516's Change-reward
@@ -155,29 +128,23 @@ export interface UseStakeManageLaunchParams {
  * The USDS approval sizing (wipeAll ×100005/100000 buffer) comes from the F1
  * helper, matching the legacy widget byte-for-byte.
  */
-export function useStakeManageLaunch({
-  urnIndex,
-  urnAddress,
-  skyToLock,
-  skyToFree,
-  usdsToBorrow,
-  usdsToWipe,
-  wipeAll,
-  selectedRewardContract,
-  selectedDelegate,
-  enabled,
-  rewardContractsToClaim,
-  claimSymbols,
-  transactionContent,
-  transactionScreenContent,
-  transactionContentAsScreen = false,
-  onSuccess,
-  sessionId: sharedSessionId
-}: UseStakeManageLaunchParams) {
-  const { launch: launchModal, txCallbacks } = useTransaction();
-  const ownSessionId = useId();
-  const sessionId = sharedSessionId ?? ownSessionId;
-  const { locked, restore } = useMinimizedSessionLock(sessionId);
+export function useStakeManageEngine(
+  {
+    urnIndex,
+    urnAddress,
+    skyToLock,
+    skyToFree,
+    usdsToBorrow,
+    usdsToWipe,
+    wipeAll,
+    selectedRewardContract,
+    selectedDelegate,
+    enabled,
+    rewardContractsToClaim,
+    claimSymbols
+  }: StakeManageParams,
+  txCallbacks?: TxCallbacks
+) {
   const { priceString: skyPriceString } = useSkyPrice();
   const { address } = useConnection();
 
@@ -246,13 +213,6 @@ export function useStakeManageLaunch({
     enabled: enabled && calldata.length > 0,
     ...txCallbacks
   });
-  useResetUnfinishedRunOnClose(engine.reset, refetchAllowances);
-
-  // Live execute ref: launch() must never snapshot onConfirm state.
-  const executeRef = useRef(engine.execute);
-  useEffect(() => {
-    executeRef.current = engine.execute;
-  }, [engine.execute]);
 
   // Legs the flow sends when bundled, mirroring the engine's own composition
   // (approvals, then one call per calldata entry). NOT `calls.length`: with
@@ -260,19 +220,6 @@ export function useStakeManageLaunch({
   // so the calls it hands back describe the current route rather than the
   // flow's shape.
   const legCount = (needsSkyAllowance ? 1 : 0) + (needsUsdsAllowance ? 1 : 0) + calldata.length;
-
-  // Keeps the review body live while it is still a review — the fee estimate
-  // follows the in-modal bundle toggle, and the rate/delegate/simulation reads
-  // it draws from resolve there rather than freezing at Confirm-press.
-  const confirmContent = useStakeConfirmContent({
-    sessionId,
-    calls: engine.calls ?? [],
-    isBatch: !!engine.isBatch,
-    legCount,
-    content: transactionContent,
-    screenContent: transactionScreenContent,
-    screenOnly: transactionContentAsScreen
-  });
 
   const hasLock = skyToLock > 0n;
   const hasFree = skyToFree > 0n;
@@ -318,84 +265,46 @@ export function useStakeManageLaunch({
     [hasLock, hasFree, hasBorrow, hasWipe, skyToLock, skyToFree, usdsToBorrow, usdsToWipe, skyPriceString]
   );
 
-  const launch = useCallback(() => {
-    // Legacy stakeData shape (M15): signed amount collapses lock/free, signed
-    // borrowAmount collapses borrow/repay; manage carries the urn index.
-    const skyAmount = hasLock ? wadToFloat(skyToLock) : hasFree ? -wadToFloat(skyToFree) : undefined;
-    const stakeAction = hasLock ? 'stake' : hasFree ? 'unstake' : undefined;
-    const borrowAmount = hasBorrow ? wadToFloat(usdsToBorrow) : hasWipe ? -wadToFloat(usdsToWipe) : undefined;
-    const borrowAction = hasBorrow ? 'borrow' : hasWipe ? 'repay' : undefined;
-
-    const stakeData: Record<string, unknown> = {
-      module: 'stake',
-      assetSymbol: 'SKY',
-      borrowSymbol: 'USDS',
-      urnIndex: Number(urnIndex),
-      selectedRewardContract: effectiveRewardContract,
-      selectedRewardSymbol,
-      isDelegating: hasDelegateChange && !!selectedDelegate && selectedDelegate !== ZERO_ADDRESS,
-      isBatchTx: shouldUseBatch,
-      ...(skyAmount != null && { amount: skyAmount, stakeAction }),
-      ...(borrowAmount != null && { borrowAmount, borrowAction })
-    };
-
-    launchStakeModal(launchModal, StakeFlow.MANAGE, {
-      usdValue,
-      // Confirm-modal titles by staged action set (M7, UX 1104:*).
-      title: isDelegateOnly
-        ? t`Confirm delegate change`
-        : isRewardOnly
-          ? t`Confirm reward change`
-          : isBorrowOnly
-            ? t`Confirm borrow`
-            : t`Confirm`,
-      // Manage toast copy is not in the UX file — flagged on APP-312 (M16).
-      toast: {
-        loading: t`Changing position`,
-        success: t`Your position is updated!`,
-        error: t`Failed to change the position`
-      },
-      sessionId,
-      transactionContent: confirmContent,
-      transactionScreenContent,
-      steps,
-      onConfirm: () => executeRef.current(),
-      onSuccess,
-      stakeData
-    });
-  }, [
-    launchModal,
-    urnIndex,
-    skyToLock,
-    skyToFree,
-    usdsToBorrow,
-    usdsToWipe,
-    hasLock,
-    hasFree,
-    hasWipe,
-    hasBorrow,
-    hasDelegateChange,
-    isDelegateOnly,
-    isRewardOnly,
-    isBorrowOnly,
-    selectedDelegate,
-    effectiveRewardContract,
+  // Legacy stakeData shape (M15): signed amount collapses lock/free, signed
+  // borrowAmount collapses borrow/repay; manage carries the urn index.
+  const skyAmount = hasLock ? wadToFloat(skyToLock) : hasFree ? -wadToFloat(skyToFree) : undefined;
+  const borrowAmount = hasBorrow ? wadToFloat(usdsToBorrow) : hasWipe ? -wadToFloat(usdsToWipe) : undefined;
+  const stakeData: Record<string, unknown> = {
+    module: 'stake',
+    assetSymbol: 'SKY',
+    borrowSymbol: 'USDS',
+    urnIndex: Number(urnIndex),
+    selectedRewardContract: effectiveRewardContract,
     selectedRewardSymbol,
-    shouldUseBatch,
-    usdValue,
-    sessionId,
-    confirmContent,
-    transactionScreenContent,
-    steps,
-    onSuccess
-  ]);
+    isDelegating: hasDelegateChange && !!selectedDelegate && selectedDelegate !== ZERO_ADDRESS,
+    isBatchTx: shouldUseBatch,
+    ...(skyAmount != null && { amount: skyAmount, stakeAction: hasLock ? 'stake' : 'unstake' }),
+    ...(borrowAmount != null && { borrowAmount, borrowAction: hasBorrow ? 'borrow' : 'repay' })
+  };
+
+  // Confirm-modal titles by staged action set (M7, UX 1104:*).
+  const title = isDelegateOnly
+    ? t`Confirm delegate change`
+    : isRewardOnly
+      ? t`Confirm reward change`
+      : isBorrowOnly
+        ? t`Confirm borrow`
+        : t`Confirm`;
+  // Manage toast copy is not in the UX file — flagged on APP-312 (M16).
+  const toast = {
+    loading: t`Changing position`,
+    success: t`Your position is updated!`,
+    error: t`Failed to change the position`
+  };
 
   return {
-    launch,
-    locked,
-    restore,
     /** Live USD notional of the staged changes, for the sheet's own preflight. */
     usdValue,
+    title,
+    toast,
+    stakeData,
+    refetchAllowances,
+    reset: engine.reset,
     calldata,
     legCount,
     hasRewardChange,

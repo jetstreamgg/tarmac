@@ -46,8 +46,8 @@ export const COMING_SOON_MAP: Record<number, Intent[]> = {
 /**
  * The Ethereum-mainnet family: real mainnet plus the Tenderly fork that stands
  * in for it in dev. This is the `supportedChainIds` every mainnet-only product
- * flow declares on its transaction config — vaults, rewards, stUSDS, Pendle,
- * upgrade, stake, claim (see `TransactionConfig.supportedChainIds`). A connected
+ * flow launches with — vaults, rewards, stUSDS, Pendle, upgrade, stake, claim
+ * (see `LaunchOptions.supportedChainIds`). A connected
  * wallet on any other chain (an L2) would resolve these products' addresses to a
  * different chain's map entry — or none — so the transaction modal's chain guard
  * blocks it and offers a switch back. Multi-chain products (savings, convert)

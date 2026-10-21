@@ -153,12 +153,7 @@ export function useAmountForm({
   };
 }
 
-/**
- * Amount-aware titles for the minimized toast (Figma "10,000.00 USDS
- * supplied!"). Memoized so the modal-content sync effects in the modal forms
- * have stable deps — an unmemoized object here recreates every render and
- * loops updateModalContent → setActiveConfig → re-render.
- */
+/** Amount-aware titles for the minimized toast (Figma "10,000.00 USDS supplied!"). */
 export function useAmountToast({
   isSupply,
   amountLabel

@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 
 import { i18n } from '@lingui/core';
-import { renderHook, act, cleanup } from '@testing-library/react';
+import { renderHook, act, cleanup, render } from '@testing-library/react';
+import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
 
@@ -25,11 +26,15 @@ type RawCall = {
 };
 
 const h = vi.hoisted(() => ({
+  modalProps: vi.fn(),
   capturedCalls: [] as unknown[],
   capturedEnabled: undefined as boolean | undefined,
   mockExecute: vi.fn(),
   launchMock: vi.fn(),
-  updateModalContent: vi.fn(),
+  engineReset: vi.fn(),
+  mutateUsdsAllowance: vi.fn(),
+  settling: false,
+  settle: null as { reset: unknown; onCleared?: () => void } | null,
   skyAllowance: 0n as bigint | undefined,
   usdsAllowance: 0n as bigint | undefined
 }));
@@ -57,7 +62,7 @@ vi.mock('@/hooks/shared/useTransactionFlow', () => ({
       prepared: true,
       execute: h.mockExecute,
       currentCallIndex: 0,
-      reset: () => undefined
+      reset: h.engineReset
     };
   }
 }));
@@ -74,7 +79,7 @@ vi.mock('@/hooks/stake/useStakeAllowance', () => ({
     data: h.usdsAllowance,
     error: null,
     isLoading: false,
-    mutate: () => undefined,
+    mutate: h.mutateUsdsAllowance,
     dataSources: []
   })
 }));
@@ -101,19 +106,24 @@ vi.mock('@/hooks/rewards/useRewardContractTokens', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: h.launchMock,
-    updateModalContent: h.updateModalContent,
-    isModalOpen: false,
+  useTransaction: () => ({ launch: h.launchMock, isSettling: () => h.settling }),
+  useSettleOnEnd: (reset: unknown, onCleared?: () => void) => {
+    h.settle = { reset, onCleared };
+  },
+  useSession: () => ({
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: 'idle'
+    status: 'idle'
   })
 }));
+
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.modalProps)
+);
 
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
   useBatchToggle: () => [false, () => undefined]
@@ -124,6 +134,17 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
 
 import { generateStakeCalldata, WIPE_BUFFER_DIVISOR, WIPE_BUFFER_MULTIPLIER } from './useStakeCalldata';
 import { useStakeManageLaunch, buildStakeManageSteps } from './useStakeManageLaunch';
+
+// Renders the flow the last launch handed the provider and returns what it gives the modal.
+const launchedFlows = new Map();
+const launched = () => {
+  const options = h.launchMock.mock.calls.at(-1)![0];
+  if (!launchedFlows.has(options)) {
+    render(<I18nProvider i18n={i18n}>{options.flow}</I18nProvider>);
+    launchedFlows.set(options, h.modalProps.mock.calls.at(-1)![0]);
+  }
+  return launchedFlows.get(options)!;
+};
 
 const SKY_FREE = parseUnits('55000', 18);
 const USDS_WIPE = parseUnits('30000', 18);
@@ -340,21 +361,6 @@ describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
     expect(calls[1].args?.[0]).toEqual(expectedCalldata());
   });
 
-  it('pushes the review body once, and not again on a re-render that changes nothing', () => {
-    // The push re-enters the transaction provider, which re-renders this host.
-    // If the body's identity churned per render — a fresh `calls` array, an
-    // unmemoized vault object in the caller's deps — that would loop.
-    h.updateModalContent.mockClear();
-    const memoBody = () => null;
-    const { rerender } = renderLaunch({ transactionContent: memoBody });
-    const pushesAfterMount = h.updateModalContent.mock.calls.length;
-    expect(pushesAfterMount).toBeGreaterThan(0);
-
-    rerender();
-
-    expect(h.updateModalContent.mock.calls.length).toBe(pushesAfterMount);
-  });
-
   it('reports the flow leg count, which the collapsed calls do not', () => {
     // Bundling off collapses wipe+free into ONE `multicall`, so the engine
     // hands back [approve, multicall] for a three-leg flow. The review body
@@ -362,14 +368,17 @@ describe('useStakeManageLaunch — calldata parity with the F1 seam', () => {
     // flow has nothing to bundle, and its bundle toggle would disappear for
     // everyone who has bundling switched off.
     const seen: { calls: unknown[]; legCount: number }[] = [];
-    renderLaunch({
+    const { result } = renderLaunch({
       transactionContent: context => {
         seen.push(context);
         return null;
       }
     });
+    act(() => result.current.launch());
+    launched();
 
     // approve(USDS) + the two calldata legs.
+    expect(result.current.legCount).toBe(3);
     expect(seen.at(-1)?.legCount).toBe(3);
     expect(expectedCalldata()).toHaveLength(2);
   });
@@ -468,22 +477,22 @@ describe('useStakeManageLaunch — launch() config', () => {
   it('titles the manage confirm per the staged action set (M7)', () => {
     const withdrawRepay = renderLaunch();
     act(() => withdrawRepay.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm');
-    expect(h.launchMock.mock.calls[0][0].transactionTitle).toBe('Confirm the change in your position');
+    expect(launched().title).toBe('Confirm');
+    expect(launched().transactionTitle).toBe('Confirm the change in your position');
     // The sheet is the review (Design QA 2800:91832): no in-modal review.
-    expect(h.launchMock.mock.calls[0][0].skipReview).toBe(true);
+    expect(launched().skipReview).toBe(true);
     withdrawRepay.unmount();
     h.launchMock.mockClear();
 
     const borrowOnly = renderLaunch({ skyToFree: 0n, usdsToWipe: 0n, usdsToBorrow: USDS_WIPE });
     act(() => borrowOnly.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm borrow');
+    expect(launched().title).toBe('Confirm borrow');
     borrowOnly.unmount();
     h.launchMock.mockClear();
 
     const delegateOnly = renderLaunch({ skyToFree: 0n, usdsToWipe: 0n, selectedDelegate: NEW_DELEGATE });
     act(() => delegateOnly.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm delegate change');
+    expect(launched().title).toBe('Confirm delegate change');
     delegateOnly.unmount();
     h.launchMock.mockClear();
 
@@ -493,18 +502,16 @@ describe('useStakeManageLaunch — launch() config', () => {
       selectedRewardContract: SKY_REWARD_CONTRACT
     });
     act(() => rewardOnly.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].title).toBe('Confirm reward change');
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
-      { label: 'Change reward', tokenSymbol: 'SKY', write: 0 }
-    ]);
-    expect(h.launchMock.mock.calls[0][0].analytics.data.selectedRewardContract).toBe(SKY_REWARD_CONTRACT);
+    expect(launched().title).toBe('Confirm reward change');
+    expect(launched().steps).toEqual([{ label: 'Change reward', tokenSymbol: 'SKY', write: 0 }]);
+    expect(launched().analytics.data.selectedRewardContract).toBe(SKY_REWARD_CONTRACT);
     rewardOnly.unmount();
   });
 
   it('derives the withdraw+repay steps from the calldata set, not the stale mock (M6)', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+    expect(launched().steps).toEqual([
       { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved.", write: 0 },
       { label: 'Repay', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been repaid.", write: 1 },
       { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn.", write: 1 }
@@ -519,7 +526,7 @@ describe('useStakeManageLaunch — launch() config', () => {
       claimSymbols: ['SKY', 'SPK']
     });
     act(() => result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toEqual([
+    expect(launched().steps).toEqual([
       { label: 'Withdraw', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been withdrawn.", write: 0 },
       { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed.", write: 0 },
       { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed.", write: 0 }
@@ -530,7 +537,7 @@ describe('useStakeManageLaunch — launch() config', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
-    const { analytics } = h.launchMock.mock.calls[0][0];
+    const { analytics } = launched();
     expect(analytics.widgetName).toBe('stake');
     expect(analytics.flow).toBe('manage');
     expect(analytics.action).toBe('multicall');
@@ -548,14 +555,14 @@ describe('useStakeManageLaunch — launch() config', () => {
     });
   });
 
-  it('sets no status subtitles and carries the manage toast copy', () => {
+  it('sets no status subtitle and carries the manage toast copy', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
-    const { subtitles, toast } = h.launchMock.mock.calls[0][0];
+    const { subtitle, toast } = launched();
     // The wallet/status screens narrate through the step list and the toast
     // (Design QA, Sep 2026) — no per-status sentence under the title.
-    expect(subtitles).toBeUndefined();
+    expect(subtitle).toBeUndefined();
     expect(toast).toEqual({
       loading: 'Changing position',
       success: 'Your position is updated!',
@@ -566,7 +573,25 @@ describe('useStakeManageLaunch — launch() config', () => {
   it('routes onConfirm to the live engine execute', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
-    h.launchMock.mock.calls[0][0].onConfirm();
+    launched().onConfirm();
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets the engine as the session ends, then refreshes the allowances, so a mined approve is not asked for again', () => {
+    const { result } = renderLaunch();
+    act(() => result.current.launch());
+    launched();
+    expect(h.settle?.reset).toBe(h.engineReset);
+    h.mutateUsdsAllowance.mockClear();
+
+    h.settle?.onCleared?.();
+    expect(h.mutateUsdsAllowance).toHaveBeenCalled();
+  });
+
+  it('holds the sheet while the last launch still has a write out', () => {
+    h.settling = true;
+    const { result } = renderLaunch();
+    expect(result.current.isLoading).toBe(true);
+    h.settling = false;
   });
 });

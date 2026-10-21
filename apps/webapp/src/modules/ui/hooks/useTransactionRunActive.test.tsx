@@ -7,7 +7,7 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 const h = vi.hoisted(() => ({ txStatus: 'idle' as string }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ txStatus: h.txStatus })
+  useSession: () => ({ status: h.txStatus })
 }));
 
 import { useTransactionRunActive } from './useTransactionRunActive';

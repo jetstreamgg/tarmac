@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionConfig, TxCallbacks } from './transactionContract';
+import type { TxCallbacks } from './transactionContract';
+import type { TransactionConfig } from './configFlow.testing';
 import type { PreTransactionGate } from './preTransactionGate';
 import { markStalledStep } from '@/hooks/helpers';
 
@@ -68,14 +69,15 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
 
 // Launches the given config on mount and hands the engine callbacks to the test.
 function Harness({ config, onReady }: { config: TransactionConfig; onReady?: (cb: TxCallbacks) => void }) {
-  const { launch, txCallbacks } = useTransaction();
+  const { launch, txCallbacks } = useTestTransaction();
   const started = useRef(false);
   useEffect(() => {
     onReady?.(txCallbacks);
@@ -513,7 +515,7 @@ describe('TransactionProvider pre-transaction gate', () => {
     };
 
     function RelaunchHarness() {
-      const { launch } = useTransaction();
+      const { launch } = useTestTransaction();
       return (
         <>
           <button
@@ -739,7 +741,7 @@ describe('TransactionProvider pre-transaction gate', () => {
       return { allow: true };
     };
     function RelaunchHarness() {
-      const { launch } = useTransaction();
+      const { launch } = useTestTransaction();
       return (
         <>
           <button

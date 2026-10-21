@@ -1,17 +1,6 @@
-import { render } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import type { Call } from 'viem';
-
-const h = {
-  txStatus: 'idle' as string,
-  updateModalContent: vi.fn()
-};
-
-vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.updateModalContent, txStatus: h.txStatus })
-}));
-
-import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useStakeConfirmContent, type StakeLaunchContentContext } from './useStakeConfirmContent';
 
 const STAKE_MODULE = '0x1111111111111111111111111111111111111111' as const;
@@ -24,24 +13,14 @@ function Host({
   calls,
   isBatch = false,
   legCount = 2,
-  screenOnly,
   render: renderBody
 }: {
   calls: Call[];
   isBatch?: boolean;
   legCount?: number;
-  screenOnly?: boolean;
   render: (context: StakeLaunchContentContext) => React.ReactNode;
 }) {
-  const body = useStakeConfirmContent({
-    sessionId: 's1',
-    calls,
-    isBatch,
-    legCount,
-    content: renderBody,
-    screenOnly
-  });
-  return <>{body}</>;
+  return <>{useStakeConfirmContent({ calls, isBatch, legCount, content: renderBody })}</>;
 }
 
 /** Counts how often the body is rebuilt, and reports the routing it saw. */
@@ -55,70 +34,32 @@ const spyBody = () => {
 };
 
 describe('useStakeConfirmContent', () => {
-  beforeEach(() => {
-    h.txStatus = TxStatus.IDLE;
-    h.updateModalContent.mockClear();
-  });
-
-  it('pushes the review body while the transaction is still IDLE', () => {
+  it('builds the body from the engine routing', () => {
     const { build } = spyBody();
     render(<Host calls={[LOCK, BORROW]} render={build} />);
-
-    expect(h.updateModalContent).toHaveBeenCalledWith(
-      's1',
-      expect.objectContaining({ transactionContent: expect.anything() })
-    );
+    expect(screen.getByTestId('body').textContent).toBe('2');
   });
 
-  it('screenOnly pushes the body as the wallet-screen summary, never as review content', () => {
-    const { build } = spyBody();
-    render(<Host calls={[LOCK]} screenOnly render={build} />);
-    const pushed = h.updateModalContent.mock.calls.at(-1)![1];
-    expect(pushed.transactionScreenContent).toBeDefined();
-    expect(pushed).not.toHaveProperty('transactionContent');
-  });
-
-  it('re-pushes when the engine reshapes its calls — the bundle toggle re-prices', () => {
-    // Toggling bundling off collapses the legs into one `multicall`, so the
-    // calls the fee is priced from change under the open modal. A frozen body
-    // would keep quoting the route the user just switched away from.
+  it('rebuilds when the engine reshapes its calls — the bundle toggle re-prices', () => {
+    // Toggling bundling off collapses the legs into one `multicall`, so the calls
+    // the fee is priced from change; the body must quote the route the user is on.
     const { build, seen } = spyBody();
     const { rerender } = render(<Host calls={[LOCK, BORROW]} isBatch render={build} />);
-    h.updateModalContent.mockClear();
 
     rerender(<Host calls={[lockCall('0xcc')]} isBatch={false} render={build} />);
 
-    expect(h.updateModalContent).toHaveBeenCalledTimes(1);
     expect(seen.at(-1)).toMatchObject({ isBatch: false });
     expect(seen.at(-1)!.calls).toHaveLength(1);
   });
 
-  it('stops pushing once the transaction leaves IDLE', () => {
-    // Past Confirm the modal describes something already signed; a mid-flight
-    // refetch must not rewrite its summary.
-    const { build } = spyBody();
-    const { rerender } = render(<Host calls={[LOCK, BORROW]} render={build} />);
-    h.updateModalContent.mockClear();
-    h.txStatus = TxStatus.INITIALIZED;
-
-    rerender(<Host calls={[lockCall('0xcc')]} render={build} />);
-
-    expect(h.updateModalContent).not.toHaveBeenCalled();
-  });
-
-  it('ignores a re-render that only gives the same calldata a new array', () => {
-    // `calls` is rebuilt every render. Keying the routing on identity would
-    // push on each one, re-rendering the provider, which re-renders this host —
-    // the update loop the modal bodies guard against.
+  it('keeps the body when a re-render only gives the same calldata a new array', () => {
     const { build } = spyBody();
     const { rerender } = render(<Host calls={[LOCK, BORROW]} render={build} />);
     const buildsAfterMount = build.mock.calls.length;
-    h.updateModalContent.mockClear();
 
     rerender(<Host calls={[lockCall('0xaa'), lockCall('0xbb')]} render={build} />);
 
     expect(build).toHaveBeenCalledTimes(buildsAfterMount);
-    expect(h.updateModalContent).not.toHaveBeenCalled();
   });
 
   it('hands the body the flow leg count, not the current route length', () => {

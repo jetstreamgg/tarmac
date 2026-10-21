@@ -1,19 +1,18 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { ZERO_ADDRESS } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
-import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
+import { useSession, useTransaction } from '@/modules/ui/context/TransactionContext';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { invalidateStakeQueries } from '../lib/invalidateStakeQueries';
 import { useFarmRewardSymbol } from '../hooks/useFarmRewardSymbol';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
-import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
-import type { StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
+import { useStakeManageEngine } from '../hooks/useStakeManageEngine';
+import { useStakeConfirmContent, type StakeLaunchContentContext } from '../hooks/useStakeConfirmContent';
 import { StakeConfirmGrid } from './StakeConfirmGrid';
 import { RewardList } from './StakeTakeoverRewardCard';
 import { DelegatePicker } from './StakeTakeoverDelegateCard';
@@ -32,24 +31,22 @@ const copy = {
 };
 
 /**
- * Entry body of the Change reward / Change delegate modals (Figma 3015:61490,
- * 3015:61189): the picker list, portaled into the shared modal's entry slot.
- * Mounted as `backgroundContent` so the manage engine survives a minimize.
- * The "Change" CTA stays disabled until a different item is selected and the
- * engine has prepared, then goes straight to the wallet screen, whose summary
- * is the confirm grid (no in-modal review: the picker already is one).
+ * The Change reward / Change delegate flows (Figma 3015:61490, 3015:61189): the
+ * picker list as the entry. The "Change" CTA stays disabled until a different item
+ * is selected and the engine has prepared, then goes straight to the wallet
+ * screen, whose summary is the confirm grid (no in-modal review: the picker
+ * already is one).
  */
-function StakeChangeSelectionPanel({
+function StakeChangeSelectionFlow({
   kind,
   urnIndex,
-  sessionId
+  onSuccess
 }: {
   kind: ChangeKind;
   urnIndex: number;
-  sessionId: string;
+  onSuccess: () => void;
 }) {
-  const { updateModalContent, txStatus } = useTransaction();
-  const entrySlot = useEntrySlot();
+  const { txCallbacks } = useSession();
   const detail = useStakePositionDetail(urnIndex);
 
   const currentReward =
@@ -123,49 +120,26 @@ function StakeChangeSelectionPanel({
     ]
   );
 
-  const { execute, steps, prepared, isLoading, error, usdValue } = useStakeManageLaunch({
-    urnIndex: BigInt(urnIndex),
-    urnAddress: detail.urnAddress,
-    skyToLock: 0n,
-    skyToFree: 0n,
-    usdsToBorrow: 0n,
-    usdsToWipe: 0n,
-    wipeAll: false,
-    selectedRewardContract: kind === 'reward' && changed ? selected : detail.rewardContract,
-    selectedDelegate: kind === 'delegate' && changed ? selected : detail.voteDelegate,
-    enabled: changed && !detail.vaultLoading,
-    transactionContent: renderConfirmSummary,
-    transactionContentAsScreen: true,
-    sessionId
-  });
-
-  // Steps/analytics are pushed at click time so the wallet screen shows the
-  // engine's final routing.
-  const onConfirm = useCallback(() => {
-    updateModalContent(sessionId, {
-      steps,
-      analytics: {
-        widgetName: 'stake',
-        flow: 'manage',
-        action: 'multicall',
-        data: { module: 'stake', urnIndex, change: kind }
-      }
-    });
-    execute();
-  }, [updateModalContent, sessionId, urnIndex, kind, steps, execute]);
+  const { execute, steps, prepared, isLoading, error, usdValue, calls, isBatch, legCount } =
+    useStakeManageEngine(
+      {
+        urnIndex: BigInt(urnIndex),
+        urnAddress: detail.urnAddress,
+        skyToLock: 0n,
+        skyToFree: 0n,
+        usdsToBorrow: 0n,
+        usdsToWipe: 0n,
+        wipeAll: false,
+        selectedRewardContract: kind === 'reward' && changed ? selected : detail.rewardContract,
+        selectedDelegate: kind === 'delegate' && changed ? selected : detail.voteDelegate,
+        enabled: changed && !detail.vaultLoading
+      },
+      txCallbacks
+    );
+  const confirmSummary = useStakeConfirmContent({ calls, isBatch, legCount, content: renderConfirmSummary });
 
   const confirmDisabled = !changed || !prepared || isLoading;
   const errorMessage = enginePrepareErrorMessage(prepared, changed && !isLoading ? error : null);
-
-  useEffect(() => {
-    if (txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, {
-      entry: { confirmLabel: t`Change`, confirmDisabled, errorMessage },
-      onConfirm,
-      onRetry: onConfirm,
-      usdValue
-    });
-  }, [updateModalContent, sessionId, txStatus, confirmDisabled, errorMessage, onConfirm, usdValue]);
 
   const body =
     kind === 'reward' ? (
@@ -184,12 +158,36 @@ function StakeChangeSelectionPanel({
       />
     );
 
-  return entrySlot ? createPortal(body, entrySlot) : body;
+  return (
+    <TransactionModal
+      title={copy[kind].title()}
+      transactionTitle={copy[kind].transactionTitle()}
+      // Opened over the details modal, which unmounts in this commit.
+      scrimHandoff
+      toast={{
+        loading: t`Changing position`,
+        success: t`Your position is updated!`,
+        error: t`Failed to change the position`
+      }}
+      entry={{ content: body, confirmLabel: t`Change`, confirmDisabled, errorMessage }}
+      transactionScreenContent={confirmSummary}
+      steps={steps}
+      analytics={{
+        widgetName: 'stake',
+        flow: 'manage',
+        action: 'multicall',
+        data: { module: 'stake', urnIndex, change: kind }
+      }}
+      usdValue={usdValue}
+      onConfirm={execute}
+      onSuccess={onSuccess}
+    />
+  );
 }
 
 /**
- * Launcher shared by the Change reward / Change delegate modals: opens the
- * shared TransactionModal at mount with the picker as its entry, returns to
+ * Launcher shared by the Change reward / Change delegate modals: launches the
+ * flow at mount, returns to
  * the position-details modal on close, and lands on the positions tab after a
  * successful change (same interlock as the claim modal).
  */
@@ -229,28 +227,10 @@ function StakeChangeSelectionModal({
     if (launchedRef.current) return;
     launchedRef.current = true;
     launch({
-      title: copy[kind].title(),
-      usdValue: undefined,
-      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-      // Opened over the details modal, which unmounts in this commit.
-      scrimHandoff: true,
-      transactionTitle: copy[kind].transactionTitle(),
-      toast: {
-        loading: t`Changing position`,
-        success: t`Your position is updated!`,
-        error: t`Failed to change the position`
-      },
       sessionId,
-      entry: { confirmLabel: t`Change`, confirmDisabled: true },
-      backgroundContent: <StakeChangeSelectionPanel kind={kind} urnIndex={urnIndex} sessionId={sessionId} />,
-      onConfirm: () => {},
-      onSuccess,
-      analytics: {
-        widgetName: 'stake',
-        flow: 'manage',
-        action: 'multicall',
-        data: { module: 'stake', urnIndex, change: kind }
-      }
+      // Staking is mainnet-only — guard the modal off any L2 (APP-528).
+      supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
+      flow: <StakeChangeSelectionFlow kind={kind} urnIndex={urnIndex} onSuccess={onSuccess} />
     });
   }, [launch, sessionId, kind, urnIndex, onSuccess]);
 

@@ -42,7 +42,7 @@ function OriginOption({ symbol }: { symbol: OriginSymbol }) {
 /**
  * The Figma `USDS ▾` origin/destination token selector, shared by both supply
  * surfaces — the inline no-position card (`SavingsSupplyWithdrawPanel`) and the
- * has-position modal (`SavingsModalForm`). One option collapses to a static chip:
+ * has-position modal (`SavingsFlow`). One option collapses to a static chip:
  * the dropdown affordance only appears when there is an actual alternative to pick
  * (mainnet withdraw is USDS-only, so it reads as a plain chip).
  *

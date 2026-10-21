@@ -10,7 +10,7 @@ import {
   useStUsdsWithdraw
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSession } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 
 export type StUsdsLaunchFlow = 'supply' | 'withdraw';
@@ -61,7 +61,7 @@ export function useStUsdsLaunch({
   stUsdsAmount,
   enabled = true
 }: StUsdsEngineParams): UseStUsdsLaunchResult {
-  const { txCallbacks } = useTransaction();
+  const { txCallbacks } = useSession();
 
   const shouldUseBatch = useShouldUseBatch();
 

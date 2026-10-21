@@ -76,14 +76,16 @@ vi.mock('../hooks/useRewardsLaunch', async importOriginal => {
   };
 });
 
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.update)
+);
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
-  useEntrySlot: () => null
+  useSession: () => ({ status: 'idle' })
 }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-import { RewardsModalForm } from './RewardsModalForm';
+import { RewardsFlow } from './RewardsFlow';
 import { TOKENS } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
@@ -92,8 +94,7 @@ const renderForm = (flow: RewardsLaunchFlow) =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <RewardsModalForm
-          sessionId="s1"
+        <RewardsFlow
           flow={flow}
           contractAddress="0xfa99470f8b0afc45a68b9dc9f5b0b1c0c5f5e0aa"
           supplyToken={TOKENS.usds}
@@ -108,17 +109,34 @@ const renderForm = (flow: RewardsLaunchFlow) =>
 
 // The last analytics blob live-merged to the modal (what the provider will emit from).
 const lastAnalytics = () => {
-  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
-  return withAnalytics.at(-1)?.[1].analytics;
+  const withAnalytics = h.update.mock.calls.filter(([patch]) => patch?.analytics !== undefined);
+  return withAnalytics.at(-1)?.[0].analytics;
 };
 
-describe('RewardsModalForm — analytics parity blob (APP-444 B3)', () => {
+describe('RewardsFlow — analytics parity blob (APP-444 B3)', () => {
   beforeEach(() => {
     h.update.mockClear();
     h.isBatch = false;
     h.amount = parseUnits('25', 18);
   });
   afterEach(() => cleanup());
+
+  it('titles the supply flow and labels its three screens', () => {
+    renderForm('supply');
+    const props = h.update.mock.calls.at(-1)![0];
+    expect(props.title).toBe('Supply to SKY Rewards');
+    expect(props.reviewTitle).toBe('Review supply');
+    expect(props.transactionTitle).toBe('Confirm in the wallet');
+    expect(props.entry?.confirmLabel).toBe('Review');
+    expect(props.confirmLabel).toBe('Confirm');
+  });
+
+  it('titles the withdraw flow', () => {
+    renderForm('withdraw');
+    const props = h.update.mock.calls.at(-1)![0];
+    expect(props.title).toBe('Withdraw from SKY Rewards');
+    expect(props.reviewTitle).toBe('Review withdrawal');
+  });
 
   it('pushes the legacy RewardsWidget supply blob with the registry product name', () => {
     renderForm('supply');

@@ -12,7 +12,7 @@ import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -27,31 +27,20 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 export type { VaultModalPreset } from '../hooks/useVaultTransactionForm';
 
 /**
- * Editable body for the vault "Supply to / Withdraw from {vault}" modals (Figma
- * 859:38105 / 859:38297 entries, 859:38553 / 859:38234 reviews), mounted as the
- * shared modal's entry screen — the vault analogue of `SavingsModalForm`. One
- * body, two flows.
- *
+ * The vault "Supply to / Withdraw from {vault}" flow (Figma 859:38105 / 859:38297
+ * entries, 859:38553 / 859:38234 reviews), the vault analogue of `SavingsFlow`.
  * The form model (`useVaultTransactionForm`) owns the amount/Max state and the
- * ERC-4626 reads; this is the presentation: the DS amount field (label + 24px
- * asset icon + Heading-3 input, balance + 25/50/100% chips + asset chip) and
- * the two-column detail grid. The shared modal owns the confirm button and the
- * three-screen sequence (entry → review → wallet): this body keeps the gating +
- * review breakdown + step labels + wallet hero + toast titles live via
- * `updateModalContent` so it never remounts (input stays focused). Confirm on
- * the review fires the engine `execute` from `useVaultLaunch` — calldata is
- * unchanged.
+ * ERC-4626 reads; the review's Confirm fires the engine `execute` from `useVaultLaunch`.
  */
-export function VaultModalForm({
-  sessionId,
+export function VaultFlow({
   flow,
   vaultAddress,
   assetToken,
   vaultName,
   netRate,
-  preset
+  preset,
+  onSuccess
 }: {
-  sessionId: string;
   flow: VaultLaunchFlow;
   vaultAddress: `0x${string}`;
   assetToken: Token;
@@ -59,6 +48,8 @@ export function VaultModalForm({
   /** Net APY as a decimal fraction (e.g. 0.0445) for the rate + projected-earnings cells. */
   netRate?: number;
   preset?: VaultModalPreset;
+  /** After a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -173,8 +164,7 @@ export function VaultModalForm({
   });
 
   // Review breakdown (Figma 859:38553 / 859:38234): the amount hero the wallet
-  // screen also draws, over the review grid. Scalar deps keep the memo stable
-  // across unrelated renders (matches the savings form).
+  // screen also draws, over the review grid.
   const amountDisplay = formatAsset(debouncedAmount);
   const earningsAfterDisplay = projectEarnings(positionAfter);
   // Resolved outside the memo so it keys on the string, not the i18n object.
@@ -236,26 +226,6 @@ export function VaultModalForm({
     }),
     [flow, vaultName, vaultAddress, assetToken, chainId, isBatch, debouncedAmount, decimals]
   );
-
-  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / review breakdown / step labels /
-  // wallet summary / toast titles in sync, and the entry-slot portal.
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    nextCalls,
-    confirmDisabled: disabled,
-    errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // Every current vault asset is a $1-pegged stablecoin (USDC/USDS/USDT),
-    // so the entered amount doubles as the USD notional (enhanced screening,
-    // APP-517).
-    usdValue: parseFloat(formatUnits(debouncedAmount, decimals)),
-    analytics
-  });
 
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`vault-modal-${flow}-form`}>
@@ -319,5 +289,26 @@ export function VaultModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  return (
+    <TransactionModal
+      title={isSupply ? t`Supply to ${vaultName}` : t`Withdraw from ${vaultName}`}
+      reviewTitle={isSupply ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled: disabled, errorMessage }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={disabled}
+      errorMessage={errorMessage}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // Every current vault asset is a $1-pegged stablecoin (USDC/USDS/USDT), so the
+      // entered amount doubles as the USD notional (APP-517).
+      usdValue={parseFloat(formatUnits(debouncedAmount, decimals))}
+      analytics={analytics}
+      onConfirm={execute}
+      onSuccess={onSuccess}
+      dispatch={{ nextCalls, disabled }}
+    />
+  );
 }

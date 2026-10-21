@@ -12,10 +12,10 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSessionHost } from '@/modules/ui/context/TransactionContext';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -39,10 +39,9 @@ const formatAmount = (amount: bigint) =>
   formatNumber(parseFloat(formatUnits(amount, DECIMALS)), { minDecimals: 2, maxDecimals: 2 });
 
 /**
- * Editable body for the "Upgrade DAI/MKR" modal (Figma 1310:130712 DAI /
- * 1310:130760 MKR), mounted as the shared modal's entry screen via
- * `useModalEntryBody` — single-screen entry (CTA "Continue" goes straight to
- * the wallet screen; the comps draw no review stage). DS amount field (balance,
+ * The "Upgrade DAI/MKR" flow (Figma 1310:130712 DAI / 1310:130760 MKR) — a
+ * single-screen entry (CTA "Continue" goes straight to the wallet screen; the
+ * comps draw no review stage). DS amount field (balance,
  * 25/50/100% chips, source-token pill) over the shared summary grid: [Rate |
  * You'll receive], [Penalty ⓘ (MKR only) | Network], Network fee.
  *
@@ -50,13 +49,7 @@ const formatAmount = (amount: bigint) =>
  * the governance fee (`useMkrSkyFee`) — the engine's calldata takes the raw
  * amount, so the preview math (`math.calculateConversion`) is display-only.
  */
-export function UpgradeModalForm({
-  sessionId,
-  initialToken = 'DAI'
-}: {
-  sessionId: string;
-  initialToken?: UpgradeSourceToken;
-}) {
+export function UpgradeFlow({ initialToken = 'DAI' }: { initialToken?: UpgradeSourceToken }) {
   const { address, isConnected } = useConnection();
   const chainId = useChainId();
 
@@ -119,13 +112,12 @@ export function UpgradeModalForm({
   const disabled = isConnected && (!amountReady || !prepared);
   const errorMessage = enginePrepareErrorMessage(prepared, error);
 
-  const { isModalOpen, isMinimized } = useTransaction();
+  const { open: modalVisible } = useSessionHost();
 
   // Upgrade is the one URL-less surface: while its modal is visibly open the
   // destination stamp reads 'upgrade' (APP-444 D2/B6). Gated on visibility, not
-  // mount — this body stays mounted (hidden) through minimize, and while
-  // minimized events belong to the section the user is actually browsing.
-  const modalVisible = isModalOpen && !isMinimized;
+  // mount — the flow stays mounted through minimize, and while minimized events
+  // belong to the section the user is actually browsing.
   useEffect(() => {
     setUpgradeModalOpen(modalVisible);
     return () => setUpgradeModalOpen(false);
@@ -133,8 +125,6 @@ export function UpgradeModalForm({
 
   const amountLabel = `${formatAmount(debouncedAmount)} ${token}`;
 
-  // Memoized on their data so the useModalEntryBody sync effect has stable
-  // deps (the savings/stUSDS forms' convention).
   const toast = useMemo(
     () => ({
       loading: t`Upgrading ${amountLabel}`,
@@ -193,23 +183,7 @@ export function UpgradeModalForm({
     [sourceToken, chainId, token, target, isBatch, debouncedAmount]
   );
 
-  // Stable identity — an inline arrow here re-triggers useModalEntryBody's sync effect every render.
   const connectAction = useCallback(() => openConnectModal('upgrade_modal'), [openConnectModal]);
-
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    nextCalls,
-    confirmDisabled: disabled,
-    confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
-    confirmAction: isConnected ? undefined : connectAction,
-    errorMessage,
-    steps,
-    transactionScreenContent,
-    toast,
-    usdValue,
-    analytics
-  });
 
   const networkName = useNetworkName(chainId);
 
@@ -282,5 +256,26 @@ export function UpgradeModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  return (
+    <TransactionModal
+      title={t`Upgrade DAI/MKR`}
+      transactionTitle={t`Confirm upgrade`}
+      entry={{
+        content: body,
+        confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
+        confirmDisabled: disabled,
+        confirmAction: isConnected ? undefined : connectAction,
+        errorMessage
+      }}
+      confirmDisabled={disabled}
+      errorMessage={errorMessage}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      usdValue={usdValue}
+      analytics={analytics}
+      onConfirm={execute}
+      dispatch={{ nextCalls, disabled }}
+    />
+  );
 }

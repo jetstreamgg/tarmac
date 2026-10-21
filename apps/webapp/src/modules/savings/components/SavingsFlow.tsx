@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
@@ -10,7 +9,7 @@ import { ModalAmountField } from '@/components/product/ModalAmountField';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { tightensOnly } from '@/modules/ui/lib/callIntent';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
@@ -25,8 +24,6 @@ import { useProductNetworks } from '@/hooks';
 import { Intent } from '@/lib/enums';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 
-// `SavingsModalPreset` now lives with the shared form model; re-exported here so the
-// modal trigger (`useSavingsModal`) and tests keep importing it from this module.
 export type { SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 
 const USDS_DECIMALS = 18;
@@ -50,30 +47,19 @@ const formatUsds = (value: bigint) =>
   formatNumber(parseFloat(formatUnits(value, USDS_DECIMALS)), { maxDecimals: 2 });
 
 /**
- * Editable body for the "Supply to / Withdraw from Sky Savings" modals (Figma
- * 859:36036 entry / 859:36154 review), mounted as the shared modal's
- * `entry.content`. One body, two flows (`flow`).
- *
- * The form model (amount/Max/token state, the balance + L2 PSM reads, and the spend
- * gate) lives in `useSavingsTransactionForm`, shared with the inline no-position
- * surface; this component is the modal *presentation* over it: the DS amount field
- * (label + 24px icon + Heading-3 input, balance + 25/50/100% chips + token
- * dropdown) and the two-column detail grid. The shared modal owns the confirm
- * button and the three-screen sequence (entry → review → wallet): this body keeps
- * the button's gating + the review breakdown + step labels + the wallet-screen
- * hero + minimized-toast titles live via `updateModalContent`, which *merges* into
- * the entry (so this `content` is never re-pushed and the body never remounts —
- * keeping the input focused and loop-free). The review's Confirm fires the engine
- * `execute` from `useSavingsLaunch` — calldata is identical to the inline path.
+ * The "Supply to / Withdraw from Sky Savings" flow (Figma 859:36036 entry →
+ * 859:36154 review → wallet). The form model lives in `useSavingsTransactionForm`;
+ * the review's Confirm fires the engine `execute` from `useSavingsLaunch`.
  */
-export function SavingsModalForm({
-  sessionId,
+export function SavingsFlow({
   flow,
-  preset
+  preset,
+  onSuccess
 }: {
-  sessionId: string;
   flow: SavingsLaunchFlow;
   preset?: SavingsModalPreset;
+  /** After a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -182,93 +168,49 @@ export function SavingsModalForm({
         : NO_VALUE
     : `${formatNumber(parseFloat(formatUnits(debouncedAmount, originDecimals)), { maxDecimals: 2 })} ${originSymbol}`;
 
-  // The review projects the position the transaction leaves behind. Scalar, so the
-  // memo below stays stable across unrelated renders.
+  // The review projects the position the transaction leaves behind.
   const earningsAfterDisplay = projectEarnings(positionAfter);
 
-  const transactionContent = useMemo(() => {
-    const reviewRows = isSupply
-      ? buildSupplyReviewRows({
-          youReceive,
-          estEarnings: earningsAfterDisplay,
-          product: 'Sky Savings',
-          rate: apyDisplay,
-          withdrawal: i18n._(withdrawalWording('savings', 'supply')),
-          network: networkName,
-          networkFee: feeCell.fee?.formatted ?? NO_VALUE
-        })
-      : buildWithdrawReviewRows({
-          youReceive,
-          receiveToken: originSymbol,
-          estEarnings: earningsAfterDisplay,
-          product: 'Sky Savings',
-          rate: apyDisplay,
-          withdrawal: i18n._(withdrawalWording('savings', 'withdraw')),
-          network: networkName,
-          networkFee: feeCell.fee?.formatted ?? NO_VALUE
-        });
-    return (
-      <div className="flex flex-col gap-8 sm:gap-12" data-testid={`savings-modal-${flow}-review`}>
-        {transactionScreenContent}
-        <ModalSummaryGrid
-          rows={toGridCells(reviewRows, 'savings-modal-row', feeCell)}
-          dividerClassName="h-6"
-        />
-      </div>
-    );
-  }, [
-    isSupply,
-    youReceive,
-    earningsAfterDisplay,
-    apyDisplay,
-    networkName,
-    originSymbol,
-    flow,
-    transactionScreenContent,
-    feeCell,
-    i18n
-  ]);
-
-  // Legacy SavingsWidget payload shape (APP-444 B1/B2): withdraw amounts negative.
-  const analytics = useMemo<TransactionAnalytics>(
-    () => ({
-      widgetName: 'savings',
-      flow,
-      action: flow,
-      data: {
-        module: 'savings',
-        assetAddress: engineParams.originToken.address[chainId],
-        assetSymbol: originSymbol,
-        isBatchTx: isBatch,
-        amount: signedAmount(parseFloat(formatUnits(debouncedAmount, originDecimals)), flow)
-      }
-    }),
-    [flow, engineParams.originToken, chainId, originSymbol, isBatch, debouncedAmount, originDecimals]
+  const reviewRows = isSupply
+    ? buildSupplyReviewRows({
+        youReceive,
+        estEarnings: earningsAfterDisplay,
+        product: 'Sky Savings',
+        rate: apyDisplay,
+        withdrawal: i18n._(withdrawalWording('savings', 'supply')),
+        network: networkName,
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
+      })
+    : buildWithdrawReviewRows({
+        youReceive,
+        receiveToken: originSymbol,
+        estEarnings: earningsAfterDisplay,
+        product: 'Sky Savings',
+        rate: apyDisplay,
+        withdrawal: i18n._(withdrawalWording('savings', 'withdraw')),
+        network: networkName,
+        networkFee: feeCell.fee?.formatted ?? NO_VALUE
+      });
+  const transactionContent = (
+    <div className="flex flex-col gap-8 sm:gap-12" data-testid={`savings-modal-${flow}-review`}>
+      {transactionScreenContent}
+      <ModalSummaryGrid rows={toGridCells(reviewRows, 'savings-modal-row', feeCell)} dividerClassName="h-6" />
+    </div>
   );
 
-  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / review breakdown / step labels /
-  // wallet summary / toast titles in sync, and the entry-slot portal.
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    nextCalls,
-    callMatches: PSM_SWAP_BOUNDS,
-    // Only while the swap is still to send: once `sellGem` mined, the USDS
-    // approve and deposit left don't touch the PSM, and refusing them would
-    // strand the swapped USDS.
-    dispatchBlocked: !!usdcBlockedReason && nextCalls.some(call => call.functionName === 'sellGem'),
-    confirmDisabled: disabled,
-    errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // All supply/withdraw origins are $1-pegged (USDS/DAI/USDC), so the
-    // entered amount doubles as the USD notional (enhanced screening, APP-517).
-    usdValue: parseFloat(formatUnits(debouncedAmount, originDecimals)),
-    analytics
-  });
+  // Legacy SavingsWidget payload shape (APP-444 B1/B2): withdraw amounts negative.
+  const analytics: TransactionAnalytics = {
+    widgetName: 'savings',
+    flow,
+    action: flow,
+    data: {
+      module: 'savings',
+      assetAddress: engineParams.originToken.address[chainId],
+      assetSymbol: originSymbol,
+      isBatchTx: isBatch,
+      amount: signedAmount(parseFloat(formatUnits(debouncedAmount, originDecimals)), flow)
+    }
+  };
 
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`savings-modal-${flow}-form`}>
@@ -321,5 +263,32 @@ export function SavingsModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  return (
+    <TransactionModal
+      title={isSupply ? t`Supply to Sky Savings` : t`Withdraw from Sky Savings`}
+      reviewTitle={isSupply ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled: disabled, errorMessage }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={disabled}
+      errorMessage={errorMessage}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // All origins are $1-pegged (USDS/DAI/USDC), so the amount doubles as the USD notional (APP-517).
+      usdValue={parseFloat(formatUnits(debouncedAmount, originDecimals))}
+      analytics={analytics}
+      onConfirm={execute}
+      onSuccess={onSuccess}
+      dispatch={{
+        nextCalls,
+        callMatches: PSM_SWAP_BOUNDS,
+        disabled,
+        // Only while the swap is still to send: once `sellGem` mined, the USDS approve
+        // and deposit left don't touch the PSM, and refusing them would strand the USDS.
+        blocked: !!usdcBlockedReason && nextCalls.some(call => call.functionName === 'sellGem')
+      }}
+    />
+  );
 }

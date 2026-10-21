@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef, ReactNode } from 'react';
+import { useChainId, useChains, useConnection } from 'wagmi';
 import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { ArrowLeft } from 'lucide-react';
@@ -27,7 +28,12 @@ import {
 } from '@/modules/ui/animation/modalStepMotion';
 import { TriangleAlert } from 'lucide-react';
 import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
-import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
+import type { TransactionEntry, TransactionFlowProps } from '@/modules/ui/context/transactionContract';
+import { chainSwitchTarget } from '@/lib/chainAvailability';
+import type { NetworkSwitchSource } from '@/modules/analytics/constants';
+import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { useHostedSession, usePreflightHook, useTransaction } from '@/modules/ui/context/TransactionContext';
+import { forAction } from '@/modules/ui/context/transactionSession';
 import type { GateStatusCopy, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
 import { cn } from '@/lib/cn';
 
@@ -59,13 +65,8 @@ export type TransactionSubtitles = {
   review?: string;
 };
 
-export type TransactionModalProps = {
+type TransactionModalViewProps = {
   open: boolean;
-  /**
-   * Registers the entry-screen portal target (a flow's `backgroundContent` portals
-   * its editable inputs here). Called with the node on mount and null on unmount.
-   */
-  registerEntrySlot?: (el: HTMLElement | null) => void;
   /**
    * Registers the modal's back-to-first-screen action while mounted (null on
    * unmount). The pre-transaction gate drives it on an enhanced-screening
@@ -159,14 +160,14 @@ export type TransactionModalProps = {
    */
   chainGuard?: ChainGuard | null;
   /**
-   * No first screen (see `TransactionConfig.skipReview`): the modal mounts on
+   * No first screen (see `TransactionFlowProps.skipReview`): the modal mounts on
    * the wallet/status screen and fires `onConfirm` itself, once, on mount —
    * the gated path, exactly as a review Confirm would. With nothing to go
-   * back to, the failure view offers Retry alone (the provider closes the
+   * back to, the failure view offers Retry alone (the session closes the
    * modal on a gate's return-to-first-screen).
    */
   skipReview?: boolean;
-  /** See `TransactionConfig.scrimHandoff`: the scrim mounts already up. */
+  /** See `TransactionFlowProps.scrimHandoff`: the scrim mounts already up. */
   scrimHandoff?: boolean;
 };
 
@@ -180,7 +181,7 @@ export type ChainGuard = {
   onSwitch?: () => void;
   /** True while the wallet is answering the guard's own switch request. */
   switching?: boolean;
-  /** Which explanation to show (see `TransactionConfig.chainGuardReason`). */
+  /** Which explanation to show (see `LaunchOptions.chainGuardReason`). */
   reason?: 'product-unavailable' | 'launch-chain';
 };
 
@@ -209,9 +210,8 @@ const statusBadgeLabel: Partial<Record<TxStatus, ReactNode>> = {
   [TxStatus.CANCELLED]: <Trans>Cancelled</Trans>
 };
 
-export function TransactionModal({
+function TransactionModalView({
   open,
-  registerEntrySlot,
   onClose,
   onMinimize,
   title,
@@ -245,15 +245,15 @@ export function TransactionModal({
   registerReturnToReview,
   skipReview = false,
   scrimHandoff = false
-}: TransactionModalProps) {
-  // The first screen is the editable entry when a config supplies one, else the
+}: TransactionModalViewProps) {
+  // The first screen is the editable entry when a flow supplies one, else the
   // read-only review — or, for a flow whose own surface was the review, the
-  // wallet/status screen itself. Initialised per mount (the provider remounts
+  // wallet/status screen itself. Initialised per mount (a fresh session mounts
   // the modal on each launch, so the initializer sees the launch's `entry`).
   const firstStep: TransactionModalStep = entry ? 'entry' : skipReview ? 'transaction' : 'review';
-  // A config carrying BOTH an entry and review content is the three-screen flow
+  // A flow carrying BOTH an entry and review content is the three-screen flow
   // (Figma 859:36036 → 859:36154 → 859:36214): entry → review → transaction.
-  // Entry-only and review-only configs keep their two screens.
+  // Entry-only and review-only flows keep their two screens.
   const hasReviewStage = !!(entry && transactionContent);
   const [step, setStep] = useState<TransactionModalStep>(firstStep);
   const { data: batchSupported } = useIsBatchSupported();
@@ -325,8 +325,8 @@ export function TransactionModal({
     </>
   ) : undefined;
 
-  // The entry screen sources its label/gating from the entry descriptor (kept
-  // live by the in-modal body); the review screen uses the top-level config.
+  // The entry screen sources its label/gating from the entry descriptor; the
+  // review screen from the top-level props.
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
   // The CTA element itself survives entry → review (both are first screens), so
   // only its wording rolls — keyed on the step so a live label edit mid-screen
@@ -356,7 +356,7 @@ export function TransactionModal({
   // and on the failure view, whose Retry would fire too — and the flow's own
   // primary CTA is REPLACED by the switch action (one button, not a second one
   // beside a disabled Confirm). The switch has no path to the executor, and
-  // the provider refuses a wrong-chain fire at the gate anyway; when the dapp
+  // the session refuses a wrong-chain fire at the gate anyway; when the dapp
   // must not switch the wallet (a Safe), the flow's CTAs stay, disabled, under
   // the message.
   const chainGuardBlock = chainGuard && (
@@ -433,7 +433,7 @@ export function TransactionModal({
 
   // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet"),
   // and the three-screen review stage its own (e.g. "Review supply"); both fall back
-  // to `title` so single-title configs render unchanged on every screen.
+  // to `title` so single-title flows render unchanged on every screen.
   //
   // A failure replaces the wallet-screen title: it names the wait for the
   // wallet ("Confirm in the wallet"), and kept reading that above the declined
@@ -453,9 +453,6 @@ export function TransactionModal({
     : isReview && hasReviewStage
       ? (reviewTitle ?? title)
       : title;
-
-  // Stable callback ref so registering the entry slot doesn't thrash on re-render.
-  const slotRef = useCallback((el: HTMLDivElement | null) => registerEntrySlot?.(el), [registerEntrySlot]);
 
   const entryConfirmAction = entry?.confirmAction;
   const handleConfirm = useCallback(() => {
@@ -499,7 +496,7 @@ export function TransactionModal({
 
   // Closing is only blocked while the tx is BROADCAST (LOADING) — a session still
   // awaiting the wallet signature (INITIALIZED) has nothing on-chain, so closing
-  // abandons it (the provider tracks the cancel + warns about the wallet prompt).
+  // abandons it (the session tracks the cancel + warns about the wallet prompt).
   const handleClose = useCallback(() => {
     if (txStatus === TxStatus.LOADING) return;
     setStep(firstStep);
@@ -522,17 +519,17 @@ export function TransactionModal({
     setStep(firstStep);
   }, [onBack, firstStep]);
 
-  // Hand the provider the same back-to-first-screen the header arrow uses, so
+  // Hand the session the same back-to-first-screen the header arrow uses, so
   // the gate's returnToFirstScreen control (enhanced-screening denials) lands
   // on an identical screen state — onBack's progress reset included. (For a
-  // skipReview flow, or once a step has mined, the provider closes the modal
+  // skipReview flow, or once a step has mined, the session closes the modal
   // instead.)
   useEffect(() => {
     registerReturnToFirstScreen?.(handleBack);
     return () => registerReturnToFirstScreen?.(null);
   }, [registerReturnToFirstScreen, handleBack]);
 
-  // The provider's send-back when a deferred dispatch is refused (changed calls,
+  // The session's send-back when a deferred dispatch is refused (changed calls,
   // account or confirm gating): the user re-confirms on the review, which
   // re-renders against the current figures once the status is back at IDLE.
   const handleReturnToReview = useCallback(() => {
@@ -579,18 +576,10 @@ export function TransactionModal({
   if (entry) {
     bodyLayers.push({
       key: 'entry',
-      // The editable entry body stays MOUNTED for the modal's lifetime — it can own
-      // the in-flight engine hook whose onSuccess completes the transaction, so
-      // unmounting it on the transaction screen would strand the modal in LOADING.
+      // Kept mounted across screens so Back returns to the inputs as they were left.
       persistent: true,
       className: 'text-text',
-      content: (
-        <>
-          {entry.content}
-          {/* Portal target for a flow's backgroundContent inputs (see registerEntrySlot). */}
-          <div ref={slotRef} />
-        </>
-      )
+      content: entry.content
     });
   }
   // Read-only review breakdown — the review-path first screen, or the three-screen
@@ -630,7 +619,7 @@ export function TransactionModal({
                     bundled: isBundled,
                     userRejected
                   });
-                  // Stays live off the product's chain: the provider refuses a
+                  // Stays live off the product's chain: the session refuses a
                   // wrong-chain fire and returns the flow to its guarded first
                   // screen, so the press is never dead. The guard's own copy and
                   // switch action render under the list (below) so the failure
@@ -751,8 +740,8 @@ export function TransactionModal({
               </ModalStepBackSlot>
               {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
               <ResponsiveModalTitle className="text-fgPrimary font-circle min-w-0 text-lg leading-5.5 font-medium tracking-[-0.36px]">
-                {/* Keyed on the step, not the string: a live `updateModalContent`
-                    retitle mid-screen should not roll. */}
+                {/* Keyed on the step, not the string: a flow retitling itself
+                    mid-screen should not roll. */}
                 <ModalStepLabel labelKey={step}>{displayTitle}</ModalStepLabel>
               </ResponsiveModalTitle>
               {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
@@ -964,5 +953,165 @@ export function TransactionModal({
         </div>
       </ResponsiveModalContent>
     </ResponsiveModal>
+  );
+}
+
+/**
+ * The transaction modal a flow renders from its own state. It shows the flow's
+ * live props while the session is IDLE and, from the moment the status leaves
+ * IDLE, the props it had then: what the wallet/status and failure screens show is
+ * what was confirmed, whatever the flow's reads do afterwards.
+ */
+export function TransactionModal(props: TransactionFlowProps) {
+  const { session, open, active, state } = useHostedSession();
+  const { minimize, isSettling } = useTransaction();
+
+  const idle = state.status === TxStatus.IDLE;
+  const [frozen, setFrozen] = useState<TransactionFlowProps | null>(null);
+  if (idle && frozen) setFrozen(null);
+  if (!idle && !frozen) setFrozen(props);
+  const shown = idle ? props : (frozen ?? props);
+
+  // The view's screen actions, handed to the session for the gate's send-backs.
+  const screensRef = useRef<{ first: (() => void) | null; review: (() => void) | null }>({
+    first: null,
+    review: null
+  });
+  const registerReturnToFirstScreen = useCallback((fn: (() => void) | null) => {
+    screensRef.current.first = fn;
+  }, []);
+  const registerReturnToReview = useCallback((fn: (() => void) | null) => {
+    screensRef.current.review = fn;
+  }, []);
+
+  // A layout effect: a gate verdict landing between commit and the passive flush
+  // must validate and run this render's calls, not the previous one's.
+  const reviewViewedRef = useRef(false);
+  useLayoutEffect(() => {
+    session.register({
+      view: shown,
+      live: props,
+      screens: {
+        returnToFirstScreen: () => screensRef.current.first?.(),
+        returnToReview: () => screensRef.current.review?.()
+      }
+    });
+    // Launch is the review view on a review-first flow, and on a skipReview one, whose
+    // Confirm launched it. Entry-first flows report it at the entry → review transition.
+    if (!reviewViewedRef.current) {
+      reviewViewedRef.current = true;
+      if (!props.entry) session.reviewViewed();
+    }
+  });
+
+  const chainId = useChainId();
+  const { chainId: connectedChainId } = useConnection();
+  const guardChainId = connectedChainId ?? chainId;
+  const chains = useChains();
+  const { handleSwitchChain, isSwitchPending, switchVariables, canSwitchChain, pendingSwitch } =
+    useNetworkSwitch();
+
+  // The previous launch from this surface still has a write out (useSettleOnEnd).
+  const confirmDisabled = shown.confirmDisabled || (!!session.sessionId && isSettling(session.sessionId));
+
+  const offChain = session.supportedChainIds.length > 0 && !session.supportedChainIds.includes(guardChainId);
+
+  // Screening is warmed while the flow's own gating would let the user proceed,
+  // and never for a transaction that cannot fire off its chains.
+  const actionable =
+    !offChain &&
+    (shown.entry
+      ? !shown.entry.confirmDisabled || (!!shown.onSecondaryConfirm && !shown.entry.secondaryConfirmDisabled)
+      : !confirmDisabled);
+  const usePreflight = usePreflightHook();
+  const preflight = usePreflight({ usdValue: shown.usdValue, active, actionable });
+
+  // Chain guard (APP-528): off the flow's chains every first-screen CTA is held and
+  // a switch is offered. Off while a write is in flight: the calldata is already in
+  // the wallet's hands. The session refuses a wrong-chain fire at the gate too.
+  const noWriteInFlight = state.status !== TxStatus.INITIALIZED && state.status !== TxStatus.LOADING;
+  const chainGuardActive = noWriteInFlight && offChain;
+  const guardTargetChainId = chainGuardActive
+    ? chainSwitchTarget(
+        session.supportedChainIds,
+        chains.map(c => c.id)
+      )
+    : undefined;
+  // A wallet the dapp must not switch (a Safe) gets the explanation without a button (APP-486).
+  const guardCanSwitch = guardTargetChainId !== undefined && canSwitchChain;
+  const switchGuardChain = useCallback(
+    (source: NetworkSwitchSource = 'transaction_modal') => {
+      if (guardTargetChainId === undefined) return;
+      handleSwitchChain({ chainId: guardTargetChainId, source });
+    },
+    [guardTargetChainId, handleSwitchChain]
+  );
+  const onGuardSwitchClick = useCallback(() => switchGuardChain(), [switchGuardChain]);
+
+  // Opening a product's modal resolves its chain the way arriving on its page does,
+  // once per session: a guard turning active later (the wallet switched with the
+  // modal open) gets the CTA, not a prompt. Not when the route guard is already
+  // waiting on the wallet for that chain: a second request would only queue (APP-591).
+  const autoSwitchEvaluatedRef = useRef(false);
+  useEffect(() => {
+    if (autoSwitchEvaluatedRef.current) return;
+    autoSwitchEvaluatedRef.current = true;
+    if (!active || !chainGuardActive || !guardCanSwitch) return;
+    if (pendingSwitch?.to === guardTargetChainId) return;
+    switchGuardChain('transaction_modal_auto');
+  });
+
+  const chainGuard: ChainGuard | null = chainGuardActive
+    ? {
+        currentName: chains.find(c => c.id === guardChainId)?.name,
+        targetName: chains.find(c => c.id === guardTargetChainId)?.name,
+        onSwitch: guardCanSwitch ? onGuardSwitchClick : undefined,
+        switching: isSwitchPending && switchVariables?.chainId === guardTargetChainId,
+        reason: session.chainGuardReason
+      }
+    : null;
+
+  const { steps: actionSteps } = forAction(shown, session.secondary);
+  // Gate prelude steps render ahead of the flow's own, composed here so a retry
+  // that no longer needs the prelude restarts with the flow's steps alone.
+  const steps = state.preludeSteps ? [...state.preludeSteps, ...(actionSteps ?? [])] : actionSteps;
+
+  return (
+    <TransactionModalView
+      open={open}
+      registerReturnToFirstScreen={registerReturnToFirstScreen}
+      registerReturnToReview={registerReturnToReview}
+      onClose={session.close}
+      onMinimize={minimize}
+      title={shown.title}
+      transactionTitle={shown.transactionTitle}
+      reviewTitle={shown.reviewTitle}
+      subtitles={shown.subtitle ? { review: shown.subtitle } : undefined}
+      transactionContent={shown.transactionContent}
+      transactionScreenContent={shown.transactionScreenContent}
+      entry={shown.entry}
+      rightHeaderComponent={shown.rightHeaderComponent}
+      titleBadge={shown.titleBadge}
+      onConfirm={session.confirm}
+      onSecondaryConfirm={shown.onSecondaryConfirm ? session.confirmSecondary : undefined}
+      onReviewStage={session.reviewViewed}
+      onRetry={session.retry}
+      onBack={session.back}
+      backLocked={state.hasMinedStep}
+      txStatus={state.status}
+      confirmLabel={shown.confirmLabel}
+      confirmDisabled={confirmDisabled}
+      errorMessage={shown.errorMessage}
+      successLabel={shown.successLabel}
+      errorLabel={shown.errorLabel}
+      steps={steps}
+      currentStep={state.currentStep}
+      userRejected={state.userRejected}
+      gateCopy={state.gateCopy}
+      preflight={preflight}
+      chainGuard={chainGuard}
+      skipReview={shown.skipReview}
+      scrimHandoff={shown.scrimHandoff}
+    />
   );
 }

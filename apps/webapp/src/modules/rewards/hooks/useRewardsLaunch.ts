@@ -3,7 +3,7 @@ import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { type Token, useBatchRewardsSupply, useRewardsWithdraw } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSession } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 import { useApproveSteps } from '@/modules/ui/hooks/useApproveSteps';
 
@@ -44,7 +44,7 @@ export function useRewardsLaunch({
   amount,
   enabled = true
 }: RewardsEngineParams): UseRewardsLaunchResult {
-  const { txCallbacks } = useTransaction();
+  const { txCallbacks } = useSession();
   const chainId = useChainId();
 
   const shouldUseBatch = useShouldUseBatch();
