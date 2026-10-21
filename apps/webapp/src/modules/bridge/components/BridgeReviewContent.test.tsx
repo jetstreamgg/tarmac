@@ -55,6 +55,15 @@ describe('BridgeReviewContent notes for a CCTP claim', () => {
     expect(note).toMatch(/exchange deposit address won't work/);
   });
 
+  it("tells a Safe to execute every step from its queue, and that a stopped bridge can't be continued here", () => {
+    review();
+    expect(screen.queryByTestId('bridge-modal-safe-queue')).toBeNull();
+    review({ safeQueue: true });
+    const note = screen.getByTestId('bridge-modal-safe-queue').textContent;
+    expect(note).toMatch(/execute every one of them in your Safe's queue/);
+    expect(note).toMatch(/can't continue the bridge/);
+  });
+
   it('asks a contract wallet to confirm it controls its address on Ethereum', () => {
     const onAcceptedChange = vi.fn();
     review({ contractWallet: { accepted: false, onAcceptedChange } });

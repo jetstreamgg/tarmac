@@ -437,6 +437,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const networkFeeText = networkFee?.formatted ?? NO_VALUE;
   // Arbitrum refunds a contract's unused fee to its L2 alias, which a Safe reaches only through Ethereum.
   const aliasedRefund = isSafe && depositTo === 'arbitrum' && !sendsToOther(recipient, account);
+  // A Safe's swap is not kept to continue: its safeTxHash can't be confirmed on chain (APP-567).
+  const safeQueue = isSafe && isCctpBurn && !legs.isBatch;
   const addresses = useMemo(
     () =>
       account && recipient && sendsToOther(recipient, account) ? { from: account, to: recipient } : undefined,
@@ -456,6 +458,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           aliasedRefund={aliasedRefund}
           recipientWarning={claimedByOther}
           contractWallet={contractWallet}
+          safeQueue={safeQueue}
         />
       ),
     [
@@ -468,7 +471,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       addresses,
       aliasedRefund,
       claimedByOther,
-      contractWallet
+      contractWallet,
+      safeQueue
     ]
   );
   const transactionScreenContent = useMemo(

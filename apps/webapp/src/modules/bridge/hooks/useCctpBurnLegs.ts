@@ -139,10 +139,13 @@ export function useCctpBurnLegs({
     [network, amountIn, destination, resume, from, swap]
   );
 
-  // The recipient and continued swap a run was executed for, and the swap it sent, which its burn clears.
+  // Fixed per run at Confirm: the status a leg is later sent under may read unsettled.
+  const isSafe = !!isSafeApp || !!isSafeWallet;
+  // The recipient, continued swap and Safe-ness a run was executed for, and the swap it sent, which its burn clears.
   type Run = {
     recipient: Address | undefined;
     resumed: string | undefined;
+    safe: boolean;
     sentSwap?: { hash: string; variables: TxMutateVariables };
   };
   // The latest run, for a bundle: no new run starts while the wallet shows one.
@@ -152,15 +155,16 @@ export function useCctpBurnLegs({
   const looseRun = () => {
     const loose = looseRef.current;
     if (loose && loose.recipient === to && loose.resumed === resume?.swapTxHash) return loose;
-    return (looseRef.current = { recipient: to, resumed: resume?.swapTxHash });
+    return (looseRef.current = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe });
   };
   // A late callback clears the swap its run continued, not the bridge now on show.
   const resumedSwap = () => (runRef.current ? runRef.current.resumed : resume?.swapTxHash);
   const onLegSent = (hash: string, variables: TxMutateVariables, context?: unknown) => {
-    // A Safe returns a safeTxHash, which the chain can't confirm a swap by.
-    if (!scope || isSafeApp || isSafeWallet) return;
+    if (!scope) return;
     // The run whose prompt this leg was signed in, though another run may have started since.
     const run = (context as Run | undefined) ?? runRef.current ?? looseRun();
+    // A Safe returns a safeTxHash, which the chain can't confirm a swap by.
+    if (run.safe) return;
     if (variables.functionName === CCTP_SWAP_FUNCTION) {
       const usdcAmount = (variables as { args?: readonly unknown[] }).args?.[3];
       if (typeof usdcAmount !== 'bigint' || !run.recipient) return;
@@ -209,10 +213,10 @@ export function useCctpBurnLegs({
   });
   const { execute: executeLegs } = legs;
   const execute = useCallback(() => {
-    const run: Run = { recipient: to, resumed: resume?.swapTxHash };
+    const run: Run = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe };
     runRef.current = run;
     executeLegs(run);
-  }, [to, resume, executeLegs]);
+  }, [to, resume, isSafe, executeLegs]);
 
   const { mutate: refetchUsds } = usdsAllowance;
   const { mutate: refetchUsdc } = usdcAllowance;

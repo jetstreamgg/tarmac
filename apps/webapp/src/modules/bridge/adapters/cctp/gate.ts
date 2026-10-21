@@ -12,6 +12,7 @@ import { psm3L2Abi, usdsPsmWrapperAbi } from '@/hooks/generated';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { getPsmDirectionHalted } from '@/modules/convert/hooks/usePsmConversion.helpers';
 import type { BridgeRouteFacts } from '../../model/resolveRoute';
+import { blockRanges } from '../blockRanges';
 import {
   CCTP_DOMAIN,
   L1_DAI,
@@ -220,9 +221,7 @@ export async function cctpResumeRefusal({
     return finalRefusal('This swap is too old for this app to check, so it cannot be continued.');
   const mintRecipient = addressToBytes32(recipient);
   const scan = async (from: bigint, to: bigint) => {
-    for (let start = from; start <= to; start += RESUME_SCAN_CHUNK_BLOCKS) {
-      const end = start + RESUME_SCAN_CHUNK_BLOCKS - 1n < to ? start + RESUME_SCAN_CHUNK_BLOCKS - 1n : to;
-      const range = { fromBlock: start, toBlock: end } as const;
+    for (const range of blockRanges(from, to, RESUME_SCAN_CHUNK_BLOCKS)) {
       const [burns, outflows] = await Promise.all([
         reader.getContractEvents({
           address: TOKEN_MESSENGER_V2,

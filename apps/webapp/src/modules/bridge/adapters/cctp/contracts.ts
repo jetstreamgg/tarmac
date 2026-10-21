@@ -12,6 +12,7 @@ import { pad, parseAbi, type Address, type Hex } from 'viem';
 import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import type { BridgeNetworkId } from '../../model/networks';
 import { isSystemAddress } from '../../model/systemAddresses';
+import { NATIVE_DEPOSIT_CONTRACTS } from '../nativeDeposit/contracts';
 
 /** The L2s that bridge USDS to Ethereum through CCTP: USDS is swapped to USDC on PSM3, burned, and minted on Ethereum. */
 export type CctpL2NetworkId = 'base' | 'optimism' | 'unichain' | 'arbitrum';
@@ -94,8 +95,8 @@ export const CCTP_CONTRACTS: readonly Address[] = [
   ...(Object.keys(CHAIN_ID) as CctpL2NetworkId[]).flatMap(network => Object.values(cctpL2Contracts(network)))
 ];
 
-/** The burn's mint on Ethereum to the zero address, a system address or a CCTP contract would lose the funds. */
+/** The burn's mint on Ethereum to the zero address, a system address or a bridge contract would lose the funds. */
 export function assertCctpRecipient(address: Address) {
-  if (isSystemAddress(address, CCTP_CONTRACTS))
+  if (isSystemAddress(address, [...CCTP_CONTRACTS, ...NATIVE_DEPOSIT_CONTRACTS]))
     throw new Error('A CCTP bridge needs a recipient that can hold USDC and USDS');
 }

@@ -317,6 +317,51 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(mocks.record).not.toHaveBeenCalled();
   });
 
+  const renderSafeFlip = (isSafeWallet: boolean) =>
+    renderHook(
+      ({ safe }: { safe: boolean }) =>
+        useCctpBurnLegs({
+          enabled: true,
+          from: 'base',
+          chainId: BASE,
+          ethereumChainId: ETHEREUM,
+          account: BASE_BURN_TX.from,
+          recipient: BASE_BURN_MINT_RECIPIENT,
+          amount: AMOUNT,
+          getCallbacks,
+          scope: SCOPE,
+          isSafeWallet: safe
+        }),
+      { initialProps: { safe: isSafeWallet } }
+    );
+
+  it('keeps no swap from a run a Safe confirmed, though its status reads unsettled when the leg is sent', () => {
+    const { result, rerender } = renderSafeFlip(true);
+    act(() => result.current.execute());
+    const run = mocks.execute.mock.calls[0][0];
+    // Checking or unknown read as not a Safe.
+    rerender({ safe: false });
+    (mocks.legs!.onLegSent as (hash: string, variables: object, context: unknown) => void)(
+      SWAP_HASH,
+      calls()[1],
+      run
+    );
+    expect(mocks.record).not.toHaveBeenCalled();
+  });
+
+  it('keeps the swap of a run an account confirmed as not a Safe, though its status changes before the leg is sent', () => {
+    const { result, rerender } = renderSafeFlip(false);
+    act(() => result.current.execute());
+    const run = mocks.execute.mock.calls[0][0];
+    rerender({ safe: true });
+    (mocks.legs!.onLegSent as (hash: string, variables: object, context: unknown) => void)(
+      SWAP_HASH,
+      calls()[1],
+      run
+    );
+    expect(mocks.record).toHaveBeenCalledWith(SCOPE, expect.objectContaining({ swapTxHash: SWAP_HASH }));
+  });
+
   it('checks the chain before continuing, then reads the gate with no swap', async () => {
     render({ resume: RESUME });
     const preflight = mocks.legs!.preflight as (client: unknown) => Promise<Error | undefined>;

@@ -26,6 +26,7 @@ const { usds, usdc, psm3 } = cctpL2Contracts('base');
 const mocks = vi.hoisted(() => ({
   launched: [] as TransactionConfig[],
   modalOpen: false,
+  safe: false,
   storageWritable: true,
   updates: [] as Partial<TransactionConfig>[],
   onError: vi.fn(),
@@ -65,8 +66,8 @@ vi.mock('wagmi', async io => ({
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => false,
-  useSafeWalletStatus: () => 'not-safe',
+  useIsSafeWallet: () => mocks.safe,
+  useSafeWalletStatus: () => (mocks.safe ? 'safe' : 'not-safe'),
   useNetworkFee: () => ({ data: undefined }),
   useTokenBalance: () => ({ data: undefined, isLoading: false })
 }));
@@ -213,6 +214,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
       launched: [],
       updates: [],
       modalOpen: false,
+      safe: false,
       storageWritable: true,
       clients: [],
       receipt: undefined
@@ -379,6 +381,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     type ReviewProps = {
       recipientWarning?: boolean;
       contractWallet?: { accepted: boolean; onAcceptedChange: (accepted: boolean) => void };
+      safeQueue?: boolean;
     };
     const reviewProps = (config: Partial<TransactionConfig>) =>
       (config.transactionContent as ReactElement<ReviewProps>).props;
@@ -398,6 +401,22 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
         contractWallet: undefined
       });
     });
+
+    it.each([
+      ['a Safe sending one step at a time', true, false, 'base', true],
+      ['a Safe sending one bundle', true, true, 'base', false],
+      ['a wallet that is not a Safe', false, false, 'base', false],
+      ['a Safe on a route from Ethereum', true, false, 'ethereum', false]
+    ] as const)(
+      'tells %s whether to finish a stopped bridge from its queue',
+      (_, safe, isBatch, from, shown) => {
+        mocks.safe = safe;
+        mocks.burn.isBatch = isBatch;
+        const view = render(from, from === 'ethereum' ? 'base' : 'ethereum');
+        act(() => view.result.current.launch());
+        expect(!!reviewProps(mocks.launched.at(-1)!).safeQueue).toBe(shown);
+      }
+    );
 
     it('asks nothing on a route from Ethereum', () => {
       const view = render('ethereum', 'base', undefined, { recipient: OTHER, senderIsContract: true });

@@ -65,6 +65,8 @@ type BridgeReviewContentProps = {
   recipientWarning?: boolean;
   /** A contract wallet's CCTP claim to itself, which it confirms it can send on Ethereum. */
   contractWallet?: { accepted: boolean; onAcceptedChange: (accepted: boolean) => void };
+  /** A Safe's CCTP legs are separate Safe transactions, and no swap of a Safe is kept to continue. */
+  safeQueue?: boolean;
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
@@ -78,7 +80,8 @@ export function BridgeReviewContent({
   addresses,
   aliasedRefund,
   recipientWarning,
-  contractWallet
+  contractWallet,
+  safeQueue
 }: BridgeReviewContentProps) {
   const rows = buildBridgeModalRows({ route, networkFee, bridgeFee });
   const contractCheckboxId = useId();
@@ -98,6 +101,11 @@ export function BridgeReviewContent({
         {recipientWarning && (
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-recipient-warning">
             {t`The recipient won't see this transfer automatically. Share the claim link or the transaction hash with them once it's sent. They need to claim on Ethereum from a wallet that controls the recipient address, so an exchange deposit address won't work.`}
+          </p>
+        )}
+        {safeQueue && (
+          <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-safe-queue">
+            {t`Your Safe sends this bridge as separate transactions. Sign and execute every one of them in your Safe's queue. If the swap executes but the burn doesn't, this app can't continue the bridge, and the USDC stays in your Safe.`}
           </p>
         )}
         {contractWallet && (
