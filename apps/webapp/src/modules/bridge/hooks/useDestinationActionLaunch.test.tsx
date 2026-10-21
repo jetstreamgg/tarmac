@@ -2,14 +2,24 @@
  * @vitest-environment happy-dom
  */
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook as renderHookIn } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
+import { createElement, type ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { applyProgress, createPendingBridge, dropSentAction } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
+
+// The hook invalidates balance reads once an action confirms.
+const queryClient = new QueryClient();
+const renderHook = <Result,>(hook: () => Result) =>
+  renderHookIn(hook, {
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children)
+  });
 
 const mocks = vi.hoisted(() => ({
   address: '',

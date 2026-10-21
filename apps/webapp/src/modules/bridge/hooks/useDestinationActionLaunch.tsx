@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -32,6 +33,7 @@ import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
+import { readsBalanceOn } from './balanceQueries';
 import { useArbitrumRedeemLegs } from './useArbitrumRedeemLegs';
 import { CCTP_CLAIM_FUNCTION, useCctpClaimLegs } from './useCctpClaimLegs';
 import { useCctpConvertLegs } from './useCctpConvertLegs';
@@ -178,6 +180,7 @@ const convertible = (bridge: PendingBridge, amount: bigint | undefined): amount 
 export function useDestinationActionLaunch() {
   const { launch: launchModal, updateModalContent, txCallbacks, isModalOpen, txStatus } = useTransaction();
   const sessionId = useId();
+  const queryClient = useQueryClient();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
   const safeStatus = useSafeWalletStatus();
@@ -427,9 +430,13 @@ export function useDestinationActionLaunch() {
               onSent: record((current, txHash) =>
                 recordActionSent(current, { action, txHash, at: Date.now(), ...(isSafe && { safe: true }) })
               ),
-              onConfirmed: record((current, txHash) =>
-                recordAction(current, { action, txHash, at: Date.now() })
-              ),
+              onConfirmed: txHash => {
+                pendingBridgeStore.update(scope, bridge.id, current =>
+                  recordAction(current, { action, txHash, at: Date.now() })
+                );
+                // A settled bridge leaves the tracker, so its arrival never refreshes these.
+                void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
+              },
               onReverted: record(dropSentAction)
             }
           );
@@ -452,6 +459,7 @@ export function useDestinationActionLaunch() {
     [
       launchModal,
       sessionId,
+      queryClient,
       pinChainId,
       isSafe,
       walletChainId,
