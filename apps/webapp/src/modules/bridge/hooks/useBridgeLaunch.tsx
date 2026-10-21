@@ -469,7 +469,11 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
 
   const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
   const confirmDisabled =
-    !form.isConnected || form.reviewBlocked || (isReal && !legs.ready) || feeShort || contractUnaccepted;
+    !form.isConnected ||
+    form.reviewBlocked ||
+    (isReal && (!legs.ready || legs.busy)) ||
+    feeShort ||
+    contractUnaccepted;
   // The mock routes send one leg at a time.
   const bundled = isReal && legs.isBatch;
   const feeText = deposit.maxFee !== undefined ? formatEthCeil(deposit.maxFee) : NO_VALUE;
@@ -477,9 +481,11 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     ? t`Browser storage is unavailable here, so this bridge can only go to your own address. Allow site data, or use another browser, to send it to another address.`
     : feeShort && ethBalance
       ? t`You need at least ${feeText} ETH on Ethereum to pay the Arbitrum bridge fee.`
-      : isReal
-        ? enginePrepareErrorMessage(legs.ready, legs.error)
-        : undefined;
+      : isReal && legs.busy
+        ? t`A transaction from your last bridge is still open in your wallet or pending. Wait for it to settle before sending again.`
+        : isReal
+          ? enginePrepareErrorMessage(legs.ready, legs.error)
+          : undefined;
 
   const launch = useCallback(() => {
     // No chain to guard: an empty guard would let the legs run on any chain.

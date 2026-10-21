@@ -38,6 +38,7 @@ const mocks = vi.hoisted(() => ({
   burnReset: vi.fn(),
   burn: {
     ready: true,
+    busy: false,
     error: null as Error | null,
     isBatch: false,
     calls: [] as unknown[],
@@ -122,12 +123,13 @@ vi.mock('./useCctpBurnLegs', () => ({
   CCTP_BURN_FUNCTION: 'depositForBurn',
   useCctpBurnLegs: (args: (typeof mocks.burn.args)[number]) => {
     mocks.burn.args.push(args);
-    const { ready, error, isBatch, calls, execute } = mocks.burn;
+    const { ready, busy, error, isBatch, calls, execute } = mocks.burn;
     return {
       calls,
       needsApprove: false,
       isBatch,
       ready,
+      busy,
       error,
       execute,
       reset: mocks.burnReset,
@@ -215,7 +217,14 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
       clients: [],
       receipt: undefined
     });
-    Object.assign(mocks.burn, { ready: true, error: null, isBatch: false, calls: BURN_CALLS, args: [] });
+    Object.assign(mocks.burn, {
+      ready: true,
+      busy: false,
+      error: null,
+      isBatch: false,
+      calls: BURN_CALLS,
+      args: []
+    });
     mocks.burn.execute.mockClear();
     mocks.depositExecute.mockClear();
     mocks.runMockLegs.mockClear();
@@ -279,6 +288,15 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     act(() => mocks.launched.at(-1)!.onConfirm!());
     expect(mocks.burn.execute).not.toHaveBeenCalled();
     expect(mocks.onError).toHaveBeenCalled();
+  });
+
+  // A leg of the closed run is still in the wallet: a Confirm now would sign that run's calls.
+  it('blocks Confirm and says why while a leg of the last run is still out', () => {
+    Object.assign(mocks.burn, { busy: true });
+    const view = render();
+    act(() => view.result.current.launch());
+    expect(mocks.launched.at(-1)).toMatchObject({ confirmDisabled: true });
+    expect(mocks.launched.at(-1)!.errorMessage).toMatch(/still open in your wallet or pending/);
   });
 
   it('stores the card under the burn hash, never the swap or an approve', () => {

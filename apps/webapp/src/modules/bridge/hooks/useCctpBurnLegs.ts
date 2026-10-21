@@ -139,35 +139,46 @@ export function useCctpBurnLegs({
     [network, amountIn, destination, resume, from, swap]
   );
 
-  // The swap the latest run sent, which its burn clears; the recipient and continued swap it ran for.
-  const sentSwapRef = useRef<{ hash: string; variables: TxMutateVariables } | undefined>(undefined);
-  const runRef = useRef<{ recipient: Address | undefined; resumed: string | undefined } | undefined>(
-    undefined
-  );
+  // The recipient and continued swap a run was executed for, and the swap it sent, which its burn clears.
+  type Run = {
+    recipient: Address | undefined;
+    resumed: string | undefined;
+    sentSwap?: { hash: string; variables: TxMutateVariables };
+  };
+  // The latest run, for a bundle: no new run starts while the wallet shows one.
+  const runRef = useRef<Run | undefined>(undefined);
+  // A leg reported with no run: one run per recipient and continued swap on show.
+  const looseRef = useRef<Run | undefined>(undefined);
+  const looseRun = () => {
+    const loose = looseRef.current;
+    if (loose && loose.recipient === to && loose.resumed === resume?.swapTxHash) return loose;
+    return (looseRef.current = { recipient: to, resumed: resume?.swapTxHash });
+  };
   // A late callback clears the swap its run continued, not the bridge now on show.
   const resumedSwap = () => (runRef.current ? runRef.current.resumed : resume?.swapTxHash);
-  const onLegSent = (hash: string, variables: TxMutateVariables) => {
+  const onLegSent = (hash: string, variables: TxMutateVariables, context?: unknown) => {
     // A Safe returns a safeTxHash, which the chain can't confirm a swap by.
     if (!scope || isSafeApp || isSafeWallet) return;
+    // The run whose prompt this leg was signed in, though another run may have started since.
+    const run = (context as Run | undefined) ?? runRef.current ?? looseRun();
     if (variables.functionName === CCTP_SWAP_FUNCTION) {
       const usdcAmount = (variables as { args?: readonly unknown[] }).args?.[3];
-      const swapRecipient = runRef.current?.recipient ?? to;
-      if (typeof usdcAmount !== 'bigint' || !swapRecipient) return;
+      if (typeof usdcAmount !== 'bigint' || !run.recipient) return;
       // A repriced swap comes back with the same variables under the hash that mines.
-      const replaced = sentSwapRef.current;
+      const replaced = run.sentSwap;
       if (replaced?.variables === variables && replaced.hash !== hash)
         cctpSwapStore.clear(scope, replaced.hash);
-      sentSwapRef.current = { hash, variables };
+      run.sentSwap = { hash, variables };
       cctpSwapStore.record(scope, {
         swapTxHash: hash,
         network,
         usdcAmount,
-        recipient: swapRecipient,
+        recipient: run.recipient,
         at: Date.now()
       });
     } else if (variables.functionName === CCTP_BURN_FUNCTION) {
-      const swapTxHash = resumedSwap() ?? sentSwapRef.current?.hash;
-      sentSwapRef.current = undefined;
+      const swapTxHash = run.resumed ?? run.sentSwap?.hash;
+      run.sentSwap = undefined;
       if (swapTxHash) cctpSwapStore.clear(scope, swapTxHash);
     }
   };
@@ -198,8 +209,9 @@ export function useCctpBurnLegs({
   });
   const { execute: executeLegs } = legs;
   const execute = useCallback(() => {
-    runRef.current = { recipient: to, resumed: resume?.swapTxHash };
-    executeLegs();
+    const run: Run = { recipient: to, resumed: resume?.swapTxHash };
+    runRef.current = run;
+    executeLegs(run);
   }, [to, resume, executeLegs]);
 
   const { mutate: refetchUsds } = usdsAllowance;
@@ -214,6 +226,8 @@ export function useCctpBurnLegs({
     needsApprove: calls.some(call => (call as { functionName?: string }).functionName === 'approve'),
     isBatch: legs.isBatch,
     ready: legs.ready,
+    /** A leg of the last run is still out, after a close. */
+    busy: legs.busy,
     /** A read, the calls or the first leg's simulation failed. */
     error:
       (active && ((swap && usdsAllowance.error) || usdcAllowance.error)) ||

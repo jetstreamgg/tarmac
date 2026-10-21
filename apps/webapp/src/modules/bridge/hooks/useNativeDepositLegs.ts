@@ -149,6 +149,8 @@ export function useNativeDepositLegs({
     isBatch: legs.isBatch,
     /** Confirm can send the first leg. */
     ready: legs.ready,
+    /** A leg of the last run is still out, after a close. */
+    busy: legs.busy,
     /** A read or the first leg's simulation failed. */
     error: (active && ((isArbitrum && quoteCurrent && quote.error) || allowance.error)) || legs.error,
     execute: legs.execute,
