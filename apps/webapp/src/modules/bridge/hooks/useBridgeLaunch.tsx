@@ -300,9 +300,13 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       // Another Review sent a burn for this swap since its card opened; the chain shows it only once it mines.
       const continued =
         resume && cctpSwapStore.getSnapshot(scope).find(swap => swap.swapTxHash === resume.swapTxHash);
+      // That burn may still revert, so this doesn't say it was sent.
       if (continued && continued.burn !== resume.burn) {
         callbacksRef.current.onError(
-          new TransactionRefusedError('This bridge was already sent.', { final: true })
+          new TransactionRefusedError(
+            'This bridge was sent from another window. Close this and check its card.',
+            { final: true }
+          )
         );
         return;
       }

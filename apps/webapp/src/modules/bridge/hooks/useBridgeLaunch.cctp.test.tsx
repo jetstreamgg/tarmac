@@ -397,7 +397,10 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
         act(() => mocks.launched.at(-1)!.onConfirm!());
         expect(mocks.burn.execute).not.toHaveBeenCalled();
         expect(mocks.onError).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'This bridge was already sent.', final: true })
+          expect.objectContaining({
+            message: 'This bridge was sent from another window. Close this and check its card.',
+            final: true
+          })
         );
         // The card of a failed burn still continues: its swap is linked to that same burn.
         const failed = { ...SWAP, burn: BASE_BURN_TX.hash.toLowerCase() };
