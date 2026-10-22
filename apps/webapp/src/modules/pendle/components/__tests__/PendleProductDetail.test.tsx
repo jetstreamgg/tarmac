@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
 
 i18n.load('en', {});
@@ -83,9 +83,18 @@ const renderDetail = () =>
     </I18nProvider>
   );
 
+// Before MARKET's 26 Nov 2026 expiry, so the live-market specs keep passing after that date.
+const BEFORE_EXPIRY_MS = Date.UTC(2026, 9, 1);
+
 describe('PendleProductDetail', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
+  });
+
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     h.stats = undefined;
   });
 

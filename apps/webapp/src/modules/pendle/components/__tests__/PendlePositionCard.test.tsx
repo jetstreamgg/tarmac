@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
 
 i18n.load('en', {});
@@ -140,7 +140,15 @@ const wrap = (market: PendleMarketConfig = MARKET) => (
 
 const renderCard = (market?: PendleMarketConfig) => render(wrap(market));
 
+// Before MARKET's 26 Nov 2026 expiry, so the live-market specs keep passing after that date.
+const BEFORE_EXPIRY_MS = Date.UTC(2026, 9, 1);
+
 describe('PendlePositionCard', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
@@ -171,6 +179,7 @@ describe('PendlePositionCard', () => {
 
   it('keeps the CTA enabled while disconnected and routes the click into the connect flow', () => {
     vi.useFakeTimers();
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
     h.connected = false;
     const view = renderCard();
 
