@@ -4,7 +4,7 @@ import { useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
 import { useTokenBalance } from '@/hooks';
 import { L1_USDC } from '../adapters/cctp/contracts';
-import { cctpConvertOffer, claimSoldForUsds, confirmedClaimTxHashes } from '../adapters/cctp/convert';
+import { cctpConvertOffer, confirmedClaimTxHashes, readClaimSold } from '../adapters/cctp/convert';
 import { bridgeChainId } from '../model/networks';
 import { canLaunchConvert } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
@@ -35,13 +35,8 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
     queryFn: async () => {
       const client = chainId === undefined ? undefined : getPublicClient(config, { chainId });
       if (!client) throw new Error('No Ethereum client.');
-      const receipts = await Promise.all(
-        claimTxHashes.map(hash => client.getTransactionReceipt({ hash: hash as Hex }))
-      );
       // A reverted claim can't tell what it left: offer nothing.
-      return receipts.some(
-        receipt => receipt.status !== 'success' || claimSoldForUsds(receipt.logs, recipient)
-      );
+      return readClaimSold(client, bridge, recipient);
     },
     enabled: eligible,
     staleTime: Infinity,

@@ -1,14 +1,14 @@
 /**
  * @vitest-environment happy-dom
  */
-import { act, renderHook as renderHookIn } from '@testing-library/react';
+import { act, renderHook as renderHookIn, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { createElement, type ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionRefusedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { confirmedClaimTxHashes } from '../adapters/cctp/convert';
+import { confirmedClaimTxHashes, type ConvertOfferReader } from '../adapters/cctp/convert';
 import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
@@ -24,20 +24,22 @@ const renderHook = <Result,>(hook: () => Result) =>
   });
 
 type LegsParams = { enabled: boolean; getCallbacks: () => TxCallbacks };
-type LegsMock = { params?: LegsParams; ready: boolean; execute: () => void };
+type LegsMock = { params?: LegsParams; ready: boolean; execute: () => void; client?: ConvertOfferReader };
 const legsResult = (legs: LegsMock) => ({
   calls: [],
   isBatch: false,
   ready: legs.ready,
   error: null,
   execute: legs.execute,
-  reset: () => undefined
+  reset: () => undefined,
+  client: legs.client
 });
 
 const mocks = vi.hoisted(() => ({
   address: '',
   isSafe: false,
   launched: [] as TransactionConfig[],
+  onError: (() => undefined) as (error: Error) => void,
   claim: { ready: true, execute: () => undefined } as LegsMock,
   convert: { ready: true, execute: () => undefined } as LegsMock
 }));
@@ -58,7 +60,12 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: (config: TransactionConfig) => mocks.launched.push(config),
     updateModalContent: vi.fn(),
-    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() },
+    txCallbacks: {
+      onMutate: vi.fn(),
+      onStart: vi.fn(),
+      onSuccess: vi.fn(),
+      onError: (error: Error) => mocks.onError(error)
+    },
     txStatus: 'idle',
     isModalOpen: true,
     isMinimized: false,
@@ -156,6 +163,7 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
     mocks.launched = [];
     mocks.claim = { ready: true, execute: vi.fn() };
     mocks.convert = { ready: true, execute: vi.fn() };
+    mocks.onError = vi.fn();
   });
 
   describe('the review of a convert (Figma 94 to 96)', () => {
@@ -274,6 +282,98 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       expect(actionsOf('claim')).toEqual([
         { action: 'claim', txHash: '0xsafe-receive', at: expect.any(Number), status: 'sent', safe: true }
       ]);
+    });
+  });
+
+  // Q17 (Figma 93): a claim whose receive mined but whose sale didn't converts on Try again, never sends the claim twice.
+  describe("Try again after a claim's sale failed", () => {
+    const usdcOf = (balance: bigint, { sold = false }: { sold?: boolean } = {}): ConvertOfferReader => ({
+      getTransactionReceipt: vi.fn(async () => ({
+        status: sold ? 'reverted' : 'success',
+        logs: []
+      })) as never,
+      readContract: vi.fn(async () => balance) as never
+    });
+    const saleReverted = () => {
+      const card = seed({ claimed: false });
+      const hook = renderHook(() => useDestinationActionLaunch());
+      act(() => hook.result.current.launch(card, 'claim'));
+      confirm();
+      const callbacks = mocks.claim.params!.getCallbacks();
+      leg(callbacks, 'receiveMessage', '0xreceive');
+      leg(callbacks, 'approve', '0xapprove');
+      leg(callbacks, 'sellGem', '0xsell');
+      callbacks.onError(new TransactionRevertedError(), '0xsell');
+      mocks.onError = vi.fn();
+      return hook;
+    };
+
+    it('opens the conversion of the USDC the claim left, capped by what the wallet holds', async () => {
+      mocks.claim.client = usdcOf(MINTED - 40n * 10n ** 6n);
+      saleReverted();
+      const launches = mocks.launched.length;
+      confirm();
+      await waitFor(() => expect(mocks.launched).toHaveLength(launches + 1));
+      const config = mocks.launched.at(-1)!;
+      expect(config.title).toBe('Review conversion');
+      expect(config.transactionContent).toMatchObject({
+        props: { amount: MINTED - 40n * 10n ** 6n, bridged: MINTED }
+      });
+      expect(mocks.onError).not.toHaveBeenCalled();
+      expect(actionsOf('claim')).toHaveLength(1);
+      expect(mocks.claim.execute).toHaveBeenCalledTimes(1);
+    });
+
+    it('never converts more than the claim minted', async () => {
+      mocks.claim.client = usdcOf(MINTED * 3n);
+      saleReverted();
+      confirm();
+      await waitFor(() => expect(mocks.launched.at(-1)!.title).toBe('Review conversion'));
+      expect(mocks.launched.at(-1)!.transactionContent).toMatchObject({ props: { amount: MINTED } });
+    });
+
+    it('still refuses when there is nothing left to convert', async () => {
+      mocks.claim.client = usdcOf(0n);
+      saleReverted();
+      const launches = mocks.launched.length;
+      confirm();
+      await waitFor(() =>
+        expect(mocks.onError).toHaveBeenCalledWith(
+          new TransactionRefusedError('This action was already sent.', { final: true })
+        )
+      );
+      expect(mocks.launched).toHaveLength(launches);
+    });
+
+    it('converts nothing when a read fails, and lets Try again read again', async () => {
+      mocks.claim.client = {
+        getTransactionReceipt: vi.fn(async () => {
+          throw new Error('rpc down');
+        }) as never,
+        readContract: vi.fn(async () => MINTED) as never
+      };
+      saleReverted();
+      const launches = mocks.launched.length;
+      confirm();
+      await waitFor(() => expect(mocks.onError).toHaveBeenCalledWith(new Error('rpc down')));
+      expect(mocks.launched).toHaveLength(launches);
+    });
+
+    it('sends a convert whose sale reverted again from its own Try again', () => {
+      const card = seed({ claimed: true });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'convert', MINTED));
+      confirm();
+      const callbacks = mocks.convert.params!.getCallbacks();
+      leg(callbacks, 'approve', '0xapprove');
+      leg(callbacks, 'sellGem', '0xsell');
+      callbacks.onError(new TransactionRevertedError(), '0xsell');
+      expect(actionsOf('convert')).toEqual([]);
+      confirm();
+      expect(mocks.onError).not.toHaveBeenCalledWith(
+        new TransactionRefusedError('This action was already sent.', { final: true })
+      );
+      expect(mocks.convert.execute).toHaveBeenCalledTimes(2);
     });
   });
 

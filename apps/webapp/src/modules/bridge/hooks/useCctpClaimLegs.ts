@@ -90,6 +90,8 @@ export function useCctpClaimLegs({
     /** The message, the allowance read, the calls or the first leg's simulation failed. */
     error: missing || (active && allowance.error) || built?.error || legs.error || null,
     execute: legs.execute,
-    reset: legs.reset
+    reset: legs.reset,
+    /** Ethereum's reader, for what a claim whose sale failed left behind. */
+    client
   };
 }

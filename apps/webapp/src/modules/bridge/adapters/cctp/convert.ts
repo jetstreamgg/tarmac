@@ -1,8 +1,17 @@
-import { isAddressEqual, parseEventLogs, erc20Abi, zeroAddress, type Log } from 'viem';
+import {
+  isAddressEqual,
+  parseEventLogs,
+  erc20Abi,
+  zeroAddress,
+  type Address,
+  type Hex,
+  type Log,
+  type PublicClient
+} from 'viem';
 import { canLaunchConvert } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { cctpBurnAmount } from './calls';
-import { L1_USDS } from './contracts';
+import { L1_USDC, L1_USDS } from './contracts';
 
 /** The claim's transaction mints USDS to the recipient when it sold the received USDC (the wrapper mints it). */
 export const claimSoldForUsds = (
@@ -54,4 +63,43 @@ export function cctpConvertOffer({
   const minted = cctpBurnAmount(bridge.amount);
   const amount = usdcBalance < minted ? usdcBalance : minted;
   return amount > 0n ? amount : undefined;
+}
+
+export type ConvertOfferReader = Pick<PublicClient, 'getTransactionReceipt' | 'readContract'>;
+
+/**
+ * Whether this app's claim sold its USDC to `recipient`, from the receipts of
+ * every hash it confirmed with. A reverted one can't tell what it left, so it
+ * counts as sold.
+ */
+export async function readClaimSold(client: ConvertOfferReader, bridge: PendingBridge, recipient: string) {
+  const receipts = await Promise.all(
+    confirmedClaimTxHashes(bridge).map(hash => client.getTransactionReceipt({ hash: hash as Hex }))
+  );
+  return receipts.some(receipt => receipt.status !== 'success' || claimSoldForUsds(receipt.logs, recipient));
+}
+
+/** `cctpConvertOffer` read afresh on Ethereum: the claim's receipts and the account's USDC. A failed read rejects. */
+export async function readCctpConvertOffer({
+  client,
+  bridge,
+  account
+}: {
+  client: ConvertOfferReader;
+  bridge: PendingBridge;
+  account: string;
+}): Promise<bigint | undefined> {
+  const recipient = bridge.recipient ?? bridge.account;
+  if (!canLaunchConvert(bridge) || !confirmedClaimTxHash(bridge)) return undefined;
+  if (account.toLowerCase() !== recipient.toLowerCase()) return undefined;
+  const [claimSold, usdcBalance] = await Promise.all([
+    readClaimSold(client, bridge, recipient),
+    client.readContract({
+      address: L1_USDC,
+      abi: erc20Abi,
+      functionName: 'balanceOf',
+      args: [account as Address]
+    })
+  ]);
+  return cctpConvertOffer({ bridge, account, claimSold, usdcBalance });
 }

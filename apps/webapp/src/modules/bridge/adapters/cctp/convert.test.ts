@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   encodeAbiParameters,
   encodeEventTopics,
@@ -17,7 +17,13 @@ import {
 import { resolveBridgeRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
 import { L1_USDC, L1_USDS } from './contracts';
-import { cctpConvertOffer, claimSoldForUsds, confirmedClaimTxHash } from './convert';
+import {
+  cctpConvertOffer,
+  claimSoldForUsds,
+  confirmedClaimTxHash,
+  readCctpConvertOffer,
+  type ConvertOfferReader
+} from './convert';
 
 const NOW = 1_800_000_000_000;
 const ACCOUNT = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
@@ -144,5 +150,96 @@ describe('cctpConvertOffer', () => {
     ).toBeUndefined();
     const sent = recordActionSent(claimed(), { action: 'convert', txHash: '0xsell', at: NOW });
     expect(offer({ bridge: sent })).toBeUndefined();
+  });
+});
+
+// The offer read afresh when a claim's Try again hands over to the convert: the same rule as the card.
+describe('readCctpConvertOffer', () => {
+  const reader = ({
+    receipts,
+    usdc
+  }: {
+    receipts: Record<string, { status: 'success' | 'reverted'; logs: ReturnType<typeof transfer>[] }>;
+    usdc: bigint;
+  }): ConvertOfferReader => ({
+    getTransactionReceipt: vi.fn(async ({ hash }: { hash: Hex }) => receipts[hash]) as never,
+    readContract: vi.fn(async ({ address, args }: { address: Address; args: readonly [Address] }) => {
+      if (address !== L1_USDC || args[0] !== ACCOUNT) throw new Error('unexpected read');
+      return usdc;
+    }) as never
+  });
+
+  it('offers what the claim minted, capped by the USDC the account holds', async () => {
+    const receipts = { '0xclaim': { status: 'success' as const, logs: [] } };
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ receipts, usdc: USDC('60') }),
+        bridge: claimed(),
+        account: ACCOUNT
+      })
+    ).resolves.toBe(USDC('60'));
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ receipts, usdc: USDC('250') }),
+        bridge: claimed(),
+        account: ACCOUNT
+      })
+    ).resolves.toBe(USDC('100'));
+  });
+
+  it('offers nothing when a transaction of the claim sold the USDC', async () => {
+    const sold = recordAction(claimed(), { action: 'claim', txHash: '0xsale', at: NOW });
+    const receipts = {
+      '0xclaim': { status: 'success' as const, logs: [] },
+      '0xsale': {
+        status: 'success' as const,
+        logs: [transfer(L1_USDS, zeroAddress, ACCOUNT, parseUnits('100', 18))]
+      }
+    };
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ receipts, usdc: USDC('500') }),
+        bridge: sold,
+        account: ACCOUNT
+      })
+    ).resolves.toBeUndefined();
+  });
+
+  it('offers nothing for a reverted claim, to another account, or with no USDC', async () => {
+    const ok = { '0xclaim': { status: 'success' as const, logs: [] } };
+    const reverted = { '0xclaim': { status: 'reverted' as const, logs: [] } };
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ receipts: reverted, usdc: USDC('100') }),
+        bridge: claimed(),
+        account: ACCOUNT
+      })
+    ).resolves.toBeUndefined();
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ receipts: ok, usdc: USDC('100') }),
+        bridge: claimed(),
+        account: OTHER
+      })
+    ).resolves.toBeUndefined();
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ receipts: ok, usdc: 0n }),
+        bridge: claimed(),
+        account: ACCOUNT
+      })
+    ).resolves.toBeUndefined();
+  });
+
+  it('fails when a read fails, so nothing is converted on a guess', async () => {
+    const client: ConvertOfferReader = {
+      getTransactionReceipt: vi.fn(async () => {
+        throw new Error('rpc down');
+      }) as never,
+      readContract: vi.fn(async () => USDC('100')) as never
+    };
+    await expect(readCctpConvertOffer({ client, bridge: claimed(), account: ACCOUNT })).rejects.toThrow(
+      'rpc down'
+    );
   });
 });

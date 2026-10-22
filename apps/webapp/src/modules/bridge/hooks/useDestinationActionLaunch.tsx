@@ -21,6 +21,7 @@ import { CctpConvertReview } from '../components/CctpConvertReview';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
 import { CCTP_CONVERT_FUNCTION, cctpBurnAmount } from '../adapters/cctp/calls';
+import { readCctpConvertOffer } from '../adapters/cctp/convert';
 import {
   canLaunchAction,
   canLaunchConvert,
@@ -323,9 +324,11 @@ export function useDestinationActionLaunch() {
   // The Confirm whose callbacks may still reach the modal; none once the modal closes.
   const modalOwnerRef = useRef<TxCallbacks | undefined>(undefined);
   const sendReplayRef = useRef(() => undefined as void);
+  const claimClientRef = useRef(claimLegs.client);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     addressRef.current = address;
+    claimClientRef.current = claimLegs.client;
     if (!isModalOpen) modalOwnerRef.current = undefined;
     sendReplayRef.current = () => {
       if (!confirmPendingRef.current) return;
@@ -388,9 +391,17 @@ export function useDestinationActionLaunch() {
     [pinChainId, walletChainId, canSwitchChain, isSafe, address]
   );
 
+  type LaunchIn = (
+    scope: string,
+    card: PendingBridge,
+    requested?: PendingBridgeNextAction,
+    convertAmount?: bigint
+  ) => void;
+  // A Confirm hands over to the latest launchIn, never the one its modal was opened with.
+  const launchInRef = useRef<LaunchIn>(() => undefined);
   // The card's scope, read where it was clicked: a switch to an L2 fork moves the dev scope.
-  const launchIn = useCallback(
-    (scope: string, card: PendingBridge, requested?: PendingBridgeNextAction, convertAmount?: bigint) => {
+  const launchIn = useCallback<LaunchIn>(
+    (scope, card, requested, convertAmount) => {
       const launchId = ++launchIdRef.current;
       // The card can predate a broadcast; the store has the sent action.
       const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === card.id);
@@ -472,10 +483,38 @@ export function useDestinationActionLaunch() {
         onConfirm: () => {
           // Retry calls onConfirm again; an action already sent must not go out twice.
           const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
-          if (!current || !launchable(current, action, addressRef.current)) {
+          const refuse = () =>
             callbacksRef.current.onError(
               new TransactionRefusedError('This action was already sent.', { final: true })
             );
+          if (!current || !launchable(current, action, addressRef.current)) {
+            // A claim whose receive mined but whose sale didn't: Try again converts what it left (Q17).
+            const account = addressRef.current;
+            const client = claimClientRef.current;
+            if (
+              current &&
+              action === 'claim' &&
+              account &&
+              client &&
+              launchable(current, 'convert', account)
+            ) {
+              readCctpConvertOffer({ client, bridge: current, account }).then(
+                offer => {
+                  if (launchIdRef.current !== launchId || !modalOwnerRef.current) return;
+                  if (offer === undefined) refuse();
+                  else launchInRef.current(scope, current, 'convert', offer);
+                },
+                error => {
+                  if (launchIdRef.current === launchId && modalOwnerRef.current)
+                    callbacksRef.current.onError(
+                      error instanceof Error ? error : new Error(String(error)),
+                      ''
+                    );
+                }
+              );
+              return;
+            }
+            refuse();
             return;
           }
           const record =
@@ -561,6 +600,9 @@ export function useDestinationActionLaunch() {
       resetConvert
     ]
   );
+  useLayoutEffect(() => {
+    launchInRef.current = launchIn;
+  });
 
   const launch = useCallback(
     (card: PendingBridge, action?: PendingBridgeNextAction, convertAmount?: bigint) => {
