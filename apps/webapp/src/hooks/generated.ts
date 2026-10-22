@@ -454,6 +454,415 @@ export const morphoMerklDistributorImplementationConfig = {
 } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// arbitrumInboxImplementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const arbitrumInboxImplementationAbi = [
+  {
+    type: 'constructor',
+    inputs: [{ name: '_maxDataSize', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'dataLength', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxDataLength', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'DataTooLarge'
+  },
+  { type: 'error', inputs: [], name: 'GasLimitTooLarge' },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'expected', internalType: 'uint256', type: 'uint256' },
+      { name: 'actual', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'InsufficientSubmissionCost'
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'expected', internalType: 'uint256', type: 'uint256' },
+      { name: 'actual', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'InsufficientValue'
+  },
+  { type: 'error', inputs: [], name: 'L1Forked' },
+  {
+    type: 'error',
+    inputs: [{ name: 'origin', internalType: 'address', type: 'address' }],
+    name: 'NotAllowedOrigin'
+  },
+  { type: 'error', inputs: [], name: 'NotCodelessOrigin' },
+  { type: 'error', inputs: [], name: 'NotForked' },
+  { type: 'error', inputs: [], name: 'NotOrigin' },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      { name: 'owner', internalType: 'address', type: 'address' }
+    ],
+    name: 'NotOwner'
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address' },
+      { name: 'rollup', internalType: 'address', type: 'address' },
+      { name: 'owner', internalType: 'address', type: 'address' }
+    ],
+    name: 'NotRollupOrOwner'
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'l2CallValue', internalType: 'uint256', type: 'uint256' },
+      { name: 'deposit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxSubmissionCost', internalType: 'uint256', type: 'uint256' },
+      { name: 'excessFeeRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'callValueRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'RetryableData'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'val', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'AllowListAddressSet'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'isEnabled', internalType: 'bool', type: 'bool', indexed: false }],
+    name: 'AllowListEnabledUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'messageNum', internalType: 'uint256', type: 'uint256', indexed: true },
+      { name: 'data', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'InboxMessageDelivered'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'messageNum', internalType: 'uint256', type: 'uint256', indexed: true }],
+    name: 'InboxMessageDeliveredFromOrigin'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'version', internalType: 'uint8', type: 'uint8', indexed: false }],
+    name: 'Initialized'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'account', internalType: 'address', type: 'address', indexed: false }],
+    name: 'Paused'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'account', internalType: 'address', type: 'address', indexed: false }],
+    name: 'Unpaused'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'allowListEnabled',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'bridge',
+    outputs: [{ name: '', internalType: 'contract IBridge', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'dataLength', internalType: 'uint256', type: 'uint256' },
+      { name: 'baseFee', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'calculateRetryableSubmissionFee',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'l2CallValue', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxSubmissionCost', internalType: 'uint256', type: 'uint256' },
+      { name: 'excessFeeRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'callValueRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'createRetryableTicket',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'l2CallValue', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxSubmissionCost', internalType: 'uint256', type: 'uint256' },
+      { name: 'excessFeeRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'callValueRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'createRetryableTicketNoRefundAliasRewrite',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'depositEth',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'depositEth',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getProxyAdmin',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_bridge', internalType: 'contract IBridge', type: 'address' },
+      { name: '_sequencerInbox', internalType: 'contract ISequencerInbox', type: 'address' }
+    ],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'isAllowed',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'maxDataSize',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'pause', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'paused',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'contract IBridge', type: 'address' }],
+    name: 'postUpgradeInit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'sendContractTransaction',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'sendL1FundedContractTransaction',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'nonce', internalType: 'uint256', type: 'uint256' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'sendL1FundedUnsignedTransaction',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'nonce', internalType: 'uint256', type: 'uint256' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'sendL1FundedUnsignedTransactionToFork',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'messageData', internalType: 'bytes', type: 'bytes' }],
+    name: 'sendL2Message',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'messageData', internalType: 'bytes', type: 'bytes' }],
+    name: 'sendL2MessageFromOrigin',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'nonce', internalType: 'uint256', type: 'uint256' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'sendUnsignedTransaction',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'nonce', internalType: 'uint256', type: 'uint256' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'sendUnsignedTransactionToFork',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'nonce', internalType: 'uint256', type: 'uint256' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'withdrawTo', internalType: 'address', type: 'address' }
+    ],
+    name: 'sendWithdrawEthToFork',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'sequencerInbox',
+    outputs: [{ name: '', internalType: 'contract ISequencerInbox', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address[]', type: 'address[]' },
+      { name: 'val', internalType: 'bool[]', type: 'bool[]' }
+    ],
+    name: 'setAllowList',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_allowListEnabled', internalType: 'bool', type: 'bool' }],
+    name: 'setAllowListEnabled',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  { type: 'function', inputs: [], name: 'unpause', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'l2CallValue', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxSubmissionCost', internalType: 'uint256', type: 'uint256' },
+      { name: 'excessFeeRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'callValueRefundAddress', internalType: 'address', type: 'address' },
+      { name: 'gasLimit', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxFeePerGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'unsafeCreateRetryableTicket',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'payable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const arbitrumInboxImplementationAddress = {
+  1: '0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10',
+  314310: '0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const arbitrumInboxImplementationConfig = {
+  address: arbitrumInboxImplementationAddress,
+  abi: arbitrumInboxImplementationAbi
+} as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // cbBtc
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -8243,6 +8652,611 @@ export const skyAddress = {
  * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56072C95FAA701256059aa122697B133aDEd9279)
  */
 export const skyConfig = { address: skyAddress, abi: skyAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// skyL1TokenBridgeImplementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const skyL1TokenBridgeImplementationAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_otherBridge', internalType: 'address', type: 'address' },
+      { name: '_messenger', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'target', internalType: 'address', type: 'address' }],
+    name: 'AddressEmptyCode'
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'implementation', internalType: 'address', type: 'address' }],
+    name: 'ERC1967InvalidImplementation'
+  },
+  { type: 'error', inputs: [], name: 'ERC1967NonPayable' },
+  { type: 'error', inputs: [], name: 'FailedInnerCall' },
+  { type: 'error', inputs: [], name: 'InvalidInitialization' },
+  { type: 'error', inputs: [], name: 'NotInitializing' },
+  { type: 'error', inputs: [], name: 'UUPSUnauthorizedCallContext' },
+  {
+    type: 'error',
+    inputs: [{ name: 'slot', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'UUPSUnsupportedProxiableUUID'
+  },
+  { type: 'event', anonymous: false, inputs: [], name: 'Closed' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Deny'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'localToken', internalType: 'address', type: 'address', indexed: true },
+      { name: 'remoteToken', internalType: 'address', type: 'address', indexed: true },
+      { name: 'from', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: false },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'extraData', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'ERC20BridgeFinalized'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'localToken', internalType: 'address', type: 'address', indexed: true },
+      { name: 'remoteToken', internalType: 'address', type: 'address', indexed: true },
+      { name: 'from', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: false },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'extraData', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'ERC20BridgeInitiated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'data', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'File'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'version', internalType: 'uint64', type: 'uint64', indexed: false }],
+    name: 'Initialized'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Rely'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address', indexed: true },
+      { name: 'l2Token', internalType: 'address', type: 'address', indexed: true }
+    ],
+    name: 'TokenSet'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Upgraded'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'UPGRADE_INTERFACE_VERSION',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_localToken', internalType: 'address', type: 'address' },
+      { name: '_remoteToken', internalType: 'address', type: 'address' },
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+      { name: '_minGasLimit', internalType: 'uint32', type: 'uint32' },
+      { name: '_extraData', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'bridgeERC20',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_localToken', internalType: 'address', type: 'address' },
+      { name: '_remoteToken', internalType: 'address', type: 'address' },
+      { name: '_to', internalType: 'address', type: 'address' },
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+      { name: '_minGasLimit', internalType: 'uint32', type: 'uint32' },
+      { name: '_extraData', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'bridgeERC20To',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  { type: 'function', inputs: [], name: 'close', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'deny',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'escrow',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'data', internalType: 'address', type: 'address' }
+    ],
+    name: 'file',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_localToken', internalType: 'address', type: 'address' },
+      { name: '_remoteToken', internalType: 'address', type: 'address' },
+      { name: '_from', internalType: 'address', type: 'address' },
+      { name: '_to', internalType: 'address', type: 'address' },
+      { name: '_amount', internalType: 'uint256', type: 'uint256' },
+      { name: '_extraData', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'finalizeBridgeERC20',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getImplementation',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'initialize', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'isOpen',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'l1ToL2Token',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'messenger',
+    outputs: [{ name: '', internalType: 'contract CrossDomainMessengerLike', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'otherBridge',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'proxiableUUID',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address' },
+      { name: 'l2Token', internalType: 'address', type: 'address' }
+    ],
+    name: 'registerToken',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'rely',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'upgradeToAndCall',
+    outputs: [],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'version',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'wards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const skyL1TokenBridgeImplementationAddress = {
+  1: '0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6',
+  314310: '0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const skyL1TokenBridgeImplementationConfig = {
+  address: skyL1TokenBridgeImplementationAddress,
+  abi: skyL1TokenBridgeImplementationAbi
+} as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// skyL1TokenGatewayImplementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const skyL1TokenGatewayImplementationAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_counterpartGateway', internalType: 'address', type: 'address' },
+      { name: '_l1Router', internalType: 'address', type: 'address' },
+      { name: '_inbox', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'target', internalType: 'address', type: 'address' }],
+    name: 'AddressEmptyCode'
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'implementation', internalType: 'address', type: 'address' }],
+    name: 'ERC1967InvalidImplementation'
+  },
+  { type: 'error', inputs: [], name: 'ERC1967NonPayable' },
+  { type: 'error', inputs: [], name: 'FailedInnerCall' },
+  { type: 'error', inputs: [], name: 'InvalidInitialization' },
+  { type: 'error', inputs: [], name: 'NotInitializing' },
+  { type: 'error', inputs: [], name: 'UUPSUnauthorizedCallContext' },
+  {
+    type: 'error',
+    inputs: [{ name: 'slot', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'UUPSUnsupportedProxiableUUID'
+  },
+  { type: 'event', anonymous: false, inputs: [], name: 'Closed' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Deny'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address', indexed: false },
+      { name: '_from', internalType: 'address', type: 'address', indexed: true },
+      { name: '_to', internalType: 'address', type: 'address', indexed: true },
+      { name: '_sequenceNumber', internalType: 'uint256', type: 'uint256', indexed: true },
+      { name: '_amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'DepositInitiated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'data', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'File'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'version', internalType: 'uint64', type: 'uint64', indexed: false }],
+    name: 'Initialized'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Rely'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'l1Address', internalType: 'address', type: 'address', indexed: true },
+      { name: 'l2Address', internalType: 'address', type: 'address', indexed: true }
+    ],
+    name: 'TokenSet'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: '_from', internalType: 'address', type: 'address', indexed: true },
+      { name: '_to', internalType: 'address', type: 'address', indexed: true },
+      { name: '_seqNum', internalType: 'uint256', type: 'uint256', indexed: true },
+      { name: '_data', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'TxToL2'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Upgraded'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address', indexed: false },
+      { name: '_from', internalType: 'address', type: 'address', indexed: true },
+      { name: '_to', internalType: 'address', type: 'address', indexed: true },
+      { name: '_exitNum', internalType: 'uint256', type: 'uint256', indexed: true },
+      { name: '_amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'WithdrawalFinalized'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'UPGRADE_INTERFACE_VERSION',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'l1Token', internalType: 'address', type: 'address' }],
+    name: 'calculateL2TokenAddress',
+    outputs: [{ name: 'l2Token', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'close', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'counterpartGateway',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'deny',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'escrow',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'data', internalType: 'address', type: 'address' }
+    ],
+    name: 'file',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address' },
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: '', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'finalizeInboundTransfer',
+    outputs: [],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getImplementation',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address' },
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'getOutboundCalldata',
+    outputs: [{ name: 'outboundCalldata', internalType: 'bytes', type: 'bytes' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'inbox',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'initialize', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'isOpen',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'l1Router',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'l1ToL2Token',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'gasPriceBid', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'outboundTransfer',
+    outputs: [{ name: 'res', internalType: 'bytes', type: 'bytes' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address' },
+      { name: 'refundTo', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'maxGas', internalType: 'uint256', type: 'uint256' },
+      { name: 'gasPriceBid', internalType: 'uint256', type: 'uint256' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'outboundTransferCustomRefund',
+    outputs: [{ name: 'res', internalType: 'bytes', type: 'bytes' }],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'proxiableUUID',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'l1Token', internalType: 'address', type: 'address' },
+      { name: 'l2Token', internalType: 'address', type: 'address' }
+    ],
+    name: 'registerToken',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'rely',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'interfaceId', internalType: 'bytes4', type: 'bytes4' }],
+    name: 'supportsInterface',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'upgradeToAndCall',
+    outputs: [],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'version',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'wards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const skyL1TokenGatewayImplementationAddress = {
+  1: '0x12eDe82637d5507026D4CDb3515B4b022Ed157b1',
+  314310: '0x12eDe82637d5507026D4CDb3515B4b022Ed157b1'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const skyL1TokenGatewayImplementationConfig = {
+  address: skyL1TokenGatewayImplementationAddress,
+  abi: skyL1TokenGatewayImplementationAbi
+} as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // spk
@@ -18962,6 +19976,655 @@ export const useWatchMorphoMerklDistributorImplementationUpgraded = /*#__PURE__*
     eventName: 'Upgraded'
   }
 );
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementation = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"allowListEnabled"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationAllowListEnabled = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'allowListEnabled'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"bridge"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationBridge = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'bridge'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"calculateRetryableSubmissionFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationCalculateRetryableSubmissionFee =
+  /*#__PURE__*/ createUseReadContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'calculateRetryableSubmissionFee'
+  });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"getProxyAdmin"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationGetProxyAdmin = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'getProxyAdmin'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"isAllowed"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationIsAllowed = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'isAllowed'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"maxDataSize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationMaxDataSize = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'maxDataSize'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"paused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationPaused = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'paused'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sequencerInbox"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useReadArbitrumInboxImplementationSequencerInbox = /*#__PURE__*/ createUseReadContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'sequencerInbox'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementation = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"createRetryableTicket"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationCreateRetryableTicket = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'createRetryableTicket'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"createRetryableTicketNoRefundAliasRewrite"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationCreateRetryableTicketNoRefundAliasRewrite =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'createRetryableTicketNoRefundAliasRewrite'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"depositEth"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationDepositEth = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'depositEth'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationInitialize = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'initialize'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"pause"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationPause = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'pause'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"postUpgradeInit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationPostUpgradeInit = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'postUpgradeInit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendContractTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendContractTransaction =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendContractTransaction'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL1FundedContractTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendL1FundedContractTransaction =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL1FundedContractTransaction'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL1FundedUnsignedTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendL1FundedUnsignedTransaction =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL1FundedUnsignedTransaction'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL1FundedUnsignedTransactionToFork"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendL1FundedUnsignedTransactionToFork =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL1FundedUnsignedTransactionToFork'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL2Message"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendL2Message = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'sendL2Message'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL2MessageFromOrigin"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendL2MessageFromOrigin =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL2MessageFromOrigin'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendUnsignedTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendUnsignedTransaction =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendUnsignedTransaction'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendUnsignedTransactionToFork"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendUnsignedTransactionToFork =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendUnsignedTransactionToFork'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendWithdrawEthToFork"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSendWithdrawEthToFork = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'sendWithdrawEthToFork'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"setAllowList"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSetAllowList = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'setAllowList'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"setAllowListEnabled"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationSetAllowListEnabled = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'setAllowListEnabled'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"unpause"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationUnpause = /*#__PURE__*/ createUseWriteContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'unpause'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"unsafeCreateRetryableTicket"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWriteArbitrumInboxImplementationUnsafeCreateRetryableTicket =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'unsafeCreateRetryableTicket'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementation = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"createRetryableTicket"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationCreateRetryableTicket =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'createRetryableTicket'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"createRetryableTicketNoRefundAliasRewrite"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationCreateRetryableTicketNoRefundAliasRewrite =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'createRetryableTicketNoRefundAliasRewrite'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"depositEth"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationDepositEth = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'depositEth'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationInitialize = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'initialize'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"pause"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationPause = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'pause'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"postUpgradeInit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationPostUpgradeInit = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'postUpgradeInit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendContractTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendContractTransaction =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendContractTransaction'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL1FundedContractTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendL1FundedContractTransaction =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL1FundedContractTransaction'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL1FundedUnsignedTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendL1FundedUnsignedTransaction =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL1FundedUnsignedTransaction'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL1FundedUnsignedTransactionToFork"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendL1FundedUnsignedTransactionToFork =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL1FundedUnsignedTransactionToFork'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL2Message"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendL2Message = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'sendL2Message'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendL2MessageFromOrigin"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendL2MessageFromOrigin =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendL2MessageFromOrigin'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendUnsignedTransaction"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendUnsignedTransaction =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendUnsignedTransaction'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendUnsignedTransactionToFork"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendUnsignedTransactionToFork =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendUnsignedTransactionToFork'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"sendWithdrawEthToFork"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSendWithdrawEthToFork =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'sendWithdrawEthToFork'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"setAllowList"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSetAllowList = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'setAllowList'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"setAllowListEnabled"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationSetAllowListEnabled =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'setAllowListEnabled'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"unpause"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationUnpause = /*#__PURE__*/ createUseSimulateContract({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  functionName: 'unpause'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `functionName` set to `"unsafeCreateRetryableTicket"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useSimulateArbitrumInboxImplementationUnsafeCreateRetryableTicket =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    functionName: 'unsafeCreateRetryableTicket'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementation = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `eventName` set to `"AllowListAddressSet"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementationAllowListAddressSet =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    eventName: 'AllowListAddressSet'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `eventName` set to `"AllowListEnabledUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementationAllowListEnabledUpdated =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    eventName: 'AllowListEnabledUpdated'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `eventName` set to `"InboxMessageDelivered"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementationInboxMessageDelivered =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    eventName: 'InboxMessageDelivered'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `eventName` set to `"InboxMessageDeliveredFromOrigin"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementationInboxMessageDeliveredFromOrigin =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: arbitrumInboxImplementationAbi,
+    address: arbitrumInboxImplementationAddress,
+    eventName: 'InboxMessageDeliveredFromOrigin'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `eventName` set to `"Initialized"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementationInitialized = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  eventName: 'Initialized'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `eventName` set to `"Paused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementationPaused = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  eventName: 'Paused'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link arbitrumInboxImplementationAbi}__ and `eventName` set to `"Unpaused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10)
+ */
+export const useWatchArbitrumInboxImplementationUnpaused = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: arbitrumInboxImplementationAbi,
+  address: arbitrumInboxImplementationAddress,
+  eventName: 'Unpaused'
+});
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link cbBtcAbi}__
@@ -31244,6 +32907,1021 @@ export const useWatchSkyTransfer = /*#__PURE__*/ createUseWatchContractEvent({
   address: skyAddress,
   eventName: 'Transfer'
 });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementation = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"UPGRADE_INTERFACE_VERSION"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationUpgradeInterfaceVersion =
+  /*#__PURE__*/ createUseReadContract({
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    functionName: 'UPGRADE_INTERFACE_VERSION'
+  });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"escrow"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationEscrow = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'escrow'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"getImplementation"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationGetImplementation = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'getImplementation'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"isOpen"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationIsOpen = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'isOpen'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"l1ToL2Token"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationL1ToL2Token = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'l1ToL2Token'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"messenger"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationMessenger = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'messenger'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"otherBridge"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationOtherBridge = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'otherBridge'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"proxiableUUID"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationProxiableUuid = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'proxiableUUID'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"version"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationVersion = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'version'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"wards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useReadSkyL1TokenBridgeImplementationWards = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'wards'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementation = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"bridgeERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationBridgeErc20 = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'bridgeERC20'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"bridgeERC20To"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationBridgeErc20To = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'bridgeERC20To'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"close"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationClose = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'close'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationDeny = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationFile = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"finalizeBridgeERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationFinalizeBridgeErc20 = /*#__PURE__*/ createUseWriteContract(
+  {
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    functionName: 'finalizeBridgeERC20'
+  }
+);
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationInitialize = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'initialize'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"registerToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationRegisterToken = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'registerToken'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationRely = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"upgradeToAndCall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWriteSkyL1TokenBridgeImplementationUpgradeToAndCall = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'upgradeToAndCall'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementation = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"bridgeERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationBridgeErc20 = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'bridgeERC20'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"bridgeERC20To"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationBridgeErc20To = /*#__PURE__*/ createUseSimulateContract(
+  {
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    functionName: 'bridgeERC20To'
+  }
+);
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"close"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationClose = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'close'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationDeny = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationFile = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"finalizeBridgeERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationFinalizeBridgeErc20 =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    functionName: 'finalizeBridgeERC20'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationInitialize = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'initialize'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"registerToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationRegisterToken = /*#__PURE__*/ createUseSimulateContract(
+  {
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    functionName: 'registerToken'
+  }
+);
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationRely = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `functionName` set to `"upgradeToAndCall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useSimulateSkyL1TokenBridgeImplementationUpgradeToAndCall =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    functionName: 'upgradeToAndCall'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementation = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"Closed"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationClosed = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  eventName: 'Closed'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"Deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationDeny = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  eventName: 'Deny'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"ERC20BridgeFinalized"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationErc20BridgeFinalized =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    eventName: 'ERC20BridgeFinalized'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"ERC20BridgeInitiated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationErc20BridgeInitiated =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: skyL1TokenBridgeImplementationAbi,
+    address: skyL1TokenBridgeImplementationAddress,
+    eventName: 'ERC20BridgeInitiated'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"File"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationFile = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  eventName: 'File'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"Initialized"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationInitialized = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  eventName: 'Initialized'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"Rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationRely = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  eventName: 'Rely'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"TokenSet"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationTokenSet = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  eventName: 'TokenSet'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenBridgeImplementationAbi}__ and `eventName` set to `"Upgraded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xaeFd31c2e593Dc971f9Cb42cBbD5d4AD7F1970b6)
+ */
+export const useWatchSkyL1TokenBridgeImplementationUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenBridgeImplementationAbi,
+  address: skyL1TokenBridgeImplementationAddress,
+  eventName: 'Upgraded'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementation = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"UPGRADE_INTERFACE_VERSION"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationUpgradeInterfaceVersion =
+  /*#__PURE__*/ createUseReadContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'UPGRADE_INTERFACE_VERSION'
+  });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"calculateL2TokenAddress"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationCalculateL2TokenAddress =
+  /*#__PURE__*/ createUseReadContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'calculateL2TokenAddress'
+  });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"counterpartGateway"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationCounterpartGateway = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'counterpartGateway'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"escrow"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationEscrow = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'escrow'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"getImplementation"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationGetImplementation = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'getImplementation'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"getOutboundCalldata"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationGetOutboundCalldata = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'getOutboundCalldata'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"inbox"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationInbox = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'inbox'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"isOpen"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationIsOpen = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'isOpen'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"l1Router"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationL1Router = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'l1Router'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"l1ToL2Token"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationL1ToL2Token = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'l1ToL2Token'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"proxiableUUID"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationProxiableUuid = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'proxiableUUID'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"supportsInterface"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationSupportsInterface = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'supportsInterface'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"version"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationVersion = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'version'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"wards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useReadSkyL1TokenGatewayImplementationWards = /*#__PURE__*/ createUseReadContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'wards'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementation = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"close"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationClose = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'close'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationDeny = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationFile = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"finalizeInboundTransfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationFinalizeInboundTransfer =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'finalizeInboundTransfer'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationInitialize = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'initialize'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"outboundTransfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationOutboundTransfer = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'outboundTransfer'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"outboundTransferCustomRefund"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationOutboundTransferCustomRefund =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'outboundTransferCustomRefund'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"registerToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationRegisterToken = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'registerToken'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationRely = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"upgradeToAndCall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWriteSkyL1TokenGatewayImplementationUpgradeToAndCall = /*#__PURE__*/ createUseWriteContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'upgradeToAndCall'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementation = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"close"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationClose = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'close'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationDeny = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationFile = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"finalizeInboundTransfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationFinalizeInboundTransfer =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'finalizeInboundTransfer'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationInitialize = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'initialize'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"outboundTransfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationOutboundTransfer =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'outboundTransfer'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"outboundTransferCustomRefund"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationOutboundTransferCustomRefund =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'outboundTransferCustomRefund'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"registerToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationRegisterToken =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'registerToken'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationRely = /*#__PURE__*/ createUseSimulateContract({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `functionName` set to `"upgradeToAndCall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useSimulateSkyL1TokenGatewayImplementationUpgradeToAndCall =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    functionName: 'upgradeToAndCall'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementation = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"Closed"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationClosed = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'Closed'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"Deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationDeny = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'Deny'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"DepositInitiated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationDepositInitiated =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    eventName: 'DepositInitiated'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"File"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationFile = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'File'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"Initialized"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationInitialized = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'Initialized'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"Rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationRely = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'Rely'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"TokenSet"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationTokenSet = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'TokenSet'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"TxToL2"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationTxToL2 = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'TxToL2'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"Upgraded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: skyL1TokenGatewayImplementationAbi,
+  address: skyL1TokenGatewayImplementationAddress,
+  eventName: 'Upgraded'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link skyL1TokenGatewayImplementationAbi}__ and `eventName` set to `"WithdrawalFinalized"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x12eDe82637d5507026D4CDb3515B4b022Ed157b1)
+ */
+export const useWatchSkyL1TokenGatewayImplementationWithdrawalFinalized =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: skyL1TokenGatewayImplementationAbi,
+    address: skyL1TokenGatewayImplementationAddress,
+    eventName: 'WithdrawalFinalized'
+  });
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__

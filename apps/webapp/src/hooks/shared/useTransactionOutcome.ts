@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useChainId, useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
@@ -70,8 +70,22 @@ export type TransactionOutcomeState = {
  * The chain is fixed when a hash first appears: the wallet can switch chains
  * while the transaction is pending, and the hash only exists on the chain it
  * was sent to.
+ *
+ * `onRepriced` hears a speed-up as viem spots it, before the new hash mines.
  */
-export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?: number }) {
+export function useTransactionOutcome({
+  hash,
+  chainId,
+  onRepriced
+}: {
+  hash?: Hash;
+  chainId?: number;
+  onRepriced?: (from: Hash, to: Hash) => void;
+}) {
+  const onRepricedRef = useRef(onRepriced);
+  useEffect(() => {
+    onRepricedRef.current = onRepriced;
+  }, [onRepriced]);
   const config = useConfig();
   const currentChainId = useChainId();
   const sendChainId = chainId ?? currentChainId;
@@ -89,7 +103,10 @@ export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?
       const receipt = await waitForTransactionReceipt(client, {
         hash: hash!,
         timeout: 0,
-        onReplaced: r => (replacement = r)
+        onReplaced: r => {
+          replacement = r;
+          if (r.reason === 'repriced') onRepricedRef.current?.(hash!, r.transaction.hash);
+        }
       });
       return { receipt, replacement };
     },

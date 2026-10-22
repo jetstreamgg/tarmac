@@ -134,6 +134,8 @@ export type UseSendBatchTransactionFlowParameters<
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string | undefined) => void;
+  /** The wallet accepted the bundle, under its EIP-5792 id; called right before `onStart`. */
+  onCallsSent?: (id: string) => void;
 };
 
 export type ReadHookParams<TData = unknown> = Omit<UseQueryOptions<TData>, 'queryKey' | 'queryFn'>;
@@ -164,14 +166,19 @@ export type UseTransactionFlowParameters = {
 };
 
 export type UseSequentialTransactionFlowParameters = {
-  calls: Call[];
+  /** A call's `gas` replaces the wallet's estimate, for a call whose estimate is known to be too low. */
+  calls: (Call & { gas?: bigint })[];
   enabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
-  onStart?: (hash: string) => void;
+  /** `variables` is the object `onMutate` got for the prompt that was signed, which may predate the run in flight. */
+  onStart?: (hash: string, variables?: TxMutateVariables) => void;
   onSuccess?: (hash: string, blockNumber?: bigint) => void;
-  onError?: (error: Error, hash: string) => void;
+  /** `variables` is set for a wallet error, as in `onStart`. */
+  onError?: (error: Error, hash: string, variables?: TxMutateVariables) => void;
   gcTime?: number;
   chainId?: number;
+  /** A repriced transaction (same call, new fee) is announced again at `onStart` and settles under its new hash. */
+  failOnReplaced?: boolean;
 };
 
 export type SequentialTransactionHook = {

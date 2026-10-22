@@ -224,6 +224,8 @@ export type TransactionConfig = {
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
+  /** Whether the steps go out as one wallet bundle; unset, the modal reads the batch toggle and the wallet. */
+  bundled?: boolean;
   /**
    * User-readable engine/prepare failure rendered above the review screen's
    * confirm button (the entry screen reads `entry.errorMessage` instead — the
@@ -312,6 +314,7 @@ export type LiveModalUpdate = Partial<
     | 'transactionScreenContent'
     | 'rightHeaderComponent'
     | 'confirmDisabled'
+    | 'bundled'
     | 'errorMessage'
     | 'onConfirm'
     | 'onSecondaryConfirm'

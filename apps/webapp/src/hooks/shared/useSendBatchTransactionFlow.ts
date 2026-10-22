@@ -43,6 +43,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     onSuccess = () => null,
     onError = () => null,
     onStart = () => null,
+    onCallsSent,
     ...sendCallsParameters
   } = parameters;
 
@@ -79,7 +80,8 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     mutation: {
       // Bundled sendCalls have no single functionName — no leg to discriminate.
       onMutate: () => onMutate?.(),
-      onSuccess: () => {
+      onSuccess: data => {
+        onCallsSent?.(data.id);
         if (onStart) {
           onStart(undefined);
         }
