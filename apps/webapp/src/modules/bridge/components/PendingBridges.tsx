@@ -335,7 +335,12 @@ function PendingBridgeCard({
   const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <div className={cardClassName} data-testid="pending-bridge-card">
-      <CardHeader symbol="USDS" amount={amount} date={formatBridgeDate(bridge.startedAt)}>
+      {/* A claim that ended in USDC shows the USDC (Figma 93). */}
+      <CardHeader
+        symbol={convertAmount === undefined ? 'USDS' : 'USDC'}
+        amount={amount}
+        date={formatBridgeDate(bridge.startedAt)}
+      >
         {dismissible ? (
           <Button
             variant="secondary"

@@ -67,7 +67,12 @@ const mocks = vi.hoisted(() => ({
   storageWritable: true
 }));
 
-vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
+// Renders no text; names its token so a card's icon can be read.
+vi.mock('@/modules/ui/components/TokenIcon', () => ({
+  TokenIcon: ({ token }: { token: { symbol: string } }) => (
+    <span data-testid="token-icon" data-symbol={token.symbol} />
+  )
+}));
 vi.mock('../hooks/usePendingBridges', () => ({
   usePendingBridges: () => ({ bridges: mocks.bridges, now: 0 })
 }));
@@ -313,6 +318,18 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridge-convert-note').textContent).toBe(
         'This claim ended in USDC, not USDS. You can convert 40.00 USDC to USDS.'
       );
+    });
+
+    // Figma 93: a card whose claim ended in USDC shows the USDC icon.
+    it('shows the USDC icon on a claim that kept its USDC, and USDS otherwise', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      const { unmount } = renderList();
+      expect(screen.getByTestId('token-icon').dataset.symbol).toBe('USDC');
+      unmount();
+      delete mocks.offers[CLAIMED.id];
+      renderList();
+      expect(screen.getByTestId('token-icon').dataset.symbol).toBe('USDS');
     });
 
     it('converts the amount offered', () => {
