@@ -3,24 +3,22 @@ import {
   createPublicClient,
   encodeFunctionData,
   http,
-  keccak256,
   parseAbi,
-  toHex,
   type Address,
   type Hash,
   type Hex
 } from 'viem';
-import { privateKeyToAccount, serializeSignature, sign } from 'viem/accounts';
+import { privateKeyToAccount } from 'viem/accounts';
 import { MESSAGE_TRANSMITTER_V2, messageTransmitterV2Abi } from '@/modules/bridge/adapters/cctp/contracts';
 import { sentMessages } from '@/modules/bridge/adapters/cctp/message';
 import { IRIS_API_URL } from '@/modules/bridge/adapters/cctp/iris';
+import { attestTestMessage, TEST_ATTESTER_KEY } from '@/modules/bridge/adapters/cctp/testnetAttester';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
 // Circle's attesters never see the forks, so the Ethereum fork's MessageTransmitterV2
-// also accepts this key's signature alone. Test-only key, deterministic across shards.
-const ATTESTER_KEY = keccak256(toHex('tarmac e2e cctp attester'));
-const ATTESTER = privateKeyToAccount(ATTESTER_KEY).address;
+// also accepts the test attester's signature alone. Deterministic across shards.
+const ATTESTER = privateKeyToAccount(TEST_ATTESTER_KEY).address;
 
 const attestableAbi = parseAbi([
   'function attesterManager() view returns (address)',
@@ -63,15 +61,7 @@ export async function attestCctpBurn(network: NetworkName, txHash: Hash) {
   const receipt = await (await client(network)).getTransactionReceipt({ hash: txHash });
   const sent = sentMessages(receipt.logs);
   if (sent.length !== 1) throw new Error(`Expected one MessageSent in ${txHash}, found ${sent.length}`);
-  const hex = sent[0].message.slice(2);
-  const message = ('0x' +
-    hex.slice(0, 24) +
-    keccak256(txHash).slice(2) +
-    hex.slice(88, 288) +
-    (2000).toString(16).padStart(8, '0') +
-    hex.slice(296)) as Hex;
-  const signature = await sign({ hash: keccak256(message), privateKey: ATTESTER_KEY });
-  return { message, attestation: serializeSignature(signature) };
+  return attestTestMessage(sent[0].message, txHash);
 }
 
 type IrisTarget = Pick<Page, 'route'>;

@@ -30,6 +30,7 @@
     "e2e:fund": "npx tsx src/test/e2e/fund-accounts.ts",
     "e2e:fund:check": "SKIP_FUNDING=true npx tsx src/test/e2e/fund-accounts.ts",
     "e2e:validate-vnets": "npx tsx src/test/e2e/validate-vnets.ts",
+    "bridge-testnets": "npx tsx --env-file=.env src/test/bridgeTestnets.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit --project tsconfig.json",

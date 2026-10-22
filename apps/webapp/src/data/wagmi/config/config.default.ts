@@ -4,6 +4,7 @@ import { metaMask, safe, walletConnect, coinbaseWallet, baseAccount } from 'wagm
 import { getWagmiConnectorV2 } from '@binance/w3w-wagmi-connector-v2';
 import { TENDERLY_CHAIN_ID, TENDERLY_RPC_URL } from './testTenderlyChain';
 import { createProxyTransport } from './proxyTransport';
+import { bridgeTestnetChains } from './bridgeTestnets';
 
 const tenderly = {
   ...mainnet,
@@ -64,7 +65,7 @@ const connectors = [
 ];
 
 export const wagmiConfigDev = createConfig({
-  chains: [mainnet, tenderly, base, arbitrum, optimism, unichain],
+  chains: [mainnet, tenderly, base, arbitrum, optimism, unichain, ...bridgeTestnetChains],
   connectors,
   transports: {
     [mainnet.id]: createProxyTransport(mainnet.id),
@@ -72,7 +73,8 @@ export const wagmiConfigDev = createConfig({
     [base.id]: createProxyTransport(base.id),
     [arbitrum.id]: createProxyTransport(arbitrum.id),
     [unichain.id]: createProxyTransport(unichain.id),
-    [optimism.id]: createProxyTransport(optimism.id)
+    [optimism.id]: createProxyTransport(optimism.id),
+    ...Object.fromEntries(bridgeTestnetChains.map(chain => [chain.id, http(chain.rpcUrls.default.http[0])]))
   },
   // This was causing issues in the past when users tried to connect to the Safe connector and had the Phantom wallet installed
   // due to how Phantom handled `eth_accounts` requests, resulting in the Safe connector hanging in a reconnecting state

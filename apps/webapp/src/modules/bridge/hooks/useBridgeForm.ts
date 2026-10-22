@@ -3,7 +3,7 @@ import { formatUnits, parseUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
 import { TOKENS, useAppChainId, useSafeWalletStatus, useTokenBalance } from '@/hooks';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
-import { familyMainnetId } from '@/utils/isTestnetId';
+import { canonicalChainId, familyMainnetId } from '@/utils/isTestnetId';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import {
   bridgeChainId,
@@ -24,7 +24,7 @@ import { useSafeConfig } from './useSafeConfig';
 /** USDS balance of `address` on a bridge network the app can read; `value` is undefined otherwise. */
 function useUsdsBalance(address: `0x${string}` | undefined, chainId: number | undefined) {
   const chains = useChains();
-  const token = chainId === undefined ? undefined : TOKENS.usds.address[chainId];
+  const token = chainId === undefined ? undefined : TOKENS.usds.address[canonicalChainId(chainId)];
   const readable = chainId !== undefined && chains.some(chain => chain.id === chainId);
   const { data, isLoading, refetch } = useTokenBalance({
     address,
@@ -79,17 +79,19 @@ export function useBridgeForm() {
   const pair: BridgePair = { from, to };
 
   const isConfiguredChain = (id: BridgeNetworkId) => {
-    const target = getBridgeNetwork(id);
+    const targetChainId = bridgeChainId(id, familyChainId);
     return (
-      target.appSupported && target.chainId !== undefined && chains.some(chain => chain.id === target.chainId)
+      getBridgeNetwork(id).appSupported &&
+      targetChainId !== undefined &&
+      chains.some(chain => chain.id === targetChainId)
     );
   };
 
   const moveSource = (next: BridgeNetworkId) => {
-    const target = getBridgeNetwork(next);
-    if (isConfiguredChain(next) && canSwitchChain && target.chainId !== undefined) {
+    const targetChainId = bridgeChainId(next, familyChainId);
+    if (isConfiguredChain(next) && canSwitchChain && targetChainId !== undefined) {
       setSourceOverride(null);
-      if (next !== walletNetwork) handleSwitchChain({ chainId: target.chainId });
+      if (next !== walletNetwork) handleSwitchChain({ chainId: targetChainId });
       return;
     }
     setSourceOverride(next === walletNetwork ? null : next);

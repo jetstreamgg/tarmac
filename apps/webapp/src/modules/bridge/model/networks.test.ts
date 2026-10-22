@@ -1,5 +1,31 @@
-import { describe, expect, it } from 'vitest';
-import { guardChainId } from './networks';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { bridgeChainId, bridgeNetworkForChainId, guardChainId } from './networks';
+
+describe('Tenderly L2 testnets', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK_WALLET', 'false'));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('pairs the Tenderly fork with the L2 testnets', () => {
+    expect(bridgeChainId('ethereum', 314310)).toBe(314310);
+    expect(bridgeChainId('base', 314310)).toBe(9998453);
+    expect(bridgeChainId('arbitrum', 314310)).toBe(99942161);
+    expect(guardChainId({ network: 'optimism', familyChainId: 314310, chainIds: [314310, 99910] })).toBe(
+      99910
+    );
+  });
+
+  it('keeps the real L2s with mainnet, and in the mock wallet build whose forks use real ids', () => {
+    expect(bridgeChainId('base', 1)).toBe(8453);
+    vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
+    expect(bridgeChainId('base', 314310)).toBe(8453);
+  });
+
+  it('reads a wallet on an L2 testnet as that L2', () => {
+    expect(bridgeNetworkForChainId(999130)).toBe('unichain');
+    expect(bridgeNetworkForChainId(130)).toBe('unichain');
+    expect(bridgeNetworkForChainId(314310)).toBe('ethereum');
+  });
+});
 
 describe('guardChainId', () => {
   const chainIds = [1, 8453];

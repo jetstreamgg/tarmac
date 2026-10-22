@@ -1,6 +1,6 @@
 import { Intent } from './enums';
 import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
-import { chainId } from '@/utils/chainId';
+import { chainId, l2TestnetChainId } from '@/utils/chainId';
 
 // Per-chain module availability. Lives in its own Lingui-free module (extracted
 // verbatim from lib/constants) so the engine layer (src/hooks) can consume it —
@@ -35,7 +35,10 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
   [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
   [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
   [unichain.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [optimism.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT]
+  [optimism.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
+  // The bridge's L2 testnets carry Convert only, so the route guard keeps a
+  // wallet the Bridge tab moved onto one of them.
+  ...Object.fromEntries(Object.values(l2TestnetChainId).map(id => [id, [Intent.CONVERT_INTENT]]))
 };
 
 export const COMING_SOON_MAP: Record<number, Intent[]> = {

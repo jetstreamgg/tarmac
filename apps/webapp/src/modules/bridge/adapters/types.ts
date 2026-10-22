@@ -2,6 +2,7 @@ import type { PublicClient } from 'viem';
 import type { BridgeProgress } from '../model/pendingTransitions';
 import type { BridgeNetworkId } from '../model/networks';
 import type { PendingBridge } from '../model/types';
+import type { AttestationReader } from './cctp/iris';
 
 /** The chain reads a route adapter makes. */
 export type ChainReader = Pick<
@@ -12,6 +13,8 @@ export type ChainReader = Pick<
 export type AdapterContext = {
   /** The network's configured client; undefined when the app has none for it. */
   getClient: (network: BridgeNetworkId) => ChainReader | undefined;
+  /** Replaces Iris where Circle can't attest, as on the Tenderly testnets. */
+  readCctpAttestations?: AttestationReader;
 };
 
 /**

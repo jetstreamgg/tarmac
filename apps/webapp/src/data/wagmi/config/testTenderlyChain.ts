@@ -14,9 +14,15 @@ const vnetData = useAlternateVnet ? tenderlyTestnetDataAlternate : tenderlyTestn
 
 export const TENDERLY_CHAIN_ID = 314310;
 
-// only works if hardcoded, cannot be set via env variable. Corresponds to the public RPC of `nov-3-mainnet-fork`
-export const TENDERLY_RPC_URL =
-  'https://virtual.mainnet.eu.rpc.tenderly.co/jetstreamgg/jetstream/jetstream-testnet';
+// The named testnet's path; every network's public RPC shares it under its own subdomain.
+const TENDERLY_TESTNET_PATH =
+  import.meta.env?.VITE_TENDERLY_TESTNET_PATH || 'jetstreamgg/jetstream/jetstream-testnet';
+
+/** Public RPC of the named Tenderly testnet on one network, e.g. `mainnet` or `base`. */
+export const tenderlyTestnetRpc = (subdomain: string) =>
+  `https://virtual.${subdomain}.eu.rpc.tenderly.co/${TENDERLY_TESTNET_PATH}`;
+
+export const TENDERLY_RPC_URL = tenderlyTestnetRpc('mainnet');
 
 export const getTestTenderlyChains = () => {
   const mainnetData = vnetData.find(data => data.NETWORK === NetworkName.mainnet);

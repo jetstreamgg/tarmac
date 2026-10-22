@@ -28,7 +28,12 @@ const cctpAdapter: BridgeAdapter = {
     const { from } = bridge;
     if (bridge.to !== 'ethereum' || !isCctpL2Network(from))
       return mockAdapter.checkProgress(bridge, now, context);
-    return cctpProgress({ ...bridge, from }, context, now, readIrisAttestations);
+    return cctpProgress(
+      { ...bridge, from },
+      context,
+      now,
+      context.readCctpAttestations ?? readIrisAttestations
+    );
   }
 };
 

@@ -1,4 +1,5 @@
-import { chainId as chainIdMap } from '@/utils/chainId';
+import { chainId as chainIdMap, l2TestnetChainId } from '@/utils/chainId';
+import { canonicalChainId } from '@/utils/isTestnetId';
 
 export type BridgeNetworkId =
   'ethereum' | 'base' | 'arbitrum' | 'optimism' | 'unichain' | 'avalanche' | 'solana';
@@ -30,15 +31,31 @@ export const BRIDGE_NETWORKS: BridgeNetwork[] = [
 export const getBridgeNetwork = (id: BridgeNetworkId): BridgeNetwork =>
   BRIDGE_NETWORKS.find(network => network.id === id) as BridgeNetwork;
 
-/** The bridge network for a wallet chain; the Tenderly fork reads as Ethereum. */
-export const bridgeNetworkForChainId = (chainId: number | undefined): BridgeNetworkId | undefined =>
-  chainId === chainIdMap.tenderly
-    ? 'ethereum'
-    : BRIDGE_NETWORKS.find(network => network.chainId !== undefined && network.chainId === chainId)?.id;
+/** The bridge network for a wallet chain; the Tenderly fork reads as Ethereum and its L2 testnets as their L2. */
+export const bridgeNetworkForChainId = (chainId: number | undefined): BridgeNetworkId | undefined => {
+  if (chainId === chainIdMap.tenderly) return 'ethereum';
+  const canonical = chainId === undefined ? undefined : canonicalChainId(chainId);
+  return BRIDGE_NETWORKS.find(network => network.chainId !== undefined && network.chainId === canonical)?.id;
+};
 
-/** The chain a bridge transacts on for a network; Ethereum is the family's (mainnet or the Tenderly fork). */
-export const bridgeChainId = (network: BridgeNetworkId, familyChainId: number): number | undefined =>
-  network === 'ethereum' ? familyChainId : getBridgeNetwork(network).chainId;
+/**
+ * Whether the family's L2s are the Tenderly testnets: with the Tenderly fork,
+ * outside the mock wallet build, whose L2 forks keep their real ids.
+ */
+export const usesL2Testnets = (familyChainId: number): boolean =>
+  familyChainId === chainIdMap.tenderly && import.meta.env.VITE_USE_MOCK_WALLET !== 'true';
+
+/**
+ * The chain a bridge transacts on for a network. Ethereum is the family's
+ * (mainnet or the Tenderly fork); with the Tenderly fork, an L2 is its testnet.
+ */
+export const bridgeChainId = (network: BridgeNetworkId, familyChainId: number): number | undefined => {
+  if (network === 'ethereum') return familyChainId;
+  const chainId = getBridgeNetwork(network).chainId;
+  return chainId !== undefined && usesL2Testnets(familyChainId)
+    ? (l2TestnetChainId[chainId] ?? chainId)
+    : chainId;
+};
 
 /** The chain a flow on `network` is pinned to; undefined when the app can't switch to it, so nothing runs elsewhere. */
 export function guardChainId({
