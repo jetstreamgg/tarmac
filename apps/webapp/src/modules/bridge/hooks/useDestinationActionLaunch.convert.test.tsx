@@ -210,22 +210,22 @@ describe('useDestinationActionLaunch: converting a CCTP claim to USDS', () => {
     expect(mocks.claimEnabled).toBe(false);
   });
 
-  it('opens Confirm on the USDC amount, with the conversion step', () => {
+  it('opens the conversion of the USDC amount, with the conversion step', () => {
     const card = seed();
     const { result } = renderHook(() => useDestinationActionLaunch());
     act(() => result.current.launch(card, 'convert', 40n * 10n ** 6n));
     const config = mocks.launched.at(-1)!;
     const hero = config.transactionScreenContent;
-    expect(isValidElement(hero) && (hero.props as { amount: string; symbol: string })).toMatchObject({
-      amount: '40.00',
-      symbol: 'USDC'
+    expect(isValidElement(hero) && hero.props).toMatchObject({
+      from: { amount: '40.00', symbol: 'USDC' },
+      to: { amount: '40.00', symbol: 'USDS' }
     });
     expect(config.toast?.loading).toBe('Converting 40.00 USDC to USDS');
     expect(
-      (config.steps as { label: string; tokenSymbol: string }[] | undefined)?.map(
-        step => `${step.label} ${step.tokenSymbol}`
+      (config.steps as { label: string; tokenSymbol: string; targetTokenSymbol?: string }[] | undefined)?.map(
+        step => `${step.label} ${step.tokenSymbol} to ${step.targetTokenSymbol}`
       )
-    ).toEqual(['Convert to USDS USDC']);
+    ).toEqual(['Convert USDC to USDS']);
     expect(config.usdValue).toBe(40);
   });
 
@@ -235,11 +235,14 @@ describe('useDestinationActionLaunch: converting a CCTP claim to USDS', () => {
     act(() => result.current.launch(card, 'convert', MINTED));
     mocks.convert.calls = [{ functionName: 'approve' }, { functionName: 'sellGem' }];
     rerender();
-    const steps = mocks.updates.at(-1)?.partial.steps as { label: string; tokenSymbol: string }[];
-    expect(steps.map(step => `${step.label} ${step.tokenSymbol}`)).toEqual([
-      'Approve USDC',
-      'Convert to USDS USDC'
-    ]);
+    const steps = mocks.updates.at(-1)?.partial.steps as {
+      label: string;
+      tokenSymbol: string;
+      targetTokenSymbol?: string;
+    }[];
+    expect(
+      steps.map(step => [step.label, step.tokenSymbol, step.targetTokenSymbol].filter(Boolean).join(' '))
+    ).toEqual(['Approve USDC', 'Convert USDC USDS']);
   });
 
   it('sends the convert legs on Confirm, never the mock executor', () => {

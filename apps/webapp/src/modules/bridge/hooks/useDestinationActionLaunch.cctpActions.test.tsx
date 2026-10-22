@@ -158,6 +158,34 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
     mocks.convert = { ready: true, execute: vi.fn() };
   });
 
+  describe('the review of a convert (Figma 94 to 96)', () => {
+    it('opens on the review conversion, with the conversion on its wallet screen', () => {
+      const card = seed({ claimed: true });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'convert', MINTED / 2n));
+      const config = mocks.launched.at(-1)!;
+      expect(config.skipReview).toBeFalsy();
+      expect(config.title).toBe('Review conversion');
+      expect(config.transactionTitle).toBe('Review conversion');
+      expect(config.transactionContent).toMatchObject({ props: { amount: MINTED / 2n, bridged: MINTED } });
+      expect(config.transactionScreenContent).toMatchObject({
+        props: { from: { symbol: 'USDC', amount: '50.00' }, to: { symbol: 'USDS', amount: '50.00' } }
+      });
+      expect(config.steps).toEqual([
+        expect.objectContaining({ label: 'Convert', tokenSymbol: 'USDC', targetTokenSymbol: 'USDS' })
+      ]);
+    });
+
+    it('leaves a claim straight on its Confirm', () => {
+      const card = seed({ claimed: false });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'claim'));
+      const config = mocks.launched.at(-1)!;
+      expect(config.skipReview).toBe(true);
+      expect(config.title).toBe('Confirm');
+    });
+  });
+
   describe('a convert after its approve', () => {
     it('toasts the Figma success copy', () => {
       const card = seed({ claimed: true });

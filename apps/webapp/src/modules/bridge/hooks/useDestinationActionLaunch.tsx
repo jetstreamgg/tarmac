@@ -14,8 +14,10 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
+import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { runMockLegs } from '../adapters/mockAdapter';
+import { CctpConvertReview } from '../components/CctpConvertReview';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
 import { CCTP_CONVERT_FUNCTION, cctpBurnAmount } from '../adapters/cctp/calls';
@@ -45,7 +47,7 @@ import { usePendingScope } from './usePendingScope';
 type Recovery =
   | { kind: 'replay'; network: OpStackNetworkId; routeData?: Record<string, string>; chainId: number }
   | { kind: 'cctp-claim'; routeData?: Record<string, string>; chainId: number }
-  | { kind: 'cctp-convert'; amount: bigint; chainId: number }
+  | { kind: 'cctp-convert'; amount: bigint; bridged: bigint; chainId: number }
   | {
       kind: 'redeem';
       action: 'redeem' | 'keepalive';
@@ -61,7 +63,8 @@ const recoveryOf = (
 ): Recovery | undefined => {
   if (action === 'claim' && bridge.routeKind === 'cctp' && bridge.to === 'ethereum')
     return { kind: 'cctp-claim', routeData: bridge.routeData, chainId };
-  if (action === 'convert' && amount !== undefined) return { kind: 'cctp-convert', amount, chainId };
+  if (action === 'convert' && amount !== undefined)
+    return { kind: 'cctp-convert', amount, bridged: cctpBurnAmount(bridge.amount), chainId };
   if (bridge.from !== 'ethereum') return undefined;
   if (action === 'replay' && isOpStackNetwork(bridge.to))
     return { kind: 'replay', network: bridge.to, routeData: bridge.routeData, chainId };
@@ -75,6 +78,14 @@ export type DestinationActionHint =
   | { kind: 'safe-executing' }
   | { kind: 'action-sent'; network: BridgeNetworkId }
   | { kind: 'switch-network'; network: BridgeNetworkId; safe: boolean };
+
+// A convert's sale step names both tokens (Figma 96).
+const convertStep = (): TransactionStep => ({
+  label: t`Convert`,
+  tokenSymbol: 'USDC',
+  targetTokenSymbol: 'USDS',
+  failureDetail: stepFailureDetail.convert('USDC')
+});
 
 const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
   switch (action) {
@@ -265,20 +276,39 @@ export function useDestinationActionLaunch() {
           return { label: t`Claim`, tokenSymbol: 'USDC', failureDetail: stepFailureDetail.claim('USDC') };
         if (functionName === 'approve')
           return { label: t`Approve`, tokenSymbol: 'USDC', failureDetail: stepFailureDetail.approve('USDC') };
-        return {
-          label: t`Convert to USDS`,
-          tokenSymbol: 'USDC',
-          failureDetail: stepFailureDetail.convert('USDC')
-        };
+        return convert
+          ? convertStep()
+          : {
+              label: t`Convert to USDS`,
+              tokenSymbol: 'USDC',
+              failureDetail: stepFailureDetail.convert('USDC')
+            };
       }),
-    [cctpLegs.calls]
+    [cctpLegs.calls, convert]
   );
   const cctpBundled = cctpLegs.isBatch;
-  // The claim's or convert's calls are built after its modal opens.
+  const convertReview = useMemo(
+    () =>
+      convert && (
+        <CctpConvertReview
+          amount={convert.amount}
+          bridged={convert.bridged}
+          chainId={convert.chainId}
+          calls={convertLegs.calls}
+          isBatch={convertLegs.isBatch}
+        />
+      ),
+    [convert, convertLegs.calls, convertLegs.isBatch]
+  );
+  // The claim's or convert's calls are built after its modal opens; the convert's review prices them.
   useEffect(() => {
     if (!cctp || !isModalOpen || txStatus !== TxStatus.IDLE || cctpSteps.length === 0) return;
-    updateModalContent(sessionId, { steps: cctpSteps, bundled: cctpBundled });
-  }, [cctp, isModalOpen, txStatus, cctpSteps, cctpBundled, sessionId, updateModalContent]);
+    updateModalContent(sessionId, {
+      steps: cctpSteps,
+      bundled: cctpBundled,
+      ...(convertReview && { transactionContent: convertReview })
+    });
+  }, [cctp, isModalOpen, txStatus, cctpSteps, cctpBundled, convertReview, sessionId, updateModalContent]);
   // A failed recovery is built afresh on the next launch, so a stale simulation error isn't reported again.
   useResetUnfinishedRunOnClose(
     useCallback(() => {
@@ -401,18 +431,44 @@ export function useDestinationActionLaunch() {
         setRecovery(nextRecovery);
       }
       launchModal({
-        title: t`Confirm`,
-        skipReview: true,
-        transactionScreenContent: (
-          <TransactionAmountHero
-            label={t`Amount`}
-            amount={amount}
-            symbol={symbol}
-            dataTestId={isConvert ? 'bridge-convert-amount' : 'bridge-claim-amount'}
-          />
-        ),
+        ...(nextRecovery?.kind === 'cctp-convert'
+          ? {
+              // The convert is reviewed first (Figma 94, 95), and its wallet screen keeps the title (Figma 96).
+              title: t`Review conversion`,
+              transactionTitle: t`Review conversion`,
+              confirmLabel: t`Confirm`,
+              transactionContent: (
+                <CctpConvertReview
+                  amount={nextRecovery.amount}
+                  bridged={nextRecovery.bridged}
+                  chainId={pinnedChainId}
+                  calls={[]}
+                  isBatch={false}
+                />
+              ),
+              transactionScreenContent: (
+                <TokenTransferHero
+                  from={{ symbol: 'USDC', amount }}
+                  to={{ symbol: 'USDS', amount }}
+                  testId="bridge-convert-amount"
+                />
+              ),
+              steps: [convertStep()]
+            }
+          : {
+              title: t`Confirm`,
+              skipReview: true,
+              transactionScreenContent: (
+                <TransactionAmountHero
+                  label={t`Amount`}
+                  amount={amount}
+                  symbol={symbol}
+                  dataTestId={isConvert ? 'bridge-convert-amount' : 'bridge-claim-amount'}
+                />
+              ),
+              steps: [{ label: copy.step, tokenSymbol: symbol, failureDetail: copy.failure }]
+            }),
         toast: { loading: copy.loading, success: copy.success, error: copy.error },
-        steps: [{ label: copy.step, tokenSymbol: symbol, failureDetail: copy.failure }],
         onConfirm: () => {
           // Retry calls onConfirm again; an action already sent must not go out twice.
           const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
