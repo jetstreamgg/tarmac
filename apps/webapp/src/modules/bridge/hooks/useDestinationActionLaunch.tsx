@@ -426,7 +426,7 @@ export function useDestinationActionLaunch() {
             (change: (current: PendingBridge, txHash: string) => PendingBridge) => (txHash: string) =>
               pendingBridgeStore.update(scope, bridge.id, current => change(current, txHash));
           // Once another Confirm took over or the modal closed, a late prompt is recorded on the card but leaves the modal alone.
-          const callbacks: TxCallbacks = withActionRecording(
+          const recorded: TxCallbacks = withActionRecording(
             () => (!nextRecovery || modalOwnerRef.current === callbacks ? callbacksRef.current : DETACHED),
             {
               // A Safe reports its Safe tx hash here; the tracker settles it if this flow can't.
@@ -457,6 +457,23 @@ export function useDestinationActionLaunch() {
               confirmOnNextLeg: !isSafe
             }
           );
+          // A CCTP card leaves once its USDS is delivered (Figma 78, 97): a claim only after its sale or a bundle, else it stays to offer the convert.
+          let soldUsdc = nextRecovery?.kind === 'cctp-convert';
+          const deliversUsds = nextRecovery?.kind === 'cctp-claim' || nextRecovery?.kind === 'cctp-convert';
+          const callbacks: TxCallbacks = deliversUsds
+            ? {
+                ...recorded,
+                onMutate: variables => {
+                  if (nextRecovery.kind === 'cctp-claim')
+                    soldUsdc = variables?.functionName !== CCTP_CLAIM_FUNCTION;
+                  recorded.onMutate(variables);
+                },
+                onSuccess: (...settled) => {
+                  recorded.onSuccess(...settled);
+                  if (soldUsdc) pendingBridgeStore.close(scope, bridge.id);
+                }
+              }
+            : recorded;
           if (!nextRecovery) {
             void runMockLegs([action], () => callbacks);
             return;

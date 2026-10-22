@@ -248,4 +248,72 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       ]);
     });
   });
+
+  // Figma 78 and 97: the card leaves once the USDS is in the wallet; Activity still lists the bridge.
+  describe('the card once its USDS is delivered', () => {
+    it('closes after a claim whose sale mined', () => {
+      const card = seed({ claimed: false });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'claim'));
+      confirm();
+      const callbacks = mocks.claim.params!.getCallbacks();
+      leg(callbacks, 'receiveMessage', '0xreceive');
+      leg(callbacks, 'approve', '0xapprove');
+      leg(callbacks, 'sellGem', '0xsell');
+      callbacks.onSuccess('0xsell', 7n);
+      expect(stored()).toMatchObject({ status: 'claimed', closedAt: expect.any(Number) });
+    });
+
+    it('closes after a claim bundle the wallet ran at once', () => {
+      const card = seed({ claimed: false });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'claim'));
+      confirm();
+      const callbacks = mocks.claim.params!.getCallbacks();
+      callbacks.onMutate(undefined);
+      callbacks.onStart(undefined);
+      callbacks.onSuccess('0xbundle', 7n);
+      expect(stored()).toMatchObject({ status: 'claimed', closedAt: expect.any(Number) });
+    });
+
+    it('stays after a claim whose receive mined alone, to offer the convert', () => {
+      const card = seed({ claimed: false });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'claim'));
+      confirm();
+      const callbacks = mocks.claim.params!.getCallbacks();
+      leg(callbacks, 'receiveMessage', '0xreceive');
+      callbacks.onSuccess('0xreceive', 7n);
+      expect(stored().status).toBe('claimed');
+      expect(stored().closedAt).toBeUndefined();
+    });
+
+    it('stays after a claim whose sale failed', () => {
+      const card = seed({ claimed: false });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'claim'));
+      confirm();
+      const callbacks = mocks.claim.params!.getCallbacks();
+      leg(callbacks, 'receiveMessage', '0xreceive');
+      leg(callbacks, 'sellGem', '0xsell');
+      callbacks.onError(new TransactionRevertedError(), '0xsell');
+      expect(stored().closedAt).toBeUndefined();
+    });
+
+    it('closes after a convert, also from a Safe once it executed', () => {
+      for (const isSafe of [false, true]) {
+        mocks.isSafe = isSafe;
+        mocks.address = `0x${(6000 + ++accountSeq).toString(16).padStart(40, '0')}`;
+        const card = seed({ claimed: true });
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        act(() => result.current.launch(card, 'convert', MINTED));
+        confirm();
+        const callbacks = mocks.convert.params!.getCallbacks();
+        leg(callbacks, 'approve', '0xapprove');
+        leg(callbacks, 'sellGem', '0xsell');
+        callbacks.onSuccess('0xsell-on-chain', 7n);
+        expect(stored()).toMatchObject({ closedAt: expect.any(Number) });
+      }
+    });
+  });
 });

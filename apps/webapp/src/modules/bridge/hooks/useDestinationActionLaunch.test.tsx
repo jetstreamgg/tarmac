@@ -321,6 +321,15 @@ describe('useDestinationActionLaunch', () => {
     expect(stored('0xsource')).toMatchObject({ status: 'claimed', actions: [{ txHash: '0xclaim' }] });
   });
 
+  it('keeps the card of a confirmed claim whose sale it never saw', () => {
+    seedReadyClaim();
+    const { result } = renderHook(() => useDestinationActionLaunch());
+    const callbacks = launchAndConfirm(result.current.launch);
+    callbacks.onStart('0xclaim');
+    callbacks.onSuccess('0xclaim');
+    expect(stored('0xsource').closedAt).toBeUndefined();
+  });
+
   it('Retry after a non-revert failure sends no second action while the first is sent', () => {
     seedReadyClaim();
     const { result } = renderHook(() => useDestinationActionLaunch());
@@ -511,6 +520,17 @@ describe('useDestinationActionLaunch', () => {
       callbacks.onSuccess('0xreplay');
       expect(stored('0xdeposit')).toMatchObject({ status: 'pending', nextAction: undefined });
       expect(result.current.actionHint(stored('0xdeposit'))).toBeUndefined();
+    });
+
+    it('keeps its card once the replay mined', () => {
+      mocks.replay.ready = true;
+      launchReplay();
+      act(() => mocks.launched[0].onConfirm!());
+      const callbacks = mocks.replay.params!.getCallbacks();
+      callbacks.onMutate(undefined);
+      callbacks.onStart('0xreplay');
+      callbacks.onSuccess('0xreplay');
+      expect(stored('0xdeposit').closedAt).toBeUndefined();
     });
 
     it('waits for the switch before building, so the simulation runs on the L2', () => {
