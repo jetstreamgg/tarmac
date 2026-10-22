@@ -75,7 +75,12 @@ export function buildBridgeModalRows({
 }): ModalGridCell[][] {
   return [
     [
-      { kind: 'single', label: t`Bridge type`, value: bridgeTypeLabel(route.kind) },
+      {
+        kind: 'single',
+        label: t`Bridge type`,
+        value: bridgeTypeLabel(route.kind),
+        ...(route.kind === 'cctp' && { logo: 'cctp' as const })
+      },
       {
         kind: 'pair',
         label: t`Bridge rate`,

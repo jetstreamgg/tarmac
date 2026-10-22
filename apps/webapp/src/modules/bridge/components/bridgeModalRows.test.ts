@@ -44,6 +44,13 @@ describe('buildBridgeModalRows', () => {
     expect(eta).toMatchObject({ value: '~3 min' });
   });
 
+  it("draws Circle's logo before CCTP only (Figma 3830:67688)", () => {
+    const [[cctp]] = buildBridgeModalRows({ route: routeFor('base', 'ethereum'), networkFee: '' });
+    expect(cctp).toMatchObject({ value: 'CCTP', logo: 'cctp' });
+    const [[native]] = buildBridgeModalRows({ route: routeFor('ethereum', 'base'), networkFee: '' });
+    expect(native).not.toHaveProperty('logo');
+  });
+
   it('shows no bridge fee until the route quotes one', () => {
     const [, , [fee]] = buildBridgeModalRows({ route: routeFor('ethereum', 'avalanche'), networkFee: '' });
     expect(fee).toMatchObject({ value: NO_VALUE });
