@@ -21,10 +21,14 @@ const mocks = vi.hoisted(() => ({
   attempts: [] as number[],
   account: '0x71c7656ec7ab88b098defb751b7401b5f6d8976f' as string | undefined,
   live: new Set<string>(),
-  toast: { success: vi.fn(), error: vi.fn() }
+  toast: { success: vi.fn(), error: vi.fn() },
+  openConnectModal: vi.fn()
 }));
 
 vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
+vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
+  useConnectModal: () => ({ openConnectModal: mocks.openConnectModal })
+}));
 
 vi.mock('../model/pairs', () => ({
   isLivePair: ({ from, to }: { from: string; to: string }) => to === 'ethereum' && mocks.live.has(from)
@@ -96,6 +100,7 @@ describe('CctpClaimLookup', () => {
   beforeEach(() => {
     mocks.params = new URLSearchParams('tab=bridge');
     mocks.setParams.mockClear();
+    mocks.openConnectModal.mockClear();
     mocks.state = { status: 'idle' };
     mocks.targets = [];
     mocks.attempts = [];
@@ -308,6 +313,20 @@ describe('CctpClaimLookup', () => {
     expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
+  it('disconnected, connects from the modal and keeps the claim link to look it up', () => {
+    mocks.params = new URLSearchParams(`tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`);
+    mocks.state = { status: 'disconnected' };
+    renderLookup();
+    expect(screen.getByTestId('bridge-claim-lookup-message').textContent).toBe(
+      'Connect your wallet to look it up.'
+    );
+    expect(screen.queryByTestId('bridge-claim-lookup-find')).toBeNull();
+    fireEvent.click(screen.getByTestId('bridge-claim-lookup-connect'));
+    expect(mocks.openConnectModal).toHaveBeenCalledOnce();
+    expect(mocks.setParams).not.toHaveBeenCalled();
+    expect(lastTarget()).toEqual({ from: 'arbitrum', txHash: HASH });
+  });
+
   it('retries a failed read', () => {
     const retry = vi.fn();
     mocks.state = { status: 'error', retry };
@@ -318,7 +337,6 @@ describe('CctpClaimLookup', () => {
   });
 
   it.each<[CctpClaimLookupState, string, string]>([
-    [{ status: 'disconnected' }, 'bridge-claim-lookup-message', 'Connect your wallet to look it up.'],
     [{ status: 'known' }, 'bridge-claim-lookup-message', 'This bridge is already in your list.'],
     [
       { status: 'known', claimed: true },

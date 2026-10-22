@@ -15,6 +15,7 @@ import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { Close, NoResults } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
+import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { readCctpClaimLink } from '../adapters/cctp/claimLink';
 import { isCctpL2Network, type CctpL2NetworkId } from '../adapters/cctp/contracts';
 import {
@@ -150,6 +151,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
   const [invalid, setInvalid] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const state = useCctpClaimLookup(target, attempt);
+  const { openConnectModal } = useConnectModal();
   const networkName = getBridgeNetwork(target?.from ?? network).name;
   const notFound = state.status === 'refused' && state.reason === 'not-found';
   const loading = state.status === 'loading';
@@ -263,17 +265,30 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
         </div>
       </div>
 
-      <Button
-        variant="primary"
-        size="xl"
-        className="w-full"
-        disabled={draft.trim() === ''}
-        loading={loading}
-        onClick={find}
-        data-testid="bridge-claim-lookup-find"
-      >
-        {loading ? <Trans>Looking up your bridge</Trans> : <Trans>Find</Trans>}
-      </Button>
+      {state.status === 'disconnected' ? (
+        // The link stays: once connected, the lookup runs on it.
+        <Button
+          variant="primary"
+          size="xl"
+          className="w-full"
+          onClick={() => openConnectModal()}
+          data-testid="bridge-claim-lookup-connect"
+        >
+          <Trans>Connect wallet</Trans>
+        </Button>
+      ) : (
+        <Button
+          variant="primary"
+          size="xl"
+          className="w-full"
+          disabled={draft.trim() === ''}
+          loading={loading}
+          onClick={find}
+          data-testid="bridge-claim-lookup-find"
+        >
+          {loading ? <Trans>Looking up your bridge</Trans> : <Trans>Find</Trans>}
+        </Button>
+      )}
     </div>
   );
 }
