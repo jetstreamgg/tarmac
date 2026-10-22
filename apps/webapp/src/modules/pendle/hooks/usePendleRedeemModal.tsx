@@ -35,7 +35,7 @@ import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
-import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
@@ -62,7 +62,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
 
   // Quote: PT → user-selected output via /convert. The `maturedExit` flag
   // adds the YT-with-zero-amount entry the API requires for matured exits.
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side: PendleConvertSide.WITHDRAW,
     marketAddress: market.marketAddress,
     inputToken: market.ptToken,
@@ -394,10 +398,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     toast
   ]);
 
+  // Only when no quote ever arrived: without one the cards keep Claim disabled,
+  // so they say why instead of leaving a silently greyed-out button.
+  const claimUnavailableMessage =
+    isRedeemable && !quote && !isFetchingQuote ? pendleQuoteErrorMessage(quoteError?.message) : undefined;
+
   return {
     openRedeemModal,
     isRedeemable,
     isPrepared: writeHook.prepared,
+    claimUnavailableMessage,
     onPendleChain,
     switchBlocked,
     ptBalance,

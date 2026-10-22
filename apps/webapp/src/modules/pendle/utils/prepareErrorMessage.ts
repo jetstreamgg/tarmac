@@ -41,6 +41,9 @@ export function pendleQuoteErrorMessage(raw: string | undefined): string | undef
   if (/no routes/i.test(raw)) {
     return t`No route available for this trade size. Try a different amount.`;
   }
+  if (/market not found/i.test(raw)) {
+    return t`Pendle's quote service can't find this market right now. Please try again later.`;
+  }
   if (/malformed quote/i.test(raw)) {
     return t`Received an invalid quote from Pendle. Please try again.`;
   }
