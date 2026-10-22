@@ -12,7 +12,8 @@ import {
   type CctpL2NetworkId
 } from '../adapters/cctp/contracts';
 import { CCTP_SWAP_FAILED_MESSAGE, cctpBurnRefusal, cctpResumeRefusal } from '../adapters/cctp/gate';
-import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { pendingBridgeStore } from '../store/pendingStore';
 import { isStorageWritable } from '../store/storageWritable';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
@@ -203,6 +204,16 @@ export function useCctpBurnLegs({
     if (loose && loose.recipient === to && loose.resumed === resume?.swapTxHash) return loose;
     return (looseRef.current = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe });
   };
+  // A new burn retries the swap's last one: that one's Failed card goes (Activity keeps it).
+  const linkBurn = (scope: string, swapTxHash: string, burn: string) => {
+    const replaced = cctpSwapStore.markBurn(scope, swapTxHash, burn);
+    const failed =
+      replaced &&
+      pendingBridgeStore
+        .getSnapshot(scope)
+        .find(bridge => bridge.status === 'failed' && isBurnOf(bridge, replaced));
+    if (failed) pendingBridgeStore.close(scope, failed.id);
+  };
   const onLegSent = (hash: string, variables: TxMutateVariables, context?: unknown) => {
     if (!scope) return;
     // The run whose prompt this leg was signed in, though another run may have started since.
@@ -227,7 +238,7 @@ export function useCctpBurnLegs({
     } else if (variables.functionName === CCTP_BURN_FUNCTION) {
       // Kept until the burn mines: a burn that reverts leaves the USDC to continue.
       const swapTxHash = run.resumed ?? run.sentSwap?.hash;
-      if (swapTxHash) cctpSwapStore.markBurn(scope, swapTxHash, hash);
+      if (swapTxHash) linkBurn(scope, swapTxHash, hash);
     }
   };
   const onLegPrompt = (variables: TxMutateVariables, context?: unknown) => {
@@ -240,7 +251,7 @@ export function useCctpBurnLegs({
   const onBundleSent = (id: string, context?: unknown) => {
     const run = (context as Run | undefined) ?? runRef.current;
     const resumed = run ? run.resumed : resume?.swapTxHash;
-    if (scope && resumed) cctpSwapStore.markBurn(scope, resumed, id);
+    if (scope && resumed) linkBurn(scope, resumed, id);
     onCallsSent?.(id);
   };
   // A swap whose receipt reverted, or that was replaced, swapped nothing; any other hash is no swap.

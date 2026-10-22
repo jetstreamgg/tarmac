@@ -1,13 +1,9 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import type { PendingBridge } from '../model/types';
-import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { useBridgeHistory } from './useBridgeHistory';
 import { usePendingScope } from './usePendingScope';
 
 const NONE: UnfinishedCctpSwap[] = [];
-
-const isBurnOf = (bridge: PendingBridge, burn: string) =>
-  [bridge.id, bridge.txHash, bridge.callsId].some(id => id?.toLowerCase() === burn);
 
 /**
  * The connected account's CCTP swaps that can be continued, newest first: no

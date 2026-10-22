@@ -189,6 +189,15 @@ describe('createCctpSwapStore burn links', () => {
     unsubscribe();
   });
 
+  it('returns the burn a new one replaced, and nothing for a first or repeated link', () => {
+    const store = createCctpSwapStore();
+    expect(store.markBurn(SCOPE, SWAP_HASH, '0xburn1')).toBeUndefined();
+    store.record(SCOPE, swap());
+    expect(store.markBurn(SCOPE, SWAP_HASH, '0xburn1')).toBeUndefined();
+    expect(store.markBurn(SCOPE, SWAP_HASH, '0xBURN1')).toBeUndefined();
+    expect(store.markBurn(SCOPE, SWAP_HASH, 'calls-2')).toBe('0xburn1');
+  });
+
   it('drops only the swaps whose burn is among the mined ids', () => {
     const store = createCctpSwapStore();
     store.record(SCOPE, swap());

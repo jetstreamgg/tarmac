@@ -9,7 +9,12 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
 import { cctpL2Contracts } from '../adapters/cctp/contracts';
 import { RESUME_SCAN_MAX_BLOCKS } from '../adapters/cctp/gate';
-import { applyProgress, createPendingBridge, failBundle } from '../model/pendingTransitions';
+import {
+  applyProgress,
+  createPendingBridge,
+  failBundle,
+  isPendingBridgeVisible
+} from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -245,6 +250,68 @@ describe('useCctpBurnLegs: the Continue card follows its burn', () => {
       );
       expect(notOwn?.message).toMatch(/not a bridge of this account/);
       expect(result.current.offered).toEqual([SWAP_HASH]);
+    });
+  });
+
+  // B6: the Failed card of a burn goes once the burn retrying it is sent; Activity keeps it.
+  describe('the failed burn card', () => {
+    const cards = () =>
+      pendingBridgeStore
+        .getSnapshot(scope())
+        .filter(bridge => isPendingBridgeVisible(bridge, NOW))
+        .map(bridge => bridge.txHash ?? bridge.callsId);
+    const stored = () =>
+      pendingBridgeStore.getSnapshot(scope()).map(bridge => bridge.txHash ?? bridge.callsId);
+    const failedBurn = () => {
+      const { result } = render();
+      act(() => result.current.legs.execute());
+      legSent(SWAP_HASH, 'swapExactIn', lastRun());
+      legSent(BURN_HASH, 'depositForBurn', lastRun());
+      card({ txHash: BURN_HASH });
+      burnReverted(BURN_HASH);
+      return result;
+    };
+
+    it('stays while nothing retried it', () => {
+      const result = failedBurn();
+      act(() => result.current.legs.execute());
+      expect(cards()).toEqual([BURN_HASH]);
+    });
+
+    it('goes once a Try again sends a new burn, and stays in Activity', () => {
+      const result = failedBurn();
+      act(() => result.current.legs.execute());
+      legSent(RETRY_HASH, 'depositForBurn', lastRun());
+      card({ txHash: RETRY_HASH });
+      expect(cards()).toEqual([RETRY_HASH]);
+      expect(stored()).toEqual([RETRY_HASH, BURN_HASH]);
+    });
+
+    it('goes once Continue sends a new burn', () => {
+      failedBurn();
+      const { result } = render({ resume: RESUME });
+      act(() => result.current.legs.execute());
+      legSent(RETRY_HASH, 'depositForBurn', lastRun());
+      expect(cards()).toEqual([]);
+    });
+
+    it('goes once Continue sends a bundle', () => {
+      failedBurn();
+      const { result } = render({ resume: RESUME, batch: true });
+      act(() => result.current.legs.execute());
+      act(() => (mocks.legs!.onCallsSent as (id: string, context?: unknown) => void)('calls-1', lastRun()));
+      expect(cards()).toEqual([]);
+    });
+
+    it('never closes a burn that may still land', () => {
+      const { result } = render();
+      act(() => result.current.legs.execute());
+      legSent(SWAP_HASH, 'swapExactIn', lastRun());
+      legSent(BURN_HASH, 'depositForBurn', lastRun());
+      card({ txHash: BURN_HASH });
+      act(() => result.current.legs.execute());
+      legSent(RETRY_HASH, 'depositForBurn', lastRun());
+      expect(cards()).toEqual([BURN_HASH]);
     });
   });
 });

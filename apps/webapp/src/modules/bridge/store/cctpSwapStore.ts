@@ -1,4 +1,5 @@
 import type { CctpL2NetworkId } from '../adapters/cctp/contracts';
+import type { PendingBridge } from '../model/types';
 
 const KEY_PREFIX = 'bridgeCctpSwap:v1:';
 
@@ -17,6 +18,10 @@ export type UnfinishedCctpSwap = {
 };
 
 type Listener = () => void;
+
+/** Whether a pending bridge is the burn a swap entry links to (`UnfinishedCctpSwap.burn`). */
+export const isBurnOf = (bridge: PendingBridge, burn: string) =>
+  [bridge.id, bridge.txHash, bridge.callsId].some(id => id?.toLowerCase() === burn);
 
 const NETWORKS = new Set<unknown>(['base', 'optimism', 'unichain', 'arbitrum'] satisfies CctpL2NetworkId[]);
 const isString = (value: unknown): value is string => typeof value === 'string';
@@ -155,17 +160,19 @@ export function createCctpSwapStore() {
       if (current.some(existing => existing.swapTxHash === entry.swapTxHash)) return;
       write(scope, [entry, ...current], entry.swapTxHash);
     },
-    /** Links a swap to the burn sent for it, which replaces any earlier one. */
-    markBurn(scope: string, swapTxHash: string, burn: string) {
+    /** Links a swap to the burn sent for it, which replaces any earlier one; returns the one it replaced. */
+    markBurn(scope: string, swapTxHash: string, burn: string): string | undefined {
       const hash = swapTxHash.toLowerCase();
       const id = burn.toLowerCase();
       const current = latest(scope);
-      if (!current.some(entry => entry.swapTxHash === hash && entry.burn !== id)) return;
+      const entry = current.find(swap => swap.swapTxHash === hash);
+      if (!entry || entry.burn === id) return undefined;
       write(
         scope,
-        current.map(entry => (entry.swapTxHash === hash ? { ...entry, burn: id } : entry)),
+        current.map(swap => (swap === entry ? { ...swap, burn: id } : swap)),
         hash
       );
+      return entry.burn;
     },
     /** Drops a swap: it reverted or was replaced, or the user dismissed it. */
     clear,
