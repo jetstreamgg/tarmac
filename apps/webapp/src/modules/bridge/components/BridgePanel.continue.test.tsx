@@ -1,6 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
+import type { ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -47,14 +48,17 @@ vi.mock('../hooks/useCctpResumeLaunch', () => ({
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({ useConnectThenAct: (fn: () => void) => fn }));
 vi.mock('./BridgeCard', () => ({ BridgeCard: () => null }));
 vi.mock('./PendingBridges', () => ({
-  PendingBridges: (props: { onContinue: (swap: UnfinishedCctpSwap) => void }) => {
+  PendingBridges: (props: { onContinue: (swap: UnfinishedCctpSwap) => void; lookup?: ReactNode }) => {
     mocks.onContinue = props.onContinue;
     mocks.list = props;
-    return null;
+    return <>{props.lookup}</>;
   }
 }));
 
-vi.mock('./CctpClaimLookup', () => ({ CctpClaimLookup: () => <div data-testid="claim-lookup" /> }));
+vi.mock('./CctpClaimLookup', () => ({
+  CctpClaimLookup: () => <div data-testid="claim-lookup" />,
+  hasCctpClaimLookup: () => true
+}));
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 afterEach(cleanup);
@@ -79,7 +83,8 @@ it("sends a card's actions, conversion included, through the destination launch"
   expect(mocks.list.actionHint).toBe(mocks.actionHint);
 });
 
-it('offers the lookup for an unclaimed bridge under the pending list', () => {
+// Figma 81: inside the list, under its cards.
+it('offers the lookup for an unclaimed bridge inside the pending list', () => {
   render(
     <I18nProvider i18n={i18n}>
       <BridgePanel />

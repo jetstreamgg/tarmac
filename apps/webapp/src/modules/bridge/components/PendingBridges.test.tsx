@@ -168,6 +168,29 @@ describe('PendingBridges', () => {
     expect(renderList().container.innerHTML).toBe('');
   });
 
+  // Figma 80/81.
+  it('shows the heading and the lookup with no pending bridges', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <PendingBridges {...props} lookup={<div data-testid="lookup" />} />
+      </I18nProvider>
+    );
+    expect(screen.getByRole('heading').textContent).toBe('Pending bridges');
+    expect(screen.getByTestId('lookup')).toBeTruthy();
+  });
+
+  it('shows the lookup under the cards', () => {
+    mocks.bridges = [BRIDGE];
+    render(
+      <I18nProvider i18n={i18n}>
+        <PendingBridges {...props} lookup={<div data-testid="lookup" />} />
+      </I18nProvider>
+    );
+    const section = screen.getByTestId('pending-bridges');
+    expect(section.lastElementChild?.getAttribute('data-testid')).toBe('lookup');
+    expect(screen.getAllByTestId('pending-bridge-card')).toHaveLength(1);
+  });
+
   it('lists each pending bridge with its amount, rows and status', () => {
     mocks.bridges = [BRIDGE, { ...BRIDGE, id: '0xdef', to: 'arbitrum' }];
     renderList();

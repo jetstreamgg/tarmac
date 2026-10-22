@@ -710,6 +710,8 @@ type PendingBridgesProps = {
   ) => void;
   /** Continues an unfinished CCTP swap: bridges the USDC it returned. */
   onContinue: (swap: UnfinishedCctpSwap) => void;
+  /** The lookup banner under the cards (Figma 81); the list shows it even while empty. */
+  lookup?: ReactNode;
 };
 
 /** "Pending bridges" list under the bridge form (Figma 3574:64348). */
@@ -719,7 +721,8 @@ export function PendingBridges({
   canAction,
   actionHint,
   actionLocked,
-  onContinue
+  onContinue,
+  lookup
 }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
   const { bridges, now } = usePendingBridges();
@@ -734,7 +737,7 @@ export function PendingBridges({
       .filter(entry => isPendingBridgeVisible(entry.bridge, now))
       .map(entry => ({ bridge: entry.bridge, owner: entry.scope }))
   ].sort((a, b) => b.bridge.startedAt - a.bridge.startedAt);
-  if (cards.length === 0 && swaps.length === 0) return null;
+  if (cards.length === 0 && swaps.length === 0 && !lookup) return null;
 
   return (
     <section className="flex w-full flex-col gap-6" data-testid="pending-bridges">
@@ -776,6 +779,7 @@ export function PendingBridges({
           storageWritable={storageWritable}
         />
       ))}
+      {lookup}
     </section>
   );
 }

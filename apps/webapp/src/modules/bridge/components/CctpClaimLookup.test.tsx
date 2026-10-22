@@ -12,7 +12,6 @@ import { CctpClaimLookup } from './CctpClaimLookup';
 
 const HASH = `0x${'ab'.repeat(32)}` as Hex;
 const SENDER = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
-const OTHER = '0x00000000000000000000000000000000000b0b01';
 
 const mocks = vi.hoisted(() => ({
   params: new URLSearchParams(),
@@ -42,27 +41,7 @@ vi.mock('../hooks/useCctpClaimLookup', () => ({
     return mocks.state;
   }
 }));
-vi.mock('./BridgeNetworkSelect', () => ({
-  BridgeNetworkSelect: ({
-    value,
-    options,
-    onChange,
-    dataTestId
-  }: {
-    value: string;
-    options: string[];
-    onChange: (next: string) => void;
-    dataTestId: string;
-  }) => (
-    <select data-testid={dataTestId} value={value} onChange={event => onChange(event.target.value)}>
-      {options.map(option => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
-  )
-}));
+vi.mock('./BridgeNetworkIcon', () => ({ BridgeNetworkIcon: () => null }));
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
@@ -94,6 +73,19 @@ const open = () => fireEvent.click(screen.getByTestId('bridge-claim-lookup-open'
 const typeHash = (value: string) =>
   fireEvent.change(screen.getByTestId('bridge-claim-lookup-hash'), { target: { value } });
 const find = () => fireEvent.click(screen.getByTestId('bridge-claim-lookup-find'));
+const pickNetwork = (network: string) =>
+  fireEvent.click(screen.getByTestId(`bridge-claim-lookup-network-${network}`));
+// The source network pills, in order, and the one checked.
+const networkPills = () =>
+  screen
+    .getAllByRole('radio')
+    .map(pill => pill.getAttribute('data-testid')?.replace('bridge-claim-lookup-network-', ''));
+const checkedNetwork = () =>
+  screen
+    .getAllByRole('radio')
+    .find(pill => pill.getAttribute('aria-checked') === 'true')
+    ?.getAttribute('data-testid')
+    ?.replace('bridge-claim-lookup-network-', '');
 // The params left after the strip the setter was called with.
 const strippedParams = () => {
   const [update] = mocks.setParams.mock.calls[mocks.setParams.mock.calls.length - 1];
@@ -114,19 +106,62 @@ describe('CctpClaimLookup', () => {
   });
   afterEach(cleanup);
 
-  it('starts closed, behind a secondary option, and looks nothing up', () => {
+  // Figma 81.
+  it('starts with the banner, the lookup closed, and looks nothing up', () => {
     renderLookup();
-    expect(screen.getByTestId('bridge-claim-lookup-open').textContent).toBe(
-      "Can't find your unclaimed transaction?"
+    const banner = screen.getByTestId('bridge-claim-lookup-banner');
+    expect(banner.textContent).toContain("Can't find your bridge?");
+    expect(banner.textContent).toContain(
+      'If you sent it from another device or browser, or someone sent it to you, find it with the transaction hash and claim it here.'
     );
+    expect(screen.getByTestId('bridge-claim-lookup-open').textContent).toBe('Find bridge');
     expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
     expect(lastTarget()).toBeUndefined();
+  });
+
+  // Figma 82.
+  it('opens the lookup in a modal from the banner', () => {
+    renderLookup();
+    open();
+    const form = screen.getByTestId('bridge-claim-lookup-form');
+    expect(form.textContent).toContain('Find your bridge');
+    expect(form.textContent).toContain(
+      "Enter the network you bridged from and the transaction hash. We'll look it up so you can claim it."
+    );
+    expect(form.textContent).toContain('Source network');
+    expect(form.textContent).toContain(
+      "You'll find it in your wallet's activity or on the block explorer of the network you bridged from."
+    );
+    expect(screen.getByRole('dialog')).toBeTruthy();
+  });
+
+  it('keeps Find disabled while no hash is entered', () => {
+    renderLookup();
+    open();
+    expect((screen.getByTestId('bridge-claim-lookup-find') as HTMLButtonElement).disabled).toBe(true);
+    typeHash('   ');
+    expect((screen.getByTestId('bridge-claim-lookup-find') as HTMLButtonElement).disabled).toBe(true);
+    typeHash(HASH);
+    expect((screen.getByTestId('bridge-claim-lookup-find') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  // Figma 84.
+  it('shows the lookup in a disabled Find while it runs', () => {
+    mocks.state = { status: 'loading' };
+    renderLookup();
+    open();
+    typeHash(HASH);
+    find();
+    const button = screen.getByTestId('bridge-claim-lookup-find') as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toBe('Looking up your bridge');
+    expect(screen.getByTestId('bridge-claim-lookup-helper')).toBeTruthy();
   });
 
   it('looks up the network and the lower-case hash entered', () => {
     renderLookup();
     open();
-    fireEvent.change(screen.getByTestId('bridge-claim-lookup-network'), { target: { value: 'unichain' } });
+    pickNetwork('unichain');
     typeHash(`  ${HASH.toUpperCase().replace('0X', '0x')} `);
     expect(lastTarget()).toBeUndefined();
     find();
@@ -136,21 +171,15 @@ describe('CctpClaimLookup', () => {
   it('offers only the networks that bridge to Ethereum through CCTP, Base first', () => {
     renderLookup();
     open();
-    const select = screen.getByTestId('bridge-claim-lookup-network') as HTMLSelectElement;
-    expect(select.value).toBe('base');
-    expect([...select.options].map(option => option.value)).toEqual([
-      'base',
-      'arbitrum',
-      'optimism',
-      'unichain'
-    ]);
+    expect(checkedNetwork()).toBe('base');
+    expect(networkPills()).toEqual(['base', 'arbitrum', 'optimism', 'unichain']);
   });
 
   it('shows nothing while no network bridges to Ethereum through CCTP, a claim link included', () => {
     mocks.live = new Set();
     mocks.params = new URLSearchParams(`tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`);
     renderLookup();
-    expect(screen.queryByTestId('bridge-claim-lookup-open')).toBeNull();
+    expect(screen.queryByTestId('bridge-claim-lookup-banner')).toBeNull();
     expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
     expect(mocks.targets.every(target => target === undefined)).toBe(true);
   });
@@ -159,9 +188,8 @@ describe('CctpClaimLookup', () => {
     mocks.live = new Set(['arbitrum', 'unichain']);
     renderLookup();
     open();
-    const select = screen.getByTestId('bridge-claim-lookup-network') as HTMLSelectElement;
-    expect(select.value).toBe('arbitrum');
-    expect([...select.options].map(option => option.value)).toEqual(['arbitrum', 'unichain']);
+    expect(checkedNetwork()).toBe('arbitrum');
+    expect(networkPills()).toEqual(['arbitrum', 'unichain']);
   });
 
   it('ignores a claim link from a network whose bridge to Ethereum is not live', () => {
@@ -172,7 +200,7 @@ describe('CctpClaimLookup', () => {
     expect(mocks.targets.every(target => target === undefined)).toBe(true);
   });
 
-  it.each([['0xabcd'], [`0x${'zz'.repeat(32)}`], ['']])('refuses %j as a hash without a lookup', value => {
+  it.each([['0xabcd'], [`0x${'zz'.repeat(32)}`]])('refuses %j as a hash without a lookup', value => {
     renderLookup();
     open();
     typeHash(value);
@@ -197,7 +225,7 @@ describe('CctpClaimLookup', () => {
     typeHash(HASH);
     find();
     expect(lastTarget()).toEqual({ from: 'base', txHash: HASH });
-    fireEvent.change(screen.getByTestId('bridge-claim-lookup-network'), { target: { value: 'optimism' } });
+    pickNetwork('optimism');
     expect(lastTarget()).toBeUndefined();
     find();
     typeHash(`0x${'cd'.repeat(32)}`);
@@ -220,7 +248,7 @@ describe('CctpClaimLookup', () => {
     mocks.params = new URLSearchParams(`tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`);
     renderLookup();
     expect(screen.getByTestId('bridge-claim-lookup-form')).toBeTruthy();
-    expect((screen.getByTestId('bridge-claim-lookup-network') as HTMLSelectElement).value).toBe('arbitrum');
+    expect(checkedNetwork()).toBe('arbitrum');
     expect((screen.getByTestId('bridge-claim-lookup-hash') as HTMLInputElement).value).toBe(HASH);
     expect(mocks.targets[0]).toEqual({ from: 'arbitrum', txHash: HASH });
   });
@@ -234,29 +262,24 @@ describe('CctpClaimLookup', () => {
     expect(mocks.setParams.mock.calls[0][1]).toEqual({ replace: true });
   });
 
-  it('shows a found burn and adds it to the list, then closes', () => {
+  // Figma 86.
+  it('adds a found burn to the list straight away, closes and toasts', () => {
     const add = vi.fn();
     mocks.state = { status: 'found', bridge: BURN, add };
     mocks.params = new URLSearchParams(`tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`);
     renderLookup();
-    const found = screen.getByTestId('bridge-claim-lookup-found');
-    expect(found.textContent).toContain('1,250.00');
-    expect(found.textContent).toContain('Arbitrum One');
-    fireEvent.click(screen.getByTestId('bridge-claim-lookup-add'));
-    expect(add).toHaveBeenCalledTimes(1);
+    expect(add).toHaveBeenCalled();
     expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
     expect(strippedParams()).toEqual({ tab: 'bridge' });
+    expect(mocks.toast.success).toHaveBeenCalledWith('Bridge found!', expect.anything());
   });
 
-  // Figma 86.
-  it('toasts that the bridge was found once it is added', () => {
-    mocks.state = { status: 'found', bridge: BURN, add: vi.fn() };
+  it('adds nothing before a lookup finds the burn', () => {
     renderLookup();
     open();
+    typeHash(HASH);
     expect(mocks.toast.success).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByTestId('bridge-claim-lookup-add'));
-    expect(mocks.toast.success).toHaveBeenCalledTimes(1);
-    expect(mocks.toast.success).toHaveBeenCalledWith('Bridge found!');
+    expect(screen.getByTestId('bridge-claim-lookup-form')).toBeTruthy();
   });
 
   // Figma 85.
@@ -285,23 +308,6 @@ describe('CctpClaimLookup', () => {
     expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
-  it('tells the sender of a burn to another wallet that only that wallet can claim it', () => {
-    mocks.state = { status: 'found', bridge: { ...BURN, recipient: OTHER }, add: vi.fn() };
-    renderLookup();
-    open();
-    expect(screen.getByTestId('bridge-claim-lookup-found').textContent).toContain(
-      'Only the destination wallet (0x0000...0b01) can claim it on Ethereum.'
-    );
-  });
-
-  it('says nothing about the destination wallet to the recipient', () => {
-    mocks.account = OTHER;
-    mocks.state = { status: 'found', bridge: { ...BURN, recipient: OTHER }, add: vi.fn() };
-    renderLookup();
-    open();
-    expect(screen.getByTestId('bridge-claim-lookup-found').textContent).not.toContain('destination wallet');
-  });
-
   it('retries a failed read', () => {
     const retry = vi.fn();
     mocks.state = { status: 'error', retry };
@@ -313,7 +319,6 @@ describe('CctpClaimLookup', () => {
 
   it.each<[CctpClaimLookupState, string, string]>([
     [{ status: 'disconnected' }, 'bridge-claim-lookup-message', 'Connect your wallet to look it up.'],
-    [{ status: 'loading' }, 'bridge-claim-lookup-message', 'Looking up your bridge'],
     [{ status: 'known' }, 'bridge-claim-lookup-message', 'This bridge is already in your list.'],
     [
       { status: 'known', claimed: true },
@@ -328,7 +333,7 @@ describe('CctpClaimLookup', () => {
     [
       { status: 'refused', reason: 'not-found' },
       'bridge-claim-lookup-error',
-      "We couldn't find this transaction on Base. Check the network and the hash."
+      "There's no CCTP bridge with this hash on Base."
     ],
     [
       { status: 'refused', reason: 'reverted' },
@@ -352,5 +357,27 @@ describe('CctpClaimLookup', () => {
     typeHash(HASH);
     find();
     expect(screen.getByTestId(testId).textContent).toBe(copy);
+  });
+
+  // Figma 85.
+  it.each<CctpClaimLookupState>([
+    { status: 'refused', reason: 'not-found' },
+    { status: 'error', retry: () => {} }
+  ])('marks the hash invalid and drops the helper on %j', state => {
+    mocks.state = state;
+    renderLookup();
+    open();
+    typeHash(HASH);
+    find();
+    expect(screen.getByTestId('bridge-claim-lookup-hash').getAttribute('aria-invalid')).toBe('true');
+    expect(screen.queryByTestId('bridge-claim-lookup-helper')).toBeNull();
+  });
+
+  it('shows the helper under a hash not looked up yet', () => {
+    renderLookup();
+    open();
+    typeHash(HASH);
+    expect(screen.getByTestId('bridge-claim-lookup-hash').getAttribute('aria-invalid')).toBe('false');
+    expect(screen.getByTestId('bridge-claim-lookup-helper')).toBeTruthy();
   });
 });

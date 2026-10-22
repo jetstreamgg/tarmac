@@ -7,7 +7,7 @@ import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
 import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
 import { BridgeCard } from './BridgeCard';
-import { CctpClaimLookup } from './CctpClaimLookup';
+import { CctpClaimLookup, hasCctpClaimLookup } from './CctpClaimLookup';
 import { PendingBridges } from './PendingBridges';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
@@ -165,9 +165,8 @@ export function BridgePanel() {
         actionHint={actionHint}
         actionLocked={actionLocked}
         onContinue={continueBridge}
+        lookup={hasCctpClaimLookup() ? <CctpClaimLookup /> : undefined}
       />
-
-      <CctpClaimLookup />
     </div>
   );
 }
