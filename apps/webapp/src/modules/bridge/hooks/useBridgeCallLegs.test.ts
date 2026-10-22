@@ -179,3 +179,25 @@ describe('useBridgeCallLegs onLegFailed', () => {
     expect(onLegFailed).not.toHaveBeenCalled();
   });
 });
+
+describe('useBridgeCallLegs bundle success', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+    Object.values(callbacks).forEach(fn => fn.mockClear());
+  });
+
+  // A wallet that runs the bundle as separate transactions lands a claim's sale apart from its receive.
+  it('hands its Confirm every transaction of a bundle run apart', () => {
+    mocks.batchPrepared = true;
+    renderLegs(vi.fn(), true);
+    const bundle = mocks.batch.at(-1)! as FlowArgs & {
+      onSuccess: (hash?: string, blockNumber?: bigint, bundleTxHashes?: string[]) => void;
+    };
+    act(() => {
+      bundle.onMutate();
+      bundle.onStart();
+      bundle.onSuccess('0xreceive', 7n, ['0xreceive', '0xsell']);
+    });
+    expect(callbacks.onSuccess).toHaveBeenCalledWith('0xreceive', 7n, ['0xreceive', '0xsell']);
+  });
+});

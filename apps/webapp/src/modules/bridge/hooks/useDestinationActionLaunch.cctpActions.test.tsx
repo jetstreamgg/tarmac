@@ -8,6 +8,7 @@ import { createElement, type ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { confirmedClaimTxHashes } from '../adapters/cctp/convert';
 import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
@@ -201,6 +202,28 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       expect(actionsOf('claim')).toEqual([{ action: 'claim', txHash: '0xreceive', at: expect.any(Number) }]);
       expect(stored().status).toBe('claimed');
       expect(result.current.canLaunch(stored(), 'claim')).toBe(false);
+    });
+
+    // A wallet that runs the bundle as separate transactions (APP-637): its sale must stay readable.
+    it('keeps every transaction of a claim bundle run apart, under one claim', () => {
+      const card = seed({ claimed: false });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'claim'));
+      confirm();
+      const callbacks = mocks.claim.params!.getCallbacks();
+      callbacks.onMutate(undefined);
+      callbacks.onStart(undefined);
+      callbacks.onSuccess('0xreceive', 7n, ['0xreceive', '0xapprove', '0xsell']);
+      expect(actionsOf('claim')).toEqual([
+        {
+          action: 'claim',
+          txHash: '0xreceive',
+          at: expect.any(Number),
+          bundleTxHashes: ['0xapprove', '0xsell']
+        }
+      ]);
+      expect(confirmedClaimTxHashes(stored())).toEqual(['0xreceive', '0xapprove', '0xsell']);
+      expect(stored().status).toBe('claimed');
     });
 
     it('keeps the claim sent from a Safe when the sale reverts, for the tracker to settle', () => {

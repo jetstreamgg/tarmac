@@ -230,6 +230,23 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([sent]);
   });
 
+  it('keeps the other transactions of a claim bundle through storage, and skips malformed ones', () => {
+    const claimed = bridge({
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, bundleTxHashes: ['0xapprove', '0xsell'] }]
+    });
+    make().upsert(SCOPE, claimed);
+    expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
+
+    const stored = { ...claimed, amount: claimed.amount.toString() };
+    const bad = {
+      ...stored,
+      id: '0xa',
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, bundleTxHashes: '0xsell' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad, stored]));
+    expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
+  });
+
   it('keeps an invalidated action through storage', () => {
     const reproving = bridge({
       routeKind: 'native',

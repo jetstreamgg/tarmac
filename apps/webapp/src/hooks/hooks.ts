@@ -132,7 +132,8 @@ export type UseSendBatchTransactionFlowParameters<
   simulateEnabled?: boolean;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string | undefined) => void;
-  onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
+  /** `bundleTxHashes`: every receipt's hash, in order, when a wallet ran the bundle as several transactions. */
+  onSuccess?: (hash: string | undefined, blockNumber?: bigint, bundleTxHashes?: string[]) => void;
   onError?: (error: Error, hash: string | undefined) => void;
   /** The wallet accepted the bundle, under its EIP-5792 id; called right before `onStart`. */
   onCallsSent?: (id: string) => void;

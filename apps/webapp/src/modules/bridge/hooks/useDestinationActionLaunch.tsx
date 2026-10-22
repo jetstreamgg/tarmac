@@ -433,9 +433,15 @@ export function useDestinationActionLaunch() {
               onSent: record((current, txHash) =>
                 recordActionSent(current, { action, txHash, at: Date.now(), ...(isSafe && { safe: true }) })
               ),
-              onConfirmed: txHash => {
+              onConfirmed: (txHash, bundleTxHashes) => {
+                const others = bundleTxHashes?.filter(hash => hash !== txHash);
                 pendingBridgeStore.update(scope, bridge.id, current =>
-                  recordAction(current, { action, txHash, at: Date.now() })
+                  recordAction(current, {
+                    action,
+                    txHash,
+                    at: Date.now(),
+                    ...(others?.length && { bundleTxHashes: others })
+                  })
                 );
                 // A settled bridge leaves the tracker, so its arrival never refreshes these.
                 void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });

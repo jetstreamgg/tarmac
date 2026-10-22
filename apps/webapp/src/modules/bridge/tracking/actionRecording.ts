@@ -3,7 +3,8 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 
 /**
  * Wraps the modal's callbacks to record a destination action: `onSent` at
- * broadcast, `onConfirmed` once mined (a Safe passes its on-chain hash here),
+ * broadcast, `onConfirmed` once mined (a Safe passes its on-chain hash here,
+ * a bundle every transaction it ran),
  * and `onReverted` only when the sent hash reverted or was cancelled or replaced.
  * Any other failure keeps it sent, since the transaction may still land. A
  * transaction sped up in the wallet starts again under a new hash; it still
@@ -24,7 +25,7 @@ export function withActionRecording(
     confirmOnNextLeg = false
   }: {
     onSent: (txHash: string) => void;
-    onConfirmed: (txHash: string) => void;
+    onConfirmed: (txHash: string, bundleTxHashes?: string[]) => void;
     onReverted: (txHash: string) => void;
     actionFunctionName?: string;
     confirmOnNextLeg?: boolean;
@@ -55,12 +56,14 @@ export function withActionRecording(
       if (hash) current = hash;
       getCallbacks().onStart(hash);
     },
-    onSuccess: (hash, blockNumber) => {
+    onSuccess: (...settled) => {
+      const [hash, , bundleTxHashes] = settled;
       if (hash) {
         confirmed = true;
-        onConfirmed(hash);
+        if (bundleTxHashes) onConfirmed(hash, bundleTxHashes);
+        else onConfirmed(hash);
       }
-      getCallbacks().onSuccess(hash, blockNumber);
+      getCallbacks().onSuccess(...settled);
     },
     onError: (error, hash) => {
       const neverLands =

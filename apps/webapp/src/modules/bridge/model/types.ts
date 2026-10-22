@@ -52,6 +52,8 @@ export type PendingBridgeAction = {
   status?: 'sent' | 'invalidated';
   /** Sent from a Safe: `txHash` is its Safe tx hash, which the tracker resolves through the Safe service. */
   safe?: true;
+  /** The other transactions of a bundle the wallet ran apart: a claim's sale can land in one of them. */
+  bundleTxHashes?: string[];
 };
 
 export type PendingBridge = {

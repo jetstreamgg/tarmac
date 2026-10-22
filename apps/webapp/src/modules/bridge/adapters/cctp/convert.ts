@@ -16,11 +16,15 @@ export const claimSoldForUsds = (
       isAddressEqual(log.args.to, recipient as `0x${string}`)
   );
 
-/** Every hash this app's claim confirmed with: a run signed step by step can confirm its receive and its sale apart. */
+/**
+ * Every hash this app's claim confirmed with: a run signed step by step can
+ * confirm its receive and its sale apart, and a bundle the wallet ran apart
+ * keeps its other transactions on the claim.
+ */
 export const confirmedClaimTxHashes = (bridge: PendingBridge): string[] =>
   bridge.actions
     .filter(action => action.action === 'claim' && action.status === undefined)
-    .map(action => action.txHash);
+    .flatMap(action => [action.txHash, ...(action.bundleTxHashes ?? [])]);
 
 /** The first hash this app's claim confirmed with; see `confirmedClaimTxHashes` for all of them. */
 export const confirmedClaimTxHash = (bridge: PendingBridge): string | undefined =>

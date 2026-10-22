@@ -272,7 +272,12 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
   // A Safe confirms with the on-chain hash, not the Safe tx hash it was sent with.
   const actions = [
     ...bridge.actions.filter(sent => !(isSent(sent) && sent.action === action.action)),
-    { action: action.action, txHash: action.txHash, at: action.at }
+    {
+      action: action.action,
+      txHash: action.txHash,
+      at: action.at,
+      ...(action.bundleTxHashes?.length && { bundleTxHashes: action.bundleTxHashes })
+    }
   ];
   const done = action.action;
   if (isSettled(bridge) || isFollowUpAction(done)) return { ...bridge, actions };

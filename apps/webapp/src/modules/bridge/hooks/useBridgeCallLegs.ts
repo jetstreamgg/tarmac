@@ -224,7 +224,7 @@ export function useBridgeCallLegs({
       // Accepted after its run ended: still recorded under its own Confirm.
       issuer.onStart(undefined);
     },
-    onSuccess: (hash, blockNumber) => {
+    onSuccess: (...settled) => {
       const issuer = acceptedIssuerRef.current;
       if (!issuer) return;
       acceptedIssuerRef.current = undefined;
@@ -233,7 +233,7 @@ export function useBridgeCallLegs({
       // A bundle of an earlier Confirm: recovery resolves its card from the chain.
       if (issuer !== getCallbacks()) return;
       runFromRef.current = undefined;
-      issuer.onSuccess(hash, blockNumber);
+      issuer.onSuccess(...settled);
     },
     onError: (error, hash) => {
       if (dispatchingRef.current) {

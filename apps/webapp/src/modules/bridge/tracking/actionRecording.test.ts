@@ -29,6 +29,15 @@ describe('withActionRecording', () => {
     expect(inner.onSuccess).toHaveBeenCalledWith('0xclaim', 42n);
   });
 
+  // A wallet that runs a bundle as separate transactions: the claim's sale lands in another one.
+  it('confirms a bundle run apart with every transaction it ran', () => {
+    const { inner, onConfirmed, callbacks } = setup();
+    callbacks.onStart(undefined);
+    callbacks.onSuccess('0xreceive', 7n, ['0xreceive', '0xsell']);
+    expect(onConfirmed).toHaveBeenCalledWith('0xreceive', ['0xreceive', '0xsell']);
+    expect(inner.onSuccess).toHaveBeenCalledWith('0xreceive', 7n, ['0xreceive', '0xsell']);
+  });
+
   it('drops the sent action when its transaction reverted', () => {
     const { inner, onReverted, callbacks } = setup();
     callbacks.onStart('0xclaim');

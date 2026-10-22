@@ -167,6 +167,25 @@ describe('useCctpConvertOffer', () => {
     expect(result.current).toBeUndefined();
   });
 
+  it('offers nothing after a claim bundle the wallet ran as separate transactions, whose sale is in a later one', async () => {
+    const sold = recordAction(claimed(false), {
+      action: 'claim',
+      txHash: '0xreceive',
+      at: NOW,
+      bundleTxHashes: ['0xapprove', '0xsale']
+    });
+    mocks.receipt.mockImplementation(async ({ hash }: { hash: string }) => ({
+      status: 'success',
+      logs: hash === '0xsale' ? [transfer(L1_USDS, ACCOUNT)] : [transfer(L1_USDC, ACCOUNT)]
+    }));
+    // The USDC the account already held must not be offered.
+    mocks.balance.value = USDC('500');
+    const result = render(sold);
+    await waitFor(() => expect(mocks.receipt).toHaveBeenCalledWith({ hash: '0xsale' }));
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(result.current).toBeUndefined();
+  });
+
   it('offers nothing while the balance is unknown', async () => {
     mocks.balance.value = undefined;
     mocks.receipt.mockResolvedValue({ status: 'success', logs: [] });
