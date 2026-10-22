@@ -81,6 +81,44 @@ function WalletValue({ address, href }: WalletValueProps) {
   );
 }
 
+type WalletNameProps = { address: string };
+
+/** "0x1234...abcd (name.eth)" once its ENS name is known (Figma 74, 76). */
+function WalletName({ address }: WalletNameProps) {
+  const { data: ensName } = useEnsName({ address: address as `0x${string}`, chainId: mainnet.id });
+  const short = formatAddress(address, 6, 4);
+  return <>{ensName ? `${short} (${ensName})` : short}</>;
+}
+
+type SenderNoteProps = { bridge: PendingBridge; sender: string; amount: string; now: number };
+
+/** A bridge another wallet sent to this one: who sent it, and when it can be claimed (Figma 74, 76). */
+function SenderNote({ bridge, sender, amount, now }: SenderNoteProps) {
+  const claim = bridge.routeKind === 'cctp' && bridge.requiresClaim;
+  if (claim && bridge.status === 'ready' && bridge.nextAction === 'claim')
+    return (
+      <Trans>
+        The bridge was sent to you from <WalletName address={sender} />. Claim to receive {amount} USDS on
+        Ethereum.
+      </Trans>
+    );
+  const minutesLeft = Math.ceil((bridge.etaAt - Math.max(now, bridge.startedAt)) / 60_000);
+  if (claim && bridge.status === 'pending' && bridge.txHash && minutesLeft > 0) {
+    const timeLeft = formatTimeLeft(minutesLeft);
+    return (
+      <Trans>
+        Sent to you from <WalletName address={sender} />. It&apos;ll be ready to claim on Ethereum in about{' '}
+        {timeLeft}.
+      </Trans>
+    );
+  }
+  return (
+    <Trans>
+      Sent to you from <WalletName address={sender} />.
+    </Trans>
+  );
+}
+
 type CellValueProps = { cell: PendingBridgeCell };
 
 function CellValue({ cell }: CellValueProps) {
@@ -378,6 +416,9 @@ function PendingBridgeCard({
   const note = pendingBridgeNote(bridge, now);
   const claimLink = pendingClaimLink(window.location.origin, bridge);
   const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
+  const counterparty = bridgeCounterparty(bridge, account);
+  // Figma 71: the note on the way already asks to share the claim link.
+  const sharesInNote = claimedElsewhere && bridge.status === 'pending';
   return (
     <div className={cardClassName} data-testid="pending-bridge-card">
       {/* A claim that ended in USDC shows the USDC (Figma 93). */}
@@ -443,24 +484,32 @@ function PendingBridgeCard({
         </div>
       )}
 
-      {incoming && (
+      {counterparty?.role === 'sender' && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-incoming-note">
-          <Trans>Sent to this wallet from {formatAddress(bridge.account, 6, 4)}.</Trans>
+          <SenderNote bridge={bridge} sender={counterparty.address} amount={amount} now={now} />
         </Text>
       )}
 
       {claimedElsewhere && bridge.recipient && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-recipient-note">
-          <Trans>
-            Only the destination wallet ({formatAddress(bridge.recipient, 6, 4)}) can claim it on Ethereum.
-          </Trans>
+          {sharesInNote ? (
+            <Trans>
+              On its way to {formatAddress(bridge.recipient, 6, 4)}. Once it&apos;s ready on Ethereum,
+              they&apos;ll need to claim it from that wallet to receive USDS. Share the claim link so they can
+              find it.
+            </Trans>
+          ) : (
+            <Trans>
+              Only the destination wallet ({formatAddress(bridge.recipient, 6, 4)}) can claim it on Ethereum.
+            </Trans>
+          )}
         </Text>
       )}
 
       {claimLink && (
         <ClaimLink
           link={claimLink}
-          note={claimedElsewhere ? 'share' : !storageWritable ? 'keep' : undefined}
+          note={sharesInNote ? undefined : claimedElsewhere ? 'share' : !storageWritable ? 'keep' : undefined}
         />
       )}
 
@@ -483,13 +532,7 @@ function PendingBridgeCard({
       )}
 
       <CardRows
-        rows={buildPendingBridgeRows(
-          bridge,
-          now,
-          familyChainId,
-          convertAmount !== undefined,
-          bridgeCounterparty(bridge, account)
-        )}
+        rows={buildPendingBridgeRows(bridge, now, familyChainId, convertAmount !== undefined, counterparty)}
       />
     </div>
   );

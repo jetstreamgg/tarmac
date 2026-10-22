@@ -225,6 +225,15 @@ describe('PendingBridges', () => {
       expect(note()).not.toBeNull();
     });
 
+    it('tells the sender who claims it and to share the link while it is on its way (Figma 71)', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending' }];
+      renderList();
+      expect(note()?.textContent).toBe(
+        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS. Share the claim link so they can find it."
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+    });
+
     it('drops the note once the bridge settles', () => {
       mocks.bridges = [{ ...TO_OTHER, status: 'arrived', nextAction: undefined, settledAt: 0 }];
       renderList();
@@ -273,7 +282,7 @@ describe('PendingBridges', () => {
       renderList();
       expect(screen.getAllByTestId('pending-bridge-card')).toHaveLength(1);
       expect(screen.getByTestId('pending-bridge-incoming-note').textContent).toBe(
-        'Sent to this wallet from 0x0000...7d01.'
+        'The bridge was sent to you from 0x0000...7d01. Claim to receive 10,000.00 USDS on Ethereum.'
       );
       expect(screen.queryByTestId('pending-bridge-recipient-note')).toBeNull();
     });
@@ -285,6 +294,35 @@ describe('PendingBridges', () => {
       const wallet = screen.getByTestId('pending-bridge-wallet');
       expect(wallet.textContent).toBe('bartoo.eth');
       expect(screen.getByText('Sender')).toBeTruthy();
+    });
+
+    it('names the sender by its ENS name in the note once known (Figma 74)', () => {
+      incoming(INCOMING);
+      mocks.ens[SENDER] = 'bartoo.eth';
+      renderList();
+      expect(screen.getByTestId('pending-bridge-incoming-note').textContent).toBe(
+        'The bridge was sent to you from 0x0000...7d01 (bartoo.eth). Claim to receive 10,000.00 USDS on Ethereum.'
+      );
+    });
+
+    it('says when it will be ready while it is on its way (Figma 76)', () => {
+      incoming({ ...INCOMING, status: 'pending', etaAt: 20 * 60_000 });
+      renderList();
+      expect(screen.getByTestId('pending-bridge-incoming-note').textContent).toBe(
+        "Sent to you from 0x0000...7d01. It'll be ready to claim on Ethereum in about 20 minutes."
+      );
+    });
+
+    it('only says who sent it once it is late or claimed', () => {
+      incoming(
+        { ...INCOMING, status: 'pending', etaAt: 0 },
+        { ...CLAIMED, id: '0xincoming2', account: SENDER, recipient: ACCOUNT }
+      );
+      renderList();
+      expect(screen.getAllByTestId('pending-bridge-incoming-note').map(note => note.textContent)).toEqual([
+        'Sent to you from 0x0000...7d01.',
+        'Sent to you from 0x0000...7d01.'
+      ]);
     });
 
     it("claims it in the sender's list", () => {
@@ -553,7 +591,7 @@ describe('PendingBridges', () => {
       const button = screen.getByTestId('pending-bridge-claim-link');
       expect(button.tagName).toBe('BUTTON');
       expect(button.className).toMatch(/\bw-full\b/);
-      const note = screen.getByTestId('pending-bridge-claim-link-note');
+      const note = screen.getByTestId('pending-bridge-recipient-note');
       expect(note.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
@@ -571,7 +609,7 @@ describe('PendingBridges', () => {
     });
 
     it('asks the sender to share it with the recipient', () => {
-      mocks.bridges = [{ ...BURN, recipient: OTHER }];
+      mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
       renderList();
       expect(screen.getByTestId('pending-bridge-claim-link-note').textContent).toBe(
         'Share the claim link with the recipient so they can claim it.'
@@ -589,7 +627,7 @@ describe('PendingBridges', () => {
 
     it('asks the sender to share it, not to keep it, when this browser keeps no bridges', () => {
       mocks.storageWritable = false;
-      mocks.bridges = [{ ...BURN, recipient: OTHER }];
+      mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
       renderList();
       expect(screen.getByTestId('pending-bridge-claim-link-note').textContent).toBe(
         'Share the claim link with the recipient so they can claim it.'
