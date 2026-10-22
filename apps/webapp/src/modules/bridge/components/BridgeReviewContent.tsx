@@ -67,6 +67,8 @@ type BridgeReviewContentProps = {
   contractWallet?: { accepted: boolean; onAcceptedChange: (accepted: boolean) => void };
   /** A Safe's CCTP legs are separate Safe transactions, and no swap of a Safe is kept to continue. */
   safeQueue?: boolean;
+  /** Browser storage takes no writes, so this bridge isn't kept to come back to. */
+  storageNote?: boolean;
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
@@ -81,7 +83,8 @@ export function BridgeReviewContent({
   aliasedRefund,
   recipientWarning,
   contractWallet,
-  safeQueue
+  safeQueue,
+  storageNote
 }: BridgeReviewContentProps) {
   const rows = buildBridgeModalRows({ route, networkFee, bridgeFee });
   const contractCheckboxId = useId();
@@ -106,6 +109,11 @@ export function BridgeReviewContent({
         {safeQueue && (
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-safe-queue">
             {t`Your Safe sends this bridge as separate transactions. Sign and execute every one of them in your Safe's queue. If the swap executes but the burn doesn't, this app can't continue the bridge, and the USDC stays in your Safe.`}
+          </p>
+        )}
+        {storageNote && (
+          <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-storage-note">
+            {t`Your browser can't save this bridge. Copy the claim link after sending, or you'll need the transaction hash to find it later.`}
           </p>
         )}
         {contractWallet && (

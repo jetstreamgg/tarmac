@@ -382,6 +382,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
       recipientWarning?: boolean;
       contractWallet?: { accepted: boolean; onAcceptedChange: (accepted: boolean) => void };
       safeQueue?: boolean;
+      storageNote?: boolean;
     };
     const reviewProps = (config: Partial<TransactionConfig>) =>
       (config.transactionContent as ReactElement<ReviewProps>).props;
@@ -471,6 +472,41 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
       const own = render();
       act(() => own.result.current.launch());
       expect(mocks.launched.at(-1)!.errorMessage ?? '').not.toMatch(/browser storage/i);
+    });
+
+    it("tells the wallet's own bridge this browser can't save it, without holding Confirm", () => {
+      mocks.storageWritable = false;
+      const own = render();
+      act(() => own.result.current.launch());
+      expect(reviewProps(mocks.launched.at(-1)!).storageNote).toBe(true);
+      expect(mocks.launched.at(-1)!.confirmDisabled).toBe(false);
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.burn.execute).toHaveBeenCalledOnce();
+      // Another recipient is refused instead, and a route from Ethereum needs no claim link.
+      const other = render('base', 'ethereum', undefined, { recipient: OTHER });
+      act(() => other.result.current.launch());
+      expect(reviewProps(mocks.launched.at(-1)!).storageNote).toBe(false);
+      const deposit = render('ethereum', 'base');
+      act(() => deposit.result.current.launch());
+      expect(reviewProps(mocks.launched.at(-1)!).storageNote).toBe(false);
+    });
+
+    it('checks browser storage again on each Review', () => {
+      const view = render('base', 'ethereum', undefined, { recipient: OTHER });
+      act(() => view.result.current.launch());
+      expect(mocks.launched.at(-1)!.errorMessage ?? '').not.toMatch(/browser storage/i);
+      mocks.storageWritable = false;
+      act(() => view.result.current.launch());
+      mocks.modalOpen = true;
+      view.rerender();
+      expect(mocks.updates.at(-1)!.errorMessage).toMatch(/browser storage/i);
+
+      const own = render();
+      act(() => own.result.current.launch());
+      mocks.storageWritable = true;
+      act(() => own.result.current.launch());
+      own.rerender();
+      expect(reviewProps(mocks.updates.at(-1)!).storageNote).toBe(false);
     });
 
     it('asks a contract wallet nothing when another address claims', () => {

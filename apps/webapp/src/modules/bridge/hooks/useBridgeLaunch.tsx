@@ -99,8 +99,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const needsContractAccept = isCctpBurn && !claimedByOther && !!form.senderIsContract;
   const [contractAccepted, setContractAccepted] = useState(false);
   const contractUnaccepted = needsContractAccept && !contractAccepted;
+  // Probed again on each Review.
+  const [storageWritable, setStorageWritable] = useState(isStorageWritable);
   // The burn legs refuse it too: only this browser can bring the recipient the claim link again.
-  const storageRefused = useMemo(() => claimedByOther && !isStorageWritable(), [claimedByOther]);
+  const storageRefused = claimedByOther && !storageWritable;
+  // The wallet's own bridge still goes, but only its claim link or hash finds it again.
+  const storageNote = isCctpBurn && !claimedByOther && !storageWritable;
   const contractWallet = useMemo(
     () =>
       needsContractAccept ? { accepted: contractAccepted, onAcceptedChange: setContractAccepted } : undefined,
@@ -459,6 +463,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           recipientWarning={claimedByOther}
           contractWallet={contractWallet}
           safeQueue={safeQueue}
+          storageNote={storageNote}
         />
       ),
     [
@@ -472,7 +477,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       aliasedRefund,
       claimedByOther,
       contractWallet,
-      safeQueue
+      safeQueue,
+      storageNote
     ]
   );
   const transactionScreenContent = useMemo(
@@ -519,6 +525,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     const title = resume ? t`Continue USDS bridge` : t`Review USDS bridge`;
     // Each Review asks again; its content follows once the modal is open.
     setContractAccepted(false);
+    setStorageWritable(isStorageWritable());
     launchModal({
       title,
       transactionTitle: title,

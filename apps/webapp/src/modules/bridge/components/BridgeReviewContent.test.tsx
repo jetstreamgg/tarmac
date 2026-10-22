@@ -64,6 +64,16 @@ describe('BridgeReviewContent notes for a CCTP claim', () => {
     expect(note).toMatch(/can't continue the bridge/);
   });
 
+  it("tells a bridge this browser can't save to keep its claim link, only when asked", () => {
+    review();
+    expect(screen.queryByTestId('bridge-modal-storage-note')).toBeNull();
+    review({ storageNote: true });
+    const note = screen.getByTestId('bridge-modal-storage-note').textContent;
+    expect(note).toBe(
+      "Your browser can't save this bridge. Copy the claim link after sending, or you'll need the transaction hash to find it later."
+    );
+  });
+
   it('asks a contract wallet to confirm it controls its address on Ethereum', () => {
     const onAcceptedChange = vi.fn();
     review({ contractWallet: { accepted: false, onAcceptedChange } });
