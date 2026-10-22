@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { toast } from '@/components/ui/use-toast';
-import { LinkExternal } from '@/modules/icons';
+import { ArrowTopRight, LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -75,7 +75,7 @@ function WalletValue({ address, href }: WalletValueProps) {
       className={cn(valueClassName, 'flex min-w-0 items-center gap-1 hover:underline')}
     >
       {content}
-      <LinkExternal boxSize={12} className="text-fgSecondary shrink-0" />
+      <ArrowTopRight boxSize={12} className="text-fgTertiary shrink-0" />
     </a>
   ) : (
     <span className={cn(valueClassName, 'flex min-w-0 items-center gap-1')}>{content}</span>
@@ -152,7 +152,7 @@ function CellValue({ cell }: CellValueProps) {
           className={cn(valueClassName, 'flex items-center gap-1 hover:underline')}
         >
           {cell.value}
-          <LinkExternal boxSize={12} className="text-fgSecondary shrink-0" />
+          <ArrowTopRight boxSize={12} className="text-fgTertiary shrink-0" />
         </a>
       ) : (
         <span className={valueClassName}>{cell.value}</span>
