@@ -163,7 +163,53 @@ describe('buildSuppliedView', () => {
       avgRate: 0,
       ratesLoading: false,
       activePositions: 0,
+      hasMatured: false,
       suppliedTokens: []
+    });
+  });
+
+  describe('matured positions', () => {
+    const matured = makeRow({
+      id: 'fixed-0xmkt',
+      kind: 'fixed',
+      tokenSymbol: 'sUSDS',
+      status: 'matured',
+      // Still settling elsewhere: a matured row never holds the rate skeleton.
+      isLoading: true,
+      rate: { formatted: '—' },
+      position: amount(1000)
+    });
+    const live = makeRow({
+      id: 'savings',
+      rate: { value: 0.05, formatted: '5.00%' },
+      position: amount(1000)
+    });
+
+    it('counts a matured balance in the supplied total and the position count', () => {
+      const view = buildSuppliedView([live, matured]);
+      expect(view.totalSupplied).toBe(2000);
+      expect(view.activePositions).toBe(2);
+      expect(view.hasMatured).toBe(true);
+      expect(view.positions.find(p => p.rowId === 'fixed-0xmkt')).toMatchObject({
+        status: 'matured',
+        share: 0.5,
+        rateLoading: false
+      });
+    });
+
+    it('leaves a matured balance out of the average rate and projected earnings', () => {
+      const view = buildSuppliedView([live, matured]);
+      // 5% on the live $1,000 only: the matured $1,000 earns nothing more.
+      expect(view.projected1Y).toBeCloseTo(50);
+      expect(view.avgRate).toBeCloseTo(0.05);
+    });
+
+    it('reports a matured-only wallet as supplied, earning nothing', () => {
+      const view = buildSuppliedView([matured]);
+      expect(view.totalSupplied).toBe(1000);
+      expect(view.projected1Y).toBe(0);
+      expect(view.avgRate).toBe(0);
+      expect(view.ratesLoading).toBe(false);
     });
   });
 

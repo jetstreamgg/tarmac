@@ -4,6 +4,7 @@ import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlow
 import { render, screen, within, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import type { SuppliedPosition, SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
@@ -20,15 +21,17 @@ const h = vi.hoisted(() => ({
   chainId: 1,
   switchChainAsync: vi.fn(),
   setIsAutoSwitching: vi.fn(),
-  setAutoSwitchIntent: vi.fn()
+  setAutoSwitchIntent: vi.fn(),
+  ptBalances: {} as Record<string, bigint>
 }));
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => h.navigate }));
 
-// The mainnet auto-switch pulls navigation/network-switch contexts — out of
-// scope here (covered by usePendleMaturedPositions.test).
-vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
-  usePendleMaturedNetworkSwitch: () => undefined
+// The matured Claim card has its own spec; stubbed to its identity here.
+vi.mock('@/modules/pendle/components/PendleMaturedPositionCard', () => ({
+  PendleMaturedPositionCard: ({ market, ptBalance }: { market: { slug: string }; ptBalance: bigint }) => (
+    <div data-testid="matured-card" data-slug={market.slug} data-balance={ptBalance.toString()} />
+  )
 }));
 
 // The resolver reads the connected chain to place in-place supply and switches
@@ -55,7 +58,11 @@ vi.mock('wagmi', async importOriginal => {
 // these specs pin.
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
-  return { ...actual, useIsSafeWallet: () => false };
+  return {
+    ...actual,
+    useIsSafeWallet: () => false,
+    usePendleUserPtBalances: () => ({ data: h.ptBalances, isLoading: false })
+  };
 });
 
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
@@ -136,6 +143,7 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   avgRate: 0,
   ratesLoading: false,
   activePositions: positions.length,
+  hasMatured: positions.some(p => p.status === 'matured'),
   suppliedTokens: []
 });
 
@@ -180,8 +188,6 @@ function renderSection(positions: SuppliedPosition[], earnings: WalletEarnings =
         <PortfolioPositionsSection
           suppliedView={view(positions)}
           suppliedLoading={false}
-          maturedPositions={[]}
-          maturedLoading={false}
           idleView={{ tokens: [] } as unknown as IdleView}
           idleSupplyInfo={new Map()}
           idleLoading={false}
@@ -404,5 +410,41 @@ describe('PositionCard — Already earned (APP-450)', () => {
     renderSection([SAVINGS], loading);
     const card = screen.getAllByTestId('position-card')[0];
     expect(within(card).getByTestId('earnings-stat-skeleton')).toBeTruthy();
+  });
+});
+
+describe('PortfolioPositionsSection — matured positions', () => {
+  const MARKET = PENDLE_MARKETS[0];
+  const MATURED = position({
+    id: `fixed-${MARKET.marketAddress.toLowerCase()}`,
+    name: 'Fixed Yield',
+    kind: 'fixed',
+    status: 'matured',
+    address: MARKET.marketAddress,
+    detailPath: `/earn/fixed/${MARKET.slug}`,
+    amountUsd: 50
+  });
+
+  beforeEach(() => {
+    h.navigate.mockClear();
+    h.ptBalances = { [MARKET.marketAddress]: 50n * 10n ** 18n };
+  });
+  afterEach(() => cleanup());
+
+  it('leads the carousel with the Claim card, ahead of larger live positions', () => {
+    renderSection([SAVINGS, MATURED]);
+
+    const cards = screen.getAllByTestId(/^(matured-card|position-card)$/);
+    expect(cards[0].getAttribute('data-testid')).toBe('matured-card');
+    expect(cards[0].getAttribute('data-slug')).toBe(MARKET.slug);
+    expect(cards[0].getAttribute('data-balance')).toBe((50n * 10n ** 18n).toString());
+    expect(screen.getAllByTestId('position-card')).toHaveLength(1);
+  });
+
+  it('renders a matured-only wallet as a carousel, not the empty state', () => {
+    renderSection([MATURED]);
+
+    expect(screen.getByTestId('matured-card')).toBeTruthy();
+    expect(screen.queryByText('No supplied positions yet.')).toBeNull();
   });
 });

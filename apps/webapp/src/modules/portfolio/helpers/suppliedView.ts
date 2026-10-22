@@ -23,6 +23,8 @@ export type SuppliedPosition = {
   /** Contract address for address-bound products (vaults/rewards/markets); undefined otherwise. */
   address?: `0x${string}`;
   amountUsd: number;
+  /** A matured Pendle market: claimable, earning nothing more, rendered as a Claim card. */
+  status?: 'matured';
   /** Current rate as a decimal fraction (0.045 = 4.5%); undefined when the product has none. */
   rate?: number;
   /** The rate source is still loading — rate/earnings cells hold a skeleton instead of 0.00. */
@@ -46,16 +48,19 @@ export type SuppliedPosition = {
 };
 
 export type SuppliedView = {
-  /** Positions with a positive amount, sorted by amount descending. */
+  /** Positions with a positive amount, sorted by amount descending. Matured ones included. */
   positions: SuppliedPosition[];
+  /** Matured positions count: they are capital still in the protocol. */
   totalSupplied: number;
-  /** Σ amountUsd × rate (rate-less products contribute 0). */
+  /** Σ amountUsd × rate (rate-less and matured products contribute 0). */
   projected1Y: number;
-  /** Supplied-weighted average rate, decimal fraction. */
+  /** Supplied-weighted average rate over the positions still earning, decimal fraction. */
   avgRate: number;
   /** A position's rate source is still loading — the aggregates above are premature. */
   ratesLoading: boolean;
   activePositions: number;
+  /** Any position is a matured market awaiting a claim. */
+  hasMatured: boolean;
   /** Deduped display-token symbols across positions, in position order. */
   suppliedTokens: string[];
 };
@@ -67,8 +72,21 @@ const EMPTY_VIEW: SuppliedView = {
   avgRate: 0,
   ratesLoading: false,
   activePositions: 0,
+  hasMatured: false,
   suppliedTokens: []
 };
+
+/**
+ * Supply-weighted average rate of the positions still earning. A matured
+ * position sits in the supplied total but earns nothing more, so averaging it
+ * in at 0% would understate every live position's rate.
+ */
+export function averageEarningRate(positions: SuppliedPosition[]): number {
+  const earning = positions.filter(p => p.status !== 'matured');
+  const total = earning.reduce((acc, p) => acc + p.amountUsd, 0);
+  if (total <= 0) return 0;
+  return earning.reduce((acc, p) => acc + projectAnnualEarnings(p.amountUsd, p.rate), 0) / total;
+}
 
 /**
  * Breaks marketplace rows down into the Portfolio "Supplied" overview: one
@@ -110,8 +128,9 @@ export function buildSuppliedView(rows: EarnProductRow[]): SuppliedView {
     intent: row.intent,
     address: row.address,
     amountUsd,
+    ...(row.status ? { status: row.status } : {}),
     rate: row.rate.value,
-    rateLoading: row.rate.value === undefined && row.isLoading,
+    rateLoading: !row.status && row.rate.value === undefined && row.isLoading,
     ...(resolveTokenChartColors(row.tokenSymbol) ?? {
       color: FALLBACK_TOKEN_COLOR,
       hoverColor: FALLBACK_TOKEN_COLOR
@@ -128,9 +147,10 @@ export function buildSuppliedView(rows: EarnProductRow[]): SuppliedView {
     positions,
     totalSupplied,
     projected1Y,
-    avgRate: totalSupplied > 0 ? projected1Y / totalSupplied : 0,
+    avgRate: averageEarningRate(positions),
     ratesLoading: positions.some(p => p.rateLoading),
     activePositions: positions.length,
+    hasMatured: positions.some(p => p.status === 'matured'),
     suppliedTokens: [...new Set(positions.map(p => p.tokenSymbol))]
   };
 }

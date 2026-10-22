@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { IconStack } from '@/modules/ui/components/TokenIconStack';
-import type { SuppliedView } from '../helpers/suppliedView';
+import { averageEarningRate, type SuppliedView } from '../helpers/suppliedView';
 import type { IdleView } from '../helpers/idleView';
 import type { EarningsFigure, Maybe, WalletEarnings } from '../earnings/types';
 import { earningsForPosition, earningsForSuppliedPositions } from '../earnings/earningsForPosition';
@@ -177,7 +177,7 @@ function SuppliedContent({
     ? focused.reduce((acc, p) => acc + projectAnnualEarnings(p.amountUsd, p.rate), 0)
     : view.projected1Y;
   // Supply-weighted, like the card's own average (a lone position's is its rate).
-  const displayAvgRate = focused ? (displayTotal > 0 ? displayProjected / displayTotal : 0) : view.avgRate;
+  const displayAvgRate = focused ? averageEarningRate(focused) : view.avgRate;
   // Positions settle before the rate APIs — hold the rate-derived stats rather
   // than quote 0.00% / $0.00 in the gap.
   const ratesPending = focused ? focused.some(p => p.rateLoading) : view.ratesLoading;
