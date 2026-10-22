@@ -493,6 +493,23 @@ describe('PendingBridges', () => {
       [...swaps].reverse().forEach(swap => cctpSwapStore.record('scope', swap));
     const continueButton = () => screen.getByTestId('continue-bridge-action') as HTMLButtonElement;
 
+    // Figma "Pending component bridge": one border-primary line, above the rows.
+    it('draws its only divider above the rows, on every card', () => {
+      mocks.bridges = [BRIDGE];
+      record(SWAP);
+      renderList();
+      for (const card of [
+        screen.getByTestId('pending-bridge-card'),
+        screen.getByTestId('continue-bridge-card')
+      ]) {
+        const dividers = [...card.querySelectorAll('*')].filter(el => /\bborder-[bt]\b/.test(el.className));
+        expect(dividers).toHaveLength(1);
+        expect(dividers[0]?.getAttribute('data-testid')).toBe('pending-bridge-rows');
+        expect(dividers[0]?.className).toMatch(/\bborder-t\b/);
+        expect(dividers[0]?.className).toMatch(/\bborder-borderPrimary\b/);
+      }
+    });
+
     it('lists them with no pending bridge, newest first', () => {
       record(SWAP, OLDER_SWAP);
       renderList();

@@ -246,7 +246,7 @@ type CardHeaderProps = { symbol: string; amount: string; date: string; children:
 
 function CardHeader({ symbol, amount, date, children }: CardHeaderProps) {
   return (
-    <div className="border-glassBorder flex items-center justify-between gap-3 border-b pb-8">
+    <div className="flex items-center justify-between gap-3">
       <span className="flex items-center gap-3">
         <span className="border-borderTertiary flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]">
           <TokenIcon token={{ symbol }} width={28} showChainIcon={false} className="size-7" />
@@ -265,9 +265,13 @@ function CardHeader({ symbol, amount, date, children }: CardHeaderProps) {
 
 type CardRowsProps = { rows: PendingBridgeCell[][] };
 
+// Figma: 32px under the card's content, 24px over the rows.
 function CardRows({ rows }: CardRowsProps) {
   return (
-    <div className="flex flex-col gap-6">
+    <div
+      className="border-borderPrimary mt-2 flex flex-col gap-6 border-t pt-6"
+      data-testid="pending-bridge-rows"
+    >
       {rows.map((row, rowIndex) => (
         <div key={rowIndex} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
           {row.map((cell, cellIndex) => (
