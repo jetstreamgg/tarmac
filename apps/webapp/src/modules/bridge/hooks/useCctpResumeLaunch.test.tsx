@@ -102,4 +102,14 @@ describe('useCctpResumeLaunch', () => {
     expect(mocks.resumes.at(-1)).toBeUndefined();
     expect(mocks.opened).toHaveLength(1);
   });
+
+  it('tells its caller once the bridge succeeds, after letting the swap go', () => {
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() => useCctpResumeLaunch(onSuccess));
+    act(() => result.current.launch(BASE));
+    expect(onSuccess).not.toHaveBeenCalled();
+    act(() => mocks.onSuccess?.());
+    expect(onSuccess).toHaveBeenCalledOnce();
+    expect(mocks.resumes.at(-1)).toBeUndefined();
+  });
 });

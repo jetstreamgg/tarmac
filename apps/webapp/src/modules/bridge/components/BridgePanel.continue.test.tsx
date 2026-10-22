@@ -13,11 +13,19 @@ const mocks = vi.hoisted(() => ({
   onContinue: undefined as ((swap: UnfinishedCctpSwap) => void) | undefined,
   launchAction: vi.fn(),
   actionHint: vi.fn(),
-  list: {} as Record<string, unknown>
+  list: {} as Record<string, unknown>,
+  reset: vi.fn(),
+  refetchBalances: vi.fn(),
+  onContinued: undefined as (() => void) | undefined
 }));
 
 vi.mock('../hooks/useBridgeForm', () => ({
-  useBridgeForm: () => ({ isConnected: true, reviewBlocked: false, refetchBalances: vi.fn(), reset: vi.fn() })
+  useBridgeForm: () => ({
+    isConnected: true,
+    reviewBlocked: false,
+    refetchBalances: mocks.refetchBalances,
+    reset: mocks.reset
+  })
 }));
 vi.mock('../hooks/useBridgeLaunch', () => ({
   useBridgeLaunch: () => ({ launch: vi.fn(), locked: false, restore: vi.fn() })
@@ -31,7 +39,10 @@ vi.mock('../hooks/useDestinationActionLaunch', () => ({
   })
 }));
 vi.mock('../hooks/useCctpResumeLaunch', () => ({
-  useCctpResumeLaunch: () => ({ launch: mocks.continueBridge })
+  useCctpResumeLaunch: (onSuccess?: () => void) => {
+    mocks.onContinued = onSuccess;
+    return { launch: mocks.continueBridge };
+  }
 }));
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({ useConnectThenAct: (fn: () => void) => fn }));
 vi.mock('./BridgeCard', () => ({ BridgeCard: () => null }));
@@ -75,4 +86,17 @@ it('offers the lookup for an unclaimed bridge under the pending list', () => {
     </I18nProvider>
   );
   expect(screen.getByTestId('claim-lookup')).toBeTruthy();
+});
+
+// Figma 92: once a continued bridge is sent, the form is left as after a new one.
+it('clears the form and refreshes its balances once a continued bridge succeeds', () => {
+  render(
+    <I18nProvider i18n={i18n}>
+      <BridgePanel />
+    </I18nProvider>
+  );
+  expect(mocks.reset).not.toHaveBeenCalled();
+  mocks.onContinued?.();
+  expect(mocks.reset).toHaveBeenCalledOnce();
+  expect(mocks.refetchBalances).toHaveBeenCalledOnce();
 });

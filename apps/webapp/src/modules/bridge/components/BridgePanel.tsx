@@ -78,10 +78,11 @@ const CTA_CLASSES =
 /** The Bridge tab body: form card, Review CTA, then the pending bridges list. */
 export function BridgePanel() {
   const form = useBridgeForm();
-  const { launch, locked, restore } = useBridgeLaunch(form, () => {
+  const onBridged = () => {
     form.refetchBalances();
     form.reset();
-  });
+  };
+  const { launch, locked, restore } = useBridgeLaunch(form, onBridged);
   const launchOrConnect = useConnectThenAct(launch);
   const {
     launch: launchAction,
@@ -90,7 +91,7 @@ export function BridgePanel() {
     actionHint,
     locked: actionLocked
   } = useDestinationActionLaunch();
-  const { launch: continueBridge } = useCctpResumeLaunch();
+  const { launch: continueBridge } = useCctpResumeLaunch(onBridged);
 
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
