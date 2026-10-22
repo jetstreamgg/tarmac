@@ -90,5 +90,7 @@ export type PendingBridge = {
   readyAt?: number;
   /** When the bridge reached arrived, claimed or failed. */
   settledAt?: number;
+  /** When the user was done with its settled card (kept the USDC); Activity still lists it. */
+  closedAt?: number;
   failureReason?: string;
 };

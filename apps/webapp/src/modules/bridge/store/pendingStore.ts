@@ -1,5 +1,5 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { applyProgress, canDismiss, isSettled, isTracked } from '../model/pendingTransitions';
+import { applyProgress, canDismiss, closeCard, isSettled } from '../model/pendingTransitions';
 import type {
   BridgeRouteKind,
   PendingBridge,
@@ -86,6 +86,7 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
     !optional(entry.readyAt, at => typeof at === 'number') ||
     !optional(entry.settledAt, at => typeof at === 'number') ||
+    !optional(entry.closedAt, at => typeof at === 'number') ||
     !optional(entry.failureReason, isString)
   ) {
     return null;
@@ -221,6 +222,19 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
     return stored ? withUnsaved(scope, stored) : getSnapshot(scope);
   };
 
+  const update = (scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) => {
+    const current = latest(scope);
+    const existing = current.find(entry => entry.id === id);
+    if (!existing) return;
+    const next = apply(existing);
+    if (next === existing) return;
+    write(
+      scope,
+      current.map(entry => (entry === existing ? next : entry)),
+      id
+    );
+  };
+
   return {
     subscribe(listener: Listener) {
       if (listeners.size === 0) window.addEventListener('storage', onStorage);
@@ -272,16 +286,9 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
         id
       );
     },
-    /** Drops a settled bridge with nothing left to confirm, such as a claim whose USDC the user keeps. */
-    dropSettled(scope: string, id: string) {
-      const current = latest(scope);
-      const existing = current.find(entry => entry.id === id);
-      if (!existing || isTracked(existing)) return;
-      write(
-        scope,
-        current.filter(entry => entry.id !== id),
-        id
-      );
+    /** Closes the card of a settled bridge with nothing left to confirm (see `closeCard`); Activity keeps it. */
+    close(scope: string, id: string) {
+      update(scope, id, bridge => closeCard(bridge, now()));
     },
     /**
      * Gives a wallet bundle's card the hash its deposit mined under, at `executedAt`
@@ -312,18 +319,7 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
         id
       );
     },
-    update(scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) {
-      const current = latest(scope);
-      const existing = current.find(entry => entry.id === id);
-      if (!existing) return;
-      const next = apply(existing);
-      if (next === existing) return;
-      write(
-        scope,
-        current.map(entry => (entry === existing ? next : entry)),
-        id
-      );
-    }
+    update
   };
 }
 

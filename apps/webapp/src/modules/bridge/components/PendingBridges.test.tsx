@@ -274,15 +274,15 @@ describe('PendingBridges', () => {
       expect(props.onActionIn).toHaveBeenCalledWith(SENDER_SCOPE, claimed, 'convert', OFFER);
     });
 
-    it("drops it from the sender's list when its USDC is kept", () => {
-      const drop = vi.spyOn(pendingBridgeStore, 'dropSettled');
+    it("closes it in the sender's list when its USDC is kept", () => {
+      const close = vi.spyOn(pendingBridgeStore, 'close');
       const claimed = { ...CLAIMED, id: '0xincoming', account: SENDER, recipient: ACCOUNT };
       incoming(claimed);
       mocks.offers[claimed.id] = OFFER;
       renderList();
       fireEvent.click(screen.getByTestId('pending-bridge-keep-usdc'));
-      expect(drop).toHaveBeenCalledExactlyOnceWith(SENDER_SCOPE, claimed.id);
-      drop.mockRestore();
+      expect(close).toHaveBeenCalledExactlyOnceWith(SENDER_SCOPE, claimed.id);
+      close.mockRestore();
     });
 
     it("lists it among the wallet's own bridges, newest first", () => {
@@ -383,18 +383,18 @@ describe('PendingBridges', () => {
     });
 
     // Figma 98: the card leaves and a toast says where to convert later.
-    it('drops the card when the USDC is kept, and says it can be converted later', () => {
-      const drop = vi.spyOn(pendingBridgeStore, 'dropSettled');
+    it('closes the card when the USDC is kept, and says it can be converted later', () => {
+      const close = vi.spyOn(pendingBridgeStore, 'close');
       mocks.bridges = [CLAIMED];
       mocks.offers[CLAIMED.id] = OFFER;
       renderList();
       fireEvent.click(screen.getByTestId('pending-bridge-keep-usdc'));
-      expect(drop).toHaveBeenCalledExactlyOnceWith('scope', CLAIMED.id);
+      expect(close).toHaveBeenCalledExactlyOnceWith('scope', CLAIMED.id);
       expect(mocks.toast.success).toHaveBeenCalledExactlyOnceWith(
         'You can convert your USDC to USDS anytime from the Swap tab.'
       );
       expect(props.onAction).not.toHaveBeenCalled();
-      drop.mockRestore();
+      close.mockRestore();
     });
 
     it("can't keep the USDC while an action's session is minimized", () => {

@@ -630,7 +630,7 @@ export function PendingBridges({
           onKeepUsdc={kept => {
             const listScope = owner ?? scope;
             if (!listScope) return;
-            pendingBridgeStore.dropSettled(listScope, kept.id);
+            pendingBridgeStore.close(listScope, kept.id);
             // Figma 98.
             toast.success(t`You can convert your USDC to USDS anytime from the Swap tab.`);
           }}

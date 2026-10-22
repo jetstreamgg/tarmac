@@ -304,9 +304,13 @@ const hasSentFollowUp = (bridge: PendingBridge) =>
 /** The tracker reads it: until it settles, then while a follow-up it sent is unconfirmed. */
 export const isTracked = (bridge: PendingBridge): boolean => !isSettled(bridge) || hasSentFollowUp(bridge);
 
-/** Tracked bridges always show; settled ones stay for a day. */
+/** Tracked bridges always show; settled ones stay for a day, unless the user closed them. */
 export const isPendingBridgeVisible = (bridge: PendingBridge, now: number): boolean =>
-  isTracked(bridge) || now - (bridge.settledAt ?? 0) <= SETTLED_VISIBLE_MS;
+  isTracked(bridge) || (bridge.closedAt === undefined && now - (bridge.settledAt ?? 0) <= SETTLED_VISIBLE_MS);
+
+/** Hides a settled card the tracker no longer reads; the bridge stays for Activity. */
+export const closeCard = (bridge: PendingBridge, now: number): PendingBridge =>
+  isTracked(bridge) || bridge.closedAt !== undefined ? bridge : { ...bridge, closedAt: now };
 
 /** How often the tracker checks a bridge; undefined once settled with nothing sent. */
 export function pollIntervalMs(bridge: PendingBridge, now: number): number | undefined {

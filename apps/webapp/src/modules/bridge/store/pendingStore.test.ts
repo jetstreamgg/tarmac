@@ -400,7 +400,7 @@ describe('createPendingBridgeStore', () => {
     });
   });
 
-  describe('dropSettled', () => {
+  describe('close', () => {
     const claimed = (overrides: Partial<PendingBridge> = {}) =>
       bridge({
         status: 'claimed',
@@ -410,19 +410,22 @@ describe('createPendingBridgeStore', () => {
         ...overrides
       });
 
-    it('drops a settled bridge with nothing in flight, and keeps the rest', () => {
+    it('closes a settled bridge with nothing in flight, and keeps it for Activity', () => {
       const store = make();
       store.upsert(SCOPE, claimed());
       store.upsert(SCOPE, bridge({ id: '0xother', txHash: '0xother', startedAt: NOW - 1 }));
-      store.dropSettled(SCOPE, '0xsource');
+      store.close(SCOPE, '0xsource');
       expect(
         make()
           .getSnapshot(SCOPE)
-          .map(entry => entry.id)
-      ).toEqual(['0xother']);
+          .map(entry => [entry.id, entry.closedAt])
+      ).toEqual([
+        ['0xsource', NOW],
+        ['0xother', undefined]
+      ]);
     });
 
-    it('keeps a bridge still on its way, or one whose follow-up is still confirming', () => {
+    it('leaves a bridge still on its way, or one whose follow-up is still confirming', () => {
       const store = make();
       store.upsert(SCOPE, bridge());
       store.upsert(
@@ -437,9 +440,9 @@ describe('createPendingBridgeStore', () => {
         })
       );
       const before = store.getSnapshot(SCOPE);
-      store.dropSettled(SCOPE, '0xsource');
-      store.dropSettled(SCOPE, '0xconverting');
-      store.dropSettled(SCOPE, '0xnope');
+      store.close(SCOPE, '0xsource');
+      store.close(SCOPE, '0xconverting');
+      store.close(SCOPE, '0xnope');
       expect(store.getSnapshot(SCOPE)).toBe(before);
     });
   });
