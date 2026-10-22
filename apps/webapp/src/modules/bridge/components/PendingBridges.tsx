@@ -1,11 +1,12 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useClipboard } from '@/modules/ui/hooks/useClipboard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { pendingClaimLink } from '../adapters/cctp/claimLink';
 import { useCctpConvertOffer } from '../hooks/useCctpConvertOffer';
@@ -19,7 +20,7 @@ import { getBridgeNetwork } from '../model/networks';
 import { canDismiss, isPendingBridgeVisible, showsActionButton } from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
-import { formatAddress, formatBigInt } from '@/utils';
+import { copyToClipboard, formatAddress, formatBigInt } from '@/utils';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { isStorageWritable } from '../store/storageWritable';
@@ -215,7 +216,6 @@ type ClaimLinkProps = {
 
 /** The link that opens a CCTP bridge's claim here, to share with its recipient or keep (Figma 71). */
 function ClaimLink({ link, note }: ClaimLinkProps) {
-  const { onCopy, hasCopied } = useClipboard(link);
   return (
     <>
       {note && (
@@ -233,10 +233,10 @@ function ClaimLink({ link, note }: ClaimLinkProps) {
         variant="secondary"
         size="m"
         className="w-full"
-        onClick={onCopy}
+        onClick={() => copyToClipboard(link, () => toast.success(t`Claim link copied!`))}
         data-testid="pending-bridge-claim-link"
       >
-        {hasCopied ? <Trans>Copied</Trans> : <Trans>Copy claim link</Trans>}
+        <Trans>Copy claim link</Trans>
       </Button>
     </>
   );

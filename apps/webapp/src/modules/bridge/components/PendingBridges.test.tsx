@@ -63,9 +63,12 @@ const mocks = vi.hoisted(() => ({
   blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
   activeSessionId: null as string | null,
   copy: vi.fn(),
-  hasCopied: false,
-  storageWritable: true
+  copyFails: false,
+  storageWritable: true,
+  toast: { success: vi.fn(), error: vi.fn() }
 }));
+
+vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
 
 // Renders no text; names its token so a card's icon can be read.
 vi.mock('@/modules/ui/components/TokenIcon', () => ({
@@ -89,8 +92,13 @@ vi.mock('../hooks/useCctpConvertOffer', () => ({
 vi.mock('../hooks/useCctpResumeForm', () => ({
   useCctpResumeForm: (swap: UnfinishedCctpSwap) => ({ blockedReason: mocks.blocked[swap.swapTxHash] })
 }));
-vi.mock('@/modules/ui/hooks/useClipboard', () => ({
-  useClipboard: (text: string) => ({ onCopy: () => mocks.copy(text), hasCopied: mocks.hasCopied })
+vi.mock('@/utils', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/utils')>()),
+  copyToClipboard: (text: string, onSuccess?: () => void, onError?: (error: Error) => void) => {
+    mocks.copy(text);
+    if (mocks.copyFails) onError?.(new Error('denied'));
+    else onSuccess?.();
+  }
 }));
 vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => mocks.storageWritable }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
@@ -125,10 +133,11 @@ describe('PendingBridges', () => {
       offers: {},
       blocked: {},
       activeSessionId: null,
-      hasCopied: false,
+      copyFails: false,
       storageWritable: true
     });
     mocks.copy.mockClear();
+    mocks.toast.success.mockClear();
     props.onAction.mockClear();
     props.onActionIn.mockClear();
     props.canAction.mockReset().mockReturnValue(true);
@@ -424,11 +433,24 @@ describe('PendingBridges', () => {
       expect(mocks.copy).toHaveBeenCalledWith(LINK);
     });
 
-    it('says it was copied', () => {
+    // Figma 72: a toast says it, and the button keeps its label.
+    it('toasts that it was copied', () => {
       mocks.bridges = [BURN];
-      mocks.hasCopied = true;
       renderList();
-      expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Copied');
+      expect(mocks.toast.success).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.toast.success).toHaveBeenCalledTimes(1);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
+      expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Copy claim link');
+    });
+
+    it('toasts nothing when the copy fails', () => {
+      mocks.bridges = [BURN];
+      mocks.copyFails = true;
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).not.toHaveBeenCalled();
     });
 
     // Figma 71: a full-width secondary button under the card's text.

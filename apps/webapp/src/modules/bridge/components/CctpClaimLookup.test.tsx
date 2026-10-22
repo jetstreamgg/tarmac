@@ -21,8 +21,11 @@ const mocks = vi.hoisted(() => ({
   targets: [] as (CctpClaimTarget | undefined)[],
   attempts: [] as number[],
   account: '0x71c7656ec7ab88b098defb751b7401b5f6d8976f' as string | undefined,
-  live: new Set<string>()
+  live: new Set<string>(),
+  toast: { success: vi.fn(), error: vi.fn() }
 }));
+
+vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
 
 vi.mock('../model/pairs', () => ({
   isLivePair: ({ from, to }: { from: string; to: string }) => to === 'ethereum' && mocks.live.has(from)
@@ -106,6 +109,8 @@ describe('CctpClaimLookup', () => {
     mocks.attempts = [];
     mocks.account = SENDER;
     mocks.live = new Set(['base', 'arbitrum', 'optimism', 'unichain']);
+    mocks.toast.success.mockClear();
+    mocks.toast.error.mockClear();
   });
   afterEach(cleanup);
 
@@ -241,6 +246,43 @@ describe('CctpClaimLookup', () => {
     expect(add).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
     expect(strippedParams()).toEqual({ tab: 'bridge' });
+  });
+
+  // Figma 86.
+  it('toasts that the bridge was found once it is added', () => {
+    mocks.state = { status: 'found', bridge: BURN, add: vi.fn() };
+    renderLookup();
+    open();
+    expect(mocks.toast.success).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('bridge-claim-lookup-add'));
+    expect(mocks.toast.success).toHaveBeenCalledTimes(1);
+    expect(mocks.toast.success).toHaveBeenCalledWith('Bridge found!');
+  });
+
+  // Figma 85.
+  it('toasts that there is no bridge with the hash on its network', () => {
+    mocks.state = { status: 'refused', reason: 'not-found' };
+    mocks.params = new URLSearchParams(`tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`);
+    renderLookup();
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      "We couldn't find this bridge",
+      expect.objectContaining({
+        description:
+          "There's no CCTP bridge with this hash on Arbitrum One. Check that the network and the hash are correct."
+      })
+    );
+  });
+
+  it('toasts no other refusal', () => {
+    mocks.params = new URLSearchParams(`tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`);
+    for (const reason of ['reverted', 'not-a-bridge', 'several-burns'] as const) {
+      mocks.state = { status: 'refused', reason } as CctpClaimLookupState;
+      renderLookup();
+      cleanup();
+    }
+    mocks.state = { status: 'error', retry: () => {} };
+    renderLookup();
+    expect(mocks.toast.error).not.toHaveBeenCalled();
   });
 
   it('tells the sender of a burn to another wallet that only that wallet can claim it', () => {

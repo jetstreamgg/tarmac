@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { isHex, size, type Hex } from 'viem';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { Close } from '@/modules/icons';
@@ -150,6 +151,17 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
   const [invalid, setInvalid] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const state = useCctpClaimLookup(target, attempt);
+  const networkName = getBridgeNetwork(target?.from ?? network).name;
+  const notFound = state.status === 'refused' && state.reason === 'not-found';
+
+  // Figma 85; the fixed id keeps a repeated run to one toast.
+  useEffect(() => {
+    if (!notFound) return;
+    toast.error(t`We couldn't find this bridge`, {
+      id: 'cctp-claim-lookup-not-found',
+      description: t`There's no CCTP bridge with this hash on ${networkName}. Check that the network and the hash are correct.`
+    });
+  }, [notFound, networkName, target, attempt]);
 
   const close = () => {
     setOpen(false);
@@ -246,11 +258,12 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
           onAdd={() => {
             state.add();
             close();
+            toast.success(t`Bridge found!`);
           }}
         />
       ) : (
         <>
-          <LookupMessage state={state} network={getBridgeNetwork(target?.from ?? network).name} />
+          <LookupMessage state={state} network={networkName} />
           <Button
             variant="secondary"
             size="m"
