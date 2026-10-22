@@ -316,17 +316,32 @@ describe('PendingBridges', () => {
     const convertHint = (hint: DestinationActionHint) =>
       props.actionHint.mockImplementation((_, action) => (action === 'convert' ? hint : undefined));
 
-    it('offers it on a claim that kept its USDC, and says how much it converts', () => {
+    it('offers it on a claim that kept its USDC, and says why it arrived as USDC', () => {
       mocks.bridges = [CLAIMED];
       mocks.offers[CLAIMED.id] = OFFER;
       renderList();
       expect(convertButton().textContent).toBe('Convert to USDS');
       expect(convertButton().disabled).toBe(false);
       expect(props.canAction).toHaveBeenCalledWith(CLAIMED, 'convert');
-      // Never says the USDC is still in the wallet: some of it may have left since the claim.
+      // Figma 93. Never says the USDC is still in the wallet: some of it may have left since the claim.
       expect(screen.getByTestId('pending-bridge-convert-note').textContent).toBe(
-        'This claim ended in USDC, not USDS. You can convert 40.00 USDC to USDS.'
+        "Your bridge arrived as USDC because the conversion to USDS didn't complete. Convert it now at a 1:1 rate."
       );
+    });
+
+    // Figma 93: the status reads Arrived as USDC in the info tone while the offer stands.
+    it('reads Arrived as USDC while the offer stands, and Claimed otherwise', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      const { unmount } = renderList();
+      const status = screen.getByTestId('pending-bridge-status');
+      expect(status.textContent).toBe('Arrived as USDC');
+      expect(status.className).toContain('text-statusInfoSolid');
+      expect(status.className).toContain('bg-statusInfoBg');
+      unmount();
+      delete mocks.offers[CLAIMED.id];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claimed');
     });
 
     // Figma 93: a card whose claim ended in USDC shows the USDC icon.

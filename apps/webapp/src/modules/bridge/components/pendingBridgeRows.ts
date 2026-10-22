@@ -24,7 +24,7 @@ const checksummed = (account: string) => (isAddress(account) ? getAddress(accoun
 
 export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
-  | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string }
+  | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string; tone?: 'info' }
   | { kind: 'text'; label: string; value: string }
   | { kind: 'link'; label: string; value: string; href?: string };
 
@@ -127,7 +127,9 @@ export const bridgeTxHref = (network: BridgeNetworkId, txHash: string, familyCha
 export function buildPendingBridgeRows(
   bridge: PendingBridge,
   now: number,
-  familyChainId: number
+  familyChainId: number,
+  /** A claim that kept its USDC, offered for conversion (Figma 93). */
+  arrivedAsUsdc = false
 ): PendingBridgeCell[][] {
   const sourceChainId = bridgeChainId(bridge.from, familyChainId);
   return [
@@ -136,7 +138,9 @@ export function buildPendingBridgeRows(
       { kind: 'network', label: t`Destination`, network: bridge.to }
     ],
     [
-      { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) },
+      arrivedAsUsdc
+        ? { kind: 'status', label: t`Status`, status: bridge.status, value: t`Arrived as USDC`, tone: 'info' }
+        : { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) },
       { kind: 'text', label: t`Estimated arrival`, value: arrivalText(bridge, now) }
     ],
     [

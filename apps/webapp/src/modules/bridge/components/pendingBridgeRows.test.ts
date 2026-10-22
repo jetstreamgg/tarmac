@@ -131,6 +131,15 @@ describe('buildPendingBridgeRows', () => {
     });
   });
 
+  it('says a claim that kept its USDC arrived as USDC, in the info tone', () => {
+    const claimed = { ...base, routeKind: 'cctp' as const, status: 'claimed' as const };
+    const [status, eta] = buildPendingBridgeRows(claimed, 0, 1, true)[1];
+    expect(status).toMatchObject({ kind: 'status', value: 'Arrived as USDC', tone: 'info' });
+    expect(eta).toMatchObject({ value: 'Arrived' });
+    expect(buildPendingBridgeRows(claimed, 0, 1)[1][0]).toMatchObject({ value: 'Claimed' });
+    expect(buildPendingBridgeRows(claimed, 0, 1)[1][0]).not.toHaveProperty('tone');
+  });
+
   it('truncates the hash like the comp and links the source explorer', () => {
     const tx = buildPendingBridgeRows(base, 0, 1)[2][1];
     expect(tx).toMatchObject({ value: '0xff9s...dsa6' });

@@ -63,7 +63,7 @@ function CellValue({ cell }: CellValueProps) {
         <span
           className={cn(
             'font-circle flex h-[18px] w-fit items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
-            STATUS_CLASS[cell.status]
+            cell.tone === 'info' ? 'bg-statusInfoBg text-statusInfoSolid' : STATUS_CLASS[cell.status]
           )}
           data-testid="pending-bridge-status"
         >
@@ -384,8 +384,8 @@ function PendingBridgeCard({
       {convertAmount !== undefined && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-convert-note">
           <Trans>
-            This claim ended in USDC, not USDS. You can convert{' '}
-            {formatBigInt(convertAmount, { unit: 6, minDecimals: 2, maxDecimals: 2 })} USDC to USDS.
+            Your bridge arrived as USDC because the conversion to USDS didn&apos;t complete. Convert it now at
+            a 1:1 rate.
           </Trans>
         </Text>
       )}
@@ -429,7 +429,7 @@ function PendingBridgeCard({
         />
       )}
 
-      <CardRows rows={buildPendingBridgeRows(bridge, now, familyChainId)} />
+      <CardRows rows={buildPendingBridgeRows(bridge, now, familyChainId, convertAmount !== undefined)} />
     </div>
   );
 }

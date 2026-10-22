@@ -169,9 +169,10 @@ test.describe('Bridge: CCTP recovery', () => {
 
     const card = bridge.card('Ethereum');
     await expect(card.getByTestId('pending-bridge-convert-note')).toHaveText(
-      `This claim ended in USDC, not USDS. You can convert ${AMOUNT}.00 USDC to USDS.`,
+      "Your bridge arrived as USDC because the conversion to USDS didn't complete. Convert it now at a 1:1 rate.",
       { timeout: 60_000 }
     );
+    await expect(card.getByTestId('pending-bridge-status')).toHaveText('Arrived as USDC');
     expect((await l1AccountState(testAccount)).usds).toBe(before);
 
     await card.getByTestId('pending-bridge-convert').click();
