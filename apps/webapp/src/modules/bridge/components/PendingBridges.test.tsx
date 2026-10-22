@@ -473,7 +473,7 @@ describe('PendingBridges', () => {
       expect(cards).toHaveLength(2);
       expect(cards[0]?.textContent).toContain('250.00');
       expect(cards[0]?.textContent).toContain('OP Mainnet');
-      expect(cards[0]?.textContent).toContain('Not bridged');
+      expect(cards[0]?.textContent).toContain('Not sent');
       expect(cards[1]?.textContent).toContain('7.00');
       expect(screen.queryAllByTestId('pending-bridge-card')).toHaveLength(0);
     });

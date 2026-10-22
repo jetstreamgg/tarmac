@@ -23,7 +23,7 @@ export function buildContinueBridgeRows(
       { kind: 'network', label: t`Destination`, network: 'ethereum' }
     ],
     [
-      { kind: 'status', label: t`Status`, status: 'pending', value: t`Not bridged` },
+      { kind: 'status', label: t`Status`, status: 'pending', value: t`Not sent` },
       { kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel('cctp') }
     ],
     sendsToOther(swap.recipient, account)

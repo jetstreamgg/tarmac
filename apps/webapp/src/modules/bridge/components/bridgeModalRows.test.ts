@@ -26,6 +26,18 @@ describe('buildBridgeModalRows', () => {
     ]);
   });
 
+  // A continued swap bridges its USDC (Figma 91): the rate reads USDC to USDS.
+  it('rates the token the bridge sends against the USDS it delivers', () => {
+    const [[, rate]] = buildBridgeModalRows({
+      route: routeFor('base', 'ethereum'),
+      networkFee: '',
+      fromToken: 'USDC'
+    });
+    expect(rate).toMatchObject({ token: 'USDC', left: '1.00', right: '1.00', rightToken: 'USDS' });
+    const [[, usds]] = buildBridgeModalRows({ route: routeFor('base', 'ethereum'), networkFee: '' });
+    expect(usds).toMatchObject({ token: 'USDS', rightToken: 'USDS' });
+  });
+
   it('names the route and its arrival time', () => {
     const [[type], [eta]] = buildBridgeModalRows({ route: routeFor('ethereum', 'base'), networkFee: '' });
     expect(type).toMatchObject({ value: 'Native' });

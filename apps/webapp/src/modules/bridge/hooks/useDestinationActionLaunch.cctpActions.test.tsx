@@ -159,6 +159,13 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
   });
 
   describe('a convert after its approve', () => {
+    it('toasts the Figma success copy', () => {
+      const card = seed({ claimed: true });
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, 'convert', MINTED));
+      expect(mocks.launched.at(-1)!.toast?.success).toBe('Funds converted successfully!');
+    });
+
     it('is not recorded by the approve, so a sale rejected after it can be sent again', () => {
       const card = seed({ claimed: true });
       const { result } = renderHook(() => useDestinationActionLaunch());

@@ -9,6 +9,7 @@ import type { BridgeRoute } from '../model/types';
 import { formatAddress, formatBigInt } from '@/utils';
 import { buildBridgeModalRows, formatEtaWords } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
+import { BridgeWarningBox } from './BridgeWarningBox';
 
 export const bridgeFootnote = (route: BridgeRoute): string => {
   const eta = formatEtaWords(route.etaMinutes);
@@ -23,16 +24,25 @@ type BridgeTransferHeroProps = {
   to: BridgeNetworkId;
   /** Sender and recipient, shown under each amount when they differ (Figma 3957:56201). */
   addresses?: { from: string; to: string };
+  /** A continued CCTP bridge sends the USDC its swap left (Figma 91). */
+  fromToken?: 'USDS' | 'USDC';
   testId?: string;
 };
 
 /** USDS from → to hero with each side's network badge (Figma 3574:64110). */
-export function BridgeTransferHero({ amount, from, to, addresses, testId }: BridgeTransferHeroProps) {
+export function BridgeTransferHero({
+  amount,
+  from,
+  to,
+  addresses,
+  fromToken = 'USDS',
+  testId
+}: BridgeTransferHeroProps) {
   const formatted = formatBigInt(amount, { minDecimals: 2, maxDecimals: 2 });
   return (
     <TokenTransferHero
       from={{
-        symbol: 'USDS',
+        symbol: fromToken,
         amount: formatted,
         badge: <BridgeNetworkBadge network={from} />,
         caption: addresses && formatAddress(addresses.from, 5, 3),
@@ -59,6 +69,8 @@ type BridgeReviewContentProps = {
   bridgeFee?: string;
   /** Sender and recipient, when the bridge pays another address. */
   addresses?: { from: string; to: string };
+  /** The token sent, USDC for a continued CCTP bridge. */
+  fromToken?: 'USDS' | 'USDC';
   /** A Safe's unused Arbitrum fee is refunded to its L2 alias. */
   aliasedRefund?: boolean;
   /** A CCTP claim minting to another address: only its wallet can claim, once told. */
@@ -80,17 +92,18 @@ export function BridgeReviewContent({
   networkFee,
   bridgeFee,
   addresses,
+  fromToken,
   aliasedRefund,
   recipientWarning,
   contractWallet,
   safeQueue,
   storageNote
 }: BridgeReviewContentProps) {
-  const rows = buildBridgeModalRows({ route, networkFee, bridgeFee });
+  const rows = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
   const contractCheckboxId = useId();
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
-      <BridgeTransferHero amount={amount} from={from} to={to} addresses={addresses} />
+      <BridgeTransferHero amount={amount} from={from} to={to} addresses={addresses} fromToken={fromToken} />
       <div className="flex flex-col gap-6">
         <ModalSummaryGrid rows={toGridCells(rows, 'bridge-modal-row')} dividerClassName="h-6" />
         <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-footnote">
@@ -102,9 +115,9 @@ export function BridgeReviewContent({
           </p>
         )}
         {recipientWarning && (
-          <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-recipient-warning">
+          <BridgeWarningBox title={t`Sending to another wallet`} dataTestId="bridge-modal-recipient-warning">
             {t`The recipient won't see this transfer automatically. Share the claim link or the transaction hash with them once it's sent. They need to claim on Ethereum from a wallet that controls the recipient address, so an exchange deposit address won't work.`}
-          </p>
+          </BridgeWarningBox>
         )}
         {safeQueue && (
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-safe-queue">

@@ -24,7 +24,7 @@ describe('buildContinueBridgeRows', () => {
         { kind: 'network', label: 'Destination', network: 'ethereum' }
       ],
       [
-        { kind: 'status', label: 'Status', status: 'pending', value: 'Not bridged' },
+        { kind: 'status', label: 'Status', status: 'pending', value: 'Not sent' },
         { kind: 'text', label: 'Bridge type', value: 'CCTP' }
       ],
       [

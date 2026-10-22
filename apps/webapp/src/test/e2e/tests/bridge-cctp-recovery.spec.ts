@@ -175,7 +175,7 @@ test.describe('Bridge: CCTP recovery', () => {
     expect((await l1AccountState(testAccount)).usds).toBe(before);
 
     await card.getByTestId('pending-bridge-convert').click();
-    await expectTransactionSuccess(isolatedPage, { title: 'Converted to USDS!', timeout: 90_000 });
+    await expectTransactionSuccess(isolatedPage, { title: 'Funds converted successfully!', timeout: 90_000 });
     await expectUsdsDelivered(testAccount, before);
     await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0, { timeout: 60_000 });
   });

@@ -271,7 +271,7 @@ describe('CctpClaimLookup', () => {
 
   it.each<[CctpClaimLookupState, string, string]>([
     [{ status: 'disconnected' }, 'bridge-claim-lookup-message', 'Connect your wallet to look it up.'],
-    [{ status: 'loading' }, 'bridge-claim-lookup-message', 'Looking it up…'],
+    [{ status: 'loading' }, 'bridge-claim-lookup-message', 'Looking up your bridge'],
     [{ status: 'known' }, 'bridge-claim-lookup-message', 'This bridge is already in your list.'],
     [
       { status: 'known', claimed: true },

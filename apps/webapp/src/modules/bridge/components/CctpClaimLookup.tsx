@@ -44,7 +44,7 @@ function LookupMessage({ state, network }: LookupMessageProps) {
     case 'loading':
       return (
         <Text className={noteClassName} dataTestId="bridge-claim-lookup-message">
-          <Trans>Looking it up…</Trans>
+          <Trans>Looking up your bridge</Trans>
         </Text>
       );
     case 'known':

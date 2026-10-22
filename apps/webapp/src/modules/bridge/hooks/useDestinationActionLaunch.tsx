@@ -130,7 +130,7 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
       return {
         step: t`Convert to USDS`,
         loading: t`Converting ${amount} USDC to USDS`,
-        success: t`Converted to USDS!`,
+        success: t`Funds converted successfully!`,
         error: t`Conversion failed`,
         failure: stepFailureDetail.convert('USDC')
       };

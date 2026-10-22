@@ -459,6 +459,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       account && recipient && sendsToOther(recipient, account) ? { from: account, to: recipient } : undefined,
     [account, recipient]
   );
+  // A continued swap sends its USDC (Figma 91).
+  const fromToken = resume ? 'USDC' : undefined;
   const transactionContent = useMemo(
     () =>
       route && (
@@ -470,6 +472,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           networkFee={networkFeeText}
           bridgeFee={bridgeFee}
           addresses={addresses}
+          fromToken={fromToken}
           aliasedRefund={aliasedRefund}
           recipientWarning={claimedByOther}
           contractWallet={contractWallet}
@@ -485,6 +488,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       networkFeeText,
       bridgeFee,
       addresses,
+      fromToken,
       aliasedRefund,
       claimedByOther,
       contractWallet,
@@ -493,8 +497,16 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     ]
   );
   const transactionScreenContent = useMemo(
-    () => <BridgeTransferHero amount={amount} from={from} to={to} testId="bridge-modal-screen-summary" />,
-    [amount, from, to]
+    () => (
+      <BridgeTransferHero
+        amount={amount}
+        from={from}
+        to={to}
+        fromToken={fromToken}
+        testId="bridge-modal-screen-summary"
+      />
+    ),
+    [amount, from, to, fromToken]
   );
 
   const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;

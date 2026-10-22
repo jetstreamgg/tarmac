@@ -10,6 +10,10 @@ import { BridgeReviewContent } from './BridgeReviewContent';
 
 // Token icons read the wallet's chain; the notes don't need them.
 vi.mock('@/modules/ui/hooks/useChainImage', () => ({ useChainImage: () => undefined }));
+// The real icon renders no text; this one names its token so a side's symbol can be read.
+vi.mock('@/modules/ui/components/TokenIcon', () => ({
+  TokenIcon: ({ token }: { token: { symbol: string } }) => <span>{token.symbol}</span>
+}));
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -53,6 +57,28 @@ describe('BridgeReviewContent notes for a CCTP claim', () => {
     expect(note).toMatch(/won't see this transfer automatically/);
     expect(note).toMatch(/claim link or the transaction hash/);
     expect(note).toMatch(/exchange deposit address won't work/);
+  });
+
+  // Figma 70: an amber box titled "Sending to another wallet".
+  it('titles the recipient warning as a warning box', () => {
+    review({ recipientWarning: true });
+    const box = screen.getByTestId('bridge-modal-recipient-warning');
+    expect(screen.getByTestId('bridge-modal-recipient-warning-title').textContent).toBe(
+      'Sending to another wallet'
+    );
+    expect(box.className).toMatch(/bg-statusWarningBg/);
+  });
+
+  // Figma 91: a continued swap sends USDC and delivers USDS.
+  it('shows USDC on the sending side when the bridge sends USDC', () => {
+    review({ fromToken: 'USDC' });
+    expect(screen.getByTestId('bridge-modal-from-amount').parentElement!.textContent).toBe('USDC1.00');
+    expect(screen.getByTestId('bridge-modal-to-amount').parentElement!.textContent).toBe('USDS1.00');
+  });
+
+  it('shows USDS on both sides by default', () => {
+    review();
+    expect(screen.getByTestId('bridge-modal-from-amount').parentElement!.textContent).toBe('USDS1.00');
   });
 
   it("tells a Safe to execute every step from its queue, and that a stopped bridge can't be continued here", () => {
