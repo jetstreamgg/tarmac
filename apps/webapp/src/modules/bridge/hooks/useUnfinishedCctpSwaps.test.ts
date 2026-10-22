@@ -34,6 +34,16 @@ describe('useUnfinishedCctpSwaps', () => {
     expect(result.current).toEqual([]);
   });
 
+  // The convert may still mine, so neither Continue nor Convert can use the same USDC again.
+  it('leaves out a swap whose USDC a convert was sent for, until that convert is unlinked', () => {
+    const { result } = renderHook(() => useUnfinishedCctpSwaps());
+    act(() => cctpSwapStore.record(SCOPE, SWAP));
+    act(() => cctpSwapStore.markConvert(SCOPE, SWAP.swapTxHash, '0xc0'));
+    expect(result.current).toEqual([]);
+    act(() => cctpSwapStore.markConvert(SCOPE, SWAP.swapTxHash, undefined));
+    expect(result.current).toEqual([SWAP]);
+  });
+
   it('has none while disconnected', () => {
     cctpSwapStore.record(SCOPE, SWAP);
     mocks.scope = undefined;

@@ -81,7 +81,7 @@ export type DestinationActionHint =
   | { kind: 'switch-network'; network: BridgeNetworkId; safe: boolean };
 
 // A convert's sale step names both tokens (Figma 96).
-const convertStep = (): TransactionStep => ({
+export const convertStep = (): TransactionStep => ({
   label: t`Convert`,
   tokenSymbol: 'USDC',
   targetTokenSymbol: 'USDS',

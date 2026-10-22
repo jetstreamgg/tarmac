@@ -15,6 +15,8 @@ export type UnfinishedCctpSwap = {
   at: number;
   /** The burn last sent for it, lowercase: its tx hash, or the wallet's calls id for a bundle. */
   burn?: string;
+  /** The convert sent for its USDC on the L2, lowercase: its tx hash, or the wallet's calls id for a bundle. */
+  convert?: string;
 };
 
 type Listener = () => void;
@@ -35,7 +37,8 @@ const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
     !isString(entry.usdcAmount) ||
     !isString(entry.recipient) ||
     typeof entry.at !== 'number' ||
-    (entry.burn !== undefined && !isString(entry.burn))
+    (entry.burn !== undefined && !isString(entry.burn)) ||
+    (entry.convert !== undefined && !isString(entry.convert))
   )
     return null;
   try {
@@ -173,6 +176,19 @@ export function createCctpSwapStore() {
         hash
       );
       return entry.burn;
+    },
+    /** Links a swap to the convert sent for its USDC, or unlinks it with no `convert` (it reverted). */
+    markConvert(scope: string, swapTxHash: string, convert: string | undefined) {
+      const hash = swapTxHash.toLowerCase();
+      const id = convert?.toLowerCase();
+      const current = latest(scope);
+      const entry = current.find(swap => swap.swapTxHash === hash);
+      if (!entry || entry.convert === id) return;
+      write(
+        scope,
+        current.map(swap => (swap === entry ? { ...swap, convert: id } : swap)),
+        hash
+      );
     },
     /** Drops a swap: it reverted or was replaced, or the user dismissed it. */
     clear,

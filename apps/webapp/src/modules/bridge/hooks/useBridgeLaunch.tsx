@@ -310,6 +310,16 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         );
         return;
       }
+      // A convert of the same USDC may still mine; a burn after it would take USDC the wallet held before.
+      if (continued?.convert) {
+        callbacksRef.current.onError(
+          new TransactionRefusedError(
+            'The USDC of this bridge was converted from another window. Close this and check your balance.',
+            { final: true }
+          )
+        );
+        return;
+      }
       if (pinnedChainId !== launchedChainIdRef.current) {
         callbacksRef.current.onError(new TransactionRefusedError('The source network changed after Review.'));
         return;

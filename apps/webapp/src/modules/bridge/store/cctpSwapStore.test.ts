@@ -224,3 +224,46 @@ describe('createCctpSwapStore burn links', () => {
     ).toEqual(['0x01']);
   });
 });
+
+describe('createCctpSwapStore convert links', () => {
+  beforeEach(() => localStorage.clear());
+
+  const SWAP_HASH = '0x' + 'ab'.repeat(32);
+
+  it('links a swap to the convert sent for its USDC, in storage, lowercase, and unlinks it', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    store.markConvert(SCOPE, '0x' + 'AB'.repeat(32), '0xCONVERT');
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0].convert).toBe('0xconvert');
+    store.markConvert(SCOPE, SWAP_HASH, undefined);
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0]).not.toHaveProperty('convert');
+  });
+
+  it('links nothing to a swap it does not hold, and notifies only on a change', () => {
+    const store = createCctpSwapStore();
+    const listener = vi.fn();
+    const unsubscribe = store.subscribe(listener);
+    store.markConvert(SCOPE, SWAP_HASH, '0xconvert');
+    expect(store.getSnapshot(SCOPE)).toEqual([]);
+    store.record(SCOPE, swap());
+    store.markConvert(SCOPE, SWAP_HASH, '0xconvert');
+    store.markConvert(SCOPE, SWAP_HASH, '0xCONVERT');
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
+
+  it('drops a stored convert link of the wrong type', () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify([
+        { ...swap(), usdcAmount: '1', convert: 7 },
+        { ...swap({ swapTxHash: '0x01' }), usdcAmount: '1', convert: '0xc' }
+      ])
+    );
+    expect(
+      createCctpSwapStore()
+        .getSnapshot(SCOPE)
+        .map(entry => [entry.swapTxHash, entry.convert])
+    ).toEqual([['0x01', '0xc']]);
+  });
+});

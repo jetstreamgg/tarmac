@@ -5,6 +5,7 @@ import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useBridgeForm } from '../hooks/useBridgeForm';
 import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
 import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
+import { useCctpSwapConvertLaunch } from '../hooks/useCctpSwapConvertLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
 import { BridgeCard } from './BridgeCard';
 import { CctpClaimLookup, hasCctpClaimLookup } from './CctpClaimLookup';
@@ -92,6 +93,7 @@ export function BridgePanel() {
     locked: actionLocked
   } = useDestinationActionLaunch();
   const { launch: continueBridge } = useCctpResumeLaunch(onBridged);
+  const { launch: convertBridge } = useCctpSwapConvertLaunch();
 
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
@@ -165,6 +167,7 @@ export function BridgePanel() {
         actionHint={actionHint}
         actionLocked={actionLocked}
         onContinue={continueBridge}
+        onConvert={convertBridge}
         lookup={hasCctpClaimLookup() ? <CctpClaimLookup /> : undefined}
       />
     </div>

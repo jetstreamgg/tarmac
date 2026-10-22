@@ -17,6 +17,7 @@ import {
   cctpClaimRefusal,
   cctpConvertRefusal,
   cctpGate,
+  cctpL2ConvertRefusal,
   cctpResumeRefusal,
   RESUME_SCAN_MAX_BLOCKS,
   type CctpGateReads
@@ -469,6 +470,62 @@ describe('cctpConvertRefusal', () => {
       'message',
       expect.stringContaining('Nothing')
     );
+  });
+
+  it('fails closed when a read fails', async () => {
+    const failing = {
+      readContract: vi.fn(async () => {
+        throw new Error('rpc down');
+      })
+    } as unknown as PublicClient;
+    await expect(refusal(failing)).rejects.toThrow('rpc down');
+  });
+});
+
+describe('cctpL2ConvertRefusal', () => {
+  type Read = { address: string; functionName: string; args?: readonly unknown[] };
+  const ACCOUNT = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+  const AMOUNT = 250n * 10n ** 6n;
+  const { psm3, usds, usdc } = cctpL2Contracts('base');
+  const base = (change: Partial<Record<string, unknown>> = {}) =>
+    ({
+      readContract: vi.fn(async ({ address, functionName, args }: Read) => {
+        const values: Record<string, unknown> = {
+          [`${psm3}.previewSwapExactIn.${usdc}.${usds}.${AMOUNT}`]: AMOUNT * UNIT,
+          [`${usds}.balanceOf.${psm3}`]: AMOUNT * UNIT,
+          [`${usdc}.balanceOf.${ACCOUNT}`]: AMOUNT,
+          ...change
+        };
+        const key = [address, functionName, ...(args ?? [])].join('.');
+        if (!(key in values)) throw new Error(`unexpected read ${key}`);
+        return values[key];
+      })
+    }) as unknown as PublicClient;
+  const refusal = (client = base(), amount = AMOUNT) =>
+    cctpL2ConvertRefusal({ network: 'base', amount, account: ACCOUNT, client });
+
+  it('lets a 1:1 conversion of USDC the account holds through', async () => {
+    await expect(refusal()).resolves.toBeUndefined();
+  });
+
+  it.each([
+    [
+      'at less than 1:1',
+      { [`${psm3}.previewSwapExactIn.${usdc}.${usds}.${AMOUNT}`]: AMOUNT * UNIT - 1n },
+      "can't convert"
+    ],
+    [
+      'with too little USDS on PSM3',
+      { [`${usds}.balanceOf.${psm3}`]: AMOUNT * UNIT - 1n },
+      'not enough liquidity'
+    ],
+    ['of more USDC than the account holds', { [`${usdc}.balanceOf.${ACCOUNT}`]: AMOUNT - 1n }, 'less USDC']
+  ])('refuses a conversion %s', async (_, change, reason) => {
+    await expect(refusal(base(change))).resolves.toHaveProperty('message', expect.stringContaining(reason));
+  });
+
+  it('refuses nothing to convert', async () => {
+    await expect(refusal(base(), 0n)).resolves.toHaveProperty('message', expect.stringContaining('Nothing'));
   });
 
   it('fails closed when a read fails', async () => {

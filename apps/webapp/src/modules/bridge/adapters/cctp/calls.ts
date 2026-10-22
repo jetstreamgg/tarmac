@@ -25,6 +25,8 @@ export const cctpBurnAmount = (amount: bigint): bigint => amount / USDS_PER_USDC
 export const CCTP_CLAIM_FUNCTION = 'receiveMessage';
 /** The leg that sells USDC for USDS, which records a convert. */
 export const CCTP_CONVERT_FUNCTION = 'sellGem';
+/** The leg that swaps USDC for USDS on an L2's PSM3, which records an L2 convert. */
+export const CCTP_L2_CONVERT_FUNCTION = 'swapExactIn';
 
 const approve = (token: Address, spender: Address, amount: bigint) =>
   getWriteContractCall({ to: token, abi: erc20Abi, functionName: 'approve', args: [spender, amount] });
@@ -107,6 +109,34 @@ export function cctpConvertCalls({
     args: [account, amount]
   });
   return usdcAllowance < amount ? [approve(L1_USDC, USDS_PSM_WRAPPER, amount), sell] : [sell];
+}
+
+/**
+ * Swaps `amount` USDC (6 decimals) 1:1 for USDS on the L2's PSM3, to
+ * `account` with a minimum of the full amount and no referral, after an
+ * approve of exactly the amount when short: the USDC a stopped bridge swapped
+ * out, turned back.
+ */
+export function cctpL2ConvertCalls({
+  network,
+  account,
+  amount,
+  usdcAllowance
+}: {
+  network: CctpL2NetworkId;
+  account: Address;
+  amount: bigint;
+  usdcAllowance: bigint;
+}): Call[] {
+  if (amount <= 0n) throw new Error('A conversion needs at least one USDC unit');
+  const { psm3, usds, usdc } = cctpL2Contracts(network);
+  const swap = getWriteContractCall({
+    to: psm3,
+    abi: psm3L2Abi,
+    functionName: CCTP_L2_CONVERT_FUNCTION,
+    args: [usdc, usds, amount, amount * USDS_PER_USDC_UNIT, account, 0n]
+  });
+  return usdcAllowance < amount ? [approve(usdc, psm3, amount), swap] : [swap];
 }
 
 /**

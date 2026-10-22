@@ -410,6 +410,27 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
         cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
       }
     });
+
+    // A convert of the same USDC may still mine; a burn after it would take USDC the wallet held before.
+    it('refuses to continue a swap whose USDC another window sent a convert for', () => {
+      try {
+        const view = render('base', 'ethereum', SWAP);
+        act(() => view.result.current.launch());
+        cctpSwapStore.record(SCOPE, SWAP);
+        cctpSwapStore.markConvert(SCOPE, SWAP.swapTxHash, '0xc0');
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.burn.execute).not.toHaveBeenCalled();
+        expect(mocks.onError).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message:
+              'The USDC of this bridge was converted from another window. Close this and check your balance.',
+            final: true
+          })
+        );
+      } finally {
+        cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+      }
+    });
   });
 
   describe('the claim notes in the Review', () => {

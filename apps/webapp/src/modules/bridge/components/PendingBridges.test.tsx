@@ -125,6 +125,7 @@ const props = {
   onAction: vi.fn(),
   onActionIn: vi.fn(),
   onContinue: vi.fn(),
+  onConvert: vi.fn(),
   canAction: vi.fn<(bridge: PendingBridge, action?: string) => boolean>(() => true),
   actionHint: vi.fn<(bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined>(
     () => undefined
@@ -159,6 +160,7 @@ describe('PendingBridges', () => {
     props.canAction.mockReset().mockReturnValue(true);
     props.actionHint.mockReset().mockReturnValue(undefined);
     props.onContinue.mockClear();
+    props.onConvert.mockClear();
     localStorage.clear();
     [SWAP, OLDER_SWAP].forEach(swap => cctpSwapStore.clear('scope', swap.swapTxHash));
   });
@@ -759,6 +761,7 @@ describe('PendingBridges', () => {
     const record = (...swaps: UnfinishedCctpSwap[]) =>
       [...swaps].reverse().forEach(swap => cctpSwapStore.record('scope', swap));
     const continueButton = () => screen.getByTestId('continue-bridge-action') as HTMLButtonElement;
+    const convertButton = () => screen.getByTestId('continue-bridge-convert') as HTMLButtonElement;
 
     // Figma "Pending component bridge": one border-primary line, above the rows.
     it('draws its only divider above the rows, on every card', () => {
@@ -790,12 +793,68 @@ describe('PendingBridges', () => {
       expect(screen.queryAllByTestId('pending-bridge-card')).toHaveLength(0);
     });
 
+    // Figma 90: the note says where the USDC is and both ways out.
     it('says where the USDC is', () => {
       record(SWAP);
       renderList();
       expect(screen.getByTestId('continue-bridge-note').textContent).toBe(
-        "Your USDS was swapped to USDC on OP Mainnet, but the USDC wasn't bridged. It's still in your wallet."
+        'Your bridge stopped before it was sent. The 250.00 USDC from the conversion is still on OP Mainnet. Continue to send it to Ethereum, or convert it back to USDS.'
       );
+    });
+
+    it('offers Continue bridge and Convert to USDS side by side', () => {
+      record(SWAP);
+      renderList();
+      expect(continueButton().textContent).toBe('Continue bridge');
+      expect(convertButton().textContent).toBe('Convert to USDS');
+      expect(continueButton().parentElement).toBe(convertButton().parentElement);
+    });
+
+    it('converts the swap of the card clicked', () => {
+      record(SWAP, OLDER_SWAP);
+      renderList();
+      fireEvent.click(screen.getAllByTestId('continue-bridge-convert')[1]!);
+      expect(props.onConvert).toHaveBeenCalledExactlyOnceWith(OLDER_SWAP);
+      expect(props.onContinue).not.toHaveBeenCalled();
+    });
+
+    it("can't convert while a transaction session is active", () => {
+      record(SWAP);
+      mocks.activeSessionId = 'session';
+      renderList();
+      expect(convertButton().disabled).toBe(true);
+      fireEvent.click(convertButton());
+      expect(props.onConvert).not.toHaveBeenCalled();
+    });
+
+    // The route's gate only stops the bridge; the USDC can still go back to USDS.
+    it.each([
+      'pair-not-allowed',
+      'over-limit',
+      'no-liquidity',
+      'facts-error',
+      'facts-loading',
+      'closed'
+    ] as const)('can still convert when the route is %s', reason => {
+      record(SWAP);
+      mocks.blocked[SWAP.swapTxHash] = reason;
+      renderList();
+      expect(continueButton().disabled).toBe(true);
+      expect(convertButton().disabled).toBe(false);
+    });
+
+    it.each([
+      'source-unavailable',
+      'wallet-checking',
+      'wallet-unknown',
+      'balance-loading',
+      'balance-unknown',
+      'insufficient'
+    ] as const)("can't convert when %s", reason => {
+      record(SWAP);
+      mocks.blocked[SWAP.swapTxHash] = reason;
+      renderList();
+      expect(convertButton().disabled).toBe(true);
     });
 
     it('lists them above the pending bridges, which still render as before', () => {

@@ -14,6 +14,7 @@ import {
 import { CCTP_SWAP_FAILED_MESSAGE, cctpBurnRefusal, cctpResumeRefusal } from '../adapters/cctp/gate';
 import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
+import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
 import { isStorageWritable } from '../store/storageWritable';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
@@ -23,24 +24,6 @@ const CCTP_SWAP_FUNCTION = 'swapExactIn';
 const STORAGE_REFUSED_MESSAGE = 'Bridging to another address needs browser storage, which is unavailable.';
 
 const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
-
-// Burn prompts not answered yet, per scope and swap across mounts: a Continue of that swap must not burn it twice.
-const openBurns = new Map<string, number>();
-const burnKey = (scope: string, swapTxHash: string) => `${scope}:${swapTxHash.toLowerCase()}`;
-
-/** Counts a burn prompt for the swap as open; the returned release counts it answered, once. */
-function openBurn(scope: string, swapTxHash: string) {
-  const key = burnKey(scope, swapTxHash);
-  openBurns.set(key, (openBurns.get(key) ?? 0) + 1);
-  let open = true;
-  return () => {
-    if (!open) return;
-    open = false;
-    const left = (openBurns.get(key) ?? 1) - 1;
-    if (left > 0) openBurns.set(key, left);
-    else openBurns.delete(key);
-  };
-}
 
 const toAddress = (value: string | undefined): Address | undefined =>
   value && isAddress(value) ? getAddress(value) : undefined;
@@ -52,7 +35,7 @@ const toAddress = (value: string | undefined): Address | undefined =>
  * is kept in `cctpSwapStore`, linked to the burn last sent for it, until that
  * burn mines, so a bridge stopped in between or whose burn failed can be
  * continued: with `resume` only that swap's USDC is burned, after the chain
- * shows the swap mined and no burn since, and no burn prompt for it is open in this tab. A swap seen to revert, while mounted or by Continue, is dropped. No calls while an
+ * shows the swap mined and no burn since, and no burn or convert prompt for it is open in this tab. A swap seen to revert, while mounted or by Continue, is dropped. No calls while an
  * allowance is loading or failed, for a recipient CCTP must never mint to,
  * or for another recipient while localStorage can't keep the bridge. The gate
  * is read again on both chains before the wallet prompt, so a paused or
@@ -165,8 +148,8 @@ export function useCctpBurnLegs({
       if (to && from && !isAddressEqual(to, from) && !isStorageWritable())
         return new Error(STORAGE_REFUSED_MESSAGE);
       if (resume) {
-        // A burn of this swap may still be signed in the wallet; the chain shows none until it mines.
-        if (scope && openBurns.has(burnKey(scope, resume.swapTxHash)))
+        // A burn or convert of this swap may still be signed in the wallet.
+        if (scope && isCctpSpendOpen(scope, resume.swapTxHash))
           return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
         const refusal = await cctpResumeRefusal({
           network,
@@ -245,7 +228,7 @@ export function useCctpBurnLegs({
     if (!scope || variables.functionName !== CCTP_BURN_FUNCTION) return undefined;
     const run = (context as Run | undefined) ?? runRef.current;
     const swapTxHash = run?.resumed ?? run?.sentSwap?.hash;
-    return swapTxHash ? openBurn(scope, swapTxHash) : undefined;
+    return swapTxHash ? openCctpSpend(scope, swapTxHash) : undefined;
   };
   // A bundle is one prompt, with no onLegSent: the swap its run continued is linked to the wallet's calls id.
   const onBundleSent = (id: string, context?: unknown) => {

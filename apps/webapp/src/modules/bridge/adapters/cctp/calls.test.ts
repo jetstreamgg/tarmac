@@ -19,7 +19,7 @@ import {
   messageTransmitterV2Abi,
   tokenMessengerV2Abi
 } from './contracts';
-import { cctpBurnAmount, cctpBurnCalls, cctpClaimCalls, cctpConvertCalls } from './calls';
+import { cctpBurnAmount, cctpBurnCalls, cctpClaimCalls, cctpConvertCalls, cctpL2ConvertCalls } from './calls';
 import {
   BASE_BURN_AMOUNT,
   BASE_BURN_ATTESTED,
@@ -206,5 +206,46 @@ describe('cctpConvertCalls', () => {
       ACCOUNT,
       5n
     ]);
+  });
+});
+
+describe('cctpL2ConvertCalls (golden: 250 USDC to USDS on Base PSM3)', () => {
+  const { psm3, usds, usdc } = cctpL2Contracts('base');
+  const AMOUNT = 250n * 10n ** 6n;
+  const convertCalls = (usdcAllowance: bigint) =>
+    cctpL2ConvertCalls({
+      network: 'base',
+      account: ACCOUNT,
+      amount: AMOUNT,
+      usdcAllowance
+    }) as ContractCall[];
+
+  it('swaps exactly the USDC 1:1 for USDS on PSM3 to the same account, with no referral', () => {
+    const [swap] = convertCalls(AMOUNT);
+    expect(swap.to).toBe(psm3);
+    expect(encode(swap)).toBe(
+      '0x1a019e37' +
+        usdc.slice(2).toLowerCase().padStart(64, '0') +
+        usds.slice(2).toLowerCase().padStart(64, '0') +
+        AMOUNT.toString(16).padStart(64, '0') +
+        (AMOUNT * UNIT).toString(16).padStart(64, '0') +
+        ACCOUNT.slice(2).toLowerCase().padStart(64, '0') +
+        '0'.repeat(64)
+    );
+    const { args } = decodeFunctionData({ abi: psm3L2Abi, data: encode(swap) });
+    expect(args).toEqual([usdc, usds, AMOUNT, AMOUNT * UNIT, ACCOUNT, 0n]);
+  });
+
+  it('approves exactly the amount to PSM3 first, only when the allowance is short', () => {
+    expect(convertCalls(AMOUNT)).toHaveLength(1);
+    const [approve, swap] = convertCalls(AMOUNT - 1n);
+    expect([approve.to, approve.functionName, swap.functionName]).toEqual([usdc, 'approve', 'swapExactIn']);
+    expect(decodeFunctionData({ abi: erc20Abi, data: encode(approve) }).args).toEqual([psm3, AMOUNT]);
+  });
+
+  it('refuses nothing to convert', () => {
+    expect(() =>
+      cctpL2ConvertCalls({ network: 'base', account: ACCOUNT, amount: 0n, usdcAllowance: 0n })
+    ).toThrow();
   });
 });

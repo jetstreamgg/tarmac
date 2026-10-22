@@ -11,6 +11,7 @@ import { BridgePanel } from './BridgePanel';
 
 const mocks = vi.hoisted(() => ({
   continueBridge: vi.fn(),
+  convertBridge: vi.fn(),
   onContinue: undefined as ((swap: UnfinishedCctpSwap) => void) | undefined,
   launchAction: vi.fn(),
   actionHint: vi.fn(),
@@ -45,6 +46,9 @@ vi.mock('../hooks/useCctpResumeLaunch', () => ({
     return { launch: mocks.continueBridge };
   }
 }));
+vi.mock('../hooks/useCctpSwapConvertLaunch', () => ({
+  useCctpSwapConvertLaunch: () => ({ launch: mocks.convertBridge })
+}));
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({ useConnectThenAct: (fn: () => void) => fn }));
 vi.mock('./BridgeCard', () => ({ BridgeCard: () => null }));
 vi.mock('./PendingBridges', () => ({
@@ -70,6 +74,16 @@ it("continues a pending list's unfinished swap through the resume launch", () =>
     </I18nProvider>
   );
   expect(mocks.onContinue).toBe(mocks.continueBridge);
+});
+
+// Figma 90: a stopped bridge's USDC goes back to USDS through its own launch.
+it("converts a pending list's unfinished swap through the swap convert launch", () => {
+  render(
+    <I18nProvider i18n={i18n}>
+      <BridgePanel />
+    </I18nProvider>
+  );
+  expect(mocks.list.onConvert).toBe(mocks.convertBridge);
 });
 
 // A conversion's amount and hint reach the destination launch unchanged.

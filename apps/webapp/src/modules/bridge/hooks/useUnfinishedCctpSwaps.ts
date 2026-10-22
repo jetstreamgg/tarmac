@@ -8,7 +8,8 @@ const NONE: UnfinishedCctpSwap[] = [];
 /**
  * The connected account's CCTP swaps that can be continued, newest first: no
  * burn was sent for them, or the last one failed. A swap whose burn may still
- * land is left out, so its USDC is never burned twice.
+ * land is left out, so its USDC is never burned twice, as is one whose USDC a
+ * convert was sent for.
  */
 export function useUnfinishedCctpSwaps(): UnfinishedCctpSwap[] {
   const { scope } = usePendingScope();
@@ -17,7 +18,8 @@ export function useUnfinishedCctpSwaps(): UnfinishedCctpSwap[] {
   const bridges = useBridgeHistory();
   return useMemo(
     () =>
-      swaps.filter(({ burn }) => {
+      swaps.filter(({ burn, convert }) => {
+        if (convert) return false;
         if (!burn) return true;
         const bridge = bridges.find(entry => isBurnOf(entry, burn));
         // A burn with no card left to follow it: Continue still refuses one the chain shows mined.

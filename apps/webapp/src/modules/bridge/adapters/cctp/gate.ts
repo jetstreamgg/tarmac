@@ -325,3 +325,38 @@ export async function cctpConvertRefusal({
   if (usdc < amount) return new Error('This account holds less USDC than this conversion.');
   return undefined;
 }
+
+/**
+ * Read right before converting a stopped bridge's USDC back on the L2: why
+ * PSM3 can't swap `amount` USDC 1:1 for USDS to `account` now, if anything.
+ * The USDS comes out of PSM3's own balance. A failed read refuses it too.
+ */
+export async function cctpL2ConvertRefusal({
+  network,
+  amount,
+  account,
+  client
+}: {
+  network: CctpL2NetworkId;
+  amount: bigint;
+  account: Address;
+  client: PublicClient;
+}): Promise<Error | undefined> {
+  if (amount <= 0n) return new Error('Nothing to convert.');
+  const { psm3, usds, usdc } = cctpL2Contracts(network);
+  const output = amount * USDS_PER_USDC_UNIT;
+  const [quote, psm3Usds, held] = await Promise.all([
+    client.readContract({
+      address: psm3,
+      abi: psm3L2Abi,
+      functionName: 'previewSwapExactIn',
+      args: [usdc, usds, amount]
+    }),
+    client.readContract({ address: usds, abi: erc20Abi, functionName: 'balanceOf', args: [psm3] }),
+    client.readContract({ address: usdc, abi: erc20Abi, functionName: 'balanceOf', args: [account] })
+  ]);
+  if (quote !== output) return new Error("PSM3 can't convert USDC to USDS at 1:1 right now.");
+  if (psm3Usds < output) return new Error('There is not enough liquidity to convert this USDC to USDS.');
+  if (held < amount) return new Error('This account holds less USDC than this conversion.');
+  return undefined;
+}

@@ -318,7 +318,7 @@ function ClaimLink({ link, note, className = 'w-full' }: ClaimLinkProps) {
   );
 }
 
-type CardHeaderProps = { symbol: string; amount: string; date: string; children: ReactNode };
+type CardHeaderProps = { symbol: string; amount: string; date: string; children?: ReactNode };
 
 function CardHeader({ symbol, amount, date, children }: CardHeaderProps) {
   return (
@@ -625,15 +625,27 @@ type ContinueBridgeCardProps = {
   account: string | undefined;
   familyChainId: number;
   onContinue: (swap: UnfinishedCctpSwap) => void;
+  onConvert: (swap: UnfinishedCctpSwap) => void;
   onDismiss: (swap: UnfinishedCctpSwap) => void;
 };
 
-/** A CCTP bridge whose swap was sent but whose burn wasn't: Continue burns the swap's USDC. */
+// Only the route's gate leaves the USDC free to go back to USDS.
+const CONVERT_BLOCKING_REASONS = new Set<CctpResumeBlockReason>([
+  'source-unavailable',
+  'wallet-checking',
+  'wallet-unknown',
+  'balance-loading',
+  'balance-unknown',
+  'insufficient'
+]);
+
+/** A CCTP bridge whose swap was sent but whose burn wasn't (Figma 90): Continue burns the swap's USDC, Convert swaps it back to USDS. */
 function ContinueBridgeCard({
   swap,
   account,
   familyChainId,
   onContinue,
+  onConvert,
   onDismiss
 }: ContinueBridgeCardProps) {
   const { blockedReason } = useCctpResumeForm(swap);
@@ -643,24 +655,13 @@ function ContinueBridgeCard({
   const amount = formatBigInt(swap.usdcAmount, { unit: 6, minDecimals: 2, maxDecimals: 2 });
   return (
     <div className={cardClassName} data-testid="continue-bridge-card">
-      <CardHeader symbol="USDC" amount={amount} date={formatBridgeDate(swap.at)}>
-        <Button
-          variant="primary"
-          size="m"
-          className="w-24"
-          disabled={busy || blockedReason !== undefined}
-          onClick={() => onContinue(swap)}
-          data-testid="continue-bridge-action"
-        >
-          <Trans>Continue</Trans>
-        </Button>
-      </CardHeader>
+      <CardHeader symbol="USDC" amount={amount} date={formatBridgeDate(swap.at)} />
 
       <div className="text-fgSecondary flex flex-col gap-1 text-xs leading-[18px]">
         <Text className="text-xs leading-[18px] text-inherit" dataTestId="continue-bridge-note">
           <Trans>
-            Your USDS was swapped to USDC on {network}, but the USDC wasn&apos;t bridged. It&apos;s still in
-            your wallet.
+            Your bridge stopped before it was sent. The {amount} USDC from the conversion is still on{' '}
+            {network}. Continue to send it to Ethereum, or convert it back to USDS.
           </Trans>
         </Text>
         <span>
@@ -673,6 +674,28 @@ function ContinueBridgeCard({
             <Trans>Dismiss</Trans>
           </button>
         </span>
+      </div>
+      <div className="flex gap-3.5">
+        <Button
+          variant="primary"
+          size="m"
+          className="flex-1"
+          disabled={busy || blockedReason !== undefined}
+          onClick={() => onContinue(swap)}
+          data-testid="continue-bridge-action"
+        >
+          <Trans>Continue bridge</Trans>
+        </Button>
+        <Button
+          variant="secondary"
+          size="m"
+          className="flex-1"
+          disabled={busy || (blockedReason !== undefined && CONVERT_BLOCKING_REASONS.has(blockedReason))}
+          onClick={() => onConvert(swap)}
+          data-testid="continue-bridge-convert"
+        >
+          <Trans>Convert to USDS</Trans>
+        </Button>
       </div>
       {busy ? (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="continue-bridge-hint">
@@ -710,6 +733,8 @@ type PendingBridgesProps = {
   ) => void;
   /** Continues an unfinished CCTP swap: bridges the USDC it returned. */
   onContinue: (swap: UnfinishedCctpSwap) => void;
+  /** Converts the USDC an unfinished CCTP swap returned back to USDS on its L2. */
+  onConvert: (swap: UnfinishedCctpSwap) => void;
   /** The lookup banner under the cards (Figma 81); the list shows it even while empty. */
   lookup?: ReactNode;
 };
@@ -722,6 +747,7 @@ export function PendingBridges({
   actionHint,
   actionLocked,
   onContinue,
+  onConvert,
   lookup
 }: PendingBridgesProps) {
   // Owns the clock so its ticks re-render this list, not the whole Bridge tab.
@@ -751,6 +777,7 @@ export function PendingBridges({
           account={account}
           familyChainId={familyChainId}
           onContinue={onContinue}
+          onConvert={onConvert}
           onDismiss={dismissed => scope && cctpSwapStore.clear(scope, dismissed.swapTxHash)}
         />
       ))}
