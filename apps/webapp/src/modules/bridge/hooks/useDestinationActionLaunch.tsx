@@ -18,7 +18,7 @@ import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components
 import { runMockLegs } from '../adapters/mockAdapter';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
-import { cctpBurnAmount } from '../adapters/cctp/calls';
+import { CCTP_CONVERT_FUNCTION, cctpBurnAmount } from '../adapters/cctp/calls';
 import {
   canLaunchAction,
   canLaunchConvert,
@@ -440,7 +440,15 @@ export function useDestinationActionLaunch() {
                 // A settled bridge leaves the tracker, so its arrival never refreshes these.
                 void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
               },
-              onReverted: record(dropSentAction)
+              onReverted: record(dropSentAction),
+              // A claim's sale and a convert's approve never record or undo the action itself.
+              actionFunctionName:
+                nextRecovery?.kind === 'cctp-claim'
+                  ? CCTP_CLAIM_FUNCTION
+                  : nextRecovery?.kind === 'cctp-convert'
+                    ? CCTP_CONVERT_FUNCTION
+                    : undefined,
+              confirmOnNextLeg: !isSafe
             }
           );
           if (!nextRecovery) {

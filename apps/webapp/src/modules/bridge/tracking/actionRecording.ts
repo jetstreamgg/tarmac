@@ -7,25 +7,47 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * and `onReverted` only when the sent hash reverted or was cancelled or replaced.
  * Any other failure keeps it sent, since the transaction may still land. A
  * transaction sped up in the wallet starts again under a new hash; it still
- * reverts the action under the hash it was sent with.
+ * reverts the action under the hash it was sent with. With
+ * `actionFunctionName`, a leg known to call another function (an approve, a
+ * sale after a claim) never records or reverts the action, and with
+ * `confirmOnNextLeg` the action confirms once a later leg starts, since legs
+ * go out only after the one before mined (not for a Safe, whose start hash is
+ * its Safe tx hash).
  */
 export function withActionRecording(
   getCallbacks: () => TxCallbacks,
   {
     onSent,
     onConfirmed,
-    onReverted
+    onReverted,
+    actionFunctionName,
+    confirmOnNextLeg = false
   }: {
     onSent: (txHash: string) => void;
     onConfirmed: (txHash: string) => void;
     onReverted: (txHash: string) => void;
+    actionFunctionName?: string;
+    confirmOnNextLeg?: boolean;
   }
 ): TxCallbacks {
   let sent: string | undefined;
   let current: string | undefined;
+  let confirmed = false;
+  // The function of the leg last prompted; unknown counts as the action.
+  let prompted: string | undefined;
+  const isOtherLeg = (functionName?: string) =>
+    !!actionFunctionName && !!functionName && functionName !== actionFunctionName;
   return {
-    onMutate: variables => getCallbacks().onMutate(variables),
+    onMutate: variables => {
+      prompted = variables?.functionName;
+      if (confirmOnNextLeg && current && !confirmed && isOtherLeg(prompted)) {
+        confirmed = true;
+        onConfirmed(current);
+      }
+      getCallbacks().onMutate(variables);
+    },
     onStart: hash => {
+      if (isOtherLeg(prompted)) return getCallbacks().onStart(hash);
       if (hash && !sent) {
         sent = hash;
         onSent(hash);
@@ -34,13 +56,16 @@ export function withActionRecording(
       getCallbacks().onStart(hash);
     },
     onSuccess: (hash, blockNumber) => {
-      if (hash) onConfirmed(hash);
+      if (hash) {
+        confirmed = true;
+        onConfirmed(hash);
+      }
       getCallbacks().onSuccess(hash, blockNumber);
     },
     onError: (error, hash) => {
       const neverLands =
         error instanceof TransactionReplacedError || error instanceof TransactionRevertedError;
-      if (sent && (hash === sent || hash === current) && neverLands) {
+      if (sent && !confirmed && (hash === sent || hash === current) && neverLands) {
         onReverted(sent);
       }
       getCallbacks().onError(error, hash);

@@ -3,14 +3,13 @@ import { getAddress, isAddress, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance } from '@/hooks';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { cctpClaimCalls } from '../adapters/cctp/calls';
+import { CCTP_CLAIM_FUNCTION, cctpClaimCalls } from '../adapters/cctp/calls';
 import { cctpClaimMessage } from '../adapters/cctp/cctpProgress';
 import { L1_USDC, USDS_PSM_WRAPPER } from '../adapters/cctp/contracts';
 import { cctpClaimRefusal } from '../adapters/cctp/gate';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
-/** The claim's receive leg, which the action recording reports as sent. */
-export const CCTP_CLAIM_FUNCTION = 'receiveMessage';
+export { CCTP_CLAIM_FUNCTION };
 
 /**
  * The Ethereum legs of a CCTP claim: receive the stored attested message, then

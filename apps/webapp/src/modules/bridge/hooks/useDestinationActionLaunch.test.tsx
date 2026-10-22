@@ -252,7 +252,7 @@ describe('useDestinationActionLaunch', () => {
     const { result } = renderHook(() => useDestinationActionLaunch());
     expect(result.current.canLaunch(card)).toBe(true);
     const callbacks = launchAndConfirm(result.current.launch, card);
-    callbacks.onMutate({ functionName: 'claim' });
+    callbacks.onMutate({ functionName: 'receiveMessage' });
     callbacks.onStart('0xclaim');
     expect(result.current.canLaunch(stored('0xsource'))).toBe(false);
   });
@@ -261,7 +261,7 @@ describe('useDestinationActionLaunch', () => {
     const card = seedReadyClaim();
     const { result } = renderHook(() => useDestinationActionLaunch());
     const callbacks = launchAndConfirm(result.current.launch, card);
-    callbacks.onMutate({ functionName: 'claim' });
+    callbacks.onMutate({ functionName: 'receiveMessage' });
     callbacks.onStart('0xclaim');
     expect(stored('0xsource').actions).toEqual([
       { action: 'claim', txHash: '0xclaim', at: expect.any(Number), status: 'sent' }
@@ -325,7 +325,7 @@ describe('useDestinationActionLaunch', () => {
     seedReadyClaim();
     const { result } = renderHook(() => useDestinationActionLaunch());
     const callbacks = launchAndConfirm(result.current.launch);
-    callbacks.onMutate({ functionName: 'claim' });
+    callbacks.onMutate({ functionName: 'receiveMessage' });
     callbacks.onStart('0xclaim1');
     callbacks.onError(new Error('rpc timeout'), '0xclaim1');
 

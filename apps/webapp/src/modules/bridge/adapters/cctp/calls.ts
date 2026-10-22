@@ -21,6 +21,11 @@ import { decodeCctpMessage } from './message';
 /** The USDC a USDS amount burns as; the USDS below one USDC unit stays in the wallet, so the swap takes none of it. */
 export const cctpBurnAmount = (amount: bigint): bigint => amount / USDS_PER_USDC_UNIT;
 
+/** The leg that receives a claim's message, which records the claim. */
+export const CCTP_CLAIM_FUNCTION = 'receiveMessage';
+/** The leg that sells USDC for USDS, which records a convert. */
+export const CCTP_CONVERT_FUNCTION = 'sellGem';
+
 const approve = (token: Address, spender: Address, amount: bigint) =>
   getWriteContractCall({ to: token, abi: erc20Abi, functionName: 'approve', args: [spender, amount] });
 
@@ -98,7 +103,7 @@ export function cctpConvertCalls({
   const sell = getWriteContractCall({
     to: USDS_PSM_WRAPPER,
     abi: usdsPsmWrapperAbi,
-    functionName: 'sellGem',
+    functionName: CCTP_CONVERT_FUNCTION,
     args: [account, amount]
   });
   return usdcAllowance < amount ? [approve(L1_USDC, USDS_PSM_WRAPPER, amount), sell] : [sell];
@@ -126,7 +131,7 @@ export function cctpClaimCalls({
   const receive = getWriteContractCall({
     to: MESSAGE_TRANSMITTER_V2,
     abi: messageTransmitterV2Abi,
-    functionName: 'receiveMessage',
+    functionName: CCTP_CLAIM_FUNCTION,
     args: [message, attestation]
   });
   return [receive, ...cctpConvertCalls({ account, amount: body.amount - body.feeExecuted, usdcAllowance })];

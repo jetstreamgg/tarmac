@@ -3,13 +3,12 @@ import { getAddress, isAddress, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance } from '@/hooks';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { cctpConvertCalls } from '../adapters/cctp/calls';
+import { CCTP_CONVERT_FUNCTION, cctpConvertCalls } from '../adapters/cctp/calls';
 import { L1_USDC, USDS_PSM_WRAPPER } from '../adapters/cctp/contracts';
 import { cctpConvertRefusal } from '../adapters/cctp/gate';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
-/** The convert's sale leg, which the action recording reports as sent. */
-export const CCTP_CONVERT_FUNCTION = 'sellGem';
+export { CCTP_CONVERT_FUNCTION };
 
 /**
  * The Ethereum legs that sell `amount` USDC a CCTP claim left in the wallet

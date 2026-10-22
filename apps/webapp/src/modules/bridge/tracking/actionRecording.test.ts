@@ -83,3 +83,130 @@ describe('withActionRecording, a sent action sped up in the wallet', () => {
     expect(onReverted).toHaveBeenCalledWith('0xclaim');
   });
 });
+
+describe('withActionRecording, an action signed after other legs', () => {
+  const setupLegs = () => {
+    const onSent = vi.fn();
+    const onConfirmed = vi.fn();
+    const onReverted = vi.fn();
+    const inner: TxCallbacks = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
+    const callbacks = withActionRecording(() => inner, {
+      onSent,
+      onConfirmed,
+      onReverted,
+      actionFunctionName: 'sellGem',
+      confirmOnNextLeg: true
+    });
+    const leg = (functionName: string, hash: string) => {
+      callbacks.onMutate({ functionName });
+      callbacks.onStart(hash);
+    };
+    return { inner, onSent, onConfirmed, onReverted, callbacks, leg };
+  };
+
+  it('never records the approve before the action as the action', () => {
+    const { onSent, onConfirmed, onReverted, callbacks, leg } = setupLegs();
+    leg('approve', '0xapprove');
+    expect(onSent).not.toHaveBeenCalled();
+    callbacks.onMutate({ functionName: 'sellGem' });
+    callbacks.onError(new Error('User rejected the request.'));
+    expect(onSent).not.toHaveBeenCalled();
+    expect(onConfirmed).not.toHaveBeenCalled();
+    expect(onReverted).not.toHaveBeenCalled();
+  });
+
+  it('records the action from its own leg, after the approve', () => {
+    const { inner, onSent, onConfirmed, callbacks, leg } = setupLegs();
+    leg('approve', '0xapprove');
+    leg('sellGem', '0xsell');
+    expect(onSent).toHaveBeenCalledExactlyOnceWith('0xsell');
+    callbacks.onSuccess('0xsell');
+    expect(onConfirmed).toHaveBeenCalledExactlyOnceWith('0xsell');
+    expect(inner.onStart).toHaveBeenCalledWith('0xapprove');
+  });
+
+  it('drops nothing when the approve before the action reverts', () => {
+    const { onReverted, callbacks, leg } = setupLegs();
+    leg('approve', '0xapprove');
+    callbacks.onError(reverted, '0xapprove');
+    expect(onReverted).not.toHaveBeenCalled();
+  });
+
+  it('drops the action sped up in the wallet when the faster one reverts', () => {
+    const { onSent, onReverted, callbacks, leg } = setupLegs();
+    leg('approve', '0xapprove');
+    leg('sellGem', '0xsell');
+    callbacks.onStart('0xfaster');
+    expect(onSent).toHaveBeenCalledTimes(1);
+    callbacks.onError(reverted, '0xfaster');
+    expect(onReverted).toHaveBeenCalledExactlyOnceWith('0xsell');
+  });
+});
+
+describe('withActionRecording, an action followed by other legs', () => {
+  const setupLegs = ({ confirmOnNextLeg = true }: { confirmOnNextLeg?: boolean } = {}) => {
+    const onSent = vi.fn();
+    const onConfirmed = vi.fn();
+    const onReverted = vi.fn();
+    const inner: TxCallbacks = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
+    const callbacks = withActionRecording(() => inner, {
+      onSent,
+      onConfirmed,
+      onReverted,
+      actionFunctionName: 'receiveMessage',
+      confirmOnNextLeg
+    });
+    const leg = (functionName: string, hash: string) => {
+      callbacks.onMutate({ functionName });
+      callbacks.onStart(hash);
+    };
+    return { onSent, onConfirmed, onReverted, callbacks, leg };
+  };
+
+  // The next leg is sent only once the one before it mined.
+  it('confirms the action under its own hash once a later leg starts, and keeps it when the sale reverts', () => {
+    const { onSent, onConfirmed, onReverted, callbacks, leg } = setupLegs();
+    leg('receiveMessage', '0xreceive');
+    expect(onSent).toHaveBeenCalledExactlyOnceWith('0xreceive');
+    leg('approve', '0xapprove');
+    expect(onConfirmed).toHaveBeenCalledExactlyOnceWith('0xreceive');
+    leg('sellGem', '0xsell');
+    callbacks.onError(reverted, '0xsell');
+    expect(onReverted).not.toHaveBeenCalled();
+    expect(onConfirmed).toHaveBeenCalledTimes(1);
+  });
+
+  it('confirms the sped-up action under the hash that mined', () => {
+    const { onConfirmed, callbacks, leg } = setupLegs();
+    leg('receiveMessage', '0xreceive');
+    callbacks.onStart('0xfaster');
+    leg('sellGem', '0xsell');
+    expect(onConfirmed).toHaveBeenCalledExactlyOnceWith('0xfaster');
+  });
+
+  it('still confirms the last leg once the run succeeds, so its sale is read', () => {
+    const { onConfirmed, callbacks, leg } = setupLegs();
+    leg('receiveMessage', '0xreceive');
+    leg('sellGem', '0xsell');
+    callbacks.onSuccess('0xsell');
+    expect(onConfirmed.mock.calls).toEqual([['0xreceive'], ['0xsell']]);
+  });
+
+  it('for a Safe, confirms nothing early and drops nothing when the sale reverts on chain', () => {
+    const { onSent, onConfirmed, onReverted, callbacks, leg } = setupLegs({ confirmOnNextLeg: false });
+    leg('receiveMessage', '0xsafe-receive');
+    leg('approve', '0xsafe-approve');
+    leg('sellGem', '0xsafe-sell');
+    expect(onSent).toHaveBeenCalledExactlyOnceWith('0xsafe-receive');
+    expect(onConfirmed).not.toHaveBeenCalled();
+    callbacks.onError(reverted, '0xsafe-sell');
+    expect(onReverted).not.toHaveBeenCalled();
+  });
+
+  it('drops the action when its own leg reverts', () => {
+    const { onReverted, callbacks, leg } = setupLegs();
+    leg('receiveMessage', '0xreceive');
+    callbacks.onError(reverted, '0xreceive');
+    expect(onReverted).toHaveBeenCalledExactlyOnceWith('0xreceive');
+  });
+});
