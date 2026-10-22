@@ -10,6 +10,7 @@ import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch'
 import type { IncomingBridge } from '../hooks/useIncomingCctpBridges';
 import type { PendingBridge } from '../model/types';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { pendingBridgeStore } from '../store/pendingStore';
 import { PendingBridges } from './PendingBridges';
 
 const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
@@ -273,6 +274,17 @@ describe('PendingBridges', () => {
       expect(props.onActionIn).toHaveBeenCalledWith(SENDER_SCOPE, claimed, 'convert', OFFER);
     });
 
+    it("drops it from the sender's list when its USDC is kept", () => {
+      const drop = vi.spyOn(pendingBridgeStore, 'dropSettled');
+      const claimed = { ...CLAIMED, id: '0xincoming', account: SENDER, recipient: ACCOUNT };
+      incoming(claimed);
+      mocks.offers[claimed.id] = OFFER;
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-keep-usdc'));
+      expect(drop).toHaveBeenCalledExactlyOnceWith(SENDER_SCOPE, claimed.id);
+      drop.mockRestore();
+    });
+
     it("lists it among the wallet's own bridges, newest first", () => {
       mocks.bridges = [
         { ...BRIDGE, startedAt: 9 },
@@ -354,6 +366,42 @@ describe('PendingBridges', () => {
       delete mocks.offers[CLAIMED.id];
       renderList();
       expect(screen.getByTestId('token-icon').dataset.symbol).toBe('USDS');
+    });
+
+    // Figma 93: Convert to USDS and Keep as USDC side by side, half width each, after the note.
+    it('offers Keep as USDC beside it, after the note', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      const keep = screen.getByTestId('pending-bridge-keep-usdc');
+      expect(keep.textContent).toBe('Keep as USDC');
+      expect(keep.parentElement).toBe(convertButton().parentElement);
+      expect(keep.parentElement?.previousElementSibling).toBe(
+        screen.getByTestId('pending-bridge-convert-note')
+      );
+      [keep, convertButton()].forEach(button => expect(button.className).toMatch(/\bflex-1\b/));
+    });
+
+    // Figma 98: the card leaves and a toast says where to convert later.
+    it('drops the card when the USDC is kept, and says it can be converted later', () => {
+      const drop = vi.spyOn(pendingBridgeStore, 'dropSettled');
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-keep-usdc'));
+      expect(drop).toHaveBeenCalledExactlyOnceWith('scope', CLAIMED.id);
+      expect(mocks.toast.success).toHaveBeenCalledExactlyOnceWith(
+        'You can convert your USDC to USDS anytime from the Swap tab.'
+      );
+      expect(props.onAction).not.toHaveBeenCalled();
+      drop.mockRestore();
+    });
+
+    it("can't keep the USDC while an action's session is minimized", () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList({ actionLocked: true });
+      expect((screen.getByTestId('pending-bridge-keep-usdc') as HTMLButtonElement).disabled).toBe(true);
     });
 
     it('converts the amount offered', () => {

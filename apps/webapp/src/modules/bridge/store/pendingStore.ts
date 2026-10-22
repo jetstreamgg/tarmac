@@ -1,5 +1,5 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { applyProgress, canDismiss, isSettled } from '../model/pendingTransitions';
+import { applyProgress, canDismiss, isSettled, isTracked } from '../model/pendingTransitions';
 import type {
   BridgeRouteKind,
   PendingBridge,
@@ -266,6 +266,17 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       const current = latest(scope);
       const existing = current.find(entry => entry.id === id);
       if (!existing || !canDismiss(existing, now())) return;
+      write(
+        scope,
+        current.filter(entry => entry.id !== id),
+        id
+      );
+    },
+    /** Drops a settled bridge with nothing left to confirm, such as a claim whose USDC the user keeps. */
+    dropSettled(scope: string, id: string) {
+      const current = latest(scope);
+      const existing = current.find(entry => entry.id === id);
+      if (!existing || isTracked(existing)) return;
       write(
         scope,
         current.filter(entry => entry.id !== id),

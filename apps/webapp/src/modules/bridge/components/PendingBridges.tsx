@@ -300,6 +300,8 @@ type PendingBridgeCardProps = {
   familyChainId: number;
   onAction: (bridge: PendingBridge, action?: PendingBridgeNextAction, amount?: bigint) => void;
   onDismiss: (bridge: PendingBridge) => void;
+  /** Keeps the USDC a claim left instead of converting it: the card leaves. */
+  onKeepUsdc: (bridge: PendingBridge) => void;
   /** Sent to this wallet from another account's list: the entry is the sender's, so it can't be dismissed here. */
   incoming?: boolean;
   canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
@@ -316,6 +318,7 @@ function PendingBridgeCard({
   familyChainId,
   onAction,
   onDismiss,
+  onKeepUsdc,
   incoming = false,
   canAction,
   actionHint,
@@ -326,6 +329,9 @@ function PendingBridgeCard({
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
   const convertAmount = useCctpConvertOffer(bridge);
+  const actionButton = showsActionButton(bridge) && !!bridge.nextAction && !claimedElsewhere;
+  // Figma 93: offered below the note, beside Keep as USDC, unless the card has its own button.
+  const offersConvert = convertAmount !== undefined && !dismissible && !actionButton;
   const convertHint = actionHint(bridge, 'convert');
   // A sent conversion is always followed; a switch is asked for only while it's offered.
   const hint =
@@ -354,7 +360,7 @@ function PendingBridgeCard({
           >
             <Trans>Dismiss</Trans>
           </Button>
-        ) : showsActionButton(bridge) && bridge.nextAction && !claimedElsewhere ? (
+        ) : actionButton && bridge.nextAction ? (
           <Button
             variant="primary"
             size="m"
@@ -365,20 +371,7 @@ function PendingBridgeCard({
           >
             {nextActionLabel(bridge.nextAction)}
           </Button>
-        ) : (
-          convertAmount !== undefined && (
-            <Button
-              variant="primary"
-              size="m"
-              className="shrink-0"
-              disabled={actionLocked || !canAction(bridge, 'convert')}
-              onClick={() => onAction(bridge, 'convert', convertAmount)}
-              data-testid="pending-bridge-convert"
-            >
-              {nextActionLabel('convert')}
-            </Button>
-          )
-        )}
+        ) : null}
       </CardHeader>
 
       {convertAmount !== undefined && (
@@ -388,6 +381,30 @@ function PendingBridgeCard({
             a 1:1 rate.
           </Trans>
         </Text>
+      )}
+      {offersConvert && (
+        <div className="flex gap-3.5">
+          <Button
+            variant="primary"
+            size="m"
+            className="flex-1"
+            disabled={actionLocked || !canAction(bridge, 'convert')}
+            onClick={() => onAction(bridge, 'convert', convertAmount)}
+            data-testid="pending-bridge-convert"
+          >
+            {nextActionLabel('convert')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="m"
+            className="flex-1"
+            disabled={actionLocked}
+            onClick={() => onKeepUsdc(bridge)}
+            data-testid="pending-bridge-keep-usdc"
+          >
+            <Trans>Keep as USDC</Trans>
+          </Button>
+        </div>
       )}
 
       {incoming && (
@@ -610,6 +627,13 @@ export function PendingBridges({
           canAction={canAction}
           actionHint={actionHint}
           onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
+          onKeepUsdc={kept => {
+            const listScope = owner ?? scope;
+            if (!listScope) return;
+            pendingBridgeStore.dropSettled(listScope, kept.id);
+            // Figma 98.
+            toast.success(t`You can convert your USDC to USDS anytime from the Swap tab.`);
+          }}
           incoming={owner !== undefined}
           actionLocked={actionLocked}
           storageWritable={storageWritable}

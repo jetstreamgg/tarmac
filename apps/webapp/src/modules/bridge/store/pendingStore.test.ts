@@ -400,6 +400,50 @@ describe('createPendingBridgeStore', () => {
     });
   });
 
+  describe('dropSettled', () => {
+    const claimed = (overrides: Partial<PendingBridge> = {}) =>
+      bridge({
+        status: 'claimed',
+        nextAction: undefined,
+        settledAt: NOW,
+        actions: [{ action: 'claim', txHash: '0xc1a1', at: NOW }],
+        ...overrides
+      });
+
+    it('drops a settled bridge with nothing in flight, and keeps the rest', () => {
+      const store = make();
+      store.upsert(SCOPE, claimed());
+      store.upsert(SCOPE, bridge({ id: '0xother', txHash: '0xother', startedAt: NOW - 1 }));
+      store.dropSettled(SCOPE, '0xsource');
+      expect(
+        make()
+          .getSnapshot(SCOPE)
+          .map(entry => entry.id)
+      ).toEqual(['0xother']);
+    });
+
+    it('keeps a bridge still on its way, or one whose follow-up is still confirming', () => {
+      const store = make();
+      store.upsert(SCOPE, bridge());
+      store.upsert(
+        SCOPE,
+        claimed({
+          id: '0xconverting',
+          txHash: '0xconverting',
+          actions: [
+            { action: 'claim', txHash: '0xc1a1', at: NOW },
+            { action: 'convert', txHash: '0xc0', at: NOW, status: 'sent' }
+          ]
+        })
+      );
+      const before = store.getSnapshot(SCOPE);
+      store.dropSettled(SCOPE, '0xsource');
+      store.dropSettled(SCOPE, '0xconverting');
+      store.dropSettled(SCOPE, '0xnope');
+      expect(store.getSnapshot(SCOPE)).toBe(before);
+    });
+  });
+
   describe('dismiss', () => {
     const KEY = `bridgePending:v1:${SCOPE}`;
     const queued = (id: string, overrides: Partial<PendingBridge> = {}) =>
