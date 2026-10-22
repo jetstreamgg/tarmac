@@ -6,7 +6,7 @@ import { useCctpResumeForm } from './useCctpResumeForm';
 /**
  * Continues unfinished CCTP swaps from their cards, one launch for all of them
  * (as `useDestinationActionLaunch` hosts the cards' actions). A card goes once
- * its burn is sent; the launch keeps the swap until the bridge succeeds.
+ * its burn is sent; the swap is kept until that burn mines.
  */
 export function useCctpResumeLaunch() {
   // A new object per click, so the same card can be launched again.

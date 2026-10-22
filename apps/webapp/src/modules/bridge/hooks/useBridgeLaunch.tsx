@@ -23,7 +23,7 @@ import { applyProgress, createPendingBridge, failBundle } from '../model/pending
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import { pendingBridgeStore } from '../store/pendingStore';
-import type { UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isStorageWritable } from '../store/storageWritable';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { withSourceRecording } from '../tracking/sourceRecording';
@@ -148,6 +148,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     amount,
     scope,
     resume,
+    storageWritable,
     isSafeApp,
     isSafeWallet: isSafe,
     batch,
@@ -277,7 +278,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         pinnedChainId === undefined ||
         (isReal && !legs.ready) ||
         feeShort ||
-        contractUnaccepted
+        contractUnaccepted ||
+        storageRefused
       ) {
         const prepareError = isReal ? enginePrepareErrorMessage(legs.ready, legs.error) : undefined;
         callbacksRef.current.onError(
@@ -292,6 +294,15 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
                 'The last bridge is still pending. Check it on its card before sending again.'
               )
             : new TransactionRefusedError('The bridge was already sent.', { final: true })
+        );
+        return;
+      }
+      // Another Review sent a burn for this swap since its card opened; the chain shows it only once it mines.
+      const continued =
+        resume && cctpSwapStore.getSnapshot(scope).find(swap => swap.swapTxHash === resume.swapTxHash);
+      if (continued && continued.burn !== resume.burn) {
+        callbacksRef.current.onError(
+          new TransactionRefusedError('This bridge was already sent.', { final: true })
         );
         return;
       }
@@ -492,7 +503,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     form.reviewBlocked ||
     (isReal && (!legs.ready || legs.busy)) ||
     feeShort ||
-    contractUnaccepted;
+    contractUnaccepted ||
+    storageRefused;
   // The mock routes send one leg at a time.
   const bundled = isReal && legs.isBatch;
   const feeText = deposit.maxFee !== undefined ? formatEthCeil(deposit.maxFee) : NO_VALUE;

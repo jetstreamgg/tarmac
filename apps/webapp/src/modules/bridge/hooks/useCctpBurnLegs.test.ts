@@ -426,4 +426,45 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     const refused = mocks.legs!.preflight as (client: unknown) => Promise<Error | undefined>;
     await expect(refused(mocks.clients[BASE])).resolves.toBeInstanceOf(Error);
   });
+
+  // The launch probes storage on each Review; the legs must follow it both ways, not their first render.
+  it('follows the storage probe of each Review for another recipient, both ways', () => {
+    const view = renderHook(
+      ({ storageWritable }: { storageWritable: boolean }) =>
+        useCctpBurnLegs({
+          enabled: true,
+          from: 'base',
+          chainId: BASE,
+          ethereumChainId: ETHEREUM,
+          account: BASE_BURN_TX.from,
+          recipient: OTHER,
+          amount: AMOUNT,
+          getCallbacks,
+          storageWritable
+        }),
+      { initialProps: { storageWritable: true } }
+    );
+    expect(calls()).toHaveLength(4);
+    view.rerender({ storageWritable: false });
+    expect(calls()).toEqual([]);
+    expect(view.result.current.error?.message).toMatch(/browser storage/);
+    view.rerender({ storageWritable: true });
+    expect(calls()).toHaveLength(4);
+    expect(view.result.current.error).toBeNull();
+  });
+
+  it('refuses another recipient at the prompt when localStorage stopped taking writes after the Review', async () => {
+    mocks.refusal.mockResolvedValue(undefined);
+    render({ recipient: OTHER });
+    expect(calls()).toHaveLength(4);
+    const preflight = mocks.legs!.preflight as (client: unknown) => Promise<Error | undefined>;
+    mocks.storageWritable = false;
+    await expect(preflight(mocks.clients[BASE])).resolves.toMatchObject({
+      message: expect.stringMatching(/browser storage/)
+    });
+    // The wallet's own address needs no storage to be claimed.
+    render();
+    const own = mocks.legs!.preflight as (client: unknown) => Promise<Error | undefined>;
+    await expect(own(mocks.clients[BASE])).resolves.toBeUndefined();
+  });
 });

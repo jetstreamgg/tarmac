@@ -51,6 +51,14 @@ function openBundle(account: string | undefined) {
   };
 }
 
+// Per single-leg wallet prompt, by the request wagmi passes back when it is answered, the release `onLegPrompt` returned.
+const legReleases = new WeakMap<object, () => void>();
+const answerLeg = (variables: object | undefined) => {
+  if (!variables) return;
+  legReleases.get(variables)?.();
+  legReleases.delete(variables);
+};
+
 const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 const SEND_OUT_MESSAGE =
   'A transaction from your last bridge is still open in your wallet or pending. Wait for it to settle before sending again.';
@@ -80,6 +88,7 @@ export function useBridgeCallLegs({
   onCallsSent,
   onAccountSwitch,
   onLegSent,
+  onLegPrompt,
   onLegFailed,
   getCallbacks
 }: {
@@ -104,6 +113,8 @@ export function useBridgeCallLegs({
   onAccountSwitch?: () => void;
   /** The wallet sent one leg, sequentially, under `hash`, with the context its run was executed with; called for a leg signed after its run ended too. */
   onLegSent?: (hash: string, variables: TxMutateVariables, context?: unknown) => void;
+  /** The wallet is about to prompt for one leg, for the run executed with `context`; the release returned runs once it is answered. */
+  onLegPrompt?: (variables: TxMutateVariables, context?: unknown) => (() => void) | undefined;
   /** A leg sent one at a time reverted or was replaced, under `hash`; called after its run ended too. */
   onLegFailed?: (hash: string) => void;
   getCallbacks: () => TxCallbacks;
@@ -269,9 +280,14 @@ export function useBridgeCallLegs({
       setSendRoute('sequential');
       if (variables && runContextRef.current !== undefined)
         promptContextsRef.current.set(variables, runContextRef.current);
+      if (variables) {
+        const release = onLegPrompt?.(variables, runContextRef.current);
+        if (release) legReleases.set(variables, release);
+      }
       issuers.onMutate(variables);
     },
     onStart: (hash, variables) => {
+      answerLeg(variables);
       if (hash && variables) {
         const contexts = promptContextsRef.current;
         if (contexts.has(variables)) onLegSent?.(hash, variables, contexts.get(variables));
@@ -294,6 +310,7 @@ export function useBridgeCallLegs({
       getCallbacks().onSuccess(hash, blockNumber);
     },
     onError: (error, hash, variables) => {
+      answerLeg(variables);
       if (hash && (error instanceof TransactionRevertedError || error instanceof TransactionReplacedError))
         onLegFailed?.(hash);
       // A prompt rejected after its run ended, or opened by an earlier Confirm.

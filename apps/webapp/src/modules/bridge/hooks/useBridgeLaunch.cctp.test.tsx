@@ -13,7 +13,7 @@ import { cctpL2Contracts, TOKEN_MESSENGER_V2 } from '../adapters/cctp/contracts'
 import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import type { BridgeNetworkId } from '../model/networks';
-import type { UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import type { BridgeFormModel } from './useBridgeForm';
 import { useBridgeLaunch } from './useBridgeLaunch';
@@ -386,6 +386,27 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
         { txHash: BASE_BURN_TX.hash, from: 'base', to: 'ethereum', amount: AMOUNT }
       ]);
     });
+
+    // A burn signed from another Review is linked to the swap at once, but the chain shows it only once it mines.
+    it('refuses to continue a swap whose burn another Review sent since this card opened', () => {
+      try {
+        const view = render('base', 'ethereum', SWAP);
+        act(() => view.result.current.launch());
+        cctpSwapStore.record(SCOPE, SWAP);
+        cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, BASE_BURN_TX.hash);
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.burn.execute).not.toHaveBeenCalled();
+        expect(mocks.onError).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'This bridge was already sent.', final: true })
+        );
+        // The card of a failed burn still continues: its swap is linked to that same burn.
+        const failed = { ...SWAP, burn: BASE_BURN_TX.hash.toLowerCase() };
+        confirm(render('base', 'ethereum', failed));
+        expect(mocks.burn.execute).toHaveBeenCalledOnce();
+      } finally {
+        cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+      }
+    });
   });
 
   describe('the claim notes in the Review', () => {
@@ -518,6 +539,19 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
       act(() => own.result.current.launch());
       own.rerender();
       expect(reviewProps(mocks.updates.at(-1)!).storageNote).toBe(false);
+    });
+
+    // The legs built while storage took writes; the Review that finds it gone must still send nothing.
+    it('holds Confirm and sends nothing to another recipient when storage stops taking writes after the legs built', () => {
+      const view = render('base', 'ethereum', undefined, { recipient: OTHER });
+      mocks.storageWritable = false;
+      act(() => view.result.current.launch());
+      mocks.modalOpen = true;
+      view.rerender();
+      expect(mocks.updates.at(-1)!.confirmDisabled).toBe(true);
+      expect(mocks.burn.args.at(-1)).toMatchObject({ storageWritable: false });
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.burn.execute).not.toHaveBeenCalled();
     });
 
     it('asks a contract wallet nothing when another address claims', () => {

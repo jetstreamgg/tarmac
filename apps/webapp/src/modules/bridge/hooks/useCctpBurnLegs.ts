@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { getAddress, isAddress, isAddressEqual, type Address, type Hex, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance, type TxMutateVariables } from '@/hooks';
+import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { cctpBurnCalls } from '../adapters/cctp/calls';
 import {
@@ -18,6 +19,27 @@ import { useBridgeCallLegs } from './useBridgeCallLegs';
 /** The burn leg, which the source recording keys on. */
 export const CCTP_BURN_FUNCTION = 'depositForBurn';
 const CCTP_SWAP_FUNCTION = 'swapExactIn';
+const STORAGE_REFUSED_MESSAGE = 'Bridging to another address needs browser storage, which is unavailable.';
+
+const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
+
+// Burn prompts not answered yet, per scope and swap across mounts: a Continue of that swap must not burn it twice.
+const openBurns = new Map<string, number>();
+const burnKey = (scope: string, swapTxHash: string) => `${scope}:${swapTxHash.toLowerCase()}`;
+
+/** Counts a burn prompt for the swap as open; the returned release counts it answered, once. */
+function openBurn(scope: string, swapTxHash: string) {
+  const key = burnKey(scope, swapTxHash);
+  openBurns.set(key, (openBurns.get(key) ?? 0) + 1);
+  let open = true;
+  return () => {
+    if (!open) return;
+    open = false;
+    const left = (openBurns.get(key) ?? 1) - 1;
+    if (left > 0) openBurns.set(key, left);
+    else openBurns.delete(key);
+  };
+}
 
 const toAddress = (value: string | undefined): Address | undefined =>
   value && isAddress(value) ? getAddress(value) : undefined;
@@ -29,7 +51,7 @@ const toAddress = (value: string | undefined): Address | undefined =>
  * is kept in `cctpSwapStore`, linked to the burn last sent for it, until that
  * burn mines, so a bridge stopped in between or whose burn failed can be
  * continued: with `resume` only that swap's USDC is burned, after the chain
- * shows the swap mined and no burn since. A swap that reverted is dropped. No calls while an
+ * shows the swap mined and no burn since, and no burn prompt for it is open in this tab. A swap seen to revert, while mounted or by Continue, is dropped. No calls while an
  * allowance is loading or failed, for a recipient CCTP must never mint to,
  * or for another recipient while localStorage can't keep the bridge. The gate
  * is read again on both chains before the wallet prompt, so a paused or
@@ -48,6 +70,7 @@ export function useCctpBurnLegs({
   batch = false,
   scope,
   resume,
+  storageWritable,
   onCallsSent,
   getCallbacks
 }: {
@@ -69,6 +92,8 @@ export function useCctpBurnLegs({
   scope?: string;
   /** Continue this bridge: burn the USDC its mined swap returned, to its recipient, and nothing else. */
   resume?: UnfinishedCctpSwap;
+  /** Whether localStorage takes writes, as the Review last probed it; probed here when not given. */
+  storageWritable?: boolean;
   onCallsSent?: (id: string) => void;
   getCallbacks: () => TxCallbacks;
 }) {
@@ -96,11 +121,11 @@ export function useCctpBurnLegs({
 
   const built = useMemo(() => {
     if (!active) return undefined;
+    const writable = storageWritable ?? isStorageWritable();
     if (resume && resume.network !== network)
       return { error: new Error('This bridge was started on another network.') };
     // Only this browser can bring the recipient the claim link again.
-    if (!isAddressEqual(to!, from!) && !isStorageWritable())
-      return { error: new Error('Bridging to another address needs browser storage, which is unavailable.') };
+    if (!isAddressEqual(to!, from!) && !writable) return { error: new Error(STORAGE_REFUSED_MESSAGE) };
     const usdsHeldAllowance = swap ? usdsAllowance.data : 0n;
     if (usdsHeldAllowance === undefined || usdcAllowance.data === undefined) return undefined;
     try {
@@ -118,13 +143,30 @@ export function useCctpBurnLegs({
     } catch (error) {
       return { error: error as Error };
     }
-  }, [active, resume, network, amountIn, from, to, swap, usdsAllowance.data, usdcAllowance.data]);
+  }, [
+    active,
+    resume,
+    network,
+    amountIn,
+    from,
+    to,
+    swap,
+    storageWritable,
+    usdsAllowance.data,
+    usdcAllowance.data
+  ]);
   const calls = useMemo(() => built?.calls ?? [], [built]);
 
   const preflight = useCallback(
     async (client: PublicClient) => {
       if (!destination) return new Error('The bridge is not ready to send.');
+      // Storage may have stopped taking writes since the Review.
+      if (to && from && !isAddressEqual(to, from) && !isStorageWritable())
+        return new Error(STORAGE_REFUSED_MESSAGE);
       if (resume) {
+        // A burn of this swap may still be signed in the wallet; the chain shows none until it mines.
+        if (scope && openBurns.has(burnKey(scope, resume.swapTxHash)))
+          return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
         const refusal = await cctpResumeRefusal({
           network,
           swapTxHash: resume.swapTxHash as Hex,
@@ -140,7 +182,7 @@ export function useCctpBurnLegs({
       }
       return cctpBurnRefusal({ network, amount: amountIn, source: client, destination, swap });
     },
-    [network, amountIn, destination, resume, from, swap, scope]
+    [network, amountIn, destination, resume, from, to, swap, scope]
   );
 
   // Fixed per run at Confirm: the status a leg is later sent under may read unsettled.
@@ -188,6 +230,12 @@ export function useCctpBurnLegs({
       if (swapTxHash) cctpSwapStore.markBurn(scope, swapTxHash, hash);
     }
   };
+  const onLegPrompt = (variables: TxMutateVariables, context?: unknown) => {
+    if (!scope || variables.functionName !== CCTP_BURN_FUNCTION) return undefined;
+    const run = (context as Run | undefined) ?? runRef.current;
+    const swapTxHash = run?.resumed ?? run?.sentSwap?.hash;
+    return swapTxHash ? openBurn(scope, swapTxHash) : undefined;
+  };
   // A bundle is one prompt, with no onLegSent: the swap its run continued is linked to the wallet's calls id.
   const onBundleSent = (id: string, context?: unknown) => {
     const run = (context as Run | undefined) ?? runRef.current;
@@ -216,6 +264,7 @@ export function useCctpBurnLegs({
       usdcAllowance.mutate();
     },
     onLegSent,
+    onLegPrompt,
     onLegFailed,
     getCallbacks
   });
