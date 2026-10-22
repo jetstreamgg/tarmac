@@ -7,7 +7,7 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowTopRight, LinkExternal } from '@/modules/icons';
+import { ArrowTopRight, CircleLogo, LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -160,7 +160,14 @@ function CellValue({ cell }: CellValueProps) {
     case 'wallet':
       return <WalletValue address={cell.address} href={cell.href} />;
     default:
-      return <span className={valueClassName}>{cell.value}</span>;
+      return cell.logo ? (
+        <span className="flex items-center gap-1">
+          <CircleLogo boxSize={12} className="shrink-0" />
+          <span className={valueClassName}>{cell.value}</span>
+        </span>
+      ) : (
+        <span className={valueClassName}>{cell.value}</span>
+      );
   }
 }
 

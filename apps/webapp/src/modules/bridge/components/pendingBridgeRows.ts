@@ -28,7 +28,8 @@ const checksummed = (account: string) => (isAddress(account) ? getAddress(accoun
 export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
   | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string; tone?: 'info' }
-  | { kind: 'text'; label: string; value: string }
+  /** `logo`: the protocol's logo drawn before the value (CCTP's Circle logo, Figma 3830:67688). */
+  | { kind: 'text'; label: string; value: string; logo?: 'cctp' }
   | { kind: 'link'; label: string; value: string; href?: string }
   | { kind: 'wallet'; label: string; address: string; href?: string };
 
@@ -186,7 +187,8 @@ export function buildPendingBridgeRows(
   const bridgeType: PendingBridgeCell = {
     kind: 'text',
     label: t`Bridge type`,
-    value: bridgeTypeLabel(bridge.routeKind)
+    value: bridgeTypeLabel(bridge.routeKind),
+    ...(bridge.routeKind === 'cctp' && { logo: 'cctp' as const })
   };
   const transaction: PendingBridgeCell = bridge.txHash
     ? {

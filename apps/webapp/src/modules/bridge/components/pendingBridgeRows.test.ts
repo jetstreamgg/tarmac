@@ -45,6 +45,16 @@ describe('buildPendingBridgeRows', () => {
     ]);
   });
 
+  it("draws Circle's logo before CCTP only (Figma 3830:67688)", () => {
+    const cctp = buildPendingBridgeRows({ ...base, from: 'base', to: 'ethereum', routeKind: 'cctp' }, 0, 1);
+    expect(cctp[2][0]).toEqual({ kind: 'text', label: 'Bridge type', value: 'CCTP', logo: 'cctp' });
+    expect(buildPendingBridgeRows(base, 0, 1)[2][0]).toEqual({
+      kind: 'text',
+      label: 'Bridge type',
+      value: 'Native'
+    });
+  });
+
   it('shows the arrival time while pending and Arrived once landed', () => {
     expect(buildPendingBridgeRows(base, 0, 1)[1][1]).toMatchObject({ value: '00:03 UTC' });
     expect(buildPendingBridgeRows({ ...base, status: 'ready' }, 0, 1)[1][1]).toMatchObject({

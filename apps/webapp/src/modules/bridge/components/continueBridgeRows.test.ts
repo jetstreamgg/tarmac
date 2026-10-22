@@ -25,7 +25,7 @@ describe('buildContinueBridgeRows', () => {
       ],
       [
         { kind: 'status', label: 'Status', status: 'pending', value: 'Not sent' },
-        { kind: 'text', label: 'Bridge type', value: 'CCTP' }
+        { kind: 'text', label: 'Bridge type', value: 'CCTP', logo: 'cctp' }
       ],
       [
         {

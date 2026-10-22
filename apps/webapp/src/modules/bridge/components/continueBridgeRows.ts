@@ -24,7 +24,7 @@ export function buildContinueBridgeRows(
     ],
     [
       { kind: 'status', label: t`Status`, status: 'pending', value: t`Not sent` },
-      { kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel('cctp') }
+      { kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel('cctp'), logo: 'cctp' }
     ],
     sendsToOther(swap.recipient, account)
       ? [swapTx, { kind: 'text', label: t`Recipient`, value: formatAddress(swap.recipient, 6, 4) }]
