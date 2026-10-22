@@ -15,6 +15,8 @@ import {
 import { followUpActions, isRecoveryAction, resolveBridgeRoute } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
 import type { PendingBridge } from './types';
+import { confirmedClaimTxHashes } from '../adapters/cctp/convert';
+import { buildBridgeActivity } from '../components/bridgeActivity';
 
 const NOW = 1_800_000_000_000;
 const MINUTE = 60_000;
@@ -164,5 +166,38 @@ describe('tracking a sent convert', () => {
   it('stays visible past the settled day while a convert is sent', () => {
     expect(isPendingBridgeVisible(claimed(), NOW + 25 * HOUR)).toBe(false);
     expect(isPendingBridgeVisible(convertSent(), NOW + 25 * HOUR)).toBe(true);
+  });
+});
+
+describe('a claim signed step by step', () => {
+  // Confirmed under its receive once the next leg starts, then the run reports its sale.
+  const stepByStep = () =>
+    recordAction(claimed(), {
+      action: 'claim',
+      txHash: '0xclaim',
+      at: NOW + 2 * MINUTE,
+      bundleTxHashes: ['0xsale']
+    });
+
+  it('keeps one claim, with its sale on it', () => {
+    const bridge = stepByStep();
+    expect(bridge.actions.filter(action => action.action === 'claim')).toHaveLength(1);
+    expect(confirmedClaimTxHashes(bridge)).toEqual(['0xclaim', '0xsale']);
+  });
+
+  it('shows one Funds claim row in the activity', () => {
+    expect(buildBridgeActivity([stepByStep()]).filter(entry => entry.kind === 'claim')).toHaveLength(1);
+  });
+
+  it('records the sale once', () => {
+    const bridge = stepByStep();
+    expect(
+      recordAction(bridge, {
+        action: 'claim',
+        txHash: '0xclaim',
+        at: NOW + 3 * MINUTE,
+        bundleTxHashes: ['0xsale']
+      })
+    ).toBe(bridge);
   });
 });

@@ -13,7 +13,7 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * sale after a claim) never records or reverts the action, and with
  * `confirmOnNextLeg` the action confirms once a later leg starts, since legs
  * go out only after the one before mined (not for a Safe, whose start hash is
- * its Safe tx hash).
+ * its Safe tx hash); the run's last leg then confirms as part of it.
  */
 export function withActionRecording(
   getCallbacks: () => TxCallbacks,
@@ -58,7 +58,10 @@ export function withActionRecording(
     },
     onSuccess: (...settled) => {
       const [hash, , bundleTxHashes] = settled;
-      if (hash) {
+      if (hash && confirmed && current && hash !== current && !bundleTxHashes) {
+        // Confirmed early under its own leg: the run's last leg joins it, so its sale is read.
+        onConfirmed(current, [current, hash]);
+      } else if (hash) {
         confirmed = true;
         if (bundleTxHashes) onConfirmed(hash, bundleTxHashes);
         else onConfirmed(hash);

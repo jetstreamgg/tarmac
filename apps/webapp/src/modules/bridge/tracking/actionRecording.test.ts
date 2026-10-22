@@ -193,12 +193,12 @@ describe('withActionRecording, an action followed by other legs', () => {
     expect(onConfirmed).toHaveBeenCalledExactlyOnceWith('0xfaster');
   });
 
-  it('still confirms the last leg once the run succeeds, so its sale is read', () => {
+  it('still confirms the last leg once the run succeeds, on the action, so its sale is read', () => {
     const { onConfirmed, callbacks, leg } = setupLegs();
     leg('receiveMessage', '0xreceive');
     leg('sellGem', '0xsell');
     callbacks.onSuccess('0xsell');
-    expect(onConfirmed.mock.calls).toEqual([['0xreceive'], ['0xsell']]);
+    expect(onConfirmed.mock.calls).toEqual([['0xreceive'], ['0xreceive', ['0xreceive', '0xsell']]]);
   });
 
   it('for a Safe, confirms nothing early and drops nothing when the sale reverts on chain', () => {

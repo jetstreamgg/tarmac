@@ -268,7 +268,14 @@ export const failBundle = (bridge: PendingBridge, reason: string, now: number): 
 /** A destination action the user sent and the transaction flow confirmed. */
 export function recordAction(bridge: PendingBridge, action: PendingBridgeAction): PendingBridge {
   if (!bridgeActions(bridge).includes(action.action)) return bridge;
-  if (bridge.actions.some(sent => !isSent(sent) && sent.txHash === action.txHash)) return bridge;
+  const known = bridge.actions.find(sent => !isSent(sent) && sent.txHash === action.txHash);
+  if (known) {
+    // A later leg of the same run (a step-by-step claim's sale) joins the action it confirmed.
+    const extra = (action.bundleTxHashes ?? []).filter(hash => !known.bundleTxHashes?.includes(hash));
+    if (extra.length === 0) return bridge;
+    const merged = { ...known, bundleTxHashes: [...(known.bundleTxHashes ?? []), ...extra] };
+    return { ...bridge, actions: bridge.actions.map(sent => (sent === known ? merged : sent)) };
+  }
   // A Safe confirms with the on-chain hash, not the Safe tx hash it was sent with.
   const actions = [
     ...bridge.actions.filter(sent => !(isSent(sent) && sent.action === action.action)),
