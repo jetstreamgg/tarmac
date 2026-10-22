@@ -44,8 +44,8 @@ describe('buildPendingBridgeRows', () => {
     ]);
   });
 
-  it('shows the remaining time while pending and Arrived once landed', () => {
-    expect(buildPendingBridgeRows(base, 0, 1)[1][1]).toMatchObject({ value: '~3 min' });
+  it('shows the arrival time while pending and Arrived once landed', () => {
+    expect(buildPendingBridgeRows(base, 0, 1)[1][1]).toMatchObject({ value: '00:03 UTC' });
     expect(buildPendingBridgeRows({ ...base, status: 'ready' }, 0, 1)[1][1]).toMatchObject({
       value: 'Arrived'
     });
@@ -106,13 +106,28 @@ describe('buildPendingBridgeRows', () => {
 
   it('ignores a clock older than the bridge start', () => {
     const late = { ...base, startedAt: 120_000, etaAt: 120_000 + 3 * 60_000 };
-    expect(buildPendingBridgeRows(late, 0, 1)[1][1]).toMatchObject({ value: '~3 min' });
+    expect(buildPendingBridgeRows(late, 0, 1)[1][1]).toMatchObject({ value: '00:05 UTC' });
   });
 
   it('says the bridge is taking longer than expected once past its ETA', () => {
-    expect(buildPendingBridgeRows(base, base.etaAt, 1)[1][1]).toMatchObject({ value: '~1 min' });
+    expect(buildPendingBridgeRows(base, base.etaAt, 1)[1][1]).toMatchObject({ value: '00:03 UTC' });
     expect(buildPendingBridgeRows(base, base.etaAt + 60_000, 1)[1][1]).toMatchObject({
       value: 'Taking longer than expected'
+    });
+  });
+
+  it('shows the arrival as a UTC clock time, rounded up to the minute', () => {
+    const now = Date.UTC(2026, 9, 25, 15, 26);
+    const at = (etaAt: number) => buildPendingBridgeRows({ ...base, startedAt: now, etaAt }, now, 1)[1][1];
+    expect(at(Date.UTC(2026, 9, 25, 15, 46))).toMatchObject({ value: '15:46 UTC' });
+    expect(at(Date.UTC(2026, 9, 25, 15, 45, 10))).toMatchObject({ value: '15:46 UTC' });
+  });
+
+  it('dates an arrival that falls on a later UTC day', () => {
+    const now = Date.UTC(2026, 9, 25, 15, 26);
+    const eta = Date.UTC(2026, 9, 29, 15, 46);
+    expect(buildPendingBridgeRows({ ...base, startedAt: now, etaAt: eta }, now, 1)[1][1]).toMatchObject({
+      value: '29/10/26 15:46 UTC'
     });
   });
 

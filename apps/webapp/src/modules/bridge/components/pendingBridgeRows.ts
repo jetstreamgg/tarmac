@@ -17,7 +17,7 @@ import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { DAY_MINUTES } from '../model/resolveRoute';
 import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
-import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
+import { bridgeTypeLabel } from './bridgeModalRows';
 
 // The store keeps accounts lowercased; the Safe app expects a checksummed address.
 const checksummed = (account: string) => (isAddress(account) ? getAddress(account) : account);
@@ -90,6 +90,14 @@ export const formatBridgeDate = (ms: number): string => {
   return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCFullYear() % 100)} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
 };
 
+/** "15:46 UTC" on the same UTC day as `now`, else the full date; rounded up to the minute. */
+const formatArrivalTime = (ms: number, now: number): string => {
+  const arrival = new Date(Math.ceil(ms / 60_000) * 60_000);
+  const utcDay = (date: Date) => date.toISOString().slice(0, 10);
+  if (utcDay(arrival) !== utcDay(new Date(now))) return formatBridgeDate(arrival.getTime());
+  return `${arrival.toISOString().slice(11, 16)} UTC`;
+};
+
 const arrivalText = (bridge: PendingBridge, now: number): string => {
   if (bridge.status === 'failed' || bridge.status === 'expired') return NO_VALUE;
   // A ready claim, prove or finalize still has a step before the funds land.
@@ -107,7 +115,7 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
   // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
   const elapsedFrom = Math.max(now, bridge.startedAt);
   if (elapsedFrom > bridge.etaAt) return t`Taking longer than expected`;
-  return formatEta(Math.max(1, Math.ceil((bridge.etaAt - elapsedFrom) / 60_000)));
+  return formatArrivalTime(bridge.etaAt, elapsedFrom);
 };
 
 /** Explorer link for a tx on `network`, on the chain the app runs that network on. */
