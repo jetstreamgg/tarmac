@@ -7,6 +7,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import {
   getTokenDecimals,
+  isMarketMatured,
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
@@ -95,6 +96,10 @@ export function PendleModalForm({
   const { isConnected, address } = useConnection();
   const isSupply = flow === 'supply';
   const side = isSupply ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
+  // The minute tick re-renders a modal left open across expiry; keyed on the
+  // registry expiry like PendlePositionCard, which swaps to Claim on the same tick.
+  const nowMs = useNow();
+  const matured = isMarketMatured(market.expiry);
 
   const { ptToken, supplyTokenList, withdrawTokenList } = usePendleTokens(market);
   const tokenOptions = isSupply ? supplyTokenList : withdrawTokenList;
@@ -193,7 +198,7 @@ export function PendleModalForm({
     syAcceptedTokens: market.syAcceptedTokens,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    enabled: debouncedAmount > 0n
+    enabled: debouncedAmount > 0n && !matured
   });
 
   // --- Analytics: the legacy PendleWidget event set, with live amounts. ---
@@ -334,7 +339,11 @@ export function PendleModalForm({
         : undefined,
     [writeHook.prepared, writeHook.error]
   );
-  const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
+  const errorMessage = matured
+    ? isSupply
+      ? t`This market has matured and no longer accepts deposits. If you hold a position, close this window to claim it.`
+      : t`This market has matured, so early withdrawal is closed. Close this window and claim your position instead.`
+    : (quoteErrorMessage ?? prepareErrorMessage);
 
   // Simulate on the engine chain — the calls are built for it (mainnet, or the
   // fork in dev), not necessarily the connected chain.
@@ -345,7 +354,7 @@ export function PendleModalForm({
     enabled: amountReady
   });
 
-  const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
+  const confirmDisabled = matured || !amountReady || !writeHook.prepared || isFetchingQuote;
 
   // --- Grid economics (see the component doc for the per-order model). ---
   const { data: marketsApi } = usePendleMarketsApiData();
@@ -353,7 +362,6 @@ export function PendleModalForm({
   const impliedApy = stats?.impliedApy;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const nowMs = useNow();
   const daysToMaturity = remainingDaysToMaturity(expirySec, nowMs);
   const claimDate = formatMaturity(expirySec);
 
