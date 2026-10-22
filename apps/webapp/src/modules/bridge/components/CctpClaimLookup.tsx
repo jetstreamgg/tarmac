@@ -77,11 +77,7 @@ function LookupMessage({ state, network }: LookupMessageProps) {
     case 'refused':
       return (
         <Text className={errorClassName} dataTestId="bridge-claim-lookup-error">
-          {state.reason === 'not-yours' ? (
-            <Trans>
-              This bridge goes to {formatAddress(state.recipient, 6, 4)}. Connect that wallet to claim it.
-            </Trans>
-          ) : state.reason === 'not-found' ? (
+          {state.reason === 'not-found' ? (
             <Trans>
               We couldn&apos;t find this transaction on {network}. Check the network and the hash.
             </Trans>

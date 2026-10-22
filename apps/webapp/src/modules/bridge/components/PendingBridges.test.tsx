@@ -187,6 +187,61 @@ describe('PendingBridges', () => {
     expect(props.onAction).toHaveBeenCalledWith(mocks.bridges[0]);
   });
 
+  // Figma 75: looked up by a wallet that neither sent nor receives it.
+  describe('a CCTP bridge on a third wallet', () => {
+    const SENDER = '0x0000000000000000000000000000000000005e4d';
+    const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
+    const THIRD: PendingBridge = {
+      ...BRIDGE,
+      id: '0xthird',
+      account: SENDER,
+      from: 'base',
+      to: 'ethereum',
+      status: 'ready',
+      routeKind: 'cctp',
+      requiresClaim: true,
+      nextAction: 'claim',
+      txHash: '0x' + 'ab'.repeat(32),
+      recipient: RECIPIENT
+    };
+
+    it.each([
+      ['ready', THIRD],
+      ['on its way', { ...THIRD, status: 'pending' as const }],
+      ['minted to its sender', { ...THIRD, recipient: SENDER }]
+    ])('offers only to switch wallet, %s', (_, bridge) => {
+      mocks.bridges = [bridge];
+      renderList();
+      const card = screen.getByTestId('pending-bridge-card');
+      const switchWallet = screen.getByTestId('pending-bridge-switch-wallet');
+      expect(switchWallet.textContent).toBe('Switch wallet');
+      // The header's single action, before the note.
+      expect(card.querySelectorAll('button')).toHaveLength(1);
+      expect(
+        switchWallet.compareDocumentPosition(screen.getByTestId('pending-bridge-third-wallet-note')) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-recipient-note')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-incoming-note')).toBeNull();
+      fireEvent.click(switchWallet);
+      expect(mocks.openConnectModal).toHaveBeenCalledOnce();
+    });
+
+    it('says which wallet can claim it and names both wallets', () => {
+      mocks.bridges = [THIRD];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-third-wallet-note').textContent).toBe(
+        'This bridge was sent to 0x0000...0b01. Connect that wallet to be able to claim the funds on Ethereum.'
+      );
+      expect(screen.getAllByTestId('pending-bridge-wallet').map(wallet => wallet.textContent)).toEqual([
+        '0x0000...5e4d',
+        '0x0000...0b01'
+      ]);
+    });
+  });
+
   describe('a CCTP claim minting to another address', () => {
     const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
     const TO_OTHER: PendingBridge = {

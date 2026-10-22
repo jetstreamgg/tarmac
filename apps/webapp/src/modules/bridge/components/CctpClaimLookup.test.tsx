@@ -344,11 +344,6 @@ describe('CctpClaimLookup', () => {
       { status: 'refused', reason: 'several-burns' },
       'bridge-claim-lookup-error',
       "This transaction sends more than one bridge, so this app can't claim it."
-    ],
-    [
-      { status: 'refused', reason: 'not-yours', recipient: OTHER },
-      'bridge-claim-lookup-error',
-      'This bridge goes to 0x0000...0b01. Connect that wallet to claim it.'
     ]
   ])('says %j', (state, testId, copy) => {
     mocks.state = state;

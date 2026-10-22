@@ -120,8 +120,19 @@ describe('lookupCctpBurn', () => {
     }
   });
 
-  it('refuses a wallet that neither sent nor receives it', async () => {
-    expect(await lookup(OTHER)).toEqual({ status: 'refused', reason: 'not-yours', recipient: SENDER });
+  // Figma 75: a third wallet follows it, and only its recipient can claim it.
+  it('builds the bridge for a wallet that neither sent nor receives it, naming its recipient', async () => {
+    const own = await lookup(OTHER);
+    expect(own.status === 'found' && own.bridge).toMatchObject({
+      account: SENDER.toLowerCase(),
+      recipient: SENDER.toLowerCase()
+    });
+    const THIRD = '0x0000000000000000000000000000000000000c0c';
+    const toOtherWallet = await lookup(THIRD, client({ logs: toOther() }));
+    expect(toOtherWallet.status === 'found' && toOtherWallet.bridge).toMatchObject({
+      account: SENDER.toLowerCase(),
+      recipient: OTHER
+    });
   });
 
   it('refuses a transaction the network has no receipt for', async () => {

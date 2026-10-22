@@ -186,6 +186,45 @@ describe('buildPendingBridgeRows with the other wallet of a bridge', () => {
   });
 });
 
+describe('buildPendingBridgeRows on a third wallet', () => {
+  const RECIPIENT = '0x00000000000000000000000000000000000a11ce';
+  const fromBase: PendingBridge = {
+    ...base,
+    from: 'base',
+    to: 'ethereum',
+    routeKind: 'cctp',
+    recipient: RECIPIENT
+  };
+
+  it('names both wallets in their own row, above the status (Figma 75)', () => {
+    const rows = buildPendingBridgeRows(fromBase, 0, chainId.tenderly, false, {
+      role: 'both',
+      sender: base.account,
+      destination: RECIPIENT
+    });
+    expect(rows.map(row => row.map(cell => cell.label))).toEqual([
+      ['Source', 'Destination'],
+      ['Sender', 'Destination wallet'],
+      ['Status', 'Estimated arrival'],
+      ['Bridge type', 'Transaction']
+    ]);
+    expect(rows[1]).toEqual([
+      {
+        kind: 'wallet',
+        label: 'Sender',
+        address: base.account,
+        href: getEtherscanLink(chainId.base, base.account, 'address')
+      },
+      {
+        kind: 'wallet',
+        label: 'Destination wallet',
+        address: RECIPIENT,
+        href: getEtherscanLink(chainId.tenderly, RECIPIENT, 'address')
+      }
+    ]);
+  });
+});
+
 describe('bridgeCounterparty', () => {
   const SENDER = base.account;
   const OTHER = '0x00000000000000000000000000000000000a11ce';
@@ -203,6 +242,21 @@ describe('bridgeCounterparty', () => {
     });
     // A looked-up bridge sent to this wallet, sent by another.
     expect(bridgeCounterparty(base, OTHER)).toEqual({ role: 'sender', address: SENDER });
+  });
+
+  it('is both wallets on a card the connected wallet neither sent nor receives', () => {
+    const THIRD = '0x0000000000000000000000000000000000000c0c';
+    expect(bridgeCounterparty({ ...base, recipient: OTHER }, THIRD)).toEqual({
+      role: 'both',
+      sender: SENDER,
+      destination: OTHER
+    });
+    // A burn its sender minted to itself, looked up by a third wallet.
+    expect(bridgeCounterparty({ ...base, recipient: SENDER }, THIRD)).toEqual({
+      role: 'both',
+      sender: SENDER,
+      destination: SENDER
+    });
   });
 
   it('is none for a bridge to the wallet that sent it, or with no wallet connected', () => {

@@ -1,7 +1,8 @@
 /**
  * Pure cell builders for a pending bridge card (Figma 3574:64348):
  * [Source | Destination], [Status | Estimated arrival], [Bridge type | Transaction].
- * A bridge between two wallets names the other one beside the status (Figma 71, 74, 93).
+ * A bridge between two wallets names the other one beside the status (Figma 71, 74, 93), and a
+ * third wallet's card names both above it (Figma 75).
  * Labels and pairing are the Figma contract, asserted in `pendingBridgeRows.test.ts`.
  */
 
@@ -31,16 +32,19 @@ export type PendingBridgeCell =
   | { kind: 'link'; label: string; value: string; href?: string }
   | { kind: 'wallet'; label: string; address: string; href?: string };
 
-/** The other wallet of a bridge: its recipient on the sender's card, its sender on the recipient's. */
-export type BridgeCounterparty = { role: 'sender' | 'destination'; address: string };
+/** The other wallet of a bridge: its recipient on the sender's card, its sender on the recipient's, both on a third wallet's. */
+export type BridgeCounterparty =
+  { role: 'sender' | 'destination'; address: string } | { role: 'both'; sender: string; destination: string };
 
 export function bridgeCounterparty(
   bridge: Pick<PendingBridge, 'account' | 'recipient'>,
   account: string | undefined
 ): BridgeCounterparty | undefined {
   if (!account) return undefined;
-  if (bridge.account.toLowerCase() !== account.toLowerCase())
-    return { role: 'sender', address: bridge.account };
+  const lower = account.toLowerCase();
+  if (bridge.recipient && bridge.account.toLowerCase() !== lower && bridge.recipient.toLowerCase() !== lower)
+    return { role: 'both', sender: bridge.account, destination: bridge.recipient };
+  if (bridge.account.toLowerCase() !== lower) return { role: 'sender', address: bridge.account };
   return bridge.recipient && sendsToOther(bridge.recipient, bridge.account)
     ? { role: 'destination', address: bridge.recipient }
     : undefined;
@@ -48,7 +52,8 @@ export function bridgeCounterparty(
 
 const walletCell = (
   bridge: PendingBridge,
-  { role, address }: BridgeCounterparty,
+  role: 'sender' | 'destination',
+  address: string,
   familyChainId: number
 ): PendingBridgeCell => {
   // Each wallet on the network it acts on.
@@ -208,10 +213,20 @@ export function buildPendingBridgeRows(
                 ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
                 : undefined
           };
+  if (counterparty?.role === 'both')
+    return [
+      networks,
+      [
+        walletCell(bridge, 'sender', counterparty.sender, familyChainId),
+        walletCell(bridge, 'destination', counterparty.destination, familyChainId)
+      ],
+      [status, arrival],
+      [bridgeType, transaction]
+    ];
   return counterparty
     ? [
         networks,
-        [walletCell(bridge, counterparty, familyChainId), status],
+        [walletCell(bridge, counterparty.role, counterparty.address, familyChainId), status],
         [arrival, bridgeType],
         [transaction]
       ]

@@ -416,13 +416,15 @@ function PendingBridgeCard({
       : (actionHint(bridge) ??
         (convertHint?.kind === 'switch-network' && convertAmount === undefined ? undefined : convertHint));
   const note = pendingBridgeNote(bridge, now);
-  const claimLink = pendingClaimLink(window.location.origin, bridge);
-  const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
   const counterparty = bridgeCounterparty(bridge, account);
+  // Figma 75: a wallet that neither sent nor receives it can only switch to the one that claims it.
+  const thirdWallet = counterparty?.role === 'both';
+  const claimLink = thirdWallet ? undefined : pendingClaimLink(window.location.origin, bridge);
+  const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
   // Figma 71: the note on the way already asks to share the claim link.
-  const sharesInNote = claimedElsewhere && bridge.status === 'pending';
+  const sharesInNote = claimedElsewhere && !thirdWallet && bridge.status === 'pending';
   // Figma 73: once ready, the sender may switch to the destination wallet or share the link.
-  const switchesWallet = claimedElsewhere && bridge.status === 'ready';
+  const switchesWallet = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
   const { openConnectModal } = useConnectModal();
   return (
     <div className={cardClassName} data-testid="pending-bridge-card">
@@ -441,6 +443,15 @@ function PendingBridgeCard({
             data-testid="pending-bridge-dismiss"
           >
             <Trans>Dismiss</Trans>
+          </Button>
+        ) : thirdWallet ? (
+          <Button
+            variant="primary"
+            size="m"
+            onClick={() => openConnectModal()}
+            data-testid="pending-bridge-switch-wallet"
+          >
+            <Trans>Switch wallet</Trans>
           </Button>
         ) : actionButton && bridge.nextAction ? (
           <Button
@@ -495,7 +506,19 @@ function PendingBridgeCard({
         </Text>
       )}
 
-      {claimedElsewhere && bridge.recipient && (
+      {counterparty?.role === 'both' && (
+        <Text
+          className="text-fgSecondary text-xs leading-[18px]"
+          dataTestId="pending-bridge-third-wallet-note"
+        >
+          <Trans>
+            This bridge was sent to {formatAddress(counterparty.destination, 6, 4)}. Connect that wallet to be
+            able to claim the funds on Ethereum.
+          </Trans>
+        </Text>
+      )}
+
+      {claimedElsewhere && !thirdWallet && bridge.recipient && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-recipient-note">
           {switchesWallet ? (
             <Trans>

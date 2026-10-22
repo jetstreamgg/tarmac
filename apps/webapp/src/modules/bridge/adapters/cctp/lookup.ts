@@ -1,4 +1,4 @@
-import { TransactionReceiptNotFoundError, type Address, type Hex, type Log } from 'viem';
+import { TransactionReceiptNotFoundError, type Hex, type Log } from 'viem';
 import { createPendingBridge } from '../../model/pendingTransitions';
 import { sendsToOther } from '../../model/recipient';
 import { cctpWithdrawalRoute } from '../../model/resolveRoute';
@@ -9,8 +9,7 @@ import { isExpectedBurn, sentMessages, type CctpBurnExpectation } from './messag
 
 export type CctpBurnLookup =
   | { status: 'found'; bridge: PendingBridge }
-  | { status: 'refused'; reason: 'not-found' | 'reverted' | 'not-a-bridge' | 'several-burns' }
-  | { status: 'refused'; reason: 'not-yours'; recipient: Address };
+  | { status: 'refused'; reason: 'not-found' | 'reverted' | 'not-a-bridge' | 'several-burns' };
 
 /** The standard, fee-free, no-hook burns to Ethereum in a source receipt, in the terms the app launches them with. */
 export function standardBurns(logs: readonly Log[], from: CctpL2NetworkId): CctpBurnExpectation[] {
@@ -28,8 +27,9 @@ export function standardBurns(logs: readonly Log[], from: CctpL2NetworkId): Cctp
 
 /**
  * A CCTP burn to Ethereum that this browser has no record of, read from its
- * source receipt, as the pending bridge the tracker claims from. Only its
- * sender or its recipient may add it; network read errors are thrown.
+ * source receipt, as the pending bridge the tracker claims from. A third
+ * wallet's names its recipient, the only wallet that can claim it; network
+ * read errors are thrown.
  */
 export async function lookupCctpBurn({
   from,
@@ -56,8 +56,7 @@ export async function lookupCctpBurn({
   if (burns.length > 1) return { status: 'refused', reason: 'several-burns' };
   const [{ amount, sender, mintRecipient }] = burns;
   const caller = account.toLowerCase();
-  if (caller !== sender.toLowerCase() && caller !== mintRecipient.toLowerCase())
-    return { status: 'refused', reason: 'not-yours', recipient: mintRecipient };
+  const thirdWallet = caller !== sender.toLowerCase() && caller !== mintRecipient.toLowerCase();
   const block = await client.getBlock({ blockNumber: receipt.blockNumber });
   const startedAt = Number(block.timestamp) * 1000;
   return {
@@ -67,7 +66,7 @@ export async function lookupCctpBurn({
       amount,
       from,
       to: 'ethereum',
-      recipient: sendsToOther(mintRecipient, sender) ? mintRecipient.toLowerCase() : undefined,
+      recipient: thirdWallet || sendsToOther(mintRecipient, sender) ? mintRecipient.toLowerCase() : undefined,
       route: cctpWithdrawalRoute(from),
       txHash: hash,
       now: startedAt
