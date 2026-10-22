@@ -213,23 +213,13 @@ type ClaimLinkProps = {
   note?: 'keep' | 'share';
 };
 
-/** The link that opens a CCTP bridge's claim here, to share with its recipient or keep. */
+/** The link that opens a CCTP bridge's claim here, to share with its recipient or keep (Figma 71). */
 function ClaimLink({ link, note }: ClaimLinkProps) {
   const { onCopy, hasCopied } = useClipboard(link);
   return (
-    <div className="text-fgSecondary flex flex-col gap-1 text-xs leading-[18px]">
-      <span>
-        <button
-          type="button"
-          className="text-fgPrimary font-medium hover:underline"
-          onClick={onCopy}
-          data-testid="pending-bridge-claim-link"
-        >
-          {hasCopied ? <Trans>Copied</Trans> : <Trans>Copy claim link</Trans>}
-        </button>
-      </span>
+    <>
       {note && (
-        <Text className="text-xs leading-[18px] text-inherit" dataTestId="pending-bridge-claim-link-note">
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-claim-link-note">
           {note === 'keep' ? (
             <Trans>
               This browser can&apos;t save your bridges. Copy the claim link and keep it to claim later.
@@ -239,7 +229,16 @@ function ClaimLink({ link, note }: ClaimLinkProps) {
           )}
         </Text>
       )}
-    </div>
+      <Button
+        variant="secondary"
+        size="m"
+        className="w-full"
+        onClick={onCopy}
+        data-testid="pending-bridge-claim-link"
+      >
+        {hasCopied ? <Trans>Copied</Trans> : <Trans>Copy claim link</Trans>}
+      </Button>
+    </>
   );
 }
 

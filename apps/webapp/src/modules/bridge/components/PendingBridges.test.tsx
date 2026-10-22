@@ -431,6 +431,17 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Copied');
     });
 
+    // Figma 71: a full-width secondary button under the card's text.
+    it('shows it as a full-width button after its note', () => {
+      mocks.bridges = [{ ...BURN, recipient: OTHER }];
+      renderList();
+      const button = screen.getByTestId('pending-bridge-claim-link');
+      expect(button.tagName).toBe('BUTTON');
+      expect(button.className).toMatch(/\bw-full\b/);
+      const note = screen.getByTestId('pending-bridge-claim-link-note');
+      expect(note.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
     it('offers it on a bridge sent to this wallet too', () => {
       mocks.incoming = [{ scope: 'sender', bridge: { ...BURN, account: OTHER, recipient: ACCOUNT } }];
       renderList();
