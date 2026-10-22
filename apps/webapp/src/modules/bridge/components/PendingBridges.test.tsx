@@ -67,6 +67,7 @@ const mocks = vi.hoisted(() => ({
   copyFails: false,
   storageWritable: true,
   ens: {} as Record<string, string | undefined>,
+  openConnectModal: vi.fn(),
   toast: { success: vi.fn(), error: vi.fn() }
 }));
 
@@ -75,6 +76,10 @@ vi.mock('wagmi', () => ({
 }));
 vi.mock('@/modules/ui/components/Avatar', () => ({
   CustomAvatar: () => <span data-testid="wallet-avatar" />
+}));
+
+vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
+  useConnectModal: () => ({ openConnectModal: mocks.openConnectModal })
 }));
 
 vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
@@ -147,6 +152,7 @@ describe('PendingBridges', () => {
       ens: {}
     });
     mocks.copy.mockClear();
+    mocks.openConnectModal.mockClear();
     mocks.toast.success.mockClear();
     props.onAction.mockClear();
     props.onActionIn.mockClear();
@@ -202,8 +208,36 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Ready to claim');
       expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
       expect(note()?.textContent).toBe(
-        'Only the destination wallet (0x0000...0b01) can claim it on Ethereum.'
+        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Otherwise, share the claim link."
       );
+    });
+
+    // Figma 73: Switch wallet and Copy claim link side by side, under the note.
+    it('offers to switch wallet beside the claim link once it is ready (Figma 73)', () => {
+      mocks.bridges = [TO_OTHER];
+      renderList();
+      const switchWallet = screen.getByTestId('pending-bridge-switch-wallet');
+      const link = screen.getByTestId('pending-bridge-claim-link');
+      expect(switchWallet.textContent).toBe('Switch wallet');
+      expect(switchWallet.className).toMatch(/\bflex-1\b/);
+      expect(link.className).toMatch(/\bflex-1\b/);
+      expect(link.className).not.toMatch(/\bw-full\b/);
+      expect(switchWallet.parentElement).toBe(link.parentElement);
+      expect(switchWallet.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(note()!.compareDocumentPosition(switchWallet) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+      expect(mocks.openConnectModal).not.toHaveBeenCalled();
+      fireEvent.click(switchWallet);
+      expect(mocks.openConnectModal).toHaveBeenCalledOnce();
+    });
+
+    it('offers no Switch wallet while it is on its way, nor to the recipient', () => {
+      mocks.bridges = [
+        { ...TO_OTHER, status: 'pending' },
+        { ...TO_OTHER, id: '0xmine', recipient: ACCOUNT }
+      ];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-switch-wallet')).toBeNull();
     });
 
     it('names the destination wallet beside the status, by its ENS name once known (Figma 71, 73)', () => {
@@ -611,9 +645,10 @@ describe('PendingBridges', () => {
     it('asks the sender to share it with the recipient', () => {
       mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
       renderList();
-      expect(screen.getByTestId('pending-bridge-claim-link-note').textContent).toBe(
-        'Share the claim link with the recipient so they can claim it.'
+      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toMatch(
+        /Otherwise, share the claim link\.$/
       );
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
     });
 
     it('asks to keep it when this browser keeps no bridges', () => {
@@ -629,9 +664,10 @@ describe('PendingBridges', () => {
       mocks.storageWritable = false;
       mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
       renderList();
-      expect(screen.getByTestId('pending-bridge-claim-link-note').textContent).toBe(
-        'Share the claim link with the recipient so they can claim it.'
+      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toMatch(
+        /Otherwise, share the claim link\.$/
       );
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
     });
 
     it('adds no note for your own bridge in a browser that keeps it', () => {

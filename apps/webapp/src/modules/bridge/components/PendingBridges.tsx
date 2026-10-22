@@ -5,6 +5,7 @@ import { useEnsName } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { toast } from '@/components/ui/use-toast';
 import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
@@ -286,10 +287,11 @@ type ClaimLinkProps = {
   link: string;
   /** `keep`: this browser keeps no bridges; `share`: another wallet claims it. */
   note?: 'keep' | 'share';
+  className?: string;
 };
 
 /** The link that opens a CCTP bridge's claim here, to share with its recipient or keep (Figma 71). */
-function ClaimLink({ link, note }: ClaimLinkProps) {
+function ClaimLink({ link, note, className = 'w-full' }: ClaimLinkProps) {
   return (
     <>
       {note && (
@@ -306,7 +308,7 @@ function ClaimLink({ link, note }: ClaimLinkProps) {
       <Button
         variant="secondary"
         size="m"
-        className="w-full"
+        className={className}
         onClick={() => copyToClipboard(link, () => toast.success(t`Claim link copied!`))}
         data-testid="pending-bridge-claim-link"
       >
@@ -419,6 +421,9 @@ function PendingBridgeCard({
   const counterparty = bridgeCounterparty(bridge, account);
   // Figma 71: the note on the way already asks to share the claim link.
   const sharesInNote = claimedElsewhere && bridge.status === 'pending';
+  // Figma 73: once ready, the sender may switch to the destination wallet or share the link.
+  const switchesWallet = claimedElsewhere && bridge.status === 'ready';
+  const { openConnectModal } = useConnectModal();
   return (
     <div className={cardClassName} data-testid="pending-bridge-card">
       {/* A claim that ended in USDC shows the USDC (Figma 93). */}
@@ -492,7 +497,12 @@ function PendingBridgeCard({
 
       {claimedElsewhere && bridge.recipient && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-recipient-note">
-          {sharesInNote ? (
+          {switchesWallet ? (
+            <Trans>
+              Ready on Ethereum. {formatAddress(bridge.recipient, 6, 4)} needs to claim it from that wallet to
+              receive USDS. If it&apos;s your wallet, switch to it. Otherwise, share the claim link.
+            </Trans>
+          ) : sharesInNote ? (
             <Trans>
               On its way to {formatAddress(bridge.recipient, 6, 4)}. Once it&apos;s ready on Ethereum,
               they&apos;ll need to claim it from that wallet to receive USDS. Share the claim link so they can
@@ -506,11 +516,28 @@ function PendingBridgeCard({
         </Text>
       )}
 
-      {claimLink && (
-        <ClaimLink
-          link={claimLink}
-          note={sharesInNote ? undefined : claimedElsewhere ? 'share' : !storageWritable ? 'keep' : undefined}
-        />
+      {switchesWallet ? (
+        <div className="flex gap-3.5">
+          <Button
+            variant="primary"
+            size="m"
+            className="flex-1"
+            onClick={() => openConnectModal()}
+            data-testid="pending-bridge-switch-wallet"
+          >
+            <Trans>Switch wallet</Trans>
+          </Button>
+          {claimLink && <ClaimLink link={claimLink} className="flex-1" />}
+        </div>
+      ) : (
+        claimLink && (
+          <ClaimLink
+            link={claimLink}
+            note={
+              sharesInNote ? undefined : claimedElsewhere ? 'share' : !storageWritable ? 'keep' : undefined
+            }
+          />
+        )
       )}
 
       {dismissible && bridge.safeTxHash && (
