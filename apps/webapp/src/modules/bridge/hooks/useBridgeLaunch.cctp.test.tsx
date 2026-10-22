@@ -375,6 +375,17 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
         { txHash: BASE_BURN_TX.hash, from: 'base', to: 'ethereum', amount: AMOUNT }
       ]);
     });
+
+    // X abandons the run, but the burn prompt still open in the wallet can be signed after it.
+    it('stores the card of a burn signed after the modal was closed with X', () => {
+      const callbacks = confirm(render());
+      act(() => callbacks.onMutate({ functionName: 'depositForBurn' } as never));
+      act(() => mocks.closeReset!());
+      act(() => callbacks.onStart(BASE_BURN_TX.hash));
+      expect(pendingBridgeStore.getSnapshot(SCOPE)).toMatchObject([
+        { txHash: BASE_BURN_TX.hash, from: 'base', to: 'ethereum', amount: AMOUNT }
+      ]);
+    });
   });
 
   describe('the claim notes in the Review', () => {
