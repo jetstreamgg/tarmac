@@ -3,7 +3,13 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Calendar, Vault, Droplet } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import { type PendleMarketConfig, useNow, usePendleMarketsApiData, useProductNetworks } from '@/hooks';
+import {
+  type PendleMarketConfig,
+  isMarketMatured,
+  useNow,
+  usePendleMarketsApiData,
+  useProductNetworks
+} from '@/hooks';
 import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';
@@ -21,6 +27,8 @@ import { PendleAboutContent } from './PendleAboutContent';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
+
+const MATURED_DETAIL_ROWS = new Set(['risk', 'maturity']);
 
 export type PendleProductDetailProps = {
   market: PendleMarketConfig;
@@ -46,8 +54,11 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
   const remainingSeconds = Math.max(0, expirySec - Math.floor(nowMs / 1000));
   const remainingDays = remainingDaysToMaturity(expirySec, nowMs);
   const maturityDateLabel = formatMaturity(expirySec);
+  // Keyed on the registry expiry, like PendlePositionCard, so the rows and the
+  // closed card swap on the same minute tick.
+  const matured = isMarketMatured(market.expiry);
 
-  const details: ProductDetailRow[] = [
+  const allDetails: ProductDetailRow[] = [
     {
       id: 'fixed-apy',
       icon: <AudioLines className="h-3 w-3" />,
@@ -130,6 +141,9 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       )
     }
   ];
+  // A matured market takes no deposits and its AMM is wound down, so the
+  // rate, TVL and liquidity rows would only show stale or zero figures.
+  const details = matured ? allDetails.filter(row => MATURED_DETAIL_ROWS.has(row.id)) : allDetails;
 
   return (
     <ProductDetailTemplate

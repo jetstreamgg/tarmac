@@ -240,4 +240,37 @@ describe('PendleProductDetail', () => {
     expect(screen.getByTestId('mock-position').getAttribute('data-market-slug')).toBe('pt-usdg');
     expect(screen.getByTestId('mock-tx-table')).toBeTruthy();
   });
+
+  describe('matured market', () => {
+    beforeEach(() => {
+      vi.setSystemTime((MARKET.expiry + 86_400) * 1000);
+      h.stats = {
+        [MARKET.marketAddress]: { impliedApy: 0, underlyingApy: 0.045, tvl: 12_345, liquidity: 678 }
+      };
+    });
+
+    it('keeps only the risk and maturity rows', () => {
+      renderDetail();
+
+      const details = screen.getByTestId('product-detail-details');
+      expect(details.textContent).toContain('Risk profile');
+      expect(details.textContent).toContain('(Matured)');
+      expect(details.textContent).not.toContain('Fixed APY');
+      expect(details.textContent).not.toContain('Underlying APY');
+      expect(details.textContent).not.toContain('TVL');
+      expect(details.textContent).not.toContain('AMM liquidity');
+    });
+
+    it('swaps the supply pitch and FAQ for the matured copy', () => {
+      renderDetail();
+
+      const about = screen.getByTestId('product-detail-about');
+      expect(about.textContent).toContain('This market matured on');
+      expect(about.textContent).toContain('no longer accepts deposits');
+      expect(about.textContent).toContain('claim your USDG');
+      expect(about.textContent).not.toContain('Fix a rate');
+      expect(screen.queryByTestId('pendle-detail-faq')).toBeNull();
+      expect(screen.getByRole('link', { name: 'Pendle site' })).toBeTruthy();
+    });
+  });
 });
