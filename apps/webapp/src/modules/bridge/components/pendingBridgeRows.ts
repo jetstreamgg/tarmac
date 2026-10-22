@@ -1,6 +1,7 @@
 /**
  * Pure cell builders for a pending bridge card (Figma 3574:64348):
  * [Source | Destination], [Status | Estimated arrival], [Bridge type | Transaction].
+ * A bridge between two wallets names the other one beside the status (Figma 71, 74, 93).
  * Labels and pairing are the Figma contract, asserted in `pendingBridgeRows.test.ts`.
  */
 
@@ -16,6 +17,7 @@ import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDepos
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { DAY_MINUTES } from '../model/resolveRoute';
 import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
+import { sendsToOther } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel } from './bridgeModalRows';
 
@@ -26,7 +28,38 @@ export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
   | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string; tone?: 'info' }
   | { kind: 'text'; label: string; value: string }
-  | { kind: 'link'; label: string; value: string; href?: string };
+  | { kind: 'link'; label: string; value: string; href?: string }
+  | { kind: 'wallet'; label: string; address: string; href?: string };
+
+/** The other wallet of a bridge: its recipient on the sender's card, its sender on the recipient's. */
+export type BridgeCounterparty = { role: 'sender' | 'destination'; address: string };
+
+export function bridgeCounterparty(
+  bridge: Pick<PendingBridge, 'account' | 'recipient'>,
+  account: string | undefined
+): BridgeCounterparty | undefined {
+  if (!account) return undefined;
+  if (bridge.account.toLowerCase() !== account.toLowerCase())
+    return { role: 'sender', address: bridge.account };
+  return bridge.recipient && sendsToOther(bridge.recipient, bridge.account)
+    ? { role: 'destination', address: bridge.recipient }
+    : undefined;
+}
+
+const walletCell = (
+  bridge: PendingBridge,
+  { role, address }: BridgeCounterparty,
+  familyChainId: number
+): PendingBridgeCell => {
+  // Each wallet on the network it acts on.
+  const chainId = bridgeChainId(role === 'sender' ? bridge.from : bridge.to, familyChainId);
+  return {
+    kind: 'wallet',
+    label: role === 'sender' ? t`Sender` : t`Destination wallet`,
+    address,
+    href: chainId === undefined ? undefined : getEtherscanLink(chainId, address, 'address')
+  };
+};
 
 const statusLabel = (status: PendingBridgeStatus): string => {
   switch (status) {
@@ -129,51 +162,60 @@ export function buildPendingBridgeRows(
   now: number,
   familyChainId: number,
   /** A claim that kept its USDC, offered for conversion (Figma 93). */
-  arrivedAsUsdc = false
+  arrivedAsUsdc = false,
+  counterparty?: BridgeCounterparty
 ): PendingBridgeCell[][] {
   const sourceChainId = bridgeChainId(bridge.from, familyChainId);
-  return [
-    [
-      { kind: 'network', label: t`Source`, network: bridge.from },
-      { kind: 'network', label: t`Destination`, network: bridge.to }
-    ],
-    [
-      arrivedAsUsdc
-        ? { kind: 'status', label: t`Status`, status: bridge.status, value: t`Arrived as USDC`, tone: 'info' }
-        : { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) },
-      { kind: 'text', label: t`Estimated arrival`, value: arrivalText(bridge, now) }
-    ],
-    [
-      { kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel(bridge.routeKind) },
-      bridge.txHash
+  const networks: PendingBridgeCell[] = [
+    { kind: 'network', label: t`Source`, network: bridge.from },
+    { kind: 'network', label: t`Destination`, network: bridge.to }
+  ];
+  const status: PendingBridgeCell = arrivedAsUsdc
+    ? { kind: 'status', label: t`Status`, status: bridge.status, value: t`Arrived as USDC`, tone: 'info' }
+    : { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) };
+  const arrival: PendingBridgeCell = {
+    kind: 'text',
+    label: t`Estimated arrival`,
+    value: arrivalText(bridge, now)
+  };
+  const bridgeType: PendingBridgeCell = {
+    kind: 'text',
+    label: t`Bridge type`,
+    value: bridgeTypeLabel(bridge.routeKind)
+  };
+  const transaction: PendingBridgeCell = bridge.txHash
+    ? {
+        kind: 'link',
+        label: t`Transaction`,
+        value: formatAddress(bridge.txHash, 6, 4),
+        href: bridgeTxHref(bridge.from, bridge.txHash, familyChainId)
+      }
+    : bridge.status === 'failed'
+      ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }
+      : bridge.bundleId
         ? {
+            kind: 'text',
+            label: t`Transaction`,
+            value: isBundleUnseen(bridge, now) ? t`Not found on Ethereum yet` : t`Confirming on Ethereum`
+          }
+        : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
+          {
             kind: 'link',
             label: t`Transaction`,
-            value: formatAddress(bridge.txHash, 6, 4),
-            href: bridgeTxHref(bridge.from, bridge.txHash, familyChainId)
-          }
-        : bridge.status === 'failed'
-          ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }
-          : bridge.bundleId
-            ? {
-                kind: 'text',
-                label: t`Transaction`,
-                value: isBundleUnseen(bridge, now) ? t`Not found on Ethereum yet` : t`Confirming on Ethereum`
-              }
-            : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
-              {
-                kind: 'link',
-                label: t`Transaction`,
-                value: t`Awaiting signatures`,
-                href:
-                  sourceChainId !== undefined &&
-                  bridge.safeTxHash &&
-                  SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
-                    ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
-                    : undefined
-              }
-    ]
-  ];
+            value: t`Awaiting signatures`,
+            href:
+              sourceChainId !== undefined && bridge.safeTxHash && SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
+                ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
+                : undefined
+          };
+  return counterparty
+    ? [
+        networks,
+        [walletCell(bridge, counterparty, familyChainId), status],
+        [arrival, bridgeType],
+        [transaction]
+      ]
+    : [networks, [status, arrival], [bridgeType, transaction]];
 }
 
 /** Arbitrum's tool to check and redeem a ticket from any wallet. */

@@ -1,6 +1,8 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useEnsName } from 'wagmi';
+import { mainnet } from 'viem/chains';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -8,6 +10,7 @@ import { LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { pendingClaimLink } from '../adapters/cctp/claimLink';
 import { useCctpConvertOffer } from '../hooks/useCctpConvertOffer';
 import { useCctpResumeForm, type CctpResumeBlockReason } from '../hooks/useCctpResumeForm';
@@ -27,6 +30,7 @@ import { isStorageWritable } from '../store/storageWritable';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { buildContinueBridgeRows } from './continueBridgeRows';
 import {
+  bridgeCounterparty,
   buildPendingBridgeRows,
   formatBridgeDate,
   formatTimeLeft,
@@ -46,6 +50,36 @@ const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
 };
 
 const valueClassName = 'font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]';
+
+type WalletValueProps = { address: string; href?: string };
+
+/** A wallet by its ENS name once known, with its avatar (Figma 71, 74). */
+function WalletValue({ address, href }: WalletValueProps) {
+  const { data: ensName } = useEnsName({ address: address as `0x${string}`, chainId: mainnet.id });
+  const content = (
+    <>
+      <span className="flex shrink-0">
+        <CustomAvatar address={address} size={12} />
+      </span>
+      <span className="truncate" data-testid="pending-bridge-wallet">
+        {ensName ?? formatAddress(address, 6, 4)}
+      </span>
+    </>
+  );
+  return href ? (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={cn(valueClassName, 'flex min-w-0 items-center gap-1 hover:underline')}
+    >
+      {content}
+      <LinkExternal boxSize={12} className="text-fgSecondary shrink-0" />
+    </a>
+  ) : (
+    <span className={cn(valueClassName, 'flex min-w-0 items-center gap-1')}>{content}</span>
+  );
+}
 
 type CellValueProps = { cell: PendingBridgeCell };
 
@@ -84,6 +118,8 @@ function CellValue({ cell }: CellValueProps) {
       ) : (
         <span className={valueClassName}>{cell.value}</span>
       );
+    case 'wallet':
+      return <WalletValue address={cell.address} href={cell.href} />;
     default:
       return <span className={valueClassName}>{cell.value}</span>;
   }
@@ -446,7 +482,15 @@ function PendingBridgeCard({
         />
       )}
 
-      <CardRows rows={buildPendingBridgeRows(bridge, now, familyChainId, convertAmount !== undefined)} />
+      <CardRows
+        rows={buildPendingBridgeRows(
+          bridge,
+          now,
+          familyChainId,
+          convertAmount !== undefined,
+          bridgeCounterparty(bridge, account)
+        )}
+      />
     </div>
   );
 }

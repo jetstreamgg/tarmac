@@ -66,7 +66,15 @@ const mocks = vi.hoisted(() => ({
   copy: vi.fn(),
   copyFails: false,
   storageWritable: true,
+  ens: {} as Record<string, string | undefined>,
   toast: { success: vi.fn(), error: vi.fn() }
+}));
+
+vi.mock('wagmi', () => ({
+  useEnsName: ({ address }: { address: string }) => ({ data: mocks.ens[address.toLowerCase()] })
+}));
+vi.mock('@/modules/ui/components/Avatar', () => ({
+  CustomAvatar: () => <span data-testid="wallet-avatar" />
 }));
 
 vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
@@ -135,7 +143,8 @@ describe('PendingBridges', () => {
       blocked: {},
       activeSessionId: null,
       copyFails: false,
-      storageWritable: true
+      storageWritable: true,
+      ens: {}
     });
     mocks.copy.mockClear();
     mocks.toast.success.mockClear();
@@ -197,6 +206,18 @@ describe('PendingBridges', () => {
       );
     });
 
+    it('names the destination wallet beside the status, by its ENS name once known (Figma 71, 73)', () => {
+      mocks.bridges = [TO_OTHER];
+      const { unmount } = renderList();
+      const wallet = () => screen.getByTestId('pending-bridge-wallet');
+      expect(wallet().textContent).toBe('0x0000...0b01');
+      expect(wallet().closest('a')?.getAttribute('href')).toContain(`/address/${RECIPIENT}`);
+      unmount();
+      mocks.ens[RECIPIENT] = 'friend.eth';
+      renderList();
+      expect(wallet().textContent).toBe('friend.eth');
+    });
+
     it('says so while the transfer is still on its way', () => {
       mocks.bridges = [{ ...TO_OTHER, status: 'pending' }];
       renderList();
@@ -255,6 +276,15 @@ describe('PendingBridges', () => {
         'Sent to this wallet from 0x0000...7d01.'
       );
       expect(screen.queryByTestId('pending-bridge-recipient-note')).toBeNull();
+    });
+
+    it('names the sender beside the status (Figma 74)', () => {
+      incoming(INCOMING);
+      mocks.ens[SENDER] = 'bartoo.eth';
+      renderList();
+      const wallet = screen.getByTestId('pending-bridge-wallet');
+      expect(wallet.textContent).toBe('bartoo.eth');
+      expect(screen.getByText('Sender')).toBeTruthy();
     });
 
     it("claims it in the sender's list", () => {

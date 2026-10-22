@@ -6,6 +6,7 @@ import type { PendingBridge } from '../model/types';
 import { chainId } from '@/utils/chainId';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import {
+  bridgeCounterparty,
   bridgeTxHref,
   buildPendingBridgeRows,
   formatBridgeDate,
@@ -144,6 +145,72 @@ describe('buildPendingBridgeRows', () => {
     const tx = buildPendingBridgeRows(base, 0, 1)[2][1];
     expect(tx).toMatchObject({ value: '0xff9s...dsa6' });
     expect(tx.kind === 'link' && tx.href).toContain('etherscan.io/tx/');
+  });
+});
+
+describe('buildPendingBridgeRows with the other wallet of a bridge', () => {
+  const OTHER = '0x00000000000000000000000000000000000a11ce';
+  const labels = (rows: ReturnType<typeof buildPendingBridgeRows>) =>
+    rows.map(row => row.map(cell => cell.label));
+
+  it("puts the destination wallet beside the status on the sender's card (Figma 71)", () => {
+    const rows = buildPendingBridgeRows(base, 0, chainId.tenderly, false, {
+      role: 'destination',
+      address: OTHER
+    });
+    expect(labels(rows)).toEqual([
+      ['Source', 'Destination'],
+      ['Destination wallet', 'Status'],
+      ['Estimated arrival', 'Bridge type'],
+      ['Transaction']
+    ]);
+    // On the explorer of the network it receives on.
+    expect(rows[1][0]).toEqual({
+      kind: 'wallet',
+      label: 'Destination wallet',
+      address: OTHER,
+      href: getEtherscanLink(chainId.base, OTHER, 'address')
+    });
+  });
+
+  it("puts the sender beside the status on the recipient's card (Figma 74)", () => {
+    const fromBase: PendingBridge = { ...base, from: 'base', to: 'ethereum', routeKind: 'cctp' };
+    const rows = buildPendingBridgeRows(fromBase, 0, chainId.tenderly, false, {
+      role: 'sender',
+      address: OTHER
+    });
+    expect(labels(rows)[1]).toEqual(['Sender', 'Status']);
+    // On the explorer of the network it was sent from.
+    expect(rows[1][0]).toMatchObject({ href: getEtherscanLink(chainId.base, OTHER, 'address') });
+    expect(rows.flat().filter(cell => cell.label === 'Transaction')).toHaveLength(1);
+  });
+});
+
+describe('bridgeCounterparty', () => {
+  const SENDER = base.account;
+  const OTHER = '0x00000000000000000000000000000000000a11ce';
+
+  it("is the recipient on the sender's own card, whatever the case of the account", () => {
+    expect(
+      bridgeCounterparty({ ...base, recipient: OTHER }, SENDER.toUpperCase().replace('0X', '0x'))
+    ).toEqual({ role: 'destination', address: OTHER });
+  });
+
+  it('is the sender on a card sent to the connected wallet', () => {
+    expect(bridgeCounterparty({ ...base, recipient: OTHER }, OTHER)).toEqual({
+      role: 'sender',
+      address: SENDER
+    });
+    // A looked-up bridge sent to this wallet, sent by another.
+    expect(bridgeCounterparty(base, OTHER)).toEqual({ role: 'sender', address: SENDER });
+  });
+
+  it('is none for a bridge to the wallet that sent it, or with no wallet connected', () => {
+    expect(bridgeCounterparty(base, SENDER)).toBeUndefined();
+    expect(
+      bridgeCounterparty({ ...base, recipient: SENDER.toUpperCase().replace('0X', '0x') }, SENDER)
+    ).toBeUndefined();
+    expect(bridgeCounterparty({ ...base, recipient: OTHER }, undefined)).toBeUndefined();
   });
 });
 
