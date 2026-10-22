@@ -132,14 +132,13 @@ test.describe('Bridge: CCTP recovery', () => {
     await expect(bridge.cards()).toHaveCount(0);
 
     await isolatedPage.getByTestId('bridge-claim-lookup-open').click();
-    await isolatedPage.getByTestId('bridge-claim-lookup-network').click();
     await isolatedPage.getByTestId('bridge-claim-lookup-network-base').click();
     await isolatedPage.getByTestId('bridge-claim-lookup-hash').fill(txHash);
     await isolatedPage.getByTestId('bridge-claim-lookup-find').click();
-    const found = isolatedPage.getByTestId('bridge-claim-lookup-found');
-    await expect(found).toContainText(`${AMOUNT}.00 USDS from Base to Ethereum`, { timeout: 60_000 });
-    await found.getByTestId('bridge-claim-lookup-add').click();
-    await expect(bridge.cards()).toHaveCount(1);
+    // A found burn goes straight to the list and the modal closes.
+    await expect(bridge.cards()).toHaveCount(1, { timeout: 60_000 });
+    await expect(bridge.card('Ethereum')).toContainText(`${AMOUNT}.00`);
+    await expect(isolatedPage.getByTestId('bridge-claim-lookup-form')).toHaveCount(0);
 
     await iris.attest(NetworkName.base, txHash);
     await claim(bridge, isolatedPage);
@@ -176,6 +175,8 @@ test.describe('Bridge: CCTP recovery', () => {
     expect((await l1AccountState(testAccount)).usds).toBe(before);
 
     await card.getByTestId('pending-bridge-convert').click();
+    await expect(isolatedPage.getByRole('dialog')).toContainText('Review conversion');
+    await bridge.confirmButton().click();
     await expectTransactionSuccess(isolatedPage, { title: 'Funds converted successfully!', timeout: 90_000 });
     await expectUsdsDelivered(testAccount, before);
     await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0, { timeout: 60_000 });
@@ -248,7 +249,9 @@ test.describe('Bridge: CCTP recovery', () => {
     await iris.attest(NetworkName.base, txHash);
     await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
     await expect(card.getByTestId('pending-bridge-action')).toHaveCount(0);
-    await expect(card).toContainText('Share the claim link with the recipient so they can claim it.');
+    await expect(card.getByTestId('pending-bridge-recipient-note')).toContainText(
+      'needs to claim it from that wallet to receive USDS'
+    );
     const { nonce: senderNonce } = await l1AccountState(testAccount);
 
     // The recipient opens the claim link in their own browser.
@@ -263,13 +266,21 @@ test.describe('Bridge: CCTP recovery', () => {
       const { usds: before } = await l1AccountState(recipient);
       // The claim link as the sender's card builds it (claimLink.ts imports app constants the runner can't load).
       await page.goto(`/convert?tab=bridge&claim_network=base&claim_tx=${txHash}`);
+      // The link opens the lookup on its burn; disconnected, it asks to connect first.
+      await expect(page.getByTestId('bridge-claim-lookup-hash')).toHaveValue(txHash.toLowerCase());
+      await expect(page.getByTestId('bridge-claim-lookup-message')).toHaveText(
+        'Connect your wallet to look it up.'
+      );
+      // The mock wallet connects from the header, under the modal: close it, connect, look it up again.
+      await page.getByTestId('bridge-claim-lookup-close').click();
       await connectAndVerify(page);
-      const found = page.getByTestId('bridge-claim-lookup-found');
-      await expect(found).toContainText(`${AMOUNT}.00 USDS from Base to Ethereum`, { timeout: 60_000 });
-      await found.getByTestId('bridge-claim-lookup-add').click();
+      await page.getByTestId('bridge-claim-lookup-open').click();
+      await page.getByTestId('bridge-claim-lookup-network-base').click();
+      await page.getByTestId('bridge-claim-lookup-hash').fill(txHash);
+      await page.getByTestId('bridge-claim-lookup-find').click();
       // Added from the lookup, it's the recipient's own bridge, with its Claim.
       const recipientBridge = new BridgePage(page);
-      await expect(recipientBridge.cards()).toHaveCount(1);
+      await expect(recipientBridge.cards()).toHaveCount(1, { timeout: 60_000 });
       await claim(recipientBridge, page);
       await expectUsdsDelivered(recipient, before);
     } finally {
