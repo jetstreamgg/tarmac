@@ -256,7 +256,7 @@ function PendleMaturedCard({
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
   // opens (usePendleRedeemModal); a Safe can't be switched from the dapp, so it
   // disables with the hint instead.
-  const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
+  const { openRedeemModal, isRedeemable, isPrepared, claimUnavailableMessage, onPendleChain, switchBlocked } =
     usePendleRedeemModal(market);
 
   return (
@@ -320,6 +320,11 @@ function PendleMaturedCard({
               <Trans>
                 Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
               </Trans>
+            </Text>
+          )}
+          {onPendleChain && !switchBlocked && claimUnavailableMessage && (
+            <Text variant="small" className="text-statusError" data-testid="pendle-redeem-quote-error">
+              {claimUnavailableMessage}
             </Text>
           )}
         </div>

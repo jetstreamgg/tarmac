@@ -62,7 +62,9 @@ const hoisted = vi.hoisted(() => ({
   setIsAutoSwitchingMock: vi.fn(),
   setAutoSwitchIntentMock: vi.fn(),
   trackSwitchRequestedMock: vi.fn(),
-  trackSwitchCompletedMock: vi.fn()
+  trackSwitchCompletedMock: vi.fn(),
+  // Swappable quote state; undefined keeps the healthy QUOTE.
+  quoteState: undefined as { data: unknown; isLoading: boolean; error: Error | undefined } | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -121,9 +123,7 @@ vi.mock('@/hooks', async importOriginal => {
       dataSources: []
     }),
     useQuotePendleConvert: () => ({
-      data: QUOTE,
-      isLoading: false,
-      error: undefined,
+      ...(hoisted.quoteState ?? { data: QUOTE, isLoading: false, error: undefined }),
       mutate: () => undefined,
       dataSources: []
     }),
@@ -455,5 +455,43 @@ describe('usePendleRedeemModal network switch', () => {
     expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
     expect(hoisted.launchMock).not.toHaveBeenCalled();
     view.unmount();
+  });
+});
+
+describe('usePendleRedeemModal claim quote failure', () => {
+  afterEach(() => {
+    hoisted.quoteState = undefined;
+    vi.clearAllMocks();
+  });
+
+  const Capture = ({ onResult }: { onResult: (message: string | undefined) => void }) => {
+    onResult(usePendleRedeemModal(MATURED_MARKET).claimUnavailableMessage);
+    return null;
+  };
+  const messageFor = (quoteState: typeof hoisted.quoteState) => {
+    hoisted.quoteState = quoteState;
+    let message: string | undefined;
+    const view = renderComponent(<Capture onResult={m => (message = m)} />);
+    view.unmount();
+    return message;
+  };
+
+  it('says nothing while the quote is healthy or still loading', () => {
+    expect(messageFor(undefined)).toBeUndefined();
+    expect(messageFor({ data: undefined, isLoading: true, error: undefined })).toBeUndefined();
+  });
+
+  it('explains a claim blocked because Pendle no longer finds the market', () => {
+    const error = new Error('Pendle /convert 400: {"message":"Market not found","statusCode":400}');
+    expect(messageFor({ data: undefined, isLoading: false, error })).toBe(
+      "Pendle's quote service can't find this market right now. Please try again later."
+    );
+  });
+
+  it('explains a claim blocked by a Pendle outage', () => {
+    const error = new Error('Pendle /convert 503: {}');
+    expect(messageFor({ data: undefined, isLoading: false, error })).toBe(
+      "Pendle's quote service is temporarily unavailable. Please try again."
+    );
   });
 });
