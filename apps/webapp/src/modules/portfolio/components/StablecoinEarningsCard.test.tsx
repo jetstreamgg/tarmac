@@ -69,6 +69,7 @@ const SUPPLIED: SuppliedView = {
   avgRate: 0.0375,
   ratesLoading: false,
   activePositions: 1,
+  hasMatured: false,
   suppliedTokens: ['sUSDS']
 };
 

@@ -22,26 +22,48 @@ const h = vi.hoisted(() => {
     kind: 'savings',
     intent: 'SAVINGS_INTENT',
     address: undefined as string | undefined,
-    rate: { value: 0.045 },
+    rate: { value: 0.045 as number | undefined },
     detailPath: '/earn/savings',
     supplyTokens: ['USDS'],
     networks: [1, 8453],
     position: { totalUsd, byChain: { 1: totalUsd } }
   });
+  // A matured Pendle market the wallet still holds, as the marketplace hands it over.
+  const maturedRow = (totalUsd: number) => ({
+    ...supplyRow(totalUsd),
+    id: 'fixed-0x9c56',
+    name: 'Fixed Yield',
+    tokenSymbol: 'sUSDS',
+    kind: 'fixed',
+    intent: 'FIXED_INTENT',
+    address: '0x9c56',
+    detailPath: '/earn/fixed/pt-susds',
+    networks: [1],
+    status: 'matured' as const,
+    rate: { value: undefined }
+  });
+  type Row = ReturnType<typeof supplyRow> & { status?: 'matured' };
   return {
     supplyRow,
+    maturedRow,
     address: '0x00000000000000000000000000000000000000aa' as string,
-    marketplace: { rows: [] as ReturnType<typeof supplyRow>[], isLoading: true, isPositionsError: false },
+    marketplace: {
+      rows: [] as Row[],
+      maturedRows: [] as Row[],
+      isLoading: true,
+      isPositionsError: false
+    },
     balances: {
       balances: [] as { symbol: string; chainId: number; amount: number; amountUsd: number }[],
       isLoading: true,
       isError: false
     },
     skyData: { data: undefined as Record<string, string> | undefined, isLoading: true },
-    geo: { savingsEnabled: true, isLoading: false },
-    matured: undefined as
-      | { maturedPositions: { market: { marketAddress: string }; ptBalance: bigint }[]; isLoading: boolean }
-      | undefined
+    geo: { savingsEnabled: true, isLoading: false } as {
+      savingsEnabled: boolean;
+      isLoading: boolean;
+      fixedEnabled?: boolean;
+    }
   };
 });
 
@@ -58,9 +80,6 @@ vi.mock('@/hooks', () => ({
   useEarnMarketplace: () => h.marketplace,
   useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading })
 }));
-vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
-  usePendleMaturedPositions: () => h.matured ?? { maturedPositions: [], isLoading: false }
-}));
 vi.mock('../hooks/useStablecoinBalances', () => ({
   useStablecoinBalances: () => h.balances
 }));
@@ -76,7 +95,8 @@ vi.mock('../hooks/useWalletEarnings', () => ({
 }));
 vi.mock('@/modules/geo-config', () => ({
   useGeoConfig: () => ({
-    isModuleEnabled: (module: string) => (module === 'savings' ? h.geo.savingsEnabled : true),
+    isModuleEnabled: (module: string) =>
+      module === 'savings' ? h.geo.savingsEnabled : module === 'fixed' ? (h.geo.fixedEnabled ?? true) : true,
     isLoading: h.geo.isLoading
   })
 }));
@@ -131,7 +151,7 @@ i18n.load('en', {});
 i18n.activate('en');
 
 const setLoading = () => {
-  h.marketplace = { rows: [], isLoading: true, isPositionsError: false };
+  h.marketplace = { rows: [], maturedRows: [], isLoading: true, isPositionsError: false };
   h.balances = { balances: [], isLoading: true, isError: false };
   h.skyData = { data: undefined, isLoading: true };
   h.geo = { savingsEnabled: true, isLoading: false };
@@ -140,6 +160,7 @@ const setLoading = () => {
 const setSettled = ({ depositedUsd, idleUsd }: { depositedUsd: number; idleUsd: number }) => {
   h.marketplace = {
     rows: depositedUsd > 0 ? [h.supplyRow(depositedUsd)] : [],
+    maturedRows: [],
     isLoading: false,
     isPositionsError: false
   };
@@ -162,7 +183,6 @@ const renderPage = () =>
 beforeEach(() => {
   localStorage.clear();
   h.address = ADDRESS_A;
-  h.matured = undefined;
   setLoading();
 });
 
@@ -171,14 +191,11 @@ afterEach(() => {
 });
 
 describe('ConnectedPortfolio matured-position tab default', () => {
-  it('defaults to Supplied when the only holding is matured PT (zero deposited USD)', () => {
-    // Matured markets are filtered out of the marketplace rows, so this wallet
-    // computes depositedUsd = 0 — but its Claim card renders only on Supplied.
+  it('defaults to Supplied when the only holding is a small matured position', () => {
+    // $5 sits under the significant-balance cut that would pick Idle, but the
+    // Claim card renders only on Supplied.
     setSettled({ depositedUsd: 0, idleUsd: 0 });
-    h.matured = {
-      maturedPositions: [{ market: { marketAddress: '0x9c56' }, ptBalance: 1n }],
-      isLoading: false
-    };
+    h.marketplace.maturedRows = [h.maturedRow(5)];
     renderPage();
     expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('supplied');
     expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ tab: 'supplied' });
@@ -186,12 +203,18 @@ describe('ConnectedPortfolio matured-position tab default', () => {
 
   it('matured PT overrides a cached idle decision from before maturity', () => {
     writePortfolioDecision(ADDRESS_A, { outcome: 'none', tab: 'idle' });
-    h.matured = {
-      maturedPositions: [{ market: { marketAddress: '0x9c56' }, ptBalance: 1n }],
-      isLoading: false
-    };
+    h.marketplace.maturedRows = [h.maturedRow(5)];
     renderPage();
     expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('supplied');
+  });
+
+  it('hides a matured position where fixed yield is region-restricted', () => {
+    setSettled({ depositedUsd: 0, idleUsd: 0 });
+    h.geo.fixedEnabled = false;
+    h.marketplace.maturedRows = [h.maturedRow(5)];
+    renderPage();
+    // Nothing visible is held, so the default falls through to Idle.
+    expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('idle');
   });
 });
 
@@ -214,7 +237,7 @@ describe('ConnectedPortfolio decision cache', () => {
     // Errors settle as empty data — indistinguishable from an empty wallet,
     // so writing it would freeze a wrong outcome for the whole TTL.
     setSettled({ depositedUsd: 0, idleUsd: 0 });
-    h.marketplace = { rows: [], isLoading: false, isPositionsError: true };
+    h.marketplace = { rows: [], maturedRows: [], isLoading: false, isPositionsError: true };
     renderPage();
     expect(readPortfolioDecision(ADDRESS_A)).toBeNull();
   });
