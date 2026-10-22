@@ -13,7 +13,8 @@ const mocks = vi.hoisted(() => ({
   legs: undefined as undefined | Record<string, unknown>,
   execute: vi.fn(),
   record: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
+  markBurn: vi.fn()
 }));
 
 vi.mock('wagmi', () => ({
@@ -26,8 +27,14 @@ vi.mock('@/hooks', () => ({
     mutate: vi.fn()
   })
 }));
-vi.mock('../adapters/cctp/gate', () => ({ cctpBurnRefusal: vi.fn(), cctpResumeRefusal: vi.fn() }));
-vi.mock('../store/cctpSwapStore', () => ({ cctpSwapStore: { record: mocks.record, clear: mocks.clear } }));
+vi.mock('../adapters/cctp/gate', () => ({
+  cctpBurnRefusal: vi.fn(),
+  cctpResumeRefusal: vi.fn(),
+  CCTP_SWAP_FAILED_MESSAGE: 'The swap of this bridge failed, so there is nothing to bridge.'
+}));
+vi.mock('../store/cctpSwapStore', () => ({
+  cctpSwapStore: { record: mocks.record, clear: mocks.clear, markBurn: mocks.markBurn }
+}));
 vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => true }));
 // The real engine calls onLegSent for a leg signed after its run ended too, with the context its run was executed with.
 vi.mock('./useBridgeCallLegs', () => ({
@@ -95,9 +102,10 @@ describe('useCctpBurnLegs with a leg signed after another run started', () => {
     mocks.execute.mockReset();
     mocks.record.mockReset();
     mocks.clear.mockReset();
+    mocks.markBurn.mockReset();
   });
 
-  it('(A) run 1 continues X, run 2 continues Y: run 1 late burn clears X and keeps Y', () => {
+  it('(A) run 1 continues X, run 2 continues Y: run 1 late burn is linked to X, not Y', () => {
     const { result, rerender } = renderLegs({ resume: RESUME_X, recipient: BASE_BURN_MINT_RECIPIENT });
     act(() => result.current.execute());
     const run1Burn = byName('depositForBurn');
@@ -109,8 +117,8 @@ describe('useCctpBurnLegs with a leg signed after another run started', () => {
     // Run 1's burn prompt is signed late, after run 2 started.
     act(() => onLegSent()(LATE_HASH, run1Burn, run1Context()));
 
-    expect(mocks.clear).not.toHaveBeenCalledWith(SCOPE, Y);
-    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, X);
+    expect(mocks.markBurn).not.toHaveBeenCalledWith(SCOPE, Y, expect.anything());
+    expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, X, LATE_HASH);
   });
 
   it('(B) run 1 fresh to R1, run 2 fresh to R2: run 1 late swap is recorded under R1', () => {

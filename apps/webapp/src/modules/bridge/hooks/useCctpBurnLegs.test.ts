@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   resumeRefusal: vi.fn(),
   record: vi.fn(),
   clear: vi.fn(),
+  markBurn: vi.fn(),
   storageWritable: true
 }));
 
@@ -40,9 +41,12 @@ vi.mock('@/hooks', () => ({
 }));
 vi.mock('../adapters/cctp/gate', () => ({
   cctpBurnRefusal: mocks.refusal,
-  cctpResumeRefusal: mocks.resumeRefusal
+  cctpResumeRefusal: mocks.resumeRefusal,
+  CCTP_SWAP_FAILED_MESSAGE: 'The swap of this bridge failed, so there is nothing to bridge.'
 }));
-vi.mock('../store/cctpSwapStore', () => ({ cctpSwapStore: { record: mocks.record, clear: mocks.clear } }));
+vi.mock('../store/cctpSwapStore', () => ({
+  cctpSwapStore: { record: mocks.record, clear: mocks.clear, markBurn: mocks.markBurn }
+}));
 vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => mocks.storageWritable }));
 vi.mock('./useBridgeCallLegs', () => ({
   useBridgeCallLegs: (params: Record<string, unknown>) => {
@@ -105,6 +109,7 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     mocks.resumeRefusal.mockReset();
     mocks.record.mockReset();
     mocks.clear.mockReset();
+    mocks.markBurn.mockReset();
     mocks.storageWritable = true;
   });
 
@@ -194,7 +199,7 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(render().error).toBeNull();
   });
 
-  it('keeps a sent swap for the recipient of the run, and drops it once its burn is sent', () => {
+  it('keeps a sent swap for the recipient of the run, and links it to its burn once sent', () => {
     const legs = render({ scope: SCOPE, recipient: OTHER });
     act(() => legs.execute());
     expect(mocks.execute).toHaveBeenCalledOnce();
@@ -211,7 +216,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     });
     expect(mocks.clear).not.toHaveBeenCalled();
     onLegSent(BURN_HASH, calls()[3]);
-    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
+    expect(mocks.clear).not.toHaveBeenCalled();
+    expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, BURN_HASH);
   });
 
   it('keeps a repriced swap under the hash that mines, and drops the one it replaced', () => {
@@ -226,7 +232,7 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
       expect.objectContaining({ swapTxHash: REPRICED_HASH })
     );
     onLegSent(BURN_HASH, calls()[3]);
-    expect(mocks.clear).toHaveBeenLastCalledWith(SCOPE, REPRICED_HASH);
+    expect(mocks.markBurn).toHaveBeenLastCalledWith(SCOPE, REPRICED_HASH, BURN_HASH);
   });
 
   it('drops nothing when the same swap is reported twice', () => {
@@ -247,17 +253,19 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(mocks.clear).not.toHaveBeenCalled();
   });
 
-  it('drops the continued swap once its burn is sent', () => {
+  it('links the continued swap to its burn once sent', () => {
     render({ scope: SCOPE, resume: RESUME });
     (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(BURN_HASH, calls()[1]);
-    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
+    expect(mocks.clear).not.toHaveBeenCalled();
+    expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, BURN_HASH);
   });
 
-  it('drops the continued swap once the wallet accepts its bundle, and tells the caller', () => {
+  it('links the continued swap to its bundle once the wallet accepts it, and tells the caller', () => {
     const onCallsSent = vi.fn();
     render({ scope: SCOPE, resume: RESUME, batch: true, onCallsSent });
     (mocks.legs!.onCallsSent as (id: string) => void)('bundle');
-    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
+    expect(mocks.clear).not.toHaveBeenCalled();
+    expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, 'bundle');
     expect(onCallsSent).toHaveBeenCalledWith('bundle');
   });
 
@@ -282,29 +290,30 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     );
   const OTHER_RESUME = { ...RESUME, swapTxHash: '0x' + '12'.repeat(32) };
 
-  it('drops the continued swap it sent when its bundle is accepted after another bridge is on show', () => {
+  it('links the continued swap it sent when its bundle is accepted after another bridge is on show', () => {
     const { result, rerender } = renderResumable({ batch: true });
     act(() => result.current.execute());
     rerender({ resume: OTHER_RESUME });
     (mocks.legs!.onCallsSent as (id: string) => void)('bundle');
-    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
-    expect(mocks.clear).not.toHaveBeenCalledWith(SCOPE, OTHER_RESUME.swapTxHash);
+    expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, 'bundle');
+    expect(mocks.markBurn).not.toHaveBeenCalledWith(SCOPE, OTHER_RESUME.swapTxHash, expect.anything());
   });
 
-  it('drops the continued swap it sent when its burn leg is sent after another bridge is on show', () => {
+  it('links the continued swap it sent when its burn leg is sent after another bridge is on show', () => {
     const { result, rerender } = renderResumable({});
     act(() => result.current.execute());
     const burn = calls()[1];
     rerender({ resume: OTHER_RESUME });
     (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(BURN_HASH, burn);
-    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, SWAP_HASH);
-    expect(mocks.clear).not.toHaveBeenCalledWith(SCOPE, OTHER_RESUME.swapTxHash);
+    expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, BURN_HASH);
+    expect(mocks.markBurn).not.toHaveBeenCalledWith(SCOPE, OTHER_RESUME.swapTxHash, expect.anything());
   });
 
   it('drops no swap for a bundle that is not a continued bridge', () => {
     render({ scope: SCOPE, batch: true });
     (mocks.legs!.onCallsSent as (id: string) => void)('bundle');
     expect(mocks.clear).not.toHaveBeenCalled();
+    expect(mocks.markBurn).not.toHaveBeenCalled();
   });
 
   it('keeps no swap without a scope, or from a Safe by any connector, whose hash the chain cannot confirm', () => {

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-// A bundle the wallet accepts clears the swap its own run continued, not one of a Confirm the engine refused.
+// A bundle the wallet accepts is linked to the swap its own run continued, not one of a Confirm the engine refused.
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
@@ -14,7 +14,8 @@ type BatchArgs = { onMutate: () => void; onCallsSent: (id: string) => void; onSt
 const mocks = vi.hoisted(() => ({
   batch: [] as BatchArgs[],
   record: vi.fn(),
-  clear: vi.fn()
+  clear: vi.fn(),
+  markBurn: vi.fn()
 }));
 
 vi.mock('wagmi', () => ({ usePublicClient: ({ chainId }: { chainId?: number }) => ({ chainId }) }));
@@ -27,9 +28,12 @@ vi.mock('@/hooks', () => ({
 }));
 vi.mock('../adapters/cctp/gate', () => ({
   cctpBurnRefusal: async () => undefined,
-  cctpResumeRefusal: async () => undefined
+  cctpResumeRefusal: async () => undefined,
+  CCTP_SWAP_FAILED_MESSAGE: 'The swap of this bridge failed, so there is nothing to bridge.'
 }));
-vi.mock('../store/cctpSwapStore', () => ({ cctpSwapStore: { record: mocks.record, clear: mocks.clear } }));
+vi.mock('../store/cctpSwapStore', () => ({
+  cctpSwapStore: { record: mocks.record, clear: mocks.clear, markBurn: mocks.markBurn }
+}));
 vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => true }));
 // The wallet opens the bundle on execute.
 vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
@@ -88,7 +92,7 @@ describe('useCctpBurnLegs with a bundle accepted after a later Confirm was refus
     vi.clearAllMocks();
   });
 
-  it('clears the swap the accepted bundle continued and keeps the refused one', async () => {
+  it('links the accepted bundle to the swap it continued, not to the refused one', async () => {
     const { result, rerender } = renderLegs();
     // Continue X: its approve and burn bundle opens in the wallet, and the modal closes on it.
     await act(async () => result.current.execute());
@@ -105,7 +109,7 @@ describe('useCctpBurnLegs with a bundle accepted after a later Confirm was refus
       mocks.batch.at(-1)!.onStart();
     });
 
-    expect(mocks.clear).not.toHaveBeenCalledWith(SCOPE, Y);
-    expect(mocks.clear).toHaveBeenCalledWith(SCOPE, X);
+    expect(mocks.markBurn).not.toHaveBeenCalledWith(SCOPE, Y, expect.anything());
+    expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, X, '0xcalls');
   });
 });

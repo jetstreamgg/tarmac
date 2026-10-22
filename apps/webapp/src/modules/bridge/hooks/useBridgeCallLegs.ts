@@ -80,6 +80,7 @@ export function useBridgeCallLegs({
   onCallsSent,
   onAccountSwitch,
   onLegSent,
+  onLegFailed,
   getCallbacks
 }: {
   /** No calls while the legs can't be built yet. */
@@ -103,6 +104,8 @@ export function useBridgeCallLegs({
   onAccountSwitch?: () => void;
   /** The wallet sent one leg, sequentially, under `hash`, with the context its run was executed with; called for a leg signed after its run ended too. */
   onLegSent?: (hash: string, variables: TxMutateVariables, context?: unknown) => void;
+  /** A leg sent one at a time reverted or was replaced, under `hash`; called after its run ended too. */
+  onLegFailed?: (hash: string) => void;
   getCallbacks: () => TxCallbacks;
 }) {
   // The sender of the run in progress: no other account may sign its later legs.
@@ -291,6 +294,8 @@ export function useBridgeCallLegs({
       getCallbacks().onSuccess(hash, blockNumber);
     },
     onError: (error, hash, variables) => {
+      if (hash && (error instanceof TransactionRevertedError || error instanceof TransactionReplacedError))
+        onLegFailed?.(hash);
       // A prompt rejected after its run ended, or opened by an earlier Confirm.
       if (!runFromRef.current) return;
       if (variables && issuers.issuerOf(variables) !== getCallbacks()) return;

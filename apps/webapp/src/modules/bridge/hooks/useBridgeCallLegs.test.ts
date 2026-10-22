@@ -5,6 +5,11 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress, type Call, type PublicClient } from 'viem';
 import type { TxMutateVariables } from '@/hooks';
+import {
+  TransactionRefusedError,
+  TransactionReplacedError,
+  TransactionRevertedError
+} from '@/hooks/shared/useTransactionOutcome';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
 const SENDER = getAddress('0x71C7656EC7ab88b098defB751B7401B5f6d8976F');
@@ -121,5 +126,56 @@ describe('useBridgeCallLegs onLegSent', () => {
       bundle.onStart();
     });
     expect(onLegSent).not.toHaveBeenCalled();
+  });
+});
+
+describe('useBridgeCallLegs onLegFailed', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+    Object.values(callbacks).forEach(fn => fn.mockClear());
+  });
+
+  const renderFailing = (onLegFailed: (hash: string) => void) =>
+    renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight: async () => undefined,
+        onLegFailed,
+        getCallbacks: () => callbacks
+      })
+    );
+  const failLeg = (error: Error, hash: string) =>
+    (mocks.sequential.at(-1) as unknown as { onError: (error: Error, hash: string) => void }).onError(
+      error,
+      hash
+    );
+
+  // A swap that reverts after the modal closed must not be offered to continue.
+  it('reports a leg whose receipt reverted or that was replaced, though its run ended', () => {
+    const onLegFailed = vi.fn();
+    const { result } = renderFailing(onLegFailed);
+    act(() => mocks.sequential.at(-1)!.onStart('0xswap', SWAP));
+    act(() => result.current.reset());
+    act(() => {
+      failLeg(new TransactionRevertedError(), '0xswap');
+      failLeg(new TransactionReplacedError(new Error('replaced')), '0xother');
+    });
+    expect(onLegFailed.mock.calls).toEqual([['0xswap'], ['0xother']]);
+    expect(callbacks.onError).not.toHaveBeenCalled();
+  });
+
+  it('reports no rejection, refusal or failure without a hash', () => {
+    const onLegFailed = vi.fn();
+    renderFailing(onLegFailed);
+    act(() => {
+      failLeg(new Error('User rejected the request.'), '0xswap');
+      failLeg(new TransactionRefusedError('refused'), '0xswap');
+      failLeg(new TransactionRevertedError(), '');
+    });
+    expect(onLegFailed).not.toHaveBeenCalled();
   });
 });

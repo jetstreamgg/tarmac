@@ -2,7 +2,7 @@ import type { CctpL2NetworkId } from '../adapters/cctp/contracts';
 
 const KEY_PREFIX = 'bridgeCctpSwap:v1:';
 
-/** A CCTP bridge whose USDS to USDC swap was sent on the L2 but whose burn never was. */
+/** A CCTP bridge whose USDS to USDC swap was sent on the L2 but whose burn never mined. */
 export type UnfinishedCctpSwap = {
   /** The swap's tx hash, lowercase; the entry's id. */
   swapTxHash: string;
@@ -12,6 +12,8 @@ export type UnfinishedCctpSwap = {
   /** The Ethereum recipient the bridge was for, lowercase. */
   recipient: string;
   at: number;
+  /** The burn last sent for it, lowercase: its tx hash, or the wallet's calls id for a bundle. */
+  burn?: string;
 };
 
 type Listener = () => void;
@@ -27,7 +29,8 @@ const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
     !NETWORKS.has(entry.network) ||
     !isString(entry.usdcAmount) ||
     !isString(entry.recipient) ||
-    typeof entry.at !== 'number'
+    typeof entry.at !== 'number' ||
+    (entry.burn !== undefined && !isString(entry.burn))
   )
     return null;
   try {
@@ -120,6 +123,17 @@ export function createCctpSwapStore() {
     return stored ? withUnsaved(scope, stored) : getSnapshot(scope);
   };
 
+  const clear = (scope: string, swapTxHash: string) => {
+    const hash = swapTxHash.toLowerCase();
+    const current = latest(scope);
+    if (!current.some(entry => entry.swapTxHash === hash)) return;
+    write(
+      scope,
+      current.filter(entry => entry.swapTxHash !== hash),
+      hash
+    );
+  };
+
   return {
     subscribe(listener: Listener) {
       if (listeners.size === 0) window.addEventListener('storage', onStorage);
@@ -141,16 +155,26 @@ export function createCctpSwapStore() {
       if (current.some(existing => existing.swapTxHash === entry.swapTxHash)) return;
       write(scope, [entry, ...current], entry.swapTxHash);
     },
-    /** Drops a swap: its burn was sent, or the user dismissed it (a reverted swap is refused on Continue). */
-    clear(scope: string, swapTxHash: string) {
+    /** Links a swap to the burn sent for it, which replaces any earlier one. */
+    markBurn(scope: string, swapTxHash: string, burn: string) {
       const hash = swapTxHash.toLowerCase();
+      const id = burn.toLowerCase();
       const current = latest(scope);
-      if (!current.some(entry => entry.swapTxHash === hash)) return;
+      if (!current.some(entry => entry.swapTxHash === hash && entry.burn !== id)) return;
       write(
         scope,
-        current.filter(entry => entry.swapTxHash !== hash),
+        current.map(entry => (entry.swapTxHash === hash ? { ...entry, burn: id } : entry)),
         hash
       );
+    },
+    /** Drops a swap: it reverted or was replaced, or the user dismissed it. */
+    clear,
+    /** Drops the swaps whose burn mined, by any id that burn is known under. */
+    clearBurned(scope: string, burns: readonly (string | undefined)[]) {
+      const ids = new Set(burns.filter(isString).map(id => id.toLowerCase()));
+      latest(scope)
+        .filter(entry => entry.burn !== undefined && ids.has(entry.burn))
+        .forEach(entry => clear(scope, entry.swapTxHash));
     }
   };
 }

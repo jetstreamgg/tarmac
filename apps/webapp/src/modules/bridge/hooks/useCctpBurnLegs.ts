@@ -10,7 +10,7 @@ import {
   cctpL2Contracts,
   type CctpL2NetworkId
 } from '../adapters/cctp/contracts';
-import { cctpBurnRefusal, cctpResumeRefusal } from '../adapters/cctp/gate';
+import { CCTP_SWAP_FAILED_MESSAGE, cctpBurnRefusal, cctpResumeRefusal } from '../adapters/cctp/gate';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isStorageWritable } from '../store/storageWritable';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
@@ -26,9 +26,10 @@ const toAddress = (value: string | undefined): Address | undefined =>
  * The source legs of a CCTP bridge from an L2 to Ethereum: approve USDS to
  * PSM3 and USDC to the TokenMessenger when short, the 1:1 swap of the whole
  * amount and the burn of the USDC it returns. A swap sent one leg at a time
- * is kept in `cctpSwapStore` until its burn is sent, so a bridge stopped in
- * between can be continued: with `resume` only that swap's USDC is burned,
- * after the chain shows the swap mined and no burn since. No calls while an
+ * is kept in `cctpSwapStore`, linked to the burn last sent for it, until that
+ * burn mines, so a bridge stopped in between or whose burn failed can be
+ * continued: with `resume` only that swap's USDC is burned, after the chain
+ * shows the swap mined and no burn since. A swap that reverted is dropped. No calls while an
  * allowance is loading or failed, for a recipient CCTP must never mint to,
  * or for another recipient while localStorage can't keep the bridge. The gate
  * is read again on both chains before the wallet prompt, so a paused or
@@ -132,16 +133,19 @@ export function useCctpBurnLegs({
           recipient: resume.recipient as Address,
           client
         });
+        // Nothing is left to continue: the card goes.
+        if (scope && refusal?.message === CCTP_SWAP_FAILED_MESSAGE)
+          cctpSwapStore.clear(scope, resume.swapTxHash);
         if (refusal) return refusal;
       }
       return cctpBurnRefusal({ network, amount: amountIn, source: client, destination, swap });
     },
-    [network, amountIn, destination, resume, from, swap]
+    [network, amountIn, destination, resume, from, swap, scope]
   );
 
   // Fixed per run at Confirm: the status a leg is later sent under may read unsettled.
   const isSafe = !!isSafeApp || !!isSafeWallet;
-  // The recipient, continued swap and Safe-ness a run was executed for, and the swap it sent, which its burn clears.
+  // The recipient, continued swap and Safe-ness a run was executed for, and the swap it sent, which its burn is linked to.
   type Run = {
     recipient: Address | undefined;
     resumed: string | undefined;
@@ -179,17 +183,21 @@ export function useCctpBurnLegs({
         at: Date.now()
       });
     } else if (variables.functionName === CCTP_BURN_FUNCTION) {
+      // Kept until the burn mines: a burn that reverts leaves the USDC to continue.
       const swapTxHash = run.resumed ?? run.sentSwap?.hash;
-      run.sentSwap = undefined;
-      if (swapTxHash) cctpSwapStore.clear(scope, swapTxHash);
+      if (swapTxHash) cctpSwapStore.markBurn(scope, swapTxHash, hash);
     }
   };
-  // A bundle is one prompt, with no onLegSent: the swap its run continued is dropped once the wallet accepts it.
+  // A bundle is one prompt, with no onLegSent: the swap its run continued is linked to the wallet's calls id.
   const onBundleSent = (id: string, context?: unknown) => {
     const run = (context as Run | undefined) ?? runRef.current;
     const resumed = run ? run.resumed : resume?.swapTxHash;
-    if (scope && resumed) cctpSwapStore.clear(scope, resumed);
+    if (scope && resumed) cctpSwapStore.markBurn(scope, resumed, id);
     onCallsSent?.(id);
+  };
+  // A swap whose receipt reverted, or that was replaced, swapped nothing; any other hash is no swap.
+  const onLegFailed = (hash: string) => {
+    if (scope) cctpSwapStore.clear(scope, hash);
   };
   const legs = useBridgeCallLegs({
     calls,
@@ -208,11 +216,16 @@ export function useCctpBurnLegs({
       usdcAllowance.mutate();
     },
     onLegSent,
+    onLegFailed,
     getCallbacks
   });
   const { execute: executeLegs } = legs;
   const execute = useCallback(() => {
-    const run: Run = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe };
+    // Try again resumes the last run's legs, so its burn still belongs to the swap that run sent.
+    const last = runRef.current;
+    const sentSwap =
+      last && last.recipient === to && last.resumed === resume?.swapTxHash ? last.sentSwap : undefined;
+    const run: Run = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe, sentSwap };
     runRef.current = run;
     executeLegs(run);
   }, [to, resume, isSafe, executeLegs]);

@@ -152,3 +152,66 @@ describe('createCctpSwapStore when writes fail but reads work', () => {
     ).toEqual([hash('a'), hash('c')]);
   });
 });
+
+describe('createCctpSwapStore burn links', () => {
+  beforeEach(() => localStorage.clear());
+
+  const SWAP_HASH = '0x' + 'ab'.repeat(32);
+  const burns = (store: ReturnType<typeof createCctpSwapStore>) =>
+    store.getSnapshot(SCOPE).map(entry => entry.burn);
+
+  it('links a swap to the burn last sent for it, in storage, lowercase', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    store.record(SCOPE, swap({ swapTxHash: '0x' + 'cd'.repeat(32) }));
+    store.markBurn(SCOPE, '0x' + 'AB'.repeat(32), '0xBURN1');
+    store.markBurn(SCOPE, SWAP_HASH, '0xburn2');
+    expect(
+      createCctpSwapStore()
+        .getSnapshot(SCOPE)
+        .map(entry => [entry.swapTxHash, entry.burn])
+    ).toEqual([
+      ['0x' + 'cd'.repeat(32), undefined],
+      [SWAP_HASH, '0xburn2']
+    ]);
+  });
+
+  it('links nothing to a swap it does not hold, and notifies only on a change', () => {
+    const store = createCctpSwapStore();
+    const listener = vi.fn();
+    const unsubscribe = store.subscribe(listener);
+    store.markBurn(SCOPE, SWAP_HASH, '0xburn');
+    expect(store.getSnapshot(SCOPE)).toEqual([]);
+    store.record(SCOPE, swap());
+    store.markBurn(SCOPE, SWAP_HASH, '0xburn');
+    store.markBurn(SCOPE, SWAP_HASH, '0xBURN');
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
+
+  it('drops only the swaps whose burn is among the mined ids', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    store.record(SCOPE, swap({ swapTxHash: '0x' + 'cd'.repeat(32) }));
+    store.record(SCOPE, swap({ swapTxHash: '0x' + 'ef'.repeat(32) }));
+    store.markBurn(SCOPE, SWAP_HASH, 'calls-1');
+    store.markBurn(SCOPE, '0x' + 'cd'.repeat(32), '0xother');
+    store.clearBurned(SCOPE, ['bundle-1', '0xBURN', undefined, 'CALLS-1']);
+    expect(burns(store)).toEqual([undefined, '0xother']);
+  });
+
+  it('drops a stored burn link of the wrong type', () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify([
+        { ...swap(), usdcAmount: '1', burn: 7 },
+        { ...swap({ swapTxHash: '0x01' }), usdcAmount: '1' }
+      ])
+    );
+    expect(
+      createCctpSwapStore()
+        .getSnapshot(SCOPE)
+        .map(entry => entry.swapTxHash)
+    ).toEqual(['0x01']);
+  });
+});

@@ -159,6 +159,9 @@ export async function cctpBurnRefusal({
   return undefined;
 }
 
+/** Why a continue is refused when its swap reverted: nothing is left to bridge. */
+export const CCTP_SWAP_FAILED_MESSAGE = 'The swap of this bridge failed, so there is nothing to bridge.';
+
 /** A refusal that sending again can't lift. */
 const finalRefusal = (message: string) => new TransactionRefusedError(message, { final: true });
 
@@ -206,8 +209,7 @@ export async function cctpResumeRefusal({
   const { psm3, usdc } = cctpL2Contracts(network);
   const receipt = await client.getTransactionReceipt({ hash: swapTxHash }).catch(() => undefined);
   if (!receipt) return new Error('The swap of this bridge is not confirmed yet.');
-  if (receipt.status !== 'success')
-    return finalRefusal('The swap of this bridge failed, so there is nothing to bridge.');
+  if (receipt.status !== 'success') return finalRefusal(CCTP_SWAP_FAILED_MESSAGE);
   if (!isAddressEqual(receipt.from, account) || !receipt.to || !isAddressEqual(receipt.to, psm3))
     return finalRefusal('This swap is not a bridge of this account.');
   // viem caches the head for seconds: a burn in that window would go unscanned.
