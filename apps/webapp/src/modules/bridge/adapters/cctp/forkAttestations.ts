@@ -20,6 +20,9 @@ import {
 import type { AttestationReader, IrisAttestedMessage } from './iris';
 import { isAttestedCopy, sentMessages } from './message';
 
+// Fork clocks match to the second (live: relay and burn share a timestamp); slack for any drift.
+const CLOCK_SLACK_SECONDS = 60n;
+
 /** How far back on the Ethereum fork a relayed mint is looked for. */
 const LOOKBACK_BLOCKS = 100_000n;
 
@@ -65,7 +68,8 @@ function receivedCopies(logs: readonly Log[], source: Hex): Hex[] {
  * Dev only, on the Tenderly multichain fork: Tenderly attests and relays a
  * CCTP burn itself, so Iris never knows it. Reads instead the copy Tenderly
  * received on the Ethereum fork, found by the mint to the burn's recipient;
- * none until it relayed. Two identical burns can't be told apart here.
+ * none until it relayed. Only relays mined after the burn count; two identical
+ * burns both in flight still can't be told apart here.
  */
 export const forkAttestationReader =
   (context: AdapterContext): AttestationReader =>
@@ -75,6 +79,7 @@ export const forkAttestationReader =
     const l2 = network && context.getClient(network);
     if (!l1 || !l2) return [];
     const receipt = await l2.getTransactionReceipt({ hash: txHash });
+    const { timestamp: burnedAt } = await l2.getBlock({ blockNumber: receipt.blockNumber });
     const latest = await l1.getBlockNumber();
     const fromBlock = latest > LOOKBACK_BLOCKS ? latest - LOOKBACK_BLOCKS : 0n;
     const attested: IrisAttestedMessage[] = [];
@@ -87,9 +92,15 @@ export const forkAttestationReader =
         fromBlock,
         toBlock: latest
       });
-      const relays = [...new Set(mints.map(({ transactionHash }) => transactionHash).filter(Boolean))];
+      // An identical earlier transfer to the same recipient was relayed before this burn existed.
+      const relays: Hex[] = [];
+      for (const { blockNumber, transactionHash } of mints) {
+        if (!transactionHash || blockNumber === null || relays.includes(transactionHash)) continue;
+        const { timestamp } = await l1.getBlock({ blockNumber });
+        if (timestamp + CLOCK_SLACK_SECONDS >= burnedAt) relays.push(transactionHash);
+      }
       for (const hash of relays) {
-        const relay = await l1.getTransactionReceipt({ hash: hash! });
+        const relay = await l1.getTransactionReceipt({ hash });
         for (const copy of receivedCopies(relay.logs, message))
           attested.push({ message: copy, attestation: NO_ATTESTATION });
       }

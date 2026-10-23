@@ -36,17 +36,24 @@ const receivedLog = (message: Hex): Log =>
 const patch = (message: Hex, offset: number, bytes: string) =>
   `${message.slice(0, 2 + offset * 2)}${bytes}${message.slice(2 + offset * 2 + bytes.length)}` as Hex;
 
+const BURNED_AT = 1_800_000_000n;
+
 const chains = ({
   relayed = [BASE_BURN_ATTESTED.message],
+  relayedAt = BURNED_AT + 30n,
   used = 1n
-}: { relayed?: Hex[]; used?: bigint } = {}) => {
+}: { relayed?: Hex[]; relayedAt?: bigint; used?: bigint } = {}) => {
   const l2 = {
-    getTransactionReceipt: vi.fn(async () => ({ status: 'success', logs: BASE_BURN_LOGS }))
+    getTransactionReceipt: vi.fn(async () => ({ status: 'success', blockNumber: 7n, logs: BASE_BURN_LOGS })),
+    getBlock: vi.fn(async () => ({ timestamp: BURNED_AT }))
   };
   const l1 = {
     getBlockNumber: vi.fn(async () => 26_250_599n),
+    getBlock: vi.fn(async () => ({ timestamp: relayedAt })),
     getLogs: vi.fn(async () =>
-      relayed.length ? [{ address: TOKEN_MESSENGER_V2, transactionHash: RELAY_TX }] : []
+      relayed.length
+        ? [{ address: TOKEN_MESSENGER_V2, blockNumber: 26_250_500n, transactionHash: RELAY_TX }]
+        : []
     ),
     getTransactionReceipt: vi.fn(async () => ({ status: 'success', logs: relayed.map(receivedLog) })),
     readContract: vi.fn(async () => used)
@@ -116,6 +123,20 @@ describe('forkAttestationReader (Tenderly multichain fork)', () => {
     await expect(
       forkAttestationReader(chains({ relayed: [fromArbitrum] }).context)(6, BASE_BURN_TX.hash)
     ).resolves.toEqual([]);
+  });
+
+  it('ignores an identical transfer relayed before this burn', async () => {
+    const { context } = chains({ relayedAt: BURNED_AT - 600n });
+    await expect(forkAttestationReader(context)(6, BASE_BURN_TX.hash)).resolves.toEqual([]);
+    await expect(
+      cctpProgress(seed(), context, 1_800_000_000_000, forkAttestationReader(context))
+    ).resolves.toEqual({ kind: 'waiting' });
+  });
+
+  it('reads a relay mined in the same second as the burn', async () => {
+    const { context } = chains({ relayedAt: BURNED_AT });
+    const attested = await forkAttestationReader(context)(6, BASE_BURN_TX.hash);
+    expect(attested.map(({ message }) => message)).toEqual([BASE_BURN_ATTESTED.message]);
   });
 
   it('lets the bridge arrive once Tenderly relayed it', async () => {
