@@ -297,7 +297,7 @@ export function EarnPage() {
     () =>
       isGeoLoading || isModuleEnabled('fixed')
         ? filterEarnRows(
-            allMaturedRows.filter(row => (row.position?.totalUsd ?? 0) > 0),
+            allMaturedRows.filter(row => row.claimable),
             filters,
             chainSlugById
           )
@@ -365,7 +365,7 @@ export function EarnPage() {
     () =>
       visibleMaturedRows.map(row => ({
         id: maturedRowId(row),
-        name: `Pendle ${row.tokenSymbol}`,
+        name: row.name,
         icon: (
           <TokenIcon
             token={{ symbol: row.tokenSymbol }}

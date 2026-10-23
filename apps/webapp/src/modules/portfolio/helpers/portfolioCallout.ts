@@ -17,3 +17,20 @@ export function portfolioCallout(depositedUsd: number, idleUsd: number): Portfol
   if (depositedUsd > SIGNIFICANT_BALANCE_USD) return 'none';
   return idleUsd > SIGNIFICANT_BALANCE_USD ? 'allocate' : 'simulate';
 }
+
+/**
+ * The settled Portfolio decision cached per address. A matured position needs
+ * a claim whatever its size, so it suppresses the pitch and claims Supplied,
+ * where its Claim card renders.
+ */
+export function portfolioDecision(
+  depositedUsd: number,
+  idleUsd: number,
+  hasMatured: boolean
+): { outcome: PortfolioCallout; tab: 'supplied' | 'idle' } {
+  if (hasMatured) return { outcome: 'none', tab: 'supplied' };
+  return {
+    outcome: portfolioCallout(depositedUsd, idleUsd),
+    tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
+  };
+}

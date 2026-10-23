@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useConnection, useConnectionEffect } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { motion, type Transition } from 'motion/react';
@@ -15,7 +15,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useStablecoinBalances } from '@/modules/portfolio/hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '@/modules/portfolio/hooks/useGeoVisibleRows';
 import { useGeoConfig } from '@/modules/geo-config';
-import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '@/modules/portfolio/helpers/portfolioCallout';
+import { portfolioDecision } from '@/modules/portfolio/helpers/portfolioCallout';
 import { IllustrationSkyLogomark } from '@/modules/icons/IllustrationSkyLogomark';
 // The held spin lives with the standalone spinner: the terms-check cover
 // wears the same glyph at the same angular speed (see SkyLogomarkSpinner).
@@ -154,8 +154,15 @@ export function useAppLoader(): {
   // The gate is the positions-only flag: the landing decision reads nothing
   // but `row.position`, and the full `isLoading` waits on rate/chart history
   // from external APIs that can outlive the hold cap.
-  const { rows, isPositionsLoading: marketLoading, isPositionsError: marketError } = useEarnMarketplace();
-  const visibleRows = useGeoVisibleRows(rows);
+  const {
+    rows,
+    maturedRows,
+    isPositionsLoading: marketLoading,
+    isPositionsError: marketError
+  } = useEarnMarketplace();
+  // Matured markets too, so this writer agrees with the Portfolio page's.
+  const visibleRows = useGeoVisibleRows(useMemo(() => [...rows, ...maturedRows], [rows, maturedRows]));
+  const hasMatured = visibleRows.some(row => row.claimable);
   const {
     balances,
     isLoading: balancesLoading,
@@ -192,11 +199,8 @@ export function useAppLoader(): {
   useEffect(() => {
     if (!address || decisionLoading || decisionError) return;
     if (fetchSeenForRef.current !== address && !balancesFetched) return;
-    writePortfolioDecision(address, {
-      outcome: portfolioCallout(depositedUsd, idleUsd),
-      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
-    });
-  }, [address, decisionLoading, decisionError, balancesFetched, depositedUsd, idleUsd]);
+    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleUsd, hasMatured));
+  }, [address, decisionLoading, decisionError, balancesFetched, depositedUsd, idleUsd, hasMatured]);
 
   useConnectionEffect({
     onConnect: data => {
@@ -302,11 +306,9 @@ export function useAppLoader(): {
     // held it): every balance figure belongs to the new address, so writing
     // it under sort.address would cache one wallet's totals for another.
     if (!decisionError && address === sort.address) {
-      const outcome = portfolioCallout(depositedUsd, idleUsd);
-      writePortfolioDecision(sort.address, {
-        outcome,
-        tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
-      });
+      const decision = portfolioDecision(depositedUsd, idleUsd, hasMatured);
+      const { outcome } = decision;
+      writePortfolioDecision(sort.address, decision);
       if (sort.surface && !released) {
         const target = landingFor(outcome);
         // viewTransition: false — the swap happens under the cover (or the
@@ -317,7 +319,18 @@ export function useAppLoader(): {
       }
     }
     setReleased(true);
-  }, [sort, holdElapsed, decisionLoading, decisionError, address, depositedUsd, idleUsd, released, navigate]);
+  }, [
+    sort,
+    holdElapsed,
+    decisionLoading,
+    decisionError,
+    address,
+    depositedUsd,
+    idleUsd,
+    hasMatured,
+    released,
+    navigate
+  ]);
 
   return { phase, coverMode, released, revealAnimated, endCover };
 }

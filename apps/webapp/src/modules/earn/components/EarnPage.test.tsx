@@ -293,7 +293,8 @@ describe('EarnPage requires-action section', () => {
       status: 'matured',
       rate: { formatted: '—' },
       rate30d: { formatted: '—' },
-      position: { totalUsd: positionUsd, byChain: { 1: positionUsd } }
+      position: { totalUsd: positionUsd, byChain: { 1: positionUsd } },
+      claimable: positionUsd > 0
     });
   const MATURED = [maturedRow(1200)];
 
@@ -336,7 +337,7 @@ describe('EarnPage requires-action section', () => {
     await screen.findByText('Requires action');
 
     const row = screen.getByTestId('earn-requires-action-row-matured-0x9c56');
-    expect(row.textContent).toContain('Pendle sUSDS');
+    expect(row.textContent).toContain('Fixed Yield');
     expect(row.textContent).toContain('Matured');
     // 1,200 PT at par → $1.2K compact, like the opportunities table's positions.
     expect(row.textContent).toContain('$1.2K');

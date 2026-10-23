@@ -12,7 +12,7 @@ import { readPortfolioDecision, writePortfolioDecision } from '@/lib/portfolioDe
 import { PageHeading } from '@/components/ui/page-header';
 import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
-import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
+import { portfolioCallout, portfolioDecision, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { useWalletEarnings } from '../hooks/useWalletEarnings';
@@ -88,7 +88,8 @@ export function ConnectedPortfolio() {
   const suppliedView = buildSuppliedView(visibleRows);
   const idleView = buildIdleView(balances);
   // Best supply rate + venue count per token, for the idle table's rate badge.
-  const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
+  // Matured markets take no deposits, so they're not a venue.
+  const idleSupplyInfo = buildIdleSupplyInfo(visibleRows.filter(row => row.status !== 'matured'));
 
   // Sky Savings Rate as a decimal fraction (drives the Idle footer + projection).
   // undefined while the query is in flight — the copy would otherwise quote
@@ -141,10 +142,7 @@ export function ConnectedPortfolio() {
   // and caching that would freeze a wrong outcome for the TTL.
   useEffect(() => {
     if (!address || calloutLoading || isPositionsError || balancesError) return;
-    writePortfolioDecision(address, {
-      outcome: hasMatured ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd),
-      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD && !hasMatured ? 'idle' : 'supplied'
-    });
+    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleTotalUsd, hasMatured));
   }, [address, calloutLoading, isPositionsError, balancesError, depositedUsd, idleTotalUsd, hasMatured]);
 
   // A matured position's Claim card renders only on Supplied, so it wins the
