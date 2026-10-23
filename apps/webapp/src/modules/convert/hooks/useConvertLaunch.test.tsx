@@ -1,71 +1,24 @@
-import { i18n } from '@lingui/core';
 import { renderHook, act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactElement } from 'react';
 import { parseUnits } from 'viem';
 
-// The `t` macro resolves against the global i18n singleton (not React context).
-i18n.load('en', {});
-i18n.activate('en');
-
-// Shared mutable state for the module mocks below. `vi.hoisted` runs before the
-// `vi.mock` factories so they can close over it.
 const h = vi.hoisted(() => ({
   launchMock: vi.fn(),
-  updateMock: vi.fn(),
-  isModalOpen: false,
-  txStatus: 'idle',
-  txCallbacks: {
-    onMutate: vi.fn(),
-    onStart: vi.fn(),
-    onSuccess: vi.fn(),
-    onError: vi.fn()
-  },
-  // Engine state the mock returns + the params it captured.
-  engineParams: undefined as Record<string, unknown> | undefined,
-  execute: vi.fn(),
-  mutatePocketBalance: vi.fn(),
-  needsAllowance: false,
-  prepared: true,
-  isLoading: false,
-  disabledReason: undefined as string | undefined,
-  targetAmount: 0n as bigint
+  engineParams: undefined as Record<string, unknown> | undefined
 }));
 
-vi.mock('wagmi', async importOriginal => {
-  const actual = await importOriginal<typeof import('wagmi')>();
-  return {
-    ...actual,
-    useChainId: () => 1,
-    useChains: () => [
-      { id: 1, name: 'Ethereum' },
-      { id: 8453, name: 'Base' }
-    ]
-  };
-});
-
-vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
-  useIsBatchSupported: () => ({
-    data: false,
-    isLoading: false,
-    error: null,
-    mutate: () => {},
-    dataSources: []
-  })
-}));
-
-vi.mock('@/hooks/shared/useNetworkFee', () => ({
-  // The fee row is read-only and network-backed; these tests render without a
-  // WagmiProvider, so stub it to the un-resolved state the row falls back on.
-  useNetworkFee: () => ({ data: undefined, isLoading: false, error: null, mutate: () => {}, dataSources: [] })
+vi.mock('wagmi', async importOriginal => ({
+  ...(await importOriginal<typeof import('wagmi')>()),
+  useChainId: () => 1
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: h.launchMock,
-    updateModalContent: h.updateMock,
-    isModalOpen: h.isModalOpen,
-    txStatus: h.txStatus,
-    txCallbacks: h.txCallbacks
+    isMinimized: false,
+    activeSessionId: null,
+    restore: vi.fn()
   })
 }));
 
@@ -76,26 +29,11 @@ vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
 vi.mock('./usePsmConversion', () => ({
   usePsmConversion: (params: Record<string, unknown>) => {
     h.engineParams = params;
-    const direction = params.direction as string;
-    const [originSymbol, targetSymbol] = direction === 'USDC_TO_USDS' ? ['USDC', 'USDS'] : ['USDS', 'USDC'];
-    return {
-      direction,
-      originToken: { symbol: originSymbol },
-      targetToken: { symbol: targetSymbol },
-      targetAmount: h.targetAmount,
-      needsAllowance: h.needsAllowance,
-      prepared: h.prepared,
-      isLoading: h.isLoading,
-      disabledReason: h.disabledReason,
-      execute: h.execute,
-      mutatePocketBalance: h.mutatePocketBalance,
-      // Mirrors the real result shape; the review content reads these for the fee
-      // row's bundling badge and the "Save X%" promo.
-      calls: [],
-      isBatch: false
-    };
+    return { direction: params.direction };
   }
 }));
+
+vi.mock('../components/ConvertFlow', () => ({ ConvertFlow: () => null }));
 
 import { useConvertLaunch } from './useConvertLaunch';
 
@@ -104,188 +42,49 @@ const AMOUNT_USDS = parseUnits('100', 18);
 beforeEach(() => {
   vi.clearAllMocks();
   h.engineParams = undefined;
-  h.isModalOpen = false;
-  h.needsAllowance = false;
-  h.prepared = true;
-  h.isLoading = false;
-  h.disabledReason = undefined;
-  h.targetAmount = parseUnits('100', 6);
 });
 
 afterEach(cleanup);
 
 describe('useConvertLaunch', () => {
-  it('wires the engine with the txCallbacks, referral code and direction/amount', () => {
+  it('reads the engine for the page without handing it transaction callbacks', () => {
     renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
 
     expect(h.engineParams).toMatchObject({
       direction: 'USDS_TO_USDC',
       amount: AMOUNT_USDS,
-      shouldUseBatch: true,
-      onMutate: h.txCallbacks.onMutate,
-      onStart: h.txCallbacks.onStart,
-      onSuccess: h.txCallbacks.onSuccess,
-      onError: h.txCallbacks.onError
+      shouldUseBatch: true
     });
-    expect(h.engineParams).toHaveProperty('referralCode');
+    expect(h.engineParams).not.toHaveProperty('onMutate');
   });
 
-  it('labels a two-step approve → convert flow when allowance is needed', () => {
-    h.needsAllowance = true;
-    const { result } = renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
-    // The approve step carries tokenSymbol so the steps list renders "Approve ◉ USDS" (Figma 1036:205564);
-    // the convert step carries a source→target pair so it renders "Convert ◉ USDS to ◉ USDC".
-    expect(result.current.steps).toEqual([
-      { label: 'Approve', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been approved." },
-      {
-        label: 'Convert',
-        tokenSymbol: 'USDS',
-        targetTokenSymbol: 'USDC',
-        failureDetail: "The USDS hasn't been converted."
-      }
-    ]);
-  });
-
-  it('collapses to a single convert step when allowance covers the amount', () => {
-    const { result } = renderHook(() =>
-      useConvertLaunch({ direction: 'USDC_TO_USDS', amount: parseUnits('100', 6) })
-    );
-    expect(result.current.steps).toEqual([
-      {
-        label: 'Convert',
-        tokenSymbol: 'USDC',
-        targetTokenSymbol: 'USDS',
-        failureDetail: "The USDC hasn't been converted."
-      }
-    ]);
-  });
-
-  it('launches the review modal with the frozen config shape and convert analytics', () => {
-    const { result } = renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
-
-    act(() => result.current.launch());
-
-    expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config).toMatchObject({
-      title: 'Review conversion',
-      // The wallet screen keeps the review title (Figma 1036:205564).
-      transactionTitle: 'Review conversion',
-      confirmLabel: 'Confirm',
-      confirmDisabled: false,
-      // The review is priced for the launch chain (mocked wallet chain 1), so a
-      // wallet-side switch mid-review shows the chain guard (APP-563 #4).
-      supportedChainIds: [1],
-      chainGuardReason: 'launch-chain',
-      steps: [
-        {
-          label: 'Convert',
-          tokenSymbol: 'USDS',
-          targetTokenSymbol: 'USDC',
-          failureDetail: "The USDS hasn't been converted."
-        }
-      ],
-      toast: {
-        loading: 'Converting 100.00 USDS',
-        success: '100.00 USDS converted to USDC!',
-        error: 'Conversion failed'
-      },
-      analytics: {
-        widgetName: 'convert',
-        flow: 'usds-to-usdc',
-        action: 'convert',
-        data: { module: 'convert', originToken: 'USDS', targetToken: 'USDC', amount: 100 }
-      }
-    });
-    expect(typeof config.sessionId).toBe('string');
-    expect(config.transactionContent).toBeTruthy();
-  });
-
-  it('onConfirm fires the live engine execute; onSuccess refetches engine reads then the caller', () => {
-    const callerSuccess = vi.fn();
-    const { result } = renderHook(() =>
-      useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS, onSuccess: callerSuccess })
-    );
-
-    act(() => result.current.launch());
-    const config = h.launchMock.mock.calls[0][0];
-
-    config.onConfirm();
-    expect(h.execute).toHaveBeenCalledTimes(1);
-
-    config.onSuccess();
-    expect(h.mutatePocketBalance).toHaveBeenCalledTimes(1);
-    expect(callerSuccess).toHaveBeenCalledTimes(1);
-  });
-
-  it('getDispatchBlocked reads the live engine guard after launch', () => {
-    const { result, rerender } = renderHook(() =>
-      useConvertLaunch({ direction: 'USDC_TO_USDS', amount: AMOUNT_USDS })
-    );
-
-    act(() => result.current.launch());
-    const config = h.launchMock.mock.calls[0][0];
-    expect(config.getDispatchBlocked()).toBe(false);
-
-    h.disabledReason = 'non_zero_fee';
-    rerender();
-    expect(config.getDispatchBlocked()).toBe(true);
-  });
-
-  it.each([
-    ['zero amount', () => ({ amount: 0n }), {}],
-    ['engine guard', () => ({}), { disabledReason: 'insufficient_liquidity' }],
-    ['not prepared', () => ({}), { prepared: false }]
-  ] as const)('disables confirm on %s', (_label, paramsOverride, engineOverride) => {
-    Object.assign(h, engineOverride);
-    const { result } = renderHook(() =>
-      useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS, ...paramsOverride() })
-    );
-
-    act(() => result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].confirmDisabled).toBe(true);
-  });
-
-  it('pushes live updates to the open modal, scoped by sessionId', () => {
-    h.isModalOpen = true;
-    renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
-
-    expect(h.updateMock).toHaveBeenCalled();
-    const [sessionId, partial] = h.updateMock.mock.calls.at(-1)!;
-    expect(typeof sessionId).toBe('string');
-    expect(partial).toMatchObject({
-      confirmDisabled: false,
-      steps: [
-        {
-          label: 'Convert',
-          tokenSymbol: 'USDS',
-          targetTokenSymbol: 'USDC',
-          failureDetail: "The USDS hasn't been converted."
-        }
-      ]
-    });
-  });
-
-  it('freezes modal content once the transaction leaves the review screen', () => {
-    // Post-confirm, the page resets the form (amount → 0); pushing that state
-    // would blank the executed amounts on the wallet/status screens.
-    h.isModalOpen = true;
-    h.txStatus = 'success';
-    renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: 0n }));
-
-    expect(h.updateMock).not.toHaveBeenCalled();
-    h.txStatus = 'idle';
-  });
-});
-
-describe('useConvertLaunch — form validity gates the engine', () => {
-  afterEach(() => cleanup());
-
-  it('passes the form gate through to the engine and defaults it open', () => {
+  it('passes the form gate through to the page engine and defaults it open', () => {
     renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS, enabled: false }));
     expect(h.engineParams?.enabled).toBe(false);
 
     renderHook(() => useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS }));
     expect(h.engineParams?.enabled).toBe(true);
+  });
+
+  it('launches the review flow at the current amount, guarded to the launch chain', () => {
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() =>
+      useConvertLaunch({ direction: 'USDS_TO_USDC', amount: AMOUNT_USDS, onSuccess })
+    );
+
+    act(() => result.current.launch());
+
+    expect(h.launchMock).toHaveBeenCalledTimes(1);
+    const options = h.launchMock.mock.calls[0][0];
+    // The review is priced for the launch chain, so a wallet-side switch mid-review
+    // shows the chain guard (APP-563 #4).
+    expect(options.supportedChainIds).toEqual([1]);
+    expect(options.chainGuardReason).toBe('launch-chain');
+    expect(typeof options.sessionId).toBe('string');
+    expect((options.flow as ReactElement).props).toEqual({
+      direction: 'USDS_TO_USDC',
+      amount: AMOUNT_USDS,
+      onSuccess
+    });
   });
 });

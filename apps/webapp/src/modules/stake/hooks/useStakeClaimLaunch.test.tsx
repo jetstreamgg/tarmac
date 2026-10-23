@@ -31,7 +31,6 @@ type CapturedFlow = { calls: RawCall[]; enabled: boolean | undefined; shouldUseB
 const h = vi.hoisted(() => ({
   flows: [] as { calls: unknown[]; enabled?: boolean; shouldUseBatch?: boolean }[],
   mockExecute: vi.fn(),
-  updateMock: vi.fn(),
   skyAllowance: 0n as bigint | undefined,
   isBatch: false,
   claims: [] as { contractAddress: `0x${string}`; claimBalance: bigint; rewardSymbol: string }[]
@@ -112,17 +111,14 @@ vi.mock('@/hooks/rewards/useRewardContractTokens', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: () => undefined,
-    updateModalContent: h.updateMock,
-    isModalOpen: false,
+  useSession: () => ({
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: 'idle'
+    status: 'idle'
   })
 }));
 
@@ -171,7 +167,6 @@ const renderLaunch = (params: Partial<Parameters<typeof useStakeClaimLaunch>[0]>
       urnIndex: URN_INDEX,
       selected: [SKY_REWARD, SPK_REWARD],
       enabled: true,
-      sessionId: 's1',
       ...params
     })
   );
@@ -258,7 +253,6 @@ describe('useStakeClaimLaunch — engines', () => {
   beforeEach(() => {
     h.flows = [];
     h.mockExecute.mockClear();
-    h.updateMock.mockClear();
     h.skyAllowance = 0n;
     h.isBatch = false;
     bothClaims();
@@ -323,40 +317,34 @@ describe('useStakeClaimLaunch — engines', () => {
   });
 });
 
-describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
+describe("useStakeClaimLaunch — each mode's steps, analytics and execution", () => {
   beforeEach(() => {
     h.flows = [];
     h.mockExecute.mockClear();
-    h.updateMock.mockClear();
     h.skyAllowance = 0n;
     h.isBatch = false;
     bothClaims();
   });
   afterEach(cleanup);
 
-  /** The [sessionId, partial] of the last live-update push. */
-  const lastPush = () => {
-    const call = h.updateMock.mock.calls.at(-1)!;
-    expect(call[0]).toBe('s1');
-    return call[1];
-  };
-
-  it('pushes the plain-claim steps and executes on confirm(false)', () => {
+  it('reports the plain-claim steps and executes on confirm(false)', () => {
     const { result } = renderLaunch();
     act(() => result.current.confirm(false));
+    const mode = result.current.plain;
 
-    expect(lastPush().steps).toEqual([
+    expect(mode.steps).toEqual([
       { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
       { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('pushes Approve + Claim + Restake steps on confirm(true), sharing the multicall write', () => {
+  it('reports Approve + Claim + Restake steps on confirm(true), sharing the multicall write', () => {
     const { result } = renderLaunch();
     act(() => result.current.confirm(true));
+    const mode = result.current.restake;
 
-    expect(lastPush().steps).toEqual([
+    expect(mode.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved.", write: 0 },
       { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed.", write: 1 },
       { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed.", write: 1 },
@@ -369,16 +357,18 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     h.skyAllowance = HAS_ALLOWANCE;
     const { result } = renderLaunch();
     act(() => result.current.confirm(true));
+    const mode = result.current.restake;
 
-    expect(lastPush().steps.map((step: { write?: number }) => step.write)).toEqual([0, 0, 0]);
+    expect((mode.steps as { write?: number }[]).map(step => step.write)).toEqual([0, 0, 0]);
   });
 
   it('draws one row per getReward on an unbundled multi-urn claim', () => {
     const selected = [reward(SKY_FARM, 'SKY', 0n), reward(SKY_FARM, 'SKY', 1n), reward(SPK_FARM, 'SPK', 1n)];
     const { result } = renderLaunch({ urnIndex: undefined, selected });
     act(() => result.current.confirm(false));
+    const mode = result.current.plain;
 
-    expect(lastPush().steps.map((step: { label: string; tokenSymbol: string }) => step.label)).toEqual([
+    expect((mode.steps as { label: string }[]).map(step => step.label)).toEqual([
       'Position 1: Claim',
       'Position 2: Claim',
       'Position 2: Claim'
@@ -391,46 +381,50 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     const selected = [reward(SKY_FARM, 'SKY', 0n), reward(SKY_FARM, 'SKY', 1n), reward(SPK_FARM, 'SPK', 1n)];
     const { result } = renderLaunch({ urnIndex: undefined, selected });
     act(() => result.current.confirm(false));
+    const mode = result.current.plain;
 
-    expect(lastPush().steps).toEqual([
+    expect(mode.steps).toEqual([
       { label: 'Claim', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been claimed." },
       { label: 'Claim', tokenSymbol: 'SPK', failureDetail: "The SPK hasn't been claimed." }
     ]);
   });
 
-  it('pushes legacy claim analytics: claimAll for a multi-token plain claim', () => {
+  it('reports legacy claim analytics: claimAll for a multi-token plain claim', () => {
     const { result } = renderLaunch();
     act(() => result.current.confirm(false));
+    const mode = result.current.plain;
 
-    const { analytics } = lastPush();
+    const { analytics } = mode;
     expect(analytics.widgetName).toBe('stake');
     expect(analytics.flow).toBe('manage');
     expect(analytics.action).toBe('claimAll');
-    expect(analytics.data.urnIndex).toBe(1);
-    expect(analytics.data.claimAction).toBe('claimAll');
-    expect(analytics.data.claimedRewards).toEqual([
+    expect(analytics.data?.urnIndex).toBe(1);
+    expect(analytics.data?.claimAction).toBe('claimAll');
+    expect(analytics.data?.claimedRewards).toEqual([
       { tokenSymbol: 'SKY', amount: 22.9, rewardContractAddress: SKY_FARM },
       { tokenSymbol: 'SPK', amount: 17.66, rewardContractAddress: SPK_FARM }
     ]);
-    expect(analytics.data.restakeSkyRewards).toBeUndefined();
+    expect(analytics.data?.restakeSkyRewards).toBeUndefined();
   });
 
-  it('pushes claimAllAndRestake with the restake amount on the restake confirm', () => {
+  it('reports claimAllAndRestake with the restake amount on the restake confirm', () => {
     const { result } = renderLaunch();
     act(() => result.current.confirm(true));
+    const mode = result.current.restake;
 
-    const { analytics } = lastPush();
+    const { analytics } = mode;
     expect(analytics.action).toBe('claimAllAndRestake');
-    expect(analytics.data.restakeSkyAmount).toBe(22.9);
-    expect(analytics.data.restakeSkyRewards).toBe(true);
+    expect(analytics.data?.restakeSkyAmount).toBe(22.9);
+    expect(analytics.data?.restakeSkyRewards).toBe(true);
   });
 
-  it('pushes claimAndRestake for a single-token restake', () => {
+  it('reports claimAndRestake for a single-token restake', () => {
     h.claims = [{ contractAddress: SKY_FARM, claimBalance: SKY_CLAIM, rewardSymbol: 'SKY' }];
     const { result } = renderLaunch({ selected: [SKY_REWARD] });
     act(() => result.current.confirm(true));
+    const mode = result.current.restake;
 
-    const push = lastPush();
+    const push = mode;
     expect(push.analytics.action).toBe('claimAndRestake');
     expect(push.steps).toEqual([
       { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved.", write: 0 },
@@ -439,15 +433,13 @@ describe('useStakeClaimLaunch — confirm() pushes + execution', () => {
     ]);
   });
 
-  it('retries the last-clicked engine without a fresh push', () => {
+  it('retries the last-clicked engine', () => {
     const { result } = renderLaunch();
     act(() => result.current.confirm(true));
-    h.updateMock.mockClear();
     h.mockExecute.mockClear();
 
     act(() => result.current.retry());
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
-    expect(h.updateMock).not.toHaveBeenCalled();
   });
 
   it('exposes restake availability from the selection', () => {

@@ -38,7 +38,7 @@ test('supply modal opens for PT-sUSDS', async ({ isolatedPage }) => {
   const pendle = new PendleProductPage(isolatedPage);
   await pendle.gotoConnected(PT_SUSDS_SLUG);
   await pendle.openSupplyModal(PT_SUSDS_MODAL_NAME);
-  // Slippage gear lives on the review grid only (PendleModalForm); Review stays
+  // Slippage gear lives on the review grid only (PendleTradeFlow); Review stays
   // disabled until a prepared quote — covered by SlippageMenu + Pendle modal
   // unit tests, not e2e (same vnet-quote limitation as the buy fixme below).
   await expect(isolatedPage.getByRole('textbox', { name: 'Supply amount' })).toBeVisible();

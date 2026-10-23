@@ -66,7 +66,8 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -77,7 +78,7 @@ const supplySteps: TransactionStep[] = [
 ];
 
 function Harness({ steps, onReady }: { steps?: TransactionStep[]; onReady: (cb: TxCallbacks) => void }) {
-  const { launch, txCallbacks, txStatus } = useTransaction();
+  const { launch, txCallbacks, txStatus } = useTestTransaction();
   const started = useRef(false);
   useEffect(() => {
     onReady(txCallbacks);

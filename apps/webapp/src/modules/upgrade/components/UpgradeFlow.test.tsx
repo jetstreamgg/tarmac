@@ -63,14 +63,12 @@ vi.mock('../hooks/useUpgradeLaunch', async importOriginal => {
   };
 });
 
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.update)
+);
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    updateModalContent: h.update,
-    txStatus: 'idle',
-    isModalOpen: h.isModalOpen,
-    isMinimized: h.isMinimized
-  }),
-  useEntrySlot: () => null
+  useSession: () => ({ status: 'idle' }),
+  useSessionHost: () => ({ open: h.isModalOpen && !h.isMinimized })
 }));
 
 vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
@@ -79,7 +77,7 @@ vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-import { UpgradeModalForm } from './UpgradeModalForm';
+import { UpgradeFlow } from './UpgradeFlow';
 import { stampDestination } from '@/modules/analytics/lib/destination';
 import { TOKENS } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -88,7 +86,7 @@ import type { UpgradeSourceToken } from '@/hooks';
 const formTree = (initialToken?: UpgradeSourceToken) => (
   <I18nProvider i18n={i18n}>
     <TooltipProvider>
-      <UpgradeModalForm sessionId="s1" initialToken={initialToken} />
+      <UpgradeFlow initialToken={initialToken} />
     </TooltipProvider>
   </I18nProvider>
 );
@@ -97,17 +95,17 @@ const renderForm = (initialToken?: UpgradeSourceToken) => render(formTree(initia
 
 // The last analytics blob live-merged to the modal (what the provider will emit from).
 const lastAnalytics = () => {
-  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
-  return withAnalytics.at(-1)?.[1].analytics;
+  const withAnalytics = h.update.mock.calls.filter(([patch]) => patch?.analytics !== undefined);
+  return withAnalytics.at(-1)?.[0].analytics;
 };
 
 // The last entry.confirmDisabled pushed to the modal.
 const lastDisabled = () => {
-  const withEntry = h.update.mock.calls.filter(([, patch]) => patch?.entry?.confirmDisabled !== undefined);
-  return withEntry.at(-1)?.[1].entry.confirmDisabled;
+  const withEntry = h.update.mock.calls.filter(([patch]) => patch?.entry?.confirmDisabled !== undefined);
+  return withEntry.at(-1)?.[0].entry.confirmDisabled;
 };
 
-describe('UpgradeModalForm — MKR→SKY fee read states (APP-491)', () => {
+describe('UpgradeFlow — MKR→SKY fee read states (APP-491)', () => {
   beforeEach(() => {
     h.isBatch = false;
     h.execute.mockClear();
@@ -151,7 +149,7 @@ describe('UpgradeModalForm — MKR→SKY fee read states (APP-491)', () => {
   });
 });
 
-describe('UpgradeModalForm — analytics parity blob (APP-444 B6)', () => {
+describe('UpgradeFlow — analytics parity blob (APP-444 B6)', () => {
   beforeEach(() => {
     h.isBatch = false;
     h.execute.mockClear();
@@ -162,6 +160,15 @@ describe('UpgradeModalForm — analytics parity blob (APP-444 B6)', () => {
     h.mkrSkyFeeError = null;
   });
   afterEach(() => cleanup());
+
+  it('opens on its single entry screen: "Continue" goes straight to "Confirm upgrade"', () => {
+    renderForm();
+    const props = h.update.mock.calls.at(-1)![0];
+    expect(props.title).toBe('Upgrade DAI/MKR');
+    expect(props.transactionTitle).toBe('Confirm upgrade');
+    expect(props.entry?.confirmLabel).toBe('Continue');
+    expect(props.transactionContent).toBeUndefined();
+  });
 
   it('pushes the legacy UpgradeWidget blob under widget_name convert: DAI→USDS', () => {
     renderForm('DAI');

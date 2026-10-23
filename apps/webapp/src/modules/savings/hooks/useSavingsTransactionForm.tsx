@@ -127,7 +127,7 @@ export interface SavingsTransactionForm {
  * The shared supply/withdraw form model for Sky Savings — the single source of
  * truth behind both savings supply surfaces: the inline no-position card
  * (`SavingsSupplyWithdrawPanel`) and the editable has-position modal body
- * (`SavingsModalForm`). It owns amount/Max/token state, resolves the origin token
+ * (`SavingsFlow`). It owns amount/Max/token state, resolves the origin token
  * and its options for the flow + network, runs the wallet/sUSDS balance and L2 PSM
  * preview reads, derives the spend gate, and maps all of it to the `useSavingsLaunch`
  * engine params. Surfaces stay thin: they render their own chrome and call
@@ -315,9 +315,8 @@ export function useSavingsTransactionForm({
   };
 
   // Compact summary for the wallet/status screen (Figma "Confirm in the wallet").
-  // Identical across surfaces, so the form owns it; memoised on the amount/token/flow
-  // so the modal's `updateModalContent` sync stays bounded. Drawn from the
-  // debounced amount so what is shown is what gets signed.
+  // Identical across surfaces, so the form owns it. Drawn from the debounced amount
+  // so what is shown is what gets signed.
   const amountDisplay = formatNumber(parseFloat(formatUnits(debouncedAmount, originDecimals)), {
     maxDecimals: 2
   });

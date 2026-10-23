@@ -1,8 +1,8 @@
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSession } from '@/modules/ui/context/TransactionContext';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 /**
- * Whether the open modal's run has started and not yet succeeded: confirmed
+ * Whether this flow's run has started and not yet succeeded: confirmed
  * (INITIALIZED), sending or mining (LOADING), or failed and retryable (ERROR).
  *
  * A form keeps its engine enabled through a run with this, whatever its amount
@@ -19,6 +19,6 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
  * post-send state.
  */
 export function useTransactionRunActive(): boolean {
-  const { txStatus } = useTransaction();
-  return txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING || txStatus === TxStatus.ERROR;
+  const { status } = useSession();
+  return status === TxStatus.INITIALIZED || status === TxStatus.LOADING || status === TxStatus.ERROR;
 }

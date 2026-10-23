@@ -213,9 +213,7 @@ export function useMerklRewards({ enabled = true }: { enabled?: boolean } = {}):
   const queryClient = useQueryClient();
   // Memoized because `mutate` closes over it: a fresh array literal per render gives
   // `mutate` a new identity every render, which busts the claim adapter's memo (its
-  // `rewards` array churns even when empty) and, through ClaimRewardsPanel's
-  // transactionScreenContent → useModalEntryBody effect → updateModalContent, spins
-  // any open claim modal in an unbounded re-render loop.
+  // `rewards` array churns even when empty).
   const queryKey = useMemo(() => ['merkl-rewards-all', userAddress], [userAddress]);
 
   const {

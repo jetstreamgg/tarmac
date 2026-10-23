@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import { act, useEffect, type ReactNode } from 'react';
+import { act, type ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { createRoot } from 'react-dom/client';
@@ -44,9 +44,10 @@ const QUOTE: PendleConvertQuote = {
 
 const hoisted = vi.hoisted(() => ({
   launchMock: vi.fn(),
-  updateMock: vi.fn(),
-  isModalOpen: false,
-  txStatus: 'idle',
+  mutateAllowance: vi.fn(),
+  reset: vi.fn(),
+  settle: null as { reset: unknown; onCleared: unknown } | null,
+  modalProps: vi.fn(),
   matured: true,
   // Swappable execute fn so tests can prove the latest one fires through onConfirm.
   currentExecute: (() => undefined) as () => void,
@@ -104,7 +105,7 @@ vi.mock('@/hooks', async importOriginal => {
   return {
     ...actual,
     isMarketMatured: () => hoisted.matured,
-    useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: () => {} }),
+    useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: hoisted.mutateAllowance }),
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
@@ -134,7 +135,7 @@ vi.mock('@/hooks', async importOriginal => {
       const captured = hoisted.currentExecute;
       return {
         execute: () => captured(),
-        reset: () => undefined,
+        reset: hoisted.reset,
         prepared: true,
         isLoading: false,
         error: undefined,
@@ -159,25 +160,33 @@ vi.mock('@/modules/pendle/hooks/usePendleUsdValue', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: hoisted.launchMock,
-    updateModalContent: hoisted.updateMock,
-    isModalOpen: hoisted.isModalOpen,
+  useTransaction: () => ({ launch: hoisted.launchMock }),
+  useSettleOnEnd: (reset: unknown, onCleared: unknown) => {
+    hoisted.settle = { reset, onCleared };
+  },
+  useSession: () => ({
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: hoisted.txStatus
+    status: 'idle'
   })
 }));
+
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(
+    hoisted.modalProps
+  )
+);
 
 vi.mock('../../components/PendleRedeem', () => ({
   PendleRedeem: () => null
 }));
 
 import { usePendleRedeemModal } from '../usePendleRedeemModal';
+import { PendleRedeemFlow } from '../../components/PendleRedeemFlow';
 
 function renderComponent(ui: ReactNode) {
   const container = document.createElement('div');
@@ -202,20 +211,21 @@ function renderComponent(ui: ReactNode) {
   };
 }
 
-const TestConsumer = ({ openOnMount = true }: { openOnMount?: boolean }) => {
-  const { openRedeemModal } = usePendleRedeemModal(MATURED_MARKET);
-  useEffect(() => {
-    if (openOnMount) openRedeemModal();
-  }, [openRedeemModal, openOnMount]);
-  return null;
+const UNDERLYING = {
+  name: 'USDG',
+  symbol: 'USDG',
+  decimals: 6,
+  color: '#00C2A1',
+  address: { [mainnet.id]: MATURED_MARKET.underlyingToken }
 };
+const Flow = () => (
+  <PendleRedeemFlow market={MATURED_MARKET} initialOutputToken={UNDERLYING} onOutputTokenChange={() => {}} />
+);
+const lastProps = () => hoisted.modalProps.mock.calls.at(-1)![0];
 
-describe('usePendleRedeemModal analytics', () => {
+describe('PendleRedeemFlow analytics', () => {
   beforeEach(() => {
-    hoisted.launchMock.mockClear();
-    hoisted.updateMock.mockClear();
-    hoisted.isModalOpen = false;
-    hoisted.txStatus = 'idle';
+    hoisted.modalProps.mockClear();
     hoisted.matured = true;
     hoisted.valueUsd = (_symbol: string, amount: number) => amount;
   });
@@ -224,56 +234,28 @@ describe('usePendleRedeemModal analytics', () => {
     vi.clearAllMocks();
   });
 
-  it('freezes the live analytics push once the flow leaves IDLE', () => {
-    hoisted.isModalOpen = true;
-    const view = renderComponent(<TestConsumer openOnMount={false} />);
-    const idlePushes = hoisted.updateMock.mock.calls.length;
-    expect(idlePushes).toBeGreaterThan(0);
-
-    // Quote repolls mid-flight (valueUsd recompute) while the tx is loading:
-    // the blob the signed tx started with must not be rewritten.
-    hoisted.txStatus = 'loading';
-    hoisted.valueUsd = (_symbol: string, amount: number) => amount * 2;
-    view.rerender(<TestConsumer openOnMount={false} />);
-    expect(hoisted.updateMock.mock.calls.length).toBe(idlePushes);
-
-    // Back to IDLE (reset/retry): pushes resume.
-    hoisted.txStatus = 'idle';
-    view.rerender(<TestConsumer openOnMount={false} />);
-    expect(hoisted.updateMock.mock.calls.length).toBeGreaterThan(idlePushes);
-    view.unmount();
-  });
-
-  it('names the quoted receive amount in the success toast, on launch and in the live push', () => {
-    hoisted.isModalOpen = true;
-    const { unmount } = renderComponent(<TestConsumer />);
+  it('names the quoted receive amount in the success toast', () => {
+    const { unmount } = renderComponent(<Flow />);
     // QUOTE.amountOut = 1_499_500n at 6dp → 1.5 of the default output (the underlying).
-    const expected = {
+    expect(lastProps().toast).toEqual({
       loading: 'Claiming your matured position',
       success: 'Claimed 1.50 USDG',
       error: 'Claim failed'
-    };
-    expect(hoisted.launchMock.mock.calls[0][0].toast).toEqual(expected);
-    const lastPush = hoisted.updateMock.mock.calls.at(-1)?.[1];
-    expect(lastPush.toast).toEqual(expected);
+    });
     unmount();
   });
 
-  it('preserves widgetName=fixed, flow=redeem, action=redeem on launch()', () => {
-    const { unmount } = renderComponent(<TestConsumer />);
-    expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
-    const config = hoisted.launchMock.mock.calls[0][0];
-    expect(config.analytics.widgetName).toBe('fixed');
-    expect(config.analytics.flow).toBe('redeem');
-    expect(config.analytics.action).toBe('redeem');
+  it('reports widgetName=fixed, flow=redeem, action=redeem', () => {
+    const { unmount } = renderComponent(<Flow />);
+    const { analytics } = lastProps();
+    expect(analytics?.widgetName).toBe('fixed');
+    expect(analytics?.flow).toBe('redeem');
+    expect(analytics?.action).toBe('redeem');
     unmount();
   });
 
   it('emits analytics.data shaped identically to pendleAnalyticsData(redeem)', () => {
-    const { unmount } = renderComponent(<TestConsumer />);
-    const config = hoisted.launchMock.mock.calls[0][0];
-
-    // Reconstruct the expected blob from the same inputs the hook used.
+    const { unmount } = renderComponent(<Flow />);
     const ptToken = {
       name: 'PT-USDG',
       symbol: 'PT-USDG',
@@ -281,18 +263,11 @@ describe('usePendleRedeemModal analytics', () => {
       color: '#1BE3C2',
       address: { [mainnet.id]: MATURED_MARKET.ptToken }
     };
-    const underlyingToken = {
-      name: 'USDG',
-      symbol: 'USDG',
-      decimals: 6,
-      color: '#00C2A1',
-      address: { [mainnet.id]: MATURED_MARKET.underlyingToken }
-    };
     const expected = pendleAnalyticsData({
       market: MATURED_MARKET,
       side: 'redeem',
       originToken: ptToken,
-      targetToken: underlyingToken,
+      targetToken: UNDERLYING,
       amountFromBigint: PT_BALANCE,
       amountToBigint: QUOTE.amountOut,
       fromDecimals: MATURED_MARKET.underlyingDecimals,
@@ -301,40 +276,34 @@ describe('usePendleRedeemModal analytics', () => {
       quote: QUOTE,
       isBatchTx: true
     });
-
-    // Each key in `expected` must be present on the launched blob with the
-    // same value. `amount` is added on top of that — assert separately below.
+    const data = lastProps().analytics?.data ?? {};
     for (const [key, value] of Object.entries(expected)) {
-      expect(config.analytics.data[key]).toEqual(value);
+      expect(data[key]).toEqual(value);
     }
     unmount();
   });
 
   it('emits a strictly negative amount = USD value of the redeemed output leg', () => {
-    // `amount` now values the non-PT output leg (USDS/USDC/underlying the user
-    // receives), not the PT count. Output = QUOTE.amountOut (1_499_500n at 6dp)
-    // = 1.4995; valued ~$1/token by the stubbed value fn; emitted negative as a
-    // withdrawal. (Previously this asserted the PT-balance magnitude of 1.5.)
-    const { unmount } = renderComponent(<TestConsumer />);
-    const config = hoisted.launchMock.mock.calls[0][0];
-    expect(config.analytics.data.amount).toBeLessThan(0);
-    expect(Math.abs(config.analytics.data.amount)).toBeCloseTo(1.4995, 6);
+    // Output = QUOTE.amountOut (1_499_500n at 6dp) = 1.4995, valued ~$1/token by the
+    // stubbed value fn, emitted negative as a withdrawal.
+    const { unmount } = renderComponent(<Flow />);
+    const amount = lastProps().analytics?.data?.amount as number;
+    expect(amount).toBeLessThan(0);
+    expect(Math.abs(amount)).toBeCloseTo(1.4995, 6);
     unmount();
   });
 
   it('omits amount when the output leg cannot be valued (valueUsd → undefined)', () => {
     hoisted.valueUsd = () => undefined;
-    const { unmount } = renderComponent(<TestConsumer />);
-    const config = hoisted.launchMock.mock.calls[0][0];
-    expect(config.analytics.widgetName).toBe('fixed');
-    expect('amount' in config.analytics.data).toBe(false);
+    const { unmount } = renderComponent(<Flow />);
+    expect(lastProps().analytics?.widgetName).toBe('fixed');
+    expect('amount' in (lastProps().analytics?.data ?? {})).toBe(false);
     unmount();
   });
 
   it('includes module=pendle and the consolidated Pendle fields', () => {
-    const { unmount } = renderComponent(<TestConsumer />);
-    const config = hoisted.launchMock.mock.calls[0][0];
-    const data = config.analytics.data;
+    const { unmount } = renderComponent(<Flow />);
+    const data = lastProps().analytics?.data ?? {};
     expect(data.module).toBe('pendle');
     expect(data.productAddress).toBe(MATURED_MARKET.marketAddress);
     expect(data.ptAddress).toBe(MATURED_MARKET.ptToken);
@@ -343,45 +312,23 @@ describe('usePendleRedeemModal analytics', () => {
     expect(data.feeUsd).toBe(1.23);
     unmount();
   });
-});
 
-describe('usePendleRedeemModal onConfirm freshness', () => {
-  beforeEach(() => {
-    hoisted.launchMock.mockClear();
-    // currentExecute is reassigned per test below, so no clear needed here.
-    hoisted.matured = true;
+  it('resets the engine as the session ends, then refreshes the PT allowance, so a mined approve is not asked for again', () => {
+    renderComponent(<Flow />);
+    expect(hoisted.settle).toEqual({ reset: hoisted.reset, onCleared: hoisted.mutateAllowance });
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
+  it("confirms with the latest render's execute", () => {
+    const executeAtMount = vi.fn();
+    hoisted.currentExecute = executeAtMount;
+    const { rerender, unmount } = renderComponent(<Flow />);
 
-  it('onConfirm invokes the latest writeHook.execute, not the one captured at launch', () => {
-    // Modal opens with the user's initial selection (e.g. underlying as output).
-    // writeHook.execute closes over that render's args.
-    const executeAtLaunch = vi.fn();
-    hoisted.currentExecute = executeAtLaunch;
-
-    const { rerender, unmount } = renderComponent(<TestConsumer />);
-
-    expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
-    const storedOnConfirm = hoisted.launchMock.mock.calls[0][0].onConfirm;
-
-    // User changes something after launch (output token, slippage, or a
-    // background quote refetch lands). The next render of useBatchPendleConvert
-    // produces a new execute closure referencing the new args. Force the
-    // re-render and swap the hoisted execute to model it.
     const executeAfterChange = vi.fn();
     hoisted.currentExecute = executeAfterChange;
-    rerender(<TestConsumer openOnMount={false} />);
+    rerender(<Flow />);
 
-    // User clicks Confirm. The stored onConfirm — captured at launch — must
-    // route through the ref and call the latest execute, not the stale one.
-    act(() => {
-      storedOnConfirm();
-    });
-
-    expect(executeAtLaunch).not.toHaveBeenCalled();
+    act(() => lastProps().onConfirm());
+    expect(executeAtMount).not.toHaveBeenCalled();
     expect(executeAfterChange).toHaveBeenCalledTimes(1);
     unmount();
   });
@@ -390,8 +337,6 @@ describe('usePendleRedeemModal onConfirm freshness', () => {
 describe('usePendleRedeemModal network switch', () => {
   beforeEach(() => {
     hoisted.launchMock.mockClear();
-    hoisted.isModalOpen = false;
-    hoisted.txStatus = 'idle';
     hoisted.matured = true;
     hoisted.chainId = 1;
     hoisted.canSwitchChain = true;

@@ -6,6 +6,7 @@ import { I18nProvider } from '@lingui/react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 i18n.load('en', {});
@@ -27,22 +28,11 @@ const MARKET: PendleMarketConfig = {
 const hoisted = vi.hoisted(() => ({ launchMock: vi.fn() }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: hoisted.launchMock,
-    updateModalContent: () => undefined,
-    isModalOpen: false,
-    txCallbacks: {
-      onMutate: () => undefined,
-      onStart: () => undefined,
-      onSuccess: () => undefined,
-      onError: () => undefined
-    },
-    txStatus: 'idle'
-  })
+  useTransaction: () => ({ launch: hoisted.launchMock })
 }));
 
-vi.mock('../../components/PendleModalForm', () => ({
-  PendleModalForm: ({ flow }: { flow: string }) => <div data-flow={flow} />
+vi.mock('../../components/PendleTradeFlow', () => ({
+  PendleTradeFlow: ({ flow }: { flow: string }) => <div data-flow={flow} />
 }));
 
 import { usePendleModal } from '../usePendleModal';
@@ -82,34 +72,24 @@ describe('usePendleModal', () => {
     vi.clearAllMocks();
   });
 
-  it('launches the editable supply modal for the market', () => {
+  it('launches the supply flow for the market, guarded to mainnet', () => {
     const { unmount } = renderComponent(<TestConsumer flow="supply" />);
 
     expect(hoisted.launchMock).toHaveBeenCalledTimes(1);
-    const config = hoisted.launchMock.mock.calls[0][0];
-    expect(config.title).toContain('PT-USDG');
-    expect(config.sessionId).toBeTruthy();
-    expect(config.reviewTitle).toBe('Review supply');
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.entry.confirmDisabled).toBe(true);
-    expect(config.confirmLabel).toBe('Confirm');
-    expect(config.backgroundContent).toBeTruthy();
+    const options = hoisted.launchMock.mock.calls[0][0];
+    expect(options.sessionId).toBeTruthy();
+    expect(options.supportedChainIds).toEqual(MAINNET_FAMILY_CHAIN_IDS);
+    expect(options.flow.props).toMatchObject({ flow: 'supply', market: MARKET });
     unmount();
   });
 
-  it('launches the editable withdraw modal for the market', () => {
+  it('launches the withdraw flow for the market', () => {
     const { unmount } = renderComponent(<TestConsumer flow="withdraw" />);
 
-    const config = hoisted.launchMock.mock.calls[0][0];
-    expect(config.title).toBe('Early withdrawal');
-    // The early-withdrawal disclosure is the only subtitle the modal carries;
-    // no status (loading/success/error) copy rides along.
-    expect(config.subtitles).toEqual({ review: expect.stringContaining('current market price') });
-    expect(config.reviewTitle).toBe('Review withdrawal');
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.entry.confirmDisabled).toBe(true);
-    expect(config.confirmLabel).toBe('Confirm');
-    expect(config.backgroundContent).toBeTruthy();
+    expect(hoisted.launchMock.mock.calls[0][0].flow.props).toMatchObject({
+      flow: 'withdraw',
+      market: MARKET
+    });
     unmount();
   });
 
@@ -126,14 +106,6 @@ describe('usePendleModal', () => {
 
     const [supplyConfig, withdrawConfig] = hoisted.launchMock.mock.calls.map(call => call[0]);
     expect(supplyConfig.sessionId).not.toBe(withdrawConfig.sessionId);
-    unmount();
-  });
-
-  it('leaves launch analytics unset — flow events fire from the form for legacy parity', () => {
-    const { unmount } = renderComponent(<TestConsumer flow="supply" />);
-
-    const config = hoisted.launchMock.mock.calls[0][0];
-    expect(config.analytics).toBeUndefined();
     unmount();
   });
 });

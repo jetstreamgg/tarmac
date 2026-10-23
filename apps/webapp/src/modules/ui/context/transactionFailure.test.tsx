@@ -66,7 +66,8 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction } from './configFlow.testing';
 import { reportError } from '@/modules/sentry/reportError';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 
@@ -87,7 +88,7 @@ function Harness({
   onConfirm: () => void;
   onReady: (cb: TxCallbacks) => void;
 }) {
-  const { launch, txCallbacks } = useTransaction();
+  const { launch, txCallbacks } = useTestTransaction();
   const started = useRef(false);
   // Report the LATEST callbacks on every render: they are bound to the session
   // generation that rendered them, so tests must capture them post-launch, the

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePrices } from '@/hooks';
@@ -7,7 +6,6 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { formatUsd } from '@/utils';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
@@ -16,7 +14,8 @@ import { Text } from '@/modules/layout/components/Typography';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCells';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
-import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { useStakeClaimLaunch } from '../hooks/useStakeClaimLaunch';
@@ -55,21 +54,18 @@ function heroFor(reward: ClaimableReward, testIdPrefix: string, label?: boolean)
 }
 
 /**
- * The claim modal's editable body, mounted as the shared modal's
- * `backgroundContent` (so its two engines survive a minimize) and portaled into
- * the entry slot. Renders the reward heroes over [Network fee | Network]
- * (Figma 1036:213978) and keeps the two-CTA footer live: primary
- * `Claim & Restake SKY` + secondary `Claim` while a SKY reward is claimable,
- * a single `Claim` otherwise. The QA comps draw no per-token selection — the
- * flow claims the urn's full claimable set (the old checkbox list is gone,
- * same call as the generalized claim modal).
+ * The claim flow (Figma 1036:213978 entry → 1036:214007 confirm): the reward
+ * heroes over [Network fee | Network], with a two-CTA footer — primary
+ * `Claim & Restake SKY` + secondary `Claim` while a SKY reward is claimable, a
+ * single `Claim` otherwise. The QA comps draw no per-token selection — the flow
+ * claims the urn's full claimable set (same call as the generalized claim modal).
  */
 function StakeClaimPanel({
   selected,
   heroes,
   isLoading,
   urnIndex,
-  sessionId
+  onSuccess
 }: {
   /** Per-urn rewards the claim calls consume. */
   selected: ClaimableReward[];
@@ -78,16 +74,16 @@ function StakeClaimPanel({
   isLoading: boolean;
   /** Set when the selection is a single urn — the only case that offers restake. */
   urnIndex: bigint | undefined;
-  sessionId: string;
+  onSuccess: () => void;
 }) {
   const chainId = useChainId();
-  const { updateModalContent, txStatus } = useTransaction();
-  const entrySlot = useEntrySlot();
   const rewards = heroes;
 
   const {
     confirm,
     retry,
+    plain,
+    restake,
     restakeAvailable,
     plainPrepared,
     plainLoading,
@@ -98,8 +94,7 @@ function StakeClaimPanel({
   } = useStakeClaimLaunch({
     urnIndex,
     selected,
-    enabled: selected.length > 0,
-    sessionId
+    enabled: selected.length > 0
   });
 
   // Read-only: the cell shows a dash until this resolves, and neither CTA waits on it.
@@ -121,52 +116,6 @@ function StakeClaimPanel({
     ),
     [rewards]
   );
-
-  // Keep the entry's CTAs + wallet summary live. While SKY is claimable the
-  // primary CTA is the restake bundle and the plain claim rides secondary
-  // (comp 1036:214001); without SKY the plain claim is the single primary.
-  // Frozen once a CTA fires: the post-claim refetch empties `rewards`, and
-  // pushing that state would blank the executed heroes on the wallet/status
-  // screens (the convert-modal precedent).
-  useEffect(() => {
-    if (txStatus !== TxStatus.IDLE) return;
-    updateModalContent(sessionId, {
-      entry: restakeAvailable
-        ? {
-            confirmLabel: t`Claim & Restake SKY`,
-            confirmDisabled: restakeDisabled,
-            secondaryConfirmLabel: t`Claim`,
-            secondaryConfirmDisabled: claimDisabled
-          }
-        : {
-            confirmLabel: t`Claim`,
-            confirmDisabled: claimDisabled,
-            secondaryConfirmLabel: undefined,
-            secondaryConfirmDisabled: undefined
-          },
-      onConfirm: restakeAvailable ? handleRestake : handlePlain,
-      onSecondaryConfirm: restakeAvailable ? handlePlain : undefined,
-      onRetry: retry,
-      transactionScreenContent,
-      // USD notional of the claim set (enhanced screening, APP-517) — the
-      // restake variant moves the same claimed value, so one number covers
-      // both CTAs. Unknown (undefined) while the claimables are resolving.
-      usdValue: isLoading ? undefined : rewards.reduce((sum, reward) => sum + reward.amountUsd, 0)
-    });
-  }, [
-    updateModalContent,
-    sessionId,
-    txStatus,
-    restakeAvailable,
-    claimDisabled,
-    restakeDisabled,
-    handlePlain,
-    handleRestake,
-    retry,
-    transactionScreenContent,
-    isLoading,
-    rewards
-  ]);
 
   const networkName = useNetworkName(chainId, NO_VALUE);
 
@@ -202,13 +151,48 @@ function StakeClaimPanel({
     </div>
   );
 
-  // Display inside the dialog when its entry slot is mounted; otherwise render
-  // inline in the hidden host (keeps the body — and the engines — mounted).
-  return entrySlot ? createPortal(body, entrySlot) : body;
+  // While SKY is claimable the primary CTA is the restake bundle and the plain
+  // claim rides secondary (comp 1036:214001); without SKY the plain claim is the
+  // single primary.
+  const primary = restakeAvailable ? restake : plain;
+  return (
+    <TransactionModal
+      title={t`Claim rewards`}
+      // Figma 1036:214007 titles the wallet screen "Confirm claim".
+      transactionTitle={t`Confirm claim`}
+      // Toasts reuse the legacy claim notification copy (C6).
+      toast={{ loading: t`Claiming rewards`, success: t`Claim successful`, error: t`Claim failed` }}
+      // Opened over the details modal, which unmounts in this commit.
+      scrimHandoff
+      entry={
+        restakeAvailable
+          ? {
+              content: body,
+              confirmLabel: t`Claim & Restake SKY`,
+              confirmDisabled: restakeDisabled,
+              secondaryConfirmLabel: t`Claim`,
+              secondaryConfirmDisabled: claimDisabled
+            }
+          : { content: body, confirmLabel: t`Claim`, confirmDisabled: claimDisabled }
+      }
+      onConfirm={restakeAvailable ? handleRestake : handlePlain}
+      onSecondaryConfirm={restakeAvailable ? handlePlain : undefined}
+      onRetry={retry}
+      steps={primary.steps}
+      analytics={primary.analytics}
+      secondarySteps={restakeAvailable ? plain.steps : undefined}
+      secondaryAnalytics={restakeAvailable ? plain.analytics : undefined}
+      transactionScreenContent={transactionScreenContent}
+      // USD notional of the claim set (APP-517) — the restake variant moves the same
+      // claimed value, so one number covers both CTAs. Unknown while resolving.
+      usdValue={isLoading ? undefined : rewards.reduce((sum, reward) => sum + reward.amountUsd, 0)}
+      onSuccess={onSuccess}
+    />
+  );
 }
 
 /** One urn's full claimable set (the position-details Claim rewards). */
-function UrnClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: string }) {
+function UrnClaimPanel({ urnIndex, onSuccess }: { urnIndex: number; onSuccess: () => void }) {
   const { rewards, isLoading } = stakeAdapter.useClaimable({ kind: 'stake', index: BigInt(urnIndex) });
   const sorted = useMemo(() => sortSkyFirst(rewards), [rewards]);
   return (
@@ -217,7 +201,7 @@ function UrnClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: s
       heroes={sorted}
       isLoading={isLoading}
       urnIndex={BigInt(urnIndex)}
-      sessionId={sessionId}
+      onSuccess={onSuccess}
     />
   );
 }
@@ -226,11 +210,11 @@ function UrnClaimPanel({ urnIndex, sessionId }: { urnIndex: number; sessionId: s
 function TargetsClaimPanel({
   targets,
   rewardContracts,
-  sessionId
+  onSuccess
 }: {
   targets: StakeClaimTarget[];
   rewardContracts?: `0x${string}`[];
-  sessionId: string;
+  onSuccess: () => void;
 }) {
   const chainId = useChainId();
   const { claims, isLoading } = useStakeUrnsClaims(targets, rewardContracts);
@@ -253,7 +237,7 @@ function TargetsClaimPanel({
       heroes={heroes}
       isLoading={isLoading || pricesLoading}
       urnIndex={urnIndex}
-      sessionId={sessionId}
+      onSuccess={onSuccess}
     />
   );
 }
@@ -262,9 +246,8 @@ export type StakeClaimSelection =
   { urnIndex: number } | { targets: StakeClaimTarget[]; rewardContracts?: `0x${string}`[] };
 
 /**
- * Claim-rewards modal launcher (Figma 1036:213978 entry → 1036:214007 confirm),
- * on the shared TransactionModal. Launches at mount — the entry body lives in
- * `StakeClaimPanel` above — and returns to the position-details modal (C11)
+ * Claim-rewards modal launcher (Figma 1036:213978 entry → 1036:214007 confirm).
+ * Launches the claim flow at mount and returns to the position-details modal (C11)
  * when the shared modal closes; a successful claim clears the manage-flow
  * params and lands on the positions tab (C20) before this ever unmounts.
  */
@@ -301,58 +284,26 @@ export function StakeClaimModal({
     );
   }, [queryClient, setSearchParams]);
 
-  const urnIndex =
-    'urnIndex' in selection
-      ? selection.urnIndex
-      : selection.targets.length === 1
-        ? Number(selection.targets[0].urnIndex)
-        : undefined;
-
   const launchedRef = useRef(false);
   useEffect(() => {
     if (launchedRef.current) return;
     launchedRef.current = true;
     launch({
-      title: t`Claim rewards`,
-      // UNKNOWN until the urn claimables resolve (the panel pushes the real
-      // sum) — treated as above-threshold, so the enhanced check runs rather
-      // than being skipped (APP-517).
-      usdValue: undefined,
+      sessionId,
       // Staking is mainnet-only — guard the modal off any L2 (APP-528).
       supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-      // Opened over the details modal, which unmounts in this commit.
-      scrimHandoff: true,
-      // Figma 1036:214007 titles the wallet screen "Confirm claim".
-      transactionTitle: t`Confirm claim`,
-      // Toasts reuse the legacy claim notification copy (C6).
-      toast: {
-        loading: t`Claiming rewards`,
-        success: t`Claim successful`,
-        error: t`Claim failed`
-      },
-      sessionId,
-      entry: { confirmLabel: t`Claim`, confirmDisabled: true },
-      backgroundContent:
+      flow:
         'urnIndex' in selection ? (
-          <UrnClaimPanel urnIndex={selection.urnIndex} sessionId={sessionId} />
+          <UrnClaimPanel urnIndex={selection.urnIndex} onSuccess={onSuccess} />
         ) : (
           <TargetsClaimPanel
             targets={selection.targets}
             rewardContracts={selection.rewardContracts}
-            sessionId={sessionId}
+            onSuccess={onSuccess}
           />
-        ),
-      onConfirm: () => {},
-      onSuccess,
-      // The panel pushes the precise claimAction + amounts at confirm time.
-      analytics: {
-        widgetName: 'stake',
-        flow: 'manage',
-        action: 'claim',
-        data: { module: 'stake', ...(urnIndex !== undefined && { urnIndex }) }
-      }
+        )
     });
-  }, [launch, sessionId, selection, urnIndex, onSuccess]);
+  }, [launch, sessionId, selection, onSuccess]);
 
   // Return to the details modal when the shared modal closes — unless the
   // claim succeeded. Success routes away instead, but through an ASYNC router

@@ -11,8 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { NETWORK_FEE_LABEL, toGridCells } from '@/components/product/ModalGridCells';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { useSession } from '@/modules/ui/context/TransactionContext';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -46,9 +46,7 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
 }
 
 /**
- * The body for the generalized "Claim rewards" modal (Figma 1036:190079 single /
- * 1036:190108 stacked) — mounted as the shared modal's `backgroundContent` and
- * portaled into its entry slot (via `useModalEntryBody`).
+ * The generalized "Claim rewards" flow (Figma 1036:190079 single / 1036:190108 stacked).
  *
  * It calls the three claim adapters' read hooks unconditionally (fixed trio,
  * rules-of-hooks), renders every in-scope reward as a hero row, and merges every
@@ -65,8 +63,17 @@ function ClaimRewardRow({ reward }: { reward: ClaimableReward }) {
  * card passes `{kind:'vault'}`. Per-reward checkboxes were dropped with the redesigned
  * modal (Figma 1036:190105 shows none) — everything in scope is always claimed.
  */
-export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; scope: ClaimScope }) {
-  const { txCallbacks } = useTransaction();
+export function ClaimRewardsFlow({
+  scope,
+  title,
+  onSuccess
+}: {
+  scope: ClaimScope;
+  title: string;
+  /** After a successful claim — refetch the position/rewards. */
+  onSuccess?: () => void;
+}) {
+  const { txCallbacks } = useSession();
   const chainId = useChainId();
 
   // Fixed trio — called unconditionally, in stable order (also the merge order).
@@ -126,10 +133,6 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     (hasRewardsIn('stake') && !stakeCalls.prepared);
   const disabled = calls.length === 0 || preparing || !flow.prepared;
 
-  // Memoized so the useModalEntryBody sync effect has stable deps — an inline
-  // element here recreates every render and loops updateModalContent →
-  // setActiveConfig → re-render ("Maximum update depth", crashes the page; the
-  // same failure mode the vault form fixed in D4).
   const transactionScreenContent = useMemo(
     () => (
       <div className="flex flex-col gap-8" data-testid="claim-rewards-summary">
@@ -239,25 +242,6 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     ];
   }, [allRewards, merklCalls.calls.length, skyCalls.calls.length, stakeCalls.calls.length, effectiveRestake]);
 
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute: flow.execute,
-    // Not call-checked: every claim pays out to the user or, on restake, into
-    // their own position, and the restake amount follows the live accrued
-    // rewards, so a refetch would refuse it for nothing.
-    nextCalls: null,
-    confirmDisabled: disabled,
-    transactionScreenContent,
-    steps,
-    toast,
-    // USD notional of the whole claim set for the enhanced-screening
-    // threshold (APP-517). Unknown (undefined) while the sources are still
-    // resolving — the launch config carries no value either, so the check
-    // stays conservative until the amounts land.
-    usdValue: isLoading ? undefined : allRewards.reduce((sum, reward) => sum + reward.amountUsd, 0),
-    analytics
-  });
-
   // All three engines are mainnet, so the network is the connected chain.
   const networkName = useNetworkName(chainId, NO_VALUE);
 
@@ -302,7 +286,26 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
     </div>
   );
 
-  return renderInSlot(body);
+  return (
+    <TransactionModal
+      title={title}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Claim`, confirmDisabled: disabled }}
+      confirmDisabled={disabled}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // USD notional of the whole claim set (APP-517); unknown (undefined) while the
+      // sources are still resolving, so the check stays conservative until they land.
+      usdValue={isLoading ? undefined : allRewards.reduce((sum, reward) => sum + reward.amountUsd, 0)}
+      analytics={analytics}
+      onConfirm={flow.execute}
+      onSuccess={onSuccess}
+      // No calls check: every claim pays out to the user or, on restake, into their own
+      // position, and the restake amount follows the live accrued rewards.
+      dispatch={{ disabled }}
+    />
+  );
 }
 
 // Re-exported for the wallet-screen summary reuse / tests.

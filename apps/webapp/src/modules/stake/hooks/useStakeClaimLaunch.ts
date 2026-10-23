@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -12,7 +12,8 @@ import {
   ZERO_ADDRESS
 } from '@/hooks';
 import { REFERRAL_CODE } from '@/lib/constants';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSession } from '@/modules/ui/context/TransactionContext';
+import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { parseStakeId, stakeAdapter } from '@/modules/claim/adapters/stakeAdapter';
@@ -81,8 +82,6 @@ export interface UseStakeClaimLaunchParams {
   selected: ClaimableReward[];
   /** Selection non-empty and the modal ready — gates both engines' prepare. */
   enabled: boolean;
-  /** Session of the already-launched modal — scopes the click-time config pushes. */
-  sessionId: string;
 }
 
 /**
@@ -95,11 +94,8 @@ export interface UseStakeClaimLaunchParams {
  * `useBatchStakeMulticall`), byte-identical to the legacy widget's restake
  * multicall (C3). Both engines stay mounted; `confirm(restake)` picks per click.
  *
- * The modal itself is launched at mount by `StakeClaimModal` (the shared modal's
- * two-CTA entry, Figma 1036:213978); this hook owns the click side: each CTA
- * pushes the clicked mode's steps + analytics into the live config (the provider
- * applies them synchronously, so the engine's onMutate sees them) and fires that
- * mode's engine. `retry` re-fires the last-clicked engine.
+ * Each mode carries its own steps and analytics, so the modal reports whichever
+ * CTA was clicked; `retry` re-fires the last-clicked engine.
  *
  * Legacy semantics preserved (C4/C5, flagged open product decision):
  *  - restake locks into the SAME urn whose rewards are claimed;
@@ -113,8 +109,8 @@ export interface UseStakeClaimLaunchParams {
  * approval math is gated by `isSkyRewardPosition` — both arrive verbatim via
  * the F1 helpers; do not "fix".
  */
-export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: UseStakeClaimLaunchParams) {
-  const { updateModalContent, txCallbacks } = useTransaction();
+export function useStakeClaimLaunch({ urnIndex, selected, enabled }: UseStakeClaimLaunchParams) {
+  const { txCallbacks } = useSession();
   const chainId = useChainId();
   const { address } = useConnection();
 
@@ -238,16 +234,6 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
     ...txCallbacks
   });
 
-  // Live execute refs: launch() must never snapshot onConfirm state.
-  const plainExecuteRef = useRef(plainFlow.execute);
-  const restakeExecuteRef = useRef(restakeEngine.execute);
-  useEffect(() => {
-    plainExecuteRef.current = plainFlow.execute;
-  }, [plainFlow.execute]);
-  useEffect(() => {
-    restakeExecuteRef.current = restakeEngine.execute;
-  }, [restakeEngine.execute]);
-
   const claimSymbols = useMemo(() => claimedTokens.map(claim => claim.tokenSymbol), [claimedTokens]);
 
   const { data: rewardContractTokens } = useRewardContractTokens(
@@ -257,28 +243,25 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   );
   const selectedRewardSymbol = rewardContractTokens?.rewardsToken?.symbol;
 
-  // The last-clicked mode, so a retry after failure re-fires the right engine.
-  const restakeModeRef = useRef(false);
-
-  const confirm = useCallback(
-    (restake: boolean) => {
-      restakeModeRef.current = restake;
-
-      // Legacy claimTransactionCallbacks parity (C8): claimedRewards carry the
-      // raw claim amounts; the action name encodes count × restake.
-      const claimedRewards = claimedTokens.filter(claim => claim.amount > 0);
-      const claimAction =
-        claimedRewards.length === 0
-          ? undefined
-          : claimedRewards.length === 1
-            ? restake
-              ? 'claimAndRestake'
-              : 'claim'
-            : restake
-              ? 'claimAllAndRestake'
-              : 'claimAll';
-
-      const stakeData: Record<string, unknown> = {
+  // Legacy claimTransactionCallbacks parity (C8): claimedRewards carry the raw
+  // claim amounts; the action name encodes count × restake.
+  const analyticsFor = (restake: boolean): TransactionAnalytics => {
+    const claimedRewards = claimedTokens.filter(claim => claim.amount > 0);
+    const claimAction =
+      claimedRewards.length === 0
+        ? undefined
+        : claimedRewards.length === 1
+          ? restake
+            ? 'claimAndRestake'
+            : 'claim'
+          : restake
+            ? 'claimAllAndRestake'
+            : 'claimAll';
+    return {
+      widgetName: 'stake',
+      flow: 'manage',
+      action: claimAction ?? 'claim',
+      data: {
         module: 'stake',
         assetSymbol: 'SKY',
         borrowSymbol: 'USDS',
@@ -293,49 +276,38 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
             restakeSkyRewards: true
           }),
         ...(claimAction != null && { claimAction, claimedRewards })
-      };
+      }
+    };
+  };
+  const plain = {
+    steps: plainIsBatch
+      ? buildStakeClaimSteps({ needsSkyAllowance, claimSymbols, restake: false, shouldUseBatch })
+      : buildStakeSequentialClaimSteps(selected),
+    analytics: analyticsFor(false)
+  };
+  const restake = {
+    steps: buildStakeClaimSteps({ needsSkyAllowance, claimSymbols, restake: true, shouldUseBatch }),
+    analytics: analyticsFor(true)
+  };
 
-      // Push the clicked mode's steps + analytics BEFORE executing — the
-      // provider applies them to its config ref synchronously, so the engine's
-      // onMutate (fired in this same click) tracks the right claimAction.
-      updateModalContent(sessionId, {
-        steps:
-          restake || plainIsBatch
-            ? buildStakeClaimSteps({ needsSkyAllowance, claimSymbols, restake, shouldUseBatch })
-            : buildStakeSequentialClaimSteps(selected),
-        analytics: {
-          widgetName: 'stake',
-          flow: 'manage',
-          action: claimAction ?? 'claim',
-          data: stakeData
-        }
-      });
-      (restake ? restakeExecuteRef : plainExecuteRef).current();
+  // The last-clicked mode, so a retry after failure re-fires the right engine.
+  const restakeModeRef = useRef(false);
+  const plainExecute = plainFlow.execute;
+  const restakeExecute = restakeEngine.execute;
+  const confirm = useCallback(
+    (withRestake: boolean) => {
+      restakeModeRef.current = withRestake;
+      (withRestake ? restakeExecute : plainExecute)();
     },
-    [
-      updateModalContent,
-      sessionId,
-      urnIndex,
-      claimedTokens,
-      claimSymbols,
-      needsSkyAllowance,
-      restakeSkyAmount,
-      shouldUseBatch,
-      plainIsBatch,
-      selected,
-      urnSelectedRewardContract,
-      selectedRewardSymbol
-    ]
+    [plainExecute, restakeExecute]
   );
-
-  const retry = useCallback(
-    () => (restakeModeRef.current ? restakeExecuteRef : plainExecuteRef).current(),
-    []
-  );
+  const retry = () => (restakeModeRef.current ? restakeExecute : plainExecute)();
 
   return {
     confirm,
     retry,
+    plain,
+    restake,
     restakeAvailable,
     plainPrepared: plainFlow.prepared,
     plainLoading: plainFlow.isLoading,

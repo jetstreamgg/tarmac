@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 
 import { i18n } from '@lingui/core';
-import { renderHook, act, cleanup } from '@testing-library/react';
+import { renderHook, act, cleanup, render } from '@testing-library/react';
+import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
 
@@ -25,10 +26,15 @@ type RawCall = {
 // Shared mutable state for the module mocks below. `vi.hoisted` runs before the
 // `vi.mock` factories so they can close over it.
 const h = vi.hoisted(() => ({
+  mutateSkyAllowance: vi.fn(),
+  modalProps: vi.fn(),
   capturedCalls: [] as unknown[],
   capturedEnabled: undefined as boolean | undefined,
   mockExecute: vi.fn(),
   launchMock: vi.fn(),
+  engineReset: vi.fn(),
+  settling: false,
+  settle: null as { reset: unknown; onCleared?: () => void } | null,
   skyAllowance: 0n as bigint | undefined,
   usdsAllowance: 0n as bigint | undefined,
   chainId: 1
@@ -60,7 +66,7 @@ vi.mock('@/hooks/shared/useTransactionFlow', () => ({
       prepared: true,
       execute: h.mockExecute,
       currentCallIndex: 0,
-      reset: () => undefined
+      reset: h.engineReset
     };
   }
 }));
@@ -71,7 +77,7 @@ vi.mock('@/hooks/stake/useStakeAllowance', () => ({
     data: h.skyAllowance,
     error: null,
     isLoading: false,
-    mutate: () => undefined,
+    mutate: h.mutateSkyAllowance,
     dataSources: []
   }),
   useStakeUsdsAllowance: () => ({
@@ -111,19 +117,24 @@ vi.mock('@/hooks/rewards/useRewardContractTokens', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: h.launchMock,
-    updateModalContent: () => undefined,
-    isModalOpen: false,
+  useTransaction: () => ({ launch: h.launchMock, isSettling: () => h.settling }),
+  useSettleOnEnd: (reset: unknown, onCleared?: () => void) => {
+    h.settle = { reset, onCleared };
+  },
+  useSession: () => ({
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: 'idle'
+    status: 'idle'
   })
 }));
+
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.modalProps)
+);
 
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
   useBatchToggle: () => [false, () => undefined]
@@ -135,6 +146,17 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
 import { REFERRAL_CODE } from '@/lib/constants';
 import { generateStakeCalldata } from './useStakeCalldata';
 import { useStakeLaunch, buildStakeOpenSteps } from './useStakeLaunch';
+
+// Renders the flow the last launch handed the provider and returns what it gives the modal.
+const launchedFlows = new Map();
+const launched = () => {
+  const options = h.launchMock.mock.calls.at(-1)![0];
+  if (!launchedFlows.has(options)) {
+    render(<I18nProvider i18n={i18n}>{options.flow}</I18nProvider>);
+    launchedFlows.set(options, h.modalProps.mock.calls.at(-1)![0]);
+  }
+  return launchedFlows.get(options)!;
+};
 
 const SKY_AMOUNT = parseUnits('100000', 18);
 const USDS_AMOUNT = parseUnits('30000', 18);
@@ -313,7 +335,7 @@ describe('useStakeLaunch — launch() config', () => {
     act(() => result.current.launch());
 
     expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = h.launchMock.mock.calls[0][0];
+    const config = launched();
     expect(config.title).toBe('Confirm');
     expect(config.transactionTitle).toBe('Confirm your transaction');
     // The takeover is the review (Design QA 2800:91832): no in-modal review.
@@ -337,7 +359,7 @@ describe('useStakeLaunch — launch() config', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
-    const data = h.launchMock.mock.calls[0][0].analytics.data;
+    const data = launched().analytics.data;
     // Legacy parity: the open flow's stakeData carries NO urnIndex (the widget
     // only passes activeUrn?.urnIndex, which is undefined when opening).
     expect(data.urnIndex).toBeUndefined();
@@ -356,31 +378,49 @@ describe('useStakeLaunch — launch() config', () => {
     });
   });
 
+  it('resets the engine as the session ends, then refreshes the allowances, so a mined approve is not asked for again', () => {
+    const { result } = renderLaunch();
+    act(() => result.current.launch());
+    launched();
+    expect(h.settle?.reset).toBe(h.engineReset);
+    h.mutateSkyAllowance.mockClear();
+
+    h.settle?.onCleared?.();
+    expect(h.mutateSkyAllowance).toHaveBeenCalled();
+  });
+
+  it('holds the takeover while the last launch still has a write out', () => {
+    h.settling = true;
+    const { result } = renderLaunch();
+    expect(result.current.isLoading).toBe(true);
+    h.settling = false;
+  });
+
   it('routes onConfirm to the engine execute', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
-    h.launchMock.mock.calls[0][0].onConfirm();
+    launched().onConfirm();
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
   it('uses the design result toasts: position-open for borrow, amount-staked for stake-only', () => {
     const withBorrow = renderLaunch();
     act(() => withBorrow.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].toast.success).toBe('The position is now open!');
+    expect(launched().toast.success).toBe('The position is now open!');
     withBorrow.unmount();
     h.launchMock.mockClear();
 
     const stakeOnly = renderLaunch({ usdsToBorrow: 0n, selectedDelegate: undefined });
     act(() => stakeOnly.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].toast.success).toBe('100,000.00 SKY staked!');
+    expect(launched().toast.success).toBe('100,000.00 SKY staked!');
     stakeOnly.unmount();
   });
 
-  it('sets no status subtitles — the step list and toast narrate the transaction', () => {
+  it('sets no status subtitle — the step list and toast narrate the transaction', () => {
     const { result } = renderLaunch();
     act(() => result.current.launch());
 
-    expect(h.launchMock.mock.calls[0][0].subtitles).toBeUndefined();
+    expect(launched().subtitle).toBeUndefined();
   });
 });

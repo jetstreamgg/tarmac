@@ -40,10 +40,10 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSession } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { usePendleSlippageCell } from '../hooks/usePendleSlippageCell';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { parseAmountInput } from '@/lib/amountInput';
@@ -61,10 +61,9 @@ import {
 export type PendleModalFlow = 'supply' | 'withdraw';
 
 /**
- * Editable body for the Pendle "Supply to {market}" / "Early withdrawal"
- * modals (Figma 2193:73513 / 2193:73598 entries, 2193:73734 / 2193:73807
- * reviews), mounted as the shared modal's background content — the Pendle
- * analogue of VaultModalForm. One body, two flows: supply (buy PT with a
+ * The Pendle "Supply to {market}" / "Early withdrawal" flow (Figma 2193:73513 /
+ * 2193:73598 entries, 2193:73734 / 2193:73807 reviews), the Pendle analogue of
+ * VaultFlow. Two flows: supply (buy PT with a
  * chosen input token) and withdraw (sell PT into a chosen output token; the
  * output choice lives in the grid's Withdrawal-token cell, the amount field's
  * pill is the fixed PT input). Quote + calldata run through the untouched
@@ -81,14 +80,15 @@ export type PendleModalFlow = 'supply' | 'withdraw';
  * through the shared USD source (usePendleUsdValue) so sUSDS/USDC in- or
  * outputs don't mis-subtract.
  */
-export function PendleModalForm({
-  sessionId,
+export function PendleTradeFlow({
   flow,
-  market
+  market,
+  onSuccess
 }: {
-  sessionId: string;
   flow: PendleModalFlow;
   market: PendleMarketConfig;
+  /** After a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -260,7 +260,7 @@ export function PendleModalForm({
     fireReviewViewed();
   }, []);
 
-  const { txCallbacks } = useTransaction();
+  const { txCallbacks } = useSession();
 
   const writeHook = useBatchPendleConvert({
     side,
@@ -588,23 +588,6 @@ export function PendleModalForm({
     ]
   );
 
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute: writeHook.execute,
-    nextCalls: writeHook.nextCalls ?? writeHook.calls ?? [],
-    confirmDisabled,
-    errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // USD value of the non-PT leg (same number the analytics use). Zero
-    // amount is $0 even when prices haven't loaded — an empty input owes no
-    // check; `undefined` (unpriceable non-zero amount) is treated as
-    // above-threshold (enhanced screening, APP-517).
-    usdValue: leg.amount === 0 ? 0 : formattedAmount
-  });
-
   const balanceDisplay = formatBigInt(available, { unit: inputDecimals, maxDecimals: 2 });
 
   const body = (
@@ -653,5 +636,37 @@ export function PendleModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  // Figma titles the modals by the PT naming convention ("Supply to PT-sUSDS",
+  // 859:41120), not the market's marketing name ("Fixed Yield").
+  const ptName = `PT-${market.underlyingSymbol}`;
+  return (
+    <TransactionModal
+      // Pre-maturity the only withdrawal IS an early one (matured positions go
+      // through the redeem flow); its disclosure renders on both first screens
+      // (Figma 2193:73598 / 2193:73807).
+      title={isSupply ? t`Supply to ${ptName}` : t`Early withdrawal`}
+      subtitle={
+        isSupply
+          ? undefined
+          : t`Early withdrawal is settled at the current market price, not your locked-in rate. Your final amount may be lower than shown if market conditions change before the transaction confirms.`
+      }
+      reviewTitle={isSupply ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled, errorMessage }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={confirmDisabled}
+      errorMessage={errorMessage}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // USD value of the non-PT leg (same number the analytics use). Zero amount is
+      // $0 even when prices haven't loaded; `undefined` (an unpriceable non-zero
+      // amount) is treated as above-threshold (APP-517).
+      usdValue={leg.amount === 0 ? 0 : formattedAmount}
+      onConfirm={writeHook.execute}
+      onSuccess={onSuccess}
+      dispatch={{ nextCalls: writeHook.nextCalls ?? writeHook.calls ?? [], disabled: confirmDisabled }}
+    />
+  );
 }

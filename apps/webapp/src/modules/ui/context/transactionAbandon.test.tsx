@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionConfig, TransactionContextValue, TxCallbacks } from './transactionContract';
+import type { TxCallbacks } from './transactionContract';
+import type { TransactionConfig } from './configFlow.testing';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionMinimize.test).
@@ -68,7 +69,8 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction, type TestTransaction } from './configFlow.testing';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 i18n.load('en', {});
@@ -96,9 +98,9 @@ function Harness({
   onReady
 }: {
   config: TransactionConfig;
-  onReady: (ctx: TransactionContextValue) => void;
+  onReady: (ctx: TestTransaction) => void;
 }) {
-  const ctx = useTransaction();
+  const ctx = useTestTransaction();
   const started = useRef(false);
   // Report the LATEST context value on every render: engine callbacks are
   // bound to the session generation that rendered them, so tests must capture
@@ -119,11 +121,11 @@ function Harness({
 // over (see cbOf); one whose host stays mounted calls THIS — react-query pushes
 // each render's options into the pending mutation and the receipt effect closes
 // over the current render. The review-first flows are the mounted kind.
-let liveCtx!: TransactionContextValue;
+let liveCtx!: TestTransaction;
 
 // Mounts the provider, opens the modal, and advances to the transaction screen.
-function renderFlow(config: TransactionConfig = SUPPLY_CONFIG): TransactionContextValue {
-  let ctx!: TransactionContextValue;
+function renderFlow(config: TransactionConfig = SUPPLY_CONFIG): TestTransaction {
+  let ctx!: TestTransaction;
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
@@ -143,7 +145,7 @@ function renderFlow(config: TransactionConfig = SUPPLY_CONFIG): TransactionConte
   return ctx;
 }
 
-const cbOf = (ctx: TransactionContextValue): TxCallbacks => ctx.txCallbacks;
+const cbOf = (ctx: TestTransaction): TxCallbacks => ctx.txCallbacks;
 
 // Render the node the provider handed to toastWithClose (header + body notice).
 const renderLastToast = () => {
@@ -310,18 +312,21 @@ describe('stale engine callbacks after teardown (APP-416)', () => {
 // callback arrives through the CURRENT render's callbacks (liveCtx) and the
 // generation it closes over is the new session's. What tells the two apart is
 // the generation latched when the write actually started (onMutate).
-describe('stale engine callbacks from a still-mounted host (APP-416)', () => {
+describe('late engine callbacks from a closed session (APP-416)', () => {
   afterEach(() => vi.clearAllMocks());
+
+  // Each session's engine holds that session's callbacks, so a write that settles
+  // after its session closed reports through callbacks that are now no-ops.
 
   it('a late onStart from a closed session does not strand the provider — the next launch opens without the in-progress block', () => {
     const ctx = renderFlow();
 
     act(() => liveCtx.txCallbacks.onMutate()); // INITIALIZED — wallet prompt open
+    const abandoned = liveCtx.txCallbacks;
     act(() => fireEvent.click(screen.getByTestId('transaction-modal-close'))); // abandon
     toastWithCloseMock.mockClear();
 
-    // The wallet had already accepted; the mounted engine reports broadcast late.
-    act(() => liveCtx.txCallbacks.onStart('0xdeadbeef'));
+    act(() => abandoned.onStart('0xdeadbeef'));
 
     act(() => ctx.launch(STAKE_CONFIG));
     expect(screen.queryByText('Stake SKY')).not.toBeNull();
@@ -333,11 +338,11 @@ describe('stale engine callbacks from a still-mounted host (APP-416)', () => {
     const ctx = renderFlow();
 
     act(() => liveCtx.txCallbacks.onMutate()); // INITIALIZED
+    const abandoned = liveCtx.txCallbacks;
     act(() => ctx.launch(STAKE_CONFIG)); // abandons the supply session
 
-    act(() => liveCtx.txCallbacks.onStart('0xdeadbeef')); // old write broadcasts late
+    act(() => abandoned.onStart('0xdeadbeef'));
 
-    // The new session must not adopt the foreign broadcast: still awaiting confirm.
     expect(screen.queryByText('Stake SKY')).not.toBeNull();
     expect(screen.queryByRole('button', { name: /^confirm$/i })).not.toBeNull();
     expect(screen.queryByText(/processing/i)).toBeNull();
@@ -348,38 +353,35 @@ describe('stale engine callbacks from a still-mounted host (APP-416)', () => {
     const ctx = renderFlow();
 
     act(() => liveCtx.txCallbacks.onMutate()); // INITIALIZED
+    const abandoned = liveCtx.txCallbacks;
     act(() => ctx.launch({ ...STAKE_CONFIG, onSuccess: onNewSuccess }));
     analytics.trackTransactionCompleted.mockClear();
 
-    act(() => liveCtx.txCallbacks.onSuccess('0xdeadbeef')); // old write settles late
+    act(() => abandoned.onSuccess('0xdeadbeef'));
 
     expect(onNewSuccess).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /^confirm$/i })).not.toBeNull();
     expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
   });
 
-  it('a settle for a foreign hash is ignored while this session has its own write in flight', () => {
+  it('an abandoned write that mines while the replacing session has its own write in flight is ignored', () => {
     const onNewSuccess = vi.fn();
     const ctx = renderFlow();
 
     act(() => liveCtx.txCallbacks.onMutate()); // supply session: wallet prompt
-    act(() => ctx.launch({ ...STAKE_CONFIG, onSuccess: onNewSuccess })); // abandoned
+    const abandoned = liveCtx.txCallbacks;
+    act(() => ctx.launch({ ...STAKE_CONFIG, onSuccess: onNewSuccess }));
 
-    // The new session runs its OWN write through to broadcast, re-latching the
-    // generation — only the hash still tells the abandoned write apart.
     act(() => liveCtx.txCallbacks.onMutate());
     act(() => liveCtx.txCallbacks.onStart('0xnewhash'));
     analytics.trackTransactionCompleted.mockClear();
 
-    act(() => liveCtx.txCallbacks.onSuccess('0xdeadbeef')); // the ABANDONED tx mines
+    act(() => abandoned.onSuccess('0xdeadbeef'));
 
-    // Still processing its own transaction — not settled by the foreign one.
     expect(onNewSuccess).not.toHaveBeenCalled();
     expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
-    // Still mining its own transaction — the foreign settle did not land.
     expect(liveCtx.txStatus).toBe(TxStatus.LOADING);
 
-    // ...and its own settle still lands.
     act(() => liveCtx.txCallbacks.onSuccess('0xnewhash'));
     expect(onNewSuccess).toHaveBeenCalledTimes(1);
   });

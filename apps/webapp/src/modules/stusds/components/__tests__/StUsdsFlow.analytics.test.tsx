@@ -90,9 +90,11 @@ vi.mock('../../hooks/useStUsdsLaunch', async importOriginal => {
   };
 });
 
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.update)
+);
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update, txStatus: 'idle' }),
-  useEntrySlot: () => null
+  useSession: () => ({ status: 'idle' })
 }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
@@ -100,7 +102,7 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 // Presentation-only; needs quote/premium fields these analytics tests don't model.
 vi.mock('../StUsdsProviderNotice', () => ({ StUsdsProviderNotice: () => null }));
 
-import { StUsdsModalForm } from '../StUsdsModalForm';
+import { StUsdsFlow } from '../StUsdsFlow';
 import { stUsdsAddress } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { StUsdsLaunchFlow } from '../../hooks/useStUsdsLaunch';
@@ -109,18 +111,18 @@ const renderForm = (flow: StUsdsLaunchFlow) =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <StUsdsModalForm sessionId="s1" flow={flow} />
+        <StUsdsFlow flow={flow} />
       </TooltipProvider>
     </I18nProvider>
   );
 
 // The last analytics blob live-merged to the modal (what the provider will emit from).
 const lastAnalytics = () => {
-  const withAnalytics = h.update.mock.calls.filter(([, patch]) => patch?.analytics !== undefined);
-  return withAnalytics.at(-1)?.[1].analytics;
+  const withAnalytics = h.update.mock.calls.filter(([patch]) => patch?.analytics !== undefined);
+  return withAnalytics.at(-1)?.[0].analytics;
 };
 
-describe('StUsdsModalForm — analytics parity blob (APP-444 B5)', () => {
+describe('StUsdsFlow — analytics parity blob (APP-444 B5)', () => {
   beforeEach(() => {
     h.update.mockClear();
     h.isBatch = false;
@@ -128,6 +130,23 @@ describe('StUsdsModalForm — analytics parity blob (APP-444 B5)', () => {
     h.provider = 'native';
   });
   afterEach(() => cleanup());
+
+  it('titles the supply flow and labels its three screens', () => {
+    renderForm('supply');
+    const props = h.update.mock.calls.at(-1)![0];
+    expect(props.title).toBe('Supply to stUSDS');
+    expect(props.reviewTitle).toBe('Review supply');
+    expect(props.transactionTitle).toBe('Confirm in the wallet');
+    expect(props.entry?.confirmLabel).toBe('Review');
+    expect(props.confirmLabel).toBe('Confirm');
+  });
+
+  it('titles the withdraw flow', () => {
+    renderForm('withdraw');
+    const props = h.update.mock.calls.at(-1)![0];
+    expect(props.title).toBe('Withdraw from stUSDS');
+    expect(props.reviewTitle).toBe('Review withdrawal');
+  });
 
   it('pushes the legacy StUSDSWidget blob: widget expert, hardcoded USDS, no assetAddress', () => {
     renderForm('supply');

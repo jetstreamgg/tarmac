@@ -1,5 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
@@ -17,7 +18,6 @@ const h = vi.hoisted(() => ({
   updateMock: vi.fn(),
   executeMock: vi.fn(),
   isModalOpen: false,
-  txStatus: 'idle',
   launchParams: undefined as Record<string, unknown> | undefined,
   prepared: true,
   launchLoading: false,
@@ -128,14 +128,13 @@ vi.mock('../hooks/useStakePositionDetail', () => ({
   })
 }));
 
-vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
-  const actual = await importOriginal<typeof import('../hooks/useStakeManageLaunch')>();
+vi.mock('../hooks/useStakeManageEngine', async importOriginal => {
+  const actual = await importOriginal<typeof import('../hooks/useStakeManageEngine')>();
   return {
     ...actual,
-    useStakeManageLaunch: (params: Record<string, unknown>) => {
+    useStakeManageEngine: (params: Record<string, unknown>) => {
       h.launchParams = params;
       return {
-        launch: vi.fn(),
         execute: h.executeMock,
         steps: [{ label: 'Change' }],
         calldata: [],
@@ -152,15 +151,17 @@ vi.mock('../hooks/useStakeManageLaunch', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: h.launchMock,
-    updateModalContent: h.updateMock,
-    isModalOpen: h.isModalOpen,
+  useTransaction: () => ({ launch: h.launchMock, isModalOpen: h.isModalOpen }),
+  useSession: () => ({
     txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() },
-    txStatus: h.txStatus
-  }),
-  useEntrySlot: () => null
+    status: 'idle'
+  })
 }));
+
+// The modal is a props spy: `h.updateMock` records what the flow hands it each render.
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(h.updateMock)
+);
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
@@ -190,18 +191,17 @@ function renderPanel(kind: Kind) {
   renderLauncher(kind);
   render(
     <I18nProvider i18n={i18n}>
-      <TooltipProvider>{launchConfig().backgroundContent as ReactNode}</TooltipProvider>
+      <TooltipProvider>{launchConfig().flow as ReactNode}</TooltipProvider>
     </I18nProvider>
   );
 }
 
-const lastUpdate = () => h.updateMock.mock.calls.at(-1)![1];
+const lastUpdate = () => h.updateMock.mock.calls.at(-1)![0];
 const pressed = (testId: string) => screen.getByTestId(testId).getAttribute('aria-pressed');
 
 describe('StakeChangeSelectionModal', () => {
   beforeEach(() => {
     h.isModalOpen = false;
-    h.txStatus = 'idle';
     h.prepared = true;
     h.launchLoading = false;
     h.launchError = null;
@@ -217,28 +217,29 @@ describe('StakeChangeSelectionModal', () => {
   });
   afterEach(cleanup);
 
-  it('launches the Change reward token modal at mount (Figma 3015:61490)', () => {
-    renderLauncher('reward');
+  it('launches the Change reward token flow at mount (Figma 3015:61490)', () => {
+    renderPanel('reward');
 
     expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config = launchConfig();
-    expect(config.title).toBe('Change reward token');
-    expect(config.transactionTitle).toBe('Confirm reward change');
-    expect(config.entry).toEqual({ confirmLabel: 'Change', confirmDisabled: true });
+    expect(launchConfig().supportedChainIds).toEqual(MAINNET_FAMILY_CHAIN_IDS);
+    const props = lastUpdate();
+    expect(props.title).toBe('Change reward token');
+    expect(props.transactionTitle).toBe('Confirm reward change');
+    expect(props.entry).toMatchObject({ confirmLabel: 'Change', confirmDisabled: true });
     // Replaces the details modal in the same commit: no scrim fade-in.
-    expect(config.scrimHandoff).toBe(true);
-    expect(config.toast).toEqual({
+    expect(props.scrimHandoff).toBe(true);
+    expect(props.toast).toEqual({
       loading: 'Changing position',
       success: 'Your position is updated!',
       error: 'Failed to change the position'
     });
-    expect(config.analytics).toMatchObject({ widgetName: 'stake', flow: 'manage', action: 'multicall' });
+    expect(props.analytics).toMatchObject({ widgetName: 'stake', flow: 'manage', action: 'multicall' });
   });
 
-  it('launches the Change delegate modal at mount (Figma 3015:61189)', () => {
-    renderLauncher('delegate');
-    expect(launchConfig().title).toBe('Change delegate');
-    expect(launchConfig().transactionTitle).toBe('Confirm delegate change');
+  it('launches the Change delegate flow at mount (Figma 3015:61189)', () => {
+    renderPanel('delegate');
+    expect(lastUpdate().title).toBe('Change delegate');
+    expect(lastUpdate().transactionTitle).toBe('Confirm delegate change');
   });
 
   it('reward: the current farm is pre-selected and Change stays disabled until another tile is picked', () => {
@@ -252,7 +253,8 @@ describe('StakeChangeSelectionModal', () => {
     expect(h.launchParams?.selectedRewardContract).toBe(lsSkySkyRewardAddress[1]);
     expect(h.launchParams?.enabled).toBe(false);
     // The picker is the review: the grid only backs the wallet screen.
-    expect(h.launchParams?.transactionContentAsScreen).toBe(true);
+    expect(lastUpdate().transactionContent).toBeUndefined();
+    expect(lastUpdate().transactionScreenContent).toBeTruthy();
 
     fireEvent.click(screen.getByTestId(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`));
     expect(pressed(`stake-manage-reward-${lsSkyUsdsRewardAddress[1].toLowerCase()}`)).toBe('true');
@@ -293,13 +295,13 @@ describe('StakeChangeSelectionModal', () => {
     expect(lastUpdate().entry).toMatchObject({ confirmDisabled: true });
   });
 
-  it('Change pushes the steps and runs the engine', () => {
+  it('Change runs the engine, reporting its steps and the change', () => {
     renderPanel('delegate');
     fireEvent.click(screen.getByTestId(`stake-manage-delegate-${OTHER_DELEGATE.toLowerCase()}`));
 
-    (lastUpdate().onConfirm as () => void)();
+    lastUpdate().onConfirm();
     expect(h.executeMock).toHaveBeenCalledTimes(1);
-    const pushed = h.updateMock.mock.calls.at(-1)![1];
+    const pushed = lastUpdate();
     expect(pushed.steps).toEqual([{ label: 'Change' }]);
     expect(pushed.analytics).toMatchObject({
       action: 'multicall',
@@ -315,12 +317,6 @@ describe('StakeChangeSelectionModal', () => {
 
     expect(lastUpdate().entry.confirmDisabled).toBe(true);
     expect(lastUpdate().entry.errorMessage).toBeTruthy();
-  });
-
-  it('freezes the entry once the transaction leaves IDLE', () => {
-    h.txStatus = 'loading';
-    renderPanel('reward');
-    expect(h.updateMock).not.toHaveBeenCalled();
   });
 
   it('× returns to the details modal; success routes to the positions tab instead', () => {
@@ -340,7 +336,7 @@ describe('StakeChangeSelectionModal', () => {
     h.launchMock.mockClear();
     h.isModalOpen = true;
     const second = renderLauncher('reward');
-    (launchConfig().onSuccess as () => void)();
+    (launchConfig().flow.props.onSuccess as () => void)();
     expect(h.invalidateMock).toHaveBeenCalled();
     const next = h.setSearchParamsMock.mock.calls[0][0](new URLSearchParams('flow=manage&urn_index=1'));
     expect(next.get('flow')).toBeNull();

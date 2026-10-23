@@ -55,8 +55,8 @@ vi.mock('../hooks/useSavingsAccrualRate', () => ({
 vi.mock('./SavingsSupplyCard', () => ({
   SavingsSupplyCard: () => <div data-testid="savings-supply-card" />
 }));
-vi.mock('./SavingsModalForm', () => ({
-  SavingsModalForm: ({ flow }: { flow: string }) => <div data-testid={`mock-modal-form-${flow}`} />
+vi.mock('./SavingsFlow', () => ({
+  SavingsFlow: ({ flow }: { flow: string }) => <div data-testid={`mock-modal-form-${flow}`} />
 }));
 
 // The has-position card opens the shared modal via launch() — capture it.
@@ -198,43 +198,23 @@ describe('SavingsPositionCard — position routing', () => {
     ]);
   });
 
-  it('opens the "Supply to Sky Savings" editable modal (entry descriptor) on Supply', () => {
+  it('launches the supply flow on Supply', () => {
     h.savingsBalance = 100n * 10n ** 18n;
     renderCard();
 
     fireEvent.click(screen.getByTestId('savings-position-supply'));
 
     expect(h.launch).toHaveBeenCalledTimes(1);
-    const config = h.launch.mock.calls[0][0];
-    expect(config.title).toBe('Supply to Sky Savings');
-    // The wallet/status screen reads "Confirm in the wallet" (Figma 527:8273).
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-    // It's the editable entry flow, not a read-only review.
-    expect(config.entry).toBeDefined();
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.entry.confirmDisabled).toBe(true);
-    // The editable body is hosted OUTSIDE the dialog (backgroundContent) so its
-    // in-flight hook survives minimize — not inside entry.content.
-    expect(config.entry.content).toBeUndefined();
-    expect(config.backgroundContent).toBeDefined();
-    expect(config.backgroundContent.props.flow).toBe('supply');
+    expect(h.launch.mock.calls[0][0].flow.props.flow).toBe('supply');
   });
 
-  it('opens the "Withdraw from Sky Savings" editable modal (entry descriptor) on Withdraw', () => {
+  it('launches the withdraw flow on Withdraw', () => {
     h.savingsBalance = 100n * 10n ** 18n;
     renderCard();
 
     fireEvent.click(screen.getByTestId('savings-position-withdraw'));
 
     expect(h.launch).toHaveBeenCalledTimes(1);
-    const config = h.launch.mock.calls[0][0];
-    expect(config.title).toBe('Withdraw from Sky Savings');
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.entry).toBeDefined();
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.entry.confirmDisabled).toBe(true);
-    expect(config.entry.content).toBeUndefined();
-    expect(config.backgroundContent).toBeDefined();
-    expect(config.backgroundContent.props.flow).toBe('withdraw');
+    expect(h.launch.mock.calls[0][0].flow.props.flow).toBe('withdraw');
   });
 });

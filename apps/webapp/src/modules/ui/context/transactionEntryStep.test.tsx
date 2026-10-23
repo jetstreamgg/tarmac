@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionConfig } from './transactionContract';
+import type { TransactionConfig } from './configFlow.testing';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionStepProgression.test.tsx).
@@ -59,7 +59,8 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -70,10 +71,10 @@ function Harness({
   build,
   onReady
 }: {
-  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig;
-  onReady: (api: ReturnType<typeof useTransaction>) => void;
+  build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig;
+  onReady: (api: ReturnType<typeof useTestTransaction>) => void;
 }) {
-  const api = useTransaction();
+  const api = useTestTransaction();
   const { launch, txCallbacks } = api;
   const started = useRef(false);
   // The config's closures must drive the LIVE session's callbacks: real
@@ -84,7 +85,7 @@ function Harness({
   useEffect(() => {
     cbRef.current = txCallbacks;
   });
-  const [liveCb] = useState<ReturnType<typeof useTransaction>['txCallbacks']>(() => ({
+  const [liveCb] = useState<ReturnType<typeof useTestTransaction>['txCallbacks']>(() => ({
     onMutate: () => cbRef.current.onMutate(),
     onStart: hash => cbRef.current.onStart(hash),
     onSuccess: hash => cbRef.current.onSuccess(hash),
@@ -102,8 +103,8 @@ function Harness({
   return null;
 }
 
-function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig) {
-  let api!: ReturnType<typeof useTransaction>;
+function renderModal(build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig) {
+  let api!: ReturnType<typeof useTestTransaction>;
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>

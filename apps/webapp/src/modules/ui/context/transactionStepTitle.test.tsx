@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionConfig } from './transactionContract';
+import type { TransactionConfig } from './configFlow.testing';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionEntryStep.test.tsx).
@@ -59,7 +59,8 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -69,9 +70,9 @@ i18n.activate('en');
 function Harness({
   build
 }: {
-  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig;
+  build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig;
 }) {
-  const { launch, txCallbacks } = useTransaction();
+  const { launch, txCallbacks } = useTestTransaction();
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return;
@@ -81,7 +82,7 @@ function Harness({
   return null;
 }
 
-function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig) {
+function renderModal(build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig) {
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
@@ -96,10 +97,10 @@ function renderModal(build: (cb: ReturnType<typeof useTransaction>['txCallbacks'
 // Launches a review flow, confirms it, then fails the write with `error` —
 // handing back the live engine callbacks of the launched session (the ones
 // `build` receives are pre-launch and stale).
-function renderFailedFlow(error: Error, hash = ''): ReturnType<typeof useTransaction>['txCallbacks'] {
-  let cb!: ReturnType<typeof useTransaction>['txCallbacks'];
+function renderFailedFlow(error: Error, hash = ''): ReturnType<typeof useTestTransaction>['txCallbacks'] {
+  let cb!: ReturnType<typeof useTestTransaction>['txCallbacks'];
   function LiveCallbacks() {
-    const { txCallbacks } = useTransaction();
+    const { txCallbacks } = useTestTransaction();
     useEffect(() => {
       cb = txCallbacks;
     });

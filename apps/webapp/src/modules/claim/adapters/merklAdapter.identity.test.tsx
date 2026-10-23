@@ -6,14 +6,10 @@ import type { ReactNode } from 'react';
 /**
  * Referential-stability guard for the Merkl claim read.
  *
- * `ClaimRewardsPanel` feeds the adapters' `rewards` into a memo → the wallet-screen
- * `transactionScreenContent` → `useModalEntryBody`'s sync effect → `updateModalContent`,
- * which always allocates a new config and so always re-renders every consumer of the
- * transaction context — the panel included. Anything in this hook that churns per
- * render therefore closes that circle into an unbounded loop, and because the setState
- * lives in a passive effect React never throws "Maximum update depth": the tab just
- * spins at 100% CPU, which no fork test will show. `exhaustive-deps` can't catch it
- * either (a fresh array literal in a dep list is legal), hence this test.
+ * `ClaimRewardsFlow` feeds the adapters' `rewards` into its memos; anything in this
+ * hook that churns per render rebuilds them, and the claim modal, on every render.
+ * `exhaustive-deps` can't catch it (a fresh array literal in a dep list is legal),
+ * hence this test.
  *
  * The sibling adapter tests mock `@/hooks` wholesale, so they can't see this — these
  * run the real hook over a mocked wagmi/fetch layer.
