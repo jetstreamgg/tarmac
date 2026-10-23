@@ -2,7 +2,7 @@
 // (Base, OP, Unichain), playing the sequencer the forks lack. Dev mode only.
 // Usage, from apps/webapp: node --env-file=.env scripts/relayForkDeposit.ts <base|optimism|unichain> <l1TxHash>
 import { createPublicClient, http, keccak256, parseAbi, toHex, type Hash } from 'viem';
-import { extractTransactionDepositedLogs, opaqueDataToDepositData } from 'viem/op-stack';
+import { readOpStackDeposit, sendOpStackDeposit } from '../src/test/e2e/utils/opStackDepositRelay.ts';
 
 const L2_RPC_ENV = {
   base: 'VITE_RPC_PROVIDER_TENDERLY_BASE',
@@ -27,46 +27,24 @@ const l2Rpc = process.env[L2_RPC_ENV[network]] || fail(`${L2_RPC_ENV[network]} i
 const l1 = createPublicClient({ transport: http(l1Rpc) });
 const l2 = createPublicClient({ transport: http(l2Rpc) });
 
-const rpc = async <T>(method: string, params: unknown[]): Promise<T> => {
-  const response = await fetch(l2Rpc, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
-  });
-  const body = await response.json();
-  if (body.error) fail(`${method}: ${body.error.message}`);
-  return body.result as T;
-};
-
 const receipt = await l1.getTransactionReceipt({ hash: l1TxHash });
 if (receipt.status !== 'success') fail('The Ethereum deposit reverted; nothing to relay.');
-const [log] = extractTransactionDepositedLogs({ logs: receipt.logs });
-if (!log) fail('No TransactionDeposited log: not an OP Stack deposit, or sent to another L2.');
-const deposit = opaqueDataToDepositData(log.args.opaqueData);
+const deposit = await readOpStackDeposit(l1, l1TxHash).catch(() =>
+  fail('No TransactionDeposited log: not an OP Stack deposit, or sent to another L2.')
+);
 
 // The deposit calls the L2 messenger's relayMessage, whose calldata hash is the message hash.
-const msgHash = keccak256(deposit.data);
 const relayed = await l2.readContract({
-  address: log.args.to,
+  address: deposit.to,
   abi: messengerAbi,
   functionName: 'successfulMessages',
-  args: [msgHash]
+  args: [keccak256(deposit.data)]
 });
 if (relayed) {
   console.log('Already relayed; nothing sent.');
   process.exit(0);
 }
 
-await rpc('tenderly_setBalance', [[log.args.from], toHex(10n ** 18n)]);
-const hash = await rpc<Hash>('eth_sendTransaction', [
-  {
-    from: log.args.from,
-    to: log.args.to,
-    gas: toHex(deposit.gas),
-    value: toHex(deposit.value),
-    data: deposit.data
-  }
-]);
-const relay = await l2.waitForTransactionReceipt({ hash });
+const relay = await sendOpStackDeposit(l2, l2Rpc, deposit);
 const failed = relay.logs.some(entry => entry.topics[0] === FAILED_RELAY_TOPIC);
 console.log(failed ? 'Relayed, but the message failed on L2 (replayable from the app).' : 'Relayed.');
