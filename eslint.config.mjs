@@ -1,21 +1,11 @@
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
+import react from 'eslint-plugin-react';
 import testingLibrary from 'eslint-plugin-testing-library';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tanstackEslintPluginQuery from '@tanstack/eslint-plugin-query';
 import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
-import { FlatCompat } from '@eslint/eslintrc';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all
-});
 
 export default [
   {
@@ -35,11 +25,9 @@ export default [
     // hides the day its rule was turned off or its violation was fixed.
     linterOptions: { reportUnusedDisableDirectives: 'error' }
   },
-  ...compat.extends(
-    'eslint:recommended',
-    'plugin:react/recommended',
-    'plugin:@typescript-eslint/recommended'
-  ),
+  js.configs.recommended,
+  react.configs.flat.recommended,
+  ...typescriptEslint.configs['flat/recommended'],
   reactHooks.configs.flat.recommended,
   {
     rules: {
