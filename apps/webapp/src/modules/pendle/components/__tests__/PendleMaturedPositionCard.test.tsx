@@ -68,10 +68,15 @@ import { PendleMaturedPositionCard } from '../PendleMaturedPositionCard';
 
 const PT_BALANCE = 100_184n * 10n ** 18n;
 
-const renderCard = () =>
+const renderCard = (amountUsd = 0) =>
   render(
     <I18nProvider i18n={i18n}>
-      <PendleMaturedPositionCard market={MARKET} ptBalance={PT_BALANCE} onViewDetails={onViewDetails} />
+      <PendleMaturedPositionCard
+        market={MARKET}
+        ptBalance={PT_BALANCE}
+        amountUsd={amountUsd}
+        onViewDetails={onViewDetails}
+      />
     </I18nProvider>
   );
 
@@ -98,6 +103,14 @@ describe('PendleMaturedPositionCard', () => {
     expect(card.textContent).toContain('18 Jun 2026');
     expect(card.textContent).toContain('184.8');
     expect(card.textContent).toContain('ready to withdraw');
+  });
+
+  it('shows the position in dollars, like the cards beside it, once it is priced', () => {
+    renderCard(100_160.5);
+
+    const card = screen.getByTestId('pendle-matured-position-card');
+    expect(card.textContent).toContain('$100,160.50');
+    expect(card.textContent).not.toContain('100,184');
   });
 
   it('opens the redeem modal from Claim', () => {

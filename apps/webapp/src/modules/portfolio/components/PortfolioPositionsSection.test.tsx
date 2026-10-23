@@ -29,8 +29,21 @@ vi.mock('@tanstack/react-router', () => ({ useNavigate: () => h.navigate }));
 
 // The matured Claim card has its own spec; stubbed to its identity here.
 vi.mock('@/modules/pendle/components/PendleMaturedPositionCard', () => ({
-  PendleMaturedPositionCard: ({ market, ptBalance }: { market: { slug: string }; ptBalance: bigint }) => (
-    <div data-testid="matured-card" data-slug={market.slug} data-balance={ptBalance.toString()} />
+  PendleMaturedPositionCard: ({
+    market,
+    ptBalance,
+    amountUsd
+  }: {
+    market: { slug: string };
+    ptBalance: bigint;
+    amountUsd: number;
+  }) => (
+    <div
+      data-testid="matured-card"
+      data-slug={market.slug}
+      data-balance={ptBalance.toString()}
+      data-usd={String(amountUsd)}
+    />
   )
 }));
 
@@ -438,6 +451,7 @@ describe('PortfolioPositionsSection — matured positions', () => {
     expect(cards[0].getAttribute('data-testid')).toBe('matured-card');
     expect(cards[0].getAttribute('data-slug')).toBe(MARKET.slug);
     expect(cards[0].getAttribute('data-balance')).toBe((50n * 10n ** 18n).toString());
+    expect(cards[0].getAttribute('data-usd')).toBe('50');
     expect(screen.getAllByTestId('position-card')).toHaveLength(1);
   });
 

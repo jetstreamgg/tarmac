@@ -2,7 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { useChainId } from 'wagmi';
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { familyMainnetId, formatBigInt, formatNumber, getChainIcon, getChainName } from '@/utils';
+import { familyMainnetId, formatBigInt, formatNumber, formatUsd, getChainIcon, getChainName } from '@/utils';
 import { type PendleMarketConfig, usePendleMaturedPositionEarnings, usePendleRedeemPreview } from '@/hooks';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,12 @@ const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-
 type PendleMaturedPositionCardProps = {
   market: PendleMarketConfig;
   ptBalance: bigint;
+  /**
+   * The position in USD, as the totals above the carousel count it. The
+   * sibling cards show dollars, so this card does too; without a price it
+   * falls back to the amount the claim pays out.
+   */
+  amountUsd: number;
   /** Routes to the market's detail page — the siblings' "Manage" slot. */
   onViewDetails: () => void;
 };
@@ -39,6 +45,7 @@ type PendleMaturedPositionCardProps = {
 export const PendleMaturedPositionCard = ({
   market,
   ptBalance,
+  amountUsd,
   onViewDetails
 }: PendleMaturedPositionCardProps) => {
   const maturityLabel = formatMaturity(market.expiry);
@@ -112,7 +119,9 @@ export const PendleMaturedPositionCard = ({
           <span className={statLabel}>
             <Trans>My position</Trans>
           </span>
-          {previewLoading ? (
+          {amountUsd > 0 ? (
+            <span className={cn(statValue, 'text-fgPrimary')}>{formatUsd(amountUsd)}</span>
+          ) : previewLoading ? (
             <Skeleton className="h-4 w-24" />
           ) : (
             <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>

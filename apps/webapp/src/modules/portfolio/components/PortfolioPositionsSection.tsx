@@ -161,7 +161,14 @@ function MaturedFixedPositionCard({
   const market = position.address ? getPendleMarketByAddress(position.address) : undefined;
   const ptBalance = market ? ptBalances?.[market.marketAddress] : undefined;
   if (!market || !ptBalance) return null;
-  return <PendleMaturedPositionCard market={market} ptBalance={ptBalance} onViewDetails={onViewDetails} />;
+  return (
+    <PendleMaturedPositionCard
+      market={market}
+      ptBalance={ptBalance}
+      amountUsd={position.amountUsd}
+      onViewDetails={onViewDetails}
+    />
+  );
 }
 
 // Skeleton placeholders sized like the loaded cards: an exact-fit grid showing
