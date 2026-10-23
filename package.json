@@ -69,7 +69,6 @@
     ]
   },
   "devDependencies": {
-    "@eslint/eslintrc": "catalog:",
     "@eslint/js": "catalog:",
     "@lingui/cli": "catalog:",
     "@lingui/conf": "catalog:",
@@ -78,7 +77,6 @@
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "dotenv": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",

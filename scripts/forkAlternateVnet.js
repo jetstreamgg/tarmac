@@ -8,7 +8,6 @@
  * To use a different fork container, set ALTERNATE_FORK_CONTAINER_ID env var.
  */
 
-require('dotenv').config();
 const { writeFile } = require('fs/promises');
 
 // Default alternate fork container (has Curve pool properly configured)

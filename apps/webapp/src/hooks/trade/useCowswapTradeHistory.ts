@@ -3,13 +3,18 @@ import { ModuleEnum, TRUST_LEVELS, TransactionTypeEnum, TrustLevelEnum } from '.
 import { useQuery } from '@tanstack/react-query';
 import { TradeHistory } from './trade';
 import { useConnection, useChainId } from 'wagmi';
-import { cowApiClient, OrderStatus } from './constants';
+import { COW_API_ENDPOINT, OrderStatus } from './constants';
+import type { paths } from './cowApiSchema';
 import { TokenForChain } from '../tokens/types';
 import { ETH_ADDRESS, getTokensForChain } from '../tokens/tokens.constants';
 import { formatOrderStatus } from './formatOrderStatus';
 import { isCowSupportedChainId } from '@/utils';
 import { SKY_MONEY_APP_CODE } from './constants';
 import { toReadHook } from '../shared/toReadHook';
+import { fetchJson } from '../shared/fetchJson';
+
+type UserOrders =
+  paths['/api/v1/account/{owner}/orders']['get']['responses'][200]['content']['application/json'];
 
 async function fetchCowswapTradeHistory(
   chainId: number,
@@ -19,23 +24,17 @@ async function fetchCowswapTradeHistory(
 ): Promise<TradeHistory | undefined> {
   if (!address) return [];
 
-  // Check if we have a client configured for this chain
-  if (!cowApiClient[chainId as keyof typeof cowApiClient]) {
-    throw new Error(`CowSwap API client not configured for chain ${chainId}`);
+  const endpoint = COW_API_ENDPOINT[chainId];
+  if (!endpoint) {
+    throw new Error(`CowSwap API not configured for chain ${chainId}`);
   }
 
-  const { data: ordersData, response } = await cowApiClient[chainId as keyof typeof cowApiClient].GET(
-    '/api/v1/account/{owner}/orders',
-    {
-      params: {
-        path: { owner: address },
-        query: { limit }
-      }
-    }
+  const ordersData = await fetchJson<UserOrders | null>(
+    `${endpoint}/api/v1/account/${address}/orders?limit=${limit}`,
+    { label: 'CowSwap orders', requireOk: true }
   );
-
-  if (!response.ok || !ordersData) {
-    throw new Error(`Failed to fetch orders for ${address}: ${response.statusText}`);
+  if (!Array.isArray(ordersData)) {
+    throw new Error(`Failed to fetch orders for ${address}: unexpected response`);
   }
 
   const parsedOrders = ordersData

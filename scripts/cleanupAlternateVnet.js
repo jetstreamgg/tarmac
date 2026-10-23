@@ -5,7 +5,6 @@
  * Reads the VNet IDs from tenderlyTestnetData-alternate.json and deletes them.
  */
 
-require('dotenv').config();
 const { readFile } = require('fs/promises');
 
 async function cleanupAlternateVNet() {

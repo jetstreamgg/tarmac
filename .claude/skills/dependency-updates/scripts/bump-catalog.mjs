@@ -5,7 +5,7 @@
 // current one is refused. Run `pnpm install` afterwards.
 //
 // Usage (from the repo root):
-//   node .claude/skills/dependency-updates/scripts/bump-catalog.mjs viem@2.56.8 @wagmi/core@3.6.5
+//   node .claude/skills/dependency-updates/scripts/bump-catalog.mjs viem@2.56.8 wagmi@3.7.7
 import { readFileSync, writeFileSync } from 'node:fs';
 import { WORKSPACE_FILE, bumpCatalogText } from './lib.mjs';
 

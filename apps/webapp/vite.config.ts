@@ -176,7 +176,7 @@ export default ({ mode }: { mode: modeEnum }) => {
         '@': path.resolve(__dirname, './src')
       },
       // Dedupe wagmi/viem to prevent multiple instances causing WagmiProviderNotFoundError
-      dedupe: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query', 'react', 'react-dom']
+      dedupe: ['wagmi', 'viem', '@tanstack/react-query', 'react', 'react-dom']
     },
     optimizeDeps: {
       // Optimize safe-apps-provider dependency to get rid of the Safe connector issue
