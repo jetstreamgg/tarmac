@@ -459,6 +459,10 @@ describe('usePendleRedeemModal network switch', () => {
 });
 
 describe('usePendleRedeemModal claim quote failure', () => {
+  beforeEach(() => {
+    hoisted.chainId = 1;
+  });
+
   afterEach(() => {
     hoisted.quoteState = undefined;
     vi.clearAllMocks();
@@ -481,17 +485,28 @@ describe('usePendleRedeemModal claim quote failure', () => {
     expect(messageFor({ data: undefined, isLoading: true, error: undefined })).toBeUndefined();
   });
 
-  it('explains a claim blocked because Pendle no longer finds the market', () => {
-    const error = new Error('Pendle /convert 400: {"message":"Market not found","statusCode":400}');
-    expect(messageFor({ data: undefined, isLoading: false, error })).toBe(
-      "Pendle's quote service can't find this market right now. Please try again later."
+  it.each([
+    'Pendle /convert 400: {"message":"Market not found","statusCode":400}',
+    'Pendle /convert 503: {}',
+    'Pendle /convert 400: {"message":"Input valuation is too low"}',
+    'Pendle /convert returned no routes',
+    'Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem'
+  ])('says Pendle cannot prepare the claim, with no trade-size advice: %s', raw => {
+    expect(messageFor({ data: undefined, isLoading: false, error: new Error(raw) })).toBe(
+      "Pendle can't prepare this claim right now. Your position stays claimable, so please check back later."
     );
   });
 
-  it('explains a claim blocked by a Pendle outage', () => {
-    const error = new Error('Pendle /convert 503: {}');
-    expect(messageFor({ data: undefined, isLoading: false, error })).toBe(
-      "Pendle's quote service is temporarily unavailable. Please try again."
+  it('leaves the off-chain case to the network hint', () => {
+    hoisted.chainId = 8453;
+    expect(
+      messageFor({ data: undefined, isLoading: false, error: new Error('Pendle /convert 503: {}') })
+    ).toBeUndefined();
+  });
+
+  it('points at the connection when Pendle could not be reached', () => {
+    expect(messageFor({ data: undefined, isLoading: false, error: new Error('Failed to fetch') })).toBe(
+      "Couldn't reach Pendle to prepare your claim. Check your connection and try again."
     );
   });
 });

@@ -41,9 +41,6 @@ export function pendleQuoteErrorMessage(raw: string | undefined): string | undef
   if (/no routes/i.test(raw)) {
     return t`No route available for this trade size. Try a different amount.`;
   }
-  if (/market not found/i.test(raw)) {
-    return t`Pendle's quote service can't find this market right now. Please try again later.`;
-  }
   if (/malformed quote/i.test(raw)) {
     return t`Received an invalid quote from Pendle. Please try again.`;
   }
@@ -51,4 +48,18 @@ export function pendleQuoteErrorMessage(raw: string | undefined): string | undef
     return t`Pendle's quote service is temporarily unavailable. Please try again.`;
   }
   return t`Couldn't fetch a quote from Pendle. Check your connection and try again.`;
+}
+
+/**
+ * Why a matured position's Claim is disabled. The claim always redeems the
+ * whole balance, so the trade-size advice above doesn't apply: either Pendle
+ * answered and can't price the exit, or it couldn't be reached.
+ */
+export function pendleClaimErrorMessage(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  // Our Pendle client and quote checks prefix every error they raise.
+  if (/^Pendle\b/.test(raw)) {
+    return t`Pendle can't prepare this claim right now. Your position stays claimable, so please check back later.`;
+  }
+  return t`Couldn't reach Pendle to prepare your claim. Check your connection and try again.`;
 }

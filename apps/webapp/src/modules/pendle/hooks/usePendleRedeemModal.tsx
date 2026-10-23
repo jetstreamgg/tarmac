@@ -35,7 +35,7 @@ import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
-import { pendlePrepareErrorMessage, pendleQuoteErrorMessage } from '../utils/prepareErrorMessage';
+import { pendleClaimErrorMessage, pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
@@ -399,9 +399,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   ]);
 
   // Only when no quote ever arrived: without one the cards keep Claim disabled,
-  // so they say why instead of leaving a silently greyed-out button.
+  // so they say why instead of leaving a silently greyed-out button. Off the
+  // Pendle chain the cards show the network hint instead.
   const claimUnavailableMessage =
-    isRedeemable && !quote && !isFetchingQuote ? pendleQuoteErrorMessage(quoteError?.message) : undefined;
+    onPendleChain && isRedeemable && !quote && !isFetchingQuote
+      ? pendleClaimErrorMessage(quoteError?.message)
+      : undefined;
 
   return {
     openRedeemModal,

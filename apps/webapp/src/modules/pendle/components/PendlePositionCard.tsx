@@ -322,7 +322,7 @@ function PendleMaturedCard({
               </Trans>
             </Text>
           )}
-          {onPendleChain && !switchBlocked && claimUnavailableMessage && (
+          {claimUnavailableMessage && (
             <Text variant="small" className="text-statusError" data-testid="pendle-redeem-quote-error">
               {claimUnavailableMessage}
             </Text>

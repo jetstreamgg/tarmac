@@ -107,8 +107,8 @@ export interface ProductDetailTemplateProps {
   networkChainIds?: number[];
   /** Test id on the network control (pill, row or badge). */
   networkTestId?: string;
-  /** Top-left: the Rate/TVL chart. */
-  chart: ReactNode;
+  /** Top-left: the Rate/TVL chart. Omitted for a product with no live rate (a matured market). */
+  chart?: ReactNode;
   /** Top-right: the "My position" card. */
   position: ReactNode;
   details: ProductDetailRow[];
@@ -383,7 +383,7 @@ export function ProductDetailTemplate({
           className="desktop:col-span-8 contents lg:col-span-5 lg:flex lg:flex-col lg:gap-20"
           data-testid="product-detail-left-pane"
         >
-          <div className="order-2 col-span-full">{chart}</div>
+          {chart && <div className="order-2 col-span-full">{chart}</div>}
           <DetailsSection
             title={detailsTitle}
             details={details}
