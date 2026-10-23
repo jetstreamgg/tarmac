@@ -40,9 +40,10 @@ const h = vi.hoisted(() => {
     detailPath: '/earn/fixed/pt-susds',
     networks: [1],
     status: 'matured' as const,
+    claimable: totalUsd > 0,
     rate: { value: undefined }
   });
-  type Row = ReturnType<typeof supplyRow> & { status?: 'matured' };
+  type Row = ReturnType<typeof supplyRow> & { status?: 'matured'; claimable?: boolean };
   return {
     supplyRow,
     maturedRow,

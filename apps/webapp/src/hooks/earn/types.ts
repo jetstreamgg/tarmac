@@ -105,6 +105,11 @@ export type EarnProductRow = EarnProductDescriptor & {
    * `EarnMarketplaceResult.maturedRows`, never `rows`.
    */
   status?: 'matured';
+  /**
+   * Matured rows only: the wallet still holds PT to claim. Set from the raw
+   * balance, so the claim stays reachable when the price feed can't value it.
+   */
+  claimable?: boolean;
   isLoading: boolean;
   error: Error | null;
 };

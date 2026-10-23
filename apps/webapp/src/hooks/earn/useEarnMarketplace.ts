@@ -464,6 +464,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
           rate: toRate(undefined),
           rate30d: toRate(undefined),
           position: connected ? singleChainAmount(familyMainnetId, userMarket?.valuationUsd ?? 0) : undefined,
+          claimable: connected && (userMarket?.ptBalance ?? 0n) > 0n,
           isLoading: pendleUserAssetsLoading,
           error: pendleUserAssetsError || null
         };

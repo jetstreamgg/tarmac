@@ -13,9 +13,14 @@ const h = vi.hoisted(() => ({
   navigate: undefined as ReturnType<typeof vi.fn> | undefined,
   onConnectCallbacks: [] as ((data: { address: string; isReconnected: boolean }) => void)[],
   marketplace: {
-    rows: [] as { position?: { totalUsd: number } }[],
+    rows: [],
     isPositionsLoading: true,
     isPositionsError: false
+  } as {
+    rows: { position?: { totalUsd: number } }[];
+    maturedRows?: { position?: { totalUsd: number }; claimable?: boolean }[];
+    isPositionsLoading: boolean;
+    isPositionsError: boolean;
   },
   balances: { balances: [] as { amountUsd: number }[], isLoading: true, isFetched: false, isError: false },
   geoLoading: false,
@@ -45,7 +50,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ isModalOpen: h.txModalOpen })
 }));
 vi.mock('@/hooks', () => ({
-  useEarnMarketplace: () => h.marketplace
+  useEarnMarketplace: () => ({ maturedRows: [], ...h.marketplace })
 }));
 vi.mock('@/modules/portfolio/hooks/useStablecoinBalances', () => ({
   useStablecoinBalances: () => h.balances
@@ -242,6 +247,24 @@ describe('useAppLoader', () => {
     act(() => h.completeCover?.());
     expect(screen.queryByTestId('app-loader')).toBeNull();
     expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
+  });
+
+  it('keeps a wallet holding only a matured position on /portfolio, where its Claim card is', () => {
+    const { rerender } = render(<Harness />);
+    connectManually(rerender);
+
+    h.marketplace = {
+      rows: [],
+      maturedRows: [{ position: { totalUsd: 3 }, claimable: true }],
+      isPositionsLoading: false,
+      isPositionsError: false
+    };
+    h.balances = { balances: [{ amountUsd: 5000 }], isLoading: false, isFetched: true, isError: false };
+    act(() => vi.advanceTimersByTime(1200));
+    rerenderHarness(rerender);
+
+    expect(h.navigate).not.toHaveBeenCalled();
+    expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'none', tab: 'supplied' });
   });
 
   it('keeps a funded wallet on /portfolio: cache written, no navigation', () => {

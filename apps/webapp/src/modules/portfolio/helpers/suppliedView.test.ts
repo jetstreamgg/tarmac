@@ -185,6 +185,15 @@ describe('buildSuppliedView', () => {
       position: amount(1000)
     });
 
+    it('keeps a held matured position the price feed could not value', () => {
+      const unpriced = { ...matured, claimable: true, position: amount(0) };
+      const view = buildSuppliedView([unpriced]);
+      expect(view.hasMatured).toBe(true);
+      expect(view.positions).toHaveLength(1);
+      expect(view.positions[0]).toMatchObject({ status: 'matured', amountUsd: 0 });
+      expect(view.totalSupplied).toBe(0);
+    });
+
     it('counts a matured balance in the supplied total and the position count', () => {
       const view = buildSuppliedView([live, matured]);
       expect(view.totalSupplied).toBe(2000);

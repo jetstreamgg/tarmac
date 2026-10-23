@@ -108,6 +108,9 @@ export function buildSuppliedView(rows: EarnProductRow[]): SuppliedView {
       .filter(({ amountUsd }) => amountUsd > 0);
     if (legs.length > 0) return legs;
     const fallbackChainId = row.networks[0];
+    if (row.claimable && fallbackChainId !== undefined) {
+      return [{ chainId: fallbackChainId, amountUsd: Math.max(row.position.totalUsd, 0) }];
+    }
     return fallbackChainId !== undefined && row.position.totalUsd > 0
       ? [{ chainId: fallbackChainId, amountUsd: row.position.totalUsd }]
       : [];
