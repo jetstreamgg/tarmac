@@ -139,6 +139,25 @@ describe('forkAttestationReader (Tenderly multichain fork)', () => {
     expect(attested.map(({ message }) => message)).toEqual([BASE_BURN_ATTESTED.message]);
   });
 
+  it('reads every candidate relay at once instead of one after another', async () => {
+    const setup = chains();
+    const OTHER_TX = `0x${'cd'.repeat(32)}` as Hex;
+    setup.l1.getLogs.mockResolvedValue([
+      { address: TOKEN_MESSENGER_V2, blockNumber: 26_250_500n, transactionHash: RELAY_TX },
+      { address: TOKEN_MESSENGER_V2, blockNumber: 26_250_501n, transactionHash: OTHER_TX }
+    ]);
+    let release = () => {};
+    const gate = new Promise<void>(resolve => (release = resolve));
+    setup.l1.getBlock.mockImplementation(async () => {
+      await gate;
+      return { timestamp: BURNED_AT + 30n };
+    });
+    const read = forkAttestationReader(setup.context)(6, BASE_BURN_TX.hash);
+    await vi.waitFor(() => expect(setup.l1.getBlock).toHaveBeenCalledTimes(2));
+    release();
+    await read;
+  });
+
   it('lets the bridge arrive once Tenderly relayed it', async () => {
     const { context } = chains();
     await expect(

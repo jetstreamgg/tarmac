@@ -78,32 +78,44 @@ export const forkAttestationReader =
     const l1 = context.getClient('ethereum');
     const l2 = network && context.getClient(network);
     if (!l1 || !l2) return [];
-    const receipt = await l2.getTransactionReceipt({ hash: txHash });
+    const [receipt, latest] = await Promise.all([
+      l2.getTransactionReceipt({ hash: txHash }),
+      l1.getBlockNumber()
+    ]);
     const { timestamp: burnedAt } = await l2.getBlock({ blockNumber: receipt.blockNumber });
-    const latest = await l1.getBlockNumber();
     const fromBlock = latest > LOOKBACK_BLOCKS ? latest - LOOKBACK_BLOCKS : 0n;
-    const attested: IrisAttestedMessage[] = [];
-    for (const { message, decoded } of sentMessages(receipt.logs)) {
-      if (decoded.destinationDomain !== CCTP_DOMAIN.ethereum) continue;
-      const mints = await l1.getLogs({
-        address: TOKEN_MESSENGER_V2,
-        event: MINT_AND_WITHDRAW,
-        args: { mintRecipient: decoded.body.mintRecipient },
-        fromBlock,
-        toBlock: latest
-      });
-      // An identical earlier transfer to the same recipient was relayed before this burn existed.
-      const relays: Hex[] = [];
-      for (const { blockNumber, transactionHash } of mints) {
-        if (!transactionHash || blockNumber === null || relays.includes(transactionHash)) continue;
-        const { timestamp } = await l1.getBlock({ blockNumber });
-        if (timestamp + CLOCK_SLACK_SECONDS >= burnedAt) relays.push(transactionHash);
-      }
-      for (const hash of relays) {
-        const relay = await l1.getTransactionReceipt({ hash });
-        for (const copy of receivedCopies(relay.logs, message))
-          attested.push({ message: copy, attestation: NO_ATTESTATION });
-      }
-    }
-    return attested;
+    // Burns to the same recipient in one tx share their relays: each is read once.
+    const relayReceipts = new Map<Hex, ReturnType<typeof l1.getTransactionReceipt>>();
+    const readRelay = (hash: Hex) => {
+      if (!relayReceipts.has(hash)) relayReceipts.set(hash, l1.getTransactionReceipt({ hash }));
+      return relayReceipts.get(hash)!;
+    };
+    const perMessage = await Promise.all(
+      sentMessages(receipt.logs)
+        .filter(({ decoded }) => decoded.destinationDomain === CCTP_DOMAIN.ethereum)
+        .map(async ({ message, decoded }) => {
+          const mints = await l1.getLogs({
+            address: TOKEN_MESSENGER_V2,
+            event: MINT_AND_WITHDRAW,
+            args: { mintRecipient: decoded.body.mintRecipient },
+            fromBlock,
+            toBlock: latest
+          });
+          const candidates = new Map<Hex, bigint>();
+          for (const { blockNumber, transactionHash } of mints)
+            if (transactionHash && blockNumber !== null) candidates.set(transactionHash, blockNumber);
+          const copies = await Promise.all(
+            [...candidates].map(async ([hash, blockNumber]) => {
+              const { timestamp } = await l1.getBlock({ blockNumber });
+              // An identical earlier transfer to the same recipient was relayed before this burn existed.
+              if (timestamp + CLOCK_SLACK_SECONDS < burnedAt) return [];
+              return receivedCopies((await readRelay(hash)).logs, message);
+            })
+          );
+          return copies
+            .flat()
+            .map((copy): IrisAttestedMessage => ({ message: copy, attestation: NO_ATTESTATION }));
+        })
+    );
+    return perMessage.flat();
   };
