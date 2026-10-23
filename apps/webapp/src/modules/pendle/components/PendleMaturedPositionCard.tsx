@@ -93,7 +93,7 @@ export const PendleMaturedPositionCard = ({
 
       <div className="flex flex-col gap-3">
         <span className="text-fgPrimary font-circle text-xl leading-[22px] font-medium tracking-[-0.4px] md:text-2xl md:leading-[26px] md:tracking-[-0.48px]">
-          Pendle {market.underlyingSymbol}
+          {market.name}
         </span>
         <Text variant="small" className="text-fgSecondary">
           {earnings !== undefined && earnings > 0 && currency ? (
@@ -167,7 +167,7 @@ export const PendleMaturedPositionCard = ({
             </Trans>
           </Text>
         )}
-        {onPendleChain && !switchBlocked && claimUnavailableMessage && (
+        {claimUnavailableMessage && (
           <Text variant="small" className="text-statusError" data-testid="pendle-redeem-quote-error">
             {claimUnavailableMessage}
           </Text>

@@ -175,7 +175,8 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         </>
       }
       networkChainIds={networks}
-      chart={<PendleDetailChart market={market} />}
+      // A matured market's rate is history, and its chart window has no data left to plot.
+      chart={matured ? undefined : <PendleDetailChart market={market} />}
       position={<PendlePositionCard market={market} />}
       details={details}
       afterDetails={{ title: <Trans>Maturity</Trans>, body: <PendleMaturityProgress market={market} /> }}
