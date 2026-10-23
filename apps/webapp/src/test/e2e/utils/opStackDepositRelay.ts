@@ -59,5 +59,7 @@ export async function sendOpStackDeposit(
       data: deposit.data
     }
   ]);
-  return l2.waitForTransactionReceipt({ hash });
+  const receipt = await l2.waitForTransactionReceipt({ hash });
+  if (receipt.status === 'reverted') throw new Error(`The L2 deposit tx ${hash} reverted`);
+  return receipt;
 }

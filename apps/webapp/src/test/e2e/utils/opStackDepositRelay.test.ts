@@ -76,6 +76,13 @@ describe('OP Stack deposit relay on the Tenderly forks', () => {
     expect(calls.at(-1)?.params).toEqual([expect.objectContaining({ gas: toHex(150_000n) })]);
   });
 
+  it('never reports a reverted deposit transaction as relayed', async () => {
+    stubFork();
+    const deposit = await readOpStackDeposit(l1([depositLog()]) as never, L1_TX, PORTAL);
+    const l2 = { waitForTransactionReceipt: vi.fn(async () => ({ status: 'reverted', logs: [] })) };
+    await expect(sendOpStackDeposit(l2 as never, 'fork-rpc', deposit)).rejects.toThrow('reverted');
+  });
+
   it('finds nothing to relay without a TransactionDeposited log', async () => {
     await expect(readOpStackDeposit(l1([]) as never, L1_TX, PORTAL)).rejects.toThrow(
       'No TransactionDeposited log'

@@ -51,6 +51,8 @@ if (relayed) {
   process.exit(0);
 }
 
-const relay = await sendOpStackDeposit(l2, l2Rpc, deposit);
+const relay = await sendOpStackDeposit(l2, l2Rpc, deposit).catch((error: Error) =>
+  fail(`Nothing was relayed: ${error.message}`)
+);
 const failed = relay.logs.some(entry => entry.topics[0] === FAILED_RELAY_TOPIC);
 console.log(failed ? 'Relayed, but the message failed on L2 (replayable from the app).' : 'Relayed.');
