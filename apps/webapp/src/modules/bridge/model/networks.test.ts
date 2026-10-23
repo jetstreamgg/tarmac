@@ -35,6 +35,17 @@ describe('the Tenderly fork L2s', () => {
     expect(bridgeChainId('base', 1, [forkChainId.base])).toBe(8453);
     expect(bridgeChainId('base', 314310, [])).toBe(8453);
   });
+
+  it('never hands a production chain to a fork session when only some fork L2s are configured', () => {
+    const forks = [forkChainId.base];
+    for (const network of ['arbitrum', 'optimism', 'unichain', 'avalanche', 'solana'] as const) {
+      expect(bridgeChainId(network, 314310, forks)).toBeUndefined();
+      expect(sourceSwitchChainId(network, 314310, forks)).toBeUndefined();
+      expect(
+        guardChainId({ network, familyChainId: 314310, chainIds: [314310, forkChainId.base, 42161] })
+      ).toBeUndefined();
+    }
+  });
 });
 
 describe('sourceSwitchChainId', () => {
@@ -52,5 +63,13 @@ describe('sourceSwitchChainId', () => {
       expect(sourceSwitchChainId('base', family, [])).toBe(8453);
       expect(sourceSwitchChainId('solana', family, [])).toBeUndefined();
     }
+  });
+});
+
+describe('guardChainId with real L2 ids configured next to the Tenderly fork (e2e, mock wallet)', () => {
+  it('keeps pinning the real L2', () => {
+    const chainIds = [314310, 8453, 42161];
+    expect(guardChainId({ network: 'base', familyChainId: 314310, chainIds })).toBe(8453);
+    expect(guardChainId({ network: 'arbitrum', familyChainId: 314310, chainIds })).toBe(42161);
   });
 });

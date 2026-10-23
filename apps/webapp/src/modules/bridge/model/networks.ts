@@ -1,5 +1,5 @@
 import { forkL2ChainIds } from '@/data/wagmi/config/forkChains';
-import { chainId as chainIdMap, forkChainId, realChainId } from '@/utils/chainId';
+import { chainId as chainIdMap, forkChainId, isForkChainId, realChainId } from '@/utils/chainId';
 
 export type BridgeNetworkId =
   'ethereum' | 'base' | 'arbitrum' | 'optimism' | 'unichain' | 'avalanche' | 'solana';
@@ -40,8 +40,8 @@ export const bridgeNetworkForChainId = (chainId: number | undefined): BridgeNetw
       )?.id;
 
 /**
- * The chain a bridge transacts on for a network; Ethereum is the family's (mainnet or the Tenderly fork),
- * and in the fork family an L2 is its fork L2 when the dev build has one.
+ * The chain a bridge transacts on for a network; Ethereum is the family's (mainnet or the Tenderly fork).
+ * In the fork family with fork L2s, an L2 is its fork L2, or none when the dev build lacks it (never production).
  */
 export const bridgeChainId = (
   network: BridgeNetworkId,
@@ -49,8 +49,10 @@ export const bridgeChainId = (
   forkL2Ids: number[] = forkL2ChainIds
 ): number | undefined => {
   if (network === 'ethereum') return familyChainId;
-  const forkId = familyChainId === chainIdMap.tenderly && forkChainId[network as keyof typeof forkChainId];
-  return forkId && forkL2Ids.includes(forkId) ? forkId : getBridgeNetwork(network).chainId;
+  if (familyChainId !== chainIdMap.tenderly || forkL2Ids.length === 0)
+    return getBridgeNetwork(network).chainId;
+  const forkId: number | undefined = forkChainId[network as keyof typeof forkChainId];
+  return forkId !== undefined && forkL2Ids.includes(forkId) ? forkId : undefined;
 };
 
 /**
@@ -75,6 +77,7 @@ export function guardChainId({
   familyChainId: number;
   chainIds: number[];
 }): number | undefined {
-  const target = bridgeChainId(network, familyChainId, chainIds);
+  const forkL2Ids = chainIds.filter(id => id !== chainIdMap.tenderly && isForkChainId(id));
+  const target = bridgeChainId(network, familyChainId, forkL2Ids);
   return target !== undefined && chainIds.includes(target) ? target : undefined;
 }
