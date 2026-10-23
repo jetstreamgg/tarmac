@@ -6,8 +6,9 @@ import { chainEnvLabel, type ChainEnvTone } from './chainEnvLabel';
 const SHOW_CHAIN_ENV_PILL = USE_TESTNET_CONFIG && import.meta.env.VITE_USE_MOCK_WALLET !== 'true';
 
 const toneClasses: Record<ChainEnvTone, string> = {
-  fork: 'border-statusWarningBorder bg-statusWarningBg text-statusWarning',
-  production: 'border-statusErrorBorder bg-statusErrorBg text-statusError',
+  fork: 'border-statusInfoBorder bg-statusInfoBg text-statusInfoSolid light:border-blue-500/30 light:text-blue-600',
+  // A softer red than statusError, so production reads as a caution, not an error.
+  production: 'border-red-300/30 bg-red-300/10 text-red-300 light:border-red-300/60 light:text-red-400',
   unconfigured: 'border-border bg-bgTertiary text-fgSecondary'
 };
 
