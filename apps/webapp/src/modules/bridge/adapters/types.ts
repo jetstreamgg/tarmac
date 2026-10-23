@@ -12,6 +12,8 @@ export type ChainReader = Pick<
 export type AdapterContext = {
   /** The network's configured client; undefined when the app has none for it. */
   getClient: (network: BridgeNetworkId) => ChainReader | undefined;
+  /** Dev mode on the Tenderly multichain fork, where Tenderly relays CCTP itself. */
+  onTenderlyFork?: boolean;
 };
 
 /**
