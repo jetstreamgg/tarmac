@@ -145,6 +145,13 @@ export type EarnMarketplaceResult = {
    * NOT geo-gated, like `rows`.
    */
   maturedRows: EarnProductRow[];
+  /**
+   * `rows` then `maturedRows`: every product a wallet can hold a position in.
+   * Position surfaces (Portfolio totals, the landing decision) read this, so
+   * none has to remember to fold the matured markets in; opportunity surfaces
+   * read `rows`.
+   */
+  positionRows: EarnProductRow[];
   /** True while any row is still loading. Rows fail independently — check per-row error. */
   isLoading: boolean;
   /**

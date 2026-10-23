@@ -35,11 +35,10 @@ import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
  * disconnected visitors get (gated on the settled `callout` signal).
  */
 export function ConnectedPortfolio() {
-  const { rows, maturedRows, isLoading, isPositionsError } = useEarnMarketplace();
-  // Matured markets stay out of the opportunities rows but are still capital
-  // in the protocol: every Portfolio total, the carousel and the earnings
-  // popup read them from the same view as the live positions (APP-532).
-  const allRows = useMemo(() => [...rows, ...maturedRows], [rows, maturedRows]);
+  // Matured markets included: they are still capital in the protocol, so
+  // every Portfolio total, the carousel and the earnings popup read them from
+  // the same view as the live positions (APP-532).
+  const { positionRows: allRows, isLoading, isPositionsError } = useEarnMarketplace();
   const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
   // APP-450: aggregated per-wallet earnings (Total earned / Earned this month
   // in the card footer, "Already earned" on each position card).

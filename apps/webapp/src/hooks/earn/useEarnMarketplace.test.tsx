@@ -36,6 +36,7 @@ describe('useEarnMarketplace', () => {
     // Matured markets never reach the opportunities rows; they arrive flagged beside them.
     expect(result.current.rows.some(row => row.status !== undefined)).toBe(false);
     for (const row of result.current.maturedRows) expect(row.status).toBe('matured');
+    expect(result.current.positionRows).toEqual([...result.current.rows, ...result.current.maturedRows]);
 
     // Aggregate of all user positions (>= 0; the fork test account holds none).
     expect(result.current.totalDepositedUsd).toBeGreaterThanOrEqual(0);

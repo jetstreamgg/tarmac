@@ -470,11 +470,13 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
         };
       });
   }, [products, address, pendleUserAssets, pendleUserAssetsLoading, pendleUserAssetsError, familyMainnetId]);
+  const positionRows = useMemo(() => [...rows, ...maturedRows], [rows, maturedRows]);
 
   return {
     rows,
     endedRewardPositions,
     maturedRows,
+    positionRows,
     isLoading: rows.some(row => row.isLoading) || maturedRows.some(row => row.isLoading),
     // Every source a row's `position` reads from — balances plus the prices
     // that turn them into USD. Rate/TVL/chart sources (the slow external
