@@ -92,7 +92,6 @@
   },
   "devDependencies": {
     "@lingui/core": "catalog:",
-    "@lingui/swc-plugin": "catalog:",
     "@lingui/vite-plugin": "catalog:",
     "@playwright/test": "catalog:",
     "@sentry/vite-plugin": "catalog:",
@@ -100,7 +99,7 @@
     "@tanstack/router-plugin": "catalog:",
     "@testing-library/dom": "catalog:",
     "@testing-library/react": "catalog:",
-    "@vitejs/plugin-react-swc": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@wagmi/cli": "catalog:",
     "happy-dom": "catalog:",
