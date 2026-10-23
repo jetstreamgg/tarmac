@@ -10,7 +10,7 @@ if (!MAINNET_FORK_CONTAINER_ID) {
   process.exit(1);
 }
 
-// Allow override via environment variable for alternate vnet naming
+// Allow override via environment variable for custom vnet naming
 // Usage: VNET_PREFIX=my-prefix pnpm vnet:fork
 // Default: ci-tests-testnet
 const VNET_PREFIX = process.env.VNET_PREFIX || 'ci-tests-testnet';
@@ -41,8 +41,10 @@ const forkVnets = async chainType => {
 
   const chainsToFork = chainType ?? ['mainnet', 'base', 'arbitrum', 'optimism', 'unichain']; // Re-enable when we add tests for these chains
 
-  const responses = await Promise.all(
-    chainsToFork.map(chain => {
+  // allSettled + async callback: a failed fork (rejected fetch, unsupported chain)
+  // must not hide the ones that did get created, so they can be cleaned up below.
+  const results = await Promise.allSettled(
+    chainsToFork.map(async chain => {
       switch (chain) {
         case 'mainnet':
           return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
@@ -151,14 +153,47 @@ const forkVnets = async chainType => {
     })
   );
 
-  const testnetsData = await Promise.all(responses.map(response => response.json()));
+  const testnetsData = await Promise.all(
+    results.map(async (result, index) => {
+      const chain = chainsToFork[index];
+      if (result.status === 'rejected') {
+        console.error(`Forking ${chain} failed:`, result.reason);
+        return null;
+      }
+      const res = result.value;
+      console.log('Response:', res);
+      const data = await res.json().catch(() => null);
+      if (res.status !== 200 || !data?.id) {
+        console.error(`There was an error while forking the ${chain} virtual testnet:`, res.statusText, data);
+        return null;
+      }
+      return data;
+    })
+  );
 
-  for (const res of responses) {
-    console.log('Response:', res);
-    if (res.status !== 200) {
-      console.error('There was an error while forking the virtual testnet:', res.statusText);
-      process.exit(1);
-    }
+  if (testnetsData.some(data => data === null)) {
+    // Don't leave the forks that did succeed running until the next delete:all sweep
+    const created = testnetsData.filter(Boolean);
+    const deleted = await Promise.all(
+      created.map(async ({ id }) => {
+        const res = await fetch(
+          `https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/testnet/container/${id}`,
+          {
+            headers: [['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]],
+            method: 'DELETE'
+          }
+        ).catch(error => error);
+        if (res.status !== 204) {
+          console.error(`Failed to delete orphaned virtual testnet ${id}:`, res.statusText ?? res);
+          return false;
+        }
+        return true;
+      })
+    );
+    console.error(
+      `Deleted ${deleted.filter(Boolean).length}/${created.length} virtual testnet(s) created before the failure.`
+    );
+    process.exit(1);
   }
 
   // Log the current state of vnets after creation
