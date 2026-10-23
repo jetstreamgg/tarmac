@@ -78,7 +78,10 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn()
 }));
 vi.mock('@/hooks', () => ({
-  useEarnMarketplace: () => h.marketplace,
+  useEarnMarketplace: () => ({
+    ...h.marketplace,
+    positionRows: [...h.marketplace.rows, ...h.marketplace.maturedRows]
+  }),
   useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading })
 }));
 vi.mock('../hooks/useStablecoinBalances', () => ({

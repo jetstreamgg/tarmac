@@ -49,7 +49,7 @@ vi.mock('@tanstack/react-router', () => ({
     select({ location: { pathname: '/portfolio' } })
 }));
 vi.mock('@/hooks', () => ({
-  useEarnMarketplace: () => ({ rows: [], maturedRows: [], isPositionsLoading: true }),
+  useEarnMarketplace: () => ({ positionRows: [], isPositionsLoading: true }),
   // ResponsiveModal (inside TermsModal) reads the breakpoint from the barrel;
   // pin the desktop tier so the modal composes as a Dialog deterministically.
   BP: { sm: 0, md: 1, lg: 2, desktop: 3, xl: 4, '2xl': 5 },

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useConnection, useConnectionEffect } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { motion, type Transition } from 'motion/react';
@@ -155,13 +155,11 @@ export function useAppLoader(): {
   // but `row.position`, and the full `isLoading` waits on rate/chart history
   // from external APIs that can outlive the hold cap.
   const {
-    rows,
-    maturedRows,
+    positionRows,
     isPositionsLoading: marketLoading,
     isPositionsError: marketError
   } = useEarnMarketplace();
-  // Matured markets too, so this writer agrees with the Portfolio page's.
-  const visibleRows = useGeoVisibleRows(useMemo(() => [...rows, ...maturedRows], [rows, maturedRows]));
+  const visibleRows = useGeoVisibleRows(positionRows);
   const hasMatured = visibleRows.some(row => row.claimable);
   const {
     balances,

@@ -50,7 +50,10 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ isModalOpen: h.txModalOpen })
 }));
 vi.mock('@/hooks', () => ({
-  useEarnMarketplace: () => ({ maturedRows: [], ...h.marketplace })
+  useEarnMarketplace: () => ({
+    ...h.marketplace,
+    positionRows: [...h.marketplace.rows, ...(h.marketplace.maturedRows ?? [])]
+  })
 }));
 vi.mock('@/modules/portfolio/hooks/useStablecoinBalances', () => ({
   useStablecoinBalances: () => h.balances
