@@ -53,6 +53,18 @@ export const bridgeChainId = (
   return forkId && forkL2Ids.includes(forkId) ? forkId : getBridgeNetwork(network).chainId;
 };
 
+/**
+ * The chain the wallet switches to when `network` becomes the bridge source: the family's chain in the
+ * Tenderly multichain setup, the production chain otherwise (the mock wallet build has no mainnet, so an
+ * Ethereum source stays a local pick until Review).
+ */
+export const sourceSwitchChainId = (
+  network: BridgeNetworkId,
+  familyChainId: number,
+  forkL2Ids: number[] = forkL2ChainIds
+): number | undefined =>
+  forkL2Ids.length > 0 ? bridgeChainId(network, familyChainId, forkL2Ids) : getBridgeNetwork(network).chainId;
+
 /** The chain a flow on `network` is pinned to; undefined when the app can't switch to it, so nothing runs elsewhere. */
 export function guardChainId({
   network,

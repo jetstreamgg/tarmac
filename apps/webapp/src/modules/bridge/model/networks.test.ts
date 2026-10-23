@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { forkChainId } from '@/utils/chainId';
-import { bridgeChainId, bridgeNetworkForChainId, guardChainId } from './networks';
+import { bridgeChainId, bridgeNetworkForChainId, guardChainId, sourceSwitchChainId } from './networks';
 
 describe('guardChainId', () => {
   const chainIds = [1, 8453];
@@ -34,5 +34,23 @@ describe('the Tenderly fork L2s', () => {
   it('keeps the real L2 ids on mainnet and when the fork has no such L2 (mock build)', () => {
     expect(bridgeChainId('base', 1, [forkChainId.base])).toBe(8453);
     expect(bridgeChainId('base', 314310, [])).toBe(8453);
+  });
+});
+
+describe('sourceSwitchChainId', () => {
+  it('stays on the forks in the Tenderly multichain setup', () => {
+    const forks = [forkChainId.base, forkChainId.optimism];
+    expect(sourceSwitchChainId('base', 314310, forks)).toBe(forkChainId.base);
+    expect(sourceSwitchChainId('ethereum', 314310, forks)).toBe(314310);
+    expect(sourceSwitchChainId('base', 1, forks)).toBe(8453);
+    expect(sourceSwitchChainId('ethereum', 1, forks)).toBe(1);
+  });
+
+  it('is the production chain without fork L2s (production, mock wallet, dev without them)', () => {
+    for (const family of [1, 314310]) {
+      expect(sourceSwitchChainId('ethereum', family, [])).toBe(1);
+      expect(sourceSwitchChainId('base', family, [])).toBe(8453);
+      expect(sourceSwitchChainId('solana', family, [])).toBeUndefined();
+    }
   });
 });
