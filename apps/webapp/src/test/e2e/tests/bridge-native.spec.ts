@@ -164,7 +164,10 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     const reopen = await closeOpStackBridge('unichain');
     try {
       await bridge.confirmButton().click();
-      await expect(isolatedPage.getByRole('dialog')).toContainText('Transaction failed', { timeout: 60_000 });
+      // A refusal before signing says nothing was sent, with the reason.
+      const dialog = isolatedPage.getByRole('dialog');
+      await expect(dialog).toContainText('Transaction not sent', { timeout: 60_000 });
+      await expect(dialog).toContainText('The bridge is closed to new deposits. Nothing was sent.');
       await expectNothingSent(bridge, isolatedPage, testAccount, before);
     } finally {
       await reopen();

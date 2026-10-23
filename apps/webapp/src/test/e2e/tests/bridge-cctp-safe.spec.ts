@@ -132,7 +132,8 @@ test.describe('Bridge: CCTP from a Safe', () => {
     await expect
       .poll(async () => (await l1AccountState(safe)).usds - before, { timeout: 30_000 })
       .toBe(DELIVERED);
-    await expect(status(bridge)).toHaveText('Claimed', { timeout: 60_000 });
+    // Once the USDS is delivered the card closes; the bridge stays in Activity.
+    await expect(bridge.card('Ethereum')).toHaveCount(0, { timeout: 60_000 });
     expect(safeMode.queued()).toEqual([]);
     expect(safeMode.unmockedRequests).toEqual([]);
   });

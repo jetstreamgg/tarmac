@@ -243,7 +243,7 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
     await opFunds.expectArrived(AMOUNT);
   });
 
-  test('The ETA counts down with the clock and says when the bridge is late', async ({
+  test('The card shows the estimated arrival time and says when the bridge is late', async ({
     isolatedPage,
     testAccount
   }) => {
@@ -254,7 +254,10 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
     const funds = await watchDeposit({ to: 'optimism', sender: account });
     const txHash = await deposit(bridge, isolatedPage, 'optimism');
     const card = bridge.card('OP Mainnet');
-    await expect(card).toContainText(/~\d+ min/, { timeout: 30_000 });
+    // A UTC clock time, or the full date when it falls on a later UTC day.
+    await expect(card).toContainText(/Estimated arrival(\d{2}\/\d{2}\/\d{2} )?\d{2}:\d{2} UTC/, {
+      timeout: 30_000
+    });
 
     await isolatedPage.clock.fastForward('02:00:00');
     await expect(card).toContainText('Taking longer than expected', { timeout: 30_000 });

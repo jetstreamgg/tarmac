@@ -46,6 +46,7 @@ test.describe('Bridge: L2 to Ethereum through CCTP', () => {
     await expect
       .poll(async () => (await l1AccountState(testAccount)).usds - before, { timeout: 30_000 })
       .toBe(parseUnits('5', 18));
-    await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 60_000 });
+    // Once the USDS is delivered the card closes; the bridge stays in Activity.
+    await expect(card).toHaveCount(0, { timeout: 60_000 });
   });
 });
