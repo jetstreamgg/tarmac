@@ -10,6 +10,7 @@ import {
   bridgeNetworkForChainId,
   getBridgeNetwork,
   guardChainId,
+  sourceSwitchChainId,
   type BridgeNetworkId
 } from '../model/networks';
 import { allowedDestinations, isLivePair, pickFrom, pickTo, type BridgePair } from '../model/pairs';
@@ -79,17 +80,17 @@ export function useBridgeForm() {
   const pair: BridgePair = { from, to };
 
   const isConfiguredChain = (id: BridgeNetworkId) => {
-    const target = getBridgeNetwork(id);
+    const target = sourceSwitchChainId(id, familyChainId);
     return (
-      target.appSupported && target.chainId !== undefined && chains.some(chain => chain.id === target.chainId)
+      getBridgeNetwork(id).appSupported && target !== undefined && chains.some(chain => chain.id === target)
     );
   };
 
   const moveSource = (next: BridgeNetworkId) => {
-    const target = getBridgeNetwork(next);
-    if (isConfiguredChain(next) && canSwitchChain && target.chainId !== undefined) {
+    const target = sourceSwitchChainId(next, familyChainId);
+    if (isConfiguredChain(next) && canSwitchChain && target !== undefined) {
       setSourceOverride(null);
-      if (next !== walletNetwork) handleSwitchChain({ chainId: target.chainId });
+      if (next !== walletNetwork) handleSwitchChain({ chainId: target });
       return;
     }
     setSourceOverride(next === walletNetwork ? null : next);

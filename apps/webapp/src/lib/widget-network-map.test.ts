@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import { Intent } from './enums';
 import { getRouteChainAction } from './widget-network-map';
-import { chainId } from '@/utils/chainId';
+import { chainId, forkChainId } from '@/utils/chainId';
 
 // Chain lists mirroring the app's wagmi configs: production carries no
 // testnet chain; dev adds the Tenderly fork; mock/e2e names every chain
@@ -129,5 +129,34 @@ describe('getRouteChainAction', () => {
     });
     // ...and the Portfolio that receives it asks for nothing, flag reset or not.
     expect(getRouteChainAction(Intent.BALANCES_INTENT, 999999)).toEqual({ kind: 'render' });
+  });
+});
+
+describe('getRouteChainAction on the Tenderly fork L2s', () => {
+  const FORK_DEV_CHAINS = [chainId.tenderly, ...Object.values(forkChainId)].map(id => ({ id }));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('renders multichain modules on every fork L2 the dev build connects to', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+    for (const l2 of ['BASE', 'ARBITRUM', 'OPTIMISM', 'UNICHAIN'])
+      vi.stubEnv(`VITE_RPC_PROVIDER_TENDERLY_${l2}`, `https://fork-${l2}.invalid`);
+    const { getRouteChainAction } = await import('./widget-network-map');
+    for (const targetChainId of Object.values(forkChainId)) {
+      for (const intent of MULTICHAIN_INTENTS) {
+        expect(getRouteChainAction(intent, targetChainId, { chains: FORK_DEV_CHAINS })).toEqual({
+          kind: 'render'
+        });
+      }
+    }
+  });
+
+  it('switches mainnet-only modules to the Ethereum fork, never real mainnet', () => {
+    for (const targetChainId of Object.values(forkChainId)) {
+      expect(getRouteChainAction(Intent.STAKE_INTENT, targetChainId, { chains: FORK_DEV_CHAINS })).toEqual({
+        kind: 'switch-network',
+        chainId: chainId.tenderly
+      });
+    }
   });
 });

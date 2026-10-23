@@ -37,6 +37,9 @@ export default ({ mode }: { mode: modeEnum }) => {
   );
 
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
+  const RPC_PROVIDER_TENDERLY_L2S = ['BASE', 'ARBITRUM', 'OPTIMISM', 'UNICHAIN']
+    .map(l2 => process.env[`VITE_RPC_PROVIDER_TENDERLY_${l2}`] || '')
+    .join(' ');
   const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
@@ -57,6 +60,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://staging-proxy.sky.money
       ${PROXY_ORIGIN}
       ${RPC_PROVIDER_TENDERLY}
+      ${RPC_PROVIDER_TENDERLY_L2S}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co
