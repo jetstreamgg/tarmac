@@ -1,11 +1,23 @@
-import { chainId } from './chainId';
+import { chainId, forkChainId } from './chainId';
 
 export function getEtherscanLink(chainId: number, address: string, type: 'address' | 'tx') {
   const prefix = getEtherscanPrefix(chainId);
   return `https://${prefix}/${type}/${address}`;
 }
 
+// Dev only: the Tenderly multichain environment's explorer of each fork, from the local .env.
+const tenderlyExplorer = (id: number): string | undefined =>
+  ({
+    [chainId.tenderly]: import.meta.env?.VITE_TENDERLY_EXPLORER_ETHEREUM,
+    [forkChainId.base]: import.meta.env?.VITE_TENDERLY_EXPLORER_BASE,
+    [forkChainId.arbitrum]: import.meta.env?.VITE_TENDERLY_EXPLORER_ARBITRUM,
+    [forkChainId.optimism]: import.meta.env?.VITE_TENDERLY_EXPLORER_OPTIMISM,
+    [forkChainId.unichain]: import.meta.env?.VITE_TENDERLY_EXPLORER_UNICHAIN
+  })[id];
+
 function getEtherscanPrefix(id: number) {
+  const forkExplorer = tenderlyExplorer(id);
+  if (forkExplorer) return forkExplorer;
   switch (id) {
     case chainId.mainnet:
       return 'etherscan.io';
