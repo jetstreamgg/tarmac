@@ -9,7 +9,7 @@ import {
   type Hex,
   type Log
 } from 'viem';
-import { base } from 'viem/chains';
+import { base, optimism } from 'viem/chains';
 import { readOpStackDeposit, sendOpStackDeposit } from './opStackDepositRelay';
 
 const portalAbi = parseAbi([
@@ -17,11 +17,12 @@ const portalAbi = parseAbi([
 ]);
 const FROM: Address = '0x36BDE71C97B33Cc4729cf772aE268934f7AB70B2';
 const TO: Address = '0x4200000000000000000000000000000000000007';
+const PORTAL = base.contracts.portal[1].address;
 const DATA: Hex = '0xd764ad0b0001';
 const L1_TX = `0x${'11'.repeat(32)}` as Hex;
 const RELAY_TX = `0x${'22'.repeat(32)}` as Hex;
 
-const depositLog = (address: Address = base.contracts.portal[1].address): Log =>
+const depositLog = (address: Address = PORTAL): Log =>
   ({
     address,
     topics: encodeEventTopics({
@@ -57,7 +58,7 @@ describe('OP Stack deposit relay on the Tenderly forks', () => {
 
   it('sends the exact L2 deposit transaction of the L1 deposit', async () => {
     const calls = stubFork();
-    const deposit = await readOpStackDeposit(l1([depositLog()]) as never, L1_TX);
+    const deposit = await readOpStackDeposit(l1([depositLog()]) as never, L1_TX, PORTAL);
     const l2 = { waitForTransactionReceipt: vi.fn(async () => ({ status: 'success', logs: [] })) };
     await sendOpStackDeposit(l2 as never, 'fork-rpc', deposit);
     expect(calls.at(-1)).toEqual({
@@ -69,13 +70,22 @@ describe('OP Stack deposit relay on the Tenderly forks', () => {
 
   it('sends the gas it is given instead, to leave a failed message to replay', async () => {
     const calls = stubFork();
-    const deposit = await readOpStackDeposit(l1([depositLog()]) as never, L1_TX);
+    const deposit = await readOpStackDeposit(l1([depositLog()]) as never, L1_TX, PORTAL);
     const l2 = { waitForTransactionReceipt: vi.fn(async () => ({ status: 'success', logs: [] })) };
     await sendOpStackDeposit(l2 as never, 'fork-rpc', deposit, { gas: 150_000n });
     expect(calls.at(-1)?.params).toEqual([expect.objectContaining({ gas: toHex(150_000n) })]);
   });
 
   it('finds nothing to relay without a TransactionDeposited log', async () => {
-    await expect(readOpStackDeposit(l1([]) as never, L1_TX)).rejects.toThrow('No TransactionDeposited log');
+    await expect(readOpStackDeposit(l1([]) as never, L1_TX, PORTAL)).rejects.toThrow(
+      'No TransactionDeposited log'
+    );
+  });
+
+  it("never relays a deposit sent through another L2's portal", async () => {
+    const optimismDeposit = depositLog(optimism.contracts.portal[1].address);
+    await expect(readOpStackDeposit(l1([optimismDeposit]) as never, L1_TX, PORTAL)).rejects.toThrow(
+      'No TransactionDeposited log'
+    );
   });
 });

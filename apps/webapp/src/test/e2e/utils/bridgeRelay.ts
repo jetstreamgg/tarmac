@@ -77,7 +77,11 @@ export async function relayOpStackDeposit(
   l1TxHash: Hash,
   { gas }: { gas?: bigint } = {}
 ) {
-  const deposit = await readOpStackDeposit(await client(NetworkName.mainnet), l1TxHash);
+  const deposit = await readOpStackDeposit(
+    await client(NetworkName.mainnet),
+    l1TxHash,
+    OP_STACK_DEPOSIT[network].portal
+  );
   const relay = await sendOpStackDeposit(
     await client(NetworkName[network]),
     await getRpcUrlFromFile(NetworkName[network]),

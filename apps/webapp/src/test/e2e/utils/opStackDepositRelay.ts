@@ -1,5 +1,12 @@
 // viem imports only: scripts/relayForkDeposit.ts runs this file with plain node.
-import { toHex, type Hash, type PublicClient, type TransactionReceipt } from 'viem';
+import {
+  isAddressEqual,
+  toHex,
+  type Address,
+  type Hash,
+  type PublicClient,
+  type TransactionReceipt
+} from 'viem';
 import { extractTransactionDepositedLogs, opaqueDataToDepositData } from 'viem/op-stack';
 
 type Reader = Pick<PublicClient, 'getTransactionReceipt' | 'waitForTransactionReceipt'>;
@@ -16,11 +23,17 @@ export const forkRpc = async <T>(url: string, method: string, params: unknown[])
   return body.result as T;
 };
 
-/** The L2 deposit transaction of an L1 OP Stack deposit, from its TransactionDeposited log. */
-export async function readOpStackDeposit(l1: Pick<Reader, 'getTransactionReceipt'>, l1TxHash: Hash) {
+/** The L2 deposit transaction of an L1 OP Stack deposit, from the TransactionDeposited log of the L2's portal. */
+export async function readOpStackDeposit(
+  l1: Pick<Reader, 'getTransactionReceipt'>,
+  l1TxHash: Hash,
+  portal: Address
+) {
   const receipt = await l1.getTransactionReceipt({ hash: l1TxHash });
-  const [log] = extractTransactionDepositedLogs({ logs: receipt.logs });
-  if (!log) throw new Error(`No TransactionDeposited log in ${l1TxHash}`);
+  const log = extractTransactionDepositedLogs({ logs: receipt.logs }).find(({ address }) =>
+    isAddressEqual(address, portal)
+  );
+  if (!log) throw new Error(`No TransactionDeposited log from ${portal} in ${l1TxHash}`);
   return { from: log.args.from, to: log.args.to, ...opaqueDataToDepositData(log.args.opaqueData) };
 }
 

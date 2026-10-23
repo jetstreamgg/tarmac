@@ -2,6 +2,7 @@
 // (Base, OP, Unichain), playing the sequencer the forks lack. Dev mode only.
 // Usage, from apps/webapp: node --env-file=.env scripts/relayForkDeposit.ts <base|optimism|unichain> <l1TxHash>
 import { createPublicClient, http, keccak256, parseAbi, toHex, type Hash } from 'viem';
+import { base, optimism, unichain } from 'viem/chains';
 import { readOpStackDeposit, sendOpStackDeposit } from '../src/test/e2e/utils/opStackDepositRelay.ts';
 
 const L2_RPC_ENV = {
@@ -9,6 +10,8 @@ const L2_RPC_ENV = {
   optimism: 'VITE_RPC_PROVIDER_TENDERLY_OPTIMISM',
   unichain: 'VITE_RPC_PROVIDER_TENDERLY_UNICHAIN'
 } as const;
+// The forks keep the mainnet addresses.
+const PORTAL = { base, optimism, unichain } as const;
 
 const messengerAbi = parseAbi(['function successfulMessages(bytes32) view returns (bool)']);
 const FAILED_RELAY_TOPIC = keccak256(toHex('FailedRelayedMessage(bytes32)'));
@@ -29,8 +32,11 @@ const l2 = createPublicClient({ transport: http(l2Rpc) });
 
 const receipt = await l1.getTransactionReceipt({ hash: l1TxHash });
 if (receipt.status !== 'success') fail('The Ethereum deposit reverted; nothing to relay.');
-const deposit = await readOpStackDeposit(l1, l1TxHash).catch(() =>
-  fail('No TransactionDeposited log: not an OP Stack deposit, or sent to another L2.')
+const deposit = await readOpStackDeposit(l1, l1TxHash, PORTAL[network].contracts.portal[1].address).catch(
+  () =>
+    fail(
+      `No TransactionDeposited log from the ${network} portal: not an OP Stack deposit, or sent to another L2.`
+    )
 );
 
 // The deposit calls the L2 messenger's relayMessage, whose calldata hash is the message hash.
