@@ -32,9 +32,10 @@ export type PendingBridgeStatus = 'pending' | 'ready' | 'arrived' | 'claimed' | 
 
 /**
  * `redeem` (Arbitrum ticket) and `replay` (OP Stack message) recover a deposit whose L2 execution failed;
- * `keepalive` extends an Arbitrum ticket's deadline and is never the next action.
+ * `keepalive` extends an Arbitrum ticket's deadline and is never the next action;
+ * `convert` sells a settled CCTP claim's USDC for USDS when the claim didn't, and is never the next action either.
  */
-export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay' | 'keepalive';
+export type PendingBridgeNextAction = PendingBridgeStepAction | 'redeem' | 'replay' | 'keepalive' | 'convert';
 
 /** A destination action every bridge of its route goes through, in order. */
 export type PendingBridgeStepAction = 'claim' | 'prove' | 'finalize';
@@ -51,6 +52,8 @@ export type PendingBridgeAction = {
   status?: 'sent' | 'invalidated';
   /** Sent from a Safe: `txHash` is its Safe tx hash, which the tracker resolves through the Safe service. */
   safe?: true;
+  /** The other transactions of a bundle the wallet ran apart: a claim's sale can land in one of them. */
+  bundleTxHashes?: string[];
 };
 
 export type PendingBridge = {
@@ -87,5 +90,7 @@ export type PendingBridge = {
   readyAt?: number;
   /** When the bridge reached arrived, claimed or failed. */
   settledAt?: number;
+  /** When the user was done with its settled card (kept the USDC); Activity still lists it. */
+  closedAt?: number;
   failureReason?: string;
 };

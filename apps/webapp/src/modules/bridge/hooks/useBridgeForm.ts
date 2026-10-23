@@ -14,9 +14,10 @@ import {
 } from '../model/networks';
 import { allowedDestinations, isLivePair, pickFrom, pickTo, type BridgePair } from '../model/pairs';
 import { isValidRecipient, recipientProblem, recipientRequirement, sendsToOther } from '../model/recipient';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { resolveBridgeRoute, type ResolvedBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
 import { useAddressCode } from './useAddressCode';
+import { useCctpGate } from './useCctpGate';
 import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
 
@@ -135,14 +136,24 @@ export function useBridgeForm() {
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
   const nativeGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
-  // The other route facts (CCTP, LayerZero, withdrawals) come from their tickets, through toRouteFact.
-  const resolved = useMemo(
-    () =>
-      isLivePair({ from, to })
-        ? resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate } })
-        : ({ status: 'blocked', reason: 'pair-not-allowed' } as const),
-    [from, to, amount, nativeGate]
-  );
+  const cctpGate = useCctpGate({
+    from,
+    to,
+    sourceChainId,
+    ethereumChainId: bridgeChainId('ethereum', familyChainId)
+  });
+  // The other route facts (LayerZero, withdrawals) come from their tickets, through toRouteFact.
+  const resolved = useMemo((): ResolvedBridgeRoute => {
+    if (!isLivePair({ from, to })) return { status: 'blocked', reason: 'pair-not-allowed' };
+    // With no gate the resolver reads CCTP as open.
+    if (from !== 'ethereum' && cctpGate === undefined)
+      return { status: 'blocked', reason: 'pair-not-allowed' };
+    const result = resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate, cctp: cctpGate } });
+    // The native withdrawal has no real calls yet (APP-617), so an L2 bridges by CCTP only.
+    if (result.status === 'ok' && from !== 'ethereum' && result.route.kind !== 'cctp')
+      return { status: 'blocked', reason: result.route.fallbackReason ?? 'closed' };
+    return result;
+  }, [from, to, amount, nativeGate, cctpGate]);
   const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;
@@ -210,6 +221,8 @@ export function useBridgeForm() {
     /** The lookups behind `needsRecipient` and `recipientProblem` are still in flight. */
     recipientChecking: codeChecking || (checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking)),
     recipientReason: recipientRule.required ? recipientRule.reason : undefined,
+    /** The wallet is a contract on the source and the destination pays it, not a typed recipient. */
+    senderIsContract: isConnected && !typedOther && payeeOnSource.code === 'contract',
     /** The Safe check failed, so the wallet type is unknown. */
     safeCheckFailed: isConnected && safeStatus === 'unknown',
     /** Review and Confirm can't go ahead; only meaningful while connected. */

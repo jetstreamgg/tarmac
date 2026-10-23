@@ -6,6 +6,7 @@ import type { PendingBridge } from '../model/types';
 import { chainId } from '@/utils/chainId';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import {
+  bridgeCounterparty,
   bridgeTxHref,
   buildPendingBridgeRows,
   formatBridgeDate,
@@ -44,8 +45,18 @@ describe('buildPendingBridgeRows', () => {
     ]);
   });
 
-  it('shows the remaining time while pending and Arrived once landed', () => {
-    expect(buildPendingBridgeRows(base, 0, 1)[1][1]).toMatchObject({ value: '~3 min' });
+  it("draws Circle's logo before CCTP only (Figma 3830:67688)", () => {
+    const cctp = buildPendingBridgeRows({ ...base, from: 'base', to: 'ethereum', routeKind: 'cctp' }, 0, 1);
+    expect(cctp[2][0]).toEqual({ kind: 'text', label: 'Bridge type', value: 'CCTP', logo: 'cctp' });
+    expect(buildPendingBridgeRows(base, 0, 1)[2][0]).toEqual({
+      kind: 'text',
+      label: 'Bridge type',
+      value: 'Native'
+    });
+  });
+
+  it('shows the arrival time while pending and Arrived once landed', () => {
+    expect(buildPendingBridgeRows(base, 0, 1)[1][1]).toMatchObject({ value: '00:03 UTC' });
     expect(buildPendingBridgeRows({ ...base, status: 'ready' }, 0, 1)[1][1]).toMatchObject({
       value: 'Arrived'
     });
@@ -53,7 +64,7 @@ describe('buildPendingBridgeRows', () => {
 
   it('names the ready action and keeps an unfinished withdrawal out of Arrived', () => {
     const claim = buildPendingBridgeRows({ ...base, status: 'ready', nextAction: 'claim' }, 0, 1)[1];
-    expect(claim.map(cell => 'value' in cell && cell.value)).toEqual(['Ready to claim', 'Arrived']);
+    expect(claim.map(cell => 'value' in cell && cell.value)).toEqual(['Ready to claim', 'Ready']);
     const prove = buildPendingBridgeRows({ ...base, status: 'ready', nextAction: 'prove' }, 0, 1)[1];
     expect(prove.map(cell => 'value' in cell && cell.value)).toEqual(['Ready to prove', 'Ready']);
     expect(buildPendingBridgeRows({ ...base, status: 'failed' }, 0, 1)[1][1]).toMatchObject({
@@ -106,20 +117,164 @@ describe('buildPendingBridgeRows', () => {
 
   it('ignores a clock older than the bridge start', () => {
     const late = { ...base, startedAt: 120_000, etaAt: 120_000 + 3 * 60_000 };
-    expect(buildPendingBridgeRows(late, 0, 1)[1][1]).toMatchObject({ value: '~3 min' });
+    expect(buildPendingBridgeRows(late, 0, 1)[1][1]).toMatchObject({ value: '00:05 UTC' });
   });
 
   it('says the bridge is taking longer than expected once past its ETA', () => {
-    expect(buildPendingBridgeRows(base, base.etaAt, 1)[1][1]).toMatchObject({ value: '~1 min' });
+    expect(buildPendingBridgeRows(base, base.etaAt, 1)[1][1]).toMatchObject({ value: '00:03 UTC' });
     expect(buildPendingBridgeRows(base, base.etaAt + 60_000, 1)[1][1]).toMatchObject({
       value: 'Taking longer than expected'
     });
+  });
+
+  it('shows the arrival as a UTC clock time, rounded up to the minute', () => {
+    const now = Date.UTC(2026, 9, 25, 15, 26);
+    const at = (etaAt: number) => buildPendingBridgeRows({ ...base, startedAt: now, etaAt }, now, 1)[1][1];
+    expect(at(Date.UTC(2026, 9, 25, 15, 46))).toMatchObject({ value: '15:46 UTC' });
+    expect(at(Date.UTC(2026, 9, 25, 15, 45, 10))).toMatchObject({ value: '15:46 UTC' });
+  });
+
+  it('dates an arrival that falls on a later UTC day', () => {
+    const now = Date.UTC(2026, 9, 25, 15, 26);
+    const eta = Date.UTC(2026, 9, 29, 15, 46);
+    expect(buildPendingBridgeRows({ ...base, startedAt: now, etaAt: eta }, now, 1)[1][1]).toMatchObject({
+      value: '29/10/26 15:46 UTC'
+    });
+  });
+
+  it('says a claim that kept its USDC arrived as USDC, in the info tone', () => {
+    const claimed = { ...base, routeKind: 'cctp' as const, status: 'claimed' as const };
+    const [status, eta] = buildPendingBridgeRows(claimed, 0, 1, true)[1];
+    expect(status).toMatchObject({ kind: 'status', value: 'Arrived as USDC', tone: 'info' });
+    expect(eta).toMatchObject({ value: 'Arrived' });
+    expect(buildPendingBridgeRows(claimed, 0, 1)[1][0]).toMatchObject({ value: 'Claimed' });
+    expect(buildPendingBridgeRows(claimed, 0, 1)[1][0]).not.toHaveProperty('tone');
   });
 
   it('truncates the hash like the comp and links the source explorer', () => {
     const tx = buildPendingBridgeRows(base, 0, 1)[2][1];
     expect(tx).toMatchObject({ value: '0xff9s...dsa6' });
     expect(tx.kind === 'link' && tx.href).toContain('etherscan.io/tx/');
+  });
+});
+
+describe('buildPendingBridgeRows with the other wallet of a bridge', () => {
+  const OTHER = '0x00000000000000000000000000000000000a11ce';
+  const labels = (rows: ReturnType<typeof buildPendingBridgeRows>) =>
+    rows.map(row => row.map(cell => cell.label));
+
+  it("puts the destination wallet beside the status on the sender's card (Figma 71)", () => {
+    const rows = buildPendingBridgeRows(base, 0, chainId.tenderly, false, {
+      role: 'destination',
+      address: OTHER
+    });
+    expect(labels(rows)).toEqual([
+      ['Source', 'Destination'],
+      ['Destination wallet', 'Status'],
+      ['Estimated arrival', 'Bridge type'],
+      ['Transaction']
+    ]);
+    // On the explorer of the network it receives on.
+    expect(rows[1][0]).toEqual({
+      kind: 'wallet',
+      label: 'Destination wallet',
+      address: OTHER,
+      href: getEtherscanLink(chainId.base, OTHER, 'address')
+    });
+  });
+
+  it("puts the sender beside the status on the recipient's card (Figma 74)", () => {
+    const fromBase: PendingBridge = { ...base, from: 'base', to: 'ethereum', routeKind: 'cctp' };
+    const rows = buildPendingBridgeRows(fromBase, 0, chainId.tenderly, false, {
+      role: 'sender',
+      address: OTHER
+    });
+    expect(labels(rows)[1]).toEqual(['Sender', 'Status']);
+    // On the explorer of the network it was sent from.
+    expect(rows[1][0]).toMatchObject({ href: getEtherscanLink(chainId.base, OTHER, 'address') });
+    expect(rows.flat().filter(cell => cell.label === 'Transaction')).toHaveLength(1);
+  });
+});
+
+describe('buildPendingBridgeRows on a third wallet', () => {
+  const RECIPIENT = '0x00000000000000000000000000000000000a11ce';
+  const fromBase: PendingBridge = {
+    ...base,
+    from: 'base',
+    to: 'ethereum',
+    routeKind: 'cctp',
+    recipient: RECIPIENT
+  };
+
+  it('names both wallets in their own row, above the status (Figma 75)', () => {
+    const rows = buildPendingBridgeRows(fromBase, 0, chainId.tenderly, false, {
+      role: 'both',
+      sender: base.account,
+      destination: RECIPIENT
+    });
+    expect(rows.map(row => row.map(cell => cell.label))).toEqual([
+      ['Source', 'Destination'],
+      ['Sender', 'Destination wallet'],
+      ['Status', 'Estimated arrival'],
+      ['Bridge type', 'Transaction']
+    ]);
+    expect(rows[1]).toEqual([
+      {
+        kind: 'wallet',
+        label: 'Sender',
+        address: base.account,
+        href: getEtherscanLink(chainId.base, base.account, 'address')
+      },
+      {
+        kind: 'wallet',
+        label: 'Destination wallet',
+        address: RECIPIENT,
+        href: getEtherscanLink(chainId.tenderly, RECIPIENT, 'address')
+      }
+    ]);
+  });
+});
+
+describe('bridgeCounterparty', () => {
+  const SENDER = base.account;
+  const OTHER = '0x00000000000000000000000000000000000a11ce';
+
+  it("is the recipient on the sender's own card, whatever the case of the account", () => {
+    expect(
+      bridgeCounterparty({ ...base, recipient: OTHER }, SENDER.toUpperCase().replace('0X', '0x'))
+    ).toEqual({ role: 'destination', address: OTHER });
+  });
+
+  it('is the sender on a card sent to the connected wallet', () => {
+    expect(bridgeCounterparty({ ...base, recipient: OTHER }, OTHER)).toEqual({
+      role: 'sender',
+      address: SENDER
+    });
+    // A looked-up bridge sent to this wallet, sent by another.
+    expect(bridgeCounterparty(base, OTHER)).toEqual({ role: 'sender', address: SENDER });
+  });
+
+  it('is both wallets on a card the connected wallet neither sent nor receives', () => {
+    const THIRD = '0x0000000000000000000000000000000000000c0c';
+    expect(bridgeCounterparty({ ...base, recipient: OTHER }, THIRD)).toEqual({
+      role: 'both',
+      sender: SENDER,
+      destination: OTHER
+    });
+    // A burn its sender minted to itself, looked up by a third wallet.
+    expect(bridgeCounterparty({ ...base, recipient: SENDER }, THIRD)).toEqual({
+      role: 'both',
+      sender: SENDER,
+      destination: SENDER
+    });
+  });
+
+  it('is none for a bridge to the wallet that sent it, or with no wallet connected', () => {
+    expect(bridgeCounterparty(base, SENDER)).toBeUndefined();
+    expect(
+      bridgeCounterparty({ ...base, recipient: SENDER.toUpperCase().replace('0X', '0x') }, SENDER)
+    ).toBeUndefined();
+    expect(bridgeCounterparty({ ...base, recipient: OTHER }, undefined)).toBeUndefined();
   });
 });
 
@@ -137,7 +292,10 @@ describe('pending bridge copy', () => {
         l => `<${l}>`
       )
     );
-    expect(ready[1].map(cell => 'value' in cell && cell.value)).toEqual(['<Ready to claim>', '<Arrived>']);
+    expect(ready[1].map(cell => 'value' in cell && cell.value)).toEqual(['<Ready to claim>', '<Ready>']);
+    expect(buildPendingBridgeRows({ ...base, status: 'ready' }, 0, 1)[1][1]).toMatchObject({
+      value: '<Arrived>'
+    });
     expect(queued[1][0]).toMatchObject({ value: '<Pending>' });
     expect(queued[2].map(cell => 'value' in cell && cell.value)).toEqual([
       '<Native>',
@@ -256,5 +414,24 @@ describe('formatTimeLeft', () => {
     expect(formatTimeLeft(5 * 60 + 12)).toBe('5 hours 12 minutes');
     expect(formatTimeLeft(60)).toBe('1 hour');
     expect(formatTimeLeft(1)).toBe('1 minute');
+  });
+});
+
+describe('buildPendingBridgeRows for a CCTP bridge still to claim', () => {
+  // Attested and waiting for the recipient's claim: no USDS has landed on Ethereum yet.
+  const readyToClaim: PendingBridge = {
+    ...base,
+    from: 'base',
+    to: 'ethereum',
+    status: 'ready',
+    nextAction: 'claim',
+    routeKind: 'cctp',
+    requiresClaim: true,
+    etaAt: 20 * 60_000
+  };
+
+  it('never reads Arrived before the claim', () => {
+    const [, arrival] = buildPendingBridgeRows(readyToClaim, 30 * 60_000, 1)[1];
+    expect(arrival).not.toMatchObject({ value: 'Arrived' });
   });
 });

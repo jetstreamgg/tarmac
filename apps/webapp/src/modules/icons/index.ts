@@ -1,5 +1,7 @@
 import { ArrowDown } from './ArrowDown';
 import { ArrowRightLong } from './ArrowRightLong';
+import { ArrowTopRight } from './ArrowTopRight';
+import { CircleLogo } from './CircleLogo';
 import { Copy } from './Copy';
 import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
@@ -51,6 +53,8 @@ import { InProgress, SuccessCheck, FailedX, Cancel, Refresh } from './Icons';
 export {
   ArrowDown,
   ArrowRightLong,
+  ArrowTopRight,
+  CircleLogo,
   Copy,
   Failure,
   RewardsModule,

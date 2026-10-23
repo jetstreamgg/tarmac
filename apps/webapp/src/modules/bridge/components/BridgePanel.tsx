@@ -4,8 +4,11 @@ import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useBridgeForm } from '../hooks/useBridgeForm';
 import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
+import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
+import { useCctpSwapConvertLaunch } from '../hooks/useCctpSwapConvertLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
 import { BridgeCard } from './BridgeCard';
+import { CctpClaimLookup, hasCctpClaimLookup } from './CctpClaimLookup';
 import { PendingBridges } from './PendingBridges';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
@@ -76,17 +79,21 @@ const CTA_CLASSES =
 /** The Bridge tab body: form card, Review CTA, then the pending bridges list. */
 export function BridgePanel() {
   const form = useBridgeForm();
-  const { launch, locked, restore } = useBridgeLaunch(form, () => {
+  const onBridged = () => {
     form.refetchBalances();
     form.reset();
-  });
+  };
+  const { launch, locked, restore } = useBridgeLaunch(form, onBridged);
   const launchOrConnect = useConnectThenAct(launch);
   const {
     launch: launchAction,
+    launchIn: launchActionIn,
     canLaunch: canLaunchAction,
     actionHint,
     locked: actionLocked
   } = useDestinationActionLaunch();
+  const { launch: continueBridge } = useCctpResumeLaunch(onBridged);
+  const { launch: convertBridge } = useCctpSwapConvertLaunch();
 
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
@@ -155,9 +162,13 @@ export function BridgePanel() {
 
       <PendingBridges
         onAction={launchAction}
+        onActionIn={launchActionIn}
         canAction={canLaunchAction}
         actionHint={actionHint}
         actionLocked={actionLocked}
+        onContinue={continueBridge}
+        onConvert={convertBridge}
+        lookup={hasCctpClaimLookup() ? <CctpClaimLookup /> : undefined}
       />
     </div>
   );

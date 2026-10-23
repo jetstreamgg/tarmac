@@ -1,6 +1,8 @@
 /**
  * Pure cell builders for a pending bridge card (Figma 3574:64348):
  * [Source | Destination], [Status | Estimated arrival], [Bridge type | Transaction].
+ * A bridge between two wallets names the other one beside the status (Figma 71, 74, 93), and a
+ * third wallet's card names both above it (Figma 75).
  * Labels and pairing are the Figma contract, asserted in `pendingBridgeRows.test.ts`.
  */
 
@@ -16,17 +18,54 @@ import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDepos
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { DAY_MINUTES } from '../model/resolveRoute';
 import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
+import { sendsToOther } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
-import { bridgeTypeLabel, formatEta } from './bridgeModalRows';
+import { bridgeTypeLabel } from './bridgeModalRows';
 
 // The store keeps accounts lowercased; the Safe app expects a checksummed address.
 const checksummed = (account: string) => (isAddress(account) ? getAddress(account) : account);
 
 export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
-  | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string }
-  | { kind: 'text'; label: string; value: string }
-  | { kind: 'link'; label: string; value: string; href?: string };
+  | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string; tone?: 'info' }
+  /** `logo`: the protocol's logo drawn before the value (CCTP's Circle logo, Figma 3830:67688). */
+  | { kind: 'text'; label: string; value: string; logo?: 'cctp' }
+  | { kind: 'link'; label: string; value: string; href?: string }
+  | { kind: 'wallet'; label: string; address: string; href?: string };
+
+/** The other wallet of a bridge: its recipient on the sender's card, its sender on the recipient's, both on a third wallet's. */
+export type BridgeCounterparty =
+  { role: 'sender' | 'destination'; address: string } | { role: 'both'; sender: string; destination: string };
+
+export function bridgeCounterparty(
+  bridge: Pick<PendingBridge, 'account' | 'recipient'>,
+  account: string | undefined
+): BridgeCounterparty | undefined {
+  if (!account) return undefined;
+  const lower = account.toLowerCase();
+  if (bridge.recipient && bridge.account.toLowerCase() !== lower && bridge.recipient.toLowerCase() !== lower)
+    return { role: 'both', sender: bridge.account, destination: bridge.recipient };
+  if (bridge.account.toLowerCase() !== lower) return { role: 'sender', address: bridge.account };
+  return bridge.recipient && sendsToOther(bridge.recipient, bridge.account)
+    ? { role: 'destination', address: bridge.recipient }
+    : undefined;
+}
+
+const walletCell = (
+  bridge: PendingBridge,
+  role: 'sender' | 'destination',
+  address: string,
+  familyChainId: number
+): PendingBridgeCell => {
+  // Each wallet on the network it acts on.
+  const chainId = bridgeChainId(role === 'sender' ? bridge.from : bridge.to, familyChainId);
+  return {
+    kind: 'wallet',
+    label: role === 'sender' ? t`Sender` : t`Destination wallet`,
+    address,
+    href: chainId === undefined ? undefined : getEtherscanLink(chainId, address, 'address')
+  };
+};
 
 const statusLabel = (status: PendingBridgeStatus): string => {
   switch (status) {
@@ -59,6 +98,8 @@ export const nextActionLabel = (action: PendingBridgeNextAction): string => {
       return t`Replay`;
     case 'keepalive':
       return t`Extend`;
+    case 'convert':
+      return t`Convert to USDS`;
   }
 };
 
@@ -73,6 +114,7 @@ const readyLabel = (action: PendingBridgeNextAction): string => {
     case 'redeem':
     case 'replay':
     case 'keepalive':
+    case 'convert':
       return t`Action needed`;
   }
 };
@@ -87,10 +129,21 @@ export const formatBridgeDate = (ms: number): string => {
   return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCFullYear() % 100)} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
 };
 
+/** "15:46 UTC" on the same UTC day as `now`, else the full date; rounded up to the minute. */
+const formatArrivalTime = (ms: number, now: number): string => {
+  const arrival = new Date(Math.ceil(ms / 60_000) * 60_000);
+  const utcDay = (date: Date) => date.toISOString().slice(0, 10);
+  if (utcDay(arrival) !== utcDay(new Date(now))) return formatBridgeDate(arrival.getTime());
+  return `${arrival.toISOString().slice(11, 16)} UTC`;
+};
+
 const arrivalText = (bridge: PendingBridge, now: number): string => {
   if (bridge.status === 'failed' || bridge.status === 'expired') return NO_VALUE;
-  // A ready prove or finalize still has a step before the funds land.
-  if (bridge.status === 'ready' && (bridge.nextAction === 'prove' || bridge.nextAction === 'finalize'))
+  // A ready claim, prove or finalize still has a step before the funds land.
+  if (
+    bridge.status === 'ready' &&
+    (bridge.nextAction === 'claim' || bridge.nextAction === 'prove' || bridge.nextAction === 'finalize')
+  )
     return t`Ready`;
   // A failed deposit lands only once the user redeems or replays it.
   if (bridge.status === 'ready' && (bridge.nextAction === 'redeem' || bridge.nextAction === 'replay'))
@@ -101,7 +154,7 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
   // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
   const elapsedFrom = Math.max(now, bridge.startedAt);
   if (elapsedFrom > bridge.etaAt) return t`Taking longer than expected`;
-  return formatEta(Math.max(1, Math.ceil((bridge.etaAt - elapsedFrom) / 60_000)));
+  return formatArrivalTime(bridge.etaAt, elapsedFrom);
 };
 
 /** Explorer link for a tx on `network`, on the chain the app runs that network on. */
@@ -113,49 +166,73 @@ export const bridgeTxHref = (network: BridgeNetworkId, txHash: string, familyCha
 export function buildPendingBridgeRows(
   bridge: PendingBridge,
   now: number,
-  familyChainId: number
+  familyChainId: number,
+  /** A claim that kept its USDC, offered for conversion (Figma 93). */
+  arrivedAsUsdc = false,
+  counterparty?: BridgeCounterparty
 ): PendingBridgeCell[][] {
   const sourceChainId = bridgeChainId(bridge.from, familyChainId);
-  return [
-    [
-      { kind: 'network', label: t`Source`, network: bridge.from },
-      { kind: 'network', label: t`Destination`, network: bridge.to }
-    ],
-    [
-      { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) },
-      { kind: 'text', label: t`Estimated arrival`, value: arrivalText(bridge, now) }
-    ],
-    [
-      { kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel(bridge.routeKind) },
-      bridge.txHash
+  const networks: PendingBridgeCell[] = [
+    { kind: 'network', label: t`Source`, network: bridge.from },
+    { kind: 'network', label: t`Destination`, network: bridge.to }
+  ];
+  const status: PendingBridgeCell = arrivedAsUsdc
+    ? { kind: 'status', label: t`Status`, status: bridge.status, value: t`Arrived as USDC`, tone: 'info' }
+    : { kind: 'status', label: t`Status`, status: bridge.status, value: statusText(bridge) };
+  const arrival: PendingBridgeCell = {
+    kind: 'text',
+    label: t`Estimated arrival`,
+    value: arrivalText(bridge, now)
+  };
+  const bridgeType: PendingBridgeCell = {
+    kind: 'text',
+    label: t`Bridge type`,
+    value: bridgeTypeLabel(bridge.routeKind),
+    ...(bridge.routeKind === 'cctp' && { logo: 'cctp' as const })
+  };
+  const transaction: PendingBridgeCell = bridge.txHash
+    ? {
+        kind: 'link',
+        label: t`Transaction`,
+        value: formatAddress(bridge.txHash, 6, 4),
+        href: bridgeTxHref(bridge.from, bridge.txHash, familyChainId)
+      }
+    : bridge.status === 'failed'
+      ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }
+      : bridge.bundleId
         ? {
+            kind: 'text',
+            label: t`Transaction`,
+            value: isBundleUnseen(bridge, now) ? t`Not found on Ethereum yet` : t`Confirming on Ethereum`
+          }
+        : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
+          {
             kind: 'link',
             label: t`Transaction`,
-            value: formatAddress(bridge.txHash, 6, 4),
-            href: bridgeTxHref(bridge.from, bridge.txHash, familyChainId)
-          }
-        : bridge.status === 'failed'
-          ? { kind: 'text', label: t`Transaction`, value: NO_VALUE }
-          : bridge.bundleId
-            ? {
-                kind: 'text',
-                label: t`Transaction`,
-                value: isBundleUnseen(bridge, now) ? t`Not found on Ethereum yet` : t`Confirming on Ethereum`
-              }
-            : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
-              {
-                kind: 'link',
-                label: t`Transaction`,
-                value: t`Awaiting signatures`,
-                href:
-                  sourceChainId !== undefined &&
-                  bridge.safeTxHash &&
-                  SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
-                    ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
-                    : undefined
-              }
-    ]
-  ];
+            value: t`Awaiting signatures`,
+            href:
+              sourceChainId !== undefined && bridge.safeTxHash && SAFE_TRANSACTION_SERVICE_URL[sourceChainId]
+                ? getSafeTransactionLink(sourceChainId, checksummed(bridge.account), bridge.safeTxHash)
+                : undefined
+          };
+  if (counterparty?.role === 'both')
+    return [
+      networks,
+      [
+        walletCell(bridge, 'sender', counterparty.sender, familyChainId),
+        walletCell(bridge, 'destination', counterparty.destination, familyChainId)
+      ],
+      [status, arrival],
+      [bridgeType, transaction]
+    ];
+  return counterparty
+    ? [
+        networks,
+        [walletCell(bridge, counterparty.role, counterparty.address, familyChainId), status],
+        [arrival, bridgeType],
+        [transaction]
+      ]
+    : [networks, [status, arrival], [bridgeType, transaction]];
 }
 
 /** Arbitrum's tool to check and redeem a ticket from any wallet. */

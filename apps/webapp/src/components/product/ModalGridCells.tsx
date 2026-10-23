@@ -8,7 +8,7 @@ import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { NetworkFeeLabel } from '@/modules/ui/components/NetworkFeeLabel';
 import { NetworkFeeValue, type BundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';
-import { SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
+import { CircleLogo, SparklesMorpho, TrendingDown, TrendingUp } from '@/modules/icons';
 import { useChainImage } from '@/modules/ui/hooks/useChainImage';
 import { CellFigure } from '@/components/product/CellFigure';
 import { RateInfo, type RateInfoType } from './RateInfo';
@@ -56,6 +56,8 @@ export type ModalGridCellHints = {
   afterTone?: CellTone;
   /** Draw the 12px network (chain) icon before the value. */
   network?: boolean;
+  /** Protocol logo drawn 12px before the value: 'cctp' is Circle's (the bridge review's Bridge type). */
+  logo?: 'cctp';
   /**
    * Chain for the network icon when the transaction runs on a different chain
    * than the connected one (the Pendle engine pins mainnet). Defaults to the
@@ -341,6 +343,9 @@ export function CellValue({ cell }: { cell: ModalGridCell }) {
   // deltas every other module emits.
   const iconFor = (side: 'before' | 'after') => {
     if (cell.network) return <NetworkIcon chainId={cell.networkChainId} />;
+    if (cell.logo === 'cctp') {
+      return <CircleLogo boxSize={12} className="size-3 shrink-0" aria-hidden data-testid="cell-logo-cctp" />;
+    }
     if (cell.trend === 'down') {
       return <TrendingDown boxSize={12} className="text-statusError size-3 shrink-0" aria-hidden />;
     }

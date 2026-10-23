@@ -763,9 +763,23 @@ export default async function globalSetup() {
       }
     }
 
-    // Step 7: Display pool status
+    // Step 7: Let the Ethereum fork receive CCTP messages signed by the test attester.
+    // Runs every time for the same reason as step 6; skips what is already set.
+    if (networks.includes(NetworkName.mainnet)) {
+      console.log('\n7. Enabling the test CCTP attester...');
+      try {
+        const { enableCctpTestAttester } = await import('./utils/cctpAttester');
+        await enableCctpTestAttester();
+        console.log('✅ Test CCTP attester enabled');
+      } catch (error) {
+        console.warn('⚠️  Failed to enable the test CCTP attester:', (error as Error).message);
+        console.warn('   CCTP claim tests may fail');
+      }
+    }
+
+    // Step 8: Display pool status
     const status = await accountPool.getPoolStatus();
-    console.log('\n7. Account pool status:');
+    console.log('\n8. Account pool status:');
     console.log(`   - Available: ${status.available}`);
     console.log(`   - In use: ${status.inUse}`);
     console.log(`   - Total: ${status.total}`);

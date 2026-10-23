@@ -33,6 +33,19 @@ export class TransactionRevertedError extends Error {
   }
 }
 
+/**
+ * A send refused before the wallet saw it, with a message written for the
+ * user. `final` when sending again can't succeed, so the modal offers no retry.
+ */
+export class TransactionRefusedError extends Error {
+  override name = 'TransactionRefusedError' as const;
+  readonly final: boolean;
+  constructor(message: string, { final = false }: { final?: boolean } = {}) {
+    super(message);
+    this.final = final;
+  }
+}
+
 export type TransactionOutcomeState = {
   /** A hash is being watched and has no outcome yet, including while the RPC is failing. */
   isPending: boolean;

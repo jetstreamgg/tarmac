@@ -7,6 +7,7 @@ import {
   canDismiss,
   canLaunchAction,
   canLaunchKeepalive,
+  closeCard,
   dropSentAction,
   pollIntervalMs,
   recordAction,
@@ -248,6 +249,32 @@ describe('isPendingBridgeVisible', () => {
   it('shows settled bridges for 24 hours', () => {
     expect(isPendingBridgeVisible(settled(deposit()), NOW + 23 * HOUR)).toBe(true);
     expect(isPendingBridgeVisible(settled(deposit()), NOW + 25 * HOUR)).toBe(false);
+  });
+
+  it('hides a settled bridge the user closed', () => {
+    expect(isPendingBridgeVisible(closeCard(settled(deposit()), NOW), NOW + MINUTE)).toBe(false);
+  });
+});
+
+describe('closeCard', () => {
+  const settled = (bridge: PendingBridge) => applyProgress(bridge, { kind: 'arrived' }, NOW);
+
+  it('closes a settled bridge once, keeping it for Activity', () => {
+    const open = settled(deposit());
+    const closed = closeCard(open, NOW + MINUTE);
+    expect(closed).toEqual({ ...open, closedAt: NOW + MINUTE });
+    expect(closeCard(closed, NOW + HOUR)).toBe(closed);
+  });
+
+  it('never closes a bridge the tracker still reads', () => {
+    const onItsWay = deposit();
+    expect(closeCard(onItsWay, NOW)).toBe(onItsWay);
+    const converting = {
+      ...settled(deposit()),
+      actions: [{ action: 'convert' as const, txHash: '0xc0', at: NOW, status: 'sent' as const }]
+    };
+    expect(closeCard(converting, NOW)).toBe(converting);
+    expect(isPendingBridgeVisible(converting, NOW + 25 * HOUR)).toBe(true);
   });
 });
 

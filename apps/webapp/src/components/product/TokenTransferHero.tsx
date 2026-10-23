@@ -11,15 +11,20 @@ export type TokenTransferHeroSide = {
   testId?: string;
   /** Replaces the token badge (the bridge review names each side's network instead). */
   badge?: ReactNode;
+  /** A line under the amount (the bridge review's sender and recipient, Figma 3957:56201). */
+  caption?: ReactNode;
 };
 
 /** One hero row (Figma 1310:130691): 32px icon + Heading-2 amount + token badge. */
-function HeroAmountRow({ symbol, amount, testId, badge }: TokenTransferHeroSide) {
+function HeroAmountRow({ symbol, amount, testId, badge, caption }: TokenTransferHeroSide) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="flex min-w-0 items-center gap-3">
-        <TokenIcon token={{ symbol }} width={32} showChainIcon={false} className="size-8 shrink-0" />
-        <FittedAmount amount={amount} testId={testId} />
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="flex min-w-0 items-center gap-3">
+          <TokenIcon token={{ symbol }} width={32} showChainIcon={false} className="size-8 shrink-0" />
+          <FittedAmount amount={amount} testId={testId} />
+        </span>
+        {caption && <span className="text-fgSecondary pl-11 text-xs leading-[18px]">{caption}</span>}
       </span>
       {badge ?? <TokenBadge symbol={symbol} />}
     </div>

@@ -49,6 +49,8 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 vi.mock('./useSafeConfig', () => ({ useSafeConfig: () => ({ lookup: undefined, isChecking: false }) }));
+// The CCTP gate has its own suite (useBridgeForm.cctp.test.tsx); unread here, an L2 source blocks.
+vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));
 vi.mock('./useAddressCode', () => ({
   useAddressCode: ({ address, chainId }: { address?: string; chainId?: number }) => {
     if (!address || chainId === undefined) return { code: undefined, isChecking: false };
@@ -196,8 +198,8 @@ describe('useBridgeForm: the L1 bridge isOpen gate', () => {
   });
 
   it('blocks the routes that are not live yet', () => {
-    mocks.appChainId = 8453;
     const { result } = renderHook(() => useBridgeForm());
+    act(() => result.current.selectTo('avalanche'));
     expect(result.current.route).toBeUndefined();
     expect(result.current.blockedReason).toBe('pair-not-allowed');
     expect(result.current.reviewBlocked).toBe(true);
@@ -206,6 +208,7 @@ describe('useBridgeForm: the L1 bridge isOpen gate', () => {
   it('does not offer a flip into a route that is not live', () => {
     const { result } = renderHook(() => useBridgeForm());
     expect(result.current.route?.kind).toBe('native');
+    act(() => result.current.selectTo('avalanche'));
     expect(result.current.canFlip).toBe(false);
   });
 });

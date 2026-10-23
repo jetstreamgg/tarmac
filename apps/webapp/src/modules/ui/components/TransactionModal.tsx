@@ -26,7 +26,7 @@ import {
   modalExitTransition
 } from '@/modules/ui/animation/modalStepMotion';
 import { TriangleAlert } from 'lucide-react';
-import { deriveTransactionStepItems, type TransactionStep } from './transactionStepsModel';
+import { deriveTransactionStepItems, type SendRefusal, type TransactionStep } from './transactionStepsModel';
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
 import type { GateStatusCopy, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
 import { cn } from '@/lib/cn';
@@ -139,6 +139,8 @@ export type TransactionModalProps = {
   currentStep?: number;
   /** The current ERROR is a wallet Reject (nothing broadcast) — see the step model. */
   userRejected?: boolean;
+  /** The current ERROR is a send refused before the wallet saw it — see the step model. */
+  refusal?: SendRefusal | null;
   /**
    * Gate-owned status copy (APP-501): while set, replaces the status row's
    * message — the flow's copy narrates on-chain writes, which is wrong while
@@ -241,6 +243,7 @@ export function TransactionModal({
   steps,
   currentStep = 0,
   userRejected = false,
+  refusal = null,
   gateCopy,
   preflight,
   chainGuard,
@@ -314,6 +317,8 @@ export function TransactionModal({
     gateCopy?.badgeLabel ??
     (failedOnSignature ? (
       <Trans>Signature failed</Trans>
+    ) : badgeFailed && refusal ? (
+      <Trans>Not sent</Trans>
     ) : badgeFailed && userRejected ? (
       <Trans>Request declined</Trans>
     ) : (
@@ -446,9 +451,11 @@ export function TransactionModal({
   // conversion" no longer differs here either.
   const failedTitle = failedOnSignature
     ? t`Signature failed`
-    : userRejected
-      ? t`Transaction declined`
-      : t`Transaction failed`;
+    : refusal
+      ? t`Transaction not sent`
+      : userRejected
+        ? t`Transaction declined`
+        : t`Transaction failed`;
   const displayTitle = isTransaction
     ? badgeFailed
       ? failedTitle
@@ -631,7 +638,8 @@ export function TransactionModal({
                     currentStep,
                     txStatus,
                     bundled: isBundled,
-                    userRejected
+                    userRejected,
+                    refusal
                   });
                   // Stays live off the product's chain: the provider refuses a
                   // wrong-chain fire and returns the flow to its guarded first
@@ -947,7 +955,7 @@ export function TransactionModal({
                       )}
                       {chainGuarded && guardCta ? (
                         guardCta
-                      ) : (
+                      ) : refusal?.final ? null : (
                         <Button
                           variant="primary"
                           size="xl"

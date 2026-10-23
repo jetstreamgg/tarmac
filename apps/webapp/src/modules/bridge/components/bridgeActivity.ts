@@ -30,6 +30,8 @@ export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
       return t`Deposit replay`;
     case 'keepalive':
       return t`Deadline extension`;
+    case 'convert':
+      return t`USDS conversion`;
   }
 };
 

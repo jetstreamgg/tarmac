@@ -1,5 +1,5 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { applyProgress, canDismiss, isSettled } from '../model/pendingTransitions';
+import { applyProgress, canDismiss, closeCard, isSettled } from '../model/pendingTransitions';
 import type {
   BridgeRouteKind,
   PendingBridge,
@@ -31,7 +31,8 @@ const NEXT_ACTIONS = keysOf({
   finalize: true,
   redeem: true,
   replay: true,
-  keepalive: true
+  keepalive: true,
+  convert: true
 } satisfies Record<PendingBridgeNextAction, true>);
 
 type Listener = () => void;
@@ -56,7 +57,8 @@ const isAction = (value: unknown) =>
   isString(value.txHash) &&
   typeof value.at === 'number' &&
   optional(value.status, status => status === 'sent' || status === 'invalidated') &&
-  optional(value.safe, safe => safe === true);
+  optional(value.safe, safe => safe === true) &&
+  optional(value.bundleTxHashes, hashes => Array.isArray(hashes) && hashes.every(isString));
 
 const parseEntry = (value: unknown): PendingBridge | null => {
   if (!isRecord(value)) return null;
@@ -84,6 +86,7 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
     !optional(entry.readyAt, at => typeof at === 'number') ||
     !optional(entry.settledAt, at => typeof at === 'number') ||
+    !optional(entry.closedAt, at => typeof at === 'number') ||
     !optional(entry.failureReason, isString)
   ) {
     return null;
@@ -219,6 +222,19 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
     return stored ? withUnsaved(scope, stored) : getSnapshot(scope);
   };
 
+  const update = (scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) => {
+    const current = latest(scope);
+    const existing = current.find(entry => entry.id === id);
+    if (!existing) return;
+    const next = apply(existing);
+    if (next === existing) return;
+    write(
+      scope,
+      current.map(entry => (entry === existing ? next : entry)),
+      id
+    );
+  };
+
   return {
     subscribe(listener: Listener) {
       if (listeners.size === 0) window.addEventListener('storage', onStorage);
@@ -229,6 +245,21 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       };
     },
     getSnapshot,
+    /** Every account's scope with a list in this chain family, stored or only in this session. */
+    scopesIn(familyChainId: number): string[] {
+      const prefix = `${familyChainId}:`;
+      const scopes = new Set([...unsaved.keys()].filter(scope => scope.startsWith(prefix)));
+      try {
+        for (let index = 0; index < localStorage.length; index++) {
+          const key = localStorage.key(index);
+          if (!key?.startsWith(`${KEY_PREFIX}${prefix}`) || key.endsWith(':unreadable')) continue;
+          scopes.add(key.slice(KEY_PREFIX.length));
+        }
+      } catch {
+        // storage can't be read: only this session's lists
+      }
+      return [...scopes];
+    },
     /** Adds a bridge, or fills the gaps of the one with the same id, Safe tx hash or tx hash. */
     upsert(scope: string, bridge: PendingBridge) {
       const current = latest(scope);
@@ -254,6 +285,10 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
         current.filter(entry => entry.id !== id),
         id
       );
+    },
+    /** Closes the card of a settled bridge with nothing left to confirm (see `closeCard`); Activity keeps it. */
+    close(scope: string, id: string) {
+      update(scope, id, bridge => closeCard(bridge, now()));
     },
     /**
      * Gives a wallet bundle's card the hash its deposit mined under, at `executedAt`
@@ -284,18 +319,7 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
         id
       );
     },
-    update(scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) {
-      const current = latest(scope);
-      const existing = current.find(entry => entry.id === id);
-      if (!existing) return;
-      const next = apply(existing);
-      if (next === existing) return;
-      write(
-        scope,
-        current.map(entry => (entry === existing ? next : entry)),
-        id
-      );
-    }
+    update
   };
 }
 

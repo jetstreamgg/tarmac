@@ -230,6 +230,23 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([sent]);
   });
 
+  it('keeps the other transactions of a claim bundle through storage, and skips malformed ones', () => {
+    const claimed = bridge({
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, bundleTxHashes: ['0xapprove', '0xsell'] }]
+    });
+    make().upsert(SCOPE, claimed);
+    expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
+
+    const stored = { ...claimed, amount: claimed.amount.toString() };
+    const bad = {
+      ...stored,
+      id: '0xa',
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, bundleTxHashes: '0xsell' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad, stored]));
+    expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
+  });
+
   it('keeps an invalidated action through storage', () => {
     const reproving = bridge({
       routeKind: 'native',
@@ -380,6 +397,53 @@ describe('createPendingBridgeStore', () => {
         vi.restoreAllMocks();
         expect(stored().map(entry => entry.id)).toEqual(['0xy']);
       });
+    });
+  });
+
+  describe('close', () => {
+    const claimed = (overrides: Partial<PendingBridge> = {}) =>
+      bridge({
+        status: 'claimed',
+        nextAction: undefined,
+        settledAt: NOW,
+        actions: [{ action: 'claim', txHash: '0xc1a1', at: NOW }],
+        ...overrides
+      });
+
+    it('closes a settled bridge with nothing in flight, and keeps it for Activity', () => {
+      const store = make();
+      store.upsert(SCOPE, claimed());
+      store.upsert(SCOPE, bridge({ id: '0xother', txHash: '0xother', startedAt: NOW - 1 }));
+      store.close(SCOPE, '0xsource');
+      expect(
+        make()
+          .getSnapshot(SCOPE)
+          .map(entry => [entry.id, entry.closedAt])
+      ).toEqual([
+        ['0xsource', NOW],
+        ['0xother', undefined]
+      ]);
+    });
+
+    it('leaves a bridge still on its way, or one whose follow-up is still confirming', () => {
+      const store = make();
+      store.upsert(SCOPE, bridge());
+      store.upsert(
+        SCOPE,
+        claimed({
+          id: '0xconverting',
+          txHash: '0xconverting',
+          actions: [
+            { action: 'claim', txHash: '0xc1a1', at: NOW },
+            { action: 'convert', txHash: '0xc0', at: NOW, status: 'sent' }
+          ]
+        })
+      );
+      const before = store.getSnapshot(SCOPE);
+      store.close(SCOPE, '0xsource');
+      store.close(SCOPE, '0xconverting');
+      store.close(SCOPE, '0xnope');
+      expect(store.getSnapshot(SCOPE)).toBe(before);
     });
   });
 

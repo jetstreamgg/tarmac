@@ -5,12 +5,15 @@ import { createElement, type ReactNode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { getAddress, parseEther } from 'viem';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useNativeDepositLegs } from './useNativeDepositLegs';
 
 const AMOUNT = parseEther('25');
-const PROMPT_OPEN = new Error('Approve or reject the request in your wallet before sending again.');
+const PROMPT_OPEN = new TransactionRefusedError(
+  'Approve or reject the request in your wallet before sending again.'
+);
 // The open bundles are counted per account across mounts: each test signs with its own.
 let accounts = 0;
 const nextAccount = () =>
@@ -35,6 +38,8 @@ const mocks = vi.hoisted(() => ({
   batchExecute: vi.fn(),
   batchReset: vi.fn(),
   sequentialExecute: vi.fn(),
+  // The engine holds a reset run whose write is still out.
+  sequentialDetached: false,
   batchArgs: [] as EngineArgs[],
   sequentialArgs: [] as EngineArgs[]
 }));
@@ -70,6 +75,7 @@ vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
     return {
       execute: mocks.sequentialExecute,
       reset: vi.fn(),
+      detached: mocks.sequentialDetached,
       prepared: !!args.enabled,
       isLoading: false,
       error: null,
@@ -122,7 +128,13 @@ const confirmBundle = async (execute: () => void) => {
 describe('useNativeDepositLegs, a batch wallet', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.assign(mocks, { allowance: 0n, batchUnavailable: false, batchArgs: [], sequentialArgs: [] });
+    Object.assign(mocks, {
+      allowance: 0n,
+      batchUnavailable: false,
+      sequentialDetached: false,
+      batchArgs: [],
+      sequentialArgs: []
+    });
     current = makeCallbacks();
     SENDER = nextAccount();
   });
@@ -277,17 +289,25 @@ describe('useNativeDepositLegs, a batch wallet', () => {
     expect(current.onError).not.toHaveBeenCalled();
   });
 
-  it('lets a one-by-one window stay open while a new Confirm sends, as before bundles', async () => {
-    const { result } = renderLegs(false);
+  // The engine would sign the reset run's frozen calls under the new Confirm.
+  it('refuses a new Confirm while a one-by-one window of the reset run is still open', async () => {
+    const { result, rerender } = renderLegs(false);
     await settle();
     act(() => result.current.execute());
     await waitFor(() => expect(mocks.sequentialExecute).toHaveBeenCalledTimes(1));
     act(() => sequentialEngine().onMutate({ functionName: 'approve' }));
     act(() => result.current.reset());
+    mocks.sequentialDetached = true;
+    rerender({ account: SENDER });
+    expect(result.current.busy).toBe(true);
     current = makeCallbacks();
     act(() => result.current.execute());
-    await waitFor(() => expect(mocks.sequentialExecute).toHaveBeenCalledTimes(2));
-    expect(current.onError).not.toHaveBeenCalled();
+    await settle();
+    expect(current.onError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringMatching(/still open in your wallet or pending/) }),
+      ''
+    );
+    expect(mocks.sequentialExecute).toHaveBeenCalledTimes(1);
   });
 
   it('reports a refusal of the engine, which opened no window, and leaves the next Confirm free', async () => {

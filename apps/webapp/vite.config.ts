@@ -86,6 +86,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://api.morpho.org/
       https://api.spark.fi
       https://api-v2.pendle.finance
+      https://iris-api.circle.com
       https://*.google-analytics.com
       https://*.analytics.google.com
       https://*.googletagmanager.com

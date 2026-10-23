@@ -1,7 +1,9 @@
 import { isAddress, zeroAddress } from 'viem';
 import type { SafeConfig } from '@/hooks/wallet/safeAccount';
+import { CCTP_CONTRACTS } from '../adapters/cctp/contracts';
 import { NATIVE_DEPOSIT_CONTRACTS } from '../adapters/nativeDeposit/contracts';
 import type { BridgeNetwork } from './networks';
+import type { PendingBridge } from './types';
 import { isSystemAddress } from './systemAddresses';
 
 const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -10,9 +12,10 @@ const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 export const isValidRecipient = (value: string, family: BridgeNetwork['family']): boolean =>
   family === 'solana' ? SOLANA_ADDRESS.test(value) : isAddress(value) && value.toLowerCase() !== zeroAddress;
 
+const BRIDGE_CONTRACTS = [...NATIVE_DEPOSIT_CONTRACTS, ...CCTP_CONTRACTS];
+
 /** A system address or a contract the bridges use, which can't hold what it's sent. */
-export const isBlockedRecipient = (address: string): boolean =>
-  isSystemAddress(address, NATIVE_DEPOSIT_CONTRACTS);
+export const isBlockedRecipient = (address: string): boolean => isSystemAddress(address, BRIDGE_CONTRACTS);
 
 /** An address's code on one chain: a contract, none, or undefined while unknown. */
 export type CodeLookup = 'contract' | 'none' | undefined;
@@ -64,6 +67,13 @@ export const isSameSafe = (a: SafeConfig, b: SafeConfig): boolean => {
 /** A recipient other than the sender; the sender's own address (any case) counts as none. */
 export const sendsToOther = (recipient: string | undefined, sender: string | undefined): boolean =>
   !!recipient && recipient.toLowerCase() !== sender?.toLowerCase();
+
+/** A CCTP claim mints to its recipient and sells from its wallet: only that wallet can send it. */
+export const claimsFromDestinationWallet = (
+  bridge: Pick<PendingBridge, 'routeKind' | 'nextAction' | 'recipient'>,
+  account: string | undefined
+): boolean =>
+  bridge.routeKind === 'cctp' && bridge.nextAction === 'claim' && sendsToOther(bridge.recipient, account);
 
 export type RecipientRequirement =
   | { required: false }
