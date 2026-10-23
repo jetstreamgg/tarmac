@@ -19,7 +19,8 @@ import { productNetworks } from './earnProducts';
  * falls out of the config: production carries no fork, so a mainnet-only
  * product resolves to `[mainnet]` and its pill goes static there. The one
  * exception is a dev build with the Tenderly fork L2s: on a fork the selector
- * keeps to the fork family, so it never offers a real chain beside its fork.
+ * keeps to the fork family, so it never offers a real chain beside its fork,
+ * and off it the fork L2s are dropped, so a real L2 never shows twice.
  */
 export function useProductNetworks(intent: Intent, addressMap?: Record<number, unknown>): number[] {
   const chains = useChains();
@@ -28,6 +29,10 @@ export function useProductNetworks(intent: Intent, addressMap?: Record<number, u
   return useMemo(() => {
     const ids = chains.map(chain => chain.id);
     const family = onForkFamily ? getSupportedChainIds(connectedChainId) : undefined;
-    return productNetworks(intent, family ? ids.filter(id => family.includes(id)) : ids, addressMap);
+    return productNetworks(
+      intent,
+      ids.filter(id => (family ? family.includes(id) : !forkL2ChainIds.includes(id))),
+      addressMap
+    );
   }, [intent, chains, addressMap, onForkFamily, connectedChainId]);
 }

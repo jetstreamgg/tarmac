@@ -38,6 +38,13 @@ describe('useProductNetworks in the dev build with fork L2s', () => {
     }
   });
 
+  it('never offers a fork L2 next to its real L2 while connected to a real chain', () => {
+    for (const connected of [mainnet.id, base.id]) {
+      const ids = render(connected);
+      for (const forkL2 of FORK_L2_IDS) expect(ids).not.toContain(forkL2);
+    }
+  });
+
   it('keeps the real chains while connected to one', () => {
     const ids = render(base.id);
     expect(ids).toContain(mainnet.id);
