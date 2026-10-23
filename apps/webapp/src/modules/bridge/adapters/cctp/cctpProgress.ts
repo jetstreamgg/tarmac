@@ -3,7 +3,7 @@ import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
 import { settleSentAction } from '../sentAction';
-import type { AdapterContext, ChainReader } from '../types';
+import type { AdapterContext } from '../types';
 import {
   CCTP_DOMAIN,
   MESSAGE_TRANSMITTER_V2,
@@ -28,25 +28,26 @@ const toRouteData = ({ message, attestation }: IrisAttestedMessage) => ({
   cctpAttestation: attestation
 });
 
-async function attestedMessage({
+/** Circle's attested copies of `source`, the stored one alone while it can still be claimed. */
+async function attestedCopies({
   bridge,
   source,
-  l1,
+  block,
   readAttestations
 }: {
   bridge: PendingBridge & { from: CctpL2NetworkId };
   source: Hex;
-  l1: ChainReader;
+  block: bigint;
   readAttestations: AttestationReader;
-}): Promise<IrisAttestedMessage | undefined> {
+}): Promise<IrisAttestedMessage[]> {
   const stored = cctpClaimMessage(bridge.routeData);
-  const block = await l1.getBlockNumber();
-  if (stored && isAttestedCopy(stored.message, source) && !isCctpMessageExpired(stored.message, block))
-    return stored;
+  const storedCopy = stored && isAttestedCopy(stored.message, source) ? stored : undefined;
+  if (storedCopy && !isCctpMessageExpired(storedCopy.message, block)) return [storedCopy];
   const attested = await readAttestations(CCTP_DOMAIN[bridge.from], bridge.txHash as Hex);
-  return attested.find(
-    ({ message }) => isAttestedCopy(message, source) && !isCctpMessageExpired(message, block)
-  );
+  return [
+    ...(storedCopy ? [storedCopy] : []),
+    ...attested.filter(({ message }) => isAttestedCopy(message, source))
+  ];
 }
 
 /**
@@ -96,16 +97,23 @@ export async function cctpProgress(
     // Two identical burns in one transaction can't be told apart; neither is offered.
     if (sources.length > 1) return null;
 
-    const attested = await attestedMessage({ bridge, source: sources[0], l1, readAttestations });
-    if (!attested) return { kind: 'waiting' };
-    const used = await l1.readContract({
-      address: MESSAGE_TRANSMITTER_V2,
-      abi: messageTransmitterV2Abi,
-      functionName: 'usedNonces',
-      args: [decodeCctpMessage(attested.message).nonce]
-    });
-    if (used !== 0n) return { kind: 'arrived' };
-    return { kind: 'ready', nextAction: 'claim', routeData: toRouteData(attested) };
+    const block = await l1.getBlockNumber();
+    const copies = await attestedCopies({ bridge, source: sources[0], block, readAttestations });
+    // A copy received before it expired still counts as arrived.
+    const nonces = [...new Set(copies.map(({ message }) => decodeCctpMessage(message).nonce))];
+    for (const nonce of nonces) {
+      const used = await l1.readContract({
+        address: MESSAGE_TRANSMITTER_V2,
+        abi: messageTransmitterV2Abi,
+        functionName: 'usedNonces',
+        args: [nonce]
+      });
+      if (used !== 0n) return { kind: 'arrived' };
+    }
+    const claimable = copies.find(({ message }) => !isCctpMessageExpired(message, block));
+    return claimable
+      ? { kind: 'ready', nextAction: 'claim', routeData: toRouteData(claimable) }
+      : { kind: 'waiting' };
   } catch {
     return null;
   }

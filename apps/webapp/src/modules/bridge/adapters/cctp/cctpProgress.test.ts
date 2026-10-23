@@ -176,6 +176,22 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     });
   });
 
+  it('arrives when the message was received before its expiration block passed', async () => {
+    const expired = {
+      ...ATTESTED,
+      message: patch(ATTESTED.message, 148 + 196, 100n.toString(16).padStart(64, '0'))
+    };
+    await expect(progress(seed(), chains({ attested: [expired], block: 100n, used: 1n }))).resolves.toEqual({
+      kind: 'arrived'
+    });
+    const stored = seed({
+      routeData: { cctpMessage: expired.message, cctpAttestation: expired.attestation }
+    });
+    await expect(progress(stored, chains({ attested: [], block: 100n, used: 1n }))).resolves.toEqual({
+      kind: 'arrived'
+    });
+  });
+
   it('fails when the burn reverted on the L2', async () => {
     await expect(progress(seed(), chains({ l2Status: 'reverted' }))).resolves.toEqual({
       kind: 'failed',
