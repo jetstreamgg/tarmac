@@ -34,6 +34,11 @@ vi.mock('posthog-js', () => ({
   }
 }));
 
+// The Tenderly fork L2s come from the local .env (data/wagmi/config/forkChains.ts),
+// so unit tests run without them, as CI does. A test that needs them stubs its own.
+for (const l2 of ['BASE', 'ARBITRUM', 'OPTIMISM', 'UNICHAIN'])
+  vi.stubEnv(`VITE_RPC_PROVIDER_TENDERLY_${l2}`, '');
+
 vi.mock('@sentry/react', async () => {
   const React = await import('react');
   const withScope = vi.fn(

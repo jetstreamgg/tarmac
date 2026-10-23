@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { chainId } from './chainId';
+import { chainId, forkChainId } from './chainId';
 import { familyMainnetId } from './isTestnetId';
 
 const L2S = [chainId.base, chainId.arbitrum, chainId.optimism, chainId.unichain];
@@ -23,5 +23,14 @@ describe('familyMainnetId', () => {
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
     expect(familyMainnetId(chainId.tenderly)).toBe(chainId.tenderly);
     for (const id of L2S) expect(familyMainnetId(id)).toBe(chainId.tenderly);
+  });
+});
+
+describe('familyMainnetId on the multichain fork', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('anchors the fork L2s to the Ethereum fork', () => {
+    vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+    for (const id of Object.values(forkChainId)) expect(familyMainnetId(id)).toBe(chainId.tenderly);
   });
 });

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAddress, isAddress, type Address, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
-import { arbitrum } from 'wagmi/chains';
+import { mainnet } from 'wagmi/chains';
 import { useTokenAllowance } from '@/hooks';
 import { useDebounce } from '@/hooks/ui/useDebounce';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -15,6 +15,7 @@ import {
   type NativeDepositNetwork
 } from '../adapters/nativeDeposit/contracts';
 import { opStackDepositCalls } from '../adapters/nativeDeposit/opStack';
+import { bridgeChainId } from '../model/networks';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
 /** The deposit leg's function, which the source recording keys on. */
@@ -69,7 +70,7 @@ export function useNativeDepositLegs({
   const from = toAddress(account);
   const to = toAddress(recipient ?? account);
   const l1 = usePublicClient({ chainId });
-  const l2 = usePublicClient({ chainId: arbitrum.id });
+  const l2 = usePublicClient({ chainId: bridgeChainId('arbitrum', chainId ?? mainnet.id) });
   const active = enabled && chainId !== undefined && !!from && !!to && amount > 0n;
   const isArbitrum = network === 'arbitrum';
   // Priced once typing stops; a price for another amount is never used.

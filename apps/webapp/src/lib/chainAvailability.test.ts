@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { mainnet, base, arbitrum } from 'viem/chains';
-import { chainId } from '@/utils/chainId';
+import { chainId, forkChainId } from '@/utils/chainId';
 import { Intent } from './enums';
-import { MAINNET_FAMILY_CHAIN_IDS, chainSwitchTarget, chainIdsForIntent } from './chainAvailability';
+import {
+  CHAIN_WIDGET_MAP,
+  MAINNET_FAMILY_CHAIN_IDS,
+  chainSwitchTarget,
+  chainIdsForIntent
+} from './chainAvailability';
 
 describe('MAINNET_FAMILY_CHAIN_IDS', () => {
   it('is exactly real mainnet plus the dev fork (the single-chain-product supported set)', () => {
@@ -53,5 +58,30 @@ describe('chainIdsForIntent (APP-528)', () => {
     expect(ids.sort()).toEqual([mainnet.id, chainId.tenderly].sort());
     // An L2 the product does not run on is excluded — the guard fires there.
     expect(ids).not.toContain(base.id);
+  });
+});
+
+describe('Tenderly fork L2s', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('are not listed without their RPCs, as in production', () => {
+    for (const fork of Object.values(forkChainId)) expect(CHAIN_WIDGET_MAP[fork]).toBeUndefined();
+    expect(chainIdsForIntent(Intent.SAVINGS_INTENT)).not.toEqual(
+      expect.arrayContaining([expect.toBeOneOf(Object.values(forkChainId))])
+    );
+  });
+
+  it('offer the same products as the L2 they stand in for in the dev build', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+    vi.stubEnv('VITE_RPC_PROVIDER_TENDERLY_BASE', 'https://fork-base.invalid');
+    vi.stubEnv('VITE_RPC_PROVIDER_TENDERLY_ARBITRUM', 'https://fork-arbitrum.invalid');
+    const dev = await import('./chainAvailability');
+    expect(dev.CHAIN_WIDGET_MAP[forkChainId.base]).toEqual(CHAIN_WIDGET_MAP[base.id]);
+    expect(dev.CHAIN_WIDGET_MAP[forkChainId.arbitrum]).toEqual(CHAIN_WIDGET_MAP[arbitrum.id]);
+    expect(dev.CHAIN_WIDGET_MAP[forkChainId.optimism]).toBeUndefined();
+    expect(dev.chainIdsForIntent(Intent.SAVINGS_INTENT)).toEqual(
+      expect.arrayContaining([forkChainId.base, forkChainId.arbitrum])
+    );
   });
 });

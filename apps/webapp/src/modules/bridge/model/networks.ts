@@ -1,4 +1,5 @@
-import { chainId as chainIdMap } from '@/utils/chainId';
+import { forkL2ChainIds } from '@/data/wagmi/config/forkChains';
+import { chainId as chainIdMap, forkChainId, realChainId } from '@/utils/chainId';
 
 export type BridgeNetworkId =
   'ethereum' | 'base' | 'arbitrum' | 'optimism' | 'unichain' | 'avalanche' | 'solana';
@@ -30,15 +31,27 @@ export const BRIDGE_NETWORKS: BridgeNetwork[] = [
 export const getBridgeNetwork = (id: BridgeNetworkId): BridgeNetwork =>
   BRIDGE_NETWORKS.find(network => network.id === id) as BridgeNetwork;
 
-/** The bridge network for a wallet chain; the Tenderly fork reads as Ethereum. */
+/** The bridge network for a wallet chain; a Tenderly fork reads as the network it stands in for. */
 export const bridgeNetworkForChainId = (chainId: number | undefined): BridgeNetworkId | undefined =>
-  chainId === chainIdMap.tenderly
-    ? 'ethereum'
-    : BRIDGE_NETWORKS.find(network => network.chainId !== undefined && network.chainId === chainId)?.id;
+  chainId === undefined
+    ? undefined
+    : BRIDGE_NETWORKS.find(
+        network => network.chainId !== undefined && network.chainId === realChainId(chainId)
+      )?.id;
 
-/** The chain a bridge transacts on for a network; Ethereum is the family's (mainnet or the Tenderly fork). */
-export const bridgeChainId = (network: BridgeNetworkId, familyChainId: number): number | undefined =>
-  network === 'ethereum' ? familyChainId : getBridgeNetwork(network).chainId;
+/**
+ * The chain a bridge transacts on for a network; Ethereum is the family's (mainnet or the Tenderly fork),
+ * and in the fork family an L2 is its fork L2 when the dev build has one.
+ */
+export const bridgeChainId = (
+  network: BridgeNetworkId,
+  familyChainId: number,
+  forkL2Ids: number[] = forkL2ChainIds
+): number | undefined => {
+  if (network === 'ethereum') return familyChainId;
+  const forkId = familyChainId === chainIdMap.tenderly && forkChainId[network as keyof typeof forkChainId];
+  return forkId && forkL2Ids.includes(forkId) ? forkId : getBridgeNetwork(network).chainId;
+};
 
 /** The chain a flow on `network` is pinned to; undefined when the app can't switch to it, so nothing runs elsewhere. */
 export function guardChainId({
@@ -50,6 +63,6 @@ export function guardChainId({
   familyChainId: number;
   chainIds: number[];
 }): number | undefined {
-  const target = bridgeChainId(network, familyChainId);
+  const target = bridgeChainId(network, familyChainId, chainIds);
   return target !== undefined && chainIds.includes(target) ? target : undefined;
 }
