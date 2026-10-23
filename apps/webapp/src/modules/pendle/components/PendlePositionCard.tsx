@@ -178,11 +178,9 @@ function PendleSupplyCard({
  * (2193:73881); this state could not exist while the route redirected.
  */
 function PendleMaturedNoPositionCard({
-  market,
   maturityLabel,
   isConnected
 }: {
-  market: PendleMarketConfig;
   maturityLabel: string;
   isConnected: boolean;
 }) {
@@ -202,12 +200,9 @@ function PendleMaturedNoPositionCard({
       title={<Trans>This market has matured</Trans>}
       description={
         isConnected ? (
-          <Trans>Pendle {market.underlyingSymbol} no longer accepts deposits.</Trans>
+          <Trans>It no longer accepts deposits.</Trans>
         ) : (
-          <Trans>
-            Pendle {market.underlyingSymbol} no longer accepts deposits. Connect your wallet to check for a
-            claimable position.
-          </Trans>
+          <Trans>It no longer accepts deposits. Connect your wallet to check for a claimable position.</Trans>
         )
       }
       stats={
@@ -373,7 +368,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
     return ptBalance > 0n ? (
       <PendleMaturedCard market={market} ptBalance={ptBalance} maturityLabel={claimDateLabel} />
     ) : (
-      <PendleMaturedNoPositionCard market={market} maturityLabel={claimDateLabel} isConnected={isConnected} />
+      <PendleMaturedNoPositionCard maturityLabel={claimDateLabel} isConnected={isConnected} />
     );
   }
 
