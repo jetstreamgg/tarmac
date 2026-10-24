@@ -48,23 +48,25 @@ const VAULT_ABOUT: Record<string, ReactNode> = {
   'USDT Risk Capital': (
     <Trans>
       USDT Risk Capital vault accepts USDT deposits and deploys them exclusively into an stUSDS-USDT Morpho
-      market. stUSDS is a SKY-backed Vault performance is driven by the underlying markets&apos; borrowing
-      demand and is not controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart
-      contracts. Note stUSDS risks, including SKY price volatility and potential bad debt.
+      market. Vault performance is driven by the underlying markets&apos; borrowing demand and is not
+      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts. Note
+      stUSDS risks, including SKY price volatility and potential bad debt.
     </Trans>
   ),
   'USDS Risk Capital': (
     <Trans>
       USDS Risk Capital vault accepts USDS deposits and deploys them exclusively into an stUSDS-USDS Morpho
       market. Vault performance is driven by the underlying markets&apos; borrowing demand and is not
-      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
+      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts. Note
+      stUSDS risks, including SKY price volatility and potential bad debt.
     </Trans>
   ),
   'USDC Risk Capital': (
     <Trans>
-      USDC Risk Capital vault allocates supplied USDC exclusively to an stUSDS-USDC Morpho market. Vault
-      performance is driven by the underlying markets&apos; borrowing demand and is not controlled by
-      Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
+      USDC Risk Capital vault accepts USDC deposits and deploys them exclusively into an stUSDS-USDC Morpho
+      market. Vault performance is driven by the underlying markets&apos; borrowing demand and is not
+      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts. Note
+      stUSDS risks, including SKY price volatility and potential bad debt.
     </Trans>
   )
 };
