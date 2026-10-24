@@ -122,16 +122,11 @@ export function ConnectedPortfolio() {
   const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
   const calloutLoading = isLoading || balancesLoading || isGeoLoading;
-  // A matured position needs a claim, whatever its size: the wallet gets the
-  // Claim card, never a get-started pitch a small balance would otherwise pick.
-  const hasMatured = suppliedView.hasMatured;
-  const callout = hasMatured
-    ? 'none'
-    : cachedDecision
-      ? cachedDecision.outcome
-      : calloutLoading
-        ? 'none'
-        : portfolioCallout(depositedUsd, idleTotalUsd);
+  const callout = cachedDecision
+    ? cachedDecision.outcome
+    : calloutLoading
+      ? 'none'
+      : portfolioCallout(depositedUsd, idleTotalUsd);
   const optimisticSimulate = !cachedDecision && calloutLoading;
 
   // Once every source settles, persist the computed decision for the next
@@ -141,17 +136,13 @@ export function ConnectedPortfolio() {
   // and caching that would freeze a wrong outcome for the TTL.
   useEffect(() => {
     if (!address || calloutLoading || isPositionsError || balancesError) return;
-    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleTotalUsd, hasMatured));
-  }, [address, calloutLoading, isPositionsError, balancesError, depositedUsd, idleTotalUsd, hasMatured]);
+    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleTotalUsd));
+  }, [address, calloutLoading, isPositionsError, balancesError, depositedUsd, idleTotalUsd]);
 
-  // A matured position's Claim card renders only on Supplied, so it wins the
-  // default (overriding a stale pre-maturity cached 'idle').
   const tab =
     userTab ??
-    (hasMatured
-      ? 'supplied'
-      : (cachedDecision?.tab ??
-        (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied')));
+    cachedDecision?.tab ??
+    (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
 
   const goToSavings = () => {
     setPendingNavIntent('card', ROUTES.EARN_SAVINGS);

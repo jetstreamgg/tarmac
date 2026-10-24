@@ -160,7 +160,6 @@ export function useAppLoader(): {
     isPositionsError: marketError
   } = useEarnMarketplace();
   const visibleRows = useGeoVisibleRows(positionRows);
-  const hasMatured = visibleRows.some(row => row.claimable);
   const {
     balances,
     isLoading: balancesLoading,
@@ -197,8 +196,8 @@ export function useAppLoader(): {
   useEffect(() => {
     if (!address || decisionLoading || decisionError) return;
     if (fetchSeenForRef.current !== address && !balancesFetched) return;
-    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleUsd, hasMatured));
-  }, [address, decisionLoading, decisionError, balancesFetched, depositedUsd, idleUsd, hasMatured]);
+    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleUsd));
+  }, [address, decisionLoading, decisionError, balancesFetched, depositedUsd, idleUsd]);
 
   useConnectionEffect({
     onConnect: data => {
@@ -304,7 +303,7 @@ export function useAppLoader(): {
     // held it): every balance figure belongs to the new address, so writing
     // it under sort.address would cache one wallet's totals for another.
     if (!decisionError && address === sort.address) {
-      const decision = portfolioDecision(depositedUsd, idleUsd, hasMatured);
+      const decision = portfolioDecision(depositedUsd, idleUsd);
       const { outcome } = decision;
       writePortfolioDecision(sort.address, decision);
       if (sort.surface && !released) {
@@ -317,18 +316,7 @@ export function useAppLoader(): {
       }
     }
     setReleased(true);
-  }, [
-    sort,
-    holdElapsed,
-    decisionLoading,
-    decisionError,
-    address,
-    depositedUsd,
-    idleUsd,
-    hasMatured,
-    released,
-    navigate
-  ]);
+  }, [sort, holdElapsed, decisionLoading, decisionError, address, depositedUsd, idleUsd, released, navigate]);
 
   return { phase, coverMode, released, revealAnimated, endCover };
 }

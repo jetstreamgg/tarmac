@@ -252,7 +252,25 @@ describe('useAppLoader', () => {
     expect(screen.getByTestId('content').className).toBe('animate-app-loader-content-reveal');
   });
 
-  it('keeps a wallet holding only a matured position on /portfolio, where its Claim card is', () => {
+  it('keeps a wallet holding a funded matured position on /portfolio, where its Claim card is', () => {
+    const { rerender } = render(<Harness />);
+    connectManually(rerender);
+
+    h.marketplace = {
+      rows: [],
+      maturedRows: [{ position: { totalUsd: 3000 }, claimable: true }],
+      isPositionsLoading: false,
+      isPositionsError: false
+    };
+    h.balances = { balances: [{ amountUsd: 5000 }], isLoading: false, isFetched: true, isError: false };
+    act(() => vi.advanceTimersByTime(1200));
+    rerenderHarness(rerender);
+
+    expect(h.navigate).not.toHaveBeenCalled();
+    expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'none', tab: 'supplied' });
+  });
+
+  it('treats matured dust like any other small position', () => {
     const { rerender } = render(<Harness />);
     connectManually(rerender);
 
@@ -266,8 +284,7 @@ describe('useAppLoader', () => {
     act(() => vi.advanceTimersByTime(1200));
     rerenderHarness(rerender);
 
-    expect(h.navigate).not.toHaveBeenCalled();
-    expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'none', tab: 'supplied' });
+    expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'allocate', tab: 'idle' });
   });
 
   it('keeps a funded wallet on /portfolio: cache written, no navigation', () => {

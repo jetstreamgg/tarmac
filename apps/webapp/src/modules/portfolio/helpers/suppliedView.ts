@@ -59,8 +59,6 @@ export type SuppliedView = {
   /** A position's rate source is still loading — the aggregates above are premature. */
   ratesLoading: boolean;
   activePositions: number;
-  /** Any position is a matured market awaiting a claim. */
-  hasMatured: boolean;
   /** Deduped display-token symbols across positions, in position order. */
   suppliedTokens: string[];
 };
@@ -72,7 +70,6 @@ const EMPTY_VIEW: SuppliedView = {
   avgRate: 0,
   ratesLoading: false,
   activePositions: 0,
-  hasMatured: false,
   suppliedTokens: []
 };
 
@@ -153,7 +150,6 @@ export function buildSuppliedView(rows: EarnProductRow[]): SuppliedView {
     avgRate: averageEarningRate(positions),
     ratesLoading: positions.some(p => p.rateLoading),
     activePositions: positions.length,
-    hasMatured: positions.some(p => p.status === 'matured'),
     suppliedTokens: [...new Set(positions.map(p => p.tokenSymbol))]
   };
 }

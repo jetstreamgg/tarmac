@@ -195,21 +195,20 @@ afterEach(() => {
 });
 
 describe('ConnectedPortfolio matured-position tab default', () => {
-  it('defaults to Supplied when the only holding is a small matured position', () => {
-    // $5 sits under the significant-balance cut that would pick Idle, but the
-    // Claim card renders only on Supplied.
+  it('defaults to Supplied when the only holding is a funded matured position', () => {
     setSettled({ depositedUsd: 0, idleUsd: 0 });
-    h.marketplace.maturedRows = [h.maturedRow(5)];
+    h.marketplace.maturedRows = [h.maturedRow(500)];
     renderPage();
     expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('supplied');
     expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ tab: 'supplied' });
   });
 
-  it('matured PT overrides a cached idle decision from before maturity', () => {
-    writePortfolioDecision(ADDRESS_A, { outcome: 'none', tab: 'idle' });
+  it('leaves matured dust under the significant-balance floor on Idle', () => {
+    setSettled({ depositedUsd: 0, idleUsd: 0 });
     h.marketplace.maturedRows = [h.maturedRow(5)];
     renderPage();
-    expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('supplied');
+    expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('idle');
+    expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ tab: 'idle' });
   });
 
   it('hides a matured position where fixed yield is region-restricted', () => {

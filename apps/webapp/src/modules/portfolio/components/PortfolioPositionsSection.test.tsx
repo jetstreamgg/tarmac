@@ -143,7 +143,6 @@ const view = (positions: SuppliedPosition[]): SuppliedView => ({
   avgRate: 0,
   ratesLoading: false,
   activePositions: positions.length,
-  hasMatured: positions.some(p => p.status === 'matured'),
   suppliedTokens: []
 });
 

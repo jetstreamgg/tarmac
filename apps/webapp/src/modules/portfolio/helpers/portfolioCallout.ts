@@ -19,16 +19,14 @@ export function portfolioCallout(depositedUsd: number, idleUsd: number): Portfol
 }
 
 /**
- * The settled Portfolio decision cached per address. A matured position needs
- * a claim whatever its size, so it suppresses the pitch and claims Supplied,
- * where its Claim card renders.
+ * The settled Portfolio decision cached per address. A matured position counts
+ * in `depositedUsd` like any other, so the same floor applies: matured dust
+ * doesn't claim the Supplied tab.
  */
 export function portfolioDecision(
   depositedUsd: number,
-  idleUsd: number,
-  hasMatured: boolean
+  idleUsd: number
 ): { outcome: PortfolioCallout; tab: 'supplied' | 'idle' } {
-  if (hasMatured) return { outcome: 'none', tab: 'supplied' };
   return {
     outcome: portfolioCallout(depositedUsd, idleUsd),
     tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'

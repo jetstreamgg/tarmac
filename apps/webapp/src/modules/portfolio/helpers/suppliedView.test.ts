@@ -163,7 +163,6 @@ describe('buildSuppliedView', () => {
       avgRate: 0,
       ratesLoading: false,
       activePositions: 0,
-      hasMatured: false,
       suppliedTokens: []
     });
   });
@@ -188,7 +187,6 @@ describe('buildSuppliedView', () => {
     it('keeps a held matured position the price feed could not value', () => {
       const unpriced = { ...matured, claimable: true, position: amount(0) };
       const view = buildSuppliedView([unpriced]);
-      expect(view.hasMatured).toBe(true);
       expect(view.positions).toHaveLength(1);
       expect(view.positions[0]).toMatchObject({ status: 'matured', amountUsd: 0 });
       expect(view.totalSupplied).toBe(0);
@@ -198,7 +196,6 @@ describe('buildSuppliedView', () => {
       const view = buildSuppliedView([live, matured]);
       expect(view.totalSupplied).toBe(2000);
       expect(view.activePositions).toBe(2);
-      expect(view.hasMatured).toBe(true);
       expect(view.positions.find(p => p.rowId === 'fixed-0xmkt')).toMatchObject({
         status: 'matured',
         share: 0.5,
