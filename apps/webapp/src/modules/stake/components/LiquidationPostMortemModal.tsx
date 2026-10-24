@@ -350,7 +350,7 @@ export function LiquidationPostMortemModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="stake-postmortem-explorer-link"
-                className="text-textSecondary hover:text-text flex w-fit items-center gap-1 text-sm transition-colors"
+                className="text-textSecondary hover:text-text focus-visible:outline-focusRing flex w-fit items-center gap-1 rounded-xs text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <Trans>View on block explorer</Trans>
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />

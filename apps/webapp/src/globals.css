@@ -94,12 +94,13 @@
      source values — colors/bg/bg-brand-primary + bg-brand-secondary (primary
      hover/pressed fills), colors/border/border-focus (focus ring),
      colors/fg/fg-tertiary (disabled/loading text) and the primary gradient
-     stops. None are overridden in the light scope, and G2 confirmed that is
-     correct rather than incidental: every one of these DS variables resolves to
-     the same value in both modes — fgConsistent
+     stops. All but the focus ring are theme-invariant, and G2 confirmed that
+     is correct rather than incidental — fgConsistent
      (colors/fg/fg-text-consistent-light) stays light on the brand gradient by
-     design, and bg-brand-primary/secondary, border-focus and fg-tertiary are
-     theme-invariant. */
+     design, and bg-brand-primary/secondary and fg-tertiary resolve to the same
+     value in both modes. border-focus does too, but at 1.4:1 on the light page
+     it falls short of the 3:1 a focus indicator needs, so the light scope
+     overrides the ring with fg-brand-primary (APP-582). */
   --color-brandHover: #504dff;
   --color-brandPressed: #4836f5;
   --color-focusRing: #c2ccff;
@@ -647,6 +648,9 @@
 
   * {
     @apply border-border;
+    /* Rings set their colour under focus-visible:, so on controls with
+       transition-colors the outline faded in from currentColor (a white flash). */
+    outline-color: var(--color-focusRing);
   }
   /* `antialiased` = -webkit-font-smoothing: antialiased + -moz-osx-font-smoothing:
      grayscale. Chrome on macOS otherwise renders noticeably heavier than Figma's
@@ -1069,6 +1073,7 @@
     --color-fgPrimary: #2f2d40; /* colors/fg/fg-primary */
     --color-fgQuaternary: #a1a6c4; /* colors/fg/fg-quaternary */
     --color-fgBrand: #4836f5; /* colors/fg/fg-brand-primary */
+    --color-focusRing: #4836f5; /* colors/fg/fg-brand-primary, see the button tokens */
     --color-borderQuarternary: #9ca0e5bf; /* colors/border/border-quarternary */
     --color-flipSurface: #ecf0ff; /* components/modals/bg-item */
     --color-flipRing: #cdd9ff; /* components/modals/border-item */

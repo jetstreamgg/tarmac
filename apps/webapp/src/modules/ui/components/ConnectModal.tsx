@@ -92,7 +92,12 @@ function LegalLink({ name }: { name: string }) {
   const href = getFooterLinks().find(link => link.name === name)?.url;
   if (!href) return <>{name}</>;
   return (
-    <a href={sanitizeUrl(href)} target="_blank" rel="noreferrer" className="text-fgBrand hover:underline">
+    <a
+      href={sanitizeUrl(href)}
+      target="_blank"
+      rel="noreferrer"
+      className="text-fgBrand focus-visible:outline-focusRing rounded-xs hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
       {name}
     </a>
   );
@@ -109,7 +114,7 @@ function SearchWalletRow({ count, onClick }: { count: number; onClick: () => voi
       type="button"
       onClick={onClick}
       data-testid="connect-modal-search-wallet"
-      className="border-borderPrimary hover:border-borderTertiary flex w-full items-center justify-between overflow-hidden rounded-2xl border p-4 text-left transition-colors"
+      className="border-borderPrimary hover:border-borderTertiary focus-visible:outline-focusRing flex w-full items-center justify-between overflow-hidden rounded-2xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <span className="flex min-w-0 items-center gap-3">
         {/* Figma types the chip colors/bg/bg-quarternary; the app's nearest

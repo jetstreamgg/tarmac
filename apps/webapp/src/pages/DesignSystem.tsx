@@ -1578,8 +1578,8 @@ function DataSection() {
             <PaginationNext className="bg-glassBadge" />
           </Spec>
           <Spec label="arrow — focus">
-            <PaginationPrevious className="outline-fgBrand outline-2 outline-offset-1" />
-            <PaginationNext className="outline-fgBrand outline-2 outline-offset-1" />
+            <PaginationPrevious className="outline-focusRing outline-2 outline-offset-1" />
+            <PaginationNext className="outline-focusRing outline-2 outline-offset-1" />
           </Spec>
           <Spec label="arrow — disabled">
             <PaginationPrevious disabled />

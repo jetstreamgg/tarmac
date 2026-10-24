@@ -85,7 +85,7 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
       target="_blank"
       rel="noreferrer"
       title={formattedDate}
-      className="hover:bg-bgSecondary flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl p-4 transition-colors"
+      className="hover:bg-bgSecondary focus-visible:outline-focusRing flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl p-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
       data-testid="wallet-activity-item"
     >
       <div className="flex min-w-0 items-center gap-3">

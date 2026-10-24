@@ -44,9 +44,15 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
           the chevron, which is dropped when there is only one chain to pick
           from and the row is inert. Passing children also tells NetworkSelect
           to keep its pill recipe off this row and to size the panel to its own
-          content rather than to a trigger that spans the card. */}
-      <NetworkSelect chainIds={networks} dataTestId="convert-network">
-        <span className="bg-glassSurface flex w-full items-center justify-between gap-2 p-4 backdrop-blur-[20px] md:px-8 md:py-6">
+          content rather than to a trigger that spans the card. The card's
+          overflow-clip would hide an outside ring, and the body's backdrop blur
+          paints over an inset one on the trigger, so the body draws it. */}
+      <NetworkSelect
+        chainIds={networks}
+        dataTestId="convert-network"
+        triggerClassName="focus-visible:outline-hidden"
+      >
+        <span className="bg-glassSurface in-focus-visible:outline-focusRing flex w-full items-center justify-between gap-2 rounded-t-2xl p-4 backdrop-blur-[20px] in-focus-visible:outline-2 in-focus-visible:-outline-offset-2 md:rounded-t-[28px] md:px-8 md:py-6">
           <span className="flex items-center gap-3">
             <Text className="text-textSecondary text-sm">
               <Trans>Network</Trans>
@@ -92,7 +98,7 @@ export function ConvertCard({ form }: { form: ConvertFormModel }) {
           onClick={form.flip}
           aria-label={t`Flip conversion direction`}
           data-testid="convert-flip"
-          className="bg-flipSurface border-flipRing text-textSecondary hover:text-text absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors"
+          className="bg-flipSurface border-flipRing text-textSecondary hover:text-text focus-visible:outline-focusRing absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <ChevronDown width={16} height={16} />
         </button>

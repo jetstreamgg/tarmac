@@ -107,7 +107,7 @@ export function WalletPreviewDrawer({
           <SheetClose
             data-testid="wallet-drawer-collapse"
             aria-label={t`Close`}
-            className="text-text border-borderPrimary light:hover:bg-surfaceAlt flex size-10 items-center justify-center rounded-full border bg-gradient-to-b from-white/0 to-white/8 bg-origin-border transition-colors hover:bg-white/10"
+            className="text-text border-borderPrimary light:hover:bg-surfaceAlt focus-visible:outline-focusRing flex size-10 items-center justify-center rounded-full border bg-gradient-to-b from-white/0 to-white/8 bg-origin-border transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <ChevronsRight className="size-4" />
           </SheetClose>

@@ -15,6 +15,7 @@ export function CopyToClipboard({ text, iconClassName }: { text: string; iconCla
       <TooltipTrigger asChild>
         <motion.div
           data-testid="copy-to-clipboard"
+          className="focus-visible:outline-focusRing rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           whileTap={{ scale: 0.8 }}
           initial={AnimationLabels.initial}
           animate={AnimationLabels.animate}
