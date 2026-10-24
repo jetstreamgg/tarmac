@@ -364,6 +364,8 @@ interface ChartProps {
   error?: Error | null;
   dataTestId?: string;
   displayValue?: number;
+  /** detail variant: text headline in place of the figure (e.g. a matured market's "Matured on 26 Nov 2026"). */
+  displayText?: string;
   tooltipLabel?: React.ReactNode;
   icons?: React.ReactNode;
   /** Token(s) the series represents; drives the tooltip's trailing token
@@ -546,6 +548,7 @@ function HeaderPiece({
 function DetailHeaderValue({
   data,
   displayValue,
+  displayText,
   isPercentage,
   symbol,
   prefix,
@@ -557,6 +560,7 @@ function DetailHeaderValue({
 }: {
   data: Data[];
   displayValue?: number;
+  displayText?: string;
   isPercentage: boolean;
   symbol?: string;
   prefix?: string;
@@ -594,7 +598,8 @@ function DetailHeaderValue({
   // drops the trailing symbol rather than saying it twice (Figma 2376:225248,
   // "Keep only icon instead fo USDS label").
   const unit = isPercentage ? '%' : symbol && !icons ? ` ${symbol}` : '';
-  const formatted = `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${unit}`;
+  const formatted =
+    displayText ?? `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${unit}`;
   const figure = (
     <span
       data-testid="chart-detail-value"
@@ -830,6 +835,7 @@ export function Chart({
   error,
   dataTestId,
   displayValue,
+  displayText,
   tooltipLabel,
   icons,
   tokenSymbols,
@@ -935,6 +941,7 @@ export function Chart({
                   mobile
                   data={data}
                   displayValue={displayValue}
+                  displayText={displayText}
                   isPercentage={isPercentage}
                   symbol={symbol}
                   prefix={prefix}
@@ -956,6 +963,7 @@ export function Chart({
                 <DetailHeaderValue
                   data={data}
                   displayValue={displayValue}
+                  displayText={displayText}
                   isPercentage={isPercentage}
                   symbol={symbol}
                   prefix={prefix}

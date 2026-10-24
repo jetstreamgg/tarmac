@@ -261,10 +261,10 @@ describe('PendleProductDetail', () => {
       expect(details.textContent).not.toContain('AMM liquidity');
     });
 
-    it('drops the rate chart', () => {
+    it('keeps the rate chart', () => {
       renderDetail();
 
-      expect(screen.queryByTestId('mock-chart')).toBeNull();
+      expect(screen.getByTestId('mock-chart')).toBeTruthy();
     });
 
     it('swaps the supply pitch and FAQ for the matured copy', () => {
