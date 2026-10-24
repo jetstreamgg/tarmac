@@ -42,7 +42,7 @@ const VAULT_ABOUT: Record<string, ReactNode> = {
       USDS Flagship vault accepts USDS deposits. It keeps 80% in the vault and allocates 20% to 3 markets
       exposed to cbBTC, wstETH and PT-sUSDS. Vault performance is driven by the underlying markets&apos;
       borrowing demand and is not controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the
-      Morpho smart contracts. Note stUSDS risks, including SKY price volatility and potential bad debt.
+      Morpho smart contracts.
     </Trans>
   ),
   'USDT Risk Capital': (
