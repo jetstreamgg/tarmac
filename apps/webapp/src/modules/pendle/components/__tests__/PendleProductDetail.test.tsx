@@ -249,14 +249,14 @@ describe('PendleProductDetail', () => {
       };
     });
 
-    it('keeps only the risk and maturity rows', () => {
+    it('keeps only the underlying rate, risk and maturity rows', () => {
       renderDetail();
 
       const details = screen.getByTestId('product-detail-details');
       expect(details.textContent).toContain('Risk profile');
       expect(details.textContent).toContain('(Matured)');
       expect(details.textContent).not.toContain('Fixed APY');
-      expect(details.textContent).not.toContain('Underlying APY');
+      expect(details.textContent).toContain('Underlying APY');
       expect(details.textContent).not.toContain('TVL');
       expect(details.textContent).not.toContain('AMM liquidity');
     });

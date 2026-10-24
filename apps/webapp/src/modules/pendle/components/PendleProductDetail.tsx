@@ -28,7 +28,7 @@ import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
-const MATURED_DETAIL_ROWS = new Set(['risk', 'maturity']);
+const MATURED_DETAIL_ROWS = new Set(['underlying-apy', 'risk', 'maturity']);
 
 export type PendleProductDetailProps = {
   market: PendleMarketConfig;
@@ -142,7 +142,8 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
     }
   ];
   // A matured market takes no deposits and its AMM is wound down, so the
-  // rate, TVL and liquidity rows would only show stale or zero figures.
+  // fixed rate, TVL and liquidity rows would only show stale or zero figures.
+  // The underlying rate keeps accruing, so it stays.
   const details = matured ? allDetails.filter(row => MATURED_DETAIL_ROWS.has(row.id)) : allDetails;
 
   return (
