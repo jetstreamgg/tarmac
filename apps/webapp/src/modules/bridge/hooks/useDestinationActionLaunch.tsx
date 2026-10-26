@@ -566,7 +566,7 @@ export function useDestinationActionLaunch() {
                     ...(others?.length && { bundleTxHashes: others })
                   })
                 );
-                // A settled bridge leaves the tracker, so its arrival never refreshes these.
+                // A settled bridge leaves the tracker once this confirms, so nothing else refreshes these.
                 void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
               },
               onReverted: record(dropSentAction),

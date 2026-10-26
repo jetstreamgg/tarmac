@@ -189,6 +189,19 @@ describe('opStackDepositProgress', () => {
       expect(l2.getTransactionReceipt).not.toHaveBeenCalled();
     });
 
+    it('once the bridge arrived, is the only thing read', async () => {
+      const arrived = { ...applyProgress(withSentReplay(), { kind: 'arrived' }, NOW), to: 'base' as const };
+      const { context, l1 } = chains({ messages: { successful: true }, replayStatus: 'missing' });
+      await expect(opStackDepositProgress(arrived, context, NOW)).resolves.toBeNull();
+      expect(l1.getTransactionReceipt).not.toHaveBeenCalled();
+      const mined = chains({ messages: { successful: true }, replayStatus: 'success' });
+      await expect(opStackDepositProgress(arrived, mined.context, NOW)).resolves.toEqual({
+        kind: 'action-confirmed',
+        action: 'replay',
+        txHash: REPLAY
+      });
+    });
+
     it('confirmed, takes the bridge back to pending until the message reads as relayed', () => {
       const confirmed = applyProgress(
         withSentReplay(),

@@ -9,7 +9,7 @@ import {
   type Log,
   type TransactionReceipt
 } from 'viem';
-import type { BridgeProgress } from '../../model/pendingTransitions';
+import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
 import { settleSentAction } from '../sentAction';
@@ -141,6 +141,8 @@ export async function arbitrumDepositProgress(
     );
     const settled = sent && (await settleSentAction(l2, sent, now));
     if (settled) return settled;
+    // A settled bridge is only read for an action it sent.
+    if (isSettled(bridge)) return null;
 
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });
     if (receipt.status === 'reverted') return { kind: 'failed', reason: 'source-tx-reverted' };

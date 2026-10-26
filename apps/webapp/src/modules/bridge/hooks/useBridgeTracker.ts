@@ -20,7 +20,7 @@ const BURN_MINED = new Set(['waiting', 'ready', 'arrived', 'expired']);
 /**
  * Polls every active bridge of the connected account, on any page, so a
  * bridge keeps moving to ready or arrived while the user is elsewhere, and a
- * settled one while a convert it sent is unconfirmed. A CCTP bridge another
+ * settled one while an action it sent is unconfirmed. A CCTP bridge another
  * account of this browser sent to it is polled too, in the sender's list.
  */
 export function useBridgeTracker() {

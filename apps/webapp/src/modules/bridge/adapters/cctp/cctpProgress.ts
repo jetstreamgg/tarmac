@@ -50,10 +50,11 @@ async function anyReceived(l1: ChainReader, copies: IrisAttestedMessage[]): Prom
  * attested copy of it, from `readAttestations`, must match it byte for byte
  * outside the fields an attestation sets. Its nonce, used on Ethereum's
  * MessageTransmitter, means it was received, by the user's claim or anyone
- * else's; until then the attested message is offered as the claim. A convert
- * sent once it settled is read from its Ethereum receipt alone. A receipt
- * with no such burn fails only when the sender's Safe reported its execution
- * failed; any other such receipt, or a failed read, is null: nothing changes.
+ * else's; until then the attested message is offered as the claim. Once it
+ * settled, only a claim or convert it sent is read, from its Ethereum
+ * receipt. A receipt with no such burn fails only when the sender's Safe
+ * reported its execution failed; any other such receipt, or a failed read,
+ * is null: nothing changes.
  */
 export async function cctpProgress(
   bridge: PendingBridge & { from: CctpL2NetworkId },
