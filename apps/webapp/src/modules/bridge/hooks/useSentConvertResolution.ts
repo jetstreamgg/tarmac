@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCallsStatus } from '@wagmi/core';
 import { useConfig } from 'wagmi';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
-import { resolveBundledConverts } from '../tracking/bundledConverts';
+import { resolveSentConverts } from '../tracking/sentConverts';
 import { usePendingScope } from './usePendingScope';
 
 const POLL_MS = 30_000;
@@ -14,7 +14,7 @@ const NONE: UnfinishedCctpSwap[] = [];
  * stopped CCTP swaps sent as a bundle ended, only while one is unresolved, so
  * one sent from a tab since closed is settled too.
  */
-export function useBundledConvertResolution() {
+export function useSentConvertResolution() {
   const { scope } = usePendingScope();
   const config = useConfig();
   const getSnapshot = useCallback(() => (scope ? cctpSwapStore.getSnapshot(scope) : NONE), [scope]);
@@ -23,10 +23,10 @@ export function useBundledConvertResolution() {
   );
 
   useQuery({
-    queryKey: ['bridge-bundled-converts', scope],
+    queryKey: ['bridge-sent-converts', scope],
     queryFn: async () => {
       if (scope)
-        await resolveBundledConverts({
+        await resolveSentConverts({
           store: cctpSwapStore,
           scope,
           callsStatus: id => getCallsStatus(config, { id })

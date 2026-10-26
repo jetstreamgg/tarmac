@@ -9,7 +9,7 @@ import type { CallsStatus } from './recoverDeposits';
  * convert so the swap is offered again, and one the wallet can't tell about
  * stays sent. A convert linked again meanwhile is left alone.
  */
-export async function resolveBundledConverts({
+export async function resolveSentConverts({
   store,
   scope,
   callsStatus

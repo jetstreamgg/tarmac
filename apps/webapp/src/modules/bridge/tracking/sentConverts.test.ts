@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Hex } from 'viem';
 import { createCctpSwapStore, isSwapSpendable, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import type { CallsStatus } from './recoverDeposits';
-import { resolveBundledConverts } from './bundledConverts';
+import { resolveSentConverts } from './sentConverts';
 
 // A convert of a stopped swap sent as a wallet bundle outlives the tab that sent it: only the wallet can tell how it ended.
 
@@ -24,11 +24,11 @@ const receipt = (transactionHash: string, status: 'success' | 'reverted' = 'succ
   logs: []
 });
 
-describe('resolveBundledConverts', () => {
+describe('resolveSentConverts', () => {
   let store = createCctpSwapStore();
   const stored = () => store.get(SCOPE, SWAP.swapTxHash);
   const resolve = (callsStatus: (id: string) => Promise<CallsStatus | undefined>) =>
-    resolveBundledConverts({ store, scope: SCOPE, callsStatus });
+    resolveSentConverts({ store, scope: SCOPE, callsStatus });
 
   beforeEach(() => {
     localStorage.clear();

@@ -7,7 +7,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cctpSwapStore } from '../store/cctpSwapStore';
 import { pendingScopeKey } from '../store/pendingStore';
-import { useBundledConvertResolution } from './useBundledConvertResolution';
+import { useSentConvertResolution } from './useSentConvertResolution';
 
 // After a reload, a stopped swap's bundled convert is settled from the wallet, on any page.
 
@@ -39,11 +39,11 @@ const renderResolution = () => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return renderHook(() => useBundledConvertResolution(), { wrapper });
+  return renderHook(() => useSentConvertResolution(), { wrapper });
 };
 const settle = () => new Promise(resolve => setTimeout(resolve, 20));
 
-describe('useBundledConvertResolution', () => {
+describe('useSentConvertResolution', () => {
   beforeEach(() => {
     localStorage.clear();
     mocks.address = `0x${(3000 + ++accountSeq).toString(16).padStart(40, '0')}`;
