@@ -158,6 +158,30 @@ describe('forkAttestationReader (Tenderly multichain fork)', () => {
     await read;
   });
 
+  it('scans only the blocks mined since the last poll and keeps the copies it found', async () => {
+    const setup = chains();
+    setup.l1.getBlockNumber.mockResolvedValueOnce(26_250_599n).mockResolvedValueOnce(26_250_700n);
+    const read = forkAttestationReader(setup.context);
+    await read(6, BASE_BURN_TX.hash);
+    setup.l1.getLogs.mockResolvedValueOnce([]);
+
+    const attested = await read(6, BASE_BURN_TX.hash);
+    expect(attested.map(({ message }) => message)).toEqual([BASE_BURN_ATTESTED.message]);
+    expect(setup.l1.getLogs).toHaveBeenLastCalledWith(
+      expect.objectContaining({ fromBlock: 26_250_600n, toBlock: 26_250_700n })
+    );
+  });
+
+  it('scans the same blocks again after a failed read', async () => {
+    const setup = chains();
+    setup.l1.getTransactionReceipt.mockRejectedValueOnce(new Error('rpc down'));
+    await expect(forkAttestationReader(setup.context)(6, BASE_BURN_TX.hash)).rejects.toThrow('rpc down');
+
+    const attested = await forkAttestationReader(setup.context)(6, BASE_BURN_TX.hash);
+    expect(attested.map(({ message }) => message)).toEqual([BASE_BURN_ATTESTED.message]);
+    expect(setup.l1.getLogs).toHaveBeenLastCalledWith(expect.objectContaining({ fromBlock: 26_150_599n }));
+  });
+
   it('lets the bridge arrive once Tenderly relayed it', async () => {
     const { context } = chains();
     await expect(

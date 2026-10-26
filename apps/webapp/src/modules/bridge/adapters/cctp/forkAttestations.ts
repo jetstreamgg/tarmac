@@ -31,6 +31,9 @@ const NO_ATTESTATION = '0x00';
 
 const MINT_AND_WITHDRAW = getAbiItem({ abi: tokenMessengerV2Abi, name: 'MintAndWithdraw' });
 
+/** Per Ethereum client, how far each burn message was scanned and the copies found so far. */
+const scans = new WeakMap<object, Map<string, { scannedTo: bigint; copies: Hex[] }>>();
+
 const networkOfDomain = (domain: number) =>
   (Object.keys(CCTP_DOMAIN) as (keyof typeof CCTP_DOMAIN)[]).find(
     (network): network is CctpL2NetworkId => network !== 'ethereum' && CCTP_DOMAIN[network] === domain
@@ -69,7 +72,8 @@ function receivedCopies(logs: readonly Log[], source: Hex): Hex[] {
  * CCTP burn itself, so Iris never knows it. Reads instead the copy Tenderly
  * received on the Ethereum fork, found by the mint to the burn's recipient;
  * none until it relayed. Only relays mined after the burn count; two identical
- * burns both in flight still can't be told apart here.
+ * burns both in flight still can't be told apart here. Each poll scans only the
+ * blocks mined since the last one and keeps the copies already found.
  */
 export const forkAttestationReader =
   (context: AdapterContext): AttestationReader =>
@@ -83,7 +87,9 @@ export const forkAttestationReader =
       l1.getBlockNumber()
     ]);
     const { timestamp: burnedAt } = await l2.getBlock({ blockNumber: receipt.blockNumber });
-    const fromBlock = latest > LOOKBACK_BLOCKS ? latest - LOOKBACK_BLOCKS : 0n;
+    const lookbackStart = latest > LOOKBACK_BLOCKS ? latest - LOOKBACK_BLOCKS : 0n;
+    if (!scans.has(l1)) scans.set(l1, new Map());
+    const scanned = scans.get(l1)!;
     // Burns to the same recipient in one tx share their relays: each is read once.
     const relayReceipts = new Map<Hex, ReturnType<typeof l1.getTransactionReceipt>>();
     const readRelay = (hash: Hex) => {
@@ -94,6 +100,10 @@ export const forkAttestationReader =
       sentMessages(receipt.logs)
         .filter(({ decoded }) => decoded.destinationDomain === CCTP_DOMAIN.ethereum)
         .map(async ({ message, decoded }) => {
+          const key = `${txHash}:${message}`;
+          const previous = scanned.get(key);
+          const fromBlock = previous ? previous.scannedTo + 1n : lookbackStart;
+          if (fromBlock > latest) return previous!.copies;
           const mints = await l1.getLogs({
             address: TOKEN_MESSENGER_V2,
             event: MINT_AND_WITHDRAW,
@@ -112,10 +122,12 @@ export const forkAttestationReader =
               return receivedCopies((await readRelay(hash)).logs, message);
             })
           );
-          return copies
-            .flat()
-            .map((copy): IrisAttestedMessage => ({ message: copy, attestation: NO_ATTESTATION }));
+          const found = [...new Set([...(previous?.copies ?? []), ...copies.flat()])];
+          scanned.set(key, { scannedTo: latest, copies: found });
+          return found;
         })
     );
-    return perMessage.flat();
+    return perMessage
+      .flat()
+      .map((copy): IrisAttestedMessage => ({ message: copy, attestation: NO_ATTESTATION }));
   };
