@@ -173,9 +173,10 @@ const seedReadyReplay = () => {
 };
 
 const stepLabels = () =>
-  (mocks.updates.at(-1)?.partial.steps as { label: string; tokenSymbol: string }[] | undefined)?.map(
-    step => `${step.label} ${step.tokenSymbol}`
-  );
+  (
+    mocks.updates.at(-1)?.partial.steps as
+      { label: string; tokenSymbol: string; targetTokenSymbol?: string }[] | undefined
+  )?.map(step => [step.label, step.tokenSymbol, step.targetTokenSymbol].filter(Boolean).join(' '));
 
 describe('useDestinationActionLaunch: CCTP claim', () => {
   beforeAll(() => {
@@ -259,9 +260,22 @@ describe('useDestinationActionLaunch: CCTP claim', () => {
 
     mocks.claim.calls = CLAIM_CALLS;
     rerender();
-    expect(stepLabels()).toEqual(['Claim USDC', 'Approve USDC', 'Convert to USDS USDC']);
+    expect(stepLabels()).toEqual(['Claim USDC', 'Approve USDC', 'Convert USDC USDS']);
     expect(mocks.updates.at(-1)!.partial.bundled).toBe(false);
     expect(mocks.updates.at(-1)!.sessionId).toBe(mocks.launched.at(-1)!.sessionId);
+  });
+
+  it('names both tokens on the sale step: Convert USDC to USDS (Figma 96)', () => {
+    const card = seedCctpClaim();
+    const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+    act(() => result.current.launch(card));
+    mocks.claim.calls = CLAIM_CALLS;
+    rerender();
+    expect((mocks.updates.at(-1)!.partial.steps as unknown[]).at(-1)).toMatchObject({
+      label: 'Convert',
+      tokenSymbol: 'USDC',
+      targetTokenSymbol: 'USDS'
+    });
   });
 
   it('skips the approve step when the allowance covers the sale', () => {
@@ -270,7 +284,7 @@ describe('useDestinationActionLaunch: CCTP claim', () => {
     act(() => result.current.launch(card));
     mocks.claim.calls = [CLAIM_CALLS[0], CLAIM_CALLS[2]];
     rerender();
-    expect(stepLabels()).toEqual(['Claim USDC', 'Convert to USDS USDC']);
+    expect(stepLabels()).toEqual(['Claim USDC', 'Convert USDC USDS']);
   });
 
   it('shows the steps as one bundle when the wallet batches them', () => {

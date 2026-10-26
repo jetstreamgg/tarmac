@@ -324,22 +324,11 @@ export function useDestinationActionLaunch() {
     () =>
       convert
         ? convertSteps(cctpLegs.calls)
-        : cctpLegs.calls.map(call => {
-            const { functionName } = call as { functionName?: string };
-            if (functionName === CCTP_CLAIM_FUNCTION)
-              return { label: t`Claim`, tokenSymbol: 'USDC', failureDetail: stepFailureDetail.claim('USDC') };
-            if (functionName === 'approve')
-              return {
-                label: t`Approve`,
-                tokenSymbol: 'USDC',
-                failureDetail: stepFailureDetail.approve('USDC')
-              };
-            return {
-              label: t`Convert to USDS`,
-              tokenSymbol: 'USDC',
-              failureDetail: stepFailureDetail.convert('USDC')
-            };
-          }),
+        : cctpLegs.calls.flatMap(call =>
+            (call as { functionName?: string }).functionName === CCTP_CLAIM_FUNCTION
+              ? [{ label: t`Claim`, tokenSymbol: 'USDC', failureDetail: stepFailureDetail.claim('USDC') }]
+              : convertSteps([call])
+          ),
     [cctpLegs.calls, convert]
   );
   const cctpBundled = cctpLegs.isBatch;
