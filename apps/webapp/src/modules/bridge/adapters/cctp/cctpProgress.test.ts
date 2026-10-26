@@ -192,28 +192,61 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     });
   });
 
-  it('reads the nonce of every attested copy at once', async () => {
+  it('arrives from the expired stored copy without asking Iris, so an Iris outage hides no arrival', async () => {
+    const expired = {
+      ...ATTESTED,
+      message: patch(ATTESTED.message, 148 + 196, 100n.toString(16).padStart(64, '0'))
+    };
+    const stored = seed({
+      routeData: { cctpMessage: expired.message, cctpAttestation: expired.attestation }
+    });
+    const setup = chains({ attested: 'error', block: 100n, used: 1n });
+    await expect(progress(stored, setup)).resolves.toEqual({ kind: 'arrived' });
+    expect(setup.readAttestations).not.toHaveBeenCalled();
+  });
+
+  it('changes nothing while Iris is down and the expired stored copy was not received', async () => {
+    const expired = {
+      ...ATTESTED,
+      message: patch(ATTESTED.message, 148 + 196, 100n.toString(16).padStart(64, '0'))
+    };
+    const stored = seed({
+      routeData: { cctpMessage: expired.message, cctpAttestation: expired.attestation }
+    });
+    await expect(progress(stored, chains({ attested: 'error', block: 100n }))).resolves.toBeNull();
+  });
+
+  it('offers a copy Circle attested again once the stored one expired unreceived', async () => {
     const expired = {
       ...ATTESTED,
       message: patch(ATTESTED.message, 148 + 196, 100n.toString(16).padStart(64, '0'))
     };
     const reattested = { ...ATTESTED, message: patch(ATTESTED.message, 12, '2'.repeat(64)) };
-    const setup = chains({ attested: [reattested], block: 100n });
+    const setup = chains({ attested: [expired, reattested], block: 100n });
+    setup.l1.readContract.mockResolvedValue(0n);
+    const stored = seed({
+      routeData: { cctpMessage: expired.message, cctpAttestation: expired.attestation }
+    });
+    await expect(progress(stored, setup)).resolves.toMatchObject({
+      kind: 'ready',
+      routeData: { cctpMessage: reattested.message }
+    });
+    // The stored nonce, which Iris echoes back, is read once.
+    expect(setup.l1.readContract).toHaveBeenCalledTimes(2);
+  });
+
+  it('reads the nonce of every Iris copy at once', async () => {
+    const reattested = { ...ATTESTED, message: patch(ATTESTED.message, 12, '2'.repeat(64)) };
+    const setup = chains({ attested: [ATTESTED, reattested] });
     const answers: (() => void)[] = [];
     setup.l1.readContract.mockImplementation(
       () => new Promise<bigint>(resolve => answers.push(() => resolve(0n)))
     );
-    const stored = seed({
-      routeData: { cctpMessage: expired.message, cctpAttestation: expired.attestation }
-    });
-    const result = progress(stored, setup);
+    const result = progress(seed(), setup);
 
     await vi.waitFor(() => expect(setup.l1.readContract).toHaveBeenCalledTimes(2));
     answers.forEach(answer => answer());
-    await expect(result).resolves.toMatchObject({
-      kind: 'ready',
-      routeData: { cctpMessage: reattested.message }
-    });
+    await expect(result).resolves.toEqual(READY);
   });
 
   it('fails when the burn reverted on the L2', async () => {
