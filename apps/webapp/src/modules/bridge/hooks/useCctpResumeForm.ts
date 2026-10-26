@@ -3,8 +3,9 @@ import { useChains, useConnection } from 'wagmi';
 import { getAddress } from 'viem';
 import { useSafeWalletStatus, useTokenBalance } from '@/hooks';
 import { useAppChainId } from '@/hooks/ui/useAppChainId';
+import { math } from '@/utils';
 import { familyMainnetId } from '@/utils/isTestnetId';
-import { cctpL2Contracts, USDS_PER_USDC_UNIT } from '../adapters/cctp/contracts';
+import { cctpL2Contracts } from '../adapters/cctp/contracts';
 import { guardChainId } from '../model/networks';
 import { sendsToOther } from '../model/recipient';
 import { resolveBridgeRoute, type BridgeBlockReason } from '../model/resolveRoute';
@@ -53,7 +54,7 @@ export function useCctpResumeForm(swap: UnfinishedCctpSwap | undefined): {
     enabled: !!swap && sourceChainId !== undefined
   });
   const usdcAmount = swap?.usdcAmount ?? 0n;
-  const amount = usdcAmount * USDS_PER_USDC_UNIT;
+  const amount = math.convertUSDCtoWad(usdcAmount);
 
   const resolved = useMemo(() => {
     // With no gate the resolver reads CCTP as open.

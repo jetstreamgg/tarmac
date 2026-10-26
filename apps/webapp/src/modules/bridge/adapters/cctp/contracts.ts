@@ -7,7 +7,6 @@ import {
   usdsL2Address,
   usdsPsmWrapperAddress
 } from '@/hooks/generated';
-import { USDC_PRECISION, WAD_PRECISION } from '@/utils/math.constants';
 import { pad, parseAbi, type Address, type Hex } from 'viem';
 import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import type { BridgeNetworkId } from '../../model/networks';
@@ -57,9 +56,6 @@ export const cctpL2Contracts = (network: CctpL2NetworkId) => {
   const chainId = CHAIN_ID[network];
   return { psm3: psm3L2Address[chainId], usds: usdsL2Address[chainId], usdc: usdcL2Address[chainId] };
 };
-
-/** USDS has 18 decimals and USDC 6; PSM3 and the wrapper convert at exactly 1:1. */
-export const USDS_PER_USDC_UNIT = 10n ** BigInt(WAD_PRECISION - USDC_PRECISION);
 
 /** A 20-byte address as CCTP's bytes32. */
 export const addressToBytes32 = (address: Address): Hex => pad(address.toLowerCase() as Hex, { size: 32 });

@@ -4,13 +4,9 @@ import { usePublicClient } from 'wagmi';
 import { useTokenAllowance, type TxMutateVariables } from '@/hooks';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { math } from '@/utils';
 import { cctpBurnCalls } from '../adapters/cctp/calls';
-import {
-  TOKEN_MESSENGER_V2,
-  USDS_PER_USDC_UNIT,
-  cctpL2Contracts,
-  type CctpL2NetworkId
-} from '../adapters/cctp/contracts';
+import { TOKEN_MESSENGER_V2, cctpL2Contracts, type CctpL2NetworkId } from '../adapters/cctp/contracts';
 import { CCTP_SWAP_FAILED_MESSAGE, cctpBurnRefusal, cctpResumeRefusal } from '../adapters/cctp/gate';
 import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -83,7 +79,7 @@ export function useCctpBurnLegs({
 }) {
   const from = toAddress(account);
   const to = toAddress(resume ? resume.recipient : (recipient ?? account));
-  const amountIn = resume ? resume.usdcAmount * USDS_PER_USDC_UNIT : amount;
+  const amountIn = resume ? math.convertUSDCtoWad(resume.usdcAmount) : amount;
   const swap = !resume;
   const source = usePublicClient({ chainId });
   const destination = usePublicClient({ chainId: ethereumChainId });

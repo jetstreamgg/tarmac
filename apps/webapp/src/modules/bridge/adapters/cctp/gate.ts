@@ -11,6 +11,7 @@ import {
 import { psm3L2Abi, usdsPsmWrapperAbi } from '@/hooks/generated';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { getPsmDirectionHalted } from '@/modules/convert/hooks/usePsmConversion.helpers';
+import { math } from '@/utils';
 import type { BridgeRouteFacts } from '../../model/resolveRoute';
 import { blockRanges } from '../blockRanges';
 import {
@@ -21,7 +22,6 @@ import {
   MESSAGE_TRANSMITTER_V2,
   TOKEN_MESSENGER_V2,
   TOKEN_MINTER_V2,
-  USDS_PER_USDC_UNIT,
   USDS_PSM_WRAPPER,
   addressToBytes32,
   cctpL2Contracts,
@@ -65,10 +65,10 @@ export function cctpGate(
   { swap = true }: { swap?: boolean } = {}
 ): NonNullable<Exclude<BridgeRouteFacts['cctp'], 'loading' | 'error'>> {
   const paused = [...reads.sourcePaused, ...reads.destinationPaused].some(Boolean);
-  const usdcLiquidity = reads.psm3Usdc * USDS_PER_USDC_UNIT;
+  const usdcLiquidity = math.convertUSDCtoWad(reads.psm3Usdc);
   return {
     isOpen: !paused && wrapperSells(reads),
-    maxAmount: reads.burnLimit * USDS_PER_USDC_UNIT,
+    maxAmount: math.convertUSDCtoWad(reads.burnLimit),
     // Without the swap, as when continuing one, PSM3's USDC is not needed.
     liquidity: swap && usdcLiquidity < reads.litePsmDai ? usdcLiquidity : reads.litePsmDai
   };
@@ -293,7 +293,7 @@ export async function cctpClaimRefusal({
     return new Error('This attestation has expired; wait for a new one.');
   if (minterPaused || transmitterPaused || !wrapperSells({ live, tin, halted }))
     return new Error('CCTP is paused.');
-  if ((body.amount - body.feeExecuted) * USDS_PER_USDC_UNIT > litePsmDai)
+  if (math.convertUSDCtoWad(body.amount - body.feeExecuted) > litePsmDai)
     return new Error('There is not enough liquidity to claim this transfer as USDS.');
   return undefined;
 }
@@ -320,7 +320,7 @@ export async function cctpConvertRefusal({
   ])) as unknown as [bigint, bigint, bigint, bigint, bigint];
   if (!wrapperSells({ live, tin, halted }))
     return new Error("The wrapper can't convert USDC to USDS right now.");
-  if (amount * USDS_PER_USDC_UNIT > litePsmDai)
+  if (math.convertUSDCtoWad(amount) > litePsmDai)
     return new Error('There is not enough liquidity to convert this USDC to USDS.');
   if (usdc < amount) return new Error('This account holds less USDC than this conversion.');
   return undefined;
@@ -344,7 +344,7 @@ export async function cctpL2ConvertRefusal({
 }): Promise<Error | undefined> {
   if (amount <= 0n) return new Error('Nothing to convert.');
   const { psm3, usds, usdc } = cctpL2Contracts(network);
-  const output = amount * USDS_PER_USDC_UNIT;
+  const output = math.convertUSDCtoWad(amount);
   const [quote, psm3Usds, held] = await Promise.all([
     client.readContract({
       address: psm3,
