@@ -1,8 +1,14 @@
-import { chainId, forkChainId } from './chainId';
+import { chainId, forkChainId, isForkChainId } from './chainId';
 
 export function getEtherscanLink(chainId: number, address: string, type: 'address' | 'tx') {
   const prefix = getEtherscanPrefix(chainId);
   return `https://${prefix}/${type}/${address}`;
+}
+
+/** Like getEtherscanLink, but no link for a fork L2 whose Tenderly explorer isn't set: Etherscan doesn't know its txs. */
+export function getExplorerLink(id: number, address: string, type: 'address' | 'tx'): string | undefined {
+  if (id !== chainId.tenderly && isForkChainId(id) && !tenderlyExplorer(id)) return undefined;
+  return getEtherscanLink(id, address, type);
 }
 
 // Dev only: the Tenderly multichain environment's explorer of each fork, from the local .env.

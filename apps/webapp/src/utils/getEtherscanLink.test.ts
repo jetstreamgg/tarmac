@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { chainId, forkChainId } from './chainId';
-import { getEtherscanLink } from './getEtherscanLink';
+import { getEtherscanLink, getExplorerLink } from './getEtherscanLink';
+import { getTransactionLink } from './getTransactionLink';
 
 const TX = `0x${'ab'.repeat(32)}`;
 const explorer = (chain: string) => `dashboard.tenderly.co/team/project/testnets/env/container/${chain}`;
@@ -35,5 +36,23 @@ describe('getEtherscanLink on the Tenderly multichain fork', () => {
     expect(getEtherscanLink(chainId.tenderly, TX, 'tx')).toMatch(
       /^https:\/\/dashboard\.tenderly\.co\/jetstreamgg\/jetstream\/testnet\/[0-9a-f-]+\/tx\//
     );
+  });
+});
+
+describe('getExplorerLink', () => {
+  afterEach(() => vi.stubEnv('VITE_TENDERLY_EXPLORER_BASE', ''));
+
+  it('gives a fork L2 without its explorer no link, never Ethereum mainnet', () => {
+    for (const id of Object.values(forkChainId)) {
+      expect(getExplorerLink(id, TX, 'tx')).toBeUndefined();
+      expect(getTransactionLink(id, undefined, TX, false)).toBeUndefined();
+    }
+  });
+
+  it('links a fork L2 to its Tenderly explorer when set, and the other chains as before', () => {
+    vi.stubEnv('VITE_TENDERLY_EXPLORER_BASE', explorer('BASE'));
+    expect(getExplorerLink(forkChainId.base, TX, 'tx')).toBe(`https://${explorer('BASE')}/tx/${TX}`);
+    for (const id of [chainId.mainnet, chainId.tenderly, chainId.base, chainId.optimism])
+      expect(getExplorerLink(id, TX, 'tx')).toBe(getEtherscanLink(id, TX, 'tx'));
   });
 });
