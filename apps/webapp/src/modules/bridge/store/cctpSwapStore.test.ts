@@ -39,6 +39,14 @@ describe('createCctpSwapStore', () => {
     expect(store.getSnapshot(SCOPE)[0].usdcAmount).toBe(1_000_000n);
   });
 
+  it('finds a swap by its hash in any case, only in its scope', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    expect(store.get(SCOPE, '0x' + 'Ab'.repeat(32))?.usdcAmount).toBe(1_000_000n);
+    expect(store.get('other', '0x' + 'ab'.repeat(32))).toBeUndefined();
+    expect(store.get(SCOPE, '0x' + 'cd'.repeat(32))).toBeUndefined();
+  });
+
   it('drops only the cleared swap, and notifies', () => {
     const store = createCctpSwapStore();
     const listener = vi.fn();

@@ -302,8 +302,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         return;
       }
       // Another Review sent a burn for this swap since its card opened; the chain shows it only once it mines.
-      const continued =
-        resume && cctpSwapStore.getSnapshot(scope).find(swap => swap.swapTxHash === resume.swapTxHash);
+      const continued = resume && cctpSwapStore.get(scope, resume.swapTxHash);
       // That burn may still revert, so this doesn't say it was sent.
       const ownBurn = !!continued?.burn && ownBurnsRef.current.includes(continued.burn);
       if (continued && continued.burn !== resume.burn && !ownBurn) {

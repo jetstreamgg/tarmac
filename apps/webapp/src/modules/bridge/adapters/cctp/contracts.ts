@@ -14,10 +14,16 @@ import { isSystemAddress } from '../../model/systemAddresses';
 import { NATIVE_DEPOSIT_CONTRACTS } from '../nativeDeposit/contracts';
 
 /** The L2s that bridge USDS to Ethereum through CCTP: USDS is swapped to USDC on PSM3, burned, and minted on Ethereum. */
-export type CctpL2NetworkId = 'base' | 'optimism' | 'unichain' | 'arbitrum';
+export const CCTP_L2_NETWORKS = [
+  'base',
+  'optimism',
+  'unichain',
+  'arbitrum'
+] as const satisfies BridgeNetworkId[];
+export type CctpL2NetworkId = (typeof CCTP_L2_NETWORKS)[number];
 
 export const isCctpL2Network = (network: BridgeNetworkId): network is CctpL2NetworkId =>
-  network === 'base' || network === 'optimism' || network === 'unichain' || network === 'arbitrum';
+  (CCTP_L2_NETWORKS as readonly BridgeNetworkId[]).includes(network);
 
 /** Circle's domain ids, read from each chain's MessageTransmitterV2 `localDomain()`. */
 export const CCTP_DOMAIN = {

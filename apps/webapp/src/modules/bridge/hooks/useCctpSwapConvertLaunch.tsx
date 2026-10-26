@@ -31,9 +31,6 @@ const DETACHED: TxCallbacks = {
   onError: () => undefined
 };
 
-const keptSwap = (scope: string, swapTxHash: string) =>
-  cctpSwapStore.getSnapshot(scope).find(entry => entry.swapTxHash === swapTxHash.toLowerCase());
-
 /**
  * Converts the USDC of a CCTP bridge that stopped before its burn back to
  * USDS on its L2 (Figma 90, 94, 96, 97), from its card: the modal reviews the
@@ -181,7 +178,7 @@ export function useCctpSwapConvertLaunch() {
           const callbacks: TxCallbacks = {
             onMutate: variables => modal().onMutate(variables),
             onStart: hash => {
-              if (!hash) bundle = keptSwap(scope, swap.swapTxHash)?.convert;
+              if (!hash) bundle = cctpSwapStore.get(scope, swap.swapTxHash)?.convert;
               modal().onStart(hash);
             },
             onSuccess: (...settled) => {
@@ -191,7 +188,7 @@ export function useCctpSwapConvertLaunch() {
             },
             onError: (error, hash) => {
               const neverLands = isBundleFailure(error) || error instanceof TransactionReplacedError;
-              if (neverLands && bundle && keptSwap(scope, swap.swapTxHash)?.convert === bundle)
+              if (neverLands && bundle && cctpSwapStore.get(scope, swap.swapTxHash)?.convert === bundle)
                 cctpSwapStore.markConvert(scope, swap.swapTxHash, undefined);
               modal().onError(error, hash);
             }

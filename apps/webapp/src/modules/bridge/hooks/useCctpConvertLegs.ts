@@ -102,9 +102,7 @@ export function useCctpConvertLegs({
           return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
         return cctpConvertRefusal(params);
       }
-      const kept = cctpSwapStore
-        .getSnapshot(scope!)
-        .find(entry => entry.swapTxHash.toLowerCase() === swap.swapTxHash.toLowerCase());
+      const kept = cctpSwapStore.get(scope!, swap.swapTxHash);
       // A burn of this swap that may still land spends the same USDC.
       if (!kept || !isSwapSpendable(kept, pendingBridgeStore.getSnapshot(scope!)))
         return new TransactionRefusedError(SETTLED_MESSAGE, { final: true });
@@ -153,9 +151,7 @@ export function useCctpConvertLegs({
       const run = linkedRef.current.get(id);
       if (!run) return;
       linkedRef.current.delete(id);
-      const kept = cctpSwapStore
-        .getSnapshot(run.scope)
-        .find(entry => entry.swapTxHash.toLowerCase() === run.swapTxHash.toLowerCase());
+      const kept = cctpSwapStore.get(run.scope, run.swapTxHash);
       if (kept?.convert === id) cctpSwapStore.markConvert(run.scope, run.swapTxHash, undefined);
     },
     getCallbacks
