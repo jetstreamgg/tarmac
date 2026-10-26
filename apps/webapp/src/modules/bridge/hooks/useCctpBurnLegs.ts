@@ -175,8 +175,9 @@ export function useCctpBurnLegs({
 
   // Fixed per run at Confirm: the status a leg is later sent under may read unsettled.
   const isSafe = !!isSafeApp || !!isSafeWallet;
-  // The recipient, continued swap and Safe-ness a run was executed for, and the swap it sent, which its burn is linked to.
+  // The network, recipient, continued swap and Safe-ness a run was executed for, and the swap it sent, which its burn is linked to.
   type Run = {
+    network: CctpL2NetworkId;
     recipient: Address | undefined;
     resumed: string | undefined;
     safe: boolean;
@@ -184,12 +185,13 @@ export function useCctpBurnLegs({
   };
   // The latest run executed, for a callback that comes with no context; the engine may have refused it.
   const runRef = useRef<Run | undefined>(undefined);
-  // A leg reported with no run: one run per recipient and continued swap on show.
+  // A leg reported with no run: one run per network, recipient and continued swap on show.
   const looseRef = useRef<Run | undefined>(undefined);
   const looseRun = () => {
     const loose = looseRef.current;
-    if (loose && loose.recipient === to && loose.resumed === resume?.swapTxHash) return loose;
-    return (looseRef.current = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe });
+    if (loose && loose.network === network && loose.recipient === to && loose.resumed === resume?.swapTxHash)
+      return loose;
+    return (looseRef.current = { network, recipient: to, resumed: resume?.swapTxHash, safe: isSafe });
   };
   // A new burn retries the swap's last one: that one's Failed card goes (Activity keeps it).
   const linkBurn = (scope: string, swapTxHash: string, burn: string) => {
@@ -217,7 +219,7 @@ export function useCctpBurnLegs({
       run.sentSwap = { hash, variables };
       cctpSwapStore.record(scope, {
         swapTxHash: hash,
-        network,
+        network: run.network,
         usdcAmount,
         recipient: run.recipient,
         at: Date.now()
@@ -271,11 +273,13 @@ export function useCctpBurnLegs({
     // Try again resumes the last run's legs, so its burn still belongs to the swap that run sent.
     const last = runRef.current;
     const sentSwap =
-      last && last.recipient === to && last.resumed === resume?.swapTxHash ? last.sentSwap : undefined;
-    const run: Run = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe, sentSwap };
+      last && last.network === network && last.recipient === to && last.resumed === resume?.swapTxHash
+        ? last.sentSwap
+        : undefined;
+    const run: Run = { network, recipient: to, resumed: resume?.swapTxHash, safe: isSafe, sentSwap };
     runRef.current = run;
     executeLegs(run);
-  }, [to, resume, isSafe, executeLegs]);
+  }, [network, to, resume, isSafe, executeLegs]);
 
   const { mutate: refetchUsds } = usdsAllowance;
   const { mutate: refetchUsdc } = usdcAllowance;

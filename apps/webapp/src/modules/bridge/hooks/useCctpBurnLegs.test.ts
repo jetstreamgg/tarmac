@@ -220,6 +220,32 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, BURN_HASH);
   });
 
+  // A closed Review resets the launch's source network while the swap may still be signed.
+  it('keeps a swap signed after the form moved to another network under the network of its run', () => {
+    const ARBITRUM = 42161;
+    mocks.clients[ARBITRUM] = { chain: 'arbitrum' };
+    const { result, rerender } = renderHook(
+      ({ from, chainId }: { from: 'base' | 'arbitrum'; chainId: number }) =>
+        useCctpBurnLegs({
+          enabled: true,
+          from,
+          chainId,
+          ethereumChainId: ETHEREUM,
+          account: BASE_BURN_TX.from,
+          recipient: BASE_BURN_MINT_RECIPIENT,
+          amount: AMOUNT,
+          getCallbacks,
+          scope: SCOPE
+        }),
+      { initialProps: { from: 'arbitrum', chainId: ARBITRUM } }
+    );
+    act(() => result.current.execute());
+    const swap = calls()[1];
+    rerender({ from: 'base', chainId: BASE });
+    (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(SWAP_HASH, swap);
+    expect(mocks.record).toHaveBeenCalledWith(SCOPE, expect.objectContaining({ network: 'arbitrum' }));
+  });
+
   it('keeps a repriced swap under the hash that mines, and drops the one it replaced', () => {
     render({ scope: SCOPE });
     const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: object) => void;
