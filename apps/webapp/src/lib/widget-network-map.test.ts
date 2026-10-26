@@ -139,16 +139,31 @@ describe('getRouteChainAction on the Tenderly fork L2s', () => {
     vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
   });
 
-  it('renders multichain modules on every fork L2 the dev build connects to', async () => {
+  const loadWithForks = async () => {
     vi.resetModules();
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
     vi.stubEnv('VITE_TESTNET_CONFIG', 'true');
     vi.stubEnv('VITE_TENDERLY_RPC_NAME', 'team/project/dev-env');
-    const { getRouteChainAction } = await import('./widget-network-map');
+    return (await import('./widget-network-map')).getRouteChainAction;
+  };
+
+  it('renders the Convert route, home of the Bridge, on every fork L2', async () => {
+    const getRouteChainAction = await loadWithForks();
     for (const targetChainId of Object.values(forkChainId)) {
-      for (const intent of MULTICHAIN_INTENTS) {
-        expect(getRouteChainAction(intent, targetChainId, { chains: FORK_DEV_CHAINS })).toEqual({
-          kind: 'render'
+      expect(getRouteChainAction(Intent.CONVERT_INTENT, targetChainId, { chains: FORK_DEV_CHAINS })).toEqual({
+        kind: 'render'
+      });
+    }
+  });
+
+  it('switches every other module to the Ethereum fork, never a real chain', async () => {
+    const getRouteChainAction = await loadWithForks();
+    const chains = [...FORK_DEV_CHAINS, ...PROD_CHAINS];
+    for (const targetChainId of Object.values(forkChainId)) {
+      for (const intent of [...MAINNET_ONLY_INTENTS, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT]) {
+        expect(getRouteChainAction(intent, targetChainId, { chains })).toEqual({
+          kind: 'switch-network',
+          chainId: chainId.tenderly
         });
       }
     }

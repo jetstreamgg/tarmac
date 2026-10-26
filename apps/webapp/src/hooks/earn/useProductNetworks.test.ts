@@ -29,25 +29,23 @@ const render = (connected: number) => {
 };
 
 describe('useProductNetworks in the dev build with fork L2s', () => {
-  it('offers only the fork family while connected to a fork', () => {
-    for (const connected of [chainId.tenderly, forkChainId.base]) {
-      const ids = render(connected);
-      expect(ids).toEqual(expect.arrayContaining([chainId.tenderly, ...FORK_L2_IDS]));
-      expect(ids).not.toContain(mainnet.id);
-      expect(ids).not.toContain(base.id);
-    }
-  });
-
-  it('never offers a fork L2 next to its real L2 while connected to a real chain', () => {
-    for (const connected of [mainnet.id, base.id]) {
+  it('never offers a fork L2, whatever the connected chain', () => {
+    for (const connected of [chainId.tenderly, forkChainId.base, mainnet.id, base.id]) {
       const ids = render(connected);
       for (const forkL2 of FORK_L2_IDS) expect(ids).not.toContain(forkL2);
     }
   });
 
-  it('keeps the real chains while connected to one', () => {
-    const ids = render(base.id);
-    expect(ids).toContain(mainnet.id);
-    expect(ids).toContain(base.id);
+  it('keeps the real chains next to the Ethereum fork, as before the fork L2s', () => {
+    for (const connected of [chainId.tenderly, forkChainId.base, base.id]) {
+      expect(render(connected)).toEqual([
+        mainnet.id,
+        chainId.tenderly,
+        base.id,
+        arbitrum.id,
+        optimism.id,
+        unichain.id
+      ]);
+    }
   });
 });

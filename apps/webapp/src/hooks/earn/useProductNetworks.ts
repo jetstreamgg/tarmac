@@ -1,9 +1,7 @@
 import { useMemo } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChains } from 'wagmi';
 import type { Intent } from '@/lib/enums';
-import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { forkL2ChainIds } from '@/data/wagmi/config/forkChains';
-import { isForkChainId } from '@/utils/chainId';
 import { productNetworks } from './earnProducts';
 
 /**
@@ -17,22 +15,19 @@ import { productNetworks } from './earnProducts';
  * fork-flavoured L2s — with a single-chain static pill on every product, and no
  * way to reach an L2 at all. Whether a product is genuinely single-chain then
  * falls out of the config: production carries no fork, so a mainnet-only
- * product resolves to `[mainnet]` and its pill goes static there. The one
- * exception is a dev build with the Tenderly fork L2s: on a fork the selector
- * keeps to the fork family, so it never offers a real chain beside its fork,
- * and off it the fork L2s are dropped, so a real L2 never shows twice.
+ * product resolves to `[mainnet]` and its pill goes static there. The Tenderly
+ * fork L2s are always dropped: they only host the Bridge, which picks its
+ * chains on its own.
  */
 export function useProductNetworks(intent: Intent, addressMap?: Record<number, unknown>): number[] {
   const chains = useChains();
-  const connectedChainId = useChainId();
-  const onForkFamily = forkL2ChainIds.length > 0 && isForkChainId(connectedChainId);
-  return useMemo(() => {
-    const ids = chains.map(chain => chain.id);
-    const family = onForkFamily ? getSupportedChainIds(connectedChainId) : undefined;
-    return productNetworks(
-      intent,
-      ids.filter(id => (family ? family.includes(id) : !forkL2ChainIds.includes(id))),
-      addressMap
-    );
-  }, [intent, chains, addressMap, onForkFamily, connectedChainId]);
+  return useMemo(
+    () =>
+      productNetworks(
+        intent,
+        chains.map(chain => chain.id).filter(id => !forkL2ChainIds.includes(id)),
+        addressMap
+      ),
+    [intent, chains, addressMap]
+  );
 }

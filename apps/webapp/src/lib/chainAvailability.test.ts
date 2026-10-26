@@ -74,16 +74,20 @@ describe('Tenderly fork L2s', () => {
     );
   });
 
-  it('offer the same products as the L2 they stand in for in the dev build', async () => {
+  it('host only the Convert route, home of the Bridge, in the dev build', async () => {
     vi.resetModules();
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
     vi.stubEnv('VITE_TESTNET_CONFIG', 'true');
     vi.stubEnv('VITE_TENDERLY_RPC_NAME', 'team/project/dev-env');
     const dev = await import('./chainAvailability');
-    expect(dev.CHAIN_WIDGET_MAP[forkChainId.base]).toEqual(CHAIN_WIDGET_MAP[base.id]);
-    expect(dev.CHAIN_WIDGET_MAP[forkChainId.arbitrum]).toEqual(CHAIN_WIDGET_MAP[arbitrum.id]);
-    expect(dev.chainIdsForIntent(Intent.SAVINGS_INTENT)).toEqual(
-      expect.arrayContaining([forkChainId.base, forkChainId.arbitrum])
+    for (const fork of Object.values(forkChainId))
+      expect(dev.CHAIN_WIDGET_MAP[fork]).toEqual([Intent.CONVERT_INTENT]);
+    for (const intent of [Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.STAKE_INTENT])
+      expect(dev.chainIdsForIntent(intent)).not.toEqual(
+        expect.arrayContaining([expect.toBeOneOf(Object.values(forkChainId))])
+      );
+    expect(dev.chainIdsForIntent(Intent.CONVERT_INTENT)).toEqual(
+      expect.arrayContaining(Object.values(forkChainId))
     );
   });
 });
