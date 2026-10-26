@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
 import { TOKENS, useAppChainId, useSafeWalletStatus, useTokenBalance } from '@/hooks';
@@ -27,6 +27,7 @@ import { isValidRecipient, recipientProblem, recipientRequirement, sendsToOther 
 import { resolveBridgeRoute, type ResolvedBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
 import { useAddressCode } from './useAddressCode';
+import { useBridgeDraft, type BridgeDraft } from './useBridgeDraft';
 import { useCctpGate } from './useCctpGate';
 import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
@@ -69,8 +70,10 @@ const parseAmountOrZero = (value: string) => {
  * to, like L2s in the Tenderly dev setup) are held as a local pick and block
  * Review until their route tickets add them. With the Tenderly fork L2s, the
  * source also picks the family: a fork source moves the whole pair to the forks.
+ *
+ * `draft` holds the typed and picked fields when the caller outlives the form; left out, the form holds them.
  */
-export function useBridgeForm() {
+export function useBridgeForm(draft?: BridgeDraft) {
   const { isConnected, address } = useConnection();
   const walletChainId = useAppChainId();
   const familyChainId = familyMainnetId(walletChainId);
@@ -79,10 +82,17 @@ export function useBridgeForm() {
   const chains = useChains();
   const { canSwitchChain, handleSwitchChain } = useNetworkSwitch();
 
-  const [sourceOverride, setSourceOverride] = useState<BridgeNetworkId | null>(null);
-  const [pickedTo, setPickedTo] = useState<BridgeNetworkId>('base');
-  const [value, setValue] = useState('');
-  const [recipient, setRecipient] = useState<string | undefined>(undefined);
+  const ownDraft = useBridgeDraft();
+  const {
+    sourceOverride,
+    setSourceOverride,
+    pickedTo,
+    setPickedTo,
+    value,
+    setValue,
+    recipient,
+    setRecipient
+  } = draft ?? ownDraft;
 
   const walletNetwork = bridgeNetworkForChainId(walletChainId) ?? 'ethereum';
   const from = sourceOverride ?? walletNetwork;
@@ -130,10 +140,13 @@ export function useBridgeForm() {
   const selectTo = (next: BridgeNetworkId) => applyPair(pickTo(pair, next));
   const flip = () => selectFrom(to);
 
-  const onInput = useCallback((raw: string) => {
-    const typed = normalizeDecimalSeparator(raw);
-    if (AMOUNT_PATTERN.test(typed)) setValue(typed);
-  }, []);
+  const onInput = useCallback(
+    (raw: string) => {
+      const typed = normalizeDecimalSeparator(raw);
+      if (AMOUNT_PATTERN.test(typed)) setValue(typed);
+    },
+    [setValue]
+  );
 
   const sourceChainId = bridgeChainId(from, familyChainId);
   const destinationChainId = bridgeChainId(to, familyChainId);
@@ -153,7 +166,7 @@ export function useBridgeForm() {
       if (sourceBalance === undefined) return;
       setValue(formatUnits((sourceBalance * BigInt(percent)) / 100n, USDS_DECIMALS));
     },
-    [sourceBalance]
+    [sourceBalance, setValue]
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
