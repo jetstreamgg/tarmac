@@ -44,6 +44,28 @@ const routeFor = (amount: bigint, reads: Partial<CctpGateReads> = {}) =>
     facts: { cctp: cctpGate({ ...LIVE, ...reads }), native: { isOpen: true } }
   });
 
+type Read = { address: string; functionName: string; args?: readonly unknown[] };
+// A chain that answers each contract read the same way, sent alone or inside a multicall.
+const reader = (answer: (read: Read) => unknown, rest: Record<string, unknown> = {}) =>
+  ({
+    readContract: vi.fn(async (read: Read) => answer(read)),
+    multicall: vi.fn(
+      async ({ contracts, allowFailure = true }: { contracts: readonly Read[]; allowFailure?: boolean }) => {
+        const settled = await Promise.allSettled(contracts.map(async read => answer(read)));
+        return settled.map(outcome => {
+          if (!allowFailure) {
+            if (outcome.status === 'rejected') throw outcome.reason;
+            return outcome.value;
+          }
+          return outcome.status === 'fulfilled'
+            ? { status: 'success', result: outcome.value }
+            : { status: 'failure', error: outcome.reason };
+        });
+      }
+    ),
+    ...rest
+  }) as unknown as PublicClient;
+
 describe('cctpGate', () => {
   it('opens CCTP with the burn cap and the smaller PSM payout', () => {
     expect(cctpGate(LIVE)).toEqual({
@@ -108,15 +130,12 @@ describe('cctpGate', () => {
 
 describe('cctpBurnRefusal', () => {
   const { psm3, usdc } = cctpL2Contracts('base');
-  type Read = { address: string; functionName: string; args?: readonly unknown[] };
-  const client = (answer: (read: Read) => unknown) =>
-    ({ readContract: vi.fn(async (read: Read) => answer(read)) }) as unknown as PublicClient;
   // PSM3 swaps out the USDC its pocket holds; `usdcOf` sets a holder's USDC (PSM3 is its own pocket by default).
   const source = (
     change: Partial<Record<string, unknown>> = {},
     usdcOf: Record<string, bigint> = { [psm3]: LIVE.psm3Usdc }
   ) =>
-    client(({ address, functionName, args }) => {
+    reader(({ address, functionName, args }) => {
       if (address === usdc && functionName === 'balanceOf') return usdcOf[args?.[0] as string] ?? 0n;
       const values: Record<string, unknown> = {
         [`${TOKEN_MINTER_V2}.paused`]: false,
@@ -128,7 +147,7 @@ describe('cctpBurnRefusal', () => {
       return values[`${address}.${functionName}`];
     });
   const destination = (change: Partial<Record<string, unknown>> = {}) =>
-    client(({ address, functionName, args }) => {
+    reader(({ address, functionName, args }) => {
       if (functionName === 'balanceOf') {
         expect(args).toEqual([LITE_PSM]);
         return change.dai ?? LIVE.litePsmDai;
@@ -147,21 +166,29 @@ describe('cctpBurnRefusal', () => {
     cctpBurnRefusal({ network: 'base', amount, source: sourceClient, destination: destinationClient });
 
   it('lets a burn within the gate through, reading both chains afresh', async () => {
-    const sourceClient = source();
-    const destinationClient = destination();
-    await expect(refusal(1000n * UNIT, sourceClient, destinationClient)).resolves.toBeUndefined();
-    expect(sourceClient.readContract).toHaveBeenCalledTimes(5);
-    expect(destinationClient.readContract).toHaveBeenCalledTimes(6);
+    const onL2: Record<string, unknown> = {};
+    const onEthereum: Record<string, unknown> = {};
+    const burn = () => refusal(1000n * UNIT, source(onL2), destination(onEthereum));
+    await expect(burn()).resolves.toBeUndefined();
+    onL2[`${TOKEN_MINTER_V2}.paused`] = true;
+    await expect(burn()).resolves.toHaveProperty('message', 'CCTP is paused.');
+    onL2[`${TOKEN_MINTER_V2}.paused`] = false;
+    onEthereum[`${MESSAGE_TRANSMITTER_V2}.paused`] = true;
+    await expect(burn()).resolves.toHaveProperty('message', 'CCTP is paused.');
   });
 
   it.each([
     ['the L2 minter is paused', source({ [`${TOKEN_MINTER_V2}.paused`]: true }), destination()],
+    ['the L2 transmitter is paused', source({ [`${MESSAGE_TRANSMITTER_V2}.paused`]: true }), destination()],
+    ['the Ethereum minter is paused', source(), destination({ [`${TOKEN_MINTER_V2}.paused`]: true })],
     [
       'the Ethereum transmitter is paused',
       source(),
       destination({ [`${MESSAGE_TRANSMITTER_V2}.paused`]: true })
     ],
     ['the wrapper sell is halted', source(), destination({ [`${USDS_PSM_WRAPPER}.tin`]: HALTED })],
+    ['the wrapper sell is halted by flag', source(), destination({ [`${USDS_PSM_WRAPPER}.HALTED`]: 2n })],
+    ['the wrapper charges a sell fee', source(), destination({ [`${USDS_PSM_WRAPPER}.tin`]: 1n })],
     ['the wrapper is caged', source(), destination({ [`${USDS_PSM_WRAPPER}.live`]: 0n })]
   ])('refuses a burn when %s', async (_, sourceClient, destinationClient) => {
     await expect(refusal(UNIT, sourceClient, destinationClient)).resolves.toHaveProperty(
@@ -231,19 +258,18 @@ describe('cctpBurnRefusal', () => {
   });
 
   it('rejects when a read fails, so the send is refused', async () => {
-    const failing = client(() => {
+    const failing = reader(() => {
       throw new Error('rpc down');
     });
     await expect(refusal(UNIT, failing)).rejects.toThrow('rpc down');
+    await expect(refusal(UNIT, source(), failing)).rejects.toThrow('rpc down');
   });
 });
 
 describe('cctpClaimRefusal (golden: the attested Base burn)', () => {
-  type Read = { address: string; functionName: string; args?: readonly unknown[] };
   const ethereum = (change: Partial<Record<string, unknown>> = {}) =>
-    ({
-      getBlockNumber: vi.fn(async () => (change.block as bigint | undefined) ?? 24_000_000n),
-      readContract: vi.fn(async ({ address, functionName, args }: Read) => {
+    reader(
+      ({ address, functionName, args }) => {
         if (functionName === 'usedNonces') {
           expect(args).toEqual([BASE_BURN_ATTESTED.nonce]);
           return change.used ?? 0n;
@@ -258,8 +284,9 @@ describe('cctpClaimRefusal (golden: the attested Base burn)', () => {
           ...change
         };
         return values[`${address}.${functionName}`];
-      })
-    }) as unknown as PublicClient;
+      },
+      { getBlockNumber: vi.fn(async () => (change.block as bigint | undefined) ?? 24_000_000n) }
+    );
   const refusal = (client = ethereum(), message: Hex = BASE_BURN_ATTESTED.message) =>
     cctpClaimRefusal({ message, client });
   const expiringAt = (block: bigint) =>
@@ -281,6 +308,8 @@ describe('cctpClaimRefusal (golden: the attested Base burn)', () => {
   it.each([
     ['already received', { used: 1n }, 'already claimed'],
     ['received while Ethereum is paused', { [`${MESSAGE_TRANSMITTER_V2}.paused`]: true }, 'CCTP is paused'],
+    ['minted while the Ethereum minter is paused', { [`${TOKEN_MINTER_V2}.paused`]: true }, 'CCTP is paused'],
+    ['sold while the sell is halted by flag', { [`${USDS_PSM_WRAPPER}.HALTED`]: 2n }, 'CCTP is paused'],
     ['sold while the wrapper is halted', { [`${USDS_PSM_WRAPPER}.tin`]: HALTED }, 'CCTP is paused'],
     ['sold while the wrapper is caged', { [`${USDS_PSM_WRAPPER}.live`]: 0n }, 'CCTP is paused'],
     ['sold with a fee', { [`${USDS_PSM_WRAPPER}.tin`]: 1n }, 'CCTP is paused'],
@@ -290,6 +319,16 @@ describe('cctpClaimRefusal (golden: the attested Base burn)', () => {
       'message',
       expect.stringContaining(reason)
     );
+  });
+
+  it('fails closed when a read fails', async () => {
+    const failing = reader(
+      () => {
+        throw new Error('rpc down');
+      },
+      { getBlockNumber: vi.fn(async () => 24_000_000n) }
+    );
+    await expect(refusal(failing)).rejects.toThrow('rpc down');
   });
 });
 
@@ -422,25 +461,22 @@ describe('cctpResumeRefusal', () => {
 });
 
 describe('cctpConvertRefusal', () => {
-  type Read = { address: string; functionName: string; args?: readonly unknown[] };
   const ACCOUNT = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
   const AMOUNT = 250n * 10n ** 6n;
   const ethereum = (change: Partial<Record<string, unknown>> = {}) =>
-    ({
-      readContract: vi.fn(async ({ address, functionName, args }: Read) => {
-        const values: Record<string, unknown> = {
-          [`${L1_DAI}.balanceOf.${LITE_PSM}`]: LIVE.litePsmDai,
-          [`${L1_USDC}.balanceOf.${ACCOUNT}`]: AMOUNT,
-          [`${USDS_PSM_WRAPPER}.live`]: 1n,
-          [`${USDS_PSM_WRAPPER}.tin`]: 0n,
-          [`${USDS_PSM_WRAPPER}.HALTED`]: HALTED,
-          ...change
-        };
-        const key = [address, functionName, ...(args ?? [])].join('.');
-        if (!(key in values)) throw new Error(`unexpected read ${key}`);
-        return values[key];
-      })
-    }) as unknown as PublicClient;
+    reader(({ address, functionName, args }) => {
+      const values: Record<string, unknown> = {
+        [`${L1_DAI}.balanceOf.${LITE_PSM}`]: LIVE.litePsmDai,
+        [`${L1_USDC}.balanceOf.${ACCOUNT}`]: AMOUNT,
+        [`${USDS_PSM_WRAPPER}.live`]: 1n,
+        [`${USDS_PSM_WRAPPER}.tin`]: 0n,
+        [`${USDS_PSM_WRAPPER}.HALTED`]: HALTED,
+        ...change
+      };
+      const key = [address, functionName, ...(args ?? [])].join('.');
+      if (!(key in values)) throw new Error(`unexpected read ${key}`);
+      return values[key];
+    });
   const refusal = (client = ethereum(), amount = AMOUNT) =>
     cctpConvertRefusal({ amount, account: ACCOUNT, client });
 
@@ -450,6 +486,7 @@ describe('cctpConvertRefusal', () => {
 
   it.each([
     ['while the wrapper is halted', { [`${USDS_PSM_WRAPPER}.tin`]: HALTED }, "can't convert"],
+    ['while the sell is halted by flag', { [`${USDS_PSM_WRAPPER}.HALTED`]: 2n }, "can't convert"],
     ['while the wrapper is caged', { [`${USDS_PSM_WRAPPER}.live`]: 0n }, "can't convert"],
     ['with a fee', { [`${USDS_PSM_WRAPPER}.tin`]: 1n }, "can't convert"],
     [
@@ -473,11 +510,9 @@ describe('cctpConvertRefusal', () => {
   });
 
   it('fails closed when a read fails', async () => {
-    const failing = {
-      readContract: vi.fn(async () => {
-        throw new Error('rpc down');
-      })
-    } as unknown as PublicClient;
+    const failing = reader(() => {
+      throw new Error('rpc down');
+    });
     await expect(refusal(failing)).rejects.toThrow('rpc down');
   });
 });
