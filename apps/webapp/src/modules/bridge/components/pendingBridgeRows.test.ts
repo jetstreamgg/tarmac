@@ -1,5 +1,5 @@
 import { i18n } from '@lingui/core';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { getAddress } from 'viem';
 import { NO_VALUE } from '@/lib/constants';
 import type { PendingBridge } from '../model/types';
@@ -17,7 +17,14 @@ import {
 } from './pendingBridgeRows';
 import { REDEEM_URGENT_MINUTES } from '../model/pendingTransitions';
 
-beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
+// Times read in the user's zone; pinned to UTC so these cases hold on any machine.
+beforeAll(() => {
+  vi.stubEnv('TZ', 'UTC');
+  return i18n.loadAndActivate({ locale: 'en', messages: {} });
+});
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
 
 const base: PendingBridge = {
   id: '0xabc',
@@ -56,7 +63,7 @@ describe('buildPendingBridgeRows', () => {
   });
 
   it('shows the arrival time while pending and Arrived once landed', () => {
-    expect(buildPendingBridgeRows(base, 0, 1)[1][1]).toMatchObject({ value: '00:03 UTC' });
+    expect(buildPendingBridgeRows(base, 0, 1)[1][1]).toMatchObject({ value: '00:03' });
     expect(buildPendingBridgeRows({ ...base, status: 'ready' }, 0, 1)[1][1]).toMatchObject({
       value: 'Arrived'
     });
@@ -117,28 +124,28 @@ describe('buildPendingBridgeRows', () => {
 
   it('ignores a clock older than the bridge start', () => {
     const late = { ...base, startedAt: 120_000, etaAt: 120_000 + 3 * 60_000 };
-    expect(buildPendingBridgeRows(late, 0, 1)[1][1]).toMatchObject({ value: '00:05 UTC' });
+    expect(buildPendingBridgeRows(late, 0, 1)[1][1]).toMatchObject({ value: '00:05' });
   });
 
   it('says the bridge is taking longer than expected once past its ETA', () => {
-    expect(buildPendingBridgeRows(base, base.etaAt, 1)[1][1]).toMatchObject({ value: '00:03 UTC' });
+    expect(buildPendingBridgeRows(base, base.etaAt, 1)[1][1]).toMatchObject({ value: '00:03' });
     expect(buildPendingBridgeRows(base, base.etaAt + 60_000, 1)[1][1]).toMatchObject({
       value: 'Taking longer than expected'
     });
   });
 
-  it('shows the arrival as a UTC clock time, rounded up to the minute', () => {
+  it('shows the arrival as a clock time, rounded up to the minute', () => {
     const now = Date.UTC(2026, 9, 25, 15, 26);
     const at = (etaAt: number) => buildPendingBridgeRows({ ...base, startedAt: now, etaAt }, now, 1)[1][1];
-    expect(at(Date.UTC(2026, 9, 25, 15, 46))).toMatchObject({ value: '15:46 UTC' });
-    expect(at(Date.UTC(2026, 9, 25, 15, 45, 10))).toMatchObject({ value: '15:46 UTC' });
+    expect(at(Date.UTC(2026, 9, 25, 15, 46))).toMatchObject({ value: '15:46' });
+    expect(at(Date.UTC(2026, 9, 25, 15, 45, 10))).toMatchObject({ value: '15:46' });
   });
 
-  it('dates an arrival that falls on a later UTC day', () => {
+  it('dates an arrival that falls on a later day', () => {
     const now = Date.UTC(2026, 9, 25, 15, 26);
     const eta = Date.UTC(2026, 9, 29, 15, 46);
     expect(buildPendingBridgeRows({ ...base, startedAt: now, etaAt: eta }, now, 1)[1][1]).toMatchObject({
-      value: '29/10/26 15:46 UTC'
+      value: '29/10/26 15:46'
     });
   });
 
@@ -306,8 +313,8 @@ describe('pending bridge copy', () => {
 });
 
 describe('formatBridgeDate', () => {
-  it('formats as dd/MM/yy HH:mm UTC', () => {
-    expect(formatBridgeDate(Date.UTC(2026, 9, 25, 15, 26))).toBe('25/10/26 15:26 UTC');
+  it('formats as dd/MM/yy HH:mm', () => {
+    expect(formatBridgeDate(Date.UTC(2026, 9, 25, 15, 26))).toBe('25/10/26 15:26');
   });
 });
 

@@ -7,6 +7,7 @@
  */
 
 import { plural, t } from '@lingui/core/macro';
+import { format, isSameDay } from 'date-fns';
 import { getAddress, isAddress } from 'viem';
 import { arbitrum } from 'viem/chains';
 import { NO_VALUE } from '@/lib/constants';
@@ -122,19 +123,13 @@ const readyLabel = (action: PendingBridgeNextAction): string => {
 const statusText = (bridge: PendingBridge): string =>
   bridge.status === 'ready' && bridge.nextAction ? readyLabel(bridge.nextAction) : statusLabel(bridge.status);
 
-/** "25/10/26 15:26 UTC". */
-export const formatBridgeDate = (ms: number): string => {
-  const date = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCFullYear() % 100)} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
-};
+/** "25/10/26 15:26", in the user's time zone. */
+export const formatBridgeDate = (ms: number): string => format(ms, 'dd/MM/yy HH:mm');
 
-/** "15:46 UTC" on the same UTC day as `now`, else the full date; rounded up to the minute. */
+/** "15:46" on the same local day as `now`, else the full date; rounded up to the minute. */
 const formatArrivalTime = (ms: number, now: number): string => {
-  const arrival = new Date(Math.ceil(ms / 60_000) * 60_000);
-  const utcDay = (date: Date) => date.toISOString().slice(0, 10);
-  if (utcDay(arrival) !== utcDay(new Date(now))) return formatBridgeDate(arrival.getTime());
-  return `${arrival.toISOString().slice(11, 16)} UTC`;
+  const arrival = Math.ceil(ms / 60_000) * 60_000;
+  return isSameDay(arrival, now) ? format(arrival, 'HH:mm') : formatBridgeDate(arrival);
 };
 
 const arrivalText = (bridge: PendingBridge, now: number): string => {
