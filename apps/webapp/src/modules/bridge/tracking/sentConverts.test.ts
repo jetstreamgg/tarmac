@@ -91,3 +91,59 @@ describe('resolveSentConverts', () => {
     expect(stored()).toMatchObject({ convert: 'calls-new', convertBundled: true });
   });
 });
+
+// A convert sent one transaction at a time is linked by its hash: after a reload, only its receipt tells how it ended.
+describe('resolveSentConverts, a convert sent by hash', () => {
+  let store = createCctpSwapStore();
+  const CONVERT = '0x' + 'ef'.repeat(32);
+  const stored = () => store.get(SCOPE, SWAP.swapTxHash);
+  const resolve = (receipt: (network: string, hash: string) => Promise<{ status: 'success' | 'reverted' }>) =>
+    resolveSentConverts({ store, scope: SCOPE, callsStatus: async () => undefined, receipt });
+
+  beforeEach(() => {
+    localStorage.clear();
+    store = createCctpSwapStore();
+    store.record(SCOPE, SWAP);
+    store.markConvert(SCOPE, SWAP.swapTxHash, CONVERT);
+  });
+
+  it('drops the swap once its convert mined', async () => {
+    const receipt = vi.fn(async () => ({ status: 'success' }) as const);
+    await resolve(receipt);
+    expect(receipt).toHaveBeenCalledWith('base', CONVERT);
+    expect(stored()).toBeUndefined();
+  });
+
+  it('offers the swap again once its convert reverted', async () => {
+    await resolve(async () => ({ status: 'reverted' }));
+    expect(stored()).toBeDefined();
+    expect(stored()!.convert).toBeUndefined();
+    expect(isSwapSpendable(stored()!, [])).toBe(true);
+  });
+
+  // Not mined yet, or the chain can't be read: it may still land.
+  it('keeps the convert sent while its receipt is unknown', async () => {
+    await resolve(async () => {
+      throw new Error('Transaction receipt could not be found');
+    });
+    expect(stored()).toMatchObject({ convert: CONVERT });
+    expect(isSwapSpendable(stored()!, [])).toBe(false);
+  });
+
+  it('leaves a convert sent again while the receipt of the old one was read', async () => {
+    const again = '0x' + '12'.repeat(32);
+    await resolve(async () => {
+      store.markConvert(SCOPE, SWAP.swapTxHash, again);
+      return { status: 'reverted' };
+    });
+    expect(stored()!.convert).toBe(again);
+  });
+
+  it('never reads a receipt for a convert sent as a bundle', async () => {
+    store.markConvert(SCOPE, SWAP.swapTxHash, 'calls-id', { bundle: true });
+    const receipt = vi.fn(async () => ({ status: 'reverted' }) as const);
+    await resolve(receipt);
+    expect(receipt).not.toHaveBeenCalled();
+    expect(stored()).toMatchObject({ convert: 'calls-id', convertBundled: true });
+  });
+});
