@@ -70,7 +70,7 @@ See the `adding-features` skill (`.claude/skills/adding-features/SKILL.md`) for 
   - `MAINNET_FORK_CONTAINER_ID` - Tenderly mainnet parent vnet for `pnpm vnet:fork` (default in `.env.example`)
   - `VITE_PROXY_ORIGIN` - Origin of the Sky RPC/indexer proxy (RPC URLs are built as `${VITE_PROXY_ORIGIN}/rpc/<chainId>`)
   - `VITE_RPC_PROVIDER_TENDERLY` - Tenderly virtual network RPC used as the dev-mode chain across all modules
-  - `VITE_RPC_PROVIDER_TENDERLY_{BASE,ARBITRUM,OPTIMISM,UNICHAIN}` - Optional public RPCs of the Tenderly multichain dev environment L2s; each one set adds that fork L2 to the dev build (`VITE_RPC_PROVIDER_TENDERLY` must then be that environment's Ethereum fork)
+  - `VITE_TENDERLY_RPC_NAME` - Optional named public RPC of the Tenderly multichain dev environment (`<team>/<project>/<rpc name>`); adds its Base, Arbitrum, OP and Unichain forks to the dev build (`VITE_RPC_PROVIDER_TENDERLY` must then be that environment's Ethereum fork)
   - `VITE_TENDERLY_EXPLORER_{ETHEREUM,BASE,ARBITRUM,OPTIMISM,UNICHAIN}` - Optional Tenderly dashboard explorer of each fork, without `https://`, for transaction links
   - `VITE_WALLETCONNECT_PROJECT_ID` - Wallet connection
   - `VITE_USE_MOCK_WALLET` - Testing mode

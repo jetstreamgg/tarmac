@@ -1,18 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chainId, forkChainId } from '@/utils/chainId';
 
-const L2_RPCS = ['BASE', 'ARBITRUM', 'OPTIMISM', 'UNICHAIN'];
 const FORK_FAMILY = [chainId.tenderly, ...Object.values(forkChainId)];
 
 const load = async () => (await import('./chainFamily')).getSupportedChainIds;
 
 describe('getSupportedChainIds', () => {
   beforeEach(() => vi.resetModules());
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
+  });
 
   const stubForkRpcs = () => {
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
-    for (const l2 of L2_RPCS) vi.stubEnv(`VITE_RPC_PROVIDER_TENDERLY_${l2}`, `https://fork-${l2}.invalid`);
+    vi.stubEnv('VITE_TESTNET_CONFIG', 'true');
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', 'team/project/dev-env');
   };
 
   it('returns the whole fork family from any fork chain', async () => {
@@ -33,16 +36,15 @@ describe('getSupportedChainIds', () => {
     ]);
   });
 
-  it('leaves out the fork L2s without an RPC', async () => {
-    vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
-    vi.stubEnv('VITE_RPC_PROVIDER_TENDERLY_BASE', 'https://fork-base.invalid');
-    for (const l2 of L2_RPCS.slice(1)) vi.stubEnv(`VITE_RPC_PROVIDER_TENDERLY_${l2}`, '');
+  it('keeps to the Ethereum fork without the RPC name', async () => {
+    stubForkRpcs();
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
     const getSupportedChainIds = await load();
-    expect(getSupportedChainIds(chainId.tenderly)).toEqual([chainId.tenderly, forkChainId.base]);
+    expect(getSupportedChainIds(chainId.tenderly)).toEqual([chainId.tenderly]);
   });
 
   it('keeps the mock wallet build on the Ethereum fork alone', async () => {
-    for (const l2 of L2_RPCS) vi.stubEnv(`VITE_RPC_PROVIDER_TENDERLY_${l2}`, `https://fork-${l2}.invalid`);
+    stubForkRpcs();
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
     const getSupportedChainIds = await load();
     expect(getSupportedChainIds(chainId.tenderly)).toEqual([chainId.tenderly]);

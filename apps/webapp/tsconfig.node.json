@@ -5,5 +5,9 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["./vite.config.ts", "./vite.preloadRouteChunks.ts"]
+  "include": [
+    "./vite.config.ts",
+    "./vite.preloadRouteChunks.ts",
+    "./src/data/wagmi/config/tenderlyForkRpc.ts"
+  ]
 }

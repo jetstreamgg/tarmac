@@ -134,13 +134,16 @@ describe('getRouteChainAction', () => {
 
 describe('getRouteChainAction on the Tenderly fork L2s', () => {
   const FORK_DEV_CHAINS = [chainId.tenderly, ...Object.values(forkChainId)].map(id => ({ id }));
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
+  });
 
   it('renders multichain modules on every fork L2 the dev build connects to', async () => {
     vi.resetModules();
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
-    for (const l2 of ['BASE', 'ARBITRUM', 'OPTIMISM', 'UNICHAIN'])
-      vi.stubEnv(`VITE_RPC_PROVIDER_TENDERLY_${l2}`, `https://fork-${l2}.invalid`);
+    vi.stubEnv('VITE_TESTNET_CONFIG', 'true');
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', 'team/project/dev-env');
     const { getRouteChainAction } = await import('./widget-network-map');
     for (const targetChainId of Object.values(forkChainId)) {
       for (const intent of MULTICHAIN_INTENTS) {

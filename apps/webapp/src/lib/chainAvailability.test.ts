@@ -62,7 +62,10 @@ describe('chainIdsForIntent (APP-528)', () => {
 });
 
 describe('Tenderly fork L2s', () => {
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
+  });
 
   it('are not listed without their RPCs, as in production', () => {
     for (const fork of Object.values(forkChainId)) expect(CHAIN_WIDGET_MAP[fork]).toBeUndefined();
@@ -74,12 +77,11 @@ describe('Tenderly fork L2s', () => {
   it('offer the same products as the L2 they stand in for in the dev build', async () => {
     vi.resetModules();
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
-    vi.stubEnv('VITE_RPC_PROVIDER_TENDERLY_BASE', 'https://fork-base.invalid');
-    vi.stubEnv('VITE_RPC_PROVIDER_TENDERLY_ARBITRUM', 'https://fork-arbitrum.invalid');
+    vi.stubEnv('VITE_TESTNET_CONFIG', 'true');
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', 'team/project/dev-env');
     const dev = await import('./chainAvailability');
     expect(dev.CHAIN_WIDGET_MAP[forkChainId.base]).toEqual(CHAIN_WIDGET_MAP[base.id]);
     expect(dev.CHAIN_WIDGET_MAP[forkChainId.arbitrum]).toEqual(CHAIN_WIDGET_MAP[arbitrum.id]);
-    expect(dev.CHAIN_WIDGET_MAP[forkChainId.optimism]).toBeUndefined();
     expect(dev.chainIdsForIntent(Intent.SAVINGS_INTENT)).toEqual(
       expect.arrayContaining([forkChainId.base, forkChainId.arbitrum])
     );
