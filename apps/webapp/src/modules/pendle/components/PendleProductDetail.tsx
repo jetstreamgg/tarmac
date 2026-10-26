@@ -28,7 +28,7 @@ import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
 
-const MATURED_DETAIL_ROWS = new Set(['underlying-apy', 'risk', 'maturity']);
+const MATURED_DETAIL_ROWS = new Set(['fixed-apy', 'underlying-apy', 'risk', 'maturity']);
 
 export type PendleProductDetailProps = {
   market: PendleMarketConfig;
@@ -66,8 +66,14 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       info: <RateInfo type="fixedYield" size={12} />,
       value: (
         <DetailValue
-          loading={statsLoading}
-          value={stats?.impliedApy !== undefined ? formatDecimalPercentage(stats.impliedApy) : undefined}
+          loading={!matured && statsLoading}
+          value={
+            matured ? (
+              <Trans>Ended</Trans>
+            ) : stats?.impliedApy !== undefined ? (
+              formatDecimalPercentage(stats.impliedApy)
+            ) : undefined
+          }
         />
       )
     },
@@ -141,9 +147,9 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       )
     }
   ];
-  // A matured market takes no deposits and its AMM is wound down, so the
-  // fixed rate, TVL and liquidity rows would only show stale or zero figures.
-  // The underlying rate keeps accruing, so it stays.
+  // A matured market takes no deposits and its AMM is wound down, so the TVL
+  // and liquidity rows would only show stale figures. The fixed rate reads
+  // "Ended" rather than Pendle's 0%; the underlying rate keeps accruing.
   const details = matured ? allDetails.filter(row => MATURED_DETAIL_ROWS.has(row.id)) : allDetails;
 
   return (

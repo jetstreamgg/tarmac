@@ -249,13 +249,13 @@ describe('PendleProductDetail', () => {
       };
     });
 
-    it('keeps only the underlying rate, risk and maturity rows', () => {
+    it('keeps the rate, risk and maturity rows, with the fixed rate ended', () => {
       renderDetail();
 
       const details = screen.getByTestId('product-detail-details');
       expect(details.textContent).toContain('Risk profile');
       expect(details.textContent).toContain('(Matured)');
-      expect(details.textContent).not.toContain('Fixed APY');
+      expect(details.textContent).toContain('Fixed APYEnded');
       expect(details.textContent).toContain('Underlying APY');
       expect(details.textContent).not.toContain('TVL');
       expect(details.textContent).not.toContain('AMM liquidity');
