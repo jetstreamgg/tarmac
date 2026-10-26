@@ -44,7 +44,8 @@ const mocks = vi.hoisted(() => ({
     ready: false,
     error: null as Error | null,
     execute: (() => undefined) as () => void,
-    reset: (() => undefined) as () => void
+    reset: (() => undefined) as () => void,
+    dropCheck: (() => undefined) as () => void
   }
 }));
 
@@ -80,8 +81,8 @@ vi.mock('./useCctpConvertLegs', () => ({
   CCTP_L2_CONVERT_FUNCTION: 'swapExactIn',
   useCctpConvertLegs: (params: ConvertParams) => {
     mocks.convert.params = params;
-    const { calls, isBatch, ready, error, execute, reset } = mocks.convert;
-    return { calls, isBatch, ready, error, execute, reset };
+    const { calls, isBatch, ready, error, execute, reset, dropCheck } = mocks.convert;
+    return { calls, isBatch, ready, error, execute, reset, dropCheck };
   }
 }));
 
@@ -125,7 +126,8 @@ describe('useCctpSwapConvertLaunch', () => {
       ready: false,
       error: null,
       execute: () => undefined,
-      reset: () => undefined
+      reset: () => undefined,
+      dropCheck: () => undefined
     });
     seed();
   });
@@ -204,6 +206,20 @@ describe('useCctpSwapConvertLaunch', () => {
     mocks.convert.ready = true;
     rerender();
     expect(execute).not.toHaveBeenCalled();
+  });
+
+  // The check before the wallet prompt reads the chain: a close meanwhile must not open the wallet.
+  it('drops a convert still checking the chain once the modal closes', () => {
+    const dropCheck = vi.fn();
+    Object.assign(mocks.convert, { ready: true, execute: vi.fn(), dropCheck });
+    const { result, rerender } = renderHook(() => useCctpSwapConvertLaunch());
+    act(() => result.current.launch(SWAP));
+    act(() => mocks.launched[0].onConfirm?.());
+    expect(mocks.convert.execute).toHaveBeenCalledTimes(1);
+    dropCheck.mockClear();
+    mocks.modalOpen = false;
+    rerender();
+    expect(dropCheck).toHaveBeenCalled();
   });
 
   it('shows the card again when its bundle reverts, only while the bundle is still its convert', () => {

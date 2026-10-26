@@ -196,6 +196,7 @@ export function useCctpConvertLegs({
     /** The allowance read, or the first leg's simulation, failed. */
     error: (active && allowance.error) || legs.error || null,
     execute,
-    reset: legs.reset
+    reset: legs.reset,
+    dropCheck: legs.dropCheck
   };
 }

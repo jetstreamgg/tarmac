@@ -35,6 +35,7 @@ type LegsMock = {
   params?: LegsParams;
   ready: boolean;
   execute: (context?: unknown) => void;
+  dropCheck?: () => void;
   client?: ConvertOfferReader;
 };
 const legsResult = (legs: LegsMock) => ({
@@ -44,12 +45,14 @@ const legsResult = (legs: LegsMock) => ({
   error: null,
   execute: legs.execute,
   reset: () => undefined,
+  dropCheck: legs.dropCheck ?? (() => undefined),
   client: legs.client
 });
 
 const mocks = vi.hoisted(() => ({
   address: '',
   isSafe: false,
+  modalOpen: true,
   launched: [] as TransactionConfig[],
   onError: (() => undefined) as (error: Error) => void,
   claim: { ready: true, execute: () => undefined } as LegsMock,
@@ -79,7 +82,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
       onError: (error: Error) => mocks.onError(error)
     },
     txStatus: 'idle',
-    isModalOpen: true,
+    isModalOpen: mocks.modalOpen,
     isMinimized: false,
     activeSessionId: undefined,
     restore: vi.fn()
@@ -172,6 +175,7 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
   beforeEach(() => {
     mocks.address = `0x${(6000 + ++accountSeq).toString(16).padStart(40, '0')}`;
     mocks.isSafe = false;
+    mocks.modalOpen = true;
     mocks.launched = [];
     mocks.claim = { ready: true, execute: vi.fn() };
     mocks.convert = { ready: true, execute: vi.fn() };
@@ -474,6 +478,24 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       expect(mocks.convert.execute).toHaveBeenCalledTimes(2);
     });
   });
+
+  // The check before the wallet prompt reads the chain: a close meanwhile must not open the wallet.
+  it.each(['claim', 'convert'] as const)(
+    'drops a %s still checking the chain once the modal closes',
+    kind => {
+      const card = seed({ claimed: kind === 'convert' });
+      const legs = mocks[kind];
+      legs.dropCheck = vi.fn();
+      const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, kind, kind === 'convert' ? MINTED : undefined));
+      confirm();
+      expect(legs.execute).toHaveBeenCalledTimes(1);
+      vi.mocked(legs.dropCheck).mockClear();
+      mocks.modalOpen = false;
+      rerender();
+      expect(legs.dropCheck).toHaveBeenCalled();
+    }
+  );
 
   // Figma 78 and 97: the card leaves once the USDS is in the wallet; Activity still lists the bridge.
   describe('the card once its USDS is delivered', () => {

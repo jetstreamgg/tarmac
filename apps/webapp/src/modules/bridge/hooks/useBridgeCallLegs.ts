@@ -402,6 +402,11 @@ export function useBridgeCallLegs({
     [l1, from, busy, preflight, executeFlow, getCallbacks]
   );
 
+  // A run still in its pre-send check ends with nothing sent: its modal closed.
+  const dropCheck = useCallback(() => {
+    if (checkingRef.current) reset();
+  }, [reset]);
+
   // Ends the run in progress, if any, with `error` unless it is paused on one already.
   const stop = useCallback(
     (error?: Error) => {
@@ -438,6 +443,8 @@ export function useBridgeCallLegs({
     error: calls.length > 0 ? flow.error : null,
     execute,
     reset,
+    /** Ends a run whose pre-send check is still out, so it never reaches the wallet. */
+    dropCheck,
     stop
   };
 }

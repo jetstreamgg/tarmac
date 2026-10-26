@@ -30,7 +30,8 @@ const mocks = vi.hoisted(() => ({
   sequential: [] as FlowArgs[],
   batch: [] as FlowArgs[],
   batchPrepared: false,
-  sequentialIndex: 0
+  sequentialIndex: 0,
+  sequentialExecute: vi.fn()
 }));
 
 vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
@@ -53,7 +54,7 @@ vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
     return {
       prepared: true,
       error: null,
-      execute: vi.fn(),
+      execute: mocks.sequentialExecute,
       reset: vi.fn(),
       currentCallIndex: mocks.sequentialIndex
     };
@@ -304,5 +305,52 @@ describe('useBridgeCallLegs one-at-a-time success', () => {
     modal.current = b;
     act(() => settle('0xburn'));
     expect(b.onSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe('useBridgeCallLegs dropCheck', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+    mocks.sequentialExecute.mockClear();
+    Object.values(callbacks).forEach(fn => fn.mockClear());
+  });
+
+  const renderChecking = () => {
+    const check = { pass: () => undefined as void };
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight: () => new Promise<undefined>(resolve => (check.pass = () => resolve(undefined))),
+        getCallbacks: () => callbacks
+      })
+    );
+    return { check, ...view };
+  };
+
+  // A modal closed while the check reads the chain must not open the wallet behind it.
+  it('opens no wallet prompt for a run dropped while its pre-send check is out', async () => {
+    const { check, result } = renderChecking();
+    act(() => result.current.execute());
+    act(() => result.current.dropCheck());
+    await act(async () => check.pass());
+    expect(mocks.sequentialExecute).not.toHaveBeenCalled();
+  });
+
+  it('keeps a run whose wallet prompt is already open', async () => {
+    const { check, result } = renderChecking();
+    act(() => result.current.execute());
+    await act(async () => check.pass());
+    expect(mocks.sequentialExecute).toHaveBeenCalledTimes(1);
+    act(() => mocks.sequential.at(-1)!.onMutate(BURN));
+    act(() => result.current.dropCheck());
+    act(() => {
+      mocks.sequential.at(-1)!.onStart('0xburn', BURN);
+      (mocks.sequential.at(-1) as unknown as { onSuccess: (hash: string) => void }).onSuccess('0xburn');
+    });
+    expect(callbacks.onSuccess).toHaveBeenCalledWith('0xburn', undefined);
   });
 });

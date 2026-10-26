@@ -312,6 +312,14 @@ export function useDestinationActionLaunch() {
   const resetRedeem = redeemLegs.reset;
   const resetClaim = claimLegs.reset;
   const resetConvert = convertLegs.reset;
+  const { dropCheck: dropClaimCheck } = claimLegs;
+  const { dropCheck: dropConvertCheck } = convertLegs;
+  // A close while the claim or convert still checks the chain must not open the wallet behind the modal.
+  useEffect(() => {
+    if (isModalOpen) return;
+    dropClaimCheck();
+    dropConvertCheck();
+  }, [isModalOpen, dropClaimCheck, dropConvertCheck]);
   const cctp = claim ?? convert;
   const cctpLegs = claim ? claimLegs : convertLegs;
   // A CCTP claim or convert signs one step per call: the receive, the approve when short and the sale for USDS.

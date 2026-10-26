@@ -70,7 +70,11 @@ export function useCctpSwapConvertLaunch() {
     batch,
     getCallbacks: () => legCallbacksRef.current
   });
-  const { reset: resetLegs } = legs;
+  const { reset: resetLegs, dropCheck } = legs;
+  // A close while the convert still checks the chain must not open the wallet behind the modal.
+  useEffect(() => {
+    if (!isModalOpen) dropCheck();
+  }, [isModalOpen, dropCheck]);
   const steps = useMemo<TransactionStep[]>(
     () =>
       legs.calls.map(call =>
