@@ -6,12 +6,12 @@ catalog:
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@coinbase/wallet-sdk': ~4.3.7
   '@eslint/js': ^10.0.1
-  '@lingui/cli': ^6.9.1
-  '@lingui/conf': ^6.9.1
-  '@lingui/core': ^6.9.1
-  '@lingui/format-po': ^6.9.1
-  '@lingui/react': ^6.9.1
-  '@lingui/vite-plugin': ^6.9.1
+  '@lingui/cli': ^6.10.0
+  '@lingui/conf': ^6.10.0
+  '@lingui/core': ^6.10.0
+  '@lingui/format-po': ^6.10.0
+  '@lingui/react': ^6.10.0
+  '@lingui/vite-plugin': ^6.10.0
   '@metamask/connect-evm': ^2.1.1
   '@playwright/test': ^1.63.0
   '@radix-ui/react-accordion': ^1.2.20
@@ -33,10 +33,10 @@ catalog:
   '@sentry/react': ^10.75.3
   '@sentry/vite-plugin': ^5.4.0
   '@tailwindcss/vite': ^4.3.3
-  '@tanstack/eslint-plugin-query': ^5.103.2
-  '@tanstack/react-query': ^5.103.2
-  '@tanstack/react-router': 1.170.39
-  '@tanstack/router-plugin': 1.168.40
+  '@tanstack/eslint-plugin-query': ^5.104.5
+  '@tanstack/react-query': ^5.104.5
+  '@tanstack/react-router': 1.170.45
+  '@tanstack/router-plugin': 1.168.47
   '@testing-library/dom': ^10.4.2
   '@testing-library/react': ^16.3.3
   '@types/react': ^19.3.0
@@ -66,8 +66,8 @@ catalog:
   posthog-js: ^1.434.12
   prettier: ^3.9.9
   prettier-plugin-tailwindcss: ^0.8.1
-  react: ^19.3.0
-  react-dom: ^19.3.0
+  react: ^19.3.1
+  react-dom: ^19.3.1
   react-jazzicon: ^1.0.4
   react-remove-scroll: ^2.7.2
   recharts: ^3.10.1
