@@ -150,11 +150,11 @@ export async function cctpBurnRefusal({
   ])) as unknown as [CctpSourceResults, CctpDestinationResults];
   const pocketUsdc = await source.readContract(cctpPocketUsdcRead(network, sourceResults[3]));
   const reads = toCctpGateReads(sourceResults, pocketUsdc, destinationResults);
-  const gate = cctpGate(reads);
+  const gate = cctpGate(reads, { swap });
   if (!gate.isOpen) return new Error('CCTP is paused.');
   if (amount > (gate.maxAmount ?? 0n))
     return new Error('The amount is over what one CCTP transfer can carry.');
-  if (amount > (swap ? (gate.liquidity ?? 0n) : reads.litePsmDai))
+  if (amount > (gate.liquidity ?? 0n))
     return new Error('There is not enough liquidity to bridge this amount.');
   return undefined;
 }
