@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Hex, Log } from 'viem';
+import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
 import { BASE_DEPOSIT_LOGS, BASE_DEPOSIT_TX } from '../adapters/nativeDeposit/depositFixtures';
 import { depositsInLogs, type DiscoveredDeposit } from '../adapters/nativeDeposit/discovery';
 import type { BridgeAdapter } from '../adapters/types';
 import { createPendingBridge } from '../model/pendingTransitions';
-import { nativeDepositRoute } from '../model/resolveRoute';
+import { cctpWithdrawalRoute, nativeDepositRoute } from '../model/resolveRoute';
+import type { BridgeNetworkId } from '../model/networks';
 import { createPendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import type { BundleReceipt } from './bundleDeposit';
 import { recoverDeposits, type CallsStatus } from './recoverDeposits';
@@ -338,5 +340,45 @@ describe('recoverDeposits, a wallet answer it cannot read', () => {
       })
     });
     expect(store.getSnapshot(scope).find(bridge => bridge.id === 'bundle-2')?.txHash).toBe(HASH);
+  });
+});
+
+describe('recoverDeposits, a CCTP bundle the wallet reports on', () => {
+  beforeEach(() => localStorage.clear());
+
+  const sender = BASE_BURN_TX.from.toLowerCase();
+  const scope = pendingScopeKey({ account: sender, familyChainId: 1 });
+  const HASH = `0x${'b'.repeat(64)}` as Hex;
+
+  // The burn mined on the L2, whose block numbers Ethereum doesn't share.
+  it("starts the card when its burn mined, read on the L2's chain", async () => {
+    const store = createPendingBridgeStore({ now: () => NOW });
+    store.upsert(
+      scope,
+      createPendingBridge({
+        account: sender,
+        amount: BASE_BURN_AMOUNT * 10n ** 12n,
+        from: 'base',
+        to: 'ethereum',
+        route: cctpWithdrawalRoute('base'),
+        bundleId: 'bundle-1',
+        callsId: '0xcalls',
+        now: SENT_AT
+      })
+    );
+    const burn = {
+      status: 'success',
+      transactionHash: HASH,
+      blockNumber: 42n,
+      logs: BASE_BURN_LOGS.map(({ address, data, topics }) => ({ address, data, topics }))
+    } as unknown as BundleReceipt;
+    await run([], store, {
+      scope,
+      account: sender,
+      chainNow: NOW,
+      blockTime: async (_: bigint, from?: BridgeNetworkId) => (from === 'base' ? MINED_AT : undefined),
+      callsStatus: async () => ({ status: 'success', receipts: [burn] })
+    });
+    expect(store.getSnapshot(scope)).toMatchObject([{ id: 'bundle-1', txHash: HASH, startedAt: MINED_AT }]);
   });
 });

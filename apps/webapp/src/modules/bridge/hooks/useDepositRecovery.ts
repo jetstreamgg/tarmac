@@ -5,7 +5,7 @@ import { getCallsStatus, getPublicClient } from '@wagmi/core';
 import { discoverNativeDeposits } from '../adapters/nativeDeposit/discovery';
 import { getBridgeAdapter } from '../adapters/registry';
 import { executedSafeTxHashes } from '../adapters/safe';
-import { bridgeChainId } from '../model/networks';
+import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { isSettled } from '../model/pendingTransitions';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { recoverDeposits } from '../tracking/recoverDeposits';
@@ -46,9 +46,13 @@ export function useDepositRecovery() {
       if (!account || !scope || ethereumChainId === undefined) return { complete: true };
       const l1 = getPublicClient(config, { chainId: ethereumChainId });
       if (!l1) return { complete: true };
-      const blockTime = async (blockNumber: bigint) => {
+      const context = wagmiAdapterContext(config, familyChainId);
+      // A CCTP bundle's burn mined on its L2.
+      const blockTime = async (blockNumber: bigint, network: BridgeNetworkId = 'ethereum') => {
+        const client = network === 'ethereum' ? l1 : context.getClient(network);
+        if (!client) return undefined;
         try {
-          return Number((await l1.getBlock({ blockNumber })).timestamp) * 1000;
+          return Number((await client.getBlock({ blockNumber })).timestamp) * 1000;
         } catch {
           return undefined;
         }
@@ -71,7 +75,7 @@ export function useDepositRecovery() {
           }
         },
         adapter: getBridgeAdapter('native'),
-        context: wagmiAdapterContext(config, familyChainId),
+        context,
         settled: settledFor(scope),
         executedSafeTxHashes: async txHash => {
           try {
