@@ -14,7 +14,6 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
-import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { CctpConvertReview } from '../components/CctpConvertReview';
@@ -42,11 +41,13 @@ import { openCctpSpend } from '../store/openCctpSpends';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
 import { readsBalanceOn } from './balanceQueries';
+import { cctpConvertModal, convertSteps, convertToast } from './cctpConvertModal';
 import { useArbitrumRedeemLegs } from './useArbitrumRedeemLegs';
 import { CCTP_CLAIM_FUNCTION, useCctpClaimLegs } from './useCctpClaimLegs';
 import { useCctpConvertLegs } from './useCctpConvertLegs';
 import { useOpStackReplayLegs } from './useOpStackReplayLegs';
 import { usePendingScope } from './usePendingScope';
+import { useSendWhenPrepared } from './useSendWhenPrepared';
 
 /** The action the legs build: a deposit's replay on an OP Stack L2 or redeem or keepalive on Arbitrum, or a CCTP claim or its conversion on Ethereum. */
 type Recovery =
@@ -104,14 +105,6 @@ export type DestinationActionHint =
   | { kind: 'action-sent'; network: BridgeNetworkId }
   | { kind: 'switch-network'; network: BridgeNetworkId; safe: boolean };
 
-// A convert's sale step names both tokens (Figma 96).
-export const convertStep = (): TransactionStep => ({
-  label: t`Convert`,
-  tokenSymbol: 'USDC',
-  targetTokenSymbol: 'USDS',
-  failureDetail: stepFailureDetail.convert('USDC')
-});
-
 const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
   switch (action) {
     case 'claim':
@@ -165,9 +158,7 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
     case 'convert':
       return {
         step: t`Convert to USDS`,
-        loading: t`Converting ${amount} USDC to USDS`,
-        success: t`Funds converted successfully!`,
-        error: t`Conversion failed`,
+        ...convertToast(amount),
         failure: stepFailureDetail.convert('USDC')
       };
   }
@@ -245,8 +236,6 @@ export function useDestinationActionLaunch() {
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
   const claimRunRef = useRef<ClaimRun | undefined>(undefined);
   const claimLegRunsRef = useRef(new Map<string, ClaimRun>());
-  // Confirm ran before the recovery was prepared: it is sent once it is.
-  const confirmPendingRef = useRef(false);
   const replay = recovery?.kind === 'replay' ? recovery : undefined;
   const redeem = recovery?.kind === 'redeem' ? recovery : undefined;
   const claim = recovery?.kind === 'cctp-claim' ? recovery : undefined;
@@ -323,20 +312,24 @@ export function useDestinationActionLaunch() {
   // A CCTP claim or convert signs one step per call: the receive, the approve when short and the sale for USDS.
   const cctpSteps = useMemo<TransactionStep[]>(
     () =>
-      cctpLegs.calls.map(call => {
-        const { functionName } = call as { functionName?: string };
-        if (functionName === CCTP_CLAIM_FUNCTION)
-          return { label: t`Claim`, tokenSymbol: 'USDC', failureDetail: stepFailureDetail.claim('USDC') };
-        if (functionName === 'approve')
-          return { label: t`Approve`, tokenSymbol: 'USDC', failureDetail: stepFailureDetail.approve('USDC') };
-        return convert
-          ? convertStep()
-          : {
+      convert
+        ? convertSteps(cctpLegs.calls)
+        : cctpLegs.calls.map(call => {
+            const { functionName } = call as { functionName?: string };
+            if (functionName === CCTP_CLAIM_FUNCTION)
+              return { label: t`Claim`, tokenSymbol: 'USDC', failureDetail: stepFailureDetail.claim('USDC') };
+            if (functionName === 'approve')
+              return {
+                label: t`Approve`,
+                tokenSymbol: 'USDC',
+                failureDetail: stepFailureDetail.approve('USDC')
+              };
+            return {
               label: t`Convert to USDS`,
               tokenSymbol: 'USDC',
               failureDetail: stepFailureDetail.convert('USDC')
             };
-      }),
+          }),
     [cctpLegs.calls, convert]
   );
   const cctpBundled = cctpLegs.isBatch;
@@ -362,12 +355,20 @@ export function useDestinationActionLaunch() {
       ...(convertReview && { transactionContent: convertReview })
     });
   }, [cctp, isModalOpen, txStatus, cctpSteps, cctpBundled, convertReview, sessionId, updateModalContent]);
+  // Confirm ran before the recovery was prepared: it is sent once it is.
+  const { send: sendWhenPrepared, cancel: cancelSend } = useSendWhenPrepared({
+    ready: legs.ready,
+    error: legs.error,
+    isModalOpen,
+    execute: () => (claim ? claimLegs.execute(claimRunRef.current) : legs.execute()),
+    onError: error => legCallbacksRef.current.onError(error, '')
+  });
   // A failed recovery is built afresh on the next launch, so a stale simulation error isn't reported again.
   useResetUnfinishedRunOnClose(
     useCallback(() => {
-      confirmPendingRef.current = false;
+      cancelSend();
       setRecovery(undefined);
-    }, [])
+    }, [cancelSend])
   );
 
   const callbacksRef = useRef(txCallbacks);
@@ -375,31 +376,13 @@ export function useDestinationActionLaunch() {
   const addressRef = useRef(address);
   // The Confirm whose callbacks may still reach the modal; none once the modal closes.
   const modalOwnerRef = useRef<TxCallbacks | undefined>(undefined);
-  const sendReplayRef = useRef(() => undefined as void);
   const claimClientRef = useRef(claimLegs.client);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     addressRef.current = address;
     claimClientRef.current = claimLegs.client;
     if (!isModalOpen) modalOwnerRef.current = undefined;
-    sendReplayRef.current = () => {
-      if (!confirmPendingRef.current) return;
-      // A closed modal drops the pending Confirm: nothing may reach the wallet behind it.
-      if (!isModalOpen) {
-        confirmPendingRef.current = false;
-        return;
-      }
-      if (legs.ready) {
-        confirmPendingRef.current = false;
-        if (claim) claimLegs.execute(claimRunRef.current);
-        else legs.execute();
-      } else if (legs.error) {
-        confirmPendingRef.current = false;
-        legCallbacksRef.current.onError(legs.error, '');
-      }
-    };
   });
-  useEffect(() => sendReplayRef.current(), [legs.ready, legs.error, isModalOpen]);
 
   const pinChainId = useCallback(
     (bridge: PendingBridge) =>
@@ -491,34 +474,16 @@ export function useDestinationActionLaunch() {
         resetRedeem();
         resetClaim();
         resetConvert();
-        confirmPendingRef.current = false;
+        cancelSend();
         setRecovery(nextRecovery);
       }
       launchModal({
         ...(nextRecovery?.kind === 'cctp-convert'
-          ? {
-              // The convert is reviewed first (Figma 94, 95), and its wallet screen keeps the title (Figma 96).
-              title: t`Review conversion`,
-              transactionTitle: t`Review conversion`,
-              confirmLabel: t`Confirm`,
-              transactionContent: (
-                <CctpConvertReview
-                  amount={nextRecovery.amount}
-                  bridged={nextRecovery.bridged}
-                  chainId={pinnedChainId}
-                  calls={[]}
-                  isBatch={false}
-                />
-              ),
-              transactionScreenContent: (
-                <TokenTransferHero
-                  from={{ symbol: 'USDC', amount }}
-                  to={{ symbol: 'USDS', amount }}
-                  testId="bridge-convert-amount"
-                />
-              ),
-              steps: [convertStep()]
-            }
+          ? cctpConvertModal({
+              amount: nextRecovery.amount,
+              bridged: nextRecovery.bridged,
+              chainId: pinnedChainId
+            })
           : {
               title: t`Confirm`,
               skipReview: true,
@@ -633,8 +598,7 @@ export function useDestinationActionLaunch() {
             nextRecovery?.kind === 'cctp-claim'
               ? { scope, bridgeId: bridge.id, ...(isSafe && { safe: true }) }
               : undefined;
-          confirmPendingRef.current = true;
-          sendReplayRef.current();
+          sendWhenPrepared();
         },
         sessionId,
         usdValue: isConvert ? Number(formatUnits(convertAmount!, 6)) : usdsToNumber(bridge.amount),
@@ -655,7 +619,9 @@ export function useDestinationActionLaunch() {
       resetReplay,
       resetRedeem,
       resetClaim,
-      resetConvert
+      resetConvert,
+      cancelSend,
+      sendWhenPrepared
     ]
   );
   useLayoutEffect(() => {
