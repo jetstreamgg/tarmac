@@ -75,3 +75,42 @@ describe('useBridgeForm on the Tenderly multichain fork: moving the source stays
     expect(mocks.switched.filter(id => REAL_IDS.includes(id))).toEqual([]);
   });
 });
+
+describe('useBridgeForm on the Tenderly multichain fork: the source picks the family', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { appChainId: chainId.mainnet, switched: [] });
+  });
+
+  it('offers every live source on the forks too', () => {
+    const { result } = renderHook(() => useBridgeForm());
+    expect(result.current.forkSources).toEqual(['ethereum', 'base', 'arbitrum', 'optimism', 'unichain']);
+  });
+
+  it('picking a fork source from mainnet asks for its fork', () => {
+    const { result } = renderHook(() => useBridgeForm());
+    act(() => result.current.selectFrom('base', true));
+    expect(mocks.switched).toEqual([forkChainId.base]);
+  });
+
+  it('picking the fork of the same network asks for the fork', () => {
+    mocks.appChainId = chainId.base;
+    const { result } = renderHook(() => useBridgeForm());
+    act(() => result.current.selectFrom('base', true));
+    expect(mocks.switched).toEqual([forkChainId.base]);
+  });
+
+  it('picking a real source from a fork asks for the production chain', () => {
+    mocks.appChainId = forkChainId.base;
+    const { result } = renderHook(() => useBridgeForm());
+    act(() => result.current.selectFrom('ethereum', false));
+    expect(mocks.switched).toEqual([chainId.mainnet]);
+  });
+
+  it('reads the pair as the forks only while the wallet is on one', () => {
+    const { result, rerender } = renderHook(() => useBridgeForm());
+    expect(result.current.onFork).toBe(false);
+    mocks.appChainId = forkChainId.base;
+    rerender();
+    expect(result.current.onFork).toBe(true);
+  });
+});

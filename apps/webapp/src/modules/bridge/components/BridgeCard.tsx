@@ -80,7 +80,9 @@ export function BridgeCard({ form }: BridgeCardProps) {
             </Text>
             <BridgeNetworkSelect
               value={form.from}
+              valueOnFork={form.onFork}
               options={fromOptions}
+              forkOptions={form.forkSources}
               onChange={form.selectFrom}
               isStatic={form.isSourceStatic}
               dataTestId="bridge-from-network"
@@ -114,8 +116,10 @@ export function BridgeCard({ form }: BridgeCardProps) {
             </Text>
             <BridgeNetworkSelect
               value={form.to}
-              options={toOptions}
-              onChange={form.selectTo}
+              valueOnFork={form.onFork}
+              options={form.onFork ? [] : toOptions}
+              forkOptions={form.onFork ? toOptions : []}
+              onChange={next => form.selectTo(next)}
               dataTestId="bridge-to-network"
             />
           </span>
