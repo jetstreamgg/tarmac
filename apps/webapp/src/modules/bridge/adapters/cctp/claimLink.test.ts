@@ -33,7 +33,8 @@ describe('readCctpClaimLink', () => {
     ['a network CCTP does not bridge from here', `claim_network=avalanche&claim_tx=${HASH}`],
     ['an unknown network', `claim_network=nowhere&claim_tx=${HASH}`],
     ['a short hash', 'claim_network=base&claim_tx=0xabcd'],
-    ['a hash that is not hex', `claim_network=base&claim_tx=0x${'zz'.repeat(32)}`]
+    ['a hash that is not hex', `claim_network=base&claim_tx=0x${'zz'.repeat(32)}`],
+    ['a hash one hex digit short', `claim_network=base&claim_tx=${HASH.slice(0, -1)}`]
   ])('reads nothing with %s', (_, search) => {
     expect(readCctpClaimLink(params(search))).toBeUndefined();
   });

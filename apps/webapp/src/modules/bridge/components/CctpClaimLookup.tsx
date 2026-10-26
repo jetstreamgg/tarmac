@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { isHex, size, type Hex } from 'viem';
+import { isHash, type Hex } from 'viem';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   ResponsiveModal,
@@ -177,7 +177,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
 
   const find = () => {
     const hash = draft.trim();
-    const valid = isHex(hash, { strict: true }) && size(hash) === 32;
+    const valid = isHash(hash);
     setInvalid(!valid);
     setAttempt(previous => previous + 1);
     setTarget(valid ? { from: network, txHash: hash.toLowerCase() as Hex } : undefined);
