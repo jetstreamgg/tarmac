@@ -5,7 +5,7 @@ import { useChains, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useSafeWalletStatus } from '@/hooks';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
-import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionReplacedError } from '@/hooks/shared/useTransactionOutcome';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -17,6 +17,7 @@ import { formatBigInt } from '@/utils';
 import { CctpConvertReview } from '../components/CctpConvertReview';
 import { guardChainId } from '../model/networks';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { isBundleFailure } from '../tracking/sourceRecording';
 import { readsBalanceOn } from './balanceQueries';
 import { useCctpConvertLegs } from './useCctpConvertLegs';
 import { convertStep } from './useDestinationActionLaunch';
@@ -185,8 +186,7 @@ export function useCctpSwapConvertLaunch() {
               modal().onSuccess(...settled);
             },
             onError: (error, hash) => {
-              const neverLands =
-                error instanceof TransactionRevertedError || error instanceof TransactionReplacedError;
+              const neverLands = isBundleFailure(error) || error instanceof TransactionReplacedError;
               if (neverLands && bundle && keptSwap(scope, swap.swapTxHash)?.convert === bundle)
                 cctpSwapStore.markConvert(scope, swap.swapTxHash, undefined);
               modal().onError(error, hash);

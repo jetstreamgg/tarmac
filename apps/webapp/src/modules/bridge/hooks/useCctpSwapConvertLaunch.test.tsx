@@ -227,6 +227,18 @@ describe('useCctpSwapConvertLaunch', () => {
     expect(kept()?.convert).toBe('0xc3');
   });
 
+  // The batch engine reports a bundle that settled as failed with a plain error, not a reverted receipt.
+  it('shows the card again when the wallet reports its bundle failed', () => {
+    const { result } = renderHook(() => useCctpSwapConvertLaunch());
+    act(() => result.current.launch(SWAP));
+    act(() => mocks.launched[0].onConfirm?.());
+    const callbacks = mocks.convert.params!.getCallbacks();
+    cctpSwapStore.markConvert(scope(), '0x5a', '0xb1');
+    act(() => callbacks.onStart(undefined));
+    act(() => callbacks.onError(new Error('ERROR: Batch transaction failed'), undefined));
+    expect(kept()?.convert).toBeUndefined();
+  });
+
   it('keeps the link when a bundle fails without reverting', () => {
     const { result } = renderHook(() => useCctpSwapConvertLaunch());
     act(() => result.current.launch(SWAP));
