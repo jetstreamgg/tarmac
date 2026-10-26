@@ -16,7 +16,7 @@ import { fetchJson } from '../shared/fetchJson';
 type UserOrders =
   paths['/api/v1/account/{owner}/orders']['get']['responses'][200]['content']['application/json'];
 
-async function fetchCowswapTradeHistory(
+export async function fetchCowswapTradeHistory(
   chainId: number,
   address?: string,
   limit = 50,
