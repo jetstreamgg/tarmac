@@ -264,7 +264,6 @@ export function useCctpBurnLegs({
 
   return {
     calls,
-    needsApprove: calls.some(call => (call as { functionName?: string }).functionName === 'approve'),
     isBatch: legs.isBatch,
     ready: legs.ready,
     /** A leg of the last run is still out, after a close. */

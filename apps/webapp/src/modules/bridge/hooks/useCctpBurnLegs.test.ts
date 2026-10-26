@@ -114,7 +114,7 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it('sends approve, swap, approve and the real burn calldata on the L2, keyed on depositForBurn', () => {
-    const legs = render();
+    render();
     expect(mocks.legs).toMatchObject({ chainId: BASE, sendFunctionName: 'depositForBurn' });
     expect(mocks.legs!.client).toBe(mocks.clients[BASE]);
     expect(calls().map(call => (call as { functionName?: string }).functionName)).toEqual([
@@ -124,7 +124,6 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
       'depositForBurn'
     ]);
     expect(encodeFunctionData(calls()[3] as never)).toBe(BASE_BURN_TX.input);
-    expect(legs.needsApprove).toBe(true);
   });
 
   it('reads both allowances on the L2 from the sender', () => {
@@ -140,7 +139,7 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   it('skips the approves the allowances cover', () => {
     mocks.usds = AMOUNT;
     mocks.usdc = BASE_BURN_AMOUNT;
-    expect(render().needsApprove).toBe(false);
+    render();
     expect(calls()).toHaveLength(2);
   });
 
