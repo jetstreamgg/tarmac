@@ -23,11 +23,11 @@ const nativeAdapter: BridgeAdapter = {
 const readIrisAttestations = irisAttestationReader();
 
 // CCTP is real from an L2 to Ethereum, its only pair: it waits for Circle's attestation and the chain.
+// An entry stored for any other pair is not a bridge the app sent, so it never moves.
 const cctpAdapter: BridgeAdapter = {
-  checkProgress: (bridge, now, context) => {
+  checkProgress: async (bridge, now, context) => {
     const { from } = bridge;
-    if (bridge.to !== 'ethereum' || !isCctpL2Network(from))
-      return mockAdapter.checkProgress(bridge, now, context);
+    if (bridge.to !== 'ethereum' || !isCctpL2Network(from)) return null;
     return cctpProgress({ ...bridge, from }, context, now, readIrisAttestations);
   }
 };
