@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import type { Address, Call, PublicClient } from 'viem';
-import { toError } from '@/hooks/helpers';
+import { extractErrorCode, toError } from '@/hooks/helpers';
 import type { TxMutateVariables } from '@/hooks';
 import {
   TransactionRefusedError,
@@ -10,6 +10,7 @@ import {
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { useSendBatchTransactionFlow } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
+import { reportError } from '@/modules/sentry/reportError';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { createPromptRegistry, PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { usePromptIssuers } from './usePromptIssuers';
@@ -51,6 +52,8 @@ const answerLeg = (variables: object | undefined) => {
 
 const SEND_OUT_MESSAGE =
   'A transaction from your last bridge is still open in your wallet or pending. Wait for it to settle before sending again.';
+// The modal's own copy for a send refused without a reason: a failed read's message is not user copy.
+const READ_FAILED_MESSAGE = 'The transaction could not be sent.';
 const asRefusal = (error: Error) =>
   error instanceof TransactionRefusedError ? error : new TransactionRefusedError(error.message);
 
@@ -390,14 +393,36 @@ export function useBridgeCallLegs({
             }
           },
           error => {
-            if (run === runRef.current) refuse(toError(error));
+            if (run !== runRef.current) return;
+            // Its message can carry the RPC URL or the account: Sentry gets its kind and code only.
+            reportError(new Error(`Bridge pre-send read failed: ${toError(error).name}`), {
+              module: 'bridge',
+              flow: 'preflight',
+              type: 'read_failed',
+              level: 'warning',
+              extra: { chainId, rpcCode: extractErrorCode(error) }
+            });
+            // Never sent, even on a Retry after a mined leg: not a rollback.
+            refuse(new TransactionRefusedError(READ_FAILED_MESSAGE));
           }
         )
         .finally(() => {
           if (run === runRef.current) checkingRef.current = false;
         });
     },
-    [l1, from, busy, preflight, useBatch, calls, nextCalls, executeFlow, getCallbacks, sendFunctionName]
+    [
+      l1,
+      from,
+      busy,
+      preflight,
+      useBatch,
+      calls,
+      nextCalls,
+      executeFlow,
+      getCallbacks,
+      sendFunctionName,
+      chainId
+    ]
   );
 
   // A run still in its pre-send check ends with nothing sent: its modal closed.
