@@ -391,3 +391,35 @@ describe('useBridgeCallLegs preflight', () => {
     expect(await run(true)).toEqual(CALLS);
   });
 });
+
+describe('useBridgeCallLegs late send', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+    Object.values(callbacks).forEach(fn => fn.mockClear());
+  });
+
+  // A native deposit's send name follows the form's destination.
+  it('records a send signed after its run ended though the form now sends another call', async () => {
+    const DEPOSIT = { functionName: 'depositETHTo', args: [] } as unknown as TxMutateVariables;
+    const client = { waitForTransactionReceipt: vi.fn(() => new Promise(() => {})) };
+    let sendFunctionName = 'depositETHTo';
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 1,
+        client: client as unknown as PublicClient,
+        from: SENDER,
+        sendFunctionName,
+        preflight: async () => undefined,
+        getCallbacks: () => callbacks
+      })
+    );
+    await act(async () => view.result.current.execute());
+    act(() => mocks.sequential.at(-1)!.onMutate(DEPOSIT));
+    act(() => view.result.current.reset());
+    sendFunctionName = 'outboundTransfer';
+    view.rerender();
+    act(() => mocks.sequential.at(-1)!.onStart('0xdeposit', DEPOSIT));
+    expect(callbacks.onStart).toHaveBeenCalledWith('0xdeposit');
+  });
+});

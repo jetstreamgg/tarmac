@@ -70,8 +70,8 @@ const asRefusal = (error: Error) =>
  * out one at a time, or as one atomic wallet bundle with `batch`. Every send
  * first awaits `preflight`, which refuses it with an error (a closed bridge).
  * A prompt signed after its run ended or after a later Confirm reports to the
- * callbacks `getCallbacks` returned when it opened: a `sendFunctionName` leg
- * is recorded and followed to its receipt while those callbacks are current,
+ * callbacks `getCallbacks` returned when it opened: a `sendFunctionName` leg (its
+ * Confirm's) is recorded and followed to its receipt while those callbacks are current,
  * any other leg is dropped. No send starts while the wallet shows a bundle
  * for the same account, opened from any form, nor while a leg of a reset run
  * is still out. Another account ends the run unless it only awaits its sent leg.
@@ -132,6 +132,9 @@ export function useBridgeCallLegs({
   // The context `execute` was given, and per wallet prompt the one of the run that opened it.
   const runContextRef = useRef<unknown>(undefined);
   const promptContextsRef = useRef(new WeakMap<object, unknown>());
+  // The send name of the Confirm a prompt opened under: a native deposit's follows the form.
+  const runSendNameRef = useRef(sendFunctionName);
+  const promptSendNamesRef = useRef(new WeakMap<object, string>());
   // Read when a late prompt is signed, whichever render opened it.
   const isSafeAppRef = useRef(isSafeApp);
   useLayoutEffect(() => {
@@ -284,6 +287,7 @@ export function useBridgeCallLegs({
         promptContextsRef.current.set(variables, runContextRef.current);
       lastPromptRef.current = variables;
       if (variables) {
+        promptSendNamesRef.current.set(variables, runSendNameRef.current);
         const release = onLegPrompt?.(variables, runContextRef.current);
         if (release) legReleases.set(variables, release);
       }
@@ -298,12 +302,15 @@ export function useBridgeCallLegs({
       }
       const issuer = issuers.issuerOf(variables);
       const current = issuer === getCallbacks();
+      const isSend =
+        !!variables &&
+        variables.functionName === (promptSendNamesRef.current.get(variables) ?? sendFunctionName);
       if (current && runFromRef.current) {
-        if (hash && variables?.functionName === sendFunctionName) broadcastRef.current = true;
+        if (hash && isSend) broadcastRef.current = true;
         return issuer.onStart(hash);
       }
       // Signed after its run ended: the send is recorded under its own Confirm, any other leg is dropped.
-      if (variables && variables.functionName !== sendFunctionName) return;
+      if (variables && !isSend) return;
       issuer.onStart(hash);
       if (hash && variables) void followLate(hash as `0x${string}`, issuer);
     },
@@ -368,6 +375,7 @@ export function useBridgeCallLegs({
       }
       checkingRef.current = true;
       runContextRef.current = context;
+      runSendNameRef.current = sendFunctionName;
       const run = runRef.current;
       // Set before the read: a switch while it is pending drops it.
       runFromRef.current = from;
@@ -400,7 +408,7 @@ export function useBridgeCallLegs({
           if (run === runRef.current) checkingRef.current = false;
         });
     },
-    [l1, from, busy, preflight, useBatch, calls, nextCalls, executeFlow, getCallbacks]
+    [l1, from, busy, preflight, useBatch, calls, nextCalls, executeFlow, getCallbacks, sendFunctionName]
   );
 
   // A run still in its pre-send check ends with nothing sent: its modal closed.
