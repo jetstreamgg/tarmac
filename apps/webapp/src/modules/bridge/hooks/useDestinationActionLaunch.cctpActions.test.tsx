@@ -11,6 +11,7 @@ import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transa
 import { confirmedClaimTxHashes, type ConvertOfferReader } from '../adapters/cctp/convert';
 import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
+import { isCctpSpendOpen } from '../store/openCctpSpends';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
@@ -23,8 +24,20 @@ const renderHook = <Result,>(hook: () => Result) =>
       createElement(QueryClientProvider, { client: queryClient }, children)
   });
 
-type LegsParams = { enabled: boolean; getCallbacks: () => TxCallbacks };
-type LegsMock = { params?: LegsParams; ready: boolean; execute: () => void; client?: ConvertOfferReader };
+type LegsParams = {
+  enabled: boolean;
+  getCallbacks: () => TxCallbacks;
+  onLegSent?: (hash: string, variables: { functionName: string }, context?: unknown) => void;
+  onLegFailed?: (hash: string) => void;
+  onLegPrompt?: (variables: { functionName: string }, context?: unknown) => (() => void) | undefined;
+};
+type LegsMock = {
+  params?: LegsParams;
+  ready: boolean;
+  execute: (context?: unknown) => void;
+  dropCheck?: () => void;
+  client?: ConvertOfferReader;
+};
 const legsResult = (legs: LegsMock) => ({
   calls: [],
   isBatch: false,
@@ -32,12 +45,14 @@ const legsResult = (legs: LegsMock) => ({
   error: null,
   execute: legs.execute,
   reset: () => undefined,
+  dropCheck: legs.dropCheck ?? (() => undefined),
   client: legs.client
 });
 
 const mocks = vi.hoisted(() => ({
   address: '',
   isSafe: false,
+  modalOpen: true,
   launched: [] as TransactionConfig[],
   onError: (() => undefined) as (error: Error) => void,
   claim: { ready: true, execute: () => undefined } as LegsMock,
@@ -67,7 +82,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
       onError: (error: Error) => mocks.onError(error)
     },
     txStatus: 'idle',
-    isModalOpen: true,
+    isModalOpen: mocks.modalOpen,
     isMinimized: false,
     activeSessionId: undefined,
     restore: vi.fn()
@@ -160,6 +175,7 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
   beforeEach(() => {
     mocks.address = `0x${(6000 + ++accountSeq).toString(16).padStart(40, '0')}`;
     mocks.isSafe = false;
+    mocks.modalOpen = true;
     mocks.launched = [];
     mocks.claim = { ready: true, execute: vi.fn() };
     mocks.convert = { ready: true, execute: vi.fn() };
@@ -246,6 +262,92 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       expect(stored().status).toBe('claimed');
       expect(result.current.canLaunch(stored(), 'claim')).toBe(false);
     });
+
+    // A sale signed and then mined after a reload must still be read, or the claim reads as unsold.
+    describe('the legs a claim run sends after its claim', () => {
+      // As the engine does: every leg it sends reaches `onLegSent` with its run's context.
+      const sentLeg = (functionName: string, hash: string, callbacks?: TxCallbacks) => {
+        if (callbacks) callbacks.onMutate({ functionName });
+        mocks.claim.params!.onLegSent!(
+          hash,
+          { functionName },
+          vi.mocked(mocks.claim.execute).mock.calls.at(-1)?.[0]
+        );
+        callbacks?.onStart(hash);
+      };
+      const start = () => {
+        const card = seed({ claimed: false });
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        act(() => result.current.launch(card, 'claim'));
+        confirm();
+        const callbacks = mocks.claim.params!.getCallbacks();
+        act(() => {
+          sentLeg('receiveMessage', '0xreceive', callbacks);
+          sentLeg('approve', '0xapprove', callbacks);
+        });
+        return callbacks;
+      };
+
+      it('keeps the sale on the claim as soon as it is sent, until the run confirms it', () => {
+        const callbacks = start();
+        act(() => sentLeg('sellGem', '0xsell', callbacks));
+        expect(actionsOf('claim')).toEqual([
+          { action: 'claim', txHash: '0xreceive', at: expect.any(Number), nextLegTxHash: '0xsell' }
+        ]);
+        act(() => callbacks.onSuccess('0xsell', 7n));
+        expect(actionsOf('claim')).toEqual([
+          { action: 'claim', txHash: '0xreceive', at: expect.any(Number), bundleTxHashes: ['0xsell'] }
+        ]);
+      });
+
+      it('keeps a sale signed after the modal closed, which its Confirm no longer hears', () => {
+        start();
+        act(() => sentLeg('sellGem', '0xsell'));
+        expect(actionsOf('claim')).toMatchObject([{ txHash: '0xreceive', nextLegTxHash: '0xsell' }]);
+      });
+
+      it('forgets a sale that reverted or was replaced, which sold nothing', () => {
+        const callbacks = start();
+        act(() => sentLeg('sellGem', '0xsell', callbacks));
+        act(() => mocks.claim.params!.onLegFailed!('0xsell'));
+        expect(actionsOf('claim')).toEqual([
+          { action: 'claim', txHash: '0xreceive', at: expect.any(Number) }
+        ]);
+      });
+
+      it('keeps no leg for a Safe, whose legs report Safe tx hashes', () => {
+        mocks.isSafe = true;
+        const callbacks = start();
+        act(() => sentLeg('sellGem', '0xsafe-sell', callbacks));
+        expect(actionsOf('claim').some(done => done.nextLegTxHash)).toBe(false);
+      });
+    });
+
+    // A convert of the card sells the same USDC: it refuses while the claim's sale may still be signed.
+    it.each([false, true])(
+      "holds the card while its claim's sale prompt is open, and hands the card to its convert (Safe: %s)",
+      isSafe => {
+        mocks.isSafe = isSafe;
+        const card = seed({ claimed: false });
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        act(() => result.current.launch(card, 'claim'));
+        confirm();
+        const run = vi.mocked(mocks.claim.execute).mock.calls.at(-1)?.[0];
+        const prompt = mocks.claim.params!.onLegPrompt!;
+        expect(prompt({ functionName: 'receiveMessage' }, run)).toBeUndefined();
+        expect(prompt({ functionName: 'approve' }, run)).toBeUndefined();
+        const release = prompt({ functionName: 'sellGem' }, run)!;
+        expect(isCctpSpendOpen(scope(), card.id)).toBe(true);
+        release();
+        expect(isCctpSpendOpen(scope(), card.id)).toBe(false);
+
+        pendingBridgeStore.update(scope(), card.id, current =>
+          recordAction(current, { action: 'claim', txHash: '0xclaim', at: NOW })
+        );
+        act(() => result.current.launch(stored(), 'convert', MINTED));
+        expect(mocks.convert.params).toMatchObject({ scope: scope(), bridgeId: card.id });
+      }
+    );
 
     // A wallet that runs the bundle as separate transactions (APP-637): its sale must stay readable.
     it('keeps every transaction of a claim bundle run apart, under one claim', () => {
@@ -376,6 +478,24 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       expect(mocks.convert.execute).toHaveBeenCalledTimes(2);
     });
   });
+
+  // The check before the wallet prompt reads the chain: a close meanwhile must not open the wallet.
+  it.each(['claim', 'convert'] as const)(
+    'drops a %s still checking the chain once the modal closes',
+    kind => {
+      const card = seed({ claimed: kind === 'convert' });
+      const legs = mocks[kind];
+      legs.dropCheck = vi.fn();
+      const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card, kind, kind === 'convert' ? MINTED : undefined));
+      confirm();
+      expect(legs.execute).toHaveBeenCalledTimes(1);
+      vi.mocked(legs.dropCheck).mockClear();
+      mocks.modalOpen = false;
+      rerender();
+      expect(legs.dropCheck).toHaveBeenCalled();
+    }
+  );
 
   // Figma 78 and 97: the card leaves once the USDS is in the wallet; Activity still lists the bridge.
   describe('the card once its USDS is delivered', () => {

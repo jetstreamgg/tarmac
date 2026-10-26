@@ -1,5 +1,6 @@
 import { psm3L2Abi, usdsPsmWrapperAbi } from '@/hooks/generated';
 import { getWriteContractCall } from '@/hooks/shared/getWriteContractCall';
+import { math } from '@/utils';
 import { erc20Abi, isAddressEqual, zeroHash, type Address, type Call, type Hex } from 'viem';
 import {
   CCTP_DOMAIN,
@@ -7,7 +8,6 @@ import {
   L1_USDC,
   MESSAGE_TRANSMITTER_V2,
   TOKEN_MESSENGER_V2,
-  USDS_PER_USDC_UNIT,
   USDS_PSM_WRAPPER,
   addressToBytes32,
   assertCctpRecipient,
@@ -19,7 +19,7 @@ import {
 import { decodeCctpMessage } from './message';
 
 /** The USDC a USDS amount burns as; the USDS below one USDC unit stays in the wallet, so the swap takes none of it. */
-export const cctpBurnAmount = (amount: bigint): bigint => amount / USDS_PER_USDC_UNIT;
+export const cctpBurnAmount = (amount: bigint): bigint => math.convertWadtoUSDC(amount);
 
 /** The leg that receives a claim's message, which records the claim. */
 export const CCTP_CLAIM_FUNCTION = 'receiveMessage';
@@ -62,7 +62,7 @@ export function cctpBurnCalls({
   assertCctpRecipient(mintRecipient);
   const burn = cctpBurnAmount(amount);
   if (burn === 0n) throw new Error('A CCTP bridge needs at least one USDC unit');
-  const swapIn = burn * USDS_PER_USDC_UNIT;
+  const swapIn = math.convertUSDCtoWad(burn);
   const { psm3, usds, usdc } = cctpL2Contracts(network);
   const swap = getWriteContractCall({
     to: psm3,
@@ -134,7 +134,7 @@ export function cctpL2ConvertCalls({
     to: psm3,
     abi: psm3L2Abi,
     functionName: CCTP_L2_CONVERT_FUNCTION,
-    args: [usdc, usds, amount, amount * USDS_PER_USDC_UNIT, account, 0n]
+    args: [usdc, usds, amount, math.convertUSDCtoWad(amount), account, 0n]
   });
   return usdcAllowance < amount ? [approve(usdc, psm3, amount), swap] : [swap];
 }

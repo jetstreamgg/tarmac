@@ -44,7 +44,8 @@ const mocks = vi.hoisted(() => ({
     ready: false,
     error: null as Error | null,
     execute: (() => undefined) as () => void,
-    reset: (() => undefined) as () => void
+    reset: (() => undefined) as () => void,
+    dropCheck: (() => undefined) as () => void
   }
 }));
 
@@ -80,8 +81,8 @@ vi.mock('./useCctpConvertLegs', () => ({
   CCTP_L2_CONVERT_FUNCTION: 'swapExactIn',
   useCctpConvertLegs: (params: ConvertParams) => {
     mocks.convert.params = params;
-    const { calls, isBatch, ready, error, execute, reset } = mocks.convert;
-    return { calls, isBatch, ready, error, execute, reset };
+    const { calls, isBatch, ready, error, execute, reset, dropCheck } = mocks.convert;
+    return { calls, isBatch, ready, error, execute, reset, dropCheck };
   }
 }));
 
@@ -125,7 +126,8 @@ describe('useCctpSwapConvertLaunch', () => {
       ready: false,
       error: null,
       execute: () => undefined,
-      reset: () => undefined
+      reset: () => undefined,
+      dropCheck: () => undefined
     });
     seed();
   });
@@ -206,6 +208,20 @@ describe('useCctpSwapConvertLaunch', () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  // The check before the wallet prompt reads the chain: a close meanwhile must not open the wallet.
+  it('drops a convert still checking the chain once the modal closes', () => {
+    const dropCheck = vi.fn();
+    Object.assign(mocks.convert, { ready: true, execute: vi.fn(), dropCheck });
+    const { result, rerender } = renderHook(() => useCctpSwapConvertLaunch());
+    act(() => result.current.launch(SWAP));
+    act(() => mocks.launched[0].onConfirm?.());
+    expect(mocks.convert.execute).toHaveBeenCalledTimes(1);
+    dropCheck.mockClear();
+    mocks.modalOpen = false;
+    rerender();
+    expect(dropCheck).toHaveBeenCalled();
+  });
+
   it('shows the card again when its bundle reverts, only while the bundle is still its convert', () => {
     const { result } = renderHook(() => useCctpSwapConvertLaunch());
     act(() => result.current.launch(SWAP));
@@ -225,6 +241,18 @@ describe('useCctpSwapConvertLaunch', () => {
     cctpSwapStore.markConvert(scope(), '0x5a', '0xc3');
     act(() => again.onError(new TransactionRevertedError(), '0xbundle'));
     expect(kept()?.convert).toBe('0xc3');
+  });
+
+  // The batch engine reports a bundle that settled as failed with a plain error, not a reverted receipt.
+  it('shows the card again when the wallet reports its bundle failed', () => {
+    const { result } = renderHook(() => useCctpSwapConvertLaunch());
+    act(() => result.current.launch(SWAP));
+    act(() => mocks.launched[0].onConfirm?.());
+    const callbacks = mocks.convert.params!.getCallbacks();
+    cctpSwapStore.markConvert(scope(), '0x5a', '0xb1');
+    act(() => callbacks.onStart(undefined));
+    act(() => callbacks.onError(new Error('ERROR: Batch transaction failed'), undefined));
+    expect(kept()?.convert).toBeUndefined();
   });
 
   it('keeps the link when a bundle fails without reverting', () => {

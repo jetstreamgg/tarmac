@@ -205,14 +205,17 @@ describe('CctpClaimLookup', () => {
     expect(mocks.targets.every(target => target === undefined)).toBe(true);
   });
 
-  it.each([['0xabcd'], [`0x${'zz'.repeat(32)}`]])('refuses %j as a hash without a lookup', value => {
-    renderLookup();
-    open();
-    typeHash(value);
-    find();
-    expect(screen.getByTestId('bridge-claim-lookup-invalid')).toBeTruthy();
-    expect(lastTarget()).toBeUndefined();
-  });
+  it.each([['0xabcd'], [`0x${'zz'.repeat(32)}`], [HASH.slice(0, -1)]])(
+    'refuses %j as a hash without a lookup',
+    value => {
+      renderLookup();
+      open();
+      typeHash(value);
+      find();
+      expect(screen.getByTestId('bridge-claim-lookup-invalid')).toBeTruthy();
+      expect(lastTarget()).toBeUndefined();
+    }
+  );
 
   it('clears the invalid hash message once the hash changes', () => {
     renderLookup();

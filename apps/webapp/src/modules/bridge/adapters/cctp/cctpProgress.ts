@@ -65,10 +65,13 @@ export async function cctpProgress(
   const l2 = context.getClient(bridge.from);
   if (!l1 || !l2 || !bridge.txHash || bridge.to !== 'ethereum') return null;
   try {
-    // A Safe's sent claim or convert is settled by the tracker.
+    // A sent claim or convert from a Safe or a wallet bundle is settled by the tracker.
     const sent = bridge.actions.find(
       action =>
-        action.status === 'sent' && !action.safe && (action.action === 'claim' || action.action === 'convert')
+        action.status === 'sent' &&
+        !action.safe &&
+        !action.bundle &&
+        (action.action === 'claim' || action.action === 'convert')
     );
     const settled = sent && (await settleSentAction(l1, sent, now));
     if (settled) return settled;

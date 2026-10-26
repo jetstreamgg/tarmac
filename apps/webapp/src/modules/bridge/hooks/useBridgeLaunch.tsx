@@ -262,16 +262,20 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     // A write still out lands before the reads refresh.
     resetRun(refetchReads);
   }, [isModalOpen, runningTo, runningBurn, resetRun, refetchReads]);
+  // The burns this Review sent, by every id the burn legs link to its swap: one that failed leaves Retry to continue.
+  const ownBurnsRef = useRef<string[]>([]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
   const unresolvedRef = useRef<string | undefined>(undefined);
   useLayoutEffect(() => {
     callbacksRef.current = txCallbacks;
     accountRef.current = account;
     scopeRef.current = scope;
+    // As TransactionContext's Retry after a mined step: the run itself moved the balances the Review checks.
+    const resumingRun = (runningTo !== undefined || runningBurn !== undefined) && legs.legMined;
     executeRef.current = () => {
       if (
         !form.isConnected ||
-        form.reviewBlocked ||
+        (form.reviewBlocked && !resumingRun) ||
         !route ||
         !account ||
         !scope ||
@@ -298,10 +302,10 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         return;
       }
       // Another Review sent a burn for this swap since its card opened; the chain shows it only once it mines.
-      const continued =
-        resume && cctpSwapStore.getSnapshot(scope).find(swap => swap.swapTxHash === resume.swapTxHash);
+      const continued = resume && cctpSwapStore.get(scope, resume.swapTxHash);
       // That burn may still revert, so this doesn't say it was sent.
-      if (continued && continued.burn !== resume.burn) {
+      const ownBurn = !!continued?.burn && ownBurnsRef.current.includes(continued.burn);
+      if (continued && continued.burn !== resume.burn && !ownBurn) {
         callbacksRef.current.onError(
           new TransactionRefusedError(
             'This bridge was sent from another window. Close this and check its card.',
@@ -357,6 +361,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             ? CCTP_BURN_FUNCTION
             : 'send',
         onSent: txHash => {
+          if (burnFrom) ownBurnsRef.current.push(txHash.toLowerCase());
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
           markSent(txHash);
         },
@@ -381,6 +386,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           const bundleId = `bundle-${crypto.randomUUID()}`;
           const callsId = callsIdRef.current;
           callsIdRef.current = undefined;
+          if (burnFrom && callsId) ownBurnsRef.current.push(callsId.toLowerCase());
           pendingBridgeStore.upsert(
             scope,
             createPendingBridge({ ...record, bundleId, callsId, now: Date.now() })
@@ -412,8 +418,10 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
           })(),
         // Sped up in the wallet: the tracker reads the hash that will mine.
-        onRepriced: (txHash, newTxHash) =>
-          pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash })),
+        onRepriced: (txHash, newTxHash) => {
+          if (burnFrom) ownBurnsRef.current.push(newTxHash.toLowerCase());
+          pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash }));
+        },
         // The funds never left, so Retry may send again.
         onFailed: (id, reason) => {
           if (unresolvedRef.current === id) {
@@ -548,6 +556,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     // No chain to guard: an empty guard would let the legs run on any chain.
     if (pinnedChainId === undefined) return;
     launchRef.current += 1;
+    ownBurnsRef.current = [];
     launchedChainIdRef.current = pinnedChainId;
     launchedAccountRef.current = accountRef.current;
     // A send whose outcome is unknown (a failed receipt wait) may still land: wait for its card to settle.

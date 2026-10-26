@@ -3,8 +3,9 @@ import { createPendingBridge } from '../../model/pendingTransitions';
 import { sendsToOther } from '../../model/recipient';
 import { cctpWithdrawalRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
+import { math } from '@/utils';
 import type { ChainReader } from '../types';
-import { USDS_PER_USDC_UNIT, type CctpL2NetworkId } from './contracts';
+import type { CctpL2NetworkId } from './contracts';
 import { isExpectedBurn, sentMessages, type CctpBurnExpectation } from './message';
 
 export type CctpBurnLookup =
@@ -17,7 +18,7 @@ export function standardBurns(logs: readonly Log[], from: CctpL2NetworkId): Cctp
     const { body } = decoded;
     const burn = {
       from,
-      amount: body.amount * USDS_PER_USDC_UNIT,
+      amount: math.convertUSDCtoWad(body.amount),
       sender: body.messageSender,
       mintRecipient: body.mintRecipient
     };

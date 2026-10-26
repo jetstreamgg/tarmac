@@ -39,6 +39,14 @@ describe('createCctpSwapStore', () => {
     expect(store.getSnapshot(SCOPE)[0].usdcAmount).toBe(1_000_000n);
   });
 
+  it('finds a swap by its hash in any case, only in its scope', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    expect(store.get(SCOPE, '0x' + 'Ab'.repeat(32))?.usdcAmount).toBe(1_000_000n);
+    expect(store.get('other', '0x' + 'ab'.repeat(32))).toBeUndefined();
+    expect(store.get(SCOPE, '0x' + 'cd'.repeat(32))).toBeUndefined();
+  });
+
   it('drops only the cleared swap, and notifies', () => {
     const store = createCctpSwapStore();
     const listener = vi.fn();
@@ -265,5 +273,90 @@ describe('createCctpSwapStore convert links', () => {
         .getSnapshot(SCOPE)
         .map(entry => [entry.swapTxHash, entry.convert])
     ).toEqual([['0x01', '0xc']]);
+  });
+});
+
+// A convert sent as a wallet bundle is linked by its calls id: only the wallet can tell how it ended.
+describe('createCctpSwapStore bundled convert links', () => {
+  beforeEach(() => localStorage.clear());
+
+  const SWAP_HASH = '0x' + 'ab'.repeat(32);
+
+  it('keeps that a convert was sent as a bundle across a reload, and forgets it once unlinked or relinked by hash', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    store.markConvert(SCOPE, SWAP_HASH, 'CALLS-ID', { bundle: true });
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0]).toMatchObject({
+      convert: 'calls-id',
+      convertBundled: true
+    });
+    store.markConvert(SCOPE, SWAP_HASH, '0xconvert');
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0]).toMatchObject({ convert: '0xconvert' });
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0].convertBundled).toBeUndefined();
+    store.markConvert(SCOPE, SWAP_HASH, 'calls-id', { bundle: true });
+    store.markConvert(SCOPE, SWAP_HASH, undefined);
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0].convertBundled).toBeUndefined();
+  });
+
+  it('drops a stored bundle flag of the wrong type', () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify([
+        { ...swap(), usdcAmount: '1', convert: '0xc', convertBundled: 'yes' },
+        { ...swap({ swapTxHash: '0x01' }), usdcAmount: '1', convert: '0xc', convertBundled: true }
+      ])
+    );
+    expect(
+      createCctpSwapStore()
+        .getSnapshot(SCOPE)
+        .map(entry => [entry.swapTxHash, entry.convertBundled])
+    ).toEqual([['0x01', true]]);
+  });
+});
+
+describe('createCctpSwapStore never loses what it cannot read', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
+
+  // A newer bundle (a later field or network) wrote this entry under the same key.
+  const future = { ...swap({ swapTxHash: '0xfuture' }), usdcAmount: '1', network: 'polygon' };
+  const seed = () =>
+    localStorage.setItem(
+      KEY,
+      JSON.stringify([future, { ...swap({ swapTxHash: '0x01' }), usdcAmount: '1000000' }])
+    );
+  const storedHashes = () =>
+    (JSON.parse(localStorage.getItem(KEY)!) as { swapTxHash: string }[]).map(entry => entry.swapTxHash);
+
+  it('a record keeps an entry it cannot parse', () => {
+    seed();
+    createCctpSwapStore().record(SCOPE, swap({ swapTxHash: '0x02' }));
+    expect(storedHashes()).toEqual(expect.arrayContaining(['0x02', '0x01', '0xfuture']));
+  });
+
+  it('a link keeps an entry it cannot parse', () => {
+    seed();
+    createCctpSwapStore().markBurn(SCOPE, '0x01', '0xburn');
+    expect(storedHashes()).toEqual(expect.arrayContaining(['0x01', '0xfuture']));
+  });
+
+  it('keeps a copy of an unreadable value before replacing it', () => {
+    localStorage.setItem(KEY, '[{"swapTxHash":"0xfuture", not json');
+    createCctpSwapStore().record(SCOPE, swap({ swapTxHash: '0x02' }));
+    expect(localStorage.getItem(`${KEY}:unreadable`)).toBe('[{"swapTxHash":"0xfuture", not json');
+    expect(storedHashes()).toEqual(['0x02']);
+  });
+
+  it('does not replace an unreadable value it could not copy', () => {
+    localStorage.setItem(KEY, '{not json');
+    const setItem = localStorage.setItem.bind(localStorage);
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key.endsWith(':unreadable')) throw new Error('QuotaExceededError');
+      setItem(key, value);
+    });
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap({ swapTxHash: '0x02' }));
+    expect(localStorage.getItem(KEY)).toBe('{not json');
+    expect(store.getSnapshot(SCOPE).map(entry => entry.swapTxHash)).toEqual(['0x02']);
   });
 });

@@ -24,14 +24,27 @@ const mocks = vi.hoisted(() => ({
   getCallsStatus: vi.fn(),
   getBlock: vi.fn(async ({ blockNumber }: { blockNumber: bigint }) => ({
     timestamp: blockNumber === 100n ? BigInt(1_700_000_000) : 0n
-  }))
+  })),
+  baseGetBlock: vi.fn(async () => ({ timestamp: 1_699_999_000n }))
 }));
 
 vi.mock('wagmi', () => ({ useConfig: () => ({}) }));
-vi.mock('@wagmi/core', () => ({
-  getPublicClient: () => ({ getBlockNumber: async () => 100n, getBlock: mocks.getBlock }),
-  getCallsStatus: mocks.getCallsStatus
-}));
+vi.mock('@wagmi/core', () => {
+  const publicClient = (chainId: number) => ({
+    getBlockNumber: async () => 100n,
+    getBlock: chainId === 8453 ? mocks.baseGetBlock : mocks.getBlock
+  });
+  // wagmi caches getClient per chain, so the adapter context's reader cache behaves as in the app.
+  const clients = new Map<number, { extend: () => ReturnType<typeof publicClient> }>();
+  return {
+    getPublicClient: (_: unknown, { chainId }: { chainId: number }) => publicClient(chainId),
+    getClient: (_: unknown, { chainId }: { chainId: number }) => {
+      if (!clients.has(chainId)) clients.set(chainId, { extend: () => publicClient(chainId) });
+      return clients.get(chainId);
+    },
+    getCallsStatus: mocks.getCallsStatus
+  };
+});
 vi.mock('./usePendingScope', () => ({
   usePendingScope: () => ({ account: ACCOUNT, scope: mocks.scope, familyChainId: 1 })
 }));
@@ -74,6 +87,15 @@ describe('useDepositRecovery, wallet bundles', () => {
     renderHook(() => useDepositRecovery(), { wrapper });
     await vi.advanceTimersByTimeAsync(0);
     expect(lastArgs().chainNow).toBe(TO_BLOCK_TIME * 1000);
+  });
+
+  // A CCTP bundle's burn mined on its L2, whose block numbers Ethereum doesn't share.
+  it('reads a block on the network recovery names, and on Ethereum when it names none', async () => {
+    renderHook(() => useDepositRecovery(), { wrapper });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await lastArgs().blockTime(42n, 'base')).toBe(1_699_999_000 * 1000);
+    expect(mocks.baseGetBlock).toHaveBeenCalledWith({ blockNumber: 42n });
+    expect(await lastArgs().blockTime(100n)).toBe(TO_BLOCK_TIME * 1000);
   });
 
   it('passes the wallet status of a bundle through, and an error as no answer', async () => {

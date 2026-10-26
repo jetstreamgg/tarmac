@@ -1,29 +1,23 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { getAddress, isAddress, isAddressEqual, type Address, type Hex, type PublicClient } from 'viem';
+import { getAddress, isAddress, isAddressEqual, type Address, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance, type TxMutateVariables } from '@/hooks';
-import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { math } from '@/utils';
 import { cctpBurnCalls } from '../adapters/cctp/calls';
-import {
-  TOKEN_MESSENGER_V2,
-  USDS_PER_USDC_UNIT,
-  cctpL2Contracts,
-  type CctpL2NetworkId
-} from '../adapters/cctp/contracts';
-import { CCTP_SWAP_FAILED_MESSAGE, cctpBurnRefusal, cctpResumeRefusal } from '../adapters/cctp/gate';
+import { TOKEN_MESSENGER_V2, cctpL2Contracts, type CctpL2NetworkId } from '../adapters/cctp/contracts';
+import { cctpBurnRefusal } from '../adapters/cctp/gate';
 import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
-import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
+import { openCctpSpend } from '../store/openCctpSpends';
 import { isStorageWritable } from '../store/storageWritable';
+import { unfinishedSwapRefusal } from '../store/unfinishedSwapRefusal';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
 /** The burn leg, which the source recording keys on. */
 export const CCTP_BURN_FUNCTION = 'depositForBurn';
 const CCTP_SWAP_FUNCTION = 'swapExactIn';
 const STORAGE_REFUSED_MESSAGE = 'Bridging to another address needs browser storage, which is unavailable.';
-
-const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 
 const toAddress = (value: string | undefined): Address | undefined =>
   value && isAddress(value) ? getAddress(value) : undefined;
@@ -83,7 +77,7 @@ export function useCctpBurnLegs({
 }) {
   const from = toAddress(account);
   const to = toAddress(resume ? resume.recipient : (recipient ?? account));
-  const amountIn = resume ? resume.usdcAmount * USDS_PER_USDC_UNIT : amount;
+  const amountIn = resume ? math.convertUSDCtoWad(resume.usdcAmount) : amount;
   const swap = !resume;
   const source = usePublicClient({ chainId });
   const destination = usePublicClient({ chainId: ethereumChainId });
@@ -142,37 +136,29 @@ export function useCctpBurnLegs({
   const calls = useMemo(() => built?.calls ?? [], [built]);
 
   const preflight = useCallback(
-    async (client: PublicClient) => {
+    async (client: PublicClient, nextCalls: readonly unknown[] = calls) => {
       if (!destination) return new Error('The bridge is not ready to send.');
       // Storage may have stopped taking writes since the Review.
       if (to && from && !isAddressEqual(to, from) && !isStorageWritable())
         return new Error(STORAGE_REFUSED_MESSAGE);
       if (resume) {
-        // A burn or convert of this swap may still be signed in the wallet.
-        if (scope && isCctpSpendOpen(scope, resume.swapTxHash))
-          return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
-        const refusal = await cctpResumeRefusal({
-          network,
-          swapTxHash: resume.swapTxHash as Hex,
-          account: from!,
-          usdcAmount: resume.usdcAmount,
-          recipient: resume.recipient as Address,
-          client
-        });
-        // Nothing is left to continue: the card goes.
-        if (scope && refusal?.message === CCTP_SWAP_FAILED_MESSAGE)
-          cctpSwapStore.clear(scope, resume.swapTxHash);
+        const refusal = await unfinishedSwapRefusal({ scope, swap: resume, account: from!, client });
         if (refusal) return refusal;
       }
-      return cctpBurnRefusal({ network, amount: amountIn, source: client, destination, swap });
+      // A Retry after the run's swap mined needs no USDC from PSM3.
+      const swapLeft =
+        swap &&
+        nextCalls.some(call => (call as { functionName?: string }).functionName === CCTP_SWAP_FUNCTION);
+      return cctpBurnRefusal({ network, amount: amountIn, source: client, destination, swap: swapLeft });
     },
-    [network, amountIn, destination, resume, from, to, swap, scope]
+    [network, amountIn, destination, resume, from, to, swap, scope, calls]
   );
 
   // Fixed per run at Confirm: the status a leg is later sent under may read unsettled.
   const isSafe = !!isSafeApp || !!isSafeWallet;
-  // The recipient, continued swap and Safe-ness a run was executed for, and the swap it sent, which its burn is linked to.
+  // The network, recipient, continued swap and Safe-ness a run was executed for, and the swap it sent, which its burn is linked to.
   type Run = {
+    network: CctpL2NetworkId;
     recipient: Address | undefined;
     resumed: string | undefined;
     safe: boolean;
@@ -180,13 +166,6 @@ export function useCctpBurnLegs({
   };
   // The latest run executed, for a callback that comes with no context; the engine may have refused it.
   const runRef = useRef<Run | undefined>(undefined);
-  // A leg reported with no run: one run per recipient and continued swap on show.
-  const looseRef = useRef<Run | undefined>(undefined);
-  const looseRun = () => {
-    const loose = looseRef.current;
-    if (loose && loose.recipient === to && loose.resumed === resume?.swapTxHash) return loose;
-    return (looseRef.current = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe });
-  };
   // A new burn retries the swap's last one: that one's Failed card goes (Activity keeps it).
   const linkBurn = (scope: string, swapTxHash: string, burn: string) => {
     const replaced = cctpSwapStore.markBurn(scope, swapTxHash, burn);
@@ -200,7 +179,8 @@ export function useCctpBurnLegs({
   const onLegSent = (hash: string, variables: TxMutateVariables, context?: unknown) => {
     if (!scope) return;
     // The run whose prompt this leg was signed in, though another run may have started since.
-    const run = (context as Run | undefined) ?? runRef.current ?? looseRun();
+    const run = (context as Run | undefined) ?? runRef.current;
+    if (!run) return;
     // A Safe returns a safeTxHash, which the chain can't confirm a swap by.
     if (run.safe) return;
     if (variables.functionName === CCTP_SWAP_FUNCTION) {
@@ -213,7 +193,7 @@ export function useCctpBurnLegs({
       run.sentSwap = { hash, variables };
       cctpSwapStore.record(scope, {
         swapTxHash: hash,
-        network,
+        network: run.network,
         usdcAmount,
         recipient: run.recipient,
         at: Date.now()
@@ -267,11 +247,13 @@ export function useCctpBurnLegs({
     // Try again resumes the last run's legs, so its burn still belongs to the swap that run sent.
     const last = runRef.current;
     const sentSwap =
-      last && last.recipient === to && last.resumed === resume?.swapTxHash ? last.sentSwap : undefined;
-    const run: Run = { recipient: to, resumed: resume?.swapTxHash, safe: isSafe, sentSwap };
+      last && last.network === network && last.recipient === to && last.resumed === resume?.swapTxHash
+        ? last.sentSwap
+        : undefined;
+    const run: Run = { network, recipient: to, resumed: resume?.swapTxHash, safe: isSafe, sentSwap };
     runRef.current = run;
     executeLegs(run);
-  }, [to, resume, isSafe, executeLegs]);
+  }, [network, to, resume, isSafe, executeLegs]);
 
   const { mutate: refetchUsds } = usdsAllowance;
   const { mutate: refetchUsdc } = usdcAllowance;
@@ -282,11 +264,12 @@ export function useCctpBurnLegs({
 
   return {
     calls,
-    needsApprove: calls.some(call => (call as { functionName?: string }).functionName === 'approve'),
     isBatch: legs.isBatch,
     ready: legs.ready,
     /** A leg of the last run is still out, after a close. */
     busy: legs.busy,
+    /** A leg of this run mined: Retry resumes the rest. */
+    legMined: legs.legMined,
     /** A read, the calls or the first leg's simulation failed. */
     error:
       (active && ((swap && usdsAllowance.error) || usdcAllowance.error)) ||

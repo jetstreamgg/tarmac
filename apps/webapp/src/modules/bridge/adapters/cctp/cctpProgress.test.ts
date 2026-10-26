@@ -17,7 +17,7 @@ import {
   BASE_BURN_LOGS,
   BASE_BURN_MINT_RECIPIENT,
   BASE_BURN_TX
-} from './cctpFixtures';
+} from './cctp.fixtures';
 import { MESSAGE_TRANSMITTER_V2 } from './contracts';
 import type { AttestationReader, IrisAttestedMessage } from './iris';
 
@@ -362,6 +362,27 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
         expect(setup.l1.getTransactionReceipt).not.toHaveBeenCalled();
         expect(setup.l2.getTransactionReceipt).not.toHaveBeenCalled();
       }
+    });
+  });
+
+  // Its calls id is no transaction hash: the tracker asks the wallet how the bundle ended.
+  describe('a claim or convert sent as a wallet bundle', () => {
+    const CALLS = '0xcallsid';
+    const claimed = () =>
+      recordAction(applyProgress(seed(), READY as never, NOW), { action: 'claim', txHash: CLAIM, at: NOW });
+
+    it('reads the bridge for a bundled claim, never a receipt under its calls id', async () => {
+      const setup = chains({ claimStatus: 'success' });
+      const sent = recordActionSent(seed(), { action: 'claim', txHash: CALLS, at: NOW, bundle: true });
+      await expect(progress(sent, setup, NOW + SENT_ACTION_DROPPED_MS)).resolves.toEqual(READY);
+      expect(setup.l1.getTransactionReceipt).not.toHaveBeenCalled();
+    });
+
+    it('reads nothing for a bundled convert of a settled bridge', async () => {
+      const setup = chains({ claimStatus: 'success' });
+      const sent = recordActionSent(claimed(), { action: 'convert', txHash: CALLS, at: NOW, bundle: true });
+      await expect(progress(sent, setup, NOW + SENT_ACTION_DROPPED_MS)).resolves.toBeNull();
+      expect(setup.l1.getTransactionReceipt).not.toHaveBeenCalled();
     });
   });
 

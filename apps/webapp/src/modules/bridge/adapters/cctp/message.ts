@@ -11,12 +11,12 @@ import {
   type Hex,
   type Log
 } from 'viem';
+import { math } from '@/utils';
 import {
   CCTP_DOMAIN,
   CCTP_FINALITY_STANDARD,
   MESSAGE_TRANSMITTER_V2,
   TOKEN_MESSENGER_V2,
-  USDS_PER_USDC_UNIT,
   cctpL2Contracts,
   messageTransmitterV2Abi,
   type CctpL2NetworkId
@@ -124,7 +124,7 @@ export function isExpectedBurn(message: CctpMessage, expected: CctpBurnExpectati
     isAddressEqual(body.burnToken, cctpL2Contracts(expected.from).usdc) &&
     isAddressEqual(body.mintRecipient, expected.mintRecipient) &&
     isAddressEqual(body.messageSender, expected.sender) &&
-    body.amount === expected.amount / USDS_PER_USDC_UNIT &&
+    body.amount === math.convertWadtoUSDC(expected.amount) &&
     body.maxFee === 0n &&
     body.hookData === '0x'
   );

@@ -7,10 +7,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress } from 'viem';
+import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { cctpL2Contracts, TOKEN_MESSENGER_V2 } from '../adapters/cctp/contracts';
-import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import type { BridgeNetworkId } from '../model/networks';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
@@ -40,6 +41,7 @@ const mocks = vi.hoisted(() => ({
   burn: {
     ready: true,
     busy: false,
+    legMined: false,
     error: null as Error | null,
     isBatch: false,
     calls: [] as unknown[],
@@ -93,7 +95,7 @@ vi.mock('@/modules/ui/hooks/useMinimizedSessionLock', () => ({
 vi.mock('./usePendingScope', async () => {
   const { pendingScopeKey } = await import('../store/pendingStore');
   const { getAddress } = await import('viem');
-  const { BASE_BURN_TX } = await import('../adapters/cctp/cctpFixtures');
+  const { BASE_BURN_TX } = await import('../adapters/cctp/cctp.fixtures');
   const account = getAddress(BASE_BURN_TX.from);
   return {
     usePendingScope: () => ({
@@ -124,13 +126,13 @@ vi.mock('./useCctpBurnLegs', () => ({
   CCTP_BURN_FUNCTION: 'depositForBurn',
   useCctpBurnLegs: (args: (typeof mocks.burn.args)[number]) => {
     mocks.burn.args.push(args);
-    const { ready, busy, error, isBatch, calls, execute } = mocks.burn;
+    const { ready, busy, legMined, error, isBatch, calls, execute } = mocks.burn;
     return {
       calls,
-      needsApprove: false,
       isBatch,
       ready,
       busy,
+      legMined,
       error,
       execute,
       reset: mocks.burnReset,
@@ -222,6 +224,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     Object.assign(mocks.burn, {
       ready: true,
       busy: false,
+      legMined: false,
       error: null,
       isBatch: false,
       calls: BURN_CALLS,
@@ -347,6 +350,56 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     expect(mocks.burn.args.at(-1)).toMatchObject({ enabled: false });
   });
 
+  describe('Retry after a leg of the run mined', () => {
+    const renderBlockable = () => {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      return renderHook(
+        ({ reviewBlocked }: { reviewBlocked: boolean }) =>
+          useBridgeLaunch(formFor('base', 'ethereum', { reviewBlocked })),
+        { wrapper, initialProps: { reviewBlocked: false } }
+      );
+    };
+
+    // The swap mines, the USDC approve is rejected, and the spent USDS now fails the Review's balance check.
+    const stopAfterSwap = (view: ReturnType<typeof renderBlockable>, legMined: boolean) => {
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacks = mocks.burn.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'swapExactIn' });
+      callbacks.onStart('0x5a');
+      callbacks.onMutate({ functionName: 'approve' });
+      act(() => callbacks.onError(new Error('User rejected the request.'), ''));
+      mocks.burn.legMined = legMined;
+      view.rerender({ reviewBlocked: true });
+      return mocks.onError.mock.calls.length;
+    };
+
+    it('resumes the legs, though the swap spent the USDS the Review checks', () => {
+      const view = renderBlockable();
+      const errorsBefore = stopAfterSwap(view, true);
+
+      // TransactionContext.handleRetry calls onConfirm when the flow has no onRetry.
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+
+      expect(mocks.onError.mock.calls.slice(errorsBefore)).toEqual([]);
+      expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('still refuses a Retry the Review blocks while nothing of the run mined', () => {
+      const view = renderBlockable();
+      const errorsBefore = stopAfterSwap(view, false);
+
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+
+      expect(mocks.onError.mock.calls.slice(errorsBefore).map(([error]) => (error as Error).message)).toEqual(
+        ['The bridge is not ready to send.']
+      );
+      expect(mocks.burn.execute).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('continuing an unfinished swap', () => {
     it('builds the burn from the swap, and the form builds a fresh one', () => {
       render('base', 'ethereum', SWAP);
@@ -406,6 +459,97 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
         const failed = { ...SWAP, burn: BASE_BURN_TX.hash.toLowerCase() };
         confirm(render('base', 'ethereum', failed));
         expect(mocks.burn.execute).toHaveBeenCalledOnce();
+      } finally {
+        cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+      }
+    });
+
+    // The burn legs link this Review's own burn to the swap; it failing leaves the USDC to continue from here.
+    const ANOTHER_WINDOW = 'This bridge was sent from another window. Close this and check its card.';
+    const RETRY_BURNS = [
+      ['a burn that reverted', () => new TransactionRevertedError(), undefined],
+      ['a burn the wallet cancelled', () => new TransactionReplacedError(new Error('cancelled')), undefined],
+      ['a burn sped up, then reverted', () => new TransactionRevertedError(), '0xbeef']
+    ] as const;
+    it.each(RETRY_BURNS)(
+      'retries a continued swap after %s, but not after another window burns',
+      (_, failure, repriced) => {
+        try {
+          cctpSwapStore.record(SCOPE, SWAP);
+          const callbacks = confirm(render('base', 'ethereum', SWAP));
+          act(() => {
+            callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+            callbacks.onStart(BASE_BURN_TX.hash);
+          });
+          cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, BASE_BURN_TX.hash);
+          if (repriced) {
+            act(() => callbacks.onStart(repriced));
+            cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, repriced);
+          }
+          act(() => callbacks.onError(failure(), repriced ?? BASE_BURN_TX.hash));
+
+          act(() => mocks.launched.at(-1)!.onConfirm!());
+          expect(mocks.onError).not.toHaveBeenCalledWith(
+            expect.objectContaining({ message: ANOTHER_WINDOW })
+          );
+          expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+
+          // Another window's burn since is still not this Review's to follow.
+          const again = mocks.burn.args.at(-1)!.getCallbacks();
+          act(() => again.onError(new Error('User rejected the request.'), ''));
+          cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, '0xfeed');
+          act(() => mocks.launched.at(-1)!.onConfirm!());
+          expect(mocks.onError).toHaveBeenLastCalledWith(
+            expect.objectContaining({ message: ANOTHER_WINDOW, final: true })
+          );
+          expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+        } finally {
+          cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+        }
+      }
+    );
+
+    it('retries a continued swap after its own bundle failed', () => {
+      try {
+        cctpSwapStore.record(SCOPE, SWAP);
+        const callbacks = confirm(render('base', 'ethereum', SWAP));
+        const { onCallsSent } = mocks.burn.args.at(-1) as unknown as { onCallsSent: (id: string) => void };
+        act(() => {
+          onCallsSent('0xca11');
+          callbacks.onMutate(undefined as never);
+          callbacks.onStart(undefined);
+        });
+        cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, '0xca11');
+        act(() => callbacks.onError(new Error('ERROR: Batch transaction failed'), undefined));
+
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.onError).not.toHaveBeenCalledWith(expect.objectContaining({ message: ANOTHER_WINDOW }));
+        expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+      } finally {
+        cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+      }
+    });
+
+    // A burn this window sent in an earlier Review may still be pending: a new Review must not send another.
+    it('refuses a new Review of the swap whose burn an earlier Review linked after it opened', () => {
+      try {
+        cctpSwapStore.record(SCOPE, SWAP);
+        const view = render('base', 'ethereum', SWAP);
+        act(() => view.result.current.launch());
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        const callbacks = mocks.burn.args.at(-1)!.getCallbacks();
+        act(() => {
+          callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+          callbacks.onStart(BASE_BURN_TX.hash);
+        });
+        cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, BASE_BURN_TX.hash);
+        act(() => callbacks.onError(new TransactionRevertedError(), BASE_BURN_TX.hash));
+        act(() => view.result.current.launch());
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.onError).toHaveBeenLastCalledWith(
+          expect.objectContaining({ message: ANOTHER_WINDOW, final: true })
+        );
+        expect(mocks.burn.execute).toHaveBeenCalledTimes(1);
       } finally {
         cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
       }

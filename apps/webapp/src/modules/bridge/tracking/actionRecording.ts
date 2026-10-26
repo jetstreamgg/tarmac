@@ -1,5 +1,6 @@
 import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { isBundleFailure } from './sourceRecording';
 
 /**
  * Wraps the modal's callbacks to record a destination action: `onSent` at
@@ -13,7 +14,9 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
  * sale after a claim) never records or reverts the action, and with
  * `confirmOnNextLeg` the action confirms once a later leg starts, since legs
  * go out only after the one before mined (not for a Safe, whose start hash is
- * its Safe tx hash); the run's last leg then confirms as part of it.
+ * its Safe tx hash); the run's last leg then confirms as part of it. A wallet
+ * bundle starts with no hash: `readBundle` gives the calls id it was recorded
+ * as sent under, which a failed bundle reverts.
  */
 export function withActionRecording(
   getCallbacks: () => TxCallbacks,
@@ -22,16 +25,19 @@ export function withActionRecording(
     onConfirmed,
     onReverted,
     actionFunctionName,
-    confirmOnNextLeg = false
+    confirmOnNextLeg = false,
+    readBundle
   }: {
     onSent: (txHash: string) => void;
     onConfirmed: (txHash: string, bundleTxHashes?: string[]) => void;
     onReverted: (txHash: string) => void;
     actionFunctionName?: string;
     confirmOnNextLeg?: boolean;
+    readBundle?: () => string | undefined;
   }
 ): TxCallbacks {
   let sent: string | undefined;
+  let bundle: string | undefined;
   let current: string | undefined;
   let confirmed = false;
   // The function of the leg last prompted; unknown counts as the action.
@@ -54,6 +60,7 @@ export function withActionRecording(
         onSent(hash);
       }
       if (hash) current = hash;
+      else if (!sent) bundle = readBundle?.();
       getCallbacks().onStart(hash);
     },
     onSuccess: (...settled) => {
@@ -74,6 +81,7 @@ export function withActionRecording(
       if (sent && !confirmed && (hash === sent || hash === current) && neverLands) {
         onReverted(sent);
       }
+      if (bundle && !confirmed && (neverLands || isBundleFailure(error))) onReverted(bundle);
       getCallbacks().onError(error, hash);
     }
   };

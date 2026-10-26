@@ -85,7 +85,8 @@ vi.mock('./useCctpClaimLegs', () => {
     ready: true,
     error: null,
     execute: () => mocks.legs.push({ names: ['receiveMessage'], getCallbacks }),
-    reset: () => undefined
+    reset: () => undefined,
+    dropCheck: () => undefined
   };
   return {
     CCTP_CLAIM_FUNCTION: 'receiveMessage',
@@ -102,7 +103,8 @@ vi.mock('./useCctpConvertLegs', () => ({
     ready: false,
     error: null,
     execute: () => undefined,
-    reset: () => undefined
+    reset: () => undefined,
+    dropCheck: () => undefined
   })
 }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({

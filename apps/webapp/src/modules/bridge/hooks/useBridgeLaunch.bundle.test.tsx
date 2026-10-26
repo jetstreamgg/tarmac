@@ -121,7 +121,6 @@ vi.mock('../adapters/mockAdapter', () => ({ runMockLegs: () => new Promise<strin
 vi.mock('./useCctpBurnLegs', () => {
   const idle = {
     calls: [],
-    needsApprove: false,
     isBatch: false,
     ready: false,
     error: null,

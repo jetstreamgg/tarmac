@@ -230,6 +230,24 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([sent]);
   });
 
+  it('keeps the bundle marker of a sent action through storage, and skips a malformed one', () => {
+    const sent = bridge({
+      status: 'ready',
+      actions: [{ action: 'claim', txHash: '0xcalls', at: NOW, status: 'sent', bundle: true }]
+    });
+    make().upsert(SCOPE, sent);
+    expect(make().getSnapshot(SCOPE)).toEqual([sent]);
+
+    const stored = { ...sent, amount: sent.amount.toString() };
+    const bad = {
+      ...stored,
+      id: '0xa',
+      actions: [{ action: 'claim', txHash: '0xcalls', at: NOW, status: 'sent', bundle: 'yes' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad, stored]));
+    expect(make().getSnapshot(SCOPE)).toEqual([sent]);
+  });
+
   it('keeps the other transactions of a claim bundle through storage, and skips malformed ones', () => {
     const claimed = bridge({
       actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, bundleTxHashes: ['0xapprove', '0xsell'] }]
@@ -245,6 +263,14 @@ describe('createPendingBridgeStore', () => {
     };
     localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad, stored]));
     expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
+  });
+
+  it('keeps the leg a claim run sent after the claim through storage', () => {
+    const selling = bridge({
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, nextLegTxHash: '0xsell' }]
+    });
+    make().upsert(SCOPE, selling);
+    expect(make().getSnapshot(SCOPE)).toEqual([selling]);
   });
 
   it('keeps an invalidated action through storage', () => {

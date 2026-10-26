@@ -1,5 +1,6 @@
 import type { DiscoveredDeposit } from '../adapters/nativeDeposit/discovery';
 import type { BridgeAdapter } from '../adapters/types';
+import type { BridgeNetworkId } from '../model/networks';
 import { applyProgress, createPendingBridge, failBundle, isSettled } from '../model/pendingTransitions';
 import { nativeDepositRoute } from '../model/resolveRoute';
 import type { PendingBridge } from '../model/types';
@@ -70,8 +71,8 @@ export async function recoverDeposits({
   account: string;
   deposits: DiscoveredDeposit[];
   now: () => number;
-  /** The block's timestamp in ms; undefined when it can't be read. */
-  blockTime: (blockNumber: bigint) => Promise<number | undefined>;
+  /** The block's timestamp in ms, on `network` (Ethereum when not given); undefined when it can't be read. */
+  blockTime: (blockNumber: bigint, network?: BridgeNetworkId) => Promise<number | undefined>;
   adapter: BridgeAdapter;
   context: Parameters<BridgeAdapter['checkProgress']>[2];
   /** Lowercase hashes of deposits that arrived or moved no funds. */
@@ -97,7 +98,12 @@ export async function recoverDeposits({
           if (!reported?.status || reported.status === 'pending') return;
           const found = bundleDepositIn(bridge, reported.receipts ?? []);
           if (found)
-            store.resolveBundle(scope, bridge.id, found.txHash, onDevice(await blockTime(found.blockNumber)));
+            store.resolveBundle(
+              scope,
+              bridge.id,
+              found.txHash,
+              onDevice(await blockTime(found.blockNumber, bridge.from))
+            );
           else if (reported.status === 'failure')
             store.update(scope, bridge.id, current => failBundle(current, 'source-tx-reverted', now()));
         } catch {

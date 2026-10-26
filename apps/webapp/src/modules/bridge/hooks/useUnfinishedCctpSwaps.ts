@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { cctpSwapStore, isSwapSpendable, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { useBridgeHistory } from './useBridgeHistory';
 import { usePendingScope } from './usePendingScope';
 
@@ -16,15 +16,5 @@ export function useUnfinishedCctpSwaps(): UnfinishedCctpSwap[] {
   const getSnapshot = useCallback(() => (scope ? cctpSwapStore.getSnapshot(scope) : NONE), [scope]);
   const swaps = useSyncExternalStore(cctpSwapStore.subscribe, getSnapshot);
   const bridges = useBridgeHistory();
-  return useMemo(
-    () =>
-      swaps.filter(({ burn, convert }) => {
-        if (convert) return false;
-        if (!burn) return true;
-        const bridge = bridges.find(entry => isBurnOf(entry, burn));
-        // A burn with no card left to follow it: Continue still refuses one the chain shows mined.
-        return !bridge || bridge.status === 'failed';
-      }),
-    [swaps, bridges]
-  );
+  return useMemo(() => swaps.filter(swap => isSwapSpendable(swap, bridges)), [swaps, bridges]);
 }

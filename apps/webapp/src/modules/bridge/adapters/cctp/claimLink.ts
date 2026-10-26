@@ -1,4 +1,4 @@
-import { isHex, size, type Hex } from 'viem';
+import { isHash, type Hex } from 'viem';
 import { QueryParams } from '@/lib/constants';
 import { BRIDGE_NETWORKS } from '../../model/networks';
 import { isSettled } from '../../model/pendingTransitions';
@@ -20,8 +20,7 @@ export function readCctpClaimLink(
 ): { from: CctpL2NetworkId; txHash: Hex } | undefined {
   const network = BRIDGE_NETWORKS.find(({ id }) => id === params.get(QueryParams.ClaimNetwork))?.id;
   const tx = params.get(QueryParams.ClaimTx);
-  if (!network || !isCctpL2Network(network) || !tx || !isHex(tx, { strict: true }) || size(tx) !== 32)
-    return undefined;
+  if (!network || !isCctpL2Network(network) || !tx || !isHash(tx)) return undefined;
   return { from: network, txHash: tx.toLowerCase() as Hex };
 }
 

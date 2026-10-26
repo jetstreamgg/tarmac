@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { isHex, size, type Hex } from 'viem';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { isHash, type Hex } from 'viem';
+import { Button } from '@/components/ui/button';
 import {
   ResponsiveModal,
   ResponsiveModalContent,
   ResponsiveModalTitle
 } from '@/components/ui/responsive-modal';
 import { AmountFieldHairline } from '@/components/product/amountFieldHairline';
+import { tabsTriggerVariants } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
 import { QueryParams } from '@/lib/constants';
@@ -122,12 +123,9 @@ function NetworkPills({ value, options, onChange }: NetworkPillsProps) {
             aria-checked={checked}
             aria-label={getBridgeNetwork(network).name}
             onClick={() => onChange(network)}
+            data-state={checked ? 'active' : 'inactive'}
             data-testid={`bridge-claim-lookup-network-${network}`}
-            className={cn(
-              buttonVariants({ variant: 'navbar', size: 'navbar' }),
-              'w-[100px] px-5',
-              checked && 'border-borderBrandDim from-brand2-start to-brand2-end bg-linear-to-b'
-            )}
+            className={cn(tabsTriggerVariants({ variant: 'nav' }), 'w-[100px]')}
           >
             <BridgeNetworkIcon network={network} className="size-5" />
           </button>
@@ -177,7 +175,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
 
   const find = () => {
     const hash = draft.trim();
-    const valid = isHex(hash, { strict: true }) && size(hash) === 32;
+    const valid = isHash(hash);
     setInvalid(!valid);
     setAttempt(previous => previous + 1);
     setTarget(valid ? { from: network, txHash: hash.toLowerCase() as Hex } : undefined);

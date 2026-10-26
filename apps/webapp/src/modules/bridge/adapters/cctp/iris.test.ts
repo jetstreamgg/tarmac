@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BASE_BURN_ATTESTED, BASE_BURN_IRIS_RESPONSE, BASE_BURN_TX } from './cctpFixtures';
+import { BASE_BURN_ATTESTED, BASE_BURN_IRIS_RESPONSE, BASE_BURN_TX } from './cctp.fixtures';
 import { IRIS_API_URL, irisAttestationReader } from './iris';
 
 const respond = (status: number, body?: unknown) =>

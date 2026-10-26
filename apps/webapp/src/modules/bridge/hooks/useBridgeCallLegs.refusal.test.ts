@@ -67,12 +67,13 @@ describe('useBridgeCallLegs preflight refusal', () => {
     }
   );
 
-  it('reports a failed read as a plain error, not as copy for the user', async () => {
+  it('refuses a failed read with the modal copy, not its raw message', async () => {
     await confirmWith(async () => {
       throw new Error('HTTP request failed. URL: https://rpc.example');
     });
     expect(execute).not.toHaveBeenCalled();
     const [error] = callbacks.onError.mock.calls[0];
-    expect(error).not.toBeInstanceOf(TransactionRefusedError);
+    expect(error).toBeInstanceOf(TransactionRefusedError);
+    expect(error).toMatchObject({ message: 'The transaction could not be sent.', final: false });
   });
 });

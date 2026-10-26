@@ -26,7 +26,7 @@ import {
   BASE_BURN_MINT_RECIPIENT,
   BASE_BURN_TX,
   ETHEREUM_RECEIVE_INPUT
-} from './cctpFixtures';
+} from './cctp.fixtures';
 
 const ACCOUNT = getAddress(BASE_BURN_TX.from);
 const UNIT = 10n ** 12n;

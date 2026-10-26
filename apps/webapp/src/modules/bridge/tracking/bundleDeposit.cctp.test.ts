@@ -5,7 +5,7 @@ import {
   BASE_BURN_LOGS,
   BASE_BURN_MINT_RECIPIENT,
   BASE_BURN_TX
-} from '../adapters/cctp/cctpFixtures';
+} from '../adapters/cctp/cctp.fixtures';
 import { createPendingBridge } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import type { PendingBridge } from '../model/types';

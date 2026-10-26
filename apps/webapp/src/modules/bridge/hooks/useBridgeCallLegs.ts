@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 import type { Address, Call, PublicClient } from 'viem';
-import { toError } from '@/hooks/helpers';
+import { extractErrorCode, toError } from '@/hooks/helpers';
 import type { TxMutateVariables } from '@/hooks';
 import {
   TransactionRefusedError,
@@ -10,7 +10,9 @@ import {
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { useSendBatchTransactionFlow } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
+import { reportError } from '@/modules/sentry/reportError';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { createPromptRegistry, PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { usePromptIssuers } from './usePromptIssuers';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -34,22 +36,11 @@ async function safeExecutedHash(chainId: number | undefined, safeTxHash: string,
 }
 
 // Bundle windows not answered yet, per lowercase account across mounts: a reopened form must not send while one is open.
-const openBundles = new Map<string, number>();
+const openBundles = createPromptRegistry();
 
 /** Counts a bundle window as open for `account`; the returned release counts it answered, once. */
-function openBundle(account: string | undefined) {
-  if (!account) return () => {};
-  const key = account.toLowerCase();
-  openBundles.set(key, (openBundles.get(key) ?? 0) + 1);
-  let open = true;
-  return () => {
-    if (!open) return;
-    open = false;
-    const left = (openBundles.get(key) ?? 1) - 1;
-    if (left > 0) openBundles.set(key, left);
-    else openBundles.delete(key);
-  };
-}
+const openBundle = (account: string | undefined) =>
+  account ? openBundles.open(account.toLowerCase()) : () => {};
 
 // Per single-leg wallet prompt, by the request wagmi passes back when it is answered, the release `onLegPrompt` returned.
 const legReleases = new WeakMap<object, () => void>();
@@ -59,9 +50,10 @@ const answerLeg = (variables: object | undefined) => {
   legReleases.delete(variables);
 };
 
-const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 const SEND_OUT_MESSAGE =
   'A transaction from your last bridge is still open in your wallet or pending. Wait for it to settle before sending again.';
+// The modal's own copy for a send refused without a reason: a failed read's message is not user copy.
+const READ_FAILED_MESSAGE = 'The transaction could not be sent.';
 const asRefusal = (error: Error) =>
   error instanceof TransactionRefusedError ? error : new TransactionRefusedError(error.message);
 
@@ -70,8 +62,8 @@ const asRefusal = (error: Error) =>
  * out one at a time, or as one atomic wallet bundle with `batch`. Every send
  * first awaits `preflight`, which refuses it with an error (a closed bridge).
  * A prompt signed after its run ended or after a later Confirm reports to the
- * callbacks `getCallbacks` returned when it opened: a `sendFunctionName` leg
- * is recorded and followed to its receipt while those callbacks are current,
+ * callbacks `getCallbacks` returned when it opened: a `sendFunctionName` leg (its
+ * Confirm's) is recorded and followed to its receipt while those callbacks are current,
  * any other leg is dropped. No send starts while the wallet shows a bundle
  * for the same account, opened from any form, nor while a leg of a reset run
  * is still out. Another account ends the run unless it only awaits its sent leg.
@@ -101,8 +93,8 @@ export function useBridgeCallLegs({
   from: Address | undefined;
   /** The leg that moves the funds, which the source recording keys on. */
   sendFunctionName: string;
-  /** Resolves to the reason the send is refused, if any. */
-  preflight: (client: PublicClient) => Promise<Error | undefined>;
+  /** Resolves to the reason the send is refused, if any, given the calls this send still has to make. */
+  preflight: (client: PublicClient, nextCalls: readonly Call[]) => Promise<Error | undefined>;
   /** Inside the Safe App a signed prompt returns a safeTxHash. */
   isSafeApp?: boolean;
   /** Bundle the legs when the wallet can: the user's batch setting, never for a Safe. */
@@ -127,9 +119,14 @@ export function useBridgeCallLegs({
   const broadcastRef = useRef(false);
   // The callbacks of the Confirm that opened each wallet prompt, so a prompt signed late reports to its own run.
   const issuers = usePromptIssuers(getCallbacks);
+  // The request of the last leg prompted one at a time: the run's success belongs to its Confirm.
+  const lastPromptRef = useRef<TxMutateVariables | undefined>(undefined);
   // The context `execute` was given, and per wallet prompt the one of the run that opened it.
   const runContextRef = useRef<unknown>(undefined);
   const promptContextsRef = useRef(new WeakMap<object, unknown>());
+  // The send name of the Confirm a prompt opened under: a native deposit's follows the form.
+  const runSendNameRef = useRef(sendFunctionName);
+  const promptSendNamesRef = useRef(new WeakMap<object, string>());
   // Read when a late prompt is signed, whichever render opened it.
   const isSafeAppRef = useRef(isSafeApp);
   useLayoutEffect(() => {
@@ -280,7 +277,9 @@ export function useBridgeCallLegs({
       setSendRoute('sequential');
       if (variables && runContextRef.current !== undefined)
         promptContextsRef.current.set(variables, runContextRef.current);
+      lastPromptRef.current = variables;
       if (variables) {
+        promptSendNamesRef.current.set(variables, runSendNameRef.current);
         const release = onLegPrompt?.(variables, runContextRef.current);
         if (release) legReleases.set(variables, release);
       }
@@ -295,18 +294,23 @@ export function useBridgeCallLegs({
       }
       const issuer = issuers.issuerOf(variables);
       const current = issuer === getCallbacks();
+      const isSend =
+        !!variables &&
+        variables.functionName === (promptSendNamesRef.current.get(variables) ?? sendFunctionName);
       if (current && runFromRef.current) {
-        if (hash && variables?.functionName === sendFunctionName) broadcastRef.current = true;
+        if (hash && isSend) broadcastRef.current = true;
         return issuer.onStart(hash);
       }
       // Signed after its run ended: the send is recorded under its own Confirm, any other leg is dropped.
-      if (variables && variables.functionName !== sendFunctionName) return;
+      if (variables && !isSend) return;
       issuer.onStart(hash);
       if (hash && variables) void followLate(hash as `0x${string}`, issuer);
     },
     onSuccess: (hash, blockNumber) => {
-      runFromRef.current = undefined;
       setSendRoute(null);
+      // A run reset or opened by an earlier Confirm: its sent leg reports its own receipt.
+      if (!runFromRef.current || issuers.issuerOf(lastPromptRef.current) !== getCallbacks()) return;
+      runFromRef.current = undefined;
       getCallbacks().onSuccess(hash, blockNumber);
     },
     onError: (error, hash, variables) => {
@@ -329,7 +333,7 @@ export function useBridgeCallLegs({
   const { execute: executeFlow } = flow;
   const { reset: resetBatch } = batchFlow;
   // A reset run's sequential leg is still out: the engine holds that run's frozen calls until it settles.
-  const { reset: resetSequential, detached: busy } = sequentialFlow;
+  const { reset: resetSequential, detached: busy, nextCalls } = sequentialFlow;
   const reset = useCallback(
     (onCleared?: () => void) => {
       runRef.current += 1;
@@ -351,7 +355,7 @@ export function useBridgeCallLegs({
       if (!l1 || !from)
         return getCallbacks().onError(new TransactionRefusedError('The bridge is not ready to send.'), '');
       // A second send while the wallet still shows a bundle could move the funds twice, under two hashless cards.
-      const promptOpen = () => openBundles.has(from.toLowerCase());
+      const promptOpen = () => openBundles.isOpen(from.toLowerCase());
       if (promptOpen()) {
         pausedRef.current = true;
         return getCallbacks().onError(new TransactionRefusedError(PROMPT_OPEN_MESSAGE), '');
@@ -363,6 +367,7 @@ export function useBridgeCallLegs({
       }
       checkingRef.current = true;
       runContextRef.current = context;
+      runSendNameRef.current = sendFunctionName;
       const run = runRef.current;
       // Set before the read: a switch while it is pending drops it.
       runFromRef.current = from;
@@ -372,7 +377,8 @@ export function useBridgeCallLegs({
         pausedRef.current = true;
         getCallbacks().onError(error, '');
       };
-      preflight(l1)
+      // A Retry resumes a sequential run after its mined legs; a bundle sends every call again.
+      preflight(l1, useBatch ? calls : nextCalls)
         .then(
           refusal => {
             if (run !== runRef.current) return;
@@ -387,15 +393,42 @@ export function useBridgeCallLegs({
             }
           },
           error => {
-            if (run === runRef.current) refuse(toError(error));
+            if (run !== runRef.current) return;
+            // Its message can carry the RPC URL or the account: Sentry gets its kind and code only.
+            reportError(new Error(`Bridge pre-send read failed: ${toError(error).name}`), {
+              module: 'bridge',
+              flow: 'preflight',
+              type: 'read_failed',
+              level: 'warning',
+              extra: { chainId, rpcCode: extractErrorCode(error) }
+            });
+            // Never sent, even on a Retry after a mined leg: not a rollback.
+            refuse(new TransactionRefusedError(READ_FAILED_MESSAGE));
           }
         )
         .finally(() => {
           if (run === runRef.current) checkingRef.current = false;
         });
     },
-    [l1, from, busy, preflight, executeFlow, getCallbacks]
+    [
+      l1,
+      from,
+      busy,
+      preflight,
+      useBatch,
+      calls,
+      nextCalls,
+      executeFlow,
+      getCallbacks,
+      sendFunctionName,
+      chainId
+    ]
   );
+
+  // A run still in its pre-send check ends with nothing sent: its modal closed.
+  const dropCheck = useCallback(() => {
+    if (checkingRef.current) reset();
+  }, [reset]);
 
   // Ends the run in progress, if any, with `error` unless it is paused on one already.
   const stop = useCallback(
@@ -427,10 +460,14 @@ export function useBridgeCallLegs({
     ready: calls.length > 0 && flow.prepared,
     /** A leg of a reset run is still out: Confirm must wait for it to settle. */
     busy,
+    /** A leg of this run mined and the rest waits for Retry. */
+    legMined: !useBatch && sequentialFlow.currentCallIndex > 0,
     /** The first leg's simulation failed. */
     error: calls.length > 0 ? flow.error : null,
     execute,
     reset,
+    /** Ends a run whose pre-send check is still out, so it never reaches the wallet. */
+    dropCheck,
     stop
   };
 }

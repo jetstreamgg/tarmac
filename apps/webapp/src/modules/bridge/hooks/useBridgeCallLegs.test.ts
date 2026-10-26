@@ -2,9 +2,10 @@
  * @vitest-environment happy-dom
  */
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress, type Call, type PublicClient } from 'viem';
 import type { TxMutateVariables } from '@/hooks';
+import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import {
   TransactionRefusedError,
   TransactionReplacedError,
@@ -28,7 +29,10 @@ type FlowArgs = {
 const mocks = vi.hoisted(() => ({
   sequential: [] as FlowArgs[],
   batch: [] as FlowArgs[],
-  batchPrepared: false
+  batchPrepared: false,
+  sequentialIndex: 0,
+  sequentialNextCalls: undefined as Call[] | undefined,
+  sequentialExecute: vi.fn()
 }));
 
 vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
@@ -48,7 +52,14 @@ vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
 vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
   useSequentialTransactionFlow: (args: FlowArgs) => {
     mocks.sequential.push(args);
-    return { prepared: true, error: null, execute: vi.fn(), reset: vi.fn() };
+    return {
+      prepared: true,
+      error: null,
+      execute: mocks.sequentialExecute,
+      reset: vi.fn(),
+      currentCallIndex: mocks.sequentialIndex,
+      nextCalls: mocks.sequentialNextCalls ?? []
+    };
   }
 }));
 
@@ -199,5 +210,216 @@ describe('useBridgeCallLegs bundle success', () => {
       bundle.onSuccess('0xreceive', 7n, ['0xreceive', '0xsell']);
     });
     expect(callbacks.onSuccess).toHaveBeenCalledWith('0xreceive', 7n, ['0xreceive', '0xsell']);
+  });
+});
+
+describe('useBridgeCallLegs legMined', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+  });
+
+  afterEach(() => {
+    mocks.sequentialIndex = 0;
+  });
+
+  it('says a leg of the run mined once the sequence moved past its first call', () => {
+    const view = renderLegs(vi.fn());
+    expect(view.result.current.legMined).toBe(false);
+
+    mocks.sequentialIndex = 1;
+    view.rerender();
+    expect(view.result.current.legMined).toBe(true);
+  });
+
+  it('never says so for a bundle, which mines all at once', () => {
+    Object.assign(mocks, { batchPrepared: true, sequentialIndex: 1 });
+    const view = renderLegs(vi.fn(), true);
+    expect(view.result.current.isBatch).toBe(true);
+    expect(view.result.current.legMined).toBe(false);
+  });
+});
+
+describe('useBridgeCallLegs one-at-a-time success', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+  });
+
+  const confirmCallbacks = () => ({
+    onMutate: vi.fn(),
+    onStart: vi.fn(),
+    onSuccess: vi.fn(),
+    onError: vi.fn()
+  });
+  const renderConfirms = (first: TxCallbacks) => {
+    const modal = { current: first };
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight: async () => undefined,
+        getCallbacks: () => modal.current
+      })
+    );
+    return { modal, ...view };
+  };
+  const settle = (hash: string) =>
+    (
+      mocks.sequential.at(-1) as unknown as { onSuccess: (hash: string, blockNumber?: bigint) => void }
+    ).onSuccess(hash, 7n);
+
+  it('hands its Confirm the success of its own run', async () => {
+    const a = confirmCallbacks();
+    const { result } = renderConfirms(a);
+    await act(async () => result.current.execute());
+    act(() => {
+      mocks.sequential.at(-1)!.onMutate(SWAP);
+      mocks.sequential.at(-1)!.onStart('0xswap', SWAP);
+      mocks.sequential.at(-1)!.onMutate(BURN);
+      mocks.sequential.at(-1)!.onStart('0xburn', BURN);
+    });
+    act(() => settle('0xburn'));
+    expect(a.onSuccess).toHaveBeenCalledWith('0xburn', 7n);
+  });
+
+  // A claim's sale signed after the modal closed must not mark the card launched next as claimed.
+  it('hands no Confirm the success of a run closed while its prompt was open', async () => {
+    const a = confirmCallbacks();
+    const b = confirmCallbacks();
+    const { modal, result } = renderConfirms(a);
+    await act(async () => result.current.execute());
+    act(() => mocks.sequential.at(-1)!.onMutate(SWAP));
+    act(() => result.current.reset());
+    modal.current = b;
+    act(() => settle('0xswap'));
+    expect(a.onSuccess).not.toHaveBeenCalled();
+    expect(b.onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('never hands the success of an earlier Confirm to the current one', async () => {
+    const a = confirmCallbacks();
+    const b = confirmCallbacks();
+    const { modal, result } = renderConfirms(a);
+    await act(async () => result.current.execute());
+    act(() => mocks.sequential.at(-1)!.onMutate(BURN));
+    modal.current = b;
+    act(() => settle('0xburn'));
+    expect(b.onSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe('useBridgeCallLegs dropCheck', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+    mocks.sequentialExecute.mockClear();
+    Object.values(callbacks).forEach(fn => fn.mockClear());
+  });
+
+  const renderChecking = () => {
+    const check = { pass: () => undefined as void };
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight: () => new Promise<undefined>(resolve => (check.pass = () => resolve(undefined))),
+        getCallbacks: () => callbacks
+      })
+    );
+    return { check, ...view };
+  };
+
+  // A modal closed while the check reads the chain must not open the wallet behind it.
+  it('opens no wallet prompt for a run dropped while its pre-send check is out', async () => {
+    const { check, result } = renderChecking();
+    act(() => result.current.execute());
+    act(() => result.current.dropCheck());
+    await act(async () => check.pass());
+    expect(mocks.sequentialExecute).not.toHaveBeenCalled();
+  });
+
+  it('keeps a run whose wallet prompt is already open', async () => {
+    const { check, result } = renderChecking();
+    act(() => result.current.execute());
+    await act(async () => check.pass());
+    expect(mocks.sequentialExecute).toHaveBeenCalledTimes(1);
+    act(() => mocks.sequential.at(-1)!.onMutate(BURN));
+    act(() => result.current.dropCheck());
+    act(() => {
+      mocks.sequential.at(-1)!.onStart('0xburn', BURN);
+      (mocks.sequential.at(-1) as unknown as { onSuccess: (hash: string) => void }).onSuccess('0xburn');
+    });
+    expect(callbacks.onSuccess).toHaveBeenCalledWith('0xburn', undefined);
+  });
+});
+
+// A Retry after a mined leg resumes the rest: the check before it reads what that rest needs, not the whole run.
+describe('useBridgeCallLegs preflight', () => {
+  afterEach(() => {
+    mocks.sequentialNextCalls = undefined;
+  });
+
+  const run = async (batch: boolean) => {
+    const preflight = vi.fn(async (_client: PublicClient, _nextCalls: readonly Call[]) => undefined);
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight,
+        batch,
+        getCallbacks: () => callbacks
+      })
+    );
+    await act(async () => view.result.current.execute());
+    return preflight.mock.calls.at(-1)![1];
+  };
+
+  it('gets the calls a sequential run still has to send', async () => {
+    mocks.sequentialNextCalls = CALLS.slice(1);
+    expect(await run(false)).toEqual(CALLS.slice(1));
+  });
+
+  it('gets every call of a bundle, which sends them all again', async () => {
+    Object.assign(mocks, { batchPrepared: true, sequentialNextCalls: CALLS.slice(1) });
+    expect(await run(true)).toEqual(CALLS);
+  });
+});
+
+describe('useBridgeCallLegs late send', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+    Object.values(callbacks).forEach(fn => fn.mockClear());
+  });
+
+  // A native deposit's send name follows the form's destination.
+  it('records a send signed after its run ended though the form now sends another call', async () => {
+    const DEPOSIT = { functionName: 'depositETHTo', args: [] } as unknown as TxMutateVariables;
+    const client = { waitForTransactionReceipt: vi.fn(() => new Promise(() => {})) };
+    let sendFunctionName = 'depositETHTo';
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 1,
+        client: client as unknown as PublicClient,
+        from: SENDER,
+        sendFunctionName,
+        preflight: async () => undefined,
+        getCallbacks: () => callbacks
+      })
+    );
+    await act(async () => view.result.current.execute());
+    act(() => mocks.sequential.at(-1)!.onMutate(DEPOSIT));
+    act(() => view.result.current.reset());
+    sendFunctionName = 'outboundTransfer';
+    view.rerender();
+    act(() => mocks.sequential.at(-1)!.onStart('0xdeposit', DEPOSIT));
+    expect(callbacks.onStart).toHaveBeenCalledWith('0xdeposit');
   });
 });

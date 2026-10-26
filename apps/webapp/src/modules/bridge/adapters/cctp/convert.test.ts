@@ -12,7 +12,8 @@ import {
   applyProgress,
   createPendingBridge,
   recordAction,
-  recordActionSent
+  recordActionSent,
+  recordNextLeg
 } from '../../model/pendingTransitions';
 import { resolveBridgeRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
@@ -241,5 +242,46 @@ describe('readCctpConvertOffer', () => {
     await expect(readCctpConvertOffer({ client, bridge: claimed(), account: ACCOUNT })).rejects.toThrow(
       'rpc down'
     );
+  });
+});
+
+describe('readCctpConvertOffer, a sale the claim run sent after the claim mined', () => {
+  const selling = () => recordNextLeg(claimed(), 'claim', '0xsale');
+  const reader = (
+    sale: { status: 'success' | 'reverted'; logs: ReturnType<typeof transfer>[] } | undefined
+  ) =>
+    ({
+      getTransactionReceipt: vi.fn(async ({ hash }: { hash: Hex }) => {
+        if (hash === '0xclaim') return { status: 'success', logs: [] };
+        if (hash === '0xsale' && sale) return sale;
+        throw new Error('Transaction receipt could not be found.');
+      }) as never,
+      readContract: vi.fn(async () => USDC('500')) as never
+    }) satisfies ConvertOfferReader;
+
+  it('offers nothing while that sale is not mined', async () => {
+    await expect(
+      readCctpConvertOffer({ client: reader(undefined), bridge: selling(), account: ACCOUNT })
+    ).rejects.toThrow();
+  });
+
+  it('offers nothing once that sale sold the USDC', async () => {
+    const sold = {
+      status: 'success' as const,
+      logs: [transfer(L1_USDS, zeroAddress, ACCOUNT, parseUnits('100', 18))]
+    };
+    await expect(
+      readCctpConvertOffer({ client: reader(sold), bridge: selling(), account: ACCOUNT })
+    ).resolves.toBeUndefined();
+  });
+
+  it('offers the USDC when that sale reverted, as it sold nothing', async () => {
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ status: 'reverted', logs: [] }),
+        bridge: selling(),
+        account: ACCOUNT
+      })
+    ).resolves.toBe(USDC('100'));
   });
 });

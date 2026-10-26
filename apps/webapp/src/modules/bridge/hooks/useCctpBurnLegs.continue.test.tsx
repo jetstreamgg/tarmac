@@ -6,7 +6,7 @@ import { getAddress, type Call, type PublicClient } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
 import { cctpL2Contracts } from '../adapters/cctp/contracts';
 import { RESUME_SCAN_MAX_BLOCKS } from '../adapters/cctp/gate';
 import {

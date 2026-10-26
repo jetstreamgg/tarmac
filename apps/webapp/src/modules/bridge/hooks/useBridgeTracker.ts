@@ -1,4 +1,5 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { getCallsStatus } from '@wagmi/core';
 import { useConfig } from 'wagmi';
 import { isTracked, pollIntervalMs } from '../model/pendingTransitions';
 import { bridgeChainId } from '../model/networks';
@@ -6,6 +7,7 @@ import { getBridgeAdapter } from '../adapters/registry';
 import { readSafeActionProgress, readSafeTxProgress } from '../adapters/safe';
 import { cctpSwapStore } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
+import { bundleActionProgress } from '../tracking/bundleAction';
 import { trackBridge } from '../tracking/trackBridge';
 import { readsBalanceOn } from './balanceQueries';
 import { wagmiAdapterContext } from './adapterContext';
@@ -53,6 +55,14 @@ export function useBridgeTracker() {
           readSafeAction: async (entry, sent) => {
             const chainId = bridgeChainId(entry.to, familyChainId);
             return chainId === undefined ? null : readSafeActionProgress({ chainId, sent, now: Date.now() });
+          },
+          // Only the wallet that took the bundle knows it; one that can't answer leaves it sent.
+          readBundleAction: async (_, sent) => {
+            try {
+              return bundleActionProgress(sent, await getCallsStatus(config, { id: sent.txHash }));
+            } catch {
+              return null;
+            }
           }
         });
         // The burn mined: the swap it continued has nothing left to bridge.

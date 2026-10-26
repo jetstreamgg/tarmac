@@ -4,9 +4,14 @@ import { useConfig } from 'wagmi';
 import { getPublicClient } from '@wagmi/core';
 import { useTokenBalance } from '@/hooks';
 import { L1_USDC } from '../adapters/cctp/contracts';
-import { cctpConvertOffer, confirmedClaimTxHashes, readClaimSold } from '../adapters/cctp/convert';
+import {
+  cctpConvertOffer,
+  claimNextLegTxHashes,
+  confirmedClaimTxHashes,
+  readClaimSold
+} from '../adapters/cctp/convert';
 import { bridgeChainId } from '../model/networks';
-import { canLaunchConvert } from '../model/pendingTransitions';
+import { canConvert } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 import { usePendingScope } from './usePendingScope';
 
@@ -22,16 +27,12 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
   const chainId = bridgeChainId('ethereum', familyChainId);
   const recipient = bridge.recipient ?? bridge.account;
   const claimTxHashes = confirmedClaimTxHashes(bridge);
-  const eligible =
-    canLaunchConvert(bridge) &&
-    claimTxHashes.length > 0 &&
-    chainId !== undefined &&
-    !!account &&
-    account.toLowerCase() === recipient.toLowerCase();
+  const nextLegTxHashes = claimNextLegTxHashes(bridge);
+  const eligible = canConvert(bridge, account) && claimTxHashes.length > 0 && chainId !== undefined;
 
-  // A confirmed receipt never changes.
+  // A mined receipt never changes; a leg not mined yet fails the read, which retries.
   const { data: claimSold } = useQuery({
-    queryKey: ['cctp-claim-sold', chainId, claimTxHashes, recipient],
+    queryKey: ['cctp-claim-sold', chainId, claimTxHashes, nextLegTxHashes, recipient],
     queryFn: async () => {
       const client = chainId === undefined ? undefined : getPublicClient(config, { chainId });
       if (!client) throw new Error('No Ethereum client.');

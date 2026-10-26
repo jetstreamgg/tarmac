@@ -11,6 +11,7 @@ import {
 import { psm3L2Abi, usdsPsmWrapperAbi } from '@/hooks/generated';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import { getPsmDirectionHalted } from '@/modules/convert/hooks/usePsmConversion.helpers';
+import { math } from '@/utils';
 import type { BridgeRouteFacts } from '../../model/resolveRoute';
 import { blockRanges } from '../blockRanges';
 import {
@@ -21,7 +22,6 @@ import {
   MESSAGE_TRANSMITTER_V2,
   TOKEN_MESSENGER_V2,
   TOKEN_MINTER_V2,
-  USDS_PER_USDC_UNIT,
   USDS_PSM_WRAPPER,
   addressToBytes32,
   cctpL2Contracts,
@@ -65,10 +65,10 @@ export function cctpGate(
   { swap = true }: { swap?: boolean } = {}
 ): NonNullable<Exclude<BridgeRouteFacts['cctp'], 'loading' | 'error'>> {
   const paused = [...reads.sourcePaused, ...reads.destinationPaused].some(Boolean);
-  const usdcLiquidity = reads.psm3Usdc * USDS_PER_USDC_UNIT;
+  const usdcLiquidity = math.convertUSDCtoWad(reads.psm3Usdc);
   return {
     isOpen: !paused && wrapperSells(reads),
-    maxAmount: reads.burnLimit * USDS_PER_USDC_UNIT,
+    maxAmount: math.convertUSDCtoWad(reads.burnLimit),
     // Without the swap, as when continuing one, PSM3's USDC is not needed.
     liquidity: swap && usdcLiquidity < reads.litePsmDai ? usdcLiquidity : reads.litePsmDai
   };
@@ -98,14 +98,16 @@ export const cctpPocketUsdcRead = (network: CctpL2NetworkId, pocket: Address) =>
     args: [pocket]
   }) as const;
 
-/** The gate's reads on Ethereum: both pauses, the LitePSM's DAI and the wrapper's liveness and sell fee. */
-export const cctpDestinationGateReads = [
-  ...pausedReads,
+/** The LitePSM's DAI and the wrapper's liveness, sell fee and halted value. */
+const sellReads = [
   { address: L1_DAI, abi: erc20Abi, functionName: 'balanceOf', args: [LITE_PSM] },
   { address: USDS_PSM_WRAPPER, abi: usdsPsmWrapperAbi, functionName: 'live' },
   { address: USDS_PSM_WRAPPER, abi: usdsPsmWrapperAbi, functionName: 'tin' },
   { address: USDS_PSM_WRAPPER, abi: usdsPsmWrapperAbi, functionName: 'HALTED' }
 ] as const;
+
+/** The gate's reads on Ethereum: both pauses, the LitePSM's DAI and the wrapper's liveness and sell fee. */
+export const cctpDestinationGateReads = [...pausedReads, ...sellReads] as const;
 
 export type CctpSourceResults = readonly [boolean, boolean, bigint, Address];
 export type CctpDestinationResults = readonly [boolean, boolean, bigint, bigint, bigint, bigint];
@@ -144,17 +146,17 @@ export async function cctpBurnRefusal({
   destination: PublicClient;
   swap?: boolean;
 }): Promise<Error | undefined> {
-  const [sourceResults, destinationResults] = (await Promise.all([
-    Promise.all(cctpSourceGateReads(network).map(read => source.readContract(read as never))),
-    Promise.all(cctpDestinationGateReads.map(read => destination.readContract(read as never)))
-  ])) as unknown as [CctpSourceResults, CctpDestinationResults];
+  const [sourceResults, destinationResults] = await Promise.all([
+    source.multicall({ contracts: cctpSourceGateReads(network), allowFailure: false }),
+    destination.multicall({ contracts: cctpDestinationGateReads, allowFailure: false })
+  ]);
   const pocketUsdc = await source.readContract(cctpPocketUsdcRead(network, sourceResults[3]));
   const reads = toCctpGateReads(sourceResults, pocketUsdc, destinationResults);
-  const gate = cctpGate(reads);
+  const gate = cctpGate(reads, { swap });
   if (!gate.isOpen) return new Error('CCTP is paused.');
   if (amount > (gate.maxAmount ?? 0n))
     return new Error('The amount is over what one CCTP transfer can carry.');
-  if (amount > (swap ? (gate.liquidity ?? 0n) : reads.litePsmDai))
+  if (amount > (gate.liquidity ?? 0n))
     return new Error('There is not enough liquidity to bridge this amount.');
   return undefined;
 }
@@ -277,23 +279,28 @@ export async function cctpClaimRefusal({
   client: PublicClient;
 }): Promise<Error | undefined> {
   const { nonce, body } = decodeCctpMessage(message);
-  const [minterPaused, transmitterPaused, litePsmDai, live, tin, halted, used, block] = (await Promise.all([
-    ...cctpDestinationGateReads.map(read => client.readContract(read as never)),
-    client.readContract({
-      address: MESSAGE_TRANSMITTER_V2,
-      abi: messageTransmitterV2Abi,
-      functionName: 'usedNonces',
-      args: [nonce]
+  const [[minterPaused, transmitterPaused, litePsmDai, live, tin, halted, used], block] = await Promise.all([
+    client.multicall({
+      contracts: [
+        ...cctpDestinationGateReads,
+        {
+          address: MESSAGE_TRANSMITTER_V2,
+          abi: messageTransmitterV2Abi,
+          functionName: 'usedNonces',
+          args: [nonce]
+        }
+      ],
+      allowFailure: false
     }),
     client.getBlockNumber()
-  ])) as unknown as [boolean, boolean, bigint, bigint, bigint, bigint, bigint, bigint];
+  ]);
   if (used !== 0n) return finalRefusal('This transfer was already claimed.');
   // The receive mines in a block after the latest one.
   if (isCctpMessageExpired(message, block + 1n))
     return new Error('This attestation has expired; wait for a new one.');
   if (minterPaused || transmitterPaused || !wrapperSells({ live, tin, halted }))
     return new Error('CCTP is paused.');
-  if ((body.amount - body.feeExecuted) * USDS_PER_USDC_UNIT > litePsmDai)
+  if (math.convertUSDCtoWad(body.amount - body.feeExecuted) > litePsmDai)
     return new Error('There is not enough liquidity to claim this transfer as USDS.');
   return undefined;
 }
@@ -314,13 +321,16 @@ export async function cctpConvertRefusal({
   client: PublicClient;
 }): Promise<Error | undefined> {
   if (amount <= 0n) return new Error('Nothing to convert.');
-  const [litePsmDai, live, tin, halted, usdc] = (await Promise.all([
-    ...cctpDestinationGateReads.slice(pausedReads.length).map(read => client.readContract(read as never)),
-    client.readContract({ address: L1_USDC, abi: erc20Abi, functionName: 'balanceOf', args: [account] })
-  ])) as unknown as [bigint, bigint, bigint, bigint, bigint];
+  const [litePsmDai, live, tin, halted, usdc] = await client.multicall({
+    contracts: [
+      ...sellReads,
+      { address: L1_USDC, abi: erc20Abi, functionName: 'balanceOf', args: [account] }
+    ],
+    allowFailure: false
+  });
   if (!wrapperSells({ live, tin, halted }))
     return new Error("The wrapper can't convert USDC to USDS right now.");
-  if (amount * USDS_PER_USDC_UNIT > litePsmDai)
+  if (math.convertUSDCtoWad(amount) > litePsmDai)
     return new Error('There is not enough liquidity to convert this USDC to USDS.');
   if (usdc < amount) return new Error('This account holds less USDC than this conversion.');
   return undefined;
@@ -344,7 +354,7 @@ export async function cctpL2ConvertRefusal({
 }): Promise<Error | undefined> {
   if (amount <= 0n) return new Error('Nothing to convert.');
   const { psm3, usds, usdc } = cctpL2Contracts(network);
-  const output = amount * USDS_PER_USDC_UNIT;
+  const output = math.convertUSDCtoWad(amount);
   const [quote, psm3Usds, held] = await Promise.all([
     client.readContract({
       address: psm3,

@@ -1,11 +1,10 @@
 import type { Call } from 'viem';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
-import { formatBigInt } from '@/utils';
+import { formatBigInt, math } from '@/utils';
 import { ConvertReviewContent } from '@/modules/convert/components/ConvertReviewContent';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
-import { USDS_PER_USDC_UNIT } from '../adapters/cctp/contracts';
 import { BridgeWarningBox } from './BridgeWarningBox';
 
 const formatUsdc = (amount: bigint) => formatBigInt(amount, { unit: 6, minDecimals: 2, maxDecimals: 2 });
@@ -33,7 +32,7 @@ export function CctpConvertReview({ amount, bridged, chainId, calls, isBatch }: 
         originSymbol="USDC"
         targetSymbol="USDS"
         originAmount={amount}
-        targetAmount={amount * USDS_PER_USDC_UNIT}
+        targetAmount={math.convertUSDCtoWad(amount)}
         originDecimals={6}
         targetDecimals={18}
         networkName={networkName}

@@ -5,7 +5,7 @@ import { act, renderHook } from '@testing-library/react';
 import { encodeFunctionData, getAddress, type Call } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
 import { TOKEN_MESSENGER_V2, cctpL2Contracts } from '../adapters/cctp/contracts';
 import { useCctpBurnLegs } from './useCctpBurnLegs';
 
@@ -114,7 +114,7 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it('sends approve, swap, approve and the real burn calldata on the L2, keyed on depositForBurn', () => {
-    const legs = render();
+    render();
     expect(mocks.legs).toMatchObject({ chainId: BASE, sendFunctionName: 'depositForBurn' });
     expect(mocks.legs!.client).toBe(mocks.clients[BASE]);
     expect(calls().map(call => (call as { functionName?: string }).functionName)).toEqual([
@@ -124,7 +124,6 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
       'depositForBurn'
     ]);
     expect(encodeFunctionData(calls()[3] as never)).toBe(BASE_BURN_TX.input);
-    expect(legs.needsApprove).toBe(true);
   });
 
   it('reads both allowances on the L2 from the sender', () => {
@@ -140,7 +139,7 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   it('skips the approves the allowances cover', () => {
     mocks.usds = AMOUNT;
     mocks.usdc = BASE_BURN_AMOUNT;
-    expect(render().needsApprove).toBe(false);
+    render();
     expect(calls()).toHaveLength(2);
   });
 
@@ -220,8 +219,35 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, BURN_HASH);
   });
 
+  // A closed Review resets the launch's source network while the swap may still be signed.
+  it('keeps a swap signed after the form moved to another network under the network of its run', () => {
+    const ARBITRUM = 42161;
+    mocks.clients[ARBITRUM] = { chain: 'arbitrum' };
+    const { result, rerender } = renderHook(
+      ({ from, chainId }: { from: 'base' | 'arbitrum'; chainId: number }) =>
+        useCctpBurnLegs({
+          enabled: true,
+          from,
+          chainId,
+          ethereumChainId: ETHEREUM,
+          account: BASE_BURN_TX.from,
+          recipient: BASE_BURN_MINT_RECIPIENT,
+          amount: AMOUNT,
+          getCallbacks,
+          scope: SCOPE
+        }),
+      { initialProps: { from: 'arbitrum', chainId: ARBITRUM } }
+    );
+    act(() => result.current.execute());
+    const swap = calls()[1];
+    rerender({ from: 'base', chainId: BASE });
+    (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(SWAP_HASH, swap);
+    expect(mocks.record).toHaveBeenCalledWith(SCOPE, expect.objectContaining({ network: 'arbitrum' }));
+  });
+
   it('keeps a repriced swap under the hash that mines, and drops the one it replaced', () => {
-    render({ scope: SCOPE });
+    const legs = render({ scope: SCOPE });
+    act(() => legs.execute());
     const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: object) => void;
     const swap = calls()[1];
     onLegSent(SWAP_HASH, swap);
@@ -236,7 +262,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it('drops nothing when the same swap is reported twice', () => {
-    render({ scope: SCOPE });
+    const legs = render({ scope: SCOPE });
+    act(() => legs.execute());
     const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: object) => void;
     const swap = calls()[1];
     onLegSent(SWAP_HASH, swap);
@@ -245,7 +272,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it("keeps an earlier run's swap when another run sends its own", () => {
-    render({ scope: SCOPE });
+    const legs = render({ scope: SCOPE });
+    act(() => legs.execute());
     const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: object) => void;
     onLegSent(SWAP_HASH, { ...calls()[1] });
     onLegSent(REPRICED_HASH, { ...calls()[1] });
@@ -254,7 +282,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it('links the continued swap to its burn once sent', () => {
-    render({ scope: SCOPE, resume: RESUME });
+    const legs = render({ scope: SCOPE, resume: RESUME });
+    act(() => legs.execute());
     (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(BURN_HASH, calls()[1]);
     expect(mocks.clear).not.toHaveBeenCalled();
     expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, BURN_HASH);
@@ -396,6 +425,23 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
       destination: mocks.clients[ETHEREUM],
       swap: false
     });
+  });
+
+  // A Retry after the run's own swap mined sends no swap: the pocket that swap may have emptied doesn't matter.
+  it('reads the gate with no swap once the run has no swap left to send', async () => {
+    render();
+    const preflight = mocks.legs!.preflight as (
+      client: unknown,
+      nextCalls?: Call[]
+    ) => Promise<Error | undefined>;
+    mocks.refusal.mockResolvedValue(undefined);
+    const swapAt = calls().findIndex(
+      call => (call as { functionName?: string }).functionName === 'swapExactIn'
+    );
+    await preflight(mocks.clients[BASE], calls().slice(swapAt + 1));
+    expect(mocks.refusal).toHaveBeenLastCalledWith(expect.objectContaining({ swap: false }));
+    await preflight(mocks.clients[BASE], calls().slice(swapAt));
+    expect(mocks.refusal).toHaveBeenLastCalledWith(expect.objectContaining({ swap: true }));
   });
 
   it('reads nothing while disabled', () => {

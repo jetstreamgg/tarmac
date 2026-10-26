@@ -5,7 +5,7 @@ import { resolveBridgeRoute } from '../../model/resolveRoute';
 import { getBridgeAdapter } from '../registry';
 import type { AdapterContext, ChainReader } from '../types';
 import { cctpProgress } from './cctpProgress';
-import { BASE_BURN_AMOUNT, BASE_BURN_ATTESTED, BASE_BURN_LOGS, BASE_BURN_TX } from './cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_ATTESTED, BASE_BURN_LOGS, BASE_BURN_TX } from './cctp.fixtures';
 import { MESSAGE_TRANSMITTER_V2, TOKEN_MESSENGER_V2, messageTransmitterV2Abi } from './contracts';
 import { forkAttestationReader } from './forkAttestations';
 

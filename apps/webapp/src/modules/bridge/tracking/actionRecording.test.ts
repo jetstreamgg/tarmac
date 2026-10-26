@@ -219,3 +219,57 @@ describe('withActionRecording, an action followed by other legs', () => {
     expect(onReverted).toHaveBeenCalledExactlyOnceWith('0xreceive');
   });
 });
+
+// A bundle starts with no hash: the action was recorded as sent under the wallet's calls id.
+describe('withActionRecording, an action sent as a wallet bundle', () => {
+  const bundleSetup = (calls: string | null = '0xcalls') => {
+    const inner: TxCallbacks = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
+    const onReverted = vi.fn();
+    const onConfirmed = vi.fn();
+    const callbacks = withActionRecording(() => inner, {
+      onSent: vi.fn(),
+      onConfirmed,
+      onReverted,
+      readBundle: () => calls ?? undefined
+    });
+    return { inner, onReverted, onConfirmed, callbacks };
+  };
+  const batchFailed = new Error('ERROR: Batch transaction failed');
+
+  it.each([
+    ['failed', batchFailed, undefined],
+    ['reverted in one of its transactions', batchFailed, '0xsell'],
+    ['reverted', reverted, '0xreceive']
+  ])('drops it by its calls id when the bundle %s', (_, error, hash) => {
+    const { inner, onReverted, callbacks } = bundleSetup();
+    callbacks.onStart(undefined);
+    callbacks.onError(error, hash);
+    expect(onReverted).toHaveBeenCalledWith('0xcalls');
+    expect(inner.onError).toHaveBeenCalledWith(error, hash);
+  });
+
+  it('keeps it when the wait fails without the bundle failing, or once it succeeded', () => {
+    const waiting = bundleSetup();
+    waiting.callbacks.onStart(undefined);
+    waiting.callbacks.onError(new Error('Timed out while waiting for transaction'), '0xreceive');
+    expect(waiting.onReverted).not.toHaveBeenCalled();
+
+    const done = bundleSetup();
+    done.callbacks.onStart(undefined);
+    done.callbacks.onSuccess('0xreceive', 7n, ['0xreceive', '0xsell']);
+    done.callbacks.onError(batchFailed);
+    expect(done.onConfirmed).toHaveBeenCalledWith('0xreceive', ['0xreceive', '0xsell']);
+    expect(done.onReverted).not.toHaveBeenCalled();
+  });
+
+  it('drops nothing when no bundle was recorded, or for a failure before the wallet accepted it', () => {
+    const none = bundleSetup(null);
+    none.callbacks.onStart(undefined);
+    none.callbacks.onError(batchFailed);
+    expect(none.onReverted).not.toHaveBeenCalled();
+
+    const early = bundleSetup();
+    early.callbacks.onError(batchFailed);
+    expect(early.onReverted).not.toHaveBeenCalled();
+  });
+});

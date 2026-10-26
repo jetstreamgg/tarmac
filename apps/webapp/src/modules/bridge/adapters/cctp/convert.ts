@@ -8,7 +8,7 @@ import {
   type Log,
   type PublicClient
 } from 'viem';
-import { canLaunchConvert } from '../../model/pendingTransitions';
+import { canConvert } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { cctpBurnAmount } from './calls';
 import { L1_USDC, L1_USDS } from './contracts';
@@ -35,6 +35,14 @@ export const confirmedClaimTxHashes = (bridge: PendingBridge): string[] =>
     .filter(action => action.action === 'claim' && action.status === undefined)
     .flatMap(action => [action.txHash, ...(action.bundleTxHashes ?? [])]);
 
+/** The leg a claim's run sent after the claim mined and hasn't confirmed: its sale, maybe mined after a reload. */
+export const claimNextLegTxHashes = (bridge: PendingBridge): string[] =>
+  bridge.actions.flatMap(action =>
+    action.action === 'claim' && action.status === undefined && action.nextLegTxHash
+      ? [action.nextLegTxHash]
+      : []
+  );
+
 /** The first hash this app's claim confirmed with; see `confirmedClaimTxHashes` for all of them. */
 export const confirmedClaimTxHash = (bridge: PendingBridge): string | undefined =>
   confirmedClaimTxHashes(bridge)[0];
@@ -56,9 +64,7 @@ export function cctpConvertOffer({
   claimSold: boolean | undefined;
   usdcBalance: bigint | undefined;
 }): bigint | undefined {
-  if (!canLaunchConvert(bridge) || !confirmedClaimTxHash(bridge)) return undefined;
-  if (!account || account.toLowerCase() !== (bridge.recipient ?? bridge.account).toLowerCase())
-    return undefined;
+  if (!canConvert(bridge, account) || !confirmedClaimTxHash(bridge)) return undefined;
   if (claimSold !== false || usdcBalance === undefined) return undefined;
   const minted = cctpBurnAmount(bridge.amount);
   const amount = usdcBalance < minted ? usdcBalance : minted;
@@ -70,13 +76,20 @@ export type ConvertOfferReader = Pick<PublicClient, 'getTransactionReceipt' | 'r
 /**
  * Whether this app's claim sold its USDC to `recipient`, from the receipts of
  * every hash it confirmed with. A reverted one can't tell what it left, so it
- * counts as sold.
+ * counts as sold. A leg its run sent after the claim (see `claimNextLegTxHashes`)
+ * must be mined to tell: a reverted one sold nothing.
  */
 export async function readClaimSold(client: ConvertOfferReader, bridge: PendingBridge, recipient: string) {
-  const receipts = await Promise.all(
-    confirmedClaimTxHashes(bridge).map(hash => client.getTransactionReceipt({ hash: hash as Hex }))
+  const read = (hashes: string[]) =>
+    Promise.all(hashes.map(hash => client.getTransactionReceipt({ hash: hash as Hex })));
+  const [receipts, nextLegs] = await Promise.all([
+    read(confirmedClaimTxHashes(bridge)),
+    read(claimNextLegTxHashes(bridge))
+  ]);
+  return (
+    receipts.some(receipt => receipt.status !== 'success' || claimSoldForUsds(receipt.logs, recipient)) ||
+    nextLegs.some(receipt => receipt.status === 'success' && claimSoldForUsds(receipt.logs, recipient))
   );
-  return receipts.some(receipt => receipt.status !== 'success' || claimSoldForUsds(receipt.logs, recipient));
 }
 
 /** `cctpConvertOffer` read afresh on Ethereum: the claim's receipts and the account's USDC. A failed read rejects. */
@@ -89,9 +102,8 @@ export async function readCctpConvertOffer({
   bridge: PendingBridge;
   account: string;
 }): Promise<bigint | undefined> {
+  if (!canConvert(bridge, account) || !confirmedClaimTxHash(bridge)) return undefined;
   const recipient = bridge.recipient ?? bridge.account;
-  if (!canLaunchConvert(bridge) || !confirmedClaimTxHash(bridge)) return undefined;
-  if (account.toLowerCase() !== recipient.toLowerCase()) return undefined;
   const [claimSold, usdcBalance] = await Promise.all([
     readClaimSold(client, bridge, recipient),
     client.readContract({

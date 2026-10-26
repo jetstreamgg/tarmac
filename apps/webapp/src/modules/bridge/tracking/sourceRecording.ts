@@ -89,7 +89,7 @@ export function withSourceRecording(
 }
 
 /** The batch engine's error for a bundle that settled as failed, or a reverted receipt. */
-function isBundleFailure(error: unknown): boolean {
+export function isBundleFailure(error: unknown): boolean {
   return (
     (error instanceof Error && error.message === BATCH_FAILED_MESSAGE) ||
     error instanceof TransactionRevertedError

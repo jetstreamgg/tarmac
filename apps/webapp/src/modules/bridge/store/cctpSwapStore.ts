@@ -1,5 +1,6 @@
-import type { CctpL2NetworkId } from '../adapters/cctp/contracts';
+import { CCTP_L2_NETWORKS, type CctpL2NetworkId } from '../adapters/cctp/contracts';
 import type { PendingBridge } from '../model/types';
+import { createScopedListStore } from './scopedListStore';
 
 const KEY_PREFIX = 'bridgeCctpSwap:v1:';
 
@@ -17,15 +18,28 @@ export type UnfinishedCctpSwap = {
   burn?: string;
   /** The convert sent for its USDC on the L2, lowercase: its tx hash, or the wallet's calls id for a bundle. */
   convert?: string;
+  /** `convert` is the wallet's calls id of a bundle, which only the wallet can resolve. */
+  convertBundled?: true;
 };
-
-type Listener = () => void;
 
 /** Whether a pending bridge is the burn a swap entry links to (`UnfinishedCctpSwap.burn`). */
 export const isBurnOf = (bridge: PendingBridge, burn: string) =>
   [bridge.id, bridge.txHash, bridge.callsId].some(id => id?.toLowerCase() === burn);
 
-const NETWORKS = new Set<unknown>(['base', 'optimism', 'unichain', 'arbitrum'] satisfies CctpL2NetworkId[]);
+/**
+ * Whether a swap's USDC can still be spent, by a burn or a convert: none was
+ * sent for it as a convert, and no burn was, or the last one's card failed or
+ * is gone. A burn that may still land holds the USDC.
+ */
+export const isSwapSpendable = ({ burn, convert }: UnfinishedCctpSwap, bridges: readonly PendingBridge[]) => {
+  if (convert) return false;
+  if (!burn) return true;
+  const bridge = bridges.find(entry => isBurnOf(entry, burn));
+  // A burn with no card left to follow it: the chain checks still refuse one that mined.
+  return !bridge || bridge.status === 'failed';
+};
+
+const NETWORKS = new Set<unknown>(CCTP_L2_NETWORKS);
 const isString = (value: unknown): value is string => typeof value === 'string';
 
 const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
@@ -38,7 +52,8 @@ const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
     !isString(entry.recipient) ||
     typeof entry.at !== 'number' ||
     (entry.burn !== undefined && !isString(entry.burn)) ||
-    (entry.convert !== undefined && !isString(entry.convert))
+    (entry.convert !== undefined && !isString(entry.convert)) ||
+    (entry.convertBundled !== undefined && entry.convertBundled !== true)
   )
     return null;
   try {
@@ -56,80 +71,13 @@ const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
  * storage holds, as the pending store does.
  */
 export function createCctpSwapStore() {
-  const listeners = new Set<Listener>();
-  const snapshots = new Map<string, UnfinishedCctpSwap[]>();
-
-  // Swaps whose last change reached only this session's copy (a write failed), by scope.
-  const unsaved = new Map<string, Set<string>>();
-
-  /** The stored list; undefined when storage can't be read. */
-  const load = (scope: string): UnfinishedCctpSwap[] | undefined => {
-    let raw: string | null;
-    try {
-      raw = localStorage.getItem(`${KEY_PREFIX}${scope}`);
-    } catch {
-      return undefined;
-    }
-    try {
-      const parsed: unknown = JSON.parse(raw ?? '[]');
-      return Array.isArray(parsed)
-        ? parsed.map(parseEntry).filter((entry): entry is UnfinishedCctpSwap => entry !== null)
-        : [];
-    } catch {
-      return [];
-    }
-  };
-
-  /** The stored list with this session's unsaved changes on top: recorded or dropped. */
-  const withUnsaved = (scope: string, stored: UnfinishedCctpSwap[]): UnfinishedCctpSwap[] => {
-    const hashes = unsaved.get(scope);
-    if (!hashes) return stored;
-    const own = (snapshots.get(scope) ?? []).filter(entry => hashes.has(entry.swapTxHash));
-    return [...own, ...stored.filter(entry => !hashes.has(entry.swapTxHash))];
-  };
-
-  const write = (scope: string, entries: UnfinishedCctpSwap[], changedHash: string) => {
-    snapshots.set(scope, entries);
-    try {
-      localStorage.setItem(
-        `${KEY_PREFIX}${scope}`,
-        JSON.stringify(entries.map(entry => ({ ...entry, usdcAmount: entry.usdcAmount.toString() })))
-      );
-      unsaved.delete(scope);
-    } catch {
-      // ignore storage write failures (private mode, quota); the session copy still updates
-      unsaved.set(scope, new Set(unsaved.get(scope)).add(changedHash));
-    }
-    listeners.forEach(listener => listener());
-  };
-
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== null && !event.key.startsWith(KEY_PREFIX)) return;
-    snapshots.forEach((_, scope) => {
-      if (!unsaved.has(scope)) {
-        snapshots.delete(scope);
-        return;
-      }
-      const stored = load(scope);
-      if (stored) snapshots.set(scope, withUnsaved(scope, stored));
-    });
-    listeners.forEach(listener => listener());
-  };
-
-  const getSnapshot = (scope: string): UnfinishedCctpSwap[] => {
-    let snapshot = snapshots.get(scope);
-    if (!snapshot) {
-      snapshot = load(scope) ?? [];
-      snapshots.set(scope, snapshot);
-    }
-    return snapshot;
-  };
-
-  // Writes start from storage, not this tab's copy, so another tab's write is not lost.
-  const latest = (scope: string): UnfinishedCctpSwap[] => {
-    const stored = load(scope);
-    return stored ? withUnsaved(scope, stored) : getSnapshot(scope);
-  };
+  const list = createScopedListStore<UnfinishedCctpSwap>({
+    keyPrefix: KEY_PREFIX,
+    parse: parseEntry,
+    toJson: entry => ({ ...entry, usdcAmount: entry.usdcAmount.toString() }),
+    idOf: entry => entry.swapTxHash
+  });
+  const { latest, write } = list;
 
   const clear = (scope: string, swapTxHash: string) => {
     const hash = swapTxHash.toLowerCase();
@@ -143,15 +91,11 @@ export function createCctpSwapStore() {
   };
 
   return {
-    subscribe(listener: Listener) {
-      if (listeners.size === 0) window.addEventListener('storage', onStorage);
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-        if (listeners.size === 0) window.removeEventListener('storage', onStorage);
-      };
-    },
-    getSnapshot,
+    subscribe: list.subscribe,
+    getSnapshot: list.getSnapshot,
+    /** The swap stored under that tx hash, in any case. */
+    get: (scope: string, swapTxHash: string): UnfinishedCctpSwap | undefined =>
+      list.getSnapshot(scope).find(entry => entry.swapTxHash === swapTxHash.toLowerCase()),
     /** Records a sent swap; one already recorded under its hash is kept. */
     record(scope: string, swap: UnfinishedCctpSwap) {
       const entry = {
@@ -177,16 +121,25 @@ export function createCctpSwapStore() {
       );
       return entry.burn;
     },
-    /** Links a swap to the convert sent for its USDC, or unlinks it with no `convert` (it reverted). */
-    markConvert(scope: string, swapTxHash: string, convert: string | undefined) {
+    /**
+     * Links a swap to the convert sent for its USDC, by the wallet's calls id
+     * with `bundle`, or unlinks it with no `convert` (it reverted).
+     */
+    markConvert(
+      scope: string,
+      swapTxHash: string,
+      convert: string | undefined,
+      { bundle = false }: { bundle?: boolean } = {}
+    ) {
       const hash = swapTxHash.toLowerCase();
       const id = convert?.toLowerCase();
+      const bundled = bundle ? (true as const) : undefined;
       const current = latest(scope);
       const entry = current.find(swap => swap.swapTxHash === hash);
       if (!entry || entry.convert === id) return;
       write(
         scope,
-        current.map(swap => (swap === entry ? { ...swap, convert: id } : swap)),
+        current.map(swap => (swap === entry ? { ...swap, convert: id, convertBundled: bundled } : swap)),
         hash
       );
     },

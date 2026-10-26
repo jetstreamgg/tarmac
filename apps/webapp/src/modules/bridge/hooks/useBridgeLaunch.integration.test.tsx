@@ -293,7 +293,6 @@ vi.mock('@/components/ui/use-toast', () => ({ toast: { dismiss: vi.fn() }, toast
 vi.mock('./useCctpBurnLegs', () => {
   const idle = {
     calls: [],
-    needsApprove: false,
     isBatch: false,
     ready: false,
     error: null,
