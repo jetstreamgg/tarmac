@@ -222,7 +222,7 @@ describe('PendlePositionCard', () => {
     // market.expiry); the API stat only feeds display labels.
     const MATURED_MARKET: PendleMarketConfig = { ...MARKET, expiry: MATURED_SEC };
 
-    it('shows the claim card with the accrued figure and ready-to-withdraw copy', () => {
+    it('shows the claim card with the accrued figure and ready-to-claim copy', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 100_184n * 10n ** 18n;
       renderCard(MATURED_MARKET);
@@ -231,7 +231,7 @@ describe('PendlePositionCard', () => {
       expect(card.textContent).toContain('100,184');
       expect(card.textContent).toContain('Accrued');
       expect(card.textContent).toContain('184.8');
-      expect(card.textContent).toContain('ready to withdraw');
+      expect(card.textContent).toContain('ready to claim');
       // The figure is the redeem preview, denominated in the underlying — not
       // USDS, even on a pegged market.
       const heroSymbols = Array.from(card.querySelectorAll('[data-testid="token-icon"]'))
@@ -259,7 +259,7 @@ describe('PendlePositionCard', () => {
       renderCard(MATURED_MARKET);
 
       const card = screen.getByTestId('pendle-matured-position-card');
-      expect(card.textContent).toContain('Your deposit is ready to withdraw');
+      expect(card.textContent).toContain('Your deposit is ready to claim');
       expect(card.textContent).not.toContain('in yield');
     });
 

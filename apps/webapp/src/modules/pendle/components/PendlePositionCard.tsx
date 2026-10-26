@@ -220,7 +220,7 @@ function PendleMaturedNoPositionCard({
 
 /**
  * Matured-position card for the detail page (Figma 2193:73881): the claimable
- * figure over Accrued / Mature date, the ready-to-withdraw line, and a single
+ * figure over Accrued / Mature date, the ready-to-claim line, and a single
  * Claim CTA opening the redeem modal. Same content the Portfolio's
  * `PendleMaturedPositionCard` carries in the carousel's chrome — this one
  * wears the detail page's ProductPositionCard.
@@ -289,10 +289,10 @@ function PendleMaturedCard({
             {earnings !== undefined && earnings > 0 && currency ? (
               <Trans>
                 Matured on {maturityLabel}. Your deposit and {formatNumber(earnings, { maxDecimals: 2 })}{' '}
-                {currency} in yield are ready to withdraw.
+                {currency} in yield are ready to claim.
               </Trans>
             ) : (
-              <Trans>Matured on {maturityLabel}. Your deposit is ready to withdraw.</Trans>
+              <Trans>Matured on {maturityLabel}. Your deposit is ready to claim.</Trans>
             )}
           </Text>
         </>

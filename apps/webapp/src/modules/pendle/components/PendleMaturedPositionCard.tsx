@@ -33,7 +33,7 @@ type PendleMaturedPositionCardProps = {
 /**
  * A matured Pendle position in the Portfolio Supplied carousel (Figma
  * 2306:72334): the PositionCard chrome with a "Matured" badge, the
- * ready-to-withdraw summary, My position / Mature date stats and a single
+ * ready-to-claim summary, My position / Mature date stats and a single
  * Claim CTA opening the redeem modal.
  */
 export const PendleMaturedPositionCard = ({
@@ -99,10 +99,10 @@ export const PendleMaturedPositionCard = ({
           {earnings !== undefined && earnings > 0 && currency ? (
             <Trans>
               Matured on {maturityLabel}. Your deposit and {formatNumber(earnings, { maxDecimals: 2 })}{' '}
-              {currency} in yield are ready to withdraw.
+              {currency} in yield are ready to claim.
             </Trans>
           ) : (
-            <Trans>Matured on {maturityLabel}. Your deposit is ready to withdraw.</Trans>
+            <Trans>Matured on {maturityLabel}. Your deposit is ready to claim.</Trans>
           )}
         </Text>
       </div>
