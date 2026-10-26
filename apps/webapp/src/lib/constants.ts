@@ -81,11 +81,7 @@ export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.P
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
-// Vite sets MODE to production when running vite build
-// https://vitejs.dev/guide/env-and-mode#modes
-// The dev wagmi config, with the Tenderly forks beside the production chains, runs under vite dev and testnet builds.
-export const USE_TESTNET_CONFIG =
-  import.meta.env.VITE_TESTNET_CONFIG === 'true' || import.meta.env.MODE === 'development';
+export { USE_TESTNET_CONFIG } from '@/data/wagmi/config/testnetConfig';
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
