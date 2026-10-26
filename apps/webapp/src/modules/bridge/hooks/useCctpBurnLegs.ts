@@ -11,6 +11,7 @@ import { CCTP_SWAP_FAILED_MESSAGE, cctpBurnRefusal, cctpResumeRefusal } from '..
 import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
+import { PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { isStorageWritable } from '../store/storageWritable';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
@@ -18,8 +19,6 @@ import { useBridgeCallLegs } from './useBridgeCallLegs';
 export const CCTP_BURN_FUNCTION = 'depositForBurn';
 const CCTP_SWAP_FUNCTION = 'swapExactIn';
 const STORAGE_REFUSED_MESSAGE = 'Bridging to another address needs browser storage, which is unavailable.';
-
-const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 
 const toAddress = (value: string | undefined): Address | undefined =>
   value && isAddress(value) ? getAddress(value) : undefined;

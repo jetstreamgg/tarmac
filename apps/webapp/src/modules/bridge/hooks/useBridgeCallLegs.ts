@@ -11,6 +11,7 @@ import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { useSendBatchTransactionFlow } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { createPromptRegistry, PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { usePromptIssuers } from './usePromptIssuers';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -34,22 +35,11 @@ async function safeExecutedHash(chainId: number | undefined, safeTxHash: string,
 }
 
 // Bundle windows not answered yet, per lowercase account across mounts: a reopened form must not send while one is open.
-const openBundles = new Map<string, number>();
+const openBundles = createPromptRegistry();
 
 /** Counts a bundle window as open for `account`; the returned release counts it answered, once. */
-function openBundle(account: string | undefined) {
-  if (!account) return () => {};
-  const key = account.toLowerCase();
-  openBundles.set(key, (openBundles.get(key) ?? 0) + 1);
-  let open = true;
-  return () => {
-    if (!open) return;
-    open = false;
-    const left = (openBundles.get(key) ?? 1) - 1;
-    if (left > 0) openBundles.set(key, left);
-    else openBundles.delete(key);
-  };
-}
+const openBundle = (account: string | undefined) =>
+  account ? openBundles.open(account.toLowerCase()) : () => {};
 
 // Per single-leg wallet prompt, by the request wagmi passes back when it is answered, the release `onLegPrompt` returned.
 const legReleases = new WeakMap<object, () => void>();
@@ -59,7 +49,6 @@ const answerLeg = (variables: object | undefined) => {
   legReleases.delete(variables);
 };
 
-const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 const SEND_OUT_MESSAGE =
   'A transaction from your last bridge is still open in your wallet or pending. Wait for it to settle before sending again.';
 const asRefusal = (error: Error) =>
@@ -363,7 +352,7 @@ export function useBridgeCallLegs({
       if (!l1 || !from)
         return getCallbacks().onError(new TransactionRefusedError('The bridge is not ready to send.'), '');
       // A second send while the wallet still shows a bundle could move the funds twice, under two hashless cards.
-      const promptOpen = () => openBundles.has(from.toLowerCase());
+      const promptOpen = () => openBundles.isOpen(from.toLowerCase());
       if (promptOpen()) {
         pausedRef.current = true;
         return getCallbacks().onError(new TransactionRefusedError(PROMPT_OPEN_MESSAGE), '');

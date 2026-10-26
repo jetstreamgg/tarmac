@@ -19,11 +19,10 @@ import {
 } from '../adapters/cctp/gate';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
+import { PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
 export { CCTP_CONVERT_FUNCTION, CCTP_L2_CONVERT_FUNCTION };
-
-const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 const SETTLED_MESSAGE = 'This bridge was already sent or converted.';
 
 /** The stopped bridge a convert run is sent for, kept with each of its prompts. */
