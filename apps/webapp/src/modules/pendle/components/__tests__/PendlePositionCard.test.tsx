@@ -79,7 +79,7 @@ vi.mock('@/hooks', async importOriginal => {
 });
 
 vi.mock('../../hooks/usePendleRedeemModal', () => ({
-  usePendleRedeemModal: () => ({ openRedeemModal, isRedeemable: true, isPrepared: true, ptBalance: 0n })
+  usePendleRedeemModal: () => ({ openRedeemModal, isRedeemable: true, ptBalance: 0n })
 }));
 
 // The mainnet auto-switch pulls navigation/network-switch contexts — covered

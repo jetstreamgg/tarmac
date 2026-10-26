@@ -65,7 +65,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const {
     data: quote,
     isLoading: isFetchingQuote,
-    error: quoteError
+    error: quoteError,
+    mutate: refetchQuote
   } = useQuotePendleConvert({
     side: PendleConvertSide.WITHDRAW,
     marketAddress: market.marketAddress,
@@ -76,8 +77,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     amountIn: isRedeemable ? ptBalance : undefined,
     slippage,
     enabled: isRedeemable,
-    // Fetch once for the card's isPrepared gating; only repoll while the
-    // quote is on screen — this hook mounts once per matured card.
+    // Prefetched so the modal opens on a ready quote; only repoll while it's
+    // on screen — this hook mounts once per matured card.
     poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
@@ -112,6 +113,15 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const prepareErrorMessage = useMemo<string | undefined>(
     () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
     [writeHook.prepared, writeHook.error]
+  );
+  // No quote at all wins, as in the buy/sell modal: there's nothing to prepare.
+  // Claim-specific copy, since the claim always takes the whole balance.
+  const errorMessage = useMemo<string | undefined>(
+    () =>
+      isRedeemable && !quote && !isFetchingQuote
+        ? pendleClaimErrorMessage(quoteError?.message)
+        : prepareErrorMessage,
+    [isRedeemable, quote, isFetchingQuote, quoteError, prepareErrorMessage]
   );
 
   // The Network cell describes where the trade executes — the engine chain,
@@ -330,6 +340,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         status: 'success'
       });
     }
+    // A failed prefetch only repolls once a minute; retry now that it's wanted.
+    if (!quote) void refetchQuote();
     launch({
       usdValue,
       // Pendle redemption is mainnet-only — guard the modal off any L2 (APP-528).
@@ -338,7 +350,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       transactionTitle: t`Confirm in the wallet`,
       toast,
       transactionContent,
-      errorMessage: prepareErrorMessage,
+      errorMessage,
       steps,
       confirmLabel: t`Claim`,
       confirmDisabled,
@@ -358,9 +370,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     trackNetworkSwitchRequested,
     trackNetworkSwitchCompleted,
     switchChainAsync,
+    quote,
+    refetchQuote,
     launch,
     transactionContent,
-    prepareErrorMessage,
+    errorMessage,
     steps,
     confirmDisabled,
     sessionId,
@@ -377,7 +391,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
       transactionContent,
-      errorMessage: prepareErrorMessage,
+      errorMessage,
       steps,
       confirmDisabled,
       analytics,
@@ -390,7 +404,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     sessionId,
     updateModalContent,
     transactionContent,
-    prepareErrorMessage,
+    errorMessage,
     steps,
     confirmDisabled,
     analytics,
@@ -398,19 +412,10 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     toast
   ]);
 
-  // Only when no quote ever arrived: without one the cards keep Claim disabled,
-  // so they say why instead of leaving a silently greyed-out button. Off the
-  // Pendle chain the cards show the network hint instead.
-  const claimUnavailableMessage =
-    onPendleChain && isRedeemable && !quote && !isFetchingQuote
-      ? pendleClaimErrorMessage(quoteError?.message)
-      : undefined;
-
   return {
     openRedeemModal,
     isRedeemable,
     isPrepared: writeHook.prepared,
-    claimUnavailableMessage,
     onPendleChain,
     switchBlocked,
     ptBalance,

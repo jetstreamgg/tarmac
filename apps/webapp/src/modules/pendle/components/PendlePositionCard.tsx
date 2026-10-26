@@ -248,11 +248,11 @@ function PendleMaturedCard({
   // The preview redeems to the underlying (sUSDS shares, not USDS, on the
   // pegged market), so it carries the underlying symbol — as on the Portfolio card.
 
-  // Off-chain, Claim stays enabled: the click switches the wallet first, then
-  // opens (usePendleRedeemModal); a Safe can't be switched from the dapp, so it
-  // disables with the hint instead.
-  const { openRedeemModal, isRedeemable, isPrepared, claimUnavailableMessage, onPendleChain, switchBlocked } =
-    usePendleRedeemModal(market);
+  // Claim stays enabled: off-chain the click switches the wallet first, then
+  // opens (usePendleRedeemModal), and the modal explains a quote Pendle can't
+  // give. A Safe can't be switched from the dapp, so it disables with the hint
+  // instead.
+  const { openRedeemModal, isRedeemable, switchBlocked } = usePendleRedeemModal(market);
 
   return (
     <ProductPositionCard
@@ -304,7 +304,7 @@ function PendleMaturedCard({
               variant="primary"
               size="l"
               onClick={openRedeemModal}
-              disabled={switchBlocked || !isRedeemable || previewLoading || (onPendleChain && !isPrepared)}
+              disabled={switchBlocked || !isRedeemable || previewLoading}
               data-testid="pendle-matured-redeem-button"
             >
               <Trans>Claim</Trans>
@@ -315,11 +315,6 @@ function PendleMaturedCard({
               <Trans>
                 Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
               </Trans>
-            </Text>
-          )}
-          {claimUnavailableMessage && (
-            <Text variant="small" className="text-statusError" data-testid="pendle-redeem-quote-error">
-              {claimUnavailableMessage}
             </Text>
           )}
         </div>

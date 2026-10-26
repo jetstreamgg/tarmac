@@ -53,12 +53,11 @@ export const PendleMaturedPositionCard = ({
     maxDecimals: 2
   });
 
-  // Off-chain, Claim stays enabled: the click switches the wallet first, then
-  // opens (usePendleRedeemModal) — so isPrepared only gates on the right chain.
-  // A Safe can't be switched from the dapp, so its off-chain Claim disables
-  // with the hint below instead (APP-486).
-  const { openRedeemModal, isRedeemable, isPrepared, claimUnavailableMessage, onPendleChain, switchBlocked } =
-    usePendleRedeemModal(market);
+  // Claim stays enabled: off-chain the click switches the wallet first, then
+  // opens (usePendleRedeemModal), and the modal explains a quote Pendle can't
+  // give. A Safe can't be switched from the dapp, so its off-chain Claim
+  // disables with the hint below instead (APP-486).
+  const { openRedeemModal, isRedeemable, switchBlocked } = usePendleRedeemModal(market);
   // Where the claim executes — matches the redeem modal's Network cell (the
   // fork in dev sessions, mainnet otherwise).
   const engineChainId = familyMainnetId(useChainId());
@@ -146,7 +145,7 @@ export const PendleMaturedPositionCard = ({
             variant="primary"
             size="l"
             onClick={openRedeemModal}
-            disabled={switchBlocked || !isRedeemable || previewLoading || (onPendleChain && !isPrepared)}
+            disabled={switchBlocked || !isRedeemable || previewLoading}
             data-testid="pendle-matured-redeem-button"
           >
             <Trans>Claim</Trans>
@@ -165,11 +164,6 @@ export const PendleMaturedPositionCard = ({
             <Trans>
               Claiming happens on Ethereum mainnet. Network switching is managed by your Safe app.
             </Trans>
-          </Text>
-        )}
-        {claimUnavailableMessage && (
-          <Text variant="small" className="text-statusError" data-testid="pendle-redeem-quote-error">
-            {claimUnavailableMessage}
           </Text>
         )}
       </div>
