@@ -166,14 +166,6 @@ export function useCctpBurnLegs({
   };
   // The latest run executed, for a callback that comes with no context; the engine may have refused it.
   const runRef = useRef<Run | undefined>(undefined);
-  // A leg reported with no run: one run per network, recipient and continued swap on show.
-  const looseRef = useRef<Run | undefined>(undefined);
-  const looseRun = () => {
-    const loose = looseRef.current;
-    if (loose && loose.network === network && loose.recipient === to && loose.resumed === resume?.swapTxHash)
-      return loose;
-    return (looseRef.current = { network, recipient: to, resumed: resume?.swapTxHash, safe: isSafe });
-  };
   // A new burn retries the swap's last one: that one's Failed card goes (Activity keeps it).
   const linkBurn = (scope: string, swapTxHash: string, burn: string) => {
     const replaced = cctpSwapStore.markBurn(scope, swapTxHash, burn);
@@ -187,7 +179,8 @@ export function useCctpBurnLegs({
   const onLegSent = (hash: string, variables: TxMutateVariables, context?: unknown) => {
     if (!scope) return;
     // The run whose prompt this leg was signed in, though another run may have started since.
-    const run = (context as Run | undefined) ?? runRef.current ?? looseRun();
+    const run = (context as Run | undefined) ?? runRef.current;
+    if (!run) return;
     // A Safe returns a safeTxHash, which the chain can't confirm a swap by.
     if (run.safe) return;
     if (variables.functionName === CCTP_SWAP_FUNCTION) {

@@ -247,7 +247,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it('keeps a repriced swap under the hash that mines, and drops the one it replaced', () => {
-    render({ scope: SCOPE });
+    const legs = render({ scope: SCOPE });
+    act(() => legs.execute());
     const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: object) => void;
     const swap = calls()[1];
     onLegSent(SWAP_HASH, swap);
@@ -262,7 +263,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it('drops nothing when the same swap is reported twice', () => {
-    render({ scope: SCOPE });
+    const legs = render({ scope: SCOPE });
+    act(() => legs.execute());
     const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: object) => void;
     const swap = calls()[1];
     onLegSent(SWAP_HASH, swap);
@@ -271,7 +273,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it("keeps an earlier run's swap when another run sends its own", () => {
-    render({ scope: SCOPE });
+    const legs = render({ scope: SCOPE });
+    act(() => legs.execute());
     const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: object) => void;
     onLegSent(SWAP_HASH, { ...calls()[1] });
     onLegSent(REPRICED_HASH, { ...calls()[1] });
@@ -280,7 +283,8 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
   });
 
   it('links the continued swap to its burn once sent', () => {
-    render({ scope: SCOPE, resume: RESUME });
+    const legs = render({ scope: SCOPE, resume: RESUME });
+    act(() => legs.execute());
     (mocks.legs!.onLegSent as (hash: string, variables: object) => void)(BURN_HASH, calls()[1]);
     expect(mocks.clear).not.toHaveBeenCalled();
     expect(mocks.markBurn).toHaveBeenCalledWith(SCOPE, SWAP_HASH, BURN_HASH);
