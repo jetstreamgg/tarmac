@@ -8,6 +8,8 @@ import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { L1_USDC, USDS_PSM_WRAPPER, cctpL2Contracts } from '../adapters/cctp/contracts';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
+import { pendingBridgeStore } from '../store/pendingStore';
+import type { PendingBridge } from '../model/types';
 import { useCctpConvertLegs } from './useCctpConvertLegs';
 
 const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
@@ -250,6 +252,27 @@ describe('useCctpConvertLegs', () => {
       cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
       await expect(preflight({})).resolves.toBeInstanceOf(Error);
       expect(mocks.resumeRefusal).not.toHaveBeenCalled();
+    });
+
+    // The burn's USDC is the convert's: both landing would spend USDC the wallet held before.
+    it('refuses while a burn sent for the swap may still land, not once its card failed or is gone', async () => {
+      renderL2();
+      mocks.resumeRefusal.mockResolvedValue(undefined);
+      mocks.l2Refusal.mockResolvedValue(undefined);
+      const BURN = '0x' + 'ef'.repeat(32);
+      cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, BURN);
+      const cards = vi.spyOn(pendingBridgeStore, 'getSnapshot');
+      try {
+        cards.mockReturnValue([{ id: BURN, status: 'pending' } as PendingBridge]);
+        await expect(preflight({})).resolves.toBeInstanceOf(Error);
+        expect(mocks.resumeRefusal).not.toHaveBeenCalled();
+        cards.mockReturnValue([{ id: BURN, status: 'failed' } as PendingBridge]);
+        await expect(preflight({})).resolves.toBeUndefined();
+        cards.mockReturnValue([]);
+        await expect(preflight({})).resolves.toBeUndefined();
+      } finally {
+        cards.mockRestore();
+      }
     });
 
     it('holds the swap while its convert prompt is open, and links the convert sent, one leg or a bundle', () => {

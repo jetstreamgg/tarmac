@@ -26,6 +26,19 @@ type Listener = () => void;
 export const isBurnOf = (bridge: PendingBridge, burn: string) =>
   [bridge.id, bridge.txHash, bridge.callsId].some(id => id?.toLowerCase() === burn);
 
+/**
+ * Whether a swap's USDC can still be spent, by a burn or a convert: none was
+ * sent for it as a convert, and no burn was, or the last one's card failed or
+ * is gone. A burn that may still land holds the USDC.
+ */
+export const isSwapSpendable = ({ burn, convert }: UnfinishedCctpSwap, bridges: readonly PendingBridge[]) => {
+  if (convert) return false;
+  if (!burn) return true;
+  const bridge = bridges.find(entry => isBurnOf(entry, burn));
+  // A burn with no card left to follow it: the chain checks still refuse one that mined.
+  return !bridge || bridge.status === 'failed';
+};
+
 const NETWORKS = new Set<unknown>(['base', 'optimism', 'unichain', 'arbitrum'] satisfies CctpL2NetworkId[]);
 const isString = (value: unknown): value is string => typeof value === 'string';
 

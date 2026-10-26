@@ -1,18 +1,17 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { getAddress, isAddress, isAddressEqual, type Address, type Hex, type PublicClient } from 'viem';
+import { getAddress, isAddress, isAddressEqual, type Address, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance, type TxMutateVariables } from '@/hooks';
-import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { math } from '@/utils';
 import { cctpBurnCalls } from '../adapters/cctp/calls';
 import { TOKEN_MESSENGER_V2, cctpL2Contracts, type CctpL2NetworkId } from '../adapters/cctp/contracts';
-import { CCTP_SWAP_FAILED_MESSAGE, cctpBurnRefusal, cctpResumeRefusal } from '../adapters/cctp/gate';
+import { cctpBurnRefusal } from '../adapters/cctp/gate';
 import { cctpSwapStore, isBurnOf, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
-import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
-import { PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
+import { openCctpSpend } from '../store/openCctpSpends';
 import { isStorageWritable } from '../store/storageWritable';
+import { unfinishedSwapRefusal } from '../store/unfinishedSwapRefusal';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
 /** The burn leg, which the source recording keys on. */
@@ -143,20 +142,7 @@ export function useCctpBurnLegs({
       if (to && from && !isAddressEqual(to, from) && !isStorageWritable())
         return new Error(STORAGE_REFUSED_MESSAGE);
       if (resume) {
-        // A burn or convert of this swap may still be signed in the wallet.
-        if (scope && isCctpSpendOpen(scope, resume.swapTxHash))
-          return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
-        const refusal = await cctpResumeRefusal({
-          network,
-          swapTxHash: resume.swapTxHash as Hex,
-          account: from!,
-          usdcAmount: resume.usdcAmount,
-          recipient: resume.recipient as Address,
-          client
-        });
-        // Nothing is left to continue: the card goes.
-        if (scope && refusal?.message === CCTP_SWAP_FAILED_MESSAGE)
-          cctpSwapStore.clear(scope, resume.swapTxHash);
+        const refusal = await unfinishedSwapRefusal({ scope, swap: resume, account: from!, client });
         if (refusal) return refusal;
       }
       // A Retry after the run's swap mined needs no USDC from PSM3.

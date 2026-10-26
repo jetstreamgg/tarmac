@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { getAddress, isAddress, type Address, type Hex, type PublicClient } from 'viem';
+import { getAddress, isAddress, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance, type TxMutateVariables } from '@/hooks';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
@@ -11,15 +11,12 @@ import {
   cctpL2ConvertCalls
 } from '../adapters/cctp/calls';
 import { L1_USDC, USDS_PSM_WRAPPER, cctpL2Contracts } from '../adapters/cctp/contracts';
-import {
-  CCTP_SWAP_FAILED_MESSAGE,
-  cctpConvertRefusal,
-  cctpL2ConvertRefusal,
-  cctpResumeRefusal
-} from '../adapters/cctp/gate';
-import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { cctpConvertRefusal, cctpL2ConvertRefusal } from '../adapters/cctp/gate';
+import { cctpSwapStore, isSwapSpendable, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
+import { pendingBridgeStore } from '../store/pendingStore';
 import { PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
+import { unfinishedSwapRefusal } from '../store/unfinishedSwapRefusal';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
 export { CCTP_CONVERT_FUNCTION, CCTP_L2_CONVERT_FUNCTION };
@@ -105,21 +102,13 @@ export function useCctpConvertLegs({
           return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
         return cctpConvertRefusal(params);
       }
-      if (isCctpSpendOpen(scope!, swap.swapTxHash)) return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
       const kept = cctpSwapStore
         .getSnapshot(scope!)
         .find(entry => entry.swapTxHash.toLowerCase() === swap.swapTxHash.toLowerCase());
-      if (!kept || kept.convert) return new TransactionRefusedError(SETTLED_MESSAGE, { final: true });
-      const refusal = await cctpResumeRefusal({
-        network: swap.network,
-        swapTxHash: swap.swapTxHash as Hex,
-        account: from!,
-        usdcAmount: swap.usdcAmount,
-        recipient: swap.recipient as Address,
-        client: reader
-      });
-      // Nothing is left to convert: the card goes.
-      if (refusal?.message === CCTP_SWAP_FAILED_MESSAGE) cctpSwapStore.clear(scope!, swap.swapTxHash);
+      // A burn of this swap that may still land spends the same USDC.
+      if (!kept || !isSwapSpendable(kept, pendingBridgeStore.getSnapshot(scope!)))
+        return new TransactionRefusedError(SETTLED_MESSAGE, { final: true });
+      const refusal = await unfinishedSwapRefusal({ scope, swap, account: from!, client: reader });
       if (refusal) return refusal;
       return cctpL2ConvertRefusal({ network: swap.network, ...params });
     },
