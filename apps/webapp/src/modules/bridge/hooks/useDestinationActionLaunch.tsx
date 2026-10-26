@@ -73,6 +73,14 @@ type ClaimRun = { scope: string; bridgeId: string; safe?: boolean };
 const isClaimRun = (context: unknown): context is ClaimRun =>
   typeof context === 'object' && context !== null && 'bridgeId' in context;
 
+/** A bundle has no hash until it mines: the action is sent under the wallet's calls id, which the tracker resolves. */
+const recordBundleSent = (action: 'claim' | 'convert') => (id: string, context?: unknown) => {
+  if (!isClaimRun(context) || context.safe) return;
+  pendingBridgeStore.update(context.scope, context.bridgeId, current =>
+    recordActionSent(current, { action, txHash: id, at: Date.now(), bundle: true })
+  );
+};
+
 const recoveryOf = (
   scope: string,
   bridge: PendingBridge,
@@ -281,6 +289,7 @@ export function useDestinationActionLaunch() {
       variables.functionName === CCTP_CONVERT_FUNCTION && isClaimRun(context)
         ? openCctpSpend(context.scope, context.bridgeId)
         : undefined,
+    onCallsSent: recordBundleSent('claim'),
     getCallbacks: () => legCallbacksRef.current
   });
   const convertLegs = useCctpConvertLegs({
@@ -292,6 +301,7 @@ export function useDestinationActionLaunch() {
     account: address,
     isSafeApp,
     batch,
+    onCallsSent: recordBundleSent('convert'),
     getCallbacks: () => legCallbacksRef.current
   });
   const legs = claim ? claimLegs : convert ? convertLegs : redeem ? redeemLegs : replayLegs;
@@ -567,7 +577,13 @@ export function useDestinationActionLaunch() {
                   : nextRecovery?.kind === 'cctp-convert'
                     ? CCTP_CONVERT_FUNCTION
                     : undefined,
-              confirmOnNextLeg: !isSafe
+              confirmOnNextLeg: !isSafe,
+              readBundle: () =>
+                pendingBridgeStore
+                  .getSnapshot(scope)
+                  .find(entry => entry.id === bridge.id)
+                  ?.actions.findLast(sent => sent.action === action && sent.status === 'sent' && sent.bundle)
+                  ?.txHash
             }
           );
           // A CCTP card leaves once its USDS is delivered (Figma 78, 97): a claim only after its sale or a bundle, else it stays to offer the convert.

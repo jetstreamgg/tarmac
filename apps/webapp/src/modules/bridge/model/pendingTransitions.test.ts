@@ -9,6 +9,7 @@ import {
   canLaunchKeepalive,
   closeCard,
   dropSentAction,
+  isTracked,
   pollIntervalMs,
   recordAction,
   recordActionSent,
@@ -726,5 +727,39 @@ describe('an Arbitrum ticket close to its deadline can be kept alive', () => {
   it('is never the next action, and is ignored off Arbitrum', () => {
     const op = ready('', 'base');
     expect(recordActionSent(op, { action: 'keepalive', txHash: '0xkeep', at: NOW })).toBe(op);
+  });
+});
+
+// A bundle's calls id resolves only through the wallet, which can answer after the chain settled the bridge.
+describe('a destination action sent as a wallet bundle', () => {
+  const ready = () =>
+    applyProgress(create(routeFor('base', 'ethereum')), { kind: 'ready', nextAction: 'claim' }, NOW);
+  const bundled = recordActionSent(ready(), { action: 'claim', txHash: '0xcalls', at: NOW, bundle: true });
+  const settled = applyProgress(bundled, { kind: 'arrived' }, NOW + MINUTE);
+
+  it('blocks a second launch and keeps the settled bridge tracked until the wallet answers', () => {
+    expect(canLaunchAction(bundled)).toBe(false);
+    expect(settled.status).toBe('claimed');
+    expect(isTracked(settled)).toBe(true);
+    const answered = applyProgress(
+      settled,
+      { kind: 'action-confirmed', action: 'claim', txHash: '0xreceive', bundleTxHashes: ['0xsell'] },
+      NOW + 2 * MINUTE
+    );
+    expect(answered.actions).toEqual([
+      { action: 'claim', txHash: '0xreceive', at: NOW + 2 * MINUTE, bundleTxHashes: ['0xsell'] }
+    ]);
+    expect(isTracked(answered)).toBe(false);
+  });
+
+  it('polls the wallet fast for an hour, then backs off', () => {
+    expect(pollIntervalMs(settled, NOW + MINUTE)).toBe(15_000);
+    expect(pollIntervalMs(settled, NOW + 2 * HOUR)).toBe(5 * MINUTE);
+  });
+
+  it('offers the action again once the wallet reports the bundle failed', () => {
+    const dropped = applyProgress(bundled, { kind: 'action-dropped', txHash: '0xcalls' }, NOW + MINUTE);
+    expect(dropped.actions).toEqual([]);
+    expect(canLaunchAction(dropped)).toBe(true);
   });
 });

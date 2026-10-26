@@ -56,6 +56,7 @@ export function useCctpConvertLegs({
   account,
   isSafeApp,
   batch = false,
+  onCallsSent,
   getCallbacks
 }: {
   enabled: boolean;
@@ -72,6 +73,8 @@ export function useCctpConvertLegs({
   account: string | undefined;
   isSafeApp?: boolean;
   batch?: boolean;
+  /** See `useBridgeCallLegs`: the wallet took the bundle, with its run's context. */
+  onCallsSent?: (id: string, run?: unknown) => void;
   getCallbacks: () => TxCallbacks;
 }) {
   const from = account && isAddress(account) ? getAddress(account) : undefined;
@@ -145,7 +148,10 @@ export function useCctpConvertLegs({
       if (isConvertLeg(variables)) link(run, hash);
     },
     // A bundle is one prompt, with no onLegSent: the convert is linked to the wallet's calls id.
-    onCallsSent: (id, run) => link(run, id),
+    onCallsSent: (id, run) => {
+      link(run, id);
+      onCallsSent?.(id, run);
+    },
     onLegFailed: hash => {
       const id = hash.toLowerCase();
       const run = linkedRef.current.get(id);

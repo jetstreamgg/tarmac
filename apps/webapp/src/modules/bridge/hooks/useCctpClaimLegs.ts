@@ -30,6 +30,7 @@ export function useCctpClaimLegs({
   onLegSent,
   onLegFailed,
   onLegPrompt,
+  onCallsSent,
   getCallbacks
 }: {
   enabled: boolean;
@@ -45,6 +46,8 @@ export function useCctpClaimLegs({
   onLegFailed?: (hash: string) => void;
   /** See `useBridgeCallLegs`: a leg's wallet prompt opened, with its run's context; returns its release. */
   onLegPrompt?: (variables: TxMutateVariables, context?: unknown) => (() => void) | undefined;
+  /** See `useBridgeCallLegs`: the wallet took the bundle, with its run's context. */
+  onCallsSent?: (id: string, context?: unknown) => void;
   getCallbacks: () => TxCallbacks;
 }) {
   const from = account && isAddress(account) ? getAddress(account) : undefined;
@@ -88,6 +91,7 @@ export function useCctpClaimLegs({
     onLegSent,
     onLegFailed,
     onLegPrompt,
+    onCallsSent,
     onAccountSwitch: () => {
       if (active) allowance.mutate();
     },

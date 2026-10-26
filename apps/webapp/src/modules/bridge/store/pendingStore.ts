@@ -55,6 +55,7 @@ const isAction = (value: unknown) =>
   typeof value.at === 'number' &&
   optional(value.status, status => status === 'sent' || status === 'invalidated') &&
   optional(value.safe, safe => safe === true) &&
+  optional(value.bundle, bundle => bundle === true) &&
   optional(value.bundleTxHashes, hashes => Array.isArray(hashes) && hashes.every(isString)) &&
   optional(value.nextLegTxHash, isString);
 
