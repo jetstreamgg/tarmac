@@ -21,7 +21,7 @@ const [network, l1TxHash] = process.argv.slice(2) as [keyof typeof PORTAL, Hash]
 if (!(network in PORTAL) || !/^0x[0-9a-fA-F]{64}$/.test(l1TxHash ?? ''))
   fail('Usage: node --env-file=.env scripts/relayForkDeposit.ts <base|optimism|unichain> <l1TxHash>');
 
-const l1Rpc = process.env.VITE_RPC_PROVIDER_TENDERLY ?? fail('VITE_RPC_PROVIDER_TENDERLY is not set');
+const l1Rpc = process.env.VITE_RPC_PROVIDER_TENDERLY || fail('VITE_RPC_PROVIDER_TENDERLY is not set');
 const rpcName = process.env.VITE_TENDERLY_RPC_NAME || fail('VITE_TENDERLY_RPC_NAME is not set');
 const l2Rpc = tenderlyForkRpcUrl(rpcName, network);
 const l1 = createPublicClient({ transport: http(l1Rpc) });
