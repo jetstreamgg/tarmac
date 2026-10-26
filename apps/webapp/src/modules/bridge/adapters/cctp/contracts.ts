@@ -1,4 +1,7 @@
 import {
+  cctpMessageTransmitterV2ImplementationAbi,
+  cctpTokenMessengerV2ImplementationAbi,
+  cctpTokenMinterV2Abi,
   mcdDaiAddress,
   psm3L2Address,
   usdcAddress,
@@ -7,7 +10,7 @@ import {
   usdsL2Address,
   usdsPsmWrapperAddress
 } from '@/hooks/generated';
-import { pad, parseAbi, type Address, type Hex } from 'viem';
+import { pad, type Address, type Hex } from 'viem';
 import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import type { BridgeNetworkId } from '../../model/networks';
 import { isSystemAddress } from '../../model/systemAddresses';
@@ -63,27 +66,14 @@ export const cctpL2Contracts = (network: CctpL2NetworkId) => {
   return { psm3: psm3L2Address[chainId], usds: usdsL2Address[chainId], usdc: usdcL2Address[chainId] };
 };
 
+export {
+  cctpTokenMessengerV2ImplementationAbi as tokenMessengerV2Abi,
+  cctpMessageTransmitterV2ImplementationAbi as messageTransmitterV2Abi,
+  cctpTokenMinterV2Abi as tokenMinterV2Abi
+};
+
 /** A 20-byte address as CCTP's bytes32. */
 export const addressToBytes32 = (address: Address): Hex => pad(address.toLowerCase() as Hex, { size: 32 });
-
-export const tokenMessengerV2Abi = parseAbi([
-  'function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint32 minFinalityThreshold)',
-  'event DepositForBurn(address indexed burnToken, uint256 amount, address indexed depositor, bytes32 mintRecipient, uint32 destinationDomain, bytes32 destinationTokenMessenger, bytes32 destinationCaller, uint256 maxFee, uint32 indexed minFinalityThreshold, bytes hookData)',
-  'event MintAndWithdraw(address indexed mintRecipient, uint256 amount, address indexed mintToken, uint256 feeCollected)'
-]);
-
-export const messageTransmitterV2Abi = parseAbi([
-  'function receiveMessage(bytes message, bytes attestation) returns (bool)',
-  'function usedNonces(bytes32 nonce) view returns (uint256)',
-  'function paused() view returns (bool)',
-  'event MessageSent(bytes message)',
-  'event MessageReceived(address indexed caller, uint32 sourceDomain, bytes32 indexed nonce, bytes32 sender, uint32 indexed finalityThresholdExecuted, bytes messageBody)'
-]);
-
-export const tokenMinterV2Abi = parseAbi([
-  'function burnLimitsPerMessage(address token) view returns (uint256)',
-  'function paused() view returns (bool)'
-]);
 
 /** Every contract a CCTP bridge touches on either side; none of them can receive one. */
 export const CCTP_CONTRACTS: readonly Address[] = [
