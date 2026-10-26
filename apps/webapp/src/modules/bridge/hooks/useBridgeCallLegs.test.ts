@@ -5,6 +5,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress, type Call, type PublicClient } from 'viem';
 import type { TxMutateVariables } from '@/hooks';
+import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import {
   TransactionRefusedError,
   TransactionReplacedError,
@@ -232,5 +233,76 @@ describe('useBridgeCallLegs legMined', () => {
     const view = renderLegs(vi.fn(), true);
     expect(view.result.current.isBatch).toBe(true);
     expect(view.result.current.legMined).toBe(false);
+  });
+});
+
+describe('useBridgeCallLegs one-at-a-time success', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+  });
+
+  const confirmCallbacks = () => ({
+    onMutate: vi.fn(),
+    onStart: vi.fn(),
+    onSuccess: vi.fn(),
+    onError: vi.fn()
+  });
+  const renderConfirms = (first: TxCallbacks) => {
+    const modal = { current: first };
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight: async () => undefined,
+        getCallbacks: () => modal.current
+      })
+    );
+    return { modal, ...view };
+  };
+  const settle = (hash: string) =>
+    (
+      mocks.sequential.at(-1) as unknown as { onSuccess: (hash: string, blockNumber?: bigint) => void }
+    ).onSuccess(hash, 7n);
+
+  it('hands its Confirm the success of its own run', async () => {
+    const a = confirmCallbacks();
+    const { result } = renderConfirms(a);
+    await act(async () => result.current.execute());
+    act(() => {
+      mocks.sequential.at(-1)!.onMutate(SWAP);
+      mocks.sequential.at(-1)!.onStart('0xswap', SWAP);
+      mocks.sequential.at(-1)!.onMutate(BURN);
+      mocks.sequential.at(-1)!.onStart('0xburn', BURN);
+    });
+    act(() => settle('0xburn'));
+    expect(a.onSuccess).toHaveBeenCalledWith('0xburn', 7n);
+  });
+
+  // A claim's sale signed after the modal closed must not mark the card launched next as claimed.
+  it('hands no Confirm the success of a run closed while its prompt was open', async () => {
+    const a = confirmCallbacks();
+    const b = confirmCallbacks();
+    const { modal, result } = renderConfirms(a);
+    await act(async () => result.current.execute());
+    act(() => mocks.sequential.at(-1)!.onMutate(SWAP));
+    act(() => result.current.reset());
+    modal.current = b;
+    act(() => settle('0xswap'));
+    expect(a.onSuccess).not.toHaveBeenCalled();
+    expect(b.onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('never hands the success of an earlier Confirm to the current one', async () => {
+    const a = confirmCallbacks();
+    const b = confirmCallbacks();
+    const { modal, result } = renderConfirms(a);
+    await act(async () => result.current.execute());
+    act(() => mocks.sequential.at(-1)!.onMutate(BURN));
+    modal.current = b;
+    act(() => settle('0xburn'));
+    expect(b.onSuccess).not.toHaveBeenCalled();
   });
 });

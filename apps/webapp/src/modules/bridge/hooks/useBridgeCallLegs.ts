@@ -127,6 +127,8 @@ export function useBridgeCallLegs({
   const broadcastRef = useRef(false);
   // The callbacks of the Confirm that opened each wallet prompt, so a prompt signed late reports to its own run.
   const issuers = usePromptIssuers(getCallbacks);
+  // The request of the last leg prompted one at a time: the run's success belongs to its Confirm.
+  const lastPromptRef = useRef<TxMutateVariables | undefined>(undefined);
   // The context `execute` was given, and per wallet prompt the one of the run that opened it.
   const runContextRef = useRef<unknown>(undefined);
   const promptContextsRef = useRef(new WeakMap<object, unknown>());
@@ -280,6 +282,7 @@ export function useBridgeCallLegs({
       setSendRoute('sequential');
       if (variables && runContextRef.current !== undefined)
         promptContextsRef.current.set(variables, runContextRef.current);
+      lastPromptRef.current = variables;
       if (variables) {
         const release = onLegPrompt?.(variables, runContextRef.current);
         if (release) legReleases.set(variables, release);
@@ -305,8 +308,10 @@ export function useBridgeCallLegs({
       if (hash && variables) void followLate(hash as `0x${string}`, issuer);
     },
     onSuccess: (hash, blockNumber) => {
-      runFromRef.current = undefined;
       setSendRoute(null);
+      // A run reset or opened by an earlier Confirm: its sent leg reports its own receipt.
+      if (!runFromRef.current || issuers.issuerOf(lastPromptRef.current) !== getCallbacks()) return;
+      runFromRef.current = undefined;
       getCallbacks().onSuccess(hash, blockNumber);
     },
     onError: (error, hash, variables) => {
