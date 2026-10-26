@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { getAddress, isAddress, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance } from '@/hooks';
+import type { TxMutateVariables } from '@/hooks';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { CCTP_CLAIM_FUNCTION, cctpClaimCalls } from '../adapters/cctp/calls';
 import { cctpClaimMessage } from '../adapters/cctp/cctpProgress';
@@ -26,6 +27,8 @@ export function useCctpClaimLegs({
   account,
   isSafeApp,
   batch = false,
+  onLegSent,
+  onLegFailed,
   getCallbacks
 }: {
   enabled: boolean;
@@ -35,6 +38,10 @@ export function useCctpClaimLegs({
   account: string | undefined;
   isSafeApp?: boolean;
   batch?: boolean;
+  /** See `useBridgeCallLegs`: every leg sent, with its run's context, even after the run ended. */
+  onLegSent?: (hash: string, variables: TxMutateVariables, context?: unknown) => void;
+  /** See `useBridgeCallLegs`: a sent leg reverted or was replaced. */
+  onLegFailed?: (hash: string) => void;
   getCallbacks: () => TxCallbacks;
 }) {
   const from = account && isAddress(account) ? getAddress(account) : undefined;
@@ -75,6 +82,8 @@ export function useCctpClaimLegs({
     preflight,
     isSafeApp,
     batch,
+    onLegSent,
+    onLegFailed,
     onAccountSwitch: () => {
       if (active) allowance.mutate();
     },

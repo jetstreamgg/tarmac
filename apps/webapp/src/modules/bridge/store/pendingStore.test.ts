@@ -247,6 +247,14 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
   });
 
+  it('keeps the leg a claim run sent after the claim through storage', () => {
+    const selling = bridge({
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, nextLegTxHash: '0xsell' }]
+    });
+    make().upsert(SCOPE, selling);
+    expect(make().getSnapshot(SCOPE)).toEqual([selling]);
+  });
+
   it('keeps an invalidated action through storage', () => {
     const reproving = bridge({
       routeKind: 'native',

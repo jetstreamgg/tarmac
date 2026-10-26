@@ -274,6 +274,7 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
     const extra = (action.bundleTxHashes ?? []).filter(hash => !known.bundleTxHashes?.includes(hash));
     if (extra.length === 0) return bridge;
     const merged = { ...known, bundleTxHashes: [...(known.bundleTxHashes ?? []), ...extra] };
+    delete merged.nextLegTxHash;
     return { ...bridge, actions: bridge.actions.map(sent => (sent === known ? merged : sent)) };
   }
   // A Safe confirms with the on-chain hash, not the Safe tx hash it was sent with.
@@ -303,6 +304,32 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
   return next
     ? { ...bridge, actions, status: 'pending', nextAction: next }
     : { ...bridge, actions, status: 'claimed', nextAction: undefined, settledAt: action.at };
+}
+
+/** Keeps on the last confirmed `action` the leg its run sent after it mined (a claim's sale), until the run confirms it. */
+export function recordNextLeg(
+  bridge: PendingBridge,
+  action: PendingBridgeNextAction,
+  legTxHash: string
+): PendingBridge {
+  const known = [...bridge.actions]
+    .reverse()
+    .find(done => done.action === action && done.status === undefined);
+  if (!known || known.nextLegTxHash === legTxHash) return bridge;
+  const next = { ...known, nextLegTxHash: legTxHash };
+  return { ...bridge, actions: bridge.actions.map(done => (done === known ? next : done)) };
+}
+
+/** Forgets a leg `recordNextLeg` kept once it reverted or was replaced: it sold nothing. */
+export function forgetNextLeg(bridge: PendingBridge, legTxHash: string): PendingBridge {
+  if (!bridge.actions.some(done => done.nextLegTxHash === legTxHash)) return bridge;
+  const actions = bridge.actions.map(done => {
+    if (done.nextLegTxHash !== legTxHash) return done;
+    const next = { ...done };
+    delete next.nextLegTxHash;
+    return next;
+  });
+  return { ...bridge, actions };
 }
 
 const hasSentFollowUp = (bridge: PendingBridge) =>

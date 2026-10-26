@@ -23,8 +23,18 @@ const renderHook = <Result,>(hook: () => Result) =>
       createElement(QueryClientProvider, { client: queryClient }, children)
   });
 
-type LegsParams = { enabled: boolean; getCallbacks: () => TxCallbacks };
-type LegsMock = { params?: LegsParams; ready: boolean; execute: () => void; client?: ConvertOfferReader };
+type LegsParams = {
+  enabled: boolean;
+  getCallbacks: () => TxCallbacks;
+  onLegSent?: (hash: string, variables: { functionName: string }, context?: unknown) => void;
+  onLegFailed?: (hash: string) => void;
+};
+type LegsMock = {
+  params?: LegsParams;
+  ready: boolean;
+  execute: (context?: unknown) => void;
+  client?: ConvertOfferReader;
+};
 const legsResult = (legs: LegsMock) => ({
   calls: [],
   isBatch: false,
@@ -245,6 +255,66 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       expect(actionsOf('claim')).toEqual([{ action: 'claim', txHash: '0xreceive', at: expect.any(Number) }]);
       expect(stored().status).toBe('claimed');
       expect(result.current.canLaunch(stored(), 'claim')).toBe(false);
+    });
+
+    // A sale signed and then mined after a reload must still be read, or the claim reads as unsold.
+    describe('the legs a claim run sends after its claim', () => {
+      // As the engine does: every leg it sends reaches `onLegSent` with its run's context.
+      const sentLeg = (functionName: string, hash: string, callbacks?: TxCallbacks) => {
+        if (callbacks) callbacks.onMutate({ functionName });
+        mocks.claim.params!.onLegSent!(
+          hash,
+          { functionName },
+          vi.mocked(mocks.claim.execute).mock.calls.at(-1)?.[0]
+        );
+        callbacks?.onStart(hash);
+      };
+      const start = () => {
+        const card = seed({ claimed: false });
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        act(() => result.current.launch(card, 'claim'));
+        confirm();
+        const callbacks = mocks.claim.params!.getCallbacks();
+        act(() => {
+          sentLeg('receiveMessage', '0xreceive', callbacks);
+          sentLeg('approve', '0xapprove', callbacks);
+        });
+        return callbacks;
+      };
+
+      it('keeps the sale on the claim as soon as it is sent, until the run confirms it', () => {
+        const callbacks = start();
+        act(() => sentLeg('sellGem', '0xsell', callbacks));
+        expect(actionsOf('claim')).toEqual([
+          { action: 'claim', txHash: '0xreceive', at: expect.any(Number), nextLegTxHash: '0xsell' }
+        ]);
+        act(() => callbacks.onSuccess('0xsell', 7n));
+        expect(actionsOf('claim')).toEqual([
+          { action: 'claim', txHash: '0xreceive', at: expect.any(Number), bundleTxHashes: ['0xsell'] }
+        ]);
+      });
+
+      it('keeps a sale signed after the modal closed, which its Confirm no longer hears', () => {
+        start();
+        act(() => sentLeg('sellGem', '0xsell'));
+        expect(actionsOf('claim')).toMatchObject([{ txHash: '0xreceive', nextLegTxHash: '0xsell' }]);
+      });
+
+      it('forgets a sale that reverted or was replaced, which sold nothing', () => {
+        const callbacks = start();
+        act(() => sentLeg('sellGem', '0xsell', callbacks));
+        act(() => mocks.claim.params!.onLegFailed!('0xsell'));
+        expect(actionsOf('claim')).toEqual([
+          { action: 'claim', txHash: '0xreceive', at: expect.any(Number) }
+        ]);
+      });
+
+      it('keeps no leg for a Safe, whose legs report Safe tx hashes', () => {
+        mocks.isSafe = true;
+        const callbacks = start();
+        act(() => sentLeg('sellGem', '0xsafe-sell', callbacks));
+        expect(actionsOf('claim').some(done => done.nextLegTxHash)).toBe(false);
+      });
     });
 
     // A wallet that runs the bundle as separate transactions (APP-637): its sale must stay readable.

@@ -58,7 +58,8 @@ const isAction = (value: unknown) =>
   typeof value.at === 'number' &&
   optional(value.status, status => status === 'sent' || status === 'invalidated') &&
   optional(value.safe, safe => safe === true) &&
-  optional(value.bundleTxHashes, hashes => Array.isArray(hashes) && hashes.every(isString));
+  optional(value.bundleTxHashes, hashes => Array.isArray(hashes) && hashes.every(isString)) &&
+  optional(value.nextLegTxHash, isString);
 
 const parseEntry = (value: unknown): PendingBridge | null => {
   if (!isRecord(value)) return null;

@@ -54,6 +54,8 @@ export type PendingBridgeAction = {
   safe?: true;
   /** The other transactions of a bundle the wallet ran apart: a claim's sale can land in one of them. */
   bundleTxHashes?: string[];
+  /** The last leg its run sent after it mined (a claim's approve or sale), until the run confirms it. */
+  nextLegTxHash?: string;
 };
 
 export type PendingBridge = {

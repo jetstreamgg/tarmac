@@ -35,6 +35,14 @@ export const confirmedClaimTxHashes = (bridge: PendingBridge): string[] =>
     .filter(action => action.action === 'claim' && action.status === undefined)
     .flatMap(action => [action.txHash, ...(action.bundleTxHashes ?? [])]);
 
+/** The leg a claim's run sent after the claim mined and hasn't confirmed: its sale, maybe mined after a reload. */
+export const claimNextLegTxHashes = (bridge: PendingBridge): string[] =>
+  bridge.actions.flatMap(action =>
+    action.action === 'claim' && action.status === undefined && action.nextLegTxHash
+      ? [action.nextLegTxHash]
+      : []
+  );
+
 /** The first hash this app's claim confirmed with; see `confirmedClaimTxHashes` for all of them. */
 export const confirmedClaimTxHash = (bridge: PendingBridge): string | undefined =>
   confirmedClaimTxHashes(bridge)[0];
@@ -70,13 +78,20 @@ export type ConvertOfferReader = Pick<PublicClient, 'getTransactionReceipt' | 'r
 /**
  * Whether this app's claim sold its USDC to `recipient`, from the receipts of
  * every hash it confirmed with. A reverted one can't tell what it left, so it
- * counts as sold.
+ * counts as sold. A leg its run sent after the claim (see `claimNextLegTxHashes`)
+ * must be mined to tell: a reverted one sold nothing.
  */
 export async function readClaimSold(client: ConvertOfferReader, bridge: PendingBridge, recipient: string) {
-  const receipts = await Promise.all(
-    confirmedClaimTxHashes(bridge).map(hash => client.getTransactionReceipt({ hash: hash as Hex }))
+  const read = (hashes: string[]) =>
+    Promise.all(hashes.map(hash => client.getTransactionReceipt({ hash: hash as Hex })));
+  const [receipts, nextLegs] = await Promise.all([
+    read(confirmedClaimTxHashes(bridge)),
+    read(claimNextLegTxHashes(bridge))
+  ]);
+  return (
+    receipts.some(receipt => receipt.status !== 'success' || claimSoldForUsds(receipt.logs, recipient)) ||
+    nextLegs.some(receipt => receipt.status === 'success' && claimSoldForUsds(receipt.logs, recipient))
   );
-  return receipts.some(receipt => receipt.status !== 'success' || claimSoldForUsds(receipt.logs, recipient));
 }
 
 /** `cctpConvertOffer` read afresh on Ethereum: the claim's receipts and the account's USDC. A failed read rejects. */

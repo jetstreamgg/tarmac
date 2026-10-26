@@ -29,6 +29,8 @@ import {
   dropSentAction,
   recordAction,
   recordActionSent,
+  forgetNextLeg,
+  recordNextLeg,
   showsActionButton
 } from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
@@ -55,6 +57,11 @@ type Recovery =
       routeData?: Record<string, string>;
       chainId: number;
     };
+
+/** The card a claim run was confirmed for: its later legs are kept on it, even once the modal closed. */
+type ClaimRun = { scope: string; bridgeId: string };
+const isClaimRun = (context: unknown): context is ClaimRun =>
+  typeof context === 'object' && context !== null && 'bridgeId' in context;
 
 const recoveryOf = (
   bridge: PendingBridge,
@@ -222,6 +229,8 @@ export function useDestinationActionLaunch() {
   // Bumped on every launch: only the latest one's switch may open the modal.
   const launchIdRef = useRef(0);
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
+  const claimRunRef = useRef<ClaimRun | undefined>(undefined);
+  const claimLegRunsRef = useRef(new Map<string, ClaimRun>());
   // Confirm ran before the recovery was prepared: it is sent once it is.
   const confirmPendingRef = useRef(false);
   const replay = recovery?.kind === 'replay' ? recovery : undefined;
@@ -250,6 +259,20 @@ export function useDestinationActionLaunch() {
     account: address,
     isSafeApp,
     batch,
+    // A sale that mines after a reload must still be read before a convert is offered.
+    onLegSent: (hash, variables, context) => {
+      if (variables.functionName === CCTP_CLAIM_FUNCTION || !isClaimRun(context)) return;
+      claimLegRunsRef.current.set(hash, context);
+      pendingBridgeStore.update(context.scope, context.bridgeId, current =>
+        recordNextLeg(current, 'claim', hash)
+      );
+    },
+    onLegFailed: hash => {
+      const run = claimLegRunsRef.current.get(hash);
+      if (!run) return;
+      claimLegRunsRef.current.delete(hash);
+      pendingBridgeStore.update(run.scope, run.bridgeId, current => forgetNextLeg(current, hash));
+    },
     getCallbacks: () => legCallbacksRef.current
   });
   const convertLegs = useCctpConvertLegs({
@@ -339,7 +362,8 @@ export function useDestinationActionLaunch() {
       }
       if (legs.ready) {
         confirmPendingRef.current = false;
-        legs.execute();
+        if (claim) claimLegs.execute(claimRunRef.current);
+        else legs.execute();
       } else if (legs.error) {
         confirmPendingRef.current = false;
         legCallbacksRef.current.onError(legs.error, '');
@@ -575,6 +599,9 @@ export function useDestinationActionLaunch() {
           }
           legCallbacksRef.current = callbacks;
           modalOwnerRef.current = callbacks;
+          // A Safe's legs report Safe tx hashes, and its claim confirms only with its last leg.
+          claimRunRef.current =
+            nextRecovery?.kind === 'cctp-claim' && !isSafe ? { scope, bridgeId: bridge.id } : undefined;
           confirmPendingRef.current = true;
           sendReplayRef.current();
         },
