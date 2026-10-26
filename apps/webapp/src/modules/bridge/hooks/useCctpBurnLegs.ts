@@ -142,7 +142,7 @@ export function useCctpBurnLegs({
   const calls = useMemo(() => built?.calls ?? [], [built]);
 
   const preflight = useCallback(
-    async (client: PublicClient) => {
+    async (client: PublicClient, nextCalls: readonly unknown[] = calls) => {
       if (!destination) return new Error('The bridge is not ready to send.');
       // Storage may have stopped taking writes since the Review.
       if (to && from && !isAddressEqual(to, from) && !isStorageWritable())
@@ -164,9 +164,13 @@ export function useCctpBurnLegs({
           cctpSwapStore.clear(scope, resume.swapTxHash);
         if (refusal) return refusal;
       }
-      return cctpBurnRefusal({ network, amount: amountIn, source: client, destination, swap });
+      // A Retry after the run's swap mined needs no USDC from PSM3.
+      const swapLeft =
+        swap &&
+        nextCalls.some(call => (call as { functionName?: string }).functionName === CCTP_SWAP_FUNCTION);
+      return cctpBurnRefusal({ network, amount: amountIn, source: client, destination, swap: swapLeft });
     },
-    [network, amountIn, destination, resume, from, to, swap, scope]
+    [network, amountIn, destination, resume, from, to, swap, scope, calls]
   );
 
   // Fixed per run at Confirm: the status a leg is later sent under may read unsettled.

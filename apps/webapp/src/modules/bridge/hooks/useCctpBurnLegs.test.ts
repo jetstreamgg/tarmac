@@ -398,6 +398,23 @@ describe('useCctpBurnLegs (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     });
   });
 
+  // A Retry after the run's own swap mined sends no swap: the pocket that swap may have emptied doesn't matter.
+  it('reads the gate with no swap once the run has no swap left to send', async () => {
+    render();
+    const preflight = mocks.legs!.preflight as (
+      client: unknown,
+      nextCalls?: Call[]
+    ) => Promise<Error | undefined>;
+    mocks.refusal.mockResolvedValue(undefined);
+    const swapAt = calls().findIndex(
+      call => (call as { functionName?: string }).functionName === 'swapExactIn'
+    );
+    await preflight(mocks.clients[BASE], calls().slice(swapAt + 1));
+    expect(mocks.refusal).toHaveBeenLastCalledWith(expect.objectContaining({ swap: false }));
+    await preflight(mocks.clients[BASE], calls().slice(swapAt));
+    expect(mocks.refusal).toHaveBeenLastCalledWith(expect.objectContaining({ swap: true }));
+  });
+
   it('reads nothing while disabled', () => {
     expect(render({ enabled: false }).error).toBeNull();
     expect(mocks.allowances.every(read => read.contractAddress === undefined)).toBe(true);

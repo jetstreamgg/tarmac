@@ -101,8 +101,8 @@ export function useBridgeCallLegs({
   from: Address | undefined;
   /** The leg that moves the funds, which the source recording keys on. */
   sendFunctionName: string;
-  /** Resolves to the reason the send is refused, if any. */
-  preflight: (client: PublicClient) => Promise<Error | undefined>;
+  /** Resolves to the reason the send is refused, if any, given the calls this send still has to make. */
+  preflight: (client: PublicClient, nextCalls: readonly Call[]) => Promise<Error | undefined>;
   /** Inside the Safe App a signed prompt returns a safeTxHash. */
   isSafeApp?: boolean;
   /** Bundle the legs when the wallet can: the user's batch setting, never for a Safe. */
@@ -334,7 +334,7 @@ export function useBridgeCallLegs({
   const { execute: executeFlow } = flow;
   const { reset: resetBatch } = batchFlow;
   // A reset run's sequential leg is still out: the engine holds that run's frozen calls until it settles.
-  const { reset: resetSequential, detached: busy } = sequentialFlow;
+  const { reset: resetSequential, detached: busy, nextCalls } = sequentialFlow;
   const reset = useCallback(
     (onCleared?: () => void) => {
       runRef.current += 1;
@@ -377,7 +377,8 @@ export function useBridgeCallLegs({
         pausedRef.current = true;
         getCallbacks().onError(error, '');
       };
-      preflight(l1)
+      // A Retry resumes a sequential run after its mined legs; a bundle sends every call again.
+      preflight(l1, useBatch ? calls : nextCalls)
         .then(
           refusal => {
             if (run !== runRef.current) return;
@@ -399,7 +400,7 @@ export function useBridgeCallLegs({
           if (run === runRef.current) checkingRef.current = false;
         });
     },
-    [l1, from, busy, preflight, executeFlow, getCallbacks]
+    [l1, from, busy, preflight, useBatch, calls, nextCalls, executeFlow, getCallbacks]
   );
 
   // A run still in its pre-send check ends with nothing sent: its modal closed.

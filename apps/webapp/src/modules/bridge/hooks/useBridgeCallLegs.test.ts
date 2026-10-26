@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   batch: [] as FlowArgs[],
   batchPrepared: false,
   sequentialIndex: 0,
+  sequentialNextCalls: undefined as Call[] | undefined,
   sequentialExecute: vi.fn()
 }));
 
@@ -56,7 +57,8 @@ vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
       error: null,
       execute: mocks.sequentialExecute,
       reset: vi.fn(),
-      currentCallIndex: mocks.sequentialIndex
+      currentCallIndex: mocks.sequentialIndex,
+      nextCalls: mocks.sequentialNextCalls ?? []
     };
   }
 }));
@@ -352,5 +354,40 @@ describe('useBridgeCallLegs dropCheck', () => {
       (mocks.sequential.at(-1) as unknown as { onSuccess: (hash: string) => void }).onSuccess('0xburn');
     });
     expect(callbacks.onSuccess).toHaveBeenCalledWith('0xburn', undefined);
+  });
+});
+
+// A Retry after a mined leg resumes the rest: the check before it reads what that rest needs, not the whole run.
+describe('useBridgeCallLegs preflight', () => {
+  afterEach(() => {
+    mocks.sequentialNextCalls = undefined;
+  });
+
+  const run = async (batch: boolean) => {
+    const preflight = vi.fn(async (_client: PublicClient, _nextCalls: readonly Call[]) => undefined);
+    const view = renderHook(() =>
+      useBridgeCallLegs({
+        calls: CALLS,
+        chainId: 8453,
+        client: {} as PublicClient,
+        from: SENDER,
+        sendFunctionName: 'depositForBurn',
+        preflight,
+        batch,
+        getCallbacks: () => callbacks
+      })
+    );
+    await act(async () => view.result.current.execute());
+    return preflight.mock.calls.at(-1)![1];
+  };
+
+  it('gets the calls a sequential run still has to send', async () => {
+    mocks.sequentialNextCalls = CALLS.slice(1);
+    expect(await run(false)).toEqual(CALLS.slice(1));
+  });
+
+  it('gets every call of a bundle, which sends them all again', async () => {
+    Object.assign(mocks, { batchPrepared: true, sequentialNextCalls: CALLS.slice(1) });
+    expect(await run(true)).toEqual(CALLS);
   });
 });
