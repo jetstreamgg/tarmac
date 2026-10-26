@@ -129,7 +129,6 @@ vi.mock('./useCctpBurnLegs', () => ({
     const { ready, busy, legMined, error, isBatch, calls, execute } = mocks.burn;
     return {
       calls,
-      needsApprove: false,
       isBatch,
       ready,
       busy,

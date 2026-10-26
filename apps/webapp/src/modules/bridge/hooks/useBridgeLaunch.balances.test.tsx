@@ -104,7 +104,6 @@ vi.mock('./useCctpBurnLegs', () => ({
         { to: usdc, functionName: 'approve', args: [TOKEN_MESSENGER_V2, BASE_BURN_AMOUNT] },
         { to: TOKEN_MESSENGER_V2, functionName: 'depositForBurn' }
       ],
-      needsApprove: false,
       isBatch: false,
       ready: true,
       error: null,
