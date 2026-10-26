@@ -24,6 +24,7 @@ import { CCTP_CONVERT_FUNCTION, cctpBurnAmount } from '../adapters/cctp/calls';
 import { readCctpConvertOffer } from '../adapters/cctp/convert';
 import {
   canLaunchAction,
+  canConvert,
   canLaunchConvert,
   canLaunchKeepalive,
   dropSentAction,
@@ -180,15 +181,12 @@ const DETACHED: TxCallbacks = {
   onError: () => undefined
 };
 
-const isRecipient = (bridge: PendingBridge, account: string | undefined) =>
-  !!account && account.toLowerCase() === (bridge.recipient ?? bridge.account).toLowerCase();
-
 /** `action` can be sent now by `account`: the next action, a keepalive of the ticket it redeems, or the recipient's convert. */
 const launchable = (bridge: PendingBridge, action: PendingBridgeNextAction, account: string | undefined) =>
   action === 'keepalive'
     ? canLaunchKeepalive(bridge, Date.now())
     : action === 'convert'
-      ? canLaunchConvert(bridge) && isRecipient(bridge, account)
+      ? canConvert(bridge, account)
       : bridge.nextAction === action &&
         canLaunchAction(bridge) &&
         !claimsFromDestinationWallet(bridge, account);

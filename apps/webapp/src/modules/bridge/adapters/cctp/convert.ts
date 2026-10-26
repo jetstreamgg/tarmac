@@ -8,7 +8,7 @@ import {
   type Log,
   type PublicClient
 } from 'viem';
-import { canLaunchConvert } from '../../model/pendingTransitions';
+import { canConvert } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { cctpBurnAmount } from './calls';
 import { L1_USDC, L1_USDS } from './contracts';
@@ -64,9 +64,7 @@ export function cctpConvertOffer({
   claimSold: boolean | undefined;
   usdcBalance: bigint | undefined;
 }): bigint | undefined {
-  if (!canLaunchConvert(bridge) || !confirmedClaimTxHash(bridge)) return undefined;
-  if (!account || account.toLowerCase() !== (bridge.recipient ?? bridge.account).toLowerCase())
-    return undefined;
+  if (!canConvert(bridge, account) || !confirmedClaimTxHash(bridge)) return undefined;
   if (claimSold !== false || usdcBalance === undefined) return undefined;
   const minted = cctpBurnAmount(bridge.amount);
   const amount = usdcBalance < minted ? usdcBalance : minted;
@@ -104,9 +102,8 @@ export async function readCctpConvertOffer({
   bridge: PendingBridge;
   account: string;
 }): Promise<bigint | undefined> {
+  if (!canConvert(bridge, account) || !confirmedClaimTxHash(bridge)) return undefined;
   const recipient = bridge.recipient ?? bridge.account;
-  if (!canLaunchConvert(bridge) || !confirmedClaimTxHash(bridge)) return undefined;
-  if (account.toLowerCase() !== recipient.toLowerCase()) return undefined;
   const [claimSold, usdcBalance] = await Promise.all([
     readClaimSold(client, bridge, recipient),
     client.readContract({

@@ -209,6 +209,12 @@ export const canLaunchConvert = (bridge: PendingBridge): boolean =>
   (bridge.status === 'claimed' || bridge.status === 'arrived') &&
   !bridge.actions.some(action => action.action === 'convert');
 
+/** `account` can sell the claim's USDC: the transfer's recipient, once a convert can launch. */
+export const canConvert = (bridge: PendingBridge, account: string | undefined): boolean =>
+  canLaunchConvert(bridge) &&
+  !!account &&
+  account.toLowerCase() === (bridge.recipient ?? bridge.account).toLowerCase();
+
 /** Under this an Arbitrum redeem is urgent and its ticket can be kept alive: a Safe's signers need time too. */
 export const REDEEM_URGENT_MINUTES = 48 * 60;
 

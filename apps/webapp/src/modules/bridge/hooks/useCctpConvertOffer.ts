@@ -11,7 +11,7 @@ import {
   readClaimSold
 } from '../adapters/cctp/convert';
 import { bridgeChainId } from '../model/networks';
-import { canLaunchConvert } from '../model/pendingTransitions';
+import { canConvert } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 import { usePendingScope } from './usePendingScope';
 
@@ -28,12 +28,7 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
   const recipient = bridge.recipient ?? bridge.account;
   const claimTxHashes = confirmedClaimTxHashes(bridge);
   const nextLegTxHashes = claimNextLegTxHashes(bridge);
-  const eligible =
-    canLaunchConvert(bridge) &&
-    claimTxHashes.length > 0 &&
-    chainId !== undefined &&
-    !!account &&
-    account.toLowerCase() === recipient.toLowerCase();
+  const eligible = canConvert(bridge, account) && claimTxHashes.length > 0 && chainId !== undefined;
 
   // A mined receipt never changes; a leg not mined yet fails the read, which retries.
   const { data: claimSold } = useQuery({

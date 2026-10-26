@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
 import {
   applyProgress,
+  canConvert,
   canLaunchConvert,
   createPendingBridge,
   dropSentAction,
@@ -63,6 +64,22 @@ describe('followUpActions', () => {
 
   it('convert is not a recovery action', () => {
     expect(isRecoveryAction('convert')).toBe(false);
+  });
+});
+
+describe('canConvert', () => {
+  it('only its recipient, in any case, once a convert can launch', () => {
+    expect(canConvert(claimed(), ACCOUNT.toLowerCase())).toBe(true);
+    expect(canConvert(claimed(), undefined)).toBe(false);
+    expect(canConvert(claimed(), '0x' + '22'.repeat(20))).toBe(false);
+    expect(canConvert(convertSent(), ACCOUNT)).toBe(false);
+  });
+
+  it('a transfer to another address only by that address', () => {
+    const other = '0x' + '33'.repeat(20);
+    const bridge = { ...claimed(), recipient: other };
+    expect(canConvert(bridge, ACCOUNT)).toBe(false);
+    expect(canConvert(bridge, other.toUpperCase().replace('0X', '0x'))).toBe(true);
   });
 });
 
