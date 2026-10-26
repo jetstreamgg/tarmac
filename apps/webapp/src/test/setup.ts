@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { vi } from 'vitest';
+import './blankForkEnv';
 
 // Stub the walletConnect connector at the module level. Its real implementation
 // (Reown AppKit) fires a `pulse.walletconnect.org/batch` telemetry POST at
@@ -33,12 +34,6 @@ vi.mock('posthog-js', () => ({
     set_config: vi.fn()
   }
 }));
-
-// The Tenderly fork L2s and fork explorers come from the local .env (data/wagmi/config/forkChains.ts,
-// utils/getEtherscanLink.ts), so unit tests run without them, as CI does. A test that needs them stubs its own.
-vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
-for (const chain of ['ETHEREUM', 'BASE', 'ARBITRUM', 'OPTIMISM', 'UNICHAIN'])
-  vi.stubEnv(`VITE_TENDERLY_EXPLORER_${chain}`, '');
 
 vi.mock('@sentry/react', async () => {
   const React = await import('react');
