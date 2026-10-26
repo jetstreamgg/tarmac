@@ -42,13 +42,12 @@ export const isForkChainId = (id: number): boolean => id in REAL_CHAIN_ID_BY_FOR
 /**
  * Copies each real-L2 entry of a chain-keyed map to its fork id, so the fork L2s
  * resolve the same addresses and settings. Entries already keyed by a fork id win.
- * With `forkIds`, only those fork ids get an entry.
+ * Every fork id gets one in every build; which chains are live is CHAIN_WIDGET_MAP's call.
  */
-export function withForkAliases<M extends Record<number, unknown>>(map: M, forkIds?: readonly number[]): M {
+export function withForkAliases<M extends Record<number, unknown>>(map: M): M {
   const aliased: Record<number, unknown> = { ...map };
   for (const [real, fork] of Object.entries(FORK_L2_BY_REAL)) {
-    if (real in map && !(fork in map) && (!forkIds || forkIds.includes(fork)))
-      aliased[fork] = map[Number(real)];
+    if (real in map && !(fork in map)) aliased[fork] = map[Number(real)];
   }
   return aliased as M;
 }
