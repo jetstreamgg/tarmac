@@ -267,3 +267,50 @@ describe('createCctpSwapStore convert links', () => {
     ).toEqual([['0x01', '0xc']]);
   });
 });
+
+describe('createCctpSwapStore never loses what it cannot read', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
+
+  // A newer bundle (a later field or network) wrote this entry under the same key.
+  const future = { ...swap({ swapTxHash: '0xfuture' }), usdcAmount: '1', network: 'polygon' };
+  const seed = () =>
+    localStorage.setItem(
+      KEY,
+      JSON.stringify([future, { ...swap({ swapTxHash: '0x01' }), usdcAmount: '1000000' }])
+    );
+  const storedHashes = () =>
+    (JSON.parse(localStorage.getItem(KEY)!) as { swapTxHash: string }[]).map(entry => entry.swapTxHash);
+
+  it('a record keeps an entry it cannot parse', () => {
+    seed();
+    createCctpSwapStore().record(SCOPE, swap({ swapTxHash: '0x02' }));
+    expect(storedHashes()).toEqual(expect.arrayContaining(['0x02', '0x01', '0xfuture']));
+  });
+
+  it('a link keeps an entry it cannot parse', () => {
+    seed();
+    createCctpSwapStore().markBurn(SCOPE, '0x01', '0xburn');
+    expect(storedHashes()).toEqual(expect.arrayContaining(['0x01', '0xfuture']));
+  });
+
+  it('keeps a copy of an unreadable value before replacing it', () => {
+    localStorage.setItem(KEY, '[{"swapTxHash":"0xfuture", not json');
+    createCctpSwapStore().record(SCOPE, swap({ swapTxHash: '0x02' }));
+    expect(localStorage.getItem(`${KEY}:unreadable`)).toBe('[{"swapTxHash":"0xfuture", not json');
+    expect(storedHashes()).toEqual(['0x02']);
+  });
+
+  it('does not replace an unreadable value it could not copy', () => {
+    localStorage.setItem(KEY, '{not json');
+    const setItem = localStorage.setItem.bind(localStorage);
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key.endsWith(':unreadable')) throw new Error('QuotaExceededError');
+      setItem(key, value);
+    });
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap({ swapTxHash: '0x02' }));
+    expect(localStorage.getItem(KEY)).toBe('{not json');
+    expect(store.getSnapshot(SCOPE).map(entry => entry.swapTxHash)).toEqual(['0x02']);
+  });
+});

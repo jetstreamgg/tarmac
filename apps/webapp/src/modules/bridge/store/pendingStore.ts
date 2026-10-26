@@ -6,6 +6,7 @@ import type {
   PendingBridgeNextAction,
   PendingBridgeStatus
 } from '../model/types';
+import { unparsedEntries } from './unparsedEntries';
 
 const KEY_PREFIX = 'bridgePending:v1:';
 const SETTLED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
@@ -102,25 +103,6 @@ const parseEntry = (value: unknown): PendingBridge | null => {
 const serialize = (bridges: PendingBridge[], kept: unknown[]) =>
   JSON.stringify([...bridges.map(bridge => ({ ...bridge, amount: bridge.amount.toString() })), ...kept]);
 
-/**
- * What a write must carry over from storage: entries this bundle can't parse
- * (a newer one may have written them). An unreadable value is copied once to
- * `<key>:unreadable` first; if that copy fails, this throws and nothing is replaced.
- */
-const unparsedEntries = (key: string): unknown[] => {
-  const raw = localStorage.getItem(key);
-  if (raw === null) return [];
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    parsed = undefined;
-  }
-  if (Array.isArray(parsed)) return parsed.filter(entry => parseEntry(entry) === null);
-  if (localStorage.getItem(`${key}:unreadable`) === null) localStorage.setItem(`${key}:unreadable`, raw);
-  return [];
-};
-
 const byNewest = (a: PendingBridge, b: PendingBridge) => b.startedAt - a.startedAt;
 
 const isSameBridge = (a: PendingBridge, b: PendingBridge) =>
@@ -186,7 +168,13 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
     snapshots.set(scope, sorted);
     try {
       const key = storageKey(scope);
-      localStorage.setItem(key, serialize(sorted, unparsedEntries(key)));
+      localStorage.setItem(
+        key,
+        serialize(
+          sorted,
+          unparsedEntries(key, entry => parseEntry(entry) !== null)
+        )
+      );
       unsaved.delete(scope);
     } catch {
       // ignore storage write failures (private mode, quota); the session copy still updates

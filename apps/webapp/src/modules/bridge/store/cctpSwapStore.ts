@@ -1,5 +1,6 @@
 import type { CctpL2NetworkId } from '../adapters/cctp/contracts';
 import type { PendingBridge } from '../model/types';
+import { unparsedEntries } from './unparsedEntries';
 
 const KEY_PREFIX = 'bridgeCctpSwap:v1:';
 
@@ -91,9 +92,14 @@ export function createCctpSwapStore() {
   const write = (scope: string, entries: UnfinishedCctpSwap[], changedHash: string) => {
     snapshots.set(scope, entries);
     try {
+      // Entries a newer bundle wrote are kept, as the pending store does.
+      const key = `${KEY_PREFIX}${scope}`;
       localStorage.setItem(
-        `${KEY_PREFIX}${scope}`,
-        JSON.stringify(entries.map(entry => ({ ...entry, usdcAmount: entry.usdcAmount.toString() })))
+        key,
+        JSON.stringify([
+          ...entries.map(entry => ({ ...entry, usdcAmount: entry.usdcAmount.toString() })),
+          ...unparsedEntries(key, entry => parseEntry(entry) !== null)
+        ])
       );
       unsaved.delete(scope);
     } catch {
