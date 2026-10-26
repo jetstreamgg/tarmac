@@ -37,6 +37,7 @@ import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
+import { openCctpSpend } from '../store/openCctpSpends';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
 import { readsBalanceOn } from './balanceQueries';
@@ -50,7 +51,14 @@ import { usePendingScope } from './usePendingScope';
 type Recovery =
   | { kind: 'replay'; network: OpStackNetworkId; routeData?: Record<string, string>; chainId: number }
   | { kind: 'cctp-claim'; routeData?: Record<string, string>; chainId: number }
-  | { kind: 'cctp-convert'; amount: bigint; bridged: bigint; chainId: number }
+  | {
+      kind: 'cctp-convert';
+      amount: bigint;
+      bridged: bigint;
+      chainId: number;
+      scope: string;
+      bridgeId: string;
+    }
   | {
       kind: 'redeem';
       action: 'redeem' | 'keepalive';
@@ -58,12 +66,13 @@ type Recovery =
       chainId: number;
     };
 
-/** The card a claim run was confirmed for: its later legs are kept on it, even once the modal closed. */
-type ClaimRun = { scope: string; bridgeId: string };
+/** The card a claim run was confirmed for: its later legs are kept on it (not a Safe's), even once the modal closed. */
+type ClaimRun = { scope: string; bridgeId: string; safe?: boolean };
 const isClaimRun = (context: unknown): context is ClaimRun =>
   typeof context === 'object' && context !== null && 'bridgeId' in context;
 
 const recoveryOf = (
+  scope: string,
   bridge: PendingBridge,
   action: PendingBridgeNextAction,
   chainId: number,
@@ -72,7 +81,14 @@ const recoveryOf = (
   if (action === 'claim' && bridge.routeKind === 'cctp' && bridge.to === 'ethereum')
     return { kind: 'cctp-claim', routeData: bridge.routeData, chainId };
   if (action === 'convert' && amount !== undefined)
-    return { kind: 'cctp-convert', amount, bridged: cctpBurnAmount(bridge.amount), chainId };
+    return {
+      kind: 'cctp-convert',
+      amount,
+      bridged: cctpBurnAmount(bridge.amount),
+      chainId,
+      scope,
+      bridgeId: bridge.id
+    };
   if (bridge.from !== 'ethereum') return undefined;
   if (action === 'replay' && isOpStackNetwork(bridge.to))
     return { kind: 'replay', network: bridge.to, routeData: bridge.routeData, chainId };
@@ -261,7 +277,7 @@ export function useDestinationActionLaunch() {
     batch,
     // A sale that mines after a reload must still be read before a convert is offered.
     onLegSent: (hash, variables, context) => {
-      if (variables.functionName === CCTP_CLAIM_FUNCTION || !isClaimRun(context)) return;
+      if (variables.functionName === CCTP_CLAIM_FUNCTION || !isClaimRun(context) || context.safe) return;
       claimLegRunsRef.current.set(hash, context);
       pendingBridgeStore.update(context.scope, context.bridgeId, current =>
         recordNextLeg(current, 'claim', hash)
@@ -273,10 +289,17 @@ export function useDestinationActionLaunch() {
       claimLegRunsRef.current.delete(hash);
       pendingBridgeStore.update(run.scope, run.bridgeId, current => forgetNextLeg(current, hash));
     },
+    // A convert of the card sells the same USDC: it refuses while this sale may still be signed.
+    onLegPrompt: (variables, context) =>
+      variables.functionName === CCTP_CONVERT_FUNCTION && isClaimRun(context)
+        ? openCctpSpend(context.scope, context.bridgeId)
+        : undefined,
     getCallbacks: () => legCallbacksRef.current
   });
   const convertLegs = useCctpConvertLegs({
     enabled: !!convert && walletChainId === convert.chainId,
+    scope: convert?.scope,
+    bridgeId: convert?.bridgeId,
     amount: convert?.amount,
     chainId: convert?.chainId,
     account: address,
@@ -456,7 +479,7 @@ export function useDestinationActionLaunch() {
         });
         return;
       }
-      const nextRecovery = recoveryOf(bridge, action, pinnedChainId, convertAmount);
+      const nextRecovery = recoveryOf(scope, bridge, action, pinnedChainId, convertAmount);
       if (nextRecovery) {
         resetReplay();
         resetRedeem();
@@ -601,7 +624,9 @@ export function useDestinationActionLaunch() {
           modalOwnerRef.current = callbacks;
           // A Safe's legs report Safe tx hashes, and its claim confirms only with its last leg.
           claimRunRef.current =
-            nextRecovery?.kind === 'cctp-claim' && !isSafe ? { scope, bridgeId: bridge.id } : undefined;
+            nextRecovery?.kind === 'cctp-claim'
+              ? { scope, bridgeId: bridge.id, ...(isSafe && { safe: true }) }
+              : undefined;
           confirmPendingRef.current = true;
           sendReplayRef.current();
         },

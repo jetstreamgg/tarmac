@@ -29,6 +29,7 @@ export function useCctpClaimLegs({
   batch = false,
   onLegSent,
   onLegFailed,
+  onLegPrompt,
   getCallbacks
 }: {
   enabled: boolean;
@@ -42,6 +43,8 @@ export function useCctpClaimLegs({
   onLegSent?: (hash: string, variables: TxMutateVariables, context?: unknown) => void;
   /** See `useBridgeCallLegs`: a sent leg reverted or was replaced. */
   onLegFailed?: (hash: string) => void;
+  /** See `useBridgeCallLegs`: a leg's wallet prompt opened, with its run's context; returns its release. */
+  onLegPrompt?: (variables: TxMutateVariables, context?: unknown) => (() => void) | undefined;
   getCallbacks: () => TxCallbacks;
 }) {
   const from = account && isAddress(account) ? getAddress(account) : undefined;
@@ -84,6 +87,7 @@ export function useCctpClaimLegs({
     batch,
     onLegSent,
     onLegFailed,
+    onLegPrompt,
     onAccountSwitch: () => {
       if (active) allowance.mutate();
     },

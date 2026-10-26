@@ -11,6 +11,7 @@ import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transa
 import { confirmedClaimTxHashes, type ConvertOfferReader } from '../adapters/cctp/convert';
 import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
+import { isCctpSpendOpen } from '../store/openCctpSpends';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
@@ -28,6 +29,7 @@ type LegsParams = {
   getCallbacks: () => TxCallbacks;
   onLegSent?: (hash: string, variables: { functionName: string }, context?: unknown) => void;
   onLegFailed?: (hash: string) => void;
+  onLegPrompt?: (variables: { functionName: string }, context?: unknown) => (() => void) | undefined;
 };
 type LegsMock = {
   params?: LegsParams;
@@ -316,6 +318,32 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
         expect(actionsOf('claim').some(done => done.nextLegTxHash)).toBe(false);
       });
     });
+
+    // A convert of the card sells the same USDC: it refuses while the claim's sale may still be signed.
+    it.each([false, true])(
+      "holds the card while its claim's sale prompt is open, and hands the card to its convert (Safe: %s)",
+      isSafe => {
+        mocks.isSafe = isSafe;
+        const card = seed({ claimed: false });
+        const { result } = renderHook(() => useDestinationActionLaunch());
+        act(() => result.current.launch(card, 'claim'));
+        confirm();
+        const run = vi.mocked(mocks.claim.execute).mock.calls.at(-1)?.[0];
+        const prompt = mocks.claim.params!.onLegPrompt!;
+        expect(prompt({ functionName: 'receiveMessage' }, run)).toBeUndefined();
+        expect(prompt({ functionName: 'approve' }, run)).toBeUndefined();
+        const release = prompt({ functionName: 'sellGem' }, run)!;
+        expect(isCctpSpendOpen(scope(), card.id)).toBe(true);
+        release();
+        expect(isCctpSpendOpen(scope(), card.id)).toBe(false);
+
+        pendingBridgeStore.update(scope(), card.id, current =>
+          recordAction(current, { action: 'claim', txHash: '0xclaim', at: NOW })
+        );
+        act(() => result.current.launch(stored(), 'convert', MINTED));
+        expect(mocks.convert.params).toMatchObject({ scope: scope(), bridgeId: card.id });
+      }
+    );
 
     // A wallet that runs the bundle as separate transactions (APP-637): its sale must stay readable.
     it('keeps every transaction of a claim bundle run apart, under one claim', () => {

@@ -129,6 +129,39 @@ describe('useCctpConvertLegs', () => {
     expect(mocks.refusal).toHaveBeenCalledWith({ amount: AMOUNT, account: getAddress(ACCOUNT), client });
   });
 
+  // A claim's sale and this convert both sell the USDC the claim minted: only one may be open in the wallet.
+  describe('on Ethereum, for a claimed bridge', () => {
+    const SCOPE = 'bridgePending:test';
+    const BRIDGE_ID = '0xburn';
+    const preflight = (client: unknown) =>
+      (mocks.legs!.preflight as (client: unknown) => Promise<Error | undefined>)(client);
+    const leg = (functionName: string) => ({ functionName }) as never;
+
+    it("refuses while a sale of the claim's USDC is open in the wallet", async () => {
+      render({ scope: SCOPE, bridgeId: BRIDGE_ID });
+      mocks.refusal.mockResolvedValue(undefined);
+      const release = openCctpSpend(SCOPE, BRIDGE_ID);
+      await expect(preflight({})).resolves.toBeInstanceOf(Error);
+      expect(mocks.refusal).not.toHaveBeenCalled();
+      release();
+      await expect(preflight({})).resolves.toBeUndefined();
+    });
+
+    it('holds the bridge while its own sale prompt is open', () => {
+      render({ scope: SCOPE, bridgeId: BRIDGE_ID }).execute();
+      const run = mocks.execute.mock.calls.at(-1)?.[0];
+      const onLegPrompt = mocks.legs!.onLegPrompt as (
+        variables: unknown,
+        run: unknown
+      ) => (() => void) | undefined;
+      expect(onLegPrompt(leg('approve'), run)).toBeUndefined();
+      const release = onLegPrompt(leg('sellGem'), run)!;
+      expect(isCctpSpendOpen(SCOPE, BRIDGE_ID)).toBe(true);
+      release();
+      expect(isCctpSpendOpen(SCOPE, BRIDGE_ID)).toBe(false);
+    });
+  });
+
   describe('on an L2, for a stopped bridge', () => {
     const { psm3, usds, usdc } = cctpL2Contracts('base');
     const SCOPE = 'bridgeCctpSwap:test';

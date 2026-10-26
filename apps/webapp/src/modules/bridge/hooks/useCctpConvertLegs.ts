@@ -30,13 +30,19 @@ const SETTLED_MESSAGE = 'This bridge was already sent or converted.';
 type ConvertRun = { scope: string; swapTxHash: string };
 const isConvertRun = (run: unknown): run is ConvertRun =>
   typeof run === 'object' && run !== null && 'scope' in run && 'swapTxHash' in run;
+/** The claimed bridge an Ethereum convert run is sent for. */
+type ClaimedConvertRun = { scope: string; bridgeId: string };
+const isClaimedConvertRun = (run: unknown): run is ClaimedConvertRun =>
+  typeof run === 'object' && run !== null && 'scope' in run && 'bridgeId' in run;
 
 /**
  * The Ethereum legs that sell `amount` USDC a CCTP claim left in the wallet
  * for USDS to the same account (after an approve when short), one at a time or
  * as one bundle with `batch`. No calls without an amount or while the
  * allowance is loading. The wrapper, liquidity and the USDC balance are read
- * again before the wallet prompt. Only enabled with the wallet on `chainId`.
+ * again before the wallet prompt, which no sale of that bridge's USDC (its
+ * claim's or another convert's) may still have open in this tab when `scope`
+ * and `bridgeId` are given. Only enabled with the wallet on `chainId`.
  * With `swap`, the legs swap that stopped bridge's USDC 1:1 for USDS on its
  * L2's PSM3 instead, only while it is kept under `scope` with no convert sent,
  * no burn or convert prompt for it is open in this tab, and the chain shows
@@ -48,6 +54,7 @@ export function useCctpConvertLegs({
   enabled,
   swap,
   scope,
+  bridgeId,
   amount,
   chainId,
   account,
@@ -58,8 +65,10 @@ export function useCctpConvertLegs({
   enabled: boolean;
   /** The stopped bridge whose USDC is converted on its L2; Ethereum when left out. */
   swap?: UnfinishedCctpSwap;
-  /** The pending bridges' scope `swap` is kept under. */
+  /** The pending bridges' scope `swap`, or the bridge `bridgeId`, is kept under. */
   scope?: string;
+  /** The claimed bridge whose USDC is converted on Ethereum. */
+  bridgeId?: string;
   /** USDC, 6 decimals. */
   amount: bigint | undefined;
   /** Ethereum, or the swap's L2 (their Tenderly forks in dev). */
@@ -92,7 +101,11 @@ export function useCctpConvertLegs({
     async (reader: PublicClient) => {
       if (!active) return new Error('Nothing to convert.');
       const params = { amount: amount!, account: from!, client: reader };
-      if (!swap) return cctpConvertRefusal(params);
+      if (!swap) {
+        if (scope && bridgeId && isCctpSpendOpen(scope, bridgeId))
+          return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
+        return cctpConvertRefusal(params);
+      }
       if (isCctpSpendOpen(scope!, swap.swapTxHash)) return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
       const kept = cctpSwapStore
         .getSnapshot(scope!)
@@ -111,9 +124,10 @@ export function useCctpConvertLegs({
       if (refusal) return refusal;
       return cctpL2ConvertRefusal({ network: swap.network, ...params });
     },
-    [active, swap, scope, amount, from]
+    [active, swap, scope, bridgeId, amount, from]
   );
   const isConvertLeg = (variables: TxMutateVariables) => variables.functionName === CCTP_L2_CONVERT_FUNCTION;
+  const isSale = (variables: TxMutateVariables) => variables.functionName === CCTP_CONVERT_FUNCTION;
   // Each convert sent, by lowercase hash or calls id, with the swap it was linked to.
   const linkedRef = useRef(new Map<string, ConvertRun>());
   const link = (run: unknown, convert: string) => {
@@ -134,8 +148,13 @@ export function useCctpConvertLegs({
       if (active) allowance.mutate();
     },
     // A prompt signed late links the swap of the run that opened it, not the one shown now.
-    onLegPrompt: (variables, run) =>
-      isConvertRun(run) && isConvertLeg(variables) ? openCctpSpend(run.scope, run.swapTxHash) : undefined,
+    onLegPrompt: (variables, run) => {
+      if (isConvertRun(run))
+        return isConvertLeg(variables) ? openCctpSpend(run.scope, run.swapTxHash) : undefined;
+      return isClaimedConvertRun(run) && isSale(variables)
+        ? openCctpSpend(run.scope, run.bridgeId)
+        : undefined;
+    },
     onLegSent: (hash, variables, run) => {
       if (isConvertLeg(variables)) link(run, hash);
     },
@@ -156,8 +175,17 @@ export function useCctpConvertLegs({
   const { execute: executeLegs } = legs;
   const swapTxHash = swap?.swapTxHash;
   const execute = useCallback(
-    () => executeLegs(swapTxHash && scope ? ({ scope, swapTxHash } satisfies ConvertRun) : undefined),
-    [executeLegs, swapTxHash, scope]
+    () =>
+      executeLegs(
+        !scope
+          ? undefined
+          : swapTxHash
+            ? ({ scope, swapTxHash } satisfies ConvertRun)
+            : bridgeId
+              ? ({ scope, bridgeId } satisfies ClaimedConvertRun)
+              : undefined
+      ),
+    [executeLegs, swapTxHash, scope, bridgeId]
   );
 
   return {
