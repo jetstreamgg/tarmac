@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContract } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
-import { isTestnetId, WAD } from '@/utils';
+import { familyMainnetId, WAD } from '@/utils';
 import { usePendleMarketHistory } from './usePendleMarketHistory';
 import { usePendleRedeemPreview } from './usePendleRedeemPreview';
 import { computeMaturedEarnings } from './computeMaturedEarnings';
@@ -43,7 +42,7 @@ export function usePendleMaturedPositionEarnings(
   ptBalance: bigint | undefined
 ): PendleMaturedPositionEarnings {
   const chainId = useChainId();
-  const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
+  const balanceChainId = familyMainnetId(chainId);
 
   const { data: history, isLoading: historyLoading } = usePendleMarketHistory(market.marketAddress);
   const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
