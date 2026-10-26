@@ -9,7 +9,10 @@ import { tenderlyForkRpcUrl } from '../src/data/wagmi/config/tenderlyForkRpc.ts'
 // The forks keep the mainnet addresses.
 const PORTAL = { base, optimism, unichain } as const;
 
-const messengerAbi = parseAbi(['function successfulMessages(bytes32) view returns (bool)']);
+const messengerAbi = parseAbi([
+  'function successfulMessages(bytes32) view returns (bool)',
+  'function failedMessages(bytes32) view returns (bool)'
+]);
 const FAILED_RELAY_TOPIC = keccak256(toHex('FailedRelayedMessage(bytes32)'));
 
 const fail = (message: string): never => {
@@ -37,14 +40,18 @@ const deposit = await readOpStackDeposit(l1, l1TxHash, PORTAL[network].contracts
 );
 
 // The deposit calls the L2 messenger's relayMessage, whose calldata hash is the message hash.
-const relayed = await l2.readContract({
-  address: deposit.to,
-  abi: messengerAbi,
-  functionName: 'successfulMessages',
-  args: [keccak256(deposit.data)]
-});
-if (relayed) {
-  console.log('Already relayed; nothing sent.');
+// A failed message is replayed from the app; re-sending the deposit would revert.
+const message = { address: deposit.to, abi: messengerAbi, args: [keccak256(deposit.data)] } as const;
+const [relayed, failedBefore] = await Promise.all([
+  l2.readContract({ ...message, functionName: 'successfulMessages' }),
+  l2.readContract({ ...message, functionName: 'failedMessages' })
+]);
+if (relayed || failedBefore) {
+  console.log(
+    relayed
+      ? 'Already relayed; nothing sent.'
+      : 'Already relayed, but the message failed on L2 (replayable from the app); nothing sent.'
+  );
   process.exit(0);
 }
 
