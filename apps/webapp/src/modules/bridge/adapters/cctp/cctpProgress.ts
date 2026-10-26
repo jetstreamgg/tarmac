@@ -75,7 +75,7 @@ export async function cctpProgress(
     );
     const settled = sent && (await settleSentAction(l1, sent, now));
     if (settled) return settled;
-    // Only a convert sent after the claim is still read for a settled bridge.
+    // A settled bridge is only read for an action it sent.
     if (isSettled(bridge)) return null;
 
     const receipt = await l2.getTransactionReceipt({ hash: bridge.txHash as Hex });

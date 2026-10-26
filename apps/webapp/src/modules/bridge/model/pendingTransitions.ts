@@ -350,11 +350,10 @@ export function forgetNextLeg(bridge: PendingBridge, legTxHash: string): Pending
   return { ...bridge, actions };
 }
 
-// A bundled claim can mine before the wallet reports it, so the chain can settle the bridge first.
-const unresolvedAfterSettling = (bridge: PendingBridge) =>
-  bridge.actions.filter(action => isSent(action) && (isFollowUpAction(action.action) || action.bundle));
+// A claim can mine before the wallet, the Safe service or the receipt read reports it, so the chain can settle the bridge first.
+const unresolvedAfterSettling = (bridge: PendingBridge) => bridge.actions.filter(isSent);
 
-/** The tracker reads it: until it settles, then while a follow-up or a bundle it sent is unconfirmed. */
+/** The tracker reads it: until it settles, then while an action it sent is unconfirmed. */
 export const isTracked = (bridge: PendingBridge): boolean =>
   !isSettled(bridge) || unresolvedAfterSettling(bridge).length > 0;
 
@@ -371,11 +370,9 @@ export function pollIntervalMs(bridge: PendingBridge, now: number): number | und
   if (isSettled(bridge)) {
     const unresolved = unresolvedAfterSettling(bridge);
     if (unresolved.length === 0) return undefined;
-    // A wallet that never answers for its bundle leaves it sent: it backs off after an hour.
-    const waitingOnWallet = unresolved.every(
-      action => action.bundle && now - action.at > FAST_POLL_WINDOW_MS
-    );
-    return waitingOnWallet ? SLOW_POLL_MS : FAST_POLL_MS;
+    // A wallet or Safe signers that never answer leave it sent: it backs off after an hour.
+    const waitingOnSigner = unresolved.every(action => now - action.at > FAST_POLL_WINDOW_MS);
+    return waitingOnSigner ? SLOW_POLL_MS : FAST_POLL_MS;
   }
   // A queued Safe transaction: signers usually act soon, but can take days. A bundle's hash comes from recovery.
   if (!bridge.txHash) return now - bridge.startedAt <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
