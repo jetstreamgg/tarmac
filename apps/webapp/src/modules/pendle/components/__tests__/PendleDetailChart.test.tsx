@@ -20,8 +20,9 @@ const MARKET: PendleMarketConfig = {
   expiry: 1795651200
 };
 
-const NOW_SEC = Math.floor(Date.now() / 1000);
 const DAY = 86_400;
+// Pinned before maturity: the live-market cases slice relative to now.
+const NOW_SEC = MARKET.expiry - 30 * DAY;
 
 const hoisted = vi.hoisted(() => ({
   chartProps: undefined as Record<string, unknown> | undefined,
@@ -63,7 +64,12 @@ vi.mock('@/modules/ui/components/Chart', async importOriginal => {
 import { PendleDetailChart } from '../PendleDetailChart';
 
 describe('PendleDetailChart', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW_SEC * 1000);
+  });
   afterEach(() => {
+    vi.useRealTimers();
     cleanup();
     hoisted.chartProps = undefined;
     hoisted.chartPoints = undefined;
@@ -132,11 +138,7 @@ describe('PendleDetailChart', () => {
 
   describe('once the market has matured', () => {
     beforeEach(() => {
-      vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime((MARKET.expiry + 30 * DAY) * 1000);
-    });
-    afterEach(() => {
-      vi.useRealTimers();
     });
 
     it('counts the timeframe back from expiry and drops the post-expiry bucket', () => {
