@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { vi } from 'vitest';
+import './blankForkEnv';
 
 // Stub the walletConnect connector at the module level. Its real implementation
 // (Reown AppKit) fires a `pulse.walletconnect.org/batch` telemetry POST at

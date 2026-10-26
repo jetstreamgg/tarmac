@@ -29,13 +29,22 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('wagmi', () => ({ useConfig: () => ({}) }));
-vi.mock('@wagmi/core', () => ({
-  getPublicClient: (_: unknown, { chainId }: { chainId: number }) => ({
+vi.mock('@wagmi/core', () => {
+  const publicClient = (chainId: number) => ({
     getBlockNumber: async () => 100n,
     getBlock: chainId === 8453 ? mocks.baseGetBlock : mocks.getBlock
-  }),
-  getCallsStatus: mocks.getCallsStatus
-}));
+  });
+  // wagmi caches getClient per chain, so the adapter context's reader cache behaves as in the app.
+  const clients = new Map<number, { extend: () => ReturnType<typeof publicClient> }>();
+  return {
+    getPublicClient: (_: unknown, { chainId }: { chainId: number }) => publicClient(chainId),
+    getClient: (_: unknown, { chainId }: { chainId: number }) => {
+      if (!clients.has(chainId)) clients.set(chainId, { extend: () => publicClient(chainId) });
+      return clients.get(chainId);
+    },
+    getCallsStatus: mocks.getCallsStatus
+  };
+});
 vi.mock('./usePendingScope', () => ({
   usePendingScope: () => ({ account: ACCOUNT, scope: mocks.scope, familyChainId: 1 })
 }));

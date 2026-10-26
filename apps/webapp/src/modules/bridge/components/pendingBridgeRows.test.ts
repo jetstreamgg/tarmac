@@ -327,6 +327,49 @@ describe('transaction links follow the app chain', () => {
   });
 });
 
+describe('transaction links on the Tenderly fork L2s', () => {
+  const loadWithForks = async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+    vi.stubEnv('VITE_TESTNET_CONFIG', 'true');
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', 'team/project/dev-env');
+    return await import('./pendingBridgeRows');
+  };
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
+    vi.stubEnv('VITE_TENDERLY_EXPLORER_BASE', '');
+  });
+
+  it('gives a fork L2 tx and wallet no link without its explorer, never Ethereum mainnet', async () => {
+    vi.stubEnv('VITE_TENDERLY_EXPLORER_BASE', '');
+    const rows = await loadWithForks();
+    expect(rows.bridgeTxHref('base', '0xabc', chainId.tenderly)).toBeUndefined();
+    const OTHER = '0x00000000000000000000000000000000000a11ce';
+    const bridge = { ...base, recipient: OTHER };
+    const destination = rows
+      .buildPendingBridgeRows(
+        bridge,
+        0,
+        chainId.tenderly,
+        false,
+        rows.bridgeCounterparty(bridge, base.account)
+      )
+      .flat()
+      .find(cell => cell.kind === 'wallet' && cell.label === 'Destination wallet');
+    expect(destination).toBeDefined();
+    expect(destination?.kind === 'wallet' && destination.href).toBeUndefined();
+  });
+
+  it('links a fork L2 tx to its Tenderly explorer when set', async () => {
+    vi.stubEnv('VITE_TENDERLY_EXPLORER_BASE', 'dashboard.tenderly.co/team/project/testnets/env/base');
+    const rows = await loadWithForks();
+    expect(rows.bridgeTxHref('base', '0xabc', chainId.tenderly)).toBe(
+      'https://dashboard.tenderly.co/team/project/testnets/env/base/tx/0xabc'
+    );
+  });
+});
+
 describe('pendingBridgeNote (Ethereum to Arbitrum)', () => {
   // The golden deposit: the portal resolves this Ethereum hash to ticket 0xfb3d…903b (checked live).
   const DEPOSIT_TX = '0x7bad421efd4f10f92c69e0563b76192b4302373996796e1a252ecce2458713d4';

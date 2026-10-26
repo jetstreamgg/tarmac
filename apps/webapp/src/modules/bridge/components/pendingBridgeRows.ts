@@ -11,7 +11,7 @@ import { getAddress, isAddress } from 'viem';
 import { arbitrum } from 'viem/chains';
 import { NO_VALUE } from '@/lib/constants';
 import { formatAddress } from '@/utils';
-import { getEtherscanLink } from '@/utils/getEtherscanLink';
+import { getExplorerLink } from '@/utils/getEtherscanLink';
 import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
@@ -63,7 +63,7 @@ const walletCell = (
     kind: 'wallet',
     label: role === 'sender' ? t`Sender` : t`Destination wallet`,
     address,
-    href: chainId === undefined ? undefined : getEtherscanLink(chainId, address, 'address')
+    href: chainId === undefined ? undefined : getExplorerLink(chainId, address, 'address')
   };
 };
 
@@ -160,7 +160,7 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
 /** Explorer link for a tx on `network`, on the chain the app runs that network on. */
 export const bridgeTxHref = (network: BridgeNetworkId, txHash: string, familyChainId: number) => {
   const chainId = bridgeChainId(network, familyChainId);
-  return chainId === undefined ? undefined : getEtherscanLink(chainId, txHash, 'tx');
+  return chainId === undefined ? undefined : getExplorerLink(chainId, txHash, 'tx');
 };
 
 export function buildPendingBridgeRows(

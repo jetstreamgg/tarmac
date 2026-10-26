@@ -68,14 +68,16 @@ export const addressToBytes32 = (address: Address): Hex => pad(address.toLowerCa
 
 export const tokenMessengerV2Abi = parseAbi([
   'function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken, bytes32 destinationCaller, uint256 maxFee, uint32 minFinalityThreshold)',
-  'event DepositForBurn(address indexed burnToken, uint256 amount, address indexed depositor, bytes32 mintRecipient, uint32 destinationDomain, bytes32 destinationTokenMessenger, bytes32 destinationCaller, uint256 maxFee, uint32 indexed minFinalityThreshold, bytes hookData)'
+  'event DepositForBurn(address indexed burnToken, uint256 amount, address indexed depositor, bytes32 mintRecipient, uint32 destinationDomain, bytes32 destinationTokenMessenger, bytes32 destinationCaller, uint256 maxFee, uint32 indexed minFinalityThreshold, bytes hookData)',
+  'event MintAndWithdraw(address indexed mintRecipient, uint256 amount, address indexed mintToken, uint256 feeCollected)'
 ]);
 
 export const messageTransmitterV2Abi = parseAbi([
   'function receiveMessage(bytes message, bytes attestation) returns (bool)',
   'function usedNonces(bytes32 nonce) view returns (uint256)',
   'function paused() view returns (bool)',
-  'event MessageSent(bytes message)'
+  'event MessageSent(bytes message)',
+  'event MessageReceived(address indexed caller, uint32 sourceDomain, bytes32 indexed nonce, bytes32 sender, uint32 indexed finalityThresholdExecuted, bytes messageBody)'
 ]);
 
 export const tokenMinterV2Abi = parseAbi([

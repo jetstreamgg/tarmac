@@ -81,6 +81,8 @@ export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.P
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
+export { USE_TESTNET_CONFIG } from '@/data/wagmi/config/testnetConfig';
+
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
 

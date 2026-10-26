@@ -12,6 +12,8 @@ import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { preloadRouteChunks } from './vite.preloadRouteChunks';
+import { tenderlyForkRpcUrl } from './src/data/wagmi/config/tenderlyForkRpc';
+import { FORK_L2_NETWORKS } from './src/utils/chainId';
 
 enum modeEnum {
   development = 'development',
@@ -37,6 +39,10 @@ export default ({ mode }: { mode: modeEnum }) => {
   );
 
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
+  const TENDERLY_RPC_NAME = process.env.VITE_TENDERLY_RPC_NAME || '';
+  const RPC_PROVIDER_TENDERLY_L2S = TENDERLY_RPC_NAME
+    ? FORK_L2_NETWORKS.map(network => tenderlyForkRpcUrl(TENDERLY_RPC_NAME, network)).join(' ')
+    : '';
   const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
@@ -57,6 +63,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://staging-proxy.sky.money
       ${PROXY_ORIGIN}
       ${RPC_PROVIDER_TENDERLY}
+      ${RPC_PROVIDER_TENDERLY_L2S}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co

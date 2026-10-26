@@ -12,7 +12,6 @@ import {
   type Hex
 } from 'viem';
 import { arbitrumInboxImplementationAbi } from '@/hooks/generated';
-import { extractTransactionDepositedLogs, opaqueDataToDepositData } from 'viem/op-stack';
 import {
   ARBITRUM_DEPOSIT,
   L1_USDS,
@@ -22,6 +21,7 @@ import {
   type OpStackNetworkId
 } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
+import { forkRpc, readOpStackDeposit, sendOpStackDeposit } from './opStackDepositRelay';
 import { NetworkName } from './constants';
 
 const erc20Abi = parseAbi(['function balanceOf(address) view returns (uint256)']);
@@ -30,16 +30,8 @@ const messengerAbi = parseAbi([
   'event FailedRelayedMessage(bytes32 indexed msgHash)'
 ]);
 
-const rpc = async <T>(network: NetworkName, method: string, params: unknown[]): Promise<T> => {
-  const response = await fetch(await getRpcUrlFromFile(network), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
-  });
-  const body = await response.json();
-  if (body.error) throw new Error(`${method} on ${network}: ${body.error.message}`);
-  return body.result as T;
-};
+const rpc = async <T>(network: NetworkName, method: string, params: unknown[]): Promise<T> =>
+  forkRpc<T>(await getRpcUrlFromFile(network), method, params);
 
 const client = async (network: NetworkName) =>
   createPublicClient({ transport: http(await getRpcUrlFromFile(network)) });
@@ -71,34 +63,23 @@ export async function awaitDepositTxHash(page: Page, to: string) {
   return hash!;
 }
 
-/**
- * Plays the sequencer's part on the L2 fork, which never derives deposits from
- * the L1 fork: sends the exact deposit tx from the L1 deposit's
- * TransactionDeposited log. A `gas` below the message's needs makes the
- * messenger record a FailedRelayedMessage, the state a user replays from.
- */
+/** Relays an L1 OP Stack deposit on the L2 fork; returns the messenger events it emitted. */
 export async function relayOpStackDeposit(
   network: OpStackNetworkId,
   l1TxHash: Hash,
   { gas }: { gas?: bigint } = {}
 ) {
-  const l1 = await client(NetworkName.mainnet);
-  const l2 = await client(NetworkName[network]);
-  const receipt = await l1.getTransactionReceipt({ hash: l1TxHash });
-  const [log] = extractTransactionDepositedLogs({ logs: receipt.logs });
-  if (!log) throw new Error(`No TransactionDeposited log in ${l1TxHash}`);
-  const deposit = opaqueDataToDepositData(log.args.opaqueData);
-  await rpc(NetworkName[network], 'tenderly_setBalance', [[log.args.from], toHex(10n ** 18n)]);
-  const hash = await rpc<Hash>(NetworkName[network], 'eth_sendTransaction', [
-    {
-      from: log.args.from,
-      to: log.args.to,
-      gas: toHex(gas ?? deposit.gas),
-      value: toHex(deposit.value),
-      data: deposit.data
-    }
-  ]);
-  const relay = await l2.waitForTransactionReceipt({ hash });
+  const deposit = await readOpStackDeposit(
+    await client(NetworkName.mainnet),
+    l1TxHash,
+    OP_STACK_DEPOSIT[network].portal
+  );
+  const relay = await sendOpStackDeposit(
+    await client(NetworkName[network]),
+    await getRpcUrlFromFile(NetworkName[network]),
+    deposit,
+    { gas }
+  );
   return relay.logs.flatMap(entry => {
     try {
       return [decodeEventLog({ abi: messengerAbi, ...entry }).eventName];

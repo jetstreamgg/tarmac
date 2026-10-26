@@ -3,6 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
+import { chainId, forkChainId } from '@/utils/chainId';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -22,6 +23,8 @@ const MARKET: PendleMarketConfig = {
 };
 
 const h = vi.hoisted(() => ({
+  chainId: 1,
+  balanceChainIds: [] as (number | undefined)[],
   connected: true,
   ptBalance: 0n as bigint,
   walletBalance: 0n as bigint,
@@ -46,7 +49,7 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useChains: () => [{ id: 1, name: 'Ethereum' }],
-    useChainId: () => 1,
+    useChainId: () => h.chainId,
     useConnection: () => ({
       address: h.connected ? '0x000000000000000000000000000000000000beef' : undefined,
       isConnected: h.connected
@@ -72,7 +75,10 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false }),
+    useTokenBalance: ({ chainId }: { chainId?: number }) => {
+      h.balanceChainIds.push(chainId);
+      return { data: { value: h.walletBalance }, isLoading: false };
+    },
     usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
     usePendleMaturedPositionEarnings: () => h.earnings
   };
@@ -145,6 +151,9 @@ describe('PendlePositionCard', () => {
     cleanup();
     vi.clearAllMocks();
     vi.useRealTimers();
+    vi.unstubAllEnvs();
+    h.chainId = 1;
+    h.balanceChainIds = [];
     h.connected = true;
     h.ptBalance = 0n;
     h.walletBalance = 0n;
@@ -161,6 +170,18 @@ describe('PendlePositionCard', () => {
     expect(card.textContent).toContain('30,000');
     expect(screen.queryByTestId('pendle-position-card')).toBeNull();
   });
+
+  it.each(Object.entries(forkChainId))(
+    'reads the wallet USDS on the Ethereum fork from fork %s, never real mainnet',
+    (_, id) => {
+      vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+      h.chainId = id;
+      renderCard();
+
+      expect(h.balanceChainIds.length).toBeGreaterThan(0);
+      expect(h.balanceChainIds.every(read => read === chainId.tenderly)).toBe(true);
+    }
+  );
 
   it('opens the supply modal from the CTA', () => {
     renderCard();

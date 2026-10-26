@@ -28,25 +28,20 @@ const toRouteData = ({ message, attestation }: IrisAttestedMessage) => ({
   cctpAttestation: attestation
 });
 
-async function attestedMessage({
-  bridge,
-  source,
-  l1,
-  readAttestations
-}: {
-  bridge: PendingBridge & { from: CctpL2NetworkId };
-  source: Hex;
-  l1: ChainReader;
-  readAttestations: AttestationReader;
-}): Promise<IrisAttestedMessage | undefined> {
-  const stored = cctpClaimMessage(bridge.routeData);
-  const block = await l1.getBlockNumber();
-  if (stored && isAttestedCopy(stored.message, source) && !isCctpMessageExpired(stored.message, block))
-    return stored;
-  const attested = await readAttestations(CCTP_DOMAIN[bridge.from], bridge.txHash as Hex);
-  return attested.find(
-    ({ message }) => isAttestedCopy(message, source) && !isCctpMessageExpired(message, block)
+/** Whether Ethereum's MessageTransmitter used the nonce of any of `copies`, all read at once. */
+async function anyReceived(l1: ChainReader, copies: IrisAttestedMessage[]): Promise<boolean> {
+  const nonces = [...new Set(copies.map(({ message }) => decodeCctpMessage(message).nonce))];
+  const used = await Promise.all(
+    nonces.map(nonce =>
+      l1.readContract({
+        address: MESSAGE_TRANSMITTER_V2,
+        abi: messageTransmitterV2Abi,
+        functionName: 'usedNonces',
+        args: [nonce]
+      })
+    )
   );
+  return used.some(value => value !== 0n);
 }
 
 /**
@@ -99,16 +94,25 @@ export async function cctpProgress(
     // Two identical burns in one transaction can't be told apart; neither is offered.
     if (sources.length > 1) return null;
 
-    const attested = await attestedMessage({ bridge, source: sources[0], l1, readAttestations });
-    if (!attested) return { kind: 'waiting' };
-    const used = await l1.readContract({
-      address: MESSAGE_TRANSMITTER_V2,
-      abi: messageTransmitterV2Abi,
-      functionName: 'usedNonces',
-      args: [decodeCctpMessage(attested.message).nonce]
-    });
-    if (used !== 0n) return { kind: 'arrived' };
-    return { kind: 'ready', nextAction: 'claim', routeData: toRouteData(attested) };
+    const block = await l1.getBlockNumber();
+    const stored = cctpClaimMessage(bridge.routeData);
+    const storedCopy = stored && isAttestedCopy(stored.message, sources[0]) ? stored : undefined;
+    // The stored copy is checked before Iris, so an Iris outage never hides its arrival.
+    if (storedCopy) {
+      if (await anyReceived(l1, [storedCopy])) return { kind: 'arrived' };
+      if (!isCctpMessageExpired(storedCopy.message, block))
+        return { kind: 'ready', nextAction: 'claim', routeData: toRouteData(storedCopy) };
+    }
+    const storedNonce = storedCopy && decodeCctpMessage(storedCopy.message).nonce;
+    const copies = (await readAttestations(CCTP_DOMAIN[bridge.from], bridge.txHash as Hex)).filter(
+      ({ message }) => isAttestedCopy(message, sources[0]) && decodeCctpMessage(message).nonce !== storedNonce
+    );
+    // A copy received before it expired still counts as arrived.
+    if (await anyReceived(l1, copies)) return { kind: 'arrived' };
+    const claimable = copies.find(({ message }) => !isCctpMessageExpired(message, block));
+    return claimable
+      ? { kind: 'ready', nextAction: 'claim', routeData: toRouteData(claimable) }
+      : { kind: 'waiting' };
   } catch {
     return null;
   }
