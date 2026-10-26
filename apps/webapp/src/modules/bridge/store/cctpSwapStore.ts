@@ -18,6 +18,8 @@ export type UnfinishedCctpSwap = {
   burn?: string;
   /** The convert sent for its USDC on the L2, lowercase: its tx hash, or the wallet's calls id for a bundle. */
   convert?: string;
+  /** `convert` is the wallet's calls id of a bundle, which only the wallet can resolve. */
+  convertBundled?: true;
 };
 
 /** Whether a pending bridge is the burn a swap entry links to (`UnfinishedCctpSwap.burn`). */
@@ -50,7 +52,8 @@ const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
     !isString(entry.recipient) ||
     typeof entry.at !== 'number' ||
     (entry.burn !== undefined && !isString(entry.burn)) ||
-    (entry.convert !== undefined && !isString(entry.convert))
+    (entry.convert !== undefined && !isString(entry.convert)) ||
+    (entry.convertBundled !== undefined && entry.convertBundled !== true)
   )
     return null;
   try {
@@ -118,16 +121,25 @@ export function createCctpSwapStore() {
       );
       return entry.burn;
     },
-    /** Links a swap to the convert sent for its USDC, or unlinks it with no `convert` (it reverted). */
-    markConvert(scope: string, swapTxHash: string, convert: string | undefined) {
+    /**
+     * Links a swap to the convert sent for its USDC, by the wallet's calls id
+     * with `bundle`, or unlinks it with no `convert` (it reverted).
+     */
+    markConvert(
+      scope: string,
+      swapTxHash: string,
+      convert: string | undefined,
+      { bundle = false }: { bundle?: boolean } = {}
+    ) {
       const hash = swapTxHash.toLowerCase();
       const id = convert?.toLowerCase();
+      const bundled = bundle ? (true as const) : undefined;
       const current = latest(scope);
       const entry = current.find(swap => swap.swapTxHash === hash);
       if (!entry || entry.convert === id) return;
       write(
         scope,
-        current.map(swap => (swap === entry ? { ...swap, convert: id } : swap)),
+        current.map(swap => (swap === entry ? { ...swap, convert: id, convertBundled: bundled } : swap)),
         hash
       );
     },

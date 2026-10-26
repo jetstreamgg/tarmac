@@ -119,9 +119,9 @@ export function useCctpConvertLegs({
   const isSale = (variables: TxMutateVariables) => variables.functionName === CCTP_CONVERT_FUNCTION;
   // Each convert sent, by lowercase hash or calls id, with the swap it was linked to.
   const linkedRef = useRef(new Map<string, ConvertRun>());
-  const link = (run: unknown, convert: string) => {
+  const link = (run: unknown, convert: string, bundle = false) => {
     if (!isConvertRun(run)) return;
-    cctpSwapStore.markConvert(run.scope, run.swapTxHash, convert);
+    cctpSwapStore.markConvert(run.scope, run.swapTxHash, convert, { bundle });
     linkedRef.current.set(convert.toLowerCase(), run);
   };
   const legs = useBridgeCallLegs({
@@ -149,7 +149,7 @@ export function useCctpConvertLegs({
     },
     // A bundle is one prompt, with no onLegSent: the convert is linked to the wallet's calls id.
     onCallsSent: (id, run) => {
-      link(run, id);
+      link(run, id, true);
       onCallsSent?.(id, run);
     },
     onLegFailed: hash => {

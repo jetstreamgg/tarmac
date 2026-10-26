@@ -276,6 +276,44 @@ describe('createCctpSwapStore convert links', () => {
   });
 });
 
+// A convert sent as a wallet bundle is linked by its calls id: only the wallet can tell how it ended.
+describe('createCctpSwapStore bundled convert links', () => {
+  beforeEach(() => localStorage.clear());
+
+  const SWAP_HASH = '0x' + 'ab'.repeat(32);
+
+  it('keeps that a convert was sent as a bundle across a reload, and forgets it once unlinked or relinked by hash', () => {
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    store.markConvert(SCOPE, SWAP_HASH, 'CALLS-ID', { bundle: true });
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0]).toMatchObject({
+      convert: 'calls-id',
+      convertBundled: true
+    });
+    store.markConvert(SCOPE, SWAP_HASH, '0xconvert');
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0]).toMatchObject({ convert: '0xconvert' });
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0].convertBundled).toBeUndefined();
+    store.markConvert(SCOPE, SWAP_HASH, 'calls-id', { bundle: true });
+    store.markConvert(SCOPE, SWAP_HASH, undefined);
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0].convertBundled).toBeUndefined();
+  });
+
+  it('drops a stored bundle flag of the wrong type', () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify([
+        { ...swap(), usdcAmount: '1', convert: '0xc', convertBundled: 'yes' },
+        { ...swap({ swapTxHash: '0x01' }), usdcAmount: '1', convert: '0xc', convertBundled: true }
+      ])
+    );
+    expect(
+      createCctpSwapStore()
+        .getSnapshot(SCOPE)
+        .map(entry => [entry.swapTxHash, entry.convertBundled])
+    ).toEqual([['0x01', true]]);
+  });
+});
+
 describe('createCctpSwapStore never loses what it cannot read', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.restoreAllMocks());

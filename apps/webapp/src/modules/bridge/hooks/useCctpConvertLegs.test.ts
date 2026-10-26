@@ -297,6 +297,18 @@ describe('useCctpConvertLegs', () => {
       expect(stored()?.convert).toBe('bundle-id');
     });
 
+    it('marks a convert linked by its calls id as a bundle, and one linked by its hash as not', () => {
+      renderL2().execute();
+      const run = mocks.execute.mock.calls.at(-1)?.[0];
+      const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: unknown, run: unknown) => void;
+      const onCallsSent = mocks.legs!.onCallsSent as (id: string, run: unknown) => void;
+      onCallsSent('bundle-id', run);
+      expect(stored()).toMatchObject({ convert: 'bundle-id', convertBundled: true });
+      onLegSent('0xconvert', leg('swapExactIn'), run);
+      expect(stored()?.convert).toBe('0xconvert');
+      expect(stored()?.convertBundled).toBeUndefined();
+    });
+
     it('unlinks a convert that reverted or was replaced, not one sent since', () => {
       renderL2().execute();
       const run = mocks.execute.mock.calls.at(-1)?.[0];
