@@ -46,6 +46,7 @@ export function useCctpBurnLegs({
   isSafeApp,
   isSafeWallet,
   batch = false,
+  batchPending,
   scope,
   resume,
   storageWritable,
@@ -66,6 +67,8 @@ export function useCctpBurnLegs({
   /** The account is a Safe by any connector, whose hashes the chain may not confirm. */
   isSafeWallet?: boolean;
   batch?: boolean;
+  /** See `useBridgeCallLegs`. */
+  batchPending?: boolean;
   /** The pending bridges' scope, which a sent swap is kept under. */
   scope?: string;
   /** Continue this bridge: burn the USDC its mined swap returned, to its recipient, and nothing else. */
@@ -230,6 +233,7 @@ export function useCctpBurnLegs({
     preflight,
     isSafeApp,
     batch,
+    batchPending,
     onCallsSent: onBundleSent,
     // A cached allowance may predate an approve that mined before the switch.
     onAccountSwitch: () => {

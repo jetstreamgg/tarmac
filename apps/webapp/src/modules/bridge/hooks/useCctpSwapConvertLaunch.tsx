@@ -2,10 +2,8 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { useQueryClient } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
-import { useSafeWalletStatus } from '@/hooks';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { TransactionReplacedError } from '@/hooks/shared/useTransactionOutcome';
-import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -19,6 +17,7 @@ import { cctpConvertModal, convertSteps } from './cctpConvertModal';
 import { useCctpConvertLegs } from './useCctpConvertLegs';
 import { usePendingScope } from './usePendingScope';
 import { useSendWhenPrepared } from './useSendWhenPrepared';
+import { useBridgeBatch } from './useBridgeBatch';
 
 // Where a Confirm's callbacks go once its modal closed.
 const DETACHED: TxCallbacks = {
@@ -41,10 +40,8 @@ export function useCctpSwapConvertLaunch() {
   const sessionId = useId();
   const queryClient = useQueryClient();
   const chains = useChains();
-  const safeStatus = useSafeWalletStatus();
   const isSafeApp = useIsSafeApp();
-  // A Safe, or a wallet not known yet not to be one, signs one leg at a time.
-  const batch = useShouldUseBatch(safeStatus === 'not-safe');
+  const { batch, batchPending } = useBridgeBatch();
   const { scope, familyChainId } = usePendingScope();
   const { chainId: walletChainId, address } = useConnection();
 
@@ -60,6 +57,7 @@ export function useCctpSwapConvertLaunch() {
     account: address,
     isSafeApp,
     batch,
+    batchPending,
     getCallbacks: () => legCallbacksRef.current
   });
   const { reset: resetLegs, dropCheck } = legs;

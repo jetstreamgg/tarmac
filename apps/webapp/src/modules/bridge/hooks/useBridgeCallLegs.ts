@@ -77,6 +77,7 @@ export function useBridgeCallLegs({
   preflight,
   isSafeApp,
   batch = false,
+  batchPending = false,
   onCallsSent,
   onAccountSwitch,
   onLegSent,
@@ -99,6 +100,8 @@ export function useBridgeCallLegs({
   isSafeApp?: boolean;
   /** Bundle the legs when the wallet can: the user's batch setting, never for a Safe. */
   batch?: boolean;
+  /** `batch` is not known yet (the wallet's batch support or its Safe read is out): Confirm waits, so a bundle never goes out one leg at a time. */
+  batchPending?: boolean;
   /** The wallet accepted a bundle under this EIP-5792 id, with the context its run was executed with; called right before its `onStart`. */
   onCallsSent?: (id: string, context?: unknown) => void;
   /** The connected account changed. */
@@ -457,7 +460,7 @@ export function useBridgeCallLegs({
     /** The legs go out as one wallet bundle. */
     isBatch: useBatch,
     /** Confirm can send the first leg. */
-    ready: calls.length > 0 && flow.prepared,
+    ready: calls.length > 0 && flow.prepared && !batchPending,
     /** A leg of a reset run is still out: Confirm must wait for it to settle. */
     busy,
     /** A leg of this run mined and the rest waits for Retry. */

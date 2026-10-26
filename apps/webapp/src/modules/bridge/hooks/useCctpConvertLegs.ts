@@ -56,6 +56,7 @@ export function useCctpConvertLegs({
   account,
   isSafeApp,
   batch = false,
+  batchPending,
   onCallsSent,
   getCallbacks
 }: {
@@ -73,6 +74,8 @@ export function useCctpConvertLegs({
   account: string | undefined;
   isSafeApp?: boolean;
   batch?: boolean;
+  /** See `useBridgeCallLegs`. */
+  batchPending?: boolean;
   /** See `useBridgeCallLegs`: the wallet took the bundle, with its run's context. */
   onCallsSent?: (id: string, run?: unknown) => void;
   getCallbacks: () => TxCallbacks;
@@ -133,6 +136,7 @@ export function useCctpConvertLegs({
     preflight,
     isSafeApp,
     batch,
+    batchPending,
     onAccountSwitch: () => {
       if (active) allowance.mutate();
     },

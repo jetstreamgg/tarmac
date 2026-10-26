@@ -3,10 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { useIsSafeWallet, useSafeWalletStatus } from '@/hooks';
+import { useIsSafeWallet } from '@/hooks';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
-import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
@@ -48,6 +47,7 @@ import { useCctpConvertLegs } from './useCctpConvertLegs';
 import { useOpStackReplayLegs } from './useOpStackReplayLegs';
 import { usePendingScope } from './usePendingScope';
 import { useSendWhenPrepared } from './useSendWhenPrepared';
+import { useBridgeBatch } from './useBridgeBatch';
 
 /** The action the legs build: a deposit's replay on an OP Stack L2 or redeem or keepalive on Arbitrum, or a CCTP claim or its conversion on Ethereum. */
 type Recovery =
@@ -216,10 +216,8 @@ export function useDestinationActionLaunch() {
   const queryClient = useQueryClient();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
-  const safeStatus = useSafeWalletStatus();
   const isSafeApp = useIsSafeApp();
-  // A Safe, or a wallet not known yet not to be one, signs one leg at a time.
-  const batch = useShouldUseBatch(safeStatus === 'not-safe');
+  const { batch, batchPending } = useBridgeBatch();
   const { scope, familyChainId } = usePendingScope();
   const { locked } = useMinimizedSessionLock(sessionId);
   const { chainId: walletChainId, address } = useConnection();
@@ -270,6 +268,7 @@ export function useDestinationActionLaunch() {
     account: address,
     isSafeApp,
     batch,
+    batchPending,
     // A sale that mines after a reload must still be read before a convert is offered.
     onLegSent: (hash, variables, context) => {
       if (variables.functionName === CCTP_CLAIM_FUNCTION || !isClaimRun(context) || context.safe) return;
@@ -301,6 +300,7 @@ export function useDestinationActionLaunch() {
     account: address,
     isSafeApp,
     batch,
+    batchPending,
     onCallsSent: recordBundleSent('convert'),
     getCallbacks: () => legCallbacksRef.current
   });

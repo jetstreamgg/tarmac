@@ -5,12 +5,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
-import { useIsSafeWallet, useNetworkFee, useSafeWalletStatus, useTokenBalance } from '@/hooks';
+import { useIsSafeWallet, useNetworkFee, useTokenBalance } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
-import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
@@ -35,6 +34,7 @@ import { cctpL2Contracts, isCctpL2Network, type CctpL2NetworkId } from '../adapt
 import { CCTP_BURN_FUNCTION, useCctpBurnLegs } from './useCctpBurnLegs';
 import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
+import { useBridgeBatch } from './useBridgeBatch';
 
 const cctpUsds = (network: CctpL2NetworkId | undefined) =>
   network ? cctpL2Contracts(network).usds : undefined;
@@ -66,7 +66,6 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const sessionId = useId();
   const chains = useChains();
   const isSafe = useIsSafeWallet();
-  const safeStatus = useSafeWalletStatus();
   const isSafeApp = useIsSafeApp();
   const queryClient = useQueryClient();
   const { account, scope, familyChainId } = usePendingScope();
@@ -117,8 +116,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   });
   // The session callbacks of the Confirm that started the legs.
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
-  // A Safe, or a wallet not known yet not to be one, signs one leg at a time.
-  const batch = useShouldUseBatch(safeStatus === 'not-safe');
+  const { batch, batchPending } = useBridgeBatch();
   // The wallet's id of the bundle it just accepted, set right before the bundle's onStart records it.
   const callsIdRef = useRef<string | undefined>(undefined);
   const sourceClient = usePublicClient({ chainId: pinnedChainId });
@@ -132,6 +130,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     amount,
     isSafeApp,
     batch,
+    batchPending,
     onCallsSent: id => {
       callsIdRef.current = id;
     },
@@ -152,6 +151,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     isSafeApp,
     isSafeWallet: isSafe,
     batch,
+    batchPending,
     onCallsSent: id => {
       callsIdRef.current = id;
     },

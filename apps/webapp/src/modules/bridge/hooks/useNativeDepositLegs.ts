@@ -48,6 +48,7 @@ export function useNativeDepositLegs({
   amount,
   isSafeApp,
   batch = false,
+  batchPending,
   onCallsSent,
   getCallbacks
 }: {
@@ -63,6 +64,8 @@ export function useNativeDepositLegs({
   isSafeApp?: boolean;
   /** Bundle the legs when the wallet can: the user's batch setting, never for a Safe. */
   batch?: boolean;
+  /** See `useBridgeCallLegs`. */
+  batchPending?: boolean;
   /** The wallet accepted a bundle under this EIP-5792 id; called right before its `onStart`. */
   onCallsSent?: (id: string) => void;
   getCallbacks: () => TxCallbacks;
@@ -136,6 +139,7 @@ export function useNativeDepositLegs({
     preflight,
     isSafeApp,
     batch,
+    batchPending,
     onCallsSent: id => onCallsSent?.(id),
     // A cached allowance may predate an approve that mined before the switch.
     onAccountSwitch: () => {

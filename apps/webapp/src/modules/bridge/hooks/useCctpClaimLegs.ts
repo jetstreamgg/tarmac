@@ -27,6 +27,7 @@ export function useCctpClaimLegs({
   account,
   isSafeApp,
   batch = false,
+  batchPending,
   onLegSent,
   onLegFailed,
   onLegPrompt,
@@ -40,6 +41,8 @@ export function useCctpClaimLegs({
   account: string | undefined;
   isSafeApp?: boolean;
   batch?: boolean;
+  /** See `useBridgeCallLegs`. */
+  batchPending?: boolean;
   /** See `useBridgeCallLegs`: every leg sent, with its run's context, even after the run ended. */
   onLegSent?: (hash: string, variables: TxMutateVariables, context?: unknown) => void;
   /** See `useBridgeCallLegs`: a sent leg reverted or was replaced. */
@@ -88,6 +91,7 @@ export function useCctpClaimLegs({
     preflight,
     isSafeApp,
     batch,
+    batchPending,
     onLegSent,
     onLegFailed,
     onLegPrompt,
