@@ -21,7 +21,7 @@ import {
   type OpStackNetworkId
 } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
-import { readOpStackDeposit, sendOpStackDeposit } from './opStackDepositRelay';
+import { forkRpc, readOpStackDeposit, sendOpStackDeposit } from './opStackDepositRelay';
 import { NetworkName } from './constants';
 
 const erc20Abi = parseAbi(['function balanceOf(address) view returns (uint256)']);
@@ -30,16 +30,8 @@ const messengerAbi = parseAbi([
   'event FailedRelayedMessage(bytes32 indexed msgHash)'
 ]);
 
-const rpc = async <T>(network: NetworkName, method: string, params: unknown[]): Promise<T> => {
-  const response = await fetch(await getRpcUrlFromFile(network), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
-  });
-  const body = await response.json();
-  if (body.error) throw new Error(`${method} on ${network}: ${body.error.message}`);
-  return body.result as T;
-};
+const rpc = async <T>(network: NetworkName, method: string, params: unknown[]): Promise<T> =>
+  forkRpc<T>(await getRpcUrlFromFile(network), method, params);
 
 const client = async (network: NetworkName) =>
   createPublicClient({ transport: http(await getRpcUrlFromFile(network)) });
