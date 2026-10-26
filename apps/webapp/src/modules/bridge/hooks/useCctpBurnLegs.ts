@@ -287,6 +287,8 @@ export function useCctpBurnLegs({
     ready: legs.ready,
     /** A leg of the last run is still out, after a close. */
     busy: legs.busy,
+    /** A leg of this run mined: Retry resumes the rest. */
+    legMined: legs.legMined,
     /** A read, the calls or the first leg's simulation failed. */
     error:
       (active && ((swap && usdsAllowance.error) || usdcAllowance.error)) ||

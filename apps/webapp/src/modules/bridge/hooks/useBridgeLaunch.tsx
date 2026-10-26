@@ -268,10 +268,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     callbacksRef.current = txCallbacks;
     accountRef.current = account;
     scopeRef.current = scope;
+    // As TransactionContext's Retry after a mined step: the run itself moved the balances the Review checks.
+    const resumingRun = (runningTo !== undefined || runningBurn !== undefined) && legs.legMined;
     executeRef.current = () => {
       if (
         !form.isConnected ||
-        form.reviewBlocked ||
+        (form.reviewBlocked && !resumingRun) ||
         !route ||
         !account ||
         !scope ||

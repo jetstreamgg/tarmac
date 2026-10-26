@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress, type Call, type PublicClient } from 'viem';
 import type { TxMutateVariables } from '@/hooks';
 import {
@@ -28,7 +28,8 @@ type FlowArgs = {
 const mocks = vi.hoisted(() => ({
   sequential: [] as FlowArgs[],
   batch: [] as FlowArgs[],
-  batchPrepared: false
+  batchPrepared: false,
+  sequentialIndex: 0
 }));
 
 vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
@@ -48,7 +49,13 @@ vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
 vi.mock('@/hooks/shared/useSequentialTransactionFlow', () => ({
   useSequentialTransactionFlow: (args: FlowArgs) => {
     mocks.sequential.push(args);
-    return { prepared: true, error: null, execute: vi.fn(), reset: vi.fn() };
+    return {
+      prepared: true,
+      error: null,
+      execute: vi.fn(),
+      reset: vi.fn(),
+      currentCallIndex: mocks.sequentialIndex
+    };
   }
 }));
 
@@ -199,5 +206,31 @@ describe('useBridgeCallLegs bundle success', () => {
       bundle.onSuccess('0xreceive', 7n, ['0xreceive', '0xsell']);
     });
     expect(callbacks.onSuccess).toHaveBeenCalledWith('0xreceive', 7n, ['0xreceive', '0xsell']);
+  });
+});
+
+describe('useBridgeCallLegs legMined', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { sequential: [], batch: [], batchPrepared: false });
+  });
+
+  afterEach(() => {
+    mocks.sequentialIndex = 0;
+  });
+
+  it('says a leg of the run mined once the sequence moved past its first call', () => {
+    const view = renderLegs(vi.fn());
+    expect(view.result.current.legMined).toBe(false);
+
+    mocks.sequentialIndex = 1;
+    view.rerender();
+    expect(view.result.current.legMined).toBe(true);
+  });
+
+  it('never says so for a bundle, which mines all at once', () => {
+    Object.assign(mocks, { batchPrepared: true, sequentialIndex: 1 });
+    const view = renderLegs(vi.fn(), true);
+    expect(view.result.current.isBatch).toBe(true);
+    expect(view.result.current.legMined).toBe(false);
   });
 });

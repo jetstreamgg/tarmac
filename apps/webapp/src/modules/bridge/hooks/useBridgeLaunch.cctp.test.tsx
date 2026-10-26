@@ -40,6 +40,7 @@ const mocks = vi.hoisted(() => ({
   burn: {
     ready: true,
     busy: false,
+    legMined: false,
     error: null as Error | null,
     isBatch: false,
     calls: [] as unknown[],
@@ -124,13 +125,14 @@ vi.mock('./useCctpBurnLegs', () => ({
   CCTP_BURN_FUNCTION: 'depositForBurn',
   useCctpBurnLegs: (args: (typeof mocks.burn.args)[number]) => {
     mocks.burn.args.push(args);
-    const { ready, busy, error, isBatch, calls, execute } = mocks.burn;
+    const { ready, busy, legMined, error, isBatch, calls, execute } = mocks.burn;
     return {
       calls,
       needsApprove: false,
       isBatch,
       ready,
       busy,
+      legMined,
       error,
       execute,
       reset: mocks.burnReset,
@@ -222,6 +224,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     Object.assign(mocks.burn, {
       ready: true,
       busy: false,
+      legMined: false,
       error: null,
       isBatch: false,
       calls: BURN_CALLS,
@@ -345,6 +348,56 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
   it('leaves the burn engine off on a route from Ethereum', () => {
     render('ethereum', 'base');
     expect(mocks.burn.args.at(-1)).toMatchObject({ enabled: false });
+  });
+
+  describe('Retry after a leg of the run mined', () => {
+    const renderBlockable = () => {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      return renderHook(
+        ({ reviewBlocked }: { reviewBlocked: boolean }) =>
+          useBridgeLaunch(formFor('base', 'ethereum', { reviewBlocked })),
+        { wrapper, initialProps: { reviewBlocked: false } }
+      );
+    };
+
+    // The swap mines, the USDC approve is rejected, and the spent USDS now fails the Review's balance check.
+    const stopAfterSwap = (view: ReturnType<typeof renderBlockable>, legMined: boolean) => {
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const callbacks = mocks.burn.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'swapExactIn' });
+      callbacks.onStart('0x5a');
+      callbacks.onMutate({ functionName: 'approve' });
+      act(() => callbacks.onError(new Error('User rejected the request.'), ''));
+      mocks.burn.legMined = legMined;
+      view.rerender({ reviewBlocked: true });
+      return mocks.onError.mock.calls.length;
+    };
+
+    it('resumes the legs, though the swap spent the USDS the Review checks', () => {
+      const view = renderBlockable();
+      const errorsBefore = stopAfterSwap(view, true);
+
+      // TransactionContext.handleRetry calls onConfirm when the flow has no onRetry.
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+
+      expect(mocks.onError.mock.calls.slice(errorsBefore)).toEqual([]);
+      expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('still refuses a Retry the Review blocks while nothing of the run mined', () => {
+      const view = renderBlockable();
+      const errorsBefore = stopAfterSwap(view, false);
+
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+
+      expect(mocks.onError.mock.calls.slice(errorsBefore).map(([error]) => (error as Error).message)).toEqual(
+        ['The bridge is not ready to send.']
+      );
+      expect(mocks.burn.execute).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('continuing an unfinished swap', () => {

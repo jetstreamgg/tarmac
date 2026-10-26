@@ -427,6 +427,8 @@ export function useBridgeCallLegs({
     ready: calls.length > 0 && flow.prepared,
     /** A leg of a reset run is still out: Confirm must wait for it to settle. */
     busy,
+    /** A leg of this run mined and the rest waits for Retry. */
+    legMined: !useBatch && sequentialFlow.currentCallIndex > 0,
     /** The first leg's simulation failed. */
     error: calls.length > 0 ? flow.error : null,
     execute,
