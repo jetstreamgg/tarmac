@@ -101,15 +101,17 @@ export async function cctpProgress(
     const copies = await attestedCopies({ bridge, source: sources[0], block, readAttestations });
     // A copy received before it expired still counts as arrived.
     const nonces = [...new Set(copies.map(({ message }) => decodeCctpMessage(message).nonce))];
-    for (const nonce of nonces) {
-      const used = await l1.readContract({
-        address: MESSAGE_TRANSMITTER_V2,
-        abi: messageTransmitterV2Abi,
-        functionName: 'usedNonces',
-        args: [nonce]
-      });
-      if (used !== 0n) return { kind: 'arrived' };
-    }
+    const used = await Promise.all(
+      nonces.map(nonce =>
+        l1.readContract({
+          address: MESSAGE_TRANSMITTER_V2,
+          abi: messageTransmitterV2Abi,
+          functionName: 'usedNonces',
+          args: [nonce]
+        })
+      )
+    );
+    if (used.some(value => value !== 0n)) return { kind: 'arrived' };
     const claimable = copies.find(({ message }) => !isCctpMessageExpired(message, block));
     return claimable
       ? { kind: 'ready', nextAction: 'claim', routeData: toRouteData(claimable) }

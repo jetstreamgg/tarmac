@@ -192,6 +192,30 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     });
   });
 
+  it('reads the nonce of every attested copy at once', async () => {
+    const expired = {
+      ...ATTESTED,
+      message: patch(ATTESTED.message, 148 + 196, 100n.toString(16).padStart(64, '0'))
+    };
+    const reattested = { ...ATTESTED, message: patch(ATTESTED.message, 12, '2'.repeat(64)) };
+    const setup = chains({ attested: [reattested], block: 100n });
+    const answers: (() => void)[] = [];
+    setup.l1.readContract.mockImplementation(
+      () => new Promise<bigint>(resolve => answers.push(() => resolve(0n)))
+    );
+    const stored = seed({
+      routeData: { cctpMessage: expired.message, cctpAttestation: expired.attestation }
+    });
+    const result = progress(stored, setup);
+
+    await vi.waitFor(() => expect(setup.l1.readContract).toHaveBeenCalledTimes(2));
+    answers.forEach(answer => answer());
+    await expect(result).resolves.toMatchObject({
+      kind: 'ready',
+      routeData: { cctpMessage: reattested.message }
+    });
+  });
+
   it('fails when the burn reverted on the L2', async () => {
     await expect(progress(seed(), chains({ l2Status: 'reverted' }))).resolves.toEqual({
       kind: 'failed',
