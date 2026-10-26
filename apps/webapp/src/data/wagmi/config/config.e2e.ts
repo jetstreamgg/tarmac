@@ -1,6 +1,6 @@
 import { http, WalletRpcSchema, EIP1193Parameters, UserRejectedRequestError } from 'viem';
 import { createConfig, createConnector, createStorage, noopStorage, CreateConnectorFn } from 'wagmi';
-import { switchChain } from '@wagmi/core';
+import { switchChain } from 'wagmi/actions';
 import { getTestTenderlyChains, TENDERLY_CHAIN_ID } from './testTenderlyChain';
 import { mock, MockParameters } from 'wagmi/connectors';
 import { TEST_WALLET_ADDRESSES, getTestWalletAddress } from '@/test/e2e/utils/testWallets';

@@ -1,4 +1,4 @@
-import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
+import { type Config, useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
 import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import type { Call } from 'viem';
@@ -12,7 +12,6 @@ import {
   UnsupportedProviderMethodError,
   WaitForCallsStatusTimeoutError
 } from 'viem';
-import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
 import { useSimulateBatch } from './useSimulateBatch';
 

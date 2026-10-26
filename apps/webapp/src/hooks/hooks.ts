@@ -2,11 +2,10 @@ import { UseQueryOptions } from '@tanstack/react-query';
 import {
   type WriteContractReturnType,
   type SimulateContractErrorType,
-  type Config,
   type SendCallsParameters
-} from '@wagmi/core';
+} from 'wagmi/actions';
 import { type Call, type Abi, type ContractFunctionArgs, type ContractFunctionName } from 'viem';
-import type { UseSimulateContractParameters } from 'wagmi';
+import type { Config, UseSimulateContractParameters } from 'wagmi';
 
 export type ReadHook = {
   error: Error | null;
