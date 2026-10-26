@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
   legs: undefined as undefined | Record<string, unknown>,
   refusal: vi.fn(),
   l2Refusal: vi.fn(),
-  resumeRefusal: vi.fn()
+  resumeRefusal: vi.fn(),
+  execute: vi.fn()
 }));
 
 vi.mock('wagmi', () => ({ usePublicClient: () => ({ chain: 'ethereum' }) }));
@@ -43,7 +44,14 @@ vi.mock('../adapters/cctp/gate', () => ({
 vi.mock('./useBridgeCallLegs', () => ({
   useBridgeCallLegs: (params: Record<string, unknown>) => {
     mocks.legs = params;
-    return { isBatch: false, ready: true, error: null, execute: vi.fn(), reset: vi.fn(), stop: vi.fn() };
+    return {
+      isBatch: false,
+      ready: true,
+      error: null,
+      execute: mocks.execute,
+      reset: vi.fn(),
+      stop: vi.fn()
+    };
   }
 }));
 
@@ -70,6 +78,7 @@ describe('useCctpConvertLegs', () => {
     mocks.refusal.mockReset();
     mocks.l2Refusal.mockReset();
     mocks.resumeRefusal.mockReset();
+    mocks.execute.mockReset();
   });
 
   it('approves when short, then sells the amount for USDS to the same account, the sale recorded as sent', () => {
@@ -211,33 +220,113 @@ describe('useCctpConvertLegs', () => {
     });
 
     it('holds the swap while its convert prompt is open, and links the convert sent, one leg or a bundle', () => {
-      renderL2();
-      const onLegPrompt = mocks.legs!.onLegPrompt as (variables: unknown) => (() => void) | undefined;
-      const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: unknown) => void;
-      const onCallsSent = mocks.legs!.onCallsSent as (id: string) => void;
-      expect(onLegPrompt(leg('approve'))).toBeUndefined();
-      const release = onLegPrompt(leg('swapExactIn'))!;
+      renderL2().execute();
+      const run = mocks.execute.mock.calls.at(-1)?.[0];
+      const onLegPrompt = mocks.legs!.onLegPrompt as (
+        variables: unknown,
+        run: unknown
+      ) => (() => void) | undefined;
+      const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: unknown, run: unknown) => void;
+      const onCallsSent = mocks.legs!.onCallsSent as (id: string, run: unknown) => void;
+      expect(onLegPrompt(leg('approve'), run)).toBeUndefined();
+      const release = onLegPrompt(leg('swapExactIn'), run)!;
       expect(isCctpSpendOpen(SCOPE, SWAP.swapTxHash)).toBe(true);
       release();
       expect(isCctpSpendOpen(SCOPE, SWAP.swapTxHash)).toBe(false);
-      onLegSent('0xapprove', leg('approve'));
+      onLegSent('0xapprove', leg('approve'), run);
       expect(stored()?.convert).toBeUndefined();
-      onLegSent('0xconvert', leg('swapExactIn'));
+      onLegSent('0xconvert', leg('swapExactIn'), run);
       expect(stored()?.convert).toBe('0xconvert');
-      onCallsSent('bundle-id');
+      onCallsSent('bundle-id', run);
       expect(stored()?.convert).toBe('bundle-id');
     });
 
     it('unlinks a convert that reverted or was replaced, not one sent since', () => {
-      renderL2();
-      const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: unknown) => void;
+      renderL2().execute();
+      const run = mocks.execute.mock.calls.at(-1)?.[0];
+      const onLegSent = mocks.legs!.onLegSent as (hash: string, variables: unknown, run: unknown) => void;
       const onLegFailed = mocks.legs!.onLegFailed as (hash: string) => void;
-      onLegSent('0xold', leg('swapExactIn'));
-      onLegSent('0xnew', leg('swapExactIn'));
+      onLegSent('0xold', leg('swapExactIn'), run);
+      onLegSent('0xnew', leg('swapExactIn'), run);
       onLegFailed('0xold');
       expect(stored()?.convert).toBe('0xnew');
       onLegFailed('0xnew');
       expect(stored()?.convert).toBeUndefined();
+    });
+    // A prompt of convert A signed after convert B opened, or after the modal closed, still moved A's USDC.
+    describe('a convert prompt signed late', () => {
+      const OTHER: UnfinishedCctpSwap = { ...SWAP, swapTxHash: '0x' + 'cd'.repeat(32) };
+      const storedOf = (swap: UnfinishedCctpSwap) =>
+        cctpSwapStore.getSnapshot(SCOPE).find(entry => entry.swapTxHash === swap.swapTxHash);
+      const launchA = () => {
+        const view = renderHook<
+          ReturnType<typeof useCctpConvertLegs>,
+          Parameters<typeof useCctpConvertLegs>[0]
+        >(props => useCctpConvertLegs(props), {
+          initialProps: {
+            enabled: true,
+            swap: SWAP,
+            scope: SCOPE,
+            amount: AMOUNT,
+            chainId: 8453,
+            account: ACCOUNT,
+            getCallbacks
+          }
+        });
+        view.result.current.execute();
+        const run = mocks.execute.mock.calls.at(-1)?.[0];
+        const prompt = (
+          mocks.legs!.onLegPrompt as (variables: unknown, context?: unknown) => (() => void) | undefined
+        )(leg('swapExactIn'), run);
+        return { view, run, prompt };
+      };
+      const sent = (hash: string, context: unknown) =>
+        (mocks.legs!.onLegSent as (hash: string, variables: unknown, context?: unknown) => void)(
+          hash,
+          leg('swapExactIn'),
+          context
+        );
+
+      beforeEach(() => {
+        cctpSwapStore.clear(SCOPE, OTHER.swapTxHash);
+        cctpSwapStore.record(SCOPE, OTHER);
+      });
+
+      it('links the swap its run was sent for, not the one shown now', () => {
+        const { view, run, prompt } = launchA();
+        expect(isCctpSpendOpen(SCOPE, SWAP.swapTxHash)).toBe(true);
+        view.rerender({
+          enabled: true,
+          swap: OTHER,
+          scope: SCOPE,
+          amount: AMOUNT,
+          chainId: 8453,
+          account: ACCOUNT,
+          getCallbacks
+        });
+        prompt?.();
+        sent('0xlatea', run);
+        expect(storedOf(SWAP)?.convert).toBe('0xlatea');
+        expect(storedOf(OTHER)?.convert).toBeUndefined();
+        (mocks.legs!.onCallsSent as (id: string, context?: unknown) => void)('bundle-a', run);
+        expect(storedOf(SWAP)?.convert).toBe('bundle-a');
+        expect(storedOf(OTHER)?.convert).toBeUndefined();
+      });
+
+      it('links its swap once no convert is shown, and unlinks it if it fails', () => {
+        const { view, run } = launchA();
+        view.rerender({
+          enabled: false,
+          amount: undefined,
+          chainId: undefined,
+          account: ACCOUNT,
+          getCallbacks
+        });
+        sent('0xlatea', run);
+        expect(storedOf(SWAP)?.convert).toBe('0xlatea');
+        (mocks.legs!.onLegFailed as (hash: string) => void)('0xlatea');
+        expect(storedOf(SWAP)?.convert).toBeUndefined();
+      });
     });
   });
 });

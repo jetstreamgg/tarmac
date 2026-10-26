@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { getAddress, isAddress, type Address, type Hex, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance, type TxMutateVariables } from '@/hooks';
@@ -25,6 +25,11 @@ export { CCTP_CONVERT_FUNCTION, CCTP_L2_CONVERT_FUNCTION };
 
 const PROMPT_OPEN_MESSAGE = 'Approve or reject the request in your wallet before sending again.';
 const SETTLED_MESSAGE = 'This bridge was already sent or converted.';
+
+/** The stopped bridge a convert run is sent for, kept with each of its prompts. */
+type ConvertRun = { scope: string; swapTxHash: string };
+const isConvertRun = (run: unknown): run is ConvertRun =>
+  typeof run === 'object' && run !== null && 'scope' in run && 'swapTxHash' in run;
 
 /**
  * The Ethereum legs that sell `amount` USDC a CCTP claim left in the wallet
@@ -109,8 +114,12 @@ export function useCctpConvertLegs({
     [active, swap, scope, amount, from]
   );
   const isConvertLeg = (variables: TxMutateVariables) => variables.functionName === CCTP_L2_CONVERT_FUNCTION;
-  const link = (convert: string | undefined) => {
-    if (swap && scope) cctpSwapStore.markConvert(scope, swap.swapTxHash, convert);
+  // Each convert sent, by lowercase hash or calls id, with the swap it was linked to.
+  const linkedRef = useRef(new Map<string, ConvertRun>());
+  const link = (run: unknown, convert: string) => {
+    if (!isConvertRun(run)) return;
+    cctpSwapStore.markConvert(run.scope, run.swapTxHash, convert);
+    linkedRef.current.set(convert.toLowerCase(), run);
   };
   const legs = useBridgeCallLegs({
     calls,
@@ -124,24 +133,32 @@ export function useCctpConvertLegs({
     onAccountSwitch: () => {
       if (active) allowance.mutate();
     },
-    ...(swap &&
-      scope && {
-        onLegPrompt: variables =>
-          isConvertLeg(variables) ? openCctpSpend(scope, swap.swapTxHash) : undefined,
-        onLegSent: (hash, variables) => {
-          if (isConvertLeg(variables)) link(hash);
-        },
-        // A bundle is one prompt, with no onLegSent: the convert is linked to the wallet's calls id.
-        onCallsSent: id => link(id),
-        onLegFailed: hash => {
-          const kept = cctpSwapStore
-            .getSnapshot(scope)
-            .find(entry => entry.swapTxHash.toLowerCase() === swap.swapTxHash.toLowerCase());
-          if (kept?.convert === hash.toLowerCase()) link(undefined);
-        }
-      }),
+    // A prompt signed late links the swap of the run that opened it, not the one shown now.
+    onLegPrompt: (variables, run) =>
+      isConvertRun(run) && isConvertLeg(variables) ? openCctpSpend(run.scope, run.swapTxHash) : undefined,
+    onLegSent: (hash, variables, run) => {
+      if (isConvertLeg(variables)) link(run, hash);
+    },
+    // A bundle is one prompt, with no onLegSent: the convert is linked to the wallet's calls id.
+    onCallsSent: (id, run) => link(run, id),
+    onLegFailed: hash => {
+      const id = hash.toLowerCase();
+      const run = linkedRef.current.get(id);
+      if (!run) return;
+      linkedRef.current.delete(id);
+      const kept = cctpSwapStore
+        .getSnapshot(run.scope)
+        .find(entry => entry.swapTxHash.toLowerCase() === run.swapTxHash.toLowerCase());
+      if (kept?.convert === id) cctpSwapStore.markConvert(run.scope, run.swapTxHash, undefined);
+    },
     getCallbacks
   });
+  const { execute: executeLegs } = legs;
+  const swapTxHash = swap?.swapTxHash;
+  const execute = useCallback(
+    () => executeLegs(swapTxHash && scope ? ({ scope, swapTxHash } satisfies ConvertRun) : undefined),
+    [executeLegs, swapTxHash, scope]
+  );
 
   return {
     calls,
@@ -150,7 +167,7 @@ export function useCctpConvertLegs({
     ready: legs.ready,
     /** The allowance read, or the first leg's simulation, failed. */
     error: (active && allowance.error) || legs.error || null,
-    execute: legs.execute,
+    execute,
     reset: legs.reset
   };
 }
