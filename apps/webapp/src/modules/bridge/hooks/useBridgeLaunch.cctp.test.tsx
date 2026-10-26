@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getAddress } from 'viem';
+import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { cctpL2Contracts, TOKEN_MESSENGER_V2 } from '../adapters/cctp/contracts';
@@ -459,6 +460,97 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
         const failed = { ...SWAP, burn: BASE_BURN_TX.hash.toLowerCase() };
         confirm(render('base', 'ethereum', failed));
         expect(mocks.burn.execute).toHaveBeenCalledOnce();
+      } finally {
+        cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+      }
+    });
+
+    // The burn legs link this Review's own burn to the swap; it failing leaves the USDC to continue from here.
+    const ANOTHER_WINDOW = 'This bridge was sent from another window. Close this and check its card.';
+    const RETRY_BURNS = [
+      ['a burn that reverted', () => new TransactionRevertedError(), undefined],
+      ['a burn the wallet cancelled', () => new TransactionReplacedError(new Error('cancelled')), undefined],
+      ['a burn sped up, then reverted', () => new TransactionRevertedError(), '0xbeef']
+    ] as const;
+    it.each(RETRY_BURNS)(
+      'retries a continued swap after %s, but not after another window burns',
+      (_, failure, repriced) => {
+        try {
+          cctpSwapStore.record(SCOPE, SWAP);
+          const callbacks = confirm(render('base', 'ethereum', SWAP));
+          act(() => {
+            callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+            callbacks.onStart(BASE_BURN_TX.hash);
+          });
+          cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, BASE_BURN_TX.hash);
+          if (repriced) {
+            act(() => callbacks.onStart(repriced));
+            cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, repriced);
+          }
+          act(() => callbacks.onError(failure(), repriced ?? BASE_BURN_TX.hash));
+
+          act(() => mocks.launched.at(-1)!.onConfirm!());
+          expect(mocks.onError).not.toHaveBeenCalledWith(
+            expect.objectContaining({ message: ANOTHER_WINDOW })
+          );
+          expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+
+          // Another window's burn since is still not this Review's to follow.
+          const again = mocks.burn.args.at(-1)!.getCallbacks();
+          act(() => again.onError(new Error('User rejected the request.'), ''));
+          cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, '0xfeed');
+          act(() => mocks.launched.at(-1)!.onConfirm!());
+          expect(mocks.onError).toHaveBeenLastCalledWith(
+            expect.objectContaining({ message: ANOTHER_WINDOW, final: true })
+          );
+          expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+        } finally {
+          cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+        }
+      }
+    );
+
+    it('retries a continued swap after its own bundle failed', () => {
+      try {
+        cctpSwapStore.record(SCOPE, SWAP);
+        const callbacks = confirm(render('base', 'ethereum', SWAP));
+        const { onCallsSent } = mocks.burn.args.at(-1) as unknown as { onCallsSent: (id: string) => void };
+        act(() => {
+          onCallsSent('0xca11');
+          callbacks.onMutate(undefined as never);
+          callbacks.onStart(undefined);
+        });
+        cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, '0xca11');
+        act(() => callbacks.onError(new Error('ERROR: Batch transaction failed'), undefined));
+
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.onError).not.toHaveBeenCalledWith(expect.objectContaining({ message: ANOTHER_WINDOW }));
+        expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+      } finally {
+        cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
+      }
+    });
+
+    // A burn this window sent in an earlier Review may still be pending: a new Review must not send another.
+    it('refuses a new Review of the swap whose burn an earlier Review linked after it opened', () => {
+      try {
+        cctpSwapStore.record(SCOPE, SWAP);
+        const view = render('base', 'ethereum', SWAP);
+        act(() => view.result.current.launch());
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        const callbacks = mocks.burn.args.at(-1)!.getCallbacks();
+        act(() => {
+          callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+          callbacks.onStart(BASE_BURN_TX.hash);
+        });
+        cctpSwapStore.markBurn(SCOPE, SWAP.swapTxHash, BASE_BURN_TX.hash);
+        act(() => callbacks.onError(new TransactionRevertedError(), BASE_BURN_TX.hash));
+        act(() => view.result.current.launch());
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.onError).toHaveBeenLastCalledWith(
+          expect.objectContaining({ message: ANOTHER_WINDOW, final: true })
+        );
+        expect(mocks.burn.execute).toHaveBeenCalledTimes(1);
       } finally {
         cctpSwapStore.clear(SCOPE, SWAP.swapTxHash);
       }
