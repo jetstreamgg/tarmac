@@ -1,4 +1,4 @@
-import { chainId, forkChainId, isForkChainId } from './chainId';
+import { FORK_L2_NETWORKS, chainId, forkChainId, isForkChainId, type ForkL2Network } from './chainId';
 
 export function getEtherscanLink(chainId: number, address: string, type: 'address' | 'tx') {
   const prefix = getEtherscanPrefix(chainId);
@@ -12,14 +12,18 @@ export function getExplorerLink(id: number, address: string, type: 'address' | '
 }
 
 // Dev only: the Tenderly multichain environment's explorer of each fork, from the local .env.
-const tenderlyExplorer = (id: number): string | undefined =>
-  ({
-    [chainId.tenderly]: import.meta.env?.VITE_TENDERLY_EXPLORER_ETHEREUM,
-    [forkChainId.base]: import.meta.env?.VITE_TENDERLY_EXPLORER_BASE,
-    [forkChainId.arbitrum]: import.meta.env?.VITE_TENDERLY_EXPLORER_ARBITRUM,
-    [forkChainId.optimism]: import.meta.env?.VITE_TENDERLY_EXPLORER_OPTIMISM,
-    [forkChainId.unichain]: import.meta.env?.VITE_TENDERLY_EXPLORER_UNICHAIN
-  })[id];
+// Each var is read by its full name, as Vite only inlines static reads.
+const tenderlyExplorer = (id: number): string | undefined => {
+  if (id === chainId.tenderly) return import.meta.env?.VITE_TENDERLY_EXPLORER_ETHEREUM;
+  const l2: Record<ForkL2Network, string | undefined> = {
+    base: import.meta.env?.VITE_TENDERLY_EXPLORER_BASE,
+    arbitrum: import.meta.env?.VITE_TENDERLY_EXPLORER_ARBITRUM,
+    optimism: import.meta.env?.VITE_TENDERLY_EXPLORER_OPTIMISM,
+    unichain: import.meta.env?.VITE_TENDERLY_EXPLORER_UNICHAIN
+  };
+  const network = FORK_L2_NETWORKS.find(network => forkChainId[network] === id);
+  return network && l2[network];
+};
 
 function getEtherscanPrefix(id: number) {
   const forkExplorer = tenderlyExplorer(id);

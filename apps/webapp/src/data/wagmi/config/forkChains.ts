@@ -1,15 +1,16 @@
 import { defineChain, type Chain } from 'viem';
 import { base, arbitrum, optimism, unichain } from 'wagmi/chains';
-import { forkChainId } from '@/utils/chainId';
+import { FORK_L2_NETWORKS, forkChainId, type ForkL2Network } from '@/utils/chainId';
 import { tenderlyForkRpcUrl } from './tenderlyForkRpc';
 import { USE_TESTNET_CONFIG } from './testnetConfig';
 
-const FORK_L2S = [
-  { chain: base, id: forkChainId.base, network: 'base' },
-  { chain: arbitrum, id: forkChainId.arbitrum, network: 'arbitrum' },
-  { chain: optimism, id: forkChainId.optimism, network: 'optimism' },
-  { chain: unichain, id: forkChainId.unichain, network: 'unichain' }
-];
+const REAL_L2: Record<ForkL2Network, Chain> = { base, arbitrum, optimism, unichain };
+
+const FORK_L2S = FORK_L2_NETWORKS.map(network => ({
+  chain: REAL_L2[network],
+  id: forkChainId[network],
+  network
+}));
 
 const rpcName = import.meta.env?.VITE_TENDERLY_RPC_NAME;
 

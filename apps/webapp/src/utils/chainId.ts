@@ -1,3 +1,4 @@
+// Zero-import: vite.config.ts reads it.
 export const chainId = {
   // The two family anchors carry literal types so familyMainnetId's result
   // satisfies call sites typed against the generated `1 | 314310` unions.
@@ -18,20 +19,25 @@ export const forkChainId = {
   unichain: 999130
 } as const;
 
+export type ForkL2Network = keyof typeof forkChainId;
+
+// Every fork list derives from forkChainId. Per-network values are Record<ForkL2Network, ...>,
+// so the compiler asks for them when a network is added.
+export const FORK_L2_NETWORKS = Object.keys(forkChainId) as ForkL2Network[];
+
+const FORK_L2_PAIRS = FORK_L2_NETWORKS.map(network => ({
+  fork: forkChainId[network],
+  real: chainId[network]
+}));
+
 const REAL_CHAIN_ID_BY_FORK: Record<number, number> = {
   [chainId.tenderly]: chainId.mainnet,
-  [forkChainId.base]: chainId.base,
-  [forkChainId.arbitrum]: chainId.arbitrum,
-  [forkChainId.optimism]: chainId.optimism,
-  [forkChainId.unichain]: chainId.unichain
+  ...Object.fromEntries(FORK_L2_PAIRS.map(({ fork, real }) => [fork, real]))
 };
 
-const FORK_L2_BY_REAL: Record<number, number> = {
-  [chainId.base]: forkChainId.base,
-  [chainId.arbitrum]: forkChainId.arbitrum,
-  [chainId.optimism]: forkChainId.optimism,
-  [chainId.unichain]: forkChainId.unichain
-};
+const FORK_L2_BY_REAL: Record<number, number> = Object.fromEntries(
+  FORK_L2_PAIRS.map(({ fork, real }) => [real, fork])
+);
 
 /** The production chain a Tenderly fork stands in for; any other id comes back unchanged. */
 export const realChainId = (id: number): number => REAL_CHAIN_ID_BY_FORK[id] ?? id;
