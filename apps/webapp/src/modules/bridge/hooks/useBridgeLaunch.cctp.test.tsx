@@ -11,7 +11,7 @@ import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shar
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { cctpL2Contracts, TOKEN_MESSENGER_V2 } from '../adapters/cctp/contracts';
-import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import type { BridgeNetworkId } from '../model/networks';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
@@ -95,7 +95,7 @@ vi.mock('@/modules/ui/hooks/useMinimizedSessionLock', () => ({
 vi.mock('./usePendingScope', async () => {
   const { pendingScopeKey } = await import('../store/pendingStore');
   const { getAddress } = await import('viem');
-  const { BASE_BURN_TX } = await import('../adapters/cctp/cctpFixtures');
+  const { BASE_BURN_TX } = await import('../adapters/cctp/cctp.fixtures');
   const account = getAddress(BASE_BURN_TX.from);
   return {
     usePendingScope: () => ({

@@ -8,7 +8,7 @@ import {
 } from 'viem';
 import { describe, expect, it, vi } from 'vitest';
 import type { ChainReader } from '../types';
-import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from './cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from './cctp.fixtures';
 import { messageTransmitterV2Abi } from './contracts';
 import { lookupCctpBurn, standardBurns } from './lookup';
 

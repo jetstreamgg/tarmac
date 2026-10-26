@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Hex, Log } from 'viem';
-import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
 import { BASE_DEPOSIT_LOGS, BASE_DEPOSIT_TX } from '../adapters/nativeDeposit/depositFixtures';
 import { depositsInLogs, type DiscoveredDeposit } from '../adapters/nativeDeposit/discovery';
 import type { BridgeAdapter } from '../adapters/types';

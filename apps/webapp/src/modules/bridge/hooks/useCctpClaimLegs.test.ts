@@ -10,7 +10,7 @@ import {
   BASE_BURN_ATTESTED,
   BASE_BURN_MINT_RECIPIENT,
   ETHEREUM_RECEIVE_INPUT
-} from '../adapters/cctp/cctpFixtures';
+} from '../adapters/cctp/cctp.fixtures';
 import { L1_USDC, USDS_PSM_WRAPPER } from '../adapters/cctp/contracts';
 import { useCctpClaimLegs } from './useCctpClaimLegs';
 

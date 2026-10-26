@@ -5,7 +5,7 @@ import { act, renderHook } from '@testing-library/react';
 import { getAddress, type Call } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
 import { useCctpBurnLegs } from './useCctpBurnLegs';
 
 const mocks = vi.hoisted(() => ({

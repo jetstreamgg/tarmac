@@ -11,7 +11,7 @@ import {
   TOKEN_MINTER_V2,
   USDS_PSM_WRAPPER
 } from './contracts';
-import { BASE_BURN_AMOUNT, BASE_BURN_ATTESTED } from './cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_ATTESTED } from './cctp.fixtures';
 import {
   cctpBurnRefusal,
   cctpClaimRefusal,

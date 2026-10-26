@@ -7,7 +7,7 @@ import {
   BASE_BURN_LOGS,
   BASE_BURN_MINT_RECIPIENT,
   BASE_BURN_TX
-} from './cctpFixtures';
+} from './cctp.fixtures';
 import {
   decodeCctpMessage,
   isAttestedCopy,

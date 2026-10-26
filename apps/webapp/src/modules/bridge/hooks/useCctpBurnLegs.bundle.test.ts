@@ -6,7 +6,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctpFixtures';
+import { BASE_BURN_AMOUNT, BASE_BURN_MINT_RECIPIENT, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
 import { useCctpBurnLegs } from './useCctpBurnLegs';
 
 type BatchArgs = { onMutate: () => void; onCallsSent: (id: string) => void; onStart: () => void };
