@@ -141,9 +141,8 @@ describe('PendleDetailChart', () => {
       vi.setSystemTime((MARKET.expiry + 30 * DAY) * 1000);
     });
 
-    it('counts the timeframe back from expiry and drops the post-expiry bucket', () => {
+    it('plots up to expiry and drops the post-expiry bucket', () => {
       hoisted.chartPoints = [
-        { timestampSec: MARKET.expiry - 10 * DAY, impliedApy: 0.03 }, // outside 1W of expiry
         { timestampSec: MARKET.expiry - 2 * DAY, impliedApy: 0.04 },
         { timestampSec: MARKET.expiry - DAY, impliedApy: 0.045 },
         { timestampSec: MARKET.expiry + DAY, impliedApy: 0 }
@@ -159,14 +158,15 @@ describe('PendleDetailChart', () => {
       expect(data.map(point => point.value)).toEqual([4, 4.5]);
     });
 
-    it('headlines the maturity date instead of a live rate', () => {
+    it('opens on the whole lifetime with no headline figure', () => {
       render(
         <I18nProvider i18n={i18n}>
           <PendleDetailChart market={MARKET} />
         </I18nProvider>
       );
 
-      expect(hoisted.chartProps?.displayText).toBe('Matured on 26 Nov 2026');
+      expect(hoisted.chartProps?.hideValue).toBe(true);
+      expect(hoisted.chartProps?.initialTimeFrame).toBe('all');
     });
   });
 });

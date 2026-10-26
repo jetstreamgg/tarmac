@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Trans } from '@lingui/react/macro';
 import {
   isMarketMatured,
   useNow,
@@ -10,7 +10,6 @@ import {
 import { Chart, TimeFrame, type Data } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
-import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
 import { SECONDS_PER_DAY } from '@/utils';
 
@@ -21,15 +20,16 @@ import { SECONDS_PER_DAY } from '@/utils';
  * for months), so timeframe filtering happens client-side.
  *
  * Once the market matures the series ends at expiry, so the timeframe window
- * is counted back from expiry rather than now.
+ * is counted back from expiry rather than now. It opens on the whole lifetime
+ * and drops the headline: a closed market has no current rate.
  *
  * Rate is the only series: the Liquidity one was pulled in APP-527 because the
  * figure it plotted is AMM liquidity, not the total liquidity the design asks
  * for. `usePendleMarketChartData` still carries the series so it can come back.
  */
 export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
-  const { t } = useLingui();
-  const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
+  const matured = isMarketMatured(market.expiry);
+  const [timeFrame, setTimeFrame] = useState<TimeFrame>(matured ? 'all' : 'w');
 
   const { data: points, isLoading, error } = usePendleMarketChartData(market.marketAddress);
   const { data: marketsApi } = usePendleMarketsApiData();
@@ -38,7 +38,6 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
   // The window's cutoff moves with the clock; the series is daily, so a minute
   // tick is plenty.
   const nowMs = useNow();
-  const matured = isMarketMatured(market.expiry);
   const data = useMemo<Data[]>(() => {
     if (!points) return [];
     const endSec = matured ? market.expiry : Math.floor(nowMs / 1000);
@@ -70,10 +69,11 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
         isLoading={isLoading}
         error={error ?? undefined}
         isPercentage
-        label={<Trans>Fixed APY</Trans>}
+        label={matured ? <Trans>Fixed APY history</Trans> : <Trans>Fixed APY</Trans>}
         tooltipLabel={<Trans>Rate</Trans>}
         displayValue={currentRate}
-        displayText={matured ? t`Matured on ${formatMaturity(market.expiry)}` : undefined}
+        hideValue={matured}
+        initialTimeFrame={timeFrame}
         onTimeFrameChange={setTimeFrame}
       />
     </ErrorBoundary>
