@@ -65,6 +65,7 @@ export function useSequentialTransactionFlow(
   // The run stays loading meanwhile, so no second write can overlap it: a
   // replaced write still fires the mutation's callbacks when it settles.
   const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+  const [detached, setDetached] = useState(false);
   const finishDetachedRef = useRef(() => {});
   const enabledRef = useRef(enabled);
   useEffect(() => {
@@ -344,6 +345,7 @@ export function useSequentialTransactionFlow(
 
   const clearRun = useCallback(() => {
     detachedRef.current = null;
+    setDetached(false);
     setIsExecuting(false);
     setCurrentIndex(0);
     setTransactionHashes([]);
@@ -370,6 +372,7 @@ export function useSequentialTransactionFlow(
     (onCleared?: () => void) => {
       if (writeOutRef.current) {
         detachedRef.current = { onCleared };
+        setDetached(true);
         return;
       }
       clearRun();
@@ -496,6 +499,7 @@ export function useSequentialTransactionFlow(
     error: writeError || txFailure || simulationError,
     currentCallIndex: currentIndex,
     reset,
+    detached,
     nextCalls
   };
 }

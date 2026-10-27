@@ -9,11 +9,12 @@ import {
   type Log,
   type TransactionReceipt
 } from 'viem';
-import type { BridgeProgress } from '../../model/pendingTransitions';
+import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
 import { settleSentAction } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
+import { blockRanges } from '../blockRanges';
 import { ARB_RETRYABLE_TX, arbRetryableTxAbi } from './contracts';
 import { arbitrumRetryableTicket } from './arbitrum';
 
@@ -93,16 +94,9 @@ async function scanForRedeem(l2: ChainReader, ticketId: Hex, fromBlock: bigint, 
   ]);
   let timeout = created.timestamp + lifetime;
   let unknown = false;
-  for (let start = fromBlock; start <= toBlock; start += TICKET_SCAN_CHUNK_BLOCKS) {
-    const end =
-      start + TICKET_SCAN_CHUNK_BLOCKS - 1n < toBlock ? start + TICKET_SCAN_CHUNK_BLOCKS - 1n : toBlock;
-    const range = {
-      address: ARB_RETRYABLE_TX,
-      args: { ticketId },
-      fromBlock: start,
-      toBlock: end,
-      strict: true
-    } as const;
+  for (const blocks of blockRanges(fromBlock, toBlock, TICKET_SCAN_CHUNK_BLOCKS)) {
+    const end = blocks.toBlock;
+    const range = { address: ARB_RETRYABLE_TX, args: { ticketId }, ...blocks, strict: true } as const;
     const [scheduled, extended] = await Promise.all([
       l2.getLogs({ ...range, event: REDEEM_SCHEDULED }),
       l2.getLogs({ ...range, event: LIFETIME_EXTENDED })
@@ -147,6 +141,8 @@ export async function arbitrumDepositProgress(
     );
     const settled = sent && (await settleSentAction(l2, sent, now));
     if (settled) return settled;
+    // A settled bridge is only read for an action it sent.
+    if (isSettled(bridge)) return null;
 
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });
     if (receipt.status === 'reverted') return { kind: 'failed', reason: 'source-tx-reverted' };

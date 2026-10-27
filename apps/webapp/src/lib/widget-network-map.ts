@@ -1,5 +1,5 @@
 import { Intent } from './enums';
-import { isTestnetId } from '@/utils';
+import { isForkChainId } from '@/utils/chainId';
 import { chainIdsForIntent, chainSwitchTarget, COMING_SOON_MAP } from './chainAvailability';
 
 /** The subset of a wagmi chain the network-target helpers need. */
@@ -77,9 +77,9 @@ export function getRouteChainAction(
 ): RouteChainAction {
   const supported = chainIdsForIntent(intent);
   // Omitting `chains` means "assume production": every supported chain is a
-  // candidate except the dev fork, and names come from the static map. The app
+  // candidate except the dev forks, and names come from the static map. The app
   // always passes them; the default keeps this callable as a pure predicate.
-  const configuredIds = chains?.map(chain => chain.id) ?? supported.filter(id => !isTestnetId(id));
+  const configuredIds = chains?.map(chain => chain.id) ?? supported.filter(id => !isForkChainId(id));
   const comingSoonHere = (COMING_SOON_MAP[currentChainId] ?? []).includes(intent);
 
   const switchTo = (id: number): RouteChainAction => ({ kind: 'switch-network', chainId: id });

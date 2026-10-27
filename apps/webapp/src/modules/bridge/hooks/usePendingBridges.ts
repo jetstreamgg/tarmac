@@ -8,7 +8,8 @@ const TICK_MS = 15_000;
 const IDLE_TICK_MS = 60_000;
 
 /**
- * Bridges shown under the form: active ones, and settled ones for a day.
+ * Bridges shown under the form: active ones, settled ones for a day, and
+ * settled ones still waiting on an action they sent.
  * `now` ticks for the remaining-time estimate.
  */
 export function usePendingBridges() {

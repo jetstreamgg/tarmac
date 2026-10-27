@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
@@ -15,7 +14,7 @@ import {
   useTokenBalance,
   type PendleMarketConfig
 } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
+import { familyMainnetId, formatDecimalPercentage, formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Pendle } from '@/modules/icons/PendleSymbol';
@@ -72,7 +71,7 @@ function PendleSupplyCard({
   const onSupplyOrConnect = useConnectThenAct(onSupply, 'pendle_supply');
 
   // Pendle markets are mainnet-only; balances follow the fork in dev mode.
-  const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
+  const balanceChainId = familyMainnetId(chainId);
 
   const { data: balance } = useTokenBalance({
     address,

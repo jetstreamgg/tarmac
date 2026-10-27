@@ -53,7 +53,12 @@ vi.mock('@/hooks', async io => ({
   useNetworkFee: () => ({ data: { formatted: '$0.42' } }),
   useTokenBalance: () => ({ data: { value: 10n * ONE }, isLoading: false })
 }));
-vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
+  useShouldUseBatch: () => false,
+  useBatchSupportPending: () => false
+}));
+// The CCTP form gate has its own suite (useBridgeForm.cctp.test.tsx).
+vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({ canSwitchChain: true, handleSwitchChain: vi.fn() })
 }));
@@ -76,6 +81,21 @@ vi.mock('../adapters/mockAdapter', () => ({
     return new Promise<string>(() => undefined);
   }
 }));
+// The CCTP burn engine stays idle on these routes.
+vi.mock('./useCctpBurnLegs', () => {
+  const idle = {
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: () => {},
+    reset: () => {},
+    stop: () => {},
+    refetchAllowance: () => {}
+  };
+  return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
+});
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('./useNativeDepositLegs', () => ({
   nativeDepositFunction: (to: string) =>

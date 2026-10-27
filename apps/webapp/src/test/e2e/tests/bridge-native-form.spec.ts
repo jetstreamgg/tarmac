@@ -19,7 +19,7 @@ import { awaitDepositTxHash, relayOpStackDeposit } from '../utils/bridgeRelay';
 import { installArbitrumShim } from '../utils/arbitrumShim';
 import { getRpcUrlFromFile } from '../utils/getRpcUrlFromFile';
 import { setErc20Balance } from '../utils/setBalance';
-import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
+import { expectAppChain, switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 import { NetworkName } from '../utils/constants';
 
 // APP-643 form and route resolution, on the native deposit route. Writes go to OP Mainnet:
@@ -112,19 +112,14 @@ test.describe('Bridge: form and route resolution', () => {
     await bridge.toNetwork().click();
     await expect(isolatedPage.getByRole('option')).toHaveText(['Ethereum']);
     await isolatedPage.keyboard.press('Escape');
-    // Base to Ethereum has no route until its ticket lands.
     await bridge.fromAmount().fill('1');
-    await expect(bridge.blocked()).toHaveText('This route is temporarily unavailable.');
-    await expect(bridge.reviewCta()).toBeDisabled();
 
     await bridge.fromNetwork().click();
     await isolatedPage.getByTestId('bridge-from-network-ethereum').click();
     await expect(bridge.fromNetwork()).toContainText('Ethereum');
     await expect(bridge.toNetwork()).toContainText('Base');
-    // Picking a source doesn't move the wallet: Review waits until the wallet is on it.
-    await expect(isolatedPage.getByTestId('bridge-source-unavailable')).toBeVisible();
-    await expect(bridge.reviewCta()).toBeDisabled();
-    await switchWalletNetwork(isolatedPage, tenderlyChainLabel(NetworkName.mainnet));
+    // Ethereum is a live source even with the wallet still on Base: the switch waits for Review.
+    await expectAppChain(isolatedPage, tenderlyChainLabel(NetworkName.base));
     await expect(isolatedPage.getByTestId('bridge-source-unavailable')).toHaveCount(0);
     await expect(bridge.reviewCta()).toBeEnabled({ timeout: 30_000 });
   });

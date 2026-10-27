@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
 import { TOKENS, useAppChainId, useSafeWalletStatus, useTokenBalance } from '@/hooks';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';
+import { forkL2ChainIds } from '@/data/wagmi/config/forkChains';
+import { chainId as chainIdMap } from '@/utils/chainId';
 import { familyMainnetId } from '@/utils/isTestnetId';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import {
@@ -10,13 +12,23 @@ import {
   bridgeNetworkForChainId,
   getBridgeNetwork,
   guardChainId,
+  sourceSwitchChainId,
   type BridgeNetworkId
 } from '../model/networks';
-import { allowedDestinations, isLivePair, pickFrom, pickTo, type BridgePair } from '../model/pairs';
+import {
+  allowedDestinations,
+  isLivePair,
+  liveSources,
+  pickFrom,
+  pickTo,
+  type BridgePair
+} from '../model/pairs';
 import { isValidRecipient, recipientProblem, recipientRequirement, sendsToOther } from '../model/recipient';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { resolveBridgeRoute, type ResolvedBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
 import { useAddressCode } from './useAddressCode';
+import { useBridgeDraft, type BridgeDraft } from './useBridgeDraft';
+import { useCctpGate } from './useCctpGate';
 import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
 
@@ -56,9 +68,12 @@ const parseAmountOrZero = (value: string) => {
  * one asks the wallet to switch, and the form shows whatever the wallet lands
  * on. Avalanche and Solana (and app networks the current config can't switch
  * to, like L2s in the Tenderly dev setup) are held as a local pick and block
- * Review until their route tickets add them.
+ * Review until their route tickets add them. With the Tenderly fork L2s, the
+ * source also picks the family: a fork source moves the whole pair to the forks.
+ *
+ * `draft` holds the typed and picked fields when the caller outlives the form; left out, the form holds them.
  */
-export function useBridgeForm() {
+export function useBridgeForm(draft?: BridgeDraft) {
   const { isConnected, address } = useConnection();
   const walletChainId = useAppChainId();
   const familyChainId = familyMainnetId(walletChainId);
@@ -67,50 +82,71 @@ export function useBridgeForm() {
   const chains = useChains();
   const { canSwitchChain, handleSwitchChain } = useNetworkSwitch();
 
-  const [sourceOverride, setSourceOverride] = useState<BridgeNetworkId | null>(null);
-  const [pickedTo, setPickedTo] = useState<BridgeNetworkId>('base');
-  const [value, setValue] = useState('');
-  const [recipient, setRecipient] = useState<string | undefined>(undefined);
+  const ownDraft = useBridgeDraft();
+  const {
+    sourceOverride,
+    setSourceOverride,
+    pickedTo,
+    setPickedTo,
+    value,
+    setValue,
+    recipient,
+    setRecipient
+  } = draft ?? ownDraft;
 
   const walletNetwork = bridgeNetworkForChainId(walletChainId) ?? 'ethereum';
   const from = sourceOverride ?? walletNetwork;
   const to = allowedDestinations(from).includes(pickedTo) ? pickedTo : allowedDestinations(from)[0];
   const pair: BridgePair = { from, to };
 
-  const isConfiguredChain = (id: BridgeNetworkId) => {
-    const target = getBridgeNetwork(id);
-    return (
-      target.appSupported && target.chainId !== undefined && chains.some(chain => chain.id === target.chainId)
-    );
-  };
+  const isConfigured = (chainId: number | undefined) =>
+    chainId !== undefined && chains.some(chain => chain.id === chainId);
+  const hasForkL2s = forkL2ChainIds.length > 0 && isConfigured(chainIdMap.tenderly);
+  const onFork = hasForkL2s && familyChainId === chainIdMap.tenderly;
+  const forkSources = hasForkL2s
+    ? liveSources().filter(id => isConfigured(sourceSwitchChainId(id, chainIdMap.tenderly)))
+    : [];
 
-  const moveSource = (next: BridgeNetworkId) => {
-    const target = getBridgeNetwork(next);
-    if (isConfiguredChain(next) && canSwitchChain && target.chainId !== undefined) {
+  const moveSource = (next: BridgeNetworkId, family: number) => {
+    const target = sourceSwitchChainId(next, family);
+    if (getBridgeNetwork(next).appSupported && isConfigured(target) && canSwitchChain) {
       setSourceOverride(null);
-      if (next !== walletNetwork) handleSwitchChain({ chainId: target.chainId });
+      if (target !== walletChainId) handleSwitchChain({ chainId: target as number });
       return;
     }
     setSourceOverride(next === walletNetwork ? null : next);
   };
 
-  const applyPair = (next: BridgePair) => {
+  const applyPair = (next: BridgePair, family = familyChainId) => {
+    const moves = next.from !== from || family !== familyChainId;
     // A wallet the app can't switch (Safe) keeps its network as the source.
-    if (next.from !== from && !canSwitchChain) return;
+    if (moves && !canSwitchChain) return;
     // A recipient typed for one address family can't carry over to another.
     if (getBridgeNetwork(next.to).family !== getBridgeNetwork(to).family) setRecipient(undefined);
     setPickedTo(next.to);
-    if (next.from !== from) moveSource(next.from);
+    if (moves) moveSource(next.from, family);
   };
 
-  const selectFrom = (next: BridgeNetworkId) => applyPair(pickFrom(pair, next));
+  /** `onForks` picks the family too (the Tenderly forks or production); left out, the pair keeps it. */
+  const selectFrom = (next: BridgeNetworkId, onForks?: boolean) =>
+    applyPair(
+      pickFrom(pair, next),
+      onForks === undefined || !hasForkL2s
+        ? familyChainId
+        : onForks
+          ? chainIdMap.tenderly
+          : chainIdMap.mainnet
+    );
   const selectTo = (next: BridgeNetworkId) => applyPair(pickTo(pair, next));
   const flip = () => selectFrom(to);
 
-  const onInput = useCallback((raw: string) => {
-    const typed = normalizeDecimalSeparator(raw);
-    if (AMOUNT_PATTERN.test(typed)) setValue(typed);
-  }, []);
+  const onInput = useCallback(
+    (raw: string) => {
+      const typed = normalizeDecimalSeparator(raw);
+      if (AMOUNT_PATTERN.test(typed)) setValue(typed);
+    },
+    [setValue]
+  );
 
   const sourceChainId = bridgeChainId(from, familyChainId);
   const destinationChainId = bridgeChainId(to, familyChainId);
@@ -130,19 +166,29 @@ export function useBridgeForm() {
       if (sourceBalance === undefined) return;
       setValue(formatUnits((sourceBalance * BigInt(percent)) / 100n, USDS_DECIMALS));
     },
-    [sourceBalance]
+    [sourceBalance, setValue]
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
   const nativeGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
-  // The other route facts (CCTP, LayerZero, withdrawals) come from their tickets, through toRouteFact.
-  const resolved = useMemo(
-    () =>
-      isLivePair({ from, to })
-        ? resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate } })
-        : ({ status: 'blocked', reason: 'pair-not-allowed' } as const),
-    [from, to, amount, nativeGate]
-  );
+  const cctpGate = useCctpGate({
+    from,
+    to,
+    sourceChainId,
+    ethereumChainId: bridgeChainId('ethereum', familyChainId)
+  });
+  // The other route facts (LayerZero, withdrawals) come from their tickets, through toRouteFact.
+  const resolved = useMemo((): ResolvedBridgeRoute => {
+    if (!isLivePair({ from, to })) return { status: 'blocked', reason: 'pair-not-allowed' };
+    // With no gate the resolver reads CCTP as open.
+    if (from !== 'ethereum' && cctpGate === undefined)
+      return { status: 'blocked', reason: 'pair-not-allowed' };
+    const result = resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate, cctp: cctpGate } });
+    // The native withdrawal has no real calls yet (APP-617), so an L2 bridges by CCTP only.
+    if (result.status === 'ok' && from !== 'ethereum' && result.route.kind !== 'cctp')
+      return { status: 'blocked', reason: result.route.fallbackReason ?? 'closed' };
+    return result;
+  }, [from, to, amount, nativeGate, cctpGate]);
   const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;
@@ -183,6 +229,10 @@ export function useBridgeForm() {
     to,
     /** The source can't be changed: the wallet can't be switched by the app (Safe). */
     isSourceStatic: !canSwitchChain,
+    /** The pair runs on the Tenderly forks (dev builds with the fork L2s only). */
+    onFork,
+    /** The sources offered on the Tenderly forks; none without the fork L2s. */
+    forkSources,
     /** The flipped pair has a live route. */
     canFlip: isLivePair({ from: to, to: from }),
     value,
@@ -210,6 +260,8 @@ export function useBridgeForm() {
     /** The lookups behind `needsRecipient` and `recipientProblem` are still in flight. */
     recipientChecking: codeChecking || (checkSafe && (sourceSafe.isChecking || destinationSafe.isChecking)),
     recipientReason: recipientRule.required ? recipientRule.reason : undefined,
+    /** The wallet is a contract on the source and the destination pays it, not a typed recipient. */
+    senderIsContract: isConnected && !typedOther && payeeOnSource.code === 'contract',
     /** The Safe check failed, so the wallet type is unknown. */
     safeCheckFailed: isConnected && safeStatus === 'unknown',
     /** Review and Confirm can't go ahead; only meaningful while connected. */

@@ -42,4 +42,19 @@ describe('getBridgeAdapter', () => {
     expect(progress).not.toBeNull();
     expect(progress).toEqual(await mockAdapter.checkProgress(bridge, later, NO_CHAINS));
   });
+
+  it.each(['arbitrum', 'base', 'optimism', 'unichain'] as const)(
+    'never reports a real %s to Ethereum CCTP bridge as arrived on a timer',
+    async from => {
+      const bridge = pending(from, 'ethereum');
+      expect(bridge.routeKind).toBe('cctp');
+      await expect(getBridgeAdapter('cctp').checkProgress(bridge, later, NO_CHAINS)).resolves.toBeNull();
+    }
+  );
+
+  // Only an L2 to Ethereum CCTP bridge is ever recorded; a stored entry for any other pair is not a mock.
+  it('never moves a CCTP bridge stored for another pair on a timer', async () => {
+    const bridge = { ...pending('base', 'ethereum'), from: 'ethereum' as const, to: 'base' as const };
+    await expect(getBridgeAdapter('cctp').checkProgress(bridge, later, NO_CHAINS)).resolves.toBeNull();
+  });
 });

@@ -417,6 +417,20 @@ describe('arbitrumDepositProgress', () => {
         nextAction: 'redeem'
       });
     });
+
+    it('once the bridge arrived, is the only thing read', async () => {
+      const arrived = applyProgress(sent(), { kind: 'arrived' }, NOW);
+      const { context, l1, l2 } = chains();
+      await expect(arbitrumDepositProgress(arrived, context, NOW)).resolves.toBeNull();
+      expect(l1.getTransactionReceipt).not.toHaveBeenCalled();
+      expect(l2.getLogs).not.toHaveBeenCalled();
+      const mined = chains({ receipts: { [REDEEM]: { status: 'success', logs: [] } } });
+      await expect(arbitrumDepositProgress(arrived, mined.context, NOW)).resolves.toEqual({
+        kind: 'action-confirmed',
+        action: 'redeem',
+        txHash: REDEEM
+      });
+    });
   });
 
   describe('a keepalive this bridge sent', () => {

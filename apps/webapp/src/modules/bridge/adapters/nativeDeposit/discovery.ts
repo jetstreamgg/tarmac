@@ -1,6 +1,7 @@
 import { decodeEventLog, getAbiItem, isAddressEqual, type Address, type Hex, type Log } from 'viem';
 import { skyL1TokenBridgeImplementationAbi, skyL1TokenGatewayImplementationAbi } from '@/hooks/generated';
 import type { ChainReader } from '../types';
+import { blockRanges } from '../blockRanges';
 import {
   ARBITRUM_DEPOSIT,
   L1_USDS,
@@ -87,9 +88,8 @@ export async function discoverNativeDeposits({
   const first = toBlock > DISCOVERY_WINDOW_BLOCKS ? toBlock - DISCOVERY_WINDOW_BLOCKS : 0n;
   const logs: Log[] = [];
   let complete = true;
-  for (let end = toBlock; end >= first; end -= DISCOVERY_CHUNK_BLOCKS) {
-    const start = end - DISCOVERY_CHUNK_BLOCKS + 1n > first ? end - DISCOVERY_CHUNK_BLOCKS + 1n : first;
-    const range = { fromBlock: start, toBlock: end, strict: true } as const;
+  for (const blocks of blockRanges(first, toBlock, DISCOVERY_CHUNK_BLOCKS, { newestFirst: true })) {
+    const range = { ...blocks, strict: true } as const;
     try {
       const [bridged, deposited] = await Promise.all([
         l1.getLogs({
@@ -109,7 +109,6 @@ export async function discoverNativeDeposits({
     } catch {
       complete = false;
     }
-    if (start === first) break;
   }
   return { deposits: depositsInLogs(logs, account), complete };
 }

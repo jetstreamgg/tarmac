@@ -44,6 +44,20 @@ describe('buildBridgeActivity', () => {
     ]);
   });
 
+  it('lists a claim bundle the wallet ran as separate transactions once, under its receive', () => {
+    expect(
+      summary([
+        bridge({
+          status: 'claimed',
+          actions: [{ action: 'claim', txHash: '0xc', at: 5000, bundleTxHashes: ['0xapprove', '0xsell'] }]
+        })
+      ])
+    ).toEqual([
+      ['claim', 'ethereum', '0xc'],
+      ['bridge', 'base', '0xa']
+    ]);
+  });
+
   it('lists both legs of an OP Stack withdrawal', () => {
     expect(
       summary([

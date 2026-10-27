@@ -15,6 +15,7 @@ import { AppLink } from '@/lib/navigation';
 import { cn } from '@/lib/cn';
 import { shellHeaderClasses, shellHeaderContentClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { PageFooter } from './PageFooter';
+import { ChainEnvPill } from './ChainEnvPill';
 import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
@@ -140,6 +141,7 @@ export function Layout({
         <div className={appLoaderRevealClasses(loaderPhase, 'chrome', revealAnimated)}>
           <Banner />
         </div>
+        <ChainEnvPill className={appLoaderRevealClasses(loaderPhase, 'chrome', revealAnimated)} />
         {/* Joins the chrome reveal like the Banner above: without it the
             commit SHA floats over the cover's bare-background frame on
             dev/staging builds. */}

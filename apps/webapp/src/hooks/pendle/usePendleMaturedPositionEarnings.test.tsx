@@ -24,7 +24,7 @@ vi.mock('wagmi', () => ({
 }));
 
 vi.mock('@/utils', () => ({
-  isTestnetId: vi.fn(() => false),
+  familyMainnetId: vi.fn(() => 1),
   WAD: 10n ** 18n
 }));
 

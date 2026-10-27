@@ -51,12 +51,16 @@ describe('bridge pairs', () => {
     });
   });
 
-  it('only Ethereum to the native deposit networks is live', () => {
-    expect(liveSources()).toEqual(['ethereum']);
+  it('only Ethereum and the native deposit networks bridge to each other, CCTP L2s back to Ethereum only', () => {
+    expect(liveSources()).toEqual(['ethereum', 'base', 'arbitrum', 'optimism', 'unichain']);
     expect(liveDestinations('ethereum')).toEqual(['base', 'arbitrum', 'optimism', 'unichain']);
     for (const to of ['avalanche', 'solana'] as const)
       expect(isLivePair({ from: 'ethereum', to })).toBe(false);
-    for (const from of ['base', 'arbitrum', 'optimism', 'unichain', 'avalanche', 'solana'] as const) {
+    for (const from of ['base', 'arbitrum', 'optimism', 'unichain'] as const) {
+      expect(isLivePair({ from, to: 'ethereum' })).toBe(true);
+      expect(liveDestinations(from)).toEqual(['ethereum']);
+    }
+    for (const from of ['avalanche', 'solana'] as const) {
       expect(isLivePair({ from, to: 'ethereum' })).toBe(false);
       expect(liveDestinations(from)).toEqual([]);
     }

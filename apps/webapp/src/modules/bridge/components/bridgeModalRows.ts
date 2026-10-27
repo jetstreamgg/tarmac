@@ -63,17 +63,32 @@ export const formatMaxEthFee = (wei: bigint): string => {
 export function buildBridgeModalRows({
   route,
   networkFee,
-  bridgeFee
+  bridgeFee,
+  fromToken = 'USDS'
 }: {
   route: BridgeRoute;
   networkFee: string;
   /** Overrides the route's USD fee, for a route that charges it in ETH. */
   bridgeFee?: string;
+  /** The token sent, rated against the USDS delivered. */
+  fromToken?: 'USDS' | 'USDC';
 }): ModalGridCell[][] {
   return [
     [
-      { kind: 'single', label: t`Bridge type`, value: bridgeTypeLabel(route.kind) },
-      { kind: 'pair', label: t`Bridge rate`, token: 'USDS', left: '1.00', right: '1.00', rightToken: 'USDS' }
+      {
+        kind: 'single',
+        label: t`Bridge type`,
+        value: bridgeTypeLabel(route.kind),
+        ...(route.kind === 'cctp' && { logo: 'cctp' as const })
+      },
+      {
+        kind: 'pair',
+        label: t`Bridge rate`,
+        token: fromToken,
+        left: '1.00',
+        right: '1.00',
+        rightToken: 'USDS'
+      }
     ],
     [
       { kind: 'single', label: t`Estimated arrival`, value: formatEta(route.etaMinutes) },

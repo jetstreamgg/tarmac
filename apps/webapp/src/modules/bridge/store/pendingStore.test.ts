@@ -230,6 +230,66 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([sent]);
   });
 
+  it('keeps the bundle marker of a sent action through storage, and skips a malformed one', () => {
+    const sent = bridge({
+      status: 'ready',
+      actions: [{ action: 'claim', txHash: '0xcalls', at: NOW, status: 'sent', bundle: true }]
+    });
+    make().upsert(SCOPE, sent);
+    expect(make().getSnapshot(SCOPE)).toEqual([sent]);
+
+    const stored = { ...sent, amount: sent.amount.toString() };
+    const bad = {
+      ...stored,
+      id: '0xa',
+      actions: [{ action: 'claim', txHash: '0xcalls', at: NOW, status: 'sent', bundle: 'yes' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad, stored]));
+    expect(make().getSnapshot(SCOPE)).toEqual([sent]);
+  });
+
+  it('keeps the other transactions of a claim bundle through storage, and skips malformed ones', () => {
+    const claimed = bridge({
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, bundleTxHashes: ['0xapprove', '0xsell'] }]
+    });
+    make().upsert(SCOPE, claimed);
+    expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
+
+    const stored = { ...claimed, amount: claimed.amount.toString() };
+    const bad = {
+      ...stored,
+      id: '0xa',
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, bundleTxHashes: '0xsell' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad, stored]));
+    expect(make().getSnapshot(SCOPE)).toEqual([claimed]);
+  });
+
+  it('keeps the leg a claim run sent after the claim through storage', () => {
+    const selling = bridge({
+      actions: [{ action: 'claim', txHash: '0xreceive', at: NOW, nextLegTxHash: '0xsell' }]
+    });
+    make().upsert(SCOPE, selling);
+    expect(make().getSnapshot(SCOPE)).toEqual([selling]);
+  });
+
+  it('keeps when that leg was sent through storage, and drops an entry whose send time is no number', () => {
+    const selling = bridge({
+      actions: [
+        { action: 'claim', txHash: '0xreceive', at: NOW, nextLegTxHash: '0xsell', nextLegAt: NOW + 1 }
+      ]
+    });
+    make().upsert(SCOPE, selling);
+    expect(make().getSnapshot(SCOPE)).toEqual([selling]);
+    const bad = {
+      ...selling,
+      amount: selling.amount.toString(),
+      actions: [{ ...selling.actions[0], nextLegAt: 'soon' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad]));
+    expect(make().getSnapshot(SCOPE)).toEqual([]);
+  });
+
   it('keeps an invalidated action through storage', () => {
     const reproving = bridge({
       routeKind: 'native',
@@ -380,6 +440,53 @@ describe('createPendingBridgeStore', () => {
         vi.restoreAllMocks();
         expect(stored().map(entry => entry.id)).toEqual(['0xy']);
       });
+    });
+  });
+
+  describe('close', () => {
+    const claimed = (overrides: Partial<PendingBridge> = {}) =>
+      bridge({
+        status: 'claimed',
+        nextAction: undefined,
+        settledAt: NOW,
+        actions: [{ action: 'claim', txHash: '0xc1a1', at: NOW }],
+        ...overrides
+      });
+
+    it('closes a settled bridge with nothing in flight, and keeps it for Activity', () => {
+      const store = make();
+      store.upsert(SCOPE, claimed());
+      store.upsert(SCOPE, bridge({ id: '0xother', txHash: '0xother', startedAt: NOW - 1 }));
+      store.close(SCOPE, '0xsource');
+      expect(
+        make()
+          .getSnapshot(SCOPE)
+          .map(entry => [entry.id, entry.closedAt])
+      ).toEqual([
+        ['0xsource', NOW],
+        ['0xother', undefined]
+      ]);
+    });
+
+    it('leaves a bridge still on its way, or one whose follow-up is still confirming', () => {
+      const store = make();
+      store.upsert(SCOPE, bridge());
+      store.upsert(
+        SCOPE,
+        claimed({
+          id: '0xconverting',
+          txHash: '0xconverting',
+          actions: [
+            { action: 'claim', txHash: '0xc1a1', at: NOW },
+            { action: 'convert', txHash: '0xc0', at: NOW, status: 'sent' }
+          ]
+        })
+      );
+      const before = store.getSnapshot(SCOPE);
+      store.close(SCOPE, '0xsource');
+      store.close(SCOPE, '0xconverting');
+      store.close(SCOPE, '0xnope');
+      expect(store.getSnapshot(SCOPE)).toBe(before);
     });
   });
 

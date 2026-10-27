@@ -1,11 +1,12 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { applyProgress, canDismiss, isSettled } from '../model/pendingTransitions';
+import { applyProgress, canDismiss, closeCard, isSettled } from '../model/pendingTransitions';
 import type {
   BridgeRouteKind,
   PendingBridge,
   PendingBridgeNextAction,
   PendingBridgeStatus
 } from '../model/types';
+import { createScopedListStore } from './scopedListStore';
 
 const KEY_PREFIX = 'bridgePending:v1:';
 const SETTLED_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
@@ -31,10 +32,9 @@ const NEXT_ACTIONS = keysOf({
   finalize: true,
   redeem: true,
   replay: true,
-  keepalive: true
+  keepalive: true,
+  convert: true
 } satisfies Record<PendingBridgeNextAction, true>);
-
-type Listener = () => void;
 
 /**
  * One list per account and chain family (mainnet or the Tenderly fork), not
@@ -42,8 +42,6 @@ type Listener = () => void;
  */
 export const pendingScopeKey = ({ account, familyChainId }: { account: string; familyChainId: number }) =>
   `${familyChainId}:${account.toLowerCase()}`;
-
-const storageKey = (scope: string) => `${KEY_PREFIX}${scope}`;
 
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -56,7 +54,11 @@ const isAction = (value: unknown) =>
   isString(value.txHash) &&
   typeof value.at === 'number' &&
   optional(value.status, status => status === 'sent' || status === 'invalidated') &&
-  optional(value.safe, safe => safe === true);
+  optional(value.safe, safe => safe === true) &&
+  optional(value.bundle, bundle => bundle === true) &&
+  optional(value.bundleTxHashes, hashes => Array.isArray(hashes) && hashes.every(isString)) &&
+  optional(value.nextLegTxHash, isString) &&
+  optional(value.nextLegAt, at => typeof at === 'number');
 
 const parseEntry = (value: unknown): PendingBridge | null => {
   if (!isRecord(value)) return null;
@@ -84,6 +86,7 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
     !optional(entry.readyAt, at => typeof at === 'number') ||
     !optional(entry.settledAt, at => typeof at === 'number') ||
+    !optional(entry.closedAt, at => typeof at === 'number') ||
     !optional(entry.failureReason, isString)
   ) {
     return null;
@@ -93,28 +96,6 @@ const parseEntry = (value: unknown): PendingBridge | null => {
   } catch {
     return null;
   }
-};
-
-const serialize = (bridges: PendingBridge[], kept: unknown[]) =>
-  JSON.stringify([...bridges.map(bridge => ({ ...bridge, amount: bridge.amount.toString() })), ...kept]);
-
-/**
- * What a write must carry over from storage: entries this bundle can't parse
- * (a newer one may have written them). An unreadable value is copied once to
- * `<key>:unreadable` first; if that copy fails, this throws and nothing is replaced.
- */
-const unparsedEntries = (key: string): unknown[] => {
-  const raw = localStorage.getItem(key);
-  if (raw === null) return [];
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    parsed = undefined;
-  }
-  if (Array.isArray(parsed)) return parsed.filter(entry => parseEntry(entry) === null);
-  if (localStorage.getItem(`${key}:unreadable`) === null) localStorage.setItem(`${key}:unreadable`, raw);
-  return [];
 };
 
 const byNewest = (a: PendingBridge, b: PendingBridge) => b.startedAt - a.startedAt;
@@ -135,100 +116,35 @@ const fillMissing = (existing: PendingBridge, incoming: PendingBridge): PendingB
  * across tabs. Settled bridges are kept 90 days for the Activity list.
  */
 export function createPendingBridgeStore({ now = Date.now }: { now?: () => number } = {}) {
-  const listeners = new Set<Listener>();
-  const snapshots = new Map<string, PendingBridge[]>();
+  const list = createScopedListStore<PendingBridge>({
+    keyPrefix: KEY_PREFIX,
+    parse: parseEntry,
+    toJson: bridge => ({ ...bridge, amount: bridge.amount.toString() }),
+    idOf: bridge => bridge.id,
+    retain: bridge => !isSettled(bridge) || (bridge.settledAt ?? 0) > now() - SETTLED_RETENTION_MS,
+    order: byNewest,
+    isSame: isSameBridge
+  });
+  const { latest, write } = list;
 
-  // Bridges whose last change reached only this session's copy (a write failed), by scope.
-  const unsaved = new Map<string, Set<string>>();
-
-  /** The stored list; undefined when storage can't be read. */
-  const load = (scope: string): PendingBridge[] | undefined => {
-    let raw: string | null;
-    try {
-      raw = localStorage.getItem(storageKey(scope));
-    } catch {
-      return undefined;
-    }
-    try {
-      const parsed: unknown = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(parsed)) return [];
-      const cutoff = now() - SETTLED_RETENTION_MS;
-      return parsed
-        .map(parseEntry)
-        .filter((bridge): bridge is PendingBridge => bridge !== null)
-        .filter(bridge => !isSettled(bridge) || (bridge.settledAt ?? 0) > cutoff)
-        .sort(byNewest);
-    } catch {
-      return [];
-    }
-  };
-  const read = (scope: string): PendingBridge[] => load(scope) ?? [];
-
-  const emit = () => listeners.forEach(listener => listener());
-
-  /** The stored list with this session's unsaved changes on top: added, updated or dropped. */
-  const withUnsaved = (scope: string, stored: PendingBridge[]): PendingBridge[] => {
-    const ids = unsaved.get(scope);
-    if (!ids) return stored;
-    const own = (snapshots.get(scope) ?? []).filter(entry => ids.has(entry.id));
-    return [
-      ...own,
-      ...stored.filter(entry => !ids.has(entry.id) && !own.some(mine => isSameBridge(mine, entry)))
-    ].sort(byNewest);
-  };
-
-  const write = (scope: string, bridges: PendingBridge[], changedId: string) => {
-    const sorted = [...bridges].sort(byNewest);
-    snapshots.set(scope, sorted);
-    try {
-      const key = storageKey(scope);
-      localStorage.setItem(key, serialize(sorted, unparsedEntries(key)));
-      unsaved.delete(scope);
-    } catch {
-      // ignore storage write failures (private mode, quota); the session copy still updates
-      unsaved.set(scope, new Set(unsaved.get(scope)).add(changedId));
-    }
-    emit();
-  };
-
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== null && !event.key.startsWith(KEY_PREFIX)) return;
-    snapshots.forEach((_, scope) => {
-      if (!unsaved.has(scope)) {
-        snapshots.delete(scope);
-        return;
-      }
-      const stored = load(scope);
-      if (stored) snapshots.set(scope, withUnsaved(scope, stored));
-    });
-    emit();
-  };
-
-  const getSnapshot = (scope: string): PendingBridge[] => {
-    let snapshot = snapshots.get(scope);
-    if (!snapshot) {
-      snapshot = read(scope);
-      snapshots.set(scope, snapshot);
-    }
-    return snapshot;
-  };
-
-  // Writes start from storage, not this tab's copy, so another tab's write is not lost.
-  const latest = (scope: string): PendingBridge[] => {
-    const stored = load(scope);
-    return stored ? withUnsaved(scope, stored) : getSnapshot(scope);
+  const update = (scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) => {
+    const current = latest(scope);
+    const existing = current.find(entry => entry.id === id);
+    if (!existing) return;
+    const next = apply(existing);
+    if (next === existing) return;
+    write(
+      scope,
+      current.map(entry => (entry === existing ? next : entry)),
+      id
+    );
   };
 
   return {
-    subscribe(listener: Listener) {
-      if (listeners.size === 0) window.addEventListener('storage', onStorage);
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-        if (listeners.size === 0) window.removeEventListener('storage', onStorage);
-      };
-    },
-    getSnapshot,
+    subscribe: list.subscribe,
+    getSnapshot: list.getSnapshot,
+    /** Every account's scope with a list in this chain family, stored or only in this session. */
+    scopesIn: (familyChainId: number): string[] => list.scopesStartingWith(`${familyChainId}:`),
     /** Adds a bridge, or fills the gaps of the one with the same id, Safe tx hash or tx hash. */
     upsert(scope: string, bridge: PendingBridge) {
       const current = latest(scope);
@@ -254,6 +170,10 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
         current.filter(entry => entry.id !== id),
         id
       );
+    },
+    /** Closes the card of a settled bridge with nothing left to confirm (see `closeCard`); Activity keeps it. */
+    close(scope: string, id: string) {
+      update(scope, id, bridge => closeCard(bridge, now()));
     },
     /**
      * Gives a wallet bundle's card the hash its deposit mined under, at `executedAt`
@@ -284,18 +204,7 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
         id
       );
     },
-    update(scope: string, id: string, apply: (bridge: PendingBridge) => PendingBridge) {
-      const current = latest(scope);
-      const existing = current.find(entry => entry.id === id);
-      if (!existing) return;
-      const next = apply(existing);
-      if (next === existing) return;
-      write(
-        scope,
-        current.map(entry => (entry === existing ? next : entry)),
-        id
-      );
-    }
+    update
   };
 }
 

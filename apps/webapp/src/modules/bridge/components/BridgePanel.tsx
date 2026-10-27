@@ -3,9 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useBridgeForm } from '../hooks/useBridgeForm';
+import type { BridgeDraft } from '../hooks/useBridgeDraft';
 import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
+import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
+import { useCctpSwapConvertLaunch } from '../hooks/useCctpSwapConvertLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
 import { BridgeCard } from './BridgeCard';
+import { CctpClaimLookup, hasCctpClaimLookup } from './CctpClaimLookup';
 import { PendingBridges } from './PendingBridges';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
@@ -73,20 +77,29 @@ function BlockedMessage({ reason }: BlockedMessageProps) {
 const CTA_CLASSES =
   'h-12 w-full text-sm leading-4 tracking-[-0.28px] md:h-14 md:text-base md:leading-[18px] md:tracking-[-0.32px]';
 
+type BridgePanelProps = {
+  /** The form's typed and picked fields, held by a parent that outlives the tab. */
+  draft?: BridgeDraft;
+};
+
 /** The Bridge tab body: form card, Review CTA, then the pending bridges list. */
-export function BridgePanel() {
-  const form = useBridgeForm();
-  const { launch, locked, restore } = useBridgeLaunch(form, () => {
+export function BridgePanel({ draft }: BridgePanelProps) {
+  const form = useBridgeForm(draft);
+  const onBridged = () => {
     form.refetchBalances();
     form.reset();
-  });
+  };
+  const { launch, locked, restore } = useBridgeLaunch(form, onBridged);
   const launchOrConnect = useConnectThenAct(launch);
   const {
     launch: launchAction,
+    launchIn: launchActionIn,
     canLaunch: canLaunchAction,
     actionHint,
     locked: actionLocked
   } = useDestinationActionLaunch();
+  const { launch: continueBridge } = useCctpResumeLaunch(onBridged);
+  const { launch: convertBridge } = useCctpSwapConvertLaunch();
 
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
@@ -155,9 +168,13 @@ export function BridgePanel() {
 
       <PendingBridges
         onAction={launchAction}
+        onActionIn={launchActionIn}
         canAction={canLaunchAction}
         actionHint={actionHint}
         actionLocked={actionLocked}
+        onContinue={continueBridge}
+        onConvert={convertBridge}
+        lookup={hasCctpClaimLookup() ? <CctpClaimLookup /> : undefined}
       />
     </div>
   );

@@ -201,4 +201,55 @@ describe('trackBridge', () => {
     expect(await run('0xmissing', adapter)).toBeNull();
     expect(adapter.checkProgress).not.toHaveBeenCalled();
   });
+
+  describe('a settled CCTP bridge with a convert sent', () => {
+    const seedClaimed = (convert?: { safe: boolean }) => {
+      const ready = applyProgress(seed({ txHash: '0xsource' }), { kind: 'ready', nextAction: 'claim' }, NOW);
+      const claimed = recordAction(ready, { action: 'claim', txHash: '0xclaim', at: NOW });
+      store.upsert(
+        SCOPE,
+        convert
+          ? recordActionSent(claimed, {
+              action: 'convert',
+              txHash: '0xsell',
+              at: NOW,
+              ...(convert.safe && { safe: true })
+            })
+          : claimed
+      );
+    };
+    const convertOf = () => store.getSnapshot(SCOPE)[0].actions.filter(action => action.action === 'convert');
+
+    it('asks the route adapter, which settles it', async () => {
+      seedClaimed({ safe: false });
+      const adapter = {
+        checkProgress: vi.fn(async () => ({
+          kind: 'action-confirmed' as const,
+          action: 'convert' as const,
+          txHash: '0xsell'
+        }))
+      };
+      await run('0xsource', adapter);
+      expect(adapter.checkProgress).toHaveBeenCalledTimes(1);
+      expect(convertOf()).toEqual([{ action: 'convert', txHash: '0xsell', at: NOW }]);
+      expect(store.getSnapshot(SCOPE)[0].status).toBe('claimed');
+    });
+
+    it("reads a Safe's convert from the Safe service", async () => {
+      seedClaimed({ safe: true });
+      const adapter = { checkProgress: vi.fn(async () => null) };
+      const readSafeAction = vi.fn(async () => ({ kind: 'action-dropped' as const, txHash: '0xsell' }));
+      await run('0xsource', adapter, undefined, readSafeAction);
+      expect(readSafeAction).toHaveBeenCalledTimes(1);
+      expect(adapter.checkProgress).not.toHaveBeenCalled();
+      expect(convertOf()).toEqual([]);
+    });
+
+    it('is not polled once nothing is sent', async () => {
+      seedClaimed();
+      const adapter = { checkProgress: vi.fn(async () => null) };
+      await expect(run('0xsource', adapter)).resolves.toBeNull();
+      expect(adapter.checkProgress).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -13,9 +13,13 @@ export const allowedDestinations = (from: BridgeNetworkId): BridgeNetworkId[] =>
 
 export const isAllowedPair = ({ from, to }: BridgePair): boolean => allowedDestinations(from).includes(to);
 
-// Pairs whose route sends real calls; the rest stay off until their route tickets land (APP-614 to APP-618).
+// Pairs whose route sends real calls; the rest stay off until their route tickets land (APP-615 to APP-618).
 const LIVE_DESTINATIONS: Partial<Record<BridgeNetworkId, BridgeNetworkId[]>> = {
-  ethereum: ['base', 'arbitrum', 'optimism', 'unichain']
+  ethereum: ['base', 'arbitrum', 'optimism', 'unichain'],
+  base: ['ethereum'],
+  arbitrum: ['ethereum'],
+  optimism: ['ethereum'],
+  unichain: ['ethereum']
 };
 
 export const isLivePair = ({ from, to }: BridgePair): boolean =>

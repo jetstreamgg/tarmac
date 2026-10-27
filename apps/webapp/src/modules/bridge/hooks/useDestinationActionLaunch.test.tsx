@@ -1,15 +1,25 @@
 /**
  * @vitest-environment happy-dom
  */
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
-import { act, renderHook } from '@testing-library/react';
+import { TransactionRefusedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { act, renderHook as renderHookIn } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
+import { createElement, type ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { applyProgress, createPendingBridge, dropSentAction } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
+
+// The hook invalidates balance reads once an action confirms.
+const queryClient = new QueryClient();
+const renderHook = <Result,>(hook: () => Result) =>
+  renderHookIn(hook, {
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children)
+  });
 
 const mocks = vi.hoisted(() => ({
   address: '',
@@ -61,7 +71,44 @@ vi.mock('wagmi', () => ({
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => mocks.isSafe
+  useIsSafeWallet: () => mocks.isSafe,
+  useSafeWalletStatus: () => (mocks.isSafe ? 'safe' : 'not-safe')
+}));
+vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
+  useShouldUseBatch: () => false,
+  useBatchSupportPending: () => false
+}));
+// The CCTP claim's legs report through the action's callbacks like the mock executor's.
+vi.mock('./useCctpClaimLegs', () => {
+  let getCallbacks: () => TxCallbacks = () => mocks.session;
+  const legs = {
+    calls: [],
+    isBatch: false,
+    ready: true,
+    error: null,
+    execute: () => mocks.legs.push({ names: ['receiveMessage'], getCallbacks }),
+    reset: () => undefined,
+    dropCheck: () => undefined
+  };
+  return {
+    CCTP_CLAIM_FUNCTION: 'receiveMessage',
+    useCctpClaimLegs: (params: { getCallbacks: () => TxCallbacks }) => {
+      getCallbacks = params.getCallbacks;
+      return legs;
+    }
+  };
+});
+vi.mock('./useCctpConvertLegs', () => ({
+  useCctpConvertLegs: () => ({
+    calls: [],
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: () => undefined,
+    reset: () => undefined,
+    dropCheck: () => undefined
+  })
 }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
@@ -210,7 +257,7 @@ describe('useDestinationActionLaunch', () => {
     const { result } = renderHook(() => useDestinationActionLaunch());
     expect(result.current.canLaunch(card)).toBe(true);
     const callbacks = launchAndConfirm(result.current.launch, card);
-    callbacks.onMutate({ functionName: 'claim' });
+    callbacks.onMutate({ functionName: 'receiveMessage' });
     callbacks.onStart('0xclaim');
     expect(result.current.canLaunch(stored('0xsource'))).toBe(false);
   });
@@ -219,7 +266,7 @@ describe('useDestinationActionLaunch', () => {
     const card = seedReadyClaim();
     const { result } = renderHook(() => useDestinationActionLaunch());
     const callbacks = launchAndConfirm(result.current.launch, card);
-    callbacks.onMutate({ functionName: 'claim' });
+    callbacks.onMutate({ functionName: 'receiveMessage' });
     callbacks.onStart('0xclaim');
     expect(stored('0xsource').actions).toEqual([
       { action: 'claim', txHash: '0xclaim', at: expect.any(Number), status: 'sent' }
@@ -259,6 +306,34 @@ describe('useDestinationActionLaunch', () => {
     expect(result.current.actionHint(stored('0xsource'))).toEqual({ kind: 'safe-executing' });
   });
 
+  it('still tells a Safe its sent action waits for execution once the bridge settled without it', () => {
+    mocks.isSafe = true;
+    seedReadyClaim();
+    const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+    launchAndConfirm(result.current.launch).onStart('0xsafeclaim');
+    pendingBridgeStore.update(scope(), '0xsource', current => ({
+      ...current,
+      status: 'claimed',
+      settledAt: Date.now()
+    }));
+    rerender();
+    expect(result.current.actionHint(stored('0xsource'))).toEqual({ kind: 'safe-executing' });
+  });
+
+  it('gives a settled bridge no hint once its Safe action is resolved', () => {
+    mocks.isSafe = true;
+    seedReadyClaim();
+    const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+    launchAndConfirm(result.current.launch).onStart('0xsafeclaim');
+    pendingBridgeStore.update(scope(), '0xsource', current => ({
+      ...dropSentAction(current, '0xsafeclaim'),
+      status: 'claimed',
+      settledAt: Date.now()
+    }));
+    rerender();
+    expect(result.current.actionHint(stored('0xsource'))).toBeUndefined();
+  });
+
   it('a reverted action clears, so the user can claim again', () => {
     seedReadyClaim();
     const { result } = renderHook(() => useDestinationActionLaunch());
@@ -279,11 +354,20 @@ describe('useDestinationActionLaunch', () => {
     expect(stored('0xsource')).toMatchObject({ status: 'claimed', actions: [{ txHash: '0xclaim' }] });
   });
 
+  it('keeps the card of a confirmed claim whose sale it never saw', () => {
+    seedReadyClaim();
+    const { result } = renderHook(() => useDestinationActionLaunch());
+    const callbacks = launchAndConfirm(result.current.launch);
+    callbacks.onStart('0xclaim');
+    callbacks.onSuccess('0xclaim');
+    expect(stored('0xsource').closedAt).toBeUndefined();
+  });
+
   it('Retry after a non-revert failure sends no second action while the first is sent', () => {
     seedReadyClaim();
     const { result } = renderHook(() => useDestinationActionLaunch());
     const callbacks = launchAndConfirm(result.current.launch);
-    callbacks.onMutate({ functionName: 'claim' });
+    callbacks.onMutate({ functionName: 'receiveMessage' });
     callbacks.onStart('0xclaim1');
     callbacks.onError(new Error('rpc timeout'), '0xclaim1');
 
@@ -471,6 +555,17 @@ describe('useDestinationActionLaunch', () => {
       expect(result.current.actionHint(stored('0xdeposit'))).toBeUndefined();
     });
 
+    it('keeps its card once the replay mined', () => {
+      mocks.replay.ready = true;
+      launchReplay();
+      act(() => mocks.launched[0].onConfirm!());
+      const callbacks = mocks.replay.params!.getCallbacks();
+      callbacks.onMutate(undefined);
+      callbacks.onStart('0xreplay');
+      callbacks.onSuccess('0xreplay');
+      expect(stored('0xdeposit').closedAt).toBeUndefined();
+    });
+
     it('waits for the switch before building, so the simulation runs on the L2', () => {
       const card = seedReadyReplay();
       mocks.walletChainId = 1;
@@ -591,7 +686,9 @@ describe('useDestinationActionLaunch', () => {
       });
       // A retry of the confirm must not send it again.
       act(() => mocks.launched[0].onConfirm!());
-      expect(mocks.session.onError).toHaveBeenCalledWith(new Error('This action was already sent.'));
+      expect(mocks.session.onError).toHaveBeenCalledWith(
+        new TransactionRefusedError('This action was already sent.', { final: true })
+      );
       callbacks.onSuccess('0xkeep');
       expect(stored('0xarbdeposit')).toMatchObject({
         status: 'ready',

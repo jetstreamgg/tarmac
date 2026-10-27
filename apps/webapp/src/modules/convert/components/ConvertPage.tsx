@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { BridgePanel } from '@/modules/bridge/components/BridgePanel';
+import { useBridgeDraft } from '@/modules/bridge/hooks/useBridgeDraft';
 import { useConvertForm } from '../hooks/useConvertForm';
 import { useConvertLaunch } from '../hooks/useConvertLaunch';
 import type { PsmConversionDisabledReason } from '../hooks/usePsmConversion.helpers';
@@ -163,6 +164,8 @@ type ConvertTab = 'swap' | 'bridge';
 /** Swap | Bridge pills (Figma Tabs3 3831:127371), synced to `?tab=`. */
 function ConvertTabs({ swap }: { swap: ReactNode }) {
   const [searchParams, setSearchParams] = useAppSearchParams();
+  // Held here, as the Swap form is by the page, so a tab switch keeps what was typed.
+  const bridgeDraft = useBridgeDraft();
   const tab: ConvertTab = searchParams.get(QueryParams.Tab) === 'bridge' ? 'bridge' : 'swap';
   const onTabChange = (value: string) => {
     setSearchParams(
@@ -188,7 +191,7 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
         {swap}
       </TabsContent>
       <TabsContent value="bridge" className="mt-6">
-        <BridgePanel />
+        <BridgePanel draft={bridgeDraft} />
       </TabsContent>
     </Tabs>
   );
