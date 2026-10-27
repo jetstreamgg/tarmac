@@ -1,10 +1,20 @@
-import { BaseError, ContractFunctionRevertedError, type Address, type Hex } from 'viem';
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  encodeAbiParameters,
+  keccak256,
+  zeroHash,
+  type Address,
+  type Hex
+} from 'viem';
+import { getBridgeNetwork } from '../../model/networks';
 import { OP_STACK_DEPOSIT, type OpStackNetworkId } from '../nativeDeposit/contracts';
 import type { ChainReader } from '../types';
 import {
   anchorStateRegistryAbi,
   disputeGameAbi,
   disputeGameFactoryAbi,
+  L2_TO_L1_MESSAGE_PASSER,
   optimismPortalAbi
 } from './contracts';
 
@@ -16,6 +26,8 @@ export const isSuperGameType = (gameType: number) => SUPER_GAME_TYPES.includes(g
 const CHALLENGER_WINS = 1;
 /** How many of the newest respected games the picker looks through. */
 const GAME_SEARCH_SIZE = 50n;
+/** How many of the newest proofs are read: anyone can prove a withdrawal, any number of times. */
+const PROVER_READ_LIMIT = 10n;
 /** The proxy's fallback upstream serves storage proofs this far back (Base and OP Mainnet ~7 days). */
 export const PROOF_WINDOW_SECONDS = 6n * 24n * 60n * 60n;
 
@@ -147,7 +159,7 @@ export async function readProofState(
   return { kind: 'maturing', prover, etaAt };
 }
 
-/** Every wallet that proved the withdrawal, in the order they proved it. */
+/** The wallets that proved the withdrawal most recently, oldest first. */
 export async function readProvers(
   l1: ChainReader,
   system: PortalSystem,
@@ -159,16 +171,47 @@ export async function readProvers(
     functionName: 'numProofSubmitters',
     args: [withdrawalHash]
   });
+  const first = count > PROVER_READ_LIMIT ? count - PROVER_READ_LIMIT : 0n;
   return Promise.all(
-    Array.from({ length: Number(count) }, (_, index) =>
+    Array.from({ length: Number(count - first) }, (_, index) =>
       l1.readContract({
         address: system.portal,
         abi: optimismPortalAbi,
         functionName: 'proofSubmitters',
-        args: [withdrawalHash, BigInt(index)]
+        args: [withdrawalHash, first + BigInt(index)]
       })
     )
   );
+}
+
+/** The version 0 output root a game claims and a prove's output root proof hashes to. */
+export const outputRoot = (proof: {
+  version: Hex;
+  stateRoot: Hex;
+  messagePasserStorageRoot: Hex;
+  latestBlockhash: Hex;
+}) =>
+  keccak256(
+    encodeAbiParameters(
+      [{ type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }, { type: 'bytes32' }],
+      [proof.version, proof.stateRoot, proof.messagePasserStorageRoot, proof.latestBlockhash]
+    )
+  );
+
+/** The L2's own output root at a block; undefined when the reader can't serve storage proofs. */
+async function l2OutputRoot(l2: ChainReader, blockNumber: bigint): Promise<Hex | undefined> {
+  if (!l2.getProof) return undefined;
+  const [block, proof] = await Promise.all([
+    l2.getBlock({ blockNumber }),
+    l2.getProof({ address: L2_TO_L1_MESSAGE_PASSER, storageKeys: [], blockNumber })
+  ]);
+  if (!block.hash) return undefined;
+  return outputRoot({
+    version: zeroHash,
+    stateRoot: block.stateRoot,
+    messagePasserStorageRoot: proof.storageHash,
+    latestBlockhash: block.hash
+  });
 }
 
 /** The game a prove uses: its factory index, and the L2 block whose state its root commits to. */
@@ -176,20 +219,24 @@ export type ProveGame = { index: bigint; game: Address; l2BlockNumber: bigint; u
 
 /**
  * The oldest of the newest respected games that covers the withdrawal and a
- * prove can use: not lost, still proper, created before now, and recent
- * enough for the proxy to serve its L2 state. The oldest one finalizes
- * first. A super root game's L2 block is found from its timestamp with the
+ * prove can use: not lost, still proper, created before now, recent enough
+ * for the proxy to serve its L2 state, and claiming the L2's own output root
+ * (a wrong root would revert the prove). Anyone can create a game for any L2
+ * block in any order, so every one is read, and a game that fails a read is
+ * skipped. A super root game's L2 block is found from its timestamp with the
  * chain's fixed block time, and checked. Undefined while no game covers it.
  */
 export async function pickProveGame({
   l1,
   l2,
+  network,
   system,
   withdrawalBlock,
   now
 }: {
   l1: ChainReader;
   l2: ChainReader;
+  network: OpStackNetworkId;
   system: PortalSystem;
   withdrawalBlock: { number: bigint; timestamp: bigint };
   now: number;
@@ -209,28 +256,17 @@ export async function pickProveGame({
     args: [system.respectedGameType, count - 1n, count < GAME_SEARCH_SIZE ? count : GAME_SEARCH_SIZE]
   });
   const proxy = (metadata: Hex) => `0x${metadata.slice(26)}` as Address;
-  const sequence = new Map<number, bigint>();
-  const sequenceAt = async (i: number) => {
-    if (!sequence.has(i)) sequence.set(i, await readGame(l1, proxy(games[i].metadata), 'l2SequenceNumber'));
-    return sequence.get(i)!;
-  };
+  const sequences = await Promise.all(
+    games.map(({ metadata }) => readGame(l1, proxy(metadata), 'l2SequenceNumber').catch(() => undefined))
+  );
   const target = usesSuperRoots ? withdrawalBlock.timestamp : withdrawalBlock.number;
-  // Covering games are a prefix of the newest-first list: find its last one.
-  let low = 0;
-  let high = games.length - 1;
-  if (games.length === 0 || (await sequenceAt(0)) < target) return undefined;
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2);
-    if ((await sequenceAt(mid)) >= target) low = mid;
-    else high = mid - 1;
-  }
   const head = await l2.getBlock();
   const nowSeconds = BigInt(Math.floor(now / 1000));
-  for (let i = low; i >= 0; i--) {
+  const chainId = BigInt(getBridgeNetwork(network).chainId!);
+
+  const usable = async (i: number, l2Sequence: bigint): Promise<ProveGame | undefined> => {
     const game = proxy(games[i].metadata);
-    const l2Sequence = await sequenceAt(i);
-    const l2Timestamp = usesSuperRoots ? l2Sequence : undefined;
-    if (l2Timestamp !== undefined && head.timestamp - l2Timestamp > PROOF_WINDOW_SECONDS) continue;
+    if (usesSuperRoots && head.timestamp - l2Sequence > PROOF_WINDOW_SECONDS) return undefined;
     const [status, createdAt, proper] = await Promise.all([
       readGame(l1, game, 'status'),
       readGame(l1, game, 'createdAt'),
@@ -241,14 +277,31 @@ export async function pickProveGame({
         args: [game]
       })
     ]);
-    if (status === CHALLENGER_WINS || !proper || createdAt >= nowSeconds) continue;
+    if (status === CHALLENGER_WINS || !proper || createdAt >= nowSeconds) return undefined;
     const l2BlockNumber = usesSuperRoots ? await blockAtTimestamp(l2, head, l2Sequence) : l2Sequence;
-    if (l2BlockNumber === undefined) continue;
+    if (l2BlockNumber === undefined) return undefined;
     if (!usesSuperRoots) {
       const block = await l2.getBlock({ blockNumber: l2BlockNumber });
-      if (head.timestamp - block.timestamp > PROOF_WINDOW_SECONDS) continue;
+      if (head.timestamp - block.timestamp > PROOF_WINDOW_SECONDS) return undefined;
     }
+    const claim = usesSuperRoots
+      ? await l1.readContract({
+          address: game,
+          abi: disputeGameAbi,
+          functionName: 'rootClaimByChainId',
+          args: [chainId]
+        })
+      : games[i].rootClaim;
+    if ((await l2OutputRoot(l2, l2BlockNumber)) !== claim) return undefined;
     return { index: games[i].index, game, l2BlockNumber, usesSuperRoots };
+  };
+
+  // Oldest first: the oldest one finalizes first.
+  for (let i = games.length - 1; i >= 0; i--) {
+    const l2Sequence = sequences[i];
+    if (l2Sequence === undefined || l2Sequence < target) continue;
+    const picked = await usable(i, l2Sequence).catch(() => undefined);
+    if (picked) return picked;
   }
   return undefined;
 }

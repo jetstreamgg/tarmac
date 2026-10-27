@@ -4,7 +4,10 @@ import {
   ContractFunctionRevertedError,
   TransactionReceiptNotFoundError,
   encodeErrorResult,
+  keccak256,
   pad,
+  toHex,
+  zeroHash,
   type Address,
   type Hex
 } from 'viem';
@@ -14,7 +17,7 @@ import type { AdapterContext, ChainReader } from '../types';
 import { OP_STACK_WITHDRAWAL, optimismPortalAbi } from './contracts';
 import { opStackWithdrawalMessage } from './opStack';
 import { opStackWithdrawalProgress } from './opStackProgress';
-import { PROOF_WINDOW_SECONDS } from './opStackStatus';
+import { PROOF_WINDOW_SECONDS, outputRoot } from './opStackStatus';
 import { BASE_WITHDRAWAL_LOGS, BASE_WITHDRAWAL_TX } from './withdrawalFixtures';
 
 const NOW = 1_790_000_000_000;
@@ -36,6 +39,8 @@ type Game = {
   maxClockDuration: bigint;
   l2SequenceNumber: bigint;
   proper: boolean;
+  /** The root it claims; the L2's own output root when unset. */
+  rootClaim?: Hex;
 };
 
 const state = {
@@ -53,7 +58,8 @@ const state = {
   games: [] as Game[],
   l2Head: { number: 0n, timestamp: 0n },
   l2BlockTime: 2n,
-  l1Receipts: {} as Record<string, 'success' | 'reverted'>
+  l1Receipts: {} as Record<string, 'success' | 'reverted'>,
+  proverReads: 0
 };
 
 const revert = (errorName: string) =>
@@ -65,6 +71,35 @@ const revert = (errorName: string) =>
     }),
     { abi: optimismPortalAbi, functionName: 'checkWithdrawal', args: [], contractAddress: PORTAL }
   );
+
+const STORAGE_HASH = keccak256('0x5107');
+const l2Block = (number: bigint) => {
+  const { number: head, timestamp } = state.l2Head;
+  return {
+    number,
+    timestamp:
+      number === BASE_WITHDRAWAL_TX.blockNumber
+        ? BASE_WITHDRAWAL_TX.timestamp
+        : timestamp - (head - number) * state.l2BlockTime,
+    stateRoot: keccak256(toHex(number)),
+    hash: keccak256(toHex(number + 1n))
+  };
+};
+const l2Root = (number: bigint) => {
+  const block = l2Block(number);
+  return outputRoot({
+    version: zeroHash,
+    stateRoot: block.stateRoot,
+    messagePasserStorageRoot: STORAGE_HASH,
+    latestBlockhash: block.hash
+  });
+};
+/** The L2 block a game's root commits to: its number, or for a super root game its timestamp's block. */
+const gameBlock = (game: Game) =>
+  state.respectedGameType === 4
+    ? state.l2Head.number - (state.l2Head.timestamp - game.l2SequenceNumber) / state.l2BlockTime
+    : game.l2SequenceNumber;
+const claimOf = (game: Game) => game.rootClaim ?? l2Root(gameBlock(game));
 
 const gameIndex = (address: string) =>
   state.games.findIndex((_, i) => gameAddress(i) === address.toLowerCase());
@@ -106,9 +141,13 @@ const l1: ChainReader = {
       case 'numProofSubmitters':
         return BigInt(state.provers.length);
       case 'proofSubmitters':
+        state.proverReads++;
         return state.provers[Number(args![1])];
       case 'checkWithdrawal': {
-        const result = state.check[args![1] as string];
+        const prover = args![1] as string;
+        // The chain lists every wallet that proved it.
+        if (!state.provers.includes(prover as Address)) throw revert('OptimismPortal_Unproven');
+        const result = state.check[prover];
         if (result instanceof Error) throw result;
         if (result) throw revert(result);
         return undefined;
@@ -124,10 +163,18 @@ const l1: ChainReader = {
       case 'findLatestGames': {
         const [, start, n] = args as [number, bigint, bigint];
         return state.games
-          .map((_, i) => ({ index: BigInt(i), metadata: pad(gameAddress(i), { size: 32 }) }))
+          .map((game, i) => ({
+            index: BigInt(i),
+            metadata: pad(gameAddress(i), { size: 32 }),
+            rootClaim: claimOf(game)
+          }))
           .filter(game => game.index <= start)
           .reverse()
           .slice(0, Number(n));
+      }
+      case 'rootClaimByChainId': {
+        const game = state.games[gameIndex(address)];
+        return args![0] === 8453n ? claimOf(game) : zeroHash;
       }
       default: {
         const game = state.games[gameIndex(address)];
@@ -139,7 +186,7 @@ const l1: ChainReader = {
   getBlock: (async () => {
     throw new Error('no L1 blocks');
   }) as never,
-  getTransaction: (async () => ({})) as never,
+  getTransaction: (async () => ({ from: PROVER })) as never,
   getBlockNumber: (async () => 0n) as never,
   getLogs: (async () => []) as never
 };
@@ -152,11 +199,13 @@ const l2: ChainReader = {
     blockNumber: BASE_WITHDRAWAL_TX.blockNumber
   })) as never,
   getBlock: (async ({ blockNumber }: { blockNumber?: bigint } = {}) => {
-    const { number, timestamp } = state.l2Head;
-    if (blockNumber === undefined) return { number, timestamp };
-    if (blockNumber === BASE_WITHDRAWAL_TX.blockNumber)
-      return { number: blockNumber, timestamp: BASE_WITHDRAWAL_TX.timestamp };
-    return { number: blockNumber, timestamp: timestamp - (number - blockNumber) * state.l2BlockTime };
+    const number = blockNumber ?? state.l2Head.number;
+    if (number > state.l2Head.number) throw new Error('block not found');
+    return l2Block(number);
+  }) as never,
+  getProof: (async ({ blockNumber }: { blockNumber: bigint }) => {
+    if (blockNumber > state.l2Head.number) throw new Error('block not found');
+    return { storageHash: STORAGE_HASH };
   }) as never
 };
 
@@ -218,7 +267,8 @@ beforeEach(() => {
       timestamp: BASE_WITHDRAWAL_TX.timestamp + 2000n
     },
     l2BlockTime: 2n,
-    l1Receipts: {}
+    l1Receipts: {},
+    proverReads: 0
   });
 });
 
@@ -312,6 +362,30 @@ describe('opStackWithdrawalProgress: proofs', () => {
     expect(await progress({ actions: [prove] })).toBeNull();
   });
 
+  it("never invalidates the bridge's confirmed prove over another wallet's invalid proof", async () => {
+    // Its own proof isn't readable yet; a third party's proof lost.
+    state.provers = [OTHER_PROVER];
+    state.proven[OTHER_PROVER] = { game: gameAddress(0), timestamp: NOW_S - DAY };
+    state.check = { [OTHER_PROVER]: 'OptimismPortal_InvalidProofTimestamp' };
+    expect(await progress({ actions: [prove] })).toBeNull();
+  });
+
+  it('reads a bounded number of proofs however many wallets proved, and always its own', async () => {
+    const spam = Array.from({ length: 40 }, (_, i) => pad(`0x${(0xd00 + i).toString(16)}`, { size: 20 }));
+    state.provers = [PROVER, ...spam];
+    for (const prover of spam) state.proven[prover] = { game: gameAddress(0), timestamp: NOW_S - DAY };
+    state.check = {
+      ...Object.fromEntries(spam.map(prover => [prover, 'OptimismPortal_InvalidProofTimestamp'])),
+      [PROVER]: undefined
+    };
+    expect(await progress({ actions: [prove] })).toEqual({
+      kind: 'ready',
+      nextAction: 'finalize',
+      routeData: { prover: PROVER }
+    });
+    expect(state.proverReads).toBeLessThanOrEqual(10);
+  });
+
   it('changes nothing when a read fails', async () => {
     state.check = { [PROVER]: new Error('rpc down') };
     expect(await progress({ actions: [prove] })).toBeNull();
@@ -346,6 +420,31 @@ describe('opStackWithdrawalProgress: prove', () => {
       timestamp: BASE_WITHDRAWAL_TX.timestamp + 2n * blocksLater
     };
     expect(await progress()).toEqual({ kind: 'waiting', nextAction: 'prove' });
+  });
+
+  it("skips a game whose root isn't the L2's output root: its prove would revert", async () => {
+    const block = BASE_WITHDRAWAL_TX.blockNumber;
+    state.games = [
+      game({ l2SequenceNumber: block, rootClaim: keccak256('0xbad') }),
+      game({ l2SequenceNumber: block + 1n })
+    ];
+    expect(await progress()).toMatchObject({ kind: 'ready', routeData: { gameIndex: '1' } });
+  });
+
+  it('finds the oldest covering game whatever order the games were created in', async () => {
+    const block = BASE_WITHDRAWAL_TX.blockNumber;
+    // Anyone can create a game for any L2 block: a newer one may claim an older block.
+    state.games = [5n, 6n, -50n, -60n].map(offset => game({ l2SequenceNumber: block + offset }));
+    expect(await progress()).toMatchObject({ kind: 'ready', routeData: { gameIndex: '0' } });
+  });
+
+  it('keeps looking past a game whose L2 block the chain cannot serve', async () => {
+    const block = BASE_WITHDRAWAL_TX.blockNumber;
+    state.games = [
+      game({ l2SequenceNumber: state.l2Head.number + 1_000_000n }),
+      game({ l2SequenceNumber: block + 1n })
+    ];
+    expect(await progress()).toMatchObject({ kind: 'ready', routeData: { gameIndex: '1' } });
   });
 
   it('proves a super root game at the L2 block of its timestamp', async () => {

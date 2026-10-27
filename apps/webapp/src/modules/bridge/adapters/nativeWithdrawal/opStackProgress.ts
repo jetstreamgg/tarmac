@@ -1,4 +1,4 @@
-import { getAddress, isAddressEqual, type Hex } from 'viem';
+import { getAddress, isAddressEqual, type Address, type Hex } from 'viem';
 import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { l2CrossDomainMessengerAbi, type OpStackNetworkId } from '../nativeDeposit/contracts';
@@ -28,6 +28,14 @@ const readMessage = (
     args: [msgHash]
   });
 
+/** The wallet that sent the bridge's confirmed prove: a Safe or a bundle proves as the account itself. */
+async function ownProver(l1: ChainReader, bridge: PendingBridge): Promise<Address | undefined> {
+  const prove = bridge.actions.findLast(action => action.action === 'prove' && action.status === undefined);
+  if (!prove) return undefined;
+  if (prove.safe || prove.bundle) return getAddress(bridge.account);
+  return (await l1.getTransaction({ hash: prove.txHash as Hex })).from;
+}
+
 const earliest = (states: ProofState[]) =>
   states
     .filter((state): state is Extract<ProofState, { kind: 'maturing' }> => state.kind === 'maturing')
@@ -40,9 +48,10 @@ const earliest = (states: ProofState[]) =>
  * finalized withdrawal whose relay failed is offered as a retry on Ethereum.
  * Before that, every prover's proof is read: one that `checkWithdrawal` passes
  * is offered as the finalize, the earliest maturing one gives the ETA, and
- * only when none is valid is a prove offered, once a game covers it. A prove
- * this bridge confirmed whose proofs all became invalid is invalidated, so the
- * prove is offered again. A failed read is null: nothing changes.
+ * only when none is valid is a prove offered, once a game covers it. Only the
+ * newest proofs are read, plus the bridge's own: a confirmed prove is
+ * invalidated, so the prove is offered again, only when its own proof became
+ * invalid. A failed read is null: nothing changes.
  */
 export async function opStackWithdrawalProgress(
   bridge: PendingBridge & { from: OpStackNetworkId },
@@ -86,7 +95,9 @@ export async function opStackWithdrawalProgress(
         : { kind: 'waiting' };
     }
 
-    const provers = await readProvers(l1, system, withdrawal.withdrawalHash);
+    const own = await ownProver(l1, bridge);
+    const newest = await readProvers(l1, system, withdrawal.withdrawalHash);
+    const provers = own && !newest.some(prover => isAddressEqual(prover, own)) ? [...newest, own] : newest;
     const states = (
       await Promise.all(provers.map(prover => readProofState(l1, system, withdrawal.withdrawalHash, prover)))
     ).filter(state => state !== undefined);
@@ -101,14 +112,17 @@ export async function opStackWithdrawalProgress(
         nextAction: 'finalize',
         routeData: { prover: maturing.prover }
       };
-    const proved = bridge.actions.some(action => action.action === 'prove' && action.status === undefined);
-    // A confirmed prove with no proof found yet is a lagging read; re-proving would reset its clock.
-    if (proved) return states.length > 0 ? { kind: 'action-invalidated', action: 'prove' } : null;
+    if (own) {
+      // No proof of its own found yet is a lagging read; re-proving would reset its clock.
+      const mine = states.find(state => state.kind === 'invalid' && isAddressEqual(state.prover, own));
+      return mine ? { kind: 'action-invalidated', action: 'prove' } : null;
+    }
 
     const block = await l2.getBlock({ blockNumber: receipt.blockNumber });
     const game = await pickProveGame({
       l1,
       l2,
+      network,
       system,
       withdrawalBlock: { number: block.number, timestamp: block.timestamp },
       now
