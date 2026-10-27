@@ -15,6 +15,12 @@ export const L2_TO_L1_MESSAGE_PASSER: Address = '0x42000000000000000000000000000
 /** Arbitrum precompile that emits L2ToL1Tx for every L2 to L1 message. */
 export const ARB_SYS: Address = '0x0000000000000000000000000000000000000064';
 
+/** Arbitrum's virtual NodeInterface: builds the outbox proof of a message, only through eth_call. */
+export const NODE_INTERFACE: Address = '0x00000000000000000000000000000000000000C8';
+
+/** How long an Arbitrum withdrawal waits on the rollup before the outbox can execute it, in ms. */
+export const ARBITRUM_CONFIRM_MS = 6.5 * 24 * 60 * 60 * 1000;
+
 /** The L1 side of Sky's OP Stack withdrawals: the messenger relays the message, the escrow pays it out. */
 export const OP_STACK_WITHDRAWAL: Record<OpStackNetworkId, { l1Escrow: Address; l1Messenger: Address }> = {
   base: {
@@ -141,6 +147,7 @@ export const arbSysAbi = parseAbi([
 export const arbitrumOutboxAbi = parseAbi([
   'function executeTransaction(bytes32[] proof, uint256 index, address l2Sender, address to, uint256 l2Block, uint256 l1Block, uint256 l2Timestamp, uint256 value, bytes data)',
   'function isSpent(uint256 index) view returns (bool)',
+  'function roots(bytes32 root) view returns (bytes32 l2BlockHash)',
   'event SendRootUpdated(bytes32 indexed outputRoot, bytes32 indexed l2BlockHash)',
   'event OutBoxTransactionExecuted(address indexed to, address indexed l2Sender, uint256 indexed zero, uint256 transactionIndex)'
 ]);

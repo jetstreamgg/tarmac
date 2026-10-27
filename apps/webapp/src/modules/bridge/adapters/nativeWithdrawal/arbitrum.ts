@@ -1,7 +1,9 @@
 import {
   decodeEventLog,
   decodeFunctionData,
+  encodePacked,
   isAddressEqual,
+  keccak256,
   type Address,
   type Call,
   type Hex,
@@ -152,3 +154,20 @@ export const arbitrumExecuteCall = ({
       message.data
     ]
   }) as const;
+
+/** The outbox leaf of a message, as Outbox.calculateItemHash and ArbSys's L2ToL1Tx hash it. */
+export const arbitrumItemHash = (message: ArbitrumWithdrawalMessage) =>
+  keccak256(
+    encodePacked(
+      ['address', 'address', 'uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
+      [
+        message.l2Sender,
+        message.destination,
+        message.arbBlockNum,
+        message.ethBlockNum,
+        message.timestamp,
+        message.callvalue,
+        message.data
+      ]
+    )
+  );
