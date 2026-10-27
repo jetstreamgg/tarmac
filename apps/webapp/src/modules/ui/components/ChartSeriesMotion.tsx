@@ -118,7 +118,7 @@ export function SeriesMotionLayer({
   // its only job is reaching the chart's <svg> to find the series paths.
   const probeRef = useRef<SVGGElement>(null);
   const clipRectRef = useRef<SVGRectElement>(null);
-  const [geom, setGeom] = useState<{ d: string; lut: ArcLut; key: string } | null>(null);
+  const [geom, setGeom] = useState<{ d: string; lut: ArcLut } | null>(null);
   // The hover chrome waits for the entrance draw — a lit window sliding along
   // a half-drawn line would light series that isn't there yet.
   const [revealDone, setRevealDone] = useState(false);
@@ -142,10 +142,7 @@ export function SeriesMotionLayer({
       if (!curve || !d) return retry();
       const lut = buildArcLut(curve);
       if (!lut) return retry();
-      // Keyed too: a new series drawing the same path (1Y and All on a market
-      // under a year old) still needs this re-render to run its entrance.
-      const key = seriesKey ?? '';
-      setGeom(prev => (prev?.d === d && prev.key === key ? prev : { d, lut, key }));
+      setGeom(prev => (prev?.d === d ? prev : { d, lut }));
     };
     measure();
     return () => {

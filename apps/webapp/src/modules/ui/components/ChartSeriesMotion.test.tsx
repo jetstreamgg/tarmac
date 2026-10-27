@@ -113,33 +113,6 @@ describe('entrance draw', () => {
     expect(surface.hasAttribute('data-series-reveal-pending')).toBe(false);
   });
 
-  it('replays the entrance when a new series draws the same path', () => {
-    // 1Y and All on a market under a year old: the Area remounts under the new
-    // key and its paths land a commit later, with the same `d` as before.
-    const data = [1];
-    const chart = (seriesKey: string, withPaths: boolean) => (
-      <svg data-testid="surface">
-        {withPaths && (
-          <g className="recharts-area">
-            <path className="recharts-area-area" d="M0,0L100,0L100,50L0,50Z" />
-            <path className="recharts-area-curve" d="M0,0L100,0" />
-          </g>
-        )}
-        <SeriesMotionLayer color="red" strokeWidth={1.5} seriesKey={seriesKey} data={data} />
-      </svg>
-    );
-    const view = render(chart('rate-y', true));
-    finishReveal();
-    const surface = screen.getByTestId('surface');
-
-    view.rerender(chart('rate-all', false));
-    expect(surface.hasAttribute('data-series-reveal-pending')).toBe(true);
-
-    view.rerender(chart('rate-all', true));
-    act(() => vi.advanceTimersByTime(20));
-    expect(surface.hasAttribute('data-series-reveal-pending')).toBe(false);
-  });
-
   it('never leaves the hold on when the paths are there from the start', () => {
     renderLayer();
     expect(
