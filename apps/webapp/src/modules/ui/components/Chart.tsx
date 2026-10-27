@@ -8,7 +8,7 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
 import { useMemo, useState, useRef, useEffect, useId } from 'react';
 import { Area, AreaChart, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
 import { SeriesMotionLayer } from './ChartSeriesMotion';

@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useMemo, useState } from 'react';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useChains } from 'wagmi';
