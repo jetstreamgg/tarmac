@@ -254,8 +254,8 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
     const funds = await watchDeposit({ to: 'optimism', sender: account });
     const txHash = await deposit(bridge, isolatedPage, 'optimism');
     const card = bridge.card('OP Mainnet');
-    // A UTC clock time, or the full date when it falls on a later UTC day.
-    await expect(card).toContainText(/Estimated arrival(\d{2}\/\d{2}\/\d{2} )?\d{2}:\d{2} UTC/, {
+    // A local clock time, or the full date when it falls on a later local day.
+    await expect(card).toContainText(/Estimated arrival(\d{2}\/\d{2}\/\d{2} )?\d{2}:\d{2}/, {
       timeout: 30_000
     });
 
