@@ -376,7 +376,7 @@ export function StakeManageBorrowCard({
         )}
 
         {!isRepay && debtCeilingReached && (
-          <p className="text-sm text-orange-400">
+          <p className="text-statusWarning text-sm">
             <Trans>Debt ceiling reached. Borrowing USDS is temporarily unavailable.</Trans>
           </p>
         )}
