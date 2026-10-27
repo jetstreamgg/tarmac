@@ -242,11 +242,11 @@ function PendleMaturedCard({
   const claimAmount = formatNumber(positionValue, { maxDecimals: 2 });
   const claimSymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
 
-  // Claim stays enabled: off-chain the click switches the wallet first, then
-  // opens (usePendleRedeemModal), and the modal explains a quote Pendle can't
-  // give. A Safe can't be switched from the dapp, so it disables with the hint
-  // instead.
-  const { openRedeemModal, isRedeemable, switchBlocked } = usePendleRedeemModal(market);
+  // Off-chain, Claim stays enabled: the click switches the wallet first, then
+  // opens (usePendleRedeemModal); a Safe can't be switched from the dapp, so it
+  // disables with the hint instead.
+  const { openRedeemModal, isRedeemable, isPrepared, onPendleChain, switchBlocked } =
+    usePendleRedeemModal(market);
 
   return (
     <ProductPositionCard
@@ -292,7 +292,7 @@ function PendleMaturedCard({
               variant="primary"
               size="l"
               onClick={openRedeemModal}
-              disabled={switchBlocked || !isRedeemable}
+              disabled={switchBlocked || !isRedeemable || (onPendleChain && !isPrepared)}
               data-testid="pendle-matured-redeem-button"
             >
               <Trans>Claim</Trans>

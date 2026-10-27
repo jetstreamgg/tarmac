@@ -62,10 +62,7 @@ const hoisted = vi.hoisted(() => ({
   setIsAutoSwitchingMock: vi.fn(),
   setAutoSwitchIntentMock: vi.fn(),
   trackSwitchRequestedMock: vi.fn(),
-  trackSwitchCompletedMock: vi.fn(),
-  refetchQuoteMock: vi.fn(),
-  // Swappable quote state; undefined keeps the healthy QUOTE.
-  quoteState: undefined as { data: unknown; isLoading: boolean; error: Error | undefined } | undefined
+  trackSwitchCompletedMock: vi.fn()
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -124,8 +121,10 @@ vi.mock('@/hooks', async importOriginal => {
       dataSources: []
     }),
     useQuotePendleConvert: () => ({
-      ...(hoisted.quoteState ?? { data: QUOTE, isLoading: false, error: undefined }),
-      mutate: hoisted.refetchQuoteMock,
+      data: QUOTE,
+      isLoading: false,
+      error: undefined,
+      mutate: () => undefined,
       dataSources: []
     }),
     useBatchPendleConvert: () => {
@@ -456,78 +455,5 @@ describe('usePendleRedeemModal network switch', () => {
     expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
     expect(hoisted.launchMock).not.toHaveBeenCalled();
     view.unmount();
-  });
-});
-
-describe('usePendleRedeemModal claim quote failure', () => {
-  beforeEach(() => {
-    hoisted.launchMock.mockClear();
-    hoisted.refetchQuoteMock.mockClear();
-    hoisted.isModalOpen = false;
-    hoisted.txStatus = 'idle';
-    hoisted.matured = true;
-    hoisted.chainId = 1;
-  });
-
-  afterEach(() => {
-    hoisted.quoteState = undefined;
-    vi.clearAllMocks();
-  });
-
-  const Capture = () => {
-    const { openRedeemModal } = usePendleRedeemModal(MATURED_MARKET);
-    return <button data-testid="open-redeem" onClick={() => void openRedeemModal()} />;
-  };
-  const clickOpen = (container: HTMLElement) =>
-    act(async () => {
-      container
-        .querySelector('[data-testid="open-redeem"]')!
-        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    });
-  // The card no longer gates Claim on a quote: the modal opens and says why.
-  const openWith = async (quoteState: typeof hoisted.quoteState) => {
-    hoisted.quoteState = quoteState;
-    const view = renderComponent(<Capture />);
-    await clickOpen(view.container);
-    view.unmount();
-    return hoisted.launchMock.mock.calls[0][0] as { errorMessage?: string };
-  };
-
-  it('says nothing while the quote is healthy or still loading', async () => {
-    expect((await openWith(undefined)).errorMessage).toBeUndefined();
-    hoisted.launchMock.mockClear();
-    expect(
-      (await openWith({ data: undefined, isLoading: true, error: undefined })).errorMessage
-    ).toBeUndefined();
-  });
-
-  it.each([
-    'Pendle /convert 400: {"message":"Market not found","statusCode":400}',
-    'Pendle /convert 503: {}',
-    'Pendle /convert 400: {"message":"Input valuation is too low"}',
-    'Pendle /convert returned no routes',
-    'Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem'
-  ])('says Pendle cannot prepare the claim, with no trade-size advice: %s', async raw => {
-    const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
-    expect(config.errorMessage).toBe(
-      "Pendle can't prepare this claim right now. Your position stays claimable, so please check back later."
-    );
-  });
-
-  it('points at the connection when Pendle could not be reached', async () => {
-    const config = await openWith({ data: undefined, isLoading: false, error: new Error('Failed to fetch') });
-    expect(config.errorMessage).toBe(
-      "Couldn't reach Pendle to prepare your claim. Check your connection and try again."
-    );
-  });
-
-  it('retries a failed quote when Claim opens, rather than waiting for the next poll', async () => {
-    await openWith({ data: undefined, isLoading: false, error: new Error('Pendle /convert 503: {}') });
-    expect(hoisted.refetchQuoteMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('leaves a healthy quote alone on open', async () => {
-    await openWith(undefined);
-    expect(hoisted.refetchQuoteMock).not.toHaveBeenCalled();
   });
 });

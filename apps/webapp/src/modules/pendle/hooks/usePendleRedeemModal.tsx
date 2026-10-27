@@ -35,7 +35,7 @@ import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
-import { pendleClaimErrorMessage, pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
@@ -62,12 +62,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
 
   // Quote: PT → user-selected output via /convert. The `maturedExit` flag
   // adds the YT-with-zero-amount entry the API requires for matured exits.
-  const {
-    data: quote,
-    isLoading: isFetchingQuote,
-    error: quoteError,
-    mutate: refetchQuote
-  } = useQuotePendleConvert({
+  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
     side: PendleConvertSide.WITHDRAW,
     marketAddress: market.marketAddress,
     inputToken: market.ptToken,
@@ -77,8 +72,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     amountIn: isRedeemable ? ptBalance : undefined,
     slippage,
     enabled: isRedeemable,
-    // Prefetched so the modal opens on a ready quote; only repoll while it's
-    // on screen — this hook mounts once per matured card.
+    // Fetch once for the card's isPrepared gating; only repoll while the
+    // quote is on screen — this hook mounts once per matured card.
     poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
@@ -113,15 +108,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const prepareErrorMessage = useMemo<string | undefined>(
     () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
     [writeHook.prepared, writeHook.error]
-  );
-  // No quote at all wins, as in the buy/sell modal: there's nothing to prepare.
-  // Claim-specific copy, since the claim always takes the whole balance.
-  const errorMessage = useMemo<string | undefined>(
-    () =>
-      isRedeemable && !quote && !isFetchingQuote
-        ? pendleClaimErrorMessage(quoteError?.message)
-        : prepareErrorMessage,
-    [isRedeemable, quote, isFetchingQuote, quoteError, prepareErrorMessage]
   );
 
   // The Network cell describes where the trade executes — the engine chain,
@@ -340,8 +326,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         status: 'success'
       });
     }
-    // A failed prefetch only repolls once a minute; retry now that it's wanted.
-    if (!quote) void refetchQuote();
     launch({
       usdValue,
       // Pendle redemption is mainnet-only — guard the modal off any L2 (APP-528).
@@ -350,7 +334,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       transactionTitle: t`Confirm in the wallet`,
       toast,
       transactionContent,
-      errorMessage,
+      errorMessage: prepareErrorMessage,
       steps,
       confirmLabel: t`Claim`,
       confirmDisabled,
@@ -370,11 +354,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     trackNetworkSwitchRequested,
     trackNetworkSwitchCompleted,
     switchChainAsync,
-    quote,
-    refetchQuote,
     launch,
     transactionContent,
-    errorMessage,
+    prepareErrorMessage,
     steps,
     confirmDisabled,
     sessionId,
@@ -391,7 +373,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
       transactionContent,
-      errorMessage,
+      errorMessage: prepareErrorMessage,
       steps,
       confirmDisabled,
       analytics,
@@ -404,7 +386,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     sessionId,
     updateModalContent,
     transactionContent,
-    errorMessage,
+    prepareErrorMessage,
     steps,
     confirmDisabled,
     analytics,
