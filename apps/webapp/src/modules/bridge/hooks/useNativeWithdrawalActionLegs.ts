@@ -4,10 +4,15 @@ import type { Call, Client } from 'viem';
 import { useConfig, useReadContract } from 'wagmi';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { l2CrossDomainMessengerAbi, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
+import {
+  isOpStackNetwork,
+  l2CrossDomainMessengerAbi,
+  type NativeDepositNetwork
+} from '../adapters/nativeDeposit/contracts';
 import { opStackReplayGas } from '../adapters/nativeDeposit/opStack';
 import { OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
 import { opStackWithdrawalReplay, opStackWithdrawalReplayCall } from '../adapters/nativeWithdrawal/opStack';
+import { arbitrumExecuteFromChain } from '../adapters/nativeWithdrawal/arbitrumProgress';
 import { opStackWithdrawalActionCall } from '../adapters/nativeWithdrawal/opStackActions';
 import type { ChainReader } from '../adapters/types';
 import type { PendingBridge } from '../model/types';
@@ -15,18 +20,19 @@ import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
 import { usePromptIssuers } from './usePromptIssuers';
 
-export type OpStackWithdrawalLegAction = 'prove' | 'finalize' | 'replay';
+export type NativeWithdrawalLegAction = 'prove' | 'finalize' | 'replay';
 
 /**
- * The Ethereum leg of an OP Stack withdrawal's next action. The prove and the
- * finalize are built from the chain when the leg is enabled (the prove's
- * storage proof, the finalize's passing check); the retry of a failed relay
+ * The Ethereum leg of a native withdrawal's next action. The OP Stack prove
+ * and finalize, and the Arbitrum outbox execute (its finalize), are built from
+ * the chain when the leg is enabled (the prove's storage proof, the
+ * finalize's passing check, the execute's outbox proof); an OP Stack retry of a failed relay
  * replays the stored message on the L1 messenger at an explicit gas priced
  * from its baseGas, as the deposit's replay does. No call while it is
  * building or doesn't check out. Only enabled with the wallet on `chainId`,
  * as the simulation runs on the connected chain.
  */
-export function useOpStackWithdrawalLegs({
+export function useNativeWithdrawalActionLegs({
   action,
   enabled,
   network,
@@ -34,20 +40,23 @@ export function useOpStackWithdrawalLegs({
   chainId,
   getCallbacks
 }: {
-  action: OpStackWithdrawalLegAction | undefined;
+  action: NativeWithdrawalLegAction | undefined;
   enabled: boolean;
-  network: OpStackNetworkId | undefined;
-  bridge: Pick<PendingBridge, 'id' | 'txHash' | 'amount' | 'recipient' | 'account' | 'routeData'> | undefined;
+  /** The L2 the withdrawal was sent from. */
+  network: NativeDepositNetwork | undefined;
+  bridge: PendingBridge | undefined;
   /** Ethereum (its Tenderly fork in dev). */
   chainId: number | undefined;
   getCallbacks: () => TxCallbacks;
 }) {
   const config = useConfig();
   const { familyChainId } = usePendingScope();
-  const portalAction = action === 'prove' || action === 'finalize' ? action : undefined;
+  const opStack = network && isOpStackNetwork(network) ? network : undefined;
+  // Arbitrum's only action is the outbox execute, sent as its finalize.
+  const portalAction = action === 'finalize' || (action === 'prove' && opStack) ? action : undefined;
   const built = useQuery({
     queryKey: [
-      'op-stack-withdrawal-action',
+      'native-withdrawal-action',
       familyChainId,
       portalAction,
       network,
@@ -60,13 +69,15 @@ export function useOpStackWithdrawalLegs({
       const l1 = context.getClient('ethereum');
       const l2 = context.getClient(network!);
       if (!l1 || !l2) throw new Error(`No client for ${network}`);
-      return opStackWithdrawalActionCall({
-        action: portalAction!,
-        l1,
-        l2: l2 as ChainReader & Client,
-        network: network!,
-        bridge: bridge!
-      });
+      return opStack
+        ? opStackWithdrawalActionCall({
+            action: portalAction!,
+            l1,
+            l2: l2 as ChainReader & Client,
+            network: opStack,
+            bridge: bridge!
+          })
+        : arbitrumExecuteFromChain({ l1, l2, bridge: bridge! });
     },
     enabled: enabled && !!portalAction && !!network && !!bridge,
     refetchOnWindowFocus: false,
@@ -75,16 +86,16 @@ export function useOpStackWithdrawalLegs({
   });
 
   const replay = useMemo(() => {
-    if (!enabled || action !== 'replay' || !network) return undefined;
+    if (!enabled || action !== 'replay' || !opStack) return undefined;
     try {
-      return { value: opStackWithdrawalReplay(network, bridge?.routeData) };
+      return { value: opStackWithdrawalReplay(opStack, bridge?.routeData) };
     } catch (error) {
       return { error: error as Error };
     }
-  }, [enabled, action, network, bridge?.routeData]);
+  }, [enabled, action, opStack, bridge?.routeData]);
   const replayValue = replay?.value;
   const baseGas = useReadContract({
-    address: network ? OP_STACK_WITHDRAWAL[network].l1Messenger : undefined,
+    address: opStack ? OP_STACK_WITHDRAWAL[opStack].l1Messenger : undefined,
     abi: l2CrossDomainMessengerAbi,
     functionName: 'baseGas',
     args: replayValue?.baseGasArgs,
@@ -93,16 +104,20 @@ export function useOpStackWithdrawalLegs({
   });
 
   const calls = useMemo<Call[]>(() => {
-    if (replayValue && network && baseGas.data !== undefined)
+    if (replayValue && opStack && baseGas.data !== undefined)
       return [
-        opStackWithdrawalReplayCall({ network, args: replayValue.args, gas: opStackReplayGas(baseGas.data) })
+        opStackWithdrawalReplayCall({
+          network: opStack,
+          args: replayValue.args,
+          gas: opStackReplayGas(baseGas.data)
+        })
       ];
     if (portalAction && built.data) {
       const { address, ...call } = built.data;
       return [{ to: address, ...call } as unknown as Call];
     }
     return [];
-  }, [replayValue, network, baseGas.data, portalAction, built.data]);
+  }, [replayValue, opStack, baseGas.data, portalAction, built.data]);
 
   const { onMutate, issuerOf } = usePromptIssuers(getCallbacks);
   const flow = useSequentialTransactionFlow({

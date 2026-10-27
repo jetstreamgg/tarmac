@@ -8,10 +8,11 @@ import { encodeFunctionData } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { OP_STACK_DEPOSIT } from '../adapters/nativeDeposit/contracts';
-import { OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
+import { ARBITRUM_WITHDRAWAL, OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
 import { opStackWithdrawalMessage } from '../adapters/nativeWithdrawal/opStack';
 import { BASE_WITHDRAWAL_LOGS, BASE_WITHDRAWAL_TX } from '../adapters/nativeWithdrawal/withdrawalFixtures';
-import { useOpStackWithdrawalLegs } from './useOpStackWithdrawalLegs';
+import type { PendingBridge } from '../model/types';
+import { useNativeWithdrawalActionLegs } from './useNativeWithdrawalActionLegs';
 
 const mocks = vi.hoisted(() => ({
   read: undefined as undefined | Record<string, unknown>,
@@ -31,6 +32,12 @@ vi.mock('wagmi', () => ({
 vi.mock('./usePendingScope', () => ({ usePendingScope: () => ({ familyChainId: 1 }) }));
 vi.mock('./adapterContext', () => ({
   wagmiAdapterContext: () => ({ getClient: (network: string) => ({ network }) })
+}));
+vi.mock('../adapters/nativeWithdrawal/arbitrumProgress', () => ({
+  arbitrumExecuteFromChain: async (args: Record<string, unknown>) => {
+    mocks.built.push({ ...args, arbitrum: true });
+    return { address: ARBITRUM_WITHDRAWAL.outbox, abi: [], functionName: 'executeTransaction', args: [] };
+  }
 }));
 vi.mock('../adapters/nativeWithdrawal/opStackActions', () => ({
   opStackWithdrawalActionCall: async (args: Record<string, unknown>) => {
@@ -60,17 +67,17 @@ const BRIDGE = {
   recipient: MESSAGE.to,
   account: MESSAGE.from.toLowerCase(),
   routeData: { msgHash: MESSAGE.msgHash, relayCalldata: MESSAGE.withdrawal.data }
-};
+} as unknown as PendingBridge;
 const getCallbacks = () => ({}) as TxCallbacks;
 
-const render = (overrides: Partial<Parameters<typeof useOpStackWithdrawalLegs>[0]> = {}) => {
+const render = (overrides: Partial<Parameters<typeof useNativeWithdrawalActionLegs>[0]> = {}) => {
   const client = new QueryClient();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
   return renderHook(
     () =>
-      useOpStackWithdrawalLegs({
+      useNativeWithdrawalActionLegs({
         action: 'replay',
         enabled: true,
         network: 'base',
@@ -83,7 +90,7 @@ const render = (overrides: Partial<Parameters<typeof useOpStackWithdrawalLegs>[0
   );
 };
 
-describe('useOpStackWithdrawalLegs', () => {
+describe('useNativeWithdrawalActionLegs', () => {
   beforeEach(() => {
     Object.assign(mocks, {
       read: undefined,
@@ -121,6 +128,19 @@ describe('useOpStackWithdrawalLegs', () => {
       expect((mocks.flow!.calls as { to: string }[])[0].to).toBe(OP_STACK_DEPOSIT.base.portal);
     }
   );
+
+  it('executes an Arbitrum withdrawal on the outbox as its finalize, and never proves or replays it', async () => {
+    const { result } = render({ action: 'finalize', network: 'arbitrum' });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(mocks.built[0]).toMatchObject({ arbitrum: true, bridge: BRIDGE });
+    expect((mocks.flow!.calls as { to: string }[])[0].to).toBe(ARBITRUM_WITHDRAWAL.outbox);
+    for (const action of ['prove', 'replay'] as const) {
+      mocks.built = [];
+      const other = render({ action, network: 'arbitrum' }).result;
+      expect(other.current.ready).toBe(false);
+      expect(mocks.built).toEqual([]);
+    }
+  });
 
   it("reports a prove that couldn't be built, and sends nothing", async () => {
     mocks.buildError = new Error("The L2 state doesn't match the dispute game's root.");
