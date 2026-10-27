@@ -90,28 +90,16 @@ export default defineConfig({
       },
       testMatch: ['**/bridge-native*.spec.ts', '**/bridge-cctp*.spec.ts']
     }
-    // {
-    //   name: 'chromium-alternate',
-    //   use: {
-    //     ...devices['Desktop Chrome'],
-    //     viewport: { width: 1920, height: 1080 }
-    //   }
-    //   // Alternate VNet tests - for tests requiring a different fork state
-    //   // Add test patterns here when you need tests to run on alternate VNet
-    //   // testMatch: ['**/expert-morpho.spec.ts', '**/vaults-morpho.spec.ts']
-    // }
   ],
 
-  webServer: [
-    {
-      // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
-      command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
-      port: 3000,
-      timeout: 120000,
-      reuseExistingServer: !process.env.CI,
-      // Wait for the server to be fully ready
-      stdout: 'pipe',
-      stderr: 'pipe'
-    }
-  ]
+  webServer: {
+    // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
+    command: 'VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true pnpm dev:mock',
+    port: 3000,
+    timeout: 120000,
+    reuseExistingServer: !process.env.CI,
+    // Wait for the server to be fully ready
+    stdout: 'pipe',
+    stderr: 'pipe'
+  }
 });

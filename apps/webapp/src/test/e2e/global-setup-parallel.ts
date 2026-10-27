@@ -497,29 +497,6 @@ export default async function globalSetup() {
   console.log('=== Global Setup for Parallel Tests ===');
 
   try {
-    // Detect if we're running alternate VNet tests based on env var OR project filter
-    // USE_ALTERNATE_VNET may already be set by the command (e.g., pnpm e2e:parallel:alternate:fork)
-    const projectArg = process.argv.find(arg => arg.includes('--project'));
-    const isAlternateFromProjectArg = projectArg?.includes('chromium-alternate');
-    const isAlternateFromEnv = process.env.USE_ALTERNATE_VNET === 'true';
-    const isAlternateProject = isAlternateFromProjectArg || isAlternateFromEnv;
-
-    // Debug logging for alternate detection
-    console.log('🔍 Alternate detection:');
-    console.log(`   - process.argv: ${process.argv.join(' ')}`);
-    console.log(`   - projectArg: ${projectArg}`);
-    console.log(`   - isAlternateFromProjectArg: ${isAlternateFromProjectArg}`);
-    console.log(`   - isAlternateFromEnv: ${isAlternateFromEnv}`);
-    console.log(`   - isAlternateProject (final): ${isAlternateProject}`);
-
-    // Set environment variable for alternate VNet selection
-    if (isAlternateProject) {
-      process.env.USE_ALTERNATE_VNET = 'true';
-      console.log('🔵 Running alternate VNet tests - using alternate fork');
-    } else {
-      console.log('🔵 Running standard tests - using regular VNet fork');
-    }
-
     // Detect shard mode
     const { isSharded, shardIndex, totalShards } = detectShardMode();
 
@@ -553,10 +530,7 @@ export default async function globalSetup() {
     }
 
     // Step 3: Check for existing snapshots and validate them
-    const snapshotFileName = isAlternateProject
-      ? 'persistent-vnet-snapshots-alternate.json'
-      : 'persistent-vnet-snapshots.json';
-    const snapshotFile = path.join(__dirname, snapshotFileName);
+    const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
     let existingSnapshots: Record<string, string> | null = null;
 
     try {
@@ -808,15 +782,7 @@ export async function globalTeardown() {
     } else {
       // Step 1: Revert all VNets to snapshots (for next test run)
       console.log('\n1. Reverting VNets to snapshots...');
-
-      // Detect if we're running alternate VNet tests
-      const projectArg = process.argv.find(arg => arg.includes('--project'));
-      const isAlternateProject =
-        projectArg?.includes('chromium-alternate') || process.env.USE_ALTERNATE_VNET === 'true';
-      const snapshotFileName = isAlternateProject
-        ? 'persistent-vnet-snapshots-alternate.json'
-        : 'persistent-vnet-snapshots.json';
-      const snapshotFile = path.join(__dirname, snapshotFileName);
+      const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
 
       try {
         const snapshotData = await fs.readFile(snapshotFile, 'utf-8');

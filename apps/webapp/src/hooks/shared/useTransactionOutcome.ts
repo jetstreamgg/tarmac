@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useChainId, useConfig } from 'wagmi';
-import { getPublicClient } from '@wagmi/core';
+import { getPublicClient } from 'wagmi/actions';
 import {
   UserRejectedRequestError,
   type Hash,

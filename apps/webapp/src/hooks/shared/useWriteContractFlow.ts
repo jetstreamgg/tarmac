@@ -1,6 +1,11 @@
-import { UseSimulateContractParameters, useSimulateContract, useWriteContract } from 'wagmi';
+import {
+  type Config,
+  type ResolvedRegister,
+  UseSimulateContractParameters,
+  useSimulateContract,
+  useWriteContract
+} from 'wagmi';
 import { useEffect, useEffectEvent, useMemo } from 'react';
-import { Config, ResolvedRegister } from '@wagmi/core';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { useTransactionOutcome } from './useTransactionOutcome';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
