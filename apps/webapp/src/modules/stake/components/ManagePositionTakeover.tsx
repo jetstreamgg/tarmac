@@ -522,8 +522,8 @@ export function ManagePositionTakeover({
     !!stakeError ||
     (borrowOn &&
       (!!borrowError ||
-        (state.borrowMode === 'borrow' &&
-          (minCollateralNotMet || collateralData?.debtCeilingUtilization === 1))));
+        minCollateralNotMet ||
+        (state.borrowMode === 'borrow' && collateralData?.debtCeilingUtilization === 1)));
   const launchErrorMessage = cardMessageShown
     ? undefined
     : enginePrepareErrorMessage(prepared, formValid && !launchLoading ? launchError : null);

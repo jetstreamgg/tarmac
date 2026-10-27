@@ -191,10 +191,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       if (isSuccess && revertedReceipt) {
         if (awaitingRevertReason) return;
         emitError(
-          new TransactionRevertedError(
-            replayable ? (batchRevert ?? undefined) : undefined,
-            'ERROR: Batch transaction failed'
-          ),
+          new TransactionRevertedError(batchRevert ?? undefined, 'ERROR: Batch transaction failed'),
           revertedReceipt.transactionHash
         );
       } else if (isSuccess && data.status === 'failure') {

@@ -32,7 +32,7 @@ import { reportError } from '@/modules/sentry/reportError';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
-import { decodeRevert, revertMessage, revertReasonForReporting } from '@/lib/revertMessages';
+import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
   TransactionConfig,
   TransactionEntry,
@@ -1351,8 +1351,7 @@ export function TransactionProvider({
         // The contract's own reason (a custom error's name or a selector, never its
         // arguments; a reason string with addresses and amounts blanked out), so
         // Sentry shows which reverts users hit.
-        const decodedRevert = decodeRevert(normalizedError);
-        const revert = decodedRevert && revertReasonForReporting(decodedRevert);
+        const revert = revertReport(normalizedError)?.reason;
         reportError(normalizedError, {
           module: 'transactions',
           flow,

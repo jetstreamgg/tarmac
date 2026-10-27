@@ -1,3 +1,4 @@
+import type { DecodedRevert } from '@/lib/revertMessages/decodeRevert';
 import type {
   AppEvents,
   SelectionMethod,
@@ -210,7 +211,7 @@ export interface PathViewedProps {
  */
 export interface TransactionPrepareRevertedProps {
   revert_reason: string;
-  revert_kind: 'error' | 'custom' | 'panic' | 'unknown';
+  revert_kind: DecodedRevert['kind'];
   revert_has_copy: boolean;
   chain_id?: number;
   viewport: Viewport;

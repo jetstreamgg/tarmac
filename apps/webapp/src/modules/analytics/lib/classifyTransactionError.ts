@@ -1,6 +1,6 @@
 import { isUserRejection, extractErrorCode } from '@/hooks/helpers';
 import { TransactionReplacedError } from '@/hooks/shared/useTransactionOutcome';
-import { decodeRevert, hasRevertCopy, revertReasonForReporting } from '@/lib/revertMessages';
+import { revertReport } from '@/lib/revertMessages';
 
 export type WidgetErrorKind = 'user_rejected' | 'reverted' | 'wallet_error' | 'unknown';
 
@@ -9,7 +9,7 @@ export interface TransactionErrorProperties {
   is_user_rejection: boolean;
   error_code?: number;
   error_name?: string;
-  /** The contract's revert reason, addresses and long numbers blanked out (see revertReasonForReporting). */
+  /** The contract's revert reason, addresses and long numbers blanked out (see revertReport). */
   revert_reason?: string;
   /** Whether the revert registry has copy for that reason, or the user saw it verbatim. */
   revert_has_copy?: boolean;
@@ -46,7 +46,7 @@ export function classifyTransactionError(error: unknown, hasTxHash: boolean): Tr
         ? 'wallet_error'
         : 'unknown';
 
-  const revert = is_user_rejection ? undefined : decodeRevert(error);
+  const revert = is_user_rejection ? undefined : revertReport(error);
 
   return {
     error_kind,
@@ -54,8 +54,8 @@ export function classifyTransactionError(error: unknown, hasTxHash: boolean): Tr
     ...(error_code !== undefined && { error_code }),
     ...(error_name !== undefined && { error_name }),
     ...(revert && {
-      revert_reason: revertReasonForReporting(revert),
-      revert_has_copy: hasRevertCopy(revert)
+      revert_reason: revert.reason,
+      revert_has_copy: revert.hasCopy
     })
   };
 }

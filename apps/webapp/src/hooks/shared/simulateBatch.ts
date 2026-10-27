@@ -119,15 +119,6 @@ function returnedNothingDespiteOutputs(call: Call, returnData: Hex): boolean {
   return !!item && item.type === 'function' && item.outputs.length > 0;
 }
 
-/**
- * The revert of a failed sub-call, decoded with that call's own ABI so custom errors
- * read by name. viem falls back to the built-in `Error(string)` and `Panic(uint)`
- * shapes on its own, and anything it can't decode keeps its raw selector.
- */
-function decodeSubCallRevert(call: Call, returnData: Hex): DecodedRevert | undefined {
-  return decodeRevertData(returnData, 'abi' in call && call.abi ? call.abi : []);
-}
-
 function describeRevert(revert: DecodedRevert | undefined): string {
   if (!revert) return 'reverted without a reason';
   return revert.kind === 'unknown' ? `reverted with data ${revert.reason}` : revert.reason;
@@ -261,7 +252,8 @@ export async function simulateBatch({
   results.forEach((result, index) => {
     const call = calls[index];
     if (!result.success) {
-      const revert = decodeSubCallRevert(call, result.returnData);
+      // Decoded with the call's own ABI, so custom errors read by name.
+      const revert = decodeRevertData(result.returnData, 'abi' in call && call.abi ? call.abi : []);
       throw new BatchSimulationError(
         `Batch simulation: ${describeCall(call, index)} ${describeRevert(revert)}`,
         {

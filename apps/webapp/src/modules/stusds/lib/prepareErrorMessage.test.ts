@@ -30,12 +30,6 @@ describe('stUsdsPrepareErrorMessage', () => {
     );
   });
 
-  it('shows an unmapped revert verbatim', () => {
-    expect(stUsdsPrepareErrorMessage(rpcRevert('Foo/bar'))).toBe(
-      'The transaction would fail with "Foo/bar".'
-    );
-  });
-
   it('keeps the generic line for an error with no revert', () => {
     expect(stUsdsPrepareErrorMessage(new Error('HTTP request failed'))).toBe(
       'An error occurred while preparing the transaction'

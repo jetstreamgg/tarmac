@@ -6,10 +6,9 @@ import { stUsdsRevertMessages } from './contracts/stUsds';
 import { tokenInputRevertReasons } from './contracts/tokens';
 import type { RevertMessageMap } from './contracts/types';
 import { vatInputRevertReasons, vatRevertMessages } from './contracts/vat';
-import { decodeRevert, type DecodedRevert } from './decodeRevert';
+import { causeChain, decodeRevert, type DecodedRevert } from './decodeRevert';
 
-export { decodeRevert, decodeRevertData, type DecodedRevert } from './decodeRevert';
-export type { RevertMessageMap } from './contracts/types';
+export { decodeRevert, type DecodedRevert } from './decodeRevert';
 
 /**
  * Every contract in `hooks/contracts.ts` (mainnet and L2), with the copy for
@@ -87,20 +86,14 @@ export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | 
 };
 
 /**
- * Contracts the app calls that `hooks/contracts.ts` doesn't list (a module's
- * own ABI: Pendle's router, a Morpho vault, …), keyed by a name of their own.
+ * Every mapped reason, flattened, plus Solidity's own `Panic` codes (any
+ * contract can raise those). Reasons carry their contract's prefix, so they
+ * don't collide.
  */
-export const moduleRevertMessages: Readonly<Record<string, RevertMessageMap>> = {};
-
-/** Reverts any contract can raise: Solidity's own `Panic` codes. */
-export const builtInRevertMessages: RevertMessageMap = panicRevertMessages;
-
-/** Every mapped reason, flattened. Reasons carry their contract's prefix, so they don't collide. */
 const revertMessageByReason: RevertMessageMap = Object.assign(
   {},
   ...Object.values(contractRevertMessages).filter((map): map is RevertMessageMap => map !== null),
-  ...Object.values(moduleRevertMessages),
-  builtInRevertMessages
+  panicRevertMessages
 );
 
 /**
@@ -111,13 +104,10 @@ const revertMessageByReason: RevertMessageMap = Object.assign(
  * reasons included, so a new contract's reasons don't need listing here to be
  * seen — only to be silenced.
  */
-export const inputRevertReasons: ReadonlySet<string> = new Set([
+const inputRevertReasons: ReadonlySet<string> = new Set([
   ...tokenInputRevertReasons,
   ...vatInputRevertReasons
 ]);
-
-/** Whether a revert is one the user's own input caused (see `inputRevertReasons`). */
-export const isInputRevert = (revert: DecodedRevert): boolean => inputRevertReasons.has(revert.reason);
 
 /**
  * A reason fit for a Sentry tag or fingerprint. Most reasons are constants, but
@@ -126,7 +116,7 @@ export const isInputRevert = (revert: DecodedRevert): boolean => inputRevertReas
  * tag and split one revert into an issue per user. Long hex runs (addresses,
  * hashes — not 4-byte selectors) and long numbers are blanked out.
  */
-export function revertReasonForReporting(revert: DecodedRevert): string {
+function revertReasonForReporting(revert: DecodedRevert): string {
   // One pass, so a short hex token (a 4-byte selector) is matched whole and
   // kept: its digits never reach the long-number rule.
   return revert.reason.replace(/0x[0-9a-fA-F]+|\d{6,}/g, token =>
@@ -134,26 +124,31 @@ export function revertReasonForReporting(revert: DecodedRevert): string {
   );
 }
 
-/** Whether the registry has copy for a revert (no translation: safe before a locale is active). */
-export const hasRevertCopy = (revert: DecodedRevert): boolean =>
-  Object.hasOwn(revertMessageByReason, revert.reason);
+// Own keys only: a reason like "constructor" must not resolve to Object.prototype.
+const hasRevertCopy = (revert: DecodedRevert): boolean => Object.hasOwn(revertMessageByReason, revert.reason);
 
-/** The curated copy for a decoded revert, if the registry has one. */
-export function knownRevertMessage(revert: DecodedRevert): string | undefined {
-  // Own keys only: a reason like "constructor" must not resolve to Object.prototype.
-  const descriptor = hasRevertCopy(revert) ? revertMessageByReason[revert.reason] : undefined;
-  return descriptor ? i18n._(descriptor) : undefined;
+/**
+ * The revert in an error, as analytics and Sentry report it: the reason
+ * scrubbed for reporting, whether the registry has copy for it (no
+ * translation: safe before a locale is active), and whether the user's own
+ * input caused it (see `inputRevertReasons`).
+ */
+export function revertReport(
+  error: unknown
+): { reason: string; kind: DecodedRevert['kind']; hasCopy: boolean; isInput: boolean } | undefined {
+  const revert = decodeRevert(error);
+  if (!revert) return undefined;
+  return {
+    reason: revertReasonForReporting(revert),
+    kind: revert.kind,
+    hasCopy: hasRevertCopy(revert),
+    isInput: inputRevertReasons.has(revert.reason)
+  };
 }
 
 /** A revert that happened on-chain, as opposed to one caught in simulation. */
-const isMinedRevert = (error: unknown): boolean => {
-  let e: unknown = error;
-  for (let i = 0; i < 12 && e; i++) {
-    if ((e as { name?: unknown }).name === 'TransactionRevertedError') return true;
-    e = (e as { cause?: unknown }).cause;
-  }
-  return false;
-};
+const isMinedRevert = (error: unknown): boolean =>
+  causeChain(error).some(e => (e as { name?: unknown }).name === 'TransactionRevertedError');
 
 /**
  * What to tell the user about a failure that is a contract revert: the
@@ -165,8 +160,7 @@ const isMinedRevert = (error: unknown): boolean => {
 export function revertMessage(error: unknown): string | undefined {
   const revert = decodeRevert(error);
   if (!revert) return undefined;
-  const known = knownRevertMessage(revert);
-  if (known) return known;
+  if (hasRevertCopy(revert)) return i18n._(revertMessageByReason[revert.reason]);
   return isMinedRevert(error)
     ? t`The transaction reverted with "${revert.reason}".`
     : t`The transaction would fail with "${revert.reason}".`;

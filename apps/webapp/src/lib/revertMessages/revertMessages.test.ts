@@ -3,14 +3,9 @@ import { i18n } from '@lingui/core';
 import { encodeErrorResult } from 'viem';
 import { contracts, l2Contracts } from '@/hooks/contracts';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
-import {
-  builtInRevertMessages,
-  contractRevertMessages,
-  isInputRevert,
-  moduleRevertMessages,
-  revertMessage,
-  revertReasonForReporting
-} from '.';
+import { panicRevertMessages } from './contracts/panic';
+import type { DecodedRevert } from './decodeRevert';
+import { contractRevertMessages, revertMessage, revertReport } from '.';
 
 beforeAll(() => {
   i18n.load('en', {});
@@ -27,24 +22,25 @@ const revertData = (reason: string) =>
 const rpcRevert = (reason: string) =>
   Object.assign(new Error('execution reverted'), { data: revertData(reason) });
 
+/** The report for an already-decoded revert (an error carrying it, like BatchSimulationError). */
+const report = (revert: DecodedRevert) => revertReport({ revert });
+const reportedReason = (revert: DecodedRevert) => report(revert)?.reason;
+const isInputRevert = (revert: DecodedRevert) => report(revert)?.isInput;
+
 describe('contractRevertMessages coverage', () => {
   // The guard behind the convention: a contract added to hooks/contracts.ts
   // must get an entry here — its reverts mapped, or `null` on purpose.
-  it('has an entry for every contract in hooks/contracts.ts', () => {
-    const names = [...contracts, ...l2Contracts].map(c => c.name);
-    const missing = names.filter(name => !(name in contractRevertMessages));
-    expect(missing, 'add these to contractRevertMessages in lib/revertMessages/index.ts').toEqual([]);
-  });
-
-  it('lists no contract that hooks/contracts.ts no longer has', () => {
-    const names = new Set([...contracts, ...l2Contracts].map(c => c.name));
-    const stale = Object.keys(contractRevertMessages).filter(name => !names.has(name));
-    expect(stale).toEqual([]);
+  it('has an entry for exactly the contracts in hooks/contracts.ts', () => {
+    const names = [...contracts, ...l2Contracts].map(c => c.name).sort();
+    expect(
+      Object.keys(contractRevertMessages).sort(),
+      'contractRevertMessages in lib/revertMessages/index.ts must list every contract, and only those'
+    ).toEqual(names);
   });
 
   it('never maps the same reason in two places', () => {
     const seen = new Map<string, string>();
-    const maps = { ...contractRevertMessages, ...moduleRevertMessages, builtIn: builtInRevertMessages };
+    const maps = { ...contractRevertMessages, panic: panicRevertMessages };
     for (const [contract, map] of Object.entries(maps)) {
       for (const reason of Object.keys(map ?? {})) {
         expect(seen.get(reason), `${reason} mapped by ${seen.get(reason)} and ${contract}`).toBeUndefined();
@@ -76,16 +72,14 @@ describe('revertMessage', () => {
 
   it('scrubs addresses and long numbers from the reason it reports', () => {
     const reason = `AccessControl: account 0x${'ab'.repeat(20)} is missing role 0x${'00'.repeat(32)}`;
-    expect(revertReasonForReporting({ reason, kind: 'error' })).toBe(
-      'AccessControl: account 0x… is missing role 0x…'
-    );
-    expect(revertReasonForReporting({ reason: '0x1425ea42', kind: 'unknown' })).toBe('0x1425ea42');
+    expect(reportedReason({ reason, kind: 'error' })).toBe('AccessControl: account 0x… is missing role 0x…');
+    expect(reportedReason({ reason: '0x1425ea42', kind: 'unknown' })).toBe('0x1425ea42');
     // A selector made of digits stays whole: it identifies the error.
-    expect(revertReasonForReporting({ reason: '0x12345678', kind: 'unknown' })).toBe('0x12345678');
-    expect(revertReasonForReporting({ reason: 'Pool/amount-1234567-too-big', kind: 'error' })).toBe(
+    expect(reportedReason({ reason: '0x12345678', kind: 'unknown' })).toBe('0x12345678');
+    expect(reportedReason({ reason: 'Pool/amount-1234567-too-big', kind: 'error' })).toBe(
       'Pool/amount-…-too-big'
     );
-    expect(revertReasonForReporting({ reason: 'LockstakeEngine/urn-unsafe', kind: 'error' })).toBe(
+    expect(reportedReason({ reason: 'LockstakeEngine/urn-unsafe', kind: 'error' })).toBe(
       'LockstakeEngine/urn-unsafe'
     );
   });

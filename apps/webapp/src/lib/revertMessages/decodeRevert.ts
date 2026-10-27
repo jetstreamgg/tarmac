@@ -1,4 +1,11 @@
-import { BaseError, ContractFunctionRevertedError, decodeErrorResult, type Abi, type Hex } from 'viem';
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  decodeErrorResult,
+  type Abi,
+  type DecodeErrorResultReturnType,
+  type Hex
+} from 'viem';
 
 /**
  * A contract revert, reduced to the one string that identifies it: the
@@ -26,6 +33,18 @@ const errorReason = (value: unknown): DecodedRevert | undefined => {
   return reason ? { reason: clamp(reason), kind: 'error' } : undefined;
 };
 
+/** viem's decoded error, reduced to its registry key. */
+function fromDecoded({
+  errorName,
+  args
+}: Pick<DecodeErrorResultReturnType, 'errorName' | 'args'>): DecodedRevert | undefined {
+  if (errorName === 'Error' && args?.length === 1) return errorReason(args[0]);
+  if (errorName === 'Panic' && args?.length === 1) {
+    return { reason: `Panic(0x${BigInt(args[0] as bigint).toString(16)})`, kind: 'panic' };
+  }
+  return { reason: errorName, kind: 'custom' };
+}
+
 /**
  * Decodes raw revert data. viem knows the built-in `Error(string)` and
  * `Panic(uint256)` shapes on its own; `abi` names custom errors. Data that
@@ -34,12 +53,7 @@ const errorReason = (value: unknown): DecodedRevert | undefined => {
 export function decodeRevertData(data: Hex, abi: Abi | readonly unknown[] = []): DecodedRevert | undefined {
   if (data === '0x' || data.length < 10) return undefined;
   try {
-    const decoded = decodeErrorResult({ abi: abi as Abi, data });
-    if (decoded.errorName === 'Error' && decoded.args?.length === 1) return errorReason(decoded.args[0]);
-    if (decoded.errorName === 'Panic' && decoded.args?.length === 1) {
-      return { reason: `Panic(0x${BigInt(decoded.args[0] as bigint).toString(16)})`, kind: 'panic' };
-    }
-    return { reason: decoded.errorName, kind: 'custom' };
+    return fromDecoded(decodeErrorResult({ abi: abi as Abi, data }));
   } catch {
     return { reason: data.slice(0, 10), kind: 'unknown' };
   }
@@ -54,14 +68,8 @@ type WithRevert = { revert?: DecodedRevert };
  * reverted", "Internal JSON-RPC error."), which is no reason at all.
  */
 function fromRevertedError(e: ContractFunctionRevertedError): DecodedRevert | undefined {
-  const { data, signature } = e;
-  if (data?.errorName === 'Error' && data.args?.length === 1) return errorReason(data.args[0]);
-  if (data?.errorName === 'Panic' && data.args?.length === 1) {
-    return { reason: `Panic(0x${BigInt(data.args[0] as bigint).toString(16)})`, kind: 'panic' };
-  }
-  if (data?.errorName) return { reason: data.errorName, kind: 'custom' };
-  if (signature) return { reason: signature, kind: 'unknown' };
-  return undefined;
+  if (e.data?.errorName) return fromDecoded(e.data);
+  return e.signature ? { reason: e.signature, kind: 'unknown' } : undefined;
 }
 
 /**
@@ -107,6 +115,13 @@ function reasonFromText(e: unknown): DecodedRevert | undefined {
   return undefined;
 }
 
+/** An error and its causes, outermost first (bounded: a cause chain can loop). */
+export function causeChain(error: unknown): unknown[] {
+  const chain: unknown[] = [];
+  for (let e = error, i = 0; i < 12 && e; i++, e = (e as { cause?: unknown }).cause) chain.push(e);
+  return chain;
+}
+
 /**
  * The contract revert inside an error, wherever along the cause chain it sits.
  *
@@ -121,14 +136,10 @@ function reasonFromText(e: unknown): DecodedRevert | undefined {
  * `undefined`: there is no reason to show.
  */
 export function decodeRevert(error: unknown): DecodedRevert | undefined {
-  const chain: unknown[] = [];
-  let e: unknown = error;
-  for (let i = 0; i < 12 && e; i++) {
-    // Nothing under it is about the user's calls.
-    if (isNonRevertBatchFailure(e)) break;
-    chain.push(e);
-    e = (e as { cause?: unknown })?.cause;
-  }
+  const links = causeChain(error);
+  // Nothing under a non-revert batch failure is about the user's calls.
+  const cut = links.findIndex(isNonRevertBatchFailure);
+  const chain = cut < 0 ? links : links.slice(0, cut);
 
   for (const link of chain) {
     const carried = (link as WithRevert)?.revert;

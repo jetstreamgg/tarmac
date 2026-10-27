@@ -1,5 +1,5 @@
 import posthog from 'posthog-js';
-import { decodeRevert, isInputRevert, hasRevertCopy, revertReasonForReporting } from '@/lib/revertMessages';
+import { revertReport } from '@/lib/revertMessages';
 import { POSTHOG_ENABLED } from '../PostHogProvider';
 import { AppEvents, getViewport, safeCapture } from '../constants';
 
@@ -24,17 +24,16 @@ export function resetPrepareRevertTracking(): void {
  * request, a reasonless revert) aren't captured.
  */
 export function trackPrepareReverted(error: unknown, chainId: number | undefined): void {
-  if (!POSTHOG_ENABLED || !error) return;
-  const revert = decodeRevert(error);
-  if (!revert || isInputRevert(revert)) return;
-  const reason = revertReasonForReporting(revert);
-  const key = `${chainId}:${reason}`;
+  if (!POSTHOG_ENABLED) return;
+  const revert = revertReport(error);
+  if (!revert || revert.isInput) return;
+  const key = `${chainId}:${revert.reason}`;
   if (captured.has(key)) return;
   captured.add(key);
   safeCapture(posthog, AppEvents.TRANSACTION_PREPARE_REVERTED, {
-    revert_reason: reason,
+    revert_reason: revert.reason,
     revert_kind: revert.kind,
-    revert_has_copy: hasRevertCopy(revert),
+    revert_has_copy: revert.hasCopy,
     ...(chainId !== undefined && { chain_id: chainId }),
     viewport: getViewport()
   });

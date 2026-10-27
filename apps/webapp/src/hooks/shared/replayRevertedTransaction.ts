@@ -1,4 +1,4 @@
-import type { Hash, PublicClient } from 'viem';
+import { withTimeout, type Hash, type PublicClient } from 'viem';
 import { decodeRevert, type DecodedRevert } from '@/lib/revertMessages/decodeRevert';
 
 /** How long the replay may hold up the failure screen before it gives up. */
@@ -39,15 +39,9 @@ export async function replayRevertedTransaction(
       return decodeRevert(error);
     }
   };
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<undefined>(resolve => {
-    timer = setTimeout(() => resolve(undefined), REPLAY_TIMEOUT_MS);
-  });
   try {
-    return await Promise.race([replay(), timeout]);
+    return await withTimeout(replay, { timeout: REPLAY_TIMEOUT_MS });
   } catch {
     return undefined;
-  } finally {
-    clearTimeout(timer);
   }
 }
