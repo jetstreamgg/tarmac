@@ -9,8 +9,6 @@ import {
   TOKENS,
   useNow,
   usePendleMarketsApiData,
-  usePendleMaturedPositionEarnings,
-  usePendleRedeemPreview,
   usePendleUserPtBalances,
   useTokenBalance,
   type PendleMarketConfig
@@ -219,15 +217,11 @@ function PendleMaturedNoPositionCard({
 }
 
 /**
- * Matured-position card for the detail page (Figma 2193:73881): the claimable
- * figure over Accrued / Mature date, the ready-to-claim line, and a single
- * Claim CTA opening the redeem modal. Same content the Portfolio's
- * `PendleMaturedPositionCard` carries in the carousel's chrome — this one
- * wears the detail page's ProductPositionCard.
- *
- * The comp labels the accrued figure "Earned"; the app's copy standard renames
- * that family ("Already earned" → "Accrued to date"), so the label follows the
- * standard, as the active card's does.
+ * Matured-position card for the detail page. Mirrors the live position card
+ * below, so a holder sees the same figures either side of maturity: the PT
+ * balance, Accrued to date / You'll claim, Claim date / Fixed rate (now
+ * "Ended"), then the ready-to-claim line and a single Claim CTA opening the
+ * redeem modal.
  */
 function PendleMaturedCard({
   market,
@@ -238,15 +232,15 @@ function PendleMaturedCard({
   ptBalance: bigint;
   maturityLabel: string;
 }) {
-  const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
-  const { earnings, currency } = usePendleMaturedPositionEarnings(market, ptBalance);
-  // The receive amount (post SY-rate conversion); the PT balance stands in
-  // until the on-chain preview resolves — same decimals, transient gap.
-  const claimAmount = parseFloat(
-    formatUnits((previewAmount as bigint | undefined) ?? ptBalance, market.underlyingDecimals)
-  );
-  // The preview redeems to the underlying (sUSDS shares, not USDS, on the
-  // pegged market), so it carries the underlying symbol — as on the Portfolio card.
+  // Same source as the live card, so the figure carries across maturity.
+  // Pendle keeps reporting expired positions; after the claim they move to
+  // realised gain.
+  const walletEarnings = useWalletEarnings();
+  const accrued = earningsForPosition(walletEarnings, `fixed-${market.marketAddress.toLowerCase()}`);
+  const positionValue = parseFloat(formatUnits(ptBalance, market.underlyingDecimals));
+  // Same figure the live card promises: 1 PT redeems 1 USDS on pegged markets.
+  const claimAmount = formatNumber(positionValue, { maxDecimals: 2 });
+  const claimSymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
 
   // Claim stays enabled: off-chain the click switches the wallet first, then
   // opens (usePendleRedeemModal), and the modal explains a quote Pendle can't
@@ -259,41 +253,35 @@ function PendleMaturedCard({
       data-testid="pendle-matured-position-card"
       hero={
         <PositionHero
-          pillSymbol={market.underlyingSymbol}
-          balanceSymbol={market.underlyingSymbol}
-          amount={claimAmount}
+          pillSymbol={`PT-${market.underlyingSymbol}`}
+          balanceSymbol={`PT-${market.underlyingSymbol}`}
+          amount={positionValue}
         />
       }
       stats={
         <>
           <ProductStatPair grow>
-            <ProductStat label={<Trans>Accrued</Trans>}>
-              {earnings !== undefined && currency ? (
-                <>
-                  <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
-                  {formatNumber(earnings, { maxDecimals: 2 })}
-                  <TokenIcon
-                    token={{ symbol: currency }}
-                    width={12}
-                    showChainIcon={false}
-                    className="h-3 w-3 shrink-0"
-                  />
-                </>
-              ) : (
-                <span className="text-fgSecondary">{NO_VALUE}</span>
-              )}
+            <AccruedToDateStat accrued={accrued} testId="pendle-accrued-to-date" />
+            <ProductStat label={<Trans>You&apos;ll claim</Trans>}>
+              <TrendingUp className="text-bullish h-3 w-3 shrink-0" />
+              {claimAmount}
+              <TokenIcon
+                token={{ symbol: claimSymbol }}
+                width={12}
+                showChainIcon={false}
+                className="h-3 w-3 shrink-0"
+              />
             </ProductStat>
-            <ProductStat label={<Trans>Mature date</Trans>}>{maturityLabel}</ProductStat>
+          </ProductStatPair>
+          <ProductStatPair grow>
+            <ProductStat label={<Trans>Claim date</Trans>}>{maturityLabel}</ProductStat>
+            <ProductStat label={<Trans>Fixed rate</Trans>}>
+              <Trans>Ended</Trans>
+              <RateInfo type="fixedYield" size={12} />
+            </ProductStat>
           </ProductStatPair>
           <Text variant="small" className="text-fgSecondary">
-            {earnings !== undefined && earnings > 0 && currency ? (
-              <Trans>
-                Matured on {maturityLabel}. Your deposit and {formatNumber(earnings, { maxDecimals: 2 })}{' '}
-                {currency} in yield are ready to claim.
-              </Trans>
-            ) : (
-              <Trans>Matured on {maturityLabel}. Your deposit is ready to claim.</Trans>
-            )}
+            <Trans>Matured on {maturityLabel}. Your deposit and yield are ready to claim.</Trans>
           </Text>
         </>
       }
@@ -304,7 +292,7 @@ function PendleMaturedCard({
               variant="primary"
               size="l"
               onClick={openRedeemModal}
-              disabled={switchBlocked || !isRedeemable || previewLoading}
+              disabled={switchBlocked || !isRedeemable}
               data-testid="pendle-matured-redeem-button"
             >
               <Trans>Claim</Trans>

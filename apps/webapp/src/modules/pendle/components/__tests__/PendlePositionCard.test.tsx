@@ -28,8 +28,7 @@ const h = vi.hoisted(() => ({
   // The API's expiry stat — display-only (dates, progress). The matured
   // branch keys on the registry's market.expiry, so these specs reach it by
   // rendering a market config with a past expiry instead.
-  expirySec: undefined as number | undefined,
-  earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined }
+  expirySec: undefined as number | undefined
 }));
 
 const openSupply = vi.fn();
@@ -73,8 +72,7 @@ vi.mock('@/hooks', async importOriginal => {
       dataSources: []
     }),
     useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false }),
-    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
-    usePendleMaturedPositionEarnings: () => h.earnings
+    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false })
   };
 });
 
@@ -157,7 +155,6 @@ describe('PendlePositionCard', () => {
     h.ptBalance = 0n;
     h.walletBalance = 0n;
     h.expirySec = undefined;
-    h.earnings = { earnings: 184.8, currency: 'USDS' };
   });
 
   it('shows the supply CTA card with the current rate when the user has no position', () => {
@@ -222,22 +219,24 @@ describe('PendlePositionCard', () => {
     // market.expiry); the API stat only feeds display labels.
     const MATURED_MARKET: PendleMarketConfig = { ...MARKET, expiry: MATURED_SEC };
 
-    it('shows the claim card with the accrued figure and ready-to-claim copy', () => {
+    it('mirrors the live card: PT hero, accrued, claim amount and an ended rate', () => {
       h.expirySec = MATURED_SEC;
       h.ptBalance = 100_184n * 10n ** 18n;
       renderCard(MATURED_MARKET);
 
       const card = screen.getByTestId('pendle-matured-position-card');
       expect(card.textContent).toContain('100,184');
-      expect(card.textContent).toContain('Accrued');
-      expect(card.textContent).toContain('184.8');
-      expect(card.textContent).toContain('ready to claim');
-      // The figure is the redeem preview, denominated in the underlying — not
-      // USDS, even on a pegged market.
-      const heroSymbols = Array.from(card.querySelectorAll('[data-testid="token-icon"]'))
-        .slice(0, 2)
-        .map(el => el.getAttribute('data-symbol'));
-      expect(heroSymbols).toEqual(['USDG', 'USDG']);
+      expect(card.textContent).toContain('Accrued to date');
+      expect(screen.getByTestId('pendle-accrued-to-date')).toBeTruthy();
+      expect(card.textContent).toContain("You'll claim");
+      expect(card.textContent).toContain('Ended');
+      expect(card.textContent).toContain('Your deposit and yield are ready to claim');
+      // Same symbols as the live card: the PT on the hero, USDS (pegged) on the claim.
+      const symbols = Array.from(card.querySelectorAll('[data-testid="token-icon"]')).map(el =>
+        el.getAttribute('data-symbol')
+      );
+      expect(symbols).toContain('PT-USDG');
+      expect(symbols).toContain('USDS');
       // The active-position actions are gone — claiming is the only move.
       expect(screen.queryByTestId('pendle-position-supply')).toBeNull();
       expect(screen.queryByTestId('pendle-position-withdraw')).toBeNull();
@@ -250,17 +249,6 @@ describe('PendlePositionCard', () => {
 
       fireEvent.click(screen.getByTestId('pendle-matured-redeem-button'));
       expect(openRedeemModal).toHaveBeenCalledTimes(1);
-    });
-
-    it('falls back to the deposit-only line when earnings are unavailable', () => {
-      h.expirySec = MATURED_SEC;
-      h.ptBalance = 100_184n * 10n ** 18n;
-      h.earnings = { earnings: undefined, currency: undefined };
-      renderCard(MATURED_MARKET);
-
-      const card = screen.getByTestId('pendle-matured-position-card');
-      expect(card.textContent).toContain('Your deposit is ready to claim');
-      expect(card.textContent).not.toContain('in yield');
     });
 
     it('shows the closed-market state — never the supply pitch — when a connected user holds nothing', () => {
