@@ -88,16 +88,16 @@ describe('PendleMaturedPositionCard', () => {
     vi.clearAllMocks();
   });
 
-  it('shows the matured badge, position and ready-to-withdraw copy', () => {
+  it('shows the matured badge, position and ready-to-claim copy', () => {
     renderCard();
 
     const card = screen.getByTestId('pendle-matured-position-card');
     expect(screen.getByTestId('pendle-matured-badge').textContent).toContain('Matured');
-    expect(card.textContent).toContain('Pendle sUSDS');
+    expect(card.textContent).toContain('Fixed Yield');
     expect(card.textContent).toContain('100,184');
     expect(card.textContent).toContain('18 Jun 2026');
     expect(card.textContent).toContain('184.8');
-    expect(card.textContent).toContain('ready to withdraw');
+    expect(card.textContent).toContain('ready to claim');
   });
 
   it('opens the redeem modal from Claim', () => {
@@ -139,7 +139,7 @@ describe('PendleMaturedPositionCard', () => {
     renderCard();
 
     const card = screen.getByTestId('pendle-matured-position-card');
-    expect(card.textContent).toContain('Your deposit is ready to withdraw');
+    expect(card.textContent).toContain('Your deposit is ready to claim');
     expect(card.textContent).not.toContain('in yield');
   });
 });
