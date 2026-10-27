@@ -100,6 +100,12 @@ describe('CellValue', () => {
     expect(rolling()).toEqual(['4', '8', '6']);
   });
 
+  it("draws Circle's logo before a CCTP value", () => {
+    render(<CellValue cell={{ kind: 'single', label: 'Bridge type', value: 'CCTP', logo: 'cctp' }} />);
+    expect(screen.getByTestId('cell-logo-cctp')).toBeTruthy();
+    expect(screen.getByText('CCTP')).toBeTruthy();
+  });
+
   it('shows a value without digits as plain text', () => {
     render(<CellValue cell={{ kind: 'single', label: 'Network', value: 'Ethereum' }} />);
     // The odometer waits, empty, so a figure that replaces the text rolls in.

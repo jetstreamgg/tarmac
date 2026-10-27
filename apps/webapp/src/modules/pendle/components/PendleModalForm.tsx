@@ -27,7 +27,7 @@ import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
 import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
-import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
+import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
@@ -101,7 +101,7 @@ export function PendleModalForm({
   const [selectedToken, setSelectedToken] = useState<Token>(tokenOptions[0]);
 
   // Pendle markets are mainnet-only; balances follow the fork in dev mode.
-  const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
+  const balanceChainId = familyMainnetId(chainId);
   const selectedAddress = selectedToken.address[mainnet.id] as `0x${string}`;
   const selectedDecimals = getTokenDecimals(selectedToken, balanceChainId);
   // PT decimals match the underlying's (Pendle convention).

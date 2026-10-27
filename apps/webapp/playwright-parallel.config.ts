@@ -81,6 +81,14 @@ export default defineConfig({
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]
+    },
+    {
+      name: 'bridge',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 }
+      },
+      testMatch: ['**/bridge-native*.spec.ts', '**/bridge-cctp*.spec.ts']
     }
   ],
 

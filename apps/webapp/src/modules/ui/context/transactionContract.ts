@@ -224,6 +224,8 @@ export type TransactionConfig = {
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
+  /** Whether the steps go out as one wallet bundle; unset, the modal reads the batch toggle and the wallet. */
+  bundled?: boolean;
   /**
    * User-readable engine/prepare failure rendered above the review screen's
    * confirm button (the entry screen reads `entry.errorMessage` instead — the
@@ -312,6 +314,7 @@ export type LiveModalUpdate = Partial<
     | 'transactionScreenContent'
     | 'rightHeaderComponent'
     | 'confirmDisabled'
+    | 'bundled'
     | 'errorMessage'
     | 'onConfirm'
     | 'onSecondaryConfirm'
@@ -335,13 +338,15 @@ export type LiveModalUpdate = Partial<
  * WriteHookParams and BatchWriteHookParams. `hash` is the on-chain tx hash where
  * one exists; for EIP-5792 batches it is undefined until a receipt resolves (see
  * the EIP-5792 rule above). `blockNumber` on success is the block of the last
- * receipt, which the history refresh waits for the indexer to reach.
+ * receipt, which the history refresh waits for the indexer to reach, and
+ * `bundleTxHashes` every receipt's hash of a batch the wallet ran as several
+ * transactions, in order.
  */
 export type TxCallbacks = {
   /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
   onMutate: (variables?: TxMutateVariables) => void;
   onStart: (hash?: string) => void;
-  onSuccess: (hash?: string, blockNumber?: bigint) => void;
+  onSuccess: (hash?: string, blockNumber?: bigint, bundleTxHashes?: string[]) => void;
   onError: (error: Error, hash?: string) => void;
 };
 

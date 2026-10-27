@@ -1,6 +1,5 @@
 import { useChainId, useReadContract } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
-import { isTestnetId, WAD } from '@/utils';
+import { familyMainnetId, WAD } from '@/utils';
 import type { PendleMarketConfig } from './pendle';
 
 const SY_PREVIEW_REDEEM_ABI = [
@@ -46,7 +45,7 @@ const YT_PYINDEX_ABI = [
  */
 export function usePendleRedeemPreview(market: PendleMarketConfig, ptBalance: bigint | undefined) {
   const chainId = useChainId();
-  const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
+  const balanceChainId = familyMainnetId(chainId);
   const enabled = ptBalance !== undefined && ptBalance > 0n;
 
   const { data: pyIndex, isLoading: pyIndexLoading } = useReadContract({

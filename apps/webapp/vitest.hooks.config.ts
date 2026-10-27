@@ -14,7 +14,7 @@ export default defineConfig({
     environment: 'happy-dom',
     testTimeout: 90000,
     hookTimeout: 30000,
-    setupFiles: ['./test/hooks/setup.ts'],
+    setupFiles: ['./src/test/blankForkEnv.ts', './test/hooks/setup.ts'],
     globalSetup: ['./test/hooks/globalSetup.ts'],
     pool: 'forks',
     maxWorkers: 1
