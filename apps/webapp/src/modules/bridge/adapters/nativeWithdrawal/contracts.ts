@@ -1,5 +1,10 @@
 import { parseAbi, type Address } from 'viem';
-import type { OpStackNetworkId } from '../nativeDeposit/contracts';
+import {
+  ARBITRUM_DEPOSIT,
+  OP_STACK_DEPOSIT,
+  type NativeDepositNetwork,
+  type OpStackNetworkId
+} from '../nativeDeposit/contracts';
 
 /** Gas the L1 relay must forward to the L1 bridge's release, as in every past Sky withdrawal; too little leaves a failed message to retry. */
 export const OP_STACK_WITHDRAWAL_MIN_GAS_LIMIT = 500_000;
@@ -46,6 +51,12 @@ export const l2BridgeGateAbi = parseAbi([
   'function isOpen() view returns (uint256)',
   'function maxWithdraws(address l2Token) view returns (uint256)'
 ]);
+
+/** The L2 contract a withdrawal from `network` approves and calls, and the L2 USDS it burns. */
+export const l2WithdrawalBridge = (network: NativeDepositNetwork): { bridge: Address; l2Usds: Address } =>
+  network === 'arbitrum'
+    ? { bridge: ARBITRUM_DEPOSIT.l2Gateway, l2Usds: ARBITRUM_DEPOSIT.l2Usds }
+    : { bridge: OP_STACK_DEPOSIT[network].l2TokenBridge, l2Usds: OP_STACK_DEPOSIT[network].l2Usds };
 
 export const opStackL2TokenBridgeAbi = parseAbi([
   'function bridgeERC20To(address _localToken, address _remoteToken, address _to, uint256 _amount, uint32 _minGasLimit, bytes _extraData)',
