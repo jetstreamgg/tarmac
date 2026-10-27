@@ -26,7 +26,6 @@ const MARKET: PendleMarketConfig = {
 const h = vi.hoisted(() => ({
   chainId: 1,
   earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined },
-  isPrepared: true,
   switchBlocked: false
 }));
 
@@ -51,7 +50,6 @@ vi.mock('../../hooks/usePendleRedeemModal', () => ({
   usePendleRedeemModal: () => ({
     openRedeemModal,
     isRedeemable: true,
-    isPrepared: h.isPrepared,
     onPendleChain: h.chainId === 1,
     switchBlocked: h.switchBlocked,
     ptBalance: 0n
@@ -80,7 +78,6 @@ describe('PendleMaturedPositionCard', () => {
     h.chainId = 1;
     h.switchBlocked = false;
     h.earnings = { earnings: 184.8, currency: 'USDS' };
-    h.isPrepared = true;
   });
 
   afterEach(() => {
@@ -114,9 +111,15 @@ describe('PendleMaturedPositionCard', () => {
     expect(onViewDetails).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps Claim enabled without a ready quote — the modal explains a failure', () => {
+    renderCard();
+
+    expect((screen.getByTestId('pendle-matured-redeem-button') as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByTestId('pendle-redeem-quote-error')).toBeNull();
+  });
+
   it('keeps Claim enabled off the pendle chain — the click switches the wallet first', () => {
     h.chainId = 8453; // Base
-    h.isPrepared = false; // prepare may not resolve off-chain; it must not gate here
     renderCard();
 
     expect((screen.getByTestId('pendle-matured-redeem-button') as HTMLButtonElement).disabled).toBe(false);
