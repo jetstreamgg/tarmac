@@ -281,7 +281,7 @@ function PendleMaturedCard({
             </ProductStat>
           </ProductStatPair>
           <Text variant="small" className="text-fgSecondary">
-            <Trans>Matured on {maturityLabel}. Your deposit and yield are ready to claim.</Trans>
+            <Trans>Your position matured on {maturityLabel} and is ready to claim.</Trans>
           </Text>
         </>
       }

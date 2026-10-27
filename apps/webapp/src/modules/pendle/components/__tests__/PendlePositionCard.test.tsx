@@ -230,7 +230,7 @@ describe('PendlePositionCard', () => {
       expect(screen.getByTestId('pendle-accrued-to-date')).toBeTruthy();
       expect(card.textContent).toContain("You'll claim");
       expect(card.textContent).toContain('Ended');
-      expect(card.textContent).toContain('Your deposit and yield are ready to claim');
+      expect(card.textContent).toContain('Your position matured on');
       // Same symbols as the live card: the PT on the hero, USDS (pegged) on the claim.
       const symbols = Array.from(card.querySelectorAll('[data-testid="token-icon"]')).map(el =>
         el.getAttribute('data-symbol')
