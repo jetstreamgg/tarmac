@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getCallsStatus, getPublicClient } from '@wagmi/core';
+import { getCallsStatus, getPublicClient } from 'wagmi/actions';
 import type { Hex } from 'viem';
 import { useChains, useConfig } from 'wagmi';
 import { guardChainId } from '../model/networks';

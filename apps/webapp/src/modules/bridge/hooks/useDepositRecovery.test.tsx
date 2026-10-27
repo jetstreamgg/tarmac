@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('wagmi', () => ({ useConfig: () => ({}) }));
-vi.mock('@wagmi/core', () => ({
+vi.mock('wagmi/actions', () => ({
   getPublicClient: () => ({ getBlockNumber: async () => 100n })
 }));
 vi.mock('./usePendingScope', () => ({

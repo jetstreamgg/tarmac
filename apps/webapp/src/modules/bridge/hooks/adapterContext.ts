@@ -1,5 +1,5 @@
 import type { Config } from 'wagmi';
-import { getClient } from '@wagmi/core';
+import { getClient } from 'wagmi/actions';
 import { publicActions, type Client } from 'viem';
 import { forkL2ChainIds } from '@/data/wagmi/config/forkChains';
 import { chainId as chainIdMap } from '@/utils/chainId';

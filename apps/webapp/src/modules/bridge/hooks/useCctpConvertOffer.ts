@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Hex } from 'viem';
 import { useConfig } from 'wagmi';
-import { getPublicClient } from '@wagmi/core';
+import { getPublicClient } from 'wagmi/actions';
 import { useTokenBalance } from '@/hooks';
 import { L1_USDC } from '../adapters/cctp/contracts';
 import {

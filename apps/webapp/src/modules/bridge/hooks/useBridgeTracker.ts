@@ -1,5 +1,5 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { getCallsStatus } from '@wagmi/core';
+import { getCallsStatus } from 'wagmi/actions';
 import { useConfig } from 'wagmi';
 import { isTracked, pollIntervalMs } from '../model/pendingTransitions';
 import { bridgeChainId } from '../model/networks';

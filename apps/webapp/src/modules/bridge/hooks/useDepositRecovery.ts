@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Hex } from 'viem';
 import { useConfig } from 'wagmi';
-import { getCallsStatus, getPublicClient } from '@wagmi/core';
+import { getCallsStatus, getPublicClient } from 'wagmi/actions';
 import { discoverNativeDeposits } from '../adapters/nativeDeposit/discovery';
 import { getBridgeAdapter } from '../adapters/registry';
 import { executedSafeTxHashes } from '../adapters/safe';

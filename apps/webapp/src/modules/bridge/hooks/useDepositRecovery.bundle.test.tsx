@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('wagmi', () => ({ useConfig: () => ({}) }));
-vi.mock('@wagmi/core', () => {
+vi.mock('wagmi/actions', () => {
   const publicClient = (chainId: number) => ({
     getBlockNumber: async () => 100n,
     getBlock: chainId === 8453 ? mocks.baseGetBlock : mocks.getBlock

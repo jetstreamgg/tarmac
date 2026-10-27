@@ -19,7 +19,7 @@ vi.mock('wagmi', () => ({
   useChains: () => [{ id: 1 }],
   useConfig: () => ({})
 }));
-vi.mock('@wagmi/core', () => ({ getCallsStatus: mocks.getCallsStatus }));
+vi.mock('wagmi/actions', () => ({ getCallsStatus: mocks.getCallsStatus }));
 
 const SWAP_HASH = '0x' + 'ab'.repeat(32);
 let accountSeq = 0;

@@ -26,7 +26,7 @@ vi.mock('wagmi', () => ({
   useChains: () => mocks.chains,
   useConfig: () => ({})
 }));
-vi.mock('@wagmi/core', () => ({
+vi.mock('wagmi/actions', () => ({
   getCallsStatus: mocks.getCallsStatus,
   getPublicClient: mocks.getPublicClient
 }));

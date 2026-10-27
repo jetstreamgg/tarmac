@@ -31,7 +31,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('wagmi', () => ({ useConfig: () => ({}) }));
-vi.mock('@wagmi/core', () => ({
+vi.mock('wagmi/actions', () => ({
   getPublicClient: (_config: unknown, { chainId }: { chainId: number }) => {
     mocks.clientChainIds.push(chainId);
     return { getTransactionReceipt: mocks.receipt };
