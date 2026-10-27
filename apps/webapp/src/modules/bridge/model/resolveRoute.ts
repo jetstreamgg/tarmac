@@ -164,6 +164,13 @@ export const cctpWithdrawalRoute = (from: BridgeNetworkId): BridgeRoute =>
 export const nativeDepositRoute = (to: NativeNetworkId): BridgeRoute =>
   route('native', routeSteps('native', 'ethereum', to), DEPOSIT_ETA_MINUTES[to], 0);
 
+/** The native withdrawal route from an L2 to Ethereum; `fallbackReason` says why CCTP couldn't carry it. */
+export const nativeWithdrawalRoute = (
+  from: NativeNetworkId,
+  fallbackReason?: BridgeFallbackReason
+): BridgeRoute =>
+  route('native', routeSteps('native', from, 'ethereum'), WITHDRAWAL_ETA_MINUTES[from], 0, fallbackReason);
+
 const ok = (resolved: BridgeRoute): ResolvedBridgeRoute => ({ status: 'ok', route: resolved });
 const blocked = (reason: BridgeBlockReason): ResolvedBridgeRoute => ({ status: 'blocked', reason });
 
@@ -212,10 +219,9 @@ export function resolveBridgeRoute({
   if (isUnread(cctp)) return blocked(unreadReason(cctp));
   const cctpFailure = gateFailure(amount, cctp);
   if (!cctpFailure) return ok(cctpWithdrawalRoute(from));
-  const withdrawalMinutes = nativeEtaMinutes(WITHDRAWAL_ETA_MINUTES, from);
-  if (withdrawalMinutes === undefined) return blocked(cctpFailure);
+  if (nativeEtaMinutes(WITHDRAWAL_ETA_MINUTES, from) === undefined) return blocked(cctpFailure);
   if (isUnread(native)) return blocked(unreadReason(native));
   const nativeFailure = gateFailure(amount, native);
   if (nativeFailure) return blocked(nativeFailure);
-  return ok(route('native', routeSteps('native', from, to), withdrawalMinutes, 0, cctpFailure));
+  return ok(nativeWithdrawalRoute(from as NativeNetworkId, cctpFailure));
 }
