@@ -266,17 +266,5 @@ describe('PendleProductDetail', () => {
 
       expect(screen.getByTestId('mock-chart')).toBeTruthy();
     });
-
-    it('swaps the supply pitch for the matured copy and keeps the FAQ', () => {
-      renderDetail();
-
-      const about = screen.getByTestId('product-detail-about');
-      expect(about.textContent).toContain('This market matured on');
-      expect(about.textContent).toContain('no longer accepts deposits');
-      expect(about.textContent).toContain('claim your USDG');
-      expect(about.textContent).not.toContain('Fix a rate');
-      expect(screen.getByTestId('pendle-detail-faq').textContent).toContain('Fixed vs. variable');
-      expect(screen.getByRole('link', { name: 'Pendle site' })).toBeTruthy();
-    });
   });
 });

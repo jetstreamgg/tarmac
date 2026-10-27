@@ -1,13 +1,12 @@
 import { type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Activity, ArrowUpFromLine, AudioLines } from 'lucide-react';
-import { isMarketMatured, useNow, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { useNow, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { IconboxAction } from '@/components/ui/iconbox';
 import { USER_RISKS_URL } from '@/lib/constants';
 import { remainingDaysToMaturity } from '@/modules/earn/helpers/daysToMaturity';
-import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';
 
 const EXAMPLE_SUPPLY = 100;
 
@@ -41,21 +40,6 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
     apy !== undefined && remainingDays > 0
       ? EXAMPLE_SUPPLY * Math.pow(1 + apy, remainingDays / 365)
       : undefined;
-
-  const links = (
-    <>
-      <Trans>
-        Check out the{' '}
-        <a href="https://pendle.finance/" target="_blank" rel="noreferrer" className="text-fgBrand">
-          Pendle site
-        </a>{' '}
-        for more details.
-      </Trans>{' '}
-      <a href={USER_RISKS_URL} target="_blank" rel="noreferrer" className="text-fgBrand">
-        <Trans>Learn more in the User Risk Documentation.</Trans>
-      </a>
-    </>
-  );
 
   const items: { id: string; icon: ReactNode; title: ReactNode; body: ReactNode }[] = [
     {
@@ -94,39 +78,6 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
     }
   ];
 
-  const faq = (
-    <Accordion type="multiple" data-testid="pendle-detail-faq">
-      {items.map(item => (
-        <AccordionItem key={item.id} value={item.id}>
-          <AccordionTrigger>
-            <span className="flex items-center gap-3">
-              <IconboxAction>{item.icon}</IconboxAction>
-              {item.title}
-            </span>
-          </AccordionTrigger>
-          <AccordionContent>{item.body}</AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
-  );
-
-  // Keyed on the registry expiry, like PendlePositionCard.
-  if (isMarketMatured(market.expiry)) {
-    const maturityDate = formatMaturity(market.expiry);
-    return (
-      <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
-        <p>
-          <Trans>
-            This market matured on {maturityDate} and no longer accepts deposits. If you hold {ptSymbol}, you
-            can claim your {symbol} at any time. Matured positions don&apos;t earn further yield.
-          </Trans>{' '}
-          {links}
-        </p>
-        {faq}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
       <p>
@@ -151,9 +102,30 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
             may be more or less than the fixed rate. PT positions carry market and smart-contract risk.
           </Trans>
         )}{' '}
-        {links}
+        <Trans>
+          Check out the{' '}
+          <a href="https://pendle.finance/" target="_blank" rel="noreferrer" className="text-fgBrand">
+            Pendle site
+          </a>{' '}
+          for more details.
+        </Trans>{' '}
+        <a href={USER_RISKS_URL} target="_blank" rel="noreferrer" className="text-fgBrand">
+          <Trans>Learn more in the User Risk Documentation.</Trans>
+        </a>
       </p>
-      {faq}
+      <Accordion type="multiple" data-testid="pendle-detail-faq">
+        {items.map(item => (
+          <AccordionItem key={item.id} value={item.id}>
+            <AccordionTrigger>
+              <span className="flex items-center gap-3">
+                <IconboxAction>{item.icon}</IconboxAction>
+                {item.title}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>{item.body}</AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </div>
   );
 }
