@@ -11,7 +11,7 @@ vi.mock('viem/actions', async io => ({
   waitForTransactionReceipt: viem.waitForTransactionReceipt
 }));
 vi.mock('wagmi', () => ({ useConfig: () => ({}), useChainId: () => chain.current }));
-vi.mock('@wagmi/core', () => ({
+vi.mock('wagmi/actions', () => ({
   getPublicClient: (_config: unknown, { chainId }: { chainId?: number }) => {
     chain.clientsFor.push(chainId);
     return {};
