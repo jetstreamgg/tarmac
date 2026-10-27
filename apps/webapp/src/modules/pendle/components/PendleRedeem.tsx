@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
-import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { formatBigInt, formatUsd } from '@/utils';
 import {
@@ -22,7 +21,7 @@ type PendleRedeemProps = {
   market: PendleMarketConfig;
   /** Read-only PT input — full balance, not editable. */
   ptBalance: bigint;
-  /** Token list for the Withdrawal-token selector (USDS / USDC). */
+  /** Token list for the Claim-token selector (underlying / USDS / USDC). */
   outputTokenList: Token[];
   selectedOutputToken: Token;
   onOutputTokenChange: (token: Token) => void;
@@ -43,7 +42,7 @@ type PendleRedeemProps = {
 };
 
 /**
- * Body of the matured-claim modal: the PT hero over the shared summary
+ * Body of the matured-claim modal: the receive hero over the shared summary
  * grid. No comp exists for this flow — the layout follows the withdraw comps
  * (Figma 2193:73598 / 2193:73807). Slippage and its floor render on every
  * route — even the pure burn signs a slippage-adjusted minTokenOut; only the
@@ -77,15 +76,10 @@ export const PendleRedeem = ({
   const quoteLoading = isFetchingQuote && !quote;
 
   const rows = buildPendleRedeemRows({
-    tokenSelector: (
-      <TokenSelectorPill
-        tokens={outputTokenList}
-        selected={selectedOutputToken}
-        onSelect={onOutputTokenChange}
-        testId="pendle-redeem-output-token"
-      />
-    ),
-    receiveAmount: quote ? formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE,
+    product: `Pendle ${market.underlyingSymbol} (${ptSymbol})`,
+    productSymbol: market.underlyingSymbol,
+    claimAmount: formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 }),
+    ptSymbol,
     aggregator,
     quoteLoading,
     slippage: slippageDisplay,
@@ -98,6 +92,7 @@ export const PendleRedeem = ({
     receiveSymbol: selectedOutputToken.symbol,
     priceImpact: formatPriceImpact(quote?.priceImpact) ?? NO_VALUE,
     routedVia: aggregatorName ? `Pendle redeem → ${aggregatorName}` : NO_VALUE,
+    pendleFee: quote?.feeUsd !== undefined ? formatUsd(quote.feeUsd) : t`Included in quote`,
     network,
     networkChainId,
     networkFee: NO_VALUE
@@ -106,17 +101,23 @@ export const PendleRedeem = ({
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="pendle-redeem">
       <TransactionAmountHero
-        // The PT side on top, as in the early withdrawal; read-only, since a
-        // claim always takes the whole balance. Large like the stake claim.
-        label={t`${ptSymbol} amount`}
-        amount={formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 })}
-        symbol={ptSymbol}
-        usd={
-          market.usdsEquivalence === 'pegged'
-            ? formatUsd(Number(formatUnits(ptBalance, market.underlyingDecimals)))
-            : undefined
+        // "Claim" is the PT side throughout the section's comps ("Claim at
+        // maturity", "You'll claim"); "receive" is what a trade pays out, as
+        // the withdraw comps use it. The hero is the payout, so it receives.
+        label={t`You'll receive`}
+        amount={quote ? formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 2 }) : NO_VALUE}
+        symbol={selectedOutputToken.symbol}
+        loading={quoteLoading}
+        // The claim has no amount field, so the payout token is chosen here —
+        // beside the figure it denominates, rather than parked in the grid.
+        badge={
+          <TokenSelectorPill
+            tokens={outputTokenList}
+            selected={selectedOutputToken}
+            onSelect={onOutputTokenChange}
+            testId="pendle-redeem-output-token"
+          />
         }
-        size="lg"
         dataTestId="pendle-redeem-hero"
       />
 
