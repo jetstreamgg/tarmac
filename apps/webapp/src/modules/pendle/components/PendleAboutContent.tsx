@@ -57,23 +57,6 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
     </>
   );
 
-  // Keyed on the registry expiry, like PendlePositionCard. Every FAQ row is
-  // about choosing and holding a rate, so a matured market drops them.
-  if (isMarketMatured(market.expiry)) {
-    const maturityDate = formatMaturity(market.expiry);
-    return (
-      <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
-        <p>
-          <Trans>
-            This market matured on {maturityDate} and no longer accepts deposits. If you hold {ptSymbol}, you
-            can claim your {symbol} at any time. Matured positions don&apos;t earn further yield.
-          </Trans>{' '}
-          {links}
-        </p>
-      </div>
-    );
-  }
-
   const items: { id: string; icon: ReactNode; title: ReactNode; body: ReactNode }[] = [
     {
       id: 'fixed-vs-variable',
@@ -111,6 +94,39 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
     }
   ];
 
+  const faq = (
+    <Accordion type="multiple" data-testid="pendle-detail-faq">
+      {items.map(item => (
+        <AccordionItem key={item.id} value={item.id}>
+          <AccordionTrigger>
+            <span className="flex items-center gap-3">
+              <IconboxAction>{item.icon}</IconboxAction>
+              {item.title}
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>{item.body}</AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
+  );
+
+  // Keyed on the registry expiry, like PendlePositionCard.
+  if (isMarketMatured(market.expiry)) {
+    const maturityDate = formatMaturity(market.expiry);
+    return (
+      <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
+        <p>
+          <Trans>
+            This market matured on {maturityDate} and no longer accepts deposits. If you hold {ptSymbol}, you
+            can claim your {symbol} at any time. Matured positions don&apos;t earn further yield.
+          </Trans>{' '}
+          {links}
+        </p>
+        {faq}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6" data-testid="pendle-detail-about">
       <p>
@@ -137,19 +153,7 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
         )}{' '}
         {links}
       </p>
-      <Accordion type="multiple" data-testid="pendle-detail-faq">
-        {items.map(item => (
-          <AccordionItem key={item.id} value={item.id}>
-            <AccordionTrigger>
-              <span className="flex items-center gap-3">
-                <IconboxAction>{item.icon}</IconboxAction>
-                {item.title}
-              </span>
-            </AccordionTrigger>
-            <AccordionContent>{item.body}</AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      {faq}
     </div>
   );
 }
