@@ -1,5 +1,5 @@
 import { type Page, type Route } from '@playwright/test';
-import { getAddress, parseUnits, toFunctionSelector, type Address } from 'viem';
+import { getAddress, numberToHex, parseUnits, toFunctionSelector, type Address } from 'viem';
 import { expect, expectNoFixtureLeaks, installFixtureRoutes, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/modules/bridge/adapters/cctp/contracts';
 import { IRIS_API_URL } from '@/modules/bridge/adapters/cctp/iris';
 import { NetworkName } from '../utils/constants';
+import { getRpcUrlFromFile } from '../utils/getRpcUrlFromFile';
 import { accountPool } from '../utils/accountPoolManager';
 import { connectAndVerify } from '../utils/connectAndVerify';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
@@ -71,6 +72,30 @@ async function claim(bridge: BridgePage, page: Page) {
   await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
   await bridge.card('Ethereum').getByTestId('pending-bridge-action').click();
   await expectTransactionSuccess(page, { title: 'Funds claimed successfully!', timeout: 90_000 });
+}
+
+/**
+ * Shows the page Ethereum's blocks `seconds` later than they are, as a shard
+ * that warps the shared mainnet fork leaves it, without moving the fork itself.
+ * Returns the removal.
+ */
+async function runEthereumAhead(page: Page, seconds: number) {
+  const l1 = await getRpcUrlFromFile(NetworkName.mainnet);
+  type RpcReply = { result?: { timestamp?: string } | null };
+  const shift = (reply: RpcReply) => {
+    if (reply.result?.timestamp)
+      reply.result.timestamp = numberToHex(BigInt(reply.result.timestamp) + BigInt(seconds));
+  };
+  const matches = (target: URL) => target.href === l1;
+  const handler = async (route: Route) => {
+    if (!route.request().postData()?.includes('eth_getBlockBy')) return route.fallback();
+    const response = await route.fetch();
+    const body: RpcReply | RpcReply[] = await response.json();
+    (Array.isArray(body) ? body : [body]).forEach(shift);
+    return route.fulfill({ response, json: body });
+  };
+  await page.route(matches, handler);
+  return () => page.unroute(matches, handler);
 }
 
 const expectUsdsDelivered = (account: Address, before: bigint, amount = DELIVERED) =>
@@ -222,6 +247,24 @@ test.describe('Bridge: CCTP recovery', () => {
     await expect(status(bridge)).toHaveText('Pending');
 
     await isolatedPage.unroute(`${IRIS_API_URL}/v2/messages/**`, outage);
+    await claim(bridge, isolatedPage);
+    await expectUsdsDelivered(testAccount, before);
+  });
+
+  // Recovery dates a bundle's L2 burn by that L2's clock, not Ethereum's: dated by Ethereum's, the card
+  // would start a month back, past its ETA, and wait on the slow poll.
+  test('A bundled burn sent while Ethereum runs a month ahead of Base still becomes claimable', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const iris = await stubIris(isolatedPage);
+    const stopAhead = await runEthereumAhead(isolatedPage, 31 * 86_400);
+    const bridge = await openOnBase(isolatedPage);
+    const { usds: before } = await l1AccountState(testAccount);
+    await iris.attest(NetworkName.base, await confirmBurn(bridge, isolatedPage));
+    await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
+
+    await stopAhead();
     await claim(bridge, isolatedPage);
     await expectUsdsDelivered(testAccount, before);
   });
