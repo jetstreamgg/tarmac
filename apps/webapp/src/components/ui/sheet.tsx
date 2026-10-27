@@ -3,6 +3,7 @@ import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
+import { useRestoreFocusOnClose } from '@/hooks/ui/useRestoreFocusOnClose';
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -45,6 +46,8 @@ function SheetContent({
   closeButtonClassName,
   closeIconClassName,
   overlayClassName,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
@@ -54,6 +57,7 @@ function SheetContent({
   /** Extra classes on the scrim, e.g. to opt a panel out of the frosted overlay. */
   overlayClassName?: string;
 }) {
+  const restoreFocus = useRestoreFocusOnClose({ onOpenAutoFocus, onCloseAutoFocus });
   return (
     <SheetPortal>
       <SheetOverlay className={overlayClassName} />
@@ -88,6 +92,7 @@ function SheetContent({
             'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
           className
         )}
+        {...restoreFocus}
         {...props}
       >
         {children}
