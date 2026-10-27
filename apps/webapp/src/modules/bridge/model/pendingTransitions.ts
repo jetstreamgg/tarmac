@@ -293,6 +293,7 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
     if (extra.length === 0) return bridge;
     const merged = { ...known, bundleTxHashes: [...(known.bundleTxHashes ?? []), ...extra] };
     delete merged.nextLegTxHash;
+    delete merged.nextLegAt;
     return { ...bridge, actions: bridge.actions.map(sent => (sent === known ? merged : sent)) };
   }
   // A Safe confirms with the on-chain hash, not the Safe tx hash it was sent with.
@@ -328,13 +329,14 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
 export function recordNextLeg(
   bridge: PendingBridge,
   action: PendingBridgeNextAction,
-  legTxHash: string
+  legTxHash: string,
+  now: number
 ): PendingBridge {
   const known = [...bridge.actions]
     .reverse()
     .find(done => done.action === action && done.status === undefined);
   if (!known || known.nextLegTxHash === legTxHash) return bridge;
-  const next = { ...known, nextLegTxHash: legTxHash };
+  const next = { ...known, nextLegTxHash: legTxHash, nextLegAt: now };
   return { ...bridge, actions: bridge.actions.map(done => (done === known ? next : done)) };
 }
 
@@ -345,6 +347,7 @@ export function forgetNextLeg(bridge: PendingBridge, legTxHash: string): Pending
     if (done.nextLegTxHash !== legTxHash) return done;
     const next = { ...done };
     delete next.nextLegTxHash;
+    delete next.nextLegAt;
     return next;
   });
   return { ...bridge, actions };

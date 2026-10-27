@@ -58,6 +58,8 @@ export type PendingBridgeAction = {
   bundleTxHashes?: string[];
   /** The last leg its run sent after it mined (a claim's approve or sale), until the run confirms it. */
   nextLegTxHash?: string;
+  /** When `nextLegTxHash` was sent, in ms. */
+  nextLegAt?: number;
 };
 
 export type PendingBridge = {

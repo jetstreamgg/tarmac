@@ -4,6 +4,8 @@ import {
   encodeEventTopics,
   erc20Abi,
   parseUnits,
+  TransactionNotFoundError,
+  TransactionReceiptNotFoundError,
   zeroAddress,
   type Address,
   type Hex
@@ -16,6 +18,7 @@ import {
   recordNextLeg
 } from '../../model/pendingTransitions';
 import { resolveBridgeRoute } from '../../model/resolveRoute';
+import { SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { PendingBridge } from '../../model/types';
 import { L1_USDC, L1_USDS } from './contracts';
 import {
@@ -246,7 +249,7 @@ describe('readCctpConvertOffer', () => {
 });
 
 describe('readCctpConvertOffer, a sale the claim run sent after the claim mined', () => {
-  const selling = () => recordNextLeg(claimed(), 'claim', '0xsale');
+  const selling = () => recordNextLeg(claimed(), 'claim', '0xsale', NOW);
   const reader = (
     sale: { status: 'success' | 'reverted'; logs: ReturnType<typeof transfer>[] } | undefined
   ) =>
@@ -282,6 +285,73 @@ describe('readCctpConvertOffer, a sale the claim run sent after the claim mined'
         bridge: selling(),
         account: ACCOUNT
       })
+    ).resolves.toBe(USDC('100'));
+  });
+});
+
+describe('readCctpConvertOffer, a sale the claim run sent that never mined', () => {
+  const SENT = NOW + 60_000;
+  const selling = () => recordNextLeg(claimed(), 'claim', '0xsale', SENT);
+  const reader = ({ pending }: { pending: boolean }) =>
+    ({
+      getTransactionReceipt: vi.fn(async ({ hash }: { hash: Hex }) => {
+        if (hash === '0xclaim') return { status: 'success', logs: [] };
+        throw new TransactionReceiptNotFoundError({ hash });
+      }) as never,
+      getTransaction: vi.fn(async ({ hash }: { hash: Hex }) => {
+        if (pending) return { hash };
+        throw new TransactionNotFoundError({ hash });
+      }) as never,
+      readContract: vi.fn(async () => USDC('500')) as never
+    }) satisfies ConvertOfferReader;
+
+  it('offers the USDC once the chain still doesn’t know it 15 minutes after it was sent', async () => {
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ pending: false }),
+        bridge: selling(),
+        account: ACCOUNT,
+        now: SENT + SENT_ACTION_DROPPED_MS
+      })
+    ).resolves.toBe(USDC('100'));
+  });
+
+  it('offers nothing before then, as it may still mine', async () => {
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ pending: false }),
+        bridge: selling(),
+        account: ACCOUNT,
+        now: SENT + SENT_ACTION_DROPPED_MS - 1
+      })
+    ).rejects.toThrow();
+  });
+
+  it('offers nothing while the chain holds it pending, however old', async () => {
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ pending: true }),
+        bridge: selling(),
+        account: ACCOUNT,
+        now: SENT + 10 * SENT_ACTION_DROPPED_MS
+      })
+    ).rejects.toThrow();
+  });
+
+  it('times a sale stored before its send time was kept from its claim', async () => {
+    const legacy = selling();
+    delete legacy.actions[0].nextLegAt;
+    const client = reader({ pending: false });
+    await expect(
+      readCctpConvertOffer({
+        client,
+        bridge: legacy,
+        account: ACCOUNT,
+        now: NOW + SENT_ACTION_DROPPED_MS - 1
+      })
+    ).rejects.toThrow();
+    await expect(
+      readCctpConvertOffer({ client, bridge: legacy, account: ACCOUNT, now: NOW + SENT_ACTION_DROPPED_MS })
     ).resolves.toBe(USDC('100'));
   });
 });

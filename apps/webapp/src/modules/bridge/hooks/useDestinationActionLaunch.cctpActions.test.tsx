@@ -292,7 +292,13 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
         const callbacks = start();
         act(() => sentLeg('sellGem', '0xsell', callbacks));
         expect(actionsOf('claim')).toEqual([
-          { action: 'claim', txHash: '0xreceive', at: expect.any(Number), nextLegTxHash: '0xsell' }
+          {
+            action: 'claim',
+            txHash: '0xreceive',
+            at: expect.any(Number),
+            nextLegTxHash: '0xsell',
+            nextLegAt: expect.any(Number)
+          }
         ]);
         act(() => callbacks.onSuccess('0xsell', 7n));
         expect(actionsOf('claim')).toEqual([

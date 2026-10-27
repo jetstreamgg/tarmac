@@ -273,6 +273,23 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([selling]);
   });
 
+  it('keeps when that leg was sent through storage, and drops an entry whose send time is no number', () => {
+    const selling = bridge({
+      actions: [
+        { action: 'claim', txHash: '0xreceive', at: NOW, nextLegTxHash: '0xsell', nextLegAt: NOW + 1 }
+      ]
+    });
+    make().upsert(SCOPE, selling);
+    expect(make().getSnapshot(SCOPE)).toEqual([selling]);
+    const bad = {
+      ...selling,
+      amount: selling.amount.toString(),
+      actions: [{ ...selling.actions[0], nextLegAt: 'soon' }]
+    };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad]));
+    expect(make().getSnapshot(SCOPE)).toEqual([]);
+  });
+
   it('keeps an invalidated action through storage', () => {
     const reproving = bridge({
       routeKind: 'native',

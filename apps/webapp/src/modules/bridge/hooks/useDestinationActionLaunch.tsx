@@ -274,7 +274,7 @@ export function useDestinationActionLaunch() {
       if (variables.functionName === CCTP_CLAIM_FUNCTION || !isClaimRun(context) || context.safe) return;
       claimLegRunsRef.current.set(hash, context);
       pendingBridgeStore.update(context.scope, context.bridgeId, current =>
-        recordNextLeg(current, 'claim', hash)
+        recordNextLeg(current, 'claim', hash, Date.now())
       );
     },
     onLegFailed: hash => {
