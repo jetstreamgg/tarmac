@@ -172,14 +172,10 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
  * matured-position cards' "Claim" CTA (2306:72334).
  */
 export type PendleRedeemRowInput = {
-  /** Product display name (e.g. "Pendle sUSDS (PT-sUSDS)"). */
-  product: string;
-  /** Underlying symbol for the Product cell's ringed icon. */
-  productSymbol: string;
-  /** The full matured PT amount being claimed, formatted. */
-  claimAmount: string;
-  /** The market's PT symbol (e.g. "PT-sUSDS") — the Claim amount icon. */
-  ptSymbol: string;
+  /** The Withdrawal-token selector (interactive, passed through opaquely). */
+  tokenSelector: ReactNode;
+  /** Quoted amount received in the selected token, formatted. */
+  receiveAmount: string;
   /**
    * True when the quote routes through an aggregator (non-SY-accepted output).
    * Gates only the price-impact/route row — slippage binds on every route.
@@ -201,8 +197,6 @@ export type PendleRedeemRowInput = {
   priceImpact: string;
   /** Aggregator route description (e.g. "Pendle redeem → KyberSwap"). */
   routedVia: string;
-  /** Pendle's fee, formatted (e.g. "$0.04"). */
-  pendleFee: string;
   /** Network the transaction runs on. */
   network: string;
   /** Chain the engine runs on, for the Network cell's icon. */
@@ -212,26 +206,27 @@ export type PendleRedeemRowInput = {
 };
 
 /**
- * Grid for the matured-claim modal: [Product | Claim amount], [Slippage |
- * Min. received], then — aggregator routes only — [Price impact | Routed
- * via], closing with [Pendle fee | Network] and the fee row. The payout token
- * is picked on the hero pill, not in this read-only grid. Slippage renders on
+ * Grid for the matured-claim modal, laid out like the early withdrawal entry
+ * (2193:73598): [Withdrawal token | You'll receive], [Slippage | Min.
+ * received], then — aggregator routes only — [Price impact | Routed via],
+ * closing with [Network | Network fee]. No Pendle fee row: redeeming matured
+ * PT carries no Pendle fee, and an aggregator hop's cost is already in the
+ * quote and its price impact. Slippage renders on
  * every route: even the pure burn signs a slippage-adjusted minTokenOut (see
  * buildVerifiedArgs' matured-exit fixtures); only the per-hop rows are
  * aggregator-only.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
-  const feeCell = networkFeeCell(input.networkFee);
-  const pendleFeeCell: ModalGridCell = {
-    kind: 'single',
-    label: 'Pendle fee',
-    value: input.pendleFee,
-    loading: input.quoteLoading
-  };
   return [
     [
-      productCell(input.product, input.productSymbol, 'pendle'),
-      { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
+      { kind: 'node', label: 'Withdrawal token', node: input.tokenSelector },
+      {
+        kind: 'single',
+        label: "You'll receive",
+        value: input.receiveAmount,
+        token: input.receiveSymbol,
+        loading: input.quoteLoading
+      }
     ],
     [
       slippageCell(input),
@@ -255,8 +250,7 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
           ]
         ]
       : []),
-    [pendleFeeCell, networkCell(input.network, input.networkChainId)],
-    [feeCell]
+    [networkCell(input.network, input.networkChainId), networkFeeCell(input.networkFee)]
   ];
 }
 
