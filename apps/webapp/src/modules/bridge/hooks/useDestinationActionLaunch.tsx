@@ -507,10 +507,8 @@ export function useDestinationActionLaunch() {
         onConfirm: () => {
           // Retry calls onConfirm again; an action already sent must not go out twice.
           const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
-          const refuse = () =>
-            callbacksRef.current.onError(
-              new TransactionRefusedError('This action was already sent.', { final: true })
-            );
+          const refuse = (message = 'This action was already sent.') =>
+            callbacksRef.current.onError(new TransactionRefusedError(message, { final: true }));
           if (!current || !launchable(current, action, addressRef.current)) {
             // A claim whose receive mined but whose sale didn't: Try again converts what it left (Q17).
             const account = addressRef.current;
@@ -525,7 +523,8 @@ export function useDestinationActionLaunch() {
               readCctpConvertOffer({ client, bridge: current, account }).then(
                 offer => {
                   if (launchIdRef.current !== launchId || !modalOwnerRef.current) return;
-                  if (offer === undefined) refuse();
+                  if (offer === undefined)
+                    refuse("There's no USDC from this bridge left in this wallet to convert.");
                   else launchInRef.current(scope, current, 'convert', offer);
                 },
                 error => {

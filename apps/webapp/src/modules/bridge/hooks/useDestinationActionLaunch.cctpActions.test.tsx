@@ -447,7 +447,9 @@ describe('useDestinationActionLaunch: the legs around a CCTP action', () => {
       confirm();
       await waitFor(() =>
         expect(mocks.onError).toHaveBeenCalledWith(
-          new TransactionRefusedError('This action was already sent.', { final: true })
+          new TransactionRefusedError("There's no USDC from this bridge left in this wallet to convert.", {
+            final: true
+          })
         )
       );
       expect(mocks.launched).toHaveLength(launches);
