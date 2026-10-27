@@ -6,6 +6,7 @@ import {
   useWriteContract
 } from 'wagmi';
 import { useEffect, useEffectEvent, useMemo } from 'react';
+import { trackPrepareReverted } from '@/modules/analytics/lib/trackPrepareReverted';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { useTransactionOutcome } from './useTransactionOutcome';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
@@ -38,6 +39,10 @@ export function useWriteContractFlow<
     ...useSimulateContractParamters,
     query: { ...useSimulateContractParamters.query, enabled, gcTime: gcTime || 30000 }
   } as unknown as UseSimulateContractParameters<abi, functionName, args, config, chainId>);
+  useEffect(
+    () => trackPrepareReverted(simulationError, parameters.chainId),
+    [simulationError, parameters.chainId]
+  );
 
   const {
     writeContract,

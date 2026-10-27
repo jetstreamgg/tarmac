@@ -7,7 +7,7 @@ import { t } from '@lingui/core/macro';
 export function stUsdsPrepareErrorMessage(message: string | undefined): string | undefined {
   if (!message) return undefined;
   // Native stUSDS: module liquidity constrained
-  if (message.includes('YUsds/insufficient-unused-funds')) {
+  if (message.includes('StUsds/insufficient-unused-funds')) {
     return t`The module does not have enough available USDS for withdrawal. Please try a smaller amount or wait for liquidity to become available.`;
   }
   // Curve: min-output slippage guard

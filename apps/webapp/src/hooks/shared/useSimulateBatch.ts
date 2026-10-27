@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId, usePublicClient } from 'wagmi';
 import type { Call } from 'viem';
+import { trackPrepareReverted } from '@/modules/analytics/lib/trackPrepareReverted';
 import { reportError } from '@/modules/sentry/reportError';
 import { getCallsKey } from './networkFee';
 import { useBatchExecutorFallbackClients } from './useBatchExecutorFallbackClients';
@@ -101,6 +102,9 @@ export function useSimulateBatch({
       extra: { chainId: resolvedChainId, callCount: calls.length, rpcCode: extractErrorCode(error.cause) }
     });
   }, [error, structuralFailure, resolvedChainId, calls.length]);
+
+  // A revert in the user's calls goes to analytics instead (once per reason).
+  useEffect(() => trackPrepareReverted(error, resolvedChainId), [error, resolvedChainId]);
 
   return {
     prepared: isSuccess,

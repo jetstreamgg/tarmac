@@ -51,7 +51,15 @@ vi.mock('wagmi', () => ({
     data: sent.id ? { id: sent.id } : undefined,
     reset: () => {}
   }),
-  useWaitForCallsStatus: () => callsStatus
+  useWaitForCallsStatus: () => callsStatus,
+  useChainId: () => 1,
+  // No client: a reverted leg isn't replayed for its reason (covered in
+  // modules/ui/context/sendBatchTransactionFlow.test.tsx).
+  usePublicClient: () => undefined
+}));
+
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: () => ({ data: undefined, isFetched: false })
 }));
 
 import { useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';

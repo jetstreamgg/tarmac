@@ -1,7 +1,10 @@
 import path from 'path';
+import { lingui } from '@lingui/vite-plugin';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // Hooks reach the revert registry (lib/revertMessages), whose copy is Lingui `msg` macros.
+  plugins: [lingui({ macroTransform: true })],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')

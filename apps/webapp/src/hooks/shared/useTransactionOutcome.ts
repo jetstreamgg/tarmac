@@ -9,11 +9,18 @@ import {
   type TransactionReceipt
 } from 'viem';
 import { waitForTransactionReceipt } from 'viem/actions';
+import type { DecodedRevert } from '@/lib/revertMessages/decodeRevert';
+import { replayRevertedTransaction } from './replayRevertedTransaction';
 
 /** Ceiling on the gap between attempts while the RPC keeps failing. */
 const MAX_RETRY_DELAY_MS = 30_000;
 
-type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementReturnType };
+type ReceiptResult = {
+  receipt: TransactionReceipt;
+  replacement?: ReplacementReturnType;
+  /** Why a reverted receipt reverted, when replaying it could tell. */
+  revert?: DecodedRevert;
+};
 
 /**
  * A broadcast transaction the user replaced in their wallet: a cancel, or
@@ -25,11 +32,18 @@ export class TransactionReplacedError extends UserRejectedRequestError {
   override name = 'TransactionReplacedError' as const;
 }
 
-/** A mined transaction whose receipt reads `reverted`. */
+/**
+ * A mined transaction whose receipt reads `reverted`. `revert` is the decoded
+ * reason when a replay of the transaction recovered one — only the reason, not
+ * the replay's error, whose message carries the call's arguments (the user's
+ * address among them) into Sentry.
+ */
 export class TransactionRevertedError extends Error {
   override name = 'TransactionRevertedError' as const;
-  constructor() {
-    super('Transaction reverted on-chain.');
+  readonly revert?: DecodedRevert;
+  constructor(revert?: DecodedRevert, message = 'Transaction reverted on-chain.') {
+    super(message);
+    this.revert = revert;
   }
 }
 
@@ -55,8 +69,10 @@ export type TransactionOutcomeState = {
  * a failed poll means "not known yet": reporting it as a failure put Retry on
  * screen, and Retry signs the same action a second time. The outcome comes from
  * the receipt itself (`status`), not from replaying the call and reading the
- * error text. A speed-up counts as the same transaction; a cancel or any other
- * replacement does not, though its receipt reads `success`.
+ * error text; a replay only runs after a revert, to say why
+ * (`TransactionRevertedError.revert`). A speed-up counts as the same
+ * transaction; a cancel or any other replacement does not, though its receipt
+ * reads `success`.
  *
  * Not wagmi's hook with `retry: true`: on a revert it throws instead of
  * returning the receipt, so a revert and an RPC failure arrive as the same kind
@@ -91,7 +107,11 @@ export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?
         timeout: 0,
         onReplaced: r => (replacement = r)
       });
-      return { receipt, replacement };
+      const revert =
+        receipt.status === 'reverted' && (!replacement || replacement.reason === 'repriced')
+          ? await replayRevertedTransaction(client, receipt)
+          : undefined;
+      return { receipt, replacement, revert };
     },
     // Unlimited while watched; TanStack stops retrying once nothing observes the query.
     retry: true,
@@ -107,7 +127,7 @@ export function useTransactionOutcome({ hash, chainId }: { hash?: Hash; chainId?
     if (data.replacement && data.replacement.reason !== 'repriced') {
       return new TransactionReplacedError(new Error(`Transaction ${data.replacement.reason} in the wallet.`));
     }
-    return data.receipt.status === 'reverted' ? new TransactionRevertedError() : null;
+    return data.receipt.status === 'reverted' ? new TransactionRevertedError(data.revert) : null;
   }, [data]);
 
   return {

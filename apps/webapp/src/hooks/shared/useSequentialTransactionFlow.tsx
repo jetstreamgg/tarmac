@@ -1,6 +1,7 @@
 import { useConnection, useSimulateContract, useWriteContract } from 'wagmi';
 import { markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
+import { trackPrepareReverted } from '@/modules/analytics/lib/trackPrepareReverted';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { useTransactionOutcome } from './useTransactionOutcome';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
@@ -116,6 +117,7 @@ export function useSequentialTransactionFlow(
     error: simulationError,
     refetch: refetchSimulation
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
+  useEffect(() => trackPrepareReverted(simulationError, chainId), [simulationError, chainId]);
 
   const {
     writeContract,

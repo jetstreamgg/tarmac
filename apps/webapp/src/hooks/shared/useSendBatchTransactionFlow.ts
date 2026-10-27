@@ -1,6 +1,7 @@
-import { type Config, useSendCalls, useWaitForCallsStatus } from 'wagmi';
+import { type Config, useChainId, usePublicClient, useSendCalls, useWaitForCallsStatus } from 'wagmi';
+import { useQuery } from '@tanstack/react-query';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
-import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { Call } from 'viem';
 import {
   BaseError,
@@ -14,6 +15,9 @@ import {
 } from 'viem';
 import { useIsBatchSupported } from './useIsBatchSupported';
 import { useSimulateBatch } from './useSimulateBatch';
+import { decodeRevert } from '@/lib/revertMessages/decodeRevert';
+import { replayRevertedTransaction } from './replayRevertedTransaction';
+import { TransactionRevertedError } from './useTransactionOutcome';
 
 /** Ceiling on the gap between status polls while the wallet keeps erroring. */
 const MAX_STATUS_RETRY_DELAY_MS = 30_000;
@@ -115,6 +119,42 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     }
   });
 
+  // A reverted leg is replayed to learn why before the failure is reported, so the
+  // failure screen can name the reason. The replay never throws and gives up on its
+  // own after a few seconds; until it settles the failure waits.
+  //
+  // The chain is fixed when the bundle id first appears, as in useTransactionOutcome:
+  // the wallet can switch chains with the failure on screen, and a replay keyed on the
+  // live chain would run again there, miss the hash and report the failure twice.
+  const connectedChainId = useChainId();
+  const liveChainId = parameters.chainId ?? connectedChainId;
+  const [sentOn, setSentOn] = useState<{ id?: string; chainId: number }>({ chainId: liveChainId });
+  if (mutationData?.id !== sentOn.id) setSentOn({ id: mutationData?.id, chainId: liveChainId });
+  const sentChainId = mutationData?.id === sentOn.id ? sentOn.chainId : liveChainId;
+  const statusClient = usePublicClient({ chainId: sentChainId });
+  const receipts = data?.receipts ?? [];
+  const revertedIndex = receipts.findIndex(receipt => receipt.status === 'reverted');
+  const revertedReceipt = revertedIndex >= 0 ? receipts[revertedIndex] : undefined;
+  // A wallet that sends the legs as separate transactions can land an earlier one in
+  // the same block (Ambire on an EOA, APP-637). The replay runs on the state before
+  // the block, without that leg's effect (an allowance), and would name the wrong
+  // reason — so it is skipped, and the failure reads generically.
+  const replayable =
+    !!revertedReceipt &&
+    !!statusClient &&
+    !receipts.slice(0, revertedIndex).some(receipt => receipt.blockNumber === revertedReceipt.blockNumber);
+  const { data: batchRevert, isFetched: batchRevertExplained } = useQuery({
+    queryKey: ['batchRevertReason', sentChainId, revertedReceipt?.transactionHash],
+    queryFn: async () => (await replayRevertedTransaction(statusClient!, revertedReceipt!)) ?? null,
+    enabled: replayable,
+    retry: false,
+    staleTime: Infinity,
+    gcTime: 60_000,
+    // Bounded by its own timeout; paused while offline, it would hold the failure back.
+    networkMode: 'always'
+  });
+  const awaitingRevertReason = replayable && !batchRevertExplained;
+
   const finishDetached = useCallback(() => {
     const onCleared = detachedRef.current?.onCleared;
     detachedRef.current = null;
@@ -148,9 +188,17 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     if (mutationData?.id) {
       // A wallet that runs the bundle as separate transactions can report the whole bundle as
       // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
-      const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
-      if (isSuccess && (revertedReceipt || data.status === 'failure')) {
-        emitError(new Error('ERROR: Batch transaction failed'), revertedReceipt?.transactionHash);
+      if (isSuccess && revertedReceipt) {
+        if (awaitingRevertReason) return;
+        emitError(
+          new TransactionRevertedError(
+            replayable ? (batchRevert ?? undefined) : undefined,
+            'ERROR: Batch transaction failed'
+          ),
+          revertedReceipt.transactionHash
+        );
+      } else if (isSuccess && data.status === 'failure') {
+        emitError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (isSuccess && data.status === 'success') {
         // A non-atomic bundle can land across blocks; the history refresh waits for the last.
         const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);
@@ -165,7 +213,17 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       }
       if (detachedRef.current) finishDetached();
     }
-  }, [isSuccess, miningError, mutationData?.id, data, finishDetached]);
+  }, [
+    isSuccess,
+    miningError,
+    mutationData?.id,
+    data,
+    finishDetached,
+    revertedReceipt,
+    replayable,
+    awaitingRevertReason,
+    batchRevert
+  ]);
 
   return {
     execute: () => {
@@ -204,10 +262,16 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         // `prepared` only disables a button. This is the guarantee behind it: a bundle
         // that has not simulated clean never reaches `wallet_sendCalls`, whatever
         // called execute(). Reported like the backstop above, for the same reason.
-        const error = new Error(
-          simulation.error
-            ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
-            : 'Refusing to send a batch before its simulation has completed.'
+        // Only the simulation's decoded revert rides along, for the failure screen —
+        // not the error itself, whose cause chain carries the call's arguments (the
+        // user's address among them) into Sentry.
+        const error = Object.assign(
+          new Error(
+            simulation.error
+              ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
+              : 'Refusing to send a batch before its simulation has completed.'
+          ),
+          { revert: simulation.error ? decodeRevert(simulation.error) : undefined }
         );
         console.error(error);
         onError(error, undefined);

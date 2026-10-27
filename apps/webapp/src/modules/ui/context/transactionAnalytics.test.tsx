@@ -163,14 +163,18 @@ describe('TransactionContext analytics (modal path)', () => {
   it('records an on-chain revert as error with classification props and no error_context (G2)', () => {
     const ctx = renderFlow(baseConfig());
     const cb = cbOf(ctx);
+    const from = `0x${'ab'.repeat(20)}`;
 
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash'));
     act(() =>
       cb.onError(
-        Object.assign(new Error('execution reverted: secret calldata 0xbeef'), {
-          name: 'ContractFunctionExecutionError'
-        }),
+        Object.assign(
+          new Error(
+            `execution reverted: Foo/bar-baz\n\nRequest Arguments:\n  from: ${from}\n  data: 0xsecretcalldata`
+          ),
+          { name: 'ContractFunctionExecutionError' }
+        ),
         '0xhash'
       )
     );
@@ -179,10 +183,16 @@ describe('TransactionContext analytics (modal path)', () => {
     expect(args).toMatchObject({
       txStatus: 'error',
       txHash: '0xhash',
-      data: expect.objectContaining({ error_kind: 'reverted', is_user_rejection: false })
+      // The contract's reason rides along; the message around it doesn't
+      data: expect.objectContaining({
+        error_kind: 'reverted',
+        is_user_rejection: false,
+        revert_reason: 'Foo/bar-baz'
+      })
     });
     expect(args).not.toHaveProperty('errorContext');
-    expect(JSON.stringify(args)).not.toContain('secret calldata');
+    expect(JSON.stringify(args)).not.toContain('secretcalldata');
+    expect(JSON.stringify(args)).not.toContain(from);
   });
 
   it('rotates the flow AFTER the consumer onSuccess, so its follow-up joins this flow', () => {
