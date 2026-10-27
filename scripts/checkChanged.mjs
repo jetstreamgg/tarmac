@@ -157,7 +157,11 @@ const runStep = step =>
 
 console.log(`Checking ${changed.length} file(s) (${source}): ${steps.map(s => s.name).join(', ')}`);
 const started = performance.now();
-const results = await Promise.all(steps.map(runStep));
+// The full suite saturates every core, so running it beside the other steps slows it more than
+// the overlap saves: run it after them instead.
+const deferred = full ? steps.filter(s => s.name === 'tests') : [];
+const results = await Promise.all(steps.filter(s => !deferred.includes(s)).map(runStep));
+for (const step of deferred) results.push(await runStep(step));
 const total = (performance.now() - started) / 1000;
 
 for (const result of results.filter(r => r.code !== 0)) {
