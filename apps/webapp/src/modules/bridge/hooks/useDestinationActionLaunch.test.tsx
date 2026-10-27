@@ -303,6 +303,34 @@ describe('useDestinationActionLaunch', () => {
     expect(result.current.actionHint(stored('0xsource'))).toEqual({ kind: 'safe-executing' });
   });
 
+  it('still tells a Safe its sent action waits for execution once the bridge settled without it', () => {
+    mocks.isSafe = true;
+    seedReadyClaim();
+    const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+    launchAndConfirm(result.current.launch).onStart('0xsafeclaim');
+    pendingBridgeStore.update(scope(), '0xsource', current => ({
+      ...current,
+      status: 'claimed',
+      settledAt: Date.now()
+    }));
+    rerender();
+    expect(result.current.actionHint(stored('0xsource'))).toEqual({ kind: 'safe-executing' });
+  });
+
+  it('gives a settled bridge no hint once its Safe action is resolved', () => {
+    mocks.isSafe = true;
+    seedReadyClaim();
+    const { result, rerender } = renderHook(() => useDestinationActionLaunch());
+    launchAndConfirm(result.current.launch).onStart('0xsafeclaim');
+    pendingBridgeStore.update(scope(), '0xsource', current => ({
+      ...dropSentAction(current, '0xsafeclaim'),
+      status: 'claimed',
+      settledAt: Date.now()
+    }));
+    rerender();
+    expect(result.current.actionHint(stored('0xsource'))).toBeUndefined();
+  });
+
   it('a reverted action clears, so the user can claim again', () => {
     seedReadyClaim();
     const { result } = renderHook(() => useDestinationActionLaunch());

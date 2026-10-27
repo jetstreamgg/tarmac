@@ -30,6 +30,7 @@ import {
   recordActionSent,
   forgetNextLeg,
   recordNextLeg,
+  isSettled,
   showsActionButton
 } from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
@@ -412,6 +413,11 @@ export function useDestinationActionLaunch() {
           return { kind: 'switch-network', network: bridge.to, safe: isSafe };
         return undefined;
       }
+      // A Safe action queued before the bridge settled keeps the card until it executes.
+      if (isSettled(bridge))
+        return bridge.actions.some(done => done.status === 'sent' && done.safe && done.action !== 'convert')
+          ? { kind: 'safe-executing' }
+          : undefined;
       if (!showsActionButton(bridge) || claimsFromDestinationWallet(bridge, address)) return undefined;
       // The keepalive is sent from the redeem's card too.
       const sent = bridge.actions.find(
