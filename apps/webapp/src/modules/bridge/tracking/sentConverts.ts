@@ -3,6 +3,20 @@ import type { CctpL2NetworkId } from '../adapters/cctp/contracts';
 import { bundleOutcome } from './bundleAction';
 import type { CallsStatus } from './recoverDeposits';
 
+const POLL_MS = 30_000;
+const SLOW_POLL_MS = 5 * 60_000;
+const FAST_POLL_WINDOW_MS = 60 * 60_000;
+
+/**
+ * How often the sent converts are checked: every 30 seconds for an hour after
+ * the last one was sent, then every 5 minutes, as a wallet or Safe signers that
+ * never answer leave it sent. A link stored without its send time is dated by its swap.
+ */
+export function sentConvertPollMs(swaps: readonly UnfinishedCctpSwap[], now: number): number {
+  const recent = swaps.some(swap => swap.convert && now - (swap.convertAt ?? swap.at) <= FAST_POLL_WINDOW_MS);
+  return recent ? POLL_MS : SLOW_POLL_MS;
+}
+
 /**
  * Settles each convert a stopped CCTP swap sent, so it is resolved after the
  * tab that sent it closed: one sent as a wallet bundle from the wallet's

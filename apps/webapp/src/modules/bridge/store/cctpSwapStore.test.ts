@@ -184,6 +184,35 @@ describe('createCctpSwapStore burn links', () => {
     ]);
   });
 
+  it('keeps when the convert was linked across a reload, and forgets it once unlinked', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(5_000);
+    const store = createCctpSwapStore();
+    store.record(SCOPE, swap());
+    store.markConvert(SCOPE, SWAP_HASH, '0xconvert');
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0]).toMatchObject({
+      convert: '0xconvert',
+      convertAt: 5_000
+    });
+    store.markConvert(SCOPE, SWAP_HASH, undefined);
+    expect(createCctpSwapStore().getSnapshot(SCOPE)[0]).not.toHaveProperty('convertAt');
+    vi.restoreAllMocks();
+  });
+
+  it('drops a stored convert time of the wrong type', () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify([
+        { ...swap(), usdcAmount: '1', convert: '0xc', convertAt: 'soon' },
+        { ...swap({ swapTxHash: '0x01' }), usdcAmount: '1', convert: '0xc', convertAt: 9 }
+      ])
+    );
+    expect(
+      createCctpSwapStore()
+        .getSnapshot(SCOPE)
+        .map(entry => [entry.swapTxHash, entry.convertAt])
+    ).toEqual([['0x01', 9]]);
+  });
+
   it('links nothing to a swap it does not hold, and notifies only on a change', () => {
     const store = createCctpSwapStore();
     const listener = vi.fn();

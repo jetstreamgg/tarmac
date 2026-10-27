@@ -20,6 +20,8 @@ export type UnfinishedCctpSwap = {
   convert?: string;
   /** `convert` is the wallet's calls id of a bundle, which only the wallet can resolve. */
   convertBundled?: true;
+  /** When `convert` was linked, by the device clock. */
+  convertAt?: number;
 };
 
 /** Whether a pending bridge is the burn a swap entry links to (`UnfinishedCctpSwap.burn`). */
@@ -53,7 +55,8 @@ const parseEntry = (value: unknown): UnfinishedCctpSwap | null => {
     typeof entry.at !== 'number' ||
     (entry.burn !== undefined && !isString(entry.burn)) ||
     (entry.convert !== undefined && !isString(entry.convert)) ||
-    (entry.convertBundled !== undefined && entry.convertBundled !== true)
+    (entry.convertBundled !== undefined && entry.convertBundled !== true) ||
+    (entry.convertAt !== undefined && typeof entry.convertAt !== 'number')
   )
     return null;
   try {
@@ -139,7 +142,11 @@ export function createCctpSwapStore() {
       if (!entry || entry.convert === id) return;
       write(
         scope,
-        current.map(swap => (swap === entry ? { ...swap, convert: id, convertBundled: bundled } : swap)),
+        current.map(swap =>
+          swap === entry
+            ? { ...swap, convert: id, convertBundled: bundled, convertAt: id ? Date.now() : undefined }
+            : swap
+        ),
         hash
       );
     },

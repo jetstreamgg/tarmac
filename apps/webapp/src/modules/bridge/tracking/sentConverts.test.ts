@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Hex } from 'viem';
 import { createCctpSwapStore, isSwapSpendable, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import type { CallsStatus } from './recoverDeposits';
-import { resolveSentConverts } from './sentConverts';
+import { resolveSentConverts, sentConvertPollMs } from './sentConverts';
 
 // A convert of a stopped swap sent as a wallet bundle outlives the tab that sent it: only the wallet can tell how it ended.
 
@@ -145,5 +145,35 @@ describe('resolveSentConverts, a convert sent by hash', () => {
     await resolve(receipt);
     expect(receipt).not.toHaveBeenCalled();
     expect(stored()).toMatchObject({ convert: 'calls-id', convertBundled: true });
+  });
+});
+
+// A convert the wallet or its signers never answer for stays sent: checking it every 30 seconds for days is waste.
+describe('sentConvertPollMs', () => {
+  const HOUR = 60 * 60_000;
+  const NOW = 10 * HOUR;
+  const sent = (convertAt: number | undefined, at = 1): UnfinishedCctpSwap => ({
+    ...SWAP,
+    at,
+    convert: '0xc',
+    convertAt
+  });
+
+  it('checks every 30 seconds for an hour after a convert is sent', () => {
+    expect(sentConvertPollMs([sent(NOW - HOUR)], NOW)).toBe(30_000);
+  });
+
+  it('backs off to every 5 minutes once every sent convert is over an hour old', () => {
+    expect(sentConvertPollMs([sent(NOW - HOUR - 1)], NOW)).toBe(5 * 60_000);
+    expect(sentConvertPollMs([sent(NOW - 2 * HOUR), sent(NOW - 60_000)], NOW)).toBe(30_000);
+  });
+
+  it("dates a link stored before its send time was kept by the swap's own time", () => {
+    expect(sentConvertPollMs([sent(undefined, NOW - 2 * HOUR)], NOW)).toBe(5 * 60_000);
+    expect(sentConvertPollMs([sent(undefined, NOW - 60_000)], NOW)).toBe(30_000);
+  });
+
+  it('ignores swaps with no convert sent', () => {
+    expect(sentConvertPollMs([{ ...SWAP, at: NOW }, sent(NOW - 2 * HOUR)], NOW)).toBe(5 * 60_000);
   });
 });
