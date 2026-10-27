@@ -1,11 +1,13 @@
-import { TransactionReceiptNotFoundError, type Hex, type Log } from 'viem';
+import { psm3L2Abi } from '@/hooks/generated';
+import { TransactionReceiptNotFoundError, isAddressEqual, parseEventLogs, type Hex, type Log } from 'viem';
 import { createPendingBridge } from '../../model/pendingTransitions';
 import { sendsToOther } from '../../model/recipient';
 import { cctpWithdrawalRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
 import { math } from '@/utils';
 import type { ChainReader } from '../types';
-import type { CctpL2NetworkId } from './contracts';
+import { CCTP_CLAIM_ONLY, cctpBurnAmount } from './calls';
+import { cctpL2Contracts, type CctpL2NetworkId } from './contracts';
 import { isExpectedBurn, sentMessages, type CctpBurnExpectation } from './message';
 
 export type CctpBurnLookup =
@@ -26,11 +28,25 @@ export function standardBurns(logs: readonly Log[], from: CctpL2NetworkId): Cctp
   });
 }
 
+/** The burn's transaction swapped its whole USDC from USDS on PSM3 to its sender, as the app's bundle does. */
+const swappedFromUsds = (logs: readonly Log[], { from, amount, sender }: CctpBurnExpectation) => {
+  const { psm3, usds, usdc } = cctpL2Contracts(from);
+  return parseEventLogs({ abi: psm3L2Abi, eventName: 'Swap', logs: logs as Log[], strict: true }).some(
+    ({ address, args }) =>
+      isAddressEqual(address, psm3) &&
+      isAddressEqual(args.assetIn, usds) &&
+      isAddressEqual(args.assetOut, usdc) &&
+      isAddressEqual(args.receiver, sender) &&
+      args.amountOut >= cctpBurnAmount(amount)
+  );
+};
+
 /**
  * A CCTP burn to Ethereum that this browser has no record of, read from its
  * source receipt, as the pending bridge the tracker claims from. A third
- * wallet's names its recipient, the only wallet that can claim it; network
- * read errors are thrown.
+ * wallet's names its recipient, the only wallet that can claim it. A burn
+ * whose transaction didn't swap it from USDS is claim-only: its USDC stays
+ * USDC, and a convert is offered after. Network read errors are thrown.
  */
 export async function lookupCctpBurn({
   from,
@@ -56,21 +72,20 @@ export async function lookupCctpBurn({
   if (burns.length === 0) return { status: 'refused', reason: 'not-a-bridge' };
   if (burns.length > 1) return { status: 'refused', reason: 'several-burns' };
   const [{ amount, sender, mintRecipient }] = burns;
+  const claimOnly = !swappedFromUsds(receipt.logs, burns[0]);
   const caller = account.toLowerCase();
   const thirdWallet = caller !== sender.toLowerCase() && caller !== mintRecipient.toLowerCase();
   const block = await client.getBlock({ blockNumber: receipt.blockNumber });
   const startedAt = Number(block.timestamp) * 1000;
-  return {
-    status: 'found',
-    bridge: createPendingBridge({
-      account: sender,
-      amount,
-      from,
-      to: 'ethereum',
-      recipient: thirdWallet || sendsToOther(mintRecipient, sender) ? mintRecipient.toLowerCase() : undefined,
-      route: cctpWithdrawalRoute(from),
-      txHash: hash,
-      now: startedAt
-    })
-  };
+  const bridge = createPendingBridge({
+    account: sender,
+    amount,
+    from,
+    to: 'ethereum',
+    recipient: thirdWallet || sendsToOther(mintRecipient, sender) ? mintRecipient.toLowerCase() : undefined,
+    route: cctpWithdrawalRoute(from),
+    txHash: hash,
+    now: startedAt
+  });
+  return { status: 'found', bridge: claimOnly ? { ...bridge, routeData: { ...CCTP_CLAIM_ONLY } } : bridge };
 }

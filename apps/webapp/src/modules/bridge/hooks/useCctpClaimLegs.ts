@@ -4,7 +4,7 @@ import { usePublicClient } from 'wagmi';
 import { useTokenAllowance } from '@/hooks';
 import type { TxMutateVariables } from '@/hooks';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { CCTP_CLAIM_FUNCTION, cctpClaimCalls } from '../adapters/cctp/calls';
+import { CCTP_CLAIM_FUNCTION, cctpClaimCalls, isCctpClaimOnly } from '../adapters/cctp/calls';
 import { cctpClaimMessage } from '../adapters/cctp/cctpProgress';
 import { L1_USDC, USDS_PSM_WRAPPER } from '../adapters/cctp/contracts';
 import { cctpClaimRefusal } from '../adapters/cctp/gate';
@@ -15,7 +15,7 @@ export { CCTP_CLAIM_FUNCTION };
 /**
  * The Ethereum legs of a CCTP claim: receive the stored attested message, then
  * sell the minted USDC for USDS to the same account (after an approve when
- * short), one at a time or as one bundle with `batch`. No calls while the
+ * short; not for a claim-only bridge), one at a time or as one bundle with `batch`. No calls while the
  * message doesn't check out, mints to another account or the allowance is
  * loading. The message, pause, sell and liquidity are read again before the
  * wallet prompt. Only enabled with the wallet on `chainId`.
@@ -57,6 +57,7 @@ export function useCctpClaimLegs({
   const client = usePublicClient({ chainId });
   const message = useMemo(() => (enabled ? cctpClaimMessage(routeData) : undefined), [enabled, routeData]);
   const active = !!message && chainId !== undefined && !!from;
+  const convert = !isCctpClaimOnly(routeData);
 
   const allowance = useTokenAllowance({
     chainId: chainId ?? 0,
@@ -68,11 +69,13 @@ export function useCctpClaimLegs({
   const built = useMemo(() => {
     if (!active || allowance.data === undefined) return undefined;
     try {
-      return { calls: cctpClaimCalls({ ...message, account: from!, usdcAllowance: allowance.data }) };
+      return {
+        calls: cctpClaimCalls({ ...message, account: from!, usdcAllowance: allowance.data, convert })
+      };
     } catch (error) {
       return { error: error as Error };
     }
-  }, [active, message, from, allowance.data]);
+  }, [active, message, from, allowance.data, convert]);
   const calls = useMemo(() => built?.calls ?? [], [built]);
 
   const preflight = useCallback(

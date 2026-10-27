@@ -187,6 +187,16 @@ describe('cctpClaimCalls (golden: the Ethereum receive of the same burn)', () =>
     expect(claim(BASE_BURN_AMOUNT).map(call => call.functionName)).toEqual(['receiveMessage', 'sellGem']);
   });
 
+  it('only receives a claim-only message: its USDC stays USDC', () => {
+    const calls = cctpClaimCalls({
+      ...BASE_BURN_ATTESTED,
+      account: recipient,
+      usdcAllowance: 0n,
+      convert: false
+    }) as ContractCall[];
+    expect(calls.map(call => call.functionName)).toEqual(['receiveMessage']);
+  });
+
   it('refuses a message minted to another account', () => {
     expect(() =>
       cctpClaimCalls({

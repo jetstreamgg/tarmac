@@ -1,7 +1,9 @@
+import { psm3L2Abi } from '@/hooks/generated';
 import {
   TransactionReceiptNotFoundError,
   decodeEventLog,
   encodeAbiParameters,
+  encodeEventTopics,
   getAddress,
   type Hex,
   type Log
@@ -9,7 +11,7 @@ import {
 import { describe, expect, it, vi } from 'vitest';
 import type { ChainReader } from '../types';
 import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from './cctp.fixtures';
-import { messageTransmitterV2Abi } from './contracts';
+import { cctpL2Contracts, messageTransmitterV2Abi } from './contracts';
 import { lookupCctpBurn, standardBurns } from './lookup';
 
 const SENDER = getAddress(BASE_BURN_TX.from);
@@ -36,6 +38,30 @@ const patchedLogs = (offset: number, bytes: string): Log[] => {
 };
 const MINT_RECIPIENT_OFFSET = 148 + 36;
 const toOther = () => patchedLogs(MINT_RECIPIENT_OFFSET, OTHER.slice(2).padStart(64, '0'));
+
+/** The PSM3 swap of USDS to USDC this app sends before the burn, in the same transaction. */
+const swapLog = ({
+  address = cctpL2Contracts('base').psm3,
+  receiver = SENDER,
+  amountOut = BASE_BURN_AMOUNT
+}: { address?: string; receiver?: string; amountOut?: bigint } = {}): Log =>
+  ({
+    ...messageLog,
+    address,
+    topics: encodeEventTopics({
+      abi: psm3L2Abi,
+      eventName: 'Swap',
+      args: {
+        assetIn: cctpL2Contracts('base').usds,
+        assetOut: cctpL2Contracts('base').usdc,
+        receiver: receiver as Hex
+      }
+    }),
+    data: encodeAbiParameters(
+      [{ type: 'address' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' }],
+      [SENDER, BASE_BURN_AMOUNT * 10n ** 12n, amountOut, 0n]
+    )
+  }) as Log;
 
 const client = ({
   logs = BASE_BURN_LOGS,
@@ -99,9 +125,25 @@ describe('lookupCctpBurn', () => {
         startedAt: Number(BLOCK_SECONDS) * 1000,
         etaAt: Number(BLOCK_SECONDS) * 1000 + 20 * 60_000,
         txHash: BASE_BURN_TX.hash,
-        actions: []
+        actions: [],
+        routeData: { cctpClaimOnly: 'true' }
       }
     });
+  });
+
+  it('claims and converts a burn its own transaction swapped from USDS on PSM3', async () => {
+    const result = await lookup(SENDER, client({ logs: [swapLog(), ...BASE_BURN_LOGS] }));
+    expect(result.status).toBe('found');
+    expect(result.status === 'found' && result.bridge.routeData).toBeUndefined();
+  });
+
+  it.each([
+    ['another contract', { address: OTHER }],
+    ['another receiver', { receiver: OTHER }],
+    ['less than the burn', { amountOut: BASE_BURN_AMOUNT - 1n }]
+  ])("only claims a burn whose swap is %s's: its USDC stays USDC", async (_, swap) => {
+    const result = await lookup(SENDER, client({ logs: [swapLog(swap), ...BASE_BURN_LOGS] }));
+    expect(result.status === 'found' && result.bridge.routeData).toEqual({ cctpClaimOnly: 'true' });
   });
 
   it('keys the bridge by the lower-case hash', async () => {

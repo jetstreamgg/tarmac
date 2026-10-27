@@ -28,6 +28,11 @@ export const CCTP_CONVERT_FUNCTION = 'sellGem';
 /** The leg that swaps USDC for USDS on an L2's PSM3, which records an L2 convert. */
 export const CCTP_L2_CONVERT_FUNCTION = 'swapExactIn';
 
+/** The routeData of a burn the app didn't swap from USDS (another frontend's): its claim only receives the USDC. */
+export const CCTP_CLAIM_ONLY = { cctpClaimOnly: 'true' } as const;
+export const isCctpClaimOnly = (routeData: Record<string, string> | undefined) =>
+  routeData?.cctpClaimOnly === CCTP_CLAIM_ONLY.cctpClaimOnly;
+
 const approve = (token: Address, spender: Address, amount: bigint) =>
   getWriteContractCall({ to: token, abi: erc20Abi, functionName: 'approve', args: [spender, amount] });
 
@@ -141,19 +146,22 @@ export function cctpL2ConvertCalls({
 
 /**
  * The Ethereum claim of an attested message minted to `account`: receive it,
- * then sell the minted USDC for USDS to the same account. Anyone else's
- * message is refused: its USDC goes to its own recipient.
+ * then sell the minted USDC for USDS to the same account, unless `convert` is
+ * false. Anyone else's message is refused: its USDC goes to its own recipient.
  */
 export function cctpClaimCalls({
   message,
   attestation,
   account,
-  usdcAllowance
+  usdcAllowance,
+  convert = true
 }: {
   message: Hex;
   attestation: Hex;
   account: Address;
   usdcAllowance: bigint;
+  /** False to leave the minted USDC as USDC. */
+  convert?: boolean;
 }): Call[] {
   const { body } = decodeCctpMessage(message);
   if (!isAddressEqual(body.mintRecipient, account))
@@ -164,5 +172,6 @@ export function cctpClaimCalls({
     functionName: CCTP_CLAIM_FUNCTION,
     args: [message, attestation]
   });
+  if (!convert) return [receive];
   return [receive, ...cctpConvertCalls({ account, amount: body.amount - body.feeExecuted, usdcAllowance })];
 }

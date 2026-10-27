@@ -68,6 +68,11 @@ describe('useCctpClaimLegs (golden: the Ethereum receive of Base burn 0x5bb3d46a
     mocks.refusal.mockReset();
   });
 
+  it("only receives a claim-only bridge's message, with no sale", () => {
+    render({ routeData: { ...ROUTE_DATA, cctpClaimOnly: 'true' } });
+    expect(names()).toEqual(['receiveMessage']);
+  });
+
   it('receives the stored message with the real calldata, then sells the mint for USDS', () => {
     expect(render({ batch: true }).ready).toBe(true);
     expect(mocks.legs).toMatchObject({ chainId: 1, sendFunctionName: 'receiveMessage', batch: true });

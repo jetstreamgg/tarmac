@@ -18,7 +18,7 @@ import { runMockLegs } from '../adapters/mockAdapter';
 import { CctpConvertReview } from '../components/CctpConvertReview';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
-import { CCTP_CONVERT_FUNCTION, cctpBurnAmount } from '../adapters/cctp/calls';
+import { CCTP_CONVERT_FUNCTION, cctpBurnAmount, isCctpClaimOnly } from '../adapters/cctp/calls';
 import { readCctpConvertOffer } from '../adapters/cctp/convert';
 import {
   canLaunchAction,
@@ -113,15 +113,15 @@ export type DestinationActionHint =
   | { kind: 'action-sent'; network: BridgeNetworkId }
   | { kind: 'switch-network'; network: BridgeNetworkId; safe: boolean };
 
-const actionCopy = (action: PendingBridgeNextAction, amount: string) => {
+const actionCopy = (action: PendingBridgeNextAction, amount: string, symbol: string) => {
   switch (action) {
     case 'claim':
       return {
         step: t`Claim`,
-        loading: t`Claiming ${amount} USDS`,
+        loading: t`Claiming ${amount} ${symbol}`,
         success: t`Funds claimed successfully!`,
         error: t`Claim failed`,
-        failure: stepFailureDetail.claim('USDS')
+        failure: stepFailureDetail.claim(symbol)
       };
     case 'prove':
       return {
@@ -444,11 +444,12 @@ export function useDestinationActionLaunch() {
       if (!bridge || !action || !launchable(bridge, action, address)) return;
       const isConvert = action === 'convert';
       if (isConvert && !convertible(bridge, convertAmount)) return;
-      const symbol = isConvert ? 'USDC' : 'USDS';
+      // A claim-only bridge's claim leaves its USDC as USDC.
+      const symbol = isConvert || (action === 'claim' && isCctpClaimOnly(bridge.routeData)) ? 'USDC' : 'USDS';
       const amount = isConvert
         ? formatBigInt(convertAmount!, { unit: 6, minDecimals: 2, maxDecimals: 2 })
         : formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
-      const copy = actionCopy(action, amount);
+      const copy = actionCopy(action, amount, symbol);
       const pinnedChainId = pinChainId(bridge);
       if (pinnedChainId === undefined) return;
       if (walletChainId !== pinnedChainId) {
