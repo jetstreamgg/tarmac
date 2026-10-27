@@ -53,7 +53,10 @@ vi.mock('@/hooks', async io => ({
   useNetworkFee: () => ({ data: { formatted: '$0.42' } }),
   useTokenBalance: () => ({ data: { value: 10n * ONE }, isLoading: false })
 }));
-vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
+  useShouldUseBatch: () => false,
+  useBatchSupportPending: () => false
+}));
 // The CCTP form gate has its own suite (useBridgeForm.cctp.test.tsx).
 vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({

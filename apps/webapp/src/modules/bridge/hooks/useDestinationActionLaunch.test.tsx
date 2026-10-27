@@ -75,7 +75,10 @@ vi.mock('@/hooks', async io => ({
   useSafeWalletStatus: () => (mocks.isSafe ? 'safe' : 'not-safe')
 }));
 vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
-vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
+  useShouldUseBatch: () => false,
+  useBatchSupportPending: () => false
+}));
 // The CCTP claim's legs report through the action's callbacks like the mock executor's.
 vi.mock('./useCctpClaimLegs', () => {
   let getCallbacks: () => TxCallbacks = () => mocks.session;

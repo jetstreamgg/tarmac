@@ -51,6 +51,13 @@ export function useShouldUseBatch(also: boolean = true): boolean {
   return !!batchEnabled && !!batchSupported && also;
 }
 
+/** The user opted into batching and the wallet's batch support is still being probed: `useShouldUseBatch` reads false until it answers. */
+export function useBatchSupportPending(): boolean {
+  const [batchEnabled] = useBatchToggle();
+  const { isLoading } = useIsBatchSupported();
+  return !!batchEnabled && isLoading;
+}
+
 /**
  * Map the routed engine hook onto the launch result. Plain-write engines
  * report a failed prepare simulation via `prepareError` (the batch engines

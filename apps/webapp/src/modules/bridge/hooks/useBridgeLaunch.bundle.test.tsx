@@ -96,7 +96,8 @@ vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
   useShouldUseBatch: (also: boolean) => {
     mocks.shouldUseBatch.push(also);
     return mocks.batchSupported && also;
-  }
+  },
+  useBatchSupportPending: () => false
 }));
 // The CCTP form gate has its own suite (useBridgeForm.cctp.test.tsx).
 vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));

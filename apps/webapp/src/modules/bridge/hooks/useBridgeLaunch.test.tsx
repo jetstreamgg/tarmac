@@ -89,7 +89,10 @@ vi.mock('@/hooks', async io => ({
     };
   }
 }));
-vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
+  useShouldUseBatch: () => false,
+  useBatchSupportPending: () => false
+}));
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({ canSwitchChain: true, handleSwitchChain: vi.fn() })
 }));

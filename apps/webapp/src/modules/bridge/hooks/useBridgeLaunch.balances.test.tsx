@@ -44,7 +44,10 @@ vi.mock('@/hooks', async io => ({
   useTokenBalance: () => ({ data: undefined, isLoading: false })
 }));
 vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
-vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
+  useShouldUseBatch: () => false,
+  useBatchSupportPending: () => false
+}));
 vi.mock('@/modules/ui/hooks/useResetUnfinishedRunOnClose', () => ({
   useResetUnfinishedRunOnClose: (reset: (onCleared?: () => void) => void, refetchReads?: () => void) => {
     mocks.closeReset = reset;

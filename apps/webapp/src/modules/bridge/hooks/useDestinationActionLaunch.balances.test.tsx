@@ -43,7 +43,10 @@ vi.mock('@/hooks', async io => ({
   useSafeWalletStatus: () => 'not-safe'
 }));
 vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
-vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => false }));
+vi.mock('@/modules/ui/hooks/engineLaunch', () => ({
+  useShouldUseBatch: () => false,
+  useBatchSupportPending: () => false
+}));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: (config: TransactionConfig) => mocks.launched.push(config),
