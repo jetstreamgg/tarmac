@@ -26,6 +26,7 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { StakeLtvInfoTooltip } from './StakeLtvInfoTooltip';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';
+import { isBelowCollateralRatio } from '../lib/liquidation';
 import { loanToValue } from '../lib/loanToValue';
 import { RiskPill } from './StakeManageBorrowCard';
 import { useStakePositionDetail } from '../hooks/useStakePositionDetail';
@@ -70,6 +71,7 @@ function MenuRow({
   icon,
   label,
   chip,
+  note,
   disabled = false,
   onClick,
   dataTestId
@@ -77,11 +79,13 @@ function MenuRow({
   icon: ReactNode;
   label: ReactNode;
   chip?: ReactNode;
+  /** Why the row is disabled, under it — kept out of the button so it isn't dimmed with it. */
+  note?: ReactNode;
   disabled?: boolean;
   onClick?: () => void;
   dataTestId: string;
 }) {
-  return (
+  const row = (
     <button
       type="button"
       disabled={disabled}
@@ -99,6 +103,15 @@ function MenuRow({
       </span>
       <ChevronRight className="text-fgQuaternary h-4 w-4" aria-hidden />
     </button>
+  );
+  if (!note) return row;
+  return (
+    <div className="flex flex-col">
+      {row}
+      <p className="text-error -mt-2 pb-2 text-xs leading-[18px]" data-testid={`${dataTestId}-note`}>
+        {note}
+      </p>
+    </div>
   );
 }
 
@@ -181,11 +194,14 @@ function ManageMenuRows({
 // switches, a Close position entry into the same sheet staged at max, and a Claim CTA.
 function ActiveActions({
   claimDisabled,
+  delegateBlocked,
   onAction,
   onClaim,
   idSuffix = ''
 }: {
   claimDisabled: boolean;
+  /** Below the collateralization ratio: the engine refuses a delegate change (see isBelowCollateralRatio). */
+  delegateBlocked: boolean;
   onAction: (action: StakeManageAction) => void;
   onClaim: () => void;
   idSuffix?: string;
@@ -211,6 +227,10 @@ function ActiveActions({
         <MenuRow
           icon={<UserRound className="h-4 w-4" />}
           label={<Trans>Change delegate</Trans>}
+          disabled={delegateBlocked}
+          note={
+            delegateBlocked ? <Trans>Add collateral or repay debt to change your delegate.</Trans> : undefined
+          }
           onClick={() => onAction('delegate')}
           dataTestId={`stake-manage-menu-change-delegate${idSuffix}`}
         />
@@ -371,7 +391,12 @@ export function PositionDetailsModal({
     ) : undefined;
 
   const isActive = !detail.shapeLoading && !isInactive;
-  const activeActionsProps = { claimDisabled, onAction, onClaim };
+  const activeActionsProps = {
+    claimDisabled,
+    delegateBlocked: isBelowCollateralRatio(detail.vault),
+    onAction,
+    onClaim
+  };
 
   const menuRowsProps = {
     loading: detail.shapeLoading,

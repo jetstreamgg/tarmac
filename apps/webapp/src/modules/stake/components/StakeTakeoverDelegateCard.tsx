@@ -41,6 +41,13 @@ export function useDelegateList(selectedDelegate: `0x${string}` | undefined) {
   return { delegates, isLoading, search, setSearch };
 }
 
+// The list's height cap. In the Change delegate modal it also gives way on a
+// short screen, so the modal (its header, the picker, an error line, the CTA:
+// ~27rem around the list) fits the viewport instead of growing a second
+// scrollbar; the list keeps its own.
+const LIST_HEIGHT = { page: 'h-96', modal: 'h-[clamp(10rem,calc(100dvh_-_27rem),24rem)]' };
+const LIST_MAX_HEIGHT = { page: 'max-h-96', modal: 'max-h-[clamp(10rem,calc(100dvh_-_27rem),24rem)]' };
+
 /**
  * The card body — search + single-select list, fed by `useDelegateList`.
  * Exported for the F5 manage sheet's Change delegate modal, which shares the
@@ -53,11 +60,13 @@ export function DelegateList({
   setSearch,
   selectedDelegate,
   onSelect,
-  dataTestIdPrefix = 'stake-takeover-delegate'
+  dataTestIdPrefix = 'stake-takeover-delegate',
+  placement = 'page'
 }: ReturnType<typeof useDelegateList> & {
   selectedDelegate: `0x${string}` | undefined;
   onSelect: (delegate: `0x${string}`) => void;
   dataTestIdPrefix?: string;
+  placement?: 'page' | 'modal';
 }) {
   return (
     <div className="flex flex-col gap-6 md:gap-8">
@@ -76,7 +85,7 @@ export function DelegateList({
 
       {isLoading ? (
         // Same height as the list's cap so the card never resizes once data lands.
-        <div className="flex h-96 flex-col gap-2 overflow-hidden">
+        <div className={cn('flex flex-col gap-2 overflow-hidden', LIST_HEIGHT[placement])}>
           {[0, 1, 2, 3, 4, 5].map(row => (
             <Skeleton key={row} className="h-16 w-full rounded-2xl md:rounded-xl" />
           ))}
@@ -86,7 +95,10 @@ export function DelegateList({
           <Trans>No delegates found</Trans>
         </p>
       ) : (
-        <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto" data-testid={`${dataTestIdPrefix}-list`}>
+        <ul
+          className={cn('flex flex-col gap-2 overflow-y-auto', LIST_MAX_HEIGHT[placement])}
+          data-testid={`${dataTestIdPrefix}-list`}
+        >
           {delegates.map(delegate => {
             const isSelected = selectedDelegate?.toLowerCase() === delegate.id.toLowerCase();
             return (
@@ -191,5 +203,5 @@ export function DelegatePicker(props: {
   dataTestIdPrefix?: string;
 }) {
   const list = useDelegateList(props.selectedDelegate);
-  return <DelegateList {...list} {...props} />;
+  return <DelegateList {...list} {...props} placement="modal" />;
 }
