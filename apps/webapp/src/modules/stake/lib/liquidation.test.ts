@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { math } from '@/utils';
 import {
   isAtRiskOfLiquidation,
-  isBelowCollateralRatio,
   maxWithdrawWithinRisk,
   repayToWithdraw,
   STAKE_LIQUIDATION_WARNING_PROXIMITY_THRESHOLD
@@ -147,27 +146,5 @@ describe('repayToWithdraw', () => {
       expect(after(repay)).toBeGreaterThanOrEqual(withdraw);
       if (repay > 0n) expect(after(repay - CENT)).toBeLessThan(withdraw);
     }
-  });
-});
-
-describe('isBelowCollateralRatio', () => {
-  const vault = { debtValue: 10n ** 21n, liquidationPrice: 50n, delayedPrice: 60n };
-
-  it('is false while the liquidation price is under the delayed price', () => {
-    expect(isBelowCollateralRatio(vault)).toBe(false);
-  });
-
-  it('is true once the liquidation price passes the delayed price', () => {
-    expect(isBelowCollateralRatio({ ...vault, liquidationPrice: 61n })).toBe(true);
-  });
-
-  it('is false at the ratio exactly: the Vat accepts ink * spot == art * rate', () => {
-    expect(isBelowCollateralRatio({ ...vault, liquidationPrice: 60n })).toBe(false);
-  });
-
-  it('is false without debt or before the vault loads', () => {
-    expect(isBelowCollateralRatio({ ...vault, debtValue: 0n, liquidationPrice: 61n })).toBe(false);
-    expect(isBelowCollateralRatio(undefined)).toBe(false);
-    expect(isBelowCollateralRatio({ ...vault, delayedPrice: undefined })).toBe(false);
   });
 });

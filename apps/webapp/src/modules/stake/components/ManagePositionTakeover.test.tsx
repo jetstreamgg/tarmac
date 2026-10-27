@@ -49,6 +49,7 @@ const h = vi.hoisted(() => ({
   liquidationRatio: 125n * 10n ** 25n,
   minCollateralForDust: 0n,
   debtCeiling: 0n,
+  debtCeilingUtilization: 0.5,
   simulationError: null as Error | null,
   // Launch-engine knobs (see the useStakeManageLaunch mock below).
   launchError: null as Error | null,
@@ -133,7 +134,7 @@ vi.mock('@/hooks', async importOriginal => {
         stabilityFee: 851n * 10n ** 14n,
         debtCeiling: h.debtCeiling,
         totalDaiDebt: 0n,
-        debtCeilingUtilization: 0.5
+        debtCeilingUtilization: h.debtCeilingUtilization
       },
       isLoading: false,
       error: null,
@@ -335,6 +336,7 @@ describe('ManagePositionTakeover', () => {
     h.liquidationRatio = 125n * 10n ** 25n;
     h.minCollateralForDust = 1_440_000n * WAD;
     h.debtCeiling = parseUnits('1000000000', 18);
+    h.debtCeilingUtilization = 0.5;
     h.simulationError = null;
     h.launchError = null;
     h.launchLoading = false;
@@ -1191,5 +1193,17 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-error').textContent).toBe(
       'Something went wrong preparing the transaction. Please try again.'
     );
+  });
+
+  it('shows one message at a time: a card notice keeps the prepare failure out of the footer (APP-663)', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.debtCeilingUtilization = 1;
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+
+    expect(screen.getByText('Debt ceiling reached. Borrowing USDS is temporarily unavailable.')).toBeTruthy();
+    expect(screen.queryByTestId('stake-manage-error')).toBeNull();
+    expect(confirmButton().disabled).toBe(true);
   });
 });

@@ -227,30 +227,6 @@ describe('PositionDetailsModal', () => {
     expect(onClaim).toHaveBeenCalled();
   });
 
-  it('blocks Change delegate below the collateralization ratio, saying how to unblock it (APP-663)', () => {
-    const { onAction } = renderModal({
-      vault: { ...baseDetail.vault!, liquidationPrice: parseUnits('0.0700', 18) }
-    });
-
-    const row = screen.getByTestId('stake-manage-menu-change-delegate') as HTMLButtonElement;
-    expect(row.disabled).toBe(true);
-    fireEvent.click(row);
-    expect(onAction).not.toHaveBeenCalledWith('delegate');
-    expect(screen.getByTestId('stake-manage-menu-change-delegate-note').textContent).toBe(
-      'Add collateral or repay debt to change your delegate.'
-    );
-    // Only the delegate change is safety-checked; the reward switch stays open.
-    expect((screen.getByTestId('stake-manage-menu-change-reward') as HTMLButtonElement).disabled).toBe(false);
-  });
-
-  it('keeps Change delegate open above the collateralization ratio', () => {
-    renderModal();
-    expect((screen.getByTestId('stake-manage-menu-change-delegate') as HTMLButtonElement).disabled).toBe(
-      false
-    );
-    expect(screen.queryByTestId('stake-manage-menu-change-delegate-note')).toBeNull();
-  });
-
   it('shows the deprecated-farm chip, warning, and change-reward CTA (APP-516)', () => {
     const { onAction } = renderModal({ rewardSymbol: 'SPK', rewardDeprecated: true });
 

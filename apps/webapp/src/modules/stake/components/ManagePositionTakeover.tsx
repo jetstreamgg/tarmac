@@ -514,10 +514,19 @@ export function ManagePositionTakeover({
   // failure once the engine is disabled. Same while the engine is re-simulating
   // (`prepared` dips false with the previous run's write/mining error still
   // set): a genuine prepare failure survives the load and shows on settle.
-  const launchErrorMessage = enginePrepareErrorMessage(
-    prepared,
-    formValid && !launchLoading ? launchError : null
-  );
+  //
+  // One message at a time: while a card shows its own error or notice (the
+  // debt ceiling, the borrow minimum), the prepare failure stays out of the
+  // footer.
+  const cardMessageShown =
+    !!stakeError ||
+    (borrowOn &&
+      (!!borrowError ||
+        (state.borrowMode === 'borrow' &&
+          (minCollateralNotMet || collateralData?.debtCeilingUtilization === 1))));
+  const launchErrorMessage = cardMessageShown
+    ? undefined
+    : enginePrepareErrorMessage(prepared, formValid && !launchLoading ? launchError : null);
   const confirmHold = useStakeConfirmHold({
     usdValue,
     actionable: formValid && prepared && !launchLoading,

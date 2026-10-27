@@ -24,24 +24,6 @@ export function isAtRiskOfLiquidation(
 }
 
 /**
- * Whether the position's debt is above what its collateral backs at the
- * delayed (OSM) price: the Vat's `ink * spot < art * rate`. The engine runs
- * that check on a delegate change (LockstakeEngine/urn-unsafe), so the
- * change can't go through until collateral is added or debt repaid. Read
- * from the vault as the liquidation price passing the delayed price, which
- * is the same inequality (spot = delayed price / mat). Sits on the stored
- * rate, a hair under the dripped one the engine uses, so the delegate
- * picker still shows the simulation's revert for a borderline position.
- */
-export function isBelowCollateralRatio(
-  vault: Pick<Vault, 'debtValue' | 'liquidationPrice' | 'delayedPrice'> | undefined
-): boolean {
-  if (!vault?.debtValue || vault.debtValue <= 0n) return false;
-  if (vault.liquidationPrice === undefined || !vault.delayedPrice) return false;
-  return vault.liquidationPrice > vault.delayedPrice;
-}
-
-/**
  * Most collateral that can leave the position while its liquidation proximity
  * stays at or under `threshold` percent. The withdraw field errors past that
  * threshold, so this is the bound the error copy may promise (PR #1938
