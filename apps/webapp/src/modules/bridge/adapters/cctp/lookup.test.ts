@@ -12,11 +12,13 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ChainReader } from '../types';
 import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from './cctp.fixtures';
 import { cctpL2Contracts, messageTransmitterV2Abi } from './contracts';
-import { lookupCctpBurn, standardBurns } from './lookup';
+import { SWAP_LOOKBACK_BLOCKS, lookupCctpBurn, standardBurns } from './lookup';
 
 const SENDER = getAddress(BASE_BURN_TX.from);
 const OTHER = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
 const BLOCK_SECONDS = 1_800_000_000n;
+const BURN_BLOCK = 52837683n;
+const BURN_TX_INDEX = 7;
 
 const messageLog = BASE_BURN_LOGS.find(log => log.topics[0]?.startsWith('0x8c5261668696')) as Log;
 const burnMessage = () =>
@@ -42,12 +44,24 @@ const toOther = () => patchedLogs(MINT_RECIPIENT_OFFSET, OTHER.slice(2).padStart
 /** The PSM3 swap of USDS to USDC this app sends before the burn, in the same transaction. */
 const swapLog = ({
   address = cctpL2Contracts('base').psm3,
+  sender = SENDER,
   receiver = SENDER,
-  amountOut = BASE_BURN_AMOUNT
-}: { address?: string; receiver?: string; amountOut?: bigint } = {}): Log =>
+  amountOut = BASE_BURN_AMOUNT,
+  blockNumber = BURN_BLOCK,
+  transactionIndex = BURN_TX_INDEX
+}: {
+  address?: string;
+  sender?: string;
+  receiver?: string;
+  amountOut?: bigint;
+  blockNumber?: bigint;
+  transactionIndex?: number;
+} = {}): Log =>
   ({
     ...messageLog,
     address,
+    blockNumber,
+    transactionIndex,
     topics: encodeEventTopics({
       abi: psm3L2Abi,
       eventName: 'Swap',
@@ -59,21 +73,29 @@ const swapLog = ({
     }),
     data: encodeAbiParameters(
       [{ type: 'address' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' }],
-      [SENDER, BASE_BURN_AMOUNT * 10n ** 12n, amountOut, 0n]
+      [sender as Hex, BASE_BURN_AMOUNT * 10n ** 12n, amountOut, 0n]
     )
   }) as Log;
 
 const client = ({
   logs = BASE_BURN_LOGS,
   status = 'success',
-  receiptError
-}: { logs?: Log[]; status?: 'success' | 'reverted'; receiptError?: Error } = {}) =>
+  receiptError,
+  earlier = []
+}: { logs?: Log[]; status?: 'success' | 'reverted'; receiptError?: Error; earlier?: Log[] } = {}) =>
   ({
     getTransactionReceipt: vi.fn(async () => {
       if (receiptError) throw receiptError;
-      return { status, logs, blockNumber: 52837683n };
+      return {
+        status,
+        logs,
+        blockNumber: BURN_BLOCK,
+        transactionIndex: BURN_TX_INDEX
+      };
     }),
-    getBlock: vi.fn(async () => ({ timestamp: BLOCK_SECONDS }))
+    getBlock: vi.fn(async () => ({ timestamp: BLOCK_SECONDS })),
+    // The PSM3 swaps to the sender, in the blocks up to the burn's.
+    getLogs: vi.fn(async () => earlier)
   }) as unknown as ChainReader;
 
 const lookup = (account: string, reader = client(), txHash: Hex = BASE_BURN_TX.hash) =>
@@ -146,6 +168,47 @@ describe('lookupCctpBurn', () => {
     expect(result.status === 'found' && result.bridge.routeData).toEqual({ cctpClaimOnly: 'true' });
   });
 
+  // A bridge sent one leg at a time, or as a bundle the wallet runs as separate transactions.
+  it('claims and converts a burn whose sender swapped it from USDS in an earlier transaction', async () => {
+    const reader = client({ earlier: [swapLog({ blockNumber: BURN_BLOCK - 2n })] });
+    const result = await lookup(OTHER, reader);
+    expect(result.status === 'found' && result.bridge.routeData).toBeUndefined();
+    expect(reader.getLogs).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: cctpL2Contracts('base').psm3,
+        args: {
+          assetIn: cctpL2Contracts('base').usds,
+          assetOut: cctpL2Contracts('base').usdc,
+          receiver: SENDER
+        },
+        fromBlock: BURN_BLOCK - SWAP_LOOKBACK_BLOCKS + 1n,
+        toBlock: BURN_BLOCK
+      })
+    );
+  });
+
+  it('claims and converts a burn whose swap went earlier in the same block', async () => {
+    const earlier = [swapLog({ transactionIndex: BURN_TX_INDEX - 1 })];
+    const result = await lookup(SENDER, client({ earlier }));
+    expect(result.status === 'found' && result.bridge.routeData).toBeUndefined();
+  });
+
+  it.each([
+    ['sent by another wallet', { sender: OTHER }],
+    ['for less than the burn', { amountOut: BASE_BURN_AMOUNT - 1n }],
+    ['sent after the burn in its block', { transactionIndex: BURN_TX_INDEX + 1 }],
+    ['from another contract', { address: OTHER }]
+  ])('only claims a burn whose earlier swap was %s: its USDC stays USDC', async (_, swap) => {
+    const result = await lookup(SENDER, client({ earlier: [swapLog(swap)] }));
+    expect(result.status === 'found' && result.bridge.routeData).toEqual({ cctpClaimOnly: 'true' });
+  });
+
+  it('does not look for an earlier swap when the burn swapped in its own transaction', async () => {
+    const reader = client({ logs: [swapLog(), ...BASE_BURN_LOGS] });
+    await lookup(SENDER, reader);
+    expect(reader.getLogs).not.toHaveBeenCalled();
+  });
+
   it('keys the bridge by the lower-case hash', async () => {
     const result = await lookup(SENDER, client(), BASE_BURN_TX.hash.toUpperCase().replace('0X', '0x') as Hex);
     expect(result.status === 'found' && result.bridge.id).toBe(BASE_BURN_TX.hash);
@@ -206,5 +269,11 @@ describe('lookupCctpBurn', () => {
 
   it('throws when the network read fails', async () => {
     await expect(lookup(SENDER, client({ receiptError: new Error('rpc down') }))).rejects.toThrow('rpc down');
+  });
+
+  it('throws when the read of earlier swaps fails', async () => {
+    const reader = client();
+    vi.mocked(reader.getLogs).mockRejectedValueOnce(new Error('logs down'));
+    await expect(lookup(SENDER, reader)).rejects.toThrow('logs down');
   });
 });

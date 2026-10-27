@@ -1,5 +1,12 @@
 import { psm3L2Abi } from '@/hooks/generated';
-import { TransactionReceiptNotFoundError, isAddressEqual, parseEventLogs, type Hex, type Log } from 'viem';
+import {
+  TransactionReceiptNotFoundError,
+  getAbiItem,
+  isAddressEqual,
+  parseEventLogs,
+  type Hex,
+  type Log
+} from 'viem';
 import { createPendingBridge } from '../../model/pendingTransitions';
 import { sendsToOther } from '../../model/recipient';
 import { cctpWithdrawalRoute } from '../../model/resolveRoute';
@@ -28,10 +35,13 @@ export function standardBurns(logs: readonly Log[], from: CctpL2NetworkId): Cctp
   });
 }
 
-/** The burn's transaction swapped its whole USDC from USDS on PSM3 to its sender, as the app's bundle does. */
-const swappedFromUsds = (logs: readonly Log[], { from, amount, sender }: CctpBurnExpectation) => {
+/** The blocks up to a burn's its sender's swap is looked for in: one log read within the 10k range RPC providers cap it at, hours on Base or OP, about 40 minutes on Arbitrum. */
+export const SWAP_LOOKBACK_BLOCKS = 10_000n;
+
+/** A PSM3 swap of USDS to `sender` covering the whole burn, as the app sends before it. */
+const swapsFor = (logs: readonly Log[], { from, amount, sender }: CctpBurnExpectation) => {
   const { psm3, usds, usdc } = cctpL2Contracts(from);
-  return parseEventLogs({ abi: psm3L2Abi, eventName: 'Swap', logs: logs as Log[], strict: true }).some(
+  return parseEventLogs({ abi: psm3L2Abi, eventName: 'Swap', logs: logs as Log[], strict: true }).filter(
     ({ address, args }) =>
       isAddressEqual(address, psm3) &&
       isAddressEqual(args.assetIn, usds) &&
@@ -42,11 +52,40 @@ const swappedFromUsds = (logs: readonly Log[], { from, amount, sender }: CctpBur
 };
 
 /**
+ * The burn was swapped from USDS on PSM3: in its own transaction, as a bundle
+ * does, or in an earlier one its sender sent, as a bridge sent one leg at a
+ * time (or a bundle the wallet runs as separate transactions) does.
+ */
+async function swappedFromUsds(
+  client: ChainReader,
+  receipt: { logs: readonly Log[]; blockNumber: bigint; transactionIndex: number },
+  burn: CctpBurnExpectation
+) {
+  if (swapsFor(receipt.logs, burn).length > 0) return true;
+  const { psm3, usds, usdc } = cctpL2Contracts(burn.from);
+  const earlier = await client.getLogs({
+    address: psm3,
+    event: getAbiItem({ abi: psm3L2Abi, name: 'Swap' }),
+    args: { assetIn: usds, assetOut: usdc, receiver: burn.sender },
+    fromBlock:
+      receipt.blockNumber >= SWAP_LOOKBACK_BLOCKS ? receipt.blockNumber - SWAP_LOOKBACK_BLOCKS + 1n : 0n,
+    toBlock: receipt.blockNumber
+  });
+  return swapsFor(earlier, burn).some(
+    ({ blockNumber, transactionIndex, args }) =>
+      isAddressEqual(args.sender, burn.sender) &&
+      (blockNumber < receipt.blockNumber ||
+        (blockNumber === receipt.blockNumber && transactionIndex < receipt.transactionIndex))
+  );
+}
+
+/**
  * A CCTP burn to Ethereum that this browser has no record of, read from its
  * source receipt, as the pending bridge the tracker claims from. A third
  * wallet's names its recipient, the only wallet that can claim it. A burn
- * whose transaction didn't swap it from USDS is claim-only: its USDC stays
- * USDC, and a convert is offered after. Network read errors are thrown.
+ * its sender didn't swap from USDS, in its transaction or in one shortly
+ * before, is claim-only: its USDC stays USDC, and a convert is offered after.
+ * Network read errors are thrown.
  */
 export async function lookupCctpBurn({
   from,
@@ -72,7 +111,7 @@ export async function lookupCctpBurn({
   if (burns.length === 0) return { status: 'refused', reason: 'not-a-bridge' };
   if (burns.length > 1) return { status: 'refused', reason: 'several-burns' };
   const [{ amount, sender, mintRecipient }] = burns;
-  const claimOnly = !swappedFromUsds(receipt.logs, burns[0]);
+  const claimOnly = !(await swappedFromUsds(client, receipt, burns[0]));
   const caller = account.toLowerCase();
   const thirdWallet = caller !== sender.toLowerCase() && caller !== mintRecipient.toLowerCase();
   const block = await client.getBlock({ blockNumber: receipt.blockNumber });
