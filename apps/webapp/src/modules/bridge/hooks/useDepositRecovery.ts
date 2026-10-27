@@ -47,12 +47,14 @@ export function useDepositRecovery() {
       const l1 = getPublicClient(config, { chainId: ethereumChainId });
       if (!l1) return { complete: true };
       const context = wagmiAdapterContext(config, familyChainId);
-      // A CCTP bundle's burn mined on its L2.
-      const blockTime = async (blockNumber: bigint, network: BridgeNetworkId = 'ethereum') => {
+      // A CCTP bundle's burn mined on its L2; no block number reads the latest.
+      const blockTime = async (blockNumber?: bigint, network: BridgeNetworkId = 'ethereum') => {
         const client = network === 'ethereum' ? l1 : context.getClient(network);
         if (!client) return undefined;
         try {
-          return Number((await client.getBlock({ blockNumber })).timestamp) * 1000;
+          const block =
+            blockNumber === undefined ? await client.getBlock() : await client.getBlock({ blockNumber });
+          return Number(block.timestamp) * 1000;
         } catch {
           return undefined;
         }
@@ -67,6 +69,7 @@ export function useDepositRecovery() {
         now: Date.now,
         blockTime,
         chainNow: await blockTime(toBlock),
+        chainNowOn: network => blockTime(undefined, network),
         callsStatus: async id => {
           try {
             return await getCallsStatus(config, { id });

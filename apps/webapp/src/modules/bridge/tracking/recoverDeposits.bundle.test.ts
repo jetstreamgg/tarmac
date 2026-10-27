@@ -56,6 +56,7 @@ const run = (
   options: {
     blockTime?: (blockNumber: bigint) => Promise<number | undefined>;
     chainNow?: number;
+    chainNowOn?: (network: BridgeNetworkId) => Promise<number | undefined>;
     callsStatus?: (callsId: string) => Promise<CallsStatus | undefined>;
     scope?: string;
     account?: string;
@@ -72,6 +73,7 @@ const run = (
     context: { getClient: () => undefined },
     settled: new Set<string>(),
     chainNow: options.chainNow,
+    chainNowOn: options.chainNowOn,
     callsStatus: options.callsStatus
   });
 
@@ -376,9 +378,54 @@ describe('recoverDeposits, a CCTP bundle the wallet reports on', () => {
       scope,
       account: sender,
       chainNow: NOW,
+      chainNowOn: async () => NOW,
       blockTime: async (_: bigint, from?: BridgeNetworkId) => (from === 'base' ? MINED_AT : undefined),
       callsStatus: async () => ({ status: 'success', receipts: [burn] })
     });
     expect(store.getSnapshot(scope)).toMatchObject([{ id: 'bundle-1', txHash: HASH, startedAt: MINED_AT }]);
+  });
+
+  const DAY = 24 * 60 * 60_000;
+  // The L1 fork runs 31 days ahead of the L2's, whose clock matches the device.
+  const resolveOnBase = async (chainNowOn: (network: BridgeNetworkId) => Promise<number | undefined>) => {
+    const store = createPendingBridgeStore({ now: () => NOW });
+    store.upsert(
+      scope,
+      createPendingBridge({
+        account: sender,
+        amount: BASE_BURN_AMOUNT * 10n ** 12n,
+        from: 'base',
+        to: 'ethereum',
+        route: cctpWithdrawalRoute('base'),
+        bundleId: 'bundle-1',
+        callsId: '0xcalls',
+        now: SENT_AT
+      })
+    );
+    const burn = {
+      status: 'success',
+      transactionHash: HASH,
+      blockNumber: 42n,
+      logs: BASE_BURN_LOGS.map(({ address, data, topics }) => ({ address, data, topics }))
+    } as unknown as BundleReceipt;
+    await run([], store, {
+      scope,
+      account: sender,
+      chainNow: NOW + 31 * DAY,
+      chainNowOn,
+      blockTime: async (_: bigint, from?: BridgeNetworkId) => (from === 'base' ? MINED_AT : undefined),
+      callsStatus: async () => ({ status: 'success', receipts: [burn] })
+    });
+    return store.getSnapshot(scope)[0];
+  };
+
+  it("moves the burn's time to the device clock by the L2's own offset, not Ethereum's", async () => {
+    const chainNowOn = vi.fn(async (network: BridgeNetworkId) => (network === 'base' ? NOW : undefined));
+    expect(await resolveOnBase(chainNowOn)).toMatchObject({ txHash: HASH, startedAt: MINED_AT });
+    expect(chainNowOn).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the card's device start when the L2's time can't be read", async () => {
+    expect(await resolveOnBase(async () => undefined)).toMatchObject({ txHash: HASH, startedAt: SENT_AT });
   });
 });

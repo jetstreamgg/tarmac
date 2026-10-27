@@ -48,9 +48,10 @@ export type CallsStatus = { status?: 'pending' | 'success' | 'failure'; receipts
  * nothing and joins `settled`, which later runs skip; an unknown progress adds
  * it as pending. A wallet bundle's card gets the hash of its deposit from the
  * wallet's receipts, else of the deposit it matches, oldest card first; one
- * the wallet reports failed with no deposit fails. Times read from the chain
- * are moved to the device clock when `chainNow` is known. Checks the deposits
- * in parallel. Returns how many it added.
+ * the wallet reports failed with no deposit fails. Times read from Ethereum
+ * are moved to the device clock when `chainNow` is known; a time read on an
+ * L2 moves by that L2's own clock from `chainNowOn`, and the card keeps its
+ * start when that can't be read. Checks the deposits in parallel. Returns how many it added.
  */
 export async function recoverDeposits({
   store,
@@ -64,6 +65,7 @@ export async function recoverDeposits({
   settled,
   executedSafeTxHashes,
   chainNow,
+  chainNowOn,
   callsStatus
 }: {
   store: Pick<PendingBridgeStore, 'getSnapshot' | 'upsert' | 'update' | 'resolveBundle'>;
@@ -81,12 +83,31 @@ export async function recoverDeposits({
   executedSafeTxHashes?: (txHash: string) => Promise<string[] | undefined>;
   /** The chain's time at the scan's last block in ms; undefined when unread. */
   chainNow?: number;
+  /** An L2's time at its latest block in ms; undefined when unread. Read at most once per network per run. */
+  chainNowOn?: (network: BridgeNetworkId) => Promise<number | undefined>;
   /** The wallet's status of a bundle by its calls id. */
   callsStatus?: (callsId: string) => Promise<CallsStatus | undefined>;
 }): Promise<number> {
   // How far the device clock runs ahead of the chain's.
   const offset = chainNow === undefined ? undefined : now() - chainNow;
   const onDevice = (at: number | undefined) => (at === undefined || offset === undefined ? at : at + offset);
+  // An L2's block time only moves to the device clock by that L2's offset.
+  const l2Offsets = new Map<BridgeNetworkId, Promise<number | undefined>>();
+  const l2Offset = (network: BridgeNetworkId) => {
+    const read =
+      l2Offsets.get(network) ??
+      (chainNowOn ? chainNowOn(network).catch(() => undefined) : Promise.resolve(undefined)).then(l2Now =>
+        l2Now === undefined ? undefined : now() - l2Now
+      );
+    l2Offsets.set(network, read);
+    return read;
+  };
+  // Unconverted, an L2 bundle keeps the time the device sent it at.
+  const onDeviceFrom = async (bridge: PendingBridge, at: number | undefined) => {
+    if (bridge.from === 'ethereum') return onDevice(at);
+    const l2 = at === undefined ? undefined : await l2Offset(bridge.from);
+    return at === undefined || l2 === undefined ? bridge.startedAt : at + l2;
+  };
   if (callsStatus) {
     const unmined = store
       .getSnapshot(scope)
@@ -102,7 +123,7 @@ export async function recoverDeposits({
               scope,
               bridge.id,
               found.txHash,
-              onDevice(await blockTime(found.blockNumber, bridge.from))
+              await onDeviceFrom(bridge, await blockTime(found.blockNumber, bridge.from))
             );
           else if (reported.status === 'failure')
             store.update(scope, bridge.id, current => failBundle(current, 'source-tx-reverted', now()));

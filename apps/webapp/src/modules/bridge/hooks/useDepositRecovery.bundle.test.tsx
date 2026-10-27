@@ -98,6 +98,16 @@ describe('useDepositRecovery, wallet bundles', () => {
     expect(await lastArgs().blockTime(100n)).toBe(TO_BLOCK_TIME * 1000);
   });
 
+  // An L2 block time moves to the device clock by that L2's own clock.
+  it("reads an L2's time at its latest block, and none when it can't", async () => {
+    renderHook(() => useDepositRecovery(), { wrapper });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await lastArgs().chainNowOn?.('base')).toBe(1_699_999_000 * 1000);
+    expect(mocks.baseGetBlock).toHaveBeenLastCalledWith();
+    mocks.baseGetBlock.mockRejectedValueOnce(new Error('rpc down'));
+    expect(await lastArgs().chainNowOn?.('base')).toBeUndefined();
+  });
+
   it('passes the wallet status of a bundle through, and an error as no answer', async () => {
     renderHook(() => useDepositRecovery(), { wrapper });
     await vi.advanceTimersByTimeAsync(0);
