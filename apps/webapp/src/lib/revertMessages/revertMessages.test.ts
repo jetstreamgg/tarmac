@@ -80,9 +80,19 @@ describe('revertMessage', () => {
       'AccessControl: account 0x… is missing role 0x…'
     );
     expect(revertReasonForReporting({ reason: '0x1425ea42', kind: 'unknown' })).toBe('0x1425ea42');
+    // A selector made of digits stays whole: it identifies the error.
+    expect(revertReasonForReporting({ reason: '0x12345678', kind: 'unknown' })).toBe('0x12345678');
+    expect(revertReasonForReporting({ reason: 'Pool/amount-1234567-too-big', kind: 'error' })).toBe(
+      'Pool/amount-…-too-big'
+    );
     expect(revertReasonForReporting({ reason: 'LockstakeEngine/urn-unsafe', kind: 'error' })).toBe(
       'LockstakeEngine/urn-unsafe'
     );
+  });
+
+  it('treats a reason named like an Object.prototype key as unmapped', () => {
+    expect(revertMessage(rpcRevert('constructor'))).toBe('The transaction would fail with "constructor".');
+    expect(revertMessage(rpcRevert('toString'))).toBe('The transaction would fail with "toString".');
   });
 
   it('gives nothing when there is no revert to explain', () => {

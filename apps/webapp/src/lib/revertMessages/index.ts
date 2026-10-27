@@ -127,7 +127,11 @@ export const isInputRevert = (revert: DecodedRevert): boolean => inputRevertReas
  * hashes — not 4-byte selectors) and long numbers are blanked out.
  */
 export function revertReasonForReporting(revert: DecodedRevert): string {
-  return revert.reason.replace(/0x[0-9a-fA-F]{9,}/g, '0x…').replace(/\d{6,}/g, '…');
+  // One pass, so a short hex token (a 4-byte selector) is matched whole and
+  // kept: its digits never reach the long-number rule.
+  return revert.reason.replace(/0x[0-9a-fA-F]+|\d{6,}/g, token =>
+    token.startsWith('0x') ? (token.length > 10 ? '0x…' : token) : '…'
+  );
 }
 
 /** Whether the registry has copy for a revert (no translation: safe before a locale is active). */
@@ -136,7 +140,8 @@ export const hasRevertCopy = (revert: DecodedRevert): boolean =>
 
 /** The curated copy for a decoded revert, if the registry has one. */
 export function knownRevertMessage(revert: DecodedRevert): string | undefined {
-  const descriptor = revertMessageByReason[revert.reason];
+  // Own keys only: a reason like "constructor" must not resolve to Object.prototype.
+  const descriptor = hasRevertCopy(revert) ? revertMessageByReason[revert.reason] : undefined;
   return descriptor ? i18n._(descriptor) : undefined;
 }
 

@@ -106,7 +106,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // modal so users see consistent guidance across all three flows. Only while
   // unprepared, so a recovered simulation drops the stale message.
   const prepareErrorMessage = useMemo<string | undefined>(
-    () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
+    () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error) : undefined),
     [writeHook.prepared, writeHook.error]
   );
 
