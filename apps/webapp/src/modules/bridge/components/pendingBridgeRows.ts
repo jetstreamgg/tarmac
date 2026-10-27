@@ -16,7 +16,7 @@ import { getExplorerLink } from '@/utils/getEtherscanLink';
 import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
-import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
+import { bridgeChainId, getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
 import { DAY_MINUTES } from '../model/resolveRoute';
 import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import { sendsToOther } from '../model/recipient';
@@ -167,6 +167,7 @@ export function buildPendingBridgeRows(
   counterparty?: BridgeCounterparty
 ): PendingBridgeCell[][] {
   const sourceChainId = bridgeChainId(bridge.from, familyChainId);
+  const sourceName = getBridgeNetwork(bridge.from).name;
   const networks: PendingBridgeCell[] = [
     { kind: 'network', label: t`Source`, network: bridge.from },
     { kind: 'network', label: t`Destination`, network: bridge.to }
@@ -198,7 +199,9 @@ export function buildPendingBridgeRows(
         ? {
             kind: 'text',
             label: t`Transaction`,
-            value: isBundleUnseen(bridge, now) ? t`Not found on Ethereum yet` : t`Confirming on Ethereum`
+            value: isBundleUnseen(bridge, now)
+              ? t`Not found on ${sourceName} yet`
+              : t`Confirming on ${sourceName}`
           }
         : // A Safe transaction queued for its owners to sign; the Safe app serves the chains its service does.
           {
