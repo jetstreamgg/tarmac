@@ -1,14 +1,17 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { t } from '@lingui/core/macro';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
-import type { BridgeRoute } from '../model/types';
+import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { formatAddress, formatBigInt } from '@/utils';
 import { buildBridgeModalRows, formatEtaWords } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
+import { BridgeRoutePicker } from './BridgeRoutePicker';
+import type { RouteOptionCard } from './bridgeRouteOptions';
 import { BridgeWarningBox } from './BridgeWarningBox';
 
 export const bridgeFootnote = (route: BridgeRoute): string => {
@@ -86,6 +89,8 @@ type BridgeReviewContentProps = {
   safeQueue?: boolean;
   /** Browser storage takes no writes, so this bridge isn't kept to come back to. */
   storageNote?: boolean;
+  /** The routes the user can pick between from the Bridge type row (Figma 50, 60). */
+  routePicker?: { cards: RouteOptionCard[]; onPick: (kind: BridgeRouteKind) => void };
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
@@ -102,10 +107,47 @@ export function BridgeReviewContent({
   recipientWarning,
   contractWallet,
   safeQueue,
-  storageNote
+  storageNote,
+  routePicker
 }: BridgeReviewContentProps) {
-  const rows = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
+  const [choosing, setChoosing] = useState(false);
+  const built = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
+  const [[bridgeType, ...firstRow], ...rest] = built;
+  const rows = routePicker
+    ? [
+        [
+          {
+            ...bridgeType,
+            action: (
+              <button
+                type="button"
+                onClick={() => setChoosing(true)}
+                aria-label={t`Change bridge type`}
+                className="text-fgSecondary flex items-center"
+                data-testid="bridge-modal-route-toggle"
+              >
+                <ChevronRight size={12} aria-hidden />
+              </button>
+            )
+          },
+          ...firstRow
+        ],
+        ...rest
+      ]
+    : built;
   const contractCheckboxId = useId();
+  if (routePicker && choosing)
+    return (
+      <BridgeRoutePicker
+        cards={routePicker.cards}
+        selected={route.kind}
+        onPick={kind => {
+          routePicker.onPick(kind);
+          setChoosing(false);
+        }}
+        onBack={() => setChoosing(false)}
+      />
+    );
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
       <BridgeTransferHero amount={amount} from={from} to={to} addresses={addresses} fromToken={fromToken} />

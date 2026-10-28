@@ -5,8 +5,9 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { cctpWithdrawalRoute, nativeWithdrawalRoute, resolveBridgeRoute } from '../model/resolveRoute';
 import { BridgeReviewContent } from './BridgeReviewContent';
+import { buildRouteOptionCard } from './bridgeRouteOptions';
 
 // Token icons read the wallet's chain; the notes don't need them.
 vi.mock('@/modules/ui/hooks/useChainImage', () => ({ useChainImage: () => undefined }));
@@ -137,5 +138,69 @@ describe('BridgeReviewContent sender and recipient', () => {
     review({ addresses: { from: SENDER, to: RECIPIENT } });
     expect(screen.getByText('0xA3F...d2a')).toBeTruthy();
     expect(screen.getByText('0x71C...8b5')).toBeTruthy();
+  });
+});
+
+describe('BridgeReviewContent route picker', () => {
+  afterEach(cleanup);
+
+  const cctp = buildRouteOptionCard({
+    option: { route: cctpWithdrawalRoute('base') },
+    networkFee: '$0.02',
+    approvals: 4
+  });
+  const native = buildRouteOptionCard({
+    option: { route: nativeWithdrawalRoute('base') },
+    networkFee: '~$3.10',
+    approvals: 4
+  });
+  const greyedCctp = buildRouteOptionCard({
+    option: { route: cctpWithdrawalRoute('base'), unavailable: 'no-liquidity' },
+    networkFee: '-',
+    approvals: undefined
+  });
+
+  it('offers no picker on a pair with a single route', () => {
+    review();
+    expect(screen.queryByTestId('bridge-modal-route-toggle')).toBeNull();
+  });
+
+  it('opens the options from the Bridge type row and closes them on back, keeping the route', () => {
+    const onPick = vi.fn();
+    review({ routePicker: { cards: [cctp, native], onPick } });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    expect(screen.getByText('Select bridge type')).toBeTruthy();
+    expect(screen.queryByTestId('bridge-modal-footnote')).toBeNull();
+    const selected = screen.getByTestId('bridge-route-option-cctp');
+    expect(selected.getAttribute('aria-pressed')).toBe('true');
+    expect(selected.textContent).toContain('Fastest');
+    expect(screen.getByTestId('bridge-route-option-native').textContent).toContain('~$3.10');
+    fireEvent.click(screen.getByTestId('bridge-route-picker-back'));
+    expect(screen.getByTestId('bridge-modal-footnote')).toBeTruthy();
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it('picks another route and goes back to the review', () => {
+    const onPick = vi.fn();
+    review({ routePicker: { cards: [cctp, native], onPick } });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    fireEvent.click(screen.getByTestId('bridge-route-option-native'));
+    expect(onPick).toHaveBeenCalledWith('native');
+    expect(screen.getByTestId('bridge-modal-footnote')).toBeTruthy();
+  });
+
+  it("can't pick an unavailable route, and says why", () => {
+    const onPick = vi.fn();
+    review({
+      route: nativeWithdrawalRoute('base', 'no-liquidity'),
+      routePicker: { cards: [greyedCctp, native], onPick }
+    });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    const option = screen.getByTestId('bridge-route-option-cctp') as HTMLButtonElement;
+    expect(option.disabled).toBe(true);
+    expect(option.textContent).toContain('Insufficient liquidity');
+    expect(screen.getByTestId('bridge-route-option-native').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(option);
+    expect(onPick).not.toHaveBeenCalled();
   });
 });
