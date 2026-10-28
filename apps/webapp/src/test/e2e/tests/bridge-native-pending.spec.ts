@@ -1,4 +1,4 @@
-import { type BrowserContext, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
 import { getAddress, keccak256, parseUnits, toHex, type Address } from 'viem';
 import { expect, expectNoFixtureLeaks, installFixtureRoutes, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
@@ -7,21 +7,13 @@ import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { watchDeposit } from '../utils/bridgeFunds';
 import { awaitDepositTxHash, relayOpStackDeposit } from '../utils/bridgeRelay';
 import { installArbitrumShim } from '../utils/arbitrumShim';
+import { keepPendingBridgesOnLoad, PENDING_BRIDGE_KEY_PREFIX } from '../utils/pendingBridgeStore';
 
 // APP-643 pending list, persistence and accounts, on the native deposit route. Writes go to
 // OP Mainnet and Arbitrum: no other spec closes those bridges.
 
 const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
-const KEY_PREFIX = 'bridgePending:v1:';
 const AMOUNT = parseUnits('1', 18);
-
-/** Mock builds clear localStorage on every load (config.e2e.ts); this keeps the pending bridges, as a real reload does. */
-const keepPendingBridgesOnLoad = (context: BrowserContext) =>
-  context.addInitScript(prefix => {
-    Storage.prototype.clear = function (this: Storage) {
-      for (const key of Object.keys(this)) if (!key.startsWith(prefix)) this.removeItem(key);
-    };
-  }, KEY_PREFIX);
 
 /** Another tab in the same browser, with the fixture's mocks; check its `leaks` before the test ends. */
 async function secondTab(page: Page) {
@@ -165,7 +157,7 @@ test.describe('Bridge: pending list, persistence and accounts', () => {
           );
       },
       {
-        prefix: KEY_PREFIX,
+        prefix: PENDING_BRIDGE_KEY_PREFIX,
         own: `${TENDERLY_CHAIN_ID}:${account.toLowerCase()}`,
         scopes: [`${TENDERLY_CHAIN_ID}:${other}`, `1:${account.toLowerCase()}`],
         fakeHash: keccak256(toHex('e2e: foreign scope'))
