@@ -223,6 +223,49 @@ function RedeemNoteText({ note }: RedeemNoteTextProps) {
   );
 }
 
+type WithdrawalNoteTextProps = { note: Extract<PendingBridgeNote, { kind: 'withdrawal' }> };
+
+function WithdrawalNoteText({ note }: WithdrawalNoteTextProps) {
+  const timeLeft = note.minutesLeft === undefined ? undefined : formatTimeLeft(note.minutesLeft);
+  switch (note.phase) {
+    case 'waiting-prove':
+      return timeLeft ? (
+        <Trans>
+          The withdrawal is on its way. It&apos;ll be ready to prove on Ethereum in about {timeLeft}.
+        </Trans>
+      ) : (
+        <Trans>The withdrawal is on its way. It&apos;ll be ready to prove on Ethereum soon.</Trans>
+      );
+    case 'waiting-finalize':
+      return timeLeft ? (
+        <Trans>It&apos;ll be ready to finalize on Ethereum in about {timeLeft}.</Trans>
+      ) : (
+        <Trans>It&apos;ll be ready to finalize on Ethereum soon.</Trans>
+      );
+    case 'prove':
+      return (
+        <Trans>
+          Prove the withdrawal on Ethereum to start its waiting period. Then come back to finalize it.
+        </Trans>
+      );
+    case 'reprove':
+      return (
+        <Trans>
+          The dispute game behind the last proof was invalidated, so that proof no longer counts. Prove the
+          withdrawal again to continue.
+        </Trans>
+      );
+    case 'finalize':
+      return <Trans>Finalize the withdrawal on Ethereum to receive your USDS.</Trans>;
+    case 'replay':
+      return (
+        <Trans>
+          The withdrawal was finalized but not delivered. Retry it on Ethereum to receive your USDS.
+        </Trans>
+      );
+  }
+}
+
 type BridgeNoteProps = {
   note: PendingBridgeNote;
   onExtend: () => void;
@@ -231,6 +274,12 @@ type BridgeNoteProps = {
 
 /** What a stuck deposit needs, and for Arbitrum how to finish it without this app. */
 function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
+  if (note.kind === 'withdrawal')
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        <WithdrawalNoteText note={note} />
+      </Text>
+    );
   if (note.kind === 'replay') {
     const network = getBridgeNetwork(note.network).name;
     return (
@@ -584,7 +633,8 @@ function PendingBridgeCard({
           <ActionHintText hint={hint} />
         </Text>
       )}
-      {note && (
+      {/* A step already sent says so in its hint; asking for it again would contradict it. */}
+      {note && !(note.kind === 'withdrawal' && hint && hint.kind !== 'switch-network') && (
         <BridgeNote
           note={note}
           onExtend={() => onAction(bridge, 'keepalive')}

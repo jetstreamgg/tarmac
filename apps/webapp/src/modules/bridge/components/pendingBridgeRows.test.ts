@@ -486,3 +486,65 @@ describe('buildPendingBridgeRows for a CCTP bridge still to claim', () => {
     expect(arrival).not.toMatchObject({ value: 'Arrived' });
   });
 });
+
+describe('pendingBridgeNote (a native withdrawal to Ethereum)', () => {
+  const HOUR = 60 * 60_000;
+  const withdrawal: PendingBridge = {
+    ...base,
+    from: 'optimism',
+    to: 'ethereum',
+    requiresClaim: true,
+    nextAction: 'prove',
+    etaAt: 2 * HOUR
+  };
+
+  it('says when an OP Stack withdrawal can be proved, then finalized', () => {
+    expect(pendingBridgeNote(withdrawal, HOUR)).toEqual({
+      kind: 'withdrawal',
+      phase: 'waiting-prove',
+      minutesLeft: 60
+    });
+    const proved: PendingBridge = { ...withdrawal, nextAction: 'finalize', etaAt: 4 * 24 * HOUR };
+    expect(pendingBridgeNote(proved, 24 * HOUR)).toEqual({
+      kind: 'withdrawal',
+      phase: 'waiting-finalize',
+      minutesLeft: 3 * 24 * 60
+    });
+  });
+
+  it('drops the time once the estimate has passed', () => {
+    expect(pendingBridgeNote(withdrawal, 3 * HOUR)).toEqual({ kind: 'withdrawal', phase: 'waiting-prove' });
+  });
+
+  it('says when an Arbitrum withdrawal can be finalized', () => {
+    const arbitrum: PendingBridge = { ...withdrawal, from: 'arbitrum', nextAction: 'finalize' };
+    expect(pendingBridgeNote(arbitrum, HOUR)).toMatchObject({ phase: 'waiting-finalize', minutesLeft: 60 });
+  });
+
+  it('asks for the next step once it is ready', () => {
+    const ready = { ...withdrawal, status: 'ready' as const };
+    expect(pendingBridgeNote(ready, 0)).toEqual({ kind: 'withdrawal', phase: 'prove' });
+    expect(pendingBridgeNote({ ...ready, nextAction: 'finalize' }, 0)).toEqual({
+      kind: 'withdrawal',
+      phase: 'finalize'
+    });
+    expect(pendingBridgeNote({ ...ready, nextAction: 'replay' }, 0)).toEqual({
+      kind: 'withdrawal',
+      phase: 'replay'
+    });
+  });
+
+  it('asks to prove again when the last proof was invalidated', () => {
+    const invalidated: PendingBridge = {
+      ...withdrawal,
+      status: 'ready',
+      actions: [{ action: 'prove', txHash: '0x1', at: 0, status: 'invalidated' }]
+    };
+    expect(pendingBridgeNote(invalidated, 0)).toEqual({ kind: 'withdrawal', phase: 'reprove' });
+  });
+
+  it('says nothing once it settled, or for a CCTP withdrawal', () => {
+    expect(pendingBridgeNote({ ...withdrawal, status: 'claimed', nextAction: undefined }, 0)).toBeUndefined();
+    expect(pendingBridgeNote({ ...withdrawal, routeKind: 'cctp', nextAction: 'claim' }, 0)).toBeUndefined();
+  });
+});

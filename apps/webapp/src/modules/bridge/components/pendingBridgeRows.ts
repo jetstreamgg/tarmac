@@ -247,14 +247,40 @@ export type PendingBridgeNote =
       retryablesHref?: string;
     }
   | { kind: 'expired'; retryablesHref?: string; supportHref: string }
-  | { kind: 'replay'; network: OpStackNetworkId };
+  | { kind: 'replay'; network: OpStackNetworkId }
+  /** A native withdrawal to Ethereum: what it waits for, or the step it needs; minutes until it is ready. */
+  | { kind: 'withdrawal'; phase: WithdrawalNotePhase; minutesLeft?: number };
+
+export type WithdrawalNotePhase =
+  'waiting-prove' | 'waiting-finalize' | 'prove' | 'reprove' | 'finalize' | 'replay';
+
+const withdrawalNote = (bridge: PendingBridge, now: number): PendingBridgeNote | undefined => {
+  const { status, nextAction } = bridge;
+  if (status === 'pending' && (nextAction === 'prove' || nextAction === 'finalize')) {
+    const minutesLeft = Math.ceil((bridge.etaAt - now) / 60_000);
+    return {
+      kind: 'withdrawal',
+      phase: nextAction === 'prove' ? 'waiting-prove' : 'waiting-finalize',
+      ...(minutesLeft > 0 && { minutesLeft })
+    };
+  }
+  if (status !== 'ready') return undefined;
+  if (nextAction === 'prove') {
+    const lastProve = bridge.actions.filter(action => action.action === 'prove').at(-1);
+    return { kind: 'withdrawal', phase: lastProve?.status === 'invalidated' ? 'reprove' : 'prove' };
+  }
+  if (nextAction === 'finalize' || nextAction === 'replay') return { kind: 'withdrawal', phase: nextAction };
+  return undefined;
+};
 
 // The tool looks the ticket up by the Ethereum tx that created it.
 const retryablesHref = (txHash: string | undefined) =>
   txHash && `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(arbitrum.id), tx: txHash })}`;
 
 export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
-  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum') return undefined;
+  if (bridge.routeKind !== 'native') return undefined;
+  if (bridge.to === 'ethereum') return withdrawalNote(bridge, now);
+  if (bridge.from !== 'ethereum') return undefined;
   if (isOpStackNetwork(bridge.to))
     return bridge.status === 'ready' && bridge.nextAction === 'replay'
       ? { kind: 'replay', network: bridge.to }

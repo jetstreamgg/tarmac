@@ -934,4 +934,53 @@ describe('PendingBridges', () => {
       expect(screen.getAllByTestId('continue-bridge-card')).toHaveLength(1);
     });
   });
+
+  describe('a native withdrawal to Ethereum', () => {
+    const WITHDRAWAL: PendingBridge = {
+      ...BRIDGE,
+      id: '0xw',
+      from: 'optimism',
+      to: 'ethereum',
+      nextAction: 'prove'
+    };
+    const note = () => screen.queryByTestId('pending-bridge-note')?.textContent;
+
+    it.each([
+      [{}, 'ready to prove on Ethereum in about'],
+      [{ etaAt: 0 }, "It'll be ready to prove on Ethereum soon."],
+      [{ nextAction: 'finalize' }, 'ready to finalize on Ethereum in about'],
+      [{ status: 'ready' }, 'Prove the withdrawal on Ethereum to start its waiting period.'],
+      [
+        { status: 'ready', nextAction: 'finalize' },
+        'Finalize the withdrawal on Ethereum to receive your USDS.'
+      ]
+    ] as const)('explains the step it is at (%o)', (change, text) => {
+      mocks.bridges = [{ ...WITHDRAWAL, ...change }];
+      renderList();
+      expect(note()).toContain(text);
+    });
+
+    it('asks to prove again when the last proof was invalidated', () => {
+      mocks.bridges = [
+        {
+          ...WITHDRAWAL,
+          status: 'ready',
+          actions: [{ action: 'prove', txHash: '0xp1', at: 0, status: 'invalidated' }]
+        }
+      ];
+      renderList();
+      expect(note()).toContain('Prove the withdrawal again to continue.');
+    });
+
+    it('gives way to the hint of a step just sent, and stays beside a network switch', () => {
+      mocks.bridges = [{ ...WITHDRAWAL, status: 'ready' }];
+      props.actionHint.mockReturnValue({ kind: 'action-sent', network: 'ethereum' });
+      const { unmount } = renderList();
+      expect(note()).toBeUndefined();
+      unmount();
+      props.actionHint.mockReturnValue({ kind: 'switch-network', network: 'ethereum', safe: false });
+      renderList();
+      expect(note()).toContain('Prove the withdrawal on Ethereum');
+    });
+  });
 });
