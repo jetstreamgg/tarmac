@@ -299,7 +299,7 @@ describe('BridgeClaimLookup', () => {
       "We couldn't find this bridge",
       expect.objectContaining({
         description:
-          "There's no CCTP bridge with this hash on Arbitrum One. Check that the network and the hash are correct."
+          "There's no bridge with this hash on Arbitrum One. Check that the network and the hash are correct."
       })
     );
   });
@@ -354,7 +354,7 @@ describe('BridgeClaimLookup', () => {
     [
       { status: 'refused', reason: 'not-found' },
       'bridge-claim-lookup-error',
-      "There's no CCTP bridge with this hash on Base."
+      "There's no bridge with this hash on Base."
     ],
     [
       { status: 'refused', reason: 'reverted' },

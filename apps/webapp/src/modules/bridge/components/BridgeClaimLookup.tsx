@@ -29,7 +29,7 @@ import { isLivePair } from '../model/pairs';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { cardClassName } from './PendingBridges';
 
-// The networks whose bridge to Ethereum is live: only their burns can come from this app.
+// The networks whose bridge to Ethereum is live: only their bridges can come from this app.
 const liveNetworks = () =>
   BRIDGE_NETWORKS.map(({ id }) => id)
     .filter(isCctpL2Network)
@@ -78,7 +78,7 @@ function LookupMessage({ state, network }: LookupMessageProps) {
       return (
         <Text className={errorClassName} dataTestId="bridge-claim-lookup-error">
           {state.reason === 'not-found' ? (
-            <Trans>There&apos;s no CCTP bridge with this hash on {network}.</Trans>
+            <Trans>There&apos;s no bridge with this hash on {network}.</Trans>
           ) : state.reason === 'reverted' ? (
             <Trans>This transaction failed on {network}, so nothing was bridged.</Trans>
           ) : state.reason === 'not-a-bridge' ? (
@@ -161,7 +161,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
     if (!notFound) return;
     toast.error(t`We couldn't find this bridge`, {
       id: 'cctp-claim-lookup-not-found',
-      description: t`There's no CCTP bridge with this hash on ${networkName}. Check that the network and the hash are correct.`
+      description: t`There's no bridge with this hash on ${networkName}. Check that the network and the hash are correct.`
     });
   }, [notFound, networkName, target, attempt]);
 
@@ -338,13 +338,13 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
   );
 }
 
-/** Whether a CCTP burn to Ethereum can be looked up: some network's bridge to Ethereum is live. */
+/** Whether a bridge to Ethereum can be looked up: some network's bridge to Ethereum is live. */
 export const hasBridgeClaimLookup = () => liveNetworks().length > 0;
 
 /**
- * "Can't find your bridge?" in the pending bridges: looks up a CCTP burn to
- * Ethereum by its network and hash, typed in or from a claim link, and adds
- * it to the list to claim.
+ * "Can't find your bridge?" in the pending bridges: looks up a bridge to
+ * Ethereum, a CCTP burn or a native withdrawal, by its network and hash,
+ * typed in or from a claim link, and adds it to the list to claim.
  */
 export function BridgeClaimLookup() {
   const [searchParams, setSearchParams] = useAppSearchParams();
