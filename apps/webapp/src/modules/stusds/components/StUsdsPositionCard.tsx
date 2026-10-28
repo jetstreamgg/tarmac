@@ -5,7 +5,7 @@ import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
 import { RateInfo } from '@/components/product/RateInfo';
-import { useStUsdsData } from '@/hooks';
+import { useStUsdsData } from '@/hooks/stusds/useStUsdsData';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';

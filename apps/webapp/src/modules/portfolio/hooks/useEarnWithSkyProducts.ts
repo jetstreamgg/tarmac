@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
-import {
-  useHighestRateFromChartData,
-  useMultipleRewardsChartInfo,
-  useStakeRewardContracts,
-  type EarnProductRow
-} from '@/hooks';
+import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromChartData';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { type EarnProductRow } from '@/hooks/earn/types';
 import { formatDecimalPercentage } from '@/utils';
 import { NO_VALUE } from '@/lib/constants';
 import { useGeoConfig } from '@/modules/geo-config';

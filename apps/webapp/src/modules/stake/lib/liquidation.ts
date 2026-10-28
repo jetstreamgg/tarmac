@@ -1,4 +1,4 @@
-import { Vault } from '@/hooks';
+import { Vault } from '@/hooks/vaults/vault';
 import { math } from '@/utils';
 
 // 🔶 BL-12: placeholder until product decides the warning threshold.

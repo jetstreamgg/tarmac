@@ -1,4 +1,4 @@
-import { TransactionTypeEnum, ModuleEnum } from '@/hooks';
+import { TransactionTypeEnum, ModuleEnum } from '@/hooks/constants';
 import { capitalizeFirstLetter } from '@/utils';
 import { t } from '@lingui/core/macro';
 

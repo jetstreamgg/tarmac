@@ -11,7 +11,7 @@ import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { UnauthorizedPage } from '@/modules/auth/components/UnauthorizedPage';
-import { useIsSafeWallet } from '@/hooks';
+import { useIsSafeWallet } from '@/hooks/wallet/useIsSafeWallet';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
 import { formatAddress } from '@/utils';
 

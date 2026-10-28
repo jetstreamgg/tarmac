@@ -10,14 +10,14 @@ import {
   usdtAddress,
   mkrAddress,
   skyAddress,
-  TOKENS,
   sUsdsAddress,
   usdcL2Address,
   usdsL2Address,
   sUsdsL2Address,
   spkAddress,
   stUsdsAddress
-} from '@/hooks';
+} from '@/hooks/generated';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 
 const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk, stusds } = TOKENS;

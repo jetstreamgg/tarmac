@@ -9,7 +9,10 @@ import React from 'react';
 import { useChainId } from 'wagmi';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
 import { familyMainnetId, isL2ChainId } from '@/utils';
-import { useAvailableTokenRewardContracts, VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
+import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTokenRewardContracts';
+import { VAULTS } from '@/hooks/vaults/constants';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
+import { isMarketMatured } from '@/hooks/pendle/helpers';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 /**

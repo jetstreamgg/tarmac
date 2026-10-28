@@ -12,8 +12,8 @@ import {
   useRowCollapseTransition
 } from '@/modules/ui/animation/useRowCollapse';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex } from '@/hooks';
-import type { EarnRiskProfileId } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import type { EarnRiskProfileId } from '@/hooks/earn/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CellEmpty, CellPercent, CellToken } from '@/components/ui/table-cells';

@@ -54,8 +54,10 @@ vi.mock('wagmi', () => ({
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn()
 }));
-vi.mock('@/hooks', () => ({
-  useEarnMarketplace: () => h.marketplace,
+vi.mock('@/hooks/earn/useEarnMarketplace', () => ({
+  useEarnMarketplace: () => h.marketplace
+}));
+vi.mock('@/hooks/shared/useOverallSkyData', () => ({
   useOverallSkyData: () => ({ data: h.skyData.data, isLoading: h.skyData.isLoading })
 }));
 vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({

@@ -1,5 +1,5 @@
 import type { Call } from 'viem';
-import { useIsBatchSupported } from '@/hooks';
+import { useIsBatchSupported } from '@/hooks/shared/useIsBatchSupported';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 

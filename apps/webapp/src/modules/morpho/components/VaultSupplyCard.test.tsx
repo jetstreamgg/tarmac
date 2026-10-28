@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Token } from '@/hooks';
+import type { Token } from '@/hooks/tokens/types';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -26,11 +26,17 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/tokens/tokens.constants', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/tokens.constants')>();
   return {
     ...actual,
-    getTokenDecimals: () => 6,
+    getTokenDecimals: () => 6
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
     useTokenBalance: () => ({ data: { value: 1_000_000_000n, decimals: 6 } })
   };
 });

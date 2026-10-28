@@ -31,16 +31,34 @@ const FARM_B = [
   { blockTimestamp: ts('2026-06-01'), rate: '0.03' }
 ];
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useStakeHistoricData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeHistoricData')>();
   return {
     ...actual,
-    useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null }),
-    useCollateralData: () => collateral,
+    useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/vaults/useCollateralData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useCollateralData')>();
+  return {
+    ...actual,
+    useCollateralData: () => collateral
+  };
+});
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
+  return {
+    ...actual,
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0xfarmA' }, { contractAddress: '0xfarmB' }],
       isLoading: false
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useMultipleRewardsChartInfo')>();
+  return {
+    ...actual,
     useMultipleRewardsChartInfo: () => ({ data: [FARM_A, FARM_B], isLoading: false, error: null })
   };
 });

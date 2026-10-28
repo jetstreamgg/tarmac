@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import type { StakePositionDetail } from '../hooks/useStakePositionDetail';
 
 i18n.load('en', {});
@@ -14,8 +14,8 @@ const h = vi.hoisted(() => ({
   delegateName: 'Shadow delegate' as string | undefined
 }));
 
-vi.mock('@/hooks', async importOriginal => ({
-  ...(await importOriginal<typeof import('@/hooks')>()),
+vi.mock('@/hooks/delegates/useDelegateName', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/hooks/delegates/useDelegateName')>()),
   useDelegateName: () => ({ data: h.delegateName })
 }));
 

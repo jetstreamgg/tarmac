@@ -2,13 +2,9 @@ import type { MouseEvent, ReactNode } from 'react';
 import { MoveUpRight, X } from 'lucide-react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import {
-  BP,
-  RISK_TIER_BY_PROFILE,
-  useBreakpointIndex,
-  type EarnRiskProfileId,
-  type EarnRiskTier
-} from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import { RISK_TIER_BY_PROFILE } from '@/hooks/earn/earnProducts';
+import { type EarnRiskProfileId, type EarnRiskTier } from '@/hooks/earn/types';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {

@@ -1,5 +1,6 @@
 import { Trans } from '@lingui/react/macro';
-import { useMorphoVaultMarketApiData, useOverallSkyData } from '@/hooks';
+import { useMorphoVaultMarketApiData } from '@/hooks/morpho/useMorphoVaultMarketApiData';
+import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokensComposition } from '@/components/product/TokensComposition';
 import { Merkl } from '@/modules/icons';

@@ -9,9 +9,9 @@ import {
   getStakeSelectDelegateCalldata,
   getStakeSelectRewardContractCalldata,
   getStakeWipeAllCalldata,
-  getStakeWipeCalldata,
-  ZERO_ADDRESS
-} from '@/hooks';
+  getStakeWipeCalldata
+} from '@/hooks/stake/calldata';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { getAddress } from 'viem';
 import { generateStakeCalldata, type GenerateStakeCalldataParams } from './useStakeCalldata';
 import goldenFixturesRaw from './useStakeCalldata.golden.fixtures.json?raw';

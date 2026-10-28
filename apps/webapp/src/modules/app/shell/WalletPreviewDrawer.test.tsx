@@ -83,14 +83,26 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/wallet/useIsSafeWallet', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/wallet/useIsSafeWallet')>();
   return {
     ...actual,
     // The real hook folds the iframe in (`isSafeApp || <address is a Safe>`),
     // so an iframe test sets one flag.
-    useIsSafeWallet: () => mocks.isSafeWallet || mocks.isSafeApp,
-    useIsSafeApp: () => mocks.isSafeApp,
+    useIsSafeWallet: () => mocks.isSafeWallet || mocks.isSafeApp
+  };
+});
+vi.mock('@/hooks/wallet/useIsSafeApp', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/wallet/useIsSafeApp')>();
+  return {
+    ...actual,
+    useIsSafeApp: () => mocks.isSafeApp
+  };
+});
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
+  return {
+    ...actual,
     // happy-dom evaluates matchMedia at its 1024px default, so the real hook
     // always lands on the desktop drawer; the flag drives the M4.6 mobile panel.
     useBreakpointIndex: () => ({ bpi: mocks.isMobile ? actual.BP.sm : actual.BP.desktop })

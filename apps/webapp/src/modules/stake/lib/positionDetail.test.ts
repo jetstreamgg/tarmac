@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseUnits } from 'viem';
-import { TransactionTypeEnum } from '@/hooks';
+import { TransactionTypeEnum } from '@/hooks/constants';
 import { calculateClaimedRewardsUsd, hasStakeBorrowHistory, rewardContractSymbols } from './positionDetail';
 
 // lsSkySkyRewardAddress[1] — the mainnet SKY farm.

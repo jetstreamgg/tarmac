@@ -5,12 +5,12 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mainnet } from 'viem/chains';
-import type { PendleConvertQuote } from '@/hooks';
+import type { PendleConvertQuote } from '@/hooks/pendle/pendle';
 
 i18n.load('en', {});
 i18n.activate('en');
 
-const MARKET: import('@/hooks').PendleMarketConfig = {
+const MARKET: import('@/hooks/pendle/pendle').PendleMarketConfig = {
   name: 'PT-USDG',
   slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as `0x${string}`,

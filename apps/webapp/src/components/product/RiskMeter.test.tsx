@@ -4,7 +4,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { RiskScaleMeter } from './RiskMeter';
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 
 i18n.load('en', {});
 i18n.activate('en');

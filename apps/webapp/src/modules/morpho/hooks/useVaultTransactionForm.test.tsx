@@ -4,7 +4,7 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { parseUnits } from 'viem';
-import type { Token } from '@/hooks';
+import type { Token } from '@/hooks/tokens/types';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -35,14 +35,38 @@ vi.mock('wagmi', async importOriginal => {
 
 // The limits mapping (computeVaultLimits) stays real — Max routing across the
 // liquidity states is exactly the seam under test. Only the data reads are stubbed.
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/tokens/tokens.constants', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/tokens.constants')>();
   return {
     ...actual,
-    getTokenDecimals: () => 18,
-    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value),
-    useTokenBalance: () => ({ data: { value: 0n } }),
-    useErc4626VaultData: () => ({ data: h.vaultData }),
+    getTokenDecimals: () => 18
+  };
+});
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
+  return {
+    ...actual,
+    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value)
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
+    useTokenBalance: () => ({ data: { value: 0n } })
+  };
+});
+vi.mock('@/hooks/vaults/useErc4626VaultData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useErc4626VaultData')>();
+  return {
+    ...actual,
+    useErc4626VaultData: () => ({ data: h.vaultData })
+  };
+});
+vi.mock('@/hooks/vaults/useVaultMarketData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useVaultMarketData')>();
+  return {
+    ...actual,
     useVaultMarketData: () => ({ data: h.marketData, isLoading: h.marketLoading })
   };
 });

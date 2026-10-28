@@ -12,12 +12,14 @@ import {
 } from '@tanstack/react-router';
 import { Intent } from '@/lib/enums';
 import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
-import { buildRewardsProduct, type EarnProductRow, type RewardContract } from '@/hooks';
+import { buildRewardsProduct } from '@/hooks/earn/earnProducts';
+import { type EarnProductRow } from '@/hooks/earn/types';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 
 // Rows are injected; every product family's own data hook is out of scope here.
 const marketplace = vi.hoisted(() => ({ rows: [] as unknown[] }));
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/earn/useEarnMarketplace', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/earn/useEarnMarketplace')>();
   return {
     ...actual,
     useEarnMarketplace: () => ({
@@ -25,7 +27,13 @@ vi.mock('@/hooks', async importOriginal => {
       endedRewardPositions: ended.current.positions,
       isLoading: false,
       totalDepositedUsd: 0
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/shared/useUsdsDaiData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useUsdsDaiData')>();
+  return {
+    ...actual,
     useUsdsDaiData: () => ({ data: undefined, isLoading: false })
   };
 });

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import { useRewardContractsToClaim, useStakeRewardContracts } from '@/hooks';
+import { useRewardContractsToClaim } from '@/hooks/rewards/useRewardContractsToClaim';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
 import type { StakeUrnClaim } from '../lib/stakeClaims';
 
 export type StakeClaimTarget = { urnIndex: bigint; urnAddress: `0x${string}` };

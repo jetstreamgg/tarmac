@@ -1,14 +1,11 @@
 import { useChainId, useConnection } from 'wagmi';
-import {
-  TOKENS,
-  useEarnMarketplace,
-  useHighestRateFromChartData,
-  useMultipleRewardsChartInfo,
-  usePrices,
-  useStakeRewardContracts,
-  useTokenBalances,
-  type TokenItem
-} from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useEarnMarketplace } from '@/hooks/earn/useEarnMarketplace';
+import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromChartData';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { useTokenBalances, type TokenItem } from '@/hooks/tokens/useTokenBalance';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useGeoConfig } from '@/modules/geo-config';
 import { buildIdleSupplyInfo } from '@/modules/portfolio/helpers/idleView';

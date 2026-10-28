@@ -1,4 +1,4 @@
-import { Token } from '@/hooks';
+import { Token } from '@/hooks/tokens/types';
 import { HistoryItem } from '../shared/shared';
 
 export type RewardUserHistoryItem = HistoryItem & {

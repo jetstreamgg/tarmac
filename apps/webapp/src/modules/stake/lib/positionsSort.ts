@@ -1,4 +1,4 @@
-import type { Vault } from '@/hooks';
+import type { Vault } from '@/hooks/vaults/vault';
 import { isLiquidatedStakePosition, type StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { loanToValue } from './loanToValue';
 

@@ -4,7 +4,7 @@ import { Cookie, FileText, FileWarning, Shield, SquareArrowUp, X } from 'lucide-
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { buttonVariants } from '@/components/ui/button';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';

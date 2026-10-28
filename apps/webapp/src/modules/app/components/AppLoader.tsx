@@ -9,7 +9,7 @@ import {
   readPortfolioDecision,
   writePortfolioDecision
 } from '@/lib/portfolioDecisionCache';
-import { useEarnMarketplace } from '@/hooks';
+import { useEarnMarketplace } from '@/hooks/earn/useEarnMarketplace';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useStablecoinBalances } from '@/modules/portfolio/hooks/useStablecoinBalances';

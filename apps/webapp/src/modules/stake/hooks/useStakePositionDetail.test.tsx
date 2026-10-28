@@ -16,24 +16,84 @@ vi.mock('wagmi', async importOriginal => {
 });
 
 // Everything except the claimables shape is inert for the chip math under test.
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useUrnAddress', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnAddress')>();
   return {
     ...actual,
-    useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111' }),
-    useVault: () => ({ data: undefined, isLoading: h.vaultLoading, error: null }),
-    useCollateralData: () => ({ data: undefined, isLoading: false, error: null }),
-    useStakeUrnSelectedRewardContract: () => ({
+    useUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111' })
+  };
+});
+vi.mock('@/hooks/vaults/useVault', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useVault')>();
+  return {
+    ...actual,
+    useVault: () => ({ data: undefined, isLoading: h.vaultLoading, error: null })
+  };
+});
+vi.mock('@/hooks/vaults/useCollateralData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useCollateralData')>();
+  return {
+    ...actual,
+    useCollateralData: () => ({ data: undefined, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/stake/useUrnSelectedRewardContract', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnSelectedRewardContract')>();
+  return {
+    ...actual,
+    useUrnSelectedRewardContract: () => ({
       data: h.rewardSymbol ? '0x3333333333333333333333333333333333333333' : undefined
-    }),
-    useStakeUrnSelectedVoteDelegate: () => ({ data: undefined }),
+    })
+  };
+});
+vi.mock('@/hooks/stake/useUrnSelectedVoteDelegate', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnSelectedVoteDelegate')>();
+  return {
+    ...actual,
+    useUrnSelectedVoteDelegate: () => ({ data: undefined })
+  };
+});
+vi.mock('@/hooks/rewards/useRewardContractTokens', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useRewardContractTokens')>();
+  return {
+    ...actual,
     useRewardContractTokens: () => ({
       data: h.rewardSymbol ? { rewardsToken: { symbol: h.rewardSymbol } } : undefined
-    }),
-    useMultipleRewardsChartInfo: () => ({ data: [] }),
-    useHighestRateFromChartData: () => null,
-    usePrices: () => ({ data: {}, isLoading: false, error: null }),
-    useSkyPrice: () => ({ data: undefined, priceString: undefined, isLoading: false }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useMultipleRewardsChartInfo')>();
+  return {
+    ...actual,
+    useMultipleRewardsChartInfo: () => ({ data: [] })
+  };
+});
+vi.mock('@/hooks/stake/useHighestRateFromChartData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useHighestRateFromChartData')>();
+  return {
+    ...actual,
+    useHighestRateFromChartData: () => null
+  };
+});
+vi.mock('@/hooks/prices/usePrices', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/usePrices')>();
+  return {
+    ...actual,
+    usePrices: () => ({ data: {}, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/prices/useSkyPrice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/useSkyPrice')>();
+  return {
+    ...actual,
+    useSkyPrice: () => ({ data: undefined, priceString: undefined, isLoading: false })
+  };
+});
+vi.mock('@/hooks/stake/useStakeHistory', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeHistory')>();
+  return {
+    ...actual,
     useStakeHistory: () => ({ data: [], isLoading: false, error: null })
   };
 });

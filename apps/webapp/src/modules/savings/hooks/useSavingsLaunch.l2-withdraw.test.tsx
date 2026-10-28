@@ -155,7 +155,10 @@ vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
   useUsdsPsmWrapperHalted: () => ({ data: 0n })
 }));
 
-import { TOKENS, useBatchPsmSwapExactIn, useBatchPsmSwapExactOut, psm3L2Address } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useBatchPsmSwapExactIn } from '@/hooks/psm/useBatchPsmSwapExactIn';
+import { useBatchPsmSwapExactOut } from '@/hooks/psm/useBatchPsmSwapExactOut';
+import { psm3L2Address } from '@/hooks/generated';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
 // Specific-amount withdraw: the user wants AMOUNT_OUT of the origin token out.

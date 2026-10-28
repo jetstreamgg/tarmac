@@ -1,6 +1,6 @@
 import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
-import { type Token } from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { VaultModalForm, type VaultModalPreset } from '../components/VaultModalForm';

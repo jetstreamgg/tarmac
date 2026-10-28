@@ -1,9 +1,5 @@
-import {
-  lsSkySkyRewardAddress,
-  lsSkySpkRewardAddress,
-  lsSkyUsdsRewardAddress,
-  TransactionTypeEnum
-} from '@/hooks';
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks/generated';
+import { TransactionTypeEnum } from '@/hooks/constants';
 import type { StakeHistory } from '@/hooks/stake/stakeModule';
 import { wadToUsd } from './stakeUsdNotional';
 

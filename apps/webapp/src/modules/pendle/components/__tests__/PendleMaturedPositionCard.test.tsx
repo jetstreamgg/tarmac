@@ -4,7 +4,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PendleMarketConfig } from '@/hooks';
+import type { PendleMarketConfig } from '@/hooks/pendle/pendle';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -38,11 +38,17 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChainId: () => h.chainId };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/pendle/usePendleRedeemPreview', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleRedeemPreview')>();
   return {
     ...actual,
-    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
+    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleMaturedPositionEarnings', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMaturedPositionEarnings')>();
+  return {
+    ...actual,
     usePendleMaturedPositionEarnings: () => h.earnings
   };
 });

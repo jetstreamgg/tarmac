@@ -6,7 +6,7 @@ const h = {
   callCounts: [] as number[]
 };
 
-vi.mock('@/hooks', () => ({
+vi.mock('@/hooks/shared/useNetworkFee', () => ({
   useNetworkFee: () => ({ data: undefined, isLoading: true, error: null })
 }));
 

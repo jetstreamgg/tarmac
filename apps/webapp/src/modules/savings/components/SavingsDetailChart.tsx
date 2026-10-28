@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useChainId } from 'wagmi';
-import { useSavingsChartInfo, useSkySavingsRateHistoricData, useOverallSkyData } from '@/hooks';
+import { useSavingsChartInfo } from '@/hooks/savings/useSavingsChartInfo';
+import { useSkySavingsRateHistoricData } from '@/hooks/savings/useSkySavingsRateHistoricData';
+import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
 import { isL2ChainId } from '@/utils';
 import { TimeFrame, Data } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';

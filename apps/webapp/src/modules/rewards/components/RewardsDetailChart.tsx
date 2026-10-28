@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useRewardsChartInfo, type RewardContract } from '@/hooks';
+import { useRewardsChartInfo } from '@/hooks/rewards/useRewardsChartInfo';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 import { TimeFrame } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { RateTvlDetailChart } from '@/components/product/RateTvlDetailChart';

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
-import { useStUsdsChartInfo, useStUsdsData } from '@/hooks';
+import { useStUsdsChartInfo } from '@/hooks/stusds/useStUsdsChartInfo';
+import { useStUsdsData } from '@/hooks/stusds/useStUsdsData';
 import { calculateApyFromStr } from '@/utils';
 import { TimeFrame } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';

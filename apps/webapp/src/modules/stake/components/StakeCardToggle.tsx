@@ -8,7 +8,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useIsTouchDevice } from '@/hooks';
+import { useIsTouchDevice } from '@/hooks/ui/useIsTouchDevice';
 
 /**
  * Card enable switch. While `disabled` with a `disabledHint`, the switch is

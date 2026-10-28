@@ -147,7 +147,7 @@ vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
   useUsdsPsmWrapperHalted: () => ({ data: 0n })
 }));
 
-import { TOKENS } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
 const AMOUNT = parseUnits('10', 18);

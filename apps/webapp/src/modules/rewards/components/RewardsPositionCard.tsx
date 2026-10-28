@@ -3,15 +3,13 @@ import { useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import {
-  ZERO_ADDRESS,
-  getTokenDecimals,
-  isDeprecatedRewardContract,
-  useRewardsRewardsBalance,
-  useRewardsSuppliedBalance,
-  useUserRewardsBalance,
-  type RewardContract
-} from '@/hooks';
+import { ZERO_ADDRESS } from '@/utils/constants';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { isDeprecatedRewardContract } from '@/hooks/rewards/deprecatedRewards';
+import { useRewardsRewardsBalance } from '@/hooks/rewards/useRewardsRewardsBalance';
+import { useRewardsSuppliedBalance } from '@/hooks/rewards/useRewardsBalance';
+import { useUserRewardsBalance } from '@/hooks/rewards/useUserRewardsBalance';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 import { formatNumber, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';

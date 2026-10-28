@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useChainId } from 'wagmi';
-import { usePrices } from '@/hooks';
+import { usePrices } from '@/hooks/prices/usePrices';
 import { Button } from '@/components/ui/button';
 import { RewardsClaimTable } from '@/modules/portfolio/components/RewardsClaimTable';
 import { StakeUserPosition } from '../hooks/useStakeUserPositions';

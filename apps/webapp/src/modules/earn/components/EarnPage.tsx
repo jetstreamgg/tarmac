@@ -4,14 +4,10 @@ import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho } from '@/modules/icons';
 import { Pendle } from '@/modules/icons/PendleSymbol';
-import {
-  useEarnMarketplace,
-  EarnProductKind,
-  productNetworks,
-  RISK_TIER_BY_PROFILE,
-  useUsdsDaiData,
-  type EarnProductRow
-} from '@/hooks';
+import { useEarnMarketplace } from '@/hooks/earn/useEarnMarketplace';
+import { EarnProductKind, type EarnProductRow } from '@/hooks/earn/types';
+import { productNetworks, RISK_TIER_BY_PROFILE } from '@/hooks/earn/earnProducts';
+import { useUsdsDaiData } from '@/hooks/shared/useUsdsDaiData';
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { RiskLevel, RISK_LEVEL_THRESHOLDS, type EarnRiskTier } from '@/hooks';
+import { RiskLevel, RISK_LEVEL_THRESHOLDS } from '@/hooks/vaults/vaults.constants';
+import { type EarnRiskTier } from '@/hooks/earn/types';
 
 /**
  * Generic three-dash risk pill - purely presentational (review feedback on

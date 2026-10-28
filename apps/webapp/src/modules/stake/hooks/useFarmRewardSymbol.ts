@@ -1,5 +1,5 @@
 import { useChainId } from 'wagmi';
-import { useRewardContractTokens } from '@/hooks';
+import { useRewardContractTokens } from '@/hooks/rewards/useRewardContractTokens';
 import { farmRewardSymbol } from '../lib/farmRewardSymbol';
 
 /**

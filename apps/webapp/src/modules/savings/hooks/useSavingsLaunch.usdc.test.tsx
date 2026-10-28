@@ -163,7 +163,8 @@ vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
   useUsdsPsmWrapperHalted: () => ({ data: h.halted })
 }));
 
-import { TOKENS, useBatchPsmSwapAndSavingsSupply } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useBatchPsmSwapAndSavingsSupply } from '@/hooks/savings/useBatchPsmSwapAndSavingsSupply';
 import { useSavingsLaunch } from './useSavingsLaunch';
 
 const AMOUNT = parseUnits('10', 6); // 10 USDC — 6 decimals, everywhere

@@ -3,7 +3,7 @@ import { AriaAttributes, Fragment, ReactNode, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount } from 'wagmi';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TransactionsEmpty } from '@/modules/icons';

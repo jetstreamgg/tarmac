@@ -1,6 +1,8 @@
 import { Trans } from '@lingui/react/macro';
 import { Progress } from '@/components/ui/progress';
-import { useNow, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { useNow } from '@/hooks/ui/useNow';
+import { usePendleMarketsApiData } from '@/hooks/pendle/usePendleMarketsApiData';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
 import { computeMaturityWindow } from '../utils/maturityWindow';
 import { formatMaturity } from '@/modules/earn/helpers/formatMaturity';

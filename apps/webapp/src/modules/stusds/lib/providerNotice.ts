@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import type { I18n } from '@lingui/core';
-import { StUsdsSelectionReason, StUsdsBlockedReason } from '@/hooks';
+import { StUsdsSelectionReason, StUsdsBlockedReason } from '@/hooks/stusds/providers/types';
 import { createNumberFormatter, formatBigInt } from '@/utils';
 import type { StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 

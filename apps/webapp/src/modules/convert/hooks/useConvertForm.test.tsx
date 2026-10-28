@@ -30,15 +30,24 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
   return {
     ...actual,
     // Identity debounce: these tests assert synchronously after typing; the
     // settle window itself is covered at the page seam (ConvertPage.test).
-    useDebounce: <T,>(value: T) => value,
+    useDebounce: <T,>(value: T) => value
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  const tokensconstantsActual = await vi.importActual<typeof import('@/hooks/tokens/tokens.constants')>(
+    '@/hooks/tokens/tokens.constants'
+  );
+  return {
+    ...actual,
     useTokenBalance: ({ token }: { token?: string }) => {
-      const usds = actual.TOKENS.usds.address[h.chainId]?.toLowerCase();
+      const usds = tokensconstantsActual.TOKENS.usds.address[h.chainId]?.toLowerCase();
       const value = token?.toLowerCase() === usds ? h.usdsBalance : h.usdcBalance;
       return { data: { value }, refetch: vi.fn() };
     }

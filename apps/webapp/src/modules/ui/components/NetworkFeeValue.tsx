@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
-import { useIsBatchSupported } from '@/hooks';
+import { useIsBatchSupported } from '@/hooks/shared/useIsBatchSupported';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { NetworkFeeData } from '@/hooks';
+import type { NetworkFeeData } from '@/hooks/shared/useNetworkFee';
 import { BundleTogglePanel } from './BundleTogglePanel';
 import { NO_VALUE } from '@/lib/constants';
 import { CellFigure } from '@/components/product/CellFigure';

@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import {
-  daiUsdsAddress,
-  mcdDaiAddress,
-  mkrAddress,
-  mkrSkyAddress,
-  useBatchUpgrade,
-  useTokenAllowance,
-  type UpgradeSourceToken
-} from '@/hooks';
+import { daiUsdsAddress, mcdDaiAddress, mkrAddress, mkrSkyAddress } from '@/hooks/generated';
+import { useBatchUpgrade, type UpgradeSourceToken } from '@/hooks/upgrade/useBatchUpgrade';
+import { useTokenAllowance } from '@/hooks/tokens/useTokenAllowance';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';

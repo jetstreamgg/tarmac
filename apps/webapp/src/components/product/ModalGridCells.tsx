@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { useChainId } from 'wagmi';
 import { ArrowRight } from 'lucide-react';
-import type { NetworkFeeData } from '@/hooks';
+import type { NetworkFeeData } from '@/hooks/shared/useNetworkFee';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';

@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
-import { getTokenDecimals, useMorphoVaultChartInfo, useVaultMarketData, type Token } from '@/hooks';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { useMorphoVaultChartInfo } from '@/hooks/morpho/useMorphoVaultChartInfo';
+import { useVaultMarketData } from '@/hooks/vaults/useVaultMarketData';
+import { type Token } from '@/hooks/tokens/types';
 import { TimeFrame } from '@/modules/ui/components/Chart';
 import { RateTvlDetailChart, withLivePoint } from '@/components/product/RateTvlDetailChart';
 import { useParseVaultChartData } from '../hooks/useParseVaultChartData';

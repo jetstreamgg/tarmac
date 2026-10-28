@@ -43,9 +43,12 @@ vi.mock('wagmi', async io => ({
     isConnected: true
   })
 }));
-vi.mock('@/hooks', async io => ({
-  ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => mockIsSafeWallet,
+vi.mock('@/hooks/wallet/useIsSafeWallet', async io => ({
+  ...(await io<typeof import('@/hooks/wallet/useIsSafeWallet')>()),
+  useIsSafeWallet: () => mockIsSafeWallet
+}));
+vi.mock('@/hooks/shared/useIsBatchSupported', async io => ({
+  ...(await io<typeof import('@/hooks/shared/useIsBatchSupported')>()),
   useIsBatchSupported: () => ({ data: false })
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));

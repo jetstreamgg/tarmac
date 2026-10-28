@@ -1,6 +1,6 @@
 import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
-import type { UpgradeSourceToken } from '@/hooks';
+import type { UpgradeSourceToken } from '@/hooks/upgrade/useBatchUpgrade';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { UpgradeModalForm } from '../components/UpgradeModalForm';

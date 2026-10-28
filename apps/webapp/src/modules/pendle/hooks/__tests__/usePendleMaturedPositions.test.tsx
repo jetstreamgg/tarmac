@@ -33,12 +33,24 @@ const hoisted = vi.hoisted(() => ({
   geo: { fixedEnabled: true, isLoading: false }
 }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/pendle/constants', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/constants')>();
   return {
     ...actual,
-    PENDLE_MARKETS: [hoisted.activeMarket, hoisted.maturedMarket],
-    isMarketMatured: (expiry: number) => expiry < 1_700_000_001, // matches the matured fixture
+    PENDLE_MARKETS: [hoisted.activeMarket, hoisted.maturedMarket]
+  };
+});
+vi.mock('@/hooks/pendle/helpers', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/helpers')>();
+  return {
+    ...actual,
+    isMarketMatured: (expiry: number) => expiry < 1_700_000_001
+  };
+});
+vi.mock('@/hooks/pendle/usePendleUserPtBalances', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleUserPtBalances')>();
+  return {
+    ...actual, // matches the matured fixture
     usePendleUserPtBalances: () => ({
       data: hoisted.ptBalances,
       isLoading: false,

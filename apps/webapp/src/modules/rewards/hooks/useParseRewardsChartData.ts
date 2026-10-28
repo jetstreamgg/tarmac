@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Data, TimeFrame } from '@/modules/ui/components/Chart';
 import { getTimeFrameInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
-import { RewardsChartInfoParsed } from '@/hooks';
+import { RewardsChartInfoParsed } from '@/hooks/rewards/useRewardsChartInfo';
 
 export function useParseRewardsChartData(
   timeFrame: TimeFrame,

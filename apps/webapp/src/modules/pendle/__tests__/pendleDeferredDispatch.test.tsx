@@ -4,7 +4,7 @@ import { I18nProvider } from '@lingui/react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { maxUint256 } from 'viem';
-import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
+import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks/pendle/pendle';
 import type { PreTransactionGate } from '@/modules/ui/context/preTransactionGate';
 
 // The real Pendle modals end to end — provider, form / redeem launcher, convert
@@ -208,21 +208,63 @@ const stable = vi.hoisted(() => ({
   widgetAnalytics: () => {},
   batchToggle: [false, () => {}] as const
 }));
-vi.mock('@/hooks', async io => {
-  const actual = await io<typeof import('@/hooks')>();
-  const { useSyncExternalStore } = await import('react');
+vi.mock('@/hooks/ui/useDebounce', async io => {
+  const actual = await io<typeof import('@/hooks/ui/useDebounce')>();
+  return {
+    ...actual,
+    useDebounce: <T,>(value: T) => value
+  };
+});
+vi.mock('@/hooks/wallet/useIsSafeWallet', async io => {
+  const actual = await io<typeof import('@/hooks/wallet/useIsSafeWallet')>();
+  return {
+    ...actual,
+    useIsSafeWallet: () => false
+  };
+});
+vi.mock('@/hooks/ui/useIsTouchDevice', async io => {
+  const actual = await io<typeof import('@/hooks/ui/useIsTouchDevice')>();
+  return {
+    ...actual,
+    useIsTouchDevice: () => false
+  };
+});
+vi.mock('@/hooks/pendle/usePendleUserPtBalances', async io => {
+  const actual = await io<typeof import('@/hooks/pendle/usePendleUserPtBalances')>();
   const balances = { [MARKET.marketAddress]: 1_000_000_000n };
-  const tokenBalance = { data: { value: 1_000_000_000n }, isLoading: false, error: null, refetch: () => {} };
+  return {
+    ...actual,
+    usePendleUserPtBalances: () => ({ ...stable.read, data: balances })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleMarketsApiData', async io => {
+  const actual = await io<typeof import('@/hooks/pendle/usePendleMarketsApiData')>();
   const marketsApi = { [MARKET.marketAddress]: { impliedApy: 0.05, expirySec: MARKET.expiry } };
   return {
     ...actual,
-    useDebounce: <T,>(value: T) => value,
-    useIsSafeWallet: () => false,
-    useIsTouchDevice: () => false,
-    usePendleUserPtBalances: () => ({ ...stable.read, data: balances }),
-    usePendleMarketsApiData: () => ({ ...stable.read, data: marketsApi }),
-    useAllPendleMarketsHistory: () => ({ ...stable.read, data: undefined }),
-    useTokenBalance: () => tokenBalance,
+    usePendleMarketsApiData: () => ({ ...stable.read, data: marketsApi })
+  };
+});
+vi.mock('@/hooks/pendle/useAllPendleMarketsHistory', async io => {
+  const actual = await io<typeof import('@/hooks/pendle/useAllPendleMarketsHistory')>();
+  return {
+    ...actual,
+    useAllPendleMarketsHistory: () => ({ ...stable.read, data: undefined })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async io => {
+  const actual = await io<typeof import('@/hooks/tokens/useTokenBalance')>();
+  const tokenBalance = { data: { value: 1_000_000_000n }, isLoading: false, error: null, refetch: () => {} };
+  return {
+    ...actual,
+    useTokenBalance: () => tokenBalance
+  };
+});
+vi.mock('@/hooks/pendle/useQuotePendleConvert', async io => {
+  const actual = await io<typeof import('@/hooks/pendle/useQuotePendleConvert')>();
+  const { useSyncExternalStore } = await import('react');
+  return {
+    ...actual,
     useQuotePendleConvert: (args: { enabled?: boolean }) => {
       const current = useSyncExternalStore(h.subscribe, () => h.quote);
       return { ...stable.read, data: args.enabled === false ? undefined : current };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import { Intent } from '@/lib/enums';
 import type { ModuleId } from '@/modules/geo-config/types';
 import { partitionByGeoAvailability } from './geoAvailability';

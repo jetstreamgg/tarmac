@@ -20,8 +20,8 @@ const CAPACITY = {
 // card test uses).
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useBorrowCapacityData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useBorrowCapacityData')>();
   return {
     ...actual,
     useBorrowCapacityData: () => ({ data: CAPACITY, isLoading: false, error: null })

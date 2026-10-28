@@ -1,6 +1,8 @@
 import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import { getTokenDecimals, useTokenBalance, type RewardContract } from '@/hooks';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 import { formatDecimalPercentage } from '@/utils';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';

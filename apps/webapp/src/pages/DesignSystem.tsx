@@ -77,7 +77,7 @@ import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';
 import { TokensComposition } from '@/components/product/TokensComposition';
 import { ChartTooltip } from '@/modules/ui/components/ChartTooltip';
 import { PortfolioDonutChart } from '@/modules/portfolio/components/PortfolioDonutChart';
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';

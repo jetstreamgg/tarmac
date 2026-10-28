@@ -25,11 +25,17 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/shared/useOverallSkyData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useOverallSkyData')>();
   return {
     ...actual,
-    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } }),
+    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
     useTokenBalances: () => ({
       data: [
         { symbol: 'USDS', formatted: '20000', value: 0n, decimals: 18, chainId: 1 },

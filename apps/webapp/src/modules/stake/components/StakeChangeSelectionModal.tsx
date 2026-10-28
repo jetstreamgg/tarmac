@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
-import { ZERO_ADDRESS } from '@/hooks';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';

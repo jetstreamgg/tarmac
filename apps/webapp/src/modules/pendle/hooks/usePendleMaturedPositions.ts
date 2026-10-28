@@ -1,5 +1,8 @@
 import { useConnection } from 'wagmi';
-import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
+import { isMarketMatured } from '@/hooks/pendle/helpers';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
+import { usePendleUserPtBalances } from '@/hooks/pendle/usePendleUserPtBalances';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export type PendleMaturedPosition = { market: PendleMarketConfig; ptBalance: bigint };

@@ -23,12 +23,24 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useIsTouchDevice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useIsTouchDevice')>();
   return {
     ...actual,
-    useIsTouchDevice: () => false,
-    useNetworkFee: () => ({ data: undefined, isLoading: false, error: null }),
+    useIsTouchDevice: () => false
+  };
+});
+vi.mock('@/hooks/shared/useNetworkFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useNetworkFee')>();
+  return {
+    ...actual,
+    useNetworkFee: () => ({ data: undefined, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
     useIsBatchSupported: () => ({ data: false })
   };
 });
@@ -37,7 +49,7 @@ vi.mock('@/hooks', async importOriginal => {
 // analytics blob the presentation layer derives from it.
 vi.mock('../../hooks/useStUsdsTransactionForm', async importOriginal => {
   const actual = await importOriginal<typeof import('../../hooks/useStUsdsTransactionForm')>();
-  const { StUsdsProviderType } = await import('@/hooks');
+  const { StUsdsProviderType } = await import('@/hooks/stusds/providers/types');
   return {
     ...actual,
     useStUsdsTransactionForm: ({ flow }: { flow: string }) => ({
@@ -101,7 +113,7 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('../StUsdsProviderNotice', () => ({ StUsdsProviderNotice: () => null }));
 
 import { StUsdsModalForm } from '../StUsdsModalForm';
-import { stUsdsAddress } from '@/hooks';
+import { stUsdsAddress } from '@/hooks/generated';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { StUsdsLaunchFlow } from '../../hooks/useStUsdsLaunch';
 

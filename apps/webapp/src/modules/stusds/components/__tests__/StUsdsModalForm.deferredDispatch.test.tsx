@@ -112,12 +112,24 @@ const idleEngine = {
   currentCallIndex: 0,
   reset: () => {}
 };
-vi.mock('@/hooks', async io => ({
-  ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => false,
-  useIsTouchDevice: () => false,
-  useStUsdsAllowance: () => ({ data: 0n }),
-  useBatchStUsdsDeposit: () => idleEngine,
+vi.mock('@/hooks/wallet/useIsSafeWallet', async io => ({
+  ...(await io<typeof import('@/hooks/wallet/useIsSafeWallet')>()),
+  useIsSafeWallet: () => false
+}));
+vi.mock('@/hooks/ui/useIsTouchDevice', async io => ({
+  ...(await io<typeof import('@/hooks/ui/useIsTouchDevice')>()),
+  useIsTouchDevice: () => false
+}));
+vi.mock('@/hooks/stusds/useStUsdsAllowance', async io => ({
+  ...(await io<typeof import('@/hooks/stusds/useStUsdsAllowance')>()),
+  useStUsdsAllowance: () => ({ data: 0n })
+}));
+vi.mock('@/hooks/stusds/useBatchStUsdsDeposit', async io => ({
+  ...(await io<typeof import('@/hooks/stusds/useBatchStUsdsDeposit')>()),
+  useBatchStUsdsDeposit: () => idleEngine
+}));
+vi.mock('@/hooks/stusds/useStUsdsWithdraw', async io => ({
+  ...(await io<typeof import('@/hooks/stusds/useStUsdsWithdraw')>()),
   useStUsdsWithdraw: () => idleEngine
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));
@@ -133,7 +145,7 @@ vi.mock('@/modules/ui/hooks/useModalFeeCell', () => ({ useModalFeeCell: () => fe
 // The form model with the Curve route selected and a live quote.
 vi.mock('../../hooks/useStUsdsTransactionForm', async io => {
   const actual = await io<typeof import('../../hooks/useStUsdsTransactionForm')>();
-  const { StUsdsProviderType } = await import('@/hooks');
+  const { StUsdsProviderType } = await import('@/hooks/stusds/providers/types');
   return {
     ...actual,
     // One model object per quote: the real hook's outputs are memoized, and

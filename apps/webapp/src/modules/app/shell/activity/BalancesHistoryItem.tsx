@@ -2,14 +2,11 @@ import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { getEtherscanLink, getCowExplorerLink, getChainIcon, formatUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import {
-  ModuleEnum,
-  TransactionTypeEnum,
-  CombinedHistoryItem,
-  useRewardContractTokens,
-  usePrices,
-  StUsdsProviderType
-} from '@/hooks';
+import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
+import { CombinedHistoryItem } from '@/hooks/shared/shared';
+import { useRewardContractTokens } from '@/hooks/rewards/useRewardContractTokens';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { StUsdsProviderType } from '@/hooks/stusds/providers/types';
 import { getTitle } from './getTitle';
 import { getAmount, getRawAmount } from './getAmount';
 import { getToken } from './getToken';

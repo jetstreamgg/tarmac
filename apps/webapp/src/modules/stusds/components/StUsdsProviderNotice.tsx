@@ -1,7 +1,11 @@
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { LoaderCircle, TriangleAlert } from 'lucide-react';
-import { StUsdsProviderType, StUsdsSelectionReason, type StUsdsProviderSelectionResult } from '@/hooks';
+import {
+  StUsdsProviderType,
+  StUsdsSelectionReason,
+  type StUsdsProviderSelectionResult
+} from '@/hooks/stusds/providers/types';
 import { CurveLogo } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import type { StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';

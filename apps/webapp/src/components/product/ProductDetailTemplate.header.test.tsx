@@ -13,8 +13,8 @@ i18n.activate('en');
 // row on phones, M6.3 486:20732; a pill from md up).
 const h = vi.hoisted(() => ({ isMobile: false }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
   return {
     ...actual,
     useBreakpointIndex: () => ({ bpi: h.isMobile ? actual.BP.sm : actual.BP.desktop })

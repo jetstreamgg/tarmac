@@ -32,14 +32,38 @@ vi.mock('wagmi', async importOriginal => {
 
 // The flag-driven max under test reads `available`, which the form derives from
 // these reads — only the data layer is stubbed, the derivation stays real.
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
   return {
     ...actual,
-    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value),
-    useStUsdsData: () => ({ data: h.stUsdsData }),
-    useStUsdsCapacityData: () => ({ data: { remainingCapacityBuffered: parseUnits('100000', 18) } }),
-    useStUsdsWithdrawBalances: () => h.withdrawBalances,
+    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value)
+  };
+});
+vi.mock('@/hooks/stusds/useStUsdsData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stusds/useStUsdsData')>();
+  return {
+    ...actual,
+    useStUsdsData: () => ({ data: h.stUsdsData })
+  };
+});
+vi.mock('@/hooks/stusds/useStUsdsCapacityData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stusds/useStUsdsCapacityData')>();
+  return {
+    ...actual,
+    useStUsdsCapacityData: () => ({ data: { remainingCapacityBuffered: parseUnits('100000', 18) } })
+  };
+});
+vi.mock('@/hooks/stusds/useStUsdsWithdrawBalances', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stusds/useStUsdsWithdrawBalances')>();
+  return {
+    ...actual,
+    useStUsdsWithdrawBalances: () => h.withdrawBalances
+  };
+});
+vi.mock('@/hooks/stusds/providers/useStUsdsProviderSelection', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stusds/providers/useStUsdsProviderSelection')>();
+  return {
+    ...actual,
     useStUsdsProviderSelection: () => ({
       selectedProvider: h.selectedProvider,
       selectionReason: 'native_default',

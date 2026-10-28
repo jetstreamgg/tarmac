@@ -44,7 +44,7 @@ vi.mock('@/modules/ui/context/ConnectedContext', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ isModalOpen: h.txModalOpen })
 }));
-vi.mock('@/hooks', () => ({
+vi.mock('@/hooks/earn/useEarnMarketplace', () => ({
   useEarnMarketplace: () => h.marketplace
 }));
 vi.mock('@/modules/portfolio/hooks/useStablecoinBalances', () => ({

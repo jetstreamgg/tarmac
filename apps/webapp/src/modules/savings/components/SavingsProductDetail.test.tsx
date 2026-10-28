@@ -23,13 +23,31 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChains: () => [{ id: 1 }], useChainId: () => 1 };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/savings/useSavingsData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/savings/useSavingsData')>();
   return {
     ...actual,
-    useSavingsData: () => ({ data: { userSavingsBalance: h.savingsBalance }, error: null, isLoading: false }),
-    useOverallSkyData: () => ({ data: undefined }),
-    useSkySavingsRateHistoricData: () => ({ data: undefined }),
+    useSavingsData: () => ({ data: { userSavingsBalance: h.savingsBalance }, error: null, isLoading: false })
+  };
+});
+vi.mock('@/hooks/shared/useOverallSkyData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useOverallSkyData')>();
+  return {
+    ...actual,
+    useOverallSkyData: () => ({ data: undefined })
+  };
+});
+vi.mock('@/hooks/savings/useSkySavingsRateHistoricData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/savings/useSkySavingsRateHistoricData')>();
+  return {
+    ...actual,
+    useSkySavingsRateHistoricData: () => ({ data: undefined })
+  };
+});
+vi.mock('@/hooks/earn/useProductNetworks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/earn/useProductNetworks')>();
+  return {
+    ...actual,
     // Savings is live on mainnet AND the L2s: the phone header keeps its
     // full-width dropdown row (a single-chain product gets the title badge).
     useProductNetworks: () => [1, 8453]

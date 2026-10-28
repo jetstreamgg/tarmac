@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import { buildStakeConfirmRows, type StakeConfirmRowInput } from './stakeModalRows';
 
 const BASE: StakeConfirmRowInput = {

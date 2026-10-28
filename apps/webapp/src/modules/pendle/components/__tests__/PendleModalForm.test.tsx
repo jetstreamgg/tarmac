@@ -6,7 +6,7 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
-import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
+import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks/pendle/pendle';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -92,52 +92,100 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
   return {
     ...actual,
-    useDebounce: <T,>(value: T) => (hoisted.debounceLagged !== undefined ? hoisted.debounceLagged : value),
+    useDebounce: <T,>(value: T) => (hoisted.debounceLagged !== undefined ? hoisted.debounceLagged : value)
+  };
+});
+vi.mock('@/hooks/shared/useNetworkFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useNetworkFee')>();
+  return {
+    ...actual,
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
       error: null,
       mutate: () => {},
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleUserPtBalances', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleUserPtBalances')>();
+  return {
+    ...actual,
     usePendleUserPtBalances: () => ({
       data: { [MARKET.marketAddress]: PT_BALANCE },
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleMarketsApiData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMarketsApiData')>();
+  return {
+    ...actual,
     usePendleMarketsApiData: () => ({
       data: { [MARKET.marketAddress]: { impliedApy: 0.042, expirySec: MARKET.expiry } },
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
     useTokenBalance: () => ({
       data: { value: WALLET_BALANCE },
       isLoading: false,
       error: null,
       refetch: () => undefined
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenAllowance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenAllowance')>();
+  return {
+    ...actual,
     useTokenAllowance: () => ({
       data: hoisted.allowance,
       isLoading: false,
       error: null,
       mutate: () => undefined
-    }),
-    useIsBatchSupported: () => ({ data: true }),
+    })
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
+    useIsBatchSupported: () => ({ data: true })
+  };
+});
+vi.mock('@/hooks/pendle/useAllPendleMarketsHistory', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/useAllPendleMarketsHistory')>();
+  return {
+    ...actual,
     useAllPendleMarketsHistory: () => ({
       data: undefined,
       isLoading: false,
       error: null,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/useQuotePendleConvert', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/useQuotePendleConvert')>();
+  return {
+    ...actual,
     useQuotePendleConvert: (args: Record<string, unknown>) => {
       hoisted.quoteArgs = args;
       return {
@@ -147,7 +195,13 @@ vi.mock('@/hooks', async importOriginal => {
         mutate: () => undefined,
         dataSources: []
       };
-    },
+    }
+  };
+});
+vi.mock('@/hooks/pendle/useBatchPendleConvert', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/useBatchPendleConvert')>();
+  return {
+    ...actual,
     useBatchPendleConvert: (args: Record<string, unknown> & BatchCallbacks) => {
       hoisted.batchArgs = args;
       return {

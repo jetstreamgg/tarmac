@@ -4,12 +4,12 @@ import { formatUnits, parseUnits } from 'viem';
 import {
   StUsdsDirection,
   StUsdsProviderType,
-  useStUsdsCapacityData,
-  useStUsdsData,
-  useStUsdsProviderSelection,
-  useStUsdsWithdrawBalances,
   type StUsdsProviderSelectionResult
-} from '@/hooks';
+} from '@/hooks/stusds/providers/types';
+import { useStUsdsCapacityData } from '@/hooks/stusds/useStUsdsCapacityData';
+import { useStUsdsData } from '@/hooks/stusds/useStUsdsData';
+import { useStUsdsProviderSelection } from '@/hooks/stusds/providers/useStUsdsProviderSelection';
+import { useStUsdsWithdrawBalances } from '@/hooks/stusds/useStUsdsWithdrawBalances';
 import { calculateApyFromStr, formatNumber } from '@/utils';
 import { parseAmountInput } from '@/lib/amountInput';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';

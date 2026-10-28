@@ -1,6 +1,7 @@
 import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import { useOverallSkyData, useTokenBalances, type TokenItem } from '@/hooks';
+import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
+import { useTokenBalances, type TokenItem } from '@/hooks/tokens/useTokenBalance';
 import { formatDecimalPercentage, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { ProductBadge, ProductSupplyCard } from '@/components/product/ProductCard';

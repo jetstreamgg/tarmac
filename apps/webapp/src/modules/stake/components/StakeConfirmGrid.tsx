@@ -1,14 +1,12 @@
 import { useChainId } from 'wagmi';
 import { type Call } from 'viem';
 import { t } from '@lingui/core/macro';
-import {
-  RiskLevel,
-  useDelegateName,
-  useHighestRateFromChartData,
-  useMultipleRewardsChartInfo,
-  useSkyPrice,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
+import { useDelegateName } from '@/hooks/delegates/useDelegateName';
+import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromChartData';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import {
   capitalizeFirstLetter,
   formatAddress,

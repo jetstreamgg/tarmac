@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import {
   Dialog,
   DialogClose,

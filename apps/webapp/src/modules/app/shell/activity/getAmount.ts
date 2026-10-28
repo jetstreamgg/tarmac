@@ -1,7 +1,9 @@
-import { CombinedHistoryItem, ModuleEnum, Token, TransactionTypeEnum } from '@/hooks';
+import { CombinedHistoryItem } from '@/hooks/shared/shared';
+import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
+import { Token } from '@/hooks/tokens/types';
 import { formatBigInt } from '@/utils';
 import { absBigInt } from './absBigInt';
-import { getTokenDecimals } from '@/hooks';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 
 /** The unsigned raw amount a history item moved, with its token decimals — or nothing when the item carries no amount. */
 // TODO this needs to be standardized across modules so that amount is the same property name on each module

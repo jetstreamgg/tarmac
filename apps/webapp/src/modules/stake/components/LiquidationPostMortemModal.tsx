@@ -4,14 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ExternalLink, X } from 'lucide-react';
-import {
-  getIlkName,
-  useSkyPrice,
-  useStakeUrnAddress,
-  useStakeUrnSelectedVoteDelegate,
-  useVault,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { useUrnAddress as useStakeUrnAddress } from '@/hooks/stake/useUrnAddress';
+import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@/hooks/stake/useUrnSelectedVoteDelegate';
+import { useVault } from '@/hooks/vaults/useVault';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { formatUsd, getEtherscanLink } from '@/utils';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

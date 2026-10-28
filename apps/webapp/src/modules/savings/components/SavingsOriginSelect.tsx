@@ -1,5 +1,6 @@
 import { t } from '@lingui/core/macro';
-import { TOKENS, type Token } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { type Token } from '@/hooks/tokens/types';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

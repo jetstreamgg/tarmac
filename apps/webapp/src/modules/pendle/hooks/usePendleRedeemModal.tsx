@@ -3,19 +3,15 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
 import { useChainId, useChains, useConnection, useSwitchChain } from 'wagmi';
-import {
-  getTokenDecimals,
-  isMarketMatured,
-  isPendleChain,
-  PENDLE_ROUTER_V4_ADDRESS,
-  PendleConvertSide,
-  useBatchPendleConvert,
-  usePendleUserPtBalances,
-  useQuotePendleConvert,
-  useTokenAllowance,
-  type PendleMarketConfig,
-  type Token
-} from '@/hooks';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { isMarketMatured, isPendleChain } from '@/hooks/pendle/helpers';
+import { PENDLE_ROUTER_V4_ADDRESS, PendleConvertSide } from '@/hooks/pendle/constants';
+import { useBatchPendleConvert } from '@/hooks/pendle/useBatchPendleConvert';
+import { usePendleUserPtBalances } from '@/hooks/pendle/usePendleUserPtBalances';
+import { useQuotePendleConvert } from '@/hooks/pendle/useQuotePendleConvert';
+import { useTokenAllowance } from '@/hooks/tokens/useTokenAllowance';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
+import { type Token } from '@/hooks/tokens/types';
 import { familyMainnetId, formatBigInt, isTestnetId } from '@/utils';
 import { Intent } from '@/lib/enums';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';

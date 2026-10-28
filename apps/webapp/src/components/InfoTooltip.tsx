@@ -1,7 +1,7 @@
 import { Info, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
-import { useIsTouchDevice } from '@/hooks';
+import { useIsTouchDevice } from '@/hooks/ui/useIsTouchDevice';
 import { cn } from '@/lib/cn';
 
 // The glyph's focus ring is the DS ring, not the browser outline (Design QA 3314:135504).

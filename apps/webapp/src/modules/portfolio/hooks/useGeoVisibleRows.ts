@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import { useGeoConfig } from '@/modules/geo-config';
 import { partitionByGeoAvailability } from '@/modules/earn/helpers/geoAvailability';
 

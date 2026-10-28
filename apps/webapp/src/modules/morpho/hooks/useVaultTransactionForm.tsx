@@ -1,14 +1,12 @@
 import { useMemo, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import {
-  type Token,
-  computeVaultLimits,
-  getTokenDecimals,
-  useErc4626VaultData,
-  useTokenBalance,
-  useVaultMarketData
-} from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
+import { computeVaultLimits } from '@/hooks/vaults/computeVaultLimits';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { useErc4626VaultData } from '@/hooks/vaults/useErc4626VaultData';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { useVaultMarketData } from '@/hooks/vaults/useVaultMarketData';
 import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { VaultAmountSummary } from '../components/VaultAmountSummary';
 import type { VaultEngineParams, VaultLaunchFlow } from './useVaultLaunch';

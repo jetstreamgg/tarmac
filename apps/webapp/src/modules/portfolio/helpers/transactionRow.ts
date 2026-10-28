@@ -1,11 +1,8 @@
 import { t } from '@lingui/core/macro';
-import {
-  CombinedHistoryItem,
-  ModuleEnum,
-  PENDLE_MARKETS,
-  TransactionTypeEnum,
-  getTokenDecimals
-} from '@/hooks';
+import { CombinedHistoryItem } from '@/hooks/shared/shared';
+import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 import { capitalizeFirstLetter, formatBigInt, getCowExplorerLink, getEtherscanLink } from '@/utils';
 
 /**

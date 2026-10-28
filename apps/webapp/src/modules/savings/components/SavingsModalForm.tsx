@@ -21,7 +21,7 @@ import { SavingsOriginSelect } from './SavingsOriginSelect';
 import { buildSavingsEntryRows, buildSupplyReviewRows, buildWithdrawReviewRows } from './savingsModalRows';
 import { NO_VALUE } from '@/lib/constants';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';
-import { useProductNetworks } from '@/hooks';
+import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
 import { Intent } from '@/lib/enums';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 

@@ -60,14 +60,20 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
   return {
     ...actual,
     // The form debounces the typed amount before it reaches the reads/engine; a
     // passthrough keeps the existing tests synchronous, `debounceLagged` opens the
     // settle window on demand.
-    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? (h.debounceLagged as T) : value),
+    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? (h.debounceLagged as T) : value)
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
     // The bundling badge asks whether the wallet can batch; these renders have no
     // WagmiProvider, so answer "no" and the fee row stays a plain value.
     useIsBatchSupported: () => ({
@@ -76,14 +82,26 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => {},
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/shared/useNetworkFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useNetworkFee')>();
+  return {
+    ...actual,
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
       error: null,
       mutate: () => {},
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/savings/useSavingsData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/savings/useSavingsData')>();
+  return {
+    ...actual,
     // The savings position (drives the withdraw balance/Max).
     useSavingsData: () => ({
       data: { userSavingsBalance: 100n * 10n ** 18n, savingsRate: 65n * 10n ** 15n, savingsTvl: 0n },
@@ -91,16 +109,52 @@ vi.mock('@/hooks', async importOriginal => {
       isLoading: false,
       mutate: vi.fn(),
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/shared/useOverallSkyData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useOverallSkyData')>();
+  return {
+    ...actual,
     // Canonical Sky Savings Rate (skySavingsRatecRate) — the "Savings rate" row source.
-    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } }),
-    useTokenBalance: () => ({ data: { value: h.walletBalance }, refetch: vi.fn() }),
+    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
+    useTokenBalance: () => ({ data: { value: h.walletBalance }, refetch: vi.fn() })
+  };
+});
+vi.mock('@/hooks/savings/useReadSavingsUsds', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/savings/useReadSavingsUsds')>();
+  return {
+    ...actual,
     // Mainnet-supply sUSDS preview — gated off in the modal (enablePreview=false), so
     // it stays disabled here; stubbed only to keep the read out of real wagmi.
-    useReadSavingsUsds: () => ({ data: undefined }),
+    useReadSavingsUsds: () => ({ data: undefined })
+  };
+});
+vi.mock('@/hooks/psm/usePreviewSwapExactIn', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/usePreviewSwapExactIn')>();
+  return {
+    ...actual,
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
-    usePreviewSwapExactIn: () => ({ value: h.convertedValue, isLoading: h.previewLoading }),
-    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn }),
+    usePreviewSwapExactIn: () => ({ value: h.convertedValue, isLoading: h.previewLoading })
+  };
+});
+vi.mock('@/hooks/psm/usePreviewSwapExactOut', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/usePreviewSwapExactOut')>();
+  return {
+    ...actual,
+    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn })
+  };
+});
+vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/useUsdsPsmWrapperReads')>();
+  return {
+    ...actual,
     // Mainnet USDC supply gate: the PSM wrapper's live / fee / halt switches.
     // Default to an open module (live, zero fee, nothing halted).
     useUsdsPsmWrapperLive: () => ({ data: h.psmLive }),
@@ -197,7 +251,7 @@ vi.mock('@/modules/ui/components/NetworkSelect', () => ({
 }));
 
 import { SavingsModalForm } from './SavingsModalForm';
-import { TOKENS } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import type { SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { TooltipProvider } from '@/components/ui/tooltip';
 

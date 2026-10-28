@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import { mainnet } from 'viem/chains';
-import { usePrices, useReadSavingsUsds, sUsdsAddress } from '@/hooks';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { useReadSavingsUsds } from '@/hooks/savings/useReadSavingsUsds';
+import { sUsdsAddress } from '@/hooks/generated';
 import { pendleUsdValue } from '../lib/pendleUsdValue';
 
 import { WAD } from '@/utils';

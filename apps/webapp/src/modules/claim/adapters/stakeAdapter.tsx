@@ -1,18 +1,14 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { erc20Abi, formatUnits, type Call } from 'viem';
-import {
-  useStakeUrnAddress,
-  useStakeRewardContracts,
-  useRewardContractsToClaim,
-  useStakeSkyAllowance,
-  usePrices,
-  getWriteContractCall,
-  stakeModuleAddress,
-  stakeModuleAbi,
-  skyAddress,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { useUrnAddress as useStakeUrnAddress } from '@/hooks/stake/useUrnAddress';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { useRewardContractsToClaim } from '@/hooks/rewards/useRewardContractsToClaim';
+import { useStakeSkyAllowance } from '@/hooks/stake/useStakeAllowance';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { getWriteContractCall } from '@/hooks/shared/getWriteContractCall';
+import { stakeModuleAddress, stakeModuleAbi, skyAddress } from '@/hooks/generated';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { rewardTokenName } from '../tokenNames';

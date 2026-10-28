@@ -20,11 +20,19 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ address: h.address })
 }));
 
-vi.mock('@/hooks', () => ({
-  useAvailableTokenRewardContracts: () => h.contracts,
-  useRewardContractsToClaim: () => ({ data: h.toClaim, isLoading: false }),
-  usePrices: () => ({ data: h.prices }),
-  getTokenDecimals: () => 18,
+vi.mock('@/hooks/rewards/useAvailableTokenRewardContracts', () => ({
+  useAvailableTokenRewardContracts: () => h.contracts
+}));
+vi.mock('@/hooks/rewards/useRewardContractsToClaim', () => ({
+  useRewardContractsToClaim: () => ({ data: h.toClaim, isLoading: false })
+}));
+vi.mock('@/hooks/prices/usePrices', () => ({
+  usePrices: () => ({ data: h.prices })
+}));
+vi.mock('@/hooks/tokens/tokens.constants', () => ({
+  getTokenDecimals: () => 18
+}));
+vi.mock('@/hooks/shared/getWriteContractCall', () => ({
   // Real getWriteContractCall is an identity cast — mirror it so the test sees the args.
   getWriteContractCall: (params: unknown) => params
 }));

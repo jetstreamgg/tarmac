@@ -26,8 +26,8 @@ vi.mock('wagmi', async io => ({
   ],
   useChainId: () => 1
 }));
-vi.mock('@/hooks', async io => ({
-  ...(await io<typeof import('@/hooks')>()),
+vi.mock('@/hooks/wallet/useIsSafeWallet', async io => ({
+  ...(await io<typeof import('@/hooks/wallet/useIsSafeWallet')>()),
   useIsSafeWallet: () => mocks.isSafeWallet
 }));
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({

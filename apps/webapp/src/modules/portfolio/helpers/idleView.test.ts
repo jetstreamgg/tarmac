@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Intent } from '@/lib/enums';
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import { buildIdleSupplyInfo, buildIdleView, type StablecoinBalance } from './idleView';
 
 const balances: StablecoinBalance[] = [

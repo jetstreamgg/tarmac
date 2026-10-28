@@ -3,23 +3,21 @@ import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import {
-  getIlkName,
-  lsSkySkyRewardAddress,
-  TOKENS,
-  useCollateralData,
-  useHighestRateFromChartData,
-  useMultipleRewardsChartInfo,
-  useSimulatedVault,
-  useSkyPrice,
-  filterDeprecatedRewards,
-  useStakeRewardContracts,
-  useStakeUrnAddress,
-  useStakeUrnSelectedRewardContract,
-  useStakeUrnSelectedVoteDelegate,
-  useTokenBalance,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
+import { lsSkySkyRewardAddress } from '@/hooks/generated';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useCollateralData } from '@/hooks/vaults/useCollateralData';
+import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromChartData';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { useSimulatedVault } from '@/hooks/vaults/useSimulatedVault';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { filterDeprecatedRewards } from '@/hooks/stake/deprecatedRewards';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { useUrnAddress as useStakeUrnAddress } from '@/hooks/stake/useUrnAddress';
+import { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from '@/hooks/stake/useUrnSelectedRewardContract';
+import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@/hooks/stake/useUrnSelectedVoteDelegate';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatDecimalPercentage } from '@/utils';
 import { QueryParams } from '@/lib/constants';

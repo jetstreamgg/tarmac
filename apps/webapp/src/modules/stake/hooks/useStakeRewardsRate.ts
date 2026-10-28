@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useStakeRewardContracts, useMultipleRewardsChartInfo, type RewardsChartInfoParsed } from '@/hooks';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { type RewardsChartInfoParsed } from '@/hooks/rewards/useRewardsChartInfo';
 
 // Full farm history: the Statistics chart's `All` range and the trailing
 // 6-month mean both need more than the endpoint's 100-point default.

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useState, ReactNode } from 'react';
 import { useSwitchChain, useConnection, useChains, useChainId } from 'wagmi';
-import { useAppChainId, useIsSafeWallet } from '@/hooks';
+import { useAppChainId } from '@/hooks/ui/useAppChainId';
+import { useIsSafeWallet } from '@/hooks/wallet/useIsSafeWallet';
 import { Trans } from '@lingui/react/macro';
 import type { Intent } from '@/lib/enums';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';

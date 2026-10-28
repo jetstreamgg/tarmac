@@ -35,8 +35,8 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChains: () => [{ id: 1 }], useChainId: () => 1 };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/pendle/usePendleMarketsApiData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMarketsApiData')>();
   return {
     ...actual,
     usePendleMarketsApiData: () => ({
@@ -45,7 +45,13 @@ vi.mock('@/hooks', async importOriginal => {
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/earn/earnProducts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/earn/earnProducts')>();
+  return {
+    ...actual,
     productNetworks: () => [1]
   };
 });

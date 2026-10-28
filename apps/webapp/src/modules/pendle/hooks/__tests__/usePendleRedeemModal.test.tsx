@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mainnet } from 'viem/chains';
 import { pendleAnalyticsData } from '@/modules/pendle/lib/pendleAnalyticsData';
-import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
+import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks/pendle/pendle';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 i18n.load('en', {});
@@ -99,34 +99,70 @@ vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
   useBatchToggle: () => [true, () => undefined]
 }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/pendle/helpers', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/helpers')>();
   return {
     ...actual,
-    isMarketMatured: () => hoisted.matured,
-    useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: () => {} }),
+    isMarketMatured: () => hoisted.matured
+  };
+});
+vi.mock('@/hooks/tokens/useTokenAllowance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenAllowance')>();
+  return {
+    ...actual,
+    useTokenAllowance: () => ({ data: 0n, isLoading: false, error: null, mutate: () => {} })
+  };
+});
+vi.mock('@/hooks/shared/useNetworkFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useNetworkFee')>();
+  return {
+    ...actual,
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
       error: null,
       mutate: () => {},
       dataSources: []
-    }),
-    useIsBatchSupported: () => ({ data: true, isLoading: false }),
+    })
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
+    useIsBatchSupported: () => ({ data: true, isLoading: false })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleUserPtBalances', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleUserPtBalances')>();
+  return {
+    ...actual,
     usePendleUserPtBalances: () => ({
       data: { [MATURED_MARKET.marketAddress]: PT_BALANCE },
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/useQuotePendleConvert', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/useQuotePendleConvert')>();
+  return {
+    ...actual,
     useQuotePendleConvert: () => ({
       data: QUOTE,
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/useBatchPendleConvert', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/useBatchPendleConvert')>();
+  return {
+    ...actual,
     useBatchPendleConvert: () => {
       // Snapshot the current execute at render time so each render's writeHook
       // closes over the args from that render — matches the real hook's

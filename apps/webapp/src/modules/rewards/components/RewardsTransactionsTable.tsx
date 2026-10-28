@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { Trans } from '@lingui/react/macro';
-import { TransactionTypeEnum, useAllRewardsUserHistory, type RewardContract } from '@/hooks';
+import { TransactionTypeEnum } from '@/hooks/constants';
+import { useAllRewardsUserHistory } from '@/hooks/rewards/useAllRewardsUserHistory';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 import { formatBigInt, getEtherscanLink, formatAddress } from '@/utils';
 import { absBigInt } from '@/modules/utils/math';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';

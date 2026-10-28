@@ -1,22 +1,17 @@
 import { useMemo } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import {
-  type Token,
-  TOKENS,
-  daiUsdsAddress,
-  mcdDaiAddress,
-  psm3L2Address,
-  useBatchPsmSwapAndSavingsSupply,
-  useBatchPsmSwapExactIn,
-  useBatchPsmSwapExactOut,
-  useBatchSavingsSupply,
-  useBatchUpgradeAndSavingsSupply,
-  useSavingsAllowance,
-  useSavingsWithdraw,
-  useTokenAllowance,
-  usdsPsmWrapperAddress
-} from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { daiUsdsAddress, mcdDaiAddress, psm3L2Address, usdsPsmWrapperAddress } from '@/hooks/generated';
+import { useBatchPsmSwapAndSavingsSupply } from '@/hooks/savings/useBatchPsmSwapAndSavingsSupply';
+import { useBatchPsmSwapExactIn } from '@/hooks/psm/useBatchPsmSwapExactIn';
+import { useBatchPsmSwapExactOut } from '@/hooks/psm/useBatchPsmSwapExactOut';
+import { useBatchSavingsSupply } from '@/hooks/savings/useBatchSavingsSupply';
+import { useBatchUpgradeAndSavingsSupply } from '@/hooks/savings/useBatchUpgradeAndSavingsSupply';
+import { useSavingsAllowance } from '@/hooks/savings/useSavingsAllowance';
+import { useSavingsWithdraw } from '@/hooks/savings/useSavingsWithdraw';
+import { useTokenAllowance } from '@/hooks/tokens/useTokenAllowance';
 import { isL2ChainId, math } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';

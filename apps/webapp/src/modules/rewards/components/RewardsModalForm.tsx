@@ -4,7 +4,7 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { type Token } from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
 import { formatDecimalPercentage, formatNumber, formatUsd, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { ModalAmountField } from '@/components/product/ModalAmountField';

@@ -28,8 +28,8 @@ const hoisted = vi.hoisted(() => ({
   chartPoints: undefined as Array<Record<string, number | undefined>> | undefined
 }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/pendle/usePendleMarketsApiData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMarketsApiData')>();
   return {
     ...actual,
     usePendleMarketsApiData: () => ({
@@ -38,7 +38,13 @@ vi.mock('@/hooks', async importOriginal => {
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleMarketChartData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMarketChartData')>();
+  return {
+    ...actual,
     usePendleMarketChartData: () => ({
       data: hoisted.chartPoints,
       isLoading: false,

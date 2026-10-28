@@ -50,13 +50,31 @@ let collateral: { data?: typeof COLLATERAL; isLoading: boolean; error: Error | n
 // headline/stat text content stays clean (same pattern the shell test uses).
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
   return {
     ...actual,
-    useStakeRewardContracts: () => ({ data: [], isLoading: false }),
-    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false }),
-    useHighestRateFromChartData: () => highestRate,
+    useStakeRewardContracts: () => ({ data: [], isLoading: false })
+  };
+});
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useMultipleRewardsChartInfo')>();
+  return {
+    ...actual,
+    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false })
+  };
+});
+vi.mock('@/hooks/stake/useHighestRateFromChartData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useHighestRateFromChartData')>();
+  return {
+    ...actual,
+    useHighestRateFromChartData: () => highestRate
+  };
+});
+vi.mock('@/hooks/vaults/useCollateralData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useCollateralData')>();
+  return {
+    ...actual,
     useCollateralData: () => collateral
   };
 });

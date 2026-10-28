@@ -2,17 +2,14 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
-import {
-  getTokenDecimals,
-  TOKENS,
-  useOverallSkyData,
-  usePreviewSwapExactIn,
-  usePreviewSwapExactOut,
-  useReadSavingsUsds,
-  useSavingsData,
-  useTokenBalance,
-  type Token
-} from '@/hooks';
+import { getTokenDecimals, TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
+import { usePreviewSwapExactIn } from '@/hooks/psm/usePreviewSwapExactIn';
+import { usePreviewSwapExactOut } from '@/hooks/psm/usePreviewSwapExactOut';
+import { useReadSavingsUsds } from '@/hooks/savings/useReadSavingsUsds';
+import { useSavingsData } from '@/hooks/savings/useSavingsData';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { type Token } from '@/hooks/tokens/types';
 import { formatDecimalPercentage, formatNumber, isL2ChainId, math } from '@/utils';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';

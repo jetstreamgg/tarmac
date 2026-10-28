@@ -27,8 +27,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/savings/useSavingsData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/savings/useSavingsData')>();
   return {
     ...actual,
     useSavingsData: () => ({
@@ -39,8 +39,20 @@ vi.mock('@/hooks', async importOriginal => {
       isLoading: h.savingsUnresolved && !h.savingsError,
       mutate: vi.fn(),
       dataSources: []
-    }),
-    useTokenBalance: () => ({ data: { value: 0n }, refetch: vi.fn() }),
+    })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
+    useTokenBalance: () => ({ data: { value: 0n }, refetch: vi.fn() })
+  };
+});
+vi.mock('@/hooks/shared/useOverallSkyData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useOverallSkyData')>();
+  return {
+    ...actual,
     useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } })
   };
 });

@@ -35,9 +35,12 @@ vi.mock('@/lib/authCheck', () => ({
   getAuthUrl: () => 'https://auth.test'
 }));
 
-vi.mock('@/hooks', async io => ({
-  ...(await io<typeof import('@/hooks')>()),
-  fetchAddressScreening: mocks.fetchAddressScreening,
+vi.mock('@/hooks/authentication/useRestrictedAddressCheck', async io => ({
+  ...(await io<typeof import('@/hooks/authentication/useRestrictedAddressCheck')>()),
+  fetchAddressScreening: mocks.fetchAddressScreening
+}));
+vi.mock('@/hooks/authentication/enhancedAddressScreening', async io => ({
+  ...(await io<typeof import('@/hooks/authentication/enhancedAddressScreening')>()),
   fetchEnhancedAddressScreening: mocks.fetchEnhancedAddressScreening
 }));
 
@@ -56,7 +59,8 @@ vi.mock('@/modules/ui/context/ConnectedContext', () => ({
   })
 }));
 
-import { addressScreeningQueryKey, enhancedAddressScreeningQueryKey } from '@/hooks';
+import { addressScreeningQueryKey } from '@/hooks/authentication/useRestrictedAddressCheck';
+import { enhancedAddressScreeningQueryKey } from '@/hooks/authentication/enhancedAddressScreening';
 import { useTermsSignatureGate } from './useTermsSignatureGate';
 
 i18n.load('en', {});

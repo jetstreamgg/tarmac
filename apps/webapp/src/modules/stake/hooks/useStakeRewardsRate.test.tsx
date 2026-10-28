@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RewardsChartInfoParsed } from '@/hooks';
+import type { RewardsChartInfoParsed } from '@/hooks/rewards/useRewardsChartInfo';
 
 // Two stake farms; the chart-info arrays are swapped per test via this knob.
 let mockChartInfo: (Partial<RewardsChartInfoParsed>[] | undefined)[] | undefined = [];
@@ -13,11 +13,17 @@ let mockContracts: { contractAddress: string }[] | undefined = [
 let mockContractsLoading = false;
 let mockChartsLoading = false;
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
   return {
     ...actual,
-    useStakeRewardContracts: () => ({ data: mockContracts, isLoading: mockContractsLoading }),
+    useStakeRewardContracts: () => ({ data: mockContracts, isLoading: mockContractsLoading })
+  };
+});
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useMultipleRewardsChartInfo')>();
+  return {
+    ...actual,
     useMultipleRewardsChartInfo: () => ({
       data: mockChartInfo,
       isLoading: mockChartsLoading,

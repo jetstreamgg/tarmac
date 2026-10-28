@@ -9,7 +9,7 @@ import { ROUTES } from '@/lib/routes';
 import { recallEarnFilterSearch } from '@/lib/earnFilterMemory';
 import { IconboxStatus } from '@/components/ui/iconbox';
 import { PageHeading } from '@/components/ui/page-header';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { NetworkSelect, useNetworkTitleBadge } from '@/modules/ui/components/NetworkSelect';
 
 /**

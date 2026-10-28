@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Data, TimeFrame } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
-import { MorphoVaultChartDataPoint } from '@/hooks';
+import { MorphoVaultChartDataPoint } from '@/hooks/morpho/useMorphoVaultChartInfo';
 
 export function useParseVaultChartData(
   timeFrame: TimeFrame,

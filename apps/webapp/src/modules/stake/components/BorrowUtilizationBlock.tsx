@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { useBorrowCapacityData } from '@/hooks';
+import { useBorrowCapacityData } from '@/hooks/stake/useBorrowCapacityData';
 import { formatBigInt, formatDecimalPercentage } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Progress } from '@/components/ui/progress';

@@ -12,7 +12,9 @@ import {
   UserRound,
   X
 } from 'lucide-react';
-import { BP, MD_MEDIA_QUERY, useBreakpointIndex, useDelegateName, ZERO_ADDRESS } from '@/hooks';
+import { BP, MD_MEDIA_QUERY, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import { useDelegateName } from '@/hooks/delegates/useDelegateName';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle, SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';

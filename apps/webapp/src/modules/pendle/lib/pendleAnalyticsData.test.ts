@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mainnet } from 'viem/chains';
-import type { PendleConvertQuote, PendleMarketConfig, Token } from '@/hooks';
+import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks/pendle/pendle';
+import type { Token } from '@/hooks/tokens/types';
 import { pendleAnalyticsData } from './pendleAnalyticsData';
 
 const MARKET: PendleMarketConfig = {

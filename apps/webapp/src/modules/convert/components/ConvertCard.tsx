@@ -2,7 +2,7 @@ import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ChevronDown } from 'lucide-react';
-import { useProductNetworks } from '@/hooks';
+import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
 import { getChainIcon } from '@/utils';
 import { Intent } from '@/lib/enums';
 import { Text } from '@/modules/layout/components/Typography';

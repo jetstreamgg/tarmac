@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { parseUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import { useUsdsDaiData, useSkySavingsRateHistoricData } from '@/hooks';
+import { useUsdsDaiData } from '@/hooks/shared/useUsdsDaiData';
+import { useSkySavingsRateHistoricData } from '@/hooks/savings/useSkySavingsRateHistoricData';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
 import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartData';

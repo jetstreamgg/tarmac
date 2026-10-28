@@ -3,7 +3,7 @@ import { request, gql } from 'graphql-request';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { useIndexerUrl } from '@/modules/app/hooks/useIndexerUrl';
-import { INDEXER_HISTORY_META } from '@/hooks';
+import { INDEXER_HISTORY_META } from '@/hooks/constants';
 import { StakeUrnVault, useStakeUrnVaults } from './useStakeUrnVaults';
 
 /**

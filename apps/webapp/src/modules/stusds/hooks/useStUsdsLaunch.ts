@@ -1,14 +1,11 @@
 import { useMemo } from 'react';
 import { t } from '@lingui/core/macro';
-import {
-  StUsdsDirection,
-  StUsdsProviderType,
-  useBatchCurveSwap,
-  useBatchStUsdsDeposit,
-  useCurveAllowance,
-  useStUsdsAllowance,
-  useStUsdsWithdraw
-} from '@/hooks';
+import { StUsdsDirection, StUsdsProviderType } from '@/hooks/stusds/providers/types';
+import { useBatchCurveSwap } from '@/hooks/stusds/providers/useBatchCurveSwap';
+import { useBatchStUsdsDeposit } from '@/hooks/stusds/useBatchStUsdsDeposit';
+import { useCurveAllowance } from '@/hooks/stusds/providers/useCurveAllowance';
+import { useStUsdsAllowance } from '@/hooks/stusds/useStUsdsAllowance';
+import { useStUsdsWithdraw } from '@/hooks/stusds/useStUsdsWithdraw';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';

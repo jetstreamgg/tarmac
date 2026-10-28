@@ -3,14 +3,11 @@ import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useChains } from 'wagmi';
-import {
-  BP,
-  ModuleEnum,
-  useAllNetworksCombinedHistory,
-  useAvailableTokenRewardContractsForChains,
-  useBreakpointIndex,
-  useFilteredPortfolioHistory
-} from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import { ModuleEnum } from '@/hooks/constants';
+import { useAllNetworksCombinedHistory } from '@/hooks/shared/useAllNetworksCombinedHistory';
+import { useAvailableTokenRewardContractsForChains } from '@/hooks/rewards/useAvailableTokenRewardContracts';
+import { useFilteredPortfolioHistory } from '@/hooks/shared/useFilteredPortfolioHistory';
 import { formatAddress, getChainIcon } from '@/utils';
 import { cn } from '@/lib/cn';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';

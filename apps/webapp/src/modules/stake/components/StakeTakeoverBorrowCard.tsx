@@ -1,6 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
+import { Vault, CollateralRiskParameters } from '@/hooks/vaults/vault';
 import { capitalizeFirstLetter, formatBigInt, formatPercent, WAD_PRECISION } from '@/utils';
 import { loanToValue as computeLoanToValue } from '../lib/loanToValue';
 import { cn } from '@/lib/cn';

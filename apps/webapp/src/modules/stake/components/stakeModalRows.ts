@@ -17,7 +17,7 @@
  * unrelated labels.
  */
 
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import {
   networkCell,
   networkFeeCell,

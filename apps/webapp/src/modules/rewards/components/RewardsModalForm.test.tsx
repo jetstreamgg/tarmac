@@ -22,12 +22,24 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useIsTouchDevice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useIsTouchDevice')>();
   return {
     ...actual,
-    useIsTouchDevice: () => false,
-    useNetworkFee: () => ({ data: undefined, isLoading: false, error: null }),
+    useIsTouchDevice: () => false
+  };
+});
+vi.mock('@/hooks/shared/useNetworkFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useNetworkFee')>();
+  return {
+    ...actual,
+    useNetworkFee: () => ({ data: undefined, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
     useIsBatchSupported: () => ({ data: false })
   };
 });
@@ -84,7 +96,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { RewardsModalForm } from './RewardsModalForm';
-import { TOKENS } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { RewardsLaunchFlow } from '../hooks/useRewardsLaunch';
 

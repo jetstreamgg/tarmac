@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getStakeLockCalldata } from '@/hooks';
+import { getStakeLockCalldata } from '@/hooks/stake/calldata';
 import { calculateStakeApprovalAmounts, generateStakeCalldata } from './useStakeCalldata';
 
 const OWNER = '0x1111111111111111111111111111111111111111' as const;

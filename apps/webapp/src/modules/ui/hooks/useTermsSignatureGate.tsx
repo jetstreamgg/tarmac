@@ -12,12 +12,14 @@ import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '@/lib/constants';
 import {
   addressScreeningQueryKey,
   fetchAddressScreening,
-  enhancedAddressScreeningQueryKey,
-  fetchEnhancedAddressScreening,
-  requiresEnhancedScreening,
   SCREENING_MAX_AGE_MS,
   type AddressScreeningResult
-} from '@/hooks';
+} from '@/hooks/authentication/useRestrictedAddressCheck';
+import {
+  enhancedAddressScreeningQueryKey,
+  fetchEnhancedAddressScreening,
+  requiresEnhancedScreening
+} from '@/hooks/authentication/enhancedAddressScreening';
 import { useConnectedContext, type SignTermsResult } from '@/modules/ui/context/ConnectedContext';
 import { TermsLink } from '@/modules/ui/components/TermsModal';
 import type {

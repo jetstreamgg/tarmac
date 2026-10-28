@@ -35,19 +35,27 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/prices/useSkyPrice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/useSkyPrice')>();
   return {
     ...actual,
-    useSkyPrice: () => ({ data: 10n ** 18n, priceString: '1', isLoading: false, error: null }),
-    useAllStakeUrnAddresses: () => ({
-      data: ['0x1111111111111111111111111111111111111111'],
-      isLoading: false
-    }),
+    useSkyPrice: () => ({ data: 10n ** 18n, priceString: '1', isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
+  return {
+    ...actual,
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0x2222222222222222222222222222222222222222' }],
       isLoading: false
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useRewardContractsToClaim', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useRewardContractsToClaim')>();
+  return {
+    ...actual,
     useRewardContractsToClaim: () => ({
       data: [
         {
@@ -57,8 +65,20 @@ vi.mock('@/hooks', async importOriginal => {
         }
       ],
       isLoading: false
-    }),
-    usePrices: () => ({ data: { SKY: { price: '1' } }, isLoading: false, error: null }),
+    })
+  };
+});
+vi.mock('@/hooks/prices/usePrices', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/usePrices')>();
+  return {
+    ...actual,
+    usePrices: () => ({ data: { SKY: { price: '1' } }, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/stake/useStakeHistory', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeHistory')>();
+  return {
+    ...actual,
     useStakeHistory: () => ({ data: [], isLoading: false, error: null })
   };
 });

@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { type Token, useBatchRewardsSupply, useRewardsWithdraw } from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
+import { useBatchRewardsSupply } from '@/hooks/rewards/useBatchRewardsSupply';
+import { useRewardsWithdraw } from '@/hooks/rewards/useRewardsWithdraw';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';

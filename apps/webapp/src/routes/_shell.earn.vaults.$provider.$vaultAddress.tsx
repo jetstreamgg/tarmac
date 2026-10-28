@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Intent } from '@/lib/enums';
 import { keepSearchFilteredTo } from '@/lib/navigation';
 import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
-import { VAULTS } from '@/hooks';
+import { VAULTS } from '@/hooks/vaults/constants';
 import { VaultDetailPage } from '@/modules/vaults/components/VaultDetailPage';
 import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks/generated';
 import { farmRewardSymbol } from './farmRewardSymbol';
 
 describe('farmRewardSymbol', () => {

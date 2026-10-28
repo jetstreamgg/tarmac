@@ -1,4 +1,4 @@
-import type { EarnProductRow, EarnRate, EarnRiskProfileId } from '@/hooks';
+import type { EarnProductRow, EarnRate, EarnRiskProfileId } from '@/hooks/earn/types';
 import { Intent } from '@/lib/enums';
 import { QueryParams } from '@/lib/constants';
 import { EARN_OPPORTUNITIES_HASH, ROUTES, intentToPath } from '@/lib/routes';

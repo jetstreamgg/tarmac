@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNetworkFee, type UseNetworkFeeParameters } from '@/hooks';
+import { useNetworkFee, type UseNetworkFeeParameters } from '@/hooks/shared/useNetworkFee';
 import { useBundleFeeState } from '@/modules/ui/components/NetworkFeeValue';
 import type { ModalGridFee } from '@/components/product/ModalGridCells';
 

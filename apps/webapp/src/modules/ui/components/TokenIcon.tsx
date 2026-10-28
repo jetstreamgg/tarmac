@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Token } from '@/hooks';
+import { Token } from '@/hooks/tokens/types';
 import { useChainImage } from '@/modules/ui/hooks/useChainImage';
 import { useTokenImage } from '@/modules/ui/hooks/useTokenImage';
 

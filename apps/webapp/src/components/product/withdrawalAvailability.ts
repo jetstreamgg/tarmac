@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import type { MessageDescriptor } from '@lingui/core';
-import type { EarnRiskProfileId } from '@/hooks';
+import type { EarnRiskProfileId } from '@/hooks/earn/types';
 
 type WithdrawalFlow = 'supply' | 'withdraw';
 

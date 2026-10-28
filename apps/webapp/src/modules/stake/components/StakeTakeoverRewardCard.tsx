@@ -1,11 +1,8 @@
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import {
-  filterDeprecatedRewards,
-  isDeprecatedStakeReward,
-  useMultipleRewardsChartInfo,
-  useStakeRewardContracts
-} from '@/hooks';
+import { filterDeprecatedRewards, isDeprecatedStakeReward } from '@/hooks/stake/deprecatedRewards';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
 import { formatAddress, formatDecimalPercentage, formatNumber } from '@/utils';
 import { cn } from '@/lib/cn';
 import { NO_VALUE } from '@/lib/constants';

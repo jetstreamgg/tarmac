@@ -2,15 +2,13 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import {
-  useBatchStakeMulticall,
-  useRewardContractTokens,
-  useStakeSkyAllowance,
-  useStakeUrnSelectedRewardContract,
-  useStakeUrnSelectedVoteDelegate,
-  useTransactionFlow,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { useBatchStakeMulticall } from '@/hooks/stake/useBatchStakeMulticall';
+import { useRewardContractTokens } from '@/hooks/rewards/useRewardContractTokens';
+import { useStakeSkyAllowance } from '@/hooks/stake/useStakeAllowance';
+import { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from '@/hooks/stake/useUrnSelectedRewardContract';
+import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@/hooks/stake/useUrnSelectedVoteDelegate';
+import { useTransactionFlow } from '@/hooks/shared/useTransactionFlow';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';

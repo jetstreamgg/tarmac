@@ -15,8 +15,8 @@ vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
   useBatchToggle: () => [mocks.batchEnabled, mocks.setBatchEnabled] as const
 }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
   return { ...actual, useIsBatchSupported: () => ({ data: mocks.batchSupported }) };
 });
 

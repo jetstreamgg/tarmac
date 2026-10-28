@@ -62,14 +62,18 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', () => ({
+vi.mock('@/hooks/authentication/useRestrictedAddressCheck', () => ({
   // The mock hands back `authCheck` whether or not the query is enabled, the
   // way a disabled useQuery still observes its cache entry.
   useRestrictedAddressCheck: ({ enabled }: { enabled: boolean }) => {
     mocks.screeningEnabled(enabled);
     return { ...mocks.authCheck, refetch: mocks.refetchAddressCheck };
-  },
-  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
+  }
+}));
+vi.mock('@/hooks/authentication/useVpnCheck', () => ({
+  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck })
+}));
+vi.mock('@/hooks/helpers', () => ({
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 }));
 

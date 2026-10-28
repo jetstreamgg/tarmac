@@ -1,22 +1,20 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import {
-  getIlkName,
-  isDeprecatedStakeReward,
-  useCollateralData,
-  useHighestRateFromChartData,
-  useMultipleRewardsChartInfo,
-  usePrices,
-  useRewardContractTokens,
-  useSkyPrice,
-  useStakeHistory,
-  useStakeUrnAddress,
-  useStakeUrnSelectedRewardContract,
-  useStakeUrnSelectedVoteDelegate,
-  useVault,
-  Vault,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
+import { isDeprecatedStakeReward } from '@/hooks/stake/deprecatedRewards';
+import { useCollateralData } from '@/hooks/vaults/useCollateralData';
+import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromChartData';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { useRewardContractTokens } from '@/hooks/rewards/useRewardContractTokens';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { useStakeHistory } from '@/hooks/stake/useStakeHistory';
+import { useUrnAddress as useStakeUrnAddress } from '@/hooks/stake/useUrnAddress';
+import { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from '@/hooks/stake/useUrnSelectedRewardContract';
+import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@/hooks/stake/useUrnSelectedVoteDelegate';
+import { useVault } from '@/hooks/vaults/useVault';
+import { Vault } from '@/hooks/vaults/vault';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { calculateClaimedRewardsUsd, hasStakeBorrowHistory } from '../lib/positionDetail';
 import { isMinCollateralNotMet } from '../lib/maxBorrow';
 import { useStakeUrnClaimables } from './useStakeUrnClaimables';

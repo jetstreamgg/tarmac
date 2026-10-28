@@ -1,4 +1,5 @@
-import { CombinedHistoryItem, TransactionTypeEnum } from '@/hooks';
+import { CombinedHistoryItem } from '@/hooks/shared/shared';
+import { TransactionTypeEnum } from '@/hooks/constants';
 import { t } from '@lingui/core/macro';
 
 export const getToken = ({

@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { type Token, useBatchVaultDeposit, useVaultRedeem, useVaultWithdraw } from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
+import { useBatchVaultDeposit } from '@/hooks/vaults/useBatchVaultDeposit';
+import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem';
+import { useVaultWithdraw } from '@/hooks/vaults/useVaultWithdraw';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
 import { useApproveSteps } from '@/modules/ui/hooks/useApproveSteps';

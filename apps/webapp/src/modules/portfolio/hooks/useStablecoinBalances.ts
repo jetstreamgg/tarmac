@@ -1,5 +1,7 @@
 import { useChainId, useConnection } from 'wagmi';
-import { TOKENS, usePrices, useTokenBalances, type TokenItem } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { useTokenBalances, type TokenItem } from '@/hooks/tokens/useTokenBalance';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { IDLE_STABLECOINS, type StablecoinBalance } from '../helpers/idleView';
 

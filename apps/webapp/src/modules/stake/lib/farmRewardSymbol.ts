@@ -1,4 +1,4 @@
-import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks/generated';
 
 const FARM_SYMBOLS: [Record<number, string>, string][] = [
   [lsSkySkyRewardAddress, 'SKY'],

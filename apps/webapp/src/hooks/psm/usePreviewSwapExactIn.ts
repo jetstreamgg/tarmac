@@ -3,7 +3,7 @@ import { Token } from '../tokens/types';
 import { getTokenDecimals } from '../tokens/tokens.constants';
 import { useChainId } from 'wagmi';
 import { useReadPsm3L2PreviewSwapExactIn } from '../generated';
-import { ZERO_ADDRESS } from '../index';
+import { ZERO_ADDRESS } from '@/utils/constants';
 
 export const usePreviewSwapExactIn = (
   amount: bigint | undefined,

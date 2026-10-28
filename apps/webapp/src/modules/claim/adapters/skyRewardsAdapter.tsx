@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits, type Call } from 'viem';
-import {
-  useAvailableTokenRewardContracts,
-  useRewardContractsToClaim,
-  usePrices,
-  getTokenDecimals,
-  getWriteContractCall
-} from '@/hooks';
+import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTokenRewardContracts';
+import { useRewardContractsToClaim } from '@/hooks/rewards/useRewardContractsToClaim';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { getWriteContractCall } from '@/hooks/shared/getWriteContractCall';
 import { usdsSkyRewardAbi } from '@/hooks/generated';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';

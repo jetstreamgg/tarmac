@@ -5,13 +5,11 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Vault, Droplet, Percent } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import {
-  getTokenDecimals,
-  type VaultConfig,
-  useMorphoVaultChartInfo,
-  useMorphoVaultMarketApiData,
-  useProductNetworks
-} from '@/hooks';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { type VaultConfig } from '@/hooks/vaults/types';
+import { useMorphoVaultChartInfo } from '@/hooks/morpho/useMorphoVaultChartInfo';
+import { useMorphoVaultMarketApiData } from '@/hooks/morpho/useMorphoVaultMarketApiData';
+import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
 import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
 import { Morpho } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';

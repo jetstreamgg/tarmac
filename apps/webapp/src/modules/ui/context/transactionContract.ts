@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import type { TxStatus } from '@/modules/ui/lib/txStatus';
-import type { TxMutateVariables } from '@/hooks';
+import type { TxMutateVariables } from '@/hooks/hooks';
 import type { Call } from 'viem';
 import type { CallMatcher } from '@/modules/ui/lib/callIntent';
 

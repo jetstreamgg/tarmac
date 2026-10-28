@@ -1,11 +1,9 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import {
-  useRewardContractsToClaim,
-  useStakeRewardContracts,
-  useStakeUrnAddress,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { useRewardContractsToClaim } from '@/hooks/rewards/useRewardContractsToClaim';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { useUrnAddress as useStakeUrnAddress } from '@/hooks/stake/useUrnAddress';
+import { ZERO_ADDRESS } from '@/utils/constants';
 
 export interface StakeUrnClaimable {
   contractAddress: `0x${string}`;

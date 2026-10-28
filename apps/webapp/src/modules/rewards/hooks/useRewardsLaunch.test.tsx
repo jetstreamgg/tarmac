@@ -122,7 +122,9 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false })
 }));
 
-import { TOKENS, useBatchRewardsSupply, useRewardsWithdraw } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useBatchRewardsSupply } from '@/hooks/rewards/useBatchRewardsSupply';
+import { useRewardsWithdraw } from '@/hooks/rewards/useRewardsWithdraw';
 import { usdsSpkRewardAddress } from '@/hooks/generated';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useRewardsLaunch } from './useRewardsLaunch';

@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import { EarnFeaturedCards, HIGHLIGHTED_PRODUCTS } from './EarnFeaturedCards';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).

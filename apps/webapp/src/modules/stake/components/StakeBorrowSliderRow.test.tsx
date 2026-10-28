@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { StakeBorrowSliderRow, sliderToneForRisk } from './StakeBorrowSliderRow';
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import { useStakeAmountSlider } from '../hooks/useStakeAmountSlider';
 
 const WAD = 10n ** 18n;

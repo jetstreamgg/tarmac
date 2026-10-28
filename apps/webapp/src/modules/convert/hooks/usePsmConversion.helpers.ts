@@ -1,4 +1,5 @@
-import { TOKENS, type TokenForChain } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { type TokenForChain } from '@/hooks/tokens/types';
 import { math, isL2ChainId } from '@/utils';
 import { parseUnits } from 'viem';
 

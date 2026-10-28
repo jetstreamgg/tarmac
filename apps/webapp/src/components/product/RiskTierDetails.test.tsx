@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { EarnRiskProfileId, EarnRiskTier } from '@/hooks';
+import type { EarnRiskProfileId, EarnRiskTier } from '@/hooks/earn/types';
 import { RiskTierDetailsCard, RiskTierDetailsTrigger } from './RiskTierDetails';
 
 // Pin the JS breakpoint per test (happy-dom's 1024 viewport = desktop).

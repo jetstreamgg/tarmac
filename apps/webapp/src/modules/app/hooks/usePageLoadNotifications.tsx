@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useTokenBalance, TOKENS } from '@/hooks';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { parseEther } from 'viem';
 import {
   GOVERNANCE_MIGRATION_NOTIFICATION_KEY,

@@ -26,11 +26,13 @@ vi.mock('wagmi', async io => ({
 }));
 // `useAppChainId` is the wallet's chain even when wagmi has it pinned elsewhere
 // (an unconfigured chain), which is what the escape-hatch test below relies on.
-vi.mock('@/hooks', async () => ({
+vi.mock('@/hooks/ui/useBreakpoint', async () => ({
   // The real enum, so the tier comparison under test is the shipped one.
   BP: (await import('@/hooks/ui/useBreakpoint')).BP,
-  useAppChainId: () => mocks.walletChainId,
   useBreakpointIndex: () => ({ bpi: mocks.bpi })
+}));
+vi.mock('@/hooks/ui/useAppChainId', async () => ({
+  useAppChainId: () => mocks.walletChainId
 }));
 
 const mockHandleSwitchChain = vi.fn();

@@ -2,7 +2,7 @@ import { isAddressEqual } from 'viem';
 import { expect, test } from '../fixtures-parallel';
 import { SavingsProductPage } from '../pages/SavingsProductPage';
 import { setErc20Balance } from '../utils/setBalance';
-import { usdsAddress } from '@/hooks';
+import { usdsAddress } from '@/hooks/generated';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { NetworkName } from '../utils/constants';
 import { deploySafe, enableSafeMode, SAFE_1_4_1 } from '../utils/mockSafe';

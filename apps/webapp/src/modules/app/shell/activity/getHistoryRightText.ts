@@ -1,4 +1,5 @@
-import { CombinedHistoryItem, TransactionTypeEnum } from '@/hooks';
+import { CombinedHistoryItem } from '@/hooks/shared/shared';
+import { TransactionTypeEnum } from '@/hooks/constants';
 import { getAmount } from './getAmount';
 import { getToken } from './getToken';
 import { formatAddress } from '@/utils';

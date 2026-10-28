@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
-import { getIlkName, newestStakeHistoricPoint, useCollateralData, useStakeHistoricData } from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
+import { newestStakeHistoricPoint, useStakeHistoricData } from '@/hooks/stake/useStakeHistoricData';
+import { useCollateralData } from '@/hooks/vaults/useCollateralData';
 import { formatNumber, formatDecimalPercentage, formatPercent, formatWholeUsd } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';

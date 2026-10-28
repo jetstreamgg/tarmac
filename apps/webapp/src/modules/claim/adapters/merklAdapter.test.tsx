@@ -45,8 +45,10 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ address: h.address })
 }));
 
-vi.mock('@/hooks', () => ({
-  useMerklRewards: () => ({ data: { rewards: h.rewards }, isLoading: false }),
+vi.mock('@/hooks/morpho/useMerklRewards', () => ({
+  useMerklRewards: () => ({ data: { rewards: h.rewards }, isLoading: false })
+}));
+vi.mock('@/hooks/shared/getWriteContractCall', () => ({
   // Real getWriteContractCall is an identity cast — mirror it so the test asserts on the args.
   getWriteContractCall: (params: unknown) => params
 }));

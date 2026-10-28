@@ -8,7 +8,8 @@ import { getRouteChainAction } from '@/lib/widget-network-map';
 import { pathToIntent, ROUTES } from '@/lib/routes';
 
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
-import { useAppChainId, useAvailableTokenRewardContracts } from '@/hooks';
+import { useAppChainId } from '@/hooks/ui/useAppChainId';
+import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTokenRewardContracts';
 import { useConnection, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { useSafeAppNotification } from './useSafeAppNotification';
 import { useGovernanceMigrationToast } from './useGovernanceMigrationToast';

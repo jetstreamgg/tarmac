@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Intent } from '@/lib/enums';
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import { useGeoVisibleRows } from './useGeoVisibleRows';
 
 const h = vi.hoisted(() => ({

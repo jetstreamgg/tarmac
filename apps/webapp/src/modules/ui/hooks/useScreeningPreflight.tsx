@@ -4,12 +4,14 @@ import { Trans } from '@lingui/react/macro';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import {
   addressScreeningQueryKey,
-  enhancedAddressScreeningQueryKey,
   fetchAddressScreening,
-  fetchEnhancedAddressScreening,
-  requiresEnhancedScreening,
   SCREENING_MAX_AGE_MS
-} from '@/hooks';
+} from '@/hooks/authentication/useRestrictedAddressCheck';
+import {
+  enhancedAddressScreeningQueryKey,
+  fetchEnhancedAddressScreening,
+  requiresEnhancedScreening
+} from '@/hooks/authentication/enhancedAddressScreening';
 import type { PreflightHook, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
 
 const CLEAR: TransactionPreflight = { kind: 'clear' };

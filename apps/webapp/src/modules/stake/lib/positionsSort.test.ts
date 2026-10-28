@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Vault } from '@/hooks';
+import type { Vault } from '@/hooks/vaults/vault';
 import type { StakeUserPosition } from '../hooks/useStakeUserPositions';
 import { DEFAULT_STAKE_POSITIONS_SORT, nextStakePositionsSort, sortStakePositions } from './positionsSort';
 

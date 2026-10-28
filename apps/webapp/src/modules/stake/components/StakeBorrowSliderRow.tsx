@@ -5,7 +5,7 @@ import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
 import { formatBigInt } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import { StakeAmountSlider, STAKE_SLIDER_MAX } from '../hooks/useStakeAmountSlider';
 
 export type StakeSliderTone = 'green' | 'yellow' | 'red';

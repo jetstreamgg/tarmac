@@ -54,8 +54,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/pendle/usePendleUserPtBalances', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleUserPtBalances')>();
   return {
     ...actual,
     usePendleUserPtBalances: () => ({
@@ -64,16 +64,40 @@ vi.mock('@/hooks', async importOriginal => {
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleMarketsApiData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMarketsApiData')>();
+  return {
+    ...actual,
     usePendleMarketsApiData: () => ({
       data: { [MARKET.marketAddress]: { impliedApy: 0.0486, expirySec: h.expirySec } },
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
       dataSources: []
-    }),
-    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false }),
-    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
+    })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
+    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleRedeemPreview', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleRedeemPreview')>();
+  return {
+    ...actual,
+    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleMaturedPositionEarnings', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMaturedPositionEarnings')>();
+  return {
+    ...actual,
     usePendleMaturedPositionEarnings: () => h.earnings
   };
 });

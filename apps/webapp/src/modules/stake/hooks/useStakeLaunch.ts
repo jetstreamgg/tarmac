@@ -2,15 +2,12 @@ import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from '
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
-import {
-  useBatchStakeMulticall,
-  useCurrentUrnIndex,
-  useRewardContractTokens,
-  useSkyPrice,
-  useStakeSkyAllowance,
-  useStakeUsdsAllowance,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { useBatchStakeMulticall } from '@/hooks/stake/useBatchStakeMulticall';
+import { useCurrentUrnIndex } from '@/hooks/stake/useCurrentUrnIndex';
+import { useRewardContractTokens } from '@/hooks/rewards/useRewardContractTokens';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { useStakeSkyAllowance, useStakeUsdsAllowance } from '@/hooks/stake/useStakeAllowance';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';

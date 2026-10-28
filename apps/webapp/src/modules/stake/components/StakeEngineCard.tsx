@@ -7,13 +7,11 @@ import {
   ProductStat,
   ProductSupplyCard
 } from '@/components/product/ProductCard';
-import {
-  useStakeRewardContracts,
-  useMultipleRewardsChartInfo,
-  useHighestRateFromChartData,
-  useCollateralData,
-  getIlkName
-} from '@/hooks';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromChartData';
+import { useCollateralData } from '@/hooks/vaults/useCollateralData';
+import { getIlkName } from '@/hooks/vaults/helpers';
 import { formatBigInt, formatDecimalPercentage, formatPercent, math } from '@/utils';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';

@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Token } from '@/hooks';
+import type { Token } from '@/hooks/tokens/types';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -73,17 +73,29 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/tokens/tokens.constants', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/tokens.constants')>();
   return {
     ...actual,
-    getTokenDecimals: () => 18,
+    getTokenDecimals: () => 18
+  };
+});
+vi.mock('@/hooks/vaults/useErc4626VaultData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useErc4626VaultData')>();
+  return {
+    ...actual,
     // 8.24 USDS supplied — enough of a position to render the "My position" card.
     useErc4626VaultData: () => ({
       data: h.vaultUnresolved ? undefined : { userAssets: 8_240_000_000_000_000_000n },
       error: h.vaultError,
       mutate: () => {}
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/vaults/useVaultMarketData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useVaultMarketData')>();
+  return {
+    ...actual,
     useVaultMarketData: () => ({ data: { rate: { netRate: 0.05 } } })
   };
 });

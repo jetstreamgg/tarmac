@@ -3,7 +3,9 @@ import { format } from 'date-fns/format';
 import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { mainnet } from 'wagmi/chains';
-import { usePendleMarketHistory, PendleHistoryAction, type PendleMarketConfig } from '@/hooks';
+import { usePendleMarketHistory } from '@/hooks/pendle/usePendleMarketHistory';
+import { PendleHistoryAction } from '@/hooks/pendle/constants';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { formatNumber, formatUsd, getEtherscanLink, formatAddress } from '@/utils';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import {

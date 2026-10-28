@@ -1,7 +1,8 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex, type EarnRiskTier } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import { type EarnRiskTier } from '@/hooks/earn/types';
 import { tabsTriggerVariants } from '@/components/ui/tabs';
 import {
   ALL_NETWORKS_LABEL,

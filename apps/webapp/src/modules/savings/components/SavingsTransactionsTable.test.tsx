@@ -24,8 +24,8 @@ vi.mock('wagmi', async importOriginal => {
   return { ...actual, useChainId: () => 1, useAccount: () => ({ isConnected: true }) };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/savings/useSavingsHistory', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/savings/useSavingsHistory')>();
   return {
     ...actual,
     useSavingsHistory: () => ({ data: h.history, isLoading: false, error: null })
@@ -35,7 +35,8 @@ vi.mock('@/hooks', async importOriginal => {
 vi.mock('@/modules/app/hooks/useIndexerUrl', () => ({ useIndexerUrl: () => 'http://test' }));
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-import { TransactionTypeEnum, TOKENS } from '@/hooks';
+import { TransactionTypeEnum } from '@/hooks/constants';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
 import { SavingsTxFilter } from './SavingsTransactionsFilter';
 

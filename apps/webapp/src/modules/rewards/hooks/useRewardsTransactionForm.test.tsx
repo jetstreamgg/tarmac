@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseUnits } from 'viem';
-import { TOKENS } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { useRewardsTransactionForm } from './useRewardsTransactionForm';
 
 // The `t` macro resolves against the global i18n singleton (not React context).
@@ -32,12 +32,24 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
   return {
     ...actual,
-    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value),
-    useTokenBalance: () => ({ data: h.walletBalance }),
+    useDebounce: <T,>(value: T) => (h.debounceLagged !== undefined ? h.debounceLagged : value)
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
+    useTokenBalance: () => ({ data: h.walletBalance })
+  };
+});
+vi.mock('@/hooks/rewards/useRewardsBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useRewardsBalance')>();
+  return {
+    ...actual,
     useRewardsSuppliedBalance: () => ({ data: h.suppliedBalance })
   };
 });

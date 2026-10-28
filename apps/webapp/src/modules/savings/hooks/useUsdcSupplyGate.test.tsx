@@ -10,7 +10,7 @@ const h = vi.hoisted(() => ({
 // The three PSM-wrapper reads the gate is made of. Stubbed so the branches can be
 // driven directly — every one of them was previously reachable only by rendering
 // the whole supply modal, which is why several never got asserted at all.
-vi.mock('@/hooks', () => ({
+vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', () => ({
   useUsdsPsmWrapperLive: () => ({ data: h.live }),
   useUsdsPsmWrapperTin: () => ({ data: h.tin }),
   useUsdsPsmWrapperHalted: () => ({ data: h.halted })

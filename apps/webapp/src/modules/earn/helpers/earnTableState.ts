@@ -1,4 +1,4 @@
-import type { EarnProductRow, EarnRiskTier } from '@/hooks';
+import type { EarnProductRow, EarnRiskTier } from '@/hooks/earn/types';
 import type { EarnTableColumn, EarnTableSort } from '@/components/product/EarnTable';
 
 export const RISK_ORDER: Record<EarnRiskTier, number> = { low: 0, moderate: 1, advanced: 2 };

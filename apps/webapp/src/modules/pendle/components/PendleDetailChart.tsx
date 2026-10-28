@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { useNow, usePendleMarketChartData, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { useNow } from '@/hooks/ui/useNow';
+import { usePendleMarketChartData } from '@/hooks/pendle/usePendleMarketChartData';
+import { usePendleMarketsApiData } from '@/hooks/pendle/usePendleMarketsApiData';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { Chart, TimeFrame, type Data } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

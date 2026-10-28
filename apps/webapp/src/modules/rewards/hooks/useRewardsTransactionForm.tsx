@@ -1,7 +1,10 @@
 import { useMemo, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { type Token, getTokenDecimals, useRewardsSuppliedBalance, useTokenBalance } from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { useRewardsSuppliedBalance } from '@/hooks/rewards/useRewardsBalance';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
 import { useAmountForm, type AmountToastTitles } from '@/modules/ui/hooks/useAmountForm';
 import { RewardsAmountSummary } from '../components/RewardsAmountSummary';
 import type { RewardsEngineParams, RewardsLaunchFlow } from './useRewardsLaunch';

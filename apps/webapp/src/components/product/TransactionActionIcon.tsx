@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
-import { ModuleEnum } from '@/hooks';
+import { ModuleEnum } from '@/hooks/constants';
 import { ConvertArrows } from '@/modules/icons';
 
 /** Action glyph for a transaction row: convert arrows for trades, otherwise in/out by direction. */

@@ -1,12 +1,9 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContracts } from 'wagmi';
-import {
-  stakeModuleAbi,
-  stakeModuleAddress,
-  useMultipleRewardsChartInfo,
-  useSkyPrice,
-  useStakeRewardContracts
-} from '@/hooks';
+import { stakeModuleAbi, stakeModuleAddress } from '@/hooks/generated';
+import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
 import { ZERO_ADDRESS } from '@/hooks/constants';
 import { wadToFloat } from '../lib/stakeUsdNotional';
 import { StakeUserPosition } from './useStakeUserPositions';

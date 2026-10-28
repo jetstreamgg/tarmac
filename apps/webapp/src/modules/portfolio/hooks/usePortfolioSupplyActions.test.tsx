@@ -48,8 +48,10 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
-vi.mock('@/hooks', () => ({
-  TOKENS: { cle: { symbol: 'CLE' } },
+vi.mock('@/hooks/tokens/tokens.constants', () => ({
+  TOKENS: { cle: { symbol: 'CLE' } }
+}));
+vi.mock('@/hooks/vaults/constants', () => ({
   VAULTS: [
     {
       provider: 'morpho',
@@ -57,10 +59,16 @@ vi.mock('@/hooks', () => ({
       vaultAddress: { 1: '0xABC' },
       assetToken: { symbol: 'USDC' }
     }
-  ],
+  ]
+}));
+vi.mock('@/hooks/pendle/constants', () => ({
   getPendleMarketByAddress: (address: string) =>
-    address.toLowerCase() === h.pendleMarket.marketAddress.toLowerCase() ? h.pendleMarket : undefined,
-  isMarketMatured: (expiry: number) => expiry * 1000 <= Date.now(),
+    address.toLowerCase() === h.pendleMarket.marketAddress.toLowerCase() ? h.pendleMarket : undefined
+}));
+vi.mock('@/hooks/pendle/helpers', () => ({
+  isMarketMatured: (expiry: number) => expiry * 1000 <= Date.now()
+}));
+vi.mock('@/hooks/rewards/useAvailableTokenRewardContracts', () => ({
   // Farms live on mainnet only, like the real registry.
   useAvailableTokenRewardContractsForChains: () => (chainId: number) =>
     chainId === 1

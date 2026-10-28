@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useStakeHistory, lsSkySpkRewardAddress, TransactionTypeEnum } from '@/hooks';
+import { useStakeHistory } from '@/hooks/stake/useStakeHistory';
+import { lsSkySpkRewardAddress } from '@/hooks/generated';
+import { TransactionTypeEnum } from '@/hooks/constants';
 import { isMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**

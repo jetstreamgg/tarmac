@@ -38,8 +38,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/wallet/useIsSafeWallet', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/wallet/useIsSafeWallet')>();
   return { ...actual, useIsSafeWallet: () => mocks.isSafeWallet };
 });
 

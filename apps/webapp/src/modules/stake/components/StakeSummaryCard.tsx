@@ -1,13 +1,11 @@
 import { ReactNode, useCallback, useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import {
-  useSkyPrice,
-  useStakeRewardContracts,
-  useRewardContractsToClaim,
-  usePrices,
-  useStakeHistory
-} from '@/hooks';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
+import { useRewardContractsToClaim } from '@/hooks/rewards/useRewardContractsToClaim';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { useStakeHistory } from '@/hooks/stake/useStakeHistory';
 import { formatUsd } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { calculateClaimedRewardsUsd } from '../lib/positionDetail';

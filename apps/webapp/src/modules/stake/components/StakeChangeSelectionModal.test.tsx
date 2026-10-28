@@ -69,8 +69,8 @@ vi.mock('@/lib/navigation', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useStakeUserDelegates', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeUserDelegates')>();
   return {
     ...actual,
     useStakeUserDelegates: () => ({
@@ -82,24 +82,43 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
+  const generatedActual = await vi.importActual<typeof import('@/hooks/generated')>('@/hooks/generated');
+  return {
+    ...actual,
     useStakeRewardContracts: () => ({
       data: [
-        { contractAddress: actual.lsSkySpkRewardAddress[1] },
-        { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
-        { contractAddress: actual.lsSkySkyRewardAddress[1] }
+        { contractAddress: generatedActual.lsSkySpkRewardAddress[1] },
+        { contractAddress: generatedActual.lsSkyUsdsRewardAddress[1] },
+        { contractAddress: generatedActual.lsSkySkyRewardAddress[1] }
       ],
       isLoading: false,
       error: null,
       mutate: () => undefined
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useRewardContractTokens', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useRewardContractTokens')>();
+  return {
+    ...actual,
     useRewardContractTokens: () => ({
       data: undefined,
       isLoading: false,
       error: null,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useMultipleRewardsChartInfo')>();
+  return {
+    ...actual,
     useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null })
   };
 });
@@ -165,7 +184,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
-import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks';
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks/generated';
 import { StakeChangeRewardModal, StakeChangeDelegateModal } from './StakeChangeSelectionModal';
 import { TooltipProvider } from '@/components/ui/tooltip';
 

@@ -23,8 +23,8 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock('wagmi', () => ({ useChainId: () => 1 }));
-vi.mock('@/hooks', async importOriginal => ({
-  ...(await importOriginal<typeof import('@/hooks')>()),
+vi.mock('@/hooks/prices/usePrices', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/hooks/prices/usePrices')>()),
   usePrices: () => ({ data: { SKY: { price: '0.05' }, USDS: { price: '1' } } })
 }));
 vi.mock('@/modules/ui/hooks/engineLaunch', () => ({ useShouldUseBatch: () => h.canBundle }));

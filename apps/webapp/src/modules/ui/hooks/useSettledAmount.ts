@@ -1,4 +1,4 @@
-import { useDebounce } from '@/hooks';
+import { useDebounce } from '@/hooks/ui/useDebounce';
 
 interface SettledAmount {
   /** The amount once typing has paused (500ms): the engine, the network reads and the amount displays read this. */

@@ -41,16 +41,52 @@ vi.mock('@tanstack/react-query', async importOriginal => {
   return { ...actual, useQueryClient: () => ({ invalidateQueries: h.invalidateMock }) };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useUrnAddress', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnAddress')>();
   return {
     ...actual,
-    useStakeUrnAddress: () => ({ data: URN_ADDRESS, isLoading: false }),
-    useVault: () => ({ data: h.vault, isLoading: h.vaultLoading, error: null }),
-    useStakeUrnSelectedVoteDelegate: () => ({ data: DELEGATE, isLoading: false }),
-    useStakeRewardContracts: () => ({ data: h.rewardContracts, isLoading: false }),
-    useRewardContractsToClaim: () => ({ data: h.toClaim, isLoading: h.claimableLoading }),
-    usePrices: () => ({ data: h.prices, isLoading: false, error: null }),
+    useUrnAddress: () => ({ data: URN_ADDRESS, isLoading: false })
+  };
+});
+vi.mock('@/hooks/vaults/useVault', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useVault')>();
+  return {
+    ...actual,
+    useVault: () => ({ data: h.vault, isLoading: h.vaultLoading, error: null })
+  };
+});
+vi.mock('@/hooks/stake/useUrnSelectedVoteDelegate', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnSelectedVoteDelegate')>();
+  return {
+    ...actual,
+    useUrnSelectedVoteDelegate: () => ({ data: DELEGATE, isLoading: false })
+  };
+});
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
+  return {
+    ...actual,
+    useStakeRewardContracts: () => ({ data: h.rewardContracts, isLoading: false })
+  };
+});
+vi.mock('@/hooks/rewards/useRewardContractsToClaim', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useRewardContractsToClaim')>();
+  return {
+    ...actual,
+    useRewardContractsToClaim: () => ({ data: h.toClaim, isLoading: h.claimableLoading })
+  };
+});
+vi.mock('@/hooks/prices/usePrices', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/usePrices')>();
+  return {
+    ...actual,
+    usePrices: () => ({ data: h.prices, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/prices/useSkyPrice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/useSkyPrice')>();
+  return {
+    ...actual,
     useSkyPrice: () => ({ priceString: h.skyPriceString, data: undefined, isLoading: false, error: null })
   };
 });

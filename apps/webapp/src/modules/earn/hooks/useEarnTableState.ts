@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { EarnRiskTier } from '@/hooks';
+import type { EarnRiskTier } from '@/hooks/earn/types';
 import type { EarnTableColumn, EarnTableSort } from '@/components/product/EarnTable';
 import { useRouterState } from '@tanstack/react-router';
 import { QueryParams } from '@/lib/constants';

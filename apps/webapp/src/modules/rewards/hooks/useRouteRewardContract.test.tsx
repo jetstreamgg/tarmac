@@ -17,7 +17,7 @@ const contractsByChain: Record<number, { contractAddress: string }[]> = {
   [POLYGON]: []
 };
 
-vi.mock('@/hooks', () => ({
+vi.mock('@/hooks/rewards/useAvailableTokenRewardContracts', () => ({
   useAvailableTokenRewardContracts: (chainId: number) => contractsByChain[chainId]
 }));
 vi.mock('@/lib/navigation', () => ({

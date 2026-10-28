@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TransactionTypeEnum } from '@/hooks';
+import { TransactionTypeEnum } from '@/hooks/constants';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -72,11 +72,17 @@ const HISTORY = [
   }
 ];
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useStakeHistory', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeHistory')>();
   return {
     ...actual,
-    useStakeHistory: () => ({ data: HISTORY, isLoading: false, error: null }),
+    useStakeHistory: () => ({ data: HISTORY, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/prices/useSkyPrice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/useSkyPrice')>();
+  return {
+    ...actual,
     useSkyPrice: () => ({ data: 10n ** 18n, priceString: '1', isLoading: false, error: null })
   };
 });
@@ -85,7 +91,7 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 // Position 1 (index 0) carries debt at Medium risk; position 2 is staking-only.
 vi.mock('../hooks/useStakeRowVault', async () => {
-  const { RiskLevel } = await import('@/hooks');
+  const { RiskLevel } = await import('@/hooks/vaults/vaults.constants');
   return {
     useStakeRowVault: (position: { index: number }) => ({
       data: position.index === 0 ? { riskLevel: RiskLevel.MEDIUM } : undefined,
@@ -96,7 +102,7 @@ vi.mock('../hooks/useStakeRowVault', async () => {
 });
 
 import { StakeActivityTable, toStakeActivityItems } from './StakeActivityTable';
-import { lsSkyUsdsRewardAddress } from '@/hooks';
+import { lsSkyUsdsRewardAddress } from '@/hooks/generated';
 
 const URN_0 = '0x1111111111111111111111111111111111111111' as const;
 const URN_1 = '0x3333333333333333333333333333333333333333' as const;

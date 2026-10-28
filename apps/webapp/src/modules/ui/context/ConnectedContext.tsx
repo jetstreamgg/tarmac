@@ -9,13 +9,14 @@ import React, {
   useMemo
 } from 'react';
 import { useConnection, useSignMessage } from 'wagmi';
-import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
+import { useRestrictedAddressCheck } from '@/hooks/authentication/useRestrictedAddressCheck';
+import { useVpnCheck } from '@/hooks/authentication/useVpnCheck';
 import { getAuthUrl, shouldSkipAuthChecks } from '@/lib/authCheck';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { setVpnSuperProperties } from '@/modules/analytics/superProperties';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
-import { toError } from '@/hooks';
+import { toError } from '@/hooks/helpers';
 import { addTermsAcceptance } from '@/modules/ui/lib/addTermsAcceptance';
 import { signTermsAcceptance } from '@/modules/ui/lib/signTermsAcceptance';
 import { checkTermsWithRetry, type TermsCheckData } from '@/modules/ui/lib/checkTermsWithRetry';

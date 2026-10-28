@@ -3,7 +3,7 @@ import { t } from '@lingui/core/macro';
 import { useConnection } from 'wagmi';
 import { Switch } from './ui/switch';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useIsBatchSupported } from '@/hooks';
+import { useIsBatchSupported } from '@/hooks/shared/useIsBatchSupported';
 import { BATCH_TX_LEGAL_NOTICE_URL, BATCH_TX_SUPPORTED_WALLETS_URL } from '@/lib/constants';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { LightningFilled } from '@/modules/icons';

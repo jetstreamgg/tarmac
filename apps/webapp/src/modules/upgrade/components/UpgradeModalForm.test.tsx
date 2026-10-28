@@ -30,17 +30,47 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
   return {
     ...actual,
     // Identity debounce: the analytics blob reads the debounced amount, and these
     // tests assert synchronously after typing.
-    useDebounce: <T,>(value: T) => value,
-    useTokenBalance: () => ({ data: { value: 100n * 10n ** 18n }, refetch: vi.fn() }),
-    useMkrSkyFee: () => ({ data: h.mkrSkyFee, error: h.mkrSkyFeeError }),
-    useNetworkFee: () => ({ data: undefined, isLoading: false, error: null }),
-    useIsBatchSupported: () => ({ data: false }),
+    useDebounce: <T,>(value: T) => value
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
+    useTokenBalance: () => ({ data: { value: 100n * 10n ** 18n }, refetch: vi.fn() })
+  };
+});
+vi.mock('@/hooks/upgrade/useMkrSkyFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/upgrade/useMkrSkyFee')>();
+  return {
+    ...actual,
+    useMkrSkyFee: () => ({ data: h.mkrSkyFee, error: h.mkrSkyFeeError })
+  };
+});
+vi.mock('@/hooks/shared/useNetworkFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useNetworkFee')>();
+  return {
+    ...actual,
+    useNetworkFee: () => ({ data: undefined, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
+    useIsBatchSupported: () => ({ data: false })
+  };
+});
+vi.mock('@/hooks/prices/useSkyPrice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/useSkyPrice')>();
+  return {
+    ...actual,
     // The APP-517 usdValue derivation reads the SKY price; keep it out of react-query.
     useSkyPrice: () => ({ priceString: '0.05' })
   };
@@ -81,9 +111,9 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
 import { UpgradeModalForm } from './UpgradeModalForm';
 import { stampDestination } from '@/modules/analytics/lib/destination';
-import { TOKENS } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import type { UpgradeSourceToken } from '@/hooks';
+import type { UpgradeSourceToken } from '@/hooks/upgrade/useBatchUpgrade';
 
 const formTree = (initialToken?: UpgradeSourceToken) => (
   <I18nProvider i18n={i18n}>

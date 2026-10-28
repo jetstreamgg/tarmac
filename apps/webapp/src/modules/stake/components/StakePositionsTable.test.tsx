@@ -66,15 +66,27 @@ vi.mock('../hooks/useStakeRowVault', () => ({
     error: h.vaultError
   })
 }));
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useUrnAddress', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnAddress')>();
   return {
     ...actual,
-    useStakeUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111', isLoading: false }),
+    useUrnAddress: () => ({ data: '0x1111111111111111111111111111111111111111', isLoading: false })
+  };
+});
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
+  return {
+    ...actual,
     useStakeRewardContracts: () => ({
       data: [{ contractAddress: '0x2222222222222222222222222222222222222222' }],
       isLoading: false
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useRewardContractsToClaim', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useRewardContractsToClaim')>();
+  return {
+    ...actual,
     useRewardContractsToClaim: () =>
       h.claimError
         ? { data: undefined, isLoading: false, error: h.claimError }
@@ -88,7 +100,13 @@ vi.mock('@/hooks', async importOriginal => {
             ],
             isLoading: false,
             error: null
-          },
+          }
+  };
+});
+vi.mock('@/hooks/prices/usePrices', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/usePrices')>();
+  return {
+    ...actual,
     usePrices: () => ({ data: { SKY: { price: '1' } }, isLoading: false, error: null })
   };
 });

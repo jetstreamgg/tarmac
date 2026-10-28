@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
+import { type Token } from '@/hooks/tokens/types';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import {
-  type Token,
-  TOKENS,
   useReadSsrAuthOracleGetChi,
   useReadSsrAuthOracleGetRho,
   useReadSsrAuthOracleGetSsr
-} from '@/hooks';
+} from '@/hooks/generated';
 import { math } from '@/utils';
 import { EPOCH_LENGTH } from '@/modules/savings/constants';
 

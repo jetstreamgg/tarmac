@@ -1,6 +1,6 @@
 import { stringToHex } from 'viem';
 import { useChainId, useReadContract } from 'wagmi';
-import { getIlkName } from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
 import { useReadMcdSpotIlks } from '@/hooks/generated';
 
 const cappedOracleAbi = [

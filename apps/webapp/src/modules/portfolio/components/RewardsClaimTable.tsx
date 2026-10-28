@@ -1,6 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { formatUsd } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

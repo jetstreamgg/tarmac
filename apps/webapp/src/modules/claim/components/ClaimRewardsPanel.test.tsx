@@ -71,23 +71,41 @@ vi.mock('wagmi', async importOriginal => {
 // Spread over the real module rather than replaced wholesale: the footer's fee
 // row pulls NetworkFeeValue/NetworkFeeLabel in, and those reach for several more
 // hooks than this panel names itself.
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useIsTouchDevice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useIsTouchDevice')>();
   return {
     ...actual,
     // The DS Tooltip reads this to suppress itself on touch devices.
-    useIsTouchDevice: () => false,
+    useIsTouchDevice: () => false
+  };
+});
+vi.mock('@/hooks/shared/useNetworkFee', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useNetworkFee')>();
+  return {
+    ...actual,
     useNetworkFee: () => ({
       data: undefined,
       isLoading: false,
       error: null,
       mutate: () => {},
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/shared/useTransactionFlow', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useTransactionFlow')>();
+  return {
+    ...actual,
     useTransactionFlow: (params: { calls: unknown[] }) => {
       h.flowCalls = params.calls;
       return { execute: vi.fn(), prepared: h.flowPrepared };
-    },
+    }
+  };
+});
+vi.mock('@/hooks/rewards/useAvailableTokenRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useAvailableTokenRewardContracts')>();
+  return {
+    ...actual,
     // Controlled registry so the reward-contract attribution blob is deterministic.
     useAvailableTokenRewardContracts: () => [
       {
@@ -96,7 +114,13 @@ vi.mock('@/hooks', async importOriginal => {
         supplyToken: { symbol: 'USDS', address: { 1: '0xusds' } },
         rewardToken: { symbol: 'SKY', address: { 1: '0xsky' } }
       }
-    ],
+    ]
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
     // No WagmiProvider in these renders → the fee row stays a plain value.
     useIsBatchSupported: () => ({
       data: false,

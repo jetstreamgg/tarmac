@@ -11,14 +11,16 @@ import {
 } from 'react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { InProgress, Cancel, Refresh } from '@/modules/icons';
-import { isStalledStep, toError, type TxMutateVariables } from '@/hooks';
+import { isStalledStep, toError } from '@/hooks/helpers';
+import { type TxMutateVariables } from '@/hooks/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
 import { TransactionSuccessToast } from '@/modules/ui/components/TransactionSuccessToast';
-import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
+import { useIsSafeWallet } from '@/hooks/wallet/useIsSafeWallet';
+import { useIsBatchSupported } from '@/hooks/shared/useIsBatchSupported';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
 import { refreshHistoryAfterTx } from '@/lib/historyRefresh';

@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import { usePrices, useRewardContractsToClaim, useStakeRewardContracts } from '@/hooks';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { useRewardContractsToClaim } from '@/hooks/rewards/useRewardContractsToClaim';
+import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
 import { priceOfFromPrices, sumRewardsUsd } from '../lib/stakeUsdNotional';
 
 /**

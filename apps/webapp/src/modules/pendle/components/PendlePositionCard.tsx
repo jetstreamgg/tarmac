@@ -4,17 +4,15 @@ import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import {
-  isMarketMatured,
-  TOKENS,
-  useNow,
-  usePendleMarketsApiData,
-  usePendleMaturedPositionEarnings,
-  usePendleRedeemPreview,
-  usePendleUserPtBalances,
-  useTokenBalance,
-  type PendleMarketConfig
-} from '@/hooks';
+import { isMarketMatured } from '@/hooks/pendle/helpers';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useNow } from '@/hooks/ui/useNow';
+import { usePendleMarketsApiData } from '@/hooks/pendle/usePendleMarketsApiData';
+import { usePendleMaturedPositionEarnings } from '@/hooks/pendle/usePendleMaturedPositionEarnings';
+import { usePendleRedeemPreview } from '@/hooks/pendle/usePendleRedeemPreview';
+import { usePendleUserPtBalances } from '@/hooks/pendle/usePendleUserPtBalances';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';

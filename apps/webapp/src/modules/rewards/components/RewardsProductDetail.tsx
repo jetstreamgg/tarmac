@@ -4,15 +4,13 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Vault, UsersRound, Coins } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import {
-  rewardsRiskProfile,
-  TOKENS,
-  trailingAverageRate,
-  type RewardContract,
-  useProductNetworks,
-  useRewardContractInfo,
-  useRewardsChartInfo
-} from '@/hooks';
+import { rewardsRiskProfile } from '@/hooks/earn/earnProducts';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { trailingAverageRate } from '@/hooks/shared/trailingRate';
+import { type RewardContract } from '@/hooks/rewards/rewards';
+import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
+import { useRewardContractInfo } from '@/hooks/rewards/useRewardContractInfo';
+import { useRewardsChartInfo } from '@/hooks/rewards/useRewardsChartInfo';
 import { formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';

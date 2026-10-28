@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
-import { TENDERLY_CHAIN_ID, TOKENS, type PendleMarketConfig, type Token } from '@/hooks';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
+import { type Token } from '@/hooks/tokens/types';
 import { mainnet } from 'viem/chains';
 
 export type PendleTokens = {

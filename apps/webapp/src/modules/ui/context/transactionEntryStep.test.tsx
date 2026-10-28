@@ -24,9 +24,12 @@ vi.mock('wagmi', async io => ({
   useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: '0x0000000000000000000000000000000000000001', isConnected: true })
 }));
-vi.mock('@/hooks', async io => ({
-  ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => false,
+vi.mock('@/hooks/wallet/useIsSafeWallet', async io => ({
+  ...(await io<typeof import('@/hooks/wallet/useIsSafeWallet')>()),
+  useIsSafeWallet: () => false
+}));
+vi.mock('@/hooks/shared/useIsBatchSupported', async io => ({
+  ...(await io<typeof import('@/hooks/shared/useIsBatchSupported')>()),
   useIsBatchSupported: () => ({ data: false })
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));

@@ -1,12 +1,10 @@
 import { useCallback } from 'react';
 import { useChainId, useSwitchChain } from 'wagmi';
-import {
-  TOKENS,
-  VAULTS,
-  useAvailableTokenRewardContractsForChains,
-  getPendleMarketByAddress,
-  isMarketMatured
-} from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { VAULTS } from '@/hooks/vaults/constants';
+import { useAvailableTokenRewardContractsForChains } from '@/hooks/rewards/useAvailableTokenRewardContracts';
+import { getPendleMarketByAddress } from '@/hooks/pendle/constants';
+import { isMarketMatured } from '@/hooks/pendle/helpers';
 // Straight from the leaf modules, not the barrel: that re-exports the provider,
 // which pulls the router into anything importing this hook.
 import { geoModuleForIntent } from '@/modules/geo-config/moduleForIntent';

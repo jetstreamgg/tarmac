@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { useIsTouchDevice } from '@/hooks';
+import { useIsTouchDevice } from '@/hooks/ui/useIsTouchDevice';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {

@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Token } from '@/hooks';
+import type { Token } from '@/hooks/tokens/types';
 
 i18n.load('en', {});
 i18n.activate('en');

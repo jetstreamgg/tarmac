@@ -1,4 +1,4 @@
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 // Straight from the leaf modules, not the barrel: that re-exports the provider,
 // which pulls the router into anything importing this helper.
 import { geoModuleForIntent } from '@/modules/geo-config/moduleForIntent';

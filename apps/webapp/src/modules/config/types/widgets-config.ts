@@ -1,4 +1,4 @@
-import { TokenForChain } from '@/hooks';
+import { TokenForChain } from '@/hooks/tokens/types';
 
 export type WidgetsConfig = {
   balancesTokenList: Record<number, TokenForChain[]>;

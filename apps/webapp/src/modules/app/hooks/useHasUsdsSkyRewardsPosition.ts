@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useRewardsWithUserBalance, usdsSkyRewardAddress } from '@/hooks';
+import { useRewardsWithUserBalance } from '@/hooks/rewards/useRewardsWithUserBalance';
+import { usdsSkyRewardAddress } from '@/hooks/generated';
 import { isMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**

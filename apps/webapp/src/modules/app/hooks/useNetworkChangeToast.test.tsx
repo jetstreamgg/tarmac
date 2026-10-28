@@ -22,8 +22,8 @@ vi.mock('wagmi', () => ({
   useSwitchChain: () => ({ switchChain: vi.fn(), isPending: false, variables: undefined })
 }));
 // The provider now derives `canSwitchChain`, which reads the Safe lookup; not under test here.
-vi.mock('@/hooks', async io => ({
-  ...(await io<typeof import('@/hooks')>()),
+vi.mock('@/hooks/wallet/useIsSafeWallet', async io => ({
+  ...(await io<typeof import('@/hooks/wallet/useIsSafeWallet')>()),
   useIsSafeWallet: () => false
 }));
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({

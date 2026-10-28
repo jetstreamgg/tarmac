@@ -1,6 +1,7 @@
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
-import type { PendleConvertQuote, PendleMarketConfig, Token } from '@/hooks';
+import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks/pendle/pendle';
+import type { Token } from '@/hooks/tokens/types';
 
 export type PendleAnalyticsSide = 'buy' | 'sell' | 'redeem';
 

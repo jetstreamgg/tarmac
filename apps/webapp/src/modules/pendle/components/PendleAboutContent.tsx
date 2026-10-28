@@ -1,7 +1,9 @@
 import { type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Activity, ArrowUpFromLine, AudioLines } from 'lucide-react';
-import { useNow, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import { useNow } from '@/hooks/ui/useNow';
+import { usePendleMarketsApiData } from '@/hooks/pendle/usePendleMarketsApiData';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { IconboxAction } from '@/components/ui/iconbox';

@@ -25,18 +25,32 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ address: h.address })
 }));
 
-vi.mock('@/hooks', () => ({
-  useStakeUrnAddress: () => ({ data: h.URN }),
+vi.mock('@/hooks/stake/useUrnAddress', () => ({
+  useUrnAddress: () => ({ data: h.URN })
+}));
+vi.mock('@/hooks/stake/useStakeRewardContracts', () => ({
   useStakeRewardContracts: () => ({
     data: [{ contractAddress: h.SKY_REWARD }, { contractAddress: h.SPK_REWARD }]
-  }),
-  useRewardContractsToClaim: () => ({ data: h.urnRewards, isLoading: false }),
-  useStakeSkyAllowance: () => ({ data: h.skyAllowance }),
-  usePrices: () => ({ data: h.prices }),
-  getWriteContractCall: (params: unknown) => params,
+  })
+}));
+vi.mock('@/hooks/rewards/useRewardContractsToClaim', () => ({
+  useRewardContractsToClaim: () => ({ data: h.urnRewards, isLoading: false })
+}));
+vi.mock('@/hooks/stake/useStakeAllowance', () => ({
+  useStakeSkyAllowance: () => ({ data: h.skyAllowance })
+}));
+vi.mock('@/hooks/prices/usePrices', () => ({
+  usePrices: () => ({ data: h.prices })
+}));
+vi.mock('@/hooks/shared/getWriteContractCall', () => ({
+  getWriteContractCall: (params: unknown) => params
+}));
+vi.mock('@/hooks/generated', () => ({
   stakeModuleAddress: { 1: h.STAKE_MODULE },
   stakeModuleAbi: [],
-  skyAddress: { 1: h.SKY_TOKEN },
+  skyAddress: { 1: h.SKY_TOKEN }
+}));
+vi.mock('@/utils/constants', () => ({
   ZERO_ADDRESS: '0x0000000000000000000000000000000000000000'
 }));
 

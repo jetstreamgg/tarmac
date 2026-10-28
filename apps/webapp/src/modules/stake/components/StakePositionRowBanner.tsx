@@ -2,7 +2,7 @@ import { MouseEvent, ReactNode } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Trans } from '@lingui/react/macro';
-import { RiskLevel, RISK_LEVEL_THRESHOLDS } from '@/hooks';
+import { RiskLevel, RISK_LEVEL_THRESHOLDS } from '@/hooks/vaults/vaults.constants';
 import { formatUsd } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';

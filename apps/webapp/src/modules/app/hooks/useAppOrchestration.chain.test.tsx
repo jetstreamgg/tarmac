@@ -109,8 +109,10 @@ vi.mock('wagmi', () => ({
     }
   })
 }));
-vi.mock('@/hooks', () => ({
-  useAvailableTokenRewardContracts: () => mockRewardContracts,
+vi.mock('@/hooks/rewards/useAvailableTokenRewardContracts', () => ({
+  useAvailableTokenRewardContracts: () => mockRewardContracts
+}));
+vi.mock('@/hooks/ui/useAppChainId', () => ({
   // The real one reads the same two wagmi hooks mocked above; inlining its rule
   // here keeps the mock honest without pulling the whole barrel in.
   useAppChainId: () =>

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
-import { useTokenBalance } from '@/hooks';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatBigInt } from '@/utils';
 import { QueryParams } from '@/lib/constants';

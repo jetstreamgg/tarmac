@@ -1,7 +1,7 @@
 import { render, renderHook, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nWidgetProvider } from '@/modules/ui/context/I18nWidgetProvider';
-import type { NetworkFeeData } from '@/hooks';
+import type { NetworkFeeData } from '@/hooks/shared/useNetworkFee';
 import { NetworkFeeValue, useBundleFeeState } from './NetworkFeeValue';
 
 const mocks = vi.hoisted(() => ({
@@ -15,8 +15,8 @@ vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
   useBatchToggle: () => [mocks.batchEnabled, mocks.setBatchEnabled] as const
 }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
   return {
     ...actual,
     useIsBatchSupported: () => ({ data: mocks.batchSupported, isLoading: mocks.isSupportLoading })

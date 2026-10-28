@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { type Token, TOKENS, useTokenAllowance } from '@/hooks';
+import { type Token } from '@/hooks/tokens/types';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useTokenAllowance } from '@/hooks/tokens/useTokenAllowance';
 
 interface UseApproveStepsParams {
   /** The token the action pulls from the wallet. */

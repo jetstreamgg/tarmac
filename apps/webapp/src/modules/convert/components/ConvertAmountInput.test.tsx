@@ -8,8 +8,8 @@ import { ConvertAmountInput } from './ConvertAmountInput';
 import { getValidatedPsmExternalAmount } from '../hooks/usePsmConversion.helpers';
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
   return { ...actual, useBreakpointIndex: () => ({ bpi: actual.BP.desktop }) };
 });
 

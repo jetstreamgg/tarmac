@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import { Intent } from '@/lib/enums';
 import { useEarnWithSkyProducts } from './useEarnWithSkyProducts';
 
@@ -10,9 +10,13 @@ const h = vi.hoisted(() => ({
   charts: { data: [[{ blockTimestamp: 1, rate: '0.105' }]], isLoading: false }
 }));
 
-vi.mock('@/hooks', () => ({
-  useStakeRewardContracts: () => h.contracts,
-  useMultipleRewardsChartInfo: () => h.charts,
+vi.mock('@/hooks/stake/useStakeRewardContracts', () => ({
+  useStakeRewardContracts: () => h.contracts
+}));
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', () => ({
+  useMultipleRewardsChartInfo: () => h.charts
+}));
+vi.mock('@/hooks/stake/useHighestRateFromChartData', () => ({
   useHighestRateFromChartData: (charts: { rate: string }[][]) => charts[0]?.[0] ?? null
 }));
 vi.mock('@/modules/geo-config', () => ({ useGeoConfig: () => h.geo }));

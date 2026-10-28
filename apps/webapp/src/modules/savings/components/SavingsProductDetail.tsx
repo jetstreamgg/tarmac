@@ -4,14 +4,11 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import {
-  BP,
-  useBreakpointIndex,
-  useOverallSkyData,
-  useProductNetworks,
-  useSavingsData,
-  useSkySavingsRateHistoricData
-} from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
+import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
+import { useSavingsData } from '@/hooks/savings/useSavingsData';
+import { useSkySavingsRateHistoricData } from '@/hooks/savings/useSkySavingsRateHistoricData';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';

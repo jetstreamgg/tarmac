@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { PENDLE_DEFAULT_SLIPPAGE } from '@/hooks';
+import { PENDLE_DEFAULT_SLIPPAGE } from '@/hooks/pendle/constants';
 import {
   PendleFlow,
   PENDLE_BUY_SLIPPAGE_STORAGE_KEY,

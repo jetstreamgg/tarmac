@@ -11,8 +11,8 @@ import { notAvailable, ok, type ProtocolEarnings, type WalletEarnings } from '..
 
 // Pin touch detection per test (finding #7: tooltips fall back to popovers on touch).
 const touch = vi.hoisted(() => ({ isTouch: false }));
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useIsTouchDevice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useIsTouchDevice')>();
   return { ...actual, useIsTouchDevice: () => touch.isTouch };
 });
 

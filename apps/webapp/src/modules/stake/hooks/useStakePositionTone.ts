@@ -1,4 +1,4 @@
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import type { IconboxPositionTone } from '@/components/ui/iconbox';
 import { useStakeRowVault } from './useStakeRowVault';
 import type { StakeUserPosition } from './useStakeUserPositions';

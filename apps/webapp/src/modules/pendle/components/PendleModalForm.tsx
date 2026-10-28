@@ -5,21 +5,18 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import {
-  getTokenDecimals,
-  PENDLE_ROUTER_V4_ADDRESS,
-  PendleConvertSide,
-  useBatchPendleConvert,
-  useIsBatchSupported,
-  useNow,
-  usePendleMarketsApiData,
-  usePendleUserPtBalances,
-  useQuotePendleConvert,
-  useTokenAllowance,
-  useTokenBalance,
-  type PendleMarketConfig,
-  type Token
-} from '@/hooks';
+import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
+import { PENDLE_ROUTER_V4_ADDRESS, PendleConvertSide } from '@/hooks/pendle/constants';
+import { useBatchPendleConvert } from '@/hooks/pendle/useBatchPendleConvert';
+import { useIsBatchSupported } from '@/hooks/shared/useIsBatchSupported';
+import { useNow } from '@/hooks/ui/useNow';
+import { usePendleMarketsApiData } from '@/hooks/pendle/usePendleMarketsApiData';
+import { usePendleUserPtBalances } from '@/hooks/pendle/usePendleUserPtBalances';
+import { useQuotePendleConvert } from '@/hooks/pendle/useQuotePendleConvert';
+import { useTokenAllowance } from '@/hooks/tokens/useTokenAllowance';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
+import { type Token } from '@/hooks/tokens/types';
 import { getTooltipById } from '@/modules/ui/data/tooltips';
 import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { PendleFlow } from '@/modules/pendle/lib/constants';

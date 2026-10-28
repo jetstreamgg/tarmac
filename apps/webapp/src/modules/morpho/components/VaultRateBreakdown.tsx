@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { StarsFilled } from '@/modules/icons';
-import type { MorphoVaultRateData } from '@/hooks';
+import type { MorphoVaultRateData } from '@/hooks/morpho/useMorphoVaultRateApiData';
 
 /**
  * Whether there is anything to break a rate down INTO: reward incentives, or a

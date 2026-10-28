@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { createFileRoute, Navigate, redirect, useRouterState } from '@tanstack/react-router';
 import { FixedIntent, Intent } from '@/lib/enums';
 import { keepSearchFilteredTo } from '@/lib/navigation';
-import { getPendleMarketBySlug } from '@/hooks';
+import { getPendleMarketBySlug } from '@/hooks/pendle/constants';
 import { PendleProductDetail } from '@/modules/pendle/components/PendleProductDetail';
 import { requireModuleEnabled } from '@/modules/geo-config/routeGuard';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';

@@ -15,7 +15,7 @@ import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { useIsBatchSupported } from '@/hooks';
+import { useIsBatchSupported } from '@/hooks/shared/useIsBatchSupported';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ModalStepBackSlot, ModalStepDivider, ModalStepLabel } from './ModalStepChrome';

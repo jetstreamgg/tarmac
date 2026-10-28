@@ -6,14 +6,12 @@ import { RateInfo } from '@/components/product/RateInfo';
 import { AudioLines, Asterisk, Vault, Droplet, Gauge, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import {
-  trailingAverageRate,
-  useOverallSkyData,
-  useProductNetworks,
-  useStUsdsCapacityData,
-  useStUsdsChartInfo,
-  useStUsdsData
-} from '@/hooks';
+import { trailingAverageRate } from '@/hooks/shared/trailingRate';
+import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
+import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
+import { useStUsdsCapacityData } from '@/hooks/stusds/useStUsdsCapacityData';
+import { useStUsdsChartInfo } from '@/hooks/stusds/useStUsdsChartInfo';
+import { useStUsdsData } from '@/hooks/stusds/useStUsdsData';
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';

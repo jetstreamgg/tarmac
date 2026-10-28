@@ -4,16 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
-import {
-  getIlkName,
-  RISK_LEVEL_THRESHOLDS,
-  RiskLevel,
-  TOKENS,
-  useCollateralData,
-  useSimulatedVault,
-  useTokenBalance,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
+import { RISK_LEVEL_THRESHOLDS, RiskLevel } from '@/hooks/vaults/vaults.constants';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
+import { useCollateralData } from '@/hooks/vaults/useCollateralData';
+import { useSimulatedVault } from '@/hooks/vaults/useSimulatedVault';
+import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { formatBigInt, formatUsd } from '@/utils';
 import { QueryParams, NO_VALUE } from '@/lib/constants';

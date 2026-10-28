@@ -1,7 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex, type EarnProductRow } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import { type EarnProductRow } from '@/hooks/earn/types';
 import { getChainIcon } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';

@@ -1,4 +1,8 @@
-import { useUsdsPsmWrapperHalted, useUsdsPsmWrapperLive, useUsdsPsmWrapperTin } from '@/hooks';
+import {
+  useUsdsPsmWrapperHalted,
+  useUsdsPsmWrapperLive,
+  useUsdsPsmWrapperTin
+} from '@/hooks/psm/useUsdsPsmWrapperReads';
 import { getPsmDirectionHalted } from '@/modules/convert/hooks/usePsmConversion.helpers';
 
 /** Why a mainnet USDC supply can't go out right now. */

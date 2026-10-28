@@ -1,4 +1,5 @@
-import { RewardContract, useAvailableTokenRewardContracts } from '@/hooks';
+import { RewardContract } from '@/hooks/rewards/rewards';
+import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTokenRewardContracts';
 import { Intent } from '@/lib/enums';
 import { useRouteEntityParams, useRouteIntent } from '@/lib/navigation';
 import { useTargetChainId } from '@/modules/ui/context/NetworkSwitchContext';

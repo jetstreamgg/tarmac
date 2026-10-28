@@ -156,7 +156,9 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false })
 }));
 
-import { StUsdsDirection, StUsdsProviderType, useBatchCurveSwap, useBatchStUsdsDeposit } from '@/hooks';
+import { StUsdsDirection, StUsdsProviderType } from '@/hooks/stusds/providers/types';
+import { useBatchCurveSwap } from '@/hooks/stusds/providers/useBatchCurveSwap';
+import { useBatchStUsdsDeposit } from '@/hooks/stusds/useBatchStUsdsDeposit';
 import { calculateMinOutputWithSlippage } from '@/hooks/stusds/providers/rateComparison';
 import { STUSDS_PROVIDER_CONFIG } from '@/hooks/stusds/providers/constants';
 import { REFERRAL_CODE } from '@/lib/constants';

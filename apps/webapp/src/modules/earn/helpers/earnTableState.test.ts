@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import {
   DEFAULT_FILTERS,
   DEFAULT_SORT,

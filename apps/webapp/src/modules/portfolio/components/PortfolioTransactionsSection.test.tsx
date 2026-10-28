@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, within, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ModuleEnum, TransactionTypeEnum } from '@/hooks';
+import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
 import type { PortfolioTxRow } from '../helpers/transactionRow';
 import { PortfolioTransactionsView } from './PortfolioTransactionsSection';
 
@@ -22,8 +22,8 @@ vi.mock('wagmi', async importOriginal => {
 });
 
 // Render the desktop table (not the mobile card list) and skip token images.
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useBreakpoint', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useBreakpoint')>();
   return { ...actual, useBreakpointIndex: () => ({ bpi: 99 }) };
 });
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));

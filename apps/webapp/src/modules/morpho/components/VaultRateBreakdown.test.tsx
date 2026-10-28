@@ -3,7 +3,7 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import type { MorphoVaultRateData } from '@/hooks';
+import type { MorphoVaultRateData } from '@/hooks/morpho/useMorphoVaultRateApiData';
 import { VaultRateBreakdown } from './VaultRateBreakdown';
 
 i18n.load('en', {});

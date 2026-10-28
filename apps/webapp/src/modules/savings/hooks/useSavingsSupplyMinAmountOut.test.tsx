@@ -13,8 +13,8 @@ const RHO = 1_700_000_000n;
 const SSR = parseUnits('1.0000001', 27);
 const NOW_MS = 1_700_001_000_000;
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/generated', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/generated')>();
   return {
     ...actual,
     useReadSsrAuthOracleGetChi: () => ({ data: CHI }),
@@ -23,7 +23,7 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-import { TOKENS } from '@/hooks';
+import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { useSavingsSupplyMinAmountOut } from './useSavingsSupplyMinAmountOut';
 
 // Re-derive the legacy computation independently to compare against.

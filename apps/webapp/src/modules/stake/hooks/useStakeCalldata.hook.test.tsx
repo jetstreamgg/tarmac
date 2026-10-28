@@ -19,22 +19,28 @@ const mockState = vi.hoisted(() => ({
 // Mock ONLY the two live on-chain reads the hook wires itself, keeping every
 // `getStake*Calldata` encoder REAL (pure viem `encodeFunctionData`, no network)
 // so the hook's output is byte-real.
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useUrnSelectedRewardContract', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnSelectedRewardContract')>();
   return {
     ...actual,
-    useStakeUrnSelectedRewardContract: (args: { urn: `0x${string}` }) => {
+    useUrnSelectedRewardContract: (args: { urn: `0x${string}` }) => {
       mockState.rewardCalls.push(args);
       return { data: mockState.urnSelectedReward, refetch: () => {} };
-    },
-    useStakeUrnSelectedVoteDelegate: (args: { urn: `0x${string}` }) => {
+    }
+  };
+});
+vi.mock('@/hooks/stake/useUrnSelectedVoteDelegate', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnSelectedVoteDelegate')>();
+  return {
+    ...actual,
+    useUrnSelectedVoteDelegate: (args: { urn: `0x${string}` }) => {
       mockState.delegateCalls.push(args);
       return { data: mockState.urnSelectedDelegate, refetch: () => {} };
     }
   };
 });
 
-import { ZERO_ADDRESS } from '@/hooks';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import {
   generateStakeCalldata,
   useStakeCalldata,

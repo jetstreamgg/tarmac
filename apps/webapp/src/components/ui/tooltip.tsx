@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { useIsTouchDevice } from '@/hooks';
+import { useIsTouchDevice } from '@/hooks/ui/useIsTouchDevice';
 import { cn } from '@/lib/cn';
 
 // Design-system Tooltip (Figma Components/Tooltip 5043:57748). The content

@@ -1,4 +1,4 @@
-import type { EarnProductKind, EarnProductRow } from '@/hooks';
+import type { EarnProductKind, EarnProductRow } from '@/hooks/earn/types';
 import type { Intent } from '@/lib/enums';
 import { projectAnnualEarnings } from '@/utils';
 import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/modules/ui/lib/tokenColors';

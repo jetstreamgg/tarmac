@@ -13,7 +13,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { ChartTooltip } from './ChartTooltip';
 import { SeriesMotionLayer } from './ChartSeriesMotion';
 import { useFollow } from './chartMotion';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import {
   Select,
   SelectContent,

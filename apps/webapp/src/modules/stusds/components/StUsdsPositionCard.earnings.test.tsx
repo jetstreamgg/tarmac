@@ -19,8 +19,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stusds/useStUsdsData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stusds/useStUsdsData')>();
   return {
     ...actual,
     useStUsdsData: () => ({

@@ -17,7 +17,7 @@ import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
-import { useIsSafeApp } from '@/hooks';
+import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { SAFE_CONNECTOR_ID } from '@/hooks/shared/constants';
 import { WalletIcon } from './WalletIcon';
 import { WALLET_ICONS } from '@/lib/constants';

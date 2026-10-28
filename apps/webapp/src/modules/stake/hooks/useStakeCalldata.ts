@@ -8,11 +8,11 @@ import {
   getStakeSelectDelegateCalldata,
   getStakeSelectRewardContractCalldata,
   getStakeWipeAllCalldata,
-  getStakeWipeCalldata,
-  useStakeUrnSelectedRewardContract,
-  useStakeUrnSelectedVoteDelegate,
-  ZERO_ADDRESS
-} from '@/hooks';
+  getStakeWipeCalldata
+} from '@/hooks/stake/calldata';
+import { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from '@/hooks/stake/useUrnSelectedRewardContract';
+import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@/hooks/stake/useUrnSelectedVoteDelegate';
+import { ZERO_ADDRESS } from '@/utils/constants';
 
 /**
  * Flow selector for {@link generateStakeCalldata}.

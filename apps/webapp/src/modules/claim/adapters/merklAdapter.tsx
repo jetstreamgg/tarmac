@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits, type Call } from 'viem';
-import { useMerklRewards, getWriteContractCall, type MerklTokenReward } from '@/hooks';
+import { useMerklRewards, type MerklTokenReward } from '@/hooks/morpho/useMerklRewards';
+import { getWriteContractCall } from '@/hooks/shared/getWriteContractCall';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '@/hooks/generated';
 import { familyMainnetId } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';

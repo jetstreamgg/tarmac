@@ -3,7 +3,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { ChevronsRight } from 'lucide-react';
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { t } from '@lingui/core/macro';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { WalletPreviewHeader } from './WalletPreviewHeader';
 import { WalletDrawerTabs } from './WalletDrawerTabs';

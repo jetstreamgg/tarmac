@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { RiskLevel } from '@/hooks';
+import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import { useStakeRowVaultLookup } from './useStakeRowVault';
 
 const RAY = 10n ** 27n;
@@ -41,8 +41,8 @@ vi.mock('@/hooks/vaults/useSimulatedDripRate', () => ({
   useSimulatedDripRate: () => h.drip
 }));
 
-vi.mock('@/hooks', async importOriginal => ({
-  ...(await importOriginal<typeof import('@/hooks')>()),
+vi.mock('@/hooks/prices/usePrices', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/hooks/prices/usePrices')>()),
   usePrices: () => ({ data: { SKY: { price: '0.07' } } })
 }));
 

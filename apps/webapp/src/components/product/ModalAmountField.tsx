@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { cn } from '@/lib/cn';
 import { MODAL_STEP_EXIT_CLASSES } from '@/modules/ui/animation/modalStepMotion';
 import { AmountFieldHairline } from './amountFieldHairline';

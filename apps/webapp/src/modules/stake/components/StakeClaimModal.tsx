@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useChainId } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
-import { usePrices } from '@/hooks';
+import { usePrices } from '@/hooks/prices/usePrices';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { formatUsd } from '@/utils';

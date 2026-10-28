@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { keepSearch, keepSearchFilteredTo } from '@/lib/navigation';
-import { getPendleMarketByAddress } from '@/hooks';
+import { getPendleMarketByAddress } from '@/hooks/pendle/constants';
 import { Intent } from '@/lib/enums';
 
 // Legacy address-based detail path — market details moved to /earn/fixed/:slug

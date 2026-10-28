@@ -20,15 +20,29 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/pendle/usePendleUserPtBalances', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleUserPtBalances')>();
+  const constantsActual =
+    await vi.importActual<typeof import('@/hooks/pendle/constants')>('@/hooks/pendle/constants');
   return {
     ...actual,
     usePendleUserPtBalances: () => ({
-      data: Object.fromEntries(actual.PENDLE_MARKETS.map(m => [m.marketAddress, h.ptBalance])),
+      data: Object.fromEntries(constantsActual.PENDLE_MARKETS.map(m => [m.marketAddress, h.ptBalance])),
       mutate: vi.fn()
-    }),
-    usePendleMarketsApiData: () => ({ data: undefined }),
+    })
+  };
+});
+vi.mock('@/hooks/pendle/usePendleMarketsApiData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/pendle/usePendleMarketsApiData')>();
+  return {
+    ...actual,
+    usePendleMarketsApiData: () => ({ data: undefined })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
     useTokenBalance: () => ({ data: { value: 0n }, refetch: vi.fn() })
   };
 });
@@ -45,7 +59,7 @@ vi.mock('@/modules/portfolio/hooks/useWalletEarnings', () => ({
   useWalletEarnings: () => earningsHolder.value
 }));
 
-import { PENDLE_MARKETS } from '@/hooks';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 import { combineWalletEarnings } from '@/modules/portfolio/earnings/combineWalletEarnings';
 import {
   notAvailable,

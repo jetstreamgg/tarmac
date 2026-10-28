@@ -1,4 +1,4 @@
-import { useEarnMarketplace } from '@/hooks';
+import { useEarnMarketplace } from '@/hooks/earn/useEarnMarketplace';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { useEarnWithSkyProducts } from '../hooks/useEarnWithSkyProducts';
 import { ConnectWalletCard } from './ConnectWalletCard';

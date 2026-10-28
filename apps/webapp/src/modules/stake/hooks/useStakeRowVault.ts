@@ -1,5 +1,7 @@
 import { parseUnits, stringToHex } from 'viem';
-import { getIlkName, usePrices, type Vault } from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
+import { usePrices } from '@/hooks/prices/usePrices';
+import { type Vault } from '@/hooks/vaults/vault';
 import { calculateVaultInfo } from '@/hooks/vaults/calculateVaultInfo';
 import { useSimulatedDripRate } from '@/hooks/vaults/useSimulatedDripRate';
 import { COLLATERAL_PRICE_SYMBOL } from '@/hooks/vaults/vaults.constants';

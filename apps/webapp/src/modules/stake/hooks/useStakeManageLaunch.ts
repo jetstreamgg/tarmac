@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
 import { useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import {
-  useBatchStakeMulticall,
-  useRewardContractTokens,
-  useStakeSkyAllowance,
-  useStakeUsdsAllowance,
-  useSkyPrice,
-  useStakeUrnSelectedRewardContract,
-  useStakeUrnSelectedVoteDelegate,
-  ZERO_ADDRESS
-} from '@/hooks';
+import { useBatchStakeMulticall } from '@/hooks/stake/useBatchStakeMulticall';
+import { useRewardContractTokens } from '@/hooks/rewards/useRewardContractTokens';
+import { useStakeSkyAllowance, useStakeUsdsAllowance } from '@/hooks/stake/useStakeAllowance';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from '@/hooks/stake/useUrnSelectedRewardContract';
+import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@/hooks/stake/useUrnSelectedVoteDelegate';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';

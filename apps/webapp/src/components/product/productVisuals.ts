@@ -1,4 +1,4 @@
-import type { EarnProductKind } from '@/hooks';
+import type { EarnProductKind } from '@/hooks/earn/types';
 
 /**
  * The Iconbox / Status tint keys the product family wherever a product token

@@ -1,4 +1,4 @@
-import { trailingAverageRate } from '@/hooks';
+import { trailingAverageRate } from '@/hooks/shared/trailingRate';
 
 /** A chart point carrying a net APY (decimal fraction) and its day timestamp. */
 type RatePoint = { apy?: number; blockTimestamp?: number };

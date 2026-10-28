@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Info } from 'lucide-react';
-import { useIsTouchDevice } from '@/hooks';
+import { useIsTouchDevice } from '@/hooks/ui/useIsTouchDevice';
 import { cn } from '@/lib/cn';
 import { formatUsd } from '@/utils';
 import { formatGainMagnitude, GainValue, isGainNegative } from '@/components/ui/GainValue';

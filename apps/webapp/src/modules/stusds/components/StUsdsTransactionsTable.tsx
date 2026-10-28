@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns/format';
 import { Trans } from '@lingui/react/macro';
-import { StUsdsProviderType, TransactionTypeEnum, useStUsdsHistory } from '@/hooks';
+import { StUsdsProviderType } from '@/hooks/stusds/providers/types';
+import { TransactionTypeEnum } from '@/hooks/constants';
+import { useStUsdsHistory } from '@/hooks/stusds/useStUsdsHistory';
 import { formatBigInt, getEtherscanLink, formatAddress } from '@/utils';
 import { absBigInt } from '@/modules/utils/math';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';

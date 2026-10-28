@@ -1,5 +1,6 @@
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
-import { getIlkName, mcdVatAbi, mcdVatAddress } from '@/hooks';
+import { getIlkName } from '@/hooks/vaults/helpers';
+import { mcdVatAbi, mcdVatAddress } from '@/hooks/generated';
 import { encodeFunctionData, stringToHex } from 'viem';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';

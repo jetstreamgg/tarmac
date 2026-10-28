@@ -3,7 +3,7 @@ import { useChainId } from 'wagmi';
 import { Navigate, useRouterState } from '@tanstack/react-router';
 import { trackRouteRedirected } from '@/modules/analytics/lib/trackRouteRedirected';
 import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
-import { VAULTS } from '@/hooks';
+import { VAULTS } from '@/hooks/vaults/constants';
 import { VaultProductDetail } from '@/modules/morpho/components/VaultProductDetail';
 
 /**

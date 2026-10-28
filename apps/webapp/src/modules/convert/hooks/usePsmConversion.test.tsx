@@ -6,8 +6,8 @@ import { base } from 'viem/chains';
 
 const captured: { swapExactIn: Record<string, unknown> | undefined } = { swapExactIn: undefined };
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/psm/useBatchPsmSwapExactIn', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/useBatchPsmSwapExactIn')>();
   return {
     ...actual,
     useBatchPsmSwapExactIn: (params: Record<string, unknown>) => {
@@ -20,7 +20,13 @@ vi.mock('@/hooks', async importOriginal => {
         currentCallIndex: 0,
         reset: () => {}
       };
-    },
+    }
+  };
+});
+vi.mock('@/hooks/psm/useBatchUsdsPsmWrapperSellGem', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/useBatchUsdsPsmWrapperSellGem')>();
+  return {
+    ...actual,
     useBatchUsdsPsmWrapperSellGem: () => ({
       prepared: false,
       isLoading: false,
@@ -28,7 +34,13 @@ vi.mock('@/hooks', async importOriginal => {
       execute: () => {},
       currentCallIndex: 0,
       reset: () => {}
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/psm/useBatchUsdsPsmWrapperBuyGem', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/useBatchUsdsPsmWrapperBuyGem')>();
+  return {
+    ...actual,
     useBatchUsdsPsmWrapperBuyGem: () => ({
       prepared: false,
       isLoading: false,
@@ -36,14 +48,44 @@ vi.mock('@/hooks', async importOriginal => {
       execute: () => {},
       currentCallIndex: 0,
       reset: () => {}
-    }),
-    useTokenAllowance: () => ({ data: 0n, mutate: () => {} }),
-    useIsBatchSupported: () => ({ data: false }),
+    })
+  };
+});
+vi.mock('@/hooks/tokens/useTokenAllowance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenAllowance')>();
+  return {
+    ...actual,
+    useTokenAllowance: () => ({ data: 0n, mutate: () => {} })
+  };
+});
+vi.mock('@/hooks/shared/useIsBatchSupported', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/shared/useIsBatchSupported')>();
+  return {
+    ...actual,
+    useIsBatchSupported: () => ({ data: false })
+  };
+});
+vi.mock('@/hooks/psm/useUsdsPsmWrapperReads', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/useUsdsPsmWrapperReads')>();
+  return {
+    ...actual,
     useUsdsPsmWrapperLive: () => ({ data: 1n, refetch: () => {} }),
     useUsdsPsmWrapperTin: () => ({ data: 0n, refetch: () => {} }),
     useUsdsPsmWrapperTout: () => ({ data: 0n, refetch: () => {} }),
-    useUsdsPsmWrapperHalted: () => ({ data: 0n, refetch: () => {} }),
-    usePsmPocketBalance: () => ({ data: undefined, refetch: () => {} }),
+    useUsdsPsmWrapperHalted: () => ({ data: 0n, refetch: () => {} })
+  };
+});
+vi.mock('@/hooks/psm/usePsmPocketBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/usePsmPocketBalance')>();
+  return {
+    ...actual,
+    usePsmPocketBalance: () => ({ data: undefined, refetch: () => {} })
+  };
+});
+vi.mock('@/hooks/psm/usePsmLiquidity', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/psm/usePsmLiquidity')>();
+  return {
+    ...actual,
     usePsmLiquidity: () => ({ data: undefined, mutate: () => {} })
   };
 });

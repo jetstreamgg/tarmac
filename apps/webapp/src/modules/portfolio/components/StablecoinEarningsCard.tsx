@@ -2,7 +2,7 @@ import { Children, Fragment, ReactNode, isValidElement, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { motion, useReducedMotion, type Transition } from 'motion/react';
 import { cn } from '@/lib/cn';
-import { BP, useBreakpointIndex } from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { formatDecimalPercentage, formatUsd, getChainIcon, projectAnnualEarnings } from '@/utils';
 import { Card } from '@/components/ui/card';
 import { GainValue } from '@/components/ui/GainValue';

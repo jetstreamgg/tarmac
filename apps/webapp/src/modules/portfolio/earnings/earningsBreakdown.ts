@@ -1,4 +1,4 @@
-import type { EarnProductKind } from '@/hooks';
+import type { EarnProductKind } from '@/hooks/earn/types';
 import { earningsForPosition } from './earningsForPosition';
 import { isAnnouncedGap, type WalletEarnings } from './types';
 

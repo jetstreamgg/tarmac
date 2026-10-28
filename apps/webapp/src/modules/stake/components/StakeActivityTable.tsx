@@ -4,16 +4,11 @@ import { wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import {
-  BP,
-  TransactionTypeEnum,
-  lsSkySkyRewardAddress,
-  lsSkySpkRewardAddress,
-  lsSkyUsdsRewardAddress,
-  useBreakpointIndex,
-  useSkyPrice,
-  useStakeHistory
-} from '@/hooks';
+import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
+import { TransactionTypeEnum } from '@/hooks/constants';
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks/generated';
+import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
+import { useStakeHistory } from '@/hooks/stake/useStakeHistory';
 import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import {

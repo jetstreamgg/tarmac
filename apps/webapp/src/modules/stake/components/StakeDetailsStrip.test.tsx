@@ -48,13 +48,31 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({
   TokenIcon: ({ token }: { token: { symbol: string } }) => <span data-testid={`token-icon-${token.symbol}`} />
 }));
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/stake/useStakeHistoricData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeHistoricData')>();
   return {
     ...actual,
-    useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null }),
-    useCollateralData: () => collateral,
-    useStakeRewardContracts: () => ({ data: [{ contractAddress: '0xfarm' }], isLoading: false }),
+    useStakeHistoricData: () => ({ data: HISTORIC, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/vaults/useCollateralData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useCollateralData')>();
+  return {
+    ...actual,
+    useCollateralData: () => collateral
+  };
+});
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
+  return {
+    ...actual,
+    useStakeRewardContracts: () => ({ data: [{ contractAddress: '0xfarm' }], isLoading: false })
+  };
+});
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useMultipleRewardsChartInfo')>();
+  return {
+    ...actual,
     useMultipleRewardsChartInfo: () => ({ data: [FARM], isLoading: false, error: null })
   };
 });

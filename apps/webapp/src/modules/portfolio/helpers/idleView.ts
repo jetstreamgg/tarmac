@@ -1,4 +1,4 @@
-import type { EarnProductRow } from '@/hooks';
+import type { EarnProductRow } from '@/hooks/earn/types';
 import { FALLBACK_TOKEN_COLOR, resolveTokenChartColors } from '@/modules/ui/lib/tokenColors';
 
 /**

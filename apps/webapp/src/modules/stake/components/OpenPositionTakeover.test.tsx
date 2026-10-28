@@ -101,17 +101,29 @@ vi.mock('@tanstack/react-query', async importOriginal => {
   };
 });
 
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
+vi.mock('@/hooks/ui/useDebounce', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/ui/useDebounce')>();
   return {
     ...actual,
-    useDebounce: <T,>(value: T) => (h.debounceLag && typeof value === 'bigint' ? (0n as T) : value),
+    useDebounce: <T,>(value: T) => (h.debounceLag && typeof value === 'bigint' ? (0n as T) : value)
+  };
+});
+vi.mock('@/hooks/tokens/useTokenBalance', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/tokens/useTokenBalance')>();
+  return {
+    ...actual,
     useTokenBalance: () => ({
       data: h.balance !== undefined ? { value: h.balance, decimals: 18, symbol: 'SKY' } : undefined,
       isLoading: false,
       error: null,
       refetch: () => undefined
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/vaults/useCollateralData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useCollateralData')>();
+  return {
+    ...actual,
     useCollateralData: () => ({
       data: {
         // 8.51% as the WAD-scaled annual rate the real hook returns.
@@ -124,7 +136,16 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/vaults/useSimulatedVault', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/vaults/useSimulatedVault')>();
+  const vaultsconstantsActual = await vi.importActual<typeof import('@/hooks/vaults/vaults.constants')>(
+    '@/hooks/vaults/vaults.constants'
+  );
+  return {
+    ...actual,
     // Deterministic simulation: borrowable = 10% of collateral count (as USDS),
     // risk MEDIUM once there is debt.
     useSimulatedVault: (collateral: bigint, desiredDebt: bigint) => ({
@@ -135,7 +156,8 @@ vi.mock('@/hooks', async importOriginal => {
         maxSafeBorrowableIntAmountNoCap: collateral / 10n,
         dust: h.dust,
         minCollateralForDust: h.minCollateralForDust,
-        riskLevel: desiredDebt > 0n ? actual.RiskLevel.MEDIUM : actual.RiskLevel.LOW,
+        riskLevel:
+          desiredDebt > 0n ? vaultsconstantsActual.RiskLevel.MEDIUM : vaultsconstantsActual.RiskLevel.LOW,
         // Capped collateral value at 150% of the debt → 67% loan-to-value.
         collateralValue: (desiredDebt * 3n) / 2n,
         liquidationProximityPercentage: desiredDebt > 0n ? 36 : 0,
@@ -146,20 +168,33 @@ vi.mock('@/hooks', async importOriginal => {
       error: h.simulationError,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/stake/useStakeRewardContracts', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeRewardContracts')>();
+  const generatedActual = await vi.importActual<typeof import('@/hooks/generated')>('@/hooks/generated');
+  return {
+    ...actual,
     useStakeRewardContracts: () => ({
       data: h.farms
         ? h.farms.map(contractAddress => ({ contractAddress }))
         : [
-            { contractAddress: actual.lsSkySpkRewardAddress[1] },
-            { contractAddress: actual.lsSkyUsdsRewardAddress[1] },
-            { contractAddress: actual.lsSkySkyRewardAddress[1] },
+            { contractAddress: generatedActual.lsSkySpkRewardAddress[1] },
+            { contractAddress: generatedActual.lsSkyUsdsRewardAddress[1] },
+            { contractAddress: generatedActual.lsSkySkyRewardAddress[1] },
             ...(h.extraFarm ? [{ contractAddress: h.extraFarm }] : [])
           ],
       isLoading: false,
       error: null,
       mutate: () => undefined
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useRewardContractTokens', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useRewardContractTokens')>();
+  return {
+    ...actual,
     useRewardContractTokens: (address?: `0x${string}`) => ({
       data:
         address && h.farmTokenSymbols[address.toLowerCase()]
@@ -169,11 +204,35 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
-    }),
-    useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null }),
-    useHighestRateFromChartData: () => ({ rate: '0.015' }),
+    })
+  };
+});
+vi.mock('@/hooks/rewards/useMultipleRewardsChartInfo', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/rewards/useMultipleRewardsChartInfo')>();
+  return {
+    ...actual,
+    useMultipleRewardsChartInfo: () => ({ data: [[]], isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/stake/useHighestRateFromChartData', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useHighestRateFromChartData')>();
+  return {
+    ...actual,
+    useHighestRateFromChartData: () => ({ rate: '0.015' })
+  };
+});
+vi.mock('@/hooks/prices/useSkyPrice', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/prices/useSkyPrice')>();
+  return {
+    ...actual,
     // $0.05/SKY — the est. annual rewards stat is quoted in USD.
-    useSkyPrice: () => ({ data: 5n * 10n ** 16n, priceString: '0.05', isLoading: false, error: null }),
+    useSkyPrice: () => ({ data: 5n * 10n ** 16n, priceString: '0.05', isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/stake/useStakeUserDelegates', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useStakeUserDelegates')>();
+  return {
+    ...actual,
     useStakeUserDelegates: () => ({
       data: [
         { id: DELEGATE_A, ownerAddress: DELEGATE_A, totalDelegated: 3122232n * WAD, metadata: null },
@@ -183,16 +242,34 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       mutate: () => undefined,
       dataSources: []
-    }),
+    })
+  };
+});
+vi.mock('@/hooks/stake/useUrnAddress', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnAddress')>();
+  return {
+    ...actual,
     // The reopened urn's context (inert in plain-open mode).
-    useStakeUrnAddress: () => ({ data: h.urnAddress ?? URN_ADDRESS, isLoading: false, error: null }),
-    useStakeUrnSelectedRewardContract: () => ({
+    useUrnAddress: () => ({ data: h.urnAddress ?? URN_ADDRESS, isLoading: false, error: null })
+  };
+});
+vi.mock('@/hooks/stake/useUrnSelectedRewardContract', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnSelectedRewardContract')>();
+  return {
+    ...actual,
+    useUrnSelectedRewardContract: () => ({
       data: h.urnRewardContract,
       isLoading: false,
       error: null,
       refetch: () => undefined
-    }),
-    useStakeUrnSelectedVoteDelegate: () => ({
+    })
+  };
+});
+vi.mock('@/hooks/stake/useUrnSelectedVoteDelegate', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/stake/useUrnSelectedVoteDelegate')>();
+  return {
+    ...actual,
+    useUrnSelectedVoteDelegate: () => ({
       data: h.urnDelegate,
       isLoading: false,
       error: null,
@@ -263,7 +340,8 @@ vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => {
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('@/modules/ui/components/Avatar', () => ({ CustomAvatar: () => null }));
 
-import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress, ZERO_ADDRESS } from '@/hooks';
+import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks/generated';
+import { ZERO_ADDRESS } from '@/utils/constants';
 import { OpenPositionTakeover } from './OpenPositionTakeover';
 
 const renderTakeover = () =>
