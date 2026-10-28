@@ -969,6 +969,37 @@ describe('useBridgeLaunch Confirm gate', () => {
       expect(mocks.routeCards.args.at(-1)!.sources.native.calls).toEqual([{ to: '0xwithdrawal' }]);
     });
 
+    it('builds the other route only while its Review is open, not while the amount is typed', async () => {
+      mocks.appChainId = 8453;
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: cctpWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        routeOptions: [{ route: cctpWithdrawalRoute('base') }, { route: nativeWithdrawalRoute('base') }],
+        pickRoute: vi.fn()
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: false });
+      expect(mocks.routeCards.args.at(-1)!.sources.native.calls).toEqual([]);
+
+      act(() => view.result.current.launch());
+      mocks.isModalOpen = true;
+      view.rerender();
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from: 'base' });
+
+      mocks.isModalOpen = false;
+      view.rerender();
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: false });
+    });
+
     it("leaves an unavailable route's engine off and its card without calls", async () => {
       await reviewWithChoice({
         route: nativeWithdrawalRoute('base', 'no-liquidity'),

@@ -114,8 +114,11 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       ? from
       : undefined);
   const isNativeWithdrawal = withdrawalFrom !== undefined;
+  // From launch to the modal's close: the route the user didn't pick is only built for this Review's picker.
+  const [reviewing, setReviewing] = useState(false);
   // The route the user didn't pick builds its calls too, for the picker's approvals and fee.
   const pickable = (kind: 'cctp' | 'native') =>
+    reviewing &&
     runningTo === undefined &&
     runningBurn === undefined &&
     runningWithdrawal === undefined &&
@@ -316,7 +319,10 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     const closed = wasOpenRef.current && !isModalOpen;
     wasOpenRef.current = isModalOpen;
     // A route picked in this Review isn't the next one's: a stale SkyLink pick would hold funds for days.
-    if (closed) forgetRoute?.();
+    if (closed) {
+      forgetRoute?.();
+      setReviewing(false);
+    }
     const running = runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined;
     if (!closed || !running || sentRef.current) return;
     // A write still out lands before the reads refresh.
@@ -702,6 +708,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     setContractAccepted(false);
     setPickerOpen(false);
     setStorageWritable(isStorageWritable());
+    setReviewing(true);
     launchModal({
       title,
       transactionTitle: title,
