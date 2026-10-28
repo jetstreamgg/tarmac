@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { ArrowLeft } from 'lucide-react';
 import {
@@ -21,7 +21,9 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ModalStepBackSlot, ModalStepDivider, ModalStepLabel } from './ModalStepChrome';
 import { ModalStepCarrier, type ModalStepCarrierLayer } from './ModalStepCarrier';
 import {
+  MODAL_CARRIER_S,
   MODAL_LAYER_SHIFT_PX,
+  easeStandard,
   modalEnterTransition,
   modalExitTransition
 } from '@/modules/ui/animation/modalStepMotion';
@@ -275,7 +277,17 @@ export function TransactionModal({
   const isFirstScreen = isEntry || isReview;
   const isTransaction = step === 'transaction';
   const { bpi } = useBreakpointIndex();
-  const showAside = !!aside && isReview && bpi >= BP.desktop;
+  const asideRoom = isReview && bpi >= BP.desktop;
+  const asideOpen = !!aside && asideRoom;
+  // The row holds while the aside slides back behind the card.
+  const [asideLeaving, setAsideLeaving] = useState(false);
+  const [asideWasOpen, setAsideWasOpen] = useState(asideOpen);
+  if (asideWasOpen !== asideOpen) {
+    setAsideWasOpen(asideOpen);
+    setAsideLeaving(!asideOpen);
+  }
+  const showAside = asideOpen || (asideLeaving && asideRoom);
+  const reducedMotion = useReducedMotion();
   const hasMultipleSteps = steps && steps.length > 1;
   // A gate-mounted signature prelude must be visible even when it is the ONLY
   // step (flows like the claim panel launch without a steps array): the step
@@ -983,7 +995,7 @@ export function TransactionModal({
           'app-loader-cover-hidden',
           // With an aside the dialog is a bare row holding the card and the aside's card.
           showAside
-            ? 'flex flex-row items-stretch gap-1 rounded-none bg-transparent p-0 shadow-none sm:max-w-none sm:min-w-0 sm:p-0'
+            ? 'flex flex-row items-stretch gap-0 rounded-none bg-transparent p-0 shadow-none sm:max-w-none sm:min-w-0 sm:p-0'
             : cardClassName
         )}
         overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
@@ -993,14 +1005,28 @@ export function TransactionModal({
         {showAside ? (
           <>
             <div className={cardClassName}>{modalBody}</div>
-            <aside
-              className="bg-bgSecondary animate-in fade-in slide-in-from-left-6 ease-out-expo relative w-100 shrink-0 rounded-[28px] duration-300 motion-reduce:animate-none"
-              data-testid="transaction-modal-aside"
-            >
-              <div className="absolute inset-0 [scrollbar-width:none] overflow-y-auto px-8 pt-7 pb-7 [&::-webkit-scrollbar]:hidden">
-                {aside}
-              </div>
-            </aside>
+            {/* Slides out from behind the card, left to right, and back in on close. */}
+            <AnimatePresence onExitComplete={() => setAsideLeaving(false)}>
+              {asideOpen && (
+                <motion.aside
+                  key="aside"
+                  className="relative shrink-0 overflow-hidden"
+                  data-testid="transaction-modal-aside"
+                  initial={{ width: 0, marginLeft: 0, opacity: 0 }}
+                  animate={{ width: 400, marginLeft: 4, opacity: 1 }}
+                  exit={{ width: 0, marginLeft: 0, opacity: 0 }}
+                  transition={
+                    reducedMotion ? { duration: 0 } : { duration: MODAL_CARRIER_S, ease: easeStandard }
+                  }
+                >
+                  <div className="bg-bgSecondary absolute inset-y-0 right-0 w-100 rounded-[28px]">
+                    <div className="absolute inset-0 [scrollbar-width:none] overflow-y-auto px-8 pt-7 pb-7 [&::-webkit-scrollbar]:hidden">
+                      {aside}
+                    </div>
+                  </div>
+                </motion.aside>
+              )}
+            </AnimatePresence>
           </>
         ) : (
           modalBody

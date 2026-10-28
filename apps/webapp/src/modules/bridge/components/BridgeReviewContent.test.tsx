@@ -1,6 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
+import type { ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -15,6 +16,24 @@ vi.mock('@/modules/ui/hooks/useChainImage', () => ({ useChainImage: () => undefi
 vi.mock('@/modules/ui/components/TokenIcon', () => ({
   TokenIcon: ({ token }: { token: { symbol: string } }) => <span>{token.symbol}</span>
 }));
+
+// Render motion elements synchronously so the picker swap is deterministic.
+vi.mock('motion/react', async io => {
+  const actual = await io<typeof import('motion/react')>();
+  const React = await import('react');
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'transition', 'variants', 'layout']);
+  const strip = (props: Record<string, unknown>) =>
+    Object.fromEntries(Object.entries(props).filter(([key]) => !MOTION_PROPS.has(key)));
+  const tag =
+    (element: string) =>
+    ({ children, ...rest }: { children?: ReactNode } & Record<string, unknown>) =>
+      React.createElement(element, strip(rest), children);
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: { children: ReactNode }) => children,
+    motion: new Proxy({}, { get: (_t, element) => tag(element as string) })
+  };
+});
 
 i18n.load('en', {});
 i18n.activate('en');

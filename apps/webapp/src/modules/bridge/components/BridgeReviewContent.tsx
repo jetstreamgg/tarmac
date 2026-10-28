@@ -1,5 +1,11 @@
 import { useId, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import {
+  MODAL_LAYER_SHIFT_PX,
+  modalEnterTransition,
+  modalExitTransition
+} from '@/modules/ui/animation/modalStepMotion';
 import { t } from '@lingui/core/macro';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
@@ -168,21 +174,8 @@ export function BridgeReviewContent({
       ]
     : built;
   const contractCheckboxId = useId();
-  if (routePicker && !beside && choosing)
-    return (
-      <div className="animate-in fade-in ease-out-expo duration-300 motion-reduce:animate-none">
-        <BridgeRoutePicker
-          cards={routePicker.cards}
-          selected={route.kind}
-          onPick={kind => {
-            routePicker.onPick(kind);
-            setChoosing(false);
-          }}
-          onBack={() => setChoosing(false)}
-        />
-      </div>
-    );
-  return (
+  const reducedMotion = useReducedMotion();
+  const review = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
       <BridgeTransferHero amount={amount} from={from} to={to} addresses={addresses} fromToken={fromToken} />
       <div className="flex flex-col gap-6">
@@ -233,5 +226,32 @@ export function BridgeReviewContent({
         )}
       </div>
     </div>
+  );
+  const picking = !!routePicker && !beside && choosing;
+  // In place, the picker slides in from the left and goes back the same way (the desktop aside's motion).
+  const shift = picking ? -MODAL_LAYER_SHIFT_PX : MODAL_LAYER_SHIFT_PX;
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={picking ? 'picker' : 'review'}
+        initial={{ opacity: 0, x: shift }}
+        animate={{ opacity: 1, x: 0, transition: reducedMotion ? { duration: 0 } : modalEnterTransition }}
+        exit={{ opacity: 0, x: shift, transition: reducedMotion ? { duration: 0 } : modalExitTransition }}
+      >
+        {picking && routePicker ? (
+          <BridgeRoutePicker
+            cards={routePicker.cards}
+            selected={route.kind}
+            onPick={kind => {
+              routePicker.onPick(kind);
+              setChoosing(false);
+            }}
+            onBack={() => setChoosing(false)}
+          />
+        ) : (
+          review
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }
