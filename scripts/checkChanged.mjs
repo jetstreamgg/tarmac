@@ -99,15 +99,17 @@ const resolveBase = () => {
   );
 };
 
+// git lists an untracked nested repository or worktree as one `dir/` entry. Handing that to prettier
+// would walk, and with --fix rewrite, another checkout's files, so only existing files are kept.
+const isFile = file => !file.endsWith('/') && existsSync(resolve(root, file));
+
 // Given paths, with directories expanded to their tracked and untracked files
 const givenFiles = () =>
   explicit.flatMap(arg => {
     const file = relative(root, resolve(process.env.INIT_CWD ?? process.cwd(), arg));
     if (!existsSync(resolve(root, file))) usage(`No such file or directory: ${arg}`);
     if (!statSync(resolve(root, file)).isDirectory()) return [file];
-    return git('ls-files', '--cached', '--others', '--exclude-standard', '--', file).filter(f =>
-      existsSync(resolve(root, f))
-    );
+    return git('ls-files', '--cached', '--others', '--exclude-standard', '--', file).filter(isFile);
   });
 
 const base = explicit.length > 0 ? undefined : resolveBase();
@@ -119,7 +121,7 @@ const changed = [
       ? [
           ...git('diff', '--name-only', '--diff-filter=d', base.rev, '--'),
           ...git('ls-files', '--others', '--exclude-standard')
-        ].filter(file => existsSync(resolve(root, file)))
+        ].filter(isFile)
       : givenFiles()
   )
 ];
