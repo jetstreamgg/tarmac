@@ -10,7 +10,7 @@ import type { CctpBurnLookup } from '../adapters/cctp/lookup';
 import type { IncomingBridge } from './useIncomingCctpBridges';
 import type { PendingBridge } from '../model/types';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
-import { useCctpClaimLookup, type CctpClaimTarget } from './useCctpClaimLookup';
+import { useBridgeClaimLookup, type BridgeClaimTarget } from './useBridgeClaimLookup';
 
 const mocks = vi.hoisted(() => ({
   address: undefined as string | undefined,
@@ -32,7 +32,7 @@ vi.mock('../adapters/cctp/lookup', () => ({ lookupCctpBurn: mocks.lookup }));
 vi.mock('./useIncomingCctpBridges', () => ({ useIncomingCctpBridges: () => mocks.incoming }));
 
 const HASH = `0x${'ab'.repeat(32)}` as Hex;
-const TARGET: CctpClaimTarget = { from: 'base', txHash: HASH };
+const TARGET: BridgeClaimTarget = { from: 'base', txHash: HASH };
 const CLIENT = { name: 'base reader' };
 
 let accountSeq = 0;
@@ -58,18 +58,18 @@ const burn = (overrides: Partial<PendingBridge> = {}): PendingBridge => ({
 });
 
 // null renders with no target.
-const renderLookup = (target: CctpClaimTarget | null = TARGET) => {
+const renderLookup = (target: BridgeClaimTarget | null = TARGET) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return renderHook(({ value, attempt }) => useCctpClaimLookup(value, attempt), {
+  return renderHook(({ value, attempt }) => useBridgeClaimLookup(value, attempt), {
     wrapper,
     initialProps: { value: target ?? undefined, attempt: 0 }
   });
 };
 
-describe('useCctpClaimLookup', () => {
+describe('useBridgeClaimLookup', () => {
   beforeEach(() => {
     mocks.address = nextAccount();
     mocks.incoming = [];
@@ -213,7 +213,7 @@ describe('useCctpClaimLookup', () => {
     await waitFor(() => expect(result.current.status).toBe('refused'));
     const first = mocks.address;
     mocks.address = nextAccount();
-    rerender({ value: TARGET as CctpClaimTarget | undefined, attempt: 0 });
+    rerender({ value: TARGET as BridgeClaimTarget | undefined, attempt: 0 });
     await waitFor(() => expect(mocks.lookup).toHaveBeenCalledTimes(2));
     expect(mocks.lookup.mock.calls.map(([args]) => args.account)).toEqual([first, mocks.address]);
   });

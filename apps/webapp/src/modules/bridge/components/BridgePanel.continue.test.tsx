@@ -59,9 +59,9 @@ vi.mock('./PendingBridges', () => ({
   }
 }));
 
-vi.mock('./CctpClaimLookup', () => ({
-  CctpClaimLookup: () => <div data-testid="claim-lookup" />,
-  hasCctpClaimLookup: () => true
+vi.mock('./BridgeClaimLookup', () => ({
+  BridgeClaimLookup: () => <div data-testid="claim-lookup" />,
+  hasBridgeClaimLookup: () => true
 }));
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));

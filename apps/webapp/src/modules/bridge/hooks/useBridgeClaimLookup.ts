@@ -11,9 +11,9 @@ import { useIncomingCctpBridges } from './useIncomingCctpBridges';
 import { usePendingScope } from './usePendingScope';
 
 /** A CCTP burn to look up: its source network and hash. */
-export type CctpClaimTarget = { from: CctpL2NetworkId; txHash: Hex };
+export type BridgeClaimTarget = { from: CctpL2NetworkId; txHash: Hex };
 
-export type CctpClaimLookupState =
+export type BridgeClaimLookupState =
   | { status: 'idle' }
   | { status: 'disconnected' }
   | { status: 'loading' }
@@ -30,7 +30,10 @@ const sameHash = (bridge: PendingBridge, txHash: Hex) => bridge.txHash?.toLowerC
  * the manual form, and adds it to the connected wallet's list for the tracker
  * to claim from. Each `attempt` reads the chain again.
  */
-export function useCctpClaimLookup(target: CctpClaimTarget | undefined, attempt = 0): CctpClaimLookupState {
+export function useBridgeClaimLookup(
+  target: BridgeClaimTarget | undefined,
+  attempt = 0
+): BridgeClaimLookupState {
   const { account, familyChainId, scope } = usePendingScope();
   const config = useConfig();
   const history = useBridgeHistory();

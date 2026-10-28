@@ -20,10 +20,10 @@ import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { readCctpClaimLink } from '../adapters/cctp/claimLink';
 import { isCctpL2Network, type CctpL2NetworkId } from '../adapters/cctp/contracts';
 import {
-  useCctpClaimLookup,
-  type CctpClaimLookupState,
-  type CctpClaimTarget
-} from '../hooks/useCctpClaimLookup';
+  useBridgeClaimLookup,
+  type BridgeClaimLookupState,
+  type BridgeClaimTarget
+} from '../hooks/useBridgeClaimLookup';
 import { BRIDGE_NETWORKS, getBridgeNetwork } from '../model/networks';
 import { isLivePair } from '../model/pairs';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
@@ -38,7 +38,7 @@ const liveNetworks = () =>
 const noteClassName = 'text-fgSecondary text-xs leading-[18px]';
 const errorClassName = 'text-statusError text-xs leading-[18px]';
 
-type LookupMessageProps = { state: CctpClaimLookupState; network: string };
+type LookupMessageProps = { state: BridgeClaimLookupState; network: string };
 
 function LookupMessage({ state, network }: LookupMessageProps) {
   switch (state.status) {
@@ -137,7 +137,7 @@ function NetworkPills({ value, options, onChange }: NetworkPillsProps) {
 
 type LookupFormProps = {
   /** The burn a claim link names: the form opens on it and looks it up straight away. */
-  link: CctpClaimTarget | undefined;
+  link: BridgeClaimTarget | undefined;
   networks: CctpL2NetworkId[];
   onClose: () => void;
 };
@@ -145,10 +145,10 @@ type LookupFormProps = {
 function LookupForm({ link, networks, onClose }: LookupFormProps) {
   const [network, setNetwork] = useState<CctpL2NetworkId>(link?.from ?? networks[0]);
   const [draft, setDraft] = useState<string>(link?.txHash ?? '');
-  const [target, setTarget] = useState<CctpClaimTarget | undefined>(link);
+  const [target, setTarget] = useState<BridgeClaimTarget | undefined>(link);
   const [invalid, setInvalid] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const state = useCctpClaimLookup(target, attempt);
+  const state = useBridgeClaimLookup(target, attempt);
   const { openConnectModal } = useConnectModal();
   const networkName = getBridgeNetwork(target?.from ?? network).name;
   const notFound = state.status === 'refused' && state.reason === 'not-found';
@@ -339,14 +339,14 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
 }
 
 /** Whether a CCTP burn to Ethereum can be looked up: some network's bridge to Ethereum is live. */
-export const hasCctpClaimLookup = () => liveNetworks().length > 0;
+export const hasBridgeClaimLookup = () => liveNetworks().length > 0;
 
 /**
  * "Can't find your bridge?" in the pending bridges: looks up a CCTP burn to
  * Ethereum by its network and hash, typed in or from a claim link, and adds
  * it to the list to claim.
  */
-export function CctpClaimLookup() {
+export function BridgeClaimLookup() {
   const [searchParams, setSearchParams] = useAppSearchParams();
   const networks = liveNetworks();
   const read = readCctpClaimLink(searchParams);
