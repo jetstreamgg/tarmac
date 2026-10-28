@@ -98,6 +98,7 @@ export const PendleRedeem = ({
     receiveSymbol: selectedOutputToken.symbol,
     priceImpact: formatPriceImpact(quote?.priceImpact) ?? NO_VALUE,
     routedVia: aggregatorName ? `Pendle redeem → ${aggregatorName}` : NO_VALUE,
+    pendleFee: quote?.feeUsd && quote.feeUsd > 0 ? formatUsd(quote.feeUsd) : undefined,
     network,
     networkChainId,
     networkFee: NO_VALUE

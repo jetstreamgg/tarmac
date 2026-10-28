@@ -197,6 +197,8 @@ export type PendleRedeemRowInput = {
   priceImpact: string;
   /** Aggregator route description (e.g. "Pendle redeem → KyberSwap"). */
   routedVia: string;
+  /** Pendle's fee, formatted; only set when the quote reports one above zero. */
+  pendleFee?: string;
   /** Network the transaction runs on. */
   network: string;
   /** Chain the engine runs on, for the Network cell's icon. */
@@ -209,9 +211,9 @@ export type PendleRedeemRowInput = {
  * Grid for the matured-claim modal, laid out like the early withdrawal entry
  * (2193:73598): [Withdrawal token | You'll receive], [Slippage | Min.
  * received], then — aggregator routes only — [Price impact | Routed via],
- * closing with [Network | Network fee]. No Pendle fee row: redeeming matured
- * PT carries no Pendle fee, and an aggregator hop's cost is already in the
- * quote and its price impact. Slippage renders on
+ * closing with [Network | Network fee]. A Pendle fee row joins only when the
+ * quote reports a fee, so a fee-free claim keeps the early-withdrawal layout
+ * without hiding a cost. Slippage renders on
  * every route: even the pure burn signs a slippage-adjusted minTokenOut (see
  * buildVerifiedArgs' matured-exit fixtures); only the per-hop rows are
  * aggregator-only.
@@ -250,7 +252,15 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
           ]
         ]
       : []),
-    [networkCell(input.network, input.networkChainId), networkFeeCell(input.networkFee)]
+    ...(input.pendleFee
+      ? [
+          [
+            { kind: 'single' as const, label: 'Pendle fee', value: input.pendleFee },
+            networkCell(input.network, input.networkChainId)
+          ],
+          [networkFeeCell(input.networkFee)]
+        ]
+      : [[networkCell(input.network, input.networkChainId), networkFeeCell(input.networkFee)]])
   ];
 }
 

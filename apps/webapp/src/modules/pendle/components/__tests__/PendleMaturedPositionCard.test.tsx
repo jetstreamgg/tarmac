@@ -50,7 +50,6 @@ vi.mock('../../hooks/usePendleRedeemModal', () => ({
   usePendleRedeemModal: () => ({
     openRedeemModal,
     isRedeemable: true,
-    onPendleChain: h.chainId === 1,
     switchBlocked: h.switchBlocked,
     ptBalance: 0n
   })

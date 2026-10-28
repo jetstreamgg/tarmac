@@ -64,6 +64,8 @@ const hoisted = vi.hoisted(() => ({
   trackSwitchRequestedMock: vi.fn(),
   trackSwitchCompletedMock: vi.fn(),
   refetchQuoteMock: vi.fn(),
+  // Swappable write-hook simulation state; defaults to prepared.
+  writeError: undefined as Error | undefined,
   // Swappable quote state; undefined keeps the healthy QUOTE.
   quoteState: undefined as { data: unknown; isLoading: boolean; error: Error | undefined } | undefined
 }));
@@ -136,9 +138,9 @@ vi.mock('@/hooks', async importOriginal => {
       return {
         execute: () => captured(),
         reset: () => undefined,
-        prepared: true,
+        prepared: !hoisted.writeError,
         isLoading: false,
-        error: undefined,
+        error: hoisted.writeError,
         currentCallIndex: 0
       };
     }
@@ -471,6 +473,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
 
   afterEach(() => {
     hoisted.quoteState = undefined;
+    hoisted.writeError = undefined;
     vi.clearAllMocks();
   });
 
@@ -504,8 +507,6 @@ describe('usePendleRedeemModal claim quote failure', () => {
   it.each([
     'Pendle /convert 400: {"message":"Market not found","statusCode":400}',
     'Pendle /convert 503: {}',
-    'Pendle /convert 400: {"message":"Input valuation is too low"}',
-    'Pendle /convert returned no routes',
     'Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem'
   ])('says Pendle cannot prepare the claim, with no trade-size advice: %s', async raw => {
     const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
@@ -514,11 +515,52 @@ describe('usePendleRedeemModal claim quote failure', () => {
     );
   });
 
+  it('does not tell a dust position to check back later', async () => {
+    const config = await openWith({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Pendle /convert 400: {"message":"Input valuation is too low"}')
+    });
+    expect(config.errorMessage).toBe(
+      "This position is too small to claim. Pendle can't process amounts worth less than $0.01."
+    );
+  });
+
+  it('points at the other payout token when Pendle has no route', async () => {
+    const config = await openWith({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Pendle /convert returned no routes')
+    });
+    expect(config.errorMessage).toBe('Pendle has no route for this payout. Try the other withdrawal token.');
+  });
+
   it('points at the connection when Pendle could not be reached', async () => {
     const config = await openWith({ data: undefined, isLoading: false, error: new Error('Failed to fetch') });
     expect(config.errorMessage).toBe(
       "Couldn't reach Pendle to prepare your claim. Check your connection and try again."
     );
+  });
+
+  it('does not blame the connection when Pendle answered with something unreadable', async () => {
+    const config = await openWith({
+      data: undefined,
+      isLoading: false,
+      error: new SyntaxError('Unexpected token < in JSON at position 0')
+    });
+    expect(config.errorMessage).toBe("Couldn't prepare your claim. Please try again.");
+  });
+
+  it('gives a failed simulation claim copy, not advice to adjust inputs', async () => {
+    hoisted.writeError = new Error('execution reverted: custom error 0x1234');
+    const config = await openWith(undefined);
+    expect(config.errorMessage).toBe("Couldn't prepare your claim. Please try again.");
+  });
+
+  it('keeps the slippage guidance when the simulation fails on slippage', async () => {
+    hoisted.writeError = new Error('execution reverted: Slippage: INSUFFICIENT_TOKEN_OUT');
+    const config = await openWith(undefined);
+    expect(config.errorMessage).toMatch(/slippage tolerance/);
   });
 
   it('retries a failed quote when Claim opens, rather than waiting for the next poll', async () => {

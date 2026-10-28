@@ -35,7 +35,7 @@ import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
-import { pendleClaimErrorMessage, pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendleClaimErrorMessage, pendleClaimPrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
@@ -111,7 +111,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // modal so users see consistent guidance across all three flows. Only while
   // unprepared, so a recovered simulation drops the stale message.
   const prepareErrorMessage = useMemo<string | undefined>(
-    () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
+    () => (!writeHook.prepared ? pendleClaimPrepareErrorMessage(writeHook.error?.message) : undefined),
     [writeHook.prepared, writeHook.error]
   );
   // No quote at all wins, as in the buy/sell modal: there's nothing to prepare.
@@ -340,7 +340,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         status: 'success'
       });
     }
-    // A failed prefetch only repolls once a minute; retry now that it's wanted.
+    // The quote doesn't poll while the modal is closed, so a failed prefetch
+    // stays failed until now.
     if (!quote) void refetchQuote();
     launch({
       usdValue,
@@ -415,8 +416,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   return {
     openRedeemModal,
     isRedeemable,
-    isPrepared: writeHook.prepared,
-    onPendleChain,
     switchBlocked,
     ptBalance,
     error: writeHook.error

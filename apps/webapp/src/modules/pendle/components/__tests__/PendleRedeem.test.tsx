@@ -135,6 +135,19 @@ describe('PendleRedeem', () => {
     expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
   });
 
+  it('shows a Pendle fee row only when the quote reports a fee', () => {
+    const { rerender } = renderRedeem({ quote: { ...baseQuote, feeUsd: 0 } });
+    expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();
+
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <PendleRedeem {...baseProps} quote={{ ...baseQuote, feeUsd: 7.86 }} />
+      </I18nProvider>
+    );
+    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$7.86');
+    expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
+  });
+
   it('draws slippage, min received and sign-flipped price impact on aggregator routes', () => {
     renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
 
