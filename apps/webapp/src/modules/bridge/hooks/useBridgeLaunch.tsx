@@ -50,7 +50,7 @@ export type BridgeLaunchForm = Pick<
   BridgeFormModel,
   'amount' | 'from' | 'to' | 'route' | 'recipient' | 'isConnected' | 'reviewBlocked'
 > &
-  Partial<Pick<BridgeFormModel, 'senderIsContract' | 'routeOptions' | 'pickRoute'>>;
+  Partial<Pick<BridgeFormModel, 'senderIsContract' | 'routeOptions' | 'pickRoute' | 'forgetRoute'>>;
 
 const DETACHED: TxCallbacks = {
   onMutate: () => {},
@@ -77,7 +77,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const queryClient = useQueryClient();
   const { account, scope, familyChainId } = usePendingScope();
   const { locked, restore } = useMinimizedSessionLock(sessionId);
-  const { amount, from, to, route, recipient } = form;
+  const { amount, from, to, route, recipient, forgetRoute } = form;
   // The legs simulate and price the amount once typing pauses; Confirm waits for it.
   const { debouncedAmount, debouncePending } = useSettledAmount(amount, `${from}:${to}`);
 
@@ -315,11 +315,13 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   useEffect(() => {
     const closed = wasOpenRef.current && !isModalOpen;
     wasOpenRef.current = isModalOpen;
+    // A route picked in this Review isn't the next one's: a stale SkyLink pick would hold funds for days.
+    if (closed) forgetRoute?.();
     const running = runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined;
     if (!closed || !running || sentRef.current) return;
     // A write still out lands before the reads refresh.
     resetRun(refetchReads);
-  }, [isModalOpen, runningTo, runningBurn, runningWithdrawal, resetRun, refetchReads]);
+  }, [isModalOpen, runningTo, runningBurn, runningWithdrawal, resetRun, refetchReads, forgetRoute]);
   // The burns this Review sent, by every id the burn legs link to its swap: one that failed leaves Retry to continue.
   const ownBurnsRef = useRef<string[]>([]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.

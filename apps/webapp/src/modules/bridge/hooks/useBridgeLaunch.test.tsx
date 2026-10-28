@@ -978,6 +978,36 @@ describe('useBridgeLaunch Confirm gate', () => {
     });
   });
 
+  describe('the route pick of a withdrawal', () => {
+    it('is forgotten once the Review closes, so the next one opens on the default route', async () => {
+      mocks.isModalOpen = true;
+      mocks.appChainId = 8453;
+      const forgetRoute = vi.fn();
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: nativeWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        forgetRoute
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      await settle();
+      expect(forgetRoute).not.toHaveBeenCalled();
+      mocks.isModalOpen = false;
+      view.rerender();
+      await settle();
+      expect(forgetRoute).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('the route picker beside the review on desktop (Figma 3964:74437)', () => {
     const CARDS = [{ kind: 'cctp' }, { kind: 'native' }];
     async function reviewOn(bpi: number) {

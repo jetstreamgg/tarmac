@@ -190,6 +190,7 @@ export function useBridgeForm(draft?: BridgeDraft) {
   }>();
   const preferred = picked?.from === from && picked.to === to ? picked.kind : undefined;
   const pickRoute = useCallback((kind: BridgeRouteKind) => setPicked({ from, to, kind }), [from, to]);
+  const forgetRoute = useCallback(() => setPicked(undefined), []);
   // With no gate the resolver reads CCTP as open.
   const gated = isLivePair({ from, to }) && (from === 'ethereum' || cctpGate !== undefined);
   // The LayerZero route facts come from its ticket, through toRouteFact.
@@ -301,9 +302,14 @@ export function useBridgeForm(draft?: BridgeDraft) {
     setRecipient,
     /** Picks the pair's route; an unavailable pick leaves the default. */
     pickRoute,
+    /** Back to the default route; each Review opens on it. */
+    forgetRoute,
     /** Rereads both balances, after a send moved the source funds. */
     refetchBalances,
-    reset: () => setValue('')
+    reset: () => {
+      setValue('');
+      forgetRoute();
+    }
   };
 }
 

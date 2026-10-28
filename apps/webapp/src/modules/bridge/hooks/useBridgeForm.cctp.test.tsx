@@ -179,6 +179,21 @@ describe('useBridgeForm: picking the route of an L2 to Ethereum bridge', () => {
     expect(result.current.route?.kind).toBe('cctp');
   });
 
+  it('forgets the pick once the bridge is sent', () => {
+    const result = typedOnL2();
+    act(() => result.current.pickRoute('native'));
+    act(() => result.current.reset());
+    act(() => result.current.onInput('1'));
+    expect(result.current.route?.kind).toBe('cctp');
+  });
+
+  it('forgets the pick when the Review closes', () => {
+    const result = typedOnL2();
+    act(() => result.current.pickRoute('native'));
+    act(() => result.current.forgetRoute());
+    expect(result.current.route?.kind).toBe('cctp');
+  });
+
   it('offers no route choice from Ethereum', () => {
     mocks.appChainId = 1;
     const { result } = renderHook(() => useBridgeForm());
