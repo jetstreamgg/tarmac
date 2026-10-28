@@ -78,6 +78,9 @@ const isUnread = (fact: RouteFact<unknown> | undefined): fact is 'loading' | 'er
 const unreadReason = (fact: 'loading' | 'error'): BridgeBlockReason =>
   fact === 'loading' ? 'facts-loading' : 'facts-error';
 
+const isFallbackReason = (reason: BridgeBlockReason | undefined): reason is BridgeFallbackReason =>
+  reason === 'closed' || reason === 'over-limit' || reason === 'no-liquidity';
+
 const gateFailure = (
   amount: bigint,
   gate: (RouteGate & { liquidity?: bigint }) | undefined
@@ -173,15 +176,25 @@ export const nativeWithdrawalRoute = (
 ): BridgeRoute =>
   route('native', routeSteps('native', from, 'ethereum'), WITHDRAWAL_ETA_MINUTES[from], 0, fallbackReason);
 
-const ok = (resolved: BridgeRoute): ResolvedBridgeRoute => ({ status: 'ok', route: resolved });
-const blocked = (reason: BridgeBlockReason): ResolvedBridgeRoute => ({ status: 'blocked', reason });
+/** Why a route's gate can't carry `amount`, an unread gate included; undefined when it can. */
+const unavailableReason = (
+  amount: bigint,
+  fact: RouteFact<RouteGate & { liquidity?: bigint }> | undefined
+): BridgeBlockReason | undefined => (isUnread(fact) ? unreadReason(fact) : gateFailure(amount, fact));
 
-/**
- * The route for a pair (APP-610 scope): Ethereum to an L2 by native deposit,
- * an L2 to Ethereum by CCTP falling back to the native withdrawal, and
- * Avalanche or Solana by LayerZero.
- */
-export function resolveBridgeRoute({
+/** A pair's route the user can pick, with why it can't be used now. */
+export type BridgeRouteOption = { route: BridgeRoute; unavailable?: BridgeBlockReason };
+
+/** A withdrawal's network, when it has a native route to Ethereum besides CCTP. */
+const withdrawalChoice = (from: BridgeNetworkId, to: BridgeNetworkId): NativeNetworkId | undefined =>
+  to === 'ethereum' &&
+  isAllowedPair({ from, to }) &&
+  nativeEtaMinutes(WITHDRAWAL_ETA_MINUTES, from) !== undefined
+    ? (from as NativeNetworkId)
+    : undefined;
+
+/** The routes the user can pick between, CCTP first; undefined when the pair has one route. */
+export function bridgeRouteOptions({
   from,
   to,
   amount,
@@ -191,6 +204,40 @@ export function resolveBridgeRoute({
   to: BridgeNetworkId;
   amount: bigint;
   facts: BridgeRouteFacts;
+}): BridgeRouteOption[] | undefined {
+  const network = withdrawalChoice(from, to);
+  if (network === undefined) return undefined;
+  const option = (route: BridgeRoute, unavailable: BridgeBlockReason | undefined): BridgeRouteOption => ({
+    route,
+    ...(unavailable && { unavailable })
+  });
+  return [
+    option(cctpWithdrawalRoute(network), unavailableReason(amount, facts.cctp)),
+    option(nativeWithdrawalRoute(network), unavailableReason(amount, facts.native))
+  ];
+}
+
+const ok = (resolved: BridgeRoute): ResolvedBridgeRoute => ({ status: 'ok', route: resolved });
+const blocked = (reason: BridgeBlockReason): ResolvedBridgeRoute => ({ status: 'blocked', reason });
+
+/**
+ * The route for a pair (APP-610 scope): Ethereum to an L2 by native deposit,
+ * an L2 to Ethereum by CCTP falling back to the native withdrawal (or by the
+ * native withdrawal when the user picks it), and Avalanche or Solana by LayerZero.
+ */
+export function resolveBridgeRoute({
+  from,
+  to,
+  amount,
+  facts,
+  preferred
+}: {
+  from: BridgeNetworkId;
+  to: BridgeNetworkId;
+  amount: bigint;
+  facts: BridgeRouteFacts;
+  /** The route the user picked; used only while it is available. */
+  preferred?: BridgeRouteKind;
 }): ResolvedBridgeRoute {
   if (!isAllowedPair({ from, to })) return blocked('pair-not-allowed');
 
@@ -217,6 +264,11 @@ export function resolveBridgeRoute({
     return ok(route('native', routeSteps('native', from, to), etaMinutes, 0));
   }
 
+  const withdrawal = withdrawalChoice(from, to);
+  if (preferred === 'native' && withdrawal !== undefined && !unavailableReason(amount, native)) {
+    const cctpReason = unavailableReason(amount, cctp);
+    return ok(nativeWithdrawalRoute(withdrawal, isFallbackReason(cctpReason) ? cctpReason : undefined));
+  }
   // No fallback before CCTP is known: the native withdrawal takes days.
   if (isUnread(cctp)) return blocked(unreadReason(cctp));
   const cctpFailure = gateFailure(amount, cctp);

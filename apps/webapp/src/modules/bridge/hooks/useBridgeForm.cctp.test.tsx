@@ -131,3 +131,52 @@ describe('useBridgeForm: an L2 to Ethereum bridge goes through the CCTP gate', (
     expect(fromEthereum.current.canFlip).toBe(true);
   });
 });
+
+describe('useBridgeForm: picking the route of an L2 to Ethereum bridge', () => {
+  beforeEach(() => {
+    Object.assign(mocks, { appChainId: 8453, cctp: OPEN, native: NATIVE_OPEN, nativeArgs: [], gateArgs: [] });
+  });
+
+  it('offers CCTP, preselected, and the native withdrawal', () => {
+    const result = typedOnL2();
+    expect(result.current.routeOptions?.map(option => [option.route.kind, option.unavailable])).toEqual([
+      ['cctp', undefined],
+      ['native', undefined]
+    ]);
+    expect(result.current.route?.kind).toBe('cctp');
+  });
+
+  it('sends by the native withdrawal once the user picks it, and back by CCTP', () => {
+    const result = typedOnL2();
+    act(() => result.current.pickRoute('native'));
+    expect(result.current.route).toMatchObject({ kind: 'native' });
+    expect(result.current.route?.fallbackReason).toBeUndefined();
+    expect(result.current.reviewBlocked).toBe(false);
+    act(() => result.current.pickRoute('cctp'));
+    expect(result.current.route?.kind).toBe('cctp');
+  });
+
+  it('says why CCTP is unavailable and keeps the native withdrawal when CCTP is picked', () => {
+    mocks.cctp = { isOpen: true, liquidity: 1n };
+    const result = typedOnL2();
+    expect(result.current.routeOptions?.[0].unavailable).toBe('no-liquidity');
+    act(() => result.current.pickRoute('cctp'));
+    expect(result.current.route).toMatchObject({ kind: 'native', fallbackReason: 'no-liquidity' });
+  });
+
+  it('forgets the pick once the source changes', () => {
+    const { result, rerender } = renderHook(() => useBridgeForm());
+    act(() => result.current.onInput('1'));
+    act(() => result.current.pickRoute('native'));
+    mocks.appChainId = 10;
+    rerender();
+    expect(result.current.from).toBe('optimism');
+    expect(result.current.route?.kind).toBe('cctp');
+  });
+
+  it('offers no route choice from Ethereum', () => {
+    mocks.appChainId = 1;
+    const { result } = renderHook(() => useBridgeForm());
+    expect(result.current.routeOptions).toBeUndefined();
+  });
+});
