@@ -29,6 +29,7 @@ import { USDS_DECIMALS } from '../model/usds';
 import { useAddressCode } from './useAddressCode';
 import { useBridgeDraft, type BridgeDraft } from './useBridgeDraft';
 import { useCctpGate } from './useCctpGate';
+import { useNativeWithdrawalGate } from './useNativeWithdrawalGate';
 import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
 
@@ -170,24 +171,23 @@ export function useBridgeForm(draft?: BridgeDraft) {
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
-  const nativeGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
+  const depositGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
+  const withdrawalGate = useNativeWithdrawalGate({ from, to, chainId: sourceChainId });
+  // At most one of them reads a gate: deposits leave Ethereum, withdrawals reach it.
+  const nativeGate = depositGate ?? withdrawalGate;
   const cctpGate = useCctpGate({
     from,
     to,
     sourceChainId,
     ethereumChainId: bridgeChainId('ethereum', familyChainId)
   });
-  // The other route facts (LayerZero, withdrawals) come from their tickets, through toRouteFact.
+  // The LayerZero route facts come from its ticket, through toRouteFact.
   const resolved = useMemo((): ResolvedBridgeRoute => {
     if (!isLivePair({ from, to })) return { status: 'blocked', reason: 'pair-not-allowed' };
     // With no gate the resolver reads CCTP as open.
     if (from !== 'ethereum' && cctpGate === undefined)
       return { status: 'blocked', reason: 'pair-not-allowed' };
-    const result = resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate, cctp: cctpGate } });
-    // The native withdrawal has no real calls yet (APP-617), so an L2 bridges by CCTP only.
-    if (result.status === 'ok' && from !== 'ethereum' && result.route.kind !== 'cctp')
-      return { status: 'blocked', reason: result.route.fallbackReason ?? 'closed' };
-    return result;
+    return resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate, cctp: cctpGate } });
   }, [from, to, amount, nativeGate, cctpGate]);
   const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;

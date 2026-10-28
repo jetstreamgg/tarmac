@@ -9,6 +9,8 @@ import { useBridgeForm } from './useBridgeForm';
 const mocks = vi.hoisted(() => ({
   appChainId: 8453,
   cctp: undefined as unknown,
+  native: undefined as unknown,
+  nativeArgs: [] as { from: string; to: string; chainId?: number }[],
   gateArgs: [] as { from: string; to: string; sourceChainId?: number; ethereumChainId?: number }[]
 }));
 
@@ -40,8 +42,16 @@ vi.mock('./useCctpGate', () => ({
   }
 }));
 
+vi.mock('./useNativeWithdrawalGate', () => ({
+  useNativeWithdrawalGate: (args: (typeof mocks.nativeArgs)[number]) => {
+    mocks.nativeArgs.push(args);
+    return args.to === 'ethereum' && args.from !== 'ethereum' ? mocks.native : undefined;
+  }
+}));
+
 type CctpFact = BridgeRouteFacts['cctp'];
 const OPEN: CctpFact = { isOpen: true, maxAmount: 10n ** 30n, liquidity: 10n ** 30n };
+const NATIVE_OPEN: BridgeRouteFacts['native'] = { isOpen: true, maxAmount: 10n ** 30n };
 
 const typedOnL2 = () => {
   const { result } = renderHook(() => useBridgeForm());
@@ -51,7 +61,7 @@ const typedOnL2 = () => {
 
 describe('useBridgeForm: an L2 to Ethereum bridge goes through the CCTP gate', () => {
   beforeEach(() => {
-    Object.assign(mocks, { appChainId: 8453, cctp: OPEN, gateArgs: [] });
+    Object.assign(mocks, { appChainId: 8453, cctp: OPEN, native: NATIVE_OPEN, nativeArgs: [], gateArgs: [] });
   });
 
   it('routes Base to Ethereum by CCTP once the gate reads open, reading it on Base and Ethereum', () => {
@@ -83,8 +93,23 @@ describe('useBridgeForm: an L2 to Ethereum bridge goes through the CCTP gate', (
     ['closed', { isOpen: false }],
     ['over-limit', { isOpen: true, maxAmount: 1n }],
     ['no-liquidity', { isOpen: true, liquidity: 1n }]
-  ])('never offers a native withdrawal the app cannot send yet when CCTP is %s', (reason, gate) => {
+  ])('falls back to the native withdrawal, read on Base, when CCTP is %s', (reason, gate) => {
     mocks.cctp = gate;
+    const result = typedOnL2();
+    expect(mocks.nativeArgs.at(-1)).toMatchObject({ from: 'base', to: 'ethereum', chainId: 8453 });
+    expect(result.current.route).toMatchObject({ kind: 'native', fallbackReason: reason });
+    expect(result.current.blockedReason).toBeUndefined();
+    expect(result.current.reviewBlocked).toBe(false);
+  });
+
+  it.each([
+    ['closed', { isOpen: false }, 'closed'],
+    ['over its limit', { isOpen: true, maxAmount: 1n }, 'over-limit'],
+    ['loading', 'loading', 'facts-loading'],
+    ['unreadable', 'error', 'facts-error']
+  ])('blocks Review when CCTP is closed and the native withdrawal is %s', (_, fact, reason) => {
+    mocks.cctp = { isOpen: false };
+    mocks.native = fact;
     const result = typedOnL2();
     expect(result.current.route).toBeUndefined();
     expect(result.current.blockedReason).toBe(reason);

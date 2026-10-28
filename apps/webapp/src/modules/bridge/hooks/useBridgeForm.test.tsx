@@ -51,6 +51,8 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
 vi.mock('./useSafeConfig', () => ({ useSafeConfig: () => ({ lookup: undefined, isChecking: false }) }));
 // The CCTP gate has its own suite (useBridgeForm.cctp.test.tsx); unread here, an L2 source blocks.
 vi.mock('./useCctpGate', () => ({ useCctpGate: () => undefined }));
+// So does the native withdrawal gate (useBridgeForm.cctp.test.tsx, useNativeWithdrawalGate.test.ts).
+vi.mock('./useNativeWithdrawalGate', () => ({ useNativeWithdrawalGate: () => undefined }));
 vi.mock('./useAddressCode', () => ({
   useAddressCode: ({ address, chainId }: { address?: string; chainId?: number }) => {
     if (!address || chainId === undefined) return { code: undefined, isChecking: false };

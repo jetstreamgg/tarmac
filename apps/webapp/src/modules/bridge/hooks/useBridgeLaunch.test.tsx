@@ -32,6 +32,8 @@ const mocks = vi.hoisted(() => ({
   ethBalance: undefined as bigint | undefined,
   ethLoading: false,
   bridgeOpen: 1n,
+  // The L2 bridges' maxWithdraws.
+  maxWithdraws: 10n ** 30n,
   refetchAllowance: vi.fn(),
   safe: {} as Record<string, SafeReply>,
   isModalOpen: false,
@@ -82,8 +84,11 @@ vi.mock('wagmi', async io => ({
   useChainId: () => mocks.appChainId,
   useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id })),
   usePublicClient: () => undefined,
-  // The L1 bridges' isOpen.
-  useReadContract: () => ({ status: 'success', data: mocks.bridgeOpen })
+  // The bridges' isOpen, and the L2 bridges' maxWithdraws.
+  useReadContract: ({ functionName }: { functionName: string }) => ({
+    status: 'success',
+    data: functionName === 'maxWithdraws' ? mocks.maxWithdraws : mocks.bridgeOpen
+  })
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
@@ -266,6 +271,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       balance: 10n * ONE,
       balanceLoading: false,
       bridgeOpen: 1n,
+      maxWithdraws: 10n ** 30n,
       safe: {},
       isModalOpen: false,
       launched: [],
@@ -889,19 +895,37 @@ describe('useBridgeLaunch Confirm gate', () => {
     });
   });
 
-  it('withdrawals are not live yet and send nothing', async () => {
-    // A closed CCTP is the only way the resolver reaches the native withdrawal.
-    mocks.cctp = { isOpen: false };
-    const view = renderBridge();
-    act(() => view.result.current.form.onInput('1'));
-    await moveWallet(view, 8453);
-    expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum', route: undefined });
-    expect(view.result.current.form.reviewBlocked).toBe(true);
-    act(() => view.result.current.launch());
-    mocks.launched.at(-1)?.onConfirm?.();
-    expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
-    expect(mocks.deposit.execute).not.toHaveBeenCalled();
-    expect(mocks.legs).toHaveLength(0);
+  describe('a Base to Ethereum bridge with CCTP closed', () => {
+    async function reviewFromBase() {
+      // A closed CCTP is the only way the resolver reaches the native withdrawal.
+      mocks.cctp = { isOpen: false };
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      await moveWallet(view, 8453);
+      act(() => view.result.current.launch());
+      return view;
+    }
+
+    it('falls back to the native withdrawal, which Confirm sends on Base', async () => {
+      const view = await reviewFromBase();
+      expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum', reviewBlocked: false });
+      expect(view.result.current.form.route).toMatchObject({ kind: 'native', fallbackReason: 'closed' });
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from: 'base', chainId: 8453 });
+      expect(mocks.withdrawal.execute).toHaveBeenCalledTimes(1);
+      expect(mocks.deposit.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+    });
+
+    it("sends nothing over the L2 bridge's withdrawal limit", async () => {
+      mocks.maxWithdraws = 1n;
+      const view = await reviewFromBase();
+      expect(view.result.current.form).toMatchObject({ route: undefined, reviewBlocked: true });
+      mocks.launched.at(-1)?.onConfirm?.();
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      expect(mocks.deposit.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+    });
   });
 
   describe('the ETH an Arbitrum deposit sends', () => {
