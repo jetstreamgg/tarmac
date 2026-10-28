@@ -3,7 +3,7 @@
  */
 import { createElement, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react';
+import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWithdrawalRecovery } from './useWithdrawalRecovery';
 
@@ -32,11 +32,18 @@ vi.mock('../tracking/recoverWithdrawals', () => ({ recoverWithdrawals: mocks.rec
 const MINUTE = 60_000;
 const wrapper = ({ children }: { children: ReactNode }) =>
   createElement(QueryClientProvider, { client: new QueryClient() }, children);
+/** A page load: a fresh app with a fresh query cache. */
+const load = async () => {
+  cleanup();
+  renderHook(() => useWithdrawalRecovery(), { wrapper });
+  await vi.advanceTimersByTimeAsync(0);
+};
 const scanned = () => mocks.discover.mock.calls.map(([args]) => args.network).sort();
 
 describe('useWithdrawalRecovery', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    localStorage.clear();
     mocks.discover.mockReset();
     mocks.recover.mockClear();
     mocks.lookup.mockReset();
@@ -94,5 +101,72 @@ describe('useWithdrawalRecovery', () => {
     await vi.advanceTimersByTimeAsync(0);
     await vi.advanceTimersByTimeAsync(29 * MINUTE);
     expect(mocks.discover).toHaveBeenCalledTimes(4);
+  });
+
+  it('reads nothing on a reload within the interval of a complete scan', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    await vi.advanceTimersByTimeAsync(10 * MINUTE);
+    await load();
+    expect(mocks.discover).toHaveBeenCalledTimes(4);
+  });
+
+  it('scans again on a load once the interval has passed', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    cleanup();
+    await vi.advanceTimersByTimeAsync(31 * MINUTE);
+    await load();
+    expect(mocks.discover).toHaveBeenCalledTimes(8);
+  });
+
+  it('scans every L2 again on a reload after a partial scan', async () => {
+    mocks.discover.mockImplementation(async ({ network }: { network: string }) => {
+      if (network === 'arbitrum') throw new Error('head unreadable');
+      return { withdrawals: [], complete: true };
+    });
+    await load();
+    await load();
+    expect(scanned()).toEqual([
+      'arbitrum',
+      'arbitrum',
+      'base',
+      'base',
+      'optimism',
+      'optimism',
+      'unichain',
+      'unichain'
+    ]);
+  });
+
+  it('retries only the L2 it could not read, waiting twice as long each time', async () => {
+    mocks.discover.mockImplementation(async ({ network }: { network: string }) => {
+      if (network === 'arbitrum') throw new Error('head unreadable');
+      return { withdrawals: [], complete: true };
+    });
+    await load();
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(scanned()).toEqual(['arbitrum', 'arbitrum', 'base', 'optimism', 'unichain']);
+    await vi.advanceTimersByTimeAsync(3 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(5);
+    await vi.advanceTimersByTimeAsync(1 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(6);
+    expect(mocks.discover.mock.calls.at(-1)![0].network).toBe('arbitrum');
+  });
+
+  it('goes back to the full interval once the unread L2 reads', async () => {
+    let arbitrumDown = true;
+    mocks.discover.mockImplementation(async ({ network }: { network: string }) => {
+      if (network === 'arbitrum' && arbitrumDown) throw new Error('head unreadable');
+      return { withdrawals: [], complete: true };
+    });
+    await load();
+    arbitrumDown = false;
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(5);
+    await vi.advanceTimersByTimeAsync(29 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(5);
+    await load();
+    expect(mocks.discover).toHaveBeenCalledTimes(5);
   });
 });
