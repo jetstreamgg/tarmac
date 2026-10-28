@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import { getAddress, parseUnits, type Address } from 'viem';
+import { ARBITRUM_CONFIRM_MS } from '@/modules/bridge/adapters/nativeWithdrawal/contracts';
 import { expect, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
 import { NetworkName } from '../utils/constants';
@@ -8,6 +9,7 @@ import { confirmArbitrumWithdrawalOnFork } from '../utils/arbitrumWithdrawalProo
 import { awaitDepositTxHash, l1AccountState, l2UsdsBalance } from '../utils/bridgeRelay';
 import { proveOpStackWithdrawalOnFork, setOpStackEscrowAllowance } from '../utils/opStackWithdrawalProof';
 import { keepPendingBridgesOnLoad } from '../utils/pendingBridgeStore';
+import { shiftPageClock } from '../utils/shiftPageClock';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 
 // L2 to Ethereum USDS through Sky's native bridge (APP-617), picked in Review. Separate vnets
@@ -104,6 +106,8 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
       const txHash = await withdrawThroughSkyLink(isolatedPage, bridge, cases[1], account);
       await confirmArbitrumWithdrawalOnFork(isolatedPage, txHash);
       const { usds: before } = await l1AccountState(account);
+      // The card looks for the confirmed root only near its ETA, days away in real time.
+      await shiftPageClock(isolatedPage, ARBITRUM_CONFIRM_MS);
       await bridge.gotoConnected();
 
       const card = bridge.card('Ethereum');

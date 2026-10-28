@@ -23,6 +23,8 @@ const SEND_ROOT_UPDATED = parseAbiItem(
 );
 /** How far back the newest confirmed send root is looked for: the rollup confirms about hourly. */
 const SEND_ROOT_SCAN_BLOCKS = [2_000n, 14_400n];
+/** How long before its ETA a message's send root is first looked for; the rollup can't confirm it sooner. */
+const CONFIRM_LEAD_MS = 24 * 60 * 60 * 1000;
 
 /** The newest send root the outbox holds, and how many messages it commits to. */
 async function readConfirmedSend(l1: ChainReader, l2: ChainReader) {
@@ -63,7 +65,8 @@ async function readMessage(
  * the L2 receipt and must be the USDS withdrawal this bridge recorded (amount
  * and recipient). Arrived once the outbox spent it, by anyone; executable once
  * the newest confirmed send root commits to it, about 6.5 days after it was
- * sent. A failed read is null: nothing changes.
+ * sent; that root is not looked for until a day before. A failed read is null:
+ * nothing changes.
  */
 export async function arbitrumWithdrawalProgress(
   bridge: PendingBridge & { from: 'arbitrum' },
@@ -90,13 +93,10 @@ export async function arbitrumWithdrawalProgress(
       args: [message.position]
     });
     if (spent) return { kind: 'arrived' };
-    const confirmed = await readConfirmedSend(l1, l2);
+    const etaAt = Number(message.timestamp) * 1000 + ARBITRUM_CONFIRM_MS;
+    const confirmed = now >= etaAt - CONFIRM_LEAD_MS ? await readConfirmedSend(l1, l2) : undefined;
     if (confirmed && confirmed.size > message.position) return { kind: 'ready', nextAction: 'finalize' };
-    return {
-      kind: 'waiting',
-      etaAt: Number(message.timestamp) * 1000 + ARBITRUM_CONFIRM_MS,
-      nextAction: 'finalize'
-    };
+    return { kind: 'waiting', etaAt, nextAction: 'finalize' };
   } catch {
     return null;
   }

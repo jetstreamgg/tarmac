@@ -16,8 +16,9 @@ import { arbitrumItemHash, arbitrumWithdrawalMessage } from './arbitrum';
 import { arbitrumExecuteFromChain, arbitrumWithdrawalProgress } from './arbitrumProgress';
 import { ARBITRUM_EXECUTE_TX, ARBITRUM_WITHDRAWAL_LOGS, ARBITRUM_WITHDRAWAL_TX } from './withdrawalFixtures';
 
-const NOW = 1_790_000_000_000;
 const MESSAGE = arbitrumWithdrawalMessage(ARBITRUM_WITHDRAWAL_LOGS)!;
+// The fixture withdrawal's ETA: the rollup may have confirmed it.
+const NOW = Number(MESSAGE.timestamp) * 1000 + ARBITRUM_CONFIRM_MS;
 const SEND_ROOT = keccak256('0x5e9d');
 const L2_HASH = keccak256('0x12b1');
 
@@ -142,6 +143,22 @@ describe('arbitrumWithdrawalProgress', () => {
     expect(await progress()).toEqual({ kind: 'waiting', etaAt: eta, nextAction: 'finalize' });
     state.confirmedSize = MESSAGE.position + 1n;
     expect(await progress()).toEqual({ kind: 'ready', nextAction: 'finalize' });
+  });
+
+  it('reads no send root in the days the rollup cannot have confirmed the message yet', async () => {
+    const sentAt = Number(MESSAGE.timestamp) * 1000;
+    const eta = sentAt + ARBITRUM_CONFIRM_MS;
+    state.confirmedSize = MESSAGE.position + 1n;
+    const early = await arbitrumWithdrawalProgress(bridge(), context, eta - 25 * 60 * 60_000);
+    expect(early).toEqual({ kind: 'waiting', etaAt: eta, nextAction: 'finalize' });
+    expect(state.logRanges).toEqual([]);
+    state.spent = true;
+    expect(await arbitrumWithdrawalProgress(bridge(), context, sentAt + 60_000)).toEqual({ kind: 'arrived' });
+    state.spent = false;
+    expect(await arbitrumWithdrawalProgress(bridge(), context, eta - 23 * 60 * 60_000)).toEqual({
+      kind: 'ready',
+      nextAction: 'finalize'
+    });
   });
 
   it('looks further back for a confirmed root before it waits', async () => {
