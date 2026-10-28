@@ -20,6 +20,7 @@ import { useIncomingCctpBridges } from '../hooks/useIncomingCctpBridges';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { useUnfinishedCctpSwaps } from '../hooks/useUnfinishedCctpSwaps';
+import { useWithdrawalEthShortfall } from '../hooks/useWithdrawalEthShortfall';
 import { getBridgeNetwork } from '../model/networks';
 import { canDismiss, isPendingBridgeVisible, showsActionButton } from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
@@ -29,6 +30,7 @@ import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { isStorageWritable } from '../store/storageWritable';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
+import { formatEthCeil } from './bridgeModalRows';
 import { buildContinueBridgeRows } from './continueBridgeRows';
 import {
   bridgeCounterparty,
@@ -221,6 +223,11 @@ function RedeemNoteText({ note }: RedeemNoteTextProps) {
   ) : (
     <Trans>Redeem on Arbitrum within {timeLeft}. It needs ETH on Arbitrum for gas.</Trans>
   );
+}
+
+function EthShortfallText({ wei }: { wei: bigint }) {
+  const eth = formatEthCeil(wei);
+  return <Trans>You need about {eth} ETH on Ethereum to pay for this step.</Trans>;
 }
 
 type WithdrawalNoteTextProps = { note: Extract<PendingBridgeNote, { kind: 'withdrawal' }> };
@@ -476,6 +483,7 @@ function PendingBridgeCard({
       : (actionHint(bridge) ??
         (convertHint?.kind === 'switch-network' && convertAmount === undefined ? undefined : convertHint));
   const note = pendingBridgeNote(bridge, now);
+  const ethShortfall = useWithdrawalEthShortfall(bridge, account, familyChainId);
   const counterparty = bridgeCounterparty(bridge, account);
   // Figma 75: a wallet that neither sent nor receives it can only switch to the one that claims it.
   const thirdWallet = counterparty?.role === 'both';
@@ -485,6 +493,7 @@ function PendingBridgeCard({
   const sharesInNote = claimedElsewhere && !thirdWallet && bridge.status === 'pending';
   // Figma 73: once ready, the sender may switch to the destination wallet or share the link.
   const switchesWallet = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
+  const sentHint = !!hint && hint.kind !== 'switch-network';
   const { openConnectModal } = useConnectModal();
   return (
     <div className={cardClassName} data-testid="pending-bridge-card">
@@ -634,12 +643,17 @@ function PendingBridgeCard({
         </Text>
       )}
       {/* A step already sent says so in its hint; asking for it again would contradict it. */}
-      {note && !(note.kind === 'withdrawal' && hint && hint.kind !== 'switch-network') && (
+      {note && !(note.kind === 'withdrawal' && sentHint) && (
         <BridgeNote
           note={note}
           onExtend={() => onAction(bridge, 'keepalive')}
           canExtend={!actionLocked && canAction(bridge, 'keepalive')}
         />
+      )}
+      {ethShortfall !== undefined && !sentHint && (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-eth-note">
+          <EthShortfallText wei={ethShortfall} />
+        </Text>
       )}
 
       <CardRows

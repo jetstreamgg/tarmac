@@ -61,6 +61,7 @@ const mocks = vi.hoisted(() => ({
   bridges: [] as PendingBridge[],
   incoming: [] as IncomingBridge[],
   offers: {} as Record<string, bigint | undefined>,
+  ethShort: {} as Record<string, bigint | undefined>,
   blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
   activeSessionId: null as string | null,
   copy: vi.fn(),
@@ -102,6 +103,9 @@ vi.mock('../hooks/usePendingScope', () => ({
 
 vi.mock('../hooks/useCctpConvertOffer', () => ({
   useCctpConvertOffer: (bridge: PendingBridge) => mocks.offers[bridge.id]
+}));
+vi.mock('../hooks/useWithdrawalEthShortfall', () => ({
+  useWithdrawalEthShortfall: (bridge: PendingBridge) => mocks.ethShort[bridge.id]
 }));
 vi.mock('../hooks/useCctpResumeForm', () => ({
   useCctpResumeForm: (swap: UnfinishedCctpSwap) => ({ blockedReason: mocks.blocked[swap.swapTxHash] })
@@ -146,6 +150,7 @@ describe('PendingBridges', () => {
       bridges: [],
       incoming: [],
       offers: {},
+      ethShort: {},
       blocked: {},
       activeSessionId: null,
       copyFails: false,
@@ -941,6 +946,7 @@ describe('PendingBridges', () => {
       id: '0xw',
       from: 'optimism',
       to: 'ethereum',
+      requiresClaim: true,
       nextAction: 'prove'
     };
     const note = () => screen.queryByTestId('pending-bridge-note')?.textContent;
@@ -970,6 +976,27 @@ describe('PendingBridges', () => {
       ];
       renderList();
       expect(note()).toContain('Prove the withdrawal again to continue.');
+    });
+
+    it("says how much ETH the step needs on Ethereum when the wallet can't pay it, and keeps the button", () => {
+      mocks.bridges = [{ ...WITHDRAWAL, status: 'ready' }];
+      mocks.ethShort = { '0xw': 12n * 10n ** 14n };
+      renderList();
+      expect(screen.getByTestId('pending-bridge-eth-note').textContent).toBe(
+        'You need about 0.0012 ETH on Ethereum to pay for this step.'
+      );
+      expect(screen.getByTestId('pending-bridge-action')).toHaveProperty('disabled', false);
+    });
+
+    it('says nothing about ETH when the wallet can pay, or once the step is sent', () => {
+      mocks.bridges = [{ ...WITHDRAWAL, status: 'ready' }];
+      const { unmount } = renderList();
+      expect(screen.queryByTestId('pending-bridge-eth-note')).toBeNull();
+      unmount();
+      mocks.ethShort = { '0xw': 1n };
+      props.actionHint.mockReturnValue({ kind: 'action-sent', network: 'ethereum' });
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-eth-note')).toBeNull();
     });
 
     it('gives way to the hint of a step just sent, and stays beside a network switch', () => {
