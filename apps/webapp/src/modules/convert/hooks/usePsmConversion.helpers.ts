@@ -1,6 +1,7 @@
 import { TOKENS } from '@/hooks/tokens/tokens.constants';
 import { type TokenForChain } from '@/hooks/tokens/types';
-import { math, isL2ChainId } from '@/utils';
+import * as math from '@/utils/math';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { parseUnits } from 'viem';
 
 export type PsmConversionDirection = 'USDC_TO_USDS' | 'USDS_TO_USDC';

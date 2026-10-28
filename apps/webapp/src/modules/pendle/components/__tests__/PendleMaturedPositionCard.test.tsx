@@ -65,8 +65,8 @@ vi.mock('../../hooks/usePendleRedeemModal', () => ({
 }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
-vi.mock('@/utils', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/utils')>();
+vi.mock('@/utils/getChainIcon', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/utils/getChainIcon')>();
   return { ...actual, getChainIcon: () => null };
 });
 

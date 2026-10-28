@@ -23,8 +23,10 @@ vi.mock('wagmi', () => ({
   useReadContract: vi.fn()
 }));
 
-vi.mock('@/utils', () => ({
-  isTestnetId: vi.fn(() => false),
+vi.mock('@/utils/isTestnetId', () => ({
+  isTestnetId: vi.fn(() => false)
+}));
+vi.mock('@/utils/math.constants', () => ({
   WAD: 10n ** 18n
 }));
 

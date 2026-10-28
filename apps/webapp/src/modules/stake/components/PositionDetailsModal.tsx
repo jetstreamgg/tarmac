@@ -15,7 +15,8 @@ import {
 import { BP, MD_MEDIA_QUERY, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { useDelegateName } from '@/hooks/delegates/useDelegateName';
 import { ZERO_ADDRESS } from '@/utils/constants';
-import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage, formatAddress } from '@/utils';
+import { formatBigInt, formatUsd, formatPercent, formatDecimalPercentage } from '@/utils/formatValue';
+import { formatAddress } from '@/utils/formatAddress';
 import { cn } from '@/lib/cn';
 import { Dialog, DialogContent, DialogTitle, SCRIM_HANDOFF_OVERLAY_CLASS } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

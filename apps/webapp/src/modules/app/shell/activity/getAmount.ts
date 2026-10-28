@@ -1,7 +1,7 @@
 import { CombinedHistoryItem } from '@/hooks/shared/shared';
 import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
 import { Token } from '@/hooks/tokens/types';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { absBigInt } from './absBigInt';
 import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 

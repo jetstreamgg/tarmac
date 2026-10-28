@@ -8,7 +8,7 @@ import { useRewardContractTokens } from '@/hooks/rewards/useRewardContractTokens
 import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
 import { useStakeSkyAllowance, useStakeUsdsAllowance } from '@/hooks/stake/useStakeAllowance';
 import { ZERO_ADDRESS } from '@/utils/constants';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';

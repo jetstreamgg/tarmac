@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { Call, erc20Abi } from 'viem';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { useTransactionFlow } from '../shared/useTransactionFlow';

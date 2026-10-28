@@ -7,7 +7,7 @@ import { usePrices } from '@/hooks/prices/usePrices';
 import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 import { getWriteContractCall } from '@/hooks/shared/getWriteContractCall';
 import { usdsSkyRewardAbi } from '@/hooks/generated';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { rewardTokenName } from '../tokenNames';
 import type { ClaimAdapter, ClaimableResult, ClaimCallsResult, ClaimableReward, ClaimScope } from '../types';

@@ -6,7 +6,7 @@ import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
 import { useRewardContractsToClaim } from '@/hooks/rewards/useRewardContractsToClaim';
 import { usePrices } from '@/hooks/prices/usePrices';
 import { useStakeHistory } from '@/hooks/stake/useStakeHistory';
-import { formatUsd } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { calculateClaimedRewardsUsd } from '../lib/positionDetail';
 import { priceOfFromPrices, sumRewardsUsd, wadToUsd } from '../lib/stakeUsdNotional';

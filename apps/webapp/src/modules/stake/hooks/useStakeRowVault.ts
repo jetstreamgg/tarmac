@@ -5,7 +5,7 @@ import { type Vault } from '@/hooks/vaults/vault';
 import { calculateVaultInfo } from '@/hooks/vaults/calculateVaultInfo';
 import { useSimulatedDripRate } from '@/hooks/vaults/useSimulatedDripRate';
 import { COLLATERAL_PRICE_SYMBOL } from '@/hooks/vaults/vaults.constants';
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 import { accruedRate, useStakeUrnVaults } from './useStakeUrnVaults';
 
 /**

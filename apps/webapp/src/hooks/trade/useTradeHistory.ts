@@ -1,7 +1,8 @@
 import { useCowswapTradeHistory } from './useCowswapTradeHistory';
 import { usePsmTradeHistory } from '../psm/usePsmTradeHistory';
 import { useHybridTradeHistory } from './useHybridTradeHistory';
-import { isCowSupportedChainId, TRADE_CUTOFF_DATES } from '@/utils';
+import { isCowSupportedChainId } from '@/utils/isCowSupportedChainId';
+import { TRADE_CUTOFF_DATES } from '@/utils/tradeCutoffDates';
 import { useChainId } from 'wagmi';
 
 export function useTradeHistory({

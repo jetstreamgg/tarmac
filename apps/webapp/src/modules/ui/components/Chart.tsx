@@ -5,7 +5,7 @@ import { RollingValue } from '@/components/ui/rolling-value';
 import { tabsListVariants, tabsTriggerVariants } from '@/components/ui/tabs';
 import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { useMemo, useState, useRef, useEffect, useId } from 'react';
 import { Area, AreaChart, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { format } from 'date-fns/format';

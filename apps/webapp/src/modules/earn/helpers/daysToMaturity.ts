@@ -1,4 +1,4 @@
-import { SECONDS_PER_DAY } from '@/utils';
+import { SECONDS_PER_DAY } from '@/utils/math.constants';
 
 /**
  * Whole days until a PT market's expiry — floored, matching the pendle

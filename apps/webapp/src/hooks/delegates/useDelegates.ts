@@ -4,7 +4,7 @@ import { indexerDataSource } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
-import { getRandomItem } from '@/utils';
+import { getRandomItem } from '@/utils/collection';
 import { useMemo } from 'react';
 import { buildDelegateSearchCondition, parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';

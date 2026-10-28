@@ -10,7 +10,8 @@ import { useUrnAddress as useStakeUrnAddress } from '@/hooks/stake/useUrnAddress
 import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@/hooks/stake/useUrnSelectedVoteDelegate';
 import { useVault } from '@/hooks/vaults/useVault';
 import { ZERO_ADDRESS } from '@/utils/constants';
-import { formatUsd, getEtherscanLink } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';

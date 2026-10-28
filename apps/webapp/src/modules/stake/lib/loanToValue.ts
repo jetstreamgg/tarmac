@@ -1,4 +1,4 @@
-import { WAD } from '@/utils';
+import { WAD } from '@/utils/math.constants';
 
 // Debt over collateral at the capped OSM price (what the protocol enforces), so it agrees
 // with the liquidation price and the SKY price shown next to it. No debt → no LTV.

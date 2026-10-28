@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { useIsSafeWallet } from '@/hooks/wallet/useIsSafeWallet';
 import { WALLET_ICONS } from '@/lib/constants';
-import { formatUsd } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
 import { Text } from '@/modules/layout/components/Typography';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { WalletIcon } from '@/modules/ui/components/WalletIcon';
@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SheetClose } from '@/components/ui/sheet';
 import { useWalletDrawerAssets } from './useWalletDrawerAssets';
 import { setDisconnectSource } from '@/modules/analytics/lib/disconnectSource';
-import { formatAddress } from '@/utils';
+import { formatAddress } from '@/utils/formatAddress';
 
 const iconButtonClasses =
   'flex size-8 items-center justify-center rounded-full border border-[#bcb6ef]/10 bg-gradient-to-b from-white/0 to-white/8 bg-origin-border text-[#f2f3f7] transition-colors hover:bg-white/10';

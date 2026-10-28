@@ -3,7 +3,7 @@ import { usdsAddress, stUsdsAddress, curveStUsdsUsdsPoolAddress } from '../../ge
 import { ReadHook } from '../../hooks';
 import { useTokenAllowance } from '../../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../../constants';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 
 export type CurveAllowanceHookResponse = ReadHook & {
   data?: bigint;

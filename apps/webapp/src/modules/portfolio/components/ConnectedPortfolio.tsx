@@ -6,7 +6,7 @@ import { mainnet } from 'viem/chains';
 import { Trans } from '@lingui/react/macro';
 import { useEarnMarketplace } from '@/hooks/earn/useEarnMarketplace';
 import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
-import { formatAddress } from '@/utils';
+import { formatAddress } from '@/utils/formatAddress';
 import { ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
 import { readPortfolioDecision, writePortfolioDecision } from '@/lib/portfolioDecisionCache';

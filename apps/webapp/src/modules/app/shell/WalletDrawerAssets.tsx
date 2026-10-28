@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { QueryParams } from '@/lib/constants';
 import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
 import { retainOnNavigate } from '@/lib/navigation';
-import { formatDecimalPercentage, formatNumber, formatUsd } from '@/utils';
+import { formatDecimalPercentage, formatNumber, formatUsd } from '@/utils/formatValue';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Button } from '@/components/ui/button';

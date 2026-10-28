@@ -1,5 +1,5 @@
 import { RefObject, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { TokenIconStack } from './TokenIconStack';
 import { useFollow } from './chartMotion';
 

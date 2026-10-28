@@ -3,11 +3,12 @@ import { useConnection } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';
 import { usePreviewSwapExactIn } from '../psm/usePreviewSwapExactIn';
-import { isMainnetId, isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@/utils';
+import { isMainnetId } from '@/utils/isMainnetId';
+import { isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@/utils/isL2ChainId';
 
 export type MultiChainSavingsBalancesHook = ReadHook & {
   data?: Record<number, bigint>;

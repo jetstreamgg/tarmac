@@ -7,7 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { HISTORY_QUERY_LIMIT, ModuleEnum } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';
-import { chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
+import { chainId as chainIdMap } from '@/utils/chainId';
+import { TRADE_CUTOFF_DATES } from '@/utils/tradeCutoffDates';
 
 // Reconstruct the interpolated query string so assertions can inspect it.
 vi.mock('graphql-request', () => ({

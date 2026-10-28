@@ -1,4 +1,4 @@
-import { SECONDS_PER_DAY } from '@/utils';
+import { SECONDS_PER_DAY } from '@/utils/math.constants';
 
 /** Conservative window length when the API hasn't provided a market start. */
 const FALLBACK_WINDOW_SECONDS = 180 * SECONDS_PER_DAY;

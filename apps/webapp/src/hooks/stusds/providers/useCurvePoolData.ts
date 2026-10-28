@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContracts } from 'wagmi';
 import { curveStUsdsUsdsPoolAddress, curveStUsdsUsdsPoolAbi, usdsAddress } from '../../generated';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { CURVE_POOL_TOKEN_INDICES } from './constants';
 
 /**

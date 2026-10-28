@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { useReadCurveStUsdsUsdsPoolGetDy, useReadCurveStUsdsUsdsPoolGetDx } from '../../generated';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { useCurvePoolData } from './useCurvePoolData';
 import { RATE_PRECISION } from './constants';
 import { StUsdsDirection } from './types';

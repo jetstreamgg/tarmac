@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
-import { getChainIcon, isL2ChainId } from '@/utils';
+import { getChainIcon } from '@/utils/getChainIcon';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { ArrowRightLong } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
 import { requiresMainnet } from '@/lib/widget-network-map';

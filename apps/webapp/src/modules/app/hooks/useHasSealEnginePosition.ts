@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { request, gql } from 'graphql-request';
 import { useConnection, useChainId } from 'wagmi';
 import { getIndexerUrl } from '@/hooks/helpers/getIndexerUrl';
-import { isMainnetId, chainId as chainIdMap } from '@/utils';
+import { isMainnetId } from '@/utils/isMainnetId';
+import { chainId as chainIdMap } from '@/utils/chainId';
 
 /**
  * Detection-only hook for the deprecated Seal Engine. The Seal Engine UI was removed from the app,

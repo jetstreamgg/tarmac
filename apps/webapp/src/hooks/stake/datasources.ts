@@ -1,4 +1,4 @@
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { stakeModuleAddress } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 

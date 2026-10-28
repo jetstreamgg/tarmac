@@ -1,13 +1,10 @@
 import { ReactNode } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import {
-  formatDecimalPercentage,
-  formatUsd,
-  getChainIcon,
-  getChainName,
-  projectAnnualEarnings
-} from '@/utils';
+import { formatDecimalPercentage, formatUsd } from '@/utils/formatValue';
+import { getChainIcon } from '@/utils/getChainIcon';
+import { getChainName } from '@/utils/getChainName';
+import { projectAnnualEarnings } from '@/utils/projectAnnualEarnings';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

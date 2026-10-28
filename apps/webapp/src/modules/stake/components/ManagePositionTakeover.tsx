@@ -12,7 +12,7 @@ import { useSimulatedVault } from '@/hooks/vaults/useSimulatedVault';
 import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
 import { ZERO_ADDRESS } from '@/utils/constants';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils/formatValue';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';

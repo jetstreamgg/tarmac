@@ -1,4 +1,4 @@
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import type { ClaimableReward } from '@/modules/claim/types';
 import { makeStakeId } from '@/modules/claim/adapters/stakeAdapter';
 import { rewardTokenName } from '@/modules/claim/tokenNames';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 import {
   isAtRiskOfLiquidation,
   maxWithdrawWithinRisk,

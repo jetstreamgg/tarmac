@@ -3,7 +3,10 @@ import { CombinedHistoryItem } from '@/hooks/shared/shared';
 import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
 import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
-import { capitalizeFirstLetter, formatBigInt, getCowExplorerLink, getEtherscanLink } from '@/utils';
+import { capitalizeFirstLetter } from '@/utils/strings';
+import { formatBigInt } from '@/utils/formatValue';
+import { getCowExplorerLink } from '@/utils/getCowExplorerLink';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 
 /**
  * Flat, display-ready row for the Portfolio Transactions table (D8/APP-391),

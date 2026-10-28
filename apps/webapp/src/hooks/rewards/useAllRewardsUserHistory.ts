@@ -6,7 +6,7 @@ import { useIndexerFamilyHistory } from '../shared/useIndexerFamilyHistory';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
 import { useChainId } from 'wagmi';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 
 export function rewardsHistoryFragments({
   user,

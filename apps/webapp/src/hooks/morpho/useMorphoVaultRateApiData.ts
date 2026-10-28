@@ -3,7 +3,7 @@ import { ReadHook } from '../hooks';
 import { MORPHO_API_CHAIN_ID, morphoDataSource } from './constants';
 import { toReadHook } from '../shared/toReadHook';
 import { morphoGraphql } from './morphoGraphql';
-import { formatDecimalPercentage } from '@/utils';
+import { formatDecimalPercentage } from '@/utils/formatValue';
 
 type MorphoVaultApiResponse = {
   data: {

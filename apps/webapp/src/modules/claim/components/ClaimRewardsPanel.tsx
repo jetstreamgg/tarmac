@@ -6,7 +6,7 @@ import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTo
 import { useTransactionFlow } from '@/hooks/shared/useTransactionFlow';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useShouldUseBatch } from '@/modules/ui/hooks/engineLaunch';
-import { formatUsd } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/modules/layout/components/Typography';

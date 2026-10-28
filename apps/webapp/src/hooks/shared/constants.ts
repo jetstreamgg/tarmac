@@ -1,4 +1,4 @@
-import { chainId } from '@/utils';
+import { chainId } from '@/utils/chainId';
 
 export const SAFE_CONNECTOR_ID = 'safe';
 

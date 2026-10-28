@@ -3,7 +3,7 @@ import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
 import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { normalizeDecimalSeparator } from '@/lib/amountInput';

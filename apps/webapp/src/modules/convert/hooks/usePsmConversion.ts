@@ -14,7 +14,8 @@ import {
   useUsdsPsmWrapperTout
 } from '@/hooks/psm/useUsdsPsmWrapperReads';
 import type { BatchWriteHookParams } from '@/hooks/hooks';
-import { isL2ChainId, math } from '@/utils';
+import * as math from '@/utils/math';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';

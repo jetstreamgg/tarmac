@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ChevronDown } from 'lucide-react';
 import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
-import { getChainIcon } from '@/utils';
+import { getChainIcon } from '@/utils/getChainIcon';
 import { Intent } from '@/lib/enums';
 import { Text } from '@/modules/layout/components/Typography';
 import { NetworkSelect } from '@/modules/ui/components/NetworkSelect';

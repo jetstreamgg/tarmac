@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
 import { type RewardContract } from '@/hooks/rewards/rewards';
-import { formatDecimalPercentage } from '@/utils';
+import { formatDecimalPercentage } from '@/utils/formatValue';
 import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
 import { ProductBadge, ProductSupplyCard } from '@/components/product/ProductCard';

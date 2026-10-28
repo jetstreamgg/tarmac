@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { copyToClipboard } from '@/utils';
+import { copyToClipboard } from '@/utils/clipboard';
 
 const COPIED_FEEDBACK_MS = 1500;
 

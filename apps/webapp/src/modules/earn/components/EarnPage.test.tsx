@@ -83,8 +83,8 @@ vi.mock('@/modules/ui/components/TokenIconStack', () => ({
 }));
 vi.mock('./EarnFeaturedCards', () => ({ EarnFeaturedCards: () => null }));
 vi.mock('./ProtocolLineageBadge', () => ({ ProtocolLineageBadge: () => null }));
-vi.mock('@/utils', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/utils')>();
+vi.mock('@/utils/getChainIcon', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/utils/getChainIcon')>();
   return { ...actual, getChainIcon: () => null };
 });
 

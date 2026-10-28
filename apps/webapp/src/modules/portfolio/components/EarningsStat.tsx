@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { Info } from 'lucide-react';
 import { useIsTouchDevice } from '@/hooks/ui/useIsTouchDevice';
 import { cn } from '@/lib/cn';
-import { formatUsd } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
 import { formatGainMagnitude, GainValue, isGainNegative } from '@/components/ui/GainValue';
 import { RollingValue } from '@/components/ui/rolling-value';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

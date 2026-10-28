@@ -13,9 +13,12 @@ vi.mock('@/components/ui/use-toast', () => ({
 vi.mock('@/modules/layout/components/Typography', () => ({
   Text: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>
 }));
-vi.mock(import('@/utils'), async importOriginal => ({
+vi.mock(import('@/utils/getChainIcon'), async importOriginal => ({
   ...(await importOriginal()),
-  getChainIcon: () => <span />,
+  getChainIcon: () => <span />
+}));
+vi.mock(import('@/utils/isL2ChainId'), async importOriginal => ({
+  ...(await importOriginal()),
   isL2ChainId: () => false
 }));
 vi.mock('@/modules/icons', () => ({ ArrowRightLong: () => null }));

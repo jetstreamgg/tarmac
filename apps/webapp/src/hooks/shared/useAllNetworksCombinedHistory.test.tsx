@@ -3,7 +3,8 @@
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
+import { chainId as chainIdMap } from '@/utils/chainId';
+import { TRADE_CUTOFF_DATES } from '@/utils/tradeCutoffDates';
 import type { CombinedHistoryItem } from './shared';
 
 vi.mock('./useEthereumCombinedHistory', () => ({ useEthereumCombinedHistory: vi.fn() }));

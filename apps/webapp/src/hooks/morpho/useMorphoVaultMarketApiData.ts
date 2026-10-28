@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_CHAIN_ID, VAULT_MARKET_DATA_QUERY, morphoDataSource } from './constants';
-import { formatBigInt, formatDecimalPercentage, formatNumber, formatPercent } from '@/utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber, formatPercent } from '@/utils/formatValue';
 import type {
   MorphoIdleLiquidityAllocation,
   MorphoMarketAllocation,

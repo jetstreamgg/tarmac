@@ -7,7 +7,7 @@ import { getIlkName } from '@/hooks/vaults/helpers';
 import { mcdVatAbi, mcdVatAddress, stakeModuleAbi, stakeModuleAddress } from '@/hooks/generated';
 import { mcdSpotAbi, mcdSpotAddress } from '@/hooks/generated';
 import { useSimulatedDripRate } from '@/hooks/vaults/useSimulatedDripRate';
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 
 /** Live Vat state of one staking urn, keyed by its owner-scoped index. */
 export type StakeUrnVault = {

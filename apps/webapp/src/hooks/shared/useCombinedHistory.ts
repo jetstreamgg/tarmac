@@ -1,7 +1,7 @@
 import { useL2CombinedHistory } from './useL2CombinedHistory';
 import { useEthereumCombinedHistory } from './useEthereumCombinedHistory';
 import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@/utils';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { CombinedHistoryItem } from './shared';
 
 export const useCombinedHistory = (): {

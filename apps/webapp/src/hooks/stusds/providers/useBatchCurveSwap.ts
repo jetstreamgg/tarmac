@@ -10,7 +10,7 @@ import {
 import { BatchWriteHook, BatchWriteHookParams } from '../../hooks';
 import { getWriteContractCall } from '../../shared/getWriteContractCall';
 import { useBatchWriteFlow } from '../../shared/useBatchWriteFlow';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { useCurveAllowance } from './useCurveAllowance';
 import { useCurvePoolData } from './useCurvePoolData';
 import { calculateMinOutputWithSlippage } from './rateComparison';

@@ -12,7 +12,8 @@ import {
 import { useReadMcdPot } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink, isL2ChainId } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { calculateDsrInfo } from './calculateDsrInfo';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';

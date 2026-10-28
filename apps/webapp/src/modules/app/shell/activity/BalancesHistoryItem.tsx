@@ -1,6 +1,9 @@
 import { formatUnits } from 'viem';
 import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
-import { getEtherscanLink, getCowExplorerLink, getChainIcon, formatUsd } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
+import { getCowExplorerLink } from '@/utils/getCowExplorerLink';
+import { getChainIcon } from '@/utils/getChainIcon';
+import { formatUsd } from '@/utils/formatValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
 import { CombinedHistoryItem } from '@/hooks/shared/shared';

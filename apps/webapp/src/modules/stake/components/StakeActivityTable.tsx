@@ -9,7 +9,9 @@ import { TransactionTypeEnum } from '@/hooks/constants';
 import { lsSkySkyRewardAddress, lsSkySpkRewardAddress, lsSkyUsdsRewardAddress } from '@/hooks/generated';
 import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
 import { useStakeHistory } from '@/hooks/stake/useStakeHistory';
-import { formatAddress, formatUsd, getEtherscanLink } from '@/utils';
+import { formatAddress } from '@/utils/formatAddress';
+import { formatUsd } from '@/utils/formatValue';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import {
   ActivityBorrow,

@@ -16,7 +16,8 @@ import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQue
 import { L2_HISTORY_CHAIN_IDS, tradeCutoffTimestamp } from './useL2sIndexerHistory';
 import { CombinedHistoryItem } from './shared';
 import { useHistoryPagination } from './useHistoryPagination';
-import { familyMainnetId, chainId as chainIdMap } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
+import { chainId as chainIdMap } from '@/utils/chainId';
 
 /**
  * One Envio-backed history family, queried on its own. Used by the filtered

@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { getIlkName } from '@/hooks/vaults/helpers';
 import { newestStakeHistoricPoint, useStakeHistoricData } from '@/hooks/stake/useStakeHistoricData';
 import { useCollateralData } from '@/hooks/vaults/useCollateralData';
-import { formatWad } from '@/utils';
+import { formatWad } from '@/utils/formatUnits';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

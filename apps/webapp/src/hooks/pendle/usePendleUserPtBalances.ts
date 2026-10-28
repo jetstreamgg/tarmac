@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useReadContracts, useChainId, useConnection } from 'wagmi';
 import { erc20Abi } from 'viem';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { ZERO_ADDRESS } from '../constants';
 import { PENDLE_MARKETS } from './constants';
 import { PendleUserPtBalances, PendleUserPtBalancesHook } from './pendle';

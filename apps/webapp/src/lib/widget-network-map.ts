@@ -1,5 +1,5 @@
 import { Intent } from './enums';
-import { isTestnetId } from '@/utils';
+import { isTestnetId } from '@/utils/isTestnetId';
 import { chainIdsForIntent, chainSwitchTarget, COMING_SOON_MAP } from './chainAvailability';
 
 /** The subset of a wagmi chain the network-target helpers need. */

@@ -3,7 +3,8 @@ import { useConnection, useChainId } from 'wagmi';
 import { useStakeHistory } from '@/hooks/stake/useStakeHistory';
 import { lsSkySpkRewardAddress } from '@/hooks/generated';
 import { TransactionTypeEnum } from '@/hooks/constants';
-import { isMainnetId, chainId as chainIdMap } from '@/utils';
+import { isMainnetId } from '@/utils/isMainnetId';
+import { chainId as chainIdMap } from '@/utils/chainId';
 
 /**
  * Hook to check if the connected user has any staking positions with SPK as the reward token.

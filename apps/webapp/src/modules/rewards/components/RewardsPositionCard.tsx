@@ -10,7 +10,8 @@ import { useRewardsRewardsBalance } from '@/hooks/rewards/useRewardsRewardsBalan
 import { useRewardsSuppliedBalance } from '@/hooks/rewards/useRewardsBalance';
 import { useUserRewardsBalance } from '@/hooks/rewards/useUserRewardsBalance';
 import { type RewardContract } from '@/hooks/rewards/rewards';
-import { formatNumber, projectAnnualEarnings } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
+import { projectAnnualEarnings } from '@/utils/projectAnnualEarnings';
 import { Button } from '@/components/ui/button';
 import { PositionHero } from '@/components/product/PositionHero';
 import { PositionCardSkeleton } from '@/components/product/PositionCardSkeleton';

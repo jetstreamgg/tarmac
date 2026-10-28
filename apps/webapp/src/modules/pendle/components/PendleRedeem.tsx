@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils/formatValue';
 import { formatPendleAggregatorName } from '@/hooks/pendle/helpers';
 import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 import { type PendleConvertQuote, type PendleMarketConfig } from '@/hooks/pendle/pendle';

@@ -12,7 +12,7 @@ import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
-import { getChainIcon } from '@/utils';
+import { getChainIcon } from '@/utils/getChainIcon';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';

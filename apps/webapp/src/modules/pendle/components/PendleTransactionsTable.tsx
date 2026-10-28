@@ -6,7 +6,9 @@ import { mainnet } from 'wagmi/chains';
 import { usePendleMarketHistory } from '@/hooks/pendle/usePendleMarketHistory';
 import { PendleHistoryAction } from '@/hooks/pendle/constants';
 import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
-import { formatNumber, formatUsd, getEtherscanLink, formatAddress } from '@/utils';
+import { formatNumber, formatUsd } from '@/utils/formatValue';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
+import { formatAddress } from '@/utils/formatAddress';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import {
   ProductTransactionsTable,

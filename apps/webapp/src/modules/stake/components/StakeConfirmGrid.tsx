@@ -7,14 +7,9 @@ import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromCha
 import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
 import { useSkyPrice } from '@/hooks/prices/useSkyPrice';
 import { ZERO_ADDRESS } from '@/utils/constants';
-import {
-  capitalizeFirstLetter,
-  formatAddress,
-  formatBigInt,
-  formatDecimalPercentage,
-  formatPercent,
-  formatUsd
-} from '@/utils';
+import { capitalizeFirstLetter } from '@/utils/strings';
+import { formatAddress } from '@/utils/formatAddress';
+import { formatBigInt, formatDecimalPercentage, formatPercent, formatUsd } from '@/utils/formatValue';
 import { NO_VALUE } from '@/lib/constants';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';

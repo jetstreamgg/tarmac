@@ -8,7 +8,8 @@ import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
 import { CombinedHistoryItem } from './shared';
 import { useHistoryPagination } from './useHistoryPagination';
-import { chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
+import { chainId as chainIdMap } from '@/utils/chainId';
+import { TRADE_CUTOFF_DATES } from '@/utils/tradeCutoffDates';
 
 // The chains whose PSM `Swap` history feeds the all-networks views. All of
 // them live in the indexer's single multichain database, so one document

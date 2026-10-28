@@ -1,5 +1,5 @@
 import { Vault } from '@/hooks/vaults/vault';
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 
 // 🔶 BL-12: placeholder until product decides the warning threshold.
 // 40 aligns with the HIGH risk tier (RISK_LEVEL_THRESHOLDS) so the banner

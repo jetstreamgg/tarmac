@@ -1,5 +1,5 @@
 import { formatUnits } from 'viem';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells, type ModalGridFee } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';

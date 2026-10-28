@@ -1,4 +1,5 @@
-import { RAD_PRECISION, RAY_PRECISION, WAD_PRECISION, math } from '@/utils';
+import * as math from '@/utils/math';
+import { RAD_PRECISION, RAY_PRECISION, WAD_PRECISION } from '@/utils/math.constants';
 import { VaultParams } from './vault';
 import { formatUnits } from 'viem';
 import { RISK_LEVEL_THRESHOLDS, RiskLevel } from './vaults.constants';

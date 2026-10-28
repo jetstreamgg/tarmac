@@ -3,7 +3,7 @@ import { useChainId } from 'wagmi';
 import { useSavingsChartInfo } from '@/hooks/savings/useSavingsChartInfo';
 import { useSkySavingsRateHistoricData } from '@/hooks/savings/useSkySavingsRateHistoricData';
 import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
-import { isL2ChainId } from '@/utils';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { TimeFrame, Data } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';

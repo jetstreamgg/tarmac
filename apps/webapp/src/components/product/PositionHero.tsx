@@ -1,6 +1,6 @@
 import { CSSProperties, ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { splitAmount } from '@/utils';
+import { splitAmount } from '@/utils/formatValue';
 import { useAccruingValue } from '@/hooks/ui';
 import { RollingDigits } from '@/components/ui/rolling-digits';
 import { RollingValue } from '@/components/ui/rolling-value';

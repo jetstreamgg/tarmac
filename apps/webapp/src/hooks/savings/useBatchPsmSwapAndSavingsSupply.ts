@@ -1,6 +1,6 @@
 import { useChainId, useConnection } from 'wagmi';
 import { Call, erc20Abi } from 'viem';
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';

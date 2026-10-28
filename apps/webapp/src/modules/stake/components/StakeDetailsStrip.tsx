@@ -4,7 +4,7 @@ import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { getIlkName } from '@/hooks/vaults/helpers';
 import { newestStakeHistoricPoint, useStakeHistoricData } from '@/hooks/stake/useStakeHistoricData';
 import { useCollateralData } from '@/hooks/vaults/useCollateralData';
-import { formatNumber, formatDecimalPercentage, formatPercent, formatWholeUsd } from '@/utils';
+import { formatNumber, formatDecimalPercentage, formatPercent, formatWholeUsd } from '@/utils/formatValue';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { RateInfo } from '@/components/product/RateInfo';

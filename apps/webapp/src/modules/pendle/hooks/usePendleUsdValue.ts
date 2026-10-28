@@ -5,7 +5,7 @@ import { useReadSavingsUsds } from '@/hooks/savings/useReadSavingsUsds';
 import { sUsdsAddress } from '@/hooks/generated';
 import { pendleUsdValue } from '../lib/pendleUsdValue';
 
-import { WAD } from '@/utils';
+import { WAD } from '@/utils/math.constants';
 
 /**
  * Returns a `valueUsd(symbol, amount)` function that converts a token amount

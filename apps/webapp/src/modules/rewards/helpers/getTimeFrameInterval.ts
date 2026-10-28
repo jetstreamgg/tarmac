@@ -1,5 +1,5 @@
 import { TimeFrame } from '@/modules/ui/components/Chart';
-import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from '@/utils';
+import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from '@/utils/math.constants';
 
 /**
  * Sampling interval, in seconds, for each timeframe.

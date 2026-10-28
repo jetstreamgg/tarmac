@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { ProductFigure, ProductStat, ProductStatPair } from '@/components/product/ProductCard';
 import { NO_VALUE } from '@/lib/constants';
 

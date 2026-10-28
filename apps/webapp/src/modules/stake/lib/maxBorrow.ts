@@ -1,4 +1,4 @@
-import { WAD } from '@/utils';
+import { WAD } from '@/utils/math.constants';
 
 /**
  * Max borrow — legacy Borrow.tsx:359-375: debt-ceiling headroom (total debt

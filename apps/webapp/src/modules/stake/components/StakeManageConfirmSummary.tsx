@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils/formatValue';
 import { wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 

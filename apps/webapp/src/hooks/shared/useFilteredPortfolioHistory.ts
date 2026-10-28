@@ -11,7 +11,9 @@ import { useMorphoVaultHistory } from '../morpho';
 import { usePendleCombinedHistory } from '../pendle/usePendleCombinedHistory';
 import { clampHistoryPage } from './historyQueryHelpers';
 import { CombinedHistoryItem } from './shared';
-import { familyMainnetId, chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
+import { chainId as chainIdMap } from '@/utils/chainId';
+import { TRADE_CUTOFF_DATES } from '@/utils/tradeCutoffDates';
 
 const FAMILY_BY_MODULE: Partial<Record<ModuleEnum, HistoryFamily>> = {
   [ModuleEnum.SAVINGS]: 'savings',

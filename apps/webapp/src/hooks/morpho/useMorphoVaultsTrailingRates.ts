@@ -3,7 +3,7 @@ import { ReadHook } from '../hooks';
 import { trailingAverageRate, type DailyRatePoint } from '../shared/trailingRate';
 import { MORPHO_API_CHAIN_ID, buildVaultV2ApyWindowQuery, morphoDataSource } from './constants';
 
-import { SECONDS_PER_DAY } from '@/utils';
+import { SECONDS_PER_DAY } from '@/utils/math.constants';
 import { toReadHook } from '../shared/toReadHook';
 import { morphoGraphql } from './morphoGraphql';
 

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useChainId, useReadContract } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { isTestnetId, WAD } from '@/utils';
+import { isTestnetId } from '@/utils/isTestnetId';
+import { WAD } from '@/utils/math.constants';
 import { usePendleMarketHistory } from './usePendleMarketHistory';
 import { usePendleRedeemPreview } from './usePendleRedeemPreview';
 import { computeMaturedEarnings } from './computeMaturedEarnings';

@@ -1,7 +1,7 @@
 import { useReadContract } from 'wagmi';
 import { erc20Abi } from 'viem';
 import { ReadHook } from '../hooks';
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 
 export type UseTokenAllowanceResponse = ReadHook & {

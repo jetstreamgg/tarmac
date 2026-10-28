@@ -1,4 +1,4 @@
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { formatUsdCompact } from './formatUsdCompact';
 
 /**

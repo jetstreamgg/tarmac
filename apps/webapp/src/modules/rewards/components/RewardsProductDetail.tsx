@@ -11,7 +11,7 @@ import { type RewardContract } from '@/hooks/rewards/rewards';
 import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
 import { useRewardContractInfo } from '@/hooks/rewards/useRewardContractInfo';
 import { useRewardsChartInfo } from '@/hooks/rewards/useRewardsChartInfo';
-import { formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils';
+import { formatDecimalPercentage, formatNumber, formatWholeUsd } from '@/utils/formatValue';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';

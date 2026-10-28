@@ -82,8 +82,8 @@ vi.mock('@/modules/geo-config', () => ({
     isLoading: h.geo.isLoading
   })
 }));
-vi.mock('@/utils', async importOriginal => ({
-  ...(await importOriginal<typeof import('@/utils')>()),
+vi.mock('@/utils/getChainIcon', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/utils/getChainIcon')>()),
   getChainIcon: () => <span data-testid="chain-icon" />
 }));
 vi.mock('@/components/product/FilterSelect', () => ({

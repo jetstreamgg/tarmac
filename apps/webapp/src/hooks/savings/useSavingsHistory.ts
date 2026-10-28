@@ -1,6 +1,6 @@
 import { useEthereumSavingsHistory } from './useEthereumSavingsHistory';
 import { useL2SavingsHistory } from '../psm/useL2SavingsHistory';
-import { isL2ChainId } from '@/utils';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { useChainId } from 'wagmi';
 
 export function useSavingsHistory(indexerUrl?: string) {

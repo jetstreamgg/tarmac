@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount, useChainId } from 'wagmi';
-import { formatPercent } from '@/utils';
+import { formatPercent } from '@/utils/formatValue';
 import { Plus } from 'lucide-react';
 import { formatStakeAmount } from '../lib/formatStakeAmount';
 import { loanToValue } from '../lib/loanToValue';

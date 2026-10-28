@@ -19,7 +19,7 @@ vi.mock('../../generated', () => ({
 }));
 
 // Mock the chain-resolution helpers: not a testnet, so the family mainnet is 1.
-vi.mock('@/utils', () => ({
+vi.mock('@/utils/isTestnetId', () => ({
   isTestnetId: vi.fn(() => false),
   familyMainnetId: vi.fn(() => 1)
 }));

@@ -4,7 +4,8 @@ import { usdsRiskCapitalVaultAbi } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
 import { sharesToAssets } from './sharesToAssets';
-import { getEtherscanLink, familyMainnetId } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
+import { familyMainnetId } from '@/utils/isTestnetId';
 
 /**
  * Data returned by the useErc4626VaultData hook

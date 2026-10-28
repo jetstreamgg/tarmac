@@ -6,7 +6,7 @@ import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
 import { getTokenDecimals } from '@/hooks/tokens/tokens.constants';
 import { type MorphoVaultRateData } from '@/hooks/morpho/useMorphoVaultRateApiData';
 import { type Token } from '@/hooks/tokens/types';
-import { formatDecimalPercentage } from '@/utils';
+import { formatDecimalPercentage } from '@/utils/formatValue';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { ProductSupplyCard } from '@/components/product/ProductCard';

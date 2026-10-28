@@ -12,7 +12,8 @@ import { useBatchUpgradeAndSavingsSupply } from '@/hooks/savings/useBatchUpgrade
 import { useSavingsAllowance } from '@/hooks/savings/useSavingsAllowance';
 import { useSavingsWithdraw } from '@/hooks/savings/useSavingsWithdraw';
 import { useTokenAllowance } from '@/hooks/tokens/useTokenAllowance';
-import { isL2ChainId, math } from '@/utils';
+import * as math from '@/utils/math';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';

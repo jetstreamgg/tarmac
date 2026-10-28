@@ -3,7 +3,7 @@ import { formatUnits, type Call } from 'viem';
 import { useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { REFERRAL_CODE, NO_VALUE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';

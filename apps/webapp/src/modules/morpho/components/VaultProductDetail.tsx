@@ -10,7 +10,7 @@ import { type VaultConfig } from '@/hooks/vaults/types';
 import { useMorphoVaultChartInfo } from '@/hooks/morpho/useMorphoVaultChartInfo';
 import { useMorphoVaultMarketApiData } from '@/hooks/morpho/useMorphoVaultMarketApiData';
 import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
-import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
+import { formatDecimalPercentage, formatWholeUsd } from '@/utils/formatValue';
 import { Morpho } from '@/modules/icons';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';

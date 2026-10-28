@@ -1,5 +1,5 @@
 import type { MorphoIdleLiquidityAllocation, MorphoMarketAllocation } from '@/hooks/morpho/morpho';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage, formatNumber } from '@/utils/formatValue';
 import { CHART_GENERIC_COLORS, resolveTokenChartColors } from '@/modules/ui/lib/tokenColors';
 
 /**

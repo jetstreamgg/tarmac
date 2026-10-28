@@ -13,7 +13,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { UnauthorizedPage } from '@/modules/auth/components/UnauthorizedPage';
 import { useIsSafeWallet } from '@/hooks/wallet/useIsSafeWallet';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
-import { formatAddress } from '@/utils';
+import { formatAddress } from '@/utils/formatAddress';
 
 // Phone tier: 0x + first two hex chars + last four (0x00…C4A2) — short enough
 // to fit the chip at 360px without ellipsis-truncating mid-glyph (APP-416).

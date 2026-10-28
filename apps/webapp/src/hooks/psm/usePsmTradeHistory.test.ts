@@ -3,7 +3,7 @@ import { HISTORY_QUERY_LIMIT, ModuleEnum, TransactionTypeEnum } from '../constan
 import { TOKENS } from '../tokens/tokens.constants';
 import { psmTradeFragment, mapPsmTradeRows } from './usePsmTradeHistory';
 import { l2SavingsHistoryFragments } from './useL2SavingsHistory';
-import { chainId as chainIdMap } from '@/utils';
+import { chainId as chainIdMap } from '@/utils/chainId';
 
 const WALLET = '0x1111111111111111111111111111111111111111';
 

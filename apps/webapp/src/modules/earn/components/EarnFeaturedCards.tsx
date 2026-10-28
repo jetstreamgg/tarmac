@@ -3,7 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { type EarnProductRow } from '@/hooks/earn/types';
-import { getChainIcon } from '@/utils';
+import { getChainIcon } from '@/utils/getChainIcon';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { IconboxStatus } from '@/components/ui/iconbox';

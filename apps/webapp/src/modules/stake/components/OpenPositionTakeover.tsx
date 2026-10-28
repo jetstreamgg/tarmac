@@ -19,7 +19,7 @@ import { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '@
 import { useTokenBalance } from '@/hooks/tokens/useTokenBalance';
 import { ZERO_ADDRESS } from '@/utils/constants';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
-import { formatDecimalPercentage } from '@/utils';
+import { formatDecimalPercentage } from '@/utils/formatValue';
 import { QueryParams } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { StakeSky } from '@/modules/icons';

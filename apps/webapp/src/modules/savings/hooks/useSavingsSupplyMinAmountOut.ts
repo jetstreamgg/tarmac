@@ -6,7 +6,7 @@ import {
   useReadSsrAuthOracleGetRho,
   useReadSsrAuthOracleGetSsr
 } from '@/hooks/generated';
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 import { EPOCH_LENGTH } from '@/modules/savings/constants';
 
 /**

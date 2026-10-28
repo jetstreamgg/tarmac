@@ -2,11 +2,9 @@ import { useMemo } from 'react';
 import { useChainId, useConnection, useReadContracts } from 'wagmi';
 import { useQueries } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
-import {
-  familyMainnetId as resolveFamilyMainnetId,
-  calculateApyFromStr,
-  formatDecimalPercentage
-} from '@/utils';
+import { familyMainnetId as resolveFamilyMainnetId } from '@/utils/isTestnetId';
+import { calculateApyFromStr } from '@/utils/math/calculateApy';
+import { formatDecimalPercentage } from '@/utils/formatValue';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { ZERO_ADDRESS } from '../constants';
 import { usdsSkyRewardAbi } from '../generated';

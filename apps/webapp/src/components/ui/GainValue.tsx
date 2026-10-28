@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn';
-import { formatUsd } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
 import { RollingValue } from './rolling-value';
 
 /** Below this, a value is float-arithmetic noise, not money — treat as zero. */

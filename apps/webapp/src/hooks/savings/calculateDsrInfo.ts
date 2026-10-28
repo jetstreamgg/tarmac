@@ -1,4 +1,4 @@
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 
 type DsrCalcInputs = {
   dsr: bigint;

@@ -1,5 +1,5 @@
 import { mainnet } from 'viem/chains';
-import { isTestnetId } from '@/utils';
+import { isTestnetId } from '@/utils/isTestnetId';
 
 /** Whether a market has matured (expiry timestamp <= now). */
 export function isMarketMatured(expiry: number): boolean {

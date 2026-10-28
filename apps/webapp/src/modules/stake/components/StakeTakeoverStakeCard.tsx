@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { formatBigInt, formatUsd } from '@/utils';
+import { formatBigInt, formatUsd } from '@/utils/formatValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfoTooltip } from '@/components/InfoTooltip';

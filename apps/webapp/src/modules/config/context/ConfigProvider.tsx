@@ -1,7 +1,7 @@
 import { ReactElement, ReactNode, useEffect, useState } from 'react';
 import { UserConfig } from '../types/user-config';
 import { USER_SETTINGS_KEY } from '@/lib/constants';
-import { dynamicActivate } from '@/utils';
+import { dynamicActivate } from '@/utils/i18n';
 import { applyTheme, getSystemTheme } from '@/lib/theme';
 import { i18n } from '@lingui/core';
 import { ConfigContext, defaultUserConfig } from './ConfigContext';

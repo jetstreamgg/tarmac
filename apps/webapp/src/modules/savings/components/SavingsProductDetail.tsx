@@ -9,7 +9,7 @@ import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
 import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
 import { useSavingsData } from '@/hooks/savings/useSavingsData';
 import { useSkySavingsRateHistoricData } from '@/hooks/savings/useSkySavingsRateHistoricData';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage, formatNumber } from '@/utils/formatValue';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';

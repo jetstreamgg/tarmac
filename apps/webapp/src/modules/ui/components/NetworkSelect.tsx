@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { getChainIcon } from '@/utils';
+import { getChainIcon } from '@/utils/getChainIcon';
 import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
 import { useAppChainId } from '@/hooks/ui/useAppChainId';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';

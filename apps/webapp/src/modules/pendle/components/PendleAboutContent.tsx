@@ -4,7 +4,7 @@ import { Activity, ArrowUpFromLine, AudioLines } from 'lucide-react';
 import { useNow } from '@/hooks/ui/useNow';
 import { usePendleMarketsApiData } from '@/hooks/pendle/usePendleMarketsApiData';
 import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
-import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { formatDecimalPercentage, formatNumber } from '@/utils/formatValue';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { IconboxAction } from '@/components/ui/iconbox';
 import { USER_RISKS_URL } from '@/lib/constants';

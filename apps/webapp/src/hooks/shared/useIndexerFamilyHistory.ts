@@ -1,6 +1,6 @@
 import { useConnection, useChainId } from 'wagmi';
 import { request, gql } from 'graphql-request';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { ReadHook } from '../hooks';
 import { indexerDataSource } from '../constants';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';

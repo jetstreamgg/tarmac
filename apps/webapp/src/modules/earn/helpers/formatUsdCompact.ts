@@ -1,4 +1,4 @@
-import { formatNumber, formatUsd } from '@/utils';
+import { formatNumber, formatUsd } from '@/utils/formatValue';
 
 /**
  * USD figure in compact style: `$4.71B` / `$120.7K` from 1000 up, plain

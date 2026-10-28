@@ -1,4 +1,4 @@
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { Token } from '../tokens/types';
 import { getTokenDecimals } from '../tokens/tokens.constants';
 import { useChainId } from 'wagmi';

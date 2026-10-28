@@ -12,7 +12,8 @@ import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsC
 import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromChartData';
 import { useCollateralData } from '@/hooks/vaults/useCollateralData';
 import { getIlkName } from '@/hooks/vaults/helpers';
-import { formatBigInt, formatDecimalPercentage, formatPercent, math } from '@/utils';
+import * as math from '@/utils/math';
+import { formatBigInt, formatDecimalPercentage, formatPercent } from '@/utils/formatValue';
 import { QueryParams, NO_VALUE } from '@/lib/constants';
 import { useAppSearchParams } from '@/lib/navigation';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';

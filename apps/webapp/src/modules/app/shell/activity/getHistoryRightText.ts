@@ -2,7 +2,7 @@ import { CombinedHistoryItem } from '@/hooks/shared/shared';
 import { TransactionTypeEnum } from '@/hooks/constants';
 import { getAmount } from './getAmount';
 import { getToken } from './getToken';
-import { formatAddress } from '@/utils';
+import { formatAddress } from '@/utils/formatAddress';
 import { t } from '@lingui/core/macro';
 
 export const getHistoryRightText = ({

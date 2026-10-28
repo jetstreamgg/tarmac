@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useCowswapTradeHistory } from './useCowswapTradeHistory';
 import { usePsmTradeHistory } from '../psm/usePsmTradeHistory';
-import { TRADE_CUTOFF_DATES } from '@/utils';
+import { TRADE_CUTOFF_DATES } from '@/utils/tradeCutoffDates';
 import { ReadHook } from '../hooks';
 import { PaginatedHistory } from '../shared/useHistoryPagination';
 

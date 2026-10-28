@@ -1,7 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Info, TrendingUp, X } from 'lucide-react';
-import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
+import { formatDecimalPercentage, formatUsd } from '@/utils/formatValue';
+import { projectAnnualEarnings } from '@/utils/projectAnnualEarnings';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { RateBadge } from '@/components/ui/RateBadge';

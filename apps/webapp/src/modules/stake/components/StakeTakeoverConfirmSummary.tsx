@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { FittedAmount } from '@/components/product/FittedAmount';
 

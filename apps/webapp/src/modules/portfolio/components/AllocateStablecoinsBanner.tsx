@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { formatDecimalPercentage, formatWholeUsd, projectAnnualEarnings } from '@/utils';
+import { formatDecimalPercentage, formatWholeUsd } from '@/utils/formatValue';
+import { projectAnnualEarnings } from '@/utils/projectAnnualEarnings';
 import { Button } from '@/components/ui/button';
 import { PromoBanner, BannerAccent } from '@/components/product/PromoBanner';
 import { trackPromoImpression, trackPromoClicked } from '@/modules/analytics/lib/trackAmbientSurfaces';

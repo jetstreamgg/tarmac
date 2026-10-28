@@ -5,7 +5,7 @@ import { VAULTS } from '../vaults/constants';
 import { MorphoVaultConfig } from './morpho';
 import { ZERO_ADDRESS } from '../constants';
 import { sharesToAssets } from '../vaults/sharesToAssets';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { ReadHook } from '../hooks';
 import { Token } from '../tokens/types';
 

@@ -14,7 +14,7 @@ import { ModuleEnum } from '../constants';
 import { historyPageBoundary, clampHistoryPage, HistoryPage } from './historyQueryHelpers';
 import { useHistoryPagination } from './useHistoryPagination';
 import { CombinedHistoryItem } from './shared';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 
 /**
  * Drops the PSM swaps that are legs of another product's transaction. A USDC

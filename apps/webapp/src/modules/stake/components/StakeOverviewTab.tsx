@@ -2,7 +2,7 @@ import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { Signature, Landmark } from 'lucide-react';
 import { stakeModuleAddress } from '@/hooks/generated';
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { Button } from '@/components/ui/button';
 import { StakeRateChart } from './StakeRateChart';
 import { StakeDetailsStrip } from './StakeDetailsStrip';

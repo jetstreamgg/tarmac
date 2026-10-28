@@ -1,4 +1,4 @@
-import { dynamicActivate } from '@/utils';
+import { dynamicActivate } from '@/utils/i18n';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { useEffect } from 'react';

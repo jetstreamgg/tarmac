@@ -8,7 +8,8 @@ import React from 'react';
 
 import { useChainId } from 'wagmi';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
-import { familyMainnetId, isL2ChainId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
+import { isL2ChainId } from '@/utils/isL2ChainId';
 import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTokenRewardContracts';
 import { VAULTS } from '@/hooks/vaults/constants';
 import { PENDLE_MARKETS } from '@/hooks/pendle/constants';

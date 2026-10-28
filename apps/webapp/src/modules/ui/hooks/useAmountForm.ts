@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { parseAmountInput } from '@/lib/amountInput';
 import { useSettledAmount } from './useSettledAmount';
 

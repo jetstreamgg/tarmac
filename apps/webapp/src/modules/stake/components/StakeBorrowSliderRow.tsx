@@ -3,7 +3,7 @@ import * as SliderPrimitive from '@radix-ui/react-slider';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { cn } from '@/lib/cn';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RiskLevel } from '@/hooks/vaults/vaults.constants';
 import { StakeAmountSlider, STAKE_SLIDER_MAX } from '../hooks/useStakeAmountSlider';

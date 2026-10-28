@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { type Token } from '@/hooks/tokens/types';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmountHero';
 
 /**

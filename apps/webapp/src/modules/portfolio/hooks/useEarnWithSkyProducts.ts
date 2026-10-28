@@ -3,7 +3,7 @@ import { useHighestRateFromChartData } from '@/hooks/stake/useHighestRateFromCha
 import { useMultipleRewardsChartInfo } from '@/hooks/rewards/useMultipleRewardsChartInfo';
 import { useStakeRewardContracts } from '@/hooks/stake/useStakeRewardContracts';
 import { type EarnProductRow } from '@/hooks/earn/types';
-import { formatDecimalPercentage } from '@/utils';
+import { formatDecimalPercentage } from '@/utils/formatValue';
 import { NO_VALUE } from '@/lib/constants';
 import { useGeoConfig } from '@/modules/geo-config';
 import { buildEarnWithSkyProducts, type EarnWithSkyProduct } from '../helpers/earnWithSky';

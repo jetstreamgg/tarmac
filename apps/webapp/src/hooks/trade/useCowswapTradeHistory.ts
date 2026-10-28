@@ -8,7 +8,7 @@ import type { paths } from './cowApiSchema';
 import { TokenForChain } from '../tokens/types';
 import { ETH_ADDRESS, getTokensForChain } from '../tokens/tokens.constants';
 import { formatOrderStatus } from './formatOrderStatus';
-import { isCowSupportedChainId } from '@/utils';
+import { isCowSupportedChainId } from '@/utils/isCowSupportedChainId';
 import { SKY_MONEY_APP_CODE } from './constants';
 import { toReadHook } from '../shared/toReadHook';
 import { fetchJson } from '../shared/fetchJson';

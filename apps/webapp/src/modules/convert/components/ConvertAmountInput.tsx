@@ -2,7 +2,7 @@ import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { BP, useBreakpointIndex } from '@/hooks/ui/useBreakpoint';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { cn } from '@/lib/cn';
 import { buttonVariants } from '@/components/ui/button';
 import { RollingValue } from '@/components/ui/rolling-value';

@@ -1,7 +1,7 @@
 import { msg } from '@lingui/core/macro';
 import type { I18n } from '@lingui/core';
 import { StUsdsSelectionReason, StUsdsBlockedReason } from '@/hooks/stusds/providers/types';
-import { createNumberFormatter, formatBigInt } from '@/utils';
+import { createNumberFormatter, formatBigInt } from '@/utils/formatValue';
 import type { StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 
 // Premium thresholds for color changes (percent) — carried over from the

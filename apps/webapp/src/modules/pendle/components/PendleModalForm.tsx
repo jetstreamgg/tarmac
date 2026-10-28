@@ -24,7 +24,8 @@ import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
 import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
-import { familyMainnetId, formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
+import { familyMainnetId, isTestnetId } from '@/utils/isTestnetId';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils/formatValue';
 import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 import { useNetworkName } from '@/modules/ui/hooks/useNetworkName';

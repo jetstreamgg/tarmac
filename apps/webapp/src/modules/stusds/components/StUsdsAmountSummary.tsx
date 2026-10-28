@@ -1,5 +1,5 @@
 import { formatUnits } from 'viem';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { StUsdsLaunchFlow } from '../hooks/useStUsdsLaunch';
 import { NO_VALUE } from '@/lib/constants';

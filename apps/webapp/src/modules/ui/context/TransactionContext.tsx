@@ -13,7 +13,7 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { InProgress, Cancel, Refresh } from '@/modules/icons';
 import { isStalledStep, toError } from '@/hooks/helpers';
 import { type TxMutateVariables } from '@/hooks/hooks';
-import { getTransactionLink } from '@/utils';
+import { getTransactionLink } from '@/utils/getTransactionLink';
 import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';

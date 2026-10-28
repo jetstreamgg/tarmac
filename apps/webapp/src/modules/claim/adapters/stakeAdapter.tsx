@@ -9,7 +9,7 @@ import { usePrices } from '@/hooks/prices/usePrices';
 import { getWriteContractCall } from '@/hooks/shared/getWriteContractCall';
 import { stakeModuleAddress, stakeModuleAbi, skyAddress } from '@/hooks/generated';
 import { ZERO_ADDRESS } from '@/utils/constants';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { rewardTokenName } from '../tokenNames';
 import type {

@@ -4,7 +4,8 @@ import { useL2sIndexerHistory } from './useL2sIndexerHistory';
 import { useCowswapTradeHistory } from '../trade/useCowswapTradeHistory';
 import { CombinedHistoryItem } from './shared';
 import { clampHistoryPage } from './historyQueryHelpers';
-import { chainId as chainIdMap, TRADE_CUTOFF_DATES } from '@/utils';
+import { chainId as chainIdMap } from '@/utils/chainId';
+import { TRADE_CUTOFF_DATES } from '@/utils/tradeCutoffDates';
 
 /**
  * History across every network: the mainnet aggregate (one indexer document +

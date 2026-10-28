@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { formatUnits, parseUnits } from 'viem';
 import { calculateVaultInfo } from './calculateVaultInfo';
-import { math, RAD_PRECISION, RAY_PRECISION, WAD_PRECISION } from '@/utils';
+import * as math from '@/utils/math';
+import { RAD_PRECISION, RAY_PRECISION, WAD_PRECISION } from '@/utils/math.constants';
 import { RISK_LEVEL_THRESHOLDS, RiskLevel } from './vaults.constants';
 
 const computeLiquidationProximity = (

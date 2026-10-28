@@ -7,7 +7,7 @@ import {
   morphoDataSource
 } from './constants';
 
-import { SECONDS_PER_HOUR } from '@/utils';
+import { SECONDS_PER_HOUR } from '@/utils/math.constants';
 import { toReadHook } from '../shared/toReadHook';
 import { morphoGraphql } from './morphoGraphql';
 const WEEK_IN_SECONDS = 604800;

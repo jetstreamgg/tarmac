@@ -1,4 +1,4 @@
-import { math } from '@/utils';
+import * as math from '@/utils/math';
 import { CollateralRiskParameters } from './vault';
 
 type RiskParamInputs = {

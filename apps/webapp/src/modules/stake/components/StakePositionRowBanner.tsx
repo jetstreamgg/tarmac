@@ -3,7 +3,7 @@ import { TriangleAlert } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Trans } from '@lingui/react/macro';
 import { RiskLevel, RISK_LEVEL_THRESHOLDS } from '@/hooks/vaults/vaults.constants';
-import { formatUsd } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { formatStakeAmount, formatOraclePrice } from '../lib/formatStakeAmount';

@@ -1,6 +1,7 @@
 import { t } from '@lingui/core/macro';
 import { InfoTooltip } from '@/components/InfoTooltip';
-import { formatBigInt, WAD_PRECISION } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
+import { WAD_PRECISION } from '@/utils/math.constants';
 import { useStakeOracleCap } from '../hooks/useStakeOracleCap';
 
 export function stakeLtvTooltipCopy(cap: bigint | undefined): [string, string] {

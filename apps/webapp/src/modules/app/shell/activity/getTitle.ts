@@ -1,5 +1,5 @@
 import { TransactionTypeEnum, ModuleEnum } from '@/hooks/constants';
-import { capitalizeFirstLetter } from '@/utils';
+import { capitalizeFirstLetter } from '@/utils/strings';
 import { t } from '@lingui/core/macro';
 
 export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: ModuleEnum }) => {

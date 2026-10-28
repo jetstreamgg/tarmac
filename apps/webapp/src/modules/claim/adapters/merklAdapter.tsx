@@ -4,7 +4,7 @@ import { formatUnits, type Call } from 'viem';
 import { useMerklRewards, type MerklTokenReward } from '@/hooks/morpho/useMerklRewards';
 import { getWriteContractCall } from '@/hooks/shared/getWriteContractCall';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '@/hooks/generated';
-import { familyMainnetId } from '@/utils';
+import { familyMainnetId } from '@/utils/isTestnetId';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { rewardTokenName } from '../tokenNames';
 import type { ClaimAdapter, ClaimableResult, ClaimCallsResult, ClaimableReward, ClaimScope } from '../types';

@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { t } from '@lingui/core/macro';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { usePendleSlippage, type PendleSlippageMode } from '@/modules/pendle/hooks/usePendleSlippage';
 import { SlippageMenu } from '@/components/ui/SlippageMenu';
 

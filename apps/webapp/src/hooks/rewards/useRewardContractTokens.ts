@@ -1,7 +1,7 @@
 import { useChainId, useReadContracts } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { usdsSkyRewardAbi } from '../generated';
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { erc20Abi } from 'viem';
 import { Token } from '../tokens/types';

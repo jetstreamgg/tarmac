@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
 import { useUsdsDaiData } from '@/hooks/shared/useUsdsDaiData';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';

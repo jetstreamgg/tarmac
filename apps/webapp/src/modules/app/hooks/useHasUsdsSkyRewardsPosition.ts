@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
 import { useRewardsWithUserBalance } from '@/hooks/rewards/useRewardsWithUserBalance';
 import { usdsSkyRewardAddress } from '@/hooks/generated';
-import { isMainnetId, chainId as chainIdMap } from '@/utils';
+import { isMainnetId } from '@/utils/isMainnetId';
+import { chainId as chainIdMap } from '@/utils/chainId';
 
 /**
  * Hook to check if the connected user has any position in the deprecated USDS-SKY rewards.

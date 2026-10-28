@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { usePrices } from '@/hooks/prices/usePrices';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { formatUsd } from '@/utils';
+import { formatUsd } from '@/utils/formatValue';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';

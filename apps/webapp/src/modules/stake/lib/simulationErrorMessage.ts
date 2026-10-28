@@ -1,5 +1,5 @@
 import { t } from '@lingui/core/macro';
-import { formatBigInt } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
 
 // The vault simulation surfaces its dust-floor failure as a plain English
 // string ("Minimum borrow amount is 30,000.00"). The engine hook owns that

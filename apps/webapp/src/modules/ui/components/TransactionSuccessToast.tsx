@@ -1,7 +1,7 @@
 import { ToastSuccessIcon } from '@/components/toast/ToastSuccessIcon';
 import { Text } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { formatAddress } from '@/utils';
+import { formatAddress } from '@/utils/formatAddress';
 
 /**
  * Content for the toast that a confirmed transaction hands its outcome to when

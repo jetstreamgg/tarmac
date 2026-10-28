@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { formatUnits } from 'viem';
 import { useStUsdsChartInfo } from '@/hooks/stusds/useStUsdsChartInfo';
 import { useStUsdsData } from '@/hooks/stusds/useStUsdsData';
-import { calculateApyFromStr } from '@/utils';
+import { calculateApyFromStr } from '@/utils/math/calculateApy';
 import { TimeFrame } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { RateTvlDetailChart, withLivePoint } from '@/components/product/RateTvlDetailChart';

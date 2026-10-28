@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { i18n } from '@lingui/core';
 import { ModuleEnum, TransactionTypeEnum } from '@/hooks/constants';
 import { type CombinedHistoryItem } from '@/hooks/shared/shared';
-import { getCowExplorerLink, getEtherscanLink } from '@/utils';
+import { getCowExplorerLink } from '@/utils/getCowExplorerLink';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { toPortfolioTxRow } from './transactionRow';
 
 i18n.load('en', {});

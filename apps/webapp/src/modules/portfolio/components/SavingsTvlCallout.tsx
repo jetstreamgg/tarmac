@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { formatNumber } from '@/utils';
+import { formatNumber } from '@/utils/formatValue';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';

@@ -7,7 +7,7 @@ import {
   useReadMcdJugIlks,
   useReadMcdSpotIlks
 } from '../generated';
-import { getEtherscanLink } from '@/utils';
+import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import { stringToHex } from 'viem';
 
 import { TRUST_LEVELS } from '../constants';

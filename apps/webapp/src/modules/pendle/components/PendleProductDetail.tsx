@@ -7,7 +7,7 @@ import { type PendleMarketConfig } from '@/hooks/pendle/pendle';
 import { useNow } from '@/hooks/ui/useNow';
 import { usePendleMarketsApiData } from '@/hooks/pendle/usePendleMarketsApiData';
 import { useProductNetworks } from '@/hooks/earn/useProductNetworks';
-import { formatDecimalPercentage, formatWholeUsd } from '@/utils';
+import { formatDecimalPercentage, formatWholeUsd } from '@/utils/formatValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HeaderBadge } from '@/components/ui/page-header';
 import { RiskTierDetailsTrigger } from '@/components/product/RiskTierDetails';

@@ -1,4 +1,5 @@
-import { formatBigInt, WAD_PRECISION } from '@/utils';
+import { formatBigInt } from '@/utils/formatValue';
+import { WAD_PRECISION } from '@/utils/math.constants';
 import { NO_VALUE } from '@/lib/constants';
 
 /**

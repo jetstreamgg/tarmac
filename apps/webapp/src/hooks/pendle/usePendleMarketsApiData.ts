@@ -4,7 +4,7 @@ import { pendleDataSource } from '../constants';
 import { PENDLE_MARKETS } from './constants';
 import { PendleMarketsStats, PendleMarketsStatsHook } from './pendle';
 import { fetchPendleMarketsByIds } from './pendleApiClient';
-import { formatWholeUsd } from '@/utils';
+import { formatWholeUsd } from '@/utils/formatValue';
 
 /**
  * Hook for fetching headline stats (implied APY, TVL) for every market in

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { InProgress, SuccessCheck, FailedX } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
-import { formatAddress } from '@/utils';
+import { formatAddress } from '@/utils/formatAddress';
 
 const statusIcon: Partial<Record<TxStatus, ReactNode>> = {
   [TxStatus.INITIALIZED]: <InProgress />,
