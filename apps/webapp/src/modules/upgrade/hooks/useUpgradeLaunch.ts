@@ -10,7 +10,7 @@ import {
   useTokenAllowance,
   type UpgradeSourceToken
 } from '@/hooks';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSession } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
@@ -51,7 +51,7 @@ export function useUpgradeLaunch({
    */
   onSuccess?: () => void;
 }): UseUpgradeLaunchResult {
-  const { txCallbacks } = useTransaction();
+  const { txCallbacks } = useSession();
   const { address } = useConnection();
   const chainId = useChainId();
 

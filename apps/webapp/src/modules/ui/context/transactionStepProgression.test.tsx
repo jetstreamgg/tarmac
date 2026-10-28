@@ -59,14 +59,15 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
 
 // Launches a 2-step flow on mount and hands the engine callbacks to the test.
 function Harness({ steps, onReady }: { steps: string[]; onReady: (cb: TxCallbacks) => void }) {
-  const { launch, txCallbacks } = useTransaction();
+  const { launch, txCallbacks } = useTestTransaction();
   const started = useRef(false);
   // Report the LATEST callbacks on every render: they are bound to the session
   // generation that rendered them, so tests must capture them post-launch, the

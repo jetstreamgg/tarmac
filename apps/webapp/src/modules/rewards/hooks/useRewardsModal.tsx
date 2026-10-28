@@ -1,9 +1,8 @@
 import { useCallback, useId } from 'react';
-import { t } from '@lingui/core/macro';
 import { type Token } from '@/hooks';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
-import { RewardsModalForm, type RewardsModalPreset } from '../components/RewardsModalForm';
+import { RewardsFlow, type RewardsModalPreset } from '../components/RewardsFlow';
 
 /** Per-contract inputs the launcher needs to open the modal for a specific farm. */
 export type RewardsModalArgs = {
@@ -28,41 +27,26 @@ type UseRewardsModalOptions = {
 /**
  * Reusable trigger for the editable rewards supply/withdraw modal — the rewards
  * analogue of `useVaultModal`. Any surface (the rewards position card, the
- * Portfolio cards, …) calls this instead of re-declaring the launch config. Each
- * opener mints its own session so sibling modals never cross-talk.
+ * Portfolio cards, …) calls this.
  *
  * Like vaults, reward farms are many, so the per-contract inputs are passed to
  * `openSupply`/`openWithdraw` at call time (not hook time) — the same launcher
- * can open the modal for any farm. Analytics live-merge from the form body
- * (`useModalEntryBody`), not from this launch config.
+ * can open the modal for any farm.
  */
 export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
   const { launch } = useTransaction();
   const supplySessionId = useId();
   const withdrawSessionId = useId();
 
-  const openSupply = useCallback(
-    (args: RewardsModalArgs, preset?: RewardsModalPreset) => {
+  const open = useCallback(
+    (flow: 'supply' | 'withdraw', sessionId: string, args: RewardsModalArgs, preset?: RewardsModalPreset) =>
       launch({
-        title: t`Supply to ${args.displayName}`,
-        reviewTitle: t`Review supply`,
-        transactionTitle: t`Confirm in the wallet`,
-        sessionId: supplySessionId,
-        // Three-screen flow per the Savings template: the entry advances to the
-        // review; the review's Confirm fires the engine. The body pushes the
-        // review breakdown (`transactionContent`) live.
-        entry: { confirmLabel: t`Review`, confirmDisabled: true },
-        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
-        usdValue: 0,
+        sessionId,
         // Reward farms are mainnet-only — guard the modal off any L2 (APP-528).
         supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-        confirmLabel: t`Confirm`,
-        // The editable body lives outside the dialog (hidden host) so its in-flight
-        // hook survives minimize; it portals its inputs into the modal's entry slot.
-        backgroundContent: (
-          <RewardsModalForm
-            sessionId={supplySessionId}
-            flow="supply"
+        flow: (
+          <RewardsFlow
+            flow={flow}
             contractAddress={args.contractAddress}
             supplyToken={args.supplyToken}
             displayName={args.displayName}
@@ -70,46 +54,21 @@ export function useRewardsModal({ onSuccess }: UseRewardsModalOptions = {}) {
             rewardTokenSymbol={args.rewardTokenSymbol}
             rate={args.rate}
             preset={preset}
+            onSuccess={onSuccess}
           />
-        ),
-        onConfirm: () => {},
-        onSuccess
-      });
-    },
-    [launch, supplySessionId, onSuccess]
+        )
+      }),
+    [launch, onSuccess]
   );
 
+  const openSupply = useCallback(
+    (args: RewardsModalArgs, preset?: RewardsModalPreset) => open('supply', supplySessionId, args, preset),
+    [open, supplySessionId]
+  );
   const openWithdraw = useCallback(
-    (args: RewardsModalArgs, preset?: RewardsModalPreset) => {
-      launch({
-        title: t`Withdraw from ${args.displayName}`,
-        reviewTitle: t`Review withdrawal`,
-        transactionTitle: t`Confirm in the wallet`,
-        sessionId: withdrawSessionId,
-        entry: { confirmLabel: t`Review`, confirmDisabled: true },
-        // Nothing entered yet; the form keeps this live (enhanced screening, APP-517).
-        usdValue: 0,
-        // Reward farms are mainnet-only — guard the modal off any L2 (APP-528).
-        supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-        confirmLabel: t`Confirm`,
-        backgroundContent: (
-          <RewardsModalForm
-            sessionId={withdrawSessionId}
-            flow="withdraw"
-            contractAddress={args.contractAddress}
-            supplyToken={args.supplyToken}
-            displayName={args.displayName}
-            productName={args.productName}
-            rewardTokenSymbol={args.rewardTokenSymbol}
-            rate={args.rate}
-            preset={preset}
-          />
-        ),
-        onConfirm: () => {},
-        onSuccess
-      });
-    },
-    [launch, withdrawSessionId, onSuccess]
+    (args: RewardsModalArgs, preset?: RewardsModalPreset) =>
+      open('withdraw', withdrawSessionId, args, preset),
+    [open, withdrawSessionId]
   );
 
   return { openSupply, openWithdraw };

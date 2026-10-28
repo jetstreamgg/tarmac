@@ -39,8 +39,7 @@ const h = vi.hoisted(() => ({
     targetToken: { symbol: 'USDC' }
   },
   locked: false,
-  restore: vi.fn(),
-  runActive: false
+  restore: vi.fn()
 }));
 
 vi.mock('posthog-js/react', async () => {
@@ -78,9 +77,6 @@ vi.mock('../hooks/useConvertLaunch', () => ({
 
 // Connect-then-act passes the action through when connected (the real provider
 // needs the whole wallet stack); the pass-through keeps the CTA seam observable.
-vi.mock('@/modules/ui/hooks/useTransactionRunActive', () => ({
-  useTransactionRunActive: () => h.runActive
-}));
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (action: () => void) => action
 }));
@@ -105,7 +101,6 @@ const renderPage = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  h.runActive = false;
   h.form.isZero = true;
   h.form.insufficient = false;
   h.form.amount = 0n;
@@ -166,18 +161,12 @@ describe('ConvertPage', () => {
     expect((screen.getByTestId('convert-review-cta') as HTMLButtonElement).disabled).toBe(false);
   });
 
-  it('keeps the engine on through a run the amount check no longer passes', () => {
-    // A leg of the run spent the balance the amount was validated against.
+  it('turns the page engine off while the balance does not cover the amount', () => {
     h.form.isZero = false;
     h.form.amount = h.form.debouncedAmount = 15n * 10n ** 18n;
     h.form.insufficient = true;
     renderPage();
     expect(h.useConvertLaunch).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: false }));
-
-    h.runActive = true;
-    cleanup();
-    renderPage();
-    expect(h.useConvertLaunch).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: true }));
   });
 
   it('shows insufficient funds over the engine guard and disables Review', () => {

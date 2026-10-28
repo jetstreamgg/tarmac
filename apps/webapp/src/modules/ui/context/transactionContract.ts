@@ -1,78 +1,24 @@
 import type { ReactNode } from 'react';
-import type { TransactionStep, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
-import type { TxStatus } from '@/modules/ui/lib/txStatus';
-import type { TxMutateVariables } from '@/hooks';
 import type { Call } from 'viem';
+import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import type { TxMutateVariables } from '@/hooks';
 import type { CallMatcher } from '@/modules/ui/lib/callIntent';
 
 /**
- * The frozen transaction-orchestration contract: a flow calls `launch(config)`,
- * spreads `txCallbacks` into its write hook, and the modal renders the lifecycle.
- * Freezing it lets the redesign build against a stable interface while the
- * orchestration is rewritten.
+ * A flow is launched with `launch({ flow: <XFlow … /> })`. The provider mounts that
+ * element for the session's lifetime (minimize included); it runs its own engine
+ * with `useSession().txCallbacks` and renders `<TransactionModal>` from its own
+ * state on every render.
  *
  * Lifecycle (`TxStatus`): IDLE → INITIALIZED (awaiting wallet) → LOADING
- * (submitted) → SUCCESS | ERROR | CANCELLED. Multi-step flows advance
- * `currentStep` each time `onMutate` fires while already INITIALIZED/LOADING.
+ * (submitted) → SUCCESS | ERROR. Multi-step flows advance the step each time
+ * `onMutate` fires while already INITIALIZED/LOADING.
  *
- * Safe-aware hash: the explorer link is resolved by the context via
- * `getTransactionLink(chainId, address, hash, isSafeWallet)` — Safe wallets link
- * to the Safe queue, everyone else to Etherscan. Consumers only pass the hash.
- *
- * EIP-5792 (batched): success requires `data.status === 'success'` (not
- * `isSuccess` alone); the hash is `data.receipts[0].transactionHash`. While
- * pending the tracked id is the bundle id, so `onStart` gets `undefined`.
+ * EIP-5792 (batched): success requires `data.status === 'success'`; while pending
+ * the tracked id is the bundle id, so `onStart` gets `undefined`.
  */
 
-/**
- * An editable "entry" first screen (PRD module 1). When a config carries one, the
- * shared modal opens on this screen instead of the read-only review, gated by
- * `confirmDisabled` and labelled by `confirmLabel`. Confirming advances to the same
- * wallet/status screen and fires the config's `onConfirm`.
- *
- * The interactive body is supplied one of two ways:
- *  - `content` — rendered inside the dialog. Simple for review-style entries, but
- *    it unmounts when the dialog is hidden (so it can't host a minimize-surviving
- *    hook). A body here keeps its `confirmDisabled` / `onConfirm` live via
- *    `updateModalContent` (the merge preserves `content`, so it never remounts).
- *  - omit `content` and supply `backgroundContent` on the config instead — the body
- *    lives in a hidden, always-mounted host (so its in-flight hook survives a
- *    minimize) and portals its inputs into the dialog's entry slot.
- */
-export type TransactionEntry = {
-  content?: ReactNode;
-  confirmLabel?: string;
-  /** Disables the entry's confirm button (e.g. amount is zero / over balance). */
-  confirmDisabled?: boolean;
-  /**
-   * User-readable engine/prepare failure rendered above the entry's confirm
-   * button (e.g. a failed withdraw simulation). Explanatory only — pair it with
-   * `confirmDisabled` to actually block the confirm. Push `undefined` to clear
-   * it when the engine recovers.
-   */
-  errorMessage?: string;
-  /**
-   * Label for an optional second CTA drawn beside the primary one (Figma
-   * 1036:214001: the stake claim entry pairs a secondary "Claim" with the
-   * primary "Claim & Restake SKY"). Only honoured on entry-only flows — a
-   * three-screen flow's entry advances to its review, which has a single
-   * confirm. Clicking advances to the wallet screen and fires the config's
-   * `onSecondaryConfirm`.
-   */
-  secondaryConfirmLabel?: string;
-  /** Disables the secondary CTA independently of the primary one. */
-  secondaryConfirmDisabled?: boolean;
-  /**
-   * While set, the entry's primary CTA fires this INSTEAD of starting the
-   * transaction — the modal stays on the entry screen and the config's
-   * `onConfirm` doesn't run. Lets a flow surface a prerequisite in the primary
-   * slot (e.g. a disconnected upgrade modal's "Connect wallet") while the form
-   * beneath stays visible; push `undefined` to restore the normal confirm.
-   */
-  confirmAction?: () => void;
-};
-
-/** Analytics metadata passed by consumers to attribute events correctly. */
+/** Analytics metadata passed by flows to attribute events correctly. */
 export type TransactionAnalytics = {
   /** Widget/page name (e.g. "vaults"). */
   widgetName: string;
@@ -84,258 +30,128 @@ export type TransactionAnalytics = {
   data?: Record<string, unknown>;
 };
 
-/** The config a consumer passes to `launch()` for a standard on-chain transaction. */
-export type TransactionConfig = {
-  /** Title for the first (review/entry) screen — and the whole modal when no `transactionTitle`. */
-  title: string;
-  /** Title for the wallet/status screen (e.g. "Confirm in the wallet"); defaults to `title`. */
-  transactionTitle?: string;
+/**
+ * An editable first screen. The modal opens on it instead of the read-only
+ * review; with `transactionContent` also set the flow runs entry → review →
+ * transaction.
+ */
+export type TransactionEntry = {
+  content: ReactNode;
+  confirmLabel?: string;
+  confirmDisabled?: boolean;
+  /** Explanatory only: pair it with `confirmDisabled` to block the confirm. */
+  errorMessage?: string;
+  /** A second CTA beside the primary one, entry-only flows only (Figma 1036:214001). */
+  secondaryConfirmLabel?: string;
+  secondaryConfirmDisabled?: boolean;
   /**
-   * Title for the review stage of a three-screen flow (e.g. "Review supply");
-   * defaults to `title`. A config carrying both `entry` and `transactionContent`
-   * runs entry → review → transaction; entry-only and review-only configs keep
-   * their two screens.
+   * While set, the primary CTA fires this INSTEAD of starting the transaction
+   * (e.g. a disconnected upgrade modal's "Connect wallet").
    */
-  reviewTitle?: string;
+  confirmAction?: () => void;
+};
+
+/**
+ * What a deferred dispatch (an async gate verdict, Retry) is re-checked against.
+ * The view freezes once the transaction leaves IDLE while the engine keeps
+ * rebuilding calldata from live quotes, so without this a deferred dispatch could
+ * sign terms the user never saw.
+ */
+export type DispatchChecks = {
   /**
-   * Subtitle copy under the title. Flows set only `review` (a first-screen
-   * disclosure); the status entries are unused by design — the step list and
-   * status chip narrate the transaction (Figma 1030:139111), and the toast has
-   * its own `toast` copy below.
+   * The calls `onConfirm` would send now. Snapshotted at the confirm; a deferred
+   * dispatch must still be a tail of that snapshot (calls legitimately drop off
+   * the front: a landed approve, a resumed sequence).
    */
-  subtitles?: TransactionSubtitles;
-  transactionContent?: ReactNode;
-  /**
-   * Compact body for the wallet/status screen ("Confirm in the wallet"). Figma
-   * shows a relabelled amount summary there instead of the full review breakdown.
-   * Falls back to `transactionContent` when omitted, so existing consumers render
-   * unchanged.
-   */
-  transactionScreenContent?: ReactNode;
-  /**
-   * Editable first screen. When present the modal opens on the entry screen
-   * (instead of the read-only review built from `transactionContent`). Both lead
-   * to the same wallet/status screen.
-   */
-  entry?: TransactionEntry;
-  /**
-   * The flow's own surface already IS the review — the stake takeovers, where
-   * the user builds the configuration and checks it on the page (Design QA
-   * 2800:91832: "We don't have a 'Confirm' modal because this overlay already
-   * serves that purpose"). Launch then behaves as if the review's Confirm had
-   * been pressed: the modal opens straight on the wallet/status screen and the
-   * pre-transaction gate runs at once — screening, the enhanced tier, the terms
-   * signature step, the chain guard — before `onConfirm`. Nothing is skipped
-   * but the in-modal review body. Mutually exclusive with `entry`.
-   *
-   * The review-viewed analytics event still fires at launch, as for every
-   * review-first flow: the Confirm that launched this is the user leaving the
-   * review. A first-screen denial (an enhanced-screening or wrong-chain
-   * refusal) has no first screen to land on, so it closes the modal — the
-   * flow's surface is expected to render the same hold itself, through
-   * `useTransactionPreflight`.
-   */
-  skipReview?: boolean;
-  /**
-   * The modal replaces another modal that unmounts in the same commit (the
-   * stake change/claim modals over the details modal): its scrim mounts
-   * already up instead of fading in over the uncovered page.
-   */
-  scrimHandoff?: boolean;
-  /**
-   * Content the provider keeps mounted (hidden) for the whole modal lifetime —
-   * independent of which screen is showing and of minimize. This is where a flow
-   * hosts the in-flight engine hook whose receipt-watcher must survive a minimize:
-   * unlike `entry.content` (inside the Radix dialog, which unmounts when hidden),
-   * `backgroundContent` lives outside the dialog so the running transaction is
-   * never torn down. The visible inputs live in `entry.content` and share state
-   * with this host (e.g. via a session-keyed store).
-   */
-  backgroundContent?: ReactNode;
-  /** Optional node rendered to the right of the title — e.g. a slippage gear. */
-  rightHeaderComponent?: ReactNode;
-  /** Optional badge rendered immediately after the title — e.g. a "Merkl" source chip. */
-  titleBadge?: ReactNode;
-  /**
-   * Per-state titles for the toast shown while the modal is minimized (it's hidden,
-   * so the toast notifies progress). Flows set amount-aware titles here (e.g.
-   * "10,000.00 USDS supplied!"); a missing state falls back to `title` alone.
-   * Every flow sets all three (status subtitles no longer exist, so there is
-   * no sentence to fall back on). An editable flow pushes these live via
-   * `updateModalContent` as the amount changes.
-   */
-  toast?: {
-    loading?: string;
-    success?: string;
-    error?: string;
-  };
-  /**
-   * Starts the flow's write(s). The provider consults the pre-transaction
-   * gate (`./preTransactionGate`) before invoking this — and before
-   * `onSecondaryConfirm` / `onRetry` — so a denied verdict never reaches the
-   * engine. The stub gate allows synchronously, keeping this (and the
-   * engine's `onMutate`) in the same tick as the user's confirm click.
-   */
-  onConfirm: () => void;
-  /**
-   * Fires when the entry's secondary CTA is clicked (see
-   * `TransactionEntry.secondaryConfirmLabel`). A two-action flow routes each
-   * CTA to its own engine and pushes the clicked mode's `steps`/`analytics`
-   * via `updateModalContent` before executing.
-   */
-  onSecondaryConfirm?: () => void;
-  onRetry?: () => void;
-  /**
-   * Reads the calls the flow's engine would send if dispatched right now (the
-   * engine's `nextCalls`, kept live through a ref). The provider snapshots them
-   * when the user confirms and, before any DEFERRED dispatch (an async gate
-   * verdict, Retry), refuses to send calls that are no longer the tail of that
-   * snapshot: the review screen freezes once the transaction leaves IDLE, but
-   * the engine keeps rebuilding its calldata from live quotes, so without this
-   * a deferred dispatch could sign terms the user never saw. A tail, not
-   * equality, because calls legitimately drop off the front (an approve that
-   * landed, a sequence resuming after a mined step). Omitted by flows whose
-   * calldata cannot drift after review.
-   */
-  getNextCalls?: () => readonly Call[];
-  /**
-   * Relaxes the `getNextCalls` comparison per call, for calldata carrying a
-   * slippage bound that follows a live quote — build it with `tightensOnly`,
-   * which lets only that bound move, and only in the user's favour. Omitted, a
-   * deferred dispatch must match the confirmed calls byte for byte.
-   */
+  nextCalls?: readonly Call[];
+  /** Relaxes the comparison per call (see `tightensOnly`); omitted, byte equality. */
   callMatches?: CallMatcher;
   /**
-   * Reads the flow's live confirm gating (what `confirmDisabled` would be if
-   * pushed now). Pushes freeze once the transaction leaves IDLE, so the provider
-   * reads this instead to refuse a deferred dispatch the flow would no longer
-   * allow: a lapsed acknowledgement, a module that halted since the confirm.
-   * Not read on a retry after a mined step: the run itself has moved the
-   * balances the form checks, and what is left to send is still held to the
-   * confirmed calls.
+   * The flow's live confirm gating. Refuses a deferred dispatch the flow would no
+   * longer allow, except a retry after a mined step (the run itself moved the
+   * balances the form checks).
    */
-  getConfirmDisabled?: () => boolean;
+  disabled?: boolean;
+  /** Refuses a deferred dispatch on every trigger, a retry after a mined step included. */
+  blocked?: boolean;
+};
+
+/** Props a flow renders `<TransactionModal>` with. */
+export type TransactionFlowProps = {
+  title: string;
+  /** Wallet/status screen title; defaults to `title`. */
+  transactionTitle?: string;
+  /** A three-screen flow's review title; defaults to `title`. */
+  reviewTitle?: string;
+  /** A first-screen disclosure under the title (Pendle's early-withdrawal note). */
+  subtitle?: string;
+  titleBadge?: ReactNode;
+  rightHeaderComponent?: ReactNode;
+  entry?: TransactionEntry;
+  /** The read-only review body (or a three-screen flow's middle stage). */
+  transactionContent?: ReactNode;
+  /** Compact wallet/status body; falls back to `transactionContent` on review-first flows. */
+  transactionScreenContent?: ReactNode;
   /**
-   * Refuses a deferred dispatch on every trigger, including a retry after a
-   * mined step: for state the calldata doesn't carry and the run itself never
-   * moves, such as a PSM fee `sellGem` has no min-out against.
+   * The flow's own surface already was the review (the stake takeovers): the
+   * modal opens on the wallet/status screen and confirms once on mount, through
+   * the same gate. Mutually exclusive with `entry`.
    */
-  getDispatchBlocked?: () => boolean;
+  skipReview?: boolean;
+  /** The modal replaces another that unmounts in the same commit: its scrim mounts already up. */
+  scrimHandoff?: boolean;
   confirmLabel?: string;
-  /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
-  /**
-   * User-readable engine/prepare failure rendered above the review screen's
-   * confirm button (the entry screen reads `entry.errorMessage` instead — the
-   * same dual sourcing as `confirmDisabled`).
-   */
+  /** The review screen's prepare failure (the entry reads `entry.errorMessage`). */
   errorMessage?: string;
   successLabel?: string;
   errorLabel?: string;
-  onSuccess?: () => void;
-  onError?: () => void;
-  /**
-   * Steps for multi-step transactions — a bare label or `{ label, tokenSymbol }`
-   * to render the DS token chip (e.g. `{ label: "Approve", tokenSymbol: "USDS" }`).
-   */
   steps?: TransactionStep[];
-  /** Analytics metadata for tracking transaction lifecycle events. */
+  /** Minimized/success toast titles per state; a missing one falls back to `title`. */
+  toast?: { loading?: string; success?: string; error?: string };
   analytics?: TransactionAnalytics;
   /**
-   * Estimated USD notional of the transaction (APP-517): what the compliance
-   * surface compares against the enhanced-screening threshold. Editable flows
-   * launch with `0` (nothing entered yet) and keep it live via
-   * `updateModalContent` as the amount changes; flows whose amounts resolve
-   * asynchronously (the claim panels) launch with `undefined` until the
-   * amounts land. `undefined` means UNKNOWN and is treated as
-   * above-threshold — the enhanced check is required — so a flow that cannot
-   * value its amount fails safe rather than open.
-   *
-   * DELIBERATELY REQUIRED (not `usdValue?:`): this is legal-compliance
-   * gating, so a new launch site must state its valuation — or explicitly
-   * declare it unknown — at compile time. Passing `undefined` is always
-   * safe (it forces the enhanced check); omitting the field is a type error.
+   * Estimated USD notional (APP-517), compared against the enhanced-screening
+   * threshold. `undefined` means unknown and is treated as above it. Required so
+   * every flow states its valuation at compile time.
    */
   usdValue: number | undefined;
+  onConfirm: () => void;
+  /** Fires the entry's secondary CTA (see `TransactionEntry.secondaryConfirmLabel`). */
+  onSecondaryConfirm?: () => void;
+  /** The secondary action's own steps and analytics, used once it is the one clicked. */
+  secondarySteps?: TransactionStep[];
+  secondaryAnalytics?: TransactionAnalytics;
+  /** Defaults to `onConfirm`. */
+  onRetry?: () => void;
+  onSuccess?: () => void;
+  onError?: () => void;
+  dispatch?: DispatchChecks;
+};
+
+export type LaunchOptions = {
+  /** The flow element, mounted for the session's lifetime. */
+  flow: ReactNode;
+  /** Identity for `activeSessionId` (the page-side minimized lock). */
+  sessionId?: string;
   /**
-   * The chains this flow's calldata may be built for and sent on. The provider
-   * guards the modal whenever the connected wallet is on a chain OUTSIDE this
-   * set: the firing/advancing CTAs are disabled and a "switch network" prompt
-   * takes their place. This is the cross-chain-calldata defense (APP-528) — a
-   * product address resolved on chain A must never be sent as calldata on chain
-   * B, which silently succeeds against a codeless address (or, worse, an
-   * attacker-occupied one).
-   *
-   * - Single-chain products (vaults, rewards, stUSDS, Pendle, upgrade, stake,
-   *   claim): `MAINNET_FAMILY_CHAIN_IDS` (`[mainnet, tenderly]`).
-   * - Multi-chain products (savings, convert): every chain the product runs on,
-   *   from `useProductNetworks(intent)`. Switching WITHIN the set is legitimate
-   *   (the planned in-modal chain switch) — the guard stays silent and the form
-   *   re-resolves its addresses against the new chain; only leaving the set guards.
-   *
-   * DELIBERATELY REQUIRED (like `usdValue`): a new launch site must state which
-   * chains it is safe on at compile time, so this class of bug cannot be
-   * reintroduced by omission. An empty array disables the guard (chain-agnostic
-   * flows only) and must be justified at the call site.
+   * The chains this flow's calldata may be built for and sent on (APP-528). Off
+   * them every firing CTA is held and a switch prompt replaces it, so a product
+   * address resolved on one chain is never sent as calldata on another. Required
+   * so no launch site can omit it; an empty array disables the guard.
    */
   supportedChainIds: number[];
   /**
-   * Why `supportedChainIds` is what it is — it picks the guard's copy.
-   *
-   * - `product-unavailable` (default): the set is every chain the product runs
-   *   on, so leaving it means the product itself isn't on the wallet's chain.
-   * - `launch-chain`: the set is `[launch chain]` because the flow's figures
-   *   (quote, allowance, addresses) were resolved for that chain and don't
-   *   re-derive from the modal. The product may well run on the wallet's new
-   *   chain, so the guard says the flow was prepared elsewhere instead of
-   *   claiming the product is unavailable (APP-563 #4, Convert).
+   * Picks the guard's copy: `launch-chain` when the set is just the launch chain
+   * because the flow's figures were resolved there (Convert, APP-563 #4).
    */
   chainGuardReason?: 'product-unavailable' | 'launch-chain';
-  /** Identity used to gate updateModalContent calls to the active session. */
-  sessionId?: string;
 };
 
 /**
- * The subset of config a flow may live-update after launch (gated on sessionId).
- * An in-modal entry body uses this to keep its gating + confirm fresh: `entry` is
- * a *partial* merged into the existing entry (so `content` need not be re-pushed,
- * and the body stays mounted), and `onConfirm` / `steps` are swapped to reflect
- * the current amount. A two-action flow additionally pushes the clicked mode's
- * `steps`/`analytics` (and an `onRetry` routed to the last-clicked engine) at
- * confirm time — the provider applies updates to its config ref synchronously,
- * so the engine's `onMutate` (fired in the same click) sees them.
- */
-export type LiveModalUpdate = Partial<
-  Pick<
-    TransactionConfig,
-    | 'transactionContent'
-    | 'transactionScreenContent'
-    | 'rightHeaderComponent'
-    | 'confirmDisabled'
-    | 'errorMessage'
-    | 'onConfirm'
-    | 'onSecondaryConfirm'
-    | 'onRetry'
-    | 'getNextCalls'
-    | 'callMatches'
-    | 'getConfirmDisabled'
-    | 'getDispatchBlocked'
-    | 'steps'
-    | 'toast'
-    | 'analytics'
-    | 'usdValue'
-  >
-> & {
-  /** Partial entry merged into the existing entry — `content` is preserved if omitted. */
-  entry?: Partial<TransactionEntry>;
-};
-
-/**
- * Lifecycle callbacks spread into write hooks. Compatible with both
- * WriteHookParams and BatchWriteHookParams. `hash` is the on-chain tx hash where
- * one exists; for EIP-5792 batches it is undefined until a receipt resolves (see
- * the EIP-5792 rule above). `blockNumber` on success is the block of the last
- * receipt, which the history refresh waits for the indexer to reach.
+ * Lifecycle callbacks a flow spreads into its engine. `hash` is the on-chain tx
+ * hash where one exists; `blockNumber` on success is the last receipt's block,
+ * which the history refresh waits for the indexer to reach.
  */
 export type TxCallbacks = {
   /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
@@ -345,38 +161,22 @@ export type TxCallbacks = {
   onError: (error: Error, hash?: string) => void;
 };
 
-/** The value exposed by the transaction context. */
 export type TransactionContextValue = {
-  /** Open the transaction modal with a review screen. */
-  launch: (config: TransactionConfig) => void;
-  /** Live-update body / right-header / confirm-disabled. Gated on sessionId. */
-  updateModalContent: (sessionId: string, partial: LiveModalUpdate) => void;
+  /** Opens a session for the flow, unless a transaction is already on-chain. */
+  launch: (options: LaunchOptions) => void;
+  /** True while a session is live, minimized or not. */
   isModalOpen: boolean;
-  /** Hide the modal without ending the transaction — it keeps running in the background. */
+  /** Hide the modal without ending the transaction. */
   minimize: () => void;
-  /** Re-show a minimized modal at its current lifecycle state. */
   restore: () => void;
-  /** Whether the modal is currently minimized (hidden but still tracking a tx). */
   isMinimized: boolean;
-  /** `sessionId` of the live session (open or minimized), null when there is none. */
+  /** `sessionId` of the live session, null when there is none. */
   activeSessionId: string | null;
+  /** An ended session of this `sessionId` still has a write out: its review Confirm stays held, and its launcher should hold too. */
+  isSettling: (sessionId: string) => boolean;
   /**
-   * Called by the app shell on every route (pathname) change: closes the
-   * session unless a write is in flight, the modal is minimized, or the
-   * session was launched on the destination route itself. Modals don't
-   * survive app navigation.
+   * Called by the app shell on every pathname change: closes the session unless
+   * a write is in flight, it is minimized, or it was launched on that route.
    */
   closeOnNavigation: (pathname: string) => void;
-  /** Transaction lifecycle callbacks to spread into write hooks. */
-  txCallbacks: TxCallbacks;
-  /**
-   * Current transaction status.
-   *
-   * NEVER observably SUCCESS: a confirmed transaction closes the modal in the
-   * same synchronous callback that sets it, and React batches the two, so the
-   * only committed value is the IDLE the close resets to. Read this for "has
-   * the flow left IDLE" (the freeze-live-updates rule); for a post-success
-   * side effect use the config's `onSuccess`, or compose the engine's.
-   */
-  txStatus: TxStatus;
 };

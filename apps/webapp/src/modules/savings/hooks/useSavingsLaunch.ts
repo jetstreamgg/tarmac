@@ -18,7 +18,7 @@ import {
   usdsPsmWrapperAddress
 } from '@/hooks';
 import { isL2ChainId, math } from '@/utils';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSession } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
 import { useUsdcSupplyGate } from './useUsdcSupplyGate';
@@ -100,7 +100,7 @@ export function useSavingsLaunch({
   maxAmountInForWithdraw,
   enabled = true
 }: UseSavingsLaunchParams): UseSavingsLaunchResult {
-  const { txCallbacks } = useTransaction();
+  const { txCallbacks } = useSession();
   const { address } = useAccount();
   const chainId = useChainId();
 
@@ -262,8 +262,6 @@ export function useSavingsLaunch({
   //  - DAI supply: up to 4 (approve-DAI → upgrade → approve-USDS → supply)
   //  - mainnet USDC supply: up to 4 (approve-USDC → convert → approve-USDS → supply)
   //  - L2 PSM supply/withdraw: optional approve(assetIn → psm3L2) → swap
-  // Hoisted from launch() so the editable modal entry body can pass them straight
-  // to the shared modal; launch() consumes the same value (behaviour unchanged).
   const steps = useMemo<TransactionStep[]>(() => {
     // Failure copy per Figma 1030:139111 — shown under "Approve failed" when
     // the approval is the step that rolled back.

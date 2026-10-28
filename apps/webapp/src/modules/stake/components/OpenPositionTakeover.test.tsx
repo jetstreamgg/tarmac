@@ -14,6 +14,7 @@ const DELEGATE_A = '0x1111111111111111111111111111111111111111' as const;
 const DELEGATE_B = '0x2222222222222222222222222222222222222222' as const;
 
 const h = vi.hoisted(() => ({
+  invalidate: vi.fn(),
   launchSpy: vi.fn(),
   launchParams: undefined as Record<string, unknown> | undefined,
   manageLaunchSpy: vi.fn(),
@@ -97,7 +98,7 @@ vi.mock('@tanstack/react-query', async importOriginal => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
   return {
     ...actual,
-    useQueryClient: () => ({ invalidateQueries: () => undefined })
+    useQueryClient: () => ({ invalidateQueries: h.invalidate })
   };
 });
 
@@ -1059,5 +1060,21 @@ describe('OpenPositionTakeover — simulation and engine errors (APP-490)', () =
     expect(screen.getByTestId('stake-takeover-error').textContent).toBe(
       'Something went wrong preparing the transaction. Please try again.'
     );
+  });
+});
+
+describe('a success that lands after the takeover is gone', () => {
+  it('still refreshes the stake reads but leaves the route alone', () => {
+    renderTakeover();
+    const onSuccess = h.launchParams?.onSuccess as () => void;
+    onSuccess();
+    expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
+
+    cleanup();
+    setSearchParamsMock.mockClear();
+    h.invalidate.mockClear();
+    onSuccess();
+    expect(h.invalidate).toHaveBeenCalled();
+    expect(setSearchParamsMock).not.toHaveBeenCalled();
   });
 });

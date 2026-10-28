@@ -12,7 +12,7 @@ import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { withdrawalWording } from '@/components/product/withdrawalAvailability';
 import { TokenSelectorPill } from '@/components/product/TokenSelectorPill';
-import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import type { TransactionAnalytics } from '@/modules/ui/context/transactionContract';
 import { signedAmount } from '@/modules/analytics/constants';
@@ -30,23 +30,17 @@ import { useModalFeeCell } from '@/modules/ui/hooks/useModalFeeCell';
 export type { RewardsModalPreset } from '../hooks/useRewardsTransactionForm';
 
 /**
- * Editable body for the rewards "Supply to / Withdraw from {farm}" modals,
- * mounted as the shared modal's entry screen — the rewards analogue of
- * `SavingsModalForm`. One body, two flows. No Figma comps exist for these
+ * The rewards "Supply to / Withdraw from {farm}" flow — the rewards analogue of
+ * `SavingsFlow`. No Figma comps exist for these
  * flows, so the presentation adapts the Savings template to the farm's data
  * points: the DS amount field (label + 24px icon + Heading-3 input, balance +
  * 25/50/100% chips + static token chip) over the two-column detail grid, and a
  * review stage whose breakdown pairs the legacy rows into the shared grid.
  *
- * The form model (`useRewardsTransactionForm`) is shared; the shared modal owns
- * the confirm button and the three-screen sequence (entry → review → wallet).
- * This body keeps the button's gating + the review breakdown + step labels +
- * the wallet-screen hero + minimized-toast titles live via `updateModalContent`
- * so the body never remounts (input stays focused). The review's Confirm fires
- * the engine `execute` from `useRewardsLaunch`.
+ * The form model is `useRewardsTransactionForm`; the review's Confirm fires the
+ * engine `execute` from `useRewardsLaunch`.
  */
-export function RewardsModalForm({
-  sessionId,
+export function RewardsFlow({
   flow,
   contractAddress,
   supplyToken,
@@ -54,9 +48,9 @@ export function RewardsModalForm({
   productName,
   rewardTokenSymbol,
   rate,
-  preset
+  preset,
+  onSuccess
 }: {
-  sessionId: string;
   flow: RewardsLaunchFlow;
   contractAddress: `0x${string}`;
   supplyToken: Token;
@@ -69,6 +63,8 @@ export function RewardsModalForm({
   /** Reward rate as a decimal fraction (e.g. 0.045) for the Rate + projected-earnings cells. */
   rate?: number;
   preset?: RewardsModalPreset;
+  /** After a successful supply/withdraw — refetch the position/balances. */
+  onSuccess?: () => void;
 }) {
   const chainId = useChainId();
   const { i18n } = useLingui();
@@ -204,25 +200,6 @@ export function RewardsModalForm({
     [flow, productName, contractAddress, supplyToken, chainId, isBatch, debouncedAmount, decimals]
   );
 
-  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
-  // keeps the shared modal's confirm gating / review breakdown / step labels /
-  // wallet summary / toast titles in sync, and the entry-slot portal.
-  const renderInSlot = useModalEntryBody({
-    sessionId,
-    execute,
-    nextCalls,
-    confirmDisabled: disabled,
-    errorMessage,
-    transactionContent,
-    transactionScreenContent,
-    steps,
-    toast,
-    // The supply token is $1-pegged USDS (see amountUsd above) — enhanced
-    // screening, APP-517.
-    usdValue: amountUsd,
-    analytics
-  });
-
   const body = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid={`rewards-modal-${flow}-form`}>
       <ModalAmountField
@@ -260,5 +237,25 @@ export function RewardsModalForm({
     </div>
   );
 
-  return renderInSlot(body);
+  return (
+    <TransactionModal
+      title={isSupply ? t`Supply to ${displayName}` : t`Withdraw from ${displayName}`}
+      reviewTitle={isSupply ? t`Review supply` : t`Review withdrawal`}
+      transactionTitle={t`Confirm in the wallet`}
+      entry={{ content: body, confirmLabel: t`Review`, confirmDisabled: disabled, errorMessage }}
+      confirmLabel={t`Confirm`}
+      confirmDisabled={disabled}
+      errorMessage={errorMessage}
+      transactionContent={transactionContent}
+      transactionScreenContent={transactionScreenContent}
+      steps={steps}
+      toast={toast}
+      // The supply token is $1-pegged USDS (see amountUsd above), APP-517.
+      usdValue={amountUsd}
+      analytics={analytics}
+      onConfirm={execute}
+      onSuccess={onSuccess}
+      dispatch={{ nextCalls, disabled }}
+    />
+  );
 }

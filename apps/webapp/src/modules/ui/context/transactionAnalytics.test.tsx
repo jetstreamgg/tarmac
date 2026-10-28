@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionConfig, TransactionContextValue, TxCallbacks } from './transactionContract';
+import type { TxCallbacks } from './transactionContract';
+import type { TransactionConfig } from './configFlow.testing';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, analytics, and error-reporting reads (mirrors transactionAbandon.test).
@@ -72,7 +73,8 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction, type TestTransaction } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -82,9 +84,9 @@ function Harness({
   onReady
 }: {
   config: TransactionConfig;
-  onReady: (ctx: TransactionContextValue) => void;
+  onReady: (ctx: TestTransaction) => void;
 }) {
-  const ctx = useTransaction();
+  const ctx = useTestTransaction();
   const started = useRef(false);
   useEffect(() => {
     onReady(ctx);
@@ -98,8 +100,8 @@ function Harness({
 }
 
 // Mounts the provider, opens the modal, and clicks confirm.
-function renderFlow(config: TransactionConfig): TransactionContextValue {
-  let ctx!: TransactionContextValue;
+function renderFlow(config: TransactionConfig): TestTransaction {
+  let ctx!: TestTransaction;
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
@@ -113,7 +115,7 @@ function renderFlow(config: TransactionConfig): TransactionContextValue {
   return ctx;
 }
 
-const cbOf = (ctx: TransactionContextValue): TxCallbacks => ctx.txCallbacks;
+const cbOf = (ctx: TestTransaction): TxCallbacks => ctx.txCallbacks;
 
 const baseConfig = (overrides: Partial<TransactionConfig> = {}): TransactionConfig => ({
   title: 'Supply USDS',
@@ -253,7 +255,7 @@ describe('TransactionContext flow_id latching', () => {
   it('re-latches per launch: a second transaction carries the rotated flow id', () => {
     getFlowIdMock.mockReturnValue('flow-A');
     // Live holder: launch() advances sessionGen, so the callbacks must be re-read.
-    const holder: { ctx?: TransactionContextValue } = {};
+    const holder: { ctx?: TestTransaction } = {};
     render(
       <StrictMode>
         <I18nProvider i18n={i18n}>
@@ -297,7 +299,7 @@ describe('TransactionContext review_viewed timing', () => {
   });
 
   it('does NOT emit review_viewed at launch for an entry-first config', () => {
-    let ctx!: TransactionContextValue;
+    let ctx!: TestTransaction;
     render(
       <StrictMode>
         <I18nProvider i18n={i18n}>
@@ -319,7 +321,7 @@ describe('TransactionContext review_viewed timing', () => {
   });
 
   it('emits review_viewed at the entry→review transition, reading the live-merged analytics', () => {
-    let ctx!: TransactionContextValue;
+    let ctx!: TestTransaction;
     render(
       <StrictMode>
         <I18nProvider i18n={i18n}>
@@ -357,7 +359,7 @@ describe('TransactionContext review_viewed timing', () => {
   });
 
   it('emits no review_viewed at all for an entry-only flow (claims parity: no review screen exists)', () => {
-    let ctx!: TransactionContextValue;
+    let ctx!: TestTransaction;
     render(
       <StrictMode>
         <I18nProvider i18n={i18n}>

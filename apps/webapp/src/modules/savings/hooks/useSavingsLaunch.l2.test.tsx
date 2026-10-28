@@ -126,17 +126,14 @@ vi.mock('@/hooks/savings/useSavingsAllowance', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: () => undefined,
-    updateModalContent: () => undefined,
-    isModalOpen: false,
+  useSession: () => ({
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: 'idle'
+    status: 'idle'
   })
 }));
 

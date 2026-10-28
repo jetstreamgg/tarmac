@@ -36,7 +36,7 @@ const formatToken = (value?: bigint) =>
  *  - no position (incl. disconnected) → the no-position "Supply" entry card
  *    (`SavingsSupplyCard`), whose CTA opens the supply modal.
  *  - has position → the "My position" summary below, with Supply / Withdraw
- *    buttons that each open the shared editable modal (`SavingsModalForm`) for
+ *    buttons that each open the shared editable modal (`SavingsFlow`) for
  *    the chosen flow.
  *
  * Both branches confirm through `useSavingsLaunch()` (sUSDS deposit/withdraw +

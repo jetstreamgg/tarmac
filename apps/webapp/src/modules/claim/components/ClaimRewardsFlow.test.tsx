@@ -16,7 +16,7 @@ const h = vi.hoisted(() => ({
   entry: undefined as { confirmDisabled: boolean } | undefined,
   screenContents: [] as unknown[],
   analytics: undefined as unknown,
-  toast: undefined as { success: string } | undefined,
+  toast: undefined as { success?: string } | undefined,
   steps: undefined as unknown[] | undefined,
   merklSingleCall: false,
   restakeSeen: false
@@ -109,31 +109,25 @@ vi.mock('@/hooks', async importOriginal => {
 });
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() }
+  useSession: () => ({
+    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() },
+    status: 'idle'
   })
 }));
 
-vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
-  useModalEntryBody: (params: {
-    confirmDisabled: boolean;
-    transactionScreenContent?: unknown;
-    analytics?: unknown;
-    toast?: { success: string };
-    steps?: unknown[];
-  }) => {
-    h.entry = { confirmDisabled: params.confirmDisabled };
-    h.screenContents.push(params.transactionScreenContent);
-    h.analytics = params.analytics;
-    h.toast = params.toast;
-    h.steps = params.steps;
-    return (body: unknown) => body;
-  }
-}));
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(props => {
+    h.entry = { confirmDisabled: !!props.entry?.confirmDisabled };
+    h.screenContents.push(props.transactionScreenContent);
+    h.analytics = props.analytics;
+    h.toast = props.toast;
+    h.steps = props.steps;
+  })
+);
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-import { ClaimRewardsPanel } from './ClaimRewardsPanel';
+import { ClaimRewardsFlow } from './ClaimRewardsFlow';
 import type { ClaimScope } from '../types';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
@@ -154,12 +148,12 @@ const renderPanel = (scope: ClaimScope = { kind: 'all' }) =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <ClaimRewardsPanel sessionId="s1" scope={scope} />
+        <ClaimRewardsFlow scope={scope} title="Claim rewards" />
       </TooltipProvider>
     </I18nProvider>
   );
 
-describe('ClaimRewardsPanel', () => {
+describe('ClaimRewardsFlow', () => {
   beforeEach(() => {
     h.merklSingleCall = false;
     h.merkl = [];
@@ -309,28 +303,9 @@ describe('ClaimRewardsPanel', () => {
     renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
     expect(screen.queryByTestId('claim-restake-toggle')).toBeNull();
   });
-
-  it('keeps the wallet-screen summary referentially stable across re-renders (loop guard)', () => {
-    // A fresh element per render feeds useModalEntryBody's sync effect a new dep
-    // each time, looping updateModalContent → re-render → "Maximum update depth"
-    // (crashes the page when the modal opens — the D4 vault-form failure mode).
-    h.sky = [reward('sky-rewards', '0xb', 'SKY')];
-    const { rerender } = renderPanel({ kind: 'reward-contract', address: '0xb' });
-    rerender(
-      <I18nProvider i18n={i18n}>
-        <TooltipProvider>
-          <ClaimRewardsPanel sessionId="s1" scope={{ kind: 'reward-contract', address: '0xb' }} />
-        </TooltipProvider>
-      </I18nProvider>
-    );
-
-    const contents = h.screenContents.filter(content => content !== undefined);
-    expect(contents.length).toBeGreaterThanOrEqual(2);
-    expect(contents[contents.length - 1]).toBe(contents[0]);
-  });
 });
 
-describe('ClaimRewardsPanel — analytics attribution by scope (APP-444 B4/B8)', () => {
+describe('ClaimRewardsFlow — analytics attribution by scope (APP-444 B4/B8)', () => {
   beforeEach(() => {
     h.merkl = [];
     h.sky = [];

@@ -1,83 +1,61 @@
 /// <reference types="vite/client" />
 
-import { i18n } from '@lingui/core';
 import { renderHook, act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
+import type { LaunchOptions } from '@/modules/ui/context/transactionContract';
+import { chainIdsForIntent } from '@/lib/chainAvailability';
+import { Intent } from '@/lib/enums';
 
-// The `t` macro resolves against the global i18n singleton (empty catalog → source strings).
-i18n.load('en', {});
-i18n.activate('en');
+const h = vi.hoisted(() => ({ launchMock: vi.fn<(options: LaunchOptions) => void>() }));
 
-const h = vi.hoisted(() => ({ launchMock: vi.fn() }));
-
-// Capture the config handed to launch() — the only channel the trigger speaks through.
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ launch: h.launchMock })
 }));
 
-// Stub the collaborator body: the hook's job is to wire its props (flow/sessionId/preset),
-// not to render it. The real form is covered by its own specs.
-vi.mock('../components/SavingsModalForm', () => ({
-  SavingsModalForm: () => null
+// The hook's job is to hand the flow its props; the flow is covered by its own specs.
+vi.mock('../components/SavingsFlow', () => ({
+  SavingsFlow: () => null
 }));
 
 import { useSavingsModal } from './useSavingsModal';
-import type { SavingsModalPreset } from '../components/SavingsModalForm';
+import type { SavingsModalPreset } from '../components/SavingsFlow';
 
-type LaunchConfig = Parameters<typeof h.launchMock>[0];
-// The backgroundContent element's props — React 19 types ReactElement.props as `unknown`.
-type BodyElement = ReactElement<{ flow: string; sessionId: string; preset?: SavingsModalPreset }>;
+type FlowElement = ReactElement<{ flow: string; preset?: SavingsModalPreset; onSuccess?: () => void }>;
+const launched = (call = 0) => h.launchMock.mock.calls[call][0];
+const flowOf = (options: LaunchOptions) => options.flow as FlowElement;
 
 describe('useSavingsModal', () => {
   beforeEach(() => h.launchMock.mockClear());
   afterEach(() => cleanup());
 
-  it('openSupply launches the supply modal and hosts the supply body in its own session', () => {
+  it('openSupply launches the supply flow, guarded to the chains Savings runs on', () => {
     const onSuccess = vi.fn();
     const { result } = renderHook(() => useSavingsModal({ onSuccess }));
     act(() => result.current.openSupply());
 
     expect(h.launchMock).toHaveBeenCalledTimes(1);
-    const config: LaunchConfig = h.launchMock.mock.calls[0][0];
-    expect(config.title).toBe('Supply to Sky Savings');
-    // Three-screen flow: the entry advances to the review ("Review"), the
-    // review's Confirm fires the engine.
-    expect(config.entry).toEqual({ confirmLabel: 'Review', confirmDisabled: true });
-    expect(config.reviewTitle).toBe('Review supply');
-    expect(config.confirmLabel).toBe('Confirm');
-    expect(config.onSuccess).toBe(onSuccess);
-    expect(typeof config.sessionId).toBe('string');
-
-    const body = config.backgroundContent as BodyElement;
-    expect(body.props.flow).toBe('supply');
-    // The host shares the config's session so updateModalContent reaches this body.
-    expect(body.props.sessionId).toBe(config.sessionId);
-    // No preset → opens empty.
-    expect(body.props.preset).toBeUndefined();
+    expect(launched().supportedChainIds).toEqual(chainIdsForIntent(Intent.SAVINGS_INTENT));
+    expect(typeof launched().sessionId).toBe('string');
+    const flow = flowOf(launched());
+    expect(flow.props.flow).toBe('supply');
+    expect(flow.props.onSuccess).toBe(onSuccess);
+    expect(flow.props.preset).toBeUndefined();
   });
 
-  it('threads a preset (amount/token) into the supply body', () => {
+  it('threads a preset (amount/token) into the supply flow', () => {
     const { result } = renderHook(() => useSavingsModal());
     act(() => result.current.openSupply({ amount: '100', token: 'USDS' }));
 
-    const config: LaunchConfig = h.launchMock.mock.calls[0][0];
-    const body = config.backgroundContent as BodyElement;
-    expect(body.props.preset).toEqual({ amount: '100', token: 'USDS' });
+    expect(flowOf(launched()).props.preset).toEqual({ amount: '100', token: 'USDS' });
   });
 
-  it('openWithdraw launches the withdraw modal in a session distinct from supply', () => {
+  it('openWithdraw launches the withdraw flow in a session distinct from supply', () => {
     const { result } = renderHook(() => useSavingsModal());
     act(() => result.current.openSupply());
     act(() => result.current.openWithdraw());
 
-    const supplyCfg: LaunchConfig = h.launchMock.mock.calls[0][0];
-    const withdrawCfg: LaunchConfig = h.launchMock.mock.calls[1][0];
-    expect(withdrawCfg.title).toBe('Withdraw from Sky Savings');
-    expect(withdrawCfg.entry).toEqual({ confirmLabel: 'Review', confirmDisabled: true });
-    expect(withdrawCfg.reviewTitle).toBe('Review withdrawal');
-    expect((withdrawCfg.backgroundContent as BodyElement).props.flow).toBe('withdraw');
-    // Sibling sessions must differ so their live updates never cross-talk.
-    expect(withdrawCfg.sessionId).not.toBe(supplyCfg.sessionId);
+    expect(flowOf(launched(1)).props.flow).toBe('withdraw');
+    expect(launched(1).sessionId).not.toBe(launched(0).sessionId);
   });
 });

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { erc20Abi, type Abi } from 'viem';
 import { curveStUsdsUsdsPoolAbi, psm3L2Abi } from '@/hooks/generated';
-import { PSM_SWAP_BOUND_ARGS } from '@/modules/savings/components/SavingsModalForm';
-import { CURVE_SWAP_BOUND_ARGS } from '@/modules/stusds/components/StUsdsModalForm';
+import { PSM_SWAP_BOUND_ARGS } from '@/modules/savings/components/SavingsFlow';
+import { CURVE_SWAP_BOUND_ARGS } from '@/modules/stusds/components/StUsdsFlow';
 
 type Bounds = Record<string, { index: number } | readonly { index: number }[]>;
 const indexesOf = (bounds: Bounds, fn: string) => {

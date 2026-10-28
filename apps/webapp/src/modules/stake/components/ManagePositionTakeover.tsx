@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trans } from '@lingui/react/macro';
@@ -401,11 +401,22 @@ export function ManagePositionTakeover({
     onClose();
   }, [onClose]);
 
+  // The session outlives the takeover (minimized, then closed or navigated away): its
+  // success still refreshes the reads, but must not rewrite whatever route is on screen.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   const onSuccess = useCallback(() => {
     // Fresh on-chain reads (vault, balances, allowances) on return — manage
     // txs change what every read hook reports; the indexer-backed positions
     // rows and activity refetch once the indexer has the tx (refreshHistoryAfterTx).
     invalidateStakeQueries(queryClient);
+    if (!mounted.current) return;
     setSearchParams(
       params => {
         params.delete(QueryParams.Flow);

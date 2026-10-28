@@ -85,7 +85,7 @@ function ModalStepLabelCopy({ children, align }: { children: ReactNode; align: '
   // the element before the browser paints the frame it left flow on.
   const [exitWidth, setExitWidth] = useState<number>();
   // Re-measured on every render it is present for, not just on mount: the same
-  // copy can be re-worded in place (a live `updateModalContent` retitle, a CTA
+  // copy can be re-worded in place (a flow retitling itself, a CTA
   // label swapping to "Connect wallet") or reflow when the webfont lands.
   useLayoutEffect(() => {
     if (isPresent && nodeRef.current) flowWidth.current = nodeRef.current.getBoundingClientRect().width;

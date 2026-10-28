@@ -1,9 +1,9 @@
-import { StrictMode, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionContextValue, TxCallbacks } from './transactionContract';
+import type { TxCallbacks } from './transactionContract';
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionStepProgression.test).
@@ -70,9 +70,9 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { createPortal } from 'react-dom';
-import { TransactionProvider, useTransaction, useEntrySlot } from './TransactionContext';
-import type { TransactionConfig } from './transactionContract';
+import { TransactionProvider } from './TransactionContext';
+import { useTestTransaction, type TestTransaction } from './configFlow.testing';
+import type { TransactionConfig } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -98,64 +98,18 @@ function ProbeBody() {
   return <div>probe-body</div>;
 }
 
-// Like ProbeBody but it PORTALS its output into the entry slot (the SavingsModalForm
-// pattern). The body-level effect stands in for the engine hook — it must survive the
-// portal→inline switch that minimize triggers.
-const portalProbe = vi.hoisted(() => ({ mounts: 0, unmounts: 0 }));
-function PortalingHost() {
-  useEffect(() => {
-    portalProbe.mounts += 1;
-    return () => {
-      portalProbe.unmounts += 1;
-    };
-  }, []);
-  const slot = useEntrySlot();
-  const body = <div data-testid="portaling-host-body">body</div>;
-  return slot ? createPortal(body, slot) : body;
-}
-
-// A backgroundContent host that portals its visible inputs into the dialog's entry
-// slot (the savings pattern), falling back to inline when no slot is mounted.
-function SlotProbe() {
-  const slot = useEntrySlot();
-  const inputs = <div data-testid="portaled-inputs">inputs</div>;
-  return slot ? createPortal(inputs, slot) : inputs;
-}
-
-// Mimics SavingsModalForm's wiring: portals its body into the entry slot, and pushes
-// a stable `onConfirm` (reading the latest engine `execute` from a ref) via
-// updateModalContent. `execute` counts submissions so we can detect a duplicate.
-const submit = vi.hoisted(() => ({ count: 0 }));
-function WithdrawHost({ sessionId }: { sessionId: string }) {
-  const { updateModalContent } = useTransaction();
-  const slot = useEntrySlot();
-  const [value] = useState('800');
-  // Fresh closure every render (like the real engine's execute), so executeRef churns.
-  const execute = () => {
-    submit.count += 1;
-  };
-  const executeRef = useRef(execute);
-  useEffect(() => {
-    executeRef.current = execute;
-  });
-  const onConfirm = useCallback(() => executeRef.current(), []);
-  useEffect(() => {
-    updateModalContent(sessionId, { entry: { confirmDisabled: false }, onConfirm });
-  }, [updateModalContent, sessionId, onConfirm]);
-  const body = <div data-testid="withdraw-host">{value}</div>;
-  return slot ? createPortal(body, slot) : body;
-}
-
 // Launches the given flow on mount and hands the whole context to the test (so it
 // can drive engine callbacks AND minimize/restore the modal).
 function Harness({
   config,
+  alongside,
   onReady
 }: {
   config: TransactionConfig;
-  onReady: (ctx: TransactionContextValue) => void;
+  alongside?: ReactNode;
+  onReady: (ctx: TestTransaction) => void;
 }) {
-  const ctx = useTransaction();
+  const ctx = useTestTransaction();
   const started = useRef(false);
   // Report the LATEST context value on every render: engine callbacks are
   // bound to the session generation that rendered them, so tests must capture
@@ -166,20 +120,20 @@ function Harness({
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    ctx.launch(config);
-  }, [ctx, config]);
+    ctx.launch(config, alongside);
+  }, [ctx, config, alongside]);
   return null;
 }
 
 // Mounts the provider, opens the modal, advances to the transaction screen, and
 // returns the context (its callbacks + minimize/restore are stable useCallbacks).
-function renderFlow(config: TransactionConfig = REVIEW_CONFIG): TransactionContextValue {
-  let ctx!: TransactionContextValue;
+function renderFlow(config: TransactionConfig = REVIEW_CONFIG, alongside?: ReactNode): TestTransaction {
+  let ctx!: TestTransaction;
   render(
     <StrictMode>
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
-          <Harness config={config} onReady={c => (ctx = c)} />
+          <Harness config={config} alongside={alongside} onReady={c => (ctx = c)} />
         </TransactionProvider>
       </I18nProvider>
     </StrictMode>
@@ -188,10 +142,10 @@ function renderFlow(config: TransactionConfig = REVIEW_CONFIG): TransactionConte
   return ctx;
 }
 
-const cbOf = (ctx: TransactionContextValue): TxCallbacks => ctx.txCallbacks;
+const cbOf = (ctx: TestTransaction): TxCallbacks => ctx.txCallbacks;
 
 function SessionProbe() {
-  const { activeSessionId } = useTransaction();
+  const { activeSessionId } = useTestTransaction();
   return <span data-testid="active-session">{activeSessionId ?? 'none'}</span>;
 }
 
@@ -199,7 +153,7 @@ describe('TransactionModal minimize', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('exposes the live session id across minimize and clears it when the session ends', () => {
-    let ctx!: TransactionContextValue;
+    let ctx!: TestTransaction;
     render(
       <StrictMode>
         <I18nProvider i18n={i18n}>
@@ -264,21 +218,20 @@ describe('TransactionModal minimize', () => {
     expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
   });
 
-  it('keeps backgroundContent (the in-flight hook host) mounted across minimize', () => {
+  it('keeps the flow (and its in-flight engine) mounted across minimize', () => {
     probe.mounts = 0;
     probe.unmounts = 0;
-    // The hook host lives in backgroundContent (outside the Radix dialog); the
-    // visible inputs would live in entry.content. Here we only assert the host's
-    // lifetime — the mechanism every editable flow relies on.
-    const ctx = renderFlow({
-      title: 'Supply',
-      usdValue: 0,
-      supportedChainIds: [1],
-      steps: ['Supply'],
-      entry: { content: <div>inputs</div>, confirmDisabled: false },
-      backgroundContent: <ProbeBody />,
-      onConfirm: () => {}
-    });
+    const ctx = renderFlow(
+      {
+        title: 'Supply',
+        usdValue: 0,
+        supportedChainIds: [1],
+        steps: ['Supply'],
+        entry: { content: <div>inputs</div>, confirmDisabled: false },
+        onConfirm: () => {}
+      },
+      <ProbeBody />
+    );
     const cb = cbOf(ctx);
 
     // In-flight: the host is mounted (StrictMode may double-invoke effects, so
@@ -341,7 +294,7 @@ describe('TransactionModal minimize', () => {
     expect(screen.queryByRole('button', { name: /done/i })).toBeNull();
   });
 
-  it('remounts the background host on a fresh launch so its inputs reset', () => {
+  it('remounts the flow on a fresh launch so its inputs reset', () => {
     probe.mounts = 0;
     probe.unmounts = 0;
     const config: TransactionConfig = {
@@ -350,10 +303,9 @@ describe('TransactionModal minimize', () => {
       supportedChainIds: [1],
       steps: ['Supply'],
       entry: { confirmDisabled: false },
-      backgroundContent: <ProbeBody />,
       onConfirm: () => undefined
     };
-    const ctx = renderFlow(config);
+    const ctx = renderFlow(config, <ProbeBody />);
     const cb = cbOf(ctx);
 
     act(() => cb.onMutate());
@@ -362,7 +314,7 @@ describe('TransactionModal minimize', () => {
     act(() => cb.onSuccess('0xhash'));
     const mountsBefore = probe.mounts;
 
-    act(() => ctx.launch(config)); // fresh launch → fresh host instance
+    act(() => ctx.launch(config, <ProbeBody />)); // fresh launch → fresh flow instance
     expect(probe.mounts).toBeGreaterThan(mountsBefore);
   });
 
@@ -375,10 +327,9 @@ describe('TransactionModal minimize', () => {
       supportedChainIds: [1],
       steps: ['Supply'],
       entry: { confirmDisabled: false },
-      backgroundContent: <ProbeBody />,
       onConfirm: () => undefined
     };
-    const ctx = renderFlow(config);
+    const ctx = renderFlow(config, <ProbeBody />);
     const cb = cbOf(ctx);
 
     act(() => cb.onMutate());
@@ -387,7 +338,7 @@ describe('TransactionModal minimize', () => {
     const unmountsBefore = probe.unmounts;
 
     // User clicks the page's action button again while the tx is still running.
-    act(() => ctx.launch(config));
+    act(() => ctx.launch(config, <ProbeBody />));
 
     // The running host is NOT torn down (no remount) and the modal comes back on
     // its pending screen rather than a fresh entry.
@@ -396,75 +347,31 @@ describe('TransactionModal minimize', () => {
     expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
   });
 
-  it('keeps a PORTALING host body mounted across minimize (engine survives the portal switch)', () => {
-    portalProbe.mounts = 0;
-    portalProbe.unmounts = 0;
-    const ctx = renderFlow({
-      title: 'Supply',
-      usdValue: 0,
-      supportedChainIds: [1],
-      steps: ['Supply'],
-      entry: { confirmDisabled: false },
-      backgroundContent: <PortalingHost />,
-      onConfirm: () => undefined
-    });
-    const cb = cbOf(ctx);
-
-    act(() => cb.onMutate());
-    act(() => cb.onStart('0xhash'));
-    const unmountsBefore = portalProbe.unmounts;
-
-    act(() => ctx.minimize()); // slot disappears → host switches portal→inline
-    expect(portalProbe.unmounts).toBe(unmountsBefore);
-
-    act(() => cb.onSuccess('0xhash'));
-    expect(portalProbe.unmounts).toBe(unmountsBefore);
-  });
-
   it('does not re-submit the transaction when minimized (no duplicate execute)', () => {
-    submit.count = 0;
-    const sessionId = 'withdraw-session';
+    let submits = 0;
     const ctx = renderFlow({
       title: 'Withdraw',
       usdValue: 0,
       supportedChainIds: [1],
       steps: ['Withdraw'],
-      sessionId,
-      entry: { confirmDisabled: false },
-      backgroundContent: <WithdrawHost sessionId={sessionId} />,
-      onConfirm: () => undefined
+      sessionId: 'withdraw-session',
+      onConfirm: () => {
+        submits += 1;
+      }
     });
     const cb = cbOf(ctx);
 
     // renderFlow already clicked Confirm → exactly one submission.
-    expect(submit.count).toBe(1);
+    expect(submits).toBe(1);
 
     act(() => cb.onMutate());
-    act(() => cb.onStart('0xhash')); // in-flight
+    act(() => cb.onStart('0xhash'));
 
-    // Closing (minimize) must NOT fire a second submission.
     act(() => ctx.minimize());
-    expect(submit.count).toBe(1);
+    expect(submits).toBe(1);
 
     act(() => cb.onSuccess('0xhash'));
-    expect(submit.count).toBe(1);
-  });
-
-  it('portals backgroundContent inputs into the dialog entry slot', () => {
-    renderFlow({
-      title: 'Supply',
-      usdValue: 0,
-      supportedChainIds: [1],
-      steps: ['Supply'],
-      entry: { confirmDisabled: false },
-      backgroundContent: <SlotProbe />,
-      onConfirm: () => {}
-    });
-
-    // The host's inputs render inside the dialog (via the registered slot), not in
-    // the hidden background host.
-    const inputs = screen.getByTestId('portaled-inputs');
-    expect(inputs.closest('[role="dialog"]')).not.toBeNull();
+    expect(submits).toBe(1);
   });
 
   const TOAST_CONFIG: TransactionConfig = {

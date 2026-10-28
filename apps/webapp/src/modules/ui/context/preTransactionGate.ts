@@ -3,7 +3,7 @@ import type { TransactionStep } from '@/modules/ui/components/transactionStepsMo
 
 /**
  * The pre-transaction gate (APP-496): consulted by the TransactionProvider
- * between the user's confirm and the config's `onConfirm` — one choke point
+ * between the user's confirm and the flow's `onConfirm` — one choke point
  * covering every launch site, including retries and two-action entries, so a
  * flow cannot start a write without passing it.
  *
@@ -85,7 +85,7 @@ export type GateControls = {
    */
   setGateStatus: (status: GatePhase | 'error' | 'idle', copy?: GateStatusCopy) => void;
   /**
-   * Mounts off-chain prelude steps ahead of the config's own step list (or
+   * Mounts off-chain prelude steps ahead of the flow's own step list (or
    * clears them with null). Cleared automatically on launch and close.
    */
   setPreludeSteps: (steps: TransactionStep[] | null) => void;
@@ -122,7 +122,7 @@ export type GateControls = {
 };
 
 export type GateVerdict = {
-  /** True lets the guarded action (the config callback) run. */
+  /** True lets the guarded action (the flow's callback) run. */
   allow: boolean;
 };
 
@@ -162,7 +162,7 @@ export type TransactionPreflight =
   | { kind: 'blocked'; message: ReactNode };
 
 export type PreflightHook = (context: {
-  /** Live USD value of the active config (see `TransactionConfig.usdValue`); undefined = unknown. */
+  /** Live USD value of the active flow (see `TransactionFlowProps.usdValue`); undefined = unknown. */
   usdValue: number | undefined;
   /** True while a transaction session is active (modal open or minimized). */
   active: boolean;

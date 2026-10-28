@@ -1,6 +1,5 @@
 /// <reference types="vite/client" />
 
-import { useState, type ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
@@ -56,21 +55,8 @@ const hoisted = vi.hoisted(() => ({
   // When set, useDebounce returns this instead of the live amount — simulates
   // the settle window after a keystroke. Unset = identity passthrough.
   debounceLagged: undefined as bigint | undefined,
-  // Optional hook a test can set to mimic the real provider (every push
-  // re-renders the tree) — the loop regression below relies on it.
-  onPush: undefined as (() => void) | undefined,
-  updateModalContent: vi.fn<
-    (
-      sessionId: string,
-      partial: {
-        entry?: { confirmDisabled?: boolean };
-        steps?: string[];
-        rightHeaderComponent?: unknown;
-        transactionContent?: ReactNode;
-        toast?: { loading: string; success: string; error: string };
-      }
-    ) => void
-  >(() => hoisted.onPush?.()),
+  // What the flow hands the modal on each render.
+  modalProps: vi.fn(),
   txCallbacks: {
     onMutate: vi.fn(),
     onStart: vi.fn(),
@@ -174,27 +160,25 @@ vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
   useBatchToggle: () => [true, () => undefined]
 }));
 
+vi.mock('@/modules/ui/components/TransactionModal', async () =>
+  (await import('@/modules/ui/components/transactionModalSpy.testing')).transactionModalSpy(
+    hoisted.modalProps
+  )
+);
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: () => undefined,
-    updateModalContent: hoisted.updateModalContent,
-    isModalOpen: true,
-    txCallbacks: hoisted.txCallbacks,
-    txStatus: 'idle'
-  }),
-  useEntrySlot: () => null
+  useSession: () => ({ txCallbacks: hoisted.txCallbacks, status: 'idle' })
 }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
-import { PendleModalForm } from '../PendleModalForm';
+import { PendleTradeFlow } from '../PendleTradeFlow';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const renderForm = (flow: 'supply' | 'withdraw') =>
   render(
     <I18nProvider i18n={i18n}>
       <TooltipProvider>
-        <PendleModalForm sessionId="session-1" flow={flow} market={MARKET} />
+        <PendleTradeFlow flow={flow} market={MARKET} />
       </TooltipProvider>
     </I18nProvider>
   );
@@ -203,57 +187,30 @@ const typeAmount = (value: string) =>
   fireEvent.change(screen.getByTestId('pendle-modal-amount-input'), { target: { value } });
 
 const lastEntryUpdate = () => {
-  const calls = hoisted.updateModalContent.mock.calls.filter(([, partial]) => partial.entry !== undefined);
-  return calls.at(-1)?.[1];
+  const calls = hoisted.modalProps.mock.calls.filter(([partial]) => partial.entry !== undefined);
+  return calls.at(-1)?.[0];
 };
 
 /** The last toast titles the form pushed to the shared modal. */
 const lastToastUpdate = () =>
-  hoisted.updateModalContent.mock.calls.filter(([, partial]) => partial.toast !== undefined).at(-1)?.[1]
-    .toast;
+  hoisted.modalProps.mock.calls.filter(([partial]) => partial.toast !== undefined).at(-1)?.[0].toast;
 
 /** Renders the review-stage grid the form pushed to the shared modal. */
 const renderLastReviewContent = () => {
-  const calls = hoisted.updateModalContent.mock.calls.filter(
-    ([, partial]) => partial.transactionContent !== undefined
-  );
+  const calls = hoisted.modalProps.mock.calls.filter(([partial]) => partial.transactionContent !== undefined);
   return render(
     <I18nProvider i18n={i18n}>
-      <TooltipProvider>{calls.at(-1)?.[1].transactionContent}</TooltipProvider>
+      <TooltipProvider>{calls.at(-1)?.[0].transactionContent}</TooltipProvider>
     </I18nProvider>
   );
 };
 
-describe('PendleModalForm', () => {
+describe('PendleTradeFlow', () => {
   beforeEach(() => {
     hoisted.quoteArgs = undefined;
     hoisted.batchArgs = undefined;
-    hoisted.onPush = undefined;
     hoisted.allowance = 0n;
     hoisted.debounceLagged = undefined;
-  });
-
-  it('settles its content pushes when every push re-renders the host (regression: max update depth)', () => {
-    // Mimic the real TransactionContext: updateModalContent always sets fresh
-    // provider state, so every push re-renders the subscribed tree. Unstable
-    // effect deps (e.g. an unmemoized transactionScreenContent) loop here.
-    const Host = () => {
-      const [, setTick] = useState(0);
-      hoisted.onPush = () => setTick(tick => tick + 1);
-      return <PendleModalForm sessionId="session-1" flow="supply" market={MARKET} />;
-    };
-
-    render(
-      <I18nProvider i18n={i18n}>
-        <TooltipProvider>
-          <Host />
-        </TooltipProvider>
-      </I18nProvider>
-    );
-
-    // A settled form pushes a handful of times on mount — a loop hits React's
-    // update-depth limit (~50) and throws before this assertion.
-    expect(hoisted.updateModalContent.mock.calls.length).toBeLessThan(10);
   });
 
   afterEach(() => {
@@ -262,6 +219,25 @@ describe('PendleModalForm', () => {
   });
 
   describe('supply flow', () => {
+    it('titles the supply flow by the PT name and carries no analytics (the flow fires its own)', () => {
+      renderForm('supply');
+      const props = hoisted.modalProps.mock.calls.at(-1)![0];
+      expect(props.title).toBe('Supply to PT-USDG');
+      expect(props.subtitle).toBeUndefined();
+      expect(props.reviewTitle).toBe('Review supply');
+      expect(props.entry?.confirmLabel).toBe('Review');
+      expect(props.confirmLabel).toBe('Confirm');
+      expect(props.analytics).toBeUndefined();
+    });
+
+    it('titles the withdraw flow as an early withdrawal, with its market-price disclosure', () => {
+      renderForm('withdraw');
+      const props = hoisted.modalProps.mock.calls.at(-1)![0];
+      expect(props.title).toBe('Early withdrawal');
+      expect(props.subtitle).toContain('current market price');
+      expect(props.reviewTitle).toBe('Review withdrawal');
+    });
+
     it('quotes the selected input token against the market PT', () => {
       renderForm('supply');
       typeAmount('100');
@@ -436,10 +412,7 @@ describe('PendleModalForm', () => {
     it('keeps the slippage control out of the modal header — it lives in the review grid now', () => {
       renderForm('supply');
 
-      const headerPush = hoisted.updateModalContent.mock.calls.find(
-        ([, partial]) => partial.rightHeaderComponent !== undefined
-      );
-      expect(headerPush).toBeUndefined();
+      expect(hoisted.modalProps.mock.calls.at(-1)?.[0].rightHeaderComponent).toBeUndefined();
     });
   });
 

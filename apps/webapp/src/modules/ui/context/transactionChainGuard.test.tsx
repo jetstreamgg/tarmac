@@ -3,7 +3,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TransactionConfig, TxCallbacks } from './transactionContract';
+import type { TxCallbacks } from './transactionContract';
+import type { TransactionConfig } from './configFlow.testing';
 import type { PreflightHook, PreTransactionGate } from './preTransactionGate';
 
 // The cross-chain-calldata guard (APP-528). A transaction modal survives a
@@ -106,7 +107,8 @@ vi.mock('motion/react', async io => {
   };
 });
 
-import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionProvider } from './TransactionContext';
+import { refreshTestFlow, useTestTransaction } from './configFlow.testing';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -115,17 +117,17 @@ function Harness({
   build,
   onReady
 }: {
-  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig;
-  onReady: (api: ReturnType<typeof useTransaction>) => void;
+  build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig;
+  onReady: (api: ReturnType<typeof useTestTransaction>) => void;
 }) {
-  const api = useTransaction();
+  const api = useTestTransaction();
   const { launch, txCallbacks } = api;
   const started = useRef(false);
   const cbRef = useRef(txCallbacks);
   useEffect(() => {
     cbRef.current = txCallbacks;
   });
-  const [liveCb] = useState<ReturnType<typeof useTransaction>['txCallbacks']>(() => ({
+  const [liveCb] = useState<ReturnType<typeof useTestTransaction>['txCallbacks']>(() => ({
     onMutate: () => cbRef.current.onMutate(),
     onStart: hash => cbRef.current.onStart(hash),
     onSuccess: hash => cbRef.current.onSuccess(hash),
@@ -143,10 +145,10 @@ function Harness({
 }
 
 function renderModal(
-  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig,
-  onReady?: (api: ReturnType<typeof useTransaction>) => void
+  build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig,
+  onReady?: (api: ReturnType<typeof useTestTransaction>) => void
 ) {
-  let api: ReturnType<typeof useTransaction> | null = null;
+  let api: ReturnType<typeof useTestTransaction> | null = null;
   const tree = () => (
     <StrictMode>
       <I18nProvider i18n={i18n}>
@@ -169,7 +171,10 @@ function renderModal(
   // to be rebuilt: React bails out of a re-render given the same reference.
   return {
     ...result,
-    refresh: () => result.rerender(tree()),
+    refresh: () => {
+      result.rerender(tree());
+      refreshTestFlow();
+    },
     // The provider owns closing; the reachable public trigger is the shell's
     // per-navigation close, which is also the path the route guard's own
     // redirect-home takes. `launchPathnameRef` latches window.location at
@@ -241,7 +246,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
   it('closes on a wallet switch under a single-step inline failure (a write was attempted)', () => {
     mockChainId = 1;
     const onConfirm = vi.fn();
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     const { refresh } = renderModal(
       cb => ({
         ...mainnetOnlyConfig(onConfirm),
@@ -605,7 +610,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     mockChainId = 1;
     const onConfirm = vi.fn();
     let cb!: TxCallbacks;
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(
       liveCb => {
         cb = liveCb;
@@ -645,7 +650,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     mockChainId = 1;
     const onConfirm = vi.fn();
     let cb!: TxCallbacks;
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(
       liveCb => {
         cb = liveCb;
@@ -688,7 +693,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     mockChainId = 1;
     mockConnectedChainId = 137; // Polygon: unconfigured, so the fallback differs
     let cb!: TxCallbacks;
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(
       liveCb => {
         cb = liveCb;
@@ -725,7 +730,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
   it('does NOT close at IDLE: a multi-chain entry follows the wallet to another supported chain', () => {
     mockChainId = 1;
     const onConfirm = vi.fn();
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(
       () => ({
         title: 'Supply to Savings',
@@ -754,7 +759,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
   it('defers the close while a write is in flight, then closes when it settles as a failure', () => {
     mockChainId = 1;
     let cb!: TxCallbacks;
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(
       liveCb => {
         cb = liveCb;
@@ -786,7 +791,7 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
   it('links the success toast to the chain the transaction was sent on, not the one the wallet moved to', () => {
     mockChainId = 1;
     let cb!: TxCallbacks;
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     const config = (): TransactionConfig => ({
       title: 'Supply to Savings',
       usdValue: 0,
@@ -892,7 +897,7 @@ describe('TransactionProvider — chain guard fallbacks', () => {
   it('a pre-write refusal (the batch backstop) lands on ERROR even after an earlier session wrote', () => {
     mockChainId = 1;
     let cb!: TxCallbacks;
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(
       liveCb => {
         cb = liveCb;
@@ -923,7 +928,7 @@ describe('TransactionProvider — chain guard fallbacks', () => {
     mockChainId = 1;
     const onConfirm = vi.fn();
     let cb!: TxCallbacks;
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(
       liveCb => {
         cb = liveCb;
@@ -1007,7 +1012,7 @@ describe('TransactionProvider — idle sessions close on navigation', () => {
   const launchedAt = () => window.location.pathname;
 
   it('closes an idle session when the route changes', () => {
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(() => mainnetOnlyConfig(vi.fn()), { onReady: a => (api = a) });
     expect(api.isModalOpen).toBe(true);
 
@@ -1016,7 +1021,7 @@ describe('TransactionProvider — idle sessions close on navigation', () => {
   });
 
   it('keeps a session the destination page itself launched (same pathname)', () => {
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(() => mainnetOnlyConfig(vi.fn()), { onReady: a => (api = a) });
 
     act(() => api.closeOnNavigation(launchedAt()));
@@ -1024,7 +1029,7 @@ describe('TransactionProvider — idle sessions close on navigation', () => {
   });
 
   it('keeps an in-flight session (the wallet prompt / broadcast must settle)', () => {
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     let cb!: TxCallbacks;
     renderTestTree(
       liveCb => {
@@ -1041,7 +1046,7 @@ describe('TransactionProvider — idle sessions close on navigation', () => {
   });
 
   it('keeps a minimized session (minimize exists to move around the app)', () => {
-    let api!: ReturnType<typeof useTransaction>;
+    let api!: ReturnType<typeof useTestTransaction>;
     renderTestTree(() => mainnetOnlyConfig(vi.fn()), { onReady: a => (api = a) });
     act(() => api.minimize());
     expect(api.isMinimized).toBe(true);
@@ -1062,21 +1067,24 @@ let forceRerender: () => void = () => {};
 type ProviderOptions = {
   gate?: PreTransactionGate;
   usePreflight?: PreflightHook;
-  onReady?: (api: ReturnType<typeof useTransaction>) => void;
+  onReady?: (api: ReturnType<typeof useTestTransaction>) => void;
 };
 
 function RerenderHost({
   build,
   options
 }: {
-  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig;
+  build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig;
   options?: ProviderOptions;
 }) {
   const [, bump] = useState(0);
   // Assigned in an effect (not during render) so the module-level handle is a
   // side effect that runs after mount — by the time the test calls it, it's set.
   useEffect(() => {
-    forceRerender = () => bump(n => n + 1);
+    forceRerender = () => {
+      bump(n => n + 1);
+      refreshTestFlow();
+    };
   }, []);
   return (
     <TransactionProvider gate={options?.gate} usePreflight={options?.usePreflight}>
@@ -1086,7 +1094,7 @@ function RerenderHost({
 }
 
 function renderTestTree(
-  build: (cb: ReturnType<typeof useTransaction>['txCallbacks']) => TransactionConfig,
+  build: (cb: ReturnType<typeof useTestTransaction>['txCallbacks']) => TransactionConfig,
   options?: ProviderOptions
 ) {
   render(

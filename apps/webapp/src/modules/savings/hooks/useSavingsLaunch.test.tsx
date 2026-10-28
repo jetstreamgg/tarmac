@@ -130,17 +130,14 @@ vi.mock('@/hooks/tokens/useTokenAllowance', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({
-    launch: h.launchMock,
-    updateModalContent: () => undefined,
-    isModalOpen: false,
+  useSession: () => ({
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
       onSuccess: () => undefined,
       onError: () => undefined
     },
-    txStatus: 'idle'
+    status: 'idle'
   })
 }));
 

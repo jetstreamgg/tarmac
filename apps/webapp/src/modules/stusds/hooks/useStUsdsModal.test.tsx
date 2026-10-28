@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -13,9 +14,9 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ launch: h.launch })
 }));
 
-// Stub the editable body — only its props (flow/preset) are asserted via backgroundContent.
-vi.mock('../components/StUsdsModalForm', () => ({
-  StUsdsModalForm: ({ flow }: { flow: string }) => <div data-testid={`mock-stusds-form-${flow}`} />
+// Stub the flow — only the props it is launched with are asserted.
+vi.mock('../components/StUsdsFlow', () => ({
+  StUsdsFlow: ({ flow }: { flow: string }) => <div data-testid={`mock-stusds-form-${flow}`} />
 }));
 
 import { useStUsdsModal } from './useStUsdsModal';
@@ -41,53 +42,22 @@ describe('useStUsdsModal', () => {
   beforeEach(() => h.launch.mockClear());
   afterEach(() => cleanup());
 
-  it('opens the "Supply to stUSDS" editable modal on openSupply', () => {
+  it('launches the supply flow with its preset, guarded to mainnet', () => {
     renderHarness();
     fireEvent.click(screen.getByTestId('open-supply'));
 
     expect(h.launch).toHaveBeenCalledTimes(1);
-    const config = h.launch.mock.calls[0][0];
-    expect(config.title).toBe('Supply to stUSDS');
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-    // Three-screen flow: the entry advances to the review ("Review"), the
-    // review's Confirm fires the engine.
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.entry.confirmDisabled).toBe(true);
-    expect(config.reviewTitle).toBe('Review supply');
-    expect(config.confirmLabel).toBe('Confirm');
-    // The editable body is hosted OUTSIDE the dialog (backgroundContent) so its
-    // in-flight hook survives minimize — not inside entry.content.
-    expect(config.entry.content).toBeUndefined();
-    expect(config.backgroundContent).toBeDefined();
-    expect(config.backgroundContent.props.flow).toBe('supply');
-    expect(config.backgroundContent.props.preset).toEqual({ amount: '100' });
+    const options = h.launch.mock.calls[0][0];
+    expect(options.supportedChainIds).toEqual(MAINNET_FAMILY_CHAIN_IDS);
+    expect(options.flow.props.flow).toBe('supply');
+    expect(options.flow.props.preset).toEqual({ amount: '100' });
   });
 
-  it('opens the "Withdraw from stUSDS" editable modal on openWithdraw', () => {
+  it('launches the withdraw flow', () => {
     renderHarness();
     fireEvent.click(screen.getByTestId('open-withdraw'));
 
     expect(h.launch).toHaveBeenCalledTimes(1);
-    const config = h.launch.mock.calls[0][0];
-    expect(config.title).toBe('Withdraw from stUSDS');
-    expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.entry.confirmLabel).toBe('Review');
-    expect(config.entry.confirmDisabled).toBe(true);
-    expect(config.reviewTitle).toBe('Review withdrawal');
-    expect(config.confirmLabel).toBe('Confirm');
-    expect(config.entry.content).toBeUndefined();
-    expect(config.backgroundContent.props.flow).toBe('withdraw');
-  });
-
-  it('mints distinct sessions for supply and withdraw so sibling modals never cross-talk', () => {
-    renderHarness();
-    fireEvent.click(screen.getByTestId('open-supply'));
-    fireEvent.click(screen.getByTestId('open-withdraw'));
-
-    const [supplyConfig] = h.launch.mock.calls[0];
-    const [withdrawConfig] = h.launch.mock.calls[1];
-    expect(supplyConfig.sessionId).toBeDefined();
-    expect(withdrawConfig.sessionId).toBeDefined();
-    expect(supplyConfig.sessionId).not.toBe(withdrawConfig.sessionId);
+    expect(h.launch.mock.calls[0][0].flow.props.flow).toBe('withdraw');
   });
 });

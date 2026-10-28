@@ -1,8 +1,6 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { Call } from 'viem';
 import { getCallsKey } from '@/hooks/shared/networkFee';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 /** What a `transactionContent` render function receives — the engine's live routing. */
 export interface StakeLaunchContentContext {
@@ -24,55 +22,16 @@ export interface StakeLaunchContentContext {
 export type StakeLaunchContent = ReactNode | ((context: StakeLaunchContentContext) => ReactNode);
 
 /**
- * Keeps the stake confirm modal's review body live for as long as it is still
- * a review.
- *
- * Stake is a review-first flow — no `entry` screen — so `launch()` opens
- * straight onto the body, and `TransactionContext` stores the launch config
- * statically. Everything the body was handed at Confirm-press would otherwise
- * be frozen there for the modal's lifetime: an in-flight farm rate stays a
- * skeleton forever, an unresolved delegate reads "No delegate", and — the one
- * that actually misinforms — the network fee keeps pricing the route the user
- * has since switched away from with the toggle inside the modal.
- *
- * So the body is re-pushed the way every entry-first module's is (see
- * `useModalEntryBody`), and frozen on the same rule: pushes stop the moment the
- * transaction leaves IDLE, so mid-flight refetches can't rewrite the summary of
- * something already signed.
- *
- * Identity is the whole game here. `calls` is a fresh array every render, so
- * the routing is memoized on the calldata's CONTENT — otherwise each push
- * re-renders the provider, which re-renders this host, which pushes again.
+ * Resolves a stake confirm body against the engine's routing, so its grid prices
+ * the network fee of the route the engine would actually send.
  */
 export function useStakeConfirmContent({
-  sessionId,
   calls,
   isBatch,
   legCount,
-  content,
-  screenContent,
-  screenOnly = false
-}: {
-  /** Session this body belongs to — `updateModalContent` ignores stale ones. */
-  sessionId: string;
-  calls: Call[];
-  isBatch: boolean;
-  legCount: number;
-  /** The caller's body. Pass a MEMOIZED render function; it is a dep below. */
-  content?: StakeLaunchContent;
-  /** Compact wallet/status-screen summary, pushed alongside it. */
-  screenContent?: ReactNode;
-  /**
-   * Push `content` as the wallet-screen summary only. For a session that
-   * already carries an `entry` (the change reward / delegate modals): a
-   * `transactionContent` beside an entry makes the modal a three-screen flow.
-   */
-  screenOnly?: boolean;
-}): ReactNode {
-  const { updateModalContent, txStatus } = useTransaction();
-
-  // Same guard as useNetworkFee: a call the engine cannot encode yet must
-  // degrade the summary, not take the route down.
+  content
+}: StakeLaunchContentContext & { content?: StakeLaunchContent }): ReactNode {
+  // A call the engine cannot encode yet must degrade the summary, not take the route down.
   const callsKey = useMemo(() => {
     try {
       return getCallsKey(calls);
@@ -80,31 +39,11 @@ export function useStakeConfirmContent({
       return null;
     }
   }, [calls]);
+  // Keyed on the calldata's content: `calls` is a fresh array every render.
   const routing = useMemo<StakeLaunchContentContext>(
     () => ({ calls, isBatch, legCount }),
-    // Keyed on the calldata's content, not the array's identity — see above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [callsKey, isBatch, legCount]
   );
-
-  const resolved = useMemo(
-    () => (typeof content === 'function' ? content(routing) : content),
-    [content, routing]
-  );
-
-  useEffect(() => {
-    // No-op until `launch()` has seeded this session; a no-op again for good
-    // once the user has committed to the calldata.
-    if (txStatus !== TxStatus.IDLE) return;
-    if (screenOnly) {
-      updateModalContent(sessionId, { transactionScreenContent: resolved });
-      return;
-    }
-    updateModalContent(sessionId, {
-      transactionContent: resolved,
-      ...(screenContent !== undefined ? { transactionScreenContent: screenContent } : {})
-    });
-  }, [sessionId, txStatus, resolved, screenContent, screenOnly, updateModalContent]);
-
-  return resolved;
+  return useMemo(() => (typeof content === 'function' ? content(routing) : content), [content, routing]);
 }

@@ -2,7 +2,7 @@ import { useCallback, useId } from 'react';
 import { t } from '@lingui/core/macro';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
-import { ClaimRewardsPanel } from '../components/ClaimRewardsPanel';
+import { ClaimRewardsFlow } from '../components/ClaimRewardsFlow';
 import type { ClaimScope } from '../types';
 
 type UseClaimRewardsModalOptions = {
@@ -24,34 +24,22 @@ function modalTitle(scope: ClaimScope): string {
 /**
  * Reusable trigger for the generalized "Claim rewards" modal. Any surface — the vault
  * position card, the portfolio reward tables, the rewards/stake pages — calls `openClaim`
- * with a `ClaimScope` instead of re-declaring the launch config. The scope both narrows
- * what the panel shows and IS the selection: `{kind:'merkl-token',tokenAddress}` claims
+ * with a `ClaimScope`. The scope both narrows what the flow shows and IS the selection: `{kind:'merkl-token',tokenAddress}` claims
  * one token, `{kind:'merkl'}` every Merkl token, `{kind:'vault',vaultAddress}` only that
- * vault's Merkl rewards, etc. The body lives in `ClaimRewardsPanel`, mounted as
- * `backgroundContent` so its in-flight flow survives a minimize.
+ * vault's Merkl rewards, etc.
  */
 export function useClaimRewardsModal({ onSuccess }: UseClaimRewardsModalOptions = {}) {
   const { launch } = useTransaction();
   const sessionId = useId();
 
   const openClaim = useCallback(
-    (scope: ClaimScope) => {
+    (scope: ClaimScope) =>
       launch({
-        title: modalTitle(scope),
-        transactionTitle: t`Confirm in the wallet`,
         sessionId,
-        // UNKNOWN until the claim set resolves (the panel pushes the real
-        // sum) — treated as above-threshold, so the enhanced check runs
-        // rather than being skipped (APP-517).
-        usdValue: undefined,
         // Reward claims are mainnet-only — guard the modal off any L2 (APP-528).
         supportedChainIds: MAINNET_FAMILY_CHAIN_IDS,
-        entry: { confirmLabel: t`Claim`, confirmDisabled: true },
-        backgroundContent: <ClaimRewardsPanel sessionId={sessionId} scope={scope} />,
-        onConfirm: () => {},
-        onSuccess
-      });
-    },
+        flow: <ClaimRewardsFlow scope={scope} title={modalTitle(scope)} onSuccess={onSuccess} />
+      }),
     [launch, sessionId, onSuccess]
   );
 
