@@ -16,14 +16,13 @@ type BridgeRoutePickerProps = {
 const BADGE =
   'font-circle flex h-[18px] shrink-0 items-center gap-0.5 rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]';
 
-/** Brand-tinted pill with a bolt, for the faster route (Figma 3964:74437 Badge). */
-export function BridgeFastBadge({
-  children,
-  testId = 'bridge-route-badge'
-}: {
+type BridgeFastBadgeProps = {
   children: ReactNode;
   testId?: string;
-}) {
+};
+
+/** Brand-tinted pill with a bolt, for the faster route (Figma 3964:74437 Badge). */
+export function BridgeFastBadge({ children, testId = 'bridge-route-badge' }: BridgeFastBadgeProps) {
   return (
     <span className={cn(BADGE, 'bg-statusBrandBg text-statusBrand')} data-testid={testId}>
       <LightningFilled boxSize={8} className="size-2 shrink-0" aria-hidden />

@@ -225,7 +225,9 @@ function RedeemNoteText({ note }: RedeemNoteTextProps) {
   );
 }
 
-function EthShortfallText({ wei }: { wei: bigint }) {
+type EthShortfallTextProps = { wei: bigint };
+
+function EthShortfallText({ wei }: EthShortfallTextProps) {
   const eth = formatEthCeil(wei);
   return <Trans>You need about {eth} ETH on Ethereum to pay for this step.</Trans>;
 }
