@@ -79,12 +79,12 @@ const unreadReason = (fact: 'loading' | 'error'): BridgeBlockReason =>
   fact === 'loading' ? 'facts-loading' : 'facts-error';
 
 const isFallbackReason = (reason: BridgeBlockReason | undefined): reason is BridgeFallbackReason =>
-  reason === 'closed' || reason === 'over-limit' || reason === 'no-liquidity';
+  reason === 'closed' || reason === 'over-limit' || reason === 'no-liquidity' || reason === 'facts-error';
 
 const gateFailure = (
   amount: bigint,
   gate: (RouteGate & { liquidity?: bigint }) | undefined
-): BridgeFallbackReason | undefined => {
+): Exclude<BridgeFallbackReason, 'facts-error'> | undefined => {
   if (gate?.isOpen === false) return 'closed';
   if (amount === 0n) return undefined;
   if (gate?.maxAmount !== undefined && amount > gate.maxAmount) return 'over-limit';
@@ -269,11 +269,13 @@ export function resolveBridgeRoute({
     const cctpReason = unavailableReason(amount, cctp);
     return ok(nativeWithdrawalRoute(withdrawal, isFallbackReason(cctpReason) ? cctpReason : undefined));
   }
-  // No fallback before CCTP is known: the native withdrawal takes days.
-  if (isUnread(cctp)) return blocked(unreadReason(cctp));
-  const cctpFailure = gateFailure(amount, cctp);
+  // No fallback while CCTP loads: the native withdrawal takes days.
+  if (cctp === 'loading') return blocked('facts-loading');
+  const cctpFailure = cctp === 'error' ? 'facts-error' : gateFailure(amount, cctp);
   if (!cctpFailure) return ok(cctpWithdrawalRoute(from));
   if (nativeEtaMinutes(WITHDRAWAL_ETA_MINUTES, from) === undefined) return blocked(cctpFailure);
+  // An unread CCTP falls back only to a native gate that was read (the CCTP resume reads none).
+  if (cctpFailure === 'facts-error' && native === undefined) return blocked(cctpFailure);
   if (isUnread(native)) return blocked(unreadReason(native));
   const nativeFailure = gateFailure(amount, native);
   if (nativeFailure) return blocked(nativeFailure);

@@ -224,22 +224,52 @@ describe('resolveBridgeRoute: single-route pairs', () => {
 describe('resolveBridgeRoute: facts still loading or failed never pass as open', () => {
   const unread = ['loading', 'error'] as const;
   const open = { isOpen: true };
+  const closed = { isOpen: false };
 
   it('blocks every route while its facts load or after they fail', () => {
     for (const state of unread) {
       expect(resolve('ethereum', 'base', usds('1'), { native: state }).status).toBe('blocked');
       expect(resolve('ethereum', 'avalanche', usds('1'), { layerzero: state }).status).toBe('blocked');
       expect(resolve('solana', 'ethereum', usds('1'), { layerzero: state }).status).toBe('blocked');
-      expect(resolve('base', 'ethereum', usds('1'), { cctp: state, native: open }).status).toBe('blocked');
+      expect(resolve('base', 'ethereum', usds('1'), { cctp: state, native: closed }).status).toBe('blocked');
     }
+    expect(resolve('base', 'ethereum', usds('1'), { cctp: 'loading', native: open }).status).toBe('blocked');
   });
 
-  it('does not fall back to the native withdrawal before CCTP is known', () => {
-    for (const state of unread) {
-      expect(resolve('arbitrum', 'ethereum', usds('1'), { cctp: state, native: open })).toMatchObject({
-        status: 'blocked'
-      });
-    }
+  it('does not fall back to the native withdrawal while CCTP loads', () => {
+    expect(resolve('arbitrum', 'ethereum', usds('1'), { cctp: 'loading', native: open })).toEqual({
+      status: 'blocked',
+      reason: 'facts-loading'
+    });
+  });
+
+  it('falls back to the native withdrawal when CCTP fails to read and the native one is open', () => {
+    expect(
+      okRoute(resolve('arbitrum', 'ethereum', usds('1'), { cctp: 'error', native: open }))
+    ).toMatchObject({
+      kind: 'native',
+      fallbackReason: 'facts-error'
+    });
+  });
+
+  it('blocks when CCTP fails to read and the native withdrawal is unread, closed or missing', () => {
+    expect(resolve('base', 'ethereum', usds('1'), { cctp: 'error', native: 'loading' })).toEqual({
+      status: 'blocked',
+      reason: 'facts-loading'
+    });
+    expect(resolve('base', 'ethereum', usds('1'), { cctp: 'error', native: 'error' })).toEqual({
+      status: 'blocked',
+      reason: 'facts-error'
+    });
+    expect(resolve('base', 'ethereum', usds('1'), { cctp: 'error', native: closed })).toEqual({
+      status: 'blocked',
+      reason: 'closed'
+    });
+    // The CCTP resume reads no native gate: its USDC can't take the native route.
+    expect(resolve('base', 'ethereum', usds('1'), { cctp: 'error' })).toEqual({
+      status: 'blocked',
+      reason: 'facts-error'
+    });
   });
 
   it('blocks a CCTP fallback while the native facts are unread', () => {

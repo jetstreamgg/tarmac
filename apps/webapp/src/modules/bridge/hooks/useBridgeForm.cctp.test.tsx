@@ -78,15 +78,20 @@ describe('useBridgeForm: an L2 to Ethereum bridge goes through the CCTP gate', (
     expect(result.current.reviewBlocked).toBe(false);
   });
 
-  it.each([
-    ['loading', 'facts-loading'],
-    ['error', 'facts-error']
-  ])('blocks Review while the gate is %s', (fact, reason) => {
-    mocks.cctp = fact;
+  it('blocks Review while the gate is loading', () => {
+    mocks.cctp = 'loading';
     const result = typedOnL2();
     expect(result.current.route).toBeUndefined();
-    expect(result.current.blockedReason).toBe(reason);
+    expect(result.current.blockedReason).toBe('facts-loading');
     expect(result.current.reviewBlocked).toBe(true);
+  });
+
+  it("falls back to the native withdrawal when the gate can't be read", () => {
+    mocks.cctp = 'error';
+    const result = typedOnL2();
+    expect(result.current.route).toMatchObject({ kind: 'native', fallbackReason: 'facts-error' });
+    expect(result.current.blockedReason).toBeUndefined();
+    expect(result.current.reviewBlocked).toBe(false);
   });
 
   it.each([

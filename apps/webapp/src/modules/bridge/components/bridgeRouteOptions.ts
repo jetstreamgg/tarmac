@@ -88,6 +88,11 @@ export function routeFallbackNotice(route: BridgeRoute): { title: string; descri
   if (!reason) return undefined;
   const network = getBridgeNetwork(route.steps[0].network).name;
   const eta = formatEtaWords(route.etaMinutes);
+  if (reason === 'facts-error')
+    return {
+      title: t`CCTP route unavailable`,
+      description: t`We couldn't check CCTP right now. We switched you to SkyLink, which takes about ${eta}.`
+    };
   const why =
     reason === 'no-liquidity'
       ? t`Not enough USDC liquidity on ${network} for CCTP.`

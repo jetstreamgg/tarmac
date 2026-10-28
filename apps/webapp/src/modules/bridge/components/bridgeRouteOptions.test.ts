@@ -81,6 +81,13 @@ describe('buildRouteOptionCard', () => {
 });
 
 describe('routeFallbackNotice', () => {
+  it("says CCTP couldn't be checked, without blaming CCTP", () => {
+    expect(routeFallbackNotice(nativeWithdrawalRoute('base', 'facts-error'))).toEqual({
+      title: 'CCTP route unavailable',
+      description: "We couldn't check CCTP right now. We switched you to SkyLink, which takes about 5 days."
+    });
+  });
+
   it('says why CCTP is out and how long SkyLink takes, per reason', () => {
     expect(routeFallbackNotice(nativeWithdrawalRoute('base', 'no-liquidity'))).toEqual({
       title: 'CCTP route unavailable',

@@ -7,7 +7,7 @@ export type BridgeStepAction = 'approve' | 'send' | 'claim' | 'prove' | 'finaliz
 export type BridgeStep = { network: BridgeNetworkId; action: BridgeStepAction };
 
 /** Why the resolver moved off the preferred route for a pair. */
-export type BridgeFallbackReason = 'closed' | 'over-limit' | 'no-liquidity';
+export type BridgeFallbackReason = 'closed' | 'over-limit' | 'no-liquidity' | 'facts-error';
 
 /** What the UI needs to show and launch a bridge; produced by the route resolver. */
 export type BridgeRoute = {
