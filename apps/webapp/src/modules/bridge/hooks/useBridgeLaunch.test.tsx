@@ -12,7 +12,7 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeForm } from './useBridgeForm';
-import { nativeWithdrawalRoute } from '../model/resolveRoute';
+import { cctpWithdrawalRoute, nativeWithdrawalRoute } from '../model/resolveRoute';
 import { useBridgeLaunch } from './useBridgeLaunch';
 
 const SENDER = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
@@ -24,6 +24,10 @@ type SafeReply = number | 'hang';
 
 const mocks = vi.hoisted(() => ({
   isConnected: true,
+  routeCards: {
+    args: [] as { options: unknown; sources: Record<string, { calls: unknown[] }> }[],
+    cards: undefined as unknown
+  },
   // The CCTP gate an L2 source reads; undefined blocks it.
   cctp: undefined as unknown,
   balance: undefined as bigint | undefined,
@@ -172,6 +176,13 @@ vi.mock('./useNativeDepositLegs', () => ({
       reset: vi.fn(),
       refetchAllowance: mocks.refetchAllowance
     };
+  }
+}));
+// The route picker's cards have their own suite; this one checks what the launch hands them.
+vi.mock('./useBridgeRouteCards', () => ({
+  useBridgeRouteCards: (args: (typeof mocks.routeCards.args)[number]) => {
+    mocks.routeCards.args.push(args);
+    return mocks.routeCards.cards;
   }
 }));
 vi.mock('./useNativeWithdrawalLegs', () => ({
@@ -805,6 +816,78 @@ describe('useBridgeLaunch Confirm gate', () => {
       await reviewDeposit('base');
       const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
       expect(content.props.bridgeFee).toBeUndefined();
+    });
+  });
+
+  describe('the route picker of a withdrawal with a choice', () => {
+    const CARDS = [{ kind: 'cctp' }, { kind: 'native' }];
+    async function reviewWithChoice({
+      route,
+      cctpUnavailable
+    }: {
+      route: ReturnType<typeof nativeWithdrawalRoute>;
+      cctpUnavailable?: 'no-liquidity';
+    }) {
+      mocks.appChainId = 8453;
+      const pickRoute = vi.fn();
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route,
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        routeOptions: [
+          { route: cctpWithdrawalRoute('base'), ...(cctpUnavailable && { unavailable: cctpUnavailable }) },
+          { route: nativeWithdrawalRoute('base') }
+        ],
+        pickRoute
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      return { pickRoute };
+    }
+    const launchedPicker = () =>
+      (mocks.launched.at(-1)?.transactionContent as { props: { routePicker?: unknown } }).props.routePicker;
+
+    beforeEach(() => {
+      mocks.routeCards.args.length = 0;
+      mocks.routeCards.cards = undefined;
+    });
+
+    it("hands the Review the cards and the form's pick", async () => {
+      mocks.routeCards.cards = CARDS;
+      const { pickRoute } = await reviewWithChoice({ route: nativeWithdrawalRoute('base') });
+      expect(launchedPicker()).toEqual({ cards: CARDS, onPick: pickRoute });
+      const view = mocks.routeCards.args.at(-1)!;
+      expect(view.options).toHaveLength(2);
+      // The selected native withdrawal's own calls price its card.
+      expect(view.sources.native.calls).toEqual([{ to: '0xwithdrawal' }]);
+    });
+
+    it('offers no picker without cards', async () => {
+      await reviewWithChoice({ route: nativeWithdrawalRoute('base') });
+      expect(launchedPicker()).toBeUndefined();
+    });
+
+    it('builds the native withdrawal while CCTP is selected, so its card has real figures', async () => {
+      await reviewWithChoice({ route: cctpWithdrawalRoute('base') });
+      // Read only: Confirm still runs CCTP's legs.
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from: 'base', chainId: 8453 });
+      expect(mocks.routeCards.args.at(-1)!.sources.native.calls).toEqual([{ to: '0xwithdrawal' }]);
+    });
+
+    it("leaves an unavailable route's engine off and its card without calls", async () => {
+      await reviewWithChoice({
+        route: nativeWithdrawalRoute('base', 'no-liquidity'),
+        cctpUnavailable: 'no-liquidity'
+      });
+      expect(mocks.routeCards.args.at(-1)!.sources.cctp.calls).toEqual([]);
     });
   });
 

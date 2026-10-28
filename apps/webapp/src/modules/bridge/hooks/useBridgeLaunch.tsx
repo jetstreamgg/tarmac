@@ -36,6 +36,7 @@ import { CCTP_BURN_FUNCTION, useCctpBurnLegs } from './useCctpBurnLegs';
 import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
 import { useBridgeBatch } from './useBridgeBatch';
+import { useBridgeRouteCards } from './useBridgeRouteCards';
 
 const cctpUsds = (network: CctpL2NetworkId | undefined) =>
   network ? cctpL2Contracts(network).usds : undefined;
@@ -45,7 +46,7 @@ export type BridgeLaunchForm = Pick<
   BridgeFormModel,
   'amount' | 'from' | 'to' | 'route' | 'recipient' | 'isConnected' | 'reviewBlocked'
 > &
-  Partial<Pick<BridgeFormModel, 'senderIsContract'>>;
+  Partial<Pick<BridgeFormModel, 'senderIsContract' | 'routeOptions' | 'pickRoute'>>;
 
 const DETACHED: TxCallbacks = {
   onMutate: () => {},
@@ -107,6 +108,15 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       ? from
       : undefined);
   const isNativeWithdrawal = withdrawalFrom !== undefined;
+  // The route the user didn't pick builds its calls too, for the picker's approvals and fee.
+  const pickable = (kind: 'cctp' | 'native') =>
+    runningTo === undefined &&
+    runningBurn === undefined &&
+    runningWithdrawal === undefined &&
+    !!form.routeOptions?.some(option => option.route.kind === kind && !option.unavailable);
+  const previewBurnFrom = !isCctpBurn && isCctpL2Network(from) && pickable('cctp') ? from : undefined;
+  const previewWithdrawalFrom =
+    !isNativeWithdrawal && isNativeDepositNetwork(from) && pickable('native') ? from : undefined;
   // A route whose source legs are real calls.
   const isReal = isNativeDeposit || isCctpBurn || isNativeWithdrawal;
   // A CCTP claim is sent on Ethereum by the address it mints to.
@@ -153,9 +163,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     getCallbacks: () => legCallbacksRef.current
   });
   const burn = useCctpBurnLegs({
-    enabled: isCctpBurn && form.isConnected && (runningBurn !== undefined || !form.reviewBlocked),
+    enabled:
+      (isCctpBurn || previewBurnFrom !== undefined) &&
+      form.isConnected &&
+      (runningBurn !== undefined || !form.reviewBlocked),
     // Any network while disabled.
-    from: burnFrom ?? 'base',
+    from: burnFrom ?? previewBurnFrom ?? 'base',
     chainId: pinnedChainId,
     ethereumChainId,
     account,
@@ -175,9 +188,11 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   });
   const withdrawal = useNativeWithdrawalLegs({
     enabled:
-      isNativeWithdrawal && form.isConnected && (runningWithdrawal !== undefined || !form.reviewBlocked),
+      (isNativeWithdrawal || previewWithdrawalFrom !== undefined) &&
+      form.isConnected &&
+      (runningWithdrawal !== undefined || !form.reviewBlocked),
     // Any network while disabled.
-    from: withdrawalFrom ?? 'base',
+    from: withdrawalFrom ?? previewWithdrawalFrom ?? 'base',
     chainId: pinnedChainId,
     account,
     recipient,
@@ -518,6 +533,36 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     enabled: isReal && legs.calls.length > 0
   });
   const networkFeeText = networkFee?.formatted ?? NO_VALUE;
+  const routeSources = useMemo(
+    () => ({
+      cctp: { calls: isCctpBurn || previewBurnFrom ? burn.calls : [], isBatch: burn.isBatch },
+      native: {
+        calls: isNativeWithdrawal || previewWithdrawalFrom ? withdrawal.calls : [],
+        isBatch: withdrawal.isBatch
+      }
+    }),
+    [
+      isCctpBurn,
+      previewBurnFrom,
+      burn.calls,
+      burn.isBatch,
+      isNativeWithdrawal,
+      previewWithdrawalFrom,
+      withdrawal.calls,
+      withdrawal.isBatch
+    ]
+  );
+  const routeCards = useBridgeRouteCards({
+    options: form.routeOptions,
+    chainId: pinnedChainId,
+    ethereumChainId,
+    sources: routeSources
+  });
+  const { pickRoute } = form;
+  const routePicker = useMemo(
+    () => (routeCards && pickRoute ? { cards: routeCards, onPick: pickRoute } : undefined),
+    [routeCards, pickRoute]
+  );
   // Arbitrum refunds a contract's unused fee to its L2 alias, which a Safe reaches only through Ethereum.
   const aliasedRefund = isSafe && depositTo === 'arbitrum' && !sendsToOther(recipient, account);
   // A Safe's swap is not kept to continue: its safeTxHash can't be confirmed on chain (APP-567).
@@ -546,6 +591,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           contractWallet={contractWallet}
           safeQueue={safeQueue}
           storageNote={storageNote}
+          routePicker={routePicker}
         />
       ),
     [
@@ -561,7 +607,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       claimedByOther,
       contractWallet,
       safeQueue,
-      storageNote
+      storageNote,
+      routePicker
     ]
   );
   const transactionScreenContent = useMemo(
