@@ -1,5 +1,4 @@
 import { decodeEventLog, getAbiItem, isAddressEqual, type Address, type Hex, type Log } from 'viem';
-import { blockRanges } from '../blockRanges';
 import {
   ARBITRUM_DEPOSIT,
   isOpStackNetwork,
@@ -14,15 +13,15 @@ const BRIDGE_INITIATED = getAbiItem({ abi: opStackL2TokenBridgeAbi, name: 'ERC20
 const WITHDRAWAL_INITIATED = getAbiItem({ abi: arbitrumL2TokenGatewayAbi, name: 'WithdrawalInitiated' });
 
 /**
- * L2 blocks per log query and the most a scan covers. The OP Stack chunk is the 10k range many RPC
- * providers cap eth_getLogs at: about 23 days of Base or OP, 11 of Unichain. Arbitrum's upstream takes
- * large filtered ranges: about 30 days.
+ * L2 blocks a scan covers, read in one query: the primary upstream returns large filtered ranges
+ * whole, and the fallback's 10-block cap fails any useful range. About 23 days of Base or OP,
+ * 11 of Unichain, 30 of Arbitrum.
  */
-export const WITHDRAWAL_SCAN: Record<NativeDepositNetwork, { chunk: bigint; window: bigint }> = {
-  base: { chunk: 10_000n, window: 1_000_000n },
-  optimism: { chunk: 10_000n, window: 1_000_000n },
-  unichain: { chunk: 10_000n, window: 1_000_000n },
-  arbitrum: { chunk: 500_000n, window: 10_500_000n }
+export const WITHDRAWAL_SCAN_BLOCKS: Record<NativeDepositNetwork, bigint> = {
+  base: 1_000_000n,
+  optimism: 1_000_000n,
+  unichain: 1_000_000n,
+  arbitrum: 10_500_000n
 };
 
 /** An L2 transaction with a USDS withdrawal to Ethereum the account sent or receives. */
@@ -69,9 +68,9 @@ export function withdrawalsInLogs(
 
 /**
  * The account's USDS withdrawals to Ethereum from `network`, sent or received,
- * in the network's scan window up to `toBlock`, newest range first. The logs
+ * in the network's scan window up to `toBlock`, in one query. The logs
  * are filtered by token only (traffic is tiny), so sender and recipient come
- * back alike. A range whose logs can't be read is skipped and reported in `complete`.
+ * back alike. Logs that can't be read leave `complete` false.
  */
 export async function discoverNativeWithdrawals({
   l2,
@@ -84,25 +83,21 @@ export async function discoverNativeWithdrawals({
   account: string;
   toBlock: bigint;
 }): Promise<{ withdrawals: DiscoveredWithdrawal[]; complete: boolean }> {
-  const { chunk, window } = WITHDRAWAL_SCAN[network];
-  const first = toBlock >= window ? toBlock - window + 1n : 0n;
-  const logs: Log[] = [];
-  let complete = true;
-  for (const blocks of blockRanges(first, toBlock, chunk, { newestFirst: true })) {
-    const range = { ...blocks, strict: true } as const;
-    try {
-      const read = isOpStackNetwork(network)
-        ? await l2.getLogs({
-            ...range,
-            address: OP_STACK_DEPOSIT[network].l2TokenBridge,
-            event: BRIDGE_INITIATED,
-            args: { localToken: OP_STACK_DEPOSIT[network].l2Usds }
-          })
-        : await l2.getLogs({ ...range, address: ARBITRUM_DEPOSIT.l2Gateway, event: WITHDRAWAL_INITIATED });
-      logs.push(...(read as Log[]));
-    } catch {
-      complete = false;
-    }
+  const window = WITHDRAWAL_SCAN_BLOCKS[network];
+  const range = { fromBlock: toBlock >= window ? toBlock - window + 1n : 0n, toBlock, strict: true } as const;
+  let logs: Log[];
+  try {
+    const read = isOpStackNetwork(network)
+      ? await l2.getLogs({
+          ...range,
+          address: OP_STACK_DEPOSIT[network].l2TokenBridge,
+          event: BRIDGE_INITIATED,
+          args: { localToken: OP_STACK_DEPOSIT[network].l2Usds }
+        })
+      : await l2.getLogs({ ...range, address: ARBITRUM_DEPOSIT.l2Gateway, event: WITHDRAWAL_INITIATED });
+    logs = read as Log[];
+  } catch {
+    return { withdrawals: [], complete: false };
   }
-  return { withdrawals: withdrawalsInLogs(logs, network, account), complete };
+  return { withdrawals: withdrawalsInLogs(logs, network, account), complete: true };
 }

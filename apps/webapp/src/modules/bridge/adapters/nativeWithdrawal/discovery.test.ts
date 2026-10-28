@@ -3,7 +3,7 @@ import type { Hex, Log } from 'viem';
 import { ARBITRUM_DEPOSIT, OP_STACK_DEPOSIT } from '../nativeDeposit/contracts';
 import type { ChainReader } from '../types';
 import { arbitrumWithdrawalMessage } from './arbitrum';
-import { discoverNativeWithdrawals, WITHDRAWAL_SCAN, withdrawalsInLogs } from './discovery';
+import { discoverNativeWithdrawals, WITHDRAWAL_SCAN_BLOCKS, withdrawalsInLogs } from './discovery';
 import { opStackWithdrawalMessage } from './opStack';
 import {
   ARBITRUM_WITHDRAWAL_LOGS,
@@ -53,24 +53,20 @@ describe('discoverNativeWithdrawals', () => {
     return { getLogs: mock as unknown as ChainReader['getLogs'], read: mock };
   };
 
-  it("scans the network's window newest first, by token only on the OP Stack bridge", async () => {
-    const { chunk, window } = WITHDRAWAL_SCAN.base;
+  it("scans the network's whole window in one query, by token only on the OP Stack bridge", async () => {
+    const window = WITHDRAWAL_SCAN_BLOCKS.base;
     const toBlock = window * 2n;
-    const l2 = reader(async ({ fromBlock }) =>
-      fromBlock === toBlock - chunk + 1n ? mined(BASE_WITHDRAWAL_LOGS, HASH(1), toBlock) : []
-    );
+    const l2 = reader(async () => mined(BASE_WITHDRAWAL_LOGS, HASH(1), toBlock));
     const found = await discoverNativeWithdrawals({ l2, network: 'base', account: base.to, toBlock });
     expect(found).toEqual({ withdrawals: [{ txHash: HASH(1), blockNumber: toBlock }], complete: true });
-    const calls = l2.read.mock.calls.map(([args]) => args);
-    expect(calls).toHaveLength(Number(window / chunk));
-    expect(calls[0]).toMatchObject({
+    expect(l2.read).toHaveBeenCalledTimes(1);
+    expect(l2.read.mock.calls[0][0]).toMatchObject({
       address: OP_STACK_DEPOSIT.base.l2TokenBridge,
       args: { localToken: OP_STACK_DEPOSIT.base.l2Usds },
-      fromBlock: toBlock - chunk + 1n,
+      fromBlock: toBlock - window + 1n,
       toBlock,
       strict: true
     });
-    expect(calls.at(-1)).toMatchObject({ fromBlock: toBlock - window + 1n });
   });
 
   it("reads every withdrawal of Sky's Arbitrum gateway, whose token isn't indexed", async () => {
@@ -82,18 +78,16 @@ describe('discoverNativeWithdrawals', () => {
     expect(args.args).toBeUndefined();
   });
 
-  it('skips a range it cannot read and says the scan is incomplete', async () => {
-    const { chunk } = WITHDRAWAL_SCAN.optimism;
-    const l2 = reader(async ({ fromBlock }) => {
-      if (fromBlock === 0n) throw new Error('range too large');
-      return mined(OPTIMISM_WITHDRAWAL_LOGS, HASH(2), fromBlock);
+  it("says the scan is incomplete when the window's logs can't be read", async () => {
+    const l2 = reader(async () => {
+      throw new Error('range too large');
     });
     const found = await discoverNativeWithdrawals({
       l2,
       network: 'optimism',
       account: optimism.from,
-      toBlock: chunk * 2n - 1n
+      toBlock: 1_000n
     });
-    expect(found).toEqual({ withdrawals: [{ txHash: HASH(2), blockNumber: chunk }], complete: false });
+    expect(found).toEqual({ withdrawals: [], complete: false });
   });
 });
