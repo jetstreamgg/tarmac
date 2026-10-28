@@ -5,12 +5,14 @@
 // Changes outside the webapp sources (dependencies, root or webapp config) run the
 // typecheck, the build and the full test suite.
 //
-// Usage: pnpm check:changed [--base <ref>] [--fix] [--full] [--skip <step,...>] [files...]
-//   --base   compare against the merge-base with this ref (default: origin/development)
-//   --fix    write eslint fixes and prettier formatting first, then run the other steps
-//   --full   run the full fast vitest suite instead of only the related tests
-//   --skip   comma-separated steps to skip: prettier, eslint, typecheck, tests, build
-//   files    check these files instead of the ones changed since the base
+// Usage: pnpm check:changed [--base <ref> | --uncommitted] [--fix] [--full] [--skip <step,...>] [files...]
+//   --base         compare against the merge-base with this ref (default: the base branch of the
+//                  branch's open PR, else origin/development)
+//   --uncommitted  check only the staged, unstaged and untracked changes
+//   --fix          write eslint fixes and prettier formatting first, then run the other steps
+//   --full         run the full fast vitest suite instead of only the related tests
+//   --skip         comma-separated steps to skip: prettier, eslint, typecheck, tests, build
+//   files          check these files instead of the changed ones
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
@@ -21,7 +23,7 @@ const webapp = resolve(root, 'apps/webapp');
 const STEPS = ['prettier', 'eslint', 'typecheck', 'tests', 'build'];
 const usage = message => {
   console.error(
-    `${message}\nUsage: pnpm check:changed [--base <ref>] [--fix] [--full] [--skip <step,...>] [files...]`
+    `${message}\nUsage: pnpm check:changed [--base <ref> | --uncommitted] [--fix] [--full] [--skip <step,...>] [files...]`
   );
   process.exit(2);
 };
@@ -38,7 +40,7 @@ for (let i = 0; i < argv.length; i++) {
     continue;
   }
   const [name, inline] = arg.slice(2).split(/=(.*)/s);
-  if (name === 'fix' || name === 'full') {
+  if (name === 'fix' || name === 'full' || name === 'uncommitted') {
     if (inline !== undefined) usage(`--${name} takes no value`);
     flags.add(name);
   } else if (name === 'base' || name === 'skip') {
@@ -51,6 +53,10 @@ for (let i = 0; i < argv.length; i++) {
 }
 const fix = flags.has('fix');
 const full = flags.has('full');
+const uncommitted = flags.has('uncommitted');
+if (uncommitted && options.base) usage('--uncommitted and --base are mutually exclusive');
+if ((uncommitted || options.base) && explicit.length > 0)
+  usage('Files cannot be combined with --base or --uncommitted');
 const skip = new Set((options.skip ?? '').split(',').filter(Boolean));
 for (const step of skip) if (!STEPS.includes(step)) usage(`Unknown step "${step}" in --skip`);
 
@@ -60,27 +66,47 @@ const git = (...gitArgs) =>
     .map(line => line.trim())
     .filter(Boolean);
 
+// The base branch of this branch's open PR, so a PR stacked on another branch only checks its own
+// changes. Undefined without gh, a PR or network access.
+const prBaseBranch = () => {
+  try {
+    return execFileSync('gh', ['pr', 'view', '--json', 'baseRefName', '-q', '.baseRefName'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5000
+    }).trim();
+  } catch {
+    return undefined;
+  }
+};
+
 const resolveBase = () => {
-  for (const ref of options.base ? [options.base] : ['origin/development', 'development']) {
+  if (uncommitted) return { rev: 'HEAD', label: 'uncommitted' };
+  const prBase = options.base ? undefined : prBaseBranch();
+  const candidates = options.base
+    ? [options.base]
+    : [...(prBase ? [`origin/${prBase}`, prBase] : []), 'origin/development', 'development'];
+  for (const ref of candidates) {
     try {
-      return git('merge-base', 'HEAD', ref)[0];
+      return { rev: git('merge-base', 'HEAD', ref)[0], label: `since ${ref}` };
     } catch {
       // Try the next candidate
     }
   }
   if (options.base) usage(`No merge-base between HEAD and "${options.base}"`);
-  return 'HEAD';
+  return { rev: 'HEAD', label: 'uncommitted' };
 };
 
 const base = explicit.length > 0 ? undefined : resolveBase();
-const source = base ? `since ${base.slice(0, 9)}` : 'given';
-// Committed, staged and unstaged changes since the base, plus untracked files. Deleted files are dropped.
+const source = base?.label ?? 'given';
+// Changes since the base (committed, staged and unstaged), plus untracked files. Deleted files are dropped.
 const changed = [
   ...new Set(
     explicit.length > 0
       ? explicit.map(file => relative(root, resolve(process.env.INIT_CWD ?? process.cwd(), file)))
       : [
-          ...git('diff', '--name-only', '--diff-filter=d', base, '--'),
+          ...git('diff', '--name-only', '--diff-filter=d', base.rev, '--'),
           ...git('ls-files', '--others', '--exclude-standard')
         ]
   )
