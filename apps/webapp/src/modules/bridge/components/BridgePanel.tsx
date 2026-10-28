@@ -9,6 +9,7 @@ import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
 import { useCctpSwapConvertLaunch } from '../hooks/useCctpSwapConvertLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
 import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
+import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { BridgeCard } from './BridgeCard';
 import { BridgeClaimLookup, hasBridgeClaimLookup } from './BridgeClaimLookup';
 import { PendingBridges } from './PendingBridges';
@@ -67,7 +68,7 @@ type BlockedMessageProps = {
 
 function BlockedMessage({ reason, from, to }: BlockedMessageProps) {
   // A withdrawal to Ethereum is blocked only once both its routes are.
-  if (from !== 'ethereum' && to === 'ethereum' && reason !== 'facts-error') {
+  if (isNativeDepositNetwork(from) && to === 'ethereum' && reason !== 'facts-error') {
     if (reason === 'over-limit')
       return <Trans>This amount is above what can be bridged right now. Try a smaller amount.</Trans>;
     const network = getBridgeNetwork(from).name;

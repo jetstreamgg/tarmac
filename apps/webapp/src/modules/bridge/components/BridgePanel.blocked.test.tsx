@@ -87,3 +87,12 @@ describe('a blocked deposit from Ethereum', () => {
     expect(blocked('ethereum', 'base', reason)).toBe(text);
   });
 });
+
+// Only a source with a native withdrawal has two routes to lose; another bridge keeps its own reason.
+describe('a blocked bridge to Ethereum from a source with no native withdrawal', () => {
+  it('keeps its own reason', () => {
+    expect(blocked('avalanche', 'ethereum', 'no-liquidity')).toBe(
+      'Not enough liquidity on the destination for this amount. Try a smaller amount.'
+    );
+  });
+});
