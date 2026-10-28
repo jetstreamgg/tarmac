@@ -15,7 +15,8 @@ import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { formatAddress, formatBigInt } from '@/utils';
 import { cn } from '@/lib/cn';
-import { buildBridgeModalRows, formatEta, formatEtaWords } from './bridgeModalRows';
+import { bridgeTypeLabel, buildBridgeModalRows, formatEta, formatEtaWords } from './bridgeModalRows';
+import { CircleLogo, SkyLinkLogo } from '@/modules/icons';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 import { BridgeFastBadge, BridgeRoutePicker } from './BridgeRoutePicker';
 import type { RouteOptionCard } from './bridgeRouteOptions';
@@ -153,17 +154,39 @@ export function BridgeReviewContent({
     ? [
         [
           {
-            ...bridgeType,
-            action: (
+            label: bridgeType.label,
+            kind: 'node' as const,
+            // The whole value opens the options, not only the chevron.
+            node: (
               <button
                 type="button"
                 onClick={() => (beside ? beside.onOpenChange(!beside.open) : setChoosing(true))}
                 aria-label={t`Change bridge type`}
                 aria-expanded={beside?.open}
-                className="text-fgSecondary flex items-center"
+                className="flex cursor-pointer items-center gap-1"
                 data-testid="bridge-modal-route-toggle"
               >
-                <ChevronRight size={12} className={cn(beside?.open && 'rotate-180')} aria-hidden />
+                {route.kind === 'cctp' ? (
+                  <CircleLogo
+                    boxSize={12}
+                    className="size-3 shrink-0"
+                    aria-hidden
+                    data-testid="cell-logo-cctp"
+                  />
+                ) : (
+                  <SkyLinkLogo
+                    boxSize={12}
+                    className="text-fgPrimary size-3 shrink-0"
+                    aria-hidden
+                    data-testid="cell-logo-skylink"
+                  />
+                )}
+                {bridgeTypeLabel(route.kind)}
+                <ChevronRight
+                  size={12}
+                  className={cn('text-fgSecondary', beside?.open && 'rotate-180')}
+                  aria-hidden
+                />
               </button>
             )
           },

@@ -184,6 +184,15 @@ describe('BridgeReviewContent route picker', () => {
     expect(screen.queryByTestId('bridge-modal-route-toggle')).toBeNull();
   });
 
+  it("opens the options from the whole Bridge type value, the route's logo and name included", () => {
+    review({ routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    const toggle = screen.getByTestId('bridge-modal-route-toggle');
+    expect(toggle.textContent).toBe('CCTP');
+    expect(toggle.querySelector('[data-testid="cell-logo-cctp"]')).toBeTruthy();
+    fireEvent.click(screen.getByText('CCTP'));
+    expect(screen.getByText('Select bridge type')).toBeTruthy();
+  });
+
   it('opens the options from the Bridge type row and closes them on back, keeping the route', () => {
     const onPick = vi.fn();
     review({ routePicker: { cards: [cctp, native], onPick } });
