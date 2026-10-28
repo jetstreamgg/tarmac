@@ -5,12 +5,12 @@ import { destinationGas, ethereumStepGas, ethShortfall, routeApprovals } from '.
 describe('destinationGas', () => {
   it('adds a prove and a finalize on Ethereum for an OP Stack withdrawal', () => {
     for (const from of ['base', 'optimism', 'unichain'] as const)
-      expect(destinationGas(nativeWithdrawalRoute(from))).toBe(800_000n);
+      expect(destinationGas(nativeWithdrawalRoute(from))).toBe(850_000n);
   });
 
   it("adds one outbox execute for an Arbitrum withdrawal, and one claim for CCTP's", () => {
-    expect(destinationGas(nativeWithdrawalRoute('arbitrum'))).toBe(250_000n);
-    expect(destinationGas(cctpWithdrawalRoute('base'))).toBe(180_000n);
+    expect(destinationGas(nativeWithdrawalRoute('arbitrum'))).toBe(200_000n);
+    expect(destinationGas(cctpWithdrawalRoute('base'))).toBe(210_000n);
   });
 
   it('adds nothing for a deposit, which the bridge delivers', () => {
@@ -33,10 +33,10 @@ describe('routeApprovals', () => {
 
 describe('ethereumStepGas', () => {
   it("is each withdrawal step's estimate on Ethereum", () => {
-    expect(ethereumStepGas('prove', 'base')).toBe(450_000n);
+    expect(ethereumStepGas('prove', 'base')).toBe(500_000n);
     expect(ethereumStepGas('finalize', 'optimism')).toBe(350_000n);
-    expect(ethereumStepGas('finalize', 'arbitrum')).toBe(250_000n);
-    expect(ethereumStepGas('claim', 'base')).toBe(180_000n);
+    expect(ethereumStepGas('finalize', 'arbitrum')).toBe(200_000n);
+    expect(ethereumStepGas('claim', 'base')).toBe(210_000n);
   });
 });
 

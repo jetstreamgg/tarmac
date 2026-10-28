@@ -2,11 +2,11 @@ import { destinationActions } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
 import type { BridgeRoute, PendingBridgeStepAction } from './types';
 
-// Upper estimates of each Ethereum step's gas, for the route picker's fee; to be measured on forks.
-const CCTP_CLAIM_GAS = 180_000n;
-const OP_STACK_PROVE_GAS = 450_000n;
+// Upper estimates of each Ethereum step's gas: about 10% over the mainnet maximum seen in October 2026.
+const CCTP_CLAIM_GAS = 210_000n;
+const OP_STACK_PROVE_GAS = 500_000n;
 const OP_STACK_FINALIZE_GAS = 350_000n;
-const ARBITRUM_EXECUTE_GAS = 250_000n;
+const ARBITRUM_EXECUTE_GAS = 200_000n;
 
 /** Upper estimate of the gas a step after the source send costs on Ethereum, for a bridge from `from`. */
 export const ethereumStepGas = (action: PendingBridgeStepAction, from: BridgeNetworkId): bigint => {

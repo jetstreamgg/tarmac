@@ -3,6 +3,7 @@
  */
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ethereumStepGas } from '../model/routeCosts';
 import type { PendingBridge } from '../model/types';
 import { useWithdrawalEthShortfall } from './useWithdrawalEthShortfall';
 
@@ -55,12 +56,15 @@ describe('useWithdrawalEthShortfall', () => {
 
   it("is the ready step's ETH cost on Ethereum when the wallet can't pay it", () => {
     mocks.feePerGas = 10n;
-    mocks.balance = 450_000n * 10n - 1n;
-    expect(shortfall(READY)).toBe(4_500_000n);
+    const prove = ethereumStepGas('prove', 'optimism') * 10n;
+    mocks.balance = prove - 1n;
+    expect(shortfall(READY)).toBe(prove);
     expect(shortfall({ ...READY, nextAction: 'finalize' })).toBeUndefined();
     expect(shortfall({ ...READY, from: 'arbitrum', nextAction: 'finalize' })).toBeUndefined();
     mocks.balance = 0n;
-    expect(shortfall({ ...READY, from: 'arbitrum', nextAction: 'finalize' })).toBe(2_500_000n);
+    expect(shortfall({ ...READY, from: 'arbitrum', nextAction: 'finalize' })).toBe(
+      ethereumStepGas('finalize', 'arbitrum') * 10n
+    );
   });
 
   it("reads the wallet's ETH and the fee on the family's Ethereum", () => {
