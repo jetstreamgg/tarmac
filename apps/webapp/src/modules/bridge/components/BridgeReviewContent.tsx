@@ -16,7 +16,7 @@ import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { formatAddress, formatBigInt } from '@/utils';
 import { cn } from '@/lib/cn';
 import { bridgeTypeLabel, buildBridgeModalRows, formatEta, formatEtaWords } from './bridgeModalRows';
-import { CircleLogo, SkyLinkLogo } from '@/modules/icons';
+import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 import { BridgeFastBadge, BridgeRoutePicker } from './BridgeRoutePicker';
 import type { RouteOptionCard } from './bridgeRouteOptions';
@@ -166,21 +166,7 @@ export function BridgeReviewContent({
                 className="flex cursor-pointer items-center gap-1"
                 data-testid="bridge-modal-route-toggle"
               >
-                {route.kind === 'cctp' ? (
-                  <CircleLogo
-                    boxSize={12}
-                    className="size-3 shrink-0"
-                    aria-hidden
-                    data-testid="cell-logo-cctp"
-                  />
-                ) : (
-                  <SkyLinkLogo
-                    boxSize={12}
-                    className="text-fgPrimary size-3 shrink-0"
-                    aria-hidden
-                    data-testid="cell-logo-skylink"
-                  />
-                )}
+                <BridgeTypeLogo logo={route.kind === 'cctp' ? 'cctp' : 'skylink'} />
                 {bridgeTypeLabel(route.kind)}
                 <ChevronRight
                   size={12}

@@ -8,6 +8,7 @@ import { formatEther } from 'viem';
 import { plural, t } from '@lingui/core/macro';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import { networkFeeCell } from '@/components/product/ModalGridCells';
+import type { BridgeTypeLogoKind } from '@/components/product/BridgeTypeLogo';
 import { NO_VALUE } from '@/lib/constants';
 import { formatUsd } from '@/utils';
 import { DAY_MINUTES } from '../model/resolveRoute';
@@ -17,7 +18,7 @@ import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 export const bridgeTypeLabel = (kind: BridgeRouteKind): string =>
   kind === 'native' ? 'SkyLink' : kind === 'cctp' ? 'CCTP' : 'LayerZero';
 
-export type BridgeTypeLogo = 'cctp' | 'skylink';
+export type BridgeTypeLogo = BridgeTypeLogoKind;
 
 /** The logo drawn before a route's name; LayerZero has none. */
 export const bridgeTypeLogo = (kind: BridgeRouteKind): BridgeTypeLogo | undefined =>

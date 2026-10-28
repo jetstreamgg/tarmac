@@ -7,7 +7,8 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowTopRight, CircleLogo, LinkExternal, SkyLinkLogo } from '@/modules/icons';
+import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
+import { ArrowTopRight, LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -164,11 +165,7 @@ function CellValue({ cell }: CellValueProps) {
     default:
       return cell.logo ? (
         <span className="flex items-center gap-1">
-          {cell.logo === 'cctp' ? (
-            <CircleLogo boxSize={12} className="shrink-0" />
-          ) : (
-            <SkyLinkLogo boxSize={12} className="text-fgPrimary shrink-0" />
-          )}
+          <BridgeTypeLogo logo={cell.logo} />
           <span className={valueClassName}>{cell.value}</span>
         </span>
       ) : (

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { ArrowLeftToLine } from 'lucide-react';
 import { t } from '@lingui/core/macro';
-import { CircleLogo, LightningFilled, SkyLinkLogo } from '@/modules/icons';
+import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
+import { LightningFilled } from '@/modules/icons';
 import { cn } from '@/lib/cn';
 import type { BridgeRouteKind } from '../model/types';
 import type { RouteOptionCard } from './bridgeRouteOptions';
@@ -68,12 +69,7 @@ export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRou
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="text-text font-circle flex items-center gap-2 text-base leading-5 font-medium">
-                    {card.logo === 'cctp' && (
-                      <CircleLogo boxSize={16} className="size-4 shrink-0" aria-hidden />
-                    )}
-                    {card.logo === 'skylink' && (
-                      <SkyLinkLogo boxSize={16} className="text-fgPrimary size-4 shrink-0" aria-hidden />
-                    )}
+                    {card.logo && <BridgeTypeLogo logo={card.logo} size={16} />}
                     {card.name}
                   </span>
                   {card.badge.tone === 'accent' ? (
