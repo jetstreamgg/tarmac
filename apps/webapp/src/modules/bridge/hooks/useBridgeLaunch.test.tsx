@@ -12,6 +12,7 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeForm } from './useBridgeForm';
+import { nativeWithdrawalRoute } from '../model/resolveRoute';
 import { useBridgeLaunch } from './useBridgeLaunch';
 
 const SENDER = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
@@ -52,6 +53,20 @@ const mocks = vi.hoisted(() => ({
       enabled: boolean;
       to: string;
       chainId: number | undefined;
+      getCallbacks: () => TxCallbacks;
+    }[]
+  },
+  withdrawal: {
+    ready: true,
+    needsApprove: true,
+    error: null as Error | null,
+    execute: vi.fn(),
+    args: [] as {
+      enabled: boolean;
+      from: string;
+      chainId: number | undefined;
+      recipient: string | undefined;
+      amount: bigint;
       getCallbacks: () => TxCallbacks;
     }[]
   }
@@ -154,6 +169,26 @@ vi.mock('./useNativeDepositLegs', () => ({
     };
   }
 }));
+vi.mock('./useNativeWithdrawalLegs', () => ({
+  nativeWithdrawalFunction: (from: string) => (from === 'arbitrum' ? 'outboundTransfer' : 'bridgeERC20To'),
+  useNativeWithdrawalLegs: (args: (typeof mocks.withdrawal.args)[number]) => {
+    mocks.withdrawal.args.push(args);
+    const { ready, needsApprove, error, execute } = mocks.withdrawal;
+    return {
+      calls: [{ to: '0xwithdrawal' }],
+      ready,
+      needsApprove,
+      error,
+      execute,
+      isBatch: false,
+      busy: false,
+      legMined: false,
+      reset: vi.fn(),
+      stop: vi.fn(),
+      refetchAllowance: mocks.refetchAllowance
+    };
+  }
+}));
 vi.mock('../components/BridgeReviewContent', () => ({
   BridgeReviewContent: () => null,
   BridgeTransferHero: () => null
@@ -249,6 +284,8 @@ describe('useBridgeLaunch Confirm gate', () => {
       args: []
     });
     mocks.deposit.execute.mockClear();
+    Object.assign(mocks.withdrawal, { ready: true, needsApprove: true, error: null, args: [] });
+    mocks.withdrawal.execute.mockClear();
     mocks.onError.mockClear();
     mocks.onSuccess.mockClear();
     mocks.refetchAllowance.mockClear();
@@ -762,6 +799,93 @@ describe('useBridgeLaunch Confirm gate', () => {
       await reviewDeposit('base');
       const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
       expect(content.props.bridgeFee).toBeUndefined();
+    });
+  });
+
+  describe('a native withdrawal to Ethereum', () => {
+    // The form's route, as the resolver builds it when CCTP can't carry the amount.
+    async function reviewWithdrawal(from: 'base' | 'arbitrum') {
+      mocks.appChainId = from === 'base' ? 8453 : 42161;
+      const form = {
+        amount: ONE,
+        from,
+        to: 'ethereum' as const,
+        route: nativeWithdrawalRoute(from, 'closed'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      return view;
+    }
+    const stepLabels = () =>
+      (mocks.launched.at(-1)?.steps ?? []).map(step => (typeof step === 'string' ? step : step.label));
+
+    it.each([
+      ['base', 8453],
+      ['arbitrum', 42161]
+    ] as const)('reads the %s withdrawal on the pinned source chain', async (from, chainId) => {
+      await reviewWithdrawal(from);
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from, chainId, amount: ONE });
+      expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
+    });
+
+    it.each([
+      ['base', 'bridgeERC20To'],
+      ['arbitrum', 'outboundTransfer']
+    ] as const)(
+      'Confirm runs the %s withdrawal, not the mock, and stores it under the %s hash',
+      async (from, functionName) => {
+        await reviewWithdrawal(from);
+        expect(mocks.launched.at(-1)?.confirmDisabled).toBe(false);
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.withdrawal.execute).toHaveBeenCalledTimes(1);
+        expect(mocks.deposit.execute).not.toHaveBeenCalled();
+        expect(mocks.legs).toHaveLength(0);
+
+        const callbacks = mocks.withdrawal.args.at(-1)!.getCallbacks();
+        callbacks.onMutate({ functionName: 'approve' });
+        callbacks.onStart(`0x${from}approve`);
+        callbacks.onMutate({ functionName });
+        callbacks.onStart(`0x${from}withdraw`);
+        const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+        const snapshot = pendingBridgeStore.getSnapshot(scope);
+        expect(snapshot.find(bridge => bridge.txHash === `0x${from}approve`)).toBeUndefined();
+        expect(snapshot.find(bridge => bridge.txHash === `0x${from}withdraw`)).toMatchObject({
+          from,
+          to: 'ethereum',
+          amount: ONE,
+          routeKind: 'native',
+          requiresClaim: true
+        });
+      }
+    );
+
+    it('drops the Approve step when the allowance covers the amount', async () => {
+      await reviewWithdrawal('base');
+      expect(stepLabels()).toEqual(['Approve', 'Bridge']);
+      mocks.withdrawal.needsApprove = false;
+      await reviewWithdrawal('base');
+      expect(stepLabels()).toEqual(['Bridge']);
+    });
+
+    it('blocks Confirm until the withdrawal is built, says why, and sends nothing', async () => {
+      Object.assign(mocks.withdrawal, {
+        ready: false,
+        error: new Error('The withdrawal could not be built')
+      });
+      await reviewWithdrawal('base');
+      const config = mocks.launched.at(-1)!;
+      expect(config.confirmDisabled).toBe(true);
+      expect(config.errorMessage).toBeTruthy();
+      act(() => config.onConfirm!());
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
     });
   });
 

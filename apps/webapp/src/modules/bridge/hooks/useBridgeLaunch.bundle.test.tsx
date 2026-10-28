@@ -151,6 +151,23 @@ vi.mock('./useNativeDepositLegs', () => ({
     };
   }
 }));
+// A native withdrawal's source legs; this file sends none.
+vi.mock('./useNativeWithdrawalLegs', () => ({
+  nativeWithdrawalFunction: () => 'bridgeERC20To',
+  useNativeWithdrawalLegs: () => ({
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    busy: false,
+    legMined: false,
+    error: null,
+    execute: () => undefined,
+    reset: () => undefined,
+    stop: () => undefined,
+    refetchAllowance: () => undefined
+  })
+}));
 vi.mock('../components/BridgeReviewContent', () => ({
   BridgeReviewContent: () => null,
   BridgeTransferHero: () => null

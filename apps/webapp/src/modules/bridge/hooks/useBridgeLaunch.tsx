@@ -30,6 +30,7 @@ import { bundleDepositIn } from '../tracking/bundleDeposit';
 import type { BridgeFormModel } from './useBridgeForm';
 import { isNativeDepositNetwork, type NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { nativeDepositFunction, useNativeDepositLegs } from './useNativeDepositLegs';
+import { nativeWithdrawalFunction, useNativeWithdrawalLegs } from './useNativeWithdrawalLegs';
 import { cctpL2Contracts, isCctpL2Network, type CctpL2NetworkId } from '../adapters/cctp/contracts';
 import { CCTP_BURN_FUNCTION, useCctpBurnLegs } from './useCctpBurnLegs';
 import { usePendingScope } from './usePendingScope';
@@ -57,8 +58,9 @@ const DETACHED: TxCallbacks = {
  * The seam between the Bridge tab and `TransactionContext.launch()` (mirrors
  * `useConvertLaunch`). Confirm runs the source legs (approve + send) and
  * stores the pending bridge once the send is broadcast, or queued for a Safe.
- * Native deposits from Ethereum and CCTP burns to Ethereum run their real
- * calls; the other routes run on the mock executor until their tickets add theirs.
+ * Native deposits from Ethereum, native withdrawals and CCTP burns to Ethereum
+ * run their real calls; the other routes run on the mock executor until their
+ * tickets add theirs.
  * With `resume`, the burn continues a CCTP swap sent before, for that swap's USDC.
  */
 export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, resume?: UnfinishedCctpSwap) {
@@ -85,14 +87,28 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     (route?.kind === 'native' && from === 'ethereum' && isNativeDepositNetwork(to) ? to : undefined);
   const isNativeDeposit = depositTo !== undefined;
   const [runningBurn, setRunningBurn] = useState<CctpL2NetworkId | undefined>(undefined);
+  const [runningWithdrawal, setRunningWithdrawal] = useState<NativeDepositNetwork | undefined>(undefined);
+  const otherRunning = (running: 'deposit' | 'burn' | 'withdrawal') =>
+    (running !== 'deposit' && runningTo !== undefined) ||
+    (running !== 'burn' && runningBurn !== undefined) ||
+    (running !== 'withdrawal' && runningWithdrawal !== undefined);
   const burnFrom =
     runningBurn ??
-    (runningTo === undefined && route?.kind === 'cctp' && to === 'ethereum' && isCctpL2Network(from)
+    (!otherRunning('burn') && route?.kind === 'cctp' && to === 'ethereum' && isCctpL2Network(from)
       ? from
       : undefined);
   const isCctpBurn = burnFrom !== undefined;
+  const withdrawalFrom =
+    runningWithdrawal ??
+    (!otherRunning('withdrawal') &&
+    route?.kind === 'native' &&
+    to === 'ethereum' &&
+    isNativeDepositNetwork(from)
+      ? from
+      : undefined);
+  const isNativeWithdrawal = withdrawalFrom !== undefined;
   // A route whose source legs are real calls.
-  const isReal = isNativeDeposit || isCctpBurn;
+  const isReal = isNativeDeposit || isCctpBurn || isNativeWithdrawal;
   // A CCTP claim is sent on Ethereum by the address it mints to.
   const claimedByOther = isCctpBurn && sendsToOther(recipient, account);
   const needsContractAccept = isCctpBurn && !claimedByOther && !!form.senderIsContract;
@@ -157,10 +173,28 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     },
     getCallbacks: () => legCallbacksRef.current
   });
-  const legs = isCctpBurn ? burn : deposit;
+  const withdrawal = useNativeWithdrawalLegs({
+    enabled:
+      isNativeWithdrawal && form.isConnected && (runningWithdrawal !== undefined || !form.reviewBlocked),
+    // Any network while disabled.
+    from: withdrawalFrom ?? 'base',
+    chainId: pinnedChainId,
+    account,
+    recipient,
+    amount,
+    isSafeApp,
+    batch,
+    batchPending,
+    onCallsSent: id => {
+      callsIdRef.current = id;
+    },
+    getCallbacks: () => legCallbacksRef.current
+  });
+  const legs = isCctpBurn ? burn : isNativeWithdrawal ? withdrawal : deposit;
   const { reset: resetDeposit } = deposit;
   const { reset: resetBurn } = burn;
-  const refetchAllowance = isCctpBurn ? burn.refetchAllowance : deposit.refetchAllowance;
+  const { reset: resetWithdrawal } = withdrawal;
+  const { refetchAllowance } = legs;
   // The Arbitrum ticket's ETH comes from the sender on Ethereum; unknown while loading, so Confirm waits.
   const { data: ethBalance } = useTokenBalance({
     address: account,
@@ -176,16 +210,17 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     (onCleared?: () => void) => {
       setRunningTo(undefined);
       setRunningBurn(undefined);
+      setRunningWithdrawal(undefined);
       // The reads refresh once the active engine's write still out has landed.
-      if (isCctpBurn) {
-        resetDeposit();
-        resetBurn(onCleared);
-      } else {
-        resetBurn();
-        resetDeposit(onCleared);
-      }
+      const engines = [
+        { active: isCctpBurn, reset: resetBurn },
+        { active: isNativeWithdrawal, reset: resetWithdrawal },
+        { active: !isCctpBurn && !isNativeWithdrawal, reset: resetDeposit }
+      ];
+      for (const { active, reset } of engines) if (!active) reset();
+      engines.find(({ active }) => active)!.reset(onCleared);
     },
-    [isCctpBurn, resetDeposit, resetBurn]
+    [isCctpBurn, isNativeWithdrawal, resetDeposit, resetBurn, resetWithdrawal]
   );
   // A run that stopped after its swap or approve mined moved funds on the source chain too.
   const refetchReads = useCallback(() => {
@@ -200,13 +235,14 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     () => (route?.steps ?? []).filter(step => step.network === from).map(step => step.action),
     [route, from]
   );
-  // A real deposit approves only when its allowance is short.
+  // A real deposit or withdrawal approves only when its allowance is short.
+  const needsApprove = isNativeWithdrawal ? withdrawal.needsApprove : deposit.needsApprove;
   const sourceActions = useMemo(
     () =>
-      isNativeDeposit
-        ? routeActions.filter(action => action !== 'approve' || deposit.needsApprove)
+      isNativeDeposit || isNativeWithdrawal
+        ? routeActions.filter(action => action !== 'approve' || needsApprove)
         : routeActions,
-    [isNativeDeposit, routeActions, deposit.needsApprove]
+    [isNativeDeposit, isNativeWithdrawal, routeActions, needsApprove]
   );
   // A burn signs one step per call: its approves, the swap to USDC and the burn.
   const burnSteps = useMemo<TransactionStep[]>(
@@ -258,10 +294,11 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   useEffect(() => {
     const closed = wasOpenRef.current && !isModalOpen;
     wasOpenRef.current = isModalOpen;
-    if (!closed || (runningTo === undefined && runningBurn === undefined) || sentRef.current) return;
+    const running = runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined;
+    if (!closed || !running || sentRef.current) return;
     // A write still out lands before the reads refresh.
     resetRun(refetchReads);
-  }, [isModalOpen, runningTo, runningBurn, resetRun, refetchReads]);
+  }, [isModalOpen, runningTo, runningBurn, runningWithdrawal, resetRun, refetchReads]);
   // The burns this Review sent, by every id the burn legs link to its swap: one that failed leaves Retry to continue.
   const ownBurnsRef = useRef<string[]>([]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
@@ -271,7 +308,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     accountRef.current = account;
     scopeRef.current = scope;
     // As TransactionContext's Retry after a mined step: the run itself moved the balances the Review checks.
-    const resumingRun = (runningTo !== undefined || runningBurn !== undefined) && legs.legMined;
+    const resumingRun =
+      (runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined) &&
+      legs.legMined;
     executeRef.current = () => {
       if (
         !form.isConnected ||
@@ -359,7 +398,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           ? nativeDepositFunction(depositTo)
           : burnFrom
             ? CCTP_BURN_FUNCTION
-            : 'send',
+            : withdrawalFrom
+              ? nativeWithdrawalFunction(withdrawalFrom)
+              : 'send',
         onSent: txHash => {
           if (burnFrom) ownBurnsRef.current.push(txHash.toLowerCase());
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
@@ -444,6 +485,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           unresolvedRef.current = undefined;
           setRunningTo(undefined);
           setRunningBurn(undefined);
+          setRunningWithdrawal(undefined);
           // The next bridge's approve depends on what this one spent.
           legs.refetchAllowance();
           if (pinnedChainId !== undefined)
@@ -459,6 +501,10 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         legCallbacksRef.current = callbacks;
         setRunningBurn(burnFrom);
         burn.execute();
+      } else if (withdrawalFrom) {
+        legCallbacksRef.current = callbacks;
+        setRunningWithdrawal(withdrawalFrom);
+        withdrawal.execute();
       } else void runMockLegs(sourceActions, () => callbacks);
     };
   });
