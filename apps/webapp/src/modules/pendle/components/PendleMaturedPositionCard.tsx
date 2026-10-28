@@ -1,13 +1,15 @@
 import { Trans } from '@lingui/react/macro';
 import { useChainId } from 'wagmi';
 import { Clock } from 'lucide-react';
+import { formatUnits } from 'viem';
 import { cn } from '@/lib/cn';
-import { familyMainnetId, formatBigInt, formatNumber, getChainIcon, getChainName } from '@/utils';
-import { type PendleMarketConfig, usePendleMaturedPositionEarnings, usePendleRedeemPreview } from '@/hooks';
+import { familyMainnetId, formatNumber, getChainIcon, getChainName } from '@/utils';
+import type { PendleMarketConfig } from '@/hooks';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconboxStatus } from '@/components/ui/iconbox';
-import { Skeleton } from '@/components/ui/skeleton';
+import { EarningsFigureValue } from '@/modules/portfolio/components/EarningsStat';
+import type { PositionEarnings } from '@/modules/portfolio/earnings/earningsForPosition';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Text } from '@/modules/layout/components/Typography';
 import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
@@ -26,6 +28,8 @@ const badgePill = 'bg-glassBadge flex items-center gap-1 rounded-[20px] py-1 pr-
 type PendleMaturedPositionCardProps = {
   market: PendleMarketConfig;
   ptBalance: bigint;
+  /** The same earnings slice the detail page's Accrued to date reads. */
+  accrued: PositionEarnings | null;
   /** Routes to the market's detail page — the siblings' "Manage" slot. */
   onViewDetails: () => void;
 };
@@ -33,25 +37,24 @@ type PendleMaturedPositionCardProps = {
 /**
  * A matured Pendle position in the Portfolio Supplied carousel (Figma
  * 2306:72334): the PositionCard chrome with a "Matured" badge, the
- * ready-to-claim summary, My position / Mature date stats and a single
- * Claim CTA opening the redeem modal.
+ * ready-to-claim line, You'll claim / Accrued to date stats and a Claim CTA
+ * opening the redeem modal. The figures match the detail page's matured card.
  */
 export const PendleMaturedPositionCard = ({
   market,
   ptBalance,
+  accrued,
   onViewDetails
 }: PendleMaturedPositionCardProps) => {
   const maturityLabel = formatMaturity(market.expiry);
 
-  const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
-  const { earnings, currency } = usePendleMaturedPositionEarnings(market, ptBalance);
-  // The amount we surface is the receive amount (post SY-rate conversion).
-  // Until the on-chain preview resolves, fall back to the PT balance — same
-  // number of decimals, just a transient discrepancy.
-  const displayedAmount = formatBigInt((previewAmount as bigint | undefined) ?? ptBalance, {
-    unit: market.underlyingDecimals,
+  // 1 PT redeems 1 USDS on pegged markets. A non-pegged market redeems through
+  // the SY rate, so 1 PT is not 1 underlying: give this a real quote before
+  // adding one.
+  const claimAmount = formatNumber(parseFloat(formatUnits(ptBalance, market.underlyingDecimals)), {
     maxDecimals: 2
   });
+  const claimSymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
 
   // Off-chain, Claim stays enabled: the click switches the wallet first, then
   // opens (usePendleRedeemModal) — so isPrepared only gates on the right chain.
@@ -96,42 +99,43 @@ export const PendleMaturedPositionCard = ({
           {market.name}
         </span>
         <Text variant="small" className="text-fgSecondary">
-          {earnings !== undefined && earnings > 0 && currency ? (
-            <Trans>
-              Matured on {maturityLabel}. Your deposit and {formatNumber(earnings, { maxDecimals: 2 })}{' '}
-              {currency} in yield are ready to claim.
-            </Trans>
-          ) : (
-            <Trans>Matured on {maturityLabel}. Your deposit is ready to claim.</Trans>
-          )}
+          <Trans>Your position matured on {maturityLabel} and is ready to claim.</Trans>
         </Text>
       </div>
 
       <div className="flex">
         <div className="flex w-[140px] flex-col gap-1">
           <span className={statLabel}>
-            <Trans>My position</Trans>
+            <Trans>You&apos;ll claim</Trans>
           </span>
-          {previewLoading ? (
-            <Skeleton className="h-4 w-24" />
-          ) : (
-            <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
-              <TokenIcon
-                token={{ symbol: market.underlyingSymbol }}
-                width={12}
-                showChainIcon={false}
-                className="size-3 shrink-0"
-              />
-              {displayedAmount}
-            </span>
-          )}
+          <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
+            <TokenIcon
+              token={{ symbol: claimSymbol }}
+              width={12}
+              showChainIcon={false}
+              className="size-3 shrink-0"
+            />
+            {claimAmount}
+          </span>
         </div>
         <div className="bg-border mx-5 h-[29.5px] w-px shrink-0 self-center" />
         <div className="flex flex-1 flex-col gap-1">
           <span className={statLabel}>
-            <Trans>Mature date</Trans>
+            <Trans>Accrued to date</Trans>
           </span>
-          <span className={cn(statValue, 'text-fgPrimary')}>{maturityLabel}</span>
+          <EarningsFigureValue
+            figure={accrued?.totalEarned ?? null}
+            missing={accrued?.missingFromTotal}
+            coverage={accrued?.coverage}
+            pendleSplit={accrued?.pendleSplit}
+            variant="plain"
+            className={cn(
+              statValue,
+              accrued?.totalEarned?.status === 'ok' ? 'text-fgPrimary' : 'text-fgSecondary'
+            )}
+            skeletonClassName="h-3.5 w-14 rounded"
+            testId="pendle-matured-accrued"
+          />
         </div>
       </div>
 
@@ -146,7 +150,7 @@ export const PendleMaturedPositionCard = ({
             variant="primary"
             size="l"
             onClick={openRedeemModal}
-            disabled={switchBlocked || !isRedeemable || previewLoading || (onPendleChain && !isPrepared)}
+            disabled={switchBlocked || !isRedeemable || (onPendleChain && !isPrepared)}
             data-testid="pendle-matured-redeem-button"
           >
             <Trans>Claim</Trans>

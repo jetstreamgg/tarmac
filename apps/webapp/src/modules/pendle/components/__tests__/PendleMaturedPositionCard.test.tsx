@@ -5,6 +5,7 @@ import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendleMarketConfig } from '@/hooks';
+import type { PositionEarnings } from '@/modules/portfolio/earnings/earningsForPosition';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -25,7 +26,6 @@ const MARKET: PendleMarketConfig = {
 
 const h = vi.hoisted(() => ({
   chainId: 1,
-  earnings: { earnings: 184.8 as number | undefined, currency: 'USDS' as string | undefined },
   isPrepared: true,
   switchBlocked: false
 }));
@@ -36,15 +36,6 @@ const onViewDetails = vi.fn();
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return { ...actual, useChainId: () => h.chainId };
-});
-
-vi.mock('@/hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/hooks')>();
-  return {
-    ...actual,
-    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false }),
-    usePendleMaturedPositionEarnings: () => h.earnings
-  };
 });
 
 vi.mock('../../hooks/usePendleRedeemModal', () => ({
@@ -68,10 +59,22 @@ import { PendleMaturedPositionCard } from '../PendleMaturedPositionCard';
 
 const PT_BALANCE = 100_184n * 10n ** 18n;
 
-const renderCard = () =>
+const ACCRUED: PositionEarnings = {
+  totalEarned: { status: 'ok', value: { usd: 184.8, native: { amount: 184.8, symbol: 'USDS' } } },
+  earnedThisMonth: { status: 'ok', value: { usd: 0 } },
+  missingFromTotal: [],
+  missingFromMonth: []
+};
+
+const renderCard = (accrued: PositionEarnings | null = ACCRUED) =>
   render(
     <I18nProvider i18n={i18n}>
-      <PendleMaturedPositionCard market={MARKET} ptBalance={PT_BALANCE} onViewDetails={onViewDetails} />
+      <PendleMaturedPositionCard
+        market={MARKET}
+        ptBalance={PT_BALANCE}
+        accrued={accrued}
+        onViewDetails={onViewDetails}
+      />
     </I18nProvider>
   );
 
@@ -79,7 +82,6 @@ describe('PendleMaturedPositionCard', () => {
   beforeEach(() => {
     h.chainId = 1;
     h.switchBlocked = false;
-    h.earnings = { earnings: 184.8, currency: 'USDS' };
     h.isPrepared = true;
   });
 
@@ -88,16 +90,21 @@ describe('PendleMaturedPositionCard', () => {
     vi.clearAllMocks();
   });
 
-  it('shows the matured badge, position and ready-to-claim copy', () => {
+  it('shows the matured badge, the PT balance as the claim and the ready-to-claim copy', () => {
     renderCard();
 
     const card = screen.getByTestId('pendle-matured-position-card');
     expect(screen.getByTestId('pendle-matured-badge').textContent).toContain('Matured');
     expect(card.textContent).toContain('Fixed Yield');
+    expect(card.textContent).toContain("You'll claim");
     expect(card.textContent).toContain('100,184');
-    expect(card.textContent).toContain('18 Jun 2026');
-    expect(card.textContent).toContain('184.8');
-    expect(card.textContent).toContain('ready to claim');
+    expect(card.textContent).toContain('Your position matured on 18 Jun 2026 and is ready to claim.');
+  });
+
+  it('shows the accrued figure from the wallet earnings slice', () => {
+    renderCard();
+
+    expect(screen.getByTestId('pendle-matured-accrued').textContent).toContain('184.8');
   });
 
   it('opens the redeem modal from Claim', () => {
@@ -132,14 +139,5 @@ describe('PendleMaturedPositionCard', () => {
     expect(screen.getByTestId('pendle-redeem-network-hint').textContent).toContain('Safe app');
     // Reading the market never depended on the wallet's chain.
     expect((screen.getByTestId('pendle-matured-view-details') as HTMLButtonElement).disabled).toBe(false);
-  });
-
-  it('falls back to the deposit-only line when earnings are unavailable', () => {
-    h.earnings = { earnings: undefined, currency: undefined };
-    renderCard();
-
-    const card = screen.getByTestId('pendle-matured-position-card');
-    expect(card.textContent).toContain('Your deposit is ready to claim');
-    expect(card.textContent).not.toContain('in yield');
   });
 });

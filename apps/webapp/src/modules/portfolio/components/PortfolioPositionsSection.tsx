@@ -14,7 +14,7 @@ import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMat
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
 import type { WalletEarnings } from '../earnings/types';
-import { earningsForSuppliedPosition } from '../earnings/earningsForPosition';
+import { earningsForPosition, earningsForSuppliedPosition } from '../earnings/earningsForPosition';
 import { PositionCard } from './PositionCard';
 import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
@@ -130,6 +130,7 @@ export function PortfolioPositionsSection({
               <PendleMaturedPositionCard
                 market={market}
                 ptBalance={ptBalance}
+                accrued={earningsForPosition(earnings, `fixed-${market.marketAddress.toLowerCase()}`)}
                 onViewDetails={() => goToProduct(`${ROUTES.EARN_FIXED}/${market.slug}`)}
               />
             </CarouselItem>
