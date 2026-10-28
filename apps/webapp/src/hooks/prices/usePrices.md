@@ -5,13 +5,13 @@ Hook for fetching token price data from the BA Labs API.
 ## Import
 
 ```ts
-import { usePrices } from '@/hooks';
+import { usePrices } from '@/hooks/prices/usePrices';
 ```
 
 ## Usage
 
 ```tsx
-import { usePrices } from '@/hooks';
+import { usePrices } from '@/hooks/prices/usePrices';
 
 function PriceComponent() {
   const { data, error, isLoading } = usePrices();
@@ -38,7 +38,7 @@ function PriceComponent() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@/hooks';
+import { type ReadHookParams } from '@/hooks/hooks';
 ```
 
 ### Props
@@ -53,7 +53,7 @@ type Props = ReadHookParams<Record<string, PriceData>>;
 ## Return Type
 
 ```ts
-import { type PriceData } from '@/hooks';
+import { type PriceData } from '@/hooks/prices/usePrices';
 ```
 
 Returns an object containing:

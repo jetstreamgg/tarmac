@@ -5,13 +5,14 @@ Hook for reading data from the Savings DAI contract using the proxy address and 
 ## Import
 
 ```ts
-import { useReadSavingsUsds, sUsdsAddress, sUsdsImplementationAbi } from '@/hooks';
+import { useReadSavingsUsds } from '@/hooks/savings/useReadSavingsUsds';
+import { sUsdsAddress, sUsdsImplementationAbi } from '@/hooks/generated';
 ```
 
 ## Usage
 
 ```tsx
-import { useReadSavingsUsds } from '@/hooks';
+import { useReadSavingsUsds } from '@/hooks/savings/useReadSavingsUsds';
 
 function SavingsDaiComponent() {
   const { data, error, isLoading, refetch } = useReadSavingsUsds({
@@ -55,7 +56,7 @@ type Props = ReadContractParams<typeof savingsdaiAbi, 'maxWithdraw'>;
 ## Return Type
 
 ```ts
-import { type ReadHook } from '@/hooks';
+import { type ReadHook } from '@/hooks/hooks';
 ```
 
 Returns an object containing:

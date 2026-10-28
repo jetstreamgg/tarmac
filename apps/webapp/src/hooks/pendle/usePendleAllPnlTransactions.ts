@@ -95,8 +95,8 @@ export function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
  * filtered to PENDLE_MARKETS and the actions we surface
  * (BUY_PT/SELL_PT/REDEEM_PY).
  *
- * NOT exported from hooks/index.ts — the public API stays the per-market and
- * all-markets hooks, both of which read this same cache.
+ * Internal — the public API stays the per-market and all-markets hooks, both
+ * of which read this same cache.
  *
  * The cache holds RAW wire rows; history consumers get normalized rows via
  * `select` (memoized per cached data reference). This lets the portfolio

@@ -36,7 +36,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type WriteHookParams } from '@/hooks';
+import { type WriteHookParams } from '@/hooks/hooks';
 ```
 
 ### Props
@@ -63,7 +63,7 @@ type Props = WriteHookParams & {
 ## Return Type
 
 ```ts
-import { type WriteHook } from '@/hooks';
+import { type WriteHook } from '@/hooks/hooks';
 ```
 
 Returns an object containing:

@@ -37,7 +37,7 @@ function lsMkrPriceComponent() {
 ## Return Type
 
 ```ts
-import { type PriceData } from '@/hooks';
+import { type PriceData } from '@/hooks/prices/usePrices';
 ```
 
 Returns an object containing:

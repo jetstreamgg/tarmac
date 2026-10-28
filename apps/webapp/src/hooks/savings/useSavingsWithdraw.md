@@ -5,13 +5,13 @@ Hook for handling the withdrawal of USDS tokens from the savings contract.
 ## Import
 
 ```ts
-import { useSavingsWithdraw } from '@/hooks';
+import { useSavingsWithdraw } from '@/hooks/savings/useSavingsWithdraw';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsWithdraw } from '@/hooks';
+import { useSavingsWithdraw } from '@/hooks/savings/useSavingsWithdraw';
 
 function WithdrawComponent() {
   const { execute, data, error, isLoading, mutate } = useSavingsWithdraw({
@@ -38,7 +38,7 @@ function WithdrawComponent() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@/hooks';
+import { type ReadHookParams } from '@/hooks/hooks';
 ```
 
 ### Props
@@ -70,7 +70,7 @@ type Props = ReadHookParams & {
 ## Return Type
 
 ```ts
-import { type ReadHook } from '@/hooks';
+import { type ReadHook } from '@/hooks/hooks';
 ```
 
 Returns an object containing:

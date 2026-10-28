@@ -332,7 +332,7 @@ if (fs.existsSync(balancesFilePath)) {
   isBaseChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@/utils';
+} from '@/utils/isL2ChainId';
 
 import {
   L2GeneralFaqItems,
@@ -386,7 +386,7 @@ if (fs.existsSync(savingsFilePath)) {
   isL2ChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@/utils';
+} from '@/utils/isL2ChainId';
 
 import {
   L2GeneralFaqItems,
@@ -441,7 +441,7 @@ if (fs.existsSync(tradeFilePath)) {
   isL2ChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@/utils';
+} from '@/utils/isL2ChainId';
 
 import {
   L2GeneralFaqItems,

@@ -5,13 +5,13 @@ Hook for fetching information about a specific reward contract.
 ## Import
 
 ```ts
-import { useRewardContractInfo } from '@/hooks';
+import { useRewardContractInfo } from '@/hooks/rewards/useRewardContractInfo';
 ```
 
 ## Usage
 
 ```tsx
-import { useRewardContractInfo } from '@/hooks';
+import { useRewardContractInfo } from '@/hooks/rewards/useRewardContractInfo';
 
 function App() {
   const { data, error, isLoading } = useRewardContractInfo({
@@ -53,7 +53,7 @@ type Props = {
 ## Return Type
 
 ```ts
-import { type RewardContract } from '@/hooks';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 ```
 
 Returns an object containing:

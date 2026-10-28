@@ -5,13 +5,13 @@ Hook for fetching user-specific delegate information based on various parameters
 ## Import
 
 ```ts
-import { useUserDelegates } from '@/hooks';
+import { useUserDelegates } from '@/hooks/delegates/useUserDelegates';
 ```
 
 ## Usage
 
 ```tsx
-import { useUserDelegates } from '@/hooks';
+import { useUserDelegates } from '@/hooks/delegates/useUserDelegates';
 
 function App() {
   const { data, error, isLoading } = useUserDelegates({
@@ -40,7 +40,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@/hooks';
+import { type ReadHookParams } from '@/hooks/hooks';
 ```
 
 ### Props
@@ -68,7 +68,7 @@ type Props = ReadHookParams<DelegateInfo[]> & {
 ## Return Type
 
 ```ts
-import { type DelegateInfo } from '@/hooks';
+import { type DelegateInfo } from '@/hooks/delegates/delegate';
 ```
 
 Returns an object containing:

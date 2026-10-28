@@ -1,7 +1,4 @@
 import { formatUnits } from 'viem';
-// Import the type from its source module rather than the '@/hooks' barrel: a
-// type-only barrel import can still pull the barrel's runtime side effects
-// (posthog-js / react-query global listeners) into unit-test transforms.
 import type { PriceData } from '@/hooks/prices/usePrices';
 import type { PendleAnalyticsSide } from './pendleAnalyticsData';
 

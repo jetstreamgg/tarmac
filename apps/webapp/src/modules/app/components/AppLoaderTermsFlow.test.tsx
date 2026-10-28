@@ -52,7 +52,7 @@ vi.mock('@/hooks/earn/useEarnMarketplace', () => ({
   useEarnMarketplace: () => ({ rows: [], isPositionsLoading: true })
 }));
 vi.mock('@/hooks/ui/useBreakpoint', () => ({
-  // ResponsiveModal (inside TermsModal) reads the breakpoint from the barrel;
+  // ResponsiveModal (inside TermsModal) reads the breakpoint from this module;
   // pin the desktop tier so the modal composes as a Dialog deterministically.
   BP: { sm: 0, md: 1, lg: 2, desktop: 3, xl: 4, '2xl': 5 },
   useBreakpointIndex: () => ({ bpi: 3 })

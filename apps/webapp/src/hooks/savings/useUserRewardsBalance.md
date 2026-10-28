@@ -5,13 +5,13 @@ Hook for fetching rewards data for a specific reward contract from the BA Labs A
 ## Import
 
 ```ts
-import { useUserRewardsBalance } from '@/hooks';
+import { useUserRewardsBalance } from '@/hooks/rewards/useUserRewardsBalance';
 ```
 
 ## Usage
 
 ```tsx
-import { useUserRewardsBalance } from '@/hooks';
+import { useUserRewardsBalance } from '@/hooks/rewards/useUserRewardsBalance';
 
 function RewardsDataComponent() {
   const { data, error, isLoading, mutate } = useUserRewardsBalance();

@@ -4,14 +4,14 @@ Hook for fetching overall Sky Ecosystem data.
 
 ## Import
 
-Import the hook from '@/hooks'.
+Import the hook from its module under '@/hooks/'.
 
 ## Usage
 
 Use this hook in your React components to fetch and display overall Sky Ecosystem data. The hook provides data, error, and loading states.
 
 ```tsx
-import { useOverallSkyData } from '@/hooks';
+import { useOverallSkyData } from '@/hooks/shared/useOverallSkyData';
 
 function App() {
   const { data, error, isLoading } = useOverallSkyData();

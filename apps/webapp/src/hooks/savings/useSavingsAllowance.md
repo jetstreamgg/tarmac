@@ -5,13 +5,13 @@ Hook for fetching the USDS token allowance for the savings contract.
 ## Import
 
 ```ts
-import { useSavingsAllowance } from '@/hooks';
+import { useSavingsAllowance } from '@/hooks/savings/useSavingsAllowance';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsAllowance } from '@/hooks';
+import { useSavingsAllowance } from '@/hooks/savings/useSavingsAllowance';
 
 function AllowanceComponent() {
   const { data, error, isLoading, mutate } = useSavingsAllowance();

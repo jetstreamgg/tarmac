@@ -1,5 +1,6 @@
 import { TestProject } from 'vitest/node';
-import { mcdDaiAddress, mkrAddress, skyAddress, TOKENS, usdsAddress } from '../../src/hooks';
+import { mcdDaiAddress, mkrAddress, skyAddress, usdsAddress } from '../../src/hooks/generated';
+import { TOKENS } from '../../src/hooks/tokens/tokens.constants';
 import { BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../../src/hooks/constants';
 import {
   setErc20Balance,

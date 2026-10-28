@@ -6,13 +6,13 @@ Fetches either the Ethereum or Base savings history, depending on wagmi's chainI
 ## Import
 
 ```ts
-import { useSavingsHistory } from '@/hooks';
+import { useSavingsHistory } from '@/hooks/savings/useSavingsHistory';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsHistory } from '@/hooks';
+import { useSavingsHistory } from '@/hooks/savings/useSavingsHistory';
 
 function SavingsHistoryComponent() {
   const { data, error, isLoading, mutate } = useSavingsHistory('https://custom-indexer-url.com');
@@ -49,7 +49,7 @@ useSavingsHistory(indexerUrl?: string);
 ## Return Type
 
 ```ts
-import { type SavingsHistory } from '@/hooks';
+import { type SavingsHistory } from '@/hooks/savings/savings';
 ```
 
 Returns an object containing:

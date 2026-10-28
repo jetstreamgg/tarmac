@@ -5,13 +5,13 @@ Hook for fetching data related to the USDS Savings Rate, including total value l
 ## Import
 
 ```ts
-import { useSavingsData } from '@/hooks';
+import { useSavingsData } from '@/hooks/savings/useSavingsData';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsData } from '@/hooks';
+import { useSavingsData } from '@/hooks/savings/useSavingsData';
 
 function SavingsDataComponent() {
   const { data, error, isLoading, mutate } = useSavingsData();
@@ -38,7 +38,7 @@ function SavingsDataComponent() {
 ## Return Type
 
 ```ts
-import { type SavingsHookData } from '@/hooks';
+import { type SavingsHookData } from '@/hooks/savings/useSavingsData';
 ```
 
 Returns an object containing:

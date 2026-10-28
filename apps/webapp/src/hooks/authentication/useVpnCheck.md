@@ -5,13 +5,13 @@ Hook for checking if a user is connected to a VPN and if they are in a restricte
 ## Import
 
 ```ts
-import { useVpnCheck } from '@/hooks';
+import { useVpnCheck } from '@/hooks/authentication/useVpnCheck';
 ```
 
 ## Usage
 
 ```tsx
-import { useVpnCheck } from '@/hooks';
+import { useVpnCheck } from '@/hooks/authentication/useVpnCheck';
 
 function App() {
   const { data, error, isLoading } = useVpnCheck({
@@ -35,7 +35,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@/hooks';
+import { type ReadHookParams } from '@/hooks/hooks';
 ```
 
 ### Props

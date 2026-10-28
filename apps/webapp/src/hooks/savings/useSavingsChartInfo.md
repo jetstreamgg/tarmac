@@ -5,13 +5,13 @@ Hook for fetching and transforming the savings chart information from the BA Lab
 ## Import
 
 ```ts
-import { useSavingsChartInfo } from '@/hooks';
+import { useSavingsChartInfo } from '@/hooks/savings/useSavingsChartInfo';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsChartInfo } from '@/hooks';
+import { useSavingsChartInfo } from '@/hooks/savings/useSavingsChartInfo';
 
 function SavingsChartComponent() {
   const { data, error, isLoading, mutate } = useSavingsChartInfo();

@@ -5,13 +5,13 @@ Hook for fetching a user's history with all reward contract.
 ## Import
 
 ```ts
-import { useAllRewardsUserHistory } from '@/hooks';
+import { useAllRewardsUserHistory } from '@/hooks/rewards/useAllRewardsUserHistory';
 ```
 
 ## Usage
 
 ```tsx
-import { useAllRewardsUserHistory } from '@/hooks';
+import { useAllRewardsUserHistory } from '@/hooks/rewards/useAllRewardsUserHistory';
 
 function App() {
   const { data, error, isLoading } = useAllRewardsUserHistory();

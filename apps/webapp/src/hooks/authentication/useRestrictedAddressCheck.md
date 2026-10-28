@@ -7,13 +7,13 @@ Every call can reach the paid screening provider once the worker's 12h edge cach
 ## Import
 
 ```ts
-import { useRestrictedAddressCheck } from '@/hooks';
+import { useRestrictedAddressCheck } from '@/hooks/authentication/useRestrictedAddressCheck';
 ```
 
 ## Usage
 
 ```tsx
-import { useRestrictedAddressCheck } from '@/hooks';
+import { useRestrictedAddressCheck } from '@/hooks/authentication/useRestrictedAddressCheck';
 
 function App() {
   const { data, error, isLoading } = useRestrictedAddressCheck({
@@ -32,7 +32,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@/hooks';
+import { type ReadHookParams } from '@/hooks/hooks';
 ```
 
 ### Props

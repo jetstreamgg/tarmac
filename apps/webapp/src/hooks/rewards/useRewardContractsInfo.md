@@ -57,7 +57,7 @@ type Props = {
 ## Return Type
 
 ```ts
-import { type RewardContract } from '@/hooks';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 ```
 
 Returns an object containing:

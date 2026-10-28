@@ -7,9 +7,9 @@ description: Step-by-step conventions for adding a new smart contract, widget, o
 
 ## New Smart Contract
 
-1. Add contract address and ABI to `apps/webapp/src/hooks/contracts.ts` (mainnet contracts go in the `contracts` array; L2 contracts go in the `l2Contracts` array in the same file), re-exporting from `apps/webapp/src/hooks/index.ts` as needed.
+1. Add contract address and ABI to `apps/webapp/src/hooks/contracts.ts` (mainnet contracts go in the `contracts` array; L2 contracts go in the `l2Contracts` array in the same file).
 2. Run `pnpm -F webapp generate` to regenerate `apps/webapp/src/hooks/generated.ts`. Use `pnpm -F webapp generate:retry` to retry on flakey Etherscan responses.
-3. Create the hook in the appropriate subfolder of `apps/webapp/src/hooks/`.
+3. Create the hook in the appropriate subfolder of `apps/webapp/src/hooks/`. There is no `@/hooks` or `@/utils` barrel: import from the defining module (e.g. `@/hooks/savings/useSavingsData`), which keeps unit tests from loading every hook.
 
 ## New Widget
 

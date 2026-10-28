@@ -114,7 +114,7 @@ vi.mock('@/hooks/rewards/useAvailableTokenRewardContracts', () => ({
 }));
 vi.mock('@/hooks/ui/useAppChainId', () => ({
   // The real one reads the same two wagmi hooks mocked above; inlining its rule
-  // here keeps the mock honest without pulling the whole barrel in.
+  // here keeps the mock honest without loading the real module's imports.
   useAppChainId: () =>
     mockWalletChainId !== undefined && !CHAINS.some(c => c.id === mockWalletChainId)
       ? mockWalletChainId
@@ -171,8 +171,8 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', async () => {
     }),
     useTargetChainId: (intent: Intent) => {
       const pending = useMockPendingSwitch();
-      // The real one reads `useAppChainId`, whose rule is inlined in the
-      // '@/hooks' mock above.
+      // The real one reads `useAppChainId`, whose rule is inlined in its mock
+      // above.
       const appChainId =
         mockWalletChainId !== undefined && !CHAINS.some(c => c.id === mockWalletChainId)
           ? mockWalletChainId

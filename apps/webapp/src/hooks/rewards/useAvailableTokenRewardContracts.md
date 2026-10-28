@@ -5,13 +5,13 @@ Hook for fetching available token reward contracts.
 ## Import
 
 ```ts
-import { useAvailableTokenRewardContracts } from '@/hooks';
+import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTokenRewardContracts';
 ```
 
 ## Usage
 
 ```tsx
-import { useAvailableTokenRewardContracts } from '@/hooks';
+import { useAvailableTokenRewardContracts } from '@/hooks/rewards/useAvailableTokenRewardContracts';
 
 function App() {
   const { data, error, isLoading } = useAvailableTokenRewardContracts();
@@ -35,7 +35,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@/hooks';
+import { type ReadHookParams } from '@/hooks/hooks';
 ```
 
 ### Props
@@ -50,7 +50,7 @@ type Props = ReadHookParams<RewardContract[]>;
 ## Return Type
 
 ```ts
-import { type RewardContract } from '@/hooks';
+import { type RewardContract } from '@/hooks/rewards/rewards';
 ```
 
 Returns an object containing:
