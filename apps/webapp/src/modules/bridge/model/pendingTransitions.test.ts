@@ -217,9 +217,30 @@ describe('recordAction', () => {
     const bridge = recordAction(ready, { action: 'prove', txHash: '0xprove', at: NOW });
     expect(bridge).toMatchObject({ status: 'pending', nextAction: 'finalize' });
     expect(bridge.settledAt).toBeUndefined();
-    expect(recordAction(bridge, { action: 'finalize', txHash: '0xfin', at: NOW + 1 })).toMatchObject({
-      status: 'claimed',
+  });
+
+  // The finalize mining doesn't mean the L1 relay paid out: a failed relay is replayed.
+  it('an OP Stack finalize waits for the adapter to read the relay, then settles as claimed', () => {
+    const proved = recordAction(
+      applyProgress(
+        create(routeFor('optimism', 'ethereum', false)),
+        { kind: 'ready', nextAction: 'prove' },
+        NOW
+      ),
+      { action: 'prove', txHash: '0xprove', at: NOW }
+    );
+    const finalized = recordAction(proved, { action: 'finalize', txHash: '0xfin', at: NOW + 1 });
+    expect(finalized).toMatchObject({
+      status: 'pending',
+      nextAction: undefined,
+      etaAt: NOW + 1 + MINUTE,
       actions: [{ action: 'prove' }, { action: 'finalize' }]
+    });
+    expect(finalized.settledAt).toBeUndefined();
+    expect(applyProgress(finalized, { kind: 'arrived' }, NOW + 2)).toMatchObject({ status: 'claimed' });
+    expect(applyProgress(finalized, { kind: 'ready', nextAction: 'replay' }, NOW + 2)).toMatchObject({
+      status: 'ready',
+      nextAction: 'replay'
     });
   });
 

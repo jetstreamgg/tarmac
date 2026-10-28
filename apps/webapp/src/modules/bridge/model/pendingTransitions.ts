@@ -316,7 +316,10 @@ export function recordAction(bridge: PendingBridge, action: PendingBridgeAction)
     return { ...bridge, actions, routeData, readyAt: action.at };
   }
   // The L2 execution runs inside the recovery tx, so the next read settles it.
-  if (isRecoveryAction(done))
+  // An OP Stack finalize can mine with its L1 relay failed, so it settles on the adapter's read too.
+  const relaysOnFinalize =
+    bridge.routeKind === 'native' && bridge.to === 'ethereum' && bridge.from !== 'arbitrum';
+  if (isRecoveryAction(done) || (done === 'finalize' && relaysOnFinalize))
     return { ...bridge, actions, status: 'pending', nextAction: undefined, etaAt: action.at + MINUTE };
   const remaining = destinationActions(bridge.routeKind, bridge.from);
   const next = remaining[remaining.indexOf(done) + 1];
