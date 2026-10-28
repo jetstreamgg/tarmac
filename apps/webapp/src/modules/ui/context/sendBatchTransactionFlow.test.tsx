@@ -32,12 +32,6 @@ const bundle = vi.hoisted(() => ({
   reset: vi.fn(),
   onError: undefined as undefined | ((err: Error) => void)
 }));
-// The replay that explains a reverted leg (APP-663): its client and query result.
-const replay = vi.hoisted(() => ({
-  client: undefined as object | undefined,
-  query: { data: undefined as unknown, isFetched: false },
-  queryOptions: undefined as Record<string, any> | undefined
-}));
 
 vi.mock('wagmi', () => ({
   useSendCalls: (opts: { mutation: { onError?: (err: Error) => void } }) => {
@@ -53,15 +47,6 @@ vi.mock('wagmi', () => ({
   useWaitForCallsStatus: (params: Record<string, any>) => {
     bundle.statusParams = params;
     return bundle.status ?? idleStatus;
-  },
-  useChainId: () => 1,
-  usePublicClient: () => replay.client
-}));
-
-vi.mock('@tanstack/react-query', () => ({
-  useQuery: (options: Record<string, any>) => {
-    replay.queryOptions = options;
-    return replay.query;
   }
 }));
 
@@ -84,7 +69,6 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
 }));
 
 import { useSendBatchTransactionFlow } from '@/hooks/shared/useSendBatchTransactionFlow';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 
 const goodCall = (to: `0x${string}`): Call =>
   ({
@@ -111,9 +95,6 @@ beforeEach(() => {
   bundle.reset = vi.fn();
   capabilities.data = true;
   capabilities.isLoading = false;
-  replay.client = undefined;
-  replay.query = { data: undefined, isFetched: false };
-  replay.queryOptions = undefined;
 });
 
 afterEach(cleanup);
@@ -207,67 +188,6 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
       bundle.id = undefined;
       bundle.status = undefined;
     }
-  });
-});
-
-describe('useSendBatchTransactionFlow — reverted leg reason (APP-663)', () => {
-  const revertedStatus = {
-    ...idleStatus,
-    isSuccess: true,
-    data: {
-      status: 'success',
-      receipts: [{ status: 'reverted', transactionHash: '0xdead', blockNumber: 7n }]
-    }
-  };
-
-  it('waits for the replay, then reports a TransactionRevertedError carrying the reason', () => {
-    const onError = vi.fn();
-    replay.client = {};
-    bundle.id = '0xb';
-    bundle.status = revertedStatus;
-    const { rerender } = renderHook(() =>
-      useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never)
-    );
-    expect(replay.queryOptions?.enabled).toBe(true);
-    expect(onError).not.toHaveBeenCalled();
-
-    replay.query = { data: { reason: 'Vat/dust', kind: 'error' }, isFetched: true };
-    rerender();
-    expect(onError).toHaveBeenCalledTimes(1);
-    const [error, hash] = onError.mock.calls[0];
-    expect(error).toBeInstanceOf(TransactionRevertedError);
-    expect(error.revert).toEqual({ reason: 'Vat/dust', kind: 'error' });
-    expect(hash).toBe('0xdead');
-  });
-
-  it('skips the replay when an earlier leg landed in the same block (it would name the wrong reason)', () => {
-    const onError = vi.fn();
-    replay.client = {};
-    bundle.id = '0xb';
-    bundle.status = {
-      ...idleStatus,
-      isSuccess: true,
-      data: {
-        status: 'success',
-        receipts: [
-          { status: 'success', transactionHash: '0xapprove', blockNumber: 7n },
-          { status: 'reverted', transactionHash: '0xdead', blockNumber: 7n }
-        ]
-      }
-    };
-    renderHook(() => useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never));
-    expect(replay.queryOptions?.enabled).toBe(false);
-    expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError.mock.calls[0][0].revert).toBeUndefined();
-  });
-
-  it('reports straight away, without a reason, when there is no client to replay on', () => {
-    const onError = vi.fn();
-    bundle.id = '0xb';
-    bundle.status = revertedStatus;
-    renderHook(() => useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never));
-    expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError.mock.calls[0][0].revert).toBeUndefined();
   });
 });
 

@@ -1358,12 +1358,10 @@ export function TransactionProvider({
           action,
           type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
           tags: revert ? { revert_reason: revert } : undefined,
-          // Every revert has the same message; one issue per flow and action (and reason,
-          // when the replay found one) instead of one for all. A reasonless revert keeps
-          // the three-part key, so its existing Sentry issues keep collecting.
+          // Every revert has the same message; one issue per flow and action instead of one for all.
           fingerprint:
             normalizedError instanceof TransactionRevertedError
-              ? ['transaction-reverted', flow, action, ...(revert ? [revert] : [])]
+              ? ['transaction-reverted', flow, action]
               : undefined,
           extra: {
             chainId: sessionChainRef.current,

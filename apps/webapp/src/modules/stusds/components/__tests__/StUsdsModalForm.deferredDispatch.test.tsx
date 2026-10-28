@@ -48,16 +48,9 @@ const useQuote = () =>
     () => h.quote
   );
 
-// The batch engine's revert-reason replay is its only query here; idle, it never settles.
-vi.mock('@tanstack/react-query', async io => ({
-  ...(await io<typeof import('@tanstack/react-query')>()),
-  useQuery: () => ({ data: undefined, isFetched: false })
-}));
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChainId: () => 1,
-  // The batch engine's revert-reason replay (APP-663) has nothing to replay on.
-  usePublicClient: () => undefined,
   useChains: () => [{ id: 1, name: 'Ethereum' }],
   useConnection: () => ({ address: ADDRESS, chainId: 1, isConnected: true }),
   useAccount: () => ({ address: ADDRESS, chainId: 1, isConnected: true }),

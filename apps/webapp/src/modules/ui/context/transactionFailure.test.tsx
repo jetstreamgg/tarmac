@@ -269,11 +269,7 @@ describe('TransactionModal failure & recovery', () => {
   });
 
   it('names a decoded revert on the failed step and tags it for Sentry (APP-663)', () => {
-    renderFailedFlow(
-      supplySteps,
-      () => {},
-      new TransactionRevertedError({ reason: 'LockstakeEngine/urn-unsafe', kind: 'error' })
-    );
+    renderFailedFlow(supplySteps, () => {}, new Error('execution reverted: LockstakeEngine/urn-unsafe'));
     // The step's own consequence still follows the reason.
     expect(
       screen.getByText(
@@ -283,22 +279,12 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByText(/The network rolled back your transaction/)).toBeNull();
     const ctx = vi.mocked(reportError).mock.calls[0][1];
     expect(ctx.tags).toEqual({ revert_reason: 'LockstakeEngine/urn-unsafe' });
-    expect(ctx.fingerprint).toEqual([
-      'transaction-reverted',
-      'unknown',
-      'unknown',
-      'LockstakeEngine/urn-unsafe'
-    ]);
   });
 
   it('shows an unmapped revert reason verbatim', () => {
-    renderFailedFlow(
-      supplySteps,
-      () => {},
-      new TransactionRevertedError({ reason: 'Foo/bar', kind: 'error' })
-    );
+    renderFailedFlow(supplySteps, () => {}, new Error('execution reverted: Foo/bar'));
     expect(
-      screen.getByText('The transaction reverted with "Foo/bar". The USDS hasn\'t been approved.')
+      screen.getByText('The transaction would fail with "Foo/bar". The USDS hasn\'t been approved.')
     ).toBeDefined();
   });
 });

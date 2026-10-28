@@ -65,11 +65,6 @@ describe('revertMessage', () => {
     expect(revertMessage(rpcRevert('Foo/bar-baz'))).toBe('The transaction would fail with "Foo/bar-baz".');
   });
 
-  it('words an unmapped mined revert in the past tense', () => {
-    const error = new TransactionRevertedError({ reason: 'Foo/bar-baz', kind: 'error' });
-    expect(revertMessage(error)).toBe('The transaction reverted with "Foo/bar-baz".');
-  });
-
   it('scrubs addresses and long numbers from the reason it reports', () => {
     const reason = `AccessControl: account 0x${'ab'.repeat(20)} is missing role 0x${'00'.repeat(32)}`;
     expect(reportedReason({ reason, kind: 'error' })).toBe('AccessControl: account 0x… is missing role 0x…');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionReplacedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from './classifyTransactionError';
 
 // Error-like shapes mirroring what viem/wallets actually throw. Wallets nest the
@@ -97,16 +97,13 @@ describe('classifyTransactionError', () => {
   });
 
   it('adds the decoded revert reason, scrubbed, and whether it had copy', () => {
-    const reverted = new TransactionRevertedError({ reason: 'LockstakeEngine/urn-unsafe', kind: 'error' });
+    const reverted = new Error('execution reverted: LockstakeEngine/urn-unsafe');
     expect(classifyTransactionError(reverted, true)).toMatchObject({
       error_kind: 'reverted',
       revert_reason: 'LockstakeEngine/urn-unsafe',
       revert_has_copy: true
     });
-    const dynamic = new TransactionRevertedError({
-      reason: `Foo/blocked 0x${'ab'.repeat(20)}`,
-      kind: 'error'
-    });
+    const dynamic = new Error(`execution reverted: Foo/blocked 0x${'ab'.repeat(20)}`);
     expect(classifyTransactionError(dynamic, true)).toMatchObject({
       revert_reason: 'Foo/blocked 0x…',
       revert_has_copy: false

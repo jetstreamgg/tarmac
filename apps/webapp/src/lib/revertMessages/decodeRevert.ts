@@ -116,7 +116,7 @@ function reasonFromText(e: unknown): DecodedRevert | undefined {
 }
 
 /** An error and its causes, outermost first (bounded: a cause chain can loop). */
-export function causeChain(error: unknown): unknown[] {
+function causeChain(error: unknown): unknown[] {
   const chain: unknown[] = [];
   for (let e = error, i = 0; i < 12 && e; i++, e = (e as { cause?: unknown }).cause) chain.push(e);
   return chain;

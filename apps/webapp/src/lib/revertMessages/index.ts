@@ -6,7 +6,7 @@ import { stUsdsRevertMessages } from './contracts/stUsds';
 import { tokenInputRevertReasons } from './contracts/tokens';
 import type { RevertMessageMap } from './contracts/types';
 import { vatInputRevertReasons, vatRevertMessages } from './contracts/vat';
-import { causeChain, decodeRevert, type DecodedRevert } from './decodeRevert';
+import { decodeRevert, type DecodedRevert } from './decodeRevert';
 
 export { decodeRevert, type DecodedRevert } from './decodeRevert';
 
@@ -146,10 +146,6 @@ export function revertReport(
   };
 }
 
-/** A revert that happened on-chain, as opposed to one caught in simulation. */
-const isMinedRevert = (error: unknown): boolean =>
-  causeChain(error).some(e => (e as { name?: unknown }).name === 'TransactionRevertedError');
-
 /**
  * What to tell the user about a failure that is a contract revert: the
  * registry's copy when the reason is mapped, otherwise the raw reason
@@ -161,7 +157,5 @@ export function revertMessage(error: unknown): string | undefined {
   const revert = decodeRevert(error);
   if (!revert) return undefined;
   if (hasRevertCopy(revert)) return i18n._(revertMessageByReason[revert.reason]);
-  return isMinedRevert(error)
-    ? t`The transaction reverted with "${revert.reason}".`
-    : t`The transaction would fail with "${revert.reason}".`;
+  return t`The transaction would fail with "${revert.reason}".`;
 }
