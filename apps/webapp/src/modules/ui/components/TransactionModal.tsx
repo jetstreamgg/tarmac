@@ -1002,35 +1002,28 @@ export function TransactionModal({
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
-        {showAside ? (
-          <>
-            <div className={cardClassName}>{modalBody}</div>
-            {/* Slides out from behind the card, left to right, and back in on close. */}
-            <AnimatePresence onExitComplete={() => setAsideLeaving(false)}>
-              {asideOpen && (
-                <motion.aside
-                  key="aside"
-                  className="relative shrink-0 overflow-hidden"
-                  data-testid="transaction-modal-aside"
-                  initial={{ width: 0, marginLeft: 0, opacity: 0 }}
-                  animate={{ width: 400, marginLeft: 4, opacity: 1 }}
-                  exit={{ width: 0, marginLeft: 0, opacity: 0 }}
-                  transition={
-                    reducedMotion ? { duration: 0 } : { duration: MODAL_CARRIER_S, ease: easeStandard }
-                  }
-                >
-                  <div className="bg-bgSecondary absolute inset-y-0 right-0 w-100 rounded-[28px]">
-                    <div className="absolute inset-0 [scrollbar-width:none] overflow-y-auto px-8 pt-7 pb-7 [&::-webkit-scrollbar]:hidden">
-                      {aside}
-                    </div>
-                  </div>
-                </motion.aside>
-              )}
-            </AnimatePresence>
-          </>
-        ) : (
-          modalBody
-        )}
+        {/* One tree with or without the aside: the review isn't remounted as the aside opens and closes. */}
+        <div className={showAside ? cardClassName : 'contents'}>{modalBody}</div>
+        {/* Slides out from behind the card, left to right, and back in on close. */}
+        <AnimatePresence onExitComplete={() => setAsideLeaving(false)}>
+          {asideOpen && (
+            <motion.aside
+              key="aside"
+              className="relative shrink-0 overflow-hidden"
+              data-testid="transaction-modal-aside"
+              initial={{ width: 0, marginLeft: 0, opacity: 0 }}
+              animate={{ width: 400, marginLeft: 4, opacity: 1 }}
+              exit={{ width: 0, marginLeft: 0, opacity: 0 }}
+              transition={reducedMotion ? { duration: 0 } : { duration: MODAL_CARRIER_S, ease: easeStandard }}
+            >
+              <div className="bg-bgSecondary absolute inset-y-0 right-0 w-100 rounded-[28px]">
+                <div className="absolute inset-0 [scrollbar-width:none] overflow-y-auto px-8 pt-7 pb-7 [&::-webkit-scrollbar]:hidden">
+                  {aside}
+                </div>
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </ResponsiveModalContent>
     </ResponsiveModal>
   );

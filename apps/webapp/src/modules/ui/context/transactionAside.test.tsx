@@ -59,7 +59,10 @@ vi.mock('motion/react', async io => {
   return {
     ...actual,
     AnimatePresence: ({ children }: { children: ReactNode }) => children,
-    motion: new Proxy({}, { get: (_t, element) => tag(element as string) })
+    // One component per tag, like motion's own: a fresh one each render would remount the tree.
+    motion: new Proxy({} as Record<string, ReturnType<typeof tag>>, {
+      get: (cache, element) => (cache[element as string] ??= tag(element as string))
+    })
   };
 });
 
@@ -143,5 +146,15 @@ describe('TransactionModal aside (Figma 3964:74437)', () => {
     act(() => update?.(undefined));
     expect(screen.queryByTestId('transaction-modal-aside')).toBeNull();
     expect(screen.getByTestId('review-breakdown')).toBeTruthy();
+  });
+
+  it('keeps the review mounted while it opens and closes, so focus and state stay', () => {
+    renderModal({ ...config(), aside: undefined });
+    const review = screen.getByTestId('review-breakdown');
+    act(() => update?.(<div data-testid="picker">Select bridge type</div>));
+    expect(screen.getByTestId('transaction-modal-aside')).toBeTruthy();
+    expect(screen.getByTestId('review-breakdown')).toBe(review);
+    act(() => update?.(undefined));
+    expect(screen.getByTestId('review-breakdown')).toBe(review);
   });
 });
