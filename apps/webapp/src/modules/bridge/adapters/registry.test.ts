@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { nativeWithdrawalRoute, resolveBridgeRoute } from '../model/resolveRoute';
 import { createPendingBridge } from '../model/pendingTransitions';
 import type { BridgeNetworkId } from '../model/networks';
-import { MOCK_STAGE_MS, mockAdapter } from './mockAdapter';
+import { MOCK_STAGE_MS } from './mockAdapter';
+import type { NativeDepositNetwork } from './nativeDeposit/contracts';
 import { getBridgeAdapter } from './registry';
 import type { AdapterContext } from './types';
 
@@ -24,6 +25,17 @@ const pending = (from: BridgeNetworkId, to: BridgeNetworkId) => {
   });
 };
 
+const withdrawal = (from: NativeDepositNetwork) =>
+  createPendingBridge({
+    account: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+    amount: 1n,
+    from,
+    to: 'ethereum',
+    route: nativeWithdrawalRoute(from),
+    txHash: '0xsource',
+    now: NOW
+  });
+
 describe('getBridgeAdapter', () => {
   const later = NOW + MOCK_STAGE_MS * 100;
 
@@ -36,11 +48,19 @@ describe('getBridgeAdapter', () => {
     }
   );
 
-  it('keeps native withdrawals on the mock until their adapters land', async () => {
-    const bridge = pending('base', 'ethereum');
-    const progress = await getBridgeAdapter('native').checkProgress(bridge, later, NO_CHAINS);
-    expect(progress).not.toBeNull();
-    expect(progress).toEqual(await mockAdapter.checkProgress(bridge, later, NO_CHAINS));
+  it.each(['arbitrum', 'base', 'optimism', 'unichain'] as const)(
+    'never reports a real %s to Ethereum native withdrawal as arrived on a timer',
+    async from => {
+      const bridge = withdrawal(from);
+      expect(bridge.routeKind).toBe('native');
+      await expect(getBridgeAdapter('native').checkProgress(bridge, later, NO_CHAINS)).resolves.toBeNull();
+    }
+  );
+
+  // Native bridges only run from or to Ethereum; a stored entry for any other pair is not a mock.
+  it('never moves a native bridge stored for another pair on a timer', async () => {
+    const bridge = { ...withdrawal('base'), to: 'optimism' as const };
+    await expect(getBridgeAdapter('native').checkProgress(bridge, later, NO_CHAINS)).resolves.toBeNull();
   });
 
   it.each(['arbitrum', 'base', 'optimism', 'unichain'] as const)(
