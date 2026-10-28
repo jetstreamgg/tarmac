@@ -91,4 +91,12 @@ describe('useBridgeRouteCards', () => {
     const cctpArgs = mocks.feeArgs.find(args => args.calls.length === 4);
     expect(cctpArgs?.enabled).toBe(false);
   });
+
+  it('lists an unavailable route after the available ones', () => {
+    const result = cards([{ route: cctpWithdrawalRoute('base'), unavailable: 'no-liquidity' }, OPTIONS[1]]);
+    expect(result?.map(card => [card.kind, card.unavailable])).toEqual([
+      ['native', false],
+      ['cctp', true]
+    ]);
+  });
 });

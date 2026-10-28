@@ -52,7 +52,9 @@ export function useBridgeRouteCards({
 
   return useMemo(() => {
     if (!options) return undefined;
-    return options.map(option => {
+    // An unavailable route goes last, below the one the user can take.
+    const ordered = [...options].sort((a, b) => Number(!!a.unavailable) - Number(!!b.unavailable));
+    return ordered.map(option => {
       const kind = option.route.kind === 'cctp' ? 'cctp' : 'native';
       const sourceFeeWei = kind === 'cctp' ? cctpFeeWei : nativeFeeWei;
       const usd =
