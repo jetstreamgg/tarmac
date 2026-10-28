@@ -186,7 +186,7 @@ export function PendleModalForm({
   }, [isSupply, needsAllowance, inputSymbol]);
 
   const {
-    data: quote,
+    data: liveQuote,
     isLoading: isFetchingQuote,
     error: quoteError
   } = useQuotePendleConvert({
@@ -200,6 +200,9 @@ export function PendleModalForm({
     slippage,
     enabled: debouncedAmount > 0n && !matured
   });
+  // A disabled query keeps its last data, so a modal left open across expiry
+  // would otherwise keep showing that quote as a live order.
+  const quote = matured ? undefined : liveQuote;
 
   // --- Analytics: the legacy PendleWidget event set, with live amounts. ---
   const onAnalyticsEvent = useWidgetAnalytics('fixed', chainId);
