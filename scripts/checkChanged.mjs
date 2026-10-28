@@ -12,10 +12,11 @@
 //   --fix          write eslint fixes and prettier formatting first, then run the other steps
 //   --full         run the full fast vitest suite instead of only the related tests
 //   --skip         comma-separated steps to skip: prettier, eslint, typecheck, tests, build
-//   files          check these files instead of the changed ones
+//   files          check these files or directories instead of the changed ones
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
+import { parseArgs } from 'node:util';
 
 const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
 const webapp = resolve(root, 'apps/webapp');
@@ -28,40 +29,37 @@ const usage = message => {
   process.exit(2);
 };
 
-// Accepts both `--name value` and `--name=value` for options
-const flags = new Set();
-const options = {};
-const explicit = [];
-const argv = process.argv.slice(2);
-for (let i = 0; i < argv.length; i++) {
-  const arg = argv[i];
-  if (!arg.startsWith('--')) {
-    explicit.push(arg);
-    continue;
-  }
-  const [name, inline] = arg.slice(2).split(/=(.*)/s);
-  if (name === 'fix' || name === 'full' || name === 'uncommitted') {
-    if (inline !== undefined) usage(`--${name} takes no value`);
-    flags.add(name);
-  } else if (name === 'base' || name === 'skip') {
-    const value = inline ?? argv[++i];
-    if (!value || value.startsWith('--')) usage(`--${name} needs a value`);
-    options[name] = value;
-  } else {
-    usage(`Unknown option --${name}`);
-  }
+let parsed;
+try {
+  parsed = parseArgs({
+    allowPositionals: true,
+    options: {
+      fix: { type: 'boolean' },
+      full: { type: 'boolean' },
+      uncommitted: { type: 'boolean' },
+      base: { type: 'string' },
+      skip: { type: 'string' }
+    }
+  });
+} catch (error) {
+  usage(error.message);
 }
-const fix = flags.has('fix');
-const full = flags.has('full');
-const uncommitted = flags.has('uncommitted');
+const { values: options, positionals: explicit } = parsed;
+const { fix = false, full = false, uncommitted = false } = options;
+if (options.base === '') usage('--base needs a value');
 if (uncommitted && options.base) usage('--uncommitted and --base are mutually exclusive');
 if ((uncommitted || options.base) && explicit.length > 0)
   usage('Files cannot be combined with --base or --uncommitted');
 const skip = new Set((options.skip ?? '').split(',').filter(Boolean));
 for (const step of skip) if (!STEPS.includes(step)) usage(`Unknown step "${step}" in --skip`);
 
+// quotePath=false keeps non-ASCII paths unescaped, so they match the files on disk
 const git = (...gitArgs) =>
-  execFileSync('git', gitArgs, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  execFileSync('git', ['-c', 'core.quotePath=false', ...gitArgs], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe']
+  })
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean);
@@ -94,45 +92,62 @@ const resolveBase = () => {
       // Try the next candidate
     }
   }
-  if (options.base) usage(`No merge-base between HEAD and "${options.base}"`);
-  return { rev: 'HEAD', label: 'uncommitted' };
+  usage(
+    options.base
+      ? `No merge-base between HEAD and "${options.base}"`
+      : 'No base branch found. Pass --base <ref> or --uncommitted'
+  );
 };
+
+// Given paths, with directories expanded to their tracked and untracked files
+const givenFiles = () =>
+  explicit.flatMap(arg => {
+    const file = relative(root, resolve(process.env.INIT_CWD ?? process.cwd(), arg));
+    if (!existsSync(resolve(root, file))) usage(`No such file or directory: ${arg}`);
+    if (!statSync(resolve(root, file)).isDirectory()) return [file];
+    return git('ls-files', '--cached', '--others', '--exclude-standard', '--', file).filter(f =>
+      existsSync(resolve(root, f))
+    );
+  });
 
 const base = explicit.length > 0 ? undefined : resolveBase();
 const source = base?.label ?? 'given';
-// Changes since the base (committed, staged and unstaged), plus untracked files. Deleted files are dropped.
+// Changes since the base (committed, staged and unstaged), plus untracked files
 const changed = [
   ...new Set(
-    explicit.length > 0
-      ? explicit.map(file => relative(root, resolve(process.env.INIT_CWD ?? process.cwd(), file)))
-      : [
+    base
+      ? [
           ...git('diff', '--name-only', '--diff-filter=d', base.rev, '--'),
           ...git('ls-files', '--others', '--exclude-standard')
-        ]
+        ].filter(file => existsSync(resolve(root, file)))
+      : givenFiles()
   )
-].filter(file => existsSync(resolve(root, file)));
+];
+// Deleted files have nothing to lint, but their importers still need the typecheck, build and tests
+const deleted = base ? git('diff', '--name-only', '--diff-filter=D', base.rev, '--') : [];
 
-if (changed.length === 0) {
+if (changed.length === 0 && deleted.length === 0) {
   console.log(`No changed files (${source}).`);
   process.exit(0);
 }
 
+const isWebappSource = file =>
+  file.startsWith('apps/webapp/src/') && !file.startsWith('apps/webapp/src/test/e2e/');
+const isBuildSource = file => isWebappSource(file) && !/\.(test\.tsx?|md)$/.test(file);
 const lintable = changed.filter(file => /\.(c|m)?[jt]sx?$/.test(file));
 const typed = changed.filter(file => /\.(tsx?|json)$/.test(file));
-const webappSources = changed.filter(
-  file => file.startsWith('apps/webapp/src/') && !file.startsWith('apps/webapp/src/test/e2e/')
-);
-const buildSources = webappSources.filter(file => !/\.(test\.tsx?|md)$/.test(file));
+const webappSources = changed.filter(isWebappSource);
+const buildSources = changed.filter(isBuildSource);
+// vitest can't find the tests related to a file that no longer exists, so a deleted source runs them all
+const deletedSources = deleted.filter(isBuildSource);
 // Dependencies and root or webapp config can affect any file, so they get the whole-project steps
-const projectWide = changed.some(
+const projectWide = [...changed, ...deleted].some(
   file =>
     !file.startsWith('apps/webapp/src/') &&
     !file.endsWith('.md') &&
     !/^(\.github|\.claude|scripts|apps\/webapp\/scripts)\//.test(file)
 );
-const fullTests = full || projectWide;
-// Tests under src/hooks need a Tenderly vnet, so the fast suite excludes them and so does this script
-const hooksTests = changed.filter(file => /^apps\/webapp\/src\/hooks\/.*\.test\.tsx?$/.test(file));
+const fullTests = full || projectWide || deletedSources.length > 0;
 
 const tsc7 = resolve(root, 'node_modules/typescript-7/bin/tsc');
 
@@ -158,13 +173,13 @@ const steps = [
   },
   {
     name: 'prettier',
-    run: true,
+    run: changed.length > 0,
     cmd: 'pnpm',
     args: ['exec', 'prettier', fix ? '--write' : '--check', '--cache', '--ignore-unknown', '--', ...changed]
   },
   {
     name: 'typecheck',
-    run: typed.length > 0 || projectWide,
+    run: typed.length > 0 || projectWide || deletedSources.length > 0,
     cmd: tsc7,
     args: ['--noEmit', '--pretty', 'false', '-p', 'apps/webapp/tsconfig.json']
   },
@@ -187,7 +202,7 @@ const steps = [
   },
   {
     name: 'build',
-    run: buildSources.length > 0 || projectWide,
+    run: buildSources.length > 0 || projectWide || deletedSources.length > 0,
     cmd: 'pnpm',
     // Built into a cache dir so a `dist` served by `pnpm preview` or the e2e suite is left alone
     args: [
@@ -231,7 +246,10 @@ const runStep = step =>
     });
   });
 
-console.log(`Checking ${changed.length} file(s) (${source}): ${steps.map(s => s.name).join(', ')}`);
+const deletedNote = deleted.length > 0 ? `, ${deleted.length} deleted` : '';
+console.log(
+  `Checking ${changed.length} file(s)${deletedNote} (${source}): ${steps.map(s => s.name).join(', ')}`
+);
 const started = performance.now();
 const results = [];
 // With --fix, eslint and then prettier rewrite files, so they run alone and in order before
@@ -249,7 +267,8 @@ for (const result of results.filter(r => r.code !== 0)) {
 }
 
 console.log(`\nTotal ${total.toFixed(1)}s`);
-if (hooksTests.length > 0 || changed.some(file => file.startsWith('apps/webapp/src/hooks/'))) {
+// Tests under src/hooks need a Tenderly vnet, so the fast suite excludes them and so does this script
+if (changed.some(file => file.startsWith('apps/webapp/src/hooks/'))) {
   console.log(
     'Note: vnet-backed hooks tests were not run. For the hooks you changed, run after `pnpm vnet:fork`:\n' +
       '  pnpm -F webapp exec vitest run -c vitest.hooks.config.ts <test files>'

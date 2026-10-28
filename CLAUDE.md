@@ -40,10 +40,10 @@ If you're about to run several of prettier, ESLint, the typecheck, the unit test
 ```bash
 pnpm check:changed                # Changes since the PR's base branch (else origin/development), incl. uncommitted
 pnpm check:changed --uncommitted  # Only staged, unstaged and untracked changes
-pnpm check:changed <files...>     # Only these files
+pnpm check:changed <paths...>     # Only these files or directories
 ```
 
-- It runs only the tests related to the changed webapp sources. Changes outside `apps/webapp/src` (dependencies, config) run the full fast suite, and so does `--full`.
+- It runs only the tests related to the changed webapp sources. Dependency and config changes, deleted webapp sources and `--full` run the full fast suite.
 - `--fix` applies ESLint fixes and prettier formatting first. `--base <ref>` picks another base. `--skip <step,...>` skips steps.
 - Its typecheck uses TypeScript 7. CI runs `pnpm typecheck` on TypeScript 6, so use that if the two might disagree.
 - It skips the vnet-backed hooks tests. When a change touches `src/hooks`, it prints the command to run them.
