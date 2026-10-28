@@ -1,3 +1,4 @@
+import { stakingRewardsPausedReason } from '@/lib/revertMessages/contracts/rewards';
 import { decodeRevert } from '@/lib/revertMessages/decodeRevert';
 
 /** A stake takeover card a prepare failure can be about. */
@@ -13,7 +14,7 @@ const cardByReason: Readonly<Record<string, StakeRevertCard>> = {
   'LockstakeEngine/farm-unsupported-or-deleted': 'stake',
   'LockstakeEngine/farm-unsupported': 'stake',
   'LockstakeEngine/same-farm': 'stake',
-  'This action cannot be performed while the contract is paused': 'stake',
+  [stakingRewardsPausedReason]: 'stake',
   'Sky/insufficient-balance': 'stake',
   'Sky/insufficient-allowance': 'stake',
   'Vat/not-safe': 'borrow',

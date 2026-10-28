@@ -15,10 +15,11 @@ export const psm3RevertMessages: RevertMessageMap = {
   'PSM3/amountIn-too-high': msg`The rate changed, so this swap would cost more than your maximum. Review the new quote and try again.`
 };
 
-// UsdsPsmWrapper, mainnet 0xA188EEC8F81263234dA3622A406892F3D630f98c. It calls
-// the Lite PSM (0xf6e72Db5454dd049d0788e411b06CfAF16853042) directly, so the
-// PSM's halt checks reach the user unchanged.
+// UsdsPsmWrapper, mainnet 0xA188EEC8F81263234dA3622A406892F3D630f98c. `sellGem`
+// calls the Lite PSM (0xf6e72Db5454dd049d0788e411b06CfAF16853042) first, so its
+// halt check reaches the user unchanged. `buyGem` multiplies by `tout` before
+// calling it, and a halted `tout` (max uint) overflows there instead: that
+// direction only ever shows `Panic(0x11)`, and the forms gate it beforehand.
 export const usdsPsmWrapperRevertMessages: RevertMessageMap = {
-  'DssLitePsm/sell-gem-halted': msg`Converting USDC to USDS is paused right now. Try again later.`,
-  'DssLitePsm/buy-gem-halted': msg`Converting USDS to USDC is paused right now. Try again later.`
+  'DssLitePsm/sell-gem-halted': msg`Converting USDC to USDS is paused right now. Try again later.`
 };

@@ -17,5 +17,11 @@ export const morphoVaultRevertMessages: RevertMessageMap = {
   'insufficient liquidity': noLiquidity
 };
 
-// The deposit's pull of the user's tokens failed: their balance or allowance.
-export const morphoVaultInputRevertReasons: readonly string[] = customError('TransferFromReverted()');
+// Set by the deposit amount: a pull of the user's tokens that failed (their
+// balance or allowance), or more than the cap's headroom, which the form
+// doesn't know (Morpho publishes no cap, so deposits are limited by balance only).
+export const morphoVaultInputRevertReasons: readonly string[] = [
+  ...customError('TransferFromReverted()'),
+  ...customError('AbsoluteCapExceeded()'),
+  ...customError('RelativeCapExceeded()')
+];

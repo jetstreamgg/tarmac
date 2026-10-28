@@ -71,8 +71,9 @@ export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | 
   usdsGroveReward: stakingRewardsRevertMessages,
   cleReward: stakingRewardsRevertMessages,
   merkleDistributor: null,
-  MorphoMerklDistributor: merklDistributorRevertMessages,
-  MorphoMerklDistributorImplementation: null,
+  // Claims go through the proxy with the implementation's ABI; the copy lives with the ABI.
+  MorphoMerklDistributor: null,
+  MorphoMerklDistributorImplementation: merklDistributorRevertMessages,
   // Staking Engine
   stakeModule: lockstakeEngineRevertMessages,
   lsMkr: null,

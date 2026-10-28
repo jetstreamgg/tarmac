@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { i18n } from '@lingui/core';
-import { encodeErrorResult, toFunctionSelector } from 'viem';
+import { ContractFunctionRevertedError, encodeErrorResult, toFunctionSelector } from 'viem';
 import { contracts, l2Contracts } from '@/hooks/contracts';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { panicRevertMessages } from './contracts/panic';
@@ -95,18 +95,24 @@ describe('revertMessage', () => {
 });
 
 describe('reverts outside the Staking Engine', () => {
-  const customErrorRevert = (name: string) =>
-    Object.assign(new Error('execution reverted'), {
-      data: encodeErrorResult({ abi: [{ type: 'error', name, inputs: [] }], errorName: name })
-    });
+  const customErrorData = (name: string) =>
+    encodeErrorResult({ abi: [{ type: 'error', name, inputs: [] }], errorName: name });
 
   it('maps a Morpho vault cap by name and by bare selector', () => {
     const copy = 'This vault has reached its deposit limit. Try a smaller amount or try again later.';
-    expect(revertMessage(customErrorRevert('AbsoluteCapExceeded'))).toBe(copy);
-    expect(revertMessage({ revert: { reason: 'AbsoluteCapExceeded', kind: 'custom' } })).toBe(copy);
-    expect(
-      revertMessage({ revert: { reason: toFunctionSelector('RelativeCapExceeded()'), kind: 'unknown' } })
-    ).toBe(copy);
+    // Decoded against the vault's ABI (simulation): keyed by name.
+    const named = new ContractFunctionRevertedError({
+      abi: [{ type: 'error', name: 'AbsoluteCapExceeded', inputs: [] }],
+      data: customErrorData('AbsoluteCapExceeded'),
+      functionName: 'deposit'
+    });
+    expect(named.data?.errorName).toBe('AbsoluteCapExceeded');
+    expect(revertMessage(named)).toBe(copy);
+    // Raw data with no ABI (a wallet's error): keyed by selector.
+    const bare = Object.assign(new Error('execution reverted'), {
+      data: customErrorData('RelativeCapExceeded')
+    });
+    expect(revertMessage(bare)).toBe(copy);
   });
 
   it('maps a withdrawal Morpho Blue has no liquidity for', () => {
@@ -137,11 +143,12 @@ describe('isInputRevert', () => {
     expect(isInputRevert({ reason: '0xe450d38c', kind: 'unknown' })).toBe(true);
   });
 
-  it('silences a Morpho vault deposit that could not pull the tokens', () => {
+  it('silences a Morpho vault deposit the amount blocks: tokens it could not pull, or over the cap', () => {
     expect(isInputRevert({ reason: 'TransferFromReverted', kind: 'custom' })).toBe(true);
     expect(isInputRevert({ reason: toFunctionSelector('TransferFromReverted()'), kind: 'unknown' })).toBe(
       true
     );
+    expect(isInputRevert({ reason: 'AbsoluteCapExceeded', kind: 'custom' })).toBe(true);
   });
 
   it('keeps protocol-state and unknown reverts', () => {
