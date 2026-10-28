@@ -7,6 +7,9 @@ describe('stakeRevertCard', () => {
   it('puts each revert under the card whose input caused it', () => {
     expect(stakeRevertCard(revert('LockstakeEngine/farm-deleted'))).toBe('stake');
     expect(stakeRevertCard(revert('LockstakeEngine/farm-unsupported-or-deleted'))).toBe('stake');
+    expect(stakeRevertCard(revert('This action cannot be performed while the contract is paused'))).toBe(
+      'stake'
+    );
     expect(stakeRevertCard(revert('Vat/dust'))).toBe('borrow');
     expect(stakeRevertCard(revert('LockstakeEngine/urn-unsafe'))).toBe('delegate');
   });

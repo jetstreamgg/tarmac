@@ -1,8 +1,15 @@
 import { i18n } from '@lingui/core';
 import { t } from '@lingui/core/macro';
 import { lockstakeEngineRevertMessages } from './contracts/lockstakeEngine';
+import { morphoVaultInputRevertReasons, morphoVaultRevertMessages } from './contracts/morphoVault';
 import { panicRevertMessages } from './contracts/panic';
+import { merklDistributorRevertMessages, stakingRewardsRevertMessages } from './contracts/rewards';
 import { stUsdsRevertMessages } from './contracts/stUsds';
+import {
+  curveStUsdsUsdsPoolRevertMessages,
+  psm3RevertMessages,
+  usdsPsmWrapperRevertMessages
+} from './contracts/swaps';
 import { tokenInputRevertReasons } from './contracts/tokens';
 import type { RevertMessageMap } from './contracts/types';
 import { vatInputRevertReasons, vatRevertMessages } from './contracts/vat';
@@ -21,6 +28,9 @@ export { decodeRevert, type DecodedRevert } from './decodeRevert';
  * ABI (raw revert data from a wallet or node) only knows the 4-byte
  * selector, so a name-keyed entry matches before signing but not after.
  * Map the selector too when that matters.
+ *
+ * Contracts built from the same source (the reward farms, the Morpho vaults)
+ * share one map.
  */
 export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | null>> = {
   // Savings / tokens
@@ -51,37 +61,37 @@ export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | 
   // Converters
   daiUsds: null,
   mkrSky: null,
-  usdsPsmWrapper: null,
-  curveStUsdsUsdsPool: null,
+  usdsPsmWrapper: usdsPsmWrapperRevertMessages,
+  curveStUsdsUsdsPool: curveStUsdsUsdsPoolRevertMessages,
   gPv2Settlement: null,
   ethFlow: null,
   // Rewards
-  usdsSkyReward: null,
-  usdsSpkReward: null,
-  usdsGroveReward: null,
-  cleReward: null,
+  usdsSkyReward: stakingRewardsRevertMessages,
+  usdsSpkReward: stakingRewardsRevertMessages,
+  usdsGroveReward: stakingRewardsRevertMessages,
+  cleReward: stakingRewardsRevertMessages,
   merkleDistributor: null,
-  MorphoMerklDistributor: null,
+  MorphoMerklDistributor: merklDistributorRevertMessages,
   MorphoMerklDistributorImplementation: null,
   // Staking Engine
   stakeModule: lockstakeEngineRevertMessages,
   lsMkr: null,
-  lsMkrUsdsReward: null,
+  lsMkrUsdsReward: stakingRewardsRevertMessages,
   lsSky: null,
-  lsSkyUsdsReward: null,
-  lsSkySpkReward: null,
-  lsSkySkyReward: null,
+  lsSkyUsdsReward: stakingRewardsRevertMessages,
+  lsSkySpkReward: stakingRewardsRevertMessages,
+  lsSkySkyReward: stakingRewardsRevertMessages,
   // Morpho vaults
-  usdsRiskCapitalVault: null,
-  usdcRiskCapitalVault: null,
-  usdsFlagshipVault: null,
-  usdtRiskCapitalVault: null,
-  usdtSavingsVault: null,
+  usdsRiskCapitalVault: morphoVaultRevertMessages,
+  usdcRiskCapitalVault: morphoVaultRevertMessages,
+  usdsFlagshipVault: morphoVaultRevertMessages,
+  usdtRiskCapitalVault: morphoVaultRevertMessages,
+  usdtSavingsVault: morphoVaultRevertMessages,
   // L2
   usdcL2: null,
   usdsL2: null,
   sUsdsL2: null,
-  psm3L2: null,
+  psm3L2: psm3RevertMessages,
   ssrAuthOracle: null
 };
 
@@ -106,7 +116,8 @@ const revertMessageByReason: RevertMessageMap = Object.assign(
  */
 const inputRevertReasons: ReadonlySet<string> = new Set([
   ...tokenInputRevertReasons,
-  ...vatInputRevertReasons
+  ...vatInputRevertReasons,
+  ...morphoVaultInputRevertReasons
 ]);
 
 /**

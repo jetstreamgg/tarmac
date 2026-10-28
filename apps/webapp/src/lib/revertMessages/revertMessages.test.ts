@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { i18n } from '@lingui/core';
-import { encodeErrorResult } from 'viem';
+import { encodeErrorResult, toFunctionSelector } from 'viem';
 import { contracts, l2Contracts } from '@/hooks/contracts';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { panicRevertMessages } from './contracts/panic';
@@ -40,9 +40,13 @@ describe('contractRevertMessages coverage', () => {
 
   it('never maps the same reason in two places', () => {
     const seen = new Map<string, string>();
+    // Contracts sharing a source share one map; it counts once.
+    const seenMaps = new Set<unknown>();
     const maps = { ...contractRevertMessages, panic: panicRevertMessages };
     for (const [contract, map] of Object.entries(maps)) {
-      for (const reason of Object.keys(map ?? {})) {
+      if (!map || seenMaps.has(map)) continue;
+      seenMaps.add(map);
+      for (const reason of Object.keys(map)) {
         expect(seen.get(reason), `${reason} mapped by ${seen.get(reason)} and ${contract}`).toBeUndefined();
         seen.set(reason, contract);
       }
@@ -90,6 +94,38 @@ describe('revertMessage', () => {
   });
 });
 
+describe('reverts outside the Staking Engine', () => {
+  const customErrorRevert = (name: string) =>
+    Object.assign(new Error('execution reverted'), {
+      data: encodeErrorResult({ abi: [{ type: 'error', name, inputs: [] }], errorName: name })
+    });
+
+  it('maps a Morpho vault cap by name and by bare selector', () => {
+    const copy = 'This vault has reached its deposit limit. Try a smaller amount or try again later.';
+    expect(revertMessage(customErrorRevert('AbsoluteCapExceeded'))).toBe(copy);
+    expect(revertMessage({ revert: { reason: 'AbsoluteCapExceeded', kind: 'custom' } })).toBe(copy);
+    expect(
+      revertMessage({ revert: { reason: toFunctionSelector('RelativeCapExceeded()'), kind: 'unknown' } })
+    ).toBe(copy);
+  });
+
+  it('maps a withdrawal Morpho Blue has no liquidity for', () => {
+    expect(revertMessage(rpcRevert('insufficient liquidity'))).toMatch(/enough available liquidity/);
+  });
+
+  it('maps slippage on the Curve pool and PSM3', () => {
+    expect(revertMessage(rpcRevert('Exchange resulted in fewer coins than expected'))).toMatch(/price moved/);
+    expect(revertMessage(rpcRevert('PSM3/amountOut-too-low'))).toMatch(/price moved/);
+  });
+
+  it('maps a halted PSM and a paused reward farm', () => {
+    expect(revertMessage(rpcRevert('DssLitePsm/sell-gem-halted'))).toMatch(/USDC to USDS is paused/);
+    expect(revertMessage(rpcRevert('This action cannot be performed while the contract is paused'))).toMatch(
+      /reward is paused/
+    );
+  });
+});
+
 describe('isInputRevert', () => {
   it('silences reverts the typed amount causes', () => {
     expect(isInputRevert({ reason: 'Sky/insufficient-balance', kind: 'error' })).toBe(true);
@@ -99,6 +135,13 @@ describe('isInputRevert', () => {
   it('knows an OpenZeppelin balance error by name and by bare selector', () => {
     expect(isInputRevert({ reason: 'ERC20InsufficientBalance', kind: 'custom' })).toBe(true);
     expect(isInputRevert({ reason: '0xe450d38c', kind: 'unknown' })).toBe(true);
+  });
+
+  it('silences a Morpho vault deposit that could not pull the tokens', () => {
+    expect(isInputRevert({ reason: 'TransferFromReverted', kind: 'custom' })).toBe(true);
+    expect(isInputRevert({ reason: toFunctionSelector('TransferFromReverted()'), kind: 'unknown' })).toBe(
+      true
+    );
   });
 
   it('keeps protocol-state and unknown reverts', () => {

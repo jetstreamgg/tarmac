@@ -1,10 +1,4 @@
-import { toFunctionSelector } from 'viem';
-
-/** A custom error by name (decoded against an ABI) and by selector (decoded without one). */
-const customError = (signature: string) => [
-  signature.slice(0, signature.indexOf('(')),
-  toFunctionSelector(signature)
-];
+import { customError } from './customError';
 
 // Balance and allowance reverts of the tokens the app moves, as written in their
 // verified sources: Dai, USDS, SKY, sUSDS, stUSDS, SPK and Grove (both SDAO

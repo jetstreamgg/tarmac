@@ -13,6 +13,7 @@ const cardByReason: Readonly<Record<string, StakeRevertCard>> = {
   'LockstakeEngine/farm-unsupported-or-deleted': 'stake',
   'LockstakeEngine/farm-unsupported': 'stake',
   'LockstakeEngine/same-farm': 'stake',
+  'This action cannot be performed while the contract is paused': 'stake',
   'Sky/insufficient-balance': 'stake',
   'Sky/insufficient-allowance': 'stake',
   'Vat/not-safe': 'borrow',
