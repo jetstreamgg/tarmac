@@ -1063,9 +1063,25 @@ describe('OpenPositionTakeover — simulation and engine errors (APP-490)', () =
     expect(screen.getByTestId('stake-takeover-error').textContent).toBe(
       'Something went wrong preparing the transaction. Please try again.'
     );
+    // An unmapped failure is about the whole form: at the bottom of the last card
+    expect(
+      screen.getByTestId('stake-takeover-delegate-card').contains(screen.getByTestId('stake-takeover-error'))
+    ).toBe(true);
   });
 
-  it('shows one message at a time: a card notice keeps the prepare failure out of the footer (APP-663)', () => {
+  it('shows a revert under the card it is about (APP-663)', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted: LockstakeEngine/farm-unsupported-or-deleted');
+    h.launchLoading = false;
+    renderTakeover();
+    typeStakeAmount('100');
+
+    expect(
+      screen.getByTestId('stake-takeover-stake-card').contains(screen.getByTestId('stake-takeover-error'))
+    ).toBe(true);
+  });
+
+  it('shows one message at a time: a card notice hides the prepare failure (APP-663)', () => {
     h.prepared = false;
     h.launchError = new Error('execution reverted');
     h.debtCeilingUtilization = 1;

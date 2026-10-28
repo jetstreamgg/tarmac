@@ -1193,9 +1193,25 @@ describe('ManagePositionTakeover', () => {
     expect(screen.getByTestId('stake-manage-error').textContent).toBe(
       'Something went wrong preparing the transaction. Please try again.'
     );
+    // An unmapped failure is about the whole form: at the bottom of the last card
+    expect(
+      screen.getByTestId('stake-manage-borrow-card').contains(screen.getByTestId('stake-manage-error'))
+    ).toBe(true);
   });
 
-  it('shows one message at a time: a card notice keeps the prepare failure out of the footer (APP-663)', () => {
+  it('shows a revert under the card it is about (APP-663)', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted: LockstakeEngine/farm-deleted');
+    h.launchLoading = false;
+    renderSheet({ stakeCard: 'stake' });
+    fireEvent.change(screen.getByTestId('stake-manage-stake-amount'), { target: { value: '1000' } });
+
+    expect(
+      screen.getByTestId('stake-manage-stake-card').contains(screen.getByTestId('stake-manage-error'))
+    ).toBe(true);
+  });
+
+  it('shows one message at a time: a card notice hides the prepare failure (APP-663)', () => {
     h.prepared = false;
     h.launchError = new Error('execution reverted');
     h.debtCeilingUtilization = 1;

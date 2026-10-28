@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -170,12 +170,15 @@ export function StakeTakeoverDelegateCard({
   enabled,
   onEnabledChange,
   selectedDelegate,
-  onSelect
+  onSelect,
+  notice
 }: {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
   selectedDelegate: `0x${string}` | undefined;
   onSelect: (delegate: `0x${string}`) => void;
+  /** A Confirm-blocking message about this card, or the whole form, shown at its bottom. */
+  notice?: ReactNode;
 }) {
   const list = useDelegateList(selectedDelegate);
   return (
@@ -190,6 +193,7 @@ export function StakeTakeoverDelegateCard({
         onEnabledChange(next);
       }}
       dataTestId="stake-takeover-delegate-card"
+      notice={notice}
     >
       <DelegateList {...list} selectedDelegate={selectedDelegate} onSelect={onSelect} />
     </StakeTakeoverCard>
