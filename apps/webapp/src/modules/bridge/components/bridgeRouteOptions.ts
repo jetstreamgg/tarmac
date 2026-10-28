@@ -25,6 +25,7 @@ export type RouteOptionCard = {
   badge: { text: string; tone: 'accent' | 'muted' };
   description: string;
   rows: { label: string; value: string }[];
+  etaMinutes: number;
   unavailable: boolean;
 };
 
@@ -76,6 +77,7 @@ export function buildRouteOptionCard({
       },
       { label: t`Network fee`, value: networkFee }
     ],
+    etaMinutes: route.etaMinutes,
     unavailable: unavailable !== undefined
   };
 }

@@ -112,6 +112,8 @@ export type TransactionConfig = {
    * unchanged.
    */
   transactionScreenContent?: ReactNode;
+  /** A card beside the review on desktop (Figma 3964:74437); below desktop it isn't drawn. */
+  aside?: ReactNode;
   /**
    * Editable first screen. When present the modal opens on the entry screen
    * (instead of the read-only review built from `transactionContent`). Both lead
@@ -312,6 +314,7 @@ export type LiveModalUpdate = Partial<
     TransactionConfig,
     | 'transactionContent'
     | 'transactionScreenContent'
+    | 'aside'
     | 'rightHeaderComponent'
     | 'confirmDisabled'
     | 'bundled'

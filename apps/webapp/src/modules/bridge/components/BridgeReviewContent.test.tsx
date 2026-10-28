@@ -204,3 +204,78 @@ describe('BridgeReviewContent route picker', () => {
     expect(onPick).not.toHaveBeenCalled();
   });
 });
+
+describe('BridgeReviewContent route picker beside the review (Figma 3964:74437)', () => {
+  afterEach(cleanup);
+
+  const cctp = buildRouteOptionCard({
+    option: { route: cctpWithdrawalRoute('base') },
+    networkFee: '$0.02',
+    approvals: 2
+  });
+  const native = buildRouteOptionCard({
+    option: { route: nativeWithdrawalRoute('base') },
+    networkFee: '~$3.10',
+    approvals: 3
+  });
+  const greyedNative = buildRouteOptionCard({
+    option: { route: nativeWithdrawalRoute('base'), unavailable: 'no-liquidity' },
+    networkFee: '-',
+    approvals: undefined
+  });
+  const eta = () => screen.getByTestId('bridge-modal-eta');
+
+  it('strikes the slower route out of the arrival and badges the faster one', () => {
+    review({ route: cctpWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    const struck = eta().querySelector('s');
+    expect(struck?.textContent).toBe('~5 days');
+    expect(screen.getByTestId('bridge-modal-eta-fast').textContent).toBe('~20 min');
+    expect(screen.getByTestId('bridge-modal-eta-fast').querySelector('svg')).not.toBeNull();
+  });
+
+  it('shows the arrival alone when the picked route is the slower one', () => {
+    review({ route: nativeWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    expect(screen.queryByTestId('bridge-modal-eta')).toBeNull();
+    expect(screen.getByTestId('bridge-modal-footnote').closest('div')?.textContent).toContain('~5 days');
+  });
+
+  it("doesn't compare against a route that can't be picked", () => {
+    review({
+      route: cctpWithdrawalRoute('base'),
+      routePicker: { cards: [cctp, greyedNative], onPick: vi.fn() }
+    });
+    expect(screen.queryByTestId('bridge-modal-eta')).toBeNull();
+  });
+
+  it('opens the options beside the review, which stays, when the caller draws them', () => {
+    const onOpenChange = vi.fn();
+    review({
+      route: cctpWithdrawalRoute('base'),
+      routePicker: { cards: [cctp, native], onPick: vi.fn(), beside: { open: false, onOpenChange } }
+    });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(screen.queryByTestId('bridge-route-picker')).toBeNull();
+    expect(screen.getByTestId('bridge-modal-footnote')).toBeTruthy();
+  });
+
+  it('closes the options beside from the same toggle', () => {
+    const onOpenChange = vi.fn();
+    review({
+      route: cctpWithdrawalRoute('base'),
+      routePicker: { cards: [cctp, native], onPick: vi.fn(), beside: { open: true, onOpenChange } }
+    });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('dresses only the Fastest badge in the brand tint with a bolt', () => {
+    review({ route: cctpWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    const fastest = screen.getByText('Fastest').closest('[data-testid="bridge-route-badge"]')!;
+    expect(fastest.className).toContain('bg-statusBrandBg');
+    expect(fastest.querySelector('svg')).not.toBeNull();
+    const nativeBadge = screen.getByText('Native').closest('[data-testid="bridge-route-badge"]')!;
+    expect(nativeBadge.querySelector('svg')).toBeNull();
+  });
+});

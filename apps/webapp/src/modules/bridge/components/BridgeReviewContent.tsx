@@ -8,9 +8,10 @@ import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { formatAddress, formatBigInt } from '@/utils';
-import { buildBridgeModalRows, formatEtaWords } from './bridgeModalRows';
+import { cn } from '@/lib/cn';
+import { buildBridgeModalRows, formatEta, formatEtaWords } from './bridgeModalRows';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
-import { BridgeRoutePicker } from './BridgeRoutePicker';
+import { BridgeFastBadge, BridgeRoutePicker } from './BridgeRoutePicker';
 import type { RouteOptionCard } from './bridgeRouteOptions';
 import { BridgeWarningBox } from './BridgeWarningBox';
 
@@ -89,8 +90,31 @@ type BridgeReviewContentProps = {
   safeQueue?: boolean;
   /** Browser storage takes no writes, so this bridge isn't kept to come back to. */
   storageNote?: boolean;
-  /** The routes the user can pick between from the Bridge type row (Figma 50, 60). */
-  routePicker?: { cards: RouteOptionCard[]; onPick: (kind: BridgeRouteKind) => void };
+  /**
+   * The routes the user can pick between from the Bridge type row (Figma 50, 60). With `beside`,
+   * the caller draws the options next to the review (Figma 3964:74437); without, they swap in place.
+   */
+  routePicker?: {
+    cards: RouteOptionCard[];
+    onPick: (kind: BridgeRouteKind) => void;
+    beside?: { open: boolean; onOpenChange: (open: boolean) => void };
+  };
+};
+
+/** The arrival with the slowest pickable route struck out, when the picked one is faster (Figma 3964:74437). */
+const arrivalAgainst = (route: BridgeRoute, cards: RouteOptionCard[] | undefined) => {
+  const slower = Math.max(
+    ...(cards ?? [])
+      .filter(card => !card.unavailable && card.kind !== route.kind)
+      .map(card => card.etaMinutes)
+  );
+  if (!(slower > route.etaMinutes)) return undefined;
+  return (
+    <span className="flex items-center gap-1" data-testid="bridge-modal-eta">
+      <s className="text-fgSecondary text-xs leading-[18px] font-normal">{formatEta(slower)}</s>
+      <BridgeFastBadge testId="bridge-modal-eta-fast">{formatEta(route.etaMinutes)}</BridgeFastBadge>
+    </span>
+  );
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
@@ -112,7 +136,13 @@ export function BridgeReviewContent({
 }: BridgeReviewContentProps) {
   const [choosing, setChoosing] = useState(false);
   const built = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
-  const [[bridgeType, ...firstRow], ...rest] = built;
+  const [[bridgeType, ...firstRow], [arrival, ...secondRow], ...rest] = built;
+  const fastArrival = arrivalAgainst(route, routePicker?.cards);
+  const arrivalRow = [
+    fastArrival ? { label: arrival.label, kind: 'node' as const, node: fastArrival } : arrival,
+    ...secondRow
+  ];
+  const beside = routePicker?.beside;
   const rows = routePicker
     ? [
         [
@@ -121,22 +151,24 @@ export function BridgeReviewContent({
             action: (
               <button
                 type="button"
-                onClick={() => setChoosing(true)}
+                onClick={() => (beside ? beside.onOpenChange(!beside.open) : setChoosing(true))}
                 aria-label={t`Change bridge type`}
+                aria-expanded={beside?.open}
                 className="text-fgSecondary flex items-center"
                 data-testid="bridge-modal-route-toggle"
               >
-                <ChevronRight size={12} aria-hidden />
+                <ChevronRight size={12} className={cn(beside?.open && 'rotate-180')} aria-hidden />
               </button>
             )
           },
           ...firstRow
         ],
+        arrivalRow,
         ...rest
       ]
     : built;
   const contractCheckboxId = useId();
-  if (routePicker && choosing)
+  if (routePicker && !beside && choosing)
     return (
       <BridgeRoutePicker
         cards={routePicker.cards}

@@ -1601,6 +1601,7 @@ export function TransactionProvider({
             subtitles={modalView.config.subtitles}
             transactionContent={modalView.config.transactionContent}
             transactionScreenContent={modalView.config.transactionScreenContent}
+            aside={modalView.config.aside}
             entry={modalView.config.entry}
             rightHeaderComponent={modalView.config.rightHeaderComponent}
             titleBadge={modalView.config.titleBadge}

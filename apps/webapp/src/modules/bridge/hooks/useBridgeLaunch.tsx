@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
-import { useIsSafeWallet, useNetworkFee, useTokenBalance } from '@/hooks';
+import { BP, useBreakpointIndex, useIsSafeWallet, useNetworkFee, useTokenBalance } from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -16,6 +16,7 @@ import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components
 import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeReviewContent';
 import { formatEthCeil, formatMaxEthFee } from '../components/bridgeModalRows';
 import { routeFallbackNotice } from '../components/bridgeRouteOptions';
+import { BridgeRoutePicker } from '../components/BridgeRoutePicker';
 import { notifyRouteFallback } from '../components/RouteFallbackToast';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
@@ -561,9 +562,34 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     sources: routeSources
   });
   const { pickRoute } = form;
+  // On desktop the options open beside the review (Figma 3964:74437); below, they swap in place.
+  const pickerBeside = useBreakpointIndex().bpi >= BP.desktop;
+  const [pickerOpen, setPickerOpen] = useState(false);
   const routePicker = useMemo(
-    () => (routeCards && pickRoute ? { cards: routeCards, onPick: pickRoute } : undefined),
-    [routeCards, pickRoute]
+    () =>
+      routeCards && pickRoute
+        ? {
+            cards: routeCards,
+            onPick: pickRoute,
+            ...(pickerBeside && { beside: { open: pickerOpen, onOpenChange: setPickerOpen } })
+          }
+        : undefined,
+    [routeCards, pickRoute, pickerBeside, pickerOpen]
+  );
+  const aside = useMemo(
+    () =>
+      route && routePicker?.beside?.open ? (
+        <BridgeRoutePicker
+          cards={routePicker.cards}
+          selected={route.kind}
+          onPick={kind => {
+            routePicker.onPick(kind);
+            setPickerOpen(false);
+          }}
+          onBack={() => setPickerOpen(false)}
+        />
+      ) : undefined,
+    [route, routePicker]
   );
   // Arbitrum refunds a contract's unused fee to its L2 alias, which a Safe reaches only through Ethereum.
   const aliasedRefund = isSafe && depositTo === 'arbitrum' && !sendsToOther(recipient, account);
@@ -667,6 +693,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     const title = resume ? t`Continue USDS bridge` : t`Review USDS bridge`;
     // Each Review asks again; its content follows once the modal is open.
     setContractAccepted(false);
+    setPickerOpen(false);
     setStorageWritable(isStorageWritable());
     launchModal({
       title,
@@ -717,6 +744,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     updateModalContent(sessionId, {
       transactionContent,
       transactionScreenContent,
+      aside,
       confirmDisabled,
       bundled,
       errorMessage,
@@ -729,6 +757,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     updateModalContent,
     transactionContent,
     transactionScreenContent,
+    aside,
     confirmDisabled,
     bundled,
     errorMessage,

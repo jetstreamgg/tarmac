@@ -24,6 +24,8 @@ type SafeReply = number | 'hang';
 
 const mocks = vi.hoisted(() => ({
   isConnected: true,
+  // The width tier; 0 is a phone.
+  bpi: 0,
   fallbackNotices: [] as unknown[],
   routeCards: {
     args: [] as { options: unknown; sources: Record<string, { calls: unknown[] }> }[],
@@ -98,6 +100,7 @@ vi.mock('wagmi', async io => ({
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
   useAppChainId: () => mocks.appChainId,
+  useBreakpointIndex: () => ({ bpi: mocks.bpi }),
   useNetworkFee: (args: (typeof mocks.networkFee)[number]) => {
     mocks.networkFee.push(args);
     return { data: args.enabled ? { formatted: '$0.42' } : undefined };
@@ -288,6 +291,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       bridgeOpen: 1n,
       maxWithdraws: 10n ** 30n,
       safe: {},
+      bpi: 0,
       isModalOpen: false,
       launched: [],
       updates: [],
@@ -928,6 +932,80 @@ describe('useBridgeLaunch Confirm gate', () => {
         cctpUnavailable: 'no-liquidity'
       });
       expect(mocks.routeCards.args.at(-1)!.sources.cctp.calls).toEqual([]);
+    });
+  });
+
+  describe('the route picker beside the review on desktop (Figma 3964:74437)', () => {
+    const CARDS = [{ kind: 'cctp' }, { kind: 'native' }];
+    async function reviewOn(bpi: number) {
+      mocks.bpi = bpi;
+      mocks.isModalOpen = true;
+      mocks.appChainId = 8453;
+      mocks.routeCards.cards = CARDS;
+      const pickRoute = vi.fn();
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: cctpWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        routeOptions: [{ route: cctpWithdrawalRoute('base') }, { route: nativeWithdrawalRoute('base') }],
+        pickRoute
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      await settle();
+      return { pickRoute };
+    }
+    type Picker = { beside?: { open: boolean; onOpenChange: (open: boolean) => void } };
+    const latest = <K extends keyof TransactionConfig>(key: K) =>
+      [mocks.launched.at(-1), ...mocks.updates].filter(c => c && key in c).at(-1)?.[key];
+    const picker = () =>
+      (latest('transactionContent') as { props: { routePicker?: Picker } }).props.routePicker;
+    const aside = () =>
+      latest('aside') as
+        | { props: { cards: unknown; selected: string; onPick: (kind: string) => void; onBack: () => void } }
+        | undefined;
+
+    it('opens the options beside the review and closes them once a route is picked', async () => {
+      const { pickRoute } = await reviewOn(3);
+      expect(aside()).toBeUndefined();
+      act(() => picker()!.beside!.onOpenChange(true));
+      expect(aside()?.props).toMatchObject({ cards: CARDS, selected: 'cctp' });
+      expect(picker()!.beside!.open).toBe(true);
+      act(() => aside()!.props.onPick('native'));
+      expect(pickRoute).toHaveBeenCalledWith('native');
+      expect(aside()).toBeUndefined();
+    });
+
+    it('closes them on back without picking', async () => {
+      const { pickRoute } = await reviewOn(3);
+      act(() => picker()!.beside!.onOpenChange(true));
+      act(() => aside()!.props.onBack());
+      expect(aside()).toBeUndefined();
+      expect(pickRoute).not.toHaveBeenCalled();
+    });
+
+    it('opens a new Review with them closed', async () => {
+      await reviewOn(3);
+      act(() => picker()!.beside!.onOpenChange(true));
+      mocks.launched.length = 0;
+      mocks.updates.length = 0;
+      await reviewOn(3);
+      expect(aside()).toBeUndefined();
+      expect(picker()!.beside!.open).toBe(false);
+    });
+
+    it('below desktop, leaves the review to swap them in place', async () => {
+      await reviewOn(2);
+      expect(picker()!.beside).toBeUndefined();
+      expect(aside()).toBeUndefined();
     });
   });
 

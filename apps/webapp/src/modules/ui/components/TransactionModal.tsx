@@ -15,7 +15,7 @@ import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { useIsBatchSupported } from '@/hooks';
+import { BP, useBreakpointIndex, useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ModalStepBackSlot, ModalStepDivider, ModalStepLabel } from './ModalStepChrome';
@@ -99,6 +99,8 @@ export type TransactionModalProps = {
    * that don't supply one render unchanged.
    */
   transactionScreenContent?: ReactNode;
+  /** A card beside the review on desktop (Figma 3964:74437); below desktop it isn't drawn. */
+  aside?: ReactNode;
   /**
    * Editable first screen. When present the modal opens on the entry screen
    * (the body in `entry.content`) instead of the read-only review.
@@ -224,6 +226,7 @@ export function TransactionModal({
   subtitles,
   transactionContent,
   transactionScreenContent,
+  aside,
   entry,
   rightHeaderComponent,
   titleBadge,
@@ -271,6 +274,8 @@ export function TransactionModal({
   // advances to the transaction screen. They differ only in content + button source.
   const isFirstScreen = isEntry || isReview;
   const isTransaction = step === 'transaction';
+  const { bpi } = useBreakpointIndex();
+  const showAside = !!aside && isReview && bpi >= BP.desktop;
   const hasMultipleSteps = steps && steps.length > 1;
   // A gate-mounted signature prelude must be visible even when it is the ONLY
   // step (flows like the claim panel launch without a steps array): the step
@@ -700,6 +705,250 @@ export function TransactionModal({
     });
   }
 
+  const cardClassName = cn(
+    'bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
+    !isTransaction && 'sm:gap-12'
+  );
+  const modalBody = (
+    <>
+      <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {/* No row gap: the back-arrow slot owns the 16px gutter so it can
+                collapse to nothing on the first screen, and the badge carries its
+                own. That is what lets the title slide sideways instead of jumping
+                when the arrow appears (Figma 2685:148222). */}
+          <div className="flex min-w-0 items-center">
+            {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph.
+                The flow's initial screen has no back arrow (Figma 859:36036 draws
+                title + close only); later screens gain it. */}
+            <ModalStepBackSlot open={step !== firstStep}>
+              <Button
+                variant="secondary"
+                size="iconM"
+                aria-label={t`Back`}
+                onClick={handleHeaderBack}
+                disabled={isTransacting || backLocked}
+                data-testid="transaction-modal-back"
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+            </ModalStepBackSlot>
+            {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
+            <ResponsiveModalTitle className="text-fgPrimary font-circle min-w-0 text-lg leading-5.5 font-medium tracking-[-0.36px]">
+              {/* Keyed on the step, not the string: a live `updateModalContent`
+                    retitle mid-screen should not roll. */}
+              <ModalStepLabel labelKey={step}>{displayTitle}</ModalStepLabel>
+            </ResponsiveModalTitle>
+            {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
+                the wallet/status screen relabels the title. */}
+            {isFirstScreen && titleBadge && <div className="ml-4 shrink-0">{titleBadge}</div>}
+          </div>
+          {/* Body 6 (Figma 2413:67012): a flow's pre-transaction disclosure hugs
+                the title inside the header block, 12/18 on fg-secondary. The
+                status subtitles below keep the content column's treatment. */}
+          {firstScreenSubtitle && (
+            <Text
+              variant="captionSm"
+              className="text-fgSecondary leading-[18px]"
+              dataTestId="transaction-modal-subtitle"
+            >
+              {firstScreenSubtitle}
+            </Text>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {rightHeaderComponent}
+          <Button
+            variant="secondary"
+            size="iconM"
+            aria-label={txStatus === TxStatus.LOADING ? t`Minimize` : t`Close`}
+            onClick={handleDismiss}
+            data-testid="transaction-modal-close"
+          >
+            <Close className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
+        {/* Subtitle */}
+        <AnimatePresence mode="wait" initial={false}>
+          {subtitle && !isFirstScreen && (
+            <motion.div
+              key={subtitle}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Text className="text-textSecondary">{subtitle}</Text>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Every screen's body lives in one height-animating box, so a step
+              change eases the modal between their heights while they cross-fade
+              inside it, instead of snapping (Figma 2685:148222). */}
+        <ModalStepCarrier activeKey={step} layers={bodyLayers} />
+
+        {/* Bottom section: animates on step/status change */}
+        <AnimatePresence mode="wait" initial={false}>
+          {isFirstScreen ? (
+            <motion.div
+              key="review-bottom"
+              initial={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
+              animate={{ opacity: 1, y: 0 }}
+              // Figma 2685:148222: the CTA does not cross-fade into the Actions
+              // panel — it drops out of the modal on the accelerate curve and the
+              // panel takes the space it left.
+              exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX, transition: modalExitTransition }}
+              transition={modalEnterTransition}
+              className="flex flex-col gap-4"
+            >
+              {/* Precedes the screening block — a wrong chain is the more
+                    fundamental block. */}
+              {chainGuardBlock}
+              {/* Screening failure: rendered above the CTAs,
+                    which stay visible but disabled — the transaction is blocked. */}
+              {preflight?.kind === 'blocked' && (
+                <div className="flex items-start gap-2" data-testid="transaction-preflight-blocked">
+                  <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
+                  <Text className="text-error text-sm">{preflight.message}</Text>
+                </div>
+              )}
+              {/* Explanatory only — the flow's confirmDisabled does the actual blocking. */}
+              {firstScreenErrorMessage && (
+                <div role="alert">
+                  <Text className="text-error text-sm" data-testid="transaction-modal-error">
+                    {firstScreenErrorMessage}
+                  </Text>
+                </div>
+              )}
+              {chainGuarded && guardCta ? (
+                guardCta
+              ) : hasSecondaryConfirm ? (
+                // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
+                <div className="flex w-full gap-5">
+                  <Button
+                    variant="secondary"
+                    size="xl"
+                    className="flex-1"
+                    onClick={handleSecondaryConfirm}
+                    disabled={entry?.secondaryConfirmDisabled || preflightBlocked || chainGuarded}
+                    loading={!entry?.secondaryConfirmDisabled && !chainGuarded && preflightPending}
+                  >
+                    {entry?.secondaryConfirmLabel}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    className="flex-1"
+                    onClick={handleConfirm}
+                    disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
+                    loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
+                  >
+                    {firstScreenConfirmLabelNode}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="xl"
+                  className="w-full"
+                  onClick={handleConfirm}
+                  disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
+                  loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
+                >
+                  {firstScreenConfirmLabelNode}
+                </Button>
+              )}
+            </motion.div>
+          ) : showInlineFailure ? null : (
+            <motion.div
+              key={`transaction-${txStatus}`}
+              initial={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX, transition: modalExitTransition }}
+              transition={modalEnterTransition}
+              className="flex flex-col gap-4"
+            >
+              {/* Status row: the icon, the per-status sentence and the explorer
+                    link are all gone (Figma review). Flows that render a Steps
+                    header already show the status chip there; flows without a step
+                    list have no Steps header, so the chip renders inline here, in
+                    the slot the old icon/message/loading-button treatment used to
+                    occupy (Figma 2376:225580). The link left with them — a
+                    confirmed transaction hands its hash to the success toast, and
+                    a mid-flow link to one leg of a multi-step flow was noise. The
+                    gate's own copy narrates an off-chain phase (screening,
+                    terms signature) that the chip's txStatus-keyed label
+                    cannot describe (APP-501). With a step list, the signature
+                    step's own description already carries the terms copy, so
+                    that sentence goes (Figma review 2829:141028/9: nothing
+                    beyond a step's description on this screen) — but the
+                    screening sentence has no step to live in, so it stays,
+                    on its own: the list's header already shows the chip. */}
+              {(() => {
+                const bottomChip = !showStepList && badgeContent;
+                const gateMessage = gateCopy?.message && !gateCopyInStepList ? gateCopy.message : undefined;
+                if (!bottomChip && !gateMessage) return null;
+                return (
+                  <div className="flex items-center gap-3 pt-4">
+                    {bottomChip && (
+                      <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
+                        {badgeContent}
+                      </StepsBadge>
+                    )}
+                    {gateMessage && <Text className="text-textSecondary">{gateMessage}</Text>}
+                  </div>
+                );
+              })()}
+
+              {/* Terminal-state actions only — the in-flight states (awaiting
+                    signature / processing) are pure loading indicators now
+                    represented solely by the chip's dots, not a button. */}
+              {(txStatus === TxStatus.SUCCESS || txStatus === TxStatus.CANCELLED) && (
+                <div className="w-full">
+                  <Button variant="primary" size="xl" className="w-full" onClick={handleClose}>
+                    {successLabel ?? <Trans>Done</Trans>}
+                  </Button>
+                </div>
+              )}
+
+              {txStatus === TxStatus.ERROR && (
+                <>
+                  {chainGuardBlock}
+                  <div className="flex w-full gap-3">
+                    {/* No Back either once a step has mined (APP-448) or when
+                          there is no first screen to go back to. */}
+                    {!backLocked && !skipReview && (
+                      <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
+                        <Trans>Back</Trans>
+                      </Button>
+                    )}
+                    {chainGuarded && guardCta ? (
+                      guardCta
+                    ) : refusal?.final ? null : (
+                      <Button
+                        variant="primary"
+                        size="xl"
+                        className="flex-1"
+                        onClick={handleRetry}
+                        disabled={chainGuarded}
+                      >
+                        {errorLabel ?? <Trans>Retry</Trans>}
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+
   return (
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
@@ -731,248 +980,29 @@ export function TransactionModal({
           // app-loader-cover-hidden: a first connect from inside this modal arms
           // the app loader's held cover (APP-515) — the card hides for the play
           // and pops back at reveal; the frosted scrim stays as the backdrop.
-          'app-loader-cover-hidden bg-bgSecondary flex flex-col gap-6 p-4 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:pt-7 sm:pb-8 md:rounded-[28px]',
-          !isTransaction && 'sm:gap-12'
+          'app-loader-cover-hidden',
+          // With an aside the dialog is a bare row holding the card and the aside's card.
+          showAside
+            ? 'flex flex-row items-stretch gap-1 rounded-none bg-transparent p-0 shadow-none sm:max-w-none sm:min-w-0 sm:p-0'
+            : cardClassName
         )}
         overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
-        <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
-          <div className="flex min-w-0 flex-1 flex-col gap-4">
-            {/* No row gap: the back-arrow slot owns the 16px gutter so it can
-                collapse to nothing on the first screen, and the badge carries its
-                own. That is what lets the title slide sideways instead of jumping
-                when the arrow appears (Figma 2685:148222). */}
-            <div className="flex min-w-0 items-center">
-              {/* DS Button / Icon (Figma 1036:208086): 40px glass circle, 16px glyph.
-                The flow's initial screen has no back arrow (Figma 859:36036 draws
-                title + close only); later screens gain it. */}
-              <ModalStepBackSlot open={step !== firstStep}>
-                <Button
-                  variant="secondary"
-                  size="iconM"
-                  aria-label={t`Back`}
-                  onClick={handleHeaderBack}
-                  disabled={isTransacting || backLocked}
-                  data-testid="transaction-modal-back"
-                >
-                  <ArrowLeft className="size-4" />
-                </Button>
-              </ModalStepBackSlot>
-              {/* Label 3 (Figma 1036:208087): Circular 18/22, -0.36 tracking, fg-primary. */}
-              <ResponsiveModalTitle className="text-fgPrimary font-circle min-w-0 text-lg leading-5.5 font-medium tracking-[-0.36px]">
-                {/* Keyed on the step, not the string: a live `updateModalContent`
-                    retitle mid-screen should not roll. */}
-                <ModalStepLabel labelKey={step}>{displayTitle}</ModalStepLabel>
-              </ResponsiveModalTitle>
-              {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
-                the wallet/status screen relabels the title. */}
-              {isFirstScreen && titleBadge && <div className="ml-4 shrink-0">{titleBadge}</div>}
-            </div>
-            {/* Body 6 (Figma 2413:67012): a flow's pre-transaction disclosure hugs
-                the title inside the header block, 12/18 on fg-secondary. The
-                status subtitles below keep the content column's treatment. */}
-            {firstScreenSubtitle && (
-              <Text
-                variant="captionSm"
-                className="text-fgSecondary leading-[18px]"
-                dataTestId="transaction-modal-subtitle"
-              >
-                {firstScreenSubtitle}
-              </Text>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {rightHeaderComponent}
-            <Button
-              variant="secondary"
-              size="iconM"
-              aria-label={txStatus === TxStatus.LOADING ? t`Minimize` : t`Close`}
-              onClick={handleDismiss}
-              data-testid="transaction-modal-close"
+        {showAside ? (
+          <>
+            <div className={cardClassName}>{modalBody}</div>
+            <aside
+              className="bg-bgSecondary relative w-100 shrink-0 rounded-[28px]"
+              data-testid="transaction-modal-aside"
             >
-              <Close className="size-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className={cn('flex flex-col gap-4', !isTransaction && 'sm:gap-12')}>
-          {/* Subtitle */}
-          <AnimatePresence mode="wait" initial={false}>
-            {subtitle && !isFirstScreen && (
-              <motion.div
-                key={subtitle}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Text className="text-textSecondary">{subtitle}</Text>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Every screen's body lives in one height-animating box, so a step
-              change eases the modal between their heights while they cross-fade
-              inside it, instead of snapping (Figma 2685:148222). */}
-          <ModalStepCarrier activeKey={step} layers={bodyLayers} />
-
-          {/* Bottom section: animates on step/status change */}
-          <AnimatePresence mode="wait" initial={false}>
-            {isFirstScreen ? (
-              <motion.div
-                key="review-bottom"
-                initial={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
-                animate={{ opacity: 1, y: 0 }}
-                // Figma 2685:148222: the CTA does not cross-fade into the Actions
-                // panel — it drops out of the modal on the accelerate curve and the
-                // panel takes the space it left.
-                exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX, transition: modalExitTransition }}
-                transition={modalEnterTransition}
-                className="flex flex-col gap-4"
-              >
-                {/* Precedes the screening block — a wrong chain is the more
-                    fundamental block. */}
-                {chainGuardBlock}
-                {/* Screening failure: rendered above the CTAs,
-                    which stay visible but disabled — the transaction is blocked. */}
-                {preflight?.kind === 'blocked' && (
-                  <div className="flex items-start gap-2" data-testid="transaction-preflight-blocked">
-                    <TriangleAlert className="text-error mt-0.5 size-4 shrink-0" />
-                    <Text className="text-error text-sm">{preflight.message}</Text>
-                  </div>
-                )}
-                {/* Explanatory only — the flow's confirmDisabled does the actual blocking. */}
-                {firstScreenErrorMessage && (
-                  <div role="alert">
-                    <Text className="text-error text-sm" data-testid="transaction-modal-error">
-                      {firstScreenErrorMessage}
-                    </Text>
-                  </div>
-                )}
-                {chainGuarded && guardCta ? (
-                  guardCta
-                ) : hasSecondaryConfirm ? (
-                  // Comp 1036:214001: two flex-1 CTAs with a 20px gutter.
-                  <div className="flex w-full gap-5">
-                    <Button
-                      variant="secondary"
-                      size="xl"
-                      className="flex-1"
-                      onClick={handleSecondaryConfirm}
-                      disabled={entry?.secondaryConfirmDisabled || preflightBlocked || chainGuarded}
-                      loading={!entry?.secondaryConfirmDisabled && !chainGuarded && preflightPending}
-                    >
-                      {entry?.secondaryConfirmLabel}
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="xl"
-                      className="flex-1"
-                      onClick={handleConfirm}
-                      disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
-                      loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
-                    >
-                      {firstScreenConfirmLabelNode}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="xl"
-                    className="w-full"
-                    onClick={handleConfirm}
-                    disabled={firstScreenConfirmDisabled || (primaryConfirmFiresTx && preflightBlocked)}
-                    loading={primaryConfirmFiresTx && !firstScreenConfirmDisabled && preflightPending}
-                  >
-                    {firstScreenConfirmLabelNode}
-                  </Button>
-                )}
-              </motion.div>
-            ) : showInlineFailure ? null : (
-              <motion.div
-                key={`transaction-${txStatus}`}
-                initial={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX, transition: modalExitTransition }}
-                transition={modalEnterTransition}
-                className="flex flex-col gap-4"
-              >
-                {/* Status row: the icon, the per-status sentence and the explorer
-                    link are all gone (Figma review). Flows that render a Steps
-                    header already show the status chip there; flows without a step
-                    list have no Steps header, so the chip renders inline here, in
-                    the slot the old icon/message/loading-button treatment used to
-                    occupy (Figma 2376:225580). The link left with them — a
-                    confirmed transaction hands its hash to the success toast, and
-                    a mid-flow link to one leg of a multi-step flow was noise. The
-                    gate's own copy narrates an off-chain phase (screening,
-                    terms signature) that the chip's txStatus-keyed label
-                    cannot describe (APP-501). With a step list, the signature
-                    step's own description already carries the terms copy, so
-                    that sentence goes (Figma review 2829:141028/9: nothing
-                    beyond a step's description on this screen) — but the
-                    screening sentence has no step to live in, so it stays,
-                    on its own: the list's header already shows the chip. */}
-                {(() => {
-                  const bottomChip = !showStepList && badgeContent;
-                  const gateMessage = gateCopy?.message && !gateCopyInStepList ? gateCopy.message : undefined;
-                  if (!bottomChip && !gateMessage) return null;
-                  return (
-                    <div className="flex items-center gap-3 pt-4">
-                      {bottomChip && (
-                        <StepsBadge variant={badgeVariant} dataTestId="transaction-status-badge">
-                          {badgeContent}
-                        </StepsBadge>
-                      )}
-                      {gateMessage && <Text className="text-textSecondary">{gateMessage}</Text>}
-                    </div>
-                  );
-                })()}
-
-                {/* Terminal-state actions only — the in-flight states (awaiting
-                    signature / processing) are pure loading indicators now
-                    represented solely by the chip's dots, not a button. */}
-                {(txStatus === TxStatus.SUCCESS || txStatus === TxStatus.CANCELLED) && (
-                  <div className="w-full">
-                    <Button variant="primary" size="xl" className="w-full" onClick={handleClose}>
-                      {successLabel ?? <Trans>Done</Trans>}
-                    </Button>
-                  </div>
-                )}
-
-                {txStatus === TxStatus.ERROR && (
-                  <>
-                    {chainGuardBlock}
-                    <div className="flex w-full gap-3">
-                      {/* No Back either once a step has mined (APP-448) or when
-                          there is no first screen to go back to. */}
-                      {!backLocked && !skipReview && (
-                        <Button variant="secondary" size="xl" className="flex-1" onClick={handleBack}>
-                          <Trans>Back</Trans>
-                        </Button>
-                      )}
-                      {chainGuarded && guardCta ? (
-                        guardCta
-                      ) : refusal?.final ? null : (
-                        <Button
-                          variant="primary"
-                          size="xl"
-                          className="flex-1"
-                          onClick={handleRetry}
-                          disabled={chainGuarded}
-                        >
-                          {errorLabel ?? <Trans>Retry</Trans>}
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              <div className="absolute inset-0 overflow-y-auto px-8 pt-7 pb-8">{aside}</div>
+            </aside>
+          </>
+        ) : (
+          modalBody
+        )}
       </ResponsiveModalContent>
     </ResponsiveModal>
   );

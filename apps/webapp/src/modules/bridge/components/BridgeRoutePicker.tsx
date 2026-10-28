@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react';
 import { ArrowLeftToLine } from 'lucide-react';
 import { t } from '@lingui/core/macro';
-import { CircleLogo, SkyLinkLogo } from '@/modules/icons';
+import { CircleLogo, LightningFilled, SkyLinkLogo } from '@/modules/icons';
 import { cn } from '@/lib/cn';
 import type { BridgeRouteKind } from '../model/types';
 import type { RouteOptionCard } from './bridgeRouteOptions';
@@ -11,6 +12,25 @@ type BridgeRoutePickerProps = {
   onPick: (kind: BridgeRouteKind) => void;
   onBack: () => void;
 };
+
+const BADGE =
+  'font-circle flex h-[18px] shrink-0 items-center gap-0.5 rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]';
+
+/** Brand-tinted pill with a bolt, for the faster route (Figma 3964:74437 Badge). */
+export function BridgeFastBadge({
+  children,
+  testId = 'bridge-route-badge'
+}: {
+  children: ReactNode;
+  testId?: string;
+}) {
+  return (
+    <span className={cn(BADGE, 'bg-statusBrandBg text-statusBrand')} data-testid={testId}>
+      <LightningFilled boxSize={8} className="size-2 shrink-0" aria-hidden />
+      {children}
+    </span>
+  );
+}
 
 /** "Select bridge type" (Figma 50, 60): one card per route; an unavailable one is greyed with its reason. */
 export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRoutePickerProps) {
@@ -57,16 +77,18 @@ export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRou
                     )}
                     {card.name}
                   </span>
-                  <span
-                    className={cn(
-                      'font-circle flex h-[18px] items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
-                      card.badge.tone === 'accent' ? 'bg-brand text-white' : 'bg-glassBadge text-fgSecondary'
-                    )}
-                  >
-                    {card.badge.text}
-                  </span>
+                  {card.badge.tone === 'accent' ? (
+                    <BridgeFastBadge>{card.badge.text}</BridgeFastBadge>
+                  ) : (
+                    <span
+                      className={cn(BADGE, 'bg-glassBadge text-fgSecondary')}
+                      data-testid="bridge-route-badge"
+                    >
+                      {card.badge.text}
+                    </span>
+                  )}
                 </span>
-                <span className="text-fgSecondary text-xs leading-[18px]">{card.description}</span>
+                <span className="text-fgSecondary text-[11px] leading-4">{card.description}</span>
                 <span className="flex flex-col">
                   {card.rows.map(row => (
                     <span
