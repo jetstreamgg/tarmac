@@ -24,6 +24,8 @@ type SafeReply = number | 'hang';
 
 const mocks = vi.hoisted(() => ({
   isConnected: true,
+  // The amount settles as typed unless a test waits for the real 500 ms settle.
+  realSettle: false,
   // The width tier; 0 is a phone.
   bpi: 0,
   fallbackNotices: [] as unknown[],
@@ -161,6 +163,15 @@ vi.mock('./useCctpBurnLegs', () => {
   return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
 });
 vi.mock('./useCctpGate', () => ({ useCctpGate: () => mocks.cctp }));
+vi.mock('@/modules/ui/hooks/useSettledAmount', async io => {
+  const { useSettledAmount } = await io<typeof import('@/modules/ui/hooks/useSettledAmount')>();
+  return {
+    useSettledAmount: (amount: bigint, unit?: string | number) => {
+      const settled = useSettledAmount(amount, unit);
+      return mocks.realSettle ? settled : { debouncedAmount: amount, debouncePending: false };
+    }
+  };
+});
 // Every address is an EOA; the code check has its own tests in useBridgeForm.
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('./useNativeDepositLegs', () => ({
@@ -251,6 +262,11 @@ function renderBridge() {
 const settle = async () => {
   for (let i = 0; i < 5; i++) await act(() => new Promise(resolve => setTimeout(resolve, 0)));
 };
+/** Lets a typed amount settle (500 ms), then the hooks catch up. */
+const settleTyping = async () => {
+  await act(() => new Promise(resolve => setTimeout(resolve, 550)));
+  await settle();
+};
 
 /** Types `amount`, opens Review and returns the modal's Confirm gate. */
 const SOLANA_RECIPIENT = 'So11111111111111111111111111111111111111112';
@@ -292,6 +308,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       maxWithdraws: 10n ** 30n,
       safe: {},
       bpi: 0,
+      realSettle: false,
       isModalOpen: false,
       launched: [],
       updates: [],
@@ -319,6 +336,32 @@ describe('useBridgeLaunch Confirm gate', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     fetchMock.mockClear();
+  });
+
+  it('simulates only the amount typing settles on, not each keystroke', async () => {
+    mocks.realSettle = true;
+    const view = renderBridge();
+    for (const typed of ['0.1', '0.12', '0.123']) act(() => view.result.current.form.onInput(typed));
+    await settle();
+    const amounts = () => mocks.deposit.args.map(args => (args as { amount?: bigint }).amount);
+    expect(amounts()).not.toContain(ONE / 10n);
+    expect(amounts()).not.toContain((12n * ONE) / 100n);
+    await settleTyping();
+    expect(amounts().at(-1)).toBe((123n * ONE) / 1000n);
+  });
+
+  it('blocks Confirm, and sends nothing, while a changed amount is settling', async () => {
+    mocks.realSettle = true;
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settleTyping();
+    act(() => view.result.current.form.onInput('2'));
+    await settle();
+    act(() => view.result.current.launch());
+    expect(mocks.launched.at(-1)?.confirmDisabled).toBe(true);
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(runCount()).toBe(0);
+    expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('allows an EOA with enough USDS', async () => {

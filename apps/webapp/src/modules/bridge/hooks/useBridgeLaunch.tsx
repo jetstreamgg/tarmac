@@ -10,6 +10,7 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
+import { useSettledAmount } from '@/modules/ui/hooks/useSettledAmount';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
@@ -77,6 +78,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const { account, scope, familyChainId } = usePendingScope();
   const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { amount, from, to, route, recipient } = form;
+  // The legs simulate and price the amount once typing pauses; Confirm waits for it.
+  const { debouncedAmount, debouncePending } = useSettledAmount(amount, `${from}:${to}`);
 
   const pinnedChainId = guardChainId({
     network: from,
@@ -156,7 +159,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     chainId: pinnedChainId,
     account,
     recipient,
-    amount,
+    amount: debouncedAmount,
     isSafeApp,
     batch,
     batchPending,
@@ -176,7 +179,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     ethereumChainId,
     account,
     recipient,
-    amount,
+    amount: debouncedAmount,
     scope,
     resume,
     storageWritable,
@@ -199,7 +202,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     chainId: pinnedChainId,
     account,
     recipient,
-    amount,
+    amount: debouncedAmount,
     isSafeApp,
     batch,
     batchPending,
@@ -333,6 +336,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       if (
         !form.isConnected ||
         (form.reviewBlocked && !resumingRun) ||
+        (debouncePending && !resumingRun) ||
         !route ||
         !account ||
         !scope ||
@@ -656,6 +660,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const confirmDisabled =
     !form.isConnected ||
     form.reviewBlocked ||
+    debouncePending ||
     (isReal && (!legs.ready || legs.busy)) ||
     feeShort ||
     contractUnaccepted ||
