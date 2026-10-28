@@ -13,9 +13,15 @@ import { formatUsd } from '@/utils';
 import { DAY_MINUTES } from '../model/resolveRoute';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 
-// CCTP and LayerZero are protocol names.
+// SkyLink (Sky's native bridges), CCTP and LayerZero are names, never translated.
 export const bridgeTypeLabel = (kind: BridgeRouteKind): string =>
-  kind === 'native' ? t`Native` : kind === 'cctp' ? 'CCTP' : 'LayerZero';
+  kind === 'native' ? 'SkyLink' : kind === 'cctp' ? 'CCTP' : 'LayerZero';
+
+export type BridgeTypeLogo = 'cctp' | 'skylink';
+
+/** The logo drawn before a route's name; LayerZero has none. */
+export const bridgeTypeLogo = (kind: BridgeRouteKind): BridgeTypeLogo | undefined =>
+  kind === 'cctp' ? 'cctp' : kind === 'native' ? 'skylink' : undefined;
 
 /** Whole or one-decimal days, for multi-day withdrawals: 7, 6.4. */
 export const toDays = (minutes: number): number => Math.round((minutes / DAY_MINUTES) * 10) / 10;
@@ -79,7 +85,7 @@ export function buildBridgeModalRows({
         kind: 'single',
         label: t`Bridge type`,
         value: bridgeTypeLabel(route.kind),
-        ...(route.kind === 'cctp' && { logo: 'cctp' as const })
+        ...(bridgeTypeLogo(route.kind) && { logo: bridgeTypeLogo(route.kind) })
       },
       {
         kind: 'pair',

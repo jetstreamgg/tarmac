@@ -53,7 +53,7 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
 
     await bridge.openReview('5');
     await expect(isolatedPage.getByRole('dialog')).toContainText('Review USDS bridge');
-    await expect(bridge.modalRow('Bridge type')).toContainText('Native');
+    await expect(bridge.modalRow('Bridge type')).toContainText('SkyLink');
     await expect(bridge.modalRow('Network fee')).toContainText(/\$\d/, { timeout: 30_000 });
 
     const bundles = countBundles(isolatedPage);

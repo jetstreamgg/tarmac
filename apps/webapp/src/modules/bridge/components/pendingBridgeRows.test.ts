@@ -52,13 +52,14 @@ describe('buildPendingBridgeRows', () => {
     ]);
   });
 
-  it("draws Circle's logo before CCTP only (Figma 3830:67688)", () => {
+  it("draws Circle's logo before CCTP (Figma 3830:67688) and SkyLink's before the native route", () => {
     const cctp = buildPendingBridgeRows({ ...base, from: 'base', to: 'ethereum', routeKind: 'cctp' }, 0, 1);
     expect(cctp[2][0]).toEqual({ kind: 'text', label: 'Bridge type', value: 'CCTP', logo: 'cctp' });
     expect(buildPendingBridgeRows(base, 0, 1)[2][0]).toEqual({
       kind: 'text',
       label: 'Bridge type',
-      value: 'Native'
+      value: 'SkyLink',
+      logo: 'skylink'
     });
   });
 
@@ -305,7 +306,7 @@ describe('pending bridge copy', () => {
     });
     expect(queued[1][0]).toMatchObject({ value: '<Pending>' });
     expect(queued[2].map(cell => 'value' in cell && cell.value)).toEqual([
-      '<Native>',
+      'SkyLink',
       '<Awaiting signatures>'
     ]);
     expect(nextActionLabel('finalize')).toBe('<Finalize>');
