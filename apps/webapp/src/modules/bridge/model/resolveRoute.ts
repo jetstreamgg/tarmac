@@ -65,7 +65,7 @@ const DEPOSIT_ETA_MINUTES: Record<NativeNetworkId, number> = {
 };
 const WITHDRAWAL_ETA_MINUTES: Record<NativeNetworkId, number> = {
   base: 5 * DAY_MINUTES,
-  arbitrum: Math.round(6.4 * DAY_MINUTES),
+  arbitrum: Math.round(6.5 * DAY_MINUTES),
   optimism: 7 * DAY_MINUTES,
   unichain: 7 * DAY_MINUTES
 };
@@ -106,7 +106,7 @@ export const destinationActions = (
 };
 
 /**
- * Actions offered only when a deposit's L2 execution failed; unordered and
+ * Actions offered only when a native bridge's destination execution failed; unordered and
  * repeatable, so the adapter settles them from the chain.
  */
 export const recoveryActions = (
@@ -114,7 +114,9 @@ export const recoveryActions = (
   from: BridgeNetworkId,
   to: BridgeNetworkId
 ): PendingBridgeNextAction[] => {
-  if (kind !== 'native' || from !== 'ethereum') return [];
+  if (kind !== 'native') return [];
+  // A withdrawal's L1 relay can fail and be replayed on the OP Stack messenger; Arbitrum's outbox has no retry.
+  if (to === 'ethereum') return from === 'arbitrum' ? [] : ['replay'];
   return to === 'arbitrum' ? ['redeem', 'keepalive'] : ['replay'];
 };
 

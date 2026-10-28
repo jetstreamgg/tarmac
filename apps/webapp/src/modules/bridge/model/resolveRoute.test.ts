@@ -178,7 +178,7 @@ describe('resolveBridgeRoute: CCTP fallback to the native withdrawal', () => {
     expect(days('base')).toBe(5);
     expect(days('optimism')).toBe(7);
     expect(days('unichain')).toBe(7);
-    expect(days('arbitrum')).toBeCloseTo(6.4, 1);
+    expect(days('arbitrum')).toBeCloseTo(6.5, 1);
   });
 
   it('blocks when the native withdrawal is closed too', () => {
@@ -275,8 +275,15 @@ describe('recoveryActions', () => {
     }
   });
 
-  it('withdrawals, CCTP and LayerZero have none', () => {
-    expect(recoveryActions('native', 'base', 'ethereum')).toEqual([]);
+  it('a native withdrawal from an OP Stack chain can need a replay on Ethereum', () => {
+    for (const from of ['base', 'optimism', 'unichain'] as const) {
+      expect(recoveryActions('native', from, 'ethereum')).toEqual(['replay']);
+    }
+  });
+
+  it('an Arbitrum withdrawal, CCTP and LayerZero have none', () => {
+    expect(recoveryActions('native', 'arbitrum', 'ethereum')).toEqual([]);
+    expect(recoveryActions('cctp', 'base', 'ethereum')).toEqual([]);
     expect(recoveryActions('cctp', 'arbitrum', 'ethereum')).toEqual([]);
     expect(recoveryActions('layerzero', 'ethereum', 'avalanche')).toEqual([]);
   });
