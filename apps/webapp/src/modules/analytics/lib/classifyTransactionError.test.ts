@@ -110,6 +110,12 @@ describe('classifyTransactionError', () => {
     });
   });
 
+  it('adds no revert reason the typed amount caused', () => {
+    const dust = new Error('execution reverted: Vat/dust');
+    expect(classifyTransactionError(dust, true)).toMatchObject({ error_kind: 'reverted' });
+    expect(classifyTransactionError(dust, true)).not.toHaveProperty('revert_reason');
+  });
+
   it('adds no revert reason to a rejection', () => {
     expect(classifyTransactionError(rejection4001, false)).not.toHaveProperty('revert_reason');
   });

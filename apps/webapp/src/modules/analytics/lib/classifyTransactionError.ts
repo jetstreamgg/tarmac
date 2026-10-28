@@ -9,7 +9,10 @@ export interface TransactionErrorProperties {
   is_user_rejection: boolean;
   error_code?: number;
   error_name?: string;
-  /** The contract's revert reason, addresses and long numbers blanked out (see revertReport). */
+  /**
+   * The contract's revert reason, addresses and long numbers blanked out (see
+   * revertReport). Left out for reasons the typed amount caused (`inputRevertReasons`).
+   */
   revert_reason?: string;
   /** Whether the revert registry has copy for that reason, or the user saw it verbatim. */
   revert_has_copy?: boolean;
@@ -46,16 +49,18 @@ export function classifyTransactionError(error: unknown, hasTxHash: boolean): Tr
         ? 'wallet_error'
         : 'unknown';
 
+  // A reason the typed amount caused stays out, as in trackPrepareReverted.
   const revert = is_user_rejection ? undefined : revertReport(error);
+  const trackedRevert = revert && !revert.isInput ? revert : undefined;
 
   return {
     error_kind,
     is_user_rejection,
     ...(error_code !== undefined && { error_code }),
     ...(error_name !== undefined && { error_name }),
-    ...(revert && {
-      revert_reason: revert.reason,
-      revert_has_copy: revert.hasCopy
+    ...(trackedRevert && {
+      revert_reason: trackedRevert.reason,
+      revert_has_copy: trackedRevert.hasCopy
     })
   };
 }
