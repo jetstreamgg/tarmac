@@ -18,7 +18,7 @@ export { decodeRevert, type DecodedRevert } from './decodeRevert';
  * removed), so each new contract gets a deliberate decision.
  *
  * Key custom errors by name with care: a revert decoded without the contract's
- * ABI (a mined revert's replay, raw data from a wallet) only knows the 4-byte
+ * ABI (raw revert data from a wallet or node) only knows the 4-byte
  * selector, so a name-keyed entry matches before signing but not after.
  * Map the selector too when that matters.
  */

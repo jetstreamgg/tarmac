@@ -131,13 +131,21 @@ describe('decodeRevert', () => {
     expect(decodeRevert(new Error('execution reverted: \n\nVersion: viem@2.56.8'))).toBeUndefined();
   });
 
-  it('stops at a batch simulation that failed for a reason other than the calls', () => {
+  it('stops at an error that carries no revert, whatever lies under it or in its message', () => {
+    // A batch simulation that failed for a reason other than the calls
     const structural = Object.assign(new Error('Batch simulation failed'), {
       name: 'BatchSimulationError',
       kind: 'structural',
+      revert: undefined,
       cause: new RawContractError({ data: URN_UNSAFE_DATA })
     });
     expect(decodeRevert(structural)).toBeUndefined();
+    // A refused batch quoting that failure's message
+    const refused = Object.assign(
+      new Error('Refusing to send a batch that failed simulation: Execution reverted with reason: Foo/bar.'),
+      { revert: undefined }
+    );
+    expect(decodeRevert(refused)).toBeUndefined();
   });
 
   it('gives nothing for a reasonless revert, a rejection or a network failure', () => {

@@ -40,7 +40,7 @@ function fromDecoded({
 }: Pick<DecodeErrorResultReturnType, 'errorName' | 'args'>): DecodedRevert | undefined {
   if (errorName === 'Error' && args?.length === 1) return errorReason(args[0]);
   if (errorName === 'Panic' && args?.length === 1) {
-    return { reason: `Panic(0x${BigInt(args[0] as bigint).toString(16)})`, kind: 'panic' };
+    return { reason: `Panic(0x${(args[0] as bigint).toString(16)})`, kind: 'panic' };
   }
   return { reason: errorName, kind: 'custom' };
 }
@@ -59,7 +59,11 @@ export function decodeRevertData(data: Hex, abi: Abi | readonly unknown[] = []):
   }
 }
 
-/** Carried by errors that already decoded their revert (`BatchSimulationError`). */
+/**
+ * Carried by errors that already decoded their revert (`BatchSimulationError`, the
+ * refused-batch error). Present but `undefined` means "no revert about the user's
+ * calls": nothing further down the chain is read.
+ */
 type WithRevert = { revert?: DecodedRevert };
 
 /**
@@ -71,14 +75,6 @@ function fromRevertedError(e: ContractFunctionRevertedError): DecodedRevert | un
   if (e.data?.errorName) return fromDecoded(e.data);
   return e.signature ? { reason: e.signature, kind: 'unknown' } : undefined;
 }
-
-/**
- * A batch simulation that failed for a reason other than the calls (the RPC
- * can't simulate, or the request failed). Revert data under it came from
- * whatever the RPC ran instead — not a reason about the user's calls.
- */
-const isNonRevertBatchFailure = (e: unknown): boolean =>
-  (e as { name?: unknown })?.name === 'BatchSimulationError' && (e as { kind?: unknown }).kind !== 'reverted';
 
 const isHexData = (value: unknown): value is Hex =>
   typeof value === 'string' && /^0x[0-9a-fA-F]{8,}$/.test(value);
@@ -136,14 +132,12 @@ function causeChain(error: unknown): unknown[] {
  * `undefined`: there is no reason to show.
  */
 export function decodeRevert(error: unknown): DecodedRevert | undefined {
-  const links = causeChain(error);
-  // Nothing under a non-revert batch failure is about the user's calls.
-  const cut = links.findIndex(isNonRevertBatchFailure);
-  const chain = cut < 0 ? links : links.slice(0, cut);
+  const chain = causeChain(error);
 
   for (const link of chain) {
-    const carried = (link as WithRevert)?.revert;
-    if (carried?.reason) return carried;
+    if (typeof link === 'object' && Object.hasOwn(link as object, 'revert')) {
+      return (link as WithRevert).revert?.reason ? (link as WithRevert).revert : undefined;
+    }
     if (link instanceof ContractFunctionRevertedError) {
       const decoded = fromRevertedError(link);
       if (decoded) return decoded;
