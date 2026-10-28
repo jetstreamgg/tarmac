@@ -15,6 +15,9 @@ const READY_POLL_MS = MINUTE;
 const OVERDUE_POLL_MS = MINUTE;
 const SLOW_POLL_MS = 5 * MINUTE;
 const FAST_POLL_WINDOW_MS = 60 * MINUTE;
+// A trip this long has an ETA good to hours, not seconds: its last hour polls each minute.
+const LONG_TRIP_MS = 24 * 60 * MINUTE;
+const LONG_TRIP_NEAR_ETA_POLL_MS = MINUTE;
 
 /** What a route adapter observed about a bridge on one poll. */
 export type BridgeProgress =
@@ -388,5 +391,6 @@ export function pollIntervalMs(bridge: PendingBridge, now: number): number | und
   }
   // Past the ETA: check each minute for an hour, then back off.
   if (now > bridge.etaAt) return now - bridge.etaAt <= FAST_POLL_WINDOW_MS ? OVERDUE_POLL_MS : SLOW_POLL_MS;
-  return bridge.etaAt - now <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
+  if (bridge.etaAt - now > FAST_POLL_WINDOW_MS) return SLOW_POLL_MS;
+  return bridge.etaAt - bridge.startedAt > LONG_TRIP_MS ? LONG_TRIP_NEAR_ETA_POLL_MS : FAST_POLL_MS;
 }

@@ -309,7 +309,15 @@ describe('pollIntervalMs', () => {
     expect(pollIntervalMs(deposit(), NOW)).toBe(15_000);
     const withdrawal = create(routeFor('base', 'ethereum', false));
     expect(pollIntervalMs(withdrawal, NOW)).toBe(5 * MINUTE);
-    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - MINUTE)).toBe(15_000);
+  });
+
+  it('polls a multi-day withdrawal each minute, not each 15 seconds, in the hour before its ETA', () => {
+    const withdrawal = create(routeFor('base', 'ethereum', false));
+    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - 59 * MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - 2 * HOUR)).toBe(5 * MINUTE);
+    const nearDeposit = deposit();
+    expect(pollIntervalMs(nearDeposit, nearDeposit.etaAt - MINUTE)).toBe(15_000);
   });
 
   it('past the ETA polls every minute for an hour, then every five minutes', () => {
