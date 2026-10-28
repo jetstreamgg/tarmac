@@ -256,13 +256,11 @@ export type WithdrawalNotePhase =
 
 const withdrawalNote = (bridge: PendingBridge, now: number): PendingBridgeNote | undefined => {
   const { status, nextAction } = bridge;
-  if (status === 'pending' && (nextAction === 'prove' || nextAction === 'finalize')) {
+  // etaAt is the whole trip's, so only the finalize wait gets a time.
+  if (status === 'pending' && nextAction === 'prove') return { kind: 'withdrawal', phase: 'waiting-prove' };
+  if (status === 'pending' && nextAction === 'finalize') {
     const minutesLeft = Math.ceil((bridge.etaAt - now) / 60_000);
-    return {
-      kind: 'withdrawal',
-      phase: nextAction === 'prove' ? 'waiting-prove' : 'waiting-finalize',
-      ...(minutesLeft > 0 && { minutesLeft })
-    };
+    return { kind: 'withdrawal', phase: 'waiting-finalize', ...(minutesLeft > 0 && { minutesLeft }) };
   }
   if (status !== 'ready') return undefined;
   if (nextAction === 'prove') {

@@ -499,17 +499,18 @@ describe('pendingBridgeNote (a native withdrawal to Ethereum)', () => {
   };
 
   it('says when an OP Stack withdrawal can be proved, then finalized', () => {
-    expect(pendingBridgeNote(withdrawal, HOUR)).toEqual({
-      kind: 'withdrawal',
-      phase: 'waiting-prove',
-      minutesLeft: 60
-    });
+    expect(pendingBridgeNote(withdrawal, HOUR)).toEqual({ kind: 'withdrawal', phase: 'waiting-prove' });
     const proved: PendingBridge = { ...withdrawal, nextAction: 'finalize', etaAt: 4 * 24 * HOUR };
     expect(pendingBridgeNote(proved, 24 * HOUR)).toEqual({
       kind: 'withdrawal',
       phase: 'waiting-finalize',
       minutesLeft: 3 * 24 * 60
     });
+  });
+
+  it("gives no time to the prove: the bridge's ETA is the finalize's, days later", () => {
+    const sent: PendingBridge = { ...withdrawal, etaAt: 7 * 24 * HOUR };
+    expect(pendingBridgeNote(sent, 0)).toEqual({ kind: 'withdrawal', phase: 'waiting-prove' });
   });
 
   it('drops the time once the estimate has passed', () => {

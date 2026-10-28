@@ -952,7 +952,7 @@ describe('PendingBridges', () => {
     const note = () => screen.queryByTestId('pending-bridge-note')?.textContent;
 
     it.each([
-      [{}, 'ready to prove on Ethereum in about'],
+      [{}, "It'll be ready to prove on Ethereum soon."],
       [{ etaAt: 0 }, "It'll be ready to prove on Ethereum soon."],
       [{ nextAction: 'finalize' }, 'ready to finalize on Ethereum in about'],
       [{ status: 'ready' }, 'Prove the withdrawal on Ethereum to start its waiting period.'],

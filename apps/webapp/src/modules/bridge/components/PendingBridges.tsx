@@ -236,13 +236,7 @@ function WithdrawalNoteText({ note }: WithdrawalNoteTextProps) {
   const timeLeft = note.minutesLeft === undefined ? undefined : formatTimeLeft(note.minutesLeft);
   switch (note.phase) {
     case 'waiting-prove':
-      return timeLeft ? (
-        <Trans>
-          The withdrawal is on its way. It&apos;ll be ready to prove on Ethereum in about {timeLeft}.
-        </Trans>
-      ) : (
-        <Trans>The withdrawal is on its way. It&apos;ll be ready to prove on Ethereum soon.</Trans>
-      );
+      return <Trans>The withdrawal is on its way. It&apos;ll be ready to prove on Ethereum soon.</Trans>;
     case 'waiting-finalize':
       return timeLeft ? (
         <Trans>It&apos;ll be ready to finalize on Ethereum in about {timeLeft}.</Trans>
