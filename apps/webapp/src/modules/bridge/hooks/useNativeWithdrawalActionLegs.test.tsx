@@ -4,10 +4,10 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { encodeFunctionData } from 'viem';
+import { encodeEventTopics, encodeFunctionData, keccak256, type Hex, type TransactionReceipt } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
-import { OP_STACK_DEPOSIT } from '../adapters/nativeDeposit/contracts';
+import { OP_STACK_DEPOSIT, l2CrossDomainMessengerAbi } from '../adapters/nativeDeposit/contracts';
 import { ARBITRUM_WITHDRAWAL, OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
 import { opStackWithdrawalMessage } from '../adapters/nativeWithdrawal/opStack';
 import { BASE_WITHDRAWAL_LOGS, BASE_WITHDRAWAL_TX } from '../adapters/nativeWithdrawal/withdrawalFixtures';
@@ -161,5 +161,57 @@ describe('useNativeWithdrawalActionLegs', () => {
     expect(mocks.built).toEqual([]);
     expect(mocks.read).toMatchObject({ query: { enabled: false } });
     expect(result.current).toMatchObject({ ready: false, error: null });
+  });
+
+  describe('the toast of a finalize whose relay failed', () => {
+    const receipt = (eventName: 'RelayedMessage' | 'FailedRelayedMessage') =>
+      ({
+        logs: [
+          {
+            address: OP_STACK_WITHDRAWAL.base.l1Messenger,
+            topics: encodeEventTopics({
+              abi: l2CrossDomainMessengerAbi,
+              eventName,
+              args: { msgHash: keccak256('0x01') }
+            }),
+            data: '0x' as Hex
+          }
+        ]
+      }) as unknown as TransactionReceipt;
+    const succeed = async (
+      eventName: 'RelayedMessage' | 'FailedRelayedMessage',
+      overrides: Partial<Parameters<typeof useNativeWithdrawalActionLegs>[0]> = {}
+    ) => {
+      const order: string[] = [];
+      const onRelayFailed = vi.fn(() => order.push('relay-failed'));
+      const onSuccess = vi.fn(() => order.push('success'));
+      const { result } = render({
+        action: 'finalize',
+        getCallbacks: () => ({ onSuccess }) as unknown as TxCallbacks,
+        onRelayFailed,
+        ...overrides
+      });
+      await waitFor(() => expect(result.current.ready || overrides.action === 'replay').toBe(true));
+      // The flow reads the receipt right before its success.
+      (mocks.flow!.onReceipt as (receipt: TransactionReceipt) => void)(receipt(eventName));
+      (mocks.flow!.onSuccess as (hash: string, blockNumber: bigint) => void)('0xabc', 1n);
+      return { order, onSuccess };
+    };
+
+    it('says so before the success, when the L1 messenger stored the message for a retry', async () => {
+      const { order, onSuccess } = await succeed('FailedRelayedMessage');
+      expect(order).toEqual(['relay-failed', 'success']);
+      expect(onSuccess).toHaveBeenCalledWith('0xabc', 1n);
+    });
+
+    it.each([
+      ['a relay that delivered the funds', 'RelayedMessage', {}],
+      ['a prove', 'FailedRelayedMessage', { action: 'prove' }],
+      ['a replay', 'FailedRelayedMessage', { action: 'replay' }],
+      ['an Arbitrum finalize', 'FailedRelayedMessage', { network: 'arbitrum' }]
+    ] as const)('keeps the success toast for %s', async (_, eventName, overrides) => {
+      const { order } = await succeed(eventName, overrides);
+      expect(order).toEqual(['success']);
+    });
   });
 });

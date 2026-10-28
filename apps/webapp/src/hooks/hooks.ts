@@ -4,7 +4,13 @@ import {
   type SimulateContractErrorType,
   type SendCallsParameters
 } from 'wagmi/actions';
-import { type Call, type Abi, type ContractFunctionArgs, type ContractFunctionName } from 'viem';
+import {
+  type Call,
+  type Abi,
+  type ContractFunctionArgs,
+  type ContractFunctionName,
+  type TransactionReceipt
+} from 'viem';
 import type { Config, UseSimulateContractParameters } from 'wagmi';
 
 export type ReadHook = {
@@ -173,6 +179,8 @@ export type UseSequentialTransactionFlowParameters = {
   /** `variables` is the object `onMutate` got for the prompt that was signed, which may predate the run in flight. */
   onStart?: (hash: string, variables?: TxMutateVariables) => void;
   onSuccess?: (hash: string, blockNumber?: bigint) => void;
+  /** The last call's receipt, right before `onSuccess`, for a caller that reads its logs. */
+  onReceipt?: (receipt: TransactionReceipt) => void;
   /** `variables` is set for a wallet error, as in `onStart`. */
   onError?: (error: Error, hash: string, variables?: TxMutateVariables) => void;
   gcTime?: number;

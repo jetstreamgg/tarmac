@@ -11,7 +11,11 @@ import {
 } from '../adapters/nativeDeposit/contracts';
 import { opStackReplayGas } from '../adapters/nativeDeposit/opStack';
 import { OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
-import { opStackWithdrawalReplay, opStackWithdrawalReplayCall } from '../adapters/nativeWithdrawal/opStack';
+import {
+  opStackRelayFailed,
+  opStackWithdrawalReplay,
+  opStackWithdrawalReplayCall
+} from '../adapters/nativeWithdrawal/opStack';
 import { arbitrumExecuteFromChain } from '../adapters/nativeWithdrawal/arbitrumProgress';
 import { opStackWithdrawalActionCall } from '../adapters/nativeWithdrawal/opStackActions';
 import type { ChainReader } from '../adapters/types';
@@ -38,7 +42,8 @@ export function useNativeWithdrawalActionLegs({
   network,
   bridge,
   chainId,
-  getCallbacks
+  getCallbacks,
+  onRelayFailed
 }: {
   action: NativeWithdrawalLegAction | undefined;
   enabled: boolean;
@@ -48,6 +53,8 @@ export function useNativeWithdrawalActionLegs({
   /** Ethereum (its Tenderly fork in dev). */
   chainId: number | undefined;
   getCallbacks: () => TxCallbacks;
+  /** An OP Stack finalize mined but its L1 relay failed, so the funds wait for a replay. Called before onSuccess. */
+  onRelayFailed?: () => void;
 }) {
   const config = useConfig();
   const { familyChainId } = usePendingScope();
@@ -127,6 +134,9 @@ export function useNativeWithdrawalActionLegs({
     failOnReplaced: true,
     onMutate,
     onStart: (hash, variables) => issuerOf(variables).onStart(hash),
+    onReceipt: ({ logs }) => {
+      if (portalAction === 'finalize' && opStack && opStackRelayFailed(opStack, logs)) onRelayFailed?.();
+    },
     onSuccess: (hash, blockNumber) => getCallbacks().onSuccess(hash, blockNumber),
     onError: (error, hash, variables) => issuerOf(variables).onError(error, hash)
   });

@@ -277,6 +277,7 @@ export function useDestinationActionLaunch() {
   // Bumped on every launch: only the latest one's switch may open the modal.
   const launchIdRef = useRef(0);
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
+  const launchedToastRef = useRef<{ loading: string; success: string; error: string }>(undefined);
   const claimRunRef = useRef<ClaimRun | undefined>(undefined);
   const claimLegRunsRef = useRef(new Map<string, ClaimRun>());
   const replay = recovery?.kind === 'replay' ? recovery : undefined;
@@ -348,7 +349,14 @@ export function useDestinationActionLaunch() {
     network: withdrawal?.network,
     bridge: withdrawal?.bridge,
     chainId: withdrawal?.chainId,
-    getCallbacks: () => legCallbacksRef.current
+    getCallbacks: () => legCallbacksRef.current,
+    onRelayFailed: () =>
+      updateModalContent(sessionId, {
+        toast: {
+          ...launchedToastRef.current,
+          success: t`Withdrawal finalized. Replay it to receive your USDS.`
+        }
+      })
   });
   const legs = claim
     ? claimLegs
@@ -543,6 +551,7 @@ export function useDestinationActionLaunch() {
         cancelSend();
         setRecovery(nextRecovery);
       }
+      launchedToastRef.current = { loading: copy.loading, success: copy.success, error: copy.error };
       launchModal({
         ...(nextRecovery?.kind === 'cctp-convert'
           ? cctpConvertModal({
@@ -563,7 +572,7 @@ export function useDestinationActionLaunch() {
               ),
               steps: [{ label: copy.step, tokenSymbol: symbol, failureDetail: copy.failure }]
             }),
-        toast: { loading: copy.loading, success: copy.success, error: copy.error },
+        toast: launchedToastRef.current,
         onConfirm: () => {
           // Retry calls onConfirm again; an action already sent must not go out twice.
           const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);

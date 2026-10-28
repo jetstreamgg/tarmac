@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   canSwitchChain: true,
   switches: [] as { chainId: number; onSuccess?: () => void }[],
   launched: [] as TransactionConfig[],
+  modalUpdates: [] as Partial<TransactionConfig>[],
   isModalOpen: true,
   session: {} as TxCallbacks,
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[],
@@ -73,6 +74,7 @@ const mocks = vi.hoisted(() => ({
           bridge?: { id: string; routeData?: Record<string, string> };
           chainId?: number;
           getCallbacks: () => TxCallbacks;
+          onRelayFailed?: () => void;
         },
     ready: false,
     error: null as Error | null,
@@ -130,6 +132,7 @@ vi.mock('./useCctpConvertLegs', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: (config: TransactionConfig) => mocks.launched.push(config),
+    updateModalContent: (_: string, partial: Partial<TransactionConfig>) => mocks.modalUpdates.push(partial),
     txCallbacks: mocks.session,
     isModalOpen: mocks.isModalOpen,
     isMinimized: false,
@@ -280,6 +283,7 @@ describe('useDestinationActionLaunch', () => {
     mocks.switches = [];
     mocks.isSafe = false;
     mocks.launched = [];
+    mocks.modalUpdates = [];
     mocks.isModalOpen = true;
     mocks.session = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
     mocks.legs = [];
@@ -750,6 +754,16 @@ describe('useDestinationActionLaunch', () => {
       ]);
       callbacks.onSuccess('0xprove');
       expect(stored('0xwithdrawal')).toMatchObject({ status: 'pending', nextAction: 'finalize' });
+    });
+
+    it("says the funds wait for a Replay when an OP Stack finalize's relay failed", () => {
+      launchWithdrawal('base', 'finalize');
+      expect(mocks.launched[0].toast?.success).toBe('Funds received!');
+      act(() => mocks.withdrawal.params!.onRelayFailed!());
+      expect(mocks.modalUpdates.at(-1)?.toast).toEqual({
+        ...mocks.launched[0].toast,
+        success: 'Withdrawal finalized. Replay it to receive your USDS.'
+      });
     });
 
     it('waits for the switch to Ethereum before building', () => {

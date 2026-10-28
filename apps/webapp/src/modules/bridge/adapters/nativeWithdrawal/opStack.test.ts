@@ -3,13 +3,15 @@ import {
   decodeEventLog,
   decodeFunctionData,
   encodeAbiParameters,
+  encodeEventTopics,
   encodeFunctionData,
   erc20Abi,
   isAddressEqual,
   keccak256,
   parseAbi,
   type Address,
-  type Hex
+  type Hex,
+  type Log
 } from 'viem';
 import {
   L1_USDS,
@@ -29,6 +31,7 @@ import {
   opStackWithdrawalCall,
   opStackWithdrawalCalls,
   opStackWithdrawalMessage,
+  opStackRelayFailed,
   opStackWithdrawalReplay,
   opStackWithdrawalReplayCall
 } from './opStack';
@@ -243,5 +246,32 @@ describe('OP Stack retry on Ethereum (a finalized withdrawal whose relay failed)
     ['another network', routeData]
   ])('refuses %s', (label, data) => {
     expect(() => opStackWithdrawalReplay(label === 'another network' ? 'optimism' : 'base', data)).toThrow();
+  });
+});
+
+describe('OP Stack relay of a finalize (read from its receipt)', () => {
+  const msgHash = keccak256('0x01');
+  const relayLog = (eventName: 'RelayedMessage' | 'FailedRelayedMessage', address: Address) =>
+    ({
+      address,
+      topics: encodeEventTopics({ abi: l2CrossDomainMessengerAbi, eventName, args: { msgHash } }),
+      data: '0x' as Hex
+    }) as unknown as Log;
+
+  it("reads a failed relay from this network's L1 messenger", () => {
+    expect(
+      opStackRelayFailed('base', [relayLog('FailedRelayedMessage', OP_STACK_WITHDRAWAL.base.l1Messenger)])
+    ).toBe(true);
+  });
+
+  it.each([
+    ['a relay that delivered the funds', [relayLog('RelayedMessage', OP_STACK_WITHDRAWAL.base.l1Messenger)]],
+    [
+      "another network's messenger",
+      [relayLog('FailedRelayedMessage', OP_STACK_WITHDRAWAL.optimism.l1Messenger)]
+    ],
+    ['no logs', [] as Log[]]
+  ])('reads no failed relay from %s', (_, logs) => {
+    expect(opStackRelayFailed('base', logs)).toBe(false);
   });
 });

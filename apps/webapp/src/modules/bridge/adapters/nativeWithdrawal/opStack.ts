@@ -2,6 +2,7 @@ import {
   decodeFunctionData,
   isAddressEqual,
   keccak256,
+  parseEventLogs,
   type Address,
   type Call,
   type Hex,
@@ -198,6 +199,15 @@ export function opStackWithdrawalReplay(
   if (minGasLimit > 0xffffffffn) throw new Error('The retry message gas limit is out of range');
   return { args, baseGasArgs: [message, Number(minGasLimit)] as const };
 }
+
+/**
+ * A finalize mines even when its L1 relay fails: the messenger stores the
+ * message for a retry and logs FailedRelayedMessage instead of RelayedMessage.
+ */
+export const opStackRelayFailed = (network: OpStackNetworkId, logs: Log[]) =>
+  parseEventLogs({ abi: l2CrossDomainMessengerAbi, eventName: 'FailedRelayedMessage', logs }).some(log =>
+    isAddressEqual(log.address, OP_STACK_WITHDRAWAL[network].l1Messenger)
+  );
 
 /** The retry call on this network's L1 messenger, with its explicit gas. */
 export const opStackWithdrawalReplayCall = ({
