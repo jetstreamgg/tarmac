@@ -5,28 +5,18 @@ import { lookupNativeWithdrawal } from '../adapters/nativeWithdrawal/lookup';
 import type { NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { getBridgeAdapter } from '../adapters/registry';
 import { pendingBridgeStore } from '../store/pendingStore';
-import { lastCompleteScan, markCompleteScan } from '../store/recoveryScanStamp';
+import { markCompleteScan } from '../store/recoveryScanStamp';
 import { recoverWithdrawals } from '../tracking/recoverWithdrawals';
 import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
+import { RECOVERY_INTERVAL_MS, retryDelay, scannedRecently, settledFor } from './recoveryScan';
 
-const RECOVERY_INTERVAL_MS = 30 * 60_000;
-// An L2 left unread (a skipped block range, or no head) is retried alone, sooner, doubling up to the interval.
-const PARTIAL_RETRY_MS = 2 * 60_000;
+// An L2 left unread (a skipped block range, or no head) is retried alone, with the shared backoff.
 const SCAN_KIND = 'withdrawal';
 
 const NETWORKS: NativeDepositNetwork[] = ['base', 'optimism', 'unichain', 'arbitrum'];
 
 type RecoveryScan = { unread: NativeDepositNetwork[]; retries: number };
-const retryDelay = (retries: number) => Math.min(PARTIAL_RETRY_MS * 2 ** (retries - 1), RECOVERY_INTERVAL_MS);
-
-// Per scope: withdrawals found settled, or not bridges, are never read again this session.
-const settledByScope = new Map<string, Set<string>>();
-const settledFor = (scope: string) => {
-  const settled = settledByScope.get(scope) ?? new Set<string>();
-  settledByScope.set(scope, settled);
-  return settled;
-};
 
 /**
  * Scans each L2 for the connected account's recent native withdrawals to
@@ -46,8 +36,7 @@ export function useWithdrawalRecovery() {
     queryFn: async (): Promise<RecoveryScan> => {
       if (!account || !scope) return { unread: [], retries: 0 };
       const previous = queryClient.getQueryData<RecoveryScan>(queryKey);
-      const stamp = lastCompleteScan(SCAN_KIND, scope);
-      if (!previous && stamp !== undefined && Date.now() - stamp < RECOVERY_INTERVAL_MS) {
+      if (scannedRecently(SCAN_KIND, scope, !previous)) {
         return { unread: [], retries: 0 };
       }
       const networks = previous?.unread.length ? previous.unread : NETWORKS;
@@ -71,7 +60,8 @@ export function useWithdrawalRecovery() {
               now: Date.now,
               adapter: getBridgeAdapter('native'),
               context,
-              settled: settledFor(scope)
+              // Withdrawals found not to be bridges are kept here too.
+              settled: settledFor(SCAN_KIND, scope)
             });
             return complete;
           } catch {

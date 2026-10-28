@@ -8,27 +8,23 @@ import { executedSafeTxHashes } from '../adapters/safe';
 import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { isSettled } from '../model/pendingTransitions';
 import { pendingBridgeStore } from '../store/pendingStore';
-import { lastCompleteScan, markCompleteScan } from '../store/recoveryScanStamp';
+import { markCompleteScan } from '../store/recoveryScanStamp';
 import { recoverDeposits } from '../tracking/recoverDeposits';
 import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
+import {
+  PARTIAL_RETRY_MS,
+  RECOVERY_INTERVAL_MS,
+  retryDelay,
+  scannedRecently,
+  settledFor
+} from './recoveryScan';
 
-const RECOVERY_INTERVAL_MS = 30 * 60_000;
 // A bundle still without its hash is read again every 2 minutes; a scan that skipped an
-// unreadable block range is retried after 2, then 4, 8 and so on up to the interval.
-const PARTIAL_RETRY_MS = 2 * 60_000;
+// unreadable block range is retried with the shared backoff.
 const SCAN_KIND = 'deposit';
 
 type RecoveryScan = { complete: boolean; retries: number };
-const retryDelay = (retries: number) => Math.min(PARTIAL_RETRY_MS * 2 ** (retries - 1), RECOVERY_INTERVAL_MS);
-
-// Per scope: deposits found settled are never read again this session.
-const settledByScope = new Map<string, Set<string>>();
-const settledFor = (scope: string) => {
-  const settled = settledByScope.get(scope) ?? new Set<string>();
-  settledByScope.set(scope, settled);
-  return settled;
-};
 
 const hasUnminedBundle = (scope: string) =>
   pendingBridgeStore
@@ -54,13 +50,7 @@ export function useDepositRecovery() {
     queryFn: async (): Promise<RecoveryScan> => {
       if (!account || !scope || ethereumChainId === undefined) return { complete: true, retries: 0 };
       const previous = queryClient.getQueryData<RecoveryScan>(queryKey);
-      const stamp = lastCompleteScan(SCAN_KIND, scope);
-      if (
-        !previous &&
-        stamp !== undefined &&
-        Date.now() - stamp < RECOVERY_INTERVAL_MS &&
-        !hasUnminedBundle(scope)
-      ) {
+      if (scannedRecently(SCAN_KIND, scope, !previous) && !hasUnminedBundle(scope)) {
         return { complete: true, retries: 0 };
       }
       const l1 = getPublicClient(config, { chainId: ethereumChainId });
@@ -98,7 +88,7 @@ export function useDepositRecovery() {
         },
         adapter: getBridgeAdapter('native'),
         context,
-        settled: settledFor(scope),
+        settled: settledFor(SCAN_KIND, scope),
         executedSafeTxHashes: async txHash => {
           try {
             return executedSafeTxHashes(
