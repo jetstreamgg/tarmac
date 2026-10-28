@@ -15,6 +15,8 @@ import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMe
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { BridgeReviewContent, BridgeTransferHero } from '../components/BridgeReviewContent';
 import { formatEthCeil, formatMaxEthFee } from '../components/bridgeModalRows';
+import { routeFallbackNotice } from '../components/bridgeRouteOptions';
+import { notifyRouteFallback } from '../components/RouteFallbackToast';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { guardChainId } from '../model/networks';
 import { sendsToOther } from '../model/recipient';
@@ -690,6 +692,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       supportedChainIds: [pinnedChainId],
       chainGuardReason: 'launch-chain'
     });
+    const fallback = route && routeFallbackNotice(route);
+    if (fallback) notifyRouteFallback(fallback);
   }, [
     launchModal,
     amountLabel,
@@ -704,7 +708,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     sessionId,
     amount,
     pinnedChainId,
-    resume
+    resume,
+    route
   ]);
 
   useEffect(() => {

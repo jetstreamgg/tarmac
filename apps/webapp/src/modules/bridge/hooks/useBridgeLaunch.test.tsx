@@ -24,6 +24,7 @@ type SafeReply = number | 'hang';
 
 const mocks = vi.hoisted(() => ({
   isConnected: true,
+  fallbackNotices: [] as unknown[],
   routeCards: {
     args: [] as { options: unknown; sources: Record<string, { calls: unknown[] }> }[],
     cards: undefined as unknown
@@ -177,6 +178,9 @@ vi.mock('./useNativeDepositLegs', () => ({
       refetchAllowance: mocks.refetchAllowance
     };
   }
+}));
+vi.mock('../components/RouteFallbackToast', () => ({
+  notifyRouteFallback: (notice: unknown) => mocks.fallbackNotices.push(notice)
 }));
 // The route picker's cards have their own suite; this one checks what the launch hands them.
 vi.mock('./useBridgeRouteCards', () => ({
@@ -816,6 +820,42 @@ describe('useBridgeLaunch Confirm gate', () => {
       await reviewDeposit('base');
       const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };
       expect(content.props.bridgeFee).toBeUndefined();
+    });
+  });
+
+  describe('the toast of a Review that falls back from CCTP', () => {
+    async function review(route: ReturnType<typeof nativeWithdrawalRoute>) {
+      mocks.appChainId = 8453;
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route,
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+    }
+
+    beforeEach(() => {
+      mocks.fallbackNotices.length = 0;
+    });
+
+    it('says CCTP is out and SkyLink was picked, once per Review', async () => {
+      await review(nativeWithdrawalRoute('base', 'no-liquidity'));
+      expect(mocks.fallbackNotices).toEqual([expect.objectContaining({ title: 'CCTP route unavailable' })]);
+    });
+
+    it('says nothing when CCTP could carry the bridge', async () => {
+      await review(nativeWithdrawalRoute('base'));
+      await review(cctpWithdrawalRoute('base'));
+      expect(mocks.fallbackNotices).toEqual([]);
     });
   });
 

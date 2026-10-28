@@ -7,6 +7,7 @@
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
 import { formatUsd } from '@/utils';
+import { getBridgeNetwork } from '../model/networks';
 import type { BridgeBlockReason, BridgeRouteOption } from '../model/resolveRoute';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import {
@@ -77,4 +78,20 @@ export function buildRouteOptionCard({
     ],
     unavailable: unavailable !== undefined
   };
+}
+
+/** The toast of a Review that opens on SkyLink because CCTP can't carry the bridge (Figma 61). */
+export function routeFallbackNotice(route: BridgeRoute): { title: string; description: string } | undefined {
+  const reason = route.fallbackReason;
+  if (!reason) return undefined;
+  const network = getBridgeNetwork(route.steps[0].network).name;
+  const eta = formatEtaWords(route.etaMinutes);
+  const why =
+    reason === 'no-liquidity'
+      ? t`Not enough USDC liquidity on ${network} for CCTP.`
+      : reason === 'closed'
+        ? t`CCTP is closed on ${network} right now.`
+        : t`This amount is above CCTP's limit on ${network}.`;
+  const switched = t`We switched you to SkyLink, which takes about ${eta}. Confirm to continue or try again later.`;
+  return { title: t`CCTP route unavailable`, description: `${why} ${switched}` };
 }

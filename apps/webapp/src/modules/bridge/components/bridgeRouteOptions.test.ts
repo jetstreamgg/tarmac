@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { NO_VALUE } from '@/lib/constants';
 import { cctpWithdrawalRoute, nativeWithdrawalRoute } from '../model/resolveRoute';
-import { buildRouteOptionCard } from './bridgeRouteOptions';
+import { buildRouteOptionCard, routeFallbackNotice } from './bridgeRouteOptions';
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 
@@ -77,5 +77,26 @@ describe('buildRouteOptionCard', () => {
     });
     expect(card.unavailable).toBe(true);
     expect(card.badge).toEqual({ text, tone: 'muted' });
+  });
+});
+
+describe('routeFallbackNotice', () => {
+  it('says why CCTP is out and how long SkyLink takes, per reason', () => {
+    expect(routeFallbackNotice(nativeWithdrawalRoute('base', 'no-liquidity'))).toEqual({
+      title: 'CCTP route unavailable',
+      description:
+        'Not enough USDC liquidity on Base for CCTP. We switched you to SkyLink, which takes about 5 days. Confirm to continue or try again later.'
+    });
+    expect(routeFallbackNotice(nativeWithdrawalRoute('optimism', 'closed'))?.description).toBe(
+      'CCTP is closed on OP Mainnet right now. We switched you to SkyLink, which takes about 7 days. Confirm to continue or try again later.'
+    );
+    expect(routeFallbackNotice(nativeWithdrawalRoute('arbitrum', 'over-limit'))?.description).toBe(
+      "This amount is above CCTP's limit on Arbitrum One. We switched you to SkyLink, which takes about 6.5 days. Confirm to continue or try again later."
+    );
+  });
+
+  it('says nothing when no route was replaced', () => {
+    expect(routeFallbackNotice(nativeWithdrawalRoute('base'))).toBeUndefined();
+    expect(routeFallbackNotice(cctpWithdrawalRoute('base'))).toBeUndefined();
   });
 });
