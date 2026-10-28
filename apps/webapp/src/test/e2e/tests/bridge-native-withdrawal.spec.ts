@@ -5,7 +5,7 @@ import { BridgePage } from '../pages/BridgePage';
 import { NetworkName } from '../utils/constants';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { awaitDepositTxHash, l1AccountState, l2UsdsBalance } from '../utils/bridgeRelay';
-import { proveOpStackWithdrawalOnFork } from '../utils/opStackWithdrawalProof';
+import { proveOpStackWithdrawalOnFork, setOpStackEscrowAllowance } from '../utils/opStackWithdrawalProof';
 import { keepPendingBridgesOnLoad } from '../utils/pendingBridgeStore';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 
@@ -86,5 +86,38 @@ test.describe('Bridge: L2 to Ethereum through SkyLink', () => {
       .poll(async () => (await l1AccountState(account)).usds - before, { timeout: 90_000 })
       .toBe(AMOUNT);
     await expect(card.getByTestId('pending-bridge-status')).toHaveText('Claimed', { timeout: 90_000 });
+  });
+
+  test('base: a finalize whose release fails asks for a Replay, which releases the USDS', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    await keepPendingBridgesOnLoad(isolatedPage.context());
+    const account = getAddress(testAccount);
+    const bridge = new BridgePage(isolatedPage);
+    const txHash = await withdrawThroughSkyLink(isolatedPage, bridge, cases[0], account);
+    await proveOpStackWithdrawalOnFork('base', txHash, account);
+    const { usds: before } = await l1AccountState(account);
+    const allowance = await setOpStackEscrowAllowance('base', 0n);
+    try {
+      await bridge.gotoConnected();
+      const card = bridge.card('Ethereum');
+      const status = card.getByTestId('pending-bridge-status');
+      const action = card.getByTestId('pending-bridge-action');
+      await expect(status).toHaveText('Ready to finalize', { timeout: 90_000 });
+      await action.click();
+      await expect(status).toHaveText('Action needed', { timeout: 90_000 });
+      await expect(action).toHaveText('Replay');
+      expect((await l1AccountState(account)).usds).toBe(before);
+
+      await setOpStackEscrowAllowance('base', allowance);
+      await action.click();
+      await expect
+        .poll(async () => (await l1AccountState(account)).usds - before, { timeout: 90_000 })
+        .toBe(AMOUNT);
+      await expect(status).toHaveText('Claimed', { timeout: 90_000 });
+    } finally {
+      await setOpStackEscrowAllowance('base', allowance);
+    }
   });
 });

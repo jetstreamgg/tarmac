@@ -1,6 +1,7 @@
 import {
   createPublicClient,
   encodeAbiParameters,
+  encodeFunctionData,
   hexToBigInt,
   http,
   keccak256,
@@ -11,7 +12,7 @@ import {
   type Hex
 } from 'viem';
 import type { OpStackNetworkId } from '@/modules/bridge/adapters/nativeDeposit/contracts';
-import { OP_STACK_DEPOSIT } from '@/modules/bridge/adapters/nativeDeposit/contracts';
+import { L1_USDS, OP_STACK_DEPOSIT } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { opStackWithdrawalMessage } from '@/modules/bridge/adapters/nativeWithdrawal/opStack';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 import { forkRpc } from './opStackDepositRelay';
@@ -23,6 +24,12 @@ const portalAbi = parseAbi([
   'function numProofSubmitters(bytes32) view returns (uint256)',
   'function proofMaturityDelaySeconds() view returns (uint256)',
   'function checkWithdrawal(bytes32, address) view'
+]);
+
+const escrowAbi = parseAbi([
+  'function escrow() view returns (address)',
+  'function allowance(address, address) view returns (uint256)',
+  'function approve(address, uint256) returns (bool)'
 ]);
 
 // Storage layouts differ between portal versions, so slots are found by probing up to this one.
@@ -134,4 +141,32 @@ async function findProofSlots(
   if (proven === undefined || submitters === undefined)
     throw new Error('Proof slots not found on the portal');
   return { proven, submitters };
+}
+
+/**
+ * Sets the USDS the L1 bridge may pull from Sky's escrow, as the escrow on the Ethereum fork,
+ * and returns the previous allowance. At 0 the bridge's release reverts, so the messenger
+ * stores the finalized withdrawal's message as failed.
+ */
+export async function setOpStackEscrowAllowance(network: OpStackNetworkId, amount: bigint): Promise<bigint> {
+  const l1Rpc = await getRpcUrlFromFile(NetworkName.mainnet);
+  const l1 = createPublicClient({ transport: http(l1Rpc) });
+  const bridge = OP_STACK_DEPOSIT[network].l1TokenBridge;
+  const escrow = await l1.readContract({ address: bridge, abi: escrowAbi, functionName: 'escrow' });
+  const previous = await l1.readContract({
+    address: L1_USDS,
+    abi: escrowAbi,
+    functionName: 'allowance',
+    args: [escrow, bridge]
+  });
+  const hash = await forkRpc<Hash>(l1Rpc, 'eth_sendTransaction', [
+    {
+      from: escrow,
+      to: L1_USDS,
+      data: encodeFunctionData({ abi: escrowAbi, functionName: 'approve', args: [bridge, amount] })
+    }
+  ]);
+  const receipt = await l1.waitForTransactionReceipt({ hash });
+  if (receipt.status !== 'success') throw new Error('The escrow approve reverted');
+  return previous;
 }
