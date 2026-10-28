@@ -994,10 +994,12 @@ export function TransactionModal({
           <>
             <div className={cardClassName}>{modalBody}</div>
             <aside
-              className="bg-bgSecondary relative w-100 shrink-0 rounded-[28px]"
+              className="bg-bgSecondary animate-in fade-in slide-in-from-left-6 ease-out-expo relative w-100 shrink-0 rounded-[28px] duration-300 motion-reduce:animate-none"
               data-testid="transaction-modal-aside"
             >
-              <div className="absolute inset-0 overflow-y-auto px-8 pt-7 pb-8">{aside}</div>
+              <div className="absolute inset-0 [scrollbar-width:none] overflow-y-auto px-8 pt-7 pb-7 [&::-webkit-scrollbar]:hidden">
+                {aside}
+              </div>
             </aside>
           </>
         ) : (

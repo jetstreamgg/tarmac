@@ -170,15 +170,17 @@ export function BridgeReviewContent({
   const contractCheckboxId = useId();
   if (routePicker && !beside && choosing)
     return (
-      <BridgeRoutePicker
-        cards={routePicker.cards}
-        selected={route.kind}
-        onPick={kind => {
-          routePicker.onPick(kind);
-          setChoosing(false);
-        }}
-        onBack={() => setChoosing(false)}
-      />
+      <div className="animate-in fade-in ease-out-expo duration-300 motion-reduce:animate-none">
+        <BridgeRoutePicker
+          cards={routePicker.cards}
+          selected={route.kind}
+          onPick={kind => {
+            routePicker.onPick(kind);
+            setChoosing(false);
+          }}
+          onBack={() => setChoosing(false)}
+        />
+      </div>
     );
   return (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">

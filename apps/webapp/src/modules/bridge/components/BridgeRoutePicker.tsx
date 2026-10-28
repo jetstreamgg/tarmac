@@ -35,7 +35,7 @@ export function BridgeFastBadge({
 /** "Select bridge type" (Figma 50, 60): one card per route; an unavailable one is greyed with its reason. */
 export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRoutePickerProps) {
   return (
-    <div className="flex flex-col gap-6" data-testid="bridge-route-picker">
+    <div className="flex flex-col gap-5" data-testid="bridge-route-picker">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -48,7 +48,7 @@ export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRou
         </button>
         <h3 className="text-text font-circle text-lg leading-6 font-medium">{t`Select bridge type`}</h3>
       </div>
-      <ul className="flex flex-col gap-4">
+      <ul className="flex flex-col gap-3">
         {cards.map(card => {
           const isSelected = card.kind === selected;
           return (
@@ -59,7 +59,7 @@ export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRou
                 aria-pressed={isSelected}
                 onClick={() => onPick(card.kind)}
                 className={cn(
-                  'flex w-full flex-col gap-4 rounded-2xl border p-[19px] text-left transition-colors',
+                  'flex w-full flex-col gap-3 rounded-2xl border p-[19px] text-left transition-colors',
                   isSelected
                     ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
                     : 'border-borderPrimary bg-transparent',
@@ -93,7 +93,7 @@ export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRou
                   {card.rows.map(row => (
                     <span
                       key={row.label}
-                      className="border-borderPrimary flex items-center justify-between border-b py-2 text-xs leading-4 last:border-b-0"
+                      className="border-borderPrimary flex items-center justify-between border-b py-1.5 text-xs leading-4 last:border-b-0 last:pb-0"
                     >
                       <span className="text-fgSecondary">{row.label}</span>
                       <span className="text-text font-medium">{row.value}</span>
