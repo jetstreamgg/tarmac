@@ -114,6 +114,15 @@ vi.mock('./useCctpConvertLegs', () => ({
     reset: () => undefined
   })
 }));
+// A native withdrawal's Ethereum legs; this file launches none.
+vi.mock('./useNativeWithdrawalActionLegs', () => ({
+  useNativeWithdrawalActionLegs: () => ({
+    ready: false,
+    error: null,
+    execute: () => undefined,
+    reset: () => undefined
+  })
+}));
 vi.mock('../adapters/mockAdapter', () => ({
   runMockLegs: (names: string[]) => {
     mocks.mockLegs.push(names);

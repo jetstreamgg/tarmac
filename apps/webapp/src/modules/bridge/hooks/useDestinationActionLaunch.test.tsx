@@ -9,7 +9,8 @@ import { createElement, type ReactNode } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { applyProgress, createPendingBridge, dropSentAction } from '../model/pendingTransitions';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { nativeWithdrawalRoute, resolveBridgeRoute } from '../model/resolveRoute';
+import type { PendingBridgeNextAction } from '../model/types';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useDestinationActionLaunch } from './useDestinationActionLaunch';
 
@@ -55,6 +56,22 @@ const mocks = vi.hoisted(() => ({
           routeData?: Record<string, string>;
           chainId?: number;
           account?: string;
+          getCallbacks: () => TxCallbacks;
+        },
+    ready: false,
+    error: null as Error | null,
+    execute: (() => undefined) as () => void,
+    reset: (() => undefined) as () => void
+  },
+  withdrawal: {
+    params: undefined as
+      | undefined
+      | {
+          action?: string;
+          enabled: boolean;
+          network?: string;
+          bridge?: { id: string; routeData?: Record<string, string> };
+          chainId?: number;
           getCallbacks: () => TxCallbacks;
         },
     ready: false,
@@ -143,6 +160,13 @@ vi.mock('./useArbitrumRedeemLegs', () => ({
     return { ready, error, execute, reset };
   }
 }));
+vi.mock('./useNativeWithdrawalActionLegs', () => ({
+  useNativeWithdrawalActionLegs: (params: NonNullable<typeof mocks.withdrawal.params>) => {
+    mocks.withdrawal.params = params;
+    const { ready, error, execute, reset } = mocks.withdrawal;
+    return { ready, error, execute, reset };
+  }
+}));
 vi.mock('../adapters/mockAdapter', () => ({
   runMockLegs: (names: string[], getCallbacks: () => TxCallbacks) => {
     mocks.legs.push({ names, getCallbacks });
@@ -213,6 +237,26 @@ const seedReadyClaim = () => {
   return stored('0xsource');
 };
 
+const PROVE_DATA = { gameIndex: '7', l2BlockNumber: '100' };
+
+const seedReadyWithdrawal = (
+  from: 'base' | 'arbitrum',
+  nextAction: PendingBridgeNextAction,
+  routeData?: Record<string, string>
+) => {
+  const bridge = createPendingBridge({
+    account: mocks.address,
+    amount: 10n ** 18n,
+    from,
+    to: 'ethereum',
+    route: nativeWithdrawalRoute(from),
+    txHash: '0xwithdrawal',
+    now: NOW
+  });
+  pendingBridgeStore.upsert(scope(), applyProgress(bridge, { kind: 'ready', nextAction, routeData }, NOW));
+  return stored('0xwithdrawal');
+};
+
 /** Opens the action modal for `bridge` and confirms it; returns the callbacks its leg reports through. */
 const launchAndConfirm = (
   launch: ReturnType<typeof useDestinationActionLaunch>['launch'],
@@ -241,6 +285,7 @@ describe('useDestinationActionLaunch', () => {
     mocks.legs = [];
     mocks.replay = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
     mocks.redeem = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
+    mocks.withdrawal = { params: undefined, ready: false, error: null, execute: vi.fn(), reset: vi.fn() };
   });
 
   it("can't launch, and the card disables its button, when the destination network can't be pinned", () => {
@@ -630,6 +675,90 @@ describe('useDestinationActionLaunch', () => {
       ]);
       callbacks.onSuccess('0xredeem');
       expect(stored('0xarbdeposit')).toMatchObject({ status: 'pending', nextAction: undefined });
+    });
+  });
+
+  describe('the Ethereum legs of a native withdrawal', () => {
+    const launchWithdrawal = (...seed: Parameters<typeof seedReadyWithdrawal>) => {
+      const card = seedReadyWithdrawal(...seed);
+      mocks.walletChainId = 1;
+      const hook = renderHook(() => useDestinationActionLaunch());
+      act(() => hook.result.current.launch(card));
+      return hook;
+    };
+
+    it('builds an OP Stack prove on Ethereum from the stored game', () => {
+      launchWithdrawal('base', 'prove', PROVE_DATA);
+      expect(mocks.withdrawal.reset).toHaveBeenCalled();
+      expect(mocks.withdrawal.params).toMatchObject({
+        action: 'prove',
+        enabled: true,
+        network: 'base',
+        bridge: { id: '0xwithdrawal', routeData: PROVE_DATA },
+        chainId: 1
+      });
+      expect(mocks.replay.params?.enabled).toBe(false);
+      expect(mocks.redeem.params?.enabled).toBe(false);
+    });
+
+    it('sends once prepared, never on the mock executor', () => {
+      const { rerender } = launchWithdrawal('base', 'prove', PROVE_DATA);
+      act(() => mocks.launched[0].onConfirm!());
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      mocks.withdrawal.ready = true;
+      rerender();
+      expect(mocks.withdrawal.execute).toHaveBeenCalledTimes(1);
+      expect(mocks.replay.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+    });
+
+    it('builds the Arbitrum outbox execute as its finalize', () => {
+      launchWithdrawal('arbitrum', 'finalize');
+      expect(mocks.withdrawal.params).toMatchObject({
+        action: 'finalize',
+        enabled: true,
+        network: 'arbitrum',
+        chainId: 1
+      });
+    });
+
+    it('retries a failed L1 relay with the withdrawal legs, not the deposit replay on the L2', () => {
+      const relay = { msgHash: '0xhash', relayCalldata: '0xrelay' };
+      launchWithdrawal('base', 'replay', relay);
+      expect(mocks.withdrawal.params).toMatchObject({ action: 'replay', enabled: true, network: 'base' });
+      expect(mocks.replay.params?.enabled).toBe(false);
+      expect(mocks.launched[0].toast?.loading).toBe('Replaying the withdrawal of 1.00 USDS');
+    });
+
+    it('reports a build or simulation failure to the modal, for Retry', () => {
+      const { rerender } = launchWithdrawal('base', 'prove', PROVE_DATA);
+      act(() => mocks.launched[0].onConfirm!());
+      mocks.withdrawal.error = new Error('No dispute game covers the withdrawal yet.');
+      rerender();
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      expect(mocks.session.onError).toHaveBeenCalledWith(mocks.withdrawal.error, '');
+    });
+
+    it('records the prove it sends and moves on to the finalize', () => {
+      mocks.withdrawal.ready = true;
+      launchWithdrawal('base', 'prove', PROVE_DATA);
+      act(() => mocks.launched[0].onConfirm!());
+      const callbacks = mocks.withdrawal.params!.getCallbacks();
+      callbacks.onStart('0xprove');
+      expect(stored('0xwithdrawal').actions).toEqual([
+        { action: 'prove', txHash: '0xprove', at: expect.any(Number), status: 'sent' }
+      ]);
+      callbacks.onSuccess('0xprove');
+      expect(stored('0xwithdrawal')).toMatchObject({ status: 'pending', nextAction: 'finalize' });
+    });
+
+    it('waits for the switch to Ethereum before building', () => {
+      const card = seedReadyWithdrawal('base', 'prove', PROVE_DATA);
+      mocks.walletChainId = 8453;
+      const { result } = renderHook(() => useDestinationActionLaunch());
+      act(() => result.current.launch(card));
+      expect(mocks.withdrawal.params?.enabled).toBe(false);
+      expect(mocks.switches.map(({ chainId }) => chainId)).toEqual([1]);
     });
   });
 

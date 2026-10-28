@@ -16,7 +16,12 @@ import { TransactionAmountHero } from '@/modules/ui/components/TransactionAmount
 import { stepFailureDetail, type TransactionStep } from '@/modules/ui/components/transactionStepsModel';
 import { runMockLegs } from '../adapters/mockAdapter';
 import { CctpConvertReview } from '../components/CctpConvertReview';
-import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
+import {
+  isNativeDepositNetwork,
+  isOpStackNetwork,
+  type NativeDepositNetwork,
+  type OpStackNetworkId
+} from '../adapters/nativeDeposit/contracts';
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
 import { CCTP_CONVERT_FUNCTION, cctpBurnAmount, isCctpClaimOnly } from '../adapters/cctp/calls';
 import { readCctpConvertOffer } from '../adapters/cctp/convert';
@@ -45,13 +50,28 @@ import { cctpConvertModal, convertSteps, convertToast } from './cctpConvertModal
 import { useArbitrumRedeemLegs } from './useArbitrumRedeemLegs';
 import { CCTP_CLAIM_FUNCTION, useCctpClaimLegs } from './useCctpClaimLegs';
 import { useCctpConvertLegs } from './useCctpConvertLegs';
+import {
+  useNativeWithdrawalActionLegs,
+  type NativeWithdrawalLegAction
+} from './useNativeWithdrawalActionLegs';
 import { useOpStackReplayLegs } from './useOpStackReplayLegs';
 import { usePendingScope } from './usePendingScope';
 import { useSendWhenPrepared } from './useSendWhenPrepared';
 import { useBridgeBatch } from './useBridgeBatch';
 
-/** The action the legs build: a deposit's replay on an OP Stack L2 or redeem or keepalive on Arbitrum, or a CCTP claim or its conversion on Ethereum. */
+/**
+ * The action the legs build: a deposit's replay on an OP Stack L2 or redeem or
+ * keepalive on Arbitrum, a native withdrawal's prove, finalize or relay retry
+ * on Ethereum, or a CCTP claim or its conversion on Ethereum.
+ */
 type Recovery =
+  | {
+      kind: 'withdrawal';
+      action: NativeWithdrawalLegAction;
+      network: NativeDepositNetwork;
+      bridge: PendingBridge;
+      chainId: number;
+    }
   | { kind: 'replay'; network: OpStackNetworkId; routeData?: Record<string, string>; chainId: number }
   | { kind: 'cctp-claim'; routeData?: Record<string, string>; chainId: number }
   | {
@@ -100,6 +120,13 @@ const recoveryOf = (
       scope,
       bridgeId: bridge.id
     };
+  if (
+    bridge.routeKind === 'native' &&
+    bridge.to === 'ethereum' &&
+    isNativeDepositNetwork(bridge.from) &&
+    (action === 'prove' || action === 'finalize' || action === 'replay')
+  )
+    return { kind: 'withdrawal', action, network: bridge.from, bridge, chainId };
   if (bridge.from !== 'ethereum') return undefined;
   if (action === 'replay' && isOpStackNetwork(bridge.to))
     return { kind: 'replay', network: bridge.to, routeData: bridge.routeData, chainId };
@@ -114,7 +141,7 @@ export type DestinationActionHint =
   | { kind: 'action-sent'; network: BridgeNetworkId }
   | { kind: 'switch-network'; network: BridgeNetworkId; safe: boolean };
 
-const actionCopy = (action: PendingBridgeNextAction, amount: string, symbol: string) => {
+const actionCopy = (action: PendingBridgeNextAction, amount: string, symbol: string, withdrawal: boolean) => {
   switch (action) {
     case 'claim':
       return {
@@ -149,6 +176,14 @@ const actionCopy = (action: PendingBridgeNextAction, amount: string, symbol: str
         failure: t`The deposit hasn't been redeemed.`
       };
     case 'replay':
+      if (withdrawal)
+        return {
+          step: t`Replay`,
+          loading: t`Replaying the withdrawal of ${amount} USDS`,
+          success: t`Replay sent!`,
+          error: t`Replay failed`,
+          failure: t`The withdrawal hasn't been replayed.`
+        };
       return {
         step: t`Replay`,
         loading: t`Replaying the deposit of ${amount} USDS`,
@@ -201,10 +236,11 @@ const convertible = (bridge: PendingBridge, amount: bigint | undefined): amount 
  * the amount hero and a single action. A wallet on another network is switched
  * first, as the modal confirms on open. The replay of an Ethereum to OP Stack
  * deposit and the redeem of an Ethereum to Arbitrum one send their real call
- * once prepared, as does the keepalive that extends that ticket's deadline
- * and the claim of a CCTP transfer to Ethereum (receive, then sell for USDS);
- * the other actions run on the mock executor until the route tickets add
- * their calls. `locked` is true while its
+ * once prepared, as do the keepalive that extends that ticket's deadline, a
+ * native withdrawal's prove, finalize and relay retry on Ethereum, and the
+ * claim of a CCTP transfer to Ethereum (receive, then sell for USDS); the
+ * other actions run on the mock executor until the route tickets add their
+ * calls. `locked` is true while its
  * session is minimized; `canLaunch` is false when the action can't be sent or
  * its network can't be pinned or switched to, and `actionHint` says why when
  * the user has to act in the wallet (a Safe switches networks in Safe).
@@ -247,6 +283,7 @@ export function useDestinationActionLaunch() {
   const redeem = recovery?.kind === 'redeem' ? recovery : undefined;
   const claim = recovery?.kind === 'cctp-claim' ? recovery : undefined;
   const convert = recovery?.kind === 'cctp-convert' ? recovery : undefined;
+  const withdrawal = recovery?.kind === 'withdrawal' ? recovery : undefined;
   const replayLegs = useOpStackReplayLegs({
     enabled: !!replay && walletChainId === replay.chainId,
     network: replay?.network,
@@ -305,8 +342,25 @@ export function useDestinationActionLaunch() {
     onCallsSent: recordBundleSent('convert'),
     getCallbacks: () => legCallbacksRef.current
   });
-  const legs = claim ? claimLegs : convert ? convertLegs : redeem ? redeemLegs : replayLegs;
+  const withdrawalLegs = useNativeWithdrawalActionLegs({
+    action: withdrawal?.action,
+    enabled: !!withdrawal && walletChainId === withdrawal.chainId,
+    network: withdrawal?.network,
+    bridge: withdrawal?.bridge,
+    chainId: withdrawal?.chainId,
+    getCallbacks: () => legCallbacksRef.current
+  });
+  const legs = claim
+    ? claimLegs
+    : convert
+      ? convertLegs
+      : redeem
+        ? redeemLegs
+        : withdrawal
+          ? withdrawalLegs
+          : replayLegs;
   const resetReplay = replayLegs.reset;
+  const resetWithdrawal = withdrawalLegs.reset;
   const resetRedeem = redeemLegs.reset;
   const resetClaim = claimLegs.reset;
   const resetConvert = convertLegs.reset;
@@ -455,7 +509,12 @@ export function useDestinationActionLaunch() {
       const amount = isConvert
         ? formatBigInt(convertAmount!, { unit: 6, minDecimals: 2, maxDecimals: 2 })
         : formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
-      const copy = actionCopy(action, amount, symbol);
+      const copy = actionCopy(
+        action,
+        amount,
+        symbol,
+        bridge.to === 'ethereum' && bridge.routeKind === 'native'
+      );
       const pinnedChainId = pinChainId(bridge);
       if (pinnedChainId === undefined) return;
       if (walletChainId !== pinnedChainId) {
@@ -478,6 +537,7 @@ export function useDestinationActionLaunch() {
       if (nextRecovery) {
         resetReplay();
         resetRedeem();
+        resetWithdrawal();
         resetClaim();
         resetConvert();
         cancelSend();
@@ -629,6 +689,7 @@ export function useDestinationActionLaunch() {
       handleSwitchChain,
       resetReplay,
       resetRedeem,
+      resetWithdrawal,
       resetClaim,
       resetConvert,
       cancelSend,
