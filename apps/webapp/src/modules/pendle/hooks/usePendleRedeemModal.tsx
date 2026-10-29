@@ -44,9 +44,11 @@ import { usePendleSlippageCell } from './usePendleSlippageCell';
  * USDS, or USDC.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig) {
-  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks } = useTransaction();
+  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks, activeSessionId } =
+    useTransaction();
   // Per-instance id so the provider can ignore live updates from sibling cards.
   const sessionId = useId();
+  const ownSessionLive = activeSessionId === sessionId;
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const matured = isMarketMatured(market.expiry);
@@ -65,8 +67,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   const {
     data: quote,
     isLoading: isFetchingQuote,
-    error: quoteError,
-    mutate: refetchQuote
+    error: quoteError
   } = useQuotePendleConvert({
     side: PendleConvertSide.WITHDRAW,
     marketAddress: market.marketAddress,
@@ -76,9 +77,10 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     syAcceptedTokens: market.syAcceptedTokens,
     amountIn: isRedeemable ? ptBalance : undefined,
     slippage,
-    enabled: isRedeemable,
-    // Prefetched so the modal opens on a ready quote; only repoll while it's
-    // on screen — this hook mounts once per matured card.
+    // Fetched while this card's modal is live, like the buy/sell modal's quote:
+    // a fresh quote on every open, and no Pendle traffic from cards nobody
+    // claims. The hook mounts on the card, so the session gates it.
+    enabled: isRedeemable && ownSessionLive,
     poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
@@ -114,14 +116,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     () => (!writeHook.prepared ? pendleClaimPrepareErrorMessage(writeHook.error) : undefined),
     [writeHook.prepared, writeHook.error]
   );
-  // No quote at all wins, as in the buy/sell modal: there's nothing to prepare.
-  // Claim-specific copy, since the claim always takes the whole balance.
+  // As in the buy/sell modal: a quote failure wins once no usable quote
+  // remains, and a prepare failure shows otherwise. Claim-specific copy, since
+  // the claim always takes the whole balance.
   const errorMessage = useMemo<string | undefined>(
-    () =>
-      isRedeemable && !quote && !isFetchingQuote
-        ? pendleClaimErrorMessage(quoteError?.message)
-        : prepareErrorMessage,
-    [isRedeemable, quote, isFetchingQuote, quoteError, prepareErrorMessage]
+    () => (quote ? undefined : pendleClaimErrorMessage(quoteError?.message)) ?? prepareErrorMessage,
+    [quote, quoteError, prepareErrorMessage]
   );
 
   // The Network cell describes where the trade executes — the engine chain,
@@ -340,9 +340,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
         status: 'success'
       });
     }
-    // The quote doesn't poll while the modal is closed, so a failed prefetch
-    // stays failed until now.
-    if (!quote) void refetchQuote();
     launch({
       usdValue,
       // Pendle redemption is mainnet-only — guard the modal off any L2 (APP-528).
@@ -371,8 +368,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     trackNetworkSwitchRequested,
     trackNetworkSwitchCompleted,
     switchChainAsync,
-    quote,
-    refetchQuote,
     launch,
     transactionContent,
     errorMessage,

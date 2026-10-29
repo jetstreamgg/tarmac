@@ -63,7 +63,9 @@ const hoisted = vi.hoisted(() => ({
   setAutoSwitchIntentMock: vi.fn(),
   trackSwitchRequestedMock: vi.fn(),
   trackSwitchCompletedMock: vi.fn(),
-  refetchQuoteMock: vi.fn(),
+  // The provider's live session, and the args the quote hook last saw.
+  activeSessionId: null as string | null,
+  quoteEnabled: undefined as boolean | undefined,
   // Swappable write-hook simulation state; defaults to prepared.
   writeError: undefined as Error | undefined,
   // Swappable quote state; undefined keeps the healthy QUOTE.
@@ -125,11 +127,14 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useQuotePendleConvert: () => ({
-      ...(hoisted.quoteState ?? { data: QUOTE, isLoading: false, error: undefined }),
-      mutate: hoisted.refetchQuoteMock,
-      dataSources: []
-    }),
+    useQuotePendleConvert: (args: { enabled?: boolean }) => {
+      hoisted.quoteEnabled = args.enabled;
+      return {
+        ...(hoisted.quoteState ?? { data: QUOTE, isLoading: false, error: undefined }),
+        mutate: () => undefined,
+        dataSources: []
+      };
+    },
     useBatchPendleConvert: () => {
       // Snapshot the current execute at render time so each render's writeHook
       // closes over the args from that render — matches the real hook's
@@ -166,6 +171,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
     launch: hoisted.launchMock,
     updateModalContent: hoisted.updateMock,
     isModalOpen: hoisted.isModalOpen,
+    activeSessionId: hoisted.activeSessionId,
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
@@ -464,7 +470,6 @@ describe('usePendleRedeemModal network switch', () => {
 describe('usePendleRedeemModal claim quote failure', () => {
   beforeEach(() => {
     hoisted.launchMock.mockClear();
-    hoisted.refetchQuoteMock.mockClear();
     hoisted.isModalOpen = false;
     hoisted.txStatus = 'idle';
     hoisted.matured = true;
@@ -574,13 +579,28 @@ describe('usePendleRedeemModal claim quote failure', () => {
     expect(config.errorMessage).toMatch(/slippage tolerance/);
   });
 
-  it('retries a failed quote when Claim opens, rather than waiting for the next poll', async () => {
-    await openWith({ data: undefined, isLoading: false, error: new Error('Pendle /convert 503: {}') });
-    expect(hoisted.refetchQuoteMock).toHaveBeenCalledTimes(1);
+  it("fetches the quote only while this card's modal session is live, like the buy/sell modal", async () => {
+    hoisted.activeSessionId = null;
+    const view = renderComponent(<Capture />);
+    expect(hoisted.quoteEnabled).toBe(false);
+
+    await clickOpen(view.container);
+    const { sessionId } = hoisted.launchMock.mock.calls[0][0] as { sessionId: string };
+    hoisted.activeSessionId = sessionId;
+    view.rerender(<Capture />);
+    expect(hoisted.quoteEnabled).toBe(true);
+
+    // Another card's session doesn't wake this card's quote.
+    hoisted.activeSessionId = 'another-card';
+    view.rerender(<Capture />);
+    expect(hoisted.quoteEnabled).toBe(false);
+    view.unmount();
+    hoisted.activeSessionId = null;
   });
 
-  it('leaves a healthy quote alone on open', async () => {
-    await openWith(undefined);
-    expect(hoisted.refetchQuoteMock).not.toHaveBeenCalled();
+  it('shows a prepare failure when no quote has arrived and none failed', async () => {
+    hoisted.writeError = new Error('HTTP request failed');
+    const config = await openWith({ data: undefined, isLoading: false, error: undefined });
+    expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
   });
 });
