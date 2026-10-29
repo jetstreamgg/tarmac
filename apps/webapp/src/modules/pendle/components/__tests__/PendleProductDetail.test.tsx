@@ -240,4 +240,31 @@ describe('PendleProductDetail', () => {
     expect(screen.getByTestId('mock-position').getAttribute('data-market-slug')).toBe('pt-usdg');
     expect(screen.getByTestId('mock-tx-table')).toBeTruthy();
   });
+
+  describe('matured market', () => {
+    beforeEach(() => {
+      vi.setSystemTime((MARKET.expiry + 86_400) * 1000);
+      h.stats = {
+        [MARKET.marketAddress]: { impliedApy: 0, underlyingApy: 0.045, tvl: 12_345, liquidity: 678 }
+      };
+    });
+
+    it('keeps the rate, risk and maturity rows, with the fixed rate ended', () => {
+      renderDetail();
+
+      const details = screen.getByTestId('product-detail-details');
+      expect(details.textContent).toContain('Risk profile');
+      expect(details.textContent).toContain('(Matured)');
+      expect(details.textContent).toContain('Fixed APYEnded');
+      expect(details.textContent).toContain('Underlying APY');
+      expect(details.textContent).not.toContain('TVL');
+      expect(details.textContent).not.toContain('AMM liquidity');
+    });
+
+    it('keeps the rate chart', () => {
+      renderDetail();
+
+      expect(screen.getByTestId('mock-chart')).toBeTruthy();
+    });
+  });
 });
