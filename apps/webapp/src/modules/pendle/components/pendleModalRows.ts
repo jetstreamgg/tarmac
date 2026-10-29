@@ -178,7 +178,7 @@ export type PendleRedeemRowInput = {
   receiveAmount: string;
   /**
    * True when the quote routes through an aggregator (non-SY-accepted output).
-   * Gates only the price-impact/route row — slippage binds on every route.
+   * Gates the slippage and price-impact/route rows: only an aggregator hop can slip.
    */
   aggregator: boolean;
   /** Quote still in flight — the quote-derived cells hold skeletons instead of dashes. */
@@ -209,14 +209,15 @@ export type PendleRedeemRowInput = {
 
 /**
  * Grid for the matured-claim modal, laid out like the early withdrawal entry
- * (2193:73598): [Withdrawal token | You'll receive], [Slippage | Min.
- * received], then — aggregator routes only — [Price impact | Routed via],
- * closing with [Network | Network fee]. A Pendle fee row joins only when the
- * quote reports a fee, so a fee-free claim keeps the early-withdrawal layout
- * without hiding a cost. Slippage renders on
- * every route: even the pure burn signs a slippage-adjusted minTokenOut (see
- * buildVerifiedArgs' matured-exit fixtures); only the per-hop rows are
- * aggregator-only.
+ * (2193:73598): [Withdrawal token | You'll receive], then — aggregator routes
+ * only — [Slippage | Min. received] and [Price impact | Routed via], closing
+ * with [Network | Network fee]. A Pendle fee row joins only when the quote
+ * reports a fee, so a fee-free claim keeps the layout without hiding a cost.
+ *
+ * A direct redemption can't slip: PT converts to SY at the rate fixed at
+ * expiry, and the SY's redemption value only grows. It still signs a
+ * slippage-adjusted minTokenOut (see buildVerifiedArgs' matured-exit
+ * fixtures), but showing that floor would suggest a cost that never happens.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
   return [
@@ -230,12 +231,12 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
         loading: input.quoteLoading
       }
     ],
-    [
-      slippageCell(input),
-      { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
-    ],
     ...(input.aggregator
       ? [
+          [
+            slippageCell(input),
+            { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
+          ],
           [
             {
               kind: 'single' as const,

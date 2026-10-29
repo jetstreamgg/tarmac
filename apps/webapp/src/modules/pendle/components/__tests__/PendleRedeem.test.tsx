@@ -123,12 +123,11 @@ describe('PendleRedeem', () => {
     ).toBeNull();
   });
 
-  it('keeps slippage and its floor on a pure redemption — the signed minTokenOut binds there too', () => {
+  it('hides slippage and its floor on a direct redemption, which cannot slip', () => {
     renderRedeem({ quote: baseQuote });
 
-    expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
-    expect(screen.getByTestId('pendle-redeem-row-Min. received')).toBeTruthy();
-    // Only the per-hop route cells are aggregator-only.
+    expect(screen.queryByTestId('pendle-redeem-row-Slippage')).toBeNull();
+    expect(screen.queryByTestId('pendle-redeem-row-Min. received')).toBeNull();
     expect(screen.queryByTestId('pendle-redeem-row-Price impact')).toBeNull();
     expect(screen.queryByTestId('pendle-redeem-row-Routed via')).toBeNull();
     expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();

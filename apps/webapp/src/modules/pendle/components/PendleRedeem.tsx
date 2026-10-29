@@ -45,9 +45,8 @@ type PendleRedeemProps = {
 /**
  * Body of the matured-claim modal: the PT hero over the shared summary
  * grid. No comp exists for this flow — the layout follows the withdraw comps
- * (Figma 2193:73598 / 2193:73807). Slippage and its floor render on every
- * route — even the pure burn signs a slippage-adjusted minTokenOut; only the
- * price-impact/route row is aggregator-only.
+ * (Figma 2193:73598 / 2193:73807). Slippage, its floor and the route rows
+ * show only on aggregator routes; a direct redemption can't slip.
  */
 export const PendleRedeem = ({
   market,
