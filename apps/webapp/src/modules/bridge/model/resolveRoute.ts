@@ -273,11 +273,11 @@ export function resolveBridgeRoute({
   if (cctp === 'loading') return blocked('facts-loading');
   const cctpFailure = cctp === 'error' ? 'facts-error' : gateFailure(amount, cctp);
   if (!cctpFailure) return ok(cctpWithdrawalRoute(from));
-  if (nativeEtaMinutes(WITHDRAWAL_ETA_MINUTES, from) === undefined) return blocked(cctpFailure);
+  if (withdrawal === undefined) return blocked(cctpFailure);
   // An unread CCTP falls back only to a native gate that was read (the CCTP resume reads none).
   if (cctpFailure === 'facts-error' && native === undefined) return blocked(cctpFailure);
   if (isUnread(native)) return blocked(unreadReason(native));
   const nativeFailure = gateFailure(amount, native);
   if (nativeFailure) return blocked(nativeFailure);
-  return ok(nativeWithdrawalRoute(from as NativeNetworkId, cctpFailure));
+  return ok(nativeWithdrawalRoute(withdrawal, cctpFailure));
 }
