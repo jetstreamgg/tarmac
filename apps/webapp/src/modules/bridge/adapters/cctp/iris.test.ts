@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BASE_BURN_ATTESTED, BASE_BURN_IRIS_RESPONSE, BASE_BURN_TX } from './cctp.fixtures';
-import { IRIS_API_URL, irisAttestationReader } from './iris';
+import { FORK_IRIS_PATH, IRIS_API_URL, forkIrisBaseUrl, irisAttestationReader } from './iris';
 
 const respond = (status: number, body?: unknown) =>
   vi.fn(async (url: string) => {
@@ -70,5 +70,19 @@ describe('irisAttestationReader', () => {
     await expect(
       irisAttestationReader(IRIS_API_URL, respond(200, { error: 'x' }))(6, BASE_BURN_TX.hash)
     ).resolves.toEqual([]);
+  });
+});
+
+describe('forkIrisBaseUrl', () => {
+  const STAGING = 'https://staging-api.sky.money/cctp-fork-iris';
+
+  it("reads the fork's stand-in from VITE_CCTP_FORK_IRIS_URL in any build", () => {
+    expect(forkIrisBaseUrl({ DEV: false, VITE_CCTP_FORK_IRIS_URL: STAGING })).toBe(STAGING);
+    expect(forkIrisBaseUrl({ DEV: true, VITE_CCTP_FORK_IRIS_URL: STAGING })).toBe(STAGING);
+  });
+
+  it("falls back to the dev server's stand-in, and to none in a build", () => {
+    expect(forkIrisBaseUrl({ DEV: true })).toBe(FORK_IRIS_PATH);
+    expect(forkIrisBaseUrl({ DEV: false, VITE_CCTP_FORK_IRIS_URL: '' })).toBeUndefined();
   });
 });

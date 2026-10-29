@@ -6,6 +6,18 @@ export const IRIS_API_URL = 'https://iris-api.circle.com';
 /** Dev server only (vite.forkIris.ts): Iris's paths, answered for the Tenderly multichain fork by test attesters. */
 export const FORK_IRIS_PATH = '/__fork-iris';
 
+/**
+ * Where the Tenderly multichain fork's Iris stand-in answers: VITE_CCTP_FORK_IRIS_URL
+ * (api-workers' /cctp-fork-iris, for previews), else the dev server's. None in a build without it.
+ */
+export const forkIrisBaseUrl = ({
+  DEV,
+  VITE_CCTP_FORK_IRIS_URL
+}: {
+  DEV: boolean;
+  VITE_CCTP_FORK_IRIS_URL?: string;
+}) => VITE_CCTP_FORK_IRIS_URL || (DEV ? FORK_IRIS_PATH : undefined);
+
 /** Long enough for a slow Iris, short enough that a hung request doesn't stall the poll. */
 const IRIS_TIMEOUT_MS = 10_000;
 

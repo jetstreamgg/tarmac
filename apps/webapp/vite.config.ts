@@ -45,6 +45,9 @@ export default ({ mode }: { mode: modeEnum }) => {
     ? FORK_L2_NETWORKS.map(network => tenderlyForkRpcUrl(TENDERLY_RPC_NAME, network)).join(' ')
     : '';
   const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
+  const CCTP_FORK_IRIS_ORIGIN = process.env.VITE_CCTP_FORK_IRIS_URL
+    ? new URL(process.env.VITE_CCTP_FORK_IRIS_URL).origin
+    : '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
   // connect-src includes `data:` so the MetaMask SDK can fetch its embedded fox-logo SVG, which is
@@ -65,6 +68,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       ${PROXY_ORIGIN}
       ${RPC_PROVIDER_TENDERLY}
       ${RPC_PROVIDER_TENDERLY_L2S}
+      ${CCTP_FORK_IRIS_ORIGIN}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co
