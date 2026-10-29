@@ -66,13 +66,14 @@ export const PendleRedeem = ({
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const outDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
-  // Aggregator-ness derives from the token, not the quote: the route row must
-  // stay stable while a quote is in flight, and only non-SY-accepted outputs
-  // route through one.
+  // Aggregator-ness derives from the token, so the rows stay stable while a
+  // quote is in flight, and from the quote too: if Pendle routes even an
+  // SY-accepted output through an aggregator, that hop can slip.
   const outputAddress = selectedOutputToken.address[mainnet.id]?.toLowerCase();
-  const aggregator = market.syAcceptedTokens
-    ? !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress)
-    : !!aggregatorName;
+  const aggregator =
+    !!aggregatorName ||
+    (!!market.syAcceptedTokens &&
+      !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress));
   const quoteLoading = isFetchingQuote && !quote;
 
   const rows = buildPendleRedeemRows({

@@ -134,6 +134,17 @@ describe('PendleRedeem', () => {
     expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
   });
 
+  it('shows slippage when the quote routes an SY-accepted output through an aggregator', () => {
+    renderRedeem({
+      market: { ...MARKET, syAcceptedTokens: [MARKET.underlyingToken] },
+      quote: { ...baseQuote, aggregatorType: 'kyberswap' }
+    });
+
+    expect(screen.getByTestId('pendle-redeem-row-Slippage')).toBeTruthy();
+    expect(screen.getByTestId('pendle-redeem-row-Min. received')).toBeTruthy();
+    expect(screen.getByTestId('pendle-redeem-row-Routed via')).toBeTruthy();
+  });
+
   it('shows a Pendle fee row only when the quote reports a fee', () => {
     const { rerender } = renderRedeem({ quote: { ...baseQuote, feeUsd: 0 } });
     expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();
