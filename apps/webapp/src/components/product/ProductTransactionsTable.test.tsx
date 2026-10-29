@@ -58,6 +58,21 @@ describe('ProductTransactionsTable — pagination', () => {
     expect(visibleRows()).not.toContain('row-0');
   });
 
+  it('moves focus to the first row of the new page so the next Tab reaches it (APP-655)', () => {
+    renderTable(makeRows(15));
+    const next = screen.getByLabelText('Go to next page');
+    next.focus();
+    fireEvent.click(next);
+
+    expect(document.activeElement?.textContent).toBe('row-7');
+    expect(document.activeElement?.tagName).toBe('TR');
+  });
+
+  it('does not move focus on first render', () => {
+    renderTable(makeRows(15));
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('shows no pagination control when the rows fit on one page', () => {
     renderTable(makeRows(7));
     expect(visibleRows()).toHaveLength(7);
