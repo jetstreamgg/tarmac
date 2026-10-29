@@ -1,17 +1,21 @@
 import { t } from '@lingui/core/macro';
+import { revertMessage } from '@/lib/revertMessages';
 
 /**
  * Maps raw Pendle prepare/revert messages to user-friendly copy. Shared by the
  * buy/sell and redeem modal flows so users see consistent guidance everywhere.
+ * Any other contract revert reads as the revert registry's copy, or its raw
+ * reason.
  *
  * `slippageHint` replaces the slippage-exceeded copy for flows where the
  * default guidance doesn't fit; the redeem and review grids both keep the
  * control on the Slippage cell's gear, which the default copy points at.
  */
 export function pendlePrepareErrorMessage(
-  raw: string | undefined,
+  error: Error | null | undefined,
   slippageHint?: string
 ): string | undefined {
+  const raw = error?.message;
   if (!raw) return undefined;
   if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
     return (
@@ -22,7 +26,7 @@ export function pendlePrepareErrorMessage(
   if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
     return t`Quote expired. Refreshing — please wait a moment.`;
   }
-  return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
+  return revertMessage(error) ?? t`Unable to prepare transaction. Please try again or adjust your inputs.`;
 }
 
 /**

@@ -161,7 +161,7 @@ export type { UpgradeSourceToken } from './upgrade/useBatchUpgrade';
 export { usePrices } from './prices/usePrices';
 export { useSkyPrice } from './prices/useSkyPrice';
 export { useStakeHistory } from './stake/useStakeHistory';
-export { useStakeHistoricData } from './stake/useStakeHistoricData';
+export { useStakeHistoricData, newestStakeHistoricPoint } from './stake/useStakeHistoricData';
 
 // Stake Module
 export { useStakeRewardContracts } from './stake/useStakeRewardContracts';

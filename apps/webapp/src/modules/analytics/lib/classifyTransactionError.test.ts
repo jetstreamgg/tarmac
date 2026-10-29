@@ -95,4 +95,28 @@ describe('classifyTransactionError', () => {
       error_name: 'TransactionReplacedError'
     });
   });
+
+  it('adds the decoded revert reason, scrubbed, and whether it had copy', () => {
+    const reverted = new Error('execution reverted: LockstakeEngine/urn-unsafe');
+    expect(classifyTransactionError(reverted, true)).toMatchObject({
+      error_kind: 'reverted',
+      revert_reason: 'LockstakeEngine/urn-unsafe',
+      revert_has_copy: true
+    });
+    const dynamic = new Error(`execution reverted: Foo/blocked 0x${'ab'.repeat(20)}`);
+    expect(classifyTransactionError(dynamic, true)).toMatchObject({
+      revert_reason: 'Foo/blocked 0x…',
+      revert_has_copy: false
+    });
+  });
+
+  it('adds no revert reason the typed amount caused', () => {
+    const dust = new Error('execution reverted: Vat/dust');
+    expect(classifyTransactionError(dust, true)).toMatchObject({ error_kind: 'reverted' });
+    expect(classifyTransactionError(dust, true)).not.toHaveProperty('revert_reason');
+  });
+
+  it('adds no revert reason to a rejection', () => {
+    expect(classifyTransactionError(rejection4001, false)).not.toHaveProperty('revert_reason');
+  });
 });

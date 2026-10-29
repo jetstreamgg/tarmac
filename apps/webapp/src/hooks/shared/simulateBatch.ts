@@ -1,6 +1,5 @@
 import {
   BaseError,
-  decodeErrorResult,
   decodeFunctionResult,
   getAbiItem,
   InsufficientFundsError,
@@ -9,6 +8,7 @@ import {
   type Hex,
   type PublicClient
 } from 'viem';
+import { decodeRevertData, type DecodedRevert } from '@/lib/revertMessages/decodeRevert';
 import { extractErrorCode } from '../helpers';
 import { encodeBatchExecutorData, getCallData, multicall3Abi, totalCallValue } from './networkFee';
 import { getBatchExecutorCode } from './batchExecutorCode';
@@ -35,14 +35,22 @@ export class BatchSimulationError extends Error {
   readonly kind: BatchSimulationFailureKind;
   /** Index of the failed sub-call, when a specific one failed. */
   readonly callIndex?: number;
+  /** The failed sub-call's decoded revert, read by `decodeRevert` for the user-facing copy. */
+  readonly revert?: DecodedRevert;
 
   constructor(
     message: string,
-    { kind, callIndex, cause }: { kind: BatchSimulationFailureKind; callIndex?: number; cause?: unknown }
+    {
+      kind,
+      callIndex,
+      cause,
+      revert
+    }: { kind: BatchSimulationFailureKind; callIndex?: number; cause?: unknown; revert?: DecodedRevert }
   ) {
     super(message, cause === undefined ? undefined : { cause });
     this.kind = kind;
     this.callIndex = callIndex;
+    this.revert = revert;
   }
 }
 
@@ -111,28 +119,9 @@ function returnedNothingDespiteOutputs(call: Call, returnData: Hex): boolean {
   return !!item && item.type === 'function' && item.outputs.length > 0;
 }
 
-/**
- * The revert reason of a failed sub-call, decoded with that call's own ABI so custom
- * errors read by name. viem falls back to the built-in `Error(string)` and `Panic(uint)`
- * shapes on its own, and anything it can't decode is shown as the raw selector.
- */
-function describeRevert(call: Call, returnData: Hex): string {
-  if (returnData === '0x') return 'reverted without a reason';
-  try {
-    const decoded = decodeErrorResult({
-      abi: 'abi' in call && call.abi ? call.abi : [],
-      data: returnData
-    });
-    if (decoded.errorName === 'Error' && decoded.args?.length === 1) return String(decoded.args[0]);
-    if (decoded.errorName === 'Panic' && decoded.args?.length === 1)
-      return `Panic(${String(decoded.args[0])})`;
-    const args = decoded.args
-      ?.map(arg => (typeof arg === 'bigint' ? arg.toString() : String(arg)))
-      .join(', ');
-    return `${decoded.errorName}(${args ?? ''})`;
-  } catch {
-    return `reverted with data ${returnData.slice(0, 10)}`;
-  }
+function describeRevert(revert: DecodedRevert | undefined): string {
+  if (!revert) return 'reverted without a reason';
+  return revert.kind === 'unknown' ? `reverted with data ${revert.reason}` : revert.reason;
 }
 
 function describeCall(call: Call, index: number): string {
@@ -263,9 +252,15 @@ export async function simulateBatch({
   results.forEach((result, index) => {
     const call = calls[index];
     if (!result.success) {
+      // Decoded with the call's own ABI, so custom errors read by name.
+      const revert = decodeRevertData(result.returnData, 'abi' in call && call.abi ? call.abi : []);
       throw new BatchSimulationError(
-        `Batch simulation: ${describeCall(call, index)} ${describeRevert(call, result.returnData)}`,
-        { kind: 'reverted', callIndex: index }
+        `Batch simulation: ${describeCall(call, index)} ${describeRevert(revert)}`,
+        {
+          kind: 'reverted',
+          callIndex: index,
+          revert
+        }
       );
     }
     if (returnedNothingDespiteOutputs(call, result.returnData)) {
