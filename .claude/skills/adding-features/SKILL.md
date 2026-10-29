@@ -10,6 +10,7 @@ description: Step-by-step conventions for adding a new smart contract, widget, o
 1. Add contract address and ABI to `apps/webapp/src/hooks/contracts.ts` (mainnet contracts go in the `contracts` array; L2 contracts go in the `l2Contracts` array in the same file), re-exporting from `apps/webapp/src/hooks/index.ts` as needed.
 2. Run `pnpm -F webapp generate` to regenerate `apps/webapp/src/hooks/generated.ts`. Use `pnpm -F webapp generate:retry` to retry on flakey Etherscan responses.
 3. Create the hook in the appropriate subfolder of `apps/webapp/src/hooks/`.
+4. Register the contract's revert reasons in `apps/webapp/src/lib/revertMessages/`: add `contracts/<contract>.ts` (reason string or custom error name → `msg` copy saying what happened and what the user can do, read from the verified source), add it to `contractRevertMessages` in `index.ts` under the same `name` as in `contracts.ts` (`null` when users can't hit a meaningful revert), and list reasons the typed input causes in `inputRevertReasons`. See "Contract errors" in CLAUDE.md; `revertMessages.test.ts` fails until the entry exists.
 
 ## New Widget
 

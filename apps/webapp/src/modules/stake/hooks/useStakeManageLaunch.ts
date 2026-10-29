@@ -32,7 +32,8 @@ import { stakeUsdNotional, wadToFloat } from '../lib/stakeUsdNotional';
 
 /**
  * Manage confirm-modal step labels, derived from the calldata set in the manage
- * execution order (repay → free → delegate → lock → borrow), approvals first.
+ * execution order (repay → free → claims → reward → lock → delegate → borrow),
+ * approvals first.
  * This is decision M6: the withdraw+repay mock (`1104:20198`) reuses stale
  * stake-flow labels; B-Q2's own proposal is the calldata-derived decomposition
  * implemented here — flagged for design sign-off on APP-312.
@@ -88,8 +89,8 @@ export function buildStakeManageSteps({
     })),
     hasRewardChange &&
       (rewardSymbol ? { label: t`Change reward`, tokenSymbol: rewardSymbol } : t`Change reward`),
-    hasDelegateChange && t`Change delegate`,
     hasLock && { label: t`Stake`, tokenSymbol: 'SKY', failureDetail: stepFailureDetail.stake('SKY') },
+    hasDelegateChange && t`Change delegate`,
     hasBorrow && { label: t`Borrow`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.borrow('USDS') }
   ].filter(Boolean) as TransactionStep[];
   return shouldUseBatch ? steps : assignSequentialWrites(steps, approvals);

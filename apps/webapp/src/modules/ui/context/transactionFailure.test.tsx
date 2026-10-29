@@ -267,4 +267,24 @@ describe('TransactionModal failure & recovery', () => {
     renderFailedFlow(supplySteps);
     expect(vi.mocked(reportError).mock.calls[0][1].fingerprint).toBeUndefined();
   });
+
+  it('names a decoded revert on the failed step and tags it for Sentry (APP-663)', () => {
+    renderFailedFlow(supplySteps, () => {}, new Error('execution reverted: LockstakeEngine/urn-unsafe'));
+    // The step's own consequence still follows the reason.
+    expect(
+      screen.getByText(
+        "Your position is below the required collateralization ratio. Add collateral or repay debt before changing your delegate. The USDS hasn't been approved."
+      )
+    ).toBeDefined();
+    expect(screen.queryByText(/The network rolled back your transaction/)).toBeNull();
+    const ctx = vi.mocked(reportError).mock.calls[0][1];
+    expect(ctx.tags).toEqual({ revert_reason: 'LockstakeEngine/urn-unsafe' });
+  });
+
+  it('shows an unmapped revert reason verbatim', () => {
+    renderFailedFlow(supplySteps, () => {}, new Error('execution reverted: Foo/bar'));
+    expect(
+      screen.getByText('The transaction would fail with "Foo/bar". The USDS hasn\'t been approved.')
+    ).toBeDefined();
+  });
 });

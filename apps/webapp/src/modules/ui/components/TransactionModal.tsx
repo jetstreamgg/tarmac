@@ -137,6 +137,8 @@ export type TransactionModalProps = {
   currentStep?: number;
   /** The current ERROR is a wallet Reject (nothing broadcast) — see the step model. */
   userRejected?: boolean;
+  /** The current ERROR is a contract revert: why, in user-facing copy — see the step model. */
+  failureReason?: string;
   /**
    * Gate-owned status copy (APP-501): while set, replaces the status row's
    * message — the flow's copy narrates on-chain writes, which is wrong while
@@ -238,6 +240,7 @@ export function TransactionModal({
   steps,
   currentStep = 0,
   userRejected = false,
+  failureReason,
   gateCopy,
   preflight,
   chainGuard,
@@ -628,7 +631,8 @@ export function TransactionModal({
                     currentStep,
                     txStatus,
                     bundled: isBundled,
-                    userRejected
+                    userRejected,
+                    failureReason
                   });
                   // Stays live off the product's chain: the provider refuses a
                   // wrong-chain fire and returns the flow to its guarded first

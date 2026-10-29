@@ -10,6 +10,8 @@ export type ReportContext = {
   statusCode?: number;
   type?: string;
   level?: Sentry.SeverityLevel;
+  /** Extra searchable tags, on top of module/flow/action/type. */
+  tags?: Record<string, string>;
   extra?: Record<string, unknown>;
   contexts?: Record<string, Record<string, unknown>>;
   fingerprint?: string[];
@@ -39,6 +41,10 @@ export function reportError(error: unknown, ctx: ReportContext): void {
 
     if (ctx.level) {
       scope.setLevel(ctx.level);
+    }
+
+    if (ctx.tags) {
+      scope.setTags(ctx.tags);
     }
 
     if (ctx.extra) {
