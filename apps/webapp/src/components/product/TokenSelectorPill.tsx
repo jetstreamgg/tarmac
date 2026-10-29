@@ -28,7 +28,9 @@ export function TokenSelectorPill({
     <span className="flex items-center gap-1">
       <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="size-4" />
       <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
-        {symbol}
+        {/* TokenIcon already drops a non-string symbol (APP-654); an object
+            here would throw as a React child. */}
+        {typeof symbol === 'string' ? symbol : null}
       </span>
     </span>
   );
