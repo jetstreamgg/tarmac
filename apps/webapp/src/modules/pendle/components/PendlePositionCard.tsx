@@ -239,6 +239,8 @@ function PendleMaturedCard({
   const accrued = earningsForPosition(walletEarnings, `fixed-${market.marketAddress.toLowerCase()}`);
   const positionValue = parseFloat(formatUnits(ptBalance, market.underlyingDecimals));
   // Same figure the live card promises: 1 PT redeems 1 USDS on pegged markets.
+  // A non-pegged market redeems through the SY rate, so 1 PT is not 1
+  // underlying: give this a real quote before adding one.
   const claimAmount = formatNumber(positionValue, { maxDecimals: 2 });
   const claimSymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
 

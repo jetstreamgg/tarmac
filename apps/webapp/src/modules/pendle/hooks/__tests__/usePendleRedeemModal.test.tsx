@@ -556,10 +556,16 @@ describe('usePendleRedeemModal claim quote failure', () => {
     expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
   });
 
-  it('gives a failed simulation claim copy, not advice to adjust inputs', async () => {
-    hoisted.writeError = new Error('execution reverted: custom error 0x1234');
+  it('gives a failed simulation the shared fallback, not advice to adjust inputs', async () => {
+    hoisted.writeError = new Error('HTTP request failed');
     const config = await openWith(undefined);
     expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
+  });
+
+  it('reads a contract revert through the shared revert registry', async () => {
+    hoisted.writeError = new Error('execution reverted: custom error 0x1234');
+    const config = await openWith(undefined);
+    expect(config.errorMessage).toBe('The transaction would fail with "custom error 0x1234".');
   });
 
   it('keeps the slippage guidance when the simulation fails on slippage', async () => {

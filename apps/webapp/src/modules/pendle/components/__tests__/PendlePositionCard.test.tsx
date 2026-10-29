@@ -71,8 +71,7 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false }),
-    usePendleRedeemPreview: () => ({ data: undefined, isLoading: false })
+    useTokenBalance: () => ({ data: { value: h.walletBalance }, isLoading: false })
   };
 });
 

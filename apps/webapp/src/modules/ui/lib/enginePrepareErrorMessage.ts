@@ -1,8 +1,11 @@
 import { t } from '@lingui/core/macro';
+import { revertMessage } from '@/lib/revertMessages';
 
 /**
- * Generic copy for an engine prepare/simulation failure, for flows without a
+ * Copy for an engine prepare/simulation failure, for flows without a
  * flow-specific mapper (those keep their own — stusds/pendle/stake simulation).
+ * A contract revert reads as its reason (the revert registry's copy, or the
+ * raw reason); anything else gets the generic retry line.
  *
  * Nothing renders while `prepared` is true: a recovered engine drops the
  * message with the next render, and post-submission failures (which leave
@@ -16,7 +19,7 @@ export function enginePrepareErrorMessage(
   error: Error | null | undefined
 ): string | undefined {
   if (prepared || !error) return undefined;
-  return genericPrepareErrorMessage();
+  return revertMessage(error) ?? genericPrepareErrorMessage();
 }
 
 /** The shared fallback copy, for flow-specific mappers that run out of cases. */

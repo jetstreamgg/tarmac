@@ -1,19 +1,23 @@
 import { t } from '@lingui/core/macro';
+import { revertMessage } from '@/lib/revertMessages';
 import { genericPrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 
 /**
  * Maps raw Pendle prepare/revert messages to user-friendly copy. Shared by the
  * buy/sell and redeem modal flows so users see consistent guidance everywhere.
+ * Any other contract revert reads as the revert registry's copy, or its raw
+ * reason.
  *
  * `slippageHint` replaces the slippage-exceeded copy for flows where the
  * default guidance doesn't fit; the redeem and review grids both keep the
  * control on the Slippage cell's gear, which the default copy points at.
  */
 export function pendlePrepareErrorMessage(
-  raw: string | undefined,
+  error: Error | null | undefined,
   slippageHint?: string,
   fallback?: string
 ): string | undefined {
+  const raw = error?.message;
   if (!raw) return undefined;
   if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
     return (
@@ -24,7 +28,11 @@ export function pendlePrepareErrorMessage(
   if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
     return t`Quote expired. Refreshing — please wait a moment.`;
   }
-  return fallback ?? t`Unable to prepare transaction. Please try again or adjust your inputs.`;
+  return (
+    revertMessage(error) ??
+    fallback ??
+    t`Unable to prepare transaction. Please try again or adjust your inputs.`
+  );
 }
 
 /**
@@ -81,11 +89,10 @@ export function pendleClaimErrorMessage(raw: string | undefined): string | undef
 }
 
 /**
- * Why a matured claim with a quote still can't be signed. Slippage and stale
- * quotes keep their shared copy; the generic "adjust your inputs" doesn't fit
- * a claim, which has no inputs.
+ * Why a matured claim with a quote still can't be signed. Slippage, stale
+ * quotes and known contract reverts keep their shared copy; the generic
+ * "adjust your inputs" doesn't fit a claim, which has no inputs.
  */
-export function pendleClaimPrepareErrorMessage(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
-  return pendlePrepareErrorMessage(raw, undefined, genericPrepareErrorMessage());
+export function pendleClaimPrepareErrorMessage(error: Error | null | undefined): string | undefined {
+  return pendlePrepareErrorMessage(error, undefined, genericPrepareErrorMessage());
 }
