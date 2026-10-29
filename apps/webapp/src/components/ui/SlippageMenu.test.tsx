@@ -105,6 +105,81 @@ describe('SlippageMenu', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.5);
   });
 
+  it('never commits 0% when the custom field is cleared', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '' } });
+
+    expect(input.value).toBe('');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('never commits 0% when zero is typed', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input');
+    for (const value of ['0', '0.', '0.0', '0.00']) {
+      fireEvent.change(input, { target: { value } });
+    }
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('commits a sub-1% tolerance typed digit by digit', () => {
+    renderMenu();
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    for (const value of ['0', '0.', '0.5']) {
+      fireEvent.change(input, { target: { value } });
+    }
+
+    expect(input.value).toBe('0.5');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(0.005);
+  });
+
+  it('puts the tolerance in effect back on blur when nothing was committed', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '0.' } });
+    fireEvent.blur(input);
+
+    expect(input.value).toBe('0.5');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves a committed value alone on blur', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '0.8' } });
+    fireEvent.blur(input);
+
+    expect(input.value).toBe('0.8');
+  });
+
+  it('warns when the custom tolerance is above 1%', () => {
+    renderMenu({ value: 0.015 });
+    openMenu();
+
+    expect(screen.getByTestId('slippage-menu-high-warning')).toBeTruthy();
+  });
+
+  it('does not warn at or below 1%', () => {
+    renderMenu({ value: 0.01 });
+    openMenu();
+
+    expect(screen.queryByTestId('slippage-menu-high-warning')).toBeNull();
+  });
+
   it('resets to the default when Auto is selected', () => {
     renderMenu({ value: 0.005 });
     openMenu();
