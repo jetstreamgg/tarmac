@@ -25,6 +25,7 @@ import { sendsToOther } from '../model/recipient';
 import { applyProgress, createPendingBridge, failBundle } from '../model/pendingTransitions';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
+import type { BridgeRouteKind } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isStorageWritable } from '../store/storageWritable';
@@ -50,7 +51,9 @@ export type BridgeLaunchForm = Pick<
   BridgeFormModel,
   'amount' | 'from' | 'to' | 'route' | 'recipient' | 'isConnected' | 'reviewBlocked'
 > &
-  Partial<Pick<BridgeFormModel, 'senderIsContract' | 'routeOptions' | 'pickRoute' | 'forgetRoute'>>;
+  Partial<
+    Pick<BridgeFormModel, 'senderIsContract' | 'routeOptions' | 'pickedRoute' | 'pickRoute' | 'forgetRoute'>
+  >;
 
 const DETACHED: TxCallbacks = {
   onMutate: () => {},
@@ -302,6 +305,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const executeRef = useRef<() => void>(() => undefined);
   // The chain the open modal guards; the source legs must run on it.
   const launchedChainIdRef = useRef<number | undefined>(undefined);
+  // The route the Review shows: the one it opened on, then each one the user picks.
+  const reviewedRouteRef = useRef<{ kind?: BridgeRouteKind; picked?: BridgeRouteKind }>({});
   // The account the Review was opened for; only it may sign the legs.
   const launchedAccountRef = useRef<string | undefined>(undefined);
   // Read at launch: connect-then-act calls a launch from before the wallet connected.
@@ -336,6 +341,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     callbacksRef.current = txCallbacks;
     accountRef.current = account;
     scopeRef.current = scope;
+    if (form.pickedRoute !== reviewedRouteRef.current.picked)
+      reviewedRouteRef.current = { kind: route?.kind, picked: form.pickedRoute };
     // As TransactionContext's Retry after a mined step: the run itself moved the balances the Review checks.
     const resumingRun =
       (runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined) &&
@@ -391,6 +398,10 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             { final: true }
           )
         );
+        return;
+      }
+      if (route.kind !== reviewedRouteRef.current.kind) {
+        callbacksRef.current.onError(new TransactionRefusedError('The bridge type changed after Review.'));
         return;
       }
       if (pinnedChainId !== launchedChainIdRef.current) {
@@ -692,6 +703,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     launchRef.current += 1;
     ownBurnsRef.current = [];
     launchedChainIdRef.current = pinnedChainId;
+    reviewedRouteRef.current = { kind: route?.kind, picked: form.pickedRoute };
     launchedAccountRef.current = accountRef.current;
     // A send whose outcome is unknown (a failed receipt wait) may still land: wait for its card to settle.
     const launchScope = scopeRef.current;
@@ -750,7 +762,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     amount,
     pinnedChainId,
     resume,
-    route
+    route,
+    form.pickedRoute
   ]);
 
   useEffect(() => {

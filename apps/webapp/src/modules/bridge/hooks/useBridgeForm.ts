@@ -300,6 +300,8 @@ export function useBridgeForm(draft?: BridgeDraft) {
     onInput,
     setPercent,
     setRecipient,
+    /** The route the user picked for this pair, if any. */
+    pickedRoute: preferred,
     /** Picks the pair's route; an unavailable pick leaves the default. */
     pickRoute,
     /** Back to the default route; each Review opens on it. */

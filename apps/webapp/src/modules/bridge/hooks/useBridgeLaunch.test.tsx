@@ -1037,6 +1037,48 @@ describe('useBridgeLaunch Confirm gate', () => {
       await settle();
       expect(forgetRoute).toHaveBeenCalledTimes(1);
     });
+
+    // The route the Review opened on, and the one the form resolves at Confirm.
+    async function reviewThenResolve(
+      opened: ReturnType<typeof nativeWithdrawalRoute>,
+      atConfirm: ReturnType<typeof nativeWithdrawalRoute>,
+      picked?: 'cctp' | 'native'
+    ) {
+      mocks.appChainId = 8453;
+      const form = (route: typeof opened, pickedRoute?: typeof picked) => ({
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route,
+        pickedRoute,
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      });
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(props => useBridgeLaunch(props), { wrapper, initialProps: form(opened) });
+      await settle();
+      act(() => view.result.current.launch());
+      view.rerender(form(atConfirm, picked));
+      await settle();
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+    }
+
+    it('sends nothing when the route changed under the Review without a pick', async () => {
+      await reviewThenResolve(cctpWithdrawalRoute('base'), nativeWithdrawalRoute('base', 'facts-error'));
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+      expect(mocks.onError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'The bridge type changed after Review.' })
+      );
+    });
+
+    it('sends the route the user picked in the Review', async () => {
+      await reviewThenResolve(cctpWithdrawalRoute('base'), nativeWithdrawalRoute('base'), 'native');
+      expect(mocks.withdrawal.execute).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('the route picker beside the review on desktop (Figma 3964:74437)', () => {

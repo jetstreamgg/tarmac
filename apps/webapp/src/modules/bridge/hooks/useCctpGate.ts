@@ -80,7 +80,8 @@ export function useCctpGate({
             results.slice(split) as unknown as CctpDestinationResults
           )
         : undefined;
-    const fetched = status === 'error' || pocketStatus === 'error' ? 'error' : reads ? 'success' : 'pending';
+    // A failed refetch keeps its last good read: a blip must not move an open Review off CCTP.
+    const fetched = reads ? 'success' : status === 'error' || pocketStatus === 'error' ? 'error' : 'pending';
     return toRouteFact({ status: fetched, data: reads && cctpGate(reads, { swap }) });
   }, [network, status, data, pocketStatus, pocketData, split, swap]);
 }

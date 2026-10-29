@@ -15,7 +15,9 @@ const mocks = vi.hoisted(() => ({
   live: true,
   pocket: undefined as string | undefined,
   usdcOf: {} as Record<string, bigint>,
-  pocketRead: 'success' as 'success' | 'pending' | 'error'
+  pocketRead: 'success' as 'success' | 'pending' | 'error',
+  // A refetch failed after a good read: TanStack keeps the data and reports an error.
+  refetchFailed: false
 }));
 
 vi.mock('../model/pairs', async importOriginal => ({
@@ -42,7 +44,7 @@ vi.mock('wagmi', () => ({
     if (query?.enabled === false) return { status: 'pending', data: undefined };
     const pocketRead = contracts.some(read => read.address === usdc && read.functionName === 'balanceOf');
     if (pocketRead && mocks.pocketRead !== 'success') return { status: mocks.pocketRead, data: undefined };
-    return { status: 'success', data: contracts.map(answer) };
+    return { status: mocks.refetchFailed ? 'error' : 'success', data: contracts.map(answer) };
   }
 }));
 
@@ -57,6 +59,7 @@ describe('useCctpGate', () => {
     mocks.pocket = undefined;
     mocks.usdcOf = { [psm3]: PSM3_USDC };
     mocks.pocketRead = 'success';
+    mocks.refetchFailed = false;
   });
 
   it('limits a burn that swaps by the USDC PSM3 can pay out', () => {
@@ -81,6 +84,11 @@ describe('useCctpGate', () => {
     expect(render()).toBe('loading');
     mocks.pocketRead = 'error';
     expect(render()).toBe('error');
+  });
+
+  it('keeps the last good read when a refetch fails, so an open CCTP route stays put', () => {
+    mocks.refetchFailed = true;
+    expect(render()).toEqual({ isOpen: true, maxAmount: 10n ** 13n * UNIT, liquidity: PSM3_USDC * UNIT });
   });
 
   it('reads nothing for a pair that is not live', () => {
