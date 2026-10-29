@@ -146,7 +146,9 @@ describe('simulateBatch — a failed sub-call', () => {
     const error = await failure(run(client));
 
     expect(error.callIndex).toBe(1);
-    expect(error.message).toContain(`NotAllowed(${ACCOUNT}, 10)`);
+    // By name only: its arguments can carry the user's address, and the message reaches Sentry.
+    expect(error.message).toContain('NotAllowed');
+    expect(error.message).not.toContain(ACCOUNT);
   });
 
   it('reports a reasonless revert as such', async () => {

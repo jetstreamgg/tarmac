@@ -32,6 +32,7 @@ import { reportError } from '@/modules/sentry/reportError';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
   TransactionConfig,
   TransactionEntry,
@@ -242,6 +243,8 @@ type TransactionModalView = {
   hasMinedStep: boolean;
   /** The ERROR on screen is a wallet Reject — the modal words it as declined, not rolled back. */
   userRejected: boolean;
+  /** The ERROR on screen is a contract revert: why, in user-facing copy (see lib/revertMessages). */
+  failureReason: string | undefined;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -313,6 +316,8 @@ export function TransactionProvider({
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
+  // Same lifecycle: written on every ERROR, so a stale reason never outlives its failure.
+  const [failureReason, setFailureReason] = useState<string | undefined>(undefined);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -695,6 +700,7 @@ export function TransactionProvider({
         currentStep,
         hasMinedStep,
         userRejected,
+        failureReason,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -727,7 +733,7 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected, failureReason]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -905,6 +911,8 @@ export function TransactionProvider({
               : TxStatus.IDLE;
           setTxStatus(mapped);
           txStatusRef.current = mapped;
+          // A gate failure is a signature or screening refusal, never a revert.
+          if (mapped === TxStatus.ERROR) setFailureReason(undefined);
           // Both phases render as INITIALIZED; the phase itself decides what a
           // close during it means (see gatePhaseRef / handleInitializedAbandon).
           gatePhaseRef.current = isGatePhase ? status : null;
@@ -1300,7 +1308,10 @@ export function TransactionProvider({
       }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
-      setUserRejected(isUserRejectedRequestError(error));
+      const rejected = isUserRejectedRequestError(error);
+      setUserRejected(rejected);
+      // A Reject has its own copy; anything else that reverted says why.
+      setFailureReason(rejected ? undefined : revertMessage(error));
       if (hash) {
         txHashRef.current = hash;
       }
@@ -1337,11 +1348,16 @@ export function TransactionProvider({
         const flowAnalytics = configRef.current?.analytics;
         const flow = flowAnalytics?.flow ?? 'unknown';
         const action = flowAnalytics?.action ?? 'unknown';
+        // The contract's own reason (a custom error's name or a selector, never its
+        // arguments; a reason string with addresses and amounts blanked out), so
+        // Sentry shows which reverts users hit.
+        const revert = revertReport(normalizedError)?.reason;
         reportError(normalizedError, {
           module: 'transactions',
           flow,
           action,
           type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
+          tags: revert ? { revert_reason: revert } : undefined,
           // Every revert has the same message; one issue per flow and action instead of one for all.
           fingerprint:
             normalizedError instanceof TransactionRevertedError
@@ -1382,7 +1398,16 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, userRejected, preludeSteps, gateCopy }
+    ? {
+        config: activeConfig,
+        txStatus,
+        currentStep,
+        hasMinedStep,
+        userRejected,
+        failureReason,
+        preludeSteps,
+        gateCopy
+      }
     : exitingView;
 
   // Chain guard (APP-528): the modal survives a wallet chain switch (the
@@ -1585,6 +1610,7 @@ export function TransactionProvider({
             steps={modalSteps}
             currentStep={modalView.currentStep}
             userRejected={modalView.userRejected}
+            failureReason={modalView.failureReason}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}

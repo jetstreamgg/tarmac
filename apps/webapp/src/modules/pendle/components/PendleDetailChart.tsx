@@ -1,6 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { useNow, usePendleMarketChartData, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
+import {
+  isMarketMatured,
+  useNow,
+  usePendleMarketChartData,
+  usePendleMarketsApiData,
+  type PendleMarketConfig
+} from '@/hooks';
 import { Chart, TimeFrame, type Data } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -13,12 +19,17 @@ import { SECONDS_PER_DAY } from '@/utils';
  * composition. The daily series covers the whole market lifetime (markets live
  * for months), so timeframe filtering happens client-side.
  *
+ * Once the market matures the series ends at expiry, so the timeframe window
+ * is counted back from expiry rather than now. It opens on the whole lifetime
+ * and drops the headline: a closed market has no current rate.
+ *
  * Rate is the only series: the Liquidity one was pulled in APP-527 because the
  * figure it plotted is AMM liquidity, not the total liquidity the design asks
  * for. `usePendleMarketChartData` still carries the series so it can come back.
  */
 export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
-  const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
+  const matured = isMarketMatured(market.expiry);
+  const [timeFrame, setTimeFrame] = useState<TimeFrame>(matured ? 'all' : 'w');
 
   const { data: points, isLoading, error } = usePendleMarketChartData(market.marketAddress);
   const { data: marketsApi } = usePendleMarketsApiData();
@@ -29,17 +40,21 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
   const nowMs = useNow();
   const data = useMemo<Data[]>(() => {
     if (!points) return [];
-    const cutoffSec = Math.floor(nowMs / 1000) - getDayCountFromTimeFrame(timeFrame) * SECONDS_PER_DAY;
-    return points
-      .filter(point => point.timestampSec >= cutoffSec)
-      .flatMap(point => {
-        // A bucket the API serves without a rate is skipped rather than drawn
-        // as a 0% dip.
-        if (point.impliedApy === undefined) return [];
-        // Percent units (0.045 → 4.5).
-        return [{ value: point.impliedApy * 100, date: new Date(point.timestampSec * 1000) }];
-      });
-  }, [points, timeFrame, nowMs]);
+    const endSec = matured ? market.expiry : Math.floor(nowMs / 1000);
+    const cutoffSec = endSec - getDayCountFromTimeFrame(timeFrame) * SECONDS_PER_DAY;
+    return (
+      points
+        // Pendle serves one bucket after expiry with the rate at 0%, which would draw a false cliff.
+        .filter(point => point.timestampSec >= cutoffSec && (!matured || point.timestampSec < market.expiry))
+        .flatMap(point => {
+          // A bucket the API serves without a rate is skipped rather than drawn
+          // as a 0% dip.
+          if (point.impliedApy === undefined) return [];
+          // Percent units (0.045 → 4.5).
+          return [{ value: point.impliedApy * 100, date: new Date(point.timestampSec * 1000) }];
+        })
+    );
+  }, [points, timeFrame, nowMs, matured, market.expiry]);
 
   // Headline reads the canonical current figure (matching the Details grid),
   // not the last historic bucket.
@@ -54,9 +69,11 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
         isLoading={isLoading}
         error={error ?? undefined}
         isPercentage
-        label={<Trans>Fixed APY</Trans>}
+        label={matured ? <Trans>Fixed APY history</Trans> : <Trans>Fixed APY</Trans>}
         tooltipLabel={<Trans>Rate</Trans>}
         displayValue={currentRate}
+        hideValue={matured}
+        initialTimeFrame={timeFrame}
         onTimeFrameChange={setTimeFrame}
       />
     </ErrorBoundary>

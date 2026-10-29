@@ -68,6 +68,12 @@ pnpm audit --prod --audit-level high   # Audit runtime deps; fails on high/criti
 
 - Hand-authored type files use `.ts`, not `.d.ts`. `skipLibCheck` makes TypeScript skip type-checking `.d.ts` contents, so exported types defined there go unchecked. Reserve `.d.ts` for genuine ambient declarations like `vite-env.d.ts`.
 
+### Contract errors
+
+- Never show a raw viem error or a generic "something went wrong" for a contract revert. Revert reasons are decoded and mapped to user-facing copy in one place: `apps/webapp/src/lib/revertMessages/` (`revertMessage(error)` for UI copy, `decodeRevert(error)` for the bare reason).
+- Every contract in `apps/webapp/src/hooks/contracts.ts` needs an entry in `contractRevertMessages` (its reverts mapped, or `null`); `revertMessages.test.ts` fails otherwise.
+- Reverts users hit are tracked in PostHog, never Sentry from prepare time (it pages). List reasons caused by the user's typed input (insufficient balance, under a minimum) in `inputRevertReasons` so they stay out of analytics.
+
 ### Testing
 
 - Use Tenderly forks for consistent test environments
