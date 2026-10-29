@@ -12,6 +12,7 @@ import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { preloadRouteChunks } from './vite.preloadRouteChunks';
+import { forkIris } from './vite.forkIris';
 import { tenderlyForkRpcUrl } from './src/data/wagmi/config/tenderlyForkRpc';
 import { FORK_L2_NETWORKS } from './src/utils/chainId';
 
@@ -225,6 +226,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       react(),
       tailwindcss(),
       preloadRouteChunks(),
+      forkIris({ l1Rpc: RPC_PROVIDER_TENDERLY, rpcName: TENDERLY_RPC_NAME }),
       lingui({ macroTransform: true }),
       sentryVitePlugin({
         applicationKey: 'sky-webapp',
