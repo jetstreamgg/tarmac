@@ -30,6 +30,12 @@ describe('stUsdsPrepareErrorMessage', () => {
     );
   });
 
+  it("reads Curve slippage as the registry's copy", () => {
+    expect(stUsdsPrepareErrorMessage(rpcRevert('Exchange resulted in fewer coins than expected'))).toMatch(
+      /price moved before your swap went through/
+    );
+  });
+
   it('keeps the generic line for an error with no revert', () => {
     expect(stUsdsPrepareErrorMessage(new Error('HTTP request failed'))).toBe(
       'An error occurred while preparing the transaction'

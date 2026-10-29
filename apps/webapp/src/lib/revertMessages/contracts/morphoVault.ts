@@ -9,19 +9,20 @@ const capReached = msg`This vault has reached its deposit limit. Try a smaller a
 // straight to the vault's liquidity market and fails when that market's cap is
 // full; a withdrawal larger than the idle balance pulls from the same market,
 // and Morpho Blue (0xBBBB…EFFCb) bubbles up "insufficient liquidity" when it
-// can't. A vault with no liquidity market fails the transfer itself instead.
+// can't. `TransferReverted` replaces whatever the asset reverted with when the
+// vault sends it: a short idle balance on a vault with no liquidity market
+// (Flagship), but on USDC and USDT also a blacklisted receiver or a paused
+// token, so its copy doesn't assume liquidity.
 export const morphoVaultRevertMessages: RevertMessageMap = {
   ...customErrorMessage('AbsoluteCapExceeded()', capReached),
   ...customErrorMessage('RelativeCapExceeded()', capReached),
-  ...customErrorMessage('TransferReverted()', noLiquidity),
+  ...customErrorMessage(
+    'TransferReverted()',
+    msg`The vault couldn't send the tokens for this withdrawal. If it's short on available liquidity, a smaller amount may go through; otherwise try again later.`
+  ),
   'insufficient liquidity': noLiquidity
 };
 
-// Set by the deposit amount: a pull of the user's tokens that failed (their
-// balance or allowance), or more than the cap's headroom, which the form
-// doesn't know (Morpho publishes no cap, so deposits are limited by balance only).
-export const morphoVaultInputRevertReasons: readonly string[] = [
-  ...customError('TransferFromReverted()'),
-  ...customError('AbsoluteCapExceeded()'),
-  ...customError('RelativeCapExceeded()')
-];
+// A deposit whose pull of the user's tokens failed: their balance or allowance.
+// The caps stay tracked: once one is full, every deposit fails.
+export const morphoVaultInputRevertReasons: readonly string[] = customError('TransferFromReverted()');

@@ -21,5 +21,6 @@ export const psm3RevertMessages: RevertMessageMap = {
 // calling it, and a halted `tout` (max uint) overflows there instead: that
 // direction only ever shows `Panic(0x11)`, and the forms gate it beforehand.
 export const usdsPsmWrapperRevertMessages: RevertMessageMap = {
-  'DssLitePsm/sell-gem-halted': msg`Converting USDC to USDS is paused right now. Try again later.`
+  // ConvertPage's copy for a halted direction, so the form and the revert read the same.
+  'DssLitePsm/sell-gem-halted': msg`This conversion direction is temporarily halted on mainnet.`
 };

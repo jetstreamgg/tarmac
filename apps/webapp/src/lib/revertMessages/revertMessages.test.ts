@@ -97,22 +97,28 @@ describe('revertMessage', () => {
 describe('reverts outside the Staking Engine', () => {
   const customErrorData = (name: string) =>
     encodeErrorResult({ abi: [{ type: 'error', name, inputs: [] }], errorName: name });
-
-  it('maps a Morpho vault cap by name and by bare selector', () => {
-    const copy = 'This vault has reached its deposit limit. Try a smaller amount or try again later.';
-    // Decoded against the vault's ABI (simulation): keyed by name.
-    const named = new ContractFunctionRevertedError({
-      abi: [{ type: 'error', name: 'AbsoluteCapExceeded', inputs: [] }],
-      data: customErrorData('AbsoluteCapExceeded'),
+  // Decoded against the contract's ABI (simulation): keyed by name.
+  const namedRevert = (name: string) => {
+    const error = new ContractFunctionRevertedError({
+      abi: [{ type: 'error', name, inputs: [] }],
+      data: customErrorData(name),
       functionName: 'deposit'
     });
-    expect(named.data?.errorName).toBe('AbsoluteCapExceeded');
-    expect(revertMessage(named)).toBe(copy);
-    // Raw data with no ABI (a wallet's error): keyed by selector.
-    const bare = Object.assign(new Error('execution reverted'), {
-      data: customErrorData('RelativeCapExceeded')
-    });
-    expect(revertMessage(bare)).toBe(copy);
+    expect(error.data?.errorName).toBe(name);
+    return error;
+  };
+  // Raw data with no ABI (a wallet's error): keyed by selector.
+  const bareRevert = (name: string) =>
+    Object.assign(new Error('execution reverted'), { data: customErrorData(name) });
+
+  it.each([
+    ['AbsoluteCapExceeded', /reached its deposit limit/],
+    ['RelativeCapExceeded', /reached its deposit limit/],
+    ['TransferReverted', /couldn't send the tokens for this withdrawal/],
+    ['InvalidProof', /rewards were just updated/]
+  ])('maps the custom error %s by name and by bare selector', (name, copy) => {
+    expect(revertMessage(namedRevert(name))).toMatch(copy);
+    expect(revertMessage(bareRevert(name))).toMatch(copy);
   });
 
   it('maps a withdrawal Morpho Blue has no liquidity for', () => {
@@ -122,10 +128,13 @@ describe('reverts outside the Staking Engine', () => {
   it('maps slippage on the Curve pool and PSM3', () => {
     expect(revertMessage(rpcRevert('Exchange resulted in fewer coins than expected'))).toMatch(/price moved/);
     expect(revertMessage(rpcRevert('PSM3/amountOut-too-low'))).toMatch(/price moved/);
+    expect(revertMessage(rpcRevert('PSM3/amountIn-too-high'))).toMatch(/cost more than your maximum/);
   });
 
   it('maps a halted PSM and a paused reward farm', () => {
-    expect(revertMessage(rpcRevert('DssLitePsm/sell-gem-halted'))).toMatch(/USDC to USDS is paused/);
+    expect(revertMessage(rpcRevert('DssLitePsm/sell-gem-halted'))).toBe(
+      'This conversion direction is temporarily halted on mainnet.'
+    );
     expect(revertMessage(rpcRevert('This action cannot be performed while the contract is paused'))).toMatch(
       /reward is paused/
     );
@@ -143,12 +152,15 @@ describe('isInputRevert', () => {
     expect(isInputRevert({ reason: '0xe450d38c', kind: 'unknown' })).toBe(true);
   });
 
-  it('silences a Morpho vault deposit the amount blocks: tokens it could not pull, or over the cap', () => {
+  it('silences a Morpho vault deposit that could not pull the tokens, but not a full cap', () => {
     expect(isInputRevert({ reason: 'TransferFromReverted', kind: 'custom' })).toBe(true);
     expect(isInputRevert({ reason: toFunctionSelector('TransferFromReverted()'), kind: 'unknown' })).toBe(
       true
     );
-    expect(isInputRevert({ reason: 'AbsoluteCapExceeded', kind: 'custom' })).toBe(true);
+    expect(isInputRevert({ reason: 'AbsoluteCapExceeded', kind: 'custom' })).toBe(false);
+    expect(isInputRevert({ reason: toFunctionSelector('RelativeCapExceeded()'), kind: 'unknown' })).toBe(
+      false
+    );
   });
 
   it('keeps protocol-state and unknown reverts', () => {

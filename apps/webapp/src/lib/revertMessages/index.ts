@@ -98,8 +98,11 @@ export const contractRevertMessages: Readonly<Record<string, RevertMessageMap | 
 
 /**
  * Every mapped reason, flattened, plus Solidity's own `Panic` codes (any
- * contract can raise those). Reasons carry their contract's prefix, so they
- * don't collide.
+ * contract can raise those). A revert doesn't say which contract raised it, so
+ * the lookup is by reason alone. Most reasons carry their contract's prefix,
+ * but a few don't: Morpho's "insufficient liquidity" and `TransferReverted`,
+ * Merkl's `InvalidProof`. Another contract raising one of those gets that copy,
+ * so check a new contract's unprefixed reasons against this list.
  */
 const revertMessageByReason: RevertMessageMap = Object.assign(
   {},
