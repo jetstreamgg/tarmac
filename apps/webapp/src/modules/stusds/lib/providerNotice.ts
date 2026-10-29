@@ -28,17 +28,17 @@ export function getProviderMessage(
   i18n: I18n
 ): string {
   // Plain fixed-2 text: the copy carries its own sign and prose, so no "<" clamp.
-  const rateText = createNumberFormatter({ minDecimals: 2, maxDecimals: 2 }).format(
-    Math.abs(rateDifferencePercent)
-  );
+  const rateFormatter = createNumberFormatter({ minDecimals: 2, maxDecimals: 2 });
+  const rateText = rateFormatter.format(Math.abs(rateDifferencePercent));
   switch (selectionReason) {
     //all blocked - this should only happen if the curve pool is unusable and native is blocked
     case StUsdsSelectionReason.ALL_BLOCKED:
       return i18n._(msg`Both native and Curve routes are temporarily unavailable`);
 
-    //curve better rate
+    //curve better rate — the difference is positive by construction (the
+    //selection only reports this reason then), so it is shown signed
     case StUsdsSelectionReason.CURVE_BETTER_RATE: {
-      return `${i18n._(msg`Routing through Curve for a better rate`)} (+${rateText}%)`;
+      return `${i18n._(msg`Routing through Curve for a better rate`)} (+${rateFormatter.format(rateDifferencePercent)}%)`;
     }
 
     //curve only available

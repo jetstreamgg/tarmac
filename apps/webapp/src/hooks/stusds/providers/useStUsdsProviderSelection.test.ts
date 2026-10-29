@@ -399,6 +399,49 @@ describe('useStUsdsProviderSelection', () => {
       expect(result.current.selectionReason).toBe(StUsdsSelectionReason.NATIVE_BETTER_RATE);
     });
 
+    it('does not report a better rate when Curve wins only on quote validity (APP-509)', () => {
+      // Native couldn't quote; Curve's rate is ~0.15% worse than native's.
+      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
+        inputAmount: 10000n * WAD,
+        outputAmount: 10000n * WAD
+      });
+      nativeData.quote = { ...nativeData.quote!, isValid: false, invalidReason: 'Unable to get quote' };
+      const curveData = createMockProviderData(StUsdsProviderType.CURVE, {
+        inputAmount: 10015n * WAD,
+        outputAmount: 10000n * WAD
+      });
+      setupMocks(nativeData, curveData);
+
+      const { result } = renderHook(() =>
+        useStUsdsProviderSelection({ amount: 0n, direction: StUsdsDirection.WITHDRAW })
+      );
+
+      expect(result.current.selectedProvider).toBe(StUsdsProviderType.CURVE);
+      expect(result.current.selectionReason).toBe(StUsdsSelectionReason.CURVE_ONLY_AVAILABLE);
+      expect(result.current.rateDifferencePercent).toBeLessThan(0);
+    });
+
+    it('keeps native for a small wallet at the reference amount when Curve is worse (APP-509)', () => {
+      // Both quote validly now that the native quote ignores the user's own
+      // balance; Curve's ~0.15% premium leaves native as the honest pick.
+      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
+        inputAmount: 10000n * WAD,
+        outputAmount: 10000n * WAD
+      });
+      const curveData = createMockProviderData(StUsdsProviderType.CURVE, {
+        inputAmount: 10015n * WAD,
+        outputAmount: 10000n * WAD
+      });
+      setupMocks(nativeData, curveData);
+
+      const { result } = renderHook(() =>
+        useStUsdsProviderSelection({ amount: 0n, direction: StUsdsDirection.WITHDRAW })
+      );
+
+      expect(result.current.selectedProvider).toBe(StUsdsProviderType.NATIVE);
+      expect(result.current.selectionReason).not.toBe(StUsdsSelectionReason.CURVE_BETTER_RATE);
+    });
+
     it('should calculate correct rate difference percent', () => {
       const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
         inputAmount: 10000n * WAD,

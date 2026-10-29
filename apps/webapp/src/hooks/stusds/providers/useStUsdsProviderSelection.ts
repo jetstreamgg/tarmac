@@ -113,7 +113,13 @@ export function useStUsdsProviderSelection(
       if (rateExceedsThreshold && comparison.betterProvider) {
         if (comparison.betterProvider === StUsdsProviderType.CURVE) {
           selectedProvider = StUsdsProviderType.CURVE;
-          selectionReason = StUsdsSelectionReason.CURVE_BETTER_RATE;
+          // Only a positive difference is a better rate. Curve can also win on
+          // quote validity alone (native couldn't quote), with a rate that is
+          // worse — that is Curve being the only usable route.
+          selectionReason =
+            comparison.differencePercent > 0
+              ? StUsdsSelectionReason.CURVE_BETTER_RATE
+              : StUsdsSelectionReason.CURVE_ONLY_AVAILABLE;
         } else {
           selectedProvider = StUsdsProviderType.NATIVE;
           selectionReason = StUsdsSelectionReason.NATIVE_BETTER_RATE;
