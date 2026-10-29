@@ -16,5 +16,9 @@ export function enginePrepareErrorMessage(
   error: Error | null | undefined
 ): string | undefined {
   if (prepared || !error) return undefined;
-  return t`Something went wrong preparing the transaction. Please try again.`;
+  return genericPrepareErrorMessage();
 }
+
+/** The shared fallback copy, for flow-specific mappers that run out of cases. */
+export const genericPrepareErrorMessage = () =>
+  t`Something went wrong preparing the transaction. Please try again.`;

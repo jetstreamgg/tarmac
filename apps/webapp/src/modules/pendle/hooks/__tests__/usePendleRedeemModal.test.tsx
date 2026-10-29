@@ -506,9 +506,8 @@ describe('usePendleRedeemModal claim quote failure', () => {
 
   it.each([
     'Pendle /convert 400: {"message":"Market not found","statusCode":400}',
-    'Pendle /convert 503: {}',
-    'Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem'
-  ])('says Pendle cannot prepare the claim, with no trade-size advice: %s', async raw => {
+    'Pendle /convert 503: {}'
+  ])('says Pendle cannot prepare the claim when its API refuses: %s', async raw => {
     const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
     expect(config.errorMessage).toBe("Pendle can't prepare this claim right now. Please try again later.");
   });
@@ -533,6 +532,15 @@ describe('usePendleRedeemModal claim quote failure', () => {
     expect(config.errorMessage).toBe('Pendle has no route for this payout. Try the other withdrawal token.');
   });
 
+  it('says the quote was invalid, as the buy/sell modal does', async () => {
+    const config = await openWith({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Pendle: malformed quote — missing input/output struct for "exitPostExpToToken"')
+    });
+    expect(config.errorMessage).toBe('Received an invalid quote from Pendle. Please try again.');
+  });
+
   it('points at the connection when Pendle could not be reached', async () => {
     const config = await openWith({ data: undefined, isLoading: false, error: new Error('Failed to fetch') });
     expect(config.errorMessage).toBe(
@@ -540,19 +548,18 @@ describe('usePendleRedeemModal claim quote failure', () => {
     );
   });
 
-  it('does not blame the connection when Pendle answered with something unreadable', async () => {
-    const config = await openWith({
-      data: undefined,
-      isLoading: false,
-      error: new SyntaxError('Unexpected token < in JSON at position 0')
-    });
-    expect(config.errorMessage).toBe("Couldn't prepare your claim. Please try again.");
+  it.each([
+    new SyntaxError('Unexpected token < in JSON at position 0'),
+    new Error('Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem')
+  ])('falls back to the shared prepare copy, not the connection: %s', async error => {
+    const config = await openWith({ data: undefined, isLoading: false, error });
+    expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
   });
 
   it('gives a failed simulation claim copy, not advice to adjust inputs', async () => {
     hoisted.writeError = new Error('execution reverted: custom error 0x1234');
     const config = await openWith(undefined);
-    expect(config.errorMessage).toBe("Couldn't prepare your claim. Please try again.");
+    expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
   });
 
   it('keeps the slippage guidance when the simulation fails on slippage', async () => {

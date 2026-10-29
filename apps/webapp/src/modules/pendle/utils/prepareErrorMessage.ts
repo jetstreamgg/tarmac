@@ -1,4 +1,5 @@
 import { t } from '@lingui/core/macro';
+import { genericPrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 
 /**
  * Maps raw Pendle prepare/revert messages to user-friendly copy. Shared by the
@@ -52,10 +53,11 @@ export function pendleQuoteErrorMessage(raw: string | undefined): string | undef
 }
 
 /**
- * Why a matured position's claim can't be prepared. The claim always redeems
- * the whole balance, so the trade-size advice above doesn't apply. Refusals
- * that won't clear on their own get their own copy; anything else from Pendle
- * reads as temporary.
+ * Why a matured position's claim can't be prepared. Sorts errors into the same
+ * cases as pendleQuoteErrorMessage, with claim wording only where its advice
+ * differs: a claim always takes the whole balance, so there is no amount to
+ * change. Unlike that mapper, only an actual network failure blames the
+ * connection.
  */
 export function pendleClaimErrorMessage(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
@@ -65,18 +67,18 @@ export function pendleClaimErrorMessage(raw: string | undefined): string | undef
   if (/no routes/i.test(raw)) {
     return t`Pendle has no route for this payout. Try the other withdrawal token.`;
   }
-  // Our Pendle client and quote checks prefix every error they raise.
-  if (/^Pendle\b/.test(raw)) {
+  if (/malformed quote/i.test(raw)) {
+    return t`Received an invalid quote from Pendle. Please try again.`;
+  }
+  if (/^Pendle \/convert \d+/i.test(raw)) {
     return t`Pendle can't prepare this claim right now. Please try again later.`;
   }
   // fetch's network failure messages across browsers.
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
     return t`Couldn't reach Pendle to prepare your claim. Check your connection and try again.`;
   }
-  return CLAIM_PREPARE_FALLBACK();
+  return genericPrepareErrorMessage();
 }
-
-const CLAIM_PREPARE_FALLBACK = () => t`Couldn't prepare your claim. Please try again.`;
 
 /**
  * Why a matured claim with a quote still can't be signed. Slippage and stale
@@ -85,5 +87,5 @@ const CLAIM_PREPARE_FALLBACK = () => t`Couldn't prepare your claim. Please try a
  */
 export function pendleClaimPrepareErrorMessage(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
-  return pendlePrepareErrorMessage(raw, undefined, CLAIM_PREPARE_FALLBACK());
+  return pendlePrepareErrorMessage(raw, undefined, genericPrepareErrorMessage());
 }
