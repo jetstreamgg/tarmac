@@ -117,8 +117,9 @@ const arrivalAgainst = (route: BridgeRoute, cards: RouteOptionCard[] | undefined
   );
   if (!(slower > route.etaMinutes)) return undefined;
   return (
-    <span className="flex items-center gap-1" data-testid="bridge-modal-eta">
-      <s className="text-fgSecondary text-xs leading-[18px] font-normal">{formatEta(slower)}</s>
+    // Held to the grid's 16px value line, so the 18px badge doesn't make this route's Review taller.
+    <span className="flex h-4 items-center gap-1" data-testid="bridge-modal-eta">
+      <s className="text-fgSecondary text-xs leading-4 font-normal">{formatEta(slower)}</s>
       <BridgeFastBadge testId="bridge-modal-eta-fast">{formatEta(route.etaMinutes)}</BridgeFastBadge>
     </span>
   );
