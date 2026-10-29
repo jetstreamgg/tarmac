@@ -1,4 +1,4 @@
-import { isAddress, zeroAddress } from 'viem';
+import { getAddress, isAddress, zeroAddress, type Address } from 'viem';
 import type { SafeConfig } from '@/hooks/wallet/safeAccount';
 import { CCTP_CONTRACTS } from '../adapters/cctp/contracts';
 import { NATIVE_DEPOSIT_CONTRACTS } from '../adapters/nativeDeposit/contracts';
@@ -12,6 +12,10 @@ const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 /** Whether `value` is a valid receiving address on the destination's address family; never the zero address. */
 export const isValidRecipient = (value: string, family: BridgeNetwork['family']): boolean =>
   family === 'solana' ? SOLANA_ADDRESS.test(value) : isAddress(value) && value.toLowerCase() !== zeroAddress;
+
+/** The checksummed EVM address, or undefined when `value` isn't one. */
+export const toAddress = (value: string | undefined): Address | undefined =>
+  value && isAddress(value) ? getAddress(value) : undefined;
 
 const BRIDGE_CONTRACTS = [...NATIVE_DEPOSIT_CONTRACTS, ...NATIVE_WITHDRAWAL_CONTRACTS, ...CCTP_CONTRACTS];
 

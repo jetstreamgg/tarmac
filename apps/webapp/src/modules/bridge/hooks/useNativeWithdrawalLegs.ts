@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { getAddress, isAddress, type Address, type Call, type PublicClient } from 'viem';
+import type { Call, PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance } from '@/hooks';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -7,15 +7,12 @@ import { arbitrumWithdrawalCalls } from '../adapters/nativeWithdrawal/arbitrum';
 import type { NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { l2BridgeGateAbi, l2WithdrawalBridge } from '../adapters/nativeWithdrawal/contracts';
 import { opStackWithdrawalCalls } from '../adapters/nativeWithdrawal/opStack';
-import { isBlockedRecipient } from '../model/recipient';
+import { isBlockedRecipient, toAddress } from '../model/recipient';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
 
 /** The withdrawal leg's function, which the source recording keys on. */
 export const nativeWithdrawalFunction = (from: NativeDepositNetwork) =>
   from === 'arbitrum' ? 'outboundTransfer' : 'bridgeERC20To';
-
-const toAddress = (value: string | undefined): Address | undefined =>
-  value && isAddress(value) ? getAddress(value) : undefined;
 
 /**
  * The source legs of a native withdrawal from an L2 to Ethereum: the approve

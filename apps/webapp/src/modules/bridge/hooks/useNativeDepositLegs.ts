@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAddress, isAddress, type Address, type PublicClient } from 'viem';
+import type { PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { useTokenAllowance } from '@/hooks';
@@ -17,13 +17,11 @@ import {
 import { opStackDepositCalls } from '../adapters/nativeDeposit/opStack';
 import { bridgeChainId } from '../model/networks';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
+import { toAddress } from '../model/recipient';
 
 /** The deposit leg's function, which the source recording keys on. */
 export const nativeDepositFunction = (to: NativeDepositNetwork) =>
   to === 'arbitrum' ? 'outboundTransferCustomRefund' : 'bridgeERC20To';
-
-const toAddress = (value: string | undefined): Address | undefined =>
-  value && isAddress(value) ? getAddress(value) : undefined;
 
 /**
  * The source legs of a native deposit from Ethereum: the approve (when the

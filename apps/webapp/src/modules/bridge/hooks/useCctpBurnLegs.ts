@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { getAddress, isAddress, isAddressEqual, type Address, type PublicClient } from 'viem';
+import { isAddressEqual, type Address, type PublicClient } from 'viem';
 import { usePublicClient } from 'wagmi';
 import { useTokenAllowance, type TxMutateVariables } from '@/hooks';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -13,14 +13,12 @@ import { openCctpSpend } from '../store/openCctpSpends';
 import { isStorageWritable } from '../store/storageWritable';
 import { unfinishedSwapRefusal } from '../store/unfinishedSwapRefusal';
 import { useBridgeCallLegs } from './useBridgeCallLegs';
+import { toAddress } from '../model/recipient';
 
 /** The burn leg, which the source recording keys on. */
 export const CCTP_BURN_FUNCTION = 'depositForBurn';
 const CCTP_SWAP_FUNCTION = 'swapExactIn';
 const STORAGE_REFUSED_MESSAGE = 'Bridging to another address needs browser storage, which is unavailable.';
-
-const toAddress = (value: string | undefined): Address | undefined =>
-  value && isAddress(value) ? getAddress(value) : undefined;
 
 /**
  * The source legs of a CCTP bridge from an L2 to Ethereum: approve USDS to

@@ -8,7 +8,8 @@ import {
   isSameSafe,
   isValidRecipient,
   recipientProblem,
-  recipientRequirement
+  recipientRequirement,
+  toAddress
 } from './recipient';
 
 describe('isValidRecipient', () => {
@@ -255,5 +256,15 @@ describe('isBlockedRecipient for withdrawals', () => {
   it.each(WITHDRAWAL_RECIPIENTS)('blocks the %s, which would trap or expose a withdrawal', (_, address) => {
     expect(isBlockedRecipient(address)).toBe(true);
     expect(recipientProblem(address, { source: 'none', destination: 'contract' })).toBe('system-contract');
+  });
+});
+
+describe('toAddress', () => {
+  it('checksums an EVM address and reads anything else as none', () => {
+    expect(toAddress('0x71c7656ec7ab88b098defb751b7401b5f6d8976f')).toBe(
+      '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+    );
+    expect(toAddress('not an address')).toBeUndefined();
+    expect(toAddress(undefined)).toBeUndefined();
   });
 });
