@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  TransactionNotFoundError,
   TransactionReceiptNotFoundError,
   decodeEventLog,
   decodeFunctionData,
@@ -10,6 +11,7 @@ import {
   type Hex
 } from 'viem';
 import type { PendingBridge } from '../../model/types';
+import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { ARB_SYS, ARBITRUM_CONFIRM_MS, arbSysAbi, arbitrumOutboxAbi } from './contracts';
 import { arbitrumItemHash, arbitrumWithdrawalMessage } from './arbitrum';
@@ -178,6 +180,22 @@ describe('arbitrumWithdrawalProgress', () => {
     state.receiptStatus = 'success';
     expect(await progress({ amount: MESSAGE.amount + 1n })).toBeNull();
     expect(await progress({ recipient: '0x1111111111111111111111111111111111111111' })).toBeNull();
+  });
+
+  it('waits longer than an L2 sequencer on an Ethereum finalize the mempool still holds', async () => {
+    const unknown = vi
+      .spyOn(l1, 'getTransaction')
+      .mockRejectedValue(new TransactionNotFoundError({ hash: '0xexec' }));
+    const sent = {
+      action: 'finalize' as const,
+      txHash: '0xexec',
+      at: NOW - 20 * 60_000,
+      status: 'sent' as const
+    };
+    expect(await progress({ actions: [sent] })).not.toMatchObject({ kind: 'action-dropped' });
+    const old = { ...sent, at: NOW - L1_SENT_ACTION_DROPPED_MS };
+    expect(await progress({ actions: [old] })).toEqual({ kind: 'action-dropped', txHash: '0xexec' });
+    unknown.mockRestore();
   });
 
   it('settles a sent execute by its Ethereum receipt first', async () => {

@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  TransactionNotFoundError,
   ContractFunctionExecutionError,
   ContractFunctionRevertedError,
   TransactionReceiptNotFoundError,
@@ -13,6 +14,7 @@ import {
 } from 'viem';
 import type { PendingBridge } from '../../model/types';
 import { OP_STACK_DEPOSIT } from '../nativeDeposit/contracts';
+import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { OP_STACK_WITHDRAWAL, optimismPortalAbi } from './contracts';
 import { opStackWithdrawalMessage } from './opStack';
@@ -481,6 +483,22 @@ describe('opStackWithdrawalProgress: sent actions', () => {
         actions: [prove, { action: 'finalize', txHash: '0xfin', at: NOW - 1000, status: 'sent' }]
       })
     ).toEqual({ kind: 'action-confirmed', action: 'finalize', txHash: '0xfin' });
+  });
+
+  it('waits longer than an L2 sequencer on an Ethereum finalize the mempool still holds', async () => {
+    const unknown = vi
+      .spyOn(l1, 'getTransaction')
+      .mockRejectedValue(new TransactionNotFoundError({ hash: '0xfin' }));
+    const sent = {
+      action: 'finalize' as const,
+      txHash: '0xfin',
+      at: NOW - 20 * 60_000,
+      status: 'sent' as const
+    };
+    expect(await progress({ actions: [prove, sent] })).not.toMatchObject({ kind: 'action-dropped' });
+    const old = { ...sent, at: NOW - L1_SENT_ACTION_DROPPED_MS };
+    expect(await progress({ actions: [prove, old] })).toEqual({ kind: 'action-dropped', txHash: '0xfin' });
+    unknown.mockRestore();
   });
 
   it('leaves a sent action of a Safe to the tracker', async () => {

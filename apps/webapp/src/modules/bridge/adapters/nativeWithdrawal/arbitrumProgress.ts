@@ -2,7 +2,7 @@ import { getAddress, isAddressEqual, parseAbiItem, zeroHash, type Hex } from 'vi
 import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
-import { settleSentAction } from '../sentAction';
+import { L1_SENT_ACTION_DROPPED_MS, settleSentAction } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import {
   ARBITRUM_CONFIRM_MS,
@@ -79,7 +79,7 @@ export async function arbitrumWithdrawalProgress(
   try {
     // A Safe's or a bundle's sent action is settled by the tracker.
     const sent = bridge.actions.find(action => action.status === 'sent' && !action.safe && !action.bundle);
-    const settled = sent && (await settleSentAction(l1, sent, now));
+    const settled = sent && (await settleSentAction(l1, sent, now, L1_SENT_ACTION_DROPPED_MS));
     if (settled) return settled;
     if (isSettled(bridge)) return null;
 
