@@ -38,6 +38,9 @@ jobs:
 
     outputs:
       pool-ready: ${{ steps.pool-status.outputs.status }}
+      # Fallback only: fresh VNet IDs and snapshot IDs (no RPC URLs).
+      vnet-ids: ${{ steps.export-ids.outputs.vnet-ids }}
+      snapshots: ${{ steps.export-ids.outputs.snapshots }}
 
     env:
       VITE_ENV_NAME: development
@@ -145,14 +148,17 @@ jobs:
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
-      - name: Upload VNet data for shards
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: vnet-data
-          path: |
-            tenderlyTestnetData.json
-            apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
-          retention-days: 1
+      # Shards never get tenderlyTestnetData.json from this job: it holds the
+      # VNets' Admin RPC URLs, and an artifact is that file in plaintext (secret
+      # masking covers logs, not artifacts). Pool shards re-read the secrets;
+      # fallback shards get the IDs here and look the URLs up with
+      # TENDERLY_API_KEY (APP-479).
+      - name: Export VNet IDs for shards (fallback only)
+        id: export-ids
+        if: steps.pool-status.outputs.status == 'unavailable'
+        run: |
+          echo "vnet-ids=$(jq -c '[.[] | {NETWORK, TENDERLY_TESTNET_ID}]' tenderlyTestnetData.json)" >> $GITHUB_OUTPUT
+          echo "snapshots=$(jq -c . apps/webapp/src/test/e2e/persistent-vnet-snapshots.json)" >> $GITHUB_OUTPUT
 
       - name: Verify setup is ready
         run: |
@@ -213,10 +219,24 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm -F webapp exec playwright install --with-deps chromium
 
-      - name: Download VNet data
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: vnet-data
+      - name: Restore pool VNet data from repo secrets
+        if: needs.setup-pool.outputs.pool-ready == 'ready'
+        run: |
+          printf '%s' "$VNET_POOL_DATA" > tenderlyTestnetData.json
+          printf '%s' "$VNET_SNAPSHOT_DATA" > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+        env:
+          VNET_POOL_DATA: ${{ secrets.VNET_POOL_DATA }}
+          VNET_SNAPSHOT_DATA: ${{ secrets.VNET_SNAPSHOT_DATA }}
+
+      - name: Restore fresh VNet data from IDs (fallback)
+        if: needs.setup-pool.outputs.pool-ready != 'ready'
+        run: |
+          node ./scripts/restoreVnetData.ts
+          printf '%s' "$VNET_SNAPSHOTS" > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+          VNET_IDS: ${{ needs.setup-pool.outputs.vnet-ids }}
+          VNET_SNAPSHOTS: ${{ needs.setup-pool.outputs.snapshots }}
 
       - name: Verify VNet files
         run: |
@@ -320,15 +340,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Download VNet data
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: vnet-data
-        continue-on-error: true
-
+      # This run's fresh VNets by ID (the age sweep skips anything under 45
+      # minutes, so it rarely caught them), then the sweep as a backstop.
       - name: Cleanup fresh VNets (fallback only)
         run: |
           echo "Cleaning up fresh VNets (not pool VNets)..."
+          if [ -n "$VNET_IDS" ]; then
+            printf '%s' "$VNET_IDS" > tenderlyCreatedVnets.json
+            pnpm run vnet:delete:created:ci || echo "Deleting this run's VNets failed, continuing..."
+          fi
           pnpm run vnet:delete:all:ci || echo "VNet cleanup failed, continuing..."
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+          VNET_IDS: ${{ needs.setup-pool.outputs.vnet-ids }}
