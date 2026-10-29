@@ -109,7 +109,8 @@ export const PendleRedeem = ({
       <TransactionAmountHero
         // The PT side on top, as in the early withdrawal; read-only, since a
         // claim always takes the whole balance. Large like the stake claim.
-        label={t`${ptSymbol} amount`}
+        // Labelled like the card's "My position", not as the payout.
+        label={t`Your position`}
         amount={formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 })}
         symbol={ptSymbol}
         usd={

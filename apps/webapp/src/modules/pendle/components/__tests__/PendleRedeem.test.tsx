@@ -97,7 +97,7 @@ describe('PendleRedeem', () => {
     renderRedeem();
 
     const hero = screen.getByTestId('pendle-redeem-hero');
-    expect(hero.textContent).toContain('PT-USDG amount');
+    expect(hero.textContent).toContain('Your position');
     expect(hero.textContent).toContain('1.5');
   });
 
