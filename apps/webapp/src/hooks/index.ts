@@ -84,8 +84,6 @@ export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useAllPendleMarketsHistory } from './pendle/useAllPendleMarketsHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
-export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
-export { usePendleMaturedPositionEarnings } from './pendle/usePendleMaturedPositionEarnings';
 export type { PendleMarketConfig, PendleConvertQuote } from './pendle/pendle';
 
 // Authentication
