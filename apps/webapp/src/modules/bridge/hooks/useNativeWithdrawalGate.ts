@@ -41,17 +41,16 @@ export function useNativeWithdrawalGate({
   // Any value but exactly 1 is closed; one unread fact blocks.
   return useMemo(() => {
     if (network === undefined) return undefined;
-    const status = [isOpen.status, maxWithdraws.status].includes('error')
-      ? 'error'
-      : isOpen.status === 'success' && maxWithdraws.status === 'success'
-        ? 'success'
+    const data =
+      isOpen.data === undefined || maxWithdraws.data === undefined
+        ? undefined
+        : { isOpen: isOpen.data === 1n, maxAmount: maxWithdraws.data };
+    // A failed refetch keeps its last good read: a blip must not move an open Review off SkyLink.
+    const status = data
+      ? 'success'
+      : [isOpen.status, maxWithdraws.status].includes('error')
+        ? 'error'
         : 'pending';
-    return toRouteFact({
-      status,
-      data:
-        isOpen.data === undefined || maxWithdraws.data === undefined
-          ? undefined
-          : { isOpen: isOpen.data === 1n, maxAmount: maxWithdraws.data }
-    });
+    return toRouteFact({ status, data });
   }, [network, isOpen.status, isOpen.data, maxWithdraws.status, maxWithdraws.data]);
 }

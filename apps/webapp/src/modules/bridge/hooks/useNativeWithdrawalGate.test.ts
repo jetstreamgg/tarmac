@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   status: 'success' as 'success' | 'pending' | 'error',
   isOpen: 1n,
   maxWithdraws: 1_000n,
+  // A refetch failed after a good read: TanStack keeps the data and reports the error.
+  refetchFailed: false,
   reads: [] as Read[]
 }));
 
@@ -21,7 +23,10 @@ vi.mock('wagmi', () => ({
     if (read.query?.enabled === false) return { status: 'pending', data: undefined };
     mocks.reads.push(read);
     if (mocks.status !== 'success') return { status: mocks.status, data: undefined };
-    return { status: 'success', data: read.functionName === 'isOpen' ? mocks.isOpen : mocks.maxWithdraws };
+    return {
+      status: mocks.refetchFailed ? 'error' : 'success',
+      data: read.functionName === 'isOpen' ? mocks.isOpen : mocks.maxWithdraws
+    };
   }
 }));
 
@@ -33,6 +38,7 @@ describe('useNativeWithdrawalGate', () => {
     mocks.status = 'success';
     mocks.isOpen = 1n;
     mocks.maxWithdraws = 1_000n;
+    mocks.refetchFailed = false;
     mocks.reads = [];
   });
 
@@ -67,6 +73,11 @@ describe('useNativeWithdrawalGate', () => {
     expect(render('unichain')).toBe('error');
     mocks.status = 'success';
     expect(render('unichain', 'ethereum', null)).toBe('loading');
+  });
+
+  it('keeps the last good read when a refetch fails, so a picked SkyLink route stays put', () => {
+    mocks.refetchFailed = true;
+    expect(render('base')).toEqual({ isOpen: true, maxAmount: 1_000n });
   });
 
   it('reads nothing for a deposit, a LayerZero pair or a pair not to Ethereum', () => {
