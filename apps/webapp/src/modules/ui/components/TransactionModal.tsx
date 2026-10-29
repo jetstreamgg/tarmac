@@ -279,14 +279,14 @@ export function TransactionModal({
   const { bpi } = useBreakpointIndex();
   const asideRoom = isReview && bpi >= BP.desktop;
   const asideOpen = !!aside && asideRoom;
-  // The row holds while the aside slides back behind the card.
+  // The row holds while the aside slides back behind the card, also once Confirm left the review.
   const [asideLeaving, setAsideLeaving] = useState(false);
   const [asideWasOpen, setAsideWasOpen] = useState(asideOpen);
   if (asideWasOpen !== asideOpen) {
     setAsideWasOpen(asideOpen);
     setAsideLeaving(!asideOpen);
   }
-  const showAside = asideOpen || (asideLeaving && asideRoom);
+  const showAside = asideOpen || (asideLeaving && bpi >= BP.desktop);
   const reducedMotion = useReducedMotion();
   const hasMultipleSteps = steps && steps.length > 1;
   // A gate-mounted signature prelude must be visible even when it is the ONLY

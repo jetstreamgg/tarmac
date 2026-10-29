@@ -7,6 +7,8 @@ import type { TransactionConfig } from './transactionContract';
 
 // The modal's width tier, set per test.
 const breakpoint = vi.hoisted(() => ({ bpi: 3 }));
+// With holdExit, a presence keeps its leaving child until `finish` runs, as motion does for the exit's length.
+const presence = vi.hoisted(() => ({ holdExit: false, finish: undefined as (() => void) | undefined }));
 
 // Render the real TransactionProvider + TransactionModal: stub only its chain,
 // wallet, batch, and analytics reads (mirrors transactionStepProgression.test).
@@ -58,7 +60,20 @@ vi.mock('motion/react', async io => {
       React.createElement(element, strip(rest), children);
   return {
     ...actual,
-    AnimatePresence: ({ children }: { children: ReactNode }) => children,
+    AnimatePresence: ({ children, onExitComplete }: { children: ReactNode; onExitComplete?: () => void }) => {
+      const leaving = React.useRef<ReactNode>(null);
+      const [, rerender] = React.useState(0);
+      if (!presence.holdExit || children) {
+        leaving.current = children;
+        return children;
+      }
+      presence.finish = () => {
+        leaving.current = null;
+        onExitComplete?.();
+        rerender(n => n + 1);
+      };
+      return leaving.current;
+    },
     // One component per tag, like motion's own: a fresh one each render would remount the tree.
     motion: new Proxy({} as Record<string, ReturnType<typeof tag>>, {
       get: (cache, element) => (cache[element as string] ??= tag(element as string))
@@ -116,7 +131,11 @@ describe('TransactionModal aside (Figma 3964:74437)', () => {
     i18n.activate('en');
     breakpoint.bpi = BP.desktop;
   });
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    presence.holdExit = false;
+    presence.finish = undefined;
+  });
 
   it('on desktop, sits beside the review, which keeps the only Confirm', () => {
     renderModal(config());
@@ -138,6 +157,17 @@ describe('TransactionModal aside (Figma 3964:74437)', () => {
   it('leaves with the review once Confirm moves to the wallet screen', () => {
     renderModal(config());
     fireEvent.click(confirmButtons()[0]);
+    expect(screen.queryByTestId('transaction-modal-aside')).toBeNull();
+  });
+
+  it('slides back beside the card, not inside it, once Confirm moves to the wallet screen', () => {
+    presence.holdExit = true;
+    renderModal(config());
+    fireEvent.click(confirmButtons()[0]);
+    const leaving = screen.getByTestId('transaction-modal-aside');
+    // The dialog stays the row: inside the single-column card the aside would push it around.
+    expect(leaving.parentElement?.className).toContain('flex-row');
+    act(() => presence.finish?.());
     expect(screen.queryByTestId('transaction-modal-aside')).toBeNull();
   });
 
