@@ -37,7 +37,10 @@ export function useBatchStUsdsDeposit({
     to: stUsdsAddress[chainId as keyof typeof stUsdsAddress],
     abi: stUsdsImplementationAbi as Abi,
     functionName: 'deposit',
-    args: [amount, connectedAddress!, ...(referral > 0 ? [referral] : [])] as const
+    // Always the 3-arg overload, so every deposit emits a referral code — the
+    // 2-arg form emits none, which left deposits unattributed while the
+    // configured code was 0 (APP-322).
+    args: [amount, connectedAddress!, referral] as const
   });
 
   const calls: Call[] = [];
