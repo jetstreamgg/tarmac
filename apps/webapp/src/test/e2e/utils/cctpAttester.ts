@@ -1,34 +1,11 @@
 import type { Page } from '@playwright/test';
-import {
-  createPublicClient,
-  encodeFunctionData,
-  http,
-  keccak256,
-  parseAbi,
-  toHex,
-  type Address,
-  type Hash,
-  type Hex
-} from 'viem';
-import { privateKeyToAccount, serializeSignature, sign } from 'viem/accounts';
+import { createPublicClient, encodeFunctionData, http, keccak256, type Hash, type Hex } from 'viem';
 import { MESSAGE_TRANSMITTER_V2, messageTransmitterV2Abi } from '@/modules/bridge/adapters/cctp/contracts';
 import { sentMessages } from '@/modules/bridge/adapters/cctp/message';
 import { IRIS_API_URL } from '@/modules/bridge/adapters/cctp/iris';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
-
-// Circle's attesters never see the forks, so the Ethereum fork's MessageTransmitterV2
-// also accepts this key's signature alone. Test-only key, deterministic across shards.
-const ATTESTER_KEY = keccak256(toHex('tarmac e2e cctp attester'));
-const ATTESTER = privateKeyToAccount(ATTESTER_KEY).address;
-
-const attestableAbi = parseAbi([
-  'function attesterManager() view returns (address)',
-  'function isEnabledAttester(address) view returns (bool)',
-  'function signatureThreshold() view returns (uint256)',
-  'function enableAttester(address)',
-  'function setSignatureThreshold(uint256)'
-]);
+import { attestedCopy, enableTestAttesters, signAsTestAttesters, testAttester } from './cctpTestAttesters';
 
 const client = async (network: NetworkName) =>
   createPublicClient({ transport: http(await getRpcUrlFromFile(network)) });
@@ -38,21 +15,7 @@ const client = async (network: NetworkName) =>
  * on every setup (snapshots may predate it) and skips what is already set.
  */
 export async function enableCctpTestAttester() {
-  const l1 = await client(NetworkName.mainnet);
-  const transmitter = { address: MESSAGE_TRANSMITTER_V2, abi: attestableAbi } as const;
-  const manager: Address = await l1.readContract({ ...transmitter, functionName: 'attesterManager' });
-  const send = async (data: Hex) => {
-    const hash = (await l1.request({
-      method: 'eth_sendTransaction',
-      params: [{ from: manager, to: MESSAGE_TRANSMITTER_V2, data, gas: '0x7A120', gasPrice: '0x0' }]
-    } as never)) as Hash;
-    const receipt = await l1.waitForTransactionReceipt({ hash });
-    if (receipt.status !== 'success') throw new Error(`Attester setup reverted: ${hash}`);
-  };
-  if (!(await l1.readContract({ ...transmitter, functionName: 'isEnabledAttester', args: [ATTESTER] })))
-    await send(encodeFunctionData({ abi: attestableAbi, functionName: 'enableAttester', args: [ATTESTER] }));
-  if ((await l1.readContract({ ...transmitter, functionName: 'signatureThreshold' })) !== 1n)
-    await send(encodeFunctionData({ abi: attestableAbi, functionName: 'setSignatureThreshold', args: [1n] }));
+  await enableTestAttesters(await client(NetworkName.mainnet), { threshold: 1 });
 }
 
 /**
@@ -63,15 +26,8 @@ export async function attestCctpBurn(network: NetworkName, txHash: Hash) {
   const receipt = await (await client(network)).getTransactionReceipt({ hash: txHash });
   const sent = sentMessages(receipt.logs);
   if (sent.length !== 1) throw new Error(`Expected one MessageSent in ${txHash}, found ${sent.length}`);
-  const hex = sent[0].message.slice(2);
-  const message = ('0x' +
-    hex.slice(0, 24) +
-    keccak256(txHash).slice(2) +
-    hex.slice(88, 288) +
-    (2000).toString(16).padStart(8, '0') +
-    hex.slice(296)) as Hex;
-  const signature = await sign({ hash: keccak256(message), privateKey: ATTESTER_KEY });
-  return { message, attestation: serializeSignature(signature) };
+  const message = attestedCopy(sent[0].message, keccak256(txHash));
+  return { message, attestation: await signAsTestAttesters(message, 1) };
 }
 
 type IrisTarget = Pick<Page, 'route'>;
@@ -108,7 +64,7 @@ export async function receiveCctpMessage({ message, attestation }: { message: He
     method: 'eth_sendTransaction',
     params: [
       {
-        from: ATTESTER,
+        from: testAttester(0),
         to: MESSAGE_TRANSMITTER_V2,
         data: encodeFunctionData({
           abi: messageTransmitterV2Abi,

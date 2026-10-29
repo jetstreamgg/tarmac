@@ -15,6 +15,7 @@ import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import type { BridgeNetworkId } from '../../model/networks';
 import { isSystemAddress } from '../../model/systemAddresses';
 import { NATIVE_DEPOSIT_CONTRACTS } from '../nativeDeposit/contracts';
+import { MESSAGE_TRANSMITTER_V2, TOKEN_MESSENGER_V2, TOKEN_MINTER_V2 } from './addresses';
 
 /** The L2s that bridge USDS to Ethereum through CCTP: USDS is swapped to USDC on PSM3, burned, and minted on Ethereum. */
 export const CCTP_L2_NETWORKS = [
@@ -37,10 +38,7 @@ export const CCTP_DOMAIN = {
   unichain: 10
 } as const satisfies Record<'ethereum' | CctpL2NetworkId, number>;
 
-// CCTP V2 is deployed at the same addresses on every chain.
-export const TOKEN_MESSENGER_V2: Address = '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d';
-export const MESSAGE_TRANSMITTER_V2: Address = '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64';
-export const TOKEN_MINTER_V2: Address = '0xfd78EE919681417d192449715b2594ab58f5D002';
+export { MESSAGE_TRANSMITTER_V2, TOKEN_MESSENGER_V2, TOKEN_MINTER_V2 } from './addresses';
 
 /** Standard transfer: attested once the source block is final, with no fee. Fast transfers (1000) are not offered. */
 export const CCTP_FINALITY_STANDARD = 2000;
