@@ -140,8 +140,11 @@ jobs:
         env:
           REACT_VERSION: ${{ matrix.react-version }}
 
+      # This run's own forks by ID (the age sweep below skips anything under
+      # 45 minutes, so it never caught them), then the sweep as a backstop for
+      # forks left behind by cancelled runs.
       - name: Delete Tenderly virtual testnet fork
-        run: pnpm vnet:delete:all:ci
+        run: pnpm vnet:delete:created:ci && pnpm vnet:delete:all:ci
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
         if: always()
