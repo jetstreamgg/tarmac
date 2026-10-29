@@ -588,6 +588,14 @@ describe('useBridgeLaunch Confirm gate', () => {
       expect(runCount()).toBe(2);
     });
 
+    it('can send again once its source mined, while a withdrawal card still waits for days', async () => {
+      const { view, scope } = await sendWithUnknownOutcome();
+      pendingBridgeStore.update(scope, '0xunknown', bridge => ({ ...bridge, sourceMinedAt: Date.now() }));
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(runCount()).toBe(2);
+    });
+
     it('can send again after a flow that succeeded, while that bridge is still in flight', async () => {
       const view = renderBridge();
       act(() => view.result.current.form.onInput('1'));

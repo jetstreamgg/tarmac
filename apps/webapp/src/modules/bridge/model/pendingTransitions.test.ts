@@ -131,6 +131,14 @@ describe('applyProgress', () => {
     expect(bridge).toMatchObject({ status: 'ready', nextAction: 'claim', routeData: { messageHash: '0xm' } });
   });
 
+  it('waiting records once when the tracker first read the source mined', () => {
+    const fresh = create(routeFor('base', 'ethereum', false));
+    expect(fresh.sourceMinedAt).toBeUndefined();
+    const waiting = applyProgress(fresh, { kind: 'waiting' }, NOW);
+    expect(waiting.sourceMinedAt).toBe(NOW);
+    expect(applyProgress(waiting, { kind: 'waiting' }, NOW + HOUR).sourceMinedAt).toBe(NOW);
+  });
+
   it('waiting updates the ETA and merges route data', () => {
     const start = applyProgress(
       create(routeFor('base', 'ethereum', false)),

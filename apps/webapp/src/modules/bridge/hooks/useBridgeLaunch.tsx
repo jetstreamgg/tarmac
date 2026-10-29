@@ -705,13 +705,13 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     launchedChainIdRef.current = pinnedChainId;
     reviewedRouteRef.current = { kind: route?.kind, picked: form.pickedRoute };
     launchedAccountRef.current = accountRef.current;
-    // A send whose outcome is unknown (a failed receipt wait) may still land: wait for its card to settle.
+    // A send whose outcome is unknown (a failed receipt wait) may still land: wait until its card reads it mined or settles.
     const launchScope = scopeRef.current;
     const unresolved =
       unresolvedRef.current && launchScope
         ? pendingBridgeStore.getSnapshot(launchScope).find(bridge => bridge.id === unresolvedRef.current)
         : undefined;
-    if (unresolved?.status !== 'pending') {
+    if (unresolved?.status !== 'pending' || unresolved.sourceMinedAt !== undefined) {
       unresolvedRef.current = undefined;
       sentRef.current = false;
     }

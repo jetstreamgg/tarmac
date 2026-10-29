@@ -158,6 +158,7 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
       return {
         ...bridge,
         status: 'pending',
+        sourceMinedAt: bridge.sourceMinedAt ?? now,
         etaAt: progress.etaAt ?? bridge.etaAt,
         nextAction: progress.nextAction ?? bridge.nextAction,
         routeData: mergeRouteData(bridge, progress.routeData)

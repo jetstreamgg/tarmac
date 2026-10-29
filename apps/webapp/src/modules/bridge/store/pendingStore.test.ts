@@ -290,6 +290,15 @@ describe('createPendingBridgeStore', () => {
     expect(make().getSnapshot(SCOPE)).toEqual([]);
   });
 
+  it('keeps when the source was read mined through storage, and drops an entry whose time is no number', () => {
+    const mined = bridge({ sourceMinedAt: NOW });
+    make().upsert(SCOPE, mined);
+    expect(make().getSnapshot(SCOPE)).toEqual([mined]);
+    const bad = { ...mined, amount: mined.amount.toString(), sourceMinedAt: 'soon' };
+    localStorage.setItem(`bridgePending:v1:${SCOPE}`, JSON.stringify([bad]));
+    expect(make().getSnapshot(SCOPE)).toEqual([]);
+  });
+
   it('keeps an invalidated action through storage', () => {
     const reproving = bridge({
       routeKind: 'native',
