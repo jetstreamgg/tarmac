@@ -14,6 +14,7 @@ import {
 } from 'viem';
 import { useIsBatchSupported } from './useIsBatchSupported';
 import { useSimulateBatch } from './useSimulateBatch';
+import { decodeRevert } from '@/lib/revertMessages/decodeRevert';
 
 /** Ceiling on the gap between status polls while the wallet keeps erroring. */
 const MAX_STATUS_RETRY_DELAY_MS = 30_000;
@@ -204,10 +205,16 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         // `prepared` only disables a button. This is the guarantee behind it: a bundle
         // that has not simulated clean never reaches `wallet_sendCalls`, whatever
         // called execute(). Reported like the backstop above, for the same reason.
-        const error = new Error(
-          simulation.error
-            ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
-            : 'Refusing to send a batch before its simulation has completed.'
+        // Only the simulation's decoded revert rides along, for the failure screen —
+        // not the error itself, whose cause chain carries the call's arguments (the
+        // user's address among them) into Sentry.
+        const error = Object.assign(
+          new Error(
+            simulation.error
+              ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
+              : 'Refusing to send a batch before its simulation has completed.'
+          ),
+          { revert: simulation.error ? decodeRevert(simulation.error) : undefined }
         );
         console.error(error);
         onError(error, undefined);

@@ -328,7 +328,7 @@ export function PendleModalForm({
     () =>
       !writeHook.prepared
         ? pendlePrepareErrorMessage(
-            writeHook.error?.message,
+            writeHook.error,
             t`Current market price exceeds your slippage tolerance. Adjust slippage on the review screen, or wait for the quote to refresh.`
           )
         : undefined,
