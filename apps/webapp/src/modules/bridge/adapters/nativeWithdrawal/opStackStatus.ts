@@ -67,7 +67,7 @@ export async function readPortalSystem(l1: ChainReader, network: OpStackNetworkI
 }
 
 /** The custom error a contract call reverted with; undefined for any other failure (an RPC error). */
-export const revertName = (error: unknown): string | undefined =>
+const revertName = (error: unknown): string | undefined =>
   error instanceof BaseError
     ? (
         error.walk(
@@ -82,8 +82,7 @@ export type ProofState =
   /** A valid proof, waiting for its maturity delay and its game's finality, around `etaAt` (ms). */
   | { kind: 'maturing'; prover: Address; etaAt: number }
   /** The proof can never finalize: its game lost, was blacklisted or retired. */
-  | { kind: 'invalid'; prover: Address }
-  | { kind: 'finalized' };
+  | { kind: 'invalid'; prover: Address };
 
 const readGame = <
   name extends
@@ -127,8 +126,8 @@ export async function readProofState(
     return { kind: 'finalizable', prover };
   } catch (error) {
     const name = revertName(error);
-    if (name === 'OptimismPortal_AlreadyFinalized') return { kind: 'finalized' };
-    if (name === 'OptimismPortal_Unproven') return undefined;
+    // A finalized withdrawal is read from the portal before any proof is.
+    if (name === 'OptimismPortal_AlreadyFinalized' || name === 'OptimismPortal_Unproven') return undefined;
     if (name === 'OptimismPortal_InvalidProofTimestamp') return { kind: 'invalid', prover };
     if (name !== 'OptimismPortal_ProofNotOldEnough' && name !== 'OptimismPortal_InvalidRootClaim')
       throw error;
@@ -215,7 +214,7 @@ async function l2OutputRoot(l2: ChainReader, blockNumber: bigint): Promise<Hex |
 }
 
 /** The game a prove uses: its factory index, and the L2 block whose state its root commits to. */
-export type ProveGame = { index: bigint; game: Address; l2BlockNumber: bigint; usesSuperRoots: boolean };
+export type ProveGame = { index: bigint; l2BlockNumber: bigint };
 
 /**
  * The oldest of the newest respected games that covers the withdrawal and a
@@ -293,7 +292,7 @@ export async function pickProveGame({
         })
       : games[i].rootClaim;
     if ((await l2OutputRoot(l2, l2BlockNumber)) !== claim) return undefined;
-    return { index: games[i].index, game, l2BlockNumber, usesSuperRoots };
+    return { index: games[i].index, l2BlockNumber };
   };
 
   // Oldest first: the oldest one finalizes first.
