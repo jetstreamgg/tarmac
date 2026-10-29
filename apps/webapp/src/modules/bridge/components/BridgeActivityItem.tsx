@@ -42,7 +42,7 @@ export function BridgeActivityItem({ entry, familyChainId }: BridgeActivityItemP
         </div>
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-fgPrimary font-circle truncate text-base leading-[18px] font-medium tracking-[-0.32px]">
-            {bridgeActivityTitle(entry.kind)}
+            {bridgeActivityTitle(entry.kind, entry.network)}
           </span>
           <span className="text-fgSecondary font-graphik text-xs leading-[18px]">
             {formatDistanceToNowStrict(entry.timestamp, { addSuffix: true })}

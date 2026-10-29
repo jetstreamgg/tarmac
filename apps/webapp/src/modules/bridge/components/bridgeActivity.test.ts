@@ -101,4 +101,9 @@ describe('bridgeActivityTitle', () => {
     expect(bridgeActivityTitle('finalize')).not.toBe(bridgeActivityTitle('claim'));
     expect(bridgeActivityTitle('finalize')).toBe('Withdrawal finalization');
   });
+
+  it('names a replay by the way it went: on Ethereum it replays a withdrawal', () => {
+    expect(bridgeActivityTitle('replay', 'ethereum')).toBe('Withdrawal replay');
+    expect(bridgeActivityTitle('replay', 'base')).toBe('Deposit replay');
+  });
 });
