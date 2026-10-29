@@ -1,4 +1,4 @@
-import { getAbiItem, getAddress, isAddressEqual, zeroHash, type Hex } from 'viem';
+import { getAbiItem, zeroHash, type Hex } from 'viem';
 import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
@@ -17,6 +17,7 @@ import {
   arbitrumWithdrawalMessage,
   type ArbitrumWithdrawalMessage
 } from './arbitrum';
+import { matchesBridge } from './message';
 
 const SEND_ROOT_UPDATED = getAbiItem({ abi: arbitrumOutboxAbi, name: 'SendRootUpdated' });
 /** How far back the newest confirmed send root is looked for: the rollup confirms about hourly. */
@@ -51,8 +52,7 @@ async function readMessage(
   const receipt = await l2.getTransactionReceipt({ hash: bridge.txHash as Hex });
   if (receipt.status === 'reverted') return { failed: { kind: 'failed', reason: 'source-tx-reverted' } };
   const message = arbitrumWithdrawalMessage(receipt.logs);
-  const recipient = getAddress(bridge.recipient ?? bridge.account);
-  if (message && message.amount === bridge.amount && isAddressEqual(message.to, recipient)) return message;
+  if (matchesBridge(message, bridge)) return message;
   return safeExecutionFailed(receipt.logs, bridge.account)
     ? { failed: { kind: 'failed', reason: 'safe-tx-reverted' } }
     : undefined;

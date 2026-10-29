@@ -1,10 +1,9 @@
 import { isAddress, isAddressEqual, type Address, type Hex, type Log } from 'viem';
 import { isCctpL2Network } from '../adapters/cctp/contracts';
 import { sourceBurnMessages } from '../adapters/cctp/message';
-import { isNativeDepositNetwork, isOpStackNetwork } from '../adapters/nativeDeposit/contracts';
+import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { depositsInLogs, type DiscoveredDeposit } from '../adapters/nativeDeposit/discovery';
-import { arbitrumWithdrawalMessage } from '../adapters/nativeWithdrawal/arbitrum';
-import { opStackWithdrawalMessage } from '../adapters/nativeWithdrawal/opStack';
+import { matchesBridge, nativeWithdrawalMessage } from '../adapters/nativeWithdrawal/message';
 import type { PendingBridge } from '../model/types';
 
 /** A receipt of a mined bundle, as the wallet (EIP-5792) or the chain reports it. */
@@ -44,15 +43,8 @@ function withdrawalIn(bridge: PendingBridge, receipts: readonly BundleReceipt[])
   if (!isAddress(account) || !isAddress(recipient)) return undefined;
   const matching = receipts.filter(receipt => {
     const logs = minedLogs([receipt]);
-    const message = isOpStackNetwork(from)
-      ? opStackWithdrawalMessage(logs, from)
-      : arbitrumWithdrawalMessage(logs);
-    return (
-      !!message &&
-      message.amount === bridge.amount &&
-      isAddressEqual(message.from, account) &&
-      isAddressEqual(message.to, recipient)
-    );
+    const message = nativeWithdrawalMessage(logs, from);
+    return matchesBridge(message, bridge) && isAddressEqual(message.from, account);
   });
   return matching.length === 1
     ? { txHash: matching[0].transactionHash, blockNumber: matching[0].blockNumber }

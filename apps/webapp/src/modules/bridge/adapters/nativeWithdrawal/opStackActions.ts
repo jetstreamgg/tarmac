@@ -1,7 +1,8 @@
-import { getAddress, isAddress, isAddressEqual, type Client, type Hex } from 'viem';
+import { getAddress, isAddress, type Client, type Hex } from 'viem';
 import type { PendingBridge } from '../../model/types';
 import type { OpStackNetworkId } from '../nativeDeposit/contracts';
 import type { ChainReader } from '../types';
+import { matchesBridge } from './message';
 import { opStackFinalizeCall, opStackWithdrawalMessage } from './opStack';
 import { buildOpStackProve } from './opStackProve';
 import { readPortalSystem, readProofState } from './opStackStatus';
@@ -42,8 +43,7 @@ export async function opStackWithdrawalActionCall({
     });
 
   const message = opStackWithdrawalMessage(receipt.logs, network);
-  if (!message || message.amount !== bridge.amount || !isAddressEqual(message.to, recipient))
-    throw new Error("The withdrawal doesn't match this bridge.");
+  if (!matchesBridge(message, bridge)) throw new Error("The withdrawal doesn't match this bridge.");
   const prover = bridge.routeData?.prover;
   if (!prover || !isAddress(prover)) throw new Error('No proof of the withdrawal is known yet.');
   const system = await readPortalSystem(l1, network);

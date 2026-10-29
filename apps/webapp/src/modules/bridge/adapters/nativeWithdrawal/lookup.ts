@@ -3,10 +3,9 @@ import { createPendingBridge } from '../../model/pendingTransitions';
 import { sendsToOther } from '../../model/recipient';
 import { nativeWithdrawalRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
-import { isOpStackNetwork, type NativeDepositNetwork } from '../nativeDeposit/contracts';
+import type { NativeDepositNetwork } from '../nativeDeposit/contracts';
 import type { ChainReader } from '../types';
-import { arbitrumWithdrawalMessage } from './arbitrum';
-import { opStackWithdrawalMessage } from './opStack';
+import { nativeWithdrawalMessage } from './message';
 
 export type NativeWithdrawalLookup =
   | { status: 'found'; bridge: PendingBridge }
@@ -39,9 +38,7 @@ export async function lookupNativeWithdrawal({
     throw error;
   }
   if (receipt.status !== 'success') return { status: 'refused', reason: 'reverted' };
-  const message = isOpStackNetwork(from)
-    ? opStackWithdrawalMessage(receipt.logs, from)
-    : arbitrumWithdrawalMessage(receipt.logs);
+  const message = nativeWithdrawalMessage(receipt.logs, from);
   if (!message) return { status: 'refused', reason: 'not-a-bridge' };
   const caller = account.toLowerCase();
   const thirdWallet = caller !== message.from.toLowerCase() && caller !== message.to.toLowerCase();

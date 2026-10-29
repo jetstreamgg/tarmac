@@ -6,6 +6,7 @@ import { safeExecutionFailed } from '../safe';
 import { L1_SENT_ACTION_DROPPED_MS, settleSentAction } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { OP_STACK_WITHDRAWAL, optimismPortalAbi } from './contracts';
+import { matchesBridge } from './message';
 import { opStackWithdrawalMessage } from './opStack';
 import {
   pickProveGame,
@@ -73,8 +74,7 @@ export async function opStackWithdrawalProgress(
     const receipt = await l2.getTransactionReceipt({ hash: bridge.txHash as Hex });
     if (receipt.status === 'reverted') return { kind: 'failed', reason: 'source-tx-reverted' };
     const message = opStackWithdrawalMessage(receipt.logs, network);
-    const recipient = getAddress(bridge.recipient ?? bridge.account);
-    if (!message || message.amount !== bridge.amount || !isAddressEqual(message.to, recipient))
+    if (!matchesBridge(message, bridge))
       return safeExecutionFailed(receipt.logs, bridge.account)
         ? { kind: 'failed', reason: 'safe-tx-reverted' }
         : null;
