@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Token } from '@/hooks';
 import { useChainImage } from '@/modules/ui/hooks/useChainImage';
 import { useTokenImage } from '@/modules/ui/hooks/useTokenImage';
+import { toTokenSymbol } from '@/lib/tokenSymbol';
 
 export function TokenIcon({
   token,
@@ -21,8 +22,7 @@ export function TokenIcon({
 }): React.ReactElement {
   // Typed `string`, but wallet and third-party data can hand us anything at
   // runtime (APP-654). Treat a non-string symbol as missing rather than crash.
-  const rawSymbol: unknown = token.symbol;
-  const symbol = typeof rawSymbol === 'string' ? rawSymbol : undefined;
+  const symbol = toTokenSymbol(token.symbol);
   const tokenImageSrc = useTokenImage(symbol);
   const chainImageSrc = useChainImage(chainId);
 

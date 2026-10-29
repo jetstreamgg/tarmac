@@ -3,6 +3,7 @@ import type { Token } from '@/hooks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/cn';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { toTokenSymbol } from '@/lib/tokenSymbol';
 
 /**
  * The DS Button / Dropdown pill beside the percent presets (Figma 859:41136,
@@ -28,9 +29,8 @@ export function TokenSelectorPill({
     <span className="flex items-center gap-1">
       <TokenIcon token={{ symbol }} width={16} showChainIcon={false} className="size-4" />
       <span className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">
-        {/* TokenIcon already drops a non-string symbol (APP-654); an object
-            here would throw as a React child. */}
-        {typeof symbol === 'string' ? symbol : null}
+        {/* Not `{symbol}`: an object symbol throws as a React child (APP-654). */}
+        {toTokenSymbol(symbol)}
       </span>
     </span>
   );
