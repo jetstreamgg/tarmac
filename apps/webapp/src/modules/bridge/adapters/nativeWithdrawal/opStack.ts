@@ -28,7 +28,7 @@ import {
 } from './contracts';
 
 /** The L1 release of a withdrawal to the zero address or a system or bridge contract reverts or traps it, so none is built. */
-function assertWithdrawalRecipient(address: Address) {
+export function assertWithdrawalRecipient(address: Address) {
   if (isBlockedRecipient(address))
     throw new Error('A bridge withdrawal needs a recipient that can hold USDS');
 }

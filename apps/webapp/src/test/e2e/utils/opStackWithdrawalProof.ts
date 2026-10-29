@@ -2,6 +2,7 @@ import {
   createPublicClient,
   encodeAbiParameters,
   encodeFunctionData,
+  getAbiItem,
   hexToBigInt,
   http,
   keccak256,
@@ -13,18 +14,11 @@ import {
 } from 'viem';
 import type { OpStackNetworkId } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { L1_USDS, OP_STACK_DEPOSIT } from '@/modules/bridge/adapters/nativeDeposit/contracts';
+import { optimismPortalAbi } from '@/modules/bridge/adapters/nativeWithdrawal/contracts';
 import { opStackWithdrawalMessage } from '@/modules/bridge/adapters/nativeWithdrawal/opStack';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 import { forkRpc } from './opStackDepositRelay';
 import { NetworkName } from './constants';
-
-const portalAbi = parseAbi([
-  'event WithdrawalProvenExtension1(bytes32 indexed withdrawalHash, address indexed proofSubmitter)',
-  'function provenWithdrawals(bytes32, address) view returns (address disputeGameProxy, uint64 timestamp)',
-  'function numProofSubmitters(bytes32) view returns (uint256)',
-  'function proofMaturityDelaySeconds() view returns (uint256)',
-  'function checkWithdrawal(bytes32, address) view'
-]);
 
 const escrowAbi = parseAbi([
   'function escrow() view returns (address)',
@@ -68,14 +62,14 @@ export async function proveOpStackWithdrawalOnFork(
 
   const maturity = await l1.readContract({
     address: portal,
-    abi: portalAbi,
+    abi: optimismPortalAbi,
     functionName: 'proofMaturityDelaySeconds'
   });
   const head = await l1.getBlockNumber();
   const matured = head - maturity / L1_BLOCK_SECONDS - 300n;
   const proofs = await l1.getLogs({
     address: portal,
-    event: portalAbi[0],
+    event: getAbiItem({ abi: optimismPortalAbi, name: 'WithdrawalProvenExtension1' }),
     fromBlock: matured - 3n * DAY_BLOCKS,
     toBlock: matured
   });
@@ -85,7 +79,7 @@ export async function proveOpStackWithdrawalOnFork(
   for (const { args } of proofs.reverse()) {
     const [game, timestamp] = await l1.readContract({
       address: portal,
-      abi: portalAbi,
+      abi: optimismPortalAbi,
       functionName: 'provenWithdrawals',
       args: [args.withdrawalHash!, args.proofSubmitter!]
     });
@@ -101,7 +95,7 @@ export async function proveOpStackWithdrawalOnFork(
     try {
       await l1.readContract({
         address: portal,
-        abi: portalAbi,
+        abi: optimismPortalAbi,
         functionName: 'checkWithdrawal',
         args: [withdrawalHash, prover]
       });
@@ -122,7 +116,7 @@ async function findProofSlots(
 ): Promise<{ proven: bigint; submitters: bigint }> {
   const count = await l1.readContract({
     address: portal,
-    abi: portalAbi,
+    abi: optimismPortalAbi,
     functionName: 'numProofSubmitters',
     args: [withdrawalHash]
   });

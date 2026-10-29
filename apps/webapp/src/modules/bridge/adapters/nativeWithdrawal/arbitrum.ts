@@ -1,16 +1,15 @@
 import {
-  decodeEventLog,
   decodeFunctionData,
   encodePacked,
   isAddressEqual,
   keccak256,
+  parseEventLogs,
   type Address,
   type Call,
   type Hex,
   type Log
 } from 'viem';
 import { skyL1TokenGatewayImplementationAbi } from '@/hooks/generated';
-import { isBlockedRecipient } from '../../model/recipient';
 import { ARBITRUM_DEPOSIT, L1_USDS, withApprove } from '../nativeDeposit/contracts';
 import {
   ARB_SYS,
@@ -19,10 +18,10 @@ import {
   arbitrumL2TokenGatewayAbi,
   arbitrumOutboxAbi
 } from './contracts';
+import { assertWithdrawalRecipient } from './opStack';
 
 export const arbitrumWithdrawalCall = ({ recipient, amount }: { recipient: Address; amount: bigint }) => {
-  if (isBlockedRecipient(recipient))
-    throw new Error('A bridge withdrawal needs a recipient that can hold USDS');
+  assertWithdrawalRecipient(recipient);
   return {
     address: ARBITRUM_DEPOSIT.l2Gateway,
     abi: arbitrumL2TokenGatewayAbi,
@@ -66,34 +65,21 @@ export type ArbitrumWithdrawalMessage = {
   amount: bigint;
 };
 
-const decodeLogs = <const abi extends typeof arbSysAbi | typeof arbitrumL2TokenGatewayAbi>(
-  logs: Log[],
-  address: Address,
-  abi: abi
-) =>
-  logs.flatMap(log => {
-    if (!isAddressEqual(log.address, address)) return [];
-    try {
-      return [decodeEventLog({ abi, data: log.data, topics: log.topics })];
-    } catch {
-      return [];
-    }
-  });
-
 /**
  * The USDS withdrawal of an Arbitrum receipt: Sky's gateway WithdrawalInitiated
  * and the ArbSys L2ToL1Tx at the same position, sent by the gateway to the L1
  * gateway with no ETH. Anything else, or more than one, is undefined.
  */
 export function arbitrumWithdrawalMessage(logs: Log[]): ArbitrumWithdrawalMessage | undefined {
-  const initiated = decodeLogs(logs, ARBITRUM_DEPOSIT.l2Gateway, arbitrumL2TokenGatewayAbi).flatMap(event =>
-    event.eventName === 'WithdrawalInitiated' && isAddressEqual(event.args.l1Token, L1_USDS)
-      ? [event.args]
-      : []
-  );
-  const sent = decodeLogs(logs, ARB_SYS, arbSysAbi).flatMap(event =>
-    event.eventName === 'L2ToL1Tx' ? [event.args] : []
-  );
+  const initiated = parseEventLogs({ abi: arbitrumL2TokenGatewayAbi, eventName: 'WithdrawalInitiated', logs })
+    .filter(
+      log =>
+        isAddressEqual(log.address, ARBITRUM_DEPOSIT.l2Gateway) && isAddressEqual(log.args.l1Token, L1_USDS)
+    )
+    .map(log => log.args);
+  const sent = parseEventLogs({ abi: arbSysAbi, eventName: 'L2ToL1Tx', logs })
+    .filter(log => isAddressEqual(log.address, ARB_SYS))
+    .map(log => log.args);
   const messages = initiated.flatMap(withdrawal => {
     const leaf = sent.find(tx => tx.position === withdrawal._l2ToL1Id);
     if (!leaf || !isAddressEqual(leaf.caller, ARBITRUM_DEPOSIT.l2Gateway)) return [];

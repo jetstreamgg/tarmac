@@ -1,4 +1,4 @@
-import { getAddress, isAddressEqual, parseAbiItem, zeroHash, type Hex } from 'viem';
+import { getAbiItem, getAddress, isAddressEqual, zeroHash, type Hex } from 'viem';
 import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
@@ -7,10 +7,10 @@ import type { AdapterContext, ChainReader } from '../types';
 import {
   ARBITRUM_CONFIRM_MS,
   ARBITRUM_WITHDRAWAL,
-  NODE_INTERFACE,
   arbitrumOutboxAbi,
   nodeInterfaceOutboxAbi
 } from './contracts';
+import { NODE_INTERFACE } from '../nativeDeposit/contracts';
 import {
   arbitrumExecuteCall,
   arbitrumItemHash,
@@ -18,9 +18,7 @@ import {
   type ArbitrumWithdrawalMessage
 } from './arbitrum';
 
-const SEND_ROOT_UPDATED = parseAbiItem(
-  'event SendRootUpdated(bytes32 indexed outputRoot, bytes32 indexed l2BlockHash)'
-);
+const SEND_ROOT_UPDATED = getAbiItem({ abi: arbitrumOutboxAbi, name: 'SendRootUpdated' });
 /** How far back the newest confirmed send root is looked for: the rollup confirms about hourly. */
 const SEND_ROOT_SCAN_BLOCKS = [2_000n, 14_400n];
 /** How long before its ETA a message's send root is first looked for; the rollup can't confirm it sooner. */

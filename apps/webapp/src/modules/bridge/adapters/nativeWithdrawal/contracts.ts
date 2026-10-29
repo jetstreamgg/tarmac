@@ -15,9 +15,6 @@ export const L2_TO_L1_MESSAGE_PASSER: Address = '0x42000000000000000000000000000
 /** Arbitrum precompile that emits L2ToL1Tx for every L2 to L1 message. */
 export const ARB_SYS: Address = '0x0000000000000000000000000000000000000064';
 
-/** Arbitrum's virtual NodeInterface: builds the outbox proof of a message, only through eth_call. */
-export const NODE_INTERFACE: Address = '0x00000000000000000000000000000000000000C8';
-
 /** How long an Arbitrum withdrawal waits on the rollup before the outbox can execute it, in ms. */
 export const ARBITRUM_CONFIRM_MS = 6.5 * 24 * 60 * 60 * 1000;
 
