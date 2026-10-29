@@ -8,7 +8,7 @@ import {
 } from '../../model/pendingTransitions';
 import { resolveBridgeRoute } from '../../model/resolveRoute';
 import type { PendingBridge } from '../../model/types';
-import { SENT_ACTION_DROPPED_MS } from '../sentAction';
+import { L1_SENT_ACTION_DROPPED_MS, SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { cctpClaimMessage, cctpProgress } from './cctpProgress';
 import {
@@ -315,9 +315,15 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
       await expect(progress(sent(), chains({ claimStatus: 'missing' }))).resolves.toEqual(READY);
     });
 
+    it('keeps waiting on an Ethereum claim longer than an L2 sequencer would', async () => {
+      await expect(progress(sent(), chains({ claimStatus: 'missing' }), NOW + 20 * 60_000)).resolves.toEqual(
+        READY
+      );
+    });
+
     it('drops it once Ethereum still has no trace of it', async () => {
       await expect(
-        progress(sent(), chains({ claimStatus: 'missing' }), NOW + SENT_ACTION_DROPPED_MS)
+        progress(sent(), chains({ claimStatus: 'missing' }), NOW + L1_SENT_ACTION_DROPPED_MS)
       ).resolves.toEqual({ kind: 'action-dropped', txHash: CLAIM });
     });
   });
@@ -343,7 +349,7 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
         txHash: SELL
       });
       await expect(
-        progress(sent(), chains({ claimStatus: 'missing' }), NOW + SENT_ACTION_DROPPED_MS)
+        progress(sent(), chains({ claimStatus: 'missing' }), NOW + L1_SENT_ACTION_DROPPED_MS)
       ).resolves.toEqual({ kind: 'action-dropped', txHash: SELL });
     });
 

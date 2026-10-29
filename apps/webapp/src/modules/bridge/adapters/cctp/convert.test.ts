@@ -18,7 +18,7 @@ import {
   recordNextLeg
 } from '../../model/pendingTransitions';
 import { resolveBridgeRoute } from '../../model/resolveRoute';
-import { SENT_ACTION_DROPPED_MS } from '../sentAction';
+import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { PendingBridge } from '../../model/types';
 import { L1_USDC, L1_USDS } from './contracts';
 import {
@@ -305,15 +305,26 @@ describe('readCctpConvertOffer, a sale the claim run sent that never mined', () 
       readContract: vi.fn(async () => USDC('500')) as never
     }) satisfies ConvertOfferReader;
 
-  it('offers the USDC once the chain still doesn’t know it 15 minutes after it was sent', async () => {
+  it('offers the USDC once the chain still doesn’t know it 3 hours after it was sent', async () => {
     await expect(
       readCctpConvertOffer({
         client: reader({ pending: false }),
         bridge: selling(),
         account: ACCOUNT,
-        now: SENT + SENT_ACTION_DROPPED_MS
+        now: SENT + L1_SENT_ACTION_DROPPED_MS
       })
     ).resolves.toBe(USDC('100'));
+  });
+
+  it('offers nothing 20 minutes after the sale was sent: Ethereum may still mine it', async () => {
+    await expect(
+      readCctpConvertOffer({
+        client: reader({ pending: false }),
+        bridge: selling(),
+        account: ACCOUNT,
+        now: SENT + 20 * 60_000
+      })
+    ).rejects.toThrow();
   });
 
   it('offers nothing before then, as it may still mine', async () => {
@@ -322,7 +333,7 @@ describe('readCctpConvertOffer, a sale the claim run sent that never mined', () 
         client: reader({ pending: false }),
         bridge: selling(),
         account: ACCOUNT,
-        now: SENT + SENT_ACTION_DROPPED_MS - 1
+        now: SENT + L1_SENT_ACTION_DROPPED_MS - 1
       })
     ).rejects.toThrow();
   });
@@ -333,7 +344,7 @@ describe('readCctpConvertOffer, a sale the claim run sent that never mined', () 
         client: reader({ pending: true }),
         bridge: selling(),
         account: ACCOUNT,
-        now: SENT + 10 * SENT_ACTION_DROPPED_MS
+        now: SENT + 10 * L1_SENT_ACTION_DROPPED_MS
       })
     ).rejects.toThrow();
   });
@@ -347,11 +358,11 @@ describe('readCctpConvertOffer, a sale the claim run sent that never mined', () 
         client,
         bridge: legacy,
         account: ACCOUNT,
-        now: NOW + SENT_ACTION_DROPPED_MS - 1
+        now: NOW + L1_SENT_ACTION_DROPPED_MS - 1
       })
     ).rejects.toThrow();
     await expect(
-      readCctpConvertOffer({ client, bridge: legacy, account: ACCOUNT, now: NOW + SENT_ACTION_DROPPED_MS })
+      readCctpConvertOffer({ client, bridge: legacy, account: ACCOUNT, now: NOW + L1_SENT_ACTION_DROPPED_MS })
     ).resolves.toBe(USDC('100'));
   });
 });

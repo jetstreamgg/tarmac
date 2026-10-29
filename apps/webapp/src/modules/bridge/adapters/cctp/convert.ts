@@ -12,7 +12,7 @@ import {
 } from 'viem';
 import { canConvert } from '../../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeAction } from '../../model/types';
-import { SENT_ACTION_DROPPED_MS } from '../sentAction';
+import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import { cctpBurnAmount } from './calls';
 import { L1_USDC, L1_USDS } from './contracts';
 
@@ -80,7 +80,7 @@ export function cctpConvertOffer({
 export type ConvertOfferReader = Pick<PublicClient, 'getTransactionReceipt' | 'readContract'> &
   Partial<Pick<PublicClient, 'getTransaction'>>;
 
-// A leg the chain still doesn't know `SENT_ACTION_DROPPED_MS` after it was sent was dropped: it sold nothing.
+// A leg the chain still doesn't know `L1_SENT_ACTION_DROPPED_MS` after it was sent was dropped: it sold nothing.
 async function readNextLeg(
   client: ConvertOfferReader,
   leg: PendingBridgeAction & { nextLegTxHash: string },
@@ -93,7 +93,7 @@ async function readNextLeg(
     if (
       !client.getTransaction ||
       !(error instanceof TransactionReceiptNotFoundError) ||
-      now - (leg.nextLegAt ?? leg.at) < SENT_ACTION_DROPPED_MS
+      now - (leg.nextLegAt ?? leg.at) < L1_SENT_ACTION_DROPPED_MS
     )
       throw error;
     try {
