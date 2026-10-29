@@ -395,7 +395,14 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         return;
       }
       if (!resumingRun && route.kind !== reviewedRouteRef.current.kind) {
-        callbacksRef.current.onError(new TransactionRefusedError('The bridge type changed after Review.'));
+        callbacksRef.current.onError(
+          new TransactionRefusedError(
+            'The bridge type changed after Review. Close this and review it again.',
+            {
+              final: true
+            }
+          )
+        );
         return;
       }
       if (pinnedChainId !== launchedChainIdRef.current) {

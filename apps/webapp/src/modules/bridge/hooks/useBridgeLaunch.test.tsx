@@ -1079,7 +1079,20 @@ describe('useBridgeLaunch Confirm gate', () => {
       expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
       expect(mocks.legs).toHaveLength(0);
       expect(mocks.onError).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'The bridge type changed after Review.' })
+        expect.objectContaining({
+          message: 'The bridge type changed after Review. Close this and review it again.'
+        })
+      );
+    });
+
+    // The Review now shows the other route; a Retry here would send it unseen, so only a new Review can.
+    it('refuses for good, so Retry is not offered for a route the user never confirmed', async () => {
+      await reviewThenResolve(cctpWithdrawalRoute('base'), nativeWithdrawalRoute('base', 'facts-error'));
+      expect(mocks.onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'The bridge type changed after Review. Close this and review it again.',
+          final: true
+        })
       );
     });
 
