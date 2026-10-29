@@ -21,7 +21,8 @@ import { DAY_MINUTES } from '../model/resolveRoute';
 import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import { sendsToOther } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
-import { bridgeTypeLabel, bridgeTypeLogo, type BridgeTypeLogo } from './bridgeModalRows';
+import { bridgeTypeLabel, bridgeTypeLogo } from './bridgeModalRows';
+import type { BridgeTypeLogoKind } from '@/components/product/BridgeTypeLogo';
 
 // The store keeps accounts lowercased; the Safe app expects a checksummed address.
 const checksummed = (account: string) => (isAddress(account) ? getAddress(account) : account);
@@ -30,7 +31,7 @@ export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
   | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string; tone?: 'info' }
   /** `logo`: the protocol's logo drawn before the value (CCTP's Circle logo, Figma 3830:67688). */
-  | { kind: 'text'; label: string; value: string; logo?: BridgeTypeLogo }
+  | { kind: 'text'; label: string; value: string; logo?: BridgeTypeLogoKind }
   | { kind: 'link'; label: string; value: string; href?: string }
   | { kind: 'wallet'; label: string; address: string; href?: string };
 
@@ -180,11 +181,12 @@ export function buildPendingBridgeRows(
     label: t`Estimated arrival`,
     value: arrivalText(bridge, now)
   };
+  const logo = bridgeTypeLogo(bridge.routeKind);
   const bridgeType: PendingBridgeCell = {
     kind: 'text',
     label: t`Bridge type`,
     value: bridgeTypeLabel(bridge.routeKind),
-    ...(bridgeTypeLogo(bridge.routeKind) && { logo: bridgeTypeLogo(bridge.routeKind) })
+    ...(logo && { logo })
   };
   const transaction: PendingBridgeCell = bridge.txHash
     ? {

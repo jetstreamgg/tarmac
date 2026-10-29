@@ -18,10 +18,8 @@ import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 export const bridgeTypeLabel = (kind: BridgeRouteKind): string =>
   kind === 'native' ? 'SkyLink' : kind === 'cctp' ? 'CCTP' : 'LayerZero';
 
-export type BridgeTypeLogo = BridgeTypeLogoKind;
-
 /** The logo drawn before a route's name; LayerZero has none. */
-export const bridgeTypeLogo = (kind: BridgeRouteKind): BridgeTypeLogo | undefined =>
+export const bridgeTypeLogo = (kind: BridgeRouteKind): BridgeTypeLogoKind | undefined =>
   kind === 'cctp' ? 'cctp' : kind === 'native' ? 'skylink' : undefined;
 
 /** Whole or one-decimal days, for multi-day withdrawals: 7, 6.4. */
@@ -80,13 +78,14 @@ export function buildBridgeModalRows({
   /** The token sent, rated against the USDS delivered. */
   fromToken?: 'USDS' | 'USDC';
 }): ModalGridCell[][] {
+  const logo = bridgeTypeLogo(route.kind);
   return [
     [
       {
         kind: 'single',
         label: t`Bridge type`,
         value: bridgeTypeLabel(route.kind),
-        ...(bridgeTypeLogo(route.kind) && { logo: bridgeTypeLogo(route.kind) })
+        ...(logo && { logo })
       },
       {
         kind: 'pair',

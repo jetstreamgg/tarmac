@@ -10,18 +10,13 @@ import { formatUsd } from '@/utils';
 import { getBridgeNetwork } from '../model/networks';
 import type { BridgeBlockReason, BridgeRouteOption } from '../model/resolveRoute';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
-import {
-  bridgeTypeLabel,
-  bridgeTypeLogo,
-  formatEta,
-  formatEtaWords,
-  type BridgeTypeLogo
-} from './bridgeModalRows';
+import { bridgeTypeLabel, bridgeTypeLogo, formatEta, formatEtaWords } from './bridgeModalRows';
+import type { BridgeTypeLogoKind } from '@/components/product/BridgeTypeLogo';
 
 export type RouteOptionCard = {
   kind: BridgeRouteKind;
   name: string;
-  logo?: BridgeTypeLogo;
+  logo?: BridgeTypeLogoKind;
   badge: { text: string; tone: 'accent' | 'muted' };
   description: string;
   rows: { label: string; value: string }[];
