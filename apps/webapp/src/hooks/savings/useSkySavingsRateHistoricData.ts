@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getBaLabsApiUrl } from '../helpers/getIndexerUrl';
 import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
@@ -56,7 +56,10 @@ export function useSkySavingsRateHistoricData(
   const query = useQuery({
     enabled: Boolean(rootBase),
     queryKey: ['sky-savings-rate-historic', url?.href],
-    queryFn: () => (url ? fetchSkySavingsRateHistoric(url) : Promise.resolve([]))
+    queryFn: () => (url ? fetchSkySavingsRateHistoric(url) : Promise.resolve([])),
+    // Only `days_ago` varies: keep the current series on screen while a new
+    // timeframe loads, instead of flashing the skeleton (APP-407).
+    placeholderData: keepPreviousData
   });
 
   return toReadHook(query, [baLabsDataSource(url)]);
