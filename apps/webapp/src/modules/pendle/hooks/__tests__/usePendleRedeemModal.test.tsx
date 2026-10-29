@@ -510,9 +510,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
     'Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem'
   ])('says Pendle cannot prepare the claim, with no trade-size advice: %s', async raw => {
     const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
-    expect(config.errorMessage).toBe(
-      "Pendle can't prepare this claim right now. Your position stays claimable, so please check back later."
-    );
+    expect(config.errorMessage).toBe("Pendle can't prepare this claim right now. Please try again later.");
   });
 
   it('does not tell a dust position to check back later', async () => {

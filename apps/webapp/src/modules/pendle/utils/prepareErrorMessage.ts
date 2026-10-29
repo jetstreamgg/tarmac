@@ -67,7 +67,7 @@ export function pendleClaimErrorMessage(raw: string | undefined): string | undef
   }
   // Our Pendle client and quote checks prefix every error they raise.
   if (/^Pendle\b/.test(raw)) {
-    return t`Pendle can't prepare this claim right now. Your position stays claimable, so please check back later.`;
+    return t`Pendle can't prepare this claim right now. Please try again later.`;
   }
   // fetch's network failure messages across browsers.
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
