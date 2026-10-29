@@ -102,6 +102,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     (running !== 'deposit' && runningTo !== undefined) ||
     (running !== 'burn' && runningBurn !== undefined) ||
     (running !== 'withdrawal' && runningWithdrawal !== undefined);
+  const anyRunning = runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined;
   const burnFrom =
     runningBurn ??
     (!otherRunning('burn') && route?.kind === 'cctp' && to === 'ethereum' && isCctpL2Network(from)
@@ -122,9 +123,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   // The route the user didn't pick builds its calls too, for the picker's approvals and fee.
   const pickable = (kind: 'cctp' | 'native') =>
     reviewing &&
-    runningTo === undefined &&
-    runningBurn === undefined &&
-    runningWithdrawal === undefined &&
+    !anyRunning &&
     !!form.routeOptions?.some(option => option.route.kind === kind && !option.unavailable);
   const previewBurnFrom = !isCctpBurn && isCctpL2Network(from) && pickable('cctp') ? from : undefined;
   const previewWithdrawalFrom =
@@ -239,13 +238,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       setRunningBurn(undefined);
       setRunningWithdrawal(undefined);
       // The reads refresh once the active engine's write still out has landed.
-      const engines = [
-        { active: isCctpBurn, reset: resetBurn },
-        { active: isNativeWithdrawal, reset: resetWithdrawal },
-        { active: !isCctpBurn && !isNativeWithdrawal, reset: resetDeposit }
-      ];
-      for (const { active, reset } of engines) if (!active) reset();
-      engines.find(({ active }) => active)!.reset(onCleared);
+      const active = isCctpBurn ? resetBurn : isNativeWithdrawal ? resetWithdrawal : resetDeposit;
+      for (const reset of [resetBurn, resetWithdrawal, resetDeposit]) if (reset !== active) reset();
+      active(onCleared);
     },
     [isCctpBurn, isNativeWithdrawal, resetDeposit, resetBurn, resetWithdrawal]
   );
@@ -328,11 +323,10 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       forgetRoute?.();
       setReviewing(false);
     }
-    const running = runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined;
-    if (!closed || !running || sentRef.current) return;
+    if (!closed || !anyRunning || sentRef.current) return;
     // A write still out lands before the reads refresh.
     resetRun(refetchReads);
-  }, [isModalOpen, runningTo, runningBurn, runningWithdrawal, resetRun, refetchReads, forgetRoute]);
+  }, [isModalOpen, anyRunning, resetRun, refetchReads, forgetRoute]);
   // The burns this Review sent, by every id the burn legs link to its swap: one that failed leaves Retry to continue.
   const ownBurnsRef = useRef<string[]>([]);
   // The bridge sent here whose flow ended with no verdict; a new Review must not send again while it is pending.
@@ -344,9 +338,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     if (form.pickedRoute !== reviewedRouteRef.current.picked)
       reviewedRouteRef.current = { kind: route?.kind, picked: form.pickedRoute };
     // As TransactionContext's Retry after a mined step: the run itself moved the balances the Review checks.
-    const resumingRun =
-      (runningTo !== undefined || runningBurn !== undefined || runningWithdrawal !== undefined) &&
-      legs.legMined;
+    const resumingRun = anyRunning && legs.legMined;
     executeRef.current = () => {
       if (
         !form.isConnected ||
