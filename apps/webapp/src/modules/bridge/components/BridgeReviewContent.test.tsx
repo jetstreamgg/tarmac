@@ -267,6 +267,15 @@ describe('BridgeReviewContent route picker beside the review (Figma 3964:74437)'
     expect(screen.getByTestId('bridge-modal-footnote').closest('div')?.textContent).toContain('~5 days');
   });
 
+  it("keeps room for the other route's footnote, hidden, so switching routes keeps the Review's height", () => {
+    review({ route: cctpWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    const footnote = screen.getByTestId('bridge-modal-footnote');
+    expect(footnote.textContent).toMatch(/20 minutes/);
+    const reserved = footnote.parentElement!.querySelector('[aria-hidden]');
+    expect(reserved?.textContent).toBe(native.footnote);
+    expect(reserved?.className).toContain('invisible');
+  });
+
   it("doesn't compare against a route that can't be picked", () => {
     review({
       route: cctpWithdrawalRoute('base'),

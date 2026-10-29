@@ -15,24 +15,14 @@ import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { formatAddress, formatBigInt } from '@/utils';
 import { cn } from '@/lib/cn';
-import { bridgeTypeLabel, buildBridgeModalRows, formatEta, formatEtaWords } from './bridgeModalRows';
+import { bridgeFootnote, bridgeTypeLabel, buildBridgeModalRows, formatEta } from './bridgeModalRows';
 import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
 import { BridgeFastBadge, BridgeRoutePicker } from './BridgeRoutePicker';
 import type { RouteOptionCard } from './bridgeRouteOptions';
 import { BridgeWarningBox } from './BridgeWarningBox';
 
-export const bridgeFootnote = (route: BridgeRoute): string => {
-  const eta = formatEtaWords(route.etaMinutes);
-  const actions = route.kind === 'native' ? route.steps.map(step => step.action) : [];
-  if (actions.includes('prove'))
-    return t`The withdrawal takes about ${eta}. You will need to come back to Ethereum twice: to prove it, usually within an hour or two, and to finalize it once the waiting period ends. Both steps need ETH on Ethereum for gas.`;
-  if (actions.includes('finalize'))
-    return t`The withdrawal takes about ${eta}. Once it's ready, finalize it on Ethereum to receive your USDS. This step needs ETH on Ethereum for gas.`;
-  return route.requiresClaim
-    ? t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. You will need to claim your asset manually afterward.`
-    : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. Your funds will arrive automatically.`;
-};
+export { bridgeFootnote } from './bridgeModalRows';
 
 type BridgeTransferHeroProps = {
   amount: bigint;
@@ -190,9 +180,19 @@ export function BridgeReviewContent({
       <BridgeTransferHero amount={amount} from={from} to={to} addresses={addresses} fromToken={fromToken} />
       <div className="flex flex-col gap-6">
         <ModalSummaryGrid rows={toGridCells(rows, 'bridge-modal-row')} dividerClassName="h-6" />
-        <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-footnote">
-          {bridgeFootnote(route)}
-        </p>
+        {/* Every pickable route's footnote holds the space, so switching routes doesn't resize the modal. */}
+        <section className="text-fgSecondary grid text-xs leading-[18px]">
+          <p className="[grid-area:1/1]" data-testid="bridge-modal-footnote">
+            {bridgeFootnote(route)}
+          </p>
+          {routePicker?.cards
+            .filter(card => card.kind !== route.kind)
+            .map(card => (
+              <p key={card.kind} className="invisible [grid-area:1/1]" aria-hidden>
+                {card.footnote}
+              </p>
+            ))}
+        </section>
         {aliasedRefund && (
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-aliased-refund">
             {t`Unused ETH from the bridge fee is refunded to your Safe's aliased address on Arbitrum, not to your Safe.`}

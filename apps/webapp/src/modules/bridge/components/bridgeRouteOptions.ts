@@ -10,7 +10,13 @@ import { formatUsd } from '@/utils';
 import { getBridgeNetwork } from '../model/networks';
 import type { BridgeBlockReason, BridgeRouteOption } from '../model/resolveRoute';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
-import { bridgeTypeLabel, bridgeTypeLogo, formatEta, formatEtaWords } from './bridgeModalRows';
+import {
+  bridgeFootnote,
+  bridgeTypeLabel,
+  bridgeTypeLogo,
+  formatEta,
+  formatEtaWords
+} from './bridgeModalRows';
 import type { BridgeTypeLogoKind } from '@/components/product/BridgeTypeLogo';
 
 export type RouteOptionCard = {
@@ -21,6 +27,8 @@ export type RouteOptionCard = {
   description: string;
   rows: { label: string; value: string }[];
   etaMinutes: number;
+  /** The Review's footnote on this route, so the Review keeps the room of the longest one. */
+  footnote: string;
   unavailable: boolean;
 };
 
@@ -73,6 +81,7 @@ export function buildRouteOptionCard({
       { label: t`Network fee`, value: networkFee }
     ],
     etaMinutes: route.etaMinutes,
+    footnote: bridgeFootnote(route),
     unavailable: unavailable !== undefined
   };
 }

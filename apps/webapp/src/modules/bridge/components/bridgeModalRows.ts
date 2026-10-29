@@ -110,3 +110,15 @@ export function buildBridgeModalRows({
     ]
   ];
 }
+
+export const bridgeFootnote = (route: BridgeRoute): string => {
+  const eta = formatEtaWords(route.etaMinutes);
+  const actions = route.kind === 'native' ? route.steps.map(step => step.action) : [];
+  if (actions.includes('prove'))
+    return t`The withdrawal takes about ${eta}. You will need to come back to Ethereum twice: to prove it, usually within an hour or two, and to finalize it once the waiting period ends. Both steps need ETH on Ethereum for gas.`;
+  if (actions.includes('finalize'))
+    return t`The withdrawal takes about ${eta}. Once it's ready, finalize it on Ethereum to receive your USDS. This step needs ETH on Ethereum for gas.`;
+  return route.requiresClaim
+    ? t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. You will need to claim your asset manually afterward.`
+    : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. Your funds will arrive automatically.`;
+};
