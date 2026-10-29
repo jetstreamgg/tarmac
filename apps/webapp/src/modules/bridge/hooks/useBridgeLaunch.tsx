@@ -25,7 +25,7 @@ import { sendsToOther } from '../model/recipient';
 import { applyProgress, createPendingBridge, failBundle } from '../model/pendingTransitions';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
-import type { BridgeRouteKind } from '../model/types';
+import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isStorageWritable } from '../store/storageWritable';
@@ -302,6 +302,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const launchedChainIdRef = useRef<number | undefined>(undefined);
   // The route the Review shows: the one it opened on, then each one the user picks.
   const reviewedRouteRef = useRef<{ kind?: BridgeRouteKind; picked?: BridgeRouteKind }>({});
+  // The route the run's first Confirm sent: a Retry after a mined leg resumes it, whatever the form resolves since.
+  const runRouteRef = useRef<BridgeRoute | undefined>(undefined);
   // The account the Review was opened for; only it may sign the legs.
   const launchedAccountRef = useRef<string | undefined>(undefined);
   // Read at launch: connect-then-act calls a launch from before the wallet connected.
@@ -392,7 +394,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         );
         return;
       }
-      if (route.kind !== reviewedRouteRef.current.kind) {
+      if (!resumingRun && route.kind !== reviewedRouteRef.current.kind) {
         callbacksRef.current.onError(new TransactionRefusedError('The bridge type changed after Review.'));
         return;
       }
@@ -404,8 +406,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         callbacksRef.current.onError(new TransactionRefusedError('The wallet account changed after Review.'));
         return;
       }
+      if (!resumingRun || !runRouteRef.current) runRouteRef.current = route;
       // Snapshot at Confirm: the form may change or reset before the legs finish.
-      const record = { account, amount, from, to, recipient, route };
+      const record = { account, amount, from, to, recipient, route: runRouteRef.current };
       // A prompt this Confirm opened can be signed after a later Confirm: the modal hears from it only while it is current.
       const isCurrent = () => !isReal || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
