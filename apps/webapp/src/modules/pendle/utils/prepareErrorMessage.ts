@@ -61,10 +61,9 @@ export function pendleQuoteErrorMessage(raw: string | undefined): string | undef
 }
 
 /**
- * Why a matured position's claim can't be prepared. Sorts errors into the same
- * cases as pendleQuoteErrorMessage, with claim wording only where its advice
- * differs: a claim always takes the whole balance, so there is no amount to
- * change. Unlike that mapper, only an actual network failure blames the
+ * Why a matured position's claim can't be prepared. Reuses the buy/sell copy
+ * except where its advice is to change the amount: a claim always takes the
+ * whole balance. Unlike that mapper, only an actual network failure blames the
  * connection.
  */
 export function pendleClaimErrorMessage(raw: string | undefined): string | undefined {
@@ -75,15 +74,14 @@ export function pendleClaimErrorMessage(raw: string | undefined): string | undef
   if (/no routes/i.test(raw)) {
     return t`Pendle can't route this claim to the selected token. Try a different token.`;
   }
-  if (/malformed quote/i.test(raw)) {
-    return t`Received an invalid quote from Pendle. Please try again.`;
-  }
-  if (/^Pendle \/convert \d+/i.test(raw)) {
-    return t`Pendle can't prepare this claim right now. Please try again later.`;
-  }
-  // fetch's network failure messages across browsers.
-  if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
-    return t`Couldn't reach Pendle to prepare your claim. Check your connection and try again.`;
+  // Malformed quote, Pendle HTTP error, or fetch's network failure messages
+  // across browsers.
+  if (
+    /malformed quote|^Pendle \/convert \d+|failed to fetch|networkerror|load failed|network request failed/i.test(
+      raw
+    )
+  ) {
+    return pendleQuoteErrorMessage(raw);
   }
   return genericPrepareErrorMessage();
 }

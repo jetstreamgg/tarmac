@@ -514,7 +514,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
     'Pendle /convert 503: {}'
   ])('says Pendle cannot prepare the claim when its API refuses: %s', async raw => {
     const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
-    expect(config.errorMessage).toBe("Pendle can't prepare this claim right now. Please try again later.");
+    expect(config.errorMessage).toBe("Pendle's quote service is temporarily unavailable. Please try again.");
   });
 
   it('does not tell a dust position to check back later', async () => {
@@ -549,7 +549,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
   it('points at the connection when Pendle could not be reached', async () => {
     const config = await openWith({ data: undefined, isLoading: false, error: new Error('Failed to fetch') });
     expect(config.errorMessage).toBe(
-      "Couldn't reach Pendle to prepare your claim. Check your connection and try again."
+      "Couldn't fetch a quote from Pendle. Check your connection and try again."
     );
   });
 
