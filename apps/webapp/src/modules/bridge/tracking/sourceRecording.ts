@@ -1,4 +1,8 @@
-import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import {
+  markUnconfirmed,
+  TransactionReplacedError,
+  TransactionRevertedError
+} from '@/hooks/shared/useTransactionOutcome';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 
 /**
@@ -76,12 +80,15 @@ export function withSourceRecording(
       getCallbacks().onSuccess(hash, blockNumber);
     },
     // Recorded only for the sent hash: the sequential flow can pass the previous leg's hash, and a batch its call id.
+    // Any other error after the send leaves its outcome unknown: the card follows it.
     onError: (error, hash) => {
       if (bundled && recorded) {
         if (isBundleFailure(error)) onFailed(recorded, 'source-tx-reverted');
+        else markUnconfirmed(error, UNCONFIRMED_MESSAGE);
       } else if (!isSafe && recorded && (hash === recorded || hash === current)) {
         if (error instanceof TransactionReplacedError) onFailed(recorded, 'source-tx-replaced');
         else if (error instanceof TransactionRevertedError) onFailed(recorded, 'source-tx-reverted');
+        else markUnconfirmed(error, UNCONFIRMED_MESSAGE);
       }
       getCallbacks().onError(error, hash);
     }
@@ -97,3 +104,6 @@ export function isBundleFailure(error: unknown): boolean {
 }
 
 const BATCH_FAILED_MESSAGE = 'ERROR: Batch transaction failed';
+
+const UNCONFIRMED_MESSAGE =
+  "We couldn't confirm your transaction yet. It may still go through, so follow it on its card before sending again.";
