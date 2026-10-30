@@ -172,10 +172,14 @@ export function buildPendleWithdrawEntryRows(input: PendleWithdrawEntryRowInput)
  * matured-position cards' "Claim" CTA (2306:72334).
  */
 export type PendleRedeemRowInput = {
-  /** The Withdrawal-token selector (interactive, passed through opaquely). */
-  tokenSelector: ReactNode;
-  /** Quoted amount received in the selected token, formatted. */
-  receiveAmount: string;
+  /** Product display name (e.g. "Pendle sUSDS (PT-sUSDS)"). */
+  product: string;
+  /** Underlying symbol for the Product cell's ringed icon. */
+  productSymbol: string;
+  /** The full matured PT amount being claimed, formatted. */
+  claimAmount: string;
+  /** The market's PT symbol (e.g. "PT-sUSDS") — the Claim amount icon. */
+  ptSymbol: string;
   /**
    * True when the quote routes through an aggregator (non-SY-accepted output).
    * Gates the slippage and price-impact/route rows: only an aggregator hop can slip.
@@ -197,7 +201,7 @@ export type PendleRedeemRowInput = {
   priceImpact: string;
   /** Aggregator route description (e.g. "Pendle redeem → KyberSwap"). */
   routedVia: string;
-  /** Pendle's fee, formatted; only set when the quote reports one above zero. */
+  /** Pendle's fee, formatted (e.g. "$0.04"); only set when the quote reports one above zero. */
   pendleFee?: string;
   /** Network the transaction runs on. */
   network: string;
@@ -208,11 +212,11 @@ export type PendleRedeemRowInput = {
 };
 
 /**
- * Grid for the matured-claim modal, laid out like the early withdrawal entry
- * (2193:73598): [Withdrawal token | You'll receive], then — aggregator routes
- * only — [Slippage | Min. received] and [Price impact | Routed via], closing
- * with [Network | Network fee]. A Pendle fee row joins only when the quote
- * reports a fee, so a fee-free claim keeps the layout without hiding a cost.
+ * Grid for the matured-claim modal: [Product | Claim amount], then — aggregator
+ * routes only — [Slippage | Min. received] and [Price impact | Routed via],
+ * closing with [Pendle fee | Network] and the fee row, or [Network | Network
+ * fee] when the quote reports no fee. The payout token is picked on the hero
+ * pill, not in this read-only grid.
  *
  * A direct redemption can't slip: PT converts to SY at the rate fixed at
  * expiry, and the SY's redemption value only grows. It still signs a
@@ -220,16 +224,12 @@ export type PendleRedeemRowInput = {
  * fixtures), but showing that floor would suggest a cost that never happens.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
+  const feeCell = networkFeeCell(input.networkFee);
+  const network = networkCell(input.network, input.networkChainId);
   return [
     [
-      { kind: 'node', label: 'Withdrawal token', node: input.tokenSelector },
-      {
-        kind: 'single',
-        label: "You'll receive",
-        value: input.receiveAmount,
-        token: input.receiveSymbol,
-        loading: input.quoteLoading
-      }
+      productCell(input.product, input.productSymbol, 'pendle'),
+      { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
     ],
     ...(input.aggregator
       ? [
@@ -254,14 +254,8 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
         ]
       : []),
     ...(input.pendleFee
-      ? [
-          [
-            { kind: 'single' as const, label: 'Pendle fee', value: input.pendleFee },
-            networkCell(input.network, input.networkChainId)
-          ],
-          [networkFeeCell(input.networkFee)]
-        ]
-      : [[networkCell(input.network, input.networkChainId), networkFeeCell(input.networkFee)]])
+      ? [[{ kind: 'single' as const, label: 'Pendle fee', value: input.pendleFee }, network], [feeCell]]
+      : [[network, feeCell]])
   ];
 }
 

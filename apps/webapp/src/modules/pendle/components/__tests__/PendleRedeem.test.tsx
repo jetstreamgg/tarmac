@@ -93,34 +93,42 @@ afterEach(() => {
 });
 
 describe('PendleRedeem', () => {
-  it('puts the full PT balance in the hero, as the early withdrawal does', () => {
-    renderRedeem();
+  it('labels the hero as the payout, not a claim — "claim" names the PT side in the comps', () => {
+    renderRedeem({ quote: baseQuote });
 
     const hero = screen.getByTestId('pendle-redeem-hero');
-    expect(hero.textContent).toContain('Your position');
-    expect(hero.textContent).toContain('1.5');
+    expect(hero.textContent).toContain("You'll receive");
+    expect(hero.textContent).not.toContain("You'll claim");
+    // The PT side keeps the claim vocabulary.
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount')).toBeTruthy();
   });
 
-  it("draws You'll receive from the quote, a dash before one arrives", () => {
+  it('draws the receive hero from the quote, a dash before one arrives', () => {
     const { rerender } = renderRedeem();
-    expect(screen.getByTestId("pendle-redeem-row-You'll receive").textContent).toContain('–');
+    expect(screen.getByTestId('pendle-redeem-hero').textContent).toContain('–');
 
     rerender(
       <I18nProvider i18n={i18n}>
         <PendleRedeem {...baseProps} quote={baseQuote} />
       </I18nProvider>
     );
-    expect(screen.getByTestId("pendle-redeem-row-You'll receive").textContent).toContain('1.48');
+    expect(screen.getByTestId('pendle-redeem-hero').textContent).toContain('1.48');
+    expect(screen.getByTestId('pendle-redeem-hero').textContent).toContain('USDG');
   });
 
-  it('hosts the payout-token selector in the grid, beside the amount it denominates', () => {
+  it('shows the product and the full PT balance as the claim amount', () => {
+    renderRedeem({ quote: baseQuote });
+
+    expect(screen.getByTestId('pendle-redeem-row-Product').textContent).toContain('Pendle USDG (PT-USDG)');
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
+  });
+
+  it('hosts the payout-token selector on the hero pill, not in the read-only grid', () => {
     renderRedeem();
 
-    const cell = screen.getByTestId('pendle-redeem-row-Withdrawal token');
-    expect(cell.querySelector('[data-testid="pendle-redeem-output-token"]')).toBeTruthy();
-    expect(
-      screen.getByTestId('pendle-redeem-hero').querySelector('[data-testid="pendle-redeem-output-token"]')
-    ).toBeNull();
+    const hero = screen.getByTestId('pendle-redeem-hero');
+    expect(hero.querySelector('[data-testid="pendle-redeem-output-token"]')).toBeTruthy();
+    expect(screen.queryByTestId('pendle-redeem-row-Claim token')).toBeNull();
   });
 
   it('hides slippage and its floor on a direct redemption, which cannot slip', () => {
@@ -131,6 +139,7 @@ describe('PendleRedeem', () => {
     expect(screen.queryByTestId('pendle-redeem-row-Price impact')).toBeNull();
     expect(screen.queryByTestId('pendle-redeem-row-Routed via')).toBeNull();
     expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();
+    expect(screen.getByTestId('pendle-redeem-row-Network')).toBeTruthy();
     expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
   });
 
@@ -145,19 +154,6 @@ describe('PendleRedeem', () => {
     expect(screen.getByTestId('pendle-redeem-row-Routed via')).toBeTruthy();
   });
 
-  it('shows a Pendle fee row only when the quote reports a fee', () => {
-    const { rerender } = renderRedeem({ quote: { ...baseQuote, feeUsd: 0 } });
-    expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();
-
-    rerender(
-      <I18nProvider i18n={i18n}>
-        <PendleRedeem {...baseProps} quote={{ ...baseQuote, feeUsd: 7.86 }} />
-      </I18nProvider>
-    );
-    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$7.86');
-    expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
-  });
-
   it('draws slippage, min received and sign-flipped price impact on aggregator routes', () => {
     renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
 
@@ -167,6 +163,19 @@ describe('PendleRedeem', () => {
     expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.46');
     // Raw -0.0005 displays positive (a cost) under the inverse convention.
     expect(screen.getByTestId('pendle-redeem-row-Price impact').textContent).toContain('0.050%');
+  });
+
+  it('shows the Pendle fee in dollars only when the quote reports one', () => {
+    renderRedeem({ quote: { ...baseQuote, feeUsd: 0 } });
+    expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();
+
+    cleanup();
+    renderRedeem({ quote: { ...baseQuote, feeUsd: 0.0363 } });
+    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$0.04');
+
+    cleanup();
+    renderRedeem({ quote: { ...baseQuote, feeUsd: 12.345 } });
+    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$12.35');
   });
 
   it('names the network in the Network cell', () => {
@@ -198,9 +207,7 @@ describe('PendleRedeem', () => {
       quote: undefined,
       isFetchingQuote: true
     });
-    expect(
-      screen.getByTestId("pendle-redeem-row-You'll receive").querySelector('[data-testid="cell-loading"]')
-    ).toBeTruthy();
+    expect(screen.getByTestId('hero-loading')).toBeTruthy();
     expect(
       screen.getByTestId('pendle-redeem-row-Min. received').querySelector('[data-testid="cell-loading"]')
     ).toBeTruthy();
@@ -218,12 +225,12 @@ describe('PendleRedeem', () => {
         aggregatorType: 'kyberswap'
       }
     });
-    const receive = screen.getByTestId("pendle-redeem-row-You'll receive").textContent!;
-    expect(receive).toContain('1.5');
-    expect(receive).not.toContain(',');
-    expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.45');
     const hero = screen.getByTestId('pendle-redeem-hero').textContent!;
     expect(hero).toContain('1.5');
+    expect(hero).toContain('USDS');
+    expect(hero).not.toContain('PT-USDG');
     expect(hero).not.toContain(',');
+    expect(screen.getByTestId('pendle-redeem-row-Min. received').textContent).toContain('1.45');
+    expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
   });
 });
