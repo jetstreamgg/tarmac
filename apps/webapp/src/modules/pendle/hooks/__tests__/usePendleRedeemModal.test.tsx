@@ -534,7 +534,9 @@ describe('usePendleRedeemModal claim quote failure', () => {
       isLoading: false,
       error: new Error('Pendle /convert returned no routes')
     });
-    expect(config.errorMessage).toBe('Pendle has no route for this payout. Try the other withdrawal token.');
+    expect(config.errorMessage).toBe(
+      "Pendle can't route this claim to the selected token. Try the other one."
+    );
   });
 
   it('says the quote was invalid, as the buy/sell modal does', async () => {

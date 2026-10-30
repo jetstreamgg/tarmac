@@ -73,7 +73,7 @@ export function pendleClaimErrorMessage(raw: string | undefined): string | undef
     return t`This position is too small to claim. Pendle can't process amounts worth less than $0.01.`;
   }
   if (/no routes/i.test(raw)) {
-    return t`Pendle has no route for this payout. Try the other withdrawal token.`;
+    return t`Pendle can't route this claim to the selected token. Try the other one.`;
   }
   if (/malformed quote/i.test(raw)) {
     return t`Received an invalid quote from Pendle. Please try again.`;
