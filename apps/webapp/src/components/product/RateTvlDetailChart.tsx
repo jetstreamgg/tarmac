@@ -25,6 +25,8 @@ type DetailChartSeries = {
   error?: Error | null;
   /** Headline figure; falls back to the series' last point when undefined. */
   displayValue?: number;
+  /** The range `data` covers while a timeframe switch loads (useSettledTimeFrame). */
+  timeFrame?: TimeFrame;
 };
 
 /**
@@ -78,6 +80,7 @@ export function RateTvlDetailChart({
         variant="detail"
         dataTestId={dataTestId}
         data={series.data}
+        plottedTimeFrame={series.timeFrame}
         isLoading={series.isLoading}
         error={series.error}
         isPercentage={isRate}

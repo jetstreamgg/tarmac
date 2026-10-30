@@ -42,15 +42,18 @@ export function SavingsDetailChart() {
     error: tvlError,
     isPlaceholderData: tvlIsPlaceholder
   } = useSavingsChartInfo(chartChainId, { limit: getDayCountFromTimeFrame(timeFrame) });
-  const tvlData = useParseTvlChartData(useSettledTimeFrame(timeFrame, tvlIsPlaceholder), tvlInfo || []);
+  const tvlTimeFrame = useSettledTimeFrame(timeFrame, tvlIsPlaceholder);
+  const tvlData = useParseTvlChartData(tvlTimeFrame, tvlInfo || []);
 
   // Rate series — BA Labs SSR historic. `rate` is a decimal fraction (same
   // scale as skySavingsRatecRate), so ×100 to plot percent units.
   const {
     data: rateInfo,
     isLoading: rateLoading,
-    error: rateError
+    error: rateError,
+    isPlaceholderData: rateIsPlaceholder
   } = useSkySavingsRateHistoricData({ daysAgo: ssrDaysAgoFromTimeFrame(timeFrame) });
+  const rateTimeFrame = useSettledTimeFrame(timeFrame, rateIsPlaceholder);
   const rateData = useMemo<Data[]>(
     () =>
       [...(rateInfo || [])]
@@ -69,8 +72,14 @@ export function SavingsDetailChart() {
     <RateTvlDetailChart
       dataTestId="savings-detail-chart"
       symbol="sUSDS"
-      rate={{ data: rateData, isLoading: rateLoading, error: rateError, displayValue: currentRate }}
-      tvl={{ data: tvlData, isLoading: tvlLoading, error: tvlError }}
+      rate={{
+        data: rateData,
+        timeFrame: rateTimeFrame,
+        isLoading: rateLoading,
+        error: rateError,
+        displayValue: currentRate
+      }}
+      tvl={{ data: tvlData, timeFrame: tvlTimeFrame, isLoading: tvlLoading, error: tvlError }}
       onTimeFrameChange={setTimeFrame}
     />
   );

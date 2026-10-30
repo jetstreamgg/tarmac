@@ -36,8 +36,9 @@ export function RewardsDetailChart({
     rewardContractAddress: contract.contractAddress,
     limit: getDayCountFromTimeFrame(timeFrame)
   });
+  const seriesTimeFrame = useSettledTimeFrame(timeFrame, isPlaceholderData);
   const { totalSupplied: tvlData, rate: rateData } = useParseRewardsChartData(
-    useSettledTimeFrame(timeFrame, isPlaceholderData),
+    seriesTimeFrame,
     chartInfo || []
   );
 
@@ -47,13 +48,14 @@ export function RewardsDetailChart({
       symbol={contract.supplyToken.symbol}
       rate={{
         data: rateData,
+        timeFrame: seriesTimeFrame,
         isLoading,
         error,
         // Headline reads the canonical current rate (matches the Details grid),
         // not the last historic point.
         displayValue: currentRate !== undefined ? currentRate * 100 : undefined
       }}
-      tvl={{ data: tvlData, isLoading, error }}
+      tvl={{ data: tvlData, timeFrame: seriesTimeFrame, isLoading, error }}
       hideRate={!hasRate}
       onTimeFrameChange={setTimeFrame}
     />

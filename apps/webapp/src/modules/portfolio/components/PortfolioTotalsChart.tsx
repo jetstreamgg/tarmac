@@ -74,8 +74,10 @@ export function PortfolioTotalsChart() {
     [ssrData]
   );
 
-  const usdsChart = useParseTokenChartData(useSettledTimeFrame(timeFrame, usdsIsPlaceholder), usdsInput);
-  const ssrChart = useParseTokenChartData(useSettledTimeFrame(timeFrame, ssrIsPlaceholder), ssrInput);
+  const usdsTimeFrame = useSettledTimeFrame(timeFrame, usdsIsPlaceholder);
+  const ssrTimeFrame = useSettledTimeFrame(timeFrame, ssrIsPlaceholder);
+  const usdsChart = useParseTokenChartData(usdsTimeFrame, usdsInput);
+  const ssrChart = useParseTokenChartData(ssrTimeFrame, ssrInput);
 
   const isUsds = metric === 'usds';
   const tokenSymbols = isUsds ? ['USDS', 'DAI'] : ['USDS'];
@@ -86,6 +88,7 @@ export function PortfolioTotalsChart() {
         variant="detail"
         dataTestId="portfolio-totals-chart"
         data={isUsds ? usdsChart : ssrChart}
+        plottedTimeFrame={isUsds ? usdsTimeFrame : ssrTimeFrame}
         isLoading={isUsds ? usdsLoading : ssrLoading}
         error={isUsds ? usdsError : ssrError}
         symbol="USDS"
