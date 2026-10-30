@@ -1,5 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
+import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -141,6 +142,27 @@ describe('SlippageMenu', () => {
     expect(input.value).toBe('0.5');
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenLastCalledWith(0.005);
+  });
+
+  it('keeps typing through the default value', () => {
+    const Controlled = () => {
+      const [value, setValue] = useState(0.008);
+      return (
+        <I18nProvider i18n={i18n}>
+          <SlippageMenu value={value} defaultValue={0.002} onChange={setValue} />
+          <output data-testid="committed">{value}</output>
+        </I18nProvider>
+      );
+    };
+    render(<Controlled />);
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    for (const value of ['0', '0.', '0.2', '0.25']) {
+      fireEvent.change(input, { target: { value } });
+      expect(input.value).toBe(value);
+    }
+    expect(screen.getByTestId('committed').textContent).toBe('0.0025');
   });
 
   it('puts the tolerance in effect back on blur when nothing was committed', () => {

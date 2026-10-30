@@ -94,10 +94,10 @@ export function SlippageMenu({
   const [synced, setSynced] = useState({ value, defaultValue });
   if (synced.value !== value || synced.defaultValue !== defaultValue) {
     setSynced({ value, defaultValue });
-    if (value === defaultValue) {
-      setRawInput('');
-    } else if (Math.abs(percentStringToDecimal(rawInput) - value) > 1e-9) {
-      setRawInput(decimalToPercentString(value));
+    // Not when the text already means this value: that's the user typing, and
+    // the default may just be on the way ("0.2" of "0.25").
+    if (Math.abs(percentStringToDecimal(rawInput) - value) > 1e-9) {
+      setRawInput(value === defaultValue ? '' : decimalToPercentString(value));
     }
   }
 
