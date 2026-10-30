@@ -123,14 +123,15 @@ export function SlippageMenu({
 
   // Leaving the field with nothing committed from it ("", "0", "0.") puts back
   // the tolerance that is actually in effect, so the field never shows a value
-  // the trade won't use.
-  const handleCustomBlur = () => {
+  // the trade won't use. Closing the menu counts: Escape unmounts the field while
+  // focused, and no blur reaches it then.
+  const restoreUncommittedInput = () => {
     if (percentStringToDecimal(rawInput) > 0) return;
     setRawInput(isCustom ? decimalToPercentString(value) : '');
   };
 
   return (
-    <Popover>
+    <Popover onOpenChange={open => !open && restoreUncommittedInput()}>
       <PopoverTrigger
         className={cn(
           'text-textSecondary hover:text-text data-[state=open]:text-text rounded-full p-1.5 transition-colors',
@@ -210,7 +211,7 @@ export function SlippageMenu({
                     inputMode="decimal"
                     value={rawInput}
                     onChange={e => handleCustomChange(e.target.value)}
-                    onBlur={handleCustomBlur}
+                    onBlur={restoreUncommittedInput}
                     data-testid={`${dataTestId}-input`}
                   />
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>

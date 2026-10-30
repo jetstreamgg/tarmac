@@ -177,6 +177,20 @@ describe('SlippageMenu', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('puts the tolerance in effect back when the menu closes with the field still focused', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    input.focus();
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    openMenu();
+
+    expect((screen.getByTestId('slippage-menu-input') as HTMLInputElement).value).toBe('0.5');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('leaves a committed value alone on blur', () => {
     renderMenu({ value: 0.005 });
     openMenu();
