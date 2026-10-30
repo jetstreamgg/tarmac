@@ -95,7 +95,7 @@ export function PortfolioTotalsChart() {
         tokenSymbols={tokenSymbols}
         // The comp (1036:189291) leads the headline figure with the series'
         // 32px token mark (APP-443 item 2.1).
-        icons={<TokenIconStack symbols={tokenSymbols} size={32} className="shrink-0" />}
+        icons={<TokenIconStack symbols={tokenSymbols} size={32} labelled className="shrink-0" />}
         // …and tags the figure with the period's change (Figma 2376:225249,
         // "missing trend badge"). The mark now stands in for the symbol, which
         // no longer trails the figure.
