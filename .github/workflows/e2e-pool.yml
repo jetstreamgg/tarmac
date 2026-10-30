@@ -347,11 +347,13 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       # This run's fresh VNets by ID (the age sweep skips anything under 45
-      # minutes, so it rarely caught them), then the sweep as a backstop.
+      # minutes, so it rarely caught them), then the sweep as a backstop. Not after
+      # a shard failure: "Re-run failed jobs" reuses these IDs, so those VNets stay
+      # up for it and the sweep collects them later.
       - name: Cleanup fresh VNets (fallback only)
         run: |
           echo "Cleaning up fresh VNets (not pool VNets)..."
-          if [ -n "$VNET_IDS_B64" ]; then
+          if [ -n "$VNET_IDS_B64" ] && [ "$SHARDS_RESULT" != "failure" ]; then
             printf '%s' "$VNET_IDS_B64" | base64 -d > tenderlyCreatedVnets.json
             pnpm run vnet:delete:created:ci || echo "Deleting this run's VNets failed, continuing..."
           fi
@@ -359,3 +361,4 @@ jobs:
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
           VNET_IDS_B64: ${{ needs.setup-pool.outputs.vnet-ids }}
+          SHARDS_RESULT: ${{ needs.test-shards.result }}
