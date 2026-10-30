@@ -4,6 +4,7 @@ import {
   decodeFunctionData,
   encodeAbiParameters,
   encodeEventTopics,
+  encodeFunctionData,
   encodeFunctionResult,
   keccak256,
   parseAbi,
@@ -25,7 +26,7 @@ import {
 } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 import { aggregate3Answer, rpcAt, same } from './rpcShim';
-import { NetworkName } from './constants';
+import { ANYONE, NetworkName } from './constants';
 
 type RpcRequest = { id: number; method: string; params?: unknown[] };
 type RpcAnswer = { result: unknown } | { error: { code: number; message: string; data?: Hex } };
@@ -106,6 +107,8 @@ export async function installArbitrumShim(page: Page) {
   const receipts = new Map<string, RpcReceipt>();
   const transactions = new Map<string, RpcTransaction>();
   const seen: ArbitrumShimLog = { estimates: [], gasPrices: [], sent: [] };
+  // RedeemScheduled logs of redeems sent outside the page, which the fork's log reads lack.
+  const scheduledElsewhere: RpcLog[] = [];
   let sequence = 0n;
 
   const mintEstimate = async (data: Hex) =>
@@ -215,6 +218,25 @@ export async function installArbitrumShim(page: Page) {
           ticketCallResult(tx?.to, data) ??
           (await aggregate3Answer(l2Rpc, { to: tx?.to, data, block: params[1] }, ticketCallResult));
         return result && { result };
+      }
+      case 'eth_getLogs': {
+        const filter = params[0] as {
+          address?: string;
+          topics?: (Hex | null)[];
+          fromBlock?: Hex;
+          toBlock?: Hex;
+        };
+        if (!scheduledElsewhere.length || !same(filter?.address, ARB_RETRYABLE_TX)) return undefined;
+        const [topic, ticketId] = filter.topics ?? [];
+        const extra = scheduledElsewhere.filter(
+          entry =>
+            same(topic, entry.topics[0]) &&
+            (!ticketId || same(ticketId, entry.topics[1])) &&
+            (!filter.fromBlock || BigInt(entry.blockNumber as Hex) >= BigInt(filter.fromBlock)) &&
+            (!filter.toBlock || BigInt(entry.blockNumber as Hex) <= BigInt(filter.toBlock))
+        );
+        if (!extra.length) return undefined;
+        return { result: [...((await l2Rpc(method, params)) as RpcLog[]), ...extra] };
       }
       case 'eth_getTransactionReceipt': {
         const receipt = receipts.get(String(params[0]).toLowerCase());
@@ -346,5 +368,33 @@ export async function installArbitrumShim(page: Page) {
     ticket.timeout = seconds === undefined ? undefined : nowS() + seconds;
   }
 
-  return { seen, relay, setTicketTimeout, mintEstimate };
+  /**
+   * A redeem of a live ticket that another wallet sends (as the retryables tool does), outside
+   * the page: the real mint as its retry, and its RedeemScheduled log in the page's log reads.
+   * Returns whether the mint ran.
+   */
+  async function redeemElsewhere(ticketId: Hex) {
+    const ticket = liveTicket(ticketId);
+    if (!ticket) throw new Error(`No live ticket ${ticketId}`);
+    const data = encodeFunctionData({
+      abi: arbRetryableTxAbi,
+      functionName: 'redeem',
+      args: [ticket.ticketId]
+    });
+    const retry = await sendFromAlias(
+      ARBITRUM_DEPOSIT.l2Gateway,
+      ticket.data,
+      await mintEstimate(ticket.data)
+    );
+    const hash = keccak256(concat([ticket.ticketId, toHex(++sequence, { size: 32 })]));
+    synthesize(hash, retry, ANYONE, data, receipt => [
+      redeemScheduled(receipt, ticket.ticketId, retry.hash, sequence)
+    ]);
+    scheduledElsewhere.push(...receipts.get(hash.toLowerCase())!.logs);
+    const minted = retry.receipt.status === '0x1';
+    if (minted) ticket.timeout = undefined;
+    return minted;
+  }
+
+  return { seen, relay, setTicketTimeout, mintEstimate, redeemElsewhere };
 }
