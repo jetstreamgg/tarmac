@@ -50,9 +50,11 @@ describe('useBaLabsHistoric — timeframe switches (APP-407)', () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.data).toEqual([{ size: '7' }]);
+    expect(result.current.isPlaceholderData).toBe(true);
 
     resolvers[1]([{ size: '365' }]);
     await waitFor(() => expect(result.current.data).toEqual([{ size: '365' }]));
+    expect(result.current.isPlaceholderData).toBe(false);
   });
 
   it('does not carry one series over to another (different farm)', async () => {

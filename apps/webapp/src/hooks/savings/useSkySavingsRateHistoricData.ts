@@ -43,7 +43,7 @@ async function fetchSkySavingsRateHistoric(url: URL): Promise<SkySavingsRateHist
 
 export function useSkySavingsRateHistoricData(
   props: { daysAgo?: number } = { daysAgo: 30 }
-): ReadHook & { data?: SkySavingsRateHistoricData[] } {
+): ReadHook & { data?: SkySavingsRateHistoricData[]; isPlaceholderData: boolean } {
   const { daysAgo } = props;
   const apiBase = getBaLabsApiUrl() || '';
   // /save/ssr/historic/ lives at the BA Labs root, not under /api/v1
@@ -62,5 +62,5 @@ export function useSkySavingsRateHistoricData(
     placeholderData: keepPreviousData
   });
 
-  return toReadHook(query, [baLabsDataSource(url)]);
+  return { ...toReadHook(query, [baLabsDataSource(url)]), isPlaceholderData: query.isPlaceholderData };
 }

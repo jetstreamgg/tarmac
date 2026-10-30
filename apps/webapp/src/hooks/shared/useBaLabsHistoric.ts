@@ -5,6 +5,12 @@ import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
 import { toReadHook } from './toReadHook';
 
+export type BaLabsHistoricHook<T> = ReadHook & {
+  data?: T[];
+  /** `data` is still the previous range's: parse it with that range (useSettledTimeFrame). */
+  isPlaceholderData: boolean;
+};
+
 /**
  * A paged BA Labs `historic` series, parsed into chart points. The endpoint
  * caps a response at 1000 rows whatever `p_size` asks for, so every page is
@@ -26,7 +32,7 @@ export function useBaLabsHistoric<TRaw, TParsed>({
   transform: (rows: TRaw[]) => TParsed[];
   /** Extra precondition on top of the API root being configured. */
   enabled?: boolean;
-}): ReadHook & { data?: TParsed[] } {
+}): BaLabsHistoricHook<TParsed> {
   const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl && enabled) {
@@ -55,5 +61,5 @@ export function useBaLabsHistoric<TRaw, TParsed>({
       previousQuery?.queryKey[1] === path ? previousData : undefined
   });
 
-  return toReadHook(query, [baLabsDataSource(url)]);
+  return { ...toReadHook(query, [baLabsDataSource(url)]), isPlaceholderData: query.isPlaceholderData };
 }

@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useUsdsDaiData, useSkySavingsRateHistoricData } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { useSettledTimeFrame } from '@/modules/ui/hooks/useSettledTimeFrame';
 import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartData';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -41,11 +42,17 @@ export function PortfolioTotalsChart() {
 
   const limit = getDayCountFromTimeFrame(timeFrame);
 
-  const { data: usdsDaiData, isLoading: usdsLoading, error: usdsError } = useUsdsDaiData({ limit });
+  const {
+    data: usdsDaiData,
+    isLoading: usdsLoading,
+    error: usdsError,
+    isPlaceholderData: usdsIsPlaceholder
+  } = useUsdsDaiData({ limit });
   const {
     data: ssrData,
     isLoading: ssrLoading,
-    error: ssrError
+    error: ssrError,
+    isPlaceholderData: ssrIsPlaceholder
   } = useSkySavingsRateHistoricData({ daysAgo: ssrDaysAgoFromTimeFrame(timeFrame) });
 
   const usdsInput = useMemo(
@@ -67,8 +74,8 @@ export function PortfolioTotalsChart() {
     [ssrData]
   );
 
-  const usdsChart = useParseTokenChartData(timeFrame, usdsInput);
-  const ssrChart = useParseTokenChartData(timeFrame, ssrInput);
+  const usdsChart = useParseTokenChartData(useSettledTimeFrame(timeFrame, usdsIsPlaceholder), usdsInput);
+  const ssrChart = useParseTokenChartData(useSettledTimeFrame(timeFrame, ssrIsPlaceholder), ssrInput);
 
   const isUsds = metric === 'usds';
   const tokenSymbols = isUsds ? ['USDS', 'DAI'] : ['USDS'];

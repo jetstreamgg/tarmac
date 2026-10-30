@@ -4,6 +4,7 @@ import { TimeFrame } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { RateTvlDetailChart } from '@/components/product/RateTvlDetailChart';
 import { useParseRewardsChartData } from '../hooks/useParseRewardsChartData';
+import { useSettledTimeFrame } from '@/modules/ui/hooks/useSettledTimeFrame';
 
 /**
  * The product-detail Rate/TVL chart for a reward farm — injected into
@@ -29,12 +30,16 @@ export function RewardsDetailChart({
   const {
     data: chartInfo,
     isLoading,
-    error
+    error,
+    isPlaceholderData
   } = useRewardsChartInfo({
     rewardContractAddress: contract.contractAddress,
     limit: getDayCountFromTimeFrame(timeFrame)
   });
-  const { totalSupplied: tvlData, rate: rateData } = useParseRewardsChartData(timeFrame, chartInfo || []);
+  const { totalSupplied: tvlData, rate: rateData } = useParseRewardsChartData(
+    useSettledTimeFrame(timeFrame, isPlaceholderData),
+    chartInfo || []
+  );
 
   return (
     <RateTvlDetailChart

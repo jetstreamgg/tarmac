@@ -3,6 +3,7 @@ import { useChainId } from 'wagmi';
 import { useSavingsChartInfo, useSkySavingsRateHistoricData, useOverallSkyData } from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { TimeFrame, Data } from '@/modules/ui/components/Chart';
+import { useSettledTimeFrame } from '@/modules/ui/hooks/useSettledTimeFrame';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { RateTvlDetailChart } from '@/components/product/RateTvlDetailChart';
@@ -38,9 +39,10 @@ export function SavingsDetailChart() {
   const {
     data: tvlInfo,
     isLoading: tvlLoading,
-    error: tvlError
+    error: tvlError,
+    isPlaceholderData: tvlIsPlaceholder
   } = useSavingsChartInfo(chartChainId, { limit: getDayCountFromTimeFrame(timeFrame) });
-  const tvlData = useParseTvlChartData(timeFrame, tvlInfo || []);
+  const tvlData = useParseTvlChartData(useSettledTimeFrame(timeFrame, tvlIsPlaceholder), tvlInfo || []);
 
   // Rate series — BA Labs SSR historic. `rate` is a decimal fraction (same
   // scale as skySavingsRatecRate), so ×100 to plot percent units.

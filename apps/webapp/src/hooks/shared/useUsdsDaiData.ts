@@ -1,5 +1,4 @@
-import { ReadHook } from '../hooks';
-import { useBaLabsHistoric } from './useBaLabsHistoric';
+import { useBaLabsHistoric, type BaLabsHistoricHook } from './useBaLabsHistoric';
 
 type UsdsDaiApiResponse = {
   datetime: string;
@@ -32,7 +31,7 @@ function transformBaLabsData(results: UsdsDaiApiResponse[]): UsdsDaiChartInfo[] 
 
 export function useUsdsDaiData(
   props: { limit?: number } = { limit: 100 }
-): ReadHook & { data?: UsdsDaiChartInfo[] } {
+): BaLabsHistoricHook<UsdsDaiChartInfo> {
   const { limit } = props;
 
   // Paged: the endpoint caps a response at 1000 rows whatever p_size asks for,
