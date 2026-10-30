@@ -1,24 +1,8 @@
-import {
-  concat,
-  decodeEventLog,
-  getAbiItem,
-  isAddressEqual,
-  numberToHex,
-  slice,
-  type Hex,
-  type Log
-} from 'viem';
+import type { Hex } from 'viem';
 import type { AdapterContext } from '../types';
-import {
-  CCTP_DOMAIN,
-  MESSAGE_TRANSMITTER_V2,
-  TOKEN_MESSENGER_V2,
-  messageTransmitterV2Abi,
-  tokenMessengerV2Abi,
-  type CctpL2NetworkId
-} from './contracts';
+import { CCTP_DOMAIN, TOKEN_MESSENGER_V2, type CctpL2NetworkId } from './contracts';
 import type { AttestationReader, IrisAttestedMessage } from './iris';
-import { isAttestedCopy, sentMessages } from './message';
+import { MINT_AND_WITHDRAW, receivedCopies, sentMessages } from './message';
 
 // Fork clocks match to the second (live: relay and burn share a timestamp); slack for any drift.
 const CLOCK_SLACK_SECONDS = 60n;
@@ -29,8 +13,6 @@ const LOOKBACK_BLOCKS = 100_000n;
 // Never sent: the copy is read only once received, so its nonce reads as used and no claim is offered.
 const NO_ATTESTATION = '0x00';
 
-const MINT_AND_WITHDRAW = getAbiItem({ abi: tokenMessengerV2Abi, name: 'MintAndWithdraw' });
-
 /** Per Ethereum client, how far each burn message was scanned and the copies found so far. */
 const scans = new WeakMap<object, Map<string, { scannedTo: bigint; copies: Hex[] }>>();
 
@@ -39,34 +21,6 @@ export const networkOfDomain = (domain: number) =>
   (Object.keys(CCTP_DOMAIN) as (keyof typeof CCTP_DOMAIN)[]).find(
     (network): network is CctpL2NetworkId => network !== 'ethereum' && CCTP_DOMAIN[network] === domain
   );
-
-/** The copies of `source` that `logs` show received on Ethereum, rebuilt with the nonce and finality they got. */
-function receivedCopies(logs: readonly Log[], source: Hex): Hex[] {
-  return logs.flatMap(log => {
-    if (!isAddressEqual(log.address, MESSAGE_TRANSMITTER_V2)) return [];
-    try {
-      const { eventName, args } = decodeEventLog({
-        abi: messageTransmitterV2Abi,
-        topics: log.topics,
-        data: log.data
-      });
-      if (eventName !== 'MessageReceived') return [];
-      const copy = concat([
-        slice(source, 0, 12),
-        args.nonce,
-        slice(source, 44, 144),
-        numberToHex(args.finalityThresholdExecuted, { size: 4 }),
-        args.messageBody
-      ]);
-      const sameOrigin =
-        args.sourceDomain === Number(BigInt(slice(source, 4, 8))) &&
-        args.sender.toLowerCase() === slice(source, 44, 76).toLowerCase();
-      return sameOrigin && isAttestedCopy(copy, source) ? [copy] : [];
-    } catch {
-      return [];
-    }
-  });
-}
 
 /**
  * Dev only, on the Tenderly multichain fork: Tenderly attests and relays a

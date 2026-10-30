@@ -1,9 +1,12 @@
 import {
+  concat,
   decodeEventLog,
+  getAbiItem,
   getAddress,
   hexToBigInt,
   hexToNumber,
   isAddressEqual,
+  numberToHex,
   size,
   slice,
   zeroHash,
@@ -19,6 +22,7 @@ import {
   TOKEN_MESSENGER_V2,
   cctpL2Contracts,
   messageTransmitterV2Abi,
+  tokenMessengerV2Abi,
   type CctpL2NetworkId
 } from './contracts';
 
@@ -184,4 +188,35 @@ export function isAttestedCopy(attested: Hex, source: Hex): boolean {
     decoded.finalityThresholdExecuted >= CCTP_FINALITY_STANDARD &&
     decoded.body.feeExecuted === 0n
   );
+}
+
+/** Ethereum's TokenMessenger mints a received transfer's USDC with it, indexed by its recipient. */
+export const MINT_AND_WITHDRAW = getAbiItem({ abi: tokenMessengerV2Abi, name: 'MintAndWithdraw' });
+
+/** The copies of `source` that `logs` show received on Ethereum, rebuilt with the nonce and finality they got. */
+export function receivedCopies(logs: readonly Log[], source: Hex): Hex[] {
+  return logs.flatMap(log => {
+    if (!isAddressEqual(log.address, MESSAGE_TRANSMITTER_V2)) return [];
+    try {
+      const { eventName, args } = decodeEventLog({
+        abi: messageTransmitterV2Abi,
+        topics: log.topics,
+        data: log.data
+      });
+      if (eventName !== 'MessageReceived') return [];
+      const copy = concat([
+        slice(source, 0, 12),
+        args.nonce,
+        slice(source, 44, 144),
+        numberToHex(args.finalityThresholdExecuted, { size: 4 }),
+        args.messageBody
+      ]);
+      const sameOrigin =
+        args.sourceDomain === Number(BigInt(slice(source, 4, 8))) &&
+        args.sender.toLowerCase() === slice(source, 44, 76).toLowerCase();
+      return sameOrigin && isAttestedCopy(copy, source) ? [copy] : [];
+    } catch {
+      return [];
+    }
+  });
 }

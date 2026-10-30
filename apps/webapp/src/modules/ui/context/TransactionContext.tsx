@@ -29,7 +29,11 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
-import { TransactionRefusedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import {
+  TransactionRefusedError,
+  TransactionRevertedError,
+  unconfirmedReason
+} from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {
@@ -49,7 +53,11 @@ import {
   type PreTransactionGate,
   type TransactionPreflight
 } from './preTransactionGate';
-import type { SendRefusal, TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import type {
+  SendRefusal,
+  SendUnconfirmed,
+  TransactionStep
+} from '@/modules/ui/components/transactionStepsModel';
 import { encodeCalls, isTailOf, type EncodedCall } from '@/modules/ui/lib/callIntent';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
@@ -244,6 +252,8 @@ type TransactionModalView = {
   userRejected: boolean;
   /** The ERROR on screen is a send refused before the wallet saw it: nothing of this attempt went out. */
   refusal: SendRefusal | null;
+  /** The ERROR on screen is a send that went out with an outcome the app can't read: it may still mine. */
+  unconfirmed: SendUnconfirmed | null;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -318,9 +328,12 @@ export function TransactionProvider({
   const [userRejected, setUserRejected] = useState(false);
   // Written with it: the ERROR is a send refused before the wallet saw it.
   const [refusal, setRefusal] = useState<SendRefusal | null>(null);
+  // Written with it: the ERROR ends a send whose outcome can't be read.
+  const [unconfirmed, setUnconfirmed] = useState<SendUnconfirmed | null>(null);
   const clearFailure = useCallback(() => {
     setUserRejected(false);
     setRefusal(null);
+    setUnconfirmed(null);
   }, []);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
@@ -707,6 +720,7 @@ export function TransactionProvider({
         hasMinedStep,
         userRejected,
         refusal,
+        unconfirmed,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -740,7 +754,7 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected, refusal, clearFailure]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected, refusal, unconfirmed, clearFailure]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -1328,6 +1342,8 @@ export function TransactionProvider({
             ? { final: false }
             : null
       );
+      const unconfirmedCopy = unconfirmedReason(error);
+      setUnconfirmed(unconfirmedCopy ? { reason: unconfirmedCopy } : null);
       if (hash) {
         txHashRef.current = hash;
       }
@@ -1416,6 +1432,7 @@ export function TransactionProvider({
         hasMinedStep,
         userRejected,
         refusal,
+        unconfirmed,
         preludeSteps,
         gateCopy
       }
@@ -1624,6 +1641,7 @@ export function TransactionProvider({
             currentStep={modalView.currentStep}
             userRejected={modalView.userRejected}
             refusal={modalView.refusal}
+            unconfirmed={modalView.unconfirmed}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}

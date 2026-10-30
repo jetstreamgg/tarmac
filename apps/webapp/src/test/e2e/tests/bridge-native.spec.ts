@@ -1,9 +1,21 @@
 import { type Page, type Route } from '@playwright/test';
-import { parseUnits, type Address } from 'viem';
+import {
+  createPublicClient,
+  decodeFunctionData,
+  getAddress,
+  http,
+  parseUnits,
+  type Address,
+  type Hex
+} from 'viem';
+import { skyL1TokenBridgeImplementationAbi } from '@/hooks/generated';
 import { expect, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
-import { L1_USDS } from '@/modules/bridge/adapters/nativeDeposit/contracts';
+import { L1_USDS, OP_STACK_DEPOSIT } from '@/modules/bridge/adapters/nativeDeposit/contracts';
+import { NetworkName } from '../utils/constants';
+import { getRpcUrlFromFile } from '../utils/getRpcUrlFromFile';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
+import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 import { watchDeposit } from '../utils/bridgeFunds';
 import {
   awaitDepositTxHash,
@@ -300,9 +312,192 @@ test.describe('Bridge: Ethereum to L2 native deposits', () => {
     await expect(bridge.cards()).toHaveCount(1);
     await funds.expectArrived(parseUnits('2', 18));
   });
+
+  for (const { network, label } of [
+    { network: 'optimism', label: 'OP Mainnet' },
+    { network: 'unichain', label: 'Unichain' }
+  ] as const) {
+    test(`${label}: the deposit sends the expected bridge call, and the card follows the relay to Arrived`, async ({
+      isolatedPage,
+      testAccount
+    }) => {
+      const account = getAddress(testAccount);
+      const amount = parseUnits('1', 18);
+      const bridge = new BridgePage(isolatedPage);
+      await bridge.gotoConnected();
+      await bridge.selectDestination(network);
+      const before = await l2UsdsBalance(network, account);
+      const funds = await watchDeposit({ to: network, sender: account });
+      const sent: { to: Address; data: Hex; value: bigint }[] = [];
+      await routeRpc(isolatedPage, route => {
+        const body = route.request().postData();
+        if (isSend(body)) {
+          const tx = JSON.parse(body!).params[0];
+          sent.push({ to: getAddress(tx.to), data: tx.data ?? tx.input, value: BigInt(tx.value ?? 0) });
+        }
+        return route.fallback();
+      });
+
+      await bridge.openReview('1');
+      await bridge.confirmButton().click();
+      await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
+      const deposit = sent.at(-1)!;
+      expect(deposit.value).toBe(0n);
+      // The token pair the bridge itself maps, read on Ethereum, not the app's config.
+      const l1 = createPublicClient({ transport: http(await getRpcUrlFromFile(NetworkName.mainnet)) });
+      const read = (functionName: 'otherBridge' | 'l1ToL2Token', args?: [Address]) =>
+        l1.readContract({
+          address: deposit.to,
+          abi: skyL1TokenBridgeImplementationAbi,
+          functionName,
+          args
+        } as never) as Promise<Address>;
+      expect(deposit.to).toBe(getAddress(OP_STACK_DEPOSIT[network].l1TokenBridge));
+      expect(getAddress(await read('otherBridge'))).toBe(getAddress(OP_STACK_DEPOSIT[network].l2TokenBridge));
+      const remoteToken = getAddress(await read('l1ToL2Token', [L1_USDS]));
+      expect(decodeFunctionData({ abi: skyL1TokenBridgeImplementationAbi, data: deposit.data })).toEqual({
+        functionName: 'bridgeERC20To',
+        args: [getAddress(L1_USDS), remoteToken, account, amount, 300_000, '0x']
+      });
+
+      const txHash = await awaitDepositTxHash(isolatedPage, network);
+      await funds.expectEscrowed(txHash, amount);
+      expect(await relayOpStackDeposit(network, txHash)).toContain('RelayedMessage');
+      await expect(bridge.card(label).getByTestId('pending-bridge-status')).toHaveText('Arrived', {
+        timeout: 60_000
+      });
+      expect((await l2UsdsBalance(network, account)) - before).toBe(amount);
+      await funds.expectArrived(amount);
+    });
+  }
+
+  test('OP Mainnet: a Replay declined in the wallet keeps Action needed, and the Replay sent after delivers', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected();
+    await bridge.selectDestination('optimism');
+    const before = await l2UsdsBalance('optimism', testAccount);
+    const funds = await watchDeposit({ to: 'optimism', sender: testAccount });
+    await bridge.openReview('1');
+    await bridge.confirmButton().click();
+    await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
+    const txHash = await awaitDepositTxHash(isolatedPage, 'optimism');
+    await funds.expectEscrowed(txHash, parseUnits('1', 18));
+    expect(await relayOpStackDeposit('optimism', txHash, { gas: 150_000n })).toContain(
+      'FailedRelayedMessage'
+    );
+    const card = bridge.card('OP Mainnet');
+    const status = card.getByTestId('pending-bridge-status');
+    const replay = card.getByTestId('pending-bridge-action');
+    await expect(status).toHaveText('Action needed', { timeout: 90_000 });
+
+    let declined = 0;
+    const stop = await routeRpc(isolatedPage, route => {
+      if (!isSend(route.request().postData())) return route.fallback();
+      declined++;
+      return route.fulfill({
+        json: { jsonrpc: '2.0', id: 1, error: { code: 4001, message: 'User rejected the request.' } }
+      });
+    });
+    await replay.click();
+    await expect(isolatedPage.getByRole('dialog')).toContainText('declined', { timeout: 60_000 });
+    expect(declined).toBe(1);
+    await isolatedPage.getByTestId('transaction-modal-close').click();
+    await switchBackToEthereum(isolatedPage);
+    await expect(status).toHaveText('Action needed');
+    await expect(replay).toBeEnabled();
+    expect(await l2UsdsBalance('optimism', testAccount)).toBe(before);
+
+    await stop();
+    await replay.click();
+    await expectTransactionSuccess(isolatedPage, { title: 'Replay sent!', timeout: 90_000 });
+    await expect
+      .poll(async () => (await l2UsdsBalance('optimism', testAccount)) - before, { timeout: 30_000 })
+      .toBe(parseUnits('1', 18));
+    await funds.expectArrived(parseUnits('1', 18));
+  });
+
+  test('A bridge closed after the deposit is sent still delivers it: the L2 side never checks isOpen', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected();
+    await bridge.selectDestination('unichain');
+    const before = await l2UsdsBalance('unichain', testAccount);
+    const funds = await watchDeposit({ to: 'unichain', sender: testAccount });
+    await bridge.openReview('1');
+    await bridge.confirmButton().click();
+    await expectTransactionSuccess(isolatedPage, { title: 'Bridge initiated!', timeout: 90_000 });
+    const txHash = await awaitDepositTxHash(isolatedPage, 'unichain');
+    await funds.expectEscrowed(txHash, parseUnits('1', 18));
+
+    const reopen = await closeOpStackBridge('unichain');
+    try {
+      expect(await relayOpStackDeposit('unichain', txHash)).toContain('RelayedMessage');
+      await expect(bridge.card('Unichain').getByTestId('pending-bridge-status')).toHaveText('Arrived', {
+        timeout: 60_000
+      });
+      expect((await l2UsdsBalance('unichain', testAccount)) - before).toBe(parseUnits('1', 18));
+      await funds.expectArrived(parseUnits('1', 18));
+    } finally {
+      await reopen();
+    }
+  });
+
+  test('A deposit that reverts on Ethereum reads Failed, with nothing to do on the L2', async ({
+    isolatedPage
+  }) => {
+    const bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected();
+    await bridge.selectDestination('unichain');
+    await bridge.openReview('1');
+
+    // The fork can't revert the deposit after its simulation passed, so its receipt reads reverted to this page.
+    const depositBridge = getAddress(OP_STACK_DEPOSIT.unichain.l1TokenBridge);
+    const reverted = new Set<string>();
+    await routeRpc(isolatedPage, async route => {
+      const body = route.request().postData();
+      if (!body) return route.fallback();
+      const request = JSON.parse(body);
+      if (Array.isArray(request)) return route.fallback();
+      if (request.method === 'eth_sendTransaction' && getAddress(request.params[0].to) === depositBridge) {
+        const response = await route.fetch();
+        const answer = await response.json();
+        if (answer.result) reverted.add(String(answer.result).toLowerCase());
+        return route.fulfill({ response, json: answer });
+      }
+      if (
+        request.method === 'eth_getTransactionReceipt' &&
+        reverted.has(String(request.params[0]).toLowerCase())
+      ) {
+        const response = await route.fetch();
+        const answer = await response.json();
+        if (!answer.result) return route.fulfill({ response, json: answer });
+        return route.fulfill({
+          response,
+          json: { ...answer, result: { ...answer.result, status: '0x0', logs: [] } }
+        });
+      }
+      return route.fallback();
+    });
+    await bridge.confirmButton().click();
+    await expect.poll(() => reverted.size, { timeout: 60_000 }).toBe(1);
+
+    const card = bridge.card('Unichain');
+    await expect(card.getByTestId('pending-bridge-status')).toHaveText('Failed', { timeout: 90_000 });
+    await expect(card.getByTestId('pending-bridge-action')).toHaveCount(0);
+  });
 });
 
 const TENDERLY_RPC = 'https://virtual.**.rpc.tenderly.co/**';
+
+/** The wallet back on Ethereum, where the deposit cards are scoped, after an action sent on the L2. */
+const switchBackToEthereum = (page: Page) =>
+  switchWalletNetwork(page, tenderlyChainLabel(NetworkName.mainnet));
+
 const isSend = (body: string | null) => !!body?.includes('"eth_sendTransaction"');
 
 /** Routes the fork's RPC through `handler`. Returns its removal, which leaves the fixture's routes in place. */

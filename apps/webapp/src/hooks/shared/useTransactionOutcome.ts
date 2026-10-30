@@ -46,6 +46,24 @@ export class TransactionRefusedError extends Error {
   }
 }
 
+// Per error, the user copy of a send that went out with an outcome the app can't read.
+const unconfirmedReasons = new WeakMap<object, string>();
+
+/**
+ * Marks `error` as ending a send that went out but whose outcome can't be read:
+ * it may still mine, so the modal says it isn't confirmed yet and offers no
+ * retry. `reason` is user copy. The error itself is kept, for its analytics
+ * and Sentry grouping.
+ */
+export function markUnconfirmed<E extends Error>(error: E, reason: string): E {
+  unconfirmedReasons.set(error, reason);
+  return error;
+}
+
+/** The copy `markUnconfirmed` gave `error`, if any. */
+export const unconfirmedReason = (error: unknown): string | undefined =>
+  typeof error === 'object' && error !== null ? unconfirmedReasons.get(error) : undefined;
+
 export type TransactionOutcomeState = {
   /** A hash is being watched and has no outcome yet, including while the RPC is failing. */
   isPending: boolean;

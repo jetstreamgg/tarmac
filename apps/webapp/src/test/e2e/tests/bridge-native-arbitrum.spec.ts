@@ -141,6 +141,28 @@ test.describe('Bridge: Ethereum to Arbitrum native deposits', () => {
     await funds.expectArrived(parseUnits('2', 18));
   });
 
+  test('A failed auto-redeem that another wallet redeems moves the card to Arrived, with nothing sent from here', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const account = getAddress(testAccount);
+    const before = await l2UsdsBalance('arbitrum', account);
+    const funds = await watchDeposit({ to: 'arbitrum', sender: account });
+    const { shim, card, txHash } = await deposit(isolatedPage, '2');
+    await funds.expectEscrowed(txHash, parseUnits('2', 18));
+    const relay = await shim.relay(txHash, { failAutoRedeem: true });
+    expect(relay.minted).toBe(false);
+    await expect(card.getByTestId('pending-bridge-status')).toHaveText('Action needed', { timeout: 60_000 });
+
+    // As the retryables tool would, from a wallet the app never sees.
+    expect(await shim.redeemElsewhere(relay.ticket.ticketId)).toBe(true);
+    await expect(card.getByTestId('pending-bridge-status')).toHaveText('Arrived', { timeout: 120_000 });
+    await expect(card.getByTestId('pending-bridge-action')).toHaveCount(0);
+    expect(shim.seen.sent).toHaveLength(0);
+    expect((await l2UsdsBalance('arbitrum', account)) - before).toBe(parseUnits('2', 18));
+    await funds.expectArrived(parseUnits('2', 18));
+  });
+
   test('Near its deadline the ticket offers Extend, and the keepalive moves the deadline', async ({
     isolatedPage,
     testAccount
