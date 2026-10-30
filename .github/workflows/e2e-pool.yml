@@ -42,7 +42,7 @@ jobs:
       # the pool secret is masked line by line, `{` included, and GitHub drops any
       # job output containing a masked value.
       vnet-ids: ${{ steps.export-ids.outputs.vnet-ids }}
-      snapshots: ${{ steps.export-ids.outputs.snapshots }}
+      snapshots: ${{ steps.export-snapshots.outputs.snapshots }}
 
     env:
       VITE_ENV_NAME: development
@@ -135,6 +135,17 @@ jobs:
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
+      # Shards never get tenderlyTestnetData.json from this job: it holds the
+      # VNets' Admin RPC URLs, and an artifact is that file in plaintext (secret
+      # masking covers logs, not artifacts). Pool shards re-read the secrets;
+      # fallback shards get the IDs here and look the URLs up with
+      # TENDERLY_API_KEY (APP-479). Exported right after the fork so cleanup can
+      # still delete these VNets if funding fails.
+      - name: Export fresh VNet IDs
+        id: export-ids
+        if: steps.pool-status.outputs.status == 'unavailable'
+        run: echo "vnet-ids=$(jq -c '[.[] | {NETWORK, TENDERLY_TESTNET_ID}]' tenderlyTestnetData.json | base64 -w0)" >> $GITHUB_OUTPUT
+
       - name: Fallback - Fund accounts and create snapshots
         if: steps.pool-status.outputs.status == 'unavailable'
         run: |
@@ -150,17 +161,10 @@ jobs:
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
-      # Shards never get tenderlyTestnetData.json from this job: it holds the
-      # VNets' Admin RPC URLs, and an artifact is that file in plaintext (secret
-      # masking covers logs, not artifacts). Pool shards re-read the secrets;
-      # fallback shards get the IDs here and look the URLs up with
-      # TENDERLY_API_KEY (APP-479).
-      - name: Export VNet IDs for shards (fallback only)
-        id: export-ids
+      - name: Export fresh snapshot IDs
+        id: export-snapshots
         if: steps.pool-status.outputs.status == 'unavailable'
-        run: |
-          echo "vnet-ids=$(jq -c '[.[] | {NETWORK, TENDERLY_TESTNET_ID}]' tenderlyTestnetData.json | base64 -w0)" >> $GITHUB_OUTPUT
-          echo "snapshots=$(jq -c . apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | base64 -w0)" >> $GITHUB_OUTPUT
+        run: echo "snapshots=$(jq -c . apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | base64 -w0)" >> $GITHUB_OUTPUT
 
       - name: Verify setup is ready
         run: |
