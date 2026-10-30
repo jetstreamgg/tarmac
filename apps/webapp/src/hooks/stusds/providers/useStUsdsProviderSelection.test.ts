@@ -445,6 +445,40 @@ describe('useStUsdsProviderSelection', () => {
       expect(result.current.selectionReason).not.toBe(StUsdsSelectionReason.CURVE_BETTER_RATE);
     });
 
+    describe('a typed withdrawal above the native max', () => {
+      const AMOUNT = 1000n * WAD;
+      const setup = (curveInput: bigint) => {
+        const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
+          inputAmount: AMOUNT,
+          outputAmount: AMOUNT
+        });
+        nativeData.state.maxWithdraw = AMOUNT - WAD;
+        setupMocks(
+          nativeData,
+          createMockProviderData(StUsdsProviderType.CURVE, { inputAmount: curveInput, outputAmount: AMOUNT })
+        );
+      };
+      const select = () =>
+        renderHook(() =>
+          useStUsdsProviderSelection({
+            amount: AMOUNT,
+            direction: StUsdsDirection.WITHDRAW,
+            userStUsdsBalance: AMOUNT
+          })
+        ).result.current;
+
+      it('goes through Curve when the shares cover it, as native would refuse it', () => {
+        setup(AMOUNT);
+        expect(select().selectedProvider).toBe(StUsdsProviderType.CURVE);
+        expect(select().selectionReason).toBe(StUsdsSelectionReason.CURVE_ONLY_AVAILABLE);
+      });
+
+      it('stays native when it exceeds the shares too: that is the form error, not a route', () => {
+        setup(AMOUNT + WAD);
+        expect(select().selectedProvider).toBe(StUsdsProviderType.NATIVE);
+      });
+    });
+
     it('should calculate correct rate difference percent', () => {
       const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
         inputAmount: 10000n * WAD,

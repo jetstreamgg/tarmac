@@ -101,6 +101,23 @@ export function useStUsdsProviderSelection(
       // Only native available
       selectedProvider = StUsdsProviderType.NATIVE;
       selectionReason = StUsdsSelectionReason.NATIVE_ONLY_AVAILABLE;
+    } else if (
+      direction === StUsdsDirection.WITHDRAW &&
+      nativeData?.state.maxWithdraw !== undefined &&
+      amount > nativeData.state.maxWithdraw &&
+      curveData?.quote?.isValid &&
+      userStUsdsBalance !== undefined &&
+      curveData.quote.inputAmount <= userStUsdsBalance
+    ) {
+      // A typed amount above the native max that the user's shares do cover
+      // through Curve: the native engine would refuse it, leaving Confirm dead.
+      selectedProvider = StUsdsProviderType.CURVE;
+      selectionReason = StUsdsSelectionReason.CURVE_ONLY_AVAILABLE;
+      rateDifferencePercent = compareRates(
+        nativeData.quote,
+        curveData.quote,
+        STUSDS_PROVIDER_CONFIG
+      ).differencePercent;
     } else {
       // Both available - compare rates
       const comparison = compareRates(nativeData?.quote, curveData?.quote, STUSDS_PROVIDER_CONFIG);
@@ -139,7 +156,7 @@ export function useStUsdsProviderSelection(
       allProvidersBlocked,
       rateDifferencePercent
     };
-  }, [nativeData, curveData, direction]);
+  }, [nativeData, curveData, direction, amount, userStUsdsBalance]);
 
   const isLoading = isNativeLoading || isCurveLoading;
 
