@@ -68,6 +68,18 @@ describe('ProductTransactionsTable — pagination', () => {
     expect(document.activeElement?.tagName).toBe('TR');
   });
 
+  it('leaves focus alone for a mouse click on the pager', () => {
+    renderTable(makeRows(15));
+    const next = screen.getByLabelText('Go to next page');
+    next.focus();
+    // A pointer-focused button doesn't match :focus-visible; happy-dom can't tell.
+    vi.spyOn(next, 'matches').mockReturnValue(false);
+    fireEvent.click(next);
+
+    expect(document.activeElement).toBe(next);
+    expect(visibleRows()).toContain('row-7');
+  });
+
   it('does not move focus on first render', () => {
     renderTable(makeRows(15));
     expect(document.activeElement).toBe(document.body);

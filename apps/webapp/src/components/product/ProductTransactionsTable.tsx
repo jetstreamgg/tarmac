@@ -179,7 +179,9 @@ export function ProductTransactionsTable<T>({
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage);
     onPageChange?.(nextPage, totalPages);
-    focusNewPageRef.current = true;
+    // Keyboard paging only: a mouse user's pointer stays on the pager, which
+    // moving focus could scroll out from under it.
+    focusNewPageRef.current = nextPage !== page && !!document.activeElement?.matches(':focus-visible');
     // A shorter page of tall cards would otherwise leave the viewport below the list.
     const list = cardListRef.current;
     if (
