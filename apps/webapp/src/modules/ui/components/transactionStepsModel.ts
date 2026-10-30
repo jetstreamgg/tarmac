@@ -80,6 +80,14 @@ type DeriveInput = {
    * the user something happened on-chain that never did.
    */
   userRejected?: boolean;
+  /**
+   * The failure is a contract revert, already worded for the user (the revert
+   * registry's copy, or the raw reason). It replaces the generic rollback
+   * sentence on the failed on-chain row: the user learns why, and a revert
+   * caught before broadcast wasn't rolled back anyway. Ignored for a Reject
+   * and for signature rows.
+   */
+  failureReason?: string;
 };
 
 /**
@@ -149,7 +157,8 @@ export function deriveTransactionStepItems({
   currentStep,
   txStatus,
   bundled,
-  userRejected = false
+  userRejected = false,
+  failureReason
 }: DeriveInput): TransactionStepItem[] {
   const allDone = txStatus === TxStatus.SUCCESS;
   const failed = txStatus === TxStatus.ERROR;
@@ -192,7 +201,8 @@ export function deriveTransactionStepItems({
         state: 'failed',
         description: userRejected
           ? t`You declined the bundled transaction in your wallet. Try again and confirm it to continue.`
-          : t`The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.`
+          : (failureReason ??
+            t`The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.`)
       },
       {
         stepNumber: prelude.length + 2,
@@ -233,7 +243,7 @@ export function deriveTransactionStepItems({
       }
       const failure = isSignature
         ? t`The signature request was declined or could not be completed.`
-        : t`The network rolled back your transaction.`;
+        : (failureReason ?? t`The network rolled back your transaction.`);
       return {
         stepNumber: i + 1,
         label: t`${label} failed`,

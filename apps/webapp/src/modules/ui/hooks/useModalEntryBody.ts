@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import type { TransactionAnalytics, TransactionConfig } from '@/modules/ui/context/transactionContract';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
+import type { Call } from 'viem';
+import type { CallMatcher } from '@/modules/ui/lib/callIntent';
 
 /**
  * The live fields an editable modal body keeps in sync after launch. `confirmDisabled`
@@ -71,6 +73,23 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
    * a fresh `onConfirm` each render would loop the sync effect below.
    */
   execute: () => void;
+  /**
+   * The calls `execute` would send now (the engine's `nextCalls`). REQUIRED, like
+   * `usdValue`: the provider re-validates every deferred dispatch against what the
+   * user confirmed (see `TransactionConfig.getNextCalls`), and an editable body is
+   * exactly where calldata keeps moving after the review freezes. `null` opts out,
+   * explicitly, for calldata that can't move against the user (a claim to self).
+   */
+  nextCalls: readonly Call[] | null;
+  /**
+   * Relaxes the dispatch-time comparison of `nextCalls` (see
+   * `TransactionConfig.callMatches`). Module-level or memoized: the sync effect
+   * below depends on its identity. Always pushed, so `undefined` restores the
+   * exact comparison.
+   */
+  callMatches?: CallMatcher;
+  /** See `TransactionConfig.getDispatchBlocked`. */
+  dispatchBlocked?: boolean;
 };
 
 /**
@@ -87,6 +106,9 @@ type UseModalEntryBodyParams = ModalEntryBodyLive & {
 export function useModalEntryBody({
   sessionId,
   execute,
+  nextCalls,
+  callMatches,
+  dispatchBlocked,
   confirmDisabled,
   confirmLabel,
   confirmAction,
@@ -102,12 +124,32 @@ export function useModalEntryBody({
   const entrySlot = useEntrySlot();
 
   // `execute` is rebuilt every render; read the latest from a ref so `onConfirm`
-  // is stable and never needs re-pushing.
+  // is stable and never needs re-pushing. A layout effect, like `nextCallsRef`
+  // below: a gate verdict landing between commit and the passive flush must not
+  // validate this render's calls and then run the previous render's execute.
   const executeRef = useRef(execute);
-  useEffect(() => {
+  useLayoutEffect(() => {
     executeRef.current = execute;
   }, [execute]);
   const onConfirm = useCallback(() => executeRef.current(), []);
+  // Same ref pattern: the provider reads the calls at dispatch time, past the
+  // IDLE freeze below, so they must stay live when nothing else is pushed.
+  const nextCallsRef = useRef(nextCalls);
+  useLayoutEffect(() => {
+    nextCallsRef.current = nextCalls;
+  }, [nextCalls]);
+  const stableGetNextCalls = useCallback(() => nextCallsRef.current ?? [], []);
+  const getNextCalls = nextCalls === null ? undefined : stableGetNextCalls;
+  const confirmDisabledRef = useRef(confirmDisabled);
+  useLayoutEffect(() => {
+    confirmDisabledRef.current = confirmDisabled;
+  }, [confirmDisabled]);
+  const getConfirmDisabled = useCallback(() => confirmDisabledRef.current, []);
+  const dispatchBlockedRef = useRef(dispatchBlocked);
+  useLayoutEffect(() => {
+    dispatchBlockedRef.current = dispatchBlocked;
+  }, [dispatchBlocked]);
+  const getDispatchBlocked = useCallback(() => !!dispatchBlockedRef.current, []);
 
   // Keep the shared modal's confirm gating + handler + wallet summary (+ optional
   // step labels / toast titles) live. Merged into the entry (never replacing
@@ -136,6 +178,10 @@ export function useModalEntryBody({
       confirmDisabled,
       errorMessage,
       onConfirm,
+      getNextCalls,
+      callMatches,
+      getConfirmDisabled,
+      getDispatchBlocked,
       ...(transactionContent !== undefined ? { transactionContent } : {}),
       ...(transactionScreenContent !== undefined ? { transactionScreenContent } : {}),
       ...(steps !== undefined ? { steps } : {}),
@@ -159,6 +205,10 @@ export function useModalEntryBody({
     usdValue,
     analytics,
     onConfirm,
+    getNextCalls,
+    callMatches,
+    getConfirmDisabled,
+    getDispatchBlocked,
     updateModalContent
   ]);
 

@@ -1,9 +1,9 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassNameValue, twMerge } from 'tailwind-merge';
 
-// Canonical className combiner (clsx + tailwind-merge); `@/lib/utils`
-// re-exports it. Dependency-free so any layer can share one `cn` without
-// pulling in app-level modules.
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+// Canonical className combiner (tailwind-merge); `@/lib/utils` re-exports it.
+// Dependency-free so any layer can share one `cn` without pulling in
+// app-level modules. Takes strings, falsy values and nested arrays — no
+// clsx-style `{ class: condition }` objects.
+export function cn(...inputs: ClassNameValue[]) {
+  return twMerge(inputs);
 }

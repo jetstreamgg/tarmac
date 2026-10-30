@@ -98,12 +98,12 @@ export class SavingsProductPage {
     return confirm;
   }
 
-  async reviewAndConfirm() {
+  async reviewAndConfirm({ waitForSuccess = true } = {}) {
     await this.page.getByText('Review').first().click();
     const confirm = this.page.getByRole('button', { name: 'Confirm', exact: true });
     await expect(confirm).toBeEnabled({ timeout: 60_000 });
     await confirm.click();
-    await expectTransactionSuccess(this.page);
+    if (waitForSuccess) await expectTransactionSuccess(this.page);
   }
 
   repairContext(

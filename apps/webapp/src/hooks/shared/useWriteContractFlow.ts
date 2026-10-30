@@ -1,13 +1,14 @@
 import {
+  type Config,
+  type ResolvedRegister,
   UseSimulateContractParameters,
   useSimulateContract,
-  useWaitForTransactionReceipt,
   useWriteContract
 } from 'wagmi';
-import { isRevertedError, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo } from 'react';
-import { Config, ResolvedRegister } from '@wagmi/core';
+import { reportPrepareRevert } from './prepareRevertReporter';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
+import { useTransactionOutcome } from './useTransactionOutcome';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
 import type { Abi, Call, ContractFunctionArgs, ContractFunctionName } from 'viem';
 
@@ -38,6 +39,10 @@ export function useWriteContractFlow<
     ...useSimulateContractParamters,
     query: { ...useSimulateContractParamters.query, enabled, gcTime: gcTime || 30000 }
   } as unknown as UseSimulateContractParameters<abi, functionName, args, config, chainId>);
+  useEffect(
+    () => reportPrepareRevert(simulationError, parameters.chainId),
+    [simulationError, parameters.chainId]
+  );
 
   const {
     writeContract,
@@ -75,15 +80,11 @@ export function useWriteContractFlow<
 
   // Monitor tx
   const {
-    isLoading: isMining,
+    isPending: isMining,
     isSuccess,
-    error: miningError,
-    failureReason,
-    data: receipt
-  } = useWaitForTransactionReceipt({
-    hash: txHash
-  });
-  const txReverted = isRevertedError(failureReason);
+    failure: txFailure,
+    receipt
+  } = useTransactionOutcome({ hash: txHash, chainId: parameters.chainId });
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
@@ -93,13 +94,11 @@ export function useWriteContractFlow<
     if (txHash) {
       if (isSuccess) {
         emitSuccess(txHash, receipt?.blockNumber);
-      } else if (miningError) {
-        emitError(miningError, txHash);
-      } else if (failureReason && txReverted) {
-        emitError(toError(failureReason), txHash);
+      } else if (txFailure) {
+        emitError(txFailure, txHash);
       }
     }
-  }, [isSuccess, miningError, failureReason, txHash, txReverted, receipt?.blockNumber]);
+  }, [isSuccess, txFailure, txHash, receipt?.blockNumber]);
 
   // The single call this hook sends, in the same contract form the batch engines use.
   // Exposed read-only so a flow that routes through here can still be fee-estimated;
@@ -125,8 +124,8 @@ export function useWriteContractFlow<
       }
     },
     data: txHash,
-    isLoading: isSimulationLoading || (isMining && !txReverted),
-    error: writeError || miningError,
+    isLoading: isSimulationLoading || isMining,
+    error: writeError || txFailure,
     prepareError: simulationError,
     prepared: !!simulationData?.request,
     retryPrepare: refetch

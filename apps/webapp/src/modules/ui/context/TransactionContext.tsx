@@ -4,13 +4,14 @@ import {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   ReactNode
 } from 'react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
-import { InProgress, Cancel } from '@/modules/icons';
-import { toError, type TxMutateVariables } from '@/hooks';
+import { InProgress, Cancel, Refresh } from '@/modules/icons';
+import { isStalledStep, toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
@@ -28,8 +29,10 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
   TransactionConfig,
   TransactionEntry,
@@ -48,6 +51,7 @@ import {
   type TransactionPreflight
 } from './preTransactionGate';
 import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import { encodeCalls, isTailOf, type EncodedCall } from '@/modules/ui/lib/callIntent';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
 // updates (and StrictMode's double-invoke) replace it rather than stacking.
@@ -127,6 +131,57 @@ function notifyReviewAgainOnChainChange() {
   );
 }
 
+// Why a deferred dispatch (a gate verdict, Retry) was refused: the flow's calls
+// or its own confirm gating no longer match what the user confirmed (a quote
+// moved while the review was frozen), or the wallet moved to another account
+// (what the user reviewed belonged to the confirming one) or disconnected.
+const DISPATCH_REFUSAL_COPY = {
+  calls: () => ({
+    icon: <Refresh />,
+    title: <Trans>Transaction details changed</Trans>,
+    description: <Trans>The details changed while you were confirming. Review them and confirm again.</Trans>,
+    closedDescription: (
+      <Trans>The details changed while you were confirming. Start again to see the current details.</Trans>
+    )
+  }),
+  account: () => ({
+    icon: <Refresh />,
+    title: <Trans>Account changed</Trans>,
+    description: (
+      <Trans>Your wallet switched accounts while confirming. Review the details and confirm again.</Trans>
+    ),
+    closedDescription: (
+      <Trans>Your wallet switched accounts. Start again from the account you want to use.</Trans>
+    )
+  }),
+  disconnect: () => ({
+    icon: <Cancel />,
+    title: <Trans>Wallet disconnected</Trans>,
+    description: <Trans>Your wallet disconnected while confirming. Reconnect and confirm again.</Trans>,
+    closedDescription: <Trans>Your wallet disconnected. Reconnect and start again.</Trans>
+  })
+};
+
+// `closed`: the modal closed instead of returning to the review (a skipReview
+// flow, or after a step of the session mined).
+function notifyDispatchRefused(reason: keyof typeof DISPATCH_REFUSAL_COPY, closed: boolean) {
+  toastWithClose(
+    () => {
+      const copy = DISPATCH_REFUSAL_COPY[reason]();
+      return closed ? (
+        <TransactionNoticeToast
+          icon={<Cancel />}
+          title={<Trans>Transaction closed</Trans>}
+          description={copy.closedDescription}
+        />
+      ) : (
+        <TransactionNoticeToast icon={copy.icon} title={copy.title} description={copy.description} />
+      );
+    },
+    { id: ABANDONED_TOAST_ID, duration: 8000 }
+  );
+}
+
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
 }
@@ -188,6 +243,8 @@ type TransactionModalView = {
   hasMinedStep: boolean;
   /** The ERROR on screen is a wallet Reject — the modal words it as declined, not rolled back. */
   userRejected: boolean;
+  /** The ERROR on screen is a contract revert: why, in user-facing copy (see lib/revertMessages). */
+  failureReason: string | undefined;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -251,11 +308,16 @@ export function TransactionProvider({
   // modal withholds Back (APP-448). Unlike `currentStep`, ignores the gate's
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
-  // Ref twin for launch(), which reads it synchronously.
   const hasMinedStepRef = useRef(false);
+  const markMinedStep = useCallback(() => {
+    setHasMinedStep(true);
+    hasMinedStepRef.current = true;
+  }, []);
   // Written on every ERROR (true/false), so it is always fresh for the failure
   // the modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
+  // Same lifecycle: written on every ERROR, so a stale reason never outlives its failure.
+  const [failureReason, setFailureReason] = useState<string | undefined>(undefined);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -339,6 +401,14 @@ export function TransactionProvider({
   // flow_id latched at launch so this session's review/started/completed events
   // stay joined even if navigation rotates the live flow id mid-transaction.
   const flowIdRef = useRef<string | undefined>(undefined);
+  // The calls the user confirmed, encoded, captured at the click (see
+  // `getNextCalls` in the contract). Undefined when the flow doesn't report
+  // its calls; null when they couldn't be encoded, which fails closed.
+  const confirmedCallsRef = useRef<EncodedCall[] | null | undefined>(undefined);
+  // The account that confirmed, captured with the calls: calldata that never
+  // names the sender (a bare claim, a position addressed by index) encodes the
+  // same for every account, so the calls alone can't tell who signs.
+  const confirmedAddressRef = useRef<string | undefined>(undefined);
 
   const chainId = useChainId();
   const { address, chainId: connectedChainId } = useConnection();
@@ -363,6 +433,13 @@ export function TransactionProvider({
   useEffect(() => {
     chainIdRef.current = guardChainId;
   }, [guardChainId]);
+  // Fire-time read of the account, for the same reason (see runGated).
+  // A layout effect, so a verdict resolving right after a switch commits
+  // never reads the previous account.
+  const addressRef = useRef(address);
+  useLayoutEffect(() => {
+    addressRef.current = address;
+  }, [address]);
   // The chain the live session's write belongs to: latched at launch, adopted
   // while the session is still at IDLE (see the chain-change close below).
   const sessionChainRef = useRef(guardChainId);
@@ -521,6 +598,8 @@ export function TransactionProvider({
       setGateCopy(null);
       gateInFlightRef.current = null;
       gatePhaseRef.current = null;
+      confirmedCallsRef.current = undefined;
+      confirmedAddressRef.current = undefined;
       setMinimized(false);
       setLaunchCount(c => c + 1);
       setOpen(true);
@@ -621,6 +700,7 @@ export function TransactionProvider({
         currentStep,
         hasMinedStep,
         userRejected,
+        failureReason,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -647,11 +727,13 @@ export function TransactionProvider({
     setGateCopy(null);
     gateInFlightRef.current = null;
     gatePhaseRef.current = null;
+    confirmedCallsRef.current = undefined;
+    confirmedAddressRef.current = undefined;
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected]);
+  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected, failureReason]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -730,6 +812,12 @@ export function TransactionProvider({
   const returnToFirstScreenRef = useRef<(() => void) | null>(null);
   const registerReturnToFirstScreen = useCallback((fn: (() => void) | null) => {
     returnToFirstScreenRef.current = fn;
+  }, []);
+  // Its back-to-review twin, for a deferred dispatch refused because what the
+  // user confirmed no longer holds (see runGated).
+  const returnToReviewRef = useRef<(() => void) | null>(null);
+  const registerReturnToReview = useCallback((fn: (() => void) | null) => {
+    returnToReviewRef.current = fn;
   }, []);
 
   // The exit hold is the only timer here; a provider unmounting mid-dismissal
@@ -823,6 +911,8 @@ export function TransactionProvider({
               : TxStatus.IDLE;
           setTxStatus(mapped);
           txStatusRef.current = mapped;
+          // A gate failure is a signature or screening refusal, never a revert.
+          if (mapped === TxStatus.ERROR) setFailureReason(undefined);
           // Both phases render as INITIALIZED; the phase itself decides what a
           // close during it means (see gatePhaseRef / handleInitializedAbandon).
           gatePhaseRef.current = isGatePhase ? status : null;
@@ -851,8 +941,10 @@ export function TransactionProvider({
           setGateCopy(null);
           // A skipReview flow has no first screen: the denial hands the user
           // back to the surface that launched it, which renders the same
-          // hold through useTransactionPreflight.
-          if (configRef.current?.skipReview) handleCloseRef.current();
+          // hold through useTransactionPreflight. Nor, in effect, does a
+          // session with a mined step: the entry would be editable while the
+          // engine's paused run still resumes the calls confirmed before.
+          if (configRef.current?.skipReview || hasMinedStepRef.current) handleCloseRef.current();
           else returnToFirstScreenRef.current?.();
         },
         reportSignatureRejected: () => {
@@ -897,6 +989,75 @@ export function TransactionProvider({
         refuseOffChain(controls);
         return;
       }
+      // A confirm is the user agreeing to what the screen shows, so it fixes
+      // the calls and the account; a retry re-sends what was already confirmed.
+      if (trigger !== 'retry') {
+        const getNextCalls = configRef.current?.getNextCalls;
+        const calls = getNextCalls?.();
+        confirmedCallsRef.current = calls ? encodeCalls(calls) : undefined;
+        // Fails closed, so every confirm of this flow is refused: report it, or
+        // the loop is invisible.
+        if (calls && confirmedCallsRef.current === null) {
+          reportError(new Error('Confirmed calls could not be encoded'), {
+            module: 'transactions',
+            flow: configRef.current?.analytics?.flow ?? 'unknown',
+            action: configRef.current?.analytics?.action ?? 'unknown',
+            type: 'call_snapshot_unencodable',
+            extra: { calls: calls.map(call => ({ to: call.to, functionName: call.functionName })) }
+          });
+        }
+        confirmedAddressRef.current = addressRef.current;
+      }
+      // Refuses a deferred dispatch: back to the review to confirm again, at IDLE
+      // so it re-renders against the current figures. A skipReview flow has no review here; it closes
+      // back to the surface that launched it, like the gate's denials. So does
+      // a session with a mined step: the engine's paused run would resume the
+      // calls confirmed before the refusal, not what the review re-renders, so
+      // the user reopens the flow and it rebuilds from the current state.
+      // Returns whether it closed the modal rather than returning to the review.
+      const refuseDispatch = (): boolean => {
+        const closes = !!configRef.current?.skipReview || hasMinedStepRef.current;
+        controls.setPreludeSteps(null);
+        controls.setGateStatus('idle');
+        if (closes) handleCloseRef.current();
+        else returnToReviewRef.current?.();
+        return closes;
+      };
+      // Whether the calls the flow would send now are still ones the user
+      // confirmed. The review freezes once the transaction leaves IDLE while the
+      // engine keeps rebuilding from live quotes, so every dispatch re-checks —
+      // a confirm resolved synchronously trivially passes, a gate verdict or a
+      // Retry arriving after the quote moved does not.
+      const callsStillConfirmed = () => {
+        const getNextCalls = configRef.current?.getNextCalls;
+        if (!getNextCalls) return true;
+        const confirmed = confirmedCallsRef.current;
+        const live = encodeCalls(getNextCalls());
+        return !!confirmed && !!live && isTailOf(live, confirmed, configRef.current?.callMatches);
+      };
+      const dispatch = () => {
+        if (addressRef.current?.toLowerCase() !== confirmedAddressRef.current?.toLowerCase()) {
+          const closed = refuseDispatch();
+          notifyDispatchRefused(addressRef.current ? 'account' : 'disconnect', closed);
+          return;
+        }
+        // The calls can hold steady while the flow's own gating turns against
+        // them (an acknowledgement lapsing, a module halting since the confirm).
+        // Not on a retry after a mined step: the run itself has moved the
+        // balances the form checks (a conversion leg spends the input), and a
+        // stalled step is unprepared until the engine re-simulates it. What is
+        // left to send is still held to the confirmed calls.
+        const checkFormGating = trigger !== 'retry' || !hasMinedStepRef.current;
+        if (
+          !callsStillConfirmed() ||
+          configRef.current?.getDispatchBlocked?.() ||
+          (checkFormGating && configRef.current?.getConfirmDisabled?.())
+        ) {
+          notifyDispatchRefused('calls', refuseDispatch());
+          return;
+        }
+        action();
+      };
       // The chain the click was made on: a verdict must not fire the action
       // on any other, supported or not (see the chain-change close above).
       const chainAtClick = chainIdRef.current;
@@ -928,7 +1089,7 @@ export function TransactionProvider({
                 notifyReviewAgainOnChainChange();
                 return;
               }
-              action();
+              dispatch();
             },
             () => {}
           )
@@ -939,7 +1100,7 @@ export function TransactionProvider({
           });
         return;
       }
-      if (verdict.allow) action();
+      if (verdict.allow) dispatch();
     },
     [gate, makeGateControls, walletOnSupportedChain, refuseOffChain]
   );
@@ -963,7 +1124,7 @@ export function TransactionProvider({
     // The reset lives inside the gate: a denied retry must leave the failure
     // view in place, not clear it and then do nothing.
     runGated('retry', () => {
-      if (hasMinedStep) {
+      if (hasMinedStepRef.current) {
         // The engine resumes at the failed write; shift past any prelude the gate dropped.
         const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
         if (dropped > 0) setCurrentStep(s => s - dropped);
@@ -978,7 +1139,7 @@ export function TransactionProvider({
 
       configRef.current?.onConfirm();
     });
-  }, [runGated, resetTransactionProgress, hasMinedStep]);
+  }, [runGated, resetTransactionProgress]);
 
   // A settle callback belongs to the running session only if BOTH its closure
   // and the write it reports on were made in the current generation (see
@@ -1026,10 +1187,7 @@ export function TransactionProvider({
       }
       // A sequential engine dispatches the next call only once the previous
       // receipt landed, so a write arriving over LOADING means a step mined.
-      if (txStatusRef.current === TxStatus.LOADING) {
-        setHasMinedStep(true);
-        hasMinedStepRef.current = true;
-      }
+      if (txStatusRef.current === TxStatus.LOADING) markMinedStep();
       setTxStatus(TxStatus.INITIALIZED);
       txStatusRef.current = TxStatus.INITIALIZED;
       txHashRef.current = undefined;
@@ -1047,7 +1205,7 @@ export function TransactionProvider({
         });
       }
     },
-    [sessionGen, chainId, trackTransactionStarted]
+    [sessionGen, chainId, trackTransactionStarted, markMinedStep]
   );
 
   const onStart = useCallback(
@@ -1069,7 +1227,8 @@ export function TransactionProvider({
       // was closed still lands in the history tables, which lag the receipt
       // by the indexer's catch-up. The session's latched chain, not the
       // config's: a batch receipt can land after a network switch.
-      void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current, blockNumber });
+      const txChainId = sessionChainRef.current;
+      void refreshHistoryAfterTx(queryClient, { chainId: txChainId, blockNumber });
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
@@ -1082,7 +1241,7 @@ export function TransactionProvider({
       if (analytics) {
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
-          chainId,
+          chainId: txChainId,
           txStatus: 'success',
           txHash: hash,
           action: analytics.action,
@@ -1116,7 +1275,7 @@ export function TransactionProvider({
             <TransactionSuccessToast
               title={successTitle}
               hash={txHash}
-              href={txHash ? getTransactionLink(chainId, address, txHash, isSafeWallet) : undefined}
+              href={txHash ? getTransactionLink(txChainId, address, txHash, isSafeWallet) : undefined}
             />
           ),
           { id: SUCCESS_TOAST_ID, duration: 10000 }
@@ -1128,16 +1287,7 @@ export function TransactionProvider({
       // handoff reads as the modal leaving, not blinking out.
       handleCloseRef.current();
     },
-    [
-      sessionGen,
-      chainId,
-      address,
-      isSafeWallet,
-      trackTransactionCompleted,
-      startNewFlow,
-      isStaleWrite,
-      isForeignHash
-    ]
+    [sessionGen, address, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
   );
 
   const onError = useCallback(
@@ -1158,9 +1308,19 @@ export function TransactionProvider({
       }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
-      setUserRejected(isUserRejectedRequestError(error));
+      const rejected = isUserRejectedRequestError(error);
+      setUserRejected(rejected);
+      // A Reject has its own copy; anything else that reverted says why.
+      setFailureReason(rejected ? undefined : revertMessage(error));
       if (hash) {
         txHashRef.current = hash;
+      }
+      // A run that stalls after a mined step never hands its next call to the
+      // wallet, so no write reports the mined step or moves the stepper onto
+      // the step that stalled; the engine's error does both.
+      if (isStalledStep(error)) {
+        markMinedStep();
+        setCurrentStep(s => s + 1);
       }
 
       // Track transaction completed (error). Bounded classification props only —
@@ -1172,7 +1332,7 @@ export function TransactionProvider({
         const classification = classifyTransactionError(error, !!hash);
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
-          chainId,
+          chainId: sessionChainRef.current,
           txStatus: classification.is_user_rejection ? 'cancelled' : 'error',
           txHash: hash,
           action: analytics.action,
@@ -1186,13 +1346,25 @@ export function TransactionProvider({
 
       if (shouldCaptureTransactionError(normalizedError)) {
         const flowAnalytics = configRef.current?.analytics;
+        const flow = flowAnalytics?.flow ?? 'unknown';
+        const action = flowAnalytics?.action ?? 'unknown';
+        // The contract's own reason (a custom error's name or a selector, never its
+        // arguments; a reason string with addresses and amounts blanked out), so
+        // Sentry shows which reverts users hit.
+        const revert = revertReport(normalizedError)?.reason;
         reportError(normalizedError, {
           module: 'transactions',
-          flow: flowAnalytics?.flow ?? 'unknown',
-          action: flowAnalytics?.action ?? 'unknown',
+          flow,
+          action,
           type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
+          tags: revert ? { revert_reason: revert } : undefined,
+          // Every revert has the same message; one issue per flow and action instead of one for all.
+          fingerprint:
+            normalizedError instanceof TransactionRevertedError
+              ? ['transaction-reverted', flow, action]
+              : undefined,
           extra: {
-            chainId,
+            chainId: sessionChainRef.current,
             txHash: hash,
             isSafeWallet,
             widget: flowAnalytics?.widgetName ?? 'unknown',
@@ -1207,7 +1379,15 @@ export function TransactionProvider({
         startNewFlow();
       }
     },
-    [sessionGen, chainId, isSafeWallet, trackTransactionCompleted, startNewFlow, isStaleWrite, isForeignHash]
+    [
+      sessionGen,
+      isSafeWallet,
+      trackTransactionCompleted,
+      startNewFlow,
+      isStaleWrite,
+      isForeignHash,
+      markMinedStep
+    ]
   );
 
   // Stable while its members are (LOW-churn): the provider value below is
@@ -1218,7 +1398,16 @@ export function TransactionProvider({
   );
 
   const modalView: TransactionModalView | null = activeConfig
-    ? { config: activeConfig, txStatus, currentStep, hasMinedStep, userRejected, preludeSteps, gateCopy }
+    ? {
+        config: activeConfig,
+        txStatus,
+        currentStep,
+        hasMinedStep,
+        userRejected,
+        failureReason,
+        preludeSteps,
+        gateCopy
+      }
     : exitingView;
 
   // Chain guard (APP-528): the modal survives a wallet chain switch (the
@@ -1392,6 +1581,7 @@ export function TransactionProvider({
             open={open && !minimized && !!activeConfig}
             registerEntrySlot={setEntrySlotEl}
             registerReturnToFirstScreen={registerReturnToFirstScreen}
+            registerReturnToReview={registerReturnToReview}
             onClose={handleClose}
             onMinimize={minimize}
             title={modalView.config.title}
@@ -1420,6 +1610,7 @@ export function TransactionProvider({
             steps={modalSteps}
             currentStep={modalView.currentStep}
             userRejected={modalView.userRejected}
+            failureReason={modalView.failureReason}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}

@@ -421,14 +421,12 @@ export type PendleDashboardPositionsResponseRaw = {
 };
 
 /**
- * Normalized history row exposed to the UI and to computeMaturedEarnings.
+ * Normalized history row exposed to the UI.
  * All rows originate from /v1/pnl/transactions and are discriminated by
  * `action` after the transport boundary maps wire values (buyPt/sellPt/
  * redeemPy) to the canonical PendleHistoryAction enum.
  *
  * `valueUsd` is USD-denominated (txValueAsset × assetUsd) for every row.
- * computeMaturedEarnings filters by action before consuming `valueUsd`, so
- * redeem rows don't contribute to cost basis even though they carry a value.
  */
 export type PendleHistoryRow = {
   /** `${txHash}:${action}` — the PnL feed has no id of its own, and the

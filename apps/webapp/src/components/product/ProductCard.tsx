@@ -18,6 +18,8 @@ import { Card } from '@/components/ui/card';
  *  - position figure  Heading 2 (Circular 44/48, -0.88) + Heading 6 fraction
  *  - stat label       Body 6   (Graphik 12/18) on fg-secondary
  *  - stat value       Label 3  (Circular 18/22, -0.36) on the supply card,
+ *                     Label 4  (Circular 16/18, -0.32) on the stake engine
+ *                     card's three-stat row,
  *                     Label 5  (Circular 14/16, -0.28) on the position card
  *
  * The phone tier has no comp of its own for these cards, so the desktop spec
@@ -53,8 +55,10 @@ export function ProductBadge({
 
 /**
  * One labelled figure. `size` picks the value scale: `lg` is the supply card's
- * Label 3 pair, `sm` the position card's Label 5 pair (which also tightens the
- * icon gap from 6px to 4px, per the comps).
+ * Label 3 pair, `md` the stake engine card's Label 4 row (1036:208779), `sm`
+ * the position card's Label 5 pair (which also tightens the icon gap from 6px
+ * to 4px, per the comps). The label is a flex row so an info glyph can sit
+ * 4px after its text.
  */
 export function ProductStat({
   label,
@@ -63,21 +67,23 @@ export function ProductStat({
   children
 }: {
   label: ReactNode;
-  size?: 'lg' | 'sm';
+  size?: 'lg' | 'md' | 'sm';
   className?: string;
   children: ReactNode;
 }) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-1', className)}>
-      <span className="text-fgSecondary text-xs leading-[18px]">{label}</span>
+      <span className="text-fgSecondary flex items-center gap-1 text-xs leading-[18px]">{label}</span>
       {/* A div, not a span: the loading states of these stats put a `Skeleton`
           (itself a div) in this slot. */}
       <div
         className={cn(
           'text-fgPrimary font-circle flex items-center font-medium',
-          size === 'lg'
-            ? 'gap-1.5 text-base leading-[18px] tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]'
-            : 'gap-1 text-sm leading-4 tracking-[-0.28px]'
+          // `lg` is Label 4 on phones, stepping up to Label 3 at `md`.
+          size === 'sm'
+            ? 'gap-1 text-sm leading-4 tracking-[-0.28px]'
+            : 'gap-1.5 text-base leading-[18px] tracking-[-0.32px]',
+          size === 'lg' && 'md:text-lg md:leading-[22px] md:tracking-[-0.36px]'
         )}
       >
         {children}

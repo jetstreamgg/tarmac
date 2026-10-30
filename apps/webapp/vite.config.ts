@@ -3,7 +3,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 const { version: APP_VERSION } = JSON.parse(readFileSync('./package.json', 'utf-8'));
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import { configDefaults } from 'vitest/config';
 import { lingui } from '@lingui/vite-plugin';
@@ -162,7 +162,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     test: {
       exclude: [
         ...configDefaults.exclude,
-        '**/test/e2e/**',
+        '**/test/e2e/tests/**',
         // Inlined hooks (formerly @jetstreamgg/sky-hooks) are vnet-backed integration tests.
         // They run via vitest.hooks.config.ts, not the fast suite below.
         path.resolve(__dirname, 'src/hooks/**/*.test.{ts,tsx}')
@@ -176,7 +176,7 @@ export default ({ mode }: { mode: modeEnum }) => {
         '@': path.resolve(__dirname, './src')
       },
       // Dedupe wagmi/viem to prevent multiple instances causing WagmiProviderNotFoundError
-      dedupe: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query', 'react', 'react-dom']
+      dedupe: ['wagmi', 'viem', '@tanstack/react-query', 'react', 'react-dom']
     },
     optimizeDeps: {
       // Optimize safe-apps-provider dependency to get rid of the Safe connector issue
@@ -214,12 +214,10 @@ export default ({ mode }: { mode: modeEnum }) => {
         generatedRouteTree: path.resolve(__dirname, 'src/routeTree.gen.ts'),
         autoCodeSplitting: true
       }),
-      react({
-        plugins: [['@lingui/swc-plugin', {}]]
-      }),
+      react(),
       tailwindcss(),
       preloadRouteChunks(),
-      lingui(),
+      lingui({ macroTransform: true }),
       sentryVitePlugin({
         applicationKey: 'sky-webapp',
         org: process.env.SENTRY_ORG,

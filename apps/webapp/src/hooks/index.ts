@@ -84,8 +84,6 @@ export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useAllPendleMarketsHistory } from './pendle/useAllPendleMarketsHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
-export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
-export { usePendleMaturedPositionEarnings } from './pendle/usePendleMaturedPositionEarnings';
 export type { PendleMarketConfig, PendleConvertQuote } from './pendle/pendle';
 
 // Authentication
@@ -163,7 +161,7 @@ export type { UpgradeSourceToken } from './upgrade/useBatchUpgrade';
 export { usePrices } from './prices/usePrices';
 export { useSkyPrice } from './prices/useSkyPrice';
 export { useStakeHistory } from './stake/useStakeHistory';
-export { useStakeHistoricData } from './stake/useStakeHistoricData';
+export { useStakeHistoricData, newestStakeHistoricPoint } from './stake/useStakeHistoricData';
 
 // Stake Module
 export { useStakeRewardContracts } from './stake/useStakeRewardContracts';
@@ -214,7 +212,7 @@ export {
 } from './constants';
 
 export { getIlkName } from './vaults/helpers';
-export { toError } from './helpers';
+export { toError, isStalledStep } from './helpers';
 
 export { TOKENS, getTokenDecimals } from './tokens/tokens.constants';
 
