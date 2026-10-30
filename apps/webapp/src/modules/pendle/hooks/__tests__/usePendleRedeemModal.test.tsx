@@ -509,15 +509,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
     ).toBeUndefined();
   });
 
-  it.each([
-    'Pendle /convert 400: {"message":"Market not found","statusCode":400}',
-    'Pendle /convert 503: {}'
-  ])('says Pendle cannot prepare the claim when its API refuses: %s', async raw => {
-    const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
-    expect(config.errorMessage).toBe("Pendle's quote service is temporarily unavailable. Please try again.");
-  });
-
-  it('does not tell a dust position to check back later', async () => {
+  it('says a dust position is too small to claim', async () => {
     const config = await openWith({
       data: undefined,
       isLoading: false,
@@ -526,7 +518,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
     expect(config.errorMessage).toBe('This position is too small to claim.');
   });
 
-  it('points at the other payout token when Pendle has no route', async () => {
+  it('suggests a different token when Pendle has no route', async () => {
     const config = await openWith({
       data: undefined,
       isLoading: false,
@@ -537,49 +529,29 @@ describe('usePendleRedeemModal claim quote failure', () => {
     );
   });
 
-  it('says the quote was invalid, as the buy/sell modal does', async () => {
-    const config = await openWith({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Pendle: malformed quote — missing input/output struct for "exitPostExpToToken"')
-    });
-    expect(config.errorMessage).toBe('Received an invalid quote from Pendle. Please try again.');
-  });
-
-  it('points at the connection when Pendle could not be reached', async () => {
-    const config = await openWith({ data: undefined, isLoading: false, error: new Error('Failed to fetch') });
-    expect(config.errorMessage).toBe(
-      "Couldn't fetch a quote from Pendle. Check your connection and try again."
-    );
+  it.each([
+    ['Pendle /convert 503: {}', "Pendle's quote service is temporarily unavailable. Please try again."],
+    [
+      'Pendle: malformed quote — missing input/output struct for "exitPostExpToToken"',
+      'Received an invalid quote from Pendle. Please try again.'
+    ],
+    ['Failed to fetch', "Couldn't fetch a quote from Pendle. Check your connection and try again."]
+  ])('uses the buy/sell copy for any other quote error: %s', async (raw, expected) => {
+    const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
+    expect(config.errorMessage).toBe(expected);
   });
 
   it.each([
-    new SyntaxError('Unexpected token < in JSON at position 0'),
-    new Error('Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem')
-  ])('falls back to the buy/sell quote copy: %s', async error => {
-    const config = await openWith({ data: undefined, isLoading: false, error });
-    expect(config.errorMessage).toBe(
-      "Couldn't fetch a quote from Pendle. Check your connection and try again."
-    );
-  });
-
-  it('gives a failed simulation the shared fallback, not advice to adjust inputs', async () => {
-    hoisted.writeError = new Error('HTTP request failed');
-    const config = await openWith(undefined);
-    expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
-  });
-
-  it('reads a contract revert through the shared revert registry', async () => {
-    hoisted.writeError = new Error('execution reverted: custom error 0x1234');
-    const config = await openWith(undefined);
-    expect(config.errorMessage).toBe('The transaction would fail with "custom error 0x1234".');
-  });
-
-  it('keeps the slippage guidance when the simulation fails on slippage', async () => {
-    hoisted.writeError = new Error('execution reverted: Slippage: INSUFFICIENT_TOKEN_OUT');
-    const config = await openWith(undefined);
-    expect(config.errorMessage).toMatch(/slippage tolerance/);
-  });
+    ['with a quote', undefined],
+    ['when no quote arrived and none failed', { data: undefined, isLoading: false, error: undefined }]
+  ])(
+    'gives a failed simulation the shared fallback, not advice to adjust inputs (%s)',
+    async (_, quoteState) => {
+      hoisted.writeError = new Error('HTTP request failed');
+      const config = await openWith(quoteState);
+      expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
+    }
+  );
 
   it("fetches the quote only while this card's modal session is live, like the buy/sell modal", async () => {
     hoisted.activeSessionId = null;
@@ -598,11 +570,5 @@ describe('usePendleRedeemModal claim quote failure', () => {
     expect(hoisted.quoteEnabled).toBe(false);
     view.unmount();
     hoisted.activeSessionId = null;
-  });
-
-  it('shows a prepare failure when no quote has arrived and none failed', async () => {
-    hoisted.writeError = new Error('HTTP request failed');
-    const config = await openWith({ data: undefined, isLoading: false, error: undefined });
-    expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
   });
 });

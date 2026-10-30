@@ -143,19 +143,12 @@ describe('PendleRedeem', () => {
     expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
   });
 
-  it('shows slippage when the quote routes an SY-accepted output through an aggregator', () => {
+  it('draws slippage, min received and sign-flipped price impact on aggregator routes', () => {
+    // The output is SY-accepted, but the quote still routes through an aggregator.
     renderRedeem({
       market: { ...MARKET, syAcceptedTokens: [MARKET.underlyingToken] },
       quote: { ...baseQuote, aggregatorType: 'kyberswap' }
     });
-
-    expect(screen.getByTestId('pendle-redeem-row-Slippage')).toBeTruthy();
-    expect(screen.getByTestId('pendle-redeem-row-Min. received')).toBeTruthy();
-    expect(screen.getByTestId('pendle-redeem-row-Routed via')).toBeTruthy();
-  });
-
-  it('draws slippage, min received and sign-flipped price impact on aggregator routes', () => {
-    renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
 
     expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
     // apiMinOut 1.4652 USDG floors to 1.46 — the figure is a contractual

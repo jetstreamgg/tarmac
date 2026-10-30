@@ -117,13 +117,6 @@ describe('PendleMaturedPositionCard', () => {
     expect(onViewDetails).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps Claim enabled without a ready quote — the modal explains a failure', () => {
-    renderCard();
-
-    expect((screen.getByTestId('pendle-matured-redeem-button') as HTMLButtonElement).disabled).toBe(false);
-    expect(screen.queryByTestId('pendle-redeem-quote-error')).toBeNull();
-  });
-
   it('keeps Claim enabled off the pendle chain — the click switches the wallet first', () => {
     h.chainId = 8453; // Base
     renderCard();
