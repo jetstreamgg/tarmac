@@ -138,8 +138,6 @@ describe('useCctpConvertOffer', () => {
 
   it('reads nothing for a bridge with no claim this app confirmed, or for another account', () => {
     expect(render(claimed(false)).current).toBeUndefined();
-    // Claimed by someone else: arrived, with no claim this app recorded.
-    expect(render(applyProgress(claimed(false), { kind: 'arrived' }, NOW)).current).toBeUndefined();
     mocks.account = `0x${'2'.repeat(40)}`;
     expect(render().current).toBeUndefined();
     expect(mocks.receipt).not.toHaveBeenCalled();
