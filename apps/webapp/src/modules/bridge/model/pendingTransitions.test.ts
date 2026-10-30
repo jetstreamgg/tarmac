@@ -131,6 +131,14 @@ describe('applyProgress', () => {
     expect(bridge).toMatchObject({ status: 'ready', nextAction: 'claim', routeData: { messageHash: '0xm' } });
   });
 
+  it('waiting records once when the tracker first read the source mined', () => {
+    const fresh = create(routeFor('base', 'ethereum', false));
+    expect(fresh.sourceMinedAt).toBeUndefined();
+    const waiting = applyProgress(fresh, { kind: 'waiting' }, NOW);
+    expect(waiting.sourceMinedAt).toBe(NOW);
+    expect(applyProgress(waiting, { kind: 'waiting' }, NOW + HOUR).sourceMinedAt).toBe(NOW);
+  });
+
   it('waiting updates the ETA and merges route data', () => {
     const start = applyProgress(
       create(routeFor('base', 'ethereum', false)),
@@ -217,9 +225,30 @@ describe('recordAction', () => {
     const bridge = recordAction(ready, { action: 'prove', txHash: '0xprove', at: NOW });
     expect(bridge).toMatchObject({ status: 'pending', nextAction: 'finalize' });
     expect(bridge.settledAt).toBeUndefined();
-    expect(recordAction(bridge, { action: 'finalize', txHash: '0xfin', at: NOW + 1 })).toMatchObject({
-      status: 'claimed',
+  });
+
+  // The finalize mining doesn't mean the L1 relay paid out: a failed relay is replayed.
+  it('an OP Stack finalize waits for the adapter to read the relay, then settles as claimed', () => {
+    const proved = recordAction(
+      applyProgress(
+        create(routeFor('optimism', 'ethereum', false)),
+        { kind: 'ready', nextAction: 'prove' },
+        NOW
+      ),
+      { action: 'prove', txHash: '0xprove', at: NOW }
+    );
+    const finalized = recordAction(proved, { action: 'finalize', txHash: '0xfin', at: NOW + 1 });
+    expect(finalized).toMatchObject({
+      status: 'pending',
+      nextAction: undefined,
+      etaAt: NOW + 1 + MINUTE,
       actions: [{ action: 'prove' }, { action: 'finalize' }]
+    });
+    expect(finalized.settledAt).toBeUndefined();
+    expect(applyProgress(finalized, { kind: 'arrived' }, NOW + 2)).toMatchObject({ status: 'claimed' });
+    expect(applyProgress(finalized, { kind: 'ready', nextAction: 'replay' }, NOW + 2)).toMatchObject({
+      status: 'ready',
+      nextAction: 'replay'
     });
   });
 
@@ -288,7 +317,15 @@ describe('pollIntervalMs', () => {
     expect(pollIntervalMs(deposit(), NOW)).toBe(15_000);
     const withdrawal = create(routeFor('base', 'ethereum', false));
     expect(pollIntervalMs(withdrawal, NOW)).toBe(5 * MINUTE);
-    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - MINUTE)).toBe(15_000);
+  });
+
+  it('polls a multi-day withdrawal each minute, not each 15 seconds, in the hour before its ETA', () => {
+    const withdrawal = create(routeFor('base', 'ethereum', false));
+    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - 59 * MINUTE)).toBe(MINUTE);
+    expect(pollIntervalMs(withdrawal, withdrawal.etaAt - 2 * HOUR)).toBe(5 * MINUTE);
+    const nearDeposit = deposit();
+    expect(pollIntervalMs(nearDeposit, nearDeposit.etaAt - MINUTE)).toBe(15_000);
   });
 
   it('past the ETA polls every minute for an hour, then every five minutes', () => {

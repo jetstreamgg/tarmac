@@ -1,22 +1,28 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import {
+  MODAL_LAYER_SHIFT_PX,
+  modalEnterTransition,
+  modalExitTransition
+} from '@/modules/ui/animation/modalStepMotion';
 import { t } from '@lingui/core/macro';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
 import type { BridgeNetworkId } from '../model/networks';
-import type { BridgeRoute } from '../model/types';
+import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { formatAddress, formatBigInt } from '@/utils';
-import { buildBridgeModalRows, formatEtaWords } from './bridgeModalRows';
+import { cn } from '@/lib/cn';
+import { bridgeFootnote, bridgeTypeLabel, buildBridgeModalRows, formatEta } from './bridgeModalRows';
+import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
 import { BridgeNetworkBadge } from './BridgeNetworkIcon';
+import { BridgeFastBadge, BridgeRoutePicker } from './BridgeRoutePicker';
+import type { RouteOptionCard } from './bridgeRouteOptions';
 import { BridgeWarningBox } from './BridgeWarningBox';
 
-export const bridgeFootnote = (route: BridgeRoute): string => {
-  const eta = formatEtaWords(route.etaMinutes);
-  return route.requiresClaim
-    ? t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. You will need to claim your asset manually afterward.`
-    : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. Your funds will arrive automatically.`;
-};
+export { bridgeFootnote } from './bridgeModalRows';
 
 type BridgeTransferHeroProps = {
   amount: bigint;
@@ -81,6 +87,32 @@ type BridgeReviewContentProps = {
   safeQueue?: boolean;
   /** Browser storage takes no writes, so this bridge isn't kept to come back to. */
   storageNote?: boolean;
+  /**
+   * The routes the user can pick between from the Bridge type row (Figma 50, 60). With `beside`,
+   * the caller draws the options next to the review (Figma 3964:74437); without, they swap in place.
+   */
+  routePicker?: {
+    cards: RouteOptionCard[];
+    onPick: (kind: BridgeRouteKind) => void;
+    beside?: { open: boolean; onOpenChange: (open: boolean) => void };
+  };
+};
+
+/** The arrival with the slowest pickable route struck out, when the picked one is faster (Figma 3964:74437). */
+const arrivalAgainst = (route: BridgeRoute, cards: RouteOptionCard[] | undefined) => {
+  const slower = Math.max(
+    ...(cards ?? [])
+      .filter(card => !card.unavailable && card.kind !== route.kind)
+      .map(card => card.etaMinutes)
+  );
+  if (!(slower > route.etaMinutes)) return undefined;
+  return (
+    // Held to the grid's 16px value line, so the 18px badge doesn't make this route's Review taller.
+    <span className="flex h-4 items-center gap-1" data-testid="bridge-modal-eta">
+      <s className="text-fgSecondary text-xs leading-4 font-normal">{formatEta(slower)}</s>
+      <BridgeFastBadge testId="bridge-modal-eta-fast">{formatEta(route.etaMinutes)}</BridgeFastBadge>
+    </span>
+  );
 };
 
 /** Read-only body of the "Review USDS bridge" modal: hero, summary grid, route footnote. */
@@ -97,18 +129,70 @@ export function BridgeReviewContent({
   recipientWarning,
   contractWallet,
   safeQueue,
-  storageNote
+  storageNote,
+  routePicker
 }: BridgeReviewContentProps) {
-  const rows = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
+  const [choosing, setChoosing] = useState(false);
+  const built = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
+  const [[bridgeType, ...firstRow], [arrival, ...secondRow], ...rest] = built;
+  const fastArrival = arrivalAgainst(route, routePicker?.cards);
+  const arrivalRow = [
+    fastArrival ? { label: arrival.label, kind: 'node' as const, node: fastArrival } : arrival,
+    ...secondRow
+  ];
+  const beside = routePicker?.beside;
+  const rows = routePicker
+    ? [
+        [
+          {
+            label: bridgeType.label,
+            kind: 'node' as const,
+            // The whole value opens the options, not only the chevron.
+            node: (
+              <button
+                type="button"
+                onClick={() => (beside ? beside.onOpenChange(!beside.open) : setChoosing(true))}
+                aria-label={t`Change bridge type`}
+                aria-expanded={beside?.open}
+                className="flex cursor-pointer items-center gap-1"
+                data-testid="bridge-modal-route-toggle"
+              >
+                <BridgeTypeLogo logo={route.kind === 'cctp' ? 'cctp' : 'skylink'} />
+                {bridgeTypeLabel(route.kind)}
+                <ChevronRight
+                  size={12}
+                  className={cn('text-fgSecondary', beside?.open && 'rotate-180')}
+                  aria-hidden
+                />
+              </button>
+            )
+          },
+          ...firstRow
+        ],
+        arrivalRow,
+        ...rest
+      ]
+    : built;
   const contractCheckboxId = useId();
-  return (
+  const reducedMotion = useReducedMotion();
+  const review = (
     <div className="flex flex-col gap-8 sm:gap-12" data-testid="bridge-modal-review">
       <BridgeTransferHero amount={amount} from={from} to={to} addresses={addresses} fromToken={fromToken} />
       <div className="flex flex-col gap-6">
         <ModalSummaryGrid rows={toGridCells(rows, 'bridge-modal-row')} dividerClassName="h-6" />
-        <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-footnote">
-          {bridgeFootnote(route)}
-        </p>
+        {/* Every pickable route's footnote holds the space, so switching routes doesn't resize the modal. */}
+        <section className="text-fgSecondary grid text-xs leading-[18px]">
+          <p className="[grid-area:1/1]" data-testid="bridge-modal-footnote">
+            {bridgeFootnote(route)}
+          </p>
+          {routePicker?.cards
+            .filter(card => card.kind !== route.kind)
+            .map(card => (
+              <p key={card.kind} className="invisible [grid-area:1/1]" aria-hidden>
+                {card.footnote}
+              </p>
+            ))}
+        </section>
         {aliasedRefund && (
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-aliased-refund">
             {t`Unused ETH from the bridge fee is refunded to your Safe's aliased address on Arbitrum, not to your Safe.`}
@@ -152,5 +236,32 @@ export function BridgeReviewContent({
         )}
       </div>
     </div>
+  );
+  const picking = !!routePicker && !beside && choosing;
+  // In place, the picker slides in from the left and goes back the same way (the desktop aside's motion).
+  const shift = picking ? -MODAL_LAYER_SHIFT_PX : MODAL_LAYER_SHIFT_PX;
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={picking ? 'picker' : 'review'}
+        initial={{ opacity: 0, x: shift }}
+        animate={{ opacity: 1, x: 0, transition: reducedMotion ? { duration: 0 } : modalEnterTransition }}
+        exit={{ opacity: 0, x: shift, transition: reducedMotion ? { duration: 0 } : modalExitTransition }}
+      >
+        {picking && routePicker ? (
+          <BridgeRoutePicker
+            cards={routePicker.cards}
+            selected={route.kind}
+            onPick={kind => {
+              routePicker.onPick(kind);
+              setChoosing(false);
+            }}
+            onBack={() => setChoosing(false)}
+          />
+        ) : (
+          review
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 }

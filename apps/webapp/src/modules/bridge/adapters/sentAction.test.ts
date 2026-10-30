@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TransactionNotFoundError, TransactionReceiptNotFoundError, type Hex } from 'viem';
 import type { PendingBridgeAction } from '../model/types';
-import { SENT_ACTION_DROPPED_MS, settleSentAction } from './sentAction';
+import { L1_SENT_ACTION_DROPPED_MS, SENT_ACTION_DROPPED_MS, settleSentAction } from './sentAction';
 import type { ChainReader } from './types';
 
 const NOW = 1_800_000_000_000;
@@ -54,6 +54,16 @@ describe('settleSentAction', () => {
       kind: 'action-dropped',
       txHash: HASH
     });
+  });
+
+  it('takes the window of the chain it was sent on: Ethereum keeps a transaction far longer', async () => {
+    const { client } = l2({});
+    await expect(
+      settleSentAction(client, SENT, NOW + L1_SENT_ACTION_DROPPED_MS - 1, L1_SENT_ACTION_DROPPED_MS)
+    ).resolves.toBeUndefined();
+    await expect(
+      settleSentAction(client, SENT, NOW + L1_SENT_ACTION_DROPPED_MS, L1_SENT_ACTION_DROPPED_MS)
+    ).resolves.toEqual({ kind: 'action-dropped', txHash: HASH });
   });
 
   it('keeps waiting on one still pending after the window', async () => {

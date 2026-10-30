@@ -67,6 +67,10 @@ const mocks = vi.hoisted(() => ({
   legs: [] as LegsArgs[]
 }));
 
+// Typed amounts settle at once here; the 500 ms settle has its own tests in useBridgeLaunch.test.
+vi.mock('@/modules/ui/hooks/useSettledAmount', () => ({
+  useSettledAmount: (amount: bigint) => ({ debouncedAmount: amount, debouncePending: false })
+}));
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useConnection: () => ({ isConnected: true, address: mocks.account, connector: { id: 'injected' } }),
@@ -150,6 +154,23 @@ vi.mock('./useNativeDepositLegs', () => ({
       refetchAllowance: mocks.refetchAllowance
     };
   }
+}));
+// A native withdrawal's source legs; this file sends none.
+vi.mock('./useNativeWithdrawalLegs', () => ({
+  nativeWithdrawalFunction: () => 'bridgeERC20To',
+  useNativeWithdrawalLegs: () => ({
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    busy: false,
+    legMined: false,
+    error: null,
+    execute: () => undefined,
+    reset: () => undefined,
+    stop: () => undefined,
+    refetchAllowance: () => undefined
+  })
 }));
 vi.mock('../components/BridgeReviewContent', () => ({
   BridgeReviewContent: () => null,

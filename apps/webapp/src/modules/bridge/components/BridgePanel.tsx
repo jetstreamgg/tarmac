@@ -8,8 +8,10 @@ import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
 import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
 import { useCctpSwapConvertLaunch } from '../hooks/useCctpSwapConvertLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
+import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
+import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { BridgeCard } from './BridgeCard';
-import { CctpClaimLookup, hasCctpClaimLookup } from './CctpClaimLookup';
+import { BridgeClaimLookup, hasBridgeClaimLookup } from './BridgeClaimLookup';
 import { PendingBridges } from './PendingBridges';
 
 type RecipientHintProps = { reason: ReturnType<typeof useBridgeForm>['recipientReason'] };
@@ -58,9 +60,20 @@ function RecipientProblemMessage({ problem }: RecipientProblemMessageProps) {
   }
 }
 
-type BlockedMessageProps = { reason: ReturnType<typeof useBridgeForm>['blockedReason'] };
+type BlockedMessageProps = {
+  reason: ReturnType<typeof useBridgeForm>['blockedReason'];
+  from: BridgeNetworkId;
+  to: BridgeNetworkId;
+};
 
-function BlockedMessage({ reason }: BlockedMessageProps) {
+function BlockedMessage({ reason, from, to }: BlockedMessageProps) {
+  // A withdrawal to Ethereum is blocked only once both its routes are.
+  if (isNativeDepositNetwork(from) && to === 'ethereum' && reason !== 'facts-error') {
+    if (reason === 'over-limit')
+      return <Trans>This amount is above what can be bridged right now. Try a smaller amount.</Trans>;
+    const network = getBridgeNetwork(from).name;
+    return <Trans>Bridging from {network} to Ethereum is unavailable right now. Try again later.</Trans>;
+  }
   switch (reason) {
     case 'over-limit':
       return <Trans>This amount is over the bridge limit. Try a smaller amount.</Trans>;
@@ -128,7 +141,7 @@ export function BridgePanel({ draft }: BridgePanelProps) {
           </Text>
         ) : form.blockedReason && form.blockedReason !== 'facts-loading' ? (
           <Text className="text-error text-sm" dataTestId="bridge-blocked">
-            <BlockedMessage reason={form.blockedReason} />
+            <BlockedMessage reason={form.blockedReason} from={form.from} to={form.to} />
           </Text>
         ) : form.safeCheckFailed ? (
           <Text className="text-error text-sm" dataTestId="bridge-safe-unknown">
@@ -174,7 +187,7 @@ export function BridgePanel({ draft }: BridgePanelProps) {
         actionLocked={actionLocked}
         onContinue={continueBridge}
         onConvert={convertBridge}
-        lookup={hasCctpClaimLookup() ? <CctpClaimLookup /> : undefined}
+        lookup={hasBridgeClaimLookup() ? <BridgeClaimLookup /> : undefined}
       />
     </div>
   );

@@ -14,7 +14,8 @@ export type BridgeActivityEntry = {
   txHash: string;
 };
 
-export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
+/** `network` is the entry's: a replay on Ethereum replays a withdrawal's relay. */
+export const bridgeActivityTitle = (kind: BridgeActivityKind, network?: BridgeNetworkId): string => {
   switch (kind) {
     case 'bridge':
       return t`Bridge`;
@@ -27,7 +28,7 @@ export const bridgeActivityTitle = (kind: BridgeActivityKind): string => {
     case 'redeem':
       return t`Deposit redeem`;
     case 'replay':
-      return t`Deposit replay`;
+      return network === 'ethereum' ? t`Withdrawal replay` : t`Deposit replay`;
     case 'keepalive':
       return t`Deadline extension`;
     case 'convert':

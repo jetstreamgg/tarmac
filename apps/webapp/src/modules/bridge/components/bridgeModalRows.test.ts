@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { parseEther } from 'viem';
 import { NO_VALUE } from '@/lib/constants';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { cctpWithdrawalRoute, nativeWithdrawalRoute, resolveBridgeRoute } from '../model/resolveRoute';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute } from '../model/types';
 import { bridgeFootnote } from './BridgeReviewContent';
@@ -40,15 +40,17 @@ describe('buildBridgeModalRows', () => {
 
   it('names the route and its arrival time', () => {
     const [[type], [eta]] = buildBridgeModalRows({ route: routeFor('ethereum', 'base'), networkFee: '' });
-    expect(type).toMatchObject({ value: 'Native' });
+    expect(type).toMatchObject({ value: 'SkyLink' });
     expect(eta).toMatchObject({ value: '~3 min' });
   });
 
-  it("draws Circle's logo before CCTP only (Figma 3830:67688)", () => {
+  it("draws Circle's logo before CCTP (Figma 3830:67688) and SkyLink's before the native route (Figma 50)", () => {
     const [[cctp]] = buildBridgeModalRows({ route: routeFor('base', 'ethereum'), networkFee: '' });
     expect(cctp).toMatchObject({ value: 'CCTP', logo: 'cctp' });
     const [[native]] = buildBridgeModalRows({ route: routeFor('ethereum', 'base'), networkFee: '' });
-    expect(native).not.toHaveProperty('logo');
+    expect(native).toMatchObject({ value: 'SkyLink', logo: 'skylink' });
+    const [[layerzero]] = buildBridgeModalRows({ route: routeFor('ethereum', 'avalanche'), networkFee: '' });
+    expect(layerzero).not.toHaveProperty('logo');
   });
 
   it('shows no bridge fee until the route quotes one', () => {
@@ -140,6 +142,34 @@ describe('arrival copy in the singular and plural', () => {
     ).toEqual(
       ['Bridge type', 'Bridge rate', 'Estimated arrival', 'Slippage', 'Bridge fee'].map(l => `<${l}>`)
     );
-    expect(rows[0][0]).toMatchObject({ value: '<Native>' });
+    // SkyLink is a name, like CCTP: never translated.
+    expect(rows[0][0]).toMatchObject({ value: 'SkyLink' });
+  });
+});
+
+describe('the review footnote of a native withdrawal', () => {
+  it.each([
+    ['base', '5 days'],
+    ['optimism', '7 days'],
+    ['unichain', '7 days']
+  ] as const)(
+    'tells a %s withdrawal to come back twice, to prove and to finalize, with ETH',
+    (from, days) => {
+      expect(bridgeFootnote(nativeWithdrawalRoute(from))).toBe(
+        `The withdrawal takes about ${days}. You will need to come back to Ethereum twice: to prove it, usually within an hour or two, and to finalize it once the waiting period ends. Both steps need ETH on Ethereum for gas.`
+      );
+    }
+  );
+
+  it('tells an Arbitrum withdrawal to finalize once, with ETH', () => {
+    expect(bridgeFootnote(nativeWithdrawalRoute('arbitrum'))).toBe(
+      "The withdrawal takes about 6.5 days. Once it's ready, finalize it on Ethereum to receive your USDS. This step needs ETH on Ethereum for gas."
+    );
+  });
+
+  it('keeps the claim footnote for a CCTP withdrawal', () => {
+    expect(bridgeFootnote(cctpWithdrawalRoute('base'))).toContain(
+      'You will need to claim your asset manually'
+    );
   });
 });

@@ -1,3 +1,4 @@
+import type { TransactionReceipt } from 'viem';
 import { useConnection, useSimulateContract, useWriteContract } from 'wagmi';
 import { markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
@@ -26,6 +27,7 @@ export function useSequentialTransactionFlow(
     onMutate = () => null,
     onStart = () => null,
     onSuccess = () => null,
+    onReceipt,
     onError = () => null,
     gcTime = 30000,
     chainId,
@@ -253,7 +255,10 @@ export function useSequentialTransactionFlow(
 
   // The consumer's callbacks are read through effect events: the completion
   // effect must not re-run because a caller passed a new inline function.
-  const emitSuccess = useEffectEvent((hash: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
+  const emitSuccess = useEffectEvent((hash: string, receipt?: TransactionReceipt) => {
+    if (receipt) onReceipt?.(receipt);
+    onSuccess(hash, receipt?.blockNumber);
+  });
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
 
   // A later step is only sent once its simulation succeeds, so a step that
@@ -307,7 +312,7 @@ export function useSequentialTransactionFlow(
       // Done only when every expected call has produced a hash, not merely when the index reaches the count.
       if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
-        emitSuccess(minedHash(txHash), receipt?.blockNumber);
+        emitSuccess(minedHash(txHash), receipt);
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
@@ -341,7 +346,7 @@ export function useSequentialTransactionFlow(
       setIsExecuting(paused);
       setHasFailed(paused);
     }
-  }, [isExecuting, isSuccess, txFailure, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
+  }, [isExecuting, isSuccess, txFailure, txHash, receipt, currentIndex, transactionHashes]);
 
   const clearRun = useCallback(() => {
     detachedRef.current = null;

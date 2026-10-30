@@ -6,9 +6,9 @@ import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Hex } from 'viem';
-import type { CctpClaimLookupState, CctpClaimTarget } from '../hooks/useCctpClaimLookup';
+import type { BridgeClaimLookupState, BridgeClaimTarget } from '../hooks/useBridgeClaimLookup';
 import type { PendingBridge } from '../model/types';
-import { CctpClaimLookup } from './CctpClaimLookup';
+import { BridgeClaimLookup } from './BridgeClaimLookup';
 
 const HASH = `0x${'ab'.repeat(32)}` as Hex;
 const SENDER = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
@@ -16,8 +16,8 @@ const SENDER = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
 const mocks = vi.hoisted(() => ({
   params: new URLSearchParams(),
   setParams: vi.fn(),
-  state: { status: 'idle' } as CctpClaimLookupState,
-  targets: [] as (CctpClaimTarget | undefined)[],
+  state: { status: 'idle' } as BridgeClaimLookupState,
+  targets: [] as (BridgeClaimTarget | undefined)[],
   attempts: [] as number[],
   account: '0x71c7656ec7ab88b098defb751b7401b5f6d8976f' as string | undefined,
   live: new Set<string>(),
@@ -38,8 +38,8 @@ vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 vi.mock('../hooks/usePendingScope', () => ({
   usePendingScope: () => ({ account: mocks.account, familyChainId: 1, scope: 'scope' })
 }));
-vi.mock('../hooks/useCctpClaimLookup', () => ({
-  useCctpClaimLookup: (target: CctpClaimTarget | undefined, attempt: number) => {
+vi.mock('../hooks/useBridgeClaimLookup', () => ({
+  useBridgeClaimLookup: (target: BridgeClaimTarget | undefined, attempt: number) => {
     mocks.targets.push(target);
     mocks.attempts.push(attempt);
     return mocks.state;
@@ -69,7 +69,7 @@ const BURN: PendingBridge = {
 const renderLookup = () =>
   render(
     <I18nProvider i18n={i18n}>
-      <CctpClaimLookup />
+      <BridgeClaimLookup />
     </I18nProvider>
   );
 const lastTarget = () => mocks.targets[mocks.targets.length - 1];
@@ -96,7 +96,7 @@ const strippedParams = () => {
   return Object.fromEntries(update(new URLSearchParams(mocks.params)));
 };
 
-describe('CctpClaimLookup', () => {
+describe('BridgeClaimLookup', () => {
   beforeEach(() => {
     mocks.params = new URLSearchParams('tab=bridge');
     mocks.setParams.mockClear();
@@ -299,7 +299,7 @@ describe('CctpClaimLookup', () => {
       "We couldn't find this bridge",
       expect.objectContaining({
         description:
-          "There's no CCTP bridge with this hash on Arbitrum One. Check that the network and the hash are correct."
+          "There's no bridge with this hash on Arbitrum One. Check that the network and the hash are correct."
       })
     );
   });
@@ -307,7 +307,7 @@ describe('CctpClaimLookup', () => {
   it('toasts no other refusal', () => {
     mocks.params = new URLSearchParams(`tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`);
     for (const reason of ['reverted', 'not-a-bridge', 'several-burns'] as const) {
-      mocks.state = { status: 'refused', reason } as CctpClaimLookupState;
+      mocks.state = { status: 'refused', reason } as BridgeClaimLookupState;
       renderLookup();
       cleanup();
     }
@@ -339,7 +339,7 @@ describe('CctpClaimLookup', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
-  it.each<[CctpClaimLookupState, string, string]>([
+  it.each<[BridgeClaimLookupState, string, string]>([
     [{ status: 'known' }, 'bridge-claim-lookup-message', 'This bridge is already in your list.'],
     [
       { status: 'known', claimed: true },
@@ -354,7 +354,7 @@ describe('CctpClaimLookup', () => {
     [
       { status: 'refused', reason: 'not-found' },
       'bridge-claim-lookup-error',
-      "There's no CCTP bridge with this hash on Base."
+      "There's no bridge with this hash on Base."
     ],
     [
       { status: 'refused', reason: 'reverted' },
@@ -381,7 +381,7 @@ describe('CctpClaimLookup', () => {
   });
 
   // Figma 85.
-  it.each<CctpClaimLookupState>([
+  it.each<BridgeClaimLookupState>([
     { status: 'refused', reason: 'not-found' },
     { status: 'error', retry: () => {} }
   ])('marks the hash invalid and drops the helper on %j', state => {

@@ -144,6 +144,25 @@ vi.mock('./useCctpBurnLegs', () => ({
     };
   }
 }));
+// A native withdrawal's source legs; this file sends none.
+// The route picker's cards have their own suite.
+vi.mock('./useBridgeRouteCards', () => ({ useBridgeRouteCards: () => undefined }));
+vi.mock('./useNativeWithdrawalLegs', () => ({
+  nativeWithdrawalFunction: () => 'bridgeERC20To',
+  useNativeWithdrawalLegs: () => ({
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    busy: false,
+    legMined: false,
+    error: null,
+    execute: () => undefined,
+    reset: () => undefined,
+    stop: () => undefined,
+    refetchAllowance: () => undefined
+  })
+}));
 vi.mock('../components/BridgeReviewContent', () => ({
   BridgeReviewContent: () => null,
   BridgeTransferHero: () => null
@@ -388,6 +407,51 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
 
       expect(mocks.onError.mock.calls.slice(errorsBefore)).toEqual([]);
       expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+    });
+
+    // The swap took USDC out of PSM3, so the form's next CCTP read fails on liquidity and resolves SkyLink.
+    it('resumes the CCTP burn, and stores its card as CCTP, when the form fell back to SkyLink after the swap mined', () => {
+      const fallback = resolveBridgeRoute({
+        from: 'base',
+        to: 'ethereum',
+        amount: AMOUNT,
+        facts: { cctp: { isOpen: false }, native: { isOpen: true } }
+      });
+      if (fallback.status !== 'ok' || fallback.route.kind !== 'native')
+        throw new Error('no SkyLink fallback');
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(
+        ({ fellBack }: { fellBack: boolean }) =>
+          useBridgeLaunch(
+            formFor('base', 'ethereum', fellBack ? { reviewBlocked: true, route: fallback.route } : {})
+          ),
+        { wrapper, initialProps: { fellBack: false } }
+      );
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const first = mocks.burn.args.at(-1)!.getCallbacks();
+      first.onMutate({ functionName: 'swapExactIn' });
+      first.onStart('0x5a');
+      first.onMutate({ functionName: 'depositForBurn' });
+      act(() => first.onError(new Error('User rejected the request.'), ''));
+      mocks.burn.legMined = true;
+      view.rerender({ fellBack: true });
+      const errorsBefore = mocks.onError.mock.calls.length;
+
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+
+      expect(mocks.onError.mock.calls.slice(errorsBefore)).toEqual([]);
+      expect(mocks.burn.execute).toHaveBeenCalledTimes(2);
+      const retried = mocks.burn.args.at(-1)!.getCallbacks();
+      act(() => {
+        retried.onMutate({ functionName: 'depositForBurn' } as never);
+        retried.onStart(BASE_BURN_TX.hash);
+      });
+      expect(pendingBridgeStore.getSnapshot(SCOPE)).toMatchObject([
+        { txHash: BASE_BURN_TX.hash, routeKind: 'cctp', requiresClaim: true }
+      ]);
     });
 
     it('still refuses a Retry the Review blocks while nothing of the run mined', () => {

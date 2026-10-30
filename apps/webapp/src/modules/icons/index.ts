@@ -2,6 +2,7 @@ import { ArrowDown } from './ArrowDown';
 import { ArrowRightLong } from './ArrowRightLong';
 import { ArrowTopRight } from './ArrowTopRight';
 import { CircleLogo } from './CircleLogo';
+import { SkyLinkLogo } from './SkyLinkLogo';
 import { Copy } from './Copy';
 import { Failure } from './Failure';
 import { RewardsModule } from './RewardsModule';
@@ -55,6 +56,7 @@ export {
   ArrowRightLong,
   ArrowTopRight,
   CircleLogo,
+  SkyLinkLogo,
   Copy,
   Failure,
   RewardsModule,

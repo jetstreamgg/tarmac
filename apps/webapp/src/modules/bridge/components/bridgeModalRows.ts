@@ -8,14 +8,19 @@ import { formatEther } from 'viem';
 import { plural, t } from '@lingui/core/macro';
 import type { ModalGridCell } from '@/components/product/ModalGridCells';
 import { networkFeeCell } from '@/components/product/ModalGridCells';
+import type { BridgeTypeLogoKind } from '@/components/product/BridgeTypeLogo';
 import { NO_VALUE } from '@/lib/constants';
 import { formatUsd } from '@/utils';
 import { DAY_MINUTES } from '../model/resolveRoute';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 
-// CCTP and LayerZero are protocol names.
+// SkyLink (Sky's native bridges), CCTP and LayerZero are names, never translated.
 export const bridgeTypeLabel = (kind: BridgeRouteKind): string =>
-  kind === 'native' ? t`Native` : kind === 'cctp' ? 'CCTP' : 'LayerZero';
+  kind === 'native' ? 'SkyLink' : kind === 'cctp' ? 'CCTP' : 'LayerZero';
+
+/** The logo drawn before a route's name; LayerZero has none. */
+export const bridgeTypeLogo = (kind: BridgeRouteKind): BridgeTypeLogoKind | undefined =>
+  kind === 'cctp' ? 'cctp' : kind === 'native' ? 'skylink' : undefined;
 
 /** Whole or one-decimal days, for multi-day withdrawals: 7, 6.4. */
 export const toDays = (minutes: number): number => Math.round((minutes / DAY_MINUTES) * 10) / 10;
@@ -73,13 +78,14 @@ export function buildBridgeModalRows({
   /** The token sent, rated against the USDS delivered. */
   fromToken?: 'USDS' | 'USDC';
 }): ModalGridCell[][] {
+  const logo = bridgeTypeLogo(route.kind);
   return [
     [
       {
         kind: 'single',
         label: t`Bridge type`,
         value: bridgeTypeLabel(route.kind),
-        ...(route.kind === 'cctp' && { logo: 'cctp' as const })
+        ...(logo && { logo })
       },
       {
         kind: 'pair',
@@ -104,3 +110,15 @@ export function buildBridgeModalRows({
     ]
   ];
 }
+
+export const bridgeFootnote = (route: BridgeRoute): string => {
+  const eta = formatEtaWords(route.etaMinutes);
+  const actions = route.kind === 'native' ? route.steps.map(step => step.action) : [];
+  if (actions.includes('prove'))
+    return t`The withdrawal takes about ${eta}. You will need to come back to Ethereum twice: to prove it, usually within an hour or two, and to finalize it once the waiting period ends. Both steps need ETH on Ethereum for gas.`;
+  if (actions.includes('finalize'))
+    return t`The withdrawal takes about ${eta}. Once it's ready, finalize it on Ethereum to receive your USDS. This step needs ETH on Ethereum for gas.`;
+  return route.requiresClaim
+    ? t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. You will need to claim your asset manually afterward.`
+    : t`The transaction will be processed on the blockchain and is expected to complete within approximately ${eta}. Your funds will arrive automatically.`;
+};

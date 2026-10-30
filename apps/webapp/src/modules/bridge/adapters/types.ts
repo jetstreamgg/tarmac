@@ -3,11 +3,12 @@ import type { BridgeProgress } from '../model/pendingTransitions';
 import type { BridgeNetworkId } from '../model/networks';
 import type { PendingBridge } from '../model/types';
 
-/** The chain reads a route adapter makes. */
+/** The chain reads a route adapter makes; `getProof` only where an adapter checks L2 state roots. */
 export type ChainReader = Pick<
   PublicClient,
   'getTransactionReceipt' | 'getTransaction' | 'readContract' | 'getBlock' | 'getBlockNumber' | 'getLogs'
->;
+> &
+  Partial<Pick<PublicClient, 'getProof'>>;
 
 export type AdapterContext = {
   /** The network's configured client, the same one on every call; undefined when the app has none for it. */

@@ -3,6 +3,8 @@ import type { Hex } from 'viem';
 import { useConfig } from 'wagmi';
 import type { CctpL2NetworkId } from '../adapters/cctp/contracts';
 import { lookupCctpBurn, type CctpBurnLookup } from '../adapters/cctp/lookup';
+import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
+import { lookupNativeWithdrawal, type NativeWithdrawalLookup } from '../adapters/nativeWithdrawal/lookup';
 import type { PendingBridge } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { wagmiAdapterContext } from './adapterContext';
@@ -10,27 +12,33 @@ import { useBridgeHistory } from './useBridgeHistory';
 import { useIncomingCctpBridges } from './useIncomingCctpBridges';
 import { usePendingScope } from './usePendingScope';
 
-/** A CCTP burn to look up: its source network and hash. */
-export type CctpClaimTarget = { from: CctpL2NetworkId; txHash: Hex };
+type BridgeLookup = CctpBurnLookup | NativeWithdrawalLookup;
 
-export type CctpClaimLookupState =
+/** A bridge to Ethereum to look up, a CCTP burn or a native withdrawal: its source network and hash. */
+export type BridgeClaimTarget = { from: CctpL2NetworkId; txHash: Hex };
+
+export type BridgeClaimLookupState =
   | { status: 'idle' }
   | { status: 'disconnected' }
   | { status: 'loading' }
   | { status: 'error'; retry: () => void }
   /** Already in this wallet's list, or sent here from another account's list of this browser; `claimed` once it was. */
   | { status: 'known'; claimed?: true }
-  | Extract<CctpBurnLookup, { status: 'refused' }>
+  | Extract<BridgeLookup, { status: 'refused' }>
   | { status: 'found'; bridge: PendingBridge; add: () => void };
 
 const sameHash = (bridge: PendingBridge, txHash: Hex) => bridge.txHash?.toLowerCase() === txHash;
 
 /**
- * Looks up a CCTP burn this browser has no record of, from a claim link or
- * the manual form, and adds it to the connected wallet's list for the tracker
- * to claim from. Each `attempt` reads the chain again.
+ * Looks up a bridge to Ethereum this browser has no record of, a CCTP burn or
+ * else a native withdrawal, from a claim link or the manual form, and adds it
+ * to the connected wallet's list for the tracker to claim, or prove and
+ * finalize. Each `attempt` reads the chain again.
  */
-export function useCctpClaimLookup(target: CctpClaimTarget | undefined, attempt = 0): CctpClaimLookupState {
+export function useBridgeClaimLookup(
+  target: BridgeClaimTarget | undefined,
+  attempt = 0
+): BridgeClaimLookupState {
   const { account, familyChainId, scope } = usePendingScope();
   const config = useConfig();
   const history = useBridgeHistory();
@@ -42,17 +50,22 @@ export function useCctpClaimLookup(target: CctpClaimTarget | undefined, attempt 
   const known = match !== undefined;
   const query = useQuery({
     queryKey: [
-      'cctp-claim-lookup',
+      'bridge-claim-lookup',
       familyChainId,
       target?.from,
       target?.txHash,
       account?.toLowerCase(),
       attempt
     ],
-    queryFn: () => {
-      const client = wagmiAdapterContext(config, familyChainId).getClient(target!.from);
-      if (!client) throw new Error(`No client for ${target!.from}`);
-      return lookupCctpBurn({ from: target!.from, txHash: target!.txHash, account: account!, client });
+    queryFn: async (): Promise<BridgeLookup> => {
+      const { from, txHash } = target!;
+      const client = wagmiAdapterContext(config, familyChainId).getClient(from);
+      if (!client) throw new Error(`No client for ${from}`);
+      const burn = await lookupCctpBurn({ from, txHash, account: account!, client });
+      // The same receipt read as a native withdrawal: only one of them can be in it.
+      if (burn.status !== 'refused' || burn.reason !== 'not-a-bridge' || !isNativeDepositNetwork(from))
+        return burn;
+      return lookupNativeWithdrawal({ from, txHash, account: account!, client });
     },
     enabled: !!target && !!account && !known,
     refetchOnWindowFocus: false,

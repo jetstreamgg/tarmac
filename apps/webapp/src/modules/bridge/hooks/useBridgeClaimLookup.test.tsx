@@ -10,11 +10,12 @@ import type { CctpBurnLookup } from '../adapters/cctp/lookup';
 import type { IncomingBridge } from './useIncomingCctpBridges';
 import type { PendingBridge } from '../model/types';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
-import { useCctpClaimLookup, type CctpClaimTarget } from './useCctpClaimLookup';
+import { useBridgeClaimLookup, type BridgeClaimTarget } from './useBridgeClaimLookup';
 
 const mocks = vi.hoisted(() => ({
   address: undefined as string | undefined,
   lookup: vi.fn(),
+  nativeLookup: vi.fn(),
   getClient: vi.fn(),
   incoming: [] as IncomingBridge[]
 }));
@@ -29,10 +30,11 @@ vi.mock('./adapterContext', () => ({
   wagmiAdapterContext: () => ({ getClient: mocks.getClient })
 }));
 vi.mock('../adapters/cctp/lookup', () => ({ lookupCctpBurn: mocks.lookup }));
+vi.mock('../adapters/nativeWithdrawal/lookup', () => ({ lookupNativeWithdrawal: mocks.nativeLookup }));
 vi.mock('./useIncomingCctpBridges', () => ({ useIncomingCctpBridges: () => mocks.incoming }));
 
 const HASH = `0x${'ab'.repeat(32)}` as Hex;
-const TARGET: CctpClaimTarget = { from: 'base', txHash: HASH };
+const TARGET: BridgeClaimTarget = { from: 'base', txHash: HASH };
 const CLIENT = { name: 'base reader' };
 
 let accountSeq = 0;
@@ -58,22 +60,23 @@ const burn = (overrides: Partial<PendingBridge> = {}): PendingBridge => ({
 });
 
 // null renders with no target.
-const renderLookup = (target: CctpClaimTarget | null = TARGET) => {
+const renderLookup = (target: BridgeClaimTarget | null = TARGET) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
-  return renderHook(({ value, attempt }) => useCctpClaimLookup(value, attempt), {
+  return renderHook(({ value, attempt }) => useBridgeClaimLookup(value, attempt), {
     wrapper,
     initialProps: { value: target ?? undefined, attempt: 0 }
   });
 };
 
-describe('useCctpClaimLookup', () => {
+describe('useBridgeClaimLookup', () => {
   beforeEach(() => {
     mocks.address = nextAccount();
     mocks.incoming = [];
     mocks.lookup.mockReset();
+    mocks.nativeLookup.mockReset().mockResolvedValue({ status: 'refused', reason: 'not-a-bridge' });
     mocks.getClient.mockReset().mockReturnValue(CLIENT);
   });
   afterEach(() => localStorage.clear());
@@ -213,8 +216,83 @@ describe('useCctpClaimLookup', () => {
     await waitFor(() => expect(result.current.status).toBe('refused'));
     const first = mocks.address;
     mocks.address = nextAccount();
-    rerender({ value: TARGET as CctpClaimTarget | undefined, attempt: 0 });
+    rerender({ value: TARGET as BridgeClaimTarget | undefined, attempt: 0 });
     await waitFor(() => expect(mocks.lookup).toHaveBeenCalledTimes(2));
     expect(mocks.lookup.mock.calls.map(([args]) => args.account)).toEqual([first, mocks.address]);
+  });
+});
+
+describe('useBridgeClaimLookup, a native withdrawal', () => {
+  beforeEach(() => {
+    mocks.address = nextAccount();
+    mocks.incoming = [];
+    mocks.lookup.mockReset().mockResolvedValue({ status: 'refused', reason: 'not-a-bridge' });
+    mocks.nativeLookup.mockReset();
+    mocks.getClient.mockReset().mockReturnValue(CLIENT);
+  });
+  afterEach(() => localStorage.clear());
+
+  const withdrawal = (): PendingBridge => ({
+    ...burn({ routeKind: 'native', nextAction: 'prove' })
+  });
+
+  it("looks a hash that isn't a CCTP burn up as a native withdrawal, on the same network's client", async () => {
+    mocks.nativeLookup.mockReturnValue(new Promise(() => {}));
+    const { result } = renderLookup();
+    await waitFor(() => expect(mocks.nativeLookup).toHaveBeenCalled());
+    expect(result.current.status).toBe('loading');
+    expect(mocks.nativeLookup).toHaveBeenCalledWith({
+      from: 'base',
+      txHash: HASH,
+      account: mocks.address,
+      client: CLIENT
+    });
+  });
+
+  it("adds a found withdrawal to the connected wallet's list", async () => {
+    const bridge = withdrawal();
+    mocks.nativeLookup.mockResolvedValue({ status: 'found', bridge });
+    const { result } = renderLookup();
+    await waitFor(() => expect(result.current.status).toBe('found'));
+    act(() => {
+      if (result.current.status === 'found') result.current.add();
+    });
+    expect(pendingBridgeStore.getSnapshot(scopeOf(mocks.address!))).toEqual([bridge]);
+  });
+
+  it.each(['not-found', 'reverted', 'several-burns'] as const)(
+    'reads no withdrawal from a hash CCTP refused as %s',
+    async reason => {
+      mocks.lookup.mockResolvedValue({ status: 'refused', reason });
+      const { result } = renderLookup();
+      await waitFor(() => expect(result.current).toEqual({ status: 'refused', reason }));
+      expect(mocks.nativeLookup).not.toHaveBeenCalled();
+    }
+  );
+
+  it('refuses a hash that is neither as not a bridge', async () => {
+    mocks.nativeLookup.mockResolvedValue({ status: 'refused', reason: 'not-a-bridge' });
+    const { result } = renderLookup();
+    await waitFor(() => expect(result.current).toEqual({ status: 'refused', reason: 'not-a-bridge' }));
+  });
+
+  it('offers a retry when the withdrawal read fails, and reads both again on it', async () => {
+    mocks.nativeLookup.mockRejectedValueOnce(new Error('rpc down'));
+    const { result } = renderLookup();
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    mocks.nativeLookup.mockResolvedValue({ status: 'found', bridge: withdrawal() });
+    act(() => {
+      if (result.current.status === 'error') result.current.retry();
+    });
+    await waitFor(() => expect(result.current.status).toBe('found'));
+    expect(mocks.lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it('says a withdrawal already in the list is there, and reads nothing', async () => {
+    pendingBridgeStore.upsert(scopeOf(mocks.address!), withdrawal());
+    const { result } = renderLookup();
+    expect(result.current).toEqual({ status: 'known' });
+    expect(mocks.lookup).not.toHaveBeenCalled();
+    expect(mocks.nativeLookup).not.toHaveBeenCalled();
   });
 });

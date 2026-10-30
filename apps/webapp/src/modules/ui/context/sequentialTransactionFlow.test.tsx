@@ -279,6 +279,31 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(result.current.currentCallIndex).toBe(0); // reset on completion
   });
 
+  it('hands the receipt to onReceipt right before onSuccess', () => {
+    const order: string[] = [];
+    const onReceipt = vi.fn(() => order.push('receipt'));
+    const onSuccess = vi.fn(() => order.push('success'));
+    const receipt = { blockNumber: 42n, logs: [] };
+
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [SUPPLY], onReceipt, onSuccess })
+    );
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null, data: receipt };
+    });
+    rerender();
+
+    expect(onReceipt).toHaveBeenCalledWith(receipt);
+    expect(order).toEqual(['receipt', 'success']);
+  });
+
   // APP-417. `useSimulateContract` hands back a NEW object whenever it refetches —
   // on window focus as the user returns from the wallet, or (on a repeat flow) as a
   // cache hit is followed by a background refetch. The supply's own hash is not

@@ -8,7 +8,8 @@ import {
   isSameSafe,
   isValidRecipient,
   recipientProblem,
-  recipientRequirement
+  recipientRequirement,
+  toAddress
 } from './recipient';
 
 describe('isValidRecipient', () => {
@@ -233,5 +234,37 @@ describe('recipientProblem', () => {
   it('passes an EOA or a contract on both networks', () => {
     expect(recipientProblem(B, eoaCode)).toBeUndefined();
     expect(recipientProblem(B, deployedCode)).toBeUndefined();
+  });
+});
+
+// Read on chain: each L1 bridge's escrow() and messenger(), and the Arbitrum Bridge's allowedOutboxList.
+const WITHDRAWAL_RECIPIENTS: [string, string][] = [
+  ['Base L1 escrow', '0x7F311a4D48377030bD810395f4CCfC03bdbe9Ef3'],
+  ['OP L1 escrow', '0x467194771dAe2967Aef3ECbEDD3Bf9a310C76C65'],
+  ['Unichain L1 escrow', '0x1196F688C585D3E5C895Ef8954FFB0dCDAfc566A'],
+  ['Arbitrum L1 escrow', '0xA10c7CE4b876998858b1a9E12b10092229539400'],
+  ['Base L1 messenger', '0x866E82a600A1414e583f7F13623F1aC5d58b0Afa'],
+  ['OP L1 messenger', '0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1'],
+  ['Unichain L1 messenger', '0x9A3D64E386C18Cb1d6d5179a9596A4B5736e98A6'],
+  ['Arbitrum outbox', '0x0B9857ae2D4A3DBe74ffE1d7DF045bb7F96E4840'],
+  ['Arbitrum legacy outbox', '0x667e23ABd27E623c11d4CC00ca3EC4d0bD63337a'],
+  ['Arbitrum classic outbox', '0x760723CD2e632826c38Fef8CD438A4CC7E7E1A40'],
+  ['Arbitrum rollup', '0x4DCeB440657f21083db8aDd07665f8ddBe1DCfc0']
+];
+
+describe('isBlockedRecipient for withdrawals', () => {
+  it.each(WITHDRAWAL_RECIPIENTS)('blocks the %s, which would trap or expose a withdrawal', (_, address) => {
+    expect(isBlockedRecipient(address)).toBe(true);
+    expect(recipientProblem(address, { source: 'none', destination: 'contract' })).toBe('system-contract');
+  });
+});
+
+describe('toAddress', () => {
+  it('checksums an EVM address and reads anything else as none', () => {
+    expect(toAddress('0x71c7656ec7ab88b098defb751b7401b5f6d8976f')).toBe(
+      '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
+    );
+    expect(toAddress('not an address')).toBeUndefined();
+    expect(toAddress(undefined)).toBeUndefined();
   });
 });

@@ -7,7 +7,7 @@ export type BridgeStepAction = 'approve' | 'send' | 'claim' | 'prove' | 'finaliz
 export type BridgeStep = { network: BridgeNetworkId; action: BridgeStepAction };
 
 /** Why the resolver moved off the preferred route for a pair. */
-export type BridgeFallbackReason = 'closed' | 'over-limit' | 'no-liquidity';
+export type BridgeFallbackReason = 'closed' | 'over-limit' | 'no-liquidity' | 'facts-error';
 
 /** What the UI needs to show and launch a bridge; produced by the route resolver. */
 export type BridgeRoute = {
@@ -92,6 +92,8 @@ export type PendingBridge = {
   actions: PendingBridgeAction[];
   /** Route-specific tracking ids (CCTP message hash, withdrawal hash, LayerZero guid). */
   routeData?: Record<string, string>;
+  /** When a tracker first read the source transaction mined. */
+  sourceMinedAt?: number;
   /** When the bridge last became ready for its next action. */
   readyAt?: number;
   /** When the bridge reached arrived, claimed or failed. */

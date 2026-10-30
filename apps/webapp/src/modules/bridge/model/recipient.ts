@@ -1,7 +1,8 @@
-import { isAddress, zeroAddress } from 'viem';
+import { getAddress, isAddress, zeroAddress, type Address } from 'viem';
 import type { SafeConfig } from '@/hooks/wallet/safeAccount';
 import { CCTP_CONTRACTS } from '../adapters/cctp/contracts';
 import { NATIVE_DEPOSIT_CONTRACTS } from '../adapters/nativeDeposit/contracts';
+import { NATIVE_WITHDRAWAL_CONTRACTS } from '../adapters/nativeWithdrawal/contracts';
 import type { BridgeNetwork } from './networks';
 import type { PendingBridge } from './types';
 import { isSystemAddress } from './systemAddresses';
@@ -12,7 +13,11 @@ const SOLANA_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 export const isValidRecipient = (value: string, family: BridgeNetwork['family']): boolean =>
   family === 'solana' ? SOLANA_ADDRESS.test(value) : isAddress(value) && value.toLowerCase() !== zeroAddress;
 
-const BRIDGE_CONTRACTS = [...NATIVE_DEPOSIT_CONTRACTS, ...CCTP_CONTRACTS];
+/** The checksummed EVM address, or undefined when `value` isn't one. */
+export const toAddress = (value: string | undefined): Address | undefined =>
+  value && isAddress(value) ? getAddress(value) : undefined;
+
+const BRIDGE_CONTRACTS = [...NATIVE_DEPOSIT_CONTRACTS, ...NATIVE_WITHDRAWAL_CONTRACTS, ...CCTP_CONTRACTS];
 
 /** A system address or a contract the bridges use, which can't hold what it's sent. */
 export const isBlockedRecipient = (address: string): boolean => isSystemAddress(address, BRIDGE_CONTRACTS);

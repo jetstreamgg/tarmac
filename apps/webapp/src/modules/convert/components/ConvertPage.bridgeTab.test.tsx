@@ -75,9 +75,9 @@ vi.mock('@/modules/bridge/hooks/useCctpSwapConvertLaunch', () => ({
   useCctpSwapConvertLaunch: () => ({ launch: vi.fn() })
 }));
 vi.mock('@/modules/bridge/components/PendingBridges', () => ({ PendingBridges: () => null }));
-vi.mock('@/modules/bridge/components/CctpClaimLookup', () => ({
-  CctpClaimLookup: () => null,
-  hasCctpClaimLookup: () => false
+vi.mock('@/modules/bridge/components/BridgeClaimLookup', () => ({
+  BridgeClaimLookup: () => null,
+  hasBridgeClaimLookup: () => false
 }));
 // The card's network pickers need the whole wallet stack; the form's own fields stand in for them.
 vi.mock('@/modules/bridge/components/BridgeCard', () => ({

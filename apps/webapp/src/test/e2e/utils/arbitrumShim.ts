@@ -6,7 +6,6 @@ import {
   encodeEventTopics,
   encodeFunctionResult,
   keccak256,
-  multicall3Abi,
   parseAbi,
   toFunctionSelector,
   toHex,
@@ -25,6 +24,7 @@ import {
   nodeInterfaceAbi
 } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
+import { aggregate3Answer, rpcAt, same } from './rpcShim';
 import { NetworkName } from './constants';
 
 type RpcRequest = { id: number; method: string; params?: unknown[] };
@@ -47,30 +47,8 @@ export type ArbitrumShimLog = {
 const LIFETIME_S = 7n * 86_400n;
 const KEEPALIVE_GAS = 100_000n;
 const ALIASED_GATEWAY = l1ToL2Alias(ARBITRUM_DEPOSIT.l1Gateway);
-const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11';
 const NO_CODE = '0x000000000000000000000000000000000000dEaD';
-const same = (a: unknown, b: string) => typeof a === 'string' && a.toLowerCase() === b.toLowerCase();
 const nowS = () => BigInt(Math.floor(Date.now() / 1000));
-
-const rpcAt = (url: string) => async (method: string, params: unknown[]) => {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
-  });
-  const body = await response.json();
-  if (body.error) throw new RpcError(`${method}: ${body.error.message}`, body.error.data);
-  return body.result;
-};
-
-class RpcError extends Error {
-  constructor(
-    message: string,
-    readonly data: Hex = '0x'
-  ) {
-    super(message);
-  }
-}
 
 const log = (receipt: RpcReceipt, index: number, topics: Hex[], data: Hex): RpcLog => ({
   address: ARB_RETRYABLE_TX,
@@ -207,35 +185,6 @@ export async function installArbitrumShim(page: Page) {
     return undefined;
   };
 
-  /** The page batches its reads through Multicall3: answers the ticket calls, the fork the rest. */
-  const aggregate3 = async (to: unknown, data: Hex, block: unknown): Promise<Hex | undefined> => {
-    if (!same(to, MULTICALL3)) return undefined;
-    let calls: readonly { target: Address; callData: Hex }[];
-    try {
-      const call = decodeFunctionData({ abi: multicall3Abi, data });
-      if (call.functionName !== 'aggregate3') return undefined;
-      calls = call.args[0];
-    } catch {
-      return undefined;
-    }
-    if (!calls.some(({ target, callData }) => ticketCallResult(target, callData))) return undefined;
-    const results = await Promise.all(
-      calls.map(async ({ target, callData }) => {
-        const answered = ticketCallResult(target, callData);
-        if (answered) return { success: true, returnData: answered };
-        try {
-          return {
-            success: true,
-            returnData: (await l2Rpc('eth_call', [{ to: target, data: callData }, block])) as Hex
-          };
-        } catch (error) {
-          return { success: false, returnData: error instanceof RpcError ? error.data : '0x' };
-        }
-      })
-    );
-    return encodeFunctionResult({ abi: multicall3Abi, functionName: 'aggregate3', result: results });
-  };
-
   async function answer({ method, params = [] }: RpcRequest): Promise<RpcAnswer | undefined> {
     const tx = params[0] as { from?: Address; to?: string; data?: Hex; input?: Hex; gas?: Hex } | undefined;
     const data = tx?.data ?? tx?.input;
@@ -262,7 +211,9 @@ export async function installArbitrumShim(page: Page) {
       }
       case 'eth_call': {
         if (!data) return undefined;
-        const result = ticketCallResult(tx?.to, data) ?? (await aggregate3(tx?.to, data, params[1]));
+        const result =
+          ticketCallResult(tx?.to, data) ??
+          (await aggregate3Answer(l2Rpc, { to: tx?.to, data, block: params[1] }, ticketCallResult));
         return result && { result };
       }
       case 'eth_getTransactionReceipt': {

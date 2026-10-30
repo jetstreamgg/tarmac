@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { formatUnits, parseUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
 import { TOKENS, useAppChainId, useSafeWalletStatus, useTokenBalance } from '@/hooks';
@@ -24,11 +24,13 @@ import {
   type BridgePair
 } from '../model/pairs';
 import { isValidRecipient, recipientProblem, recipientRequirement, sendsToOther } from '../model/recipient';
-import { resolveBridgeRoute, type ResolvedBridgeRoute } from '../model/resolveRoute';
+import type { BridgeRouteKind } from '../model/types';
+import { bridgeRouteOptions, resolveBridgeRoute, type ResolvedBridgeRoute } from '../model/resolveRoute';
 import { USDS_DECIMALS } from '../model/usds';
 import { useAddressCode } from './useAddressCode';
 import { useBridgeDraft, type BridgeDraft } from './useBridgeDraft';
 import { useCctpGate } from './useCctpGate';
+import { useNativeWithdrawalGate } from './useNativeWithdrawalGate';
 import { useNativeDepositGate } from './useNativeDepositGate';
 import { useSafeConfig } from './useSafeConfig';
 
@@ -170,25 +172,39 @@ export function useBridgeForm(draft?: BridgeDraft) {
   );
 
   const amount = useMemo(() => parseAmountOrZero(value), [value]);
-  const nativeGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
+  const depositGate = useNativeDepositGate({ from, to, chainId: sourceChainId });
+  const withdrawalGate = useNativeWithdrawalGate({ from, to, chainId: sourceChainId });
+  // At most one of them reads a gate: deposits leave Ethereum, withdrawals reach it.
+  const nativeGate = depositGate ?? withdrawalGate;
   const cctpGate = useCctpGate({
     from,
     to,
     sourceChainId,
     ethereumChainId: bridgeChainId('ethereum', familyChainId)
   });
-  // The other route facts (LayerZero, withdrawals) come from their tickets, through toRouteFact.
+  // The route the user picked, for the pair it was picked on.
+  const [picked, setPicked] = useState<{
+    from: BridgeNetworkId;
+    to: BridgeNetworkId;
+    kind: BridgeRouteKind;
+  }>();
+  const preferred = picked?.from === from && picked.to === to ? picked.kind : undefined;
+  const pickRoute = useCallback((kind: BridgeRouteKind) => setPicked({ from, to, kind }), [from, to]);
+  const forgetRoute = useCallback(() => setPicked(undefined), []);
+  // With no gate the resolver reads CCTP as open.
+  const gated = isLivePair({ from, to }) && (from === 'ethereum' || cctpGate !== undefined);
+  // The LayerZero route facts come from its ticket, through toRouteFact.
   const resolved = useMemo((): ResolvedBridgeRoute => {
-    if (!isLivePair({ from, to })) return { status: 'blocked', reason: 'pair-not-allowed' };
-    // With no gate the resolver reads CCTP as open.
-    if (from !== 'ethereum' && cctpGate === undefined)
-      return { status: 'blocked', reason: 'pair-not-allowed' };
-    const result = resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate, cctp: cctpGate } });
-    // The native withdrawal has no real calls yet (APP-617), so an L2 bridges by CCTP only.
-    if (result.status === 'ok' && from !== 'ethereum' && result.route.kind !== 'cctp')
-      return { status: 'blocked', reason: result.route.fallbackReason ?? 'closed' };
-    return result;
-  }, [from, to, amount, nativeGate, cctpGate]);
+    if (!gated) return { status: 'blocked', reason: 'pair-not-allowed' };
+    return resolveBridgeRoute({ from, to, amount, facts: { native: nativeGate, cctp: cctpGate }, preferred });
+  }, [gated, from, to, amount, nativeGate, cctpGate, preferred]);
+  const routeOptions = useMemo(
+    () =>
+      gated
+        ? bridgeRouteOptions({ from, to, amount, facts: { native: nativeGate, cctp: cctpGate } })
+        : undefined,
+    [gated, from, to, amount, nativeGate, cctpGate]
+  );
   const route = resolved.status === 'ok' ? resolved.route : undefined;
   const isZero = amount === 0n;
   const insufficient = isConnected && sourceBalance !== undefined && amount > sourceBalance;
@@ -238,6 +254,8 @@ export function useBridgeForm(draft?: BridgeDraft) {
     value,
     amount,
     route,
+    /** The routes the user can pick between, each with why it can't be used now; undefined with one route. */
+    routeOptions,
     /** Why no route can take this bridge right now. */
     blockedReason: resolved.status === 'blocked' ? resolved.reason : undefined,
     recipient,
@@ -282,9 +300,18 @@ export function useBridgeForm(draft?: BridgeDraft) {
     onInput,
     setPercent,
     setRecipient,
+    /** The route the user picked for this pair, if any. */
+    pickedRoute: preferred,
+    /** Picks the pair's route; an unavailable pick leaves the default. */
+    pickRoute,
+    /** Back to the default route; each Review opens on it. */
+    forgetRoute,
     /** Rereads both balances, after a send moved the source funds. */
     refetchBalances,
-    reset: () => setValue('')
+    reset: () => {
+      setValue('');
+      forgetRoute();
+    }
   };
 }
 

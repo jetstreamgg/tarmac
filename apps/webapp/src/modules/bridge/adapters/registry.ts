@@ -6,18 +6,25 @@ import { forkIrisBaseUrl, irisAttestationReader } from './cctp/iris';
 import { arbitrumDepositProgress } from './nativeDeposit/arbitrumProgress';
 import { isNativeDepositNetwork, isOpStackNetwork } from './nativeDeposit/contracts';
 import { opStackDepositProgress } from './nativeDeposit/opStackProgress';
+import { arbitrumWithdrawalProgress } from './nativeWithdrawal/arbitrumProgress';
+import { opStackWithdrawalProgress } from './nativeWithdrawal/opStackProgress';
 import { mockAdapter } from './mockAdapter';
 import type { BridgeAdapter } from './types';
 
-// Native deposits from Ethereum are real: they wait for their readers, as the mock's timed "arrived" would be false.
+// Native deposits and withdrawals are real: they wait for their readers, as the mock's timed "arrived" would be false.
+// An entry stored for any other pair is not a bridge the app sent, so it never moves.
 const nativeAdapter: BridgeAdapter = {
-  checkProgress: (bridge, now, context) => {
-    const { to } = bridge;
-    if (bridge.from !== 'ethereum' || !isNativeDepositNetwork(to))
-      return mockAdapter.checkProgress(bridge, now, context);
-    return isOpStackNetwork(to)
-      ? opStackDepositProgress({ ...bridge, to }, context, now)
-      : arbitrumDepositProgress(bridge, context, now);
+  checkProgress: async (bridge, now, context) => {
+    const { from, to } = bridge;
+    if (from === 'ethereum' && isNativeDepositNetwork(to))
+      return isOpStackNetwork(to)
+        ? opStackDepositProgress({ ...bridge, to }, context, now)
+        : arbitrumDepositProgress(bridge, context, now);
+    if (to === 'ethereum' && isNativeDepositNetwork(from))
+      return isOpStackNetwork(from)
+        ? opStackWithdrawalProgress({ ...bridge, from }, context, now)
+        : arbitrumWithdrawalProgress({ ...bridge, from }, context, now);
+    return null;
   }
 };
 

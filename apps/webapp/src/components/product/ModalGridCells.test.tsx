@@ -106,6 +106,12 @@ describe('CellValue', () => {
     expect(screen.getByText('CCTP')).toBeTruthy();
   });
 
+  it("draws SkyLink's logo before a native route's value", () => {
+    render(<CellValue cell={{ kind: 'single', label: 'Bridge type', value: 'SkyLink', logo: 'skylink' }} />);
+    expect(screen.getByTestId('cell-logo-skylink')).toBeTruthy();
+    expect(screen.getByText('SkyLink')).toBeTruthy();
+  });
+
   it('shows a value without digits as plain text', () => {
     render(<CellValue cell={{ kind: 'single', label: 'Network', value: 'Ethereum' }} />);
     // The odometer waits, empty, so a figure that replaces the text rolls in.

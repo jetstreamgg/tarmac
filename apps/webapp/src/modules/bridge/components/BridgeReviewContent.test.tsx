@@ -1,12 +1,14 @@
 /**
  * @vitest-environment happy-dom
  */
+import type { ReactNode } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveBridgeRoute } from '../model/resolveRoute';
+import { cctpWithdrawalRoute, nativeWithdrawalRoute, resolveBridgeRoute } from '../model/resolveRoute';
 import { BridgeReviewContent } from './BridgeReviewContent';
+import { buildRouteOptionCard } from './bridgeRouteOptions';
 
 // Token icons read the wallet's chain; the notes don't need them.
 vi.mock('@/modules/ui/hooks/useChainImage', () => ({ useChainImage: () => undefined }));
@@ -14,6 +16,24 @@ vi.mock('@/modules/ui/hooks/useChainImage', () => ({ useChainImage: () => undefi
 vi.mock('@/modules/ui/components/TokenIcon', () => ({
   TokenIcon: ({ token }: { token: { symbol: string } }) => <span>{token.symbol}</span>
 }));
+
+// Render motion elements synchronously so the picker swap is deterministic.
+vi.mock('motion/react', async io => {
+  const actual = await io<typeof import('motion/react')>();
+  const React = await import('react');
+  const MOTION_PROPS = new Set(['initial', 'animate', 'exit', 'transition', 'variants', 'layout']);
+  const strip = (props: Record<string, unknown>) =>
+    Object.fromEntries(Object.entries(props).filter(([key]) => !MOTION_PROPS.has(key)));
+  const tag =
+    (element: string) =>
+    ({ children, ...rest }: { children?: ReactNode } & Record<string, unknown>) =>
+      React.createElement(element, strip(rest), children);
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: { children: ReactNode }) => children,
+    motion: new Proxy({}, { get: (_t, element) => tag(element as string) })
+  };
+});
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -137,5 +157,162 @@ describe('BridgeReviewContent sender and recipient', () => {
     review({ addresses: { from: SENDER, to: RECIPIENT } });
     expect(screen.getByText('0xA3F...d2a')).toBeTruthy();
     expect(screen.getByText('0x71C...8b5')).toBeTruthy();
+  });
+});
+
+describe('BridgeReviewContent route picker', () => {
+  afterEach(cleanup);
+
+  const cctp = buildRouteOptionCard({
+    option: { route: cctpWithdrawalRoute('base') },
+    networkFee: '$0.02',
+    approvals: 4
+  });
+  const native = buildRouteOptionCard({
+    option: { route: nativeWithdrawalRoute('base') },
+    networkFee: '~$3.10',
+    approvals: 4
+  });
+  const greyedCctp = buildRouteOptionCard({
+    option: { route: cctpWithdrawalRoute('base'), unavailable: 'no-liquidity' },
+    networkFee: '-',
+    approvals: undefined
+  });
+
+  it('offers no picker on a pair with a single route', () => {
+    review();
+    expect(screen.queryByTestId('bridge-modal-route-toggle')).toBeNull();
+  });
+
+  it("opens the options from the whole Bridge type value, the route's logo and name included", () => {
+    review({ routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    const toggle = screen.getByTestId('bridge-modal-route-toggle');
+    expect(toggle.textContent).toBe('CCTP');
+    expect(toggle.querySelector('[data-testid="cell-logo-cctp"]')).toBeTruthy();
+    fireEvent.click(screen.getByText('CCTP'));
+    expect(screen.getByText('Select bridge type')).toBeTruthy();
+  });
+
+  it('opens the options from the Bridge type row and closes them on back, keeping the route', () => {
+    const onPick = vi.fn();
+    review({ routePicker: { cards: [cctp, native], onPick } });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    expect(screen.getByText('Select bridge type')).toBeTruthy();
+    expect(screen.queryByTestId('bridge-modal-footnote')).toBeNull();
+    const selected = screen.getByTestId('bridge-route-option-cctp');
+    expect(selected.getAttribute('aria-pressed')).toBe('true');
+    expect(selected.textContent).toContain('Fastest');
+    expect(screen.getByTestId('bridge-route-option-native').textContent).toContain('~$3.10');
+    fireEvent.click(screen.getByTestId('bridge-route-picker-back'));
+    expect(screen.getByTestId('bridge-modal-footnote')).toBeTruthy();
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it('picks another route and goes back to the review', () => {
+    const onPick = vi.fn();
+    review({ routePicker: { cards: [cctp, native], onPick } });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    fireEvent.click(screen.getByTestId('bridge-route-option-native'));
+    expect(onPick).toHaveBeenCalledWith('native');
+    expect(screen.getByTestId('bridge-modal-footnote')).toBeTruthy();
+  });
+
+  it("can't pick an unavailable route, and says why", () => {
+    const onPick = vi.fn();
+    review({
+      route: nativeWithdrawalRoute('base', 'no-liquidity'),
+      routePicker: { cards: [greyedCctp, native], onPick }
+    });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    const option = screen.getByTestId('bridge-route-option-cctp') as HTMLButtonElement;
+    expect(option.disabled).toBe(true);
+    expect(option.textContent).toContain('Insufficient liquidity');
+    expect(screen.getByTestId('bridge-route-option-native').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(option);
+    expect(onPick).not.toHaveBeenCalled();
+  });
+});
+
+describe('BridgeReviewContent route picker beside the review (Figma 3964:74437)', () => {
+  afterEach(cleanup);
+
+  const cctp = buildRouteOptionCard({
+    option: { route: cctpWithdrawalRoute('base') },
+    networkFee: '$0.02',
+    approvals: 2
+  });
+  const native = buildRouteOptionCard({
+    option: { route: nativeWithdrawalRoute('base') },
+    networkFee: '~$3.10',
+    approvals: 3
+  });
+  const greyedNative = buildRouteOptionCard({
+    option: { route: nativeWithdrawalRoute('base'), unavailable: 'no-liquidity' },
+    networkFee: '-',
+    approvals: undefined
+  });
+  const eta = () => screen.getByTestId('bridge-modal-eta');
+
+  it('strikes the slower route out of the arrival and badges the faster one', () => {
+    review({ route: cctpWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    const struck = eta().querySelector('s');
+    expect(struck?.textContent).toBe('~5 days');
+    expect(screen.getByTestId('bridge-modal-eta-fast').textContent).toBe('~20 min');
+    expect(screen.getByTestId('bridge-modal-eta-fast').querySelector('svg')).not.toBeNull();
+  });
+
+  it('shows the arrival alone when the picked route is the slower one', () => {
+    review({ route: nativeWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    expect(screen.queryByTestId('bridge-modal-eta')).toBeNull();
+    expect(screen.getByTestId('bridge-modal-footnote').closest('div')?.textContent).toContain('~5 days');
+  });
+
+  it("keeps room for the other route's footnote, hidden, so switching routes keeps the Review's height", () => {
+    review({ route: cctpWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    const footnote = screen.getByTestId('bridge-modal-footnote');
+    expect(footnote.textContent).toMatch(/20 minutes/);
+    const reserved = footnote.parentElement!.querySelector('[aria-hidden]');
+    expect(reserved?.textContent).toBe(native.footnote);
+    expect(reserved?.className).toContain('invisible');
+  });
+
+  it("doesn't compare against a route that can't be picked", () => {
+    review({
+      route: cctpWithdrawalRoute('base'),
+      routePicker: { cards: [cctp, greyedNative], onPick: vi.fn() }
+    });
+    expect(screen.queryByTestId('bridge-modal-eta')).toBeNull();
+  });
+
+  it('opens the options beside the review, which stays, when the caller draws them', () => {
+    const onOpenChange = vi.fn();
+    review({
+      route: cctpWithdrawalRoute('base'),
+      routePicker: { cards: [cctp, native], onPick: vi.fn(), beside: { open: false, onOpenChange } }
+    });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+    expect(screen.queryByTestId('bridge-route-picker')).toBeNull();
+    expect(screen.getByTestId('bridge-modal-footnote')).toBeTruthy();
+  });
+
+  it('closes the options beside from the same toggle', () => {
+    const onOpenChange = vi.fn();
+    review({
+      route: cctpWithdrawalRoute('base'),
+      routePicker: { cards: [cctp, native], onPick: vi.fn(), beside: { open: true, onOpenChange } }
+    });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('dresses only the Fastest badge in the brand tint with a bolt', () => {
+    review({ route: cctpWithdrawalRoute('base'), routePicker: { cards: [cctp, native], onPick: vi.fn() } });
+    fireEvent.click(screen.getByTestId('bridge-modal-route-toggle'));
+    const fastest = screen.getByText('Fastest').closest('[data-testid="bridge-route-badge"]')!;
+    expect(fastest.className).toContain('bg-statusBrandBg');
+    expect(fastest.querySelector('svg')).not.toBeNull();
+    const nativeBadge = screen.getByText('Native').closest('[data-testid="bridge-route-badge"]')!;
+    expect(nativeBadge.querySelector('svg')).toBeNull();
   });
 });

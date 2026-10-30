@@ -21,7 +21,8 @@ import { DAY_MINUTES } from '../model/resolveRoute';
 import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
 import { sendsToOther } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
-import { bridgeTypeLabel } from './bridgeModalRows';
+import { bridgeTypeLabel, bridgeTypeLogo } from './bridgeModalRows';
+import type { BridgeTypeLogoKind } from '@/components/product/BridgeTypeLogo';
 
 // The store keeps accounts lowercased; the Safe app expects a checksummed address.
 const checksummed = (account: string) => (isAddress(account) ? getAddress(account) : account);
@@ -30,7 +31,7 @@ export type PendingBridgeCell =
   | { kind: 'network'; label: string; network: BridgeNetworkId }
   | { kind: 'status'; label: string; status: PendingBridgeStatus; value: string; tone?: 'info' }
   /** `logo`: the protocol's logo drawn before the value (CCTP's Circle logo, Figma 3830:67688). */
-  | { kind: 'text'; label: string; value: string; logo?: 'cctp' }
+  | { kind: 'text'; label: string; value: string; logo?: BridgeTypeLogoKind }
   | { kind: 'link'; label: string; value: string; href?: string }
   | { kind: 'wallet'; label: string; address: string; href?: string };
 
@@ -180,11 +181,12 @@ export function buildPendingBridgeRows(
     label: t`Estimated arrival`,
     value: arrivalText(bridge, now)
   };
+  const logo = bridgeTypeLogo(bridge.routeKind);
   const bridgeType: PendingBridgeCell = {
     kind: 'text',
     label: t`Bridge type`,
     value: bridgeTypeLabel(bridge.routeKind),
-    ...(bridge.routeKind === 'cctp' && { logo: 'cctp' as const })
+    ...(logo && { logo })
   };
   const transaction: PendingBridgeCell = bridge.txHash
     ? {
@@ -247,14 +249,38 @@ export type PendingBridgeNote =
       retryablesHref?: string;
     }
   | { kind: 'expired'; retryablesHref?: string; supportHref: string }
-  | { kind: 'replay'; network: OpStackNetworkId };
+  | { kind: 'replay'; network: OpStackNetworkId }
+  /** A native withdrawal to Ethereum: what it waits for, or the step it needs; minutes until it is ready. */
+  | { kind: 'withdrawal'; phase: WithdrawalNotePhase; minutesLeft?: number };
+
+export type WithdrawalNotePhase =
+  'waiting-prove' | 'waiting-finalize' | 'prove' | 'reprove' | 'finalize' | 'replay';
+
+const withdrawalNote = (bridge: PendingBridge, now: number): PendingBridgeNote | undefined => {
+  const { status, nextAction } = bridge;
+  // etaAt is the whole trip's, so only the finalize wait gets a time.
+  if (status === 'pending' && nextAction === 'prove') return { kind: 'withdrawal', phase: 'waiting-prove' };
+  if (status === 'pending' && nextAction === 'finalize') {
+    const minutesLeft = Math.ceil((bridge.etaAt - now) / 60_000);
+    return { kind: 'withdrawal', phase: 'waiting-finalize', ...(minutesLeft > 0 && { minutesLeft }) };
+  }
+  if (status !== 'ready') return undefined;
+  if (nextAction === 'prove') {
+    const lastProve = bridge.actions.filter(action => action.action === 'prove').at(-1);
+    return { kind: 'withdrawal', phase: lastProve?.status === 'invalidated' ? 'reprove' : 'prove' };
+  }
+  if (nextAction === 'finalize' || nextAction === 'replay') return { kind: 'withdrawal', phase: nextAction };
+  return undefined;
+};
 
 // The tool looks the ticket up by the Ethereum tx that created it.
 const retryablesHref = (txHash: string | undefined) =>
   txHash && `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(arbitrum.id), tx: txHash })}`;
 
 export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
-  if (bridge.routeKind !== 'native' || bridge.from !== 'ethereum') return undefined;
+  if (bridge.routeKind !== 'native') return undefined;
+  if (bridge.to === 'ethereum') return withdrawalNote(bridge, now);
+  if (bridge.from !== 'ethereum') return undefined;
   if (isOpStackNetwork(bridge.to))
     return bridge.status === 'ready' && bridge.nextAction === 'replay'
       ? { kind: 'replay', network: bridge.to }

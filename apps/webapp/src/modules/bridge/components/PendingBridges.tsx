@@ -7,7 +7,8 @@ import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowTopRight, CircleLogo, LinkExternal } from '@/modules/icons';
+import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
+import { ArrowTopRight, LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -20,6 +21,7 @@ import { useIncomingCctpBridges } from '../hooks/useIncomingCctpBridges';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
 import { useUnfinishedCctpSwaps } from '../hooks/useUnfinishedCctpSwaps';
+import { useWithdrawalEthShortfall } from '../hooks/useWithdrawalEthShortfall';
 import { getBridgeNetwork } from '../model/networks';
 import { canDismiss, isPendingBridgeVisible, showsActionButton } from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
@@ -29,6 +31,7 @@ import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { isStorageWritable } from '../store/storageWritable';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
+import { formatEthCeil } from './bridgeModalRows';
 import { buildContinueBridgeRows } from './continueBridgeRows';
 import {
   bridgeCounterparty,
@@ -162,7 +165,7 @@ function CellValue({ cell }: CellValueProps) {
     default:
       return cell.logo ? (
         <span className="flex items-center gap-1">
-          <CircleLogo boxSize={12} className="shrink-0" />
+          <BridgeTypeLogo logo={cell.logo} />
           <span className={valueClassName}>{cell.value}</span>
         </span>
       ) : (
@@ -219,6 +222,50 @@ function RedeemNoteText({ note }: RedeemNoteTextProps) {
   );
 }
 
+type EthShortfallTextProps = { wei: bigint };
+
+function EthShortfallText({ wei }: EthShortfallTextProps) {
+  const eth = formatEthCeil(wei);
+  return <Trans>You need about {eth} ETH on Ethereum to pay for this step.</Trans>;
+}
+
+type WithdrawalNoteTextProps = { note: Extract<PendingBridgeNote, { kind: 'withdrawal' }> };
+
+function WithdrawalNoteText({ note }: WithdrawalNoteTextProps) {
+  const timeLeft = note.minutesLeft === undefined ? undefined : formatTimeLeft(note.minutesLeft);
+  switch (note.phase) {
+    case 'waiting-prove':
+      return <Trans>The withdrawal is on its way. It&apos;ll be ready to prove on Ethereum soon.</Trans>;
+    case 'waiting-finalize':
+      return timeLeft ? (
+        <Trans>It&apos;ll be ready to finalize on Ethereum in about {timeLeft}.</Trans>
+      ) : (
+        <Trans>It&apos;ll be ready to finalize on Ethereum soon.</Trans>
+      );
+    case 'prove':
+      return (
+        <Trans>
+          Prove the withdrawal on Ethereum to start its waiting period. Then come back to finalize it.
+        </Trans>
+      );
+    case 'reprove':
+      return (
+        <Trans>
+          The dispute game behind the last proof was invalidated, so that proof no longer counts. Prove the
+          withdrawal again to continue.
+        </Trans>
+      );
+    case 'finalize':
+      return <Trans>Finalize the withdrawal on Ethereum to receive your USDS.</Trans>;
+    case 'replay':
+      return (
+        <Trans>
+          The withdrawal was finalized but not delivered. Retry it on Ethereum to receive your USDS.
+        </Trans>
+      );
+  }
+}
+
 type BridgeNoteProps = {
   note: PendingBridgeNote;
   onExtend: () => void;
@@ -227,6 +274,12 @@ type BridgeNoteProps = {
 
 /** What a stuck deposit needs, and for Arbitrum how to finish it without this app. */
 function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
+  if (note.kind === 'withdrawal')
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        <WithdrawalNoteText note={note} />
+      </Text>
+    );
   if (note.kind === 'replay') {
     const network = getBridgeNetwork(note.network).name;
     return (
@@ -423,6 +476,7 @@ function PendingBridgeCard({
       : (actionHint(bridge) ??
         (convertHint?.kind === 'switch-network' && convertAmount === undefined ? undefined : convertHint));
   const note = pendingBridgeNote(bridge, now);
+  const ethShortfall = useWithdrawalEthShortfall(bridge, account, familyChainId);
   const counterparty = bridgeCounterparty(bridge, account);
   // Figma 75: a wallet that neither sent nor receives it can only switch to the one that claims it.
   const thirdWallet = counterparty?.role === 'both';
@@ -432,6 +486,7 @@ function PendingBridgeCard({
   const sharesInNote = claimedElsewhere && !thirdWallet && bridge.status === 'pending';
   // Figma 73: once ready, the sender may switch to the destination wallet or share the link.
   const switchesWallet = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
+  const sentHint = !!hint && hint.kind !== 'switch-network';
   const { openConnectModal } = useConnectModal();
   return (
     <div className={cardClassName} data-testid="pending-bridge-card">
@@ -580,12 +635,18 @@ function PendingBridgeCard({
           <ActionHintText hint={hint} />
         </Text>
       )}
-      {note && (
+      {/* A step already sent says so in its hint; asking for it again would contradict it. */}
+      {note && !(note.kind === 'withdrawal' && sentHint) && (
         <BridgeNote
           note={note}
           onExtend={() => onAction(bridge, 'keepalive')}
           canExtend={!actionLocked && canAction(bridge, 'keepalive')}
         />
+      )}
+      {ethShortfall !== undefined && !sentHint && (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-eth-note">
+          <EthShortfallText wei={ethShortfall} />
+        </Text>
       )}
 
       <CardRows

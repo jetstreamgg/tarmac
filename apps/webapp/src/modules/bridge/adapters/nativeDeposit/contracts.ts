@@ -12,20 +12,22 @@ export function assertRecipient(address: Address) {
     throw new Error('A bridge deposit needs a recipient that can hold USDS');
 }
 
-/** The deposit, after an approve of exactly `amount` to `spender` when the allowance is short. */
+/** The deposit, after an approve of exactly `amount` of `token` (L1 USDS by default) to `spender` when the allowance is short. */
 export function withApprove({
   allowance,
   amount,
   spender,
-  deposit
+  deposit,
+  token = L1_USDS
 }: {
   allowance: bigint;
   amount: bigint;
   spender: Address;
   deposit: Call;
+  token?: Address;
 }): Call[] {
   if (allowance >= amount) return [deposit];
-  const approve = { to: L1_USDS, abi: erc20Abi, functionName: 'approve', args: [spender, amount] };
+  const approve = { to: token, abi: erc20Abi, functionName: 'approve', args: [spender, amount] };
   return [approve as unknown as Call, deposit];
 }
 

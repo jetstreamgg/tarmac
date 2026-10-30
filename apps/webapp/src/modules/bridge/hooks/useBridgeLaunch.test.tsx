@@ -12,6 +12,7 @@ import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeForm } from './useBridgeForm';
+import { cctpWithdrawalRoute, nativeWithdrawalRoute } from '../model/resolveRoute';
 import { useBridgeLaunch } from './useBridgeLaunch';
 
 const SENDER = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
@@ -23,6 +24,15 @@ type SafeReply = number | 'hang';
 
 const mocks = vi.hoisted(() => ({
   isConnected: true,
+  // The amount settles as typed unless a test waits for the real 500 ms settle.
+  realSettle: false,
+  // The width tier; 0 is a phone.
+  bpi: 0,
+  fallbackNotices: [] as unknown[],
+  routeCards: {
+    args: [] as { options: unknown; sources: Record<string, { calls: unknown[] }> }[],
+    cards: undefined as unknown
+  },
   // The CCTP gate an L2 source reads; undefined blocks it.
   cctp: undefined as unknown,
   balance: undefined as bigint | undefined,
@@ -31,6 +41,8 @@ const mocks = vi.hoisted(() => ({
   ethBalance: undefined as bigint | undefined,
   ethLoading: false,
   bridgeOpen: 1n,
+  // The L2 bridges' maxWithdraws.
+  maxWithdraws: 10n ** 30n,
   refetchAllowance: vi.fn(),
   safe: {} as Record<string, SafeReply>,
   isModalOpen: false,
@@ -54,6 +66,20 @@ const mocks = vi.hoisted(() => ({
       chainId: number | undefined;
       getCallbacks: () => TxCallbacks;
     }[]
+  },
+  withdrawal: {
+    ready: true,
+    needsApprove: true,
+    error: null as Error | null,
+    execute: vi.fn(),
+    args: [] as {
+      enabled: boolean;
+      from: string;
+      chainId: number | undefined;
+      recipient: string | undefined;
+      amount: bigint;
+      getCallbacks: () => TxCallbacks;
+    }[]
   }
 }));
 
@@ -67,12 +93,16 @@ vi.mock('wagmi', async io => ({
   useChainId: () => mocks.appChainId,
   useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id })),
   usePublicClient: () => undefined,
-  // The L1 bridges' isOpen.
-  useReadContract: () => ({ status: 'success', data: mocks.bridgeOpen })
+  // The bridges' isOpen, and the L2 bridges' maxWithdraws.
+  useReadContract: ({ functionName }: { functionName: string }) => ({
+    status: 'success',
+    data: functionName === 'maxWithdraws' ? mocks.maxWithdraws : mocks.bridgeOpen
+  })
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
   useAppChainId: () => mocks.appChainId,
+  useBreakpointIndex: () => ({ bpi: mocks.bpi }),
   useNetworkFee: (args: (typeof mocks.networkFee)[number]) => {
     mocks.networkFee.push(args);
     return { data: args.enabled ? { formatted: '$0.42' } : undefined };
@@ -133,6 +163,15 @@ vi.mock('./useCctpBurnLegs', () => {
   return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
 });
 vi.mock('./useCctpGate', () => ({ useCctpGate: () => mocks.cctp }));
+vi.mock('@/modules/ui/hooks/useSettledAmount', async io => {
+  const { useSettledAmount } = await io<typeof import('@/modules/ui/hooks/useSettledAmount')>();
+  return {
+    useSettledAmount: (amount: bigint, unit?: string | number) => {
+      const settled = useSettledAmount(amount, unit);
+      return mocks.realSettle ? settled : { debouncedAmount: amount, debouncePending: false };
+    }
+  };
+});
 // Every address is an EOA; the code check has its own tests in useBridgeForm.
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('./useNativeDepositLegs', () => ({
@@ -150,6 +189,36 @@ vi.mock('./useNativeDepositLegs', () => ({
       execute,
       isBatch: false,
       reset: vi.fn(),
+      refetchAllowance: mocks.refetchAllowance
+    };
+  }
+}));
+vi.mock('../components/RouteFallbackToast', () => ({
+  notifyRouteFallback: (notice: unknown) => mocks.fallbackNotices.push(notice)
+}));
+// The route picker's cards have their own suite; this one checks what the launch hands them.
+vi.mock('./useBridgeRouteCards', () => ({
+  useBridgeRouteCards: (args: (typeof mocks.routeCards.args)[number]) => {
+    mocks.routeCards.args.push(args);
+    return mocks.routeCards.cards;
+  }
+}));
+vi.mock('./useNativeWithdrawalLegs', () => ({
+  nativeWithdrawalFunction: (from: string) => (from === 'arbitrum' ? 'outboundTransfer' : 'bridgeERC20To'),
+  useNativeWithdrawalLegs: (args: (typeof mocks.withdrawal.args)[number]) => {
+    mocks.withdrawal.args.push(args);
+    const { ready, needsApprove, error, execute } = mocks.withdrawal;
+    return {
+      calls: [{ to: '0xwithdrawal' }],
+      ready,
+      needsApprove,
+      error,
+      execute,
+      isBatch: false,
+      busy: false,
+      legMined: false,
+      reset: vi.fn(),
+      stop: vi.fn(),
       refetchAllowance: mocks.refetchAllowance
     };
   }
@@ -193,6 +262,11 @@ function renderBridge() {
 const settle = async () => {
   for (let i = 0; i < 5; i++) await act(() => new Promise(resolve => setTimeout(resolve, 0)));
 };
+/** Lets a typed amount settle (500 ms), then the hooks catch up. */
+const settleTyping = async () => {
+  await act(() => new Promise(resolve => setTimeout(resolve, 550)));
+  await settle();
+};
 
 /** Types `amount`, opens Review and returns the modal's Confirm gate. */
 const SOLANA_RECIPIENT = 'So11111111111111111111111111111111111111112';
@@ -231,7 +305,10 @@ describe('useBridgeLaunch Confirm gate', () => {
       balance: 10n * ONE,
       balanceLoading: false,
       bridgeOpen: 1n,
+      maxWithdraws: 10n ** 30n,
       safe: {},
+      bpi: 0,
+      realSettle: false,
       isModalOpen: false,
       launched: [],
       updates: [],
@@ -249,6 +326,8 @@ describe('useBridgeLaunch Confirm gate', () => {
       args: []
     });
     mocks.deposit.execute.mockClear();
+    Object.assign(mocks.withdrawal, { ready: true, needsApprove: true, error: null, args: [] });
+    mocks.withdrawal.execute.mockClear();
     mocks.onError.mockClear();
     mocks.onSuccess.mockClear();
     mocks.refetchAllowance.mockClear();
@@ -257,6 +336,32 @@ describe('useBridgeLaunch Confirm gate', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     fetchMock.mockClear();
+  });
+
+  it('simulates only the amount typing settles on, not each keystroke', async () => {
+    mocks.realSettle = true;
+    const view = renderBridge();
+    for (const typed of ['0.1', '0.12', '0.123']) act(() => view.result.current.form.onInput(typed));
+    await settle();
+    const amounts = () => mocks.deposit.args.map(args => (args as { amount?: bigint }).amount);
+    expect(amounts()).not.toContain(ONE / 10n);
+    expect(amounts()).not.toContain((12n * ONE) / 100n);
+    await settleTyping();
+    expect(amounts().at(-1)).toBe((123n * ONE) / 1000n);
+  });
+
+  it('blocks Confirm, and sends nothing, while a changed amount is settling', async () => {
+    mocks.realSettle = true;
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    await settleTyping();
+    act(() => view.result.current.form.onInput('2'));
+    await settle();
+    act(() => view.result.current.launch());
+    expect(mocks.launched.at(-1)?.confirmDisabled).toBe(true);
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+    expect(runCount()).toBe(0);
+    expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it('allows an EOA with enough USDS', async () => {
@@ -478,6 +583,14 @@ describe('useBridgeLaunch Confirm gate', () => {
     it('can send again once the card settles', async () => {
       const { view, scope } = await sendWithUnknownOutcome();
       pendingBridgeStore.update(scope, '0xunknown', bridge => ({ ...bridge, status: 'failed' }));
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(runCount()).toBe(2);
+    });
+
+    it('can send again once its source mined, while a withdrawal card still waits for days', async () => {
+      const { view, scope } = await sendWithUnknownOutcome();
+      pendingBridgeStore.update(scope, '0xunknown', bridge => ({ ...bridge, sourceMinedAt: Date.now() }));
       act(() => view.result.current.launch());
       act(() => mocks.launched.at(-1)!.onConfirm!());
       expect(runCount()).toBe(2);
@@ -765,19 +878,422 @@ describe('useBridgeLaunch Confirm gate', () => {
     });
   });
 
-  it('withdrawals are not live yet and send nothing', async () => {
-    // A closed CCTP is the only way the resolver reaches the native withdrawal.
-    mocks.cctp = { isOpen: false };
-    const view = renderBridge();
-    act(() => view.result.current.form.onInput('1'));
-    await moveWallet(view, 8453);
-    expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum', route: undefined });
-    expect(view.result.current.form.reviewBlocked).toBe(true);
-    act(() => view.result.current.launch());
-    mocks.launched.at(-1)?.onConfirm?.();
-    expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
-    expect(mocks.deposit.execute).not.toHaveBeenCalled();
-    expect(mocks.legs).toHaveLength(0);
+  describe('the toast of a Review that falls back from CCTP', () => {
+    async function review(route: ReturnType<typeof nativeWithdrawalRoute>) {
+      mocks.appChainId = 8453;
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route,
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+    }
+
+    beforeEach(() => {
+      mocks.fallbackNotices.length = 0;
+    });
+
+    it('says CCTP is out and SkyLink was picked, once per Review', async () => {
+      await review(nativeWithdrawalRoute('base', 'no-liquidity'));
+      expect(mocks.fallbackNotices).toEqual([expect.objectContaining({ title: 'CCTP route unavailable' })]);
+    });
+
+    it('says nothing when CCTP could carry the bridge', async () => {
+      await review(nativeWithdrawalRoute('base'));
+      await review(cctpWithdrawalRoute('base'));
+      expect(mocks.fallbackNotices).toEqual([]);
+    });
+  });
+
+  describe('the route picker of a withdrawal with a choice', () => {
+    const CARDS = [{ kind: 'cctp' }, { kind: 'native' }];
+    async function reviewWithChoice({
+      route,
+      cctpUnavailable
+    }: {
+      route: ReturnType<typeof nativeWithdrawalRoute>;
+      cctpUnavailable?: 'no-liquidity';
+    }) {
+      mocks.appChainId = 8453;
+      const pickRoute = vi.fn();
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route,
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        routeOptions: [
+          { route: cctpWithdrawalRoute('base'), ...(cctpUnavailable && { unavailable: cctpUnavailable }) },
+          { route: nativeWithdrawalRoute('base') }
+        ],
+        pickRoute
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      return { pickRoute };
+    }
+    const launchedPicker = () =>
+      (mocks.launched.at(-1)?.transactionContent as { props: { routePicker?: unknown } }).props.routePicker;
+
+    beforeEach(() => {
+      mocks.routeCards.args.length = 0;
+      mocks.routeCards.cards = undefined;
+    });
+
+    it("hands the Review the cards and the form's pick", async () => {
+      mocks.routeCards.cards = CARDS;
+      const { pickRoute } = await reviewWithChoice({ route: nativeWithdrawalRoute('base') });
+      expect(launchedPicker()).toEqual({ cards: CARDS, onPick: pickRoute });
+      const view = mocks.routeCards.args.at(-1)!;
+      expect(view.options).toHaveLength(2);
+      // The selected native withdrawal's own calls price its card.
+      expect(view.sources.native.calls).toEqual([{ to: '0xwithdrawal' }]);
+    });
+
+    it('offers no picker without cards', async () => {
+      await reviewWithChoice({ route: nativeWithdrawalRoute('base') });
+      expect(launchedPicker()).toBeUndefined();
+    });
+
+    it('builds the native withdrawal while CCTP is selected, so its card has real figures', async () => {
+      await reviewWithChoice({ route: cctpWithdrawalRoute('base') });
+      // Read only: Confirm still runs CCTP's legs.
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from: 'base', chainId: 8453 });
+      expect(mocks.routeCards.args.at(-1)!.sources.native.calls).toEqual([{ to: '0xwithdrawal' }]);
+    });
+
+    it('builds the other route only while its Review is open, not while the amount is typed', async () => {
+      mocks.appChainId = 8453;
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: cctpWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        routeOptions: [{ route: cctpWithdrawalRoute('base') }, { route: nativeWithdrawalRoute('base') }],
+        pickRoute: vi.fn()
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: false });
+      expect(mocks.routeCards.args.at(-1)!.sources.native.calls).toEqual([]);
+
+      act(() => view.result.current.launch());
+      mocks.isModalOpen = true;
+      view.rerender();
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from: 'base' });
+
+      mocks.isModalOpen = false;
+      view.rerender();
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: false });
+    });
+
+    it("leaves an unavailable route's engine off and its card without calls", async () => {
+      await reviewWithChoice({
+        route: nativeWithdrawalRoute('base', 'no-liquidity'),
+        cctpUnavailable: 'no-liquidity'
+      });
+      expect(mocks.routeCards.args.at(-1)!.sources.cctp.calls).toEqual([]);
+    });
+  });
+
+  describe('the route pick of a withdrawal', () => {
+    it('is forgotten once the Review closes, so the next one opens on the default route', async () => {
+      mocks.isModalOpen = true;
+      mocks.appChainId = 8453;
+      const forgetRoute = vi.fn();
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: nativeWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        forgetRoute
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      await settle();
+      expect(forgetRoute).not.toHaveBeenCalled();
+      mocks.isModalOpen = false;
+      view.rerender();
+      await settle();
+      expect(forgetRoute).toHaveBeenCalledTimes(1);
+    });
+
+    // The route the Review opened on, and the one the form resolves at Confirm.
+    async function reviewThenResolve(
+      opened: ReturnType<typeof nativeWithdrawalRoute>,
+      atConfirm: ReturnType<typeof nativeWithdrawalRoute>,
+      picked?: 'cctp' | 'native'
+    ) {
+      mocks.appChainId = 8453;
+      const form = (route: typeof opened, pickedRoute?: typeof picked) => ({
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route,
+        pickedRoute,
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      });
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(props => useBridgeLaunch(props), { wrapper, initialProps: form(opened) });
+      await settle();
+      act(() => view.result.current.launch());
+      view.rerender(form(atConfirm, picked));
+      await settle();
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+    }
+
+    it('sends nothing when the route changed under the Review without a pick', async () => {
+      await reviewThenResolve(cctpWithdrawalRoute('base'), nativeWithdrawalRoute('base', 'facts-error'));
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+      expect(mocks.onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'The bridge type changed after Review. Close this and review it again.'
+        })
+      );
+    });
+
+    // The Review now shows the other route; a Retry here would send it unseen, so only a new Review can.
+    it('refuses for good, so Retry is not offered for a route the user never confirmed', async () => {
+      await reviewThenResolve(cctpWithdrawalRoute('base'), nativeWithdrawalRoute('base', 'facts-error'));
+      expect(mocks.onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'The bridge type changed after Review. Close this and review it again.',
+          final: true
+        })
+      );
+    });
+
+    it('sends the route the user picked in the Review', async () => {
+      await reviewThenResolve(cctpWithdrawalRoute('base'), nativeWithdrawalRoute('base'), 'native');
+      expect(mocks.withdrawal.execute).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('the route picker beside the review on desktop (Figma 3964:74437)', () => {
+    const CARDS = [{ kind: 'cctp' }, { kind: 'native' }];
+    async function reviewOn(bpi: number) {
+      mocks.bpi = bpi;
+      mocks.isModalOpen = true;
+      mocks.appChainId = 8453;
+      mocks.routeCards.cards = CARDS;
+      const pickRoute = vi.fn();
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: cctpWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false,
+        routeOptions: [{ route: cctpWithdrawalRoute('base') }, { route: nativeWithdrawalRoute('base') }],
+        pickRoute
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      await settle();
+      return { pickRoute };
+    }
+    type Picker = { beside?: { open: boolean; onOpenChange: (open: boolean) => void } };
+    const latest = <K extends keyof TransactionConfig>(key: K) =>
+      [mocks.launched.at(-1), ...mocks.updates].filter(c => c && key in c).at(-1)?.[key];
+    const picker = () =>
+      (latest('transactionContent') as { props: { routePicker?: Picker } }).props.routePicker;
+    const aside = () =>
+      latest('aside') as
+        | { props: { cards: unknown; selected: string; onPick: (kind: string) => void; onBack: () => void } }
+        | undefined;
+
+    it('opens the options beside the review and closes them once a route is picked', async () => {
+      const { pickRoute } = await reviewOn(3);
+      expect(aside()).toBeUndefined();
+      act(() => picker()!.beside!.onOpenChange(true));
+      expect(aside()?.props).toMatchObject({ cards: CARDS, selected: 'cctp' });
+      expect(picker()!.beside!.open).toBe(true);
+      act(() => aside()!.props.onPick('native'));
+      expect(pickRoute).toHaveBeenCalledWith('native');
+      expect(aside()).toBeUndefined();
+    });
+
+    it('closes them on back without picking', async () => {
+      const { pickRoute } = await reviewOn(3);
+      act(() => picker()!.beside!.onOpenChange(true));
+      act(() => aside()!.props.onBack());
+      expect(aside()).toBeUndefined();
+      expect(pickRoute).not.toHaveBeenCalled();
+    });
+
+    it('opens a new Review with them closed', async () => {
+      await reviewOn(3);
+      act(() => picker()!.beside!.onOpenChange(true));
+      mocks.launched.length = 0;
+      mocks.updates.length = 0;
+      await reviewOn(3);
+      expect(aside()).toBeUndefined();
+      expect(picker()!.beside!.open).toBe(false);
+    });
+
+    it('below desktop, leaves the review to swap them in place', async () => {
+      await reviewOn(2);
+      expect(picker()!.beside).toBeUndefined();
+      expect(aside()).toBeUndefined();
+    });
+  });
+
+  describe('a native withdrawal to Ethereum', () => {
+    // The form's route, as the resolver builds it when CCTP can't carry the amount.
+    async function reviewWithdrawal(from: 'base' | 'arbitrum') {
+      mocks.appChainId = from === 'base' ? 8453 : 42161;
+      const form = {
+        amount: ONE,
+        from,
+        to: 'ethereum' as const,
+        route: nativeWithdrawalRoute(from, 'closed'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      return view;
+    }
+    const stepLabels = () =>
+      (mocks.launched.at(-1)?.steps ?? []).map(step => (typeof step === 'string' ? step : step.label));
+
+    it.each([
+      ['base', 8453],
+      ['arbitrum', 42161]
+    ] as const)('reads the %s withdrawal on the pinned source chain', async (from, chainId) => {
+      await reviewWithdrawal(from);
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from, chainId, amount: ONE });
+      expect(mocks.deposit.args.at(-1)?.enabled).toBe(false);
+    });
+
+    it.each([
+      ['base', 'bridgeERC20To'],
+      ['arbitrum', 'outboundTransfer']
+    ] as const)(
+      'Confirm runs the %s withdrawal, not the mock, and stores it under the %s hash',
+      async (from, functionName) => {
+        await reviewWithdrawal(from);
+        expect(mocks.launched.at(-1)?.confirmDisabled).toBe(false);
+        act(() => mocks.launched.at(-1)!.onConfirm!());
+        expect(mocks.withdrawal.execute).toHaveBeenCalledTimes(1);
+        expect(mocks.deposit.execute).not.toHaveBeenCalled();
+        expect(mocks.legs).toHaveLength(0);
+
+        const callbacks = mocks.withdrawal.args.at(-1)!.getCallbacks();
+        callbacks.onMutate({ functionName: 'approve' });
+        callbacks.onStart(`0x${from}approve`);
+        callbacks.onMutate({ functionName });
+        callbacks.onStart(`0x${from}withdraw`);
+        const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+        const snapshot = pendingBridgeStore.getSnapshot(scope);
+        expect(snapshot.find(bridge => bridge.txHash === `0x${from}approve`)).toBeUndefined();
+        expect(snapshot.find(bridge => bridge.txHash === `0x${from}withdraw`)).toMatchObject({
+          from,
+          to: 'ethereum',
+          amount: ONE,
+          routeKind: 'native',
+          requiresClaim: true
+        });
+      }
+    );
+
+    it('drops the Approve step when the allowance covers the amount', async () => {
+      await reviewWithdrawal('base');
+      expect(stepLabels()).toEqual(['Approve', 'Bridge']);
+      mocks.withdrawal.needsApprove = false;
+      await reviewWithdrawal('base');
+      expect(stepLabels()).toEqual(['Bridge']);
+    });
+
+    it('blocks Confirm until the withdrawal is built, says why, and sends nothing', async () => {
+      Object.assign(mocks.withdrawal, {
+        ready: false,
+        error: new Error('The withdrawal could not be built')
+      });
+      await reviewWithdrawal('base');
+      const config = mocks.launched.at(-1)!;
+      expect(config.confirmDisabled).toBe(true);
+      expect(config.errorMessage).toBeTruthy();
+      act(() => config.onConfirm!());
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+    });
+  });
+
+  describe('a Base to Ethereum bridge with CCTP closed', () => {
+    async function reviewFromBase() {
+      // A closed CCTP is the only way the resolver reaches the native withdrawal.
+      mocks.cctp = { isOpen: false };
+      const view = renderBridge();
+      act(() => view.result.current.form.onInput('1'));
+      await moveWallet(view, 8453);
+      act(() => view.result.current.launch());
+      return view;
+    }
+
+    it('falls back to the native withdrawal, which Confirm sends on Base', async () => {
+      const view = await reviewFromBase();
+      expect(view.result.current.form).toMatchObject({ from: 'base', to: 'ethereum', reviewBlocked: false });
+      expect(view.result.current.form.route).toMatchObject({ kind: 'native', fallbackReason: 'closed' });
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.withdrawal.args.at(-1)).toMatchObject({ enabled: true, from: 'base', chainId: 8453 });
+      expect(mocks.withdrawal.execute).toHaveBeenCalledTimes(1);
+      expect(mocks.deposit.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+    });
+
+    it("sends nothing over the L2 bridge's withdrawal limit", async () => {
+      mocks.maxWithdraws = 1n;
+      const view = await reviewFromBase();
+      expect(view.result.current.form).toMatchObject({ route: undefined, reviewBlocked: true });
+      mocks.launched.at(-1)?.onConfirm?.();
+      expect(mocks.withdrawal.execute).not.toHaveBeenCalled();
+      expect(mocks.deposit.execute).not.toHaveBeenCalled();
+      expect(mocks.legs).toHaveLength(0);
+    });
   });
 
   describe('the ETH an Arbitrum deposit sends', () => {

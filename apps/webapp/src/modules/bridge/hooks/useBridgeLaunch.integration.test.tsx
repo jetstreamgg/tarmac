@@ -303,6 +303,21 @@ vi.mock('./useCctpBurnLegs', () => {
   };
   return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
 });
+// So does the native withdrawal engine.
+vi.mock('./useNativeWithdrawalLegs', () => {
+  const idle = {
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    error: null,
+    execute: () => {},
+    reset: () => {},
+    stop: () => {},
+    refetchAllowance: () => {}
+  };
+  return { nativeWithdrawalFunction: () => 'bridgeERC20To', useNativeWithdrawalLegs: () => idle };
+});
 // Every address is an EOA; the code check has its own tests in useBridgeForm.
 vi.mock('./useAddressCode', () => ({ useAddressCode: () => ({ code: 'none', isChecking: false }) }));
 vi.mock('../components/BridgeReviewContent', () => ({

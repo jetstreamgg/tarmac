@@ -117,6 +117,25 @@ vi.mock('./useCctpBurnLegs', () => ({
     };
   }
 }));
+// A native withdrawal's source legs; this file sends none.
+// The route picker's cards have their own suite.
+vi.mock('./useBridgeRouteCards', () => ({ useBridgeRouteCards: () => undefined }));
+vi.mock('./useNativeWithdrawalLegs', () => ({
+  nativeWithdrawalFunction: () => 'bridgeERC20To',
+  useNativeWithdrawalLegs: () => ({
+    calls: [],
+    needsApprove: false,
+    isBatch: false,
+    ready: false,
+    busy: false,
+    legMined: false,
+    error: null,
+    execute: () => undefined,
+    reset: () => undefined,
+    stop: () => undefined,
+    refetchAllowance: () => undefined
+  })
+}));
 vi.mock('../components/BridgeReviewContent', () => ({
   BridgeReviewContent: () => null,
   BridgeTransferHero: () => null
