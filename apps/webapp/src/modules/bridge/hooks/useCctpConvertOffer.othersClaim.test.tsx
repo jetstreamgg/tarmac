@@ -7,7 +7,12 @@ import { createElement, type ReactNode } from 'react';
 import { encodeAbiParameters, encodeEventTopics, erc20Abi, parseUnits, zeroAddress, type Hex } from 'viem';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { L1_USDC, L1_USDS } from '../adapters/cctp/contracts';
-import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
+import {
+  applyProgress,
+  createPendingBridge,
+  recordAction,
+  recordActionSent
+} from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { useCctpConvertOffer } from './useCctpConvertOffer';
 
@@ -171,8 +176,9 @@ describe('useCctpConvertOffer, after a claim someone else sent', () => {
     expect(failed.current).toBeUndefined();
   });
 
-  it('scans again each minute after a failed scan, and not after one that found nothing', async () => {
+  it('scans again each minute after a failed scan, and not after one that found nothing 10 minutes after the card settled', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW + 10 * 60_000);
     try {
       const found = { transactionHash: '0xreceive', blockNumber: 90n, logs: [] };
       mocks.find.mockRejectedValueOnce(new Error('rpc down')).mockResolvedValue(found);
@@ -213,6 +219,52 @@ describe('useCctpConvertOffer, after a claim someone else sent', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('hides the offer when a sale check that read unsold fails on a later read', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mocks.find.mockResolvedValue({ transactionHash: '0xreceive', blockNumber: 90n, logs: [] });
+      const result = render();
+      await waitFor(() => expect(result.current).toBe(USDC('100')));
+      mocks.getLogs = async () => {
+        throw new Error('rpc down');
+      };
+      await vi.advanceTimersByTimeAsync(60_000);
+      await waitFor(() => expect(result.current).toBeUndefined());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("scans again after one that found nothing just after the card settled: a node's logs may lag", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW);
+    try {
+      mocks.find
+        .mockResolvedValueOnce(null)
+        .mockResolvedValue({ transactionHash: '0xreceive', blockNumber: 90n, logs: [] });
+      const result = render();
+      await waitFor(() => expect(mocks.find).toHaveBeenCalledTimes(1));
+      expect(result.current).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(60_000);
+      await waitFor(() => expect(result.current).toBe(USDC('100')));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("offers nothing while this app's claim is still sent, as a Safe's is until its sale executes", async () => {
+    const sent = recordActionSent(bridge(), { action: 'claim', txHash: '0xsafeclaim', at: NOW });
+    mocks.find.mockResolvedValue({
+      transactionHash: '0xreceive',
+      blockNumber: 90n,
+      logs: [mint(L1_USDC, ACCOUNT)]
+    });
+    const result = render(applyProgress(sent, { kind: 'arrived' }, NOW));
+    await settle();
+    expect(result.current).toBeUndefined();
+    expect(mocks.find).not.toHaveBeenCalled();
   });
 
   it('scans nothing while the recipient holds no USDC, or its balance is unknown', async () => {

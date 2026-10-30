@@ -18,6 +18,8 @@ import type { PendingBridge } from '../model/types';
 import { usePendingScope } from './usePendingScope';
 
 const OTHERS_CLAIM_POLL_MS = 60_000;
+// A node's logs can lag the nonce the tracker saw used: a scan that found nothing runs again for this long.
+const OTHERS_CLAIM_RESCAN_MS = 10 * 60_000;
 
 /**
  * The USDC (6 decimals) the connected account can convert to USDS on a
@@ -36,8 +38,10 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
   const nextLegTxHashes = claimNextLegTxHashes(bridge);
   const sourceChainId = bridgeChainId(bridge.from, familyChainId);
   const convertible = canConvert(bridge, account) && chainId !== undefined;
+  // A claim still sent is this app's own, as a Safe's is until its last leg: its receive isn't someone else's.
+  const claimSent = bridge.actions.some(action => action.action === 'claim' && action.status === 'sent');
   const othersClaimed =
-    convertible && claimTxHashes.length === 0 && !!bridge.txHash && sourceChainId !== undefined;
+    convertible && claimTxHashes.length === 0 && !claimSent && !!bridge.txHash && sourceChainId !== undefined;
   const eligible = convertible && (claimTxHashes.length > 0 || othersClaimed);
 
   // A mined receipt never changes; a leg not mined yet fails the read, which retries.
@@ -59,7 +63,8 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
     chainId: chainId ?? 0,
     enabled: eligible
   });
-  // Scanned only while there is USDC to offer; a mined receive never changes. A failed scan runs again each minute.
+  // Scanned only while there is USDC to offer; a mined receive never changes. A failed scan runs again each
+  // minute, and one that found nothing too, until `OTHERS_CLAIM_RESCAN_MS` after the card settled.
   const { data: othersClaim } = useQuery({
     queryKey: ['cctp-others-claim', chainId, sourceChainId, bridge.txHash, recipient],
     queryFn: async () => {
@@ -72,10 +77,15 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
     enabled: othersClaimed && (usdc?.value ?? 0n) > 0n,
     staleTime: Infinity,
     gcTime: Infinity,
-    refetchInterval: query => (query.state.status === 'error' ? OTHERS_CLAIM_POLL_MS : false)
+    refetchInterval: query =>
+      query.state.status === 'error' ||
+      (query.state.data === null && Date.now() - (bridge.settledAt ?? 0) < OTHERS_CLAIM_RESCAN_MS)
+        ? OTHERS_CLAIM_POLL_MS
+        : false
   });
   // A sale signed apart can mine after the receive was found: read again each minute while unsold or unread.
-  const { data: othersSold } = useQuery({
+  // A failed re-read keeps the last answer, so it offers nothing until a read succeeds.
+  const { data: othersSold, isError: othersSoldFailed } = useQuery({
     queryKey: ['cctp-others-claim-sold', chainId, othersClaim?.transactionHash, recipient],
     queryFn: async () => {
       const l1 = chainId === undefined ? undefined : getPublicClient(config, { chainId });
@@ -92,7 +102,7 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
     ? cctpConvertOffer({
         bridge,
         account,
-        claimSold: othersSold,
+        claimSold: othersSoldFailed ? undefined : othersSold,
         usdcBalance: usdc?.value,
         othersClaimTxHash: othersClaim?.transactionHash
       })
