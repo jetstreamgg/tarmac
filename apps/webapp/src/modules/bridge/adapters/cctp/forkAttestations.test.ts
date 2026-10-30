@@ -8,6 +8,7 @@ import { cctpProgress } from './cctpProgress';
 import { BASE_BURN_AMOUNT, BASE_BURN_ATTESTED, BASE_BURN_LOGS, BASE_BURN_TX } from './cctp.fixtures';
 import { MESSAGE_TRANSMITTER_V2, TOKEN_MESSENGER_V2, messageTransmitterV2Abi } from './contracts';
 import { forkAttestationReader } from './forkAttestations';
+import { FORK_IRIS_PATH } from './iris';
 
 const RELAY_TX = `0x${'ab'.repeat(32)}` as Hex;
 const RELAYER = '0x000000000000000000000000000000000000dEaD';
@@ -108,6 +109,30 @@ describe('forkAttestationReader (Tenderly multichain fork)', () => {
     await expect(
       forkAttestationReader(chains({ relayed: [] }).context)(6, BASE_BURN_TX.hash)
     ).resolves.toEqual([]);
+  });
+
+  it('asks the fork attester while Tenderly has not relayed the burn', async () => {
+    const signed = vi.fn(async () => [BASE_BURN_ATTESTED]);
+    await expect(
+      forkAttestationReader(chains({ relayed: [] }).context, signed)(6, BASE_BURN_TX.hash)
+    ).resolves.toEqual([BASE_BURN_ATTESTED]);
+    expect(signed).toHaveBeenCalledWith(6, BASE_BURN_TX.hash);
+  });
+
+  it('keeps the copy Tenderly relayed without asking the fork attester', async () => {
+    const signed = vi.fn(async () => [BASE_BURN_ATTESTED]);
+    const attested = await forkAttestationReader(chains().context, signed)(6, BASE_BURN_TX.hash);
+    expect(attested.map(({ message }) => message)).toEqual([BASE_BURN_ATTESTED.message]);
+    expect(signed).not.toHaveBeenCalled();
+  });
+
+  it('offers the claim the fork attester signed', async () => {
+    const { context } = chains({ relayed: [], used: 0n });
+    const read = forkAttestationReader(context, async () => [BASE_BURN_ATTESTED]);
+    await expect(cctpProgress(seed(), context, 1_800_000_000_000, read)).resolves.toMatchObject({
+      kind: 'ready',
+      nextAction: 'claim'
+    });
   });
 
   it("ignores a received message that isn't this burn", async () => {
@@ -212,6 +237,24 @@ describe('CCTP adapter on the Tenderly multichain fork', () => {
       getBridgeAdapter('cctp').checkProgress(seed(), 1_800_000_000_000, { ...context, onTenderlyFork: true })
     ).resolves.toEqual({ kind: 'arrived' });
     expect(iris).not.toHaveBeenCalled();
+  });
+
+  it("asks the dev server's attester while Tenderly has not relayed the burn", async () => {
+    const devIris = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ messages: [{ ...BASE_BURN_ATTESTED, status: 'complete', cctpVersion: 2 }] })
+        )
+    );
+    vi.stubGlobal('fetch', devIris);
+    const { context } = chains({ relayed: [], used: 0n });
+    await expect(
+      getBridgeAdapter('cctp').checkProgress(seed(), 1_800_000_000_000, { ...context, onTenderlyFork: true })
+    ).resolves.toMatchObject({ kind: 'ready', nextAction: 'claim' });
+    expect(devIris).toHaveBeenCalledWith(
+      `${FORK_IRIS_PATH}/v2/messages/6?transactionHash=${BASE_BURN_TX.hash}`,
+      expect.anything()
+    );
   });
 
   it('keeps reading Iris everywhere else', async () => {

@@ -34,7 +34,8 @@ const MINT_AND_WITHDRAW = getAbiItem({ abi: tokenMessengerV2Abi, name: 'MintAndW
 /** Per Ethereum client, how far each burn message was scanned and the copies found so far. */
 const scans = new WeakMap<object, Map<string, { scannedTo: bigint; copies: Hex[] }>>();
 
-const networkOfDomain = (domain: number) =>
+/** The CCTP L2 behind a Circle domain id, if any. */
+export const networkOfDomain = (domain: number) =>
   (Object.keys(CCTP_DOMAIN) as (keyof typeof CCTP_DOMAIN)[]).find(
     (network): network is CctpL2NetworkId => network !== 'ethereum' && CCTP_DOMAIN[network] === domain
   );
@@ -73,10 +74,12 @@ function receivedCopies(logs: readonly Log[], source: Hex): Hex[] {
  * received on the Ethereum fork, found by the mint to the burn's recipient;
  * none until it relayed. Only relays mined after the burn count; two identical
  * burns both in flight still can't be told apart here. Each poll scans only the
- * blocks mined since the last one and keeps the copies already found.
+ * blocks mined since the last one and keeps the copies already found. Until
+ * Tenderly relayed, `signed` stands in for Iris when given: with CCTP paused
+ * on the environment, the dev server's test attesters sign the burn instead.
  */
 export const forkAttestationReader =
-  (context: AdapterContext): AttestationReader =>
+  (context: AdapterContext, signed?: AttestationReader): AttestationReader =>
   async (sourceDomain, txHash) => {
     const network = networkOfDomain(sourceDomain);
     const l1 = context.getClient('ethereum');
@@ -127,7 +130,8 @@ export const forkAttestationReader =
           return found;
         })
     );
-    return perMessage
+    const relayed = perMessage
       .flat()
       .map((copy): IrisAttestedMessage => ({ message: copy, attestation: NO_ATTESTATION }));
+    return relayed.length || !signed ? relayed : signed(sourceDomain, txHash);
   };
