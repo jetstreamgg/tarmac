@@ -67,4 +67,25 @@ describe('useBaLabsHistoric — timeframe switches (APP-407)', () => {
     expect(result.current.data).toBeUndefined();
     expect(result.current.isLoading).toBe(true);
   });
+
+  it('does not hand a disabled caller the series an enabled one cached', async () => {
+    const { result, rerender } = renderHook(
+      ({ enabled }) =>
+        useBaLabsHistoric<Point, Point>({
+          path: '/farm/a/',
+          limit: 7,
+          queryKey: 'series',
+          transform: rows => rows,
+          enabled
+        }),
+      { initialProps: { enabled: true }, wrapper: makeWrapper() }
+    );
+    resolvers[0]([{ size: '7' }]);
+    await waitFor(() => expect(result.current.data).toEqual([{ size: '7' }]));
+
+    rerender({ enabled: false });
+
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isPlaceholderData).toBe(false);
+  });
 });

@@ -27,7 +27,7 @@ export function useBaLabsHistoric<TRaw, TParsed>({
   path: string;
   /** Row budget (`p_size`), passed through verbatim. */
   limit?: number;
-  /** Query-key prefix; the path and row budget are the other key parts. */
+  /** Query-key prefix; the path, row budget and enabled state are the other key parts. */
   queryKey: string;
   transform: (rows: TRaw[]) => TParsed[];
   /** Extra precondition on top of the API root being configured. */
@@ -51,14 +51,16 @@ export function useBaLabsHistoric<TRaw, TParsed>({
 
   const query = useQuery({
     enabled: Boolean(url),
-    queryKey: [queryKey, path, limit],
+    // The enabled state keeps a disabled caller on its own empty entry instead
+    // of reading the series an enabled one cached under the same path.
+    queryKey: [queryKey, path, limit, Boolean(url)],
     queryFn: () => (url ? fetchHistoric(url) : Promise.resolve([])),
     // A timeframe switch only changes `limit`: keep the series on screen while
     // the new range loads, instead of flashing the skeleton (APP-407). Only for
     // the same series — another farm or vault starts from the skeleton rather
     // than briefly showing the previous one's data.
     placeholderData: (previousData, previousQuery) =>
-      previousQuery?.queryKey[1] === path ? previousData : undefined
+      url && previousQuery?.queryKey[1] === path ? previousData : undefined
   });
 
   return { ...toReadHook(query, [baLabsDataSource(url)]), isPlaceholderData: query.isPlaceholderData };
