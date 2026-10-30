@@ -556,9 +556,11 @@ describe('usePendleRedeemModal claim quote failure', () => {
   it.each([
     new SyntaxError('Unexpected token < in JSON at position 0'),
     new Error('Pendle: refusing to sign — selector "redeemPyToToken" not allowed for redeem')
-  ])('falls back to the shared prepare copy, not the connection: %s', async error => {
+  ])('falls back to the buy/sell quote copy: %s', async error => {
     const config = await openWith({ data: undefined, isLoading: false, error });
-    expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
+    expect(config.errorMessage).toBe(
+      "Couldn't fetch a quote from Pendle. Check your connection and try again."
+    );
   });
 
   it('gives a failed simulation the shared fallback, not advice to adjust inputs', async () => {
