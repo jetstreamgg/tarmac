@@ -38,7 +38,9 @@ jobs:
 
     outputs:
       pool-ready: ${{ steps.pool-status.outputs.status }}
-      # Fallback only: fresh VNet IDs and snapshot IDs (no RPC URLs).
+      # Fallback only: fresh VNet IDs and snapshot IDs (no RPC URLs), base64 because
+      # the pool secret is masked line by line, `{` included, and GitHub drops any
+      # job output containing a masked value.
       vnet-ids: ${{ steps.export-ids.outputs.vnet-ids }}
       snapshots: ${{ steps.export-ids.outputs.snapshots }}
 
@@ -157,8 +159,8 @@ jobs:
         id: export-ids
         if: steps.pool-status.outputs.status == 'unavailable'
         run: |
-          echo "vnet-ids=$(jq -c '[.[] | {NETWORK, TENDERLY_TESTNET_ID}]' tenderlyTestnetData.json)" >> $GITHUB_OUTPUT
-          echo "snapshots=$(jq -c . apps/webapp/src/test/e2e/persistent-vnet-snapshots.json)" >> $GITHUB_OUTPUT
+          echo "vnet-ids=$(jq -c '[.[] | {NETWORK, TENDERLY_TESTNET_ID}]' tenderlyTestnetData.json | base64 -w0)" >> $GITHUB_OUTPUT
+          echo "snapshots=$(jq -c . apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | base64 -w0)" >> $GITHUB_OUTPUT
 
       - name: Verify setup is ready
         run: |
@@ -231,12 +233,12 @@ jobs:
       - name: Restore fresh VNet data from IDs (fallback)
         if: needs.setup-pool.outputs.pool-ready != 'ready'
         run: |
-          node ./scripts/restoreVnetData.ts
-          printf '%s' "$VNET_SNAPSHOTS" > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+          VNET_IDS="$(printf '%s' "$VNET_IDS_B64" | base64 -d)" node ./scripts/restoreVnetData.ts
+          printf '%s' "$VNET_SNAPSHOTS_B64" | base64 -d > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-          VNET_IDS: ${{ needs.setup-pool.outputs.vnet-ids }}
-          VNET_SNAPSHOTS: ${{ needs.setup-pool.outputs.snapshots }}
+          VNET_IDS_B64: ${{ needs.setup-pool.outputs.vnet-ids }}
+          VNET_SNAPSHOTS_B64: ${{ needs.setup-pool.outputs.snapshots }}
 
       - name: Verify VNet files
         run: |
@@ -345,11 +347,11 @@ jobs:
       - name: Cleanup fresh VNets (fallback only)
         run: |
           echo "Cleaning up fresh VNets (not pool VNets)..."
-          if [ -n "$VNET_IDS" ]; then
-            printf '%s' "$VNET_IDS" > tenderlyCreatedVnets.json
+          if [ -n "$VNET_IDS_B64" ]; then
+            printf '%s' "$VNET_IDS_B64" | base64 -d > tenderlyCreatedVnets.json
             pnpm run vnet:delete:created:ci || echo "Deleting this run's VNets failed, continuing..."
           fi
           pnpm run vnet:delete:all:ci || echo "VNet cleanup failed, continuing..."
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-          VNET_IDS: ${{ needs.setup-pool.outputs.vnet-ids }}
+          VNET_IDS_B64: ${{ needs.setup-pool.outputs.vnet-ids }}
