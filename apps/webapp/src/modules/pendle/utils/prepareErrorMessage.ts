@@ -1,6 +1,5 @@
 import { t } from '@lingui/core/macro';
 import { revertMessage } from '@/lib/revertMessages';
-import { genericPrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
 
 /**
  * Maps raw Pendle prepare/revert messages to user-friendly copy. Shared by the
@@ -82,5 +81,9 @@ export function pendleClaimErrorMessage(raw: string | undefined): string | undef
  * "adjust your inputs" doesn't fit a claim, which has no inputs.
  */
 export function pendleClaimPrepareErrorMessage(error: Error | null | undefined): string | undefined {
-  return pendlePrepareErrorMessage(error, undefined, genericPrepareErrorMessage());
+  return pendlePrepareErrorMessage(
+    error,
+    undefined,
+    t`Something went wrong preparing the transaction. Please try again.`
+  );
 }
