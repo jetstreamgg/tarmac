@@ -102,7 +102,7 @@ export function SlippageMenu({
   }
 
   const isCustom = value !== defaultValue;
-  const isHighSlippage = isCustom && value > HIGH_SLIPPAGE_WARNING;
+  const isHighSlippage = value > HIGH_SLIPPAGE_WARNING;
 
   const handleCustomChange = (raw: string) => {
     // Masked to what this field can mean — digits and one decimal point, at
@@ -126,7 +126,7 @@ export function SlippageMenu({
   // the trade won't use.
   const handleCustomBlur = () => {
     if (percentStringToDecimal(rawInput) > 0) return;
-    setRawInput(value !== defaultValue ? decimalToPercentString(value) : '');
+    setRawInput(isCustom ? decimalToPercentString(value) : '');
   };
 
   return (
