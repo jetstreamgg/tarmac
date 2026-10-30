@@ -1,7 +1,7 @@
 import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { stUsdsAddress, stUsdsImplementationAbi, usdsAddress } from '../generated';
-import { Abi, Call, erc20Abi } from 'viem';
+import { Call, erc20Abi } from 'viem';
 import { useStUsdsAllowance } from './useStUsdsAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
@@ -35,12 +35,12 @@ export function useBatchStUsdsDeposit({
 
   const depositCall = getWriteContractCall({
     to: stUsdsAddress[chainId as keyof typeof stUsdsAddress],
-    abi: stUsdsImplementationAbi as Abi,
+    abi: stUsdsImplementationAbi,
     functionName: 'deposit',
     // Always the 3-arg overload, so every deposit emits a referral code — the
     // 2-arg form emits none, which left deposits unattributed while the
     // configured code was 0 (APP-322).
-    args: [amount, connectedAddress!, referral] as const
+    args: [amount, connectedAddress!, referral]
   });
 
   const calls: Call[] = [];
