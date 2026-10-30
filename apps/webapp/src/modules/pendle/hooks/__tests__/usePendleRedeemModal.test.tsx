@@ -523,9 +523,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
       isLoading: false,
       error: new Error('Pendle /convert 400: {"message":"Input valuation is too low"}')
     });
-    expect(config.errorMessage).toBe(
-      "This position is too small to claim. Pendle can't process amounts worth less than $0.01."
-    );
+    expect(config.errorMessage).toBe('This position is too small to claim.');
   });
 
   it('points at the other payout token when Pendle has no route', async () => {
@@ -535,7 +533,7 @@ describe('usePendleRedeemModal claim quote failure', () => {
       error: new Error('Pendle /convert returned no routes')
     });
     expect(config.errorMessage).toBe(
-      "Pendle can't route this claim to the selected token. Try the other one."
+      "Pendle can't route this claim to the selected token. Try a different token."
     );
   });
 

@@ -70,10 +70,10 @@ export function pendleQuoteErrorMessage(raw: string | undefined): string | undef
 export function pendleClaimErrorMessage(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
   if (/input valuation is too low/i.test(raw)) {
-    return t`This position is too small to claim. Pendle can't process amounts worth less than $0.01.`;
+    return t`This position is too small to claim.`;
   }
   if (/no routes/i.test(raw)) {
-    return t`Pendle can't route this claim to the selected token. Try the other one.`;
+    return t`Pendle can't route this claim to the selected token. Try a different token.`;
   }
   if (/malformed quote/i.test(raw)) {
     return t`Received an invalid quote from Pendle. Please try again.`;
