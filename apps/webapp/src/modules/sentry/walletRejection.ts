@@ -28,18 +28,16 @@ export function filterWalletRejection(event: ErrorEvent): ErrorEvent | null {
   const exception = event.exception?.values?.find(v => v.value?.includes(OBJECT_REJECTION_PREFIX));
   if (!exception) return event;
 
-  const serialized = (event.extra as Record<string, unknown> | undefined)?.__serialized__;
-  const extraData =
-    serialized && typeof serialized === 'object' ? (serialized as Record<string, unknown>) : undefined;
+  const serialized = event.extra?.__serialized__;
+  if (!serialized || typeof serialized !== 'object' || Object.keys(serialized).length === 0) return null;
+  const { code, message } = serialized as { code?: unknown; message?: unknown };
 
-  if (!extraData || Object.keys(extraData).length === 0) return null;
-  if (typeof extraData.code === 'number' && DROPPED_WALLET_REJECTION_CODES.has(extraData.code)) return null;
+  if (typeof code === 'number' && DROPPED_WALLET_REJECTION_CODES.has(code)) return null;
 
-  const message = typeof extraData.message === 'string' && extraData.message ? extraData.message : undefined;
-  const code = extraData.code !== undefined ? String(extraData.code) : undefined;
-  if (message || code) {
+  const title = [message, code !== undefined && `(${code})`].filter(Boolean).join(' ');
+  if (title) {
     exception.type = 'UnhandledWalletRejection';
-    exception.value = [message, code && `(${code})`].filter(Boolean).join(' ');
+    exception.value = title;
   }
   return event;
 }
