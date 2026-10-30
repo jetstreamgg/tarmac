@@ -152,6 +152,15 @@ export default [
           property: 'captureException',
           message: 'Use reportError() outside modules/sentry.'
         }
+      ],
+      // The root index loads every date-fns function, which unit tests pay for on each file.
+      'no-restricted-imports': [
+        'error',
+        {
+          name: 'date-fns',
+          allowTypeImports: true,
+          message: "Import the function's subpath, e.g. 'date-fns/format'."
+        }
       ]
     }
   },

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { Trans } from '@lingui/react/macro';
 import { TransactionTypeEnum, useAllRewardsUserHistory, type RewardContract } from '@/hooks';
 import { formatBigInt, getEtherscanLink, formatAddress } from '@/utils';

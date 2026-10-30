@@ -33,6 +33,21 @@ pnpm prettier:check  # Check formatting without writing. Same caveat: always che
 
 Before committing, format the files you changed: `pnpm exec prettier --write <changed files>`. The pre-commit hook and the CI check both run prettier, so unformatted files either get rewritten under you at commit time or fail the PR.
 
+### Checking a change
+
+If you're about to run several of prettier, ESLint, the typecheck, the unit tests and the build one after another to check a change, prefer `pnpm check:changed`, which runs them in parallel and only on what changed. Running the individual commands is still fine.
+
+```bash
+pnpm check:changed                # Changes since the PR's base branch (else origin/development), incl. uncommitted
+pnpm check:changed --uncommitted  # Only staged, unstaged and untracked changes
+pnpm check:changed <paths...>     # Only these files or directories
+```
+
+- It runs only the tests related to the changed webapp sources. Dependency and config changes, deleted webapp sources and `--full` run the full fast suite.
+- `--fix` applies ESLint fixes and prettier formatting first. `--base <ref>` picks another base. `--skip <step,...>` skips steps.
+- Its typecheck uses TypeScript 7. CI runs `pnpm typecheck` on TypeScript 6, so use that if the two might disagree.
+- It skips the vnet-backed hooks tests. When a change touches `src/hooks`, it prints the command to run them.
+
 ### Security audit
 
 ```bash
