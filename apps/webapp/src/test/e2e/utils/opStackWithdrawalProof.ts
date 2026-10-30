@@ -15,10 +15,13 @@ import {
 import type { OpStackNetworkId } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { L1_USDS, OP_STACK_DEPOSIT } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import { optimismPortalAbi } from '@/modules/bridge/adapters/nativeWithdrawal/contracts';
-import { opStackWithdrawalMessage } from '@/modules/bridge/adapters/nativeWithdrawal/opStack';
+import {
+  opStackFinalizeCall,
+  opStackWithdrawalMessage
+} from '@/modules/bridge/adapters/nativeWithdrawal/opStack';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 import { forkRpc } from './opStackDepositRelay';
-import { NetworkName } from './constants';
+import { ANYONE, NetworkName } from './constants';
 
 const escrowAbi = parseAbi([
   'function escrow() view returns (address)',
@@ -105,6 +108,42 @@ export async function proveOpStackWithdrawalOnFork(
     }
   }
   throw new Error(`No finalizable game found on the ${network} portal`);
+}
+
+/**
+ * Finalizes the withdrawal in `l2TxHash` with `proofSubmitter`'s proof from an unrelated
+ * account, as anyone may.
+ */
+export async function finalizeOpStackWithdrawalOnFork(
+  network: OpStackNetworkId,
+  l2TxHash: Hash,
+  proofSubmitter: Address
+): Promise<void> {
+  const l1Rpc = await getRpcUrlFromFile(NetworkName.mainnet);
+  const l1 = createPublicClient({ transport: http(l1Rpc) });
+  const l2 = createPublicClient({ transport: http(await getRpcUrlFromFile(NetworkName[network])) });
+  const message = opStackWithdrawalMessage(
+    (await l2.getTransactionReceipt({ hash: l2TxHash })).logs,
+    network
+  );
+  if (!message) throw new Error(`No USDS withdrawal in ${l2TxHash}`);
+  const { address, abi, functionName, args } = opStackFinalizeCall({
+    network,
+    withdrawal: message.withdrawal,
+    proofSubmitter
+  });
+  const hash = await forkRpc<Hash>(l1Rpc, 'eth_sendTransaction', [
+    {
+      from: ANYONE,
+      to: address,
+      data: encodeFunctionData({ abi, functionName, args }),
+      // The portal relays with the message's minimum gas: an estimate can leave the relay short.
+      gas: toHex(3_000_000n),
+      gasPrice: '0x0'
+    }
+  ]);
+  const receipt = await l1.waitForTransactionReceipt({ hash });
+  if (receipt.status !== 'success') throw new Error('The finalize reverted');
 }
 
 async function findProofSlots(

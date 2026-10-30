@@ -16,8 +16,10 @@ import {
 } from 'viem';
 import { NODE_INTERFACE } from '@/modules/bridge/adapters/nativeDeposit/contracts';
 import {
+  arbitrumExecuteCall,
   arbitrumItemHash,
-  arbitrumWithdrawalMessage
+  arbitrumWithdrawalMessage,
+  type ArbitrumWithdrawalMessage
 } from '@/modules/bridge/adapters/nativeWithdrawal/arbitrum';
 import {
   ARBITRUM_WITHDRAWAL,
@@ -25,7 +27,7 @@ import {
 } from '@/modules/bridge/adapters/nativeWithdrawal/contracts';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 import { aggregate3Answer, rpcAt, same } from './rpcShim';
-import { NetworkName } from './constants';
+import { ANYONE, NetworkName } from './constants';
 
 const outboxAbi = parseAbi([
   'function calculateItemHash(address l2Sender, address to, uint256 l2Block, uint256 l1Block, uint256 l2Timestamp, uint256 value, bytes data) pure returns (bytes32)',
@@ -42,8 +44,12 @@ const MAX_SLOT = 20n;
  * root that commits to it, from the rollup, and the page's Arbitrum reads get what ArbOS
  * would answer for that root (the block's send count and NodeInterface's proof), which the
  * Arbitrum fork can't. Outbox, gateway and escrow then run for real on the execute.
+ * Returns the message and its proof, for an execute sent from outside the page.
  */
-export async function confirmArbitrumWithdrawalOnFork(page: Page, l2TxHash: Hash): Promise<void> {
+export async function confirmArbitrumWithdrawalOnFork(
+  page: Page,
+  l2TxHash: Hash
+): Promise<{ message: ArbitrumWithdrawalMessage; proof: Hex[] }> {
   const l1Url = await getRpcUrlFromFile(NetworkName.mainnet);
   const l2Url = await getRpcUrlFromFile(NetworkName.arbitrum);
   const l1 = createPublicClient({ transport: http(l1Url) });
@@ -138,6 +144,28 @@ export async function confirmArbitrumWithdrawalOnFork(page: Page, l2TxHash: Hash
       return route.fulfill({ json: { jsonrpc: '2.0', id: request.id, result } });
     }
   );
+  return { message, proof };
+}
+
+/** Executes a confirmed withdrawal on the Ethereum fork's outbox from an unrelated account, as anyone may. */
+export async function executeArbitrumWithdrawalOnFork(confirmed: {
+  message: ArbitrumWithdrawalMessage;
+  proof: Hex[];
+}): Promise<void> {
+  const l1Url = await getRpcUrlFromFile(NetworkName.mainnet);
+  const l1 = createPublicClient({ transport: http(l1Url) });
+  const { address, abi, functionName, args } = arbitrumExecuteCall(confirmed);
+  const hash = await rpcAt(l1Url)('eth_sendTransaction', [
+    {
+      from: ANYONE,
+      to: address,
+      data: encodeFunctionData({ abi, functionName, args }),
+      gas: toHex(1_000_000n),
+      gasPrice: '0x0'
+    }
+  ]);
+  const receipt = await l1.waitForTransactionReceipt({ hash });
+  if (receipt.status !== 'success') throw new Error('The execute reverted');
 }
 
 /**
