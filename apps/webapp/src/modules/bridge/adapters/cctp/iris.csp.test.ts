@@ -11,4 +11,8 @@ describe('Iris and the page CSP', () => {
     const connectSrc = viteConfig.match(/^\s*connect-src([^;]*);/m)?.[1].split(/\s+/) ?? [];
     expect(connectSrc).toContain(new URL(IRIS_API_URL).origin);
   });
+
+  it("lets the page fetch the fork's Iris stand-in when a build points at one", () => {
+    expect(viteConfig).toMatch(/connect-src[^;]*\$\{CCTP_FORK_IRIS_ORIGIN\}/);
+  });
 });

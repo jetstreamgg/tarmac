@@ -71,6 +71,7 @@ See the `adding-features` skill (`.claude/skills/adding-features/SKILL.md`) for 
   - `VITE_PROXY_ORIGIN` - Origin of the Sky RPC/indexer proxy (RPC URLs are built as `${VITE_PROXY_ORIGIN}/rpc/<chainId>`)
   - `VITE_RPC_PROVIDER_TENDERLY` - Tenderly virtual network RPC used as the dev-mode chain across all modules
   - `VITE_TENDERLY_RPC_NAME` - Optional named public RPC of the Tenderly multichain dev environment (`<team>/<project>/<rpc name>`); adds its Base, Arbitrum, OP and Unichain forks to the dev build, for the Bridge only (`VITE_RPC_PROVIDER_TENDERLY` must then be that environment's Ethereum fork)
+  - `VITE_CCTP_FORK_IRIS_URL` - Optional Iris stand-in for CCTP claims on that environment's forks, outside the dev server (api-workers' `/cctp-fork-iris` on staging, for previews). The dev server answers it itself
   - `VITE_TENDERLY_EXPLORER_{ETHEREUM,BASE,ARBITRUM,OPTIMISM,UNICHAIN}` - Optional Tenderly dashboard explorer of each fork, without `https://`, for transaction links
   - `VITE_WALLETCONNECT_PROJECT_ID` - Wallet connection
   - `VITE_USE_MOCK_WALLET` - Testing mode
