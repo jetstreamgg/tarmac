@@ -400,12 +400,15 @@ describe('useStUsdsProviderSelection', () => {
     });
 
     it('does not report a better rate when Curve wins only on quote validity (APP-509)', () => {
-      // Native couldn't quote; Curve's rate is ~0.15% worse than native's.
-      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE, {
-        inputAmount: 10000n * WAD,
-        outputAmount: 10000n * WAD
-      });
-      nativeData.quote = { ...nativeData.quote!, isValid: false, invalidReason: 'Unable to get quote' };
+      // Native couldn't quote: rate 0, which compares as Curve being +100% better.
+      const nativeData = createMockProviderData(StUsdsProviderType.NATIVE);
+      nativeData.quote = {
+        ...nativeData.quote!,
+        outputAmount: 0n,
+        rateInfo: { ...nativeData.quote!.rateInfo, outputAmount: 0n, effectiveRate: 0n },
+        isValid: false,
+        invalidReason: 'Unable to get quote'
+      };
       const curveData = createMockProviderData(StUsdsProviderType.CURVE, {
         inputAmount: 10015n * WAD,
         outputAmount: 10000n * WAD
@@ -418,7 +421,7 @@ describe('useStUsdsProviderSelection', () => {
 
       expect(result.current.selectedProvider).toBe(StUsdsProviderType.CURVE);
       expect(result.current.selectionReason).toBe(StUsdsSelectionReason.CURVE_ONLY_AVAILABLE);
-      expect(result.current.rateDifferencePercent).toBeLessThan(0);
+      expect(result.current.rateDifferencePercent).toBe(0);
     });
 
     it('keeps native for a small wallet at the reference amount when Curve is worse (APP-509)', () => {
