@@ -5,17 +5,6 @@ import { baLabsDataSource } from '../constants';
 import { ReadHook } from '../hooks';
 import { toReadHook } from './toReadHook';
 
-/** Whether two query keys name the same series, ignoring the `p_size` row budget. */
-function sameSeries(a: readonly unknown[], b: readonly unknown[]): boolean {
-  if (a[0] !== b[0] || !a[1] || !b[1]) return false;
-  const withoutSize = (target: unknown) => {
-    const href = new URL(String(target));
-    href.searchParams.delete('p_size');
-    return href.href;
-  };
-  return withoutSize(a[1]) === withoutSize(b[1]);
-}
-
 /**
  * A paged BA Labs `historic` series, parsed into chart points. The endpoint
  * caps a response at 1000 rows whatever `p_size` asks for, so every page is
@@ -32,7 +21,7 @@ export function useBaLabsHistoric<TRaw, TParsed>({
   path: string;
   /** Row budget (`p_size`), passed through verbatim. */
   limit?: number;
-  /** Query-key prefix; the URL is the second key part. */
+  /** Query-key prefix; the path and row budget are the other key parts. */
   queryKey: string;
   transform: (rows: TRaw[]) => TParsed[];
   /** Extra precondition on top of the API root being configured. */
@@ -56,14 +45,14 @@ export function useBaLabsHistoric<TRaw, TParsed>({
 
   const query = useQuery({
     enabled: Boolean(url),
-    queryKey: [queryKey, url],
+    queryKey: [queryKey, path, limit],
     queryFn: () => (url ? fetchHistoric(url) : Promise.resolve([])),
-    // A timeframe switch only changes `p_size`: keep the series on screen while
+    // A timeframe switch only changes `limit`: keep the series on screen while
     // the new range loads, instead of flashing the skeleton (APP-407). Only for
     // the same series — another farm or vault starts from the skeleton rather
     // than briefly showing the previous one's data.
     placeholderData: (previousData, previousQuery) =>
-      previousQuery && sameSeries(previousQuery.queryKey, [queryKey, url]) ? previousData : undefined
+      previousQuery?.queryKey[1] === path ? previousData : undefined
   });
 
   return toReadHook(query, [baLabsDataSource(url)]);
