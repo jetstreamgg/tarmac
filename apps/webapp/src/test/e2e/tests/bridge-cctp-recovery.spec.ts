@@ -3,6 +3,7 @@ import { getAddress, numberToHex, parseUnits, toFunctionSelector, type Address }
 import { expect, expectNoFixtureLeaks, installFixtureRoutes, test } from '../fixtures-parallel';
 import { BridgePage } from '../pages/BridgePage';
 import {
+  L1_USDC,
   MESSAGE_TRANSMITTER_V2,
   TOKEN_MESSENGER_V2,
   USDS_PSM_WRAPPER,
@@ -16,6 +17,7 @@ import { connectAndVerify } from '../utils/connectAndVerify';
 import { expectTransactionSuccess } from '../utils/expectTransactionSuccess';
 import { awaitDepositTxHash, l1AccountState } from '../utils/bridgeRelay';
 import { receiveCctpMessage, stubIris } from '../utils/cctpAttester';
+import { setErc20Balance } from '../utils/setBalance';
 import { switchWalletNetwork, tenderlyChainLabel } from '../utils/switchWalletNetwork';
 
 // APP-614 recovery: every way a CCTP bridge to Ethereum can stall still ends with the
@@ -207,23 +209,85 @@ test.describe('Bridge: CCTP recovery', () => {
     await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0, { timeout: 60_000 });
   });
 
-  test('A burn someone else delivers on Ethereum reads Claimed and offers nothing to send', async ({
+  test('A burn someone else delivers on Ethereum arrives as USDC, and the card converts it once', async ({
     isolatedPage,
     testAccount
   }) => {
     const iris = await stubIris(isolatedPage);
     const bridge = await openOnBase(isolatedPage);
+    const { usds: before } = await l1AccountState(testAccount);
     const attested = await iris.attest(NetworkName.base, await confirmBurn(bridge, isolatedPage));
     await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
 
     const { nonce: nonceBefore } = await l1AccountState(testAccount);
     await receiveCctpMessage(attested);
-    // Any delivery settles a claim bridge as Claimed (pendingTransitions); USDC claimed by
-    // someone else gets no Convert offer (APP-614 scope).
+    // APP-653: a receive anyone else sent sells nothing, so the card finds it and offers the convert.
+    const card = bridge.card('Ethereum');
+    await expect(card.getByTestId('pending-bridge-convert-note')).toBeVisible({ timeout: 90_000 });
+    await expect(status(bridge)).toHaveText('Arrived as USDC');
+    await expect(card.getByTestId('pending-bridge-action')).toHaveCount(0);
+    expect(await l1AccountState(testAccount)).toEqual({ nonce: nonceBefore, usds: before });
+
+    await card.getByTestId('pending-bridge-convert').click();
+    await expect(isolatedPage.getByRole('dialog')).toContainText('Review conversion');
+    await bridge.confirmButton().click();
+    await expectTransactionSuccess(isolatedPage, { title: 'Funds converted successfully!', timeout: 90_000 });
+    await expectUsdsDelivered(testAccount, before);
+    await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0, { timeout: 60_000 });
+  });
+
+  test('A claim sent from another device that sold for USDS reads Claimed and offers no convert', async ({
+    isolatedPage,
+    testAccount,
+    browser
+  }) => {
+    const iris = await stubIris(isolatedPage);
+    const bridge = await openOnBase(isolatedPage);
+    const { usds: before } = await l1AccountState(testAccount);
+    const txHash = await confirmBurn(bridge, isolatedPage);
+    await iris.attest(NetworkName.base, txHash);
+    await expect(status(bridge)).toHaveText('Ready to claim', { timeout: 90_000 });
+    // USDC the wallet holds anyway, so the card looks for the receive and must tell it sold.
+    await setErc20Balance(L1_USDC, '7', 6, NetworkName.mainnet, testAccount);
+    const scans: string[] = [];
+    await isolatedPage.route(TENDERLY_RPC, route => {
+      const body = route.request().postData() ?? '';
+      if (body.includes('"eth_getLogs"') && body.toLowerCase().includes(TOKEN_MESSENGER_V2.toLowerCase()))
+        scans.push(body);
+      return route.fallback();
+    });
+
+    // The same wallet claims on another device, found through the lookup.
+    const context = await browser.newContext();
+    await context.addInitScript(account => {
+      (window as unknown as { __TEST_ACCOUNT__: string }).__TEST_ACCOUNT__ = account;
+    }, testAccount);
+    const page = await context.newPage();
+    const leaks = await installFixtureRoutes(page);
+    await iris.serve(page);
+    try {
+      const other = new BridgePage(page);
+      await other.gotoConnected();
+      await page.getByTestId('bridge-claim-lookup-open').click();
+      await page.getByTestId('bridge-claim-lookup-network-base').click();
+      await page.getByTestId('bridge-claim-lookup-hash').fill(txHash);
+      await page.getByTestId('bridge-claim-lookup-find').click();
+      await expect(other.cards()).toHaveCount(1, { timeout: 60_000 });
+      await claim(other, page);
+      await expectUsdsDelivered(testAccount, before);
+    } finally {
+      await context.close();
+    }
+    expectNoFixtureLeaks(leaks);
+
     await expect(status(bridge)).toHaveText('Claimed', { timeout: 90_000 });
-    await expect(bridge.card('Ethereum').getByTestId('pending-bridge-action')).toHaveCount(0);
-    await expect(bridge.card('Ethereum').getByTestId('pending-bridge-convert')).toHaveCount(0);
-    expect((await l1AccountState(testAccount)).nonce).toBe(nonceBefore);
+    await expect.poll(() => scans.length, { timeout: 60_000 }).toBeGreaterThan(0);
+    // The scan's receipt and sale reads take a few seconds; an offer would show by then.
+    await isolatedPage.waitForTimeout(10_000);
+    const card = bridge.card('Ethereum');
+    await expect(card.getByTestId('pending-bridge-convert-note')).toHaveCount(0);
+    await expect(card.getByTestId('pending-bridge-convert')).toHaveCount(0);
+    await expect(card.getByTestId('pending-bridge-action')).toHaveCount(0);
   });
 
   test('An Iris outage keeps the card Pending, and it becomes claimable once Iris answers', async ({
