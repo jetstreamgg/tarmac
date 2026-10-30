@@ -7,6 +7,7 @@ import {
   StUsdsProviderType,
   StUsdsProviderStatus,
   StUsdsSelectionReason,
+  StUsdsQuote,
   StUsdsQuoteParams,
   StUsdsProviderSelectionResult,
   StUsdsDirection
@@ -21,6 +22,14 @@ export type StUsdsProviderSelectionParams = StUsdsQuoteParams & {
   /** Whether this is a max withdrawal */
   isMax?: boolean;
 };
+
+/** How Curve's rate compares when Curve is the route. A native quote that failed
+ * has rate 0, which would read as "+100%": there is no rate to compare (APP-509). */
+function curveRateDifference(nativeQuote?: StUsdsQuote, curveQuote?: StUsdsQuote): number {
+  return nativeQuote?.rateInfo.effectiveRate
+    ? compareRates(nativeQuote, curveQuote, STUSDS_PROVIDER_CONFIG).differencePercent
+    : 0;
+}
 
 /**
  * Main orchestration hook that selects the optimal provider for stUSDS operations.
@@ -95,12 +104,24 @@ export function useStUsdsProviderSelection(
       selectedProvider = StUsdsProviderType.CURVE;
       selectionReason = StUsdsSelectionReason.CURVE_ONLY_AVAILABLE;
       // Calculate rate difference even when native is blocked
-      const comparison = compareRates(nativeData?.quote, curveData?.quote, STUSDS_PROVIDER_CONFIG);
-      rateDifferencePercent = comparison.differencePercent;
+      rateDifferencePercent = curveRateDifference(nativeData?.quote, curveData?.quote);
     } else if (isNativeAvailable && !isCurveAvailable) {
       // Only native available
       selectedProvider = StUsdsProviderType.NATIVE;
       selectionReason = StUsdsSelectionReason.NATIVE_ONLY_AVAILABLE;
+    } else if (
+      direction === StUsdsDirection.WITHDRAW &&
+      nativeData?.state.maxWithdraw !== undefined &&
+      amount > nativeData.state.maxWithdraw &&
+      curveData?.quote?.isValid &&
+      userStUsdsBalance !== undefined &&
+      curveData.quote.inputAmount <= userStUsdsBalance
+    ) {
+      // A typed amount above the native max that the user's shares do cover
+      // through Curve: the native engine would refuse it, leaving Confirm dead.
+      selectedProvider = StUsdsProviderType.CURVE;
+      selectionReason = StUsdsSelectionReason.CURVE_ONLY_AVAILABLE;
+      rateDifferencePercent = curveRateDifference(nativeData.quote, curveData.quote);
     } else {
       // Both available - compare rates
       const comparison = compareRates(nativeData?.quote, curveData?.quote, STUSDS_PROVIDER_CONFIG);
@@ -113,7 +134,15 @@ export function useStUsdsProviderSelection(
       if (rateExceedsThreshold && comparison.betterProvider) {
         if (comparison.betterProvider === StUsdsProviderType.CURVE) {
           selectedProvider = StUsdsProviderType.CURVE;
-          selectionReason = StUsdsSelectionReason.CURVE_BETTER_RATE;
+          // A native quote that failed compares as rate 0, reading as "+100%":
+          // that is Curve being the only usable route, not a better rate. A
+          // valid one only loses here on a positive difference.
+          if (nativeData?.quote?.isValid) {
+            selectionReason = StUsdsSelectionReason.CURVE_BETTER_RATE;
+          } else {
+            selectionReason = StUsdsSelectionReason.CURVE_ONLY_AVAILABLE;
+            rateDifferencePercent = 0;
+          }
         } else {
           selectedProvider = StUsdsProviderType.NATIVE;
           selectionReason = StUsdsSelectionReason.NATIVE_BETTER_RATE;
@@ -131,7 +160,7 @@ export function useStUsdsProviderSelection(
       allProvidersBlocked,
       rateDifferencePercent
     };
-  }, [nativeData, curveData, direction]);
+  }, [nativeData, curveData, direction, amount, userStUsdsBalance]);
 
   const isLoading = isNativeLoading || isCurveLoading;
 

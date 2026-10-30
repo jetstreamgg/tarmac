@@ -1,5 +1,4 @@
-import { ReadHook } from '../hooks';
-import { useBaLabsHistoric } from '../shared/useBaLabsHistoric';
+import { useBaLabsHistoric, type BaLabsHistoricHook } from '../shared/useBaLabsHistoric';
 
 export type RewardsChartInfo = {
   apr: string;
@@ -46,7 +45,7 @@ export function useRewardsChartInfo({
 }: {
   rewardContractAddress: string;
   limit?: number;
-}): ReadHook & { data?: RewardsChartInfoParsed[] } {
+}): BaLabsHistoricHook<RewardsChartInfoParsed> {
   return useBaLabsHistoric<RewardsChartInfo, RewardsChartInfoParsed>({
     path: `/farms/${rewardContractAddress.toLowerCase()}/historic/`,
     limit,

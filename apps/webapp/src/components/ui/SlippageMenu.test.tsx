@@ -1,5 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
+import { useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -103,6 +104,116 @@ describe('SlippageMenu', () => {
 
     expect((screen.getByTestId('slippage-menu-input') as HTMLInputElement).value).toBe('50');
     expect(onChange).toHaveBeenLastCalledWith(0.5);
+  });
+
+  it('never commits 0% when the custom field is cleared', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '' } });
+
+    expect(input.value).toBe('');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('never commits 0% when zero is typed', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input');
+    for (const value of ['0', '0.', '0.0', '0.00']) {
+      fireEvent.change(input, { target: { value } });
+    }
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('commits a sub-1% tolerance typed digit by digit', () => {
+    renderMenu();
+    openMenu();
+
+    selectTab('slippage-menu-custom-tab');
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    for (const value of ['0', '0.', '0.5']) {
+      fireEvent.change(input, { target: { value } });
+    }
+
+    expect(input.value).toBe('0.5');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(0.005);
+  });
+
+  it('keeps typing through the default value', () => {
+    const Controlled = () => {
+      const [value, setValue] = useState(0.008);
+      return (
+        <I18nProvider i18n={i18n}>
+          <SlippageMenu value={value} defaultValue={0.002} onChange={setValue} />
+          <output data-testid="committed">{value}</output>
+        </I18nProvider>
+      );
+    };
+    render(<Controlled />);
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    for (const value of ['0', '0.', '0.2', '0.25']) {
+      fireEvent.change(input, { target: { value } });
+      expect(input.value).toBe(value);
+    }
+    expect(screen.getByTestId('committed').textContent).toBe('0.0025');
+  });
+
+  it('puts the tolerance in effect back on blur when nothing was committed', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '0.' } });
+    fireEvent.blur(input);
+
+    expect(input.value).toBe('0.5');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('puts the tolerance in effect back when the menu closes with the field still focused', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    input.focus();
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    openMenu();
+
+    expect((screen.getByTestId('slippage-menu-input') as HTMLInputElement).value).toBe('0.5');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves a committed value alone on blur', () => {
+    renderMenu({ value: 0.005 });
+    openMenu();
+
+    const input = screen.getByTestId('slippage-menu-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '0.8' } });
+    fireEvent.blur(input);
+
+    expect(input.value).toBe('0.8');
+  });
+
+  it('warns when the custom tolerance is above 1%', () => {
+    renderMenu({ value: 0.015 });
+    openMenu();
+
+    expect(screen.getByTestId('slippage-menu-high-warning')).toBeTruthy();
+  });
+
+  it('does not warn at or below 1%', () => {
+    renderMenu({ value: 0.01 });
+    openMenu();
+
+    expect(screen.queryByTestId('slippage-menu-high-warning')).toBeNull();
   });
 
   it('resets to the default when Auto is selected', () => {

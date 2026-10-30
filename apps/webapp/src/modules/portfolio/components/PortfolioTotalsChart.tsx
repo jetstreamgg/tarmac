@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useUsdsDaiData, useSkySavingsRateHistoricData } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { TokenIconStack } from '@/modules/ui/components/TokenIconStack';
+import { useSettledTimeFrame } from '@/modules/ui/hooks/useSettledTimeFrame';
 import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartData';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -41,11 +42,17 @@ export function PortfolioTotalsChart() {
 
   const limit = getDayCountFromTimeFrame(timeFrame);
 
-  const { data: usdsDaiData, isLoading: usdsLoading, error: usdsError } = useUsdsDaiData({ limit });
+  const {
+    data: usdsDaiData,
+    isLoading: usdsLoading,
+    error: usdsError,
+    isPlaceholderData: usdsIsPlaceholder
+  } = useUsdsDaiData({ limit });
   const {
     data: ssrData,
     isLoading: ssrLoading,
-    error: ssrError
+    error: ssrError,
+    isPlaceholderData: ssrIsPlaceholder
   } = useSkySavingsRateHistoricData({ daysAgo: ssrDaysAgoFromTimeFrame(timeFrame) });
 
   const usdsInput = useMemo(
@@ -67,8 +74,10 @@ export function PortfolioTotalsChart() {
     [ssrData]
   );
 
-  const usdsChart = useParseTokenChartData(timeFrame, usdsInput);
-  const ssrChart = useParseTokenChartData(timeFrame, ssrInput);
+  const usdsTimeFrame = useSettledTimeFrame(timeFrame, usdsIsPlaceholder);
+  const ssrTimeFrame = useSettledTimeFrame(timeFrame, ssrIsPlaceholder);
+  const usdsChart = useParseTokenChartData(usdsTimeFrame, usdsInput);
+  const ssrChart = useParseTokenChartData(ssrTimeFrame, ssrInput);
 
   const isUsds = metric === 'usds';
   const tokenSymbols = isUsds ? ['USDS', 'DAI'] : ['USDS'];
@@ -79,13 +88,14 @@ export function PortfolioTotalsChart() {
         variant="detail"
         dataTestId="portfolio-totals-chart"
         data={isUsds ? usdsChart : ssrChart}
+        plottedTimeFrame={isUsds ? usdsTimeFrame : ssrTimeFrame}
         isLoading={isUsds ? usdsLoading : ssrLoading}
         error={isUsds ? usdsError : ssrError}
         symbol="USDS"
         tokenSymbols={tokenSymbols}
         // The comp (1036:189291) leads the headline figure with the series'
         // 32px token mark (APP-443 item 2.1).
-        icons={<TokenIconStack symbols={tokenSymbols} size={32} className="shrink-0" />}
+        icons={<TokenIconStack symbols={tokenSymbols} size={32} labelled className="shrink-0" />}
         // …and tags the figure with the period's change (Figma 2376:225249,
         // "missing trend badge"). The mark now stands in for the symbol, which
         // no longer trails the figure.

@@ -199,7 +199,12 @@ const forkVnets = async chainType => {
       const data = await res.json().catch(() => null);
       const ok = res.status === 200 && !!data?.id;
       if (!ok) {
-        console.error(`There was an error while forking the ${chain} virtual testnet:`, res.status, data);
+        // Not the whole body: a created vnet's response carries its Admin RPC.
+        console.error(
+          `There was an error while forking the ${chain} virtual testnet:`,
+          res.status,
+          data?.id ?? data?.error ?? data?.message
+        );
       }
       return { ok, data };
     })
@@ -229,7 +234,12 @@ const forkVnets = async chainType => {
 
     if (vnetsResponse.ok) {
       const vnetsData = await vnetsResponse.json();
-      console.log('Current vnets state:', JSON.stringify(vnetsData, null, 2));
+      // IDs and names only: the full response carries every listed vnet's
+      // Admin RPC URL, and public-repo workflow logs are world-readable (APP-480).
+      const summary = (Array.isArray(vnetsData) ? vnetsData : []).map(vnet =>
+        `${vnet.id} ${vnet.display_name} ${vnet.status ?? ''}`.trim()
+      );
+      console.log(`Current vnets state (${summary.length}):\n${summary.join('\n')}`);
     } else {
       console.error('Failed to fetch vnets state:', vnetsResponse.status, vnetsResponse.statusText);
     }
@@ -270,6 +280,13 @@ const forkVnets = async chainType => {
     });
 
     await writeFile('./tenderlyTestnetData.json', JSON.stringify(updatedData));
+    // This run's own vnets, kept apart from the data file (which also holds the
+    // tracked e2e pool) so CI cleanup deletes exactly these — the age-based
+    // delete:all sweep skips vnets this young (APP-480).
+    await writeFile(
+      './tenderlyCreatedVnets.json',
+      JSON.stringify(createdIds.map(id => ({ TENDERLY_TESTNET_ID: id })))
+    );
   } catch (error) {
     console.error('Failed to save the forked virtual testnets:', error);
     await deleteCreatedVnets(createdIds);

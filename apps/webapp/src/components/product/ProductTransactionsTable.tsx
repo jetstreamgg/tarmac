@@ -1,5 +1,5 @@
 import { hasTextSelection, openInNewTab } from '@/lib/openInNewTab';
-import { AriaAttributes, Fragment, ReactNode, useRef, useState } from 'react';
+import { AriaAttributes, Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useAccount } from 'wagmi';
 import { cn } from '@/lib/cn';
@@ -173,9 +173,15 @@ export function ProductTransactionsTable<T>({
   const { bpi } = useBreakpointIndex();
   const isCards = !!renderCard && bpi < BP.md;
   const cardListRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  // Set by a page change, consumed once the new page's rows are on screen.
+  const focusNewPageRef = useRef(false);
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage);
     onPageChange?.(nextPage, totalPages);
+    // Keyboard paging only: a mouse user's pointer stays on the pager, which
+    // moving focus could scroll out from under it.
+    focusNewPageRef.current = nextPage !== page && !!document.activeElement?.matches(':focus-visible');
     // A shorter page of tall cards would otherwise leave the viewport below the list.
     const list = cardListRef.current;
     if (
@@ -187,6 +193,17 @@ export function ProductTransactionsTable<T>({
       list.scrollIntoView({ block: 'start', behavior: 'instant' });
     }
   };
+  // Paging swaps the rows in place, so focus would stay on the pager and the
+  // next Tab would skip the new rows entirely. Move it to the first row of the
+  // new page instead (APP-655). Inert rows carry tabIndex -1 for this.
+  useEffect(() => {
+    if (!focusNewPageRef.current) return;
+    focusNewPageRef.current = false;
+    const container = isCards ? cardListRef.current : tableRef.current;
+    const firstRow = container?.querySelector<HTMLElement>('[data-page-row]');
+    // Cards manage their own scroll on paging (above).
+    firstRow?.focus({ preventScroll: isCards });
+  }, [page, isCards]);
   const showPagination = !isLoading && !error && totalPages > 1;
   const widths = columnWidths(columns);
   const { isConnected } = useAccount();
@@ -236,7 +253,8 @@ export function ProductTransactionsTable<T>({
                 >
                   <div
                     data-testid={rowTestId?.(row)}
-                    tabIndex={activate ? 0 : undefined}
+                    data-page-row
+                    tabIndex={activate ? 0 : -1}
                     {...intentProps(row)}
                     onClick={clickAction(activate)}
                     onKeyDown={
@@ -276,7 +294,7 @@ export function ProductTransactionsTable<T>({
       {/* No width floor: the cells' own min-content is the only limit before the
           wrapper scrolls. A fixed floor forced a scroll inside the tablet-seam
           pane (912 to 1200), where the design fits this table in 587px. */}
-      <Table data-testid={dataTestId}>
+      <Table ref={tableRef} data-testid={dataTestId}>
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (
@@ -316,9 +334,10 @@ export function ProductTransactionsTable<T>({
                   <TableRow
                     data-testid={rowTestId?.(row)}
                     data-hover={activate ? undefined : 'off'}
+                    data-page-row
                     // No role="button": overriding the native row role breaks
                     // table navigation for assistive tech (CodeRabbit).
-                    tabIndex={activate ? 0 : undefined}
+                    tabIndex={activate ? 0 : -1}
                     {...intentProps(row)}
                     onClick={clickAction(activate)}
                     onKeyDown={

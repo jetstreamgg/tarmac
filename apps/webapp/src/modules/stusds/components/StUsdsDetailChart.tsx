@@ -6,6 +6,7 @@ import { TimeFrame } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { RateTvlDetailChart, withLivePoint } from '@/components/product/RateTvlDetailChart';
 import { useParseStUsdsChartData } from '../hooks/useParseStUsdsChartData';
+import { useSettledTimeFrame } from '@/modules/ui/hooks/useSettledTimeFrame';
 
 /**
  * The product-detail Rate/TVL chart for stUSDS — injected into
@@ -22,13 +23,15 @@ export function StUsdsDetailChart() {
   const {
     data: chartInfo,
     isLoading,
-    error
+    error,
+    isPlaceholderData
   } = useStUsdsChartInfo({
     limit: getDayCountFromTimeFrame(timeFrame)
   });
   const { data: stUsdsData } = useStUsdsData();
 
-  const parsed = useParseStUsdsChartData(timeFrame, chartInfo || []);
+  const seriesTimeFrame = useSettledTimeFrame(timeFrame, isPlaceholderData);
+  const parsed = useParseStUsdsChartData(seriesTimeFrame, chartInfo || []);
 
   // Headline + live trailing point come from the canonical on-chain module data
   // (matches the Details grid), appended to the historic series.
@@ -50,8 +53,8 @@ export function StUsdsDetailChart() {
     <RateTvlDetailChart
       dataTestId="stusds-detail-chart"
       symbol="USDS"
-      rate={{ data: rateData, isLoading, error, displayValue: liveRate }}
-      tvl={{ data: tvlData, isLoading, error, displayValue: liveTvl }}
+      rate={{ data: rateData, timeFrame: seriesTimeFrame, isLoading, error, displayValue: liveRate }}
+      tvl={{ data: tvlData, timeFrame: seriesTimeFrame, isLoading, error, displayValue: liveTvl }}
       tooltipLabel="Daily average"
       onTimeFrameChange={setTimeFrame}
     />

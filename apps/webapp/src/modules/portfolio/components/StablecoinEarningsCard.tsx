@@ -555,6 +555,8 @@ function EarningsHeadline({
               width={iconSize}
               showChainIcon={false}
               className="h-full w-full"
+              // The headline's only mention of which tokens it sums.
+              alt={symbol}
             />
           ))}
         </IconStack>

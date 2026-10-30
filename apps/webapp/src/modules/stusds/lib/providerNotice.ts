@@ -102,7 +102,16 @@ export function getProviderMessage(
           );
         }
 
+        // No blocked reason: native isn't closed, it just can't take this amount
+        // (above the user's native max) or couldn't quote it. Say what the route
+        // costs when there's a rate to compare.
         default:
+          if (rateDifferencePercent < 0) {
+            return i18n._(msg`Routing through Curve with a ${rateText}% premium`);
+          }
+          if (rateDifferencePercent > 0) {
+            return `${i18n._(msg`Routing through Curve for a better rate`)} (+${rateText}%)`;
+          }
           return flow === 'supply'
             ? i18n._(msg`Routing through Curve - native supply unavailable`)
             : i18n._(msg`Routing through Curve - native withdrawals unavailable`);
