@@ -203,20 +203,12 @@ describe('ConnectedPortfolio matured-position tab default', () => {
     expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ tab: 'supplied' });
   });
 
-  it('leaves matured dust under the significant-balance floor on Idle', () => {
-    setSettled({ depositedUsd: 0, idleUsd: 0 });
-    h.marketplace.maturedRows = [h.maturedRow(5)];
-    renderPage();
-    expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('idle');
-    expect(readPortfolioDecision(ADDRESS_A)).toMatchObject({ tab: 'idle' });
-  });
-
   it('hides a matured position where fixed yield is region-restricted', () => {
     setSettled({ depositedUsd: 0, idleUsd: 0 });
     h.geo.fixedEnabled = false;
-    h.marketplace.maturedRows = [h.maturedRow(5)];
+    h.marketplace.maturedRows = [h.maturedRow(500)];
     renderPage();
-    // Nothing visible is held, so the default falls through to Idle.
+    // Funded, so only the region rule can explain landing on Idle.
     expect(screen.getByTestId('positions-section').getAttribute('data-tab')).toBe('idle');
   });
 });

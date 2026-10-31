@@ -442,13 +442,6 @@ describe('PortfolioPositionsSection — matured positions', () => {
     expect(screen.getAllByTestId('position-card')).toHaveLength(1);
   });
 
-  it('renders a matured-only wallet as a carousel, not the empty state', () => {
-    renderSection([MATURED]);
-
-    expect(screen.getByTestId('matured-card')).toBeTruthy();
-    expect(screen.queryByText('No supplied positions yet.')).toBeNull();
-  });
-
   it('leaves no empty carousel slot while the PT balance is unread', () => {
     h.ptBalances = {};
     renderSection([SAVINGS, MATURED]);

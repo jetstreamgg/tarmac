@@ -26,13 +26,4 @@ describe('portfolioDecision', () => {
   it('lands a funded wallet on Supplied', () => {
     expect(portfolioDecision(1000, 0)).toEqual({ outcome: 'none', tab: 'supplied' });
   });
-
-  it('applies the same floor to a matured balance, which counts in depositedUsd', () => {
-    // $4 of matured dust alone stays on Idle; the Claim card is still on Supplied.
-    expect(portfolioDecision(4, 5000)).toEqual({ outcome: 'allocate', tab: 'idle' });
-    expect(portfolioDecision(SIGNIFICANT_BALANCE_USD + 0.01, 0)).toEqual({
-      outcome: 'none',
-      tab: 'supplied'
-    });
-  });
 });

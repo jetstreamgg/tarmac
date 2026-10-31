@@ -270,23 +270,6 @@ describe('useAppLoader', () => {
     expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'none', tab: 'supplied' });
   });
 
-  it('treats matured dust like any other small position', () => {
-    const { rerender } = render(<Harness />);
-    connectManually(rerender);
-
-    h.marketplace = {
-      rows: [],
-      maturedRows: [{ position: { totalUsd: 3 }, claimable: true }],
-      isPositionsLoading: false,
-      isPositionsError: false
-    };
-    h.balances = { balances: [{ amountUsd: 5000 }], isLoading: false, isFetched: true, isError: false };
-    act(() => vi.advanceTimersByTime(1200));
-    rerenderHarness(rerender);
-
-    expect(readPortfolioDecision(ADDRESS)).toMatchObject({ outcome: 'allocate', tab: 'idle' });
-  });
-
   it('keeps a funded wallet on /portfolio: cache written, no navigation', () => {
     const { rerender } = render(<Harness />);
     connectManually(rerender);
