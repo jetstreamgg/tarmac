@@ -292,8 +292,8 @@ function OpenSupply() {
   return <OpenOnMount open={() => openSupply(MARKET)} />;
 }
 function OpenRedeem() {
-  const { openRedeemModal, isPrepared } = usePendleRedeemModal(MATURED_MARKET);
-  return isPrepared ? <OpenOnMount open={() => void openRedeemModal()} /> : null;
+  const { openRedeemModal } = usePendleRedeemModal(MATURED_MARKET);
+  return <OpenOnMount open={() => void openRedeemModal()} />;
 }
 
 const renderWith = (gate: PreTransactionGate, opener: ReactNode) =>

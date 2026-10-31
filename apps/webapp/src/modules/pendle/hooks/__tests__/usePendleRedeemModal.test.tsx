@@ -62,7 +62,14 @@ const hoisted = vi.hoisted(() => ({
   setIsAutoSwitchingMock: vi.fn(),
   setAutoSwitchIntentMock: vi.fn(),
   trackSwitchRequestedMock: vi.fn(),
-  trackSwitchCompletedMock: vi.fn()
+  trackSwitchCompletedMock: vi.fn(),
+  // The provider's live session, and the args the quote hook last saw.
+  activeSessionId: null as string | null,
+  quoteEnabled: undefined as boolean | undefined,
+  // Swappable write-hook simulation state; defaults to prepared.
+  writeError: undefined as Error | undefined,
+  // Swappable quote state; undefined keeps the healthy QUOTE.
+  quoteState: undefined as { data: unknown; isLoading: boolean; error: Error | undefined } | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -120,13 +127,14 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: () => undefined,
       dataSources: []
     }),
-    useQuotePendleConvert: () => ({
-      data: QUOTE,
-      isLoading: false,
-      error: undefined,
-      mutate: () => undefined,
-      dataSources: []
-    }),
+    useQuotePendleConvert: (args: { enabled?: boolean }) => {
+      hoisted.quoteEnabled = args.enabled;
+      return {
+        ...(hoisted.quoteState ?? { data: QUOTE, isLoading: false, error: undefined }),
+        mutate: () => undefined,
+        dataSources: []
+      };
+    },
     useBatchPendleConvert: () => {
       // Snapshot the current execute at render time so each render's writeHook
       // closes over the args from that render — matches the real hook's
@@ -135,9 +143,9 @@ vi.mock('@/hooks', async importOriginal => {
       return {
         execute: () => captured(),
         reset: () => undefined,
-        prepared: true,
+        prepared: !hoisted.writeError,
         isLoading: false,
-        error: undefined,
+        error: hoisted.writeError,
         currentCallIndex: 0
       };
     }
@@ -163,6 +171,7 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
     launch: hoisted.launchMock,
     updateModalContent: hoisted.updateMock,
     isModalOpen: hoisted.isModalOpen,
+    activeSessionId: hoisted.activeSessionId,
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
@@ -455,5 +464,111 @@ describe('usePendleRedeemModal network switch', () => {
     expect(hoisted.switchChainAsyncMock).not.toHaveBeenCalled();
     expect(hoisted.launchMock).not.toHaveBeenCalled();
     view.unmount();
+  });
+});
+
+describe('usePendleRedeemModal claim quote failure', () => {
+  beforeEach(() => {
+    hoisted.launchMock.mockClear();
+    hoisted.isModalOpen = false;
+    hoisted.txStatus = 'idle';
+    hoisted.matured = true;
+    hoisted.chainId = 1;
+  });
+
+  afterEach(() => {
+    hoisted.quoteState = undefined;
+    hoisted.writeError = undefined;
+    vi.clearAllMocks();
+  });
+
+  const Capture = () => {
+    const { openRedeemModal } = usePendleRedeemModal(MATURED_MARKET);
+    return <button data-testid="open-redeem" onClick={() => void openRedeemModal()} />;
+  };
+  const clickOpen = (container: HTMLElement) =>
+    act(async () => {
+      container
+        .querySelector('[data-testid="open-redeem"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  // The card no longer gates Claim on a quote: the modal opens and says why.
+  const openWith = async (quoteState: typeof hoisted.quoteState) => {
+    hoisted.quoteState = quoteState;
+    const view = renderComponent(<Capture />);
+    await clickOpen(view.container);
+    view.unmount();
+    return hoisted.launchMock.mock.calls[0][0] as { errorMessage?: string };
+  };
+
+  it('says nothing while the quote is healthy or still loading', async () => {
+    expect((await openWith(undefined)).errorMessage).toBeUndefined();
+    hoisted.launchMock.mockClear();
+    expect(
+      (await openWith({ data: undefined, isLoading: true, error: undefined })).errorMessage
+    ).toBeUndefined();
+  });
+
+  it('says a dust position is too small to claim', async () => {
+    const config = await openWith({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Pendle /convert 400: {"message":"Input valuation is too low"}')
+    });
+    expect(config.errorMessage).toBe('This position is too small to claim.');
+  });
+
+  it('suggests a different token when Pendle has no route', async () => {
+    const config = await openWith({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Pendle /convert returned no routes')
+    });
+    expect(config.errorMessage).toBe(
+      "Pendle can't route this claim to the selected token. Try a different token."
+    );
+  });
+
+  it.each([
+    ['Pendle /convert 503: {}', "Pendle's quote service is temporarily unavailable. Please try again."],
+    [
+      'Pendle: malformed quote — missing input/output struct for "exitPostExpToToken"',
+      'Received an invalid quote from Pendle. Please try again.'
+    ],
+    ['Failed to fetch', "Couldn't fetch a quote from Pendle. Check your connection and try again."]
+  ])('uses the buy/sell copy for any other quote error: %s', async (raw, expected) => {
+    const config = await openWith({ data: undefined, isLoading: false, error: new Error(raw) });
+    expect(config.errorMessage).toBe(expected);
+  });
+
+  it.each([
+    ['with a quote', undefined],
+    ['when no quote arrived and none failed', { data: undefined, isLoading: false, error: undefined }]
+  ])(
+    'gives a failed simulation the shared fallback, not advice to adjust inputs (%s)',
+    async (_, quoteState) => {
+      hoisted.writeError = new Error('HTTP request failed');
+      const config = await openWith(quoteState);
+      expect(config.errorMessage).toBe('Something went wrong preparing the transaction. Please try again.');
+    }
+  );
+
+  it("fetches the quote only while this card's modal session is live, like the buy/sell modal", async () => {
+    hoisted.activeSessionId = null;
+    const view = renderComponent(<Capture />);
+    expect(hoisted.quoteEnabled).toBe(false);
+
+    await clickOpen(view.container);
+    const { sessionId } = hoisted.launchMock.mock.calls[0][0] as { sessionId: string };
+    hoisted.activeSessionId = sessionId;
+    view.rerender(<Capture />);
+    expect(hoisted.quoteEnabled).toBe(true);
+
+    // Another card's session doesn't wake this card's quote.
+    hoisted.activeSessionId = 'another-card';
+    view.rerender(<Capture />);
+    expect(hoisted.quoteEnabled).toBe(false);
+    view.unmount();
+    hoisted.activeSessionId = null;
   });
 });
