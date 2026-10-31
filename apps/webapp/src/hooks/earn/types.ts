@@ -99,6 +99,17 @@ export type EarnProductRow = EarnProductDescriptor & {
   rate30d: EarnRate;
   tvl?: EarnUsdAmount;
   position?: EarnUsdAmount;
+  /**
+   * Set on a wound-down product: a matured Pendle market. Such a row carries
+   * no rate or TVL, only the wallet's position, and comes from
+   * `EarnMarketplaceResult.maturedRows`, never `rows`.
+   */
+  status?: 'matured';
+  /**
+   * Matured rows only: the wallet still holds PT to claim. Set from the raw
+   * balance, so the claim stays reachable when the price feed can't value it.
+   */
+  claimable?: boolean;
   isLoading: boolean;
   error: Error | null;
 };
@@ -126,6 +137,21 @@ export type EarnMarketplaceResult = {
    * consumer applies the rewards module's region check.
    */
   endedRewardPositions: EndedRewardPosition[];
+  /**
+   * Every matured Pendle market in the registry, as `status: 'matured'` rows
+   * (position 0 when the wallet holds none). Kept out of `rows` so the
+   * opportunities surfaces never list them; the Portfolio folds them into its
+   * supplied view and the Earn page's "Requires action" lists the held ones.
+   * NOT geo-gated, like `rows`.
+   */
+  maturedRows: EarnProductRow[];
+  /**
+   * `rows` then `maturedRows`: every product a wallet can hold a position in.
+   * Position surfaces (Portfolio totals, the landing decision) read this, so
+   * none has to remember to fold the matured markets in; opportunity surfaces
+   * read `rows`.
+   */
+  positionRows: EarnProductRow[];
   /** True while any row is still loading. Rows fail independently — check per-row error. */
   isLoading: boolean;
   /**
@@ -142,6 +168,4 @@ export type EarnMarketplaceResult = {
    * when this is set.
    */
   isPositionsError: boolean;
-  /** Σ of every row's user position USD — the wallet's total deposited across all earn products. */
-  totalDepositedUsd: number;
 };

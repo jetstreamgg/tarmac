@@ -12,16 +12,12 @@ import { readPortfolioDecision, writePortfolioDecision } from '@/lib/portfolioDe
 import { PageHeading } from '@/components/ui/page-header';
 import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
-import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
+import { portfolioCallout, portfolioDecision, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { useWalletEarnings } from '../hooks/useWalletEarnings';
 import { filterWalletEarnings } from '../earnings/filterWalletEarnings';
-import type { BreakdownProduct } from '../earnings/earningsBreakdown';
-import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
-import { isMarketMatured } from '@/hooks/pendle/helpers';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
-import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import { PortfolioRewardsSections } from './PortfolioRewardsSections';
 import { PortfolioTransactionsSection } from './PortfolioTransactionsSection';
@@ -38,7 +34,10 @@ import { setPendingNavIntent } from '@/modules/analytics/lib/navigationIntent';
  * disconnected visitors get (gated on the settled `callout` signal).
  */
 export function ConnectedPortfolio() {
-  const { rows, isLoading, isPositionsError } = useEarnMarketplace();
+  // Matured markets included: they are still capital in the protocol, so
+  // every Portfolio total, the carousel and the earnings popup read them from
+  // the same view as the live positions (APP-532).
+  const { positionRows: allRows, isLoading, isPositionsError } = useEarnMarketplace();
   const { balances, isLoading: balancesLoading, isError: balancesError } = useStablecoinBalances();
   // APP-450: aggregated per-wallet earnings (Total earned / Earned this month
   // in the card footer, "Already earned" on each position card).
@@ -46,33 +45,16 @@ export function ConnectedPortfolio() {
   // Geo-restricted positions are hidden from every Portfolio surface (APP-484),
   // so all totals/views build from the visible rows, and the savings promos
   // (callouts, idle-tab rate stats) drop when the savings module is restricted.
-  const visibleRows = useGeoVisibleRows(rows);
+  const visibleRows = useGeoVisibleRows(allRows);
   // "Every Portfolio surface" includes the earnings stats: a restricted
   // product's figures drop from the combined totals along with its row. The
-  // filter names the geo-HIDDEN rows (rows minus visibleRows) so sources whose
-  // rows are absent for other reasons — a matured Pendle market is delisted
-  // from the marketplace while its closed position still earned — survive.
+  // filter names the geo-HIDDEN rows (all rows minus visibleRows) so sources
+  // without a row of their own survive.
   const earnings = useMemo(() => {
     const visible = new Set(visibleRows.map(row => row.id));
-    const hidden = new Set(rows.filter(row => !visible.has(row.id)).map(row => row.id));
+    const hidden = new Set(allRows.filter(row => !visible.has(row.id)).map(row => row.id));
     return filterWalletEarnings(walletEarnings, hidden);
-  }, [walletEarnings, rows, visibleRows]);
-  // Products that name the earnings popup rows (APP-589). A matured Pendle
-  // market leaves the marketplace but its closed position keeps its figure in
-  // the combined total, so it gets a row too — otherwise the rows wouldn't add
-  // up to the total above them.
-  const breakdownProducts = useMemo<BreakdownProduct[]>(
-    () => [
-      ...visibleRows,
-      ...PENDLE_MARKETS.filter(m => isMarketMatured(m.expiry)).map(m => ({
-        id: `fixed-${m.marketAddress.toLowerCase()}`,
-        name: m.name,
-        tokenSymbol: m.underlyingSymbol,
-        kind: 'fixed' as const
-      }))
-    ],
-    [visibleRows]
-  );
+  }, [walletEarnings, allRows, visibleRows]);
   const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
   const savingsAvailable = isGeoLoading || isModuleEnabled('savings');
   // The optimistic default above is safe for the settle path (the callout is
@@ -98,12 +80,10 @@ export function ConnectedPortfolio() {
   const [cachedDecision] = useState(() => readPortfolioDecision(address));
 
   const suppliedView = buildSuppliedView(visibleRows);
-  // Matured PT rides beside suppliedView (the marketplace filters matured
-  // markets out, so it can't come from the rows).
-  const { maturedPositions, isLoading: maturedLoading } = usePendleMaturedPositions();
   const idleView = buildIdleView(balances);
   // Best supply rate + venue count per token, for the idle table's rate badge.
-  const idleSupplyInfo = buildIdleSupplyInfo(visibleRows);
+  // Matured markets take no deposits, so they're not a venue.
+  const idleSupplyInfo = buildIdleSupplyInfo(visibleRows.filter(row => row.status !== 'matured'));
 
   // Sky Savings Rate as a decimal fraction (drives the Idle footer + projection).
   // undefined while the query is in flight — the copy would otherwise quote
@@ -133,20 +113,15 @@ export function ConnectedPortfolio() {
   // and shove the earnings card down. That pins the `simulate` outcome
   // exactly; `allocate` (taller banner) and `none` (slot collapses) still
   // shift — the winner can't be known while loading.
+  // Matured PT counts: it is still the user's capital in the protocol.
   const depositedUsd = visibleRows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0);
   const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
   const calloutLoading = isLoading || balancesLoading || isGeoLoading;
-  // Matured PT is still capital in the protocol even though the marketplace
-  // rows drop it — a matured-only wallet gets the Claim card, never the
-  // get-started pitch its $0 depositedUsd would otherwise pick.
-  const hasMatured = !maturedLoading && maturedPositions.length > 0;
-  const callout = hasMatured
-    ? 'none'
-    : cachedDecision
-      ? cachedDecision.outcome
-      : calloutLoading
-        ? 'none'
-        : portfolioCallout(depositedUsd, idleTotalUsd);
+  const callout = cachedDecision
+    ? cachedDecision.outcome
+    : calloutLoading
+      ? 'none'
+      : portfolioCallout(depositedUsd, idleTotalUsd);
   const optimisticSimulate = !cachedDecision && calloutLoading;
 
   // Once every source settles, persist the computed decision for the next
@@ -155,34 +130,14 @@ export function ConnectedPortfolio() {
   // Never off failed data: an errored source settles as empty/zero totals,
   // and caching that would freeze a wrong outcome for the TTL.
   useEffect(() => {
-    if (!address || calloutLoading || maturedLoading || isPositionsError || balancesError) return;
-    writePortfolioDecision(address, {
-      outcome: maturedPositions.length > 0 ? 'none' : portfolioCallout(depositedUsd, idleTotalUsd),
-      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD && maturedPositions.length === 0 ? 'idle' : 'supplied'
-    });
-  }, [
-    address,
-    calloutLoading,
-    maturedLoading,
-    isPositionsError,
-    balancesError,
-    depositedUsd,
-    idleTotalUsd,
-    maturedPositions.length
-  ]);
+    if (!address || calloutLoading || isPositionsError || balancesError) return;
+    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleTotalUsd));
+  }, [address, calloutLoading, isPositionsError, balancesError, depositedUsd, idleTotalUsd]);
 
-  // Matured PT needs action and renders only on Supplied, so it wins the
-  // default (overriding a stale pre-maturity cached 'idle'). The uncached
-  // idle default waits for the matured read like it waits for positions —
-  // deciding on the in-flight empty list would mount Idle, then yank.
   const tab =
     userTab ??
-    (maturedPositions.length > 0
-      ? 'supplied'
-      : (cachedDecision?.tab ??
-        (!isLoading && !isGeoLoading && !maturedLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD
-          ? 'idle'
-          : 'supplied')));
+    cachedDecision?.tab ??
+    (!isLoading && !isGeoLoading && depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
 
   const goToSavings = () => {
     setPendingNavIntent('card', ROUTES.EARN_SAVINGS);
@@ -243,7 +198,7 @@ export function ConnectedPortfolio() {
           idleLoading={balancesLoading}
           savingsRate={savingsAvailable ? savingsRate : undefined}
           earnings={earnings}
-          products={breakdownProducts}
+          products={visibleRows}
           tab={tab}
           onTabChange={setUserTab}
         />
@@ -252,8 +207,6 @@ export function ConnectedPortfolio() {
         <PortfolioPositionsSection
           suppliedView={suppliedView}
           suppliedLoading={isLoading}
-          maturedPositions={maturedPositions}
-          maturedLoading={maturedLoading}
           idleView={idleView}
           idleSupplyInfo={idleSupplyInfo}
           idleLoading={balancesLoading}

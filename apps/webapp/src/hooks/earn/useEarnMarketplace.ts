@@ -448,10 +448,36 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
     familyMainnetId
   ]);
 
+  // Matured markets, from the same registry descriptors as the live rows. No
+  // rate, TVL or history: the market takes no deposits and its PT redeems at
+  // face value, so only the position is live. The valuation falls back to face
+  // value past expiry (ptDiscount).
+  const maturedRows = useMemo<EarnProductRow[]>(() => {
+    const connected = !!address;
+    return products
+      .filter(product => product.maturity !== undefined && isMarketMatured(product.maturity))
+      .map(product => {
+        const userMarket = pendleUserAssets.markets.find(m => m.marketAddress === product.address);
+        return {
+          ...product,
+          status: 'matured' as const,
+          rate: toRate(undefined),
+          rate30d: toRate(undefined),
+          position: connected ? singleChainAmount(familyMainnetId, userMarket?.valuationUsd ?? 0) : undefined,
+          claimable: connected && (userMarket?.ptBalance ?? 0n) > 0n,
+          isLoading: pendleUserAssetsLoading,
+          error: pendleUserAssetsError || null
+        };
+      });
+  }, [products, address, pendleUserAssets, pendleUserAssetsLoading, pendleUserAssetsError, familyMainnetId]);
+  const positionRows = useMemo(() => [...rows, ...maturedRows], [rows, maturedRows]);
+
   return {
     rows,
     endedRewardPositions,
-    isLoading: rows.some(row => row.isLoading),
+    maturedRows,
+    positionRows,
+    isLoading: rows.some(row => row.isLoading) || maturedRows.some(row => row.isLoading),
     // Every source a row's `position` reads from — balances plus the prices
     // that turn them into USD. Rate/TVL/chart sources (the slow external
     // APIs) deliberately excluded.
@@ -468,7 +494,6 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
       !!rewardsBalancesError ||
       !!vaultUserAssetsError ||
       !!pendleUserAssetsError ||
-      !!stUsdsError,
-    totalDepositedUsd: rows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0)
+      !!stUsdsError
   };
 }

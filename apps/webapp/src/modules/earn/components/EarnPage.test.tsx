@@ -15,7 +15,7 @@ import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
 import { buildRewardsProduct, type EarnProductRow, type RewardContract } from '@/hooks';
 
 // Rows are injected; every product family's own data hook is out of scope here.
-const marketplace = vi.hoisted(() => ({ rows: [] as unknown[] }));
+const marketplace = vi.hoisted(() => ({ rows: [] as unknown[], maturedRows: [] as unknown[] }));
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
@@ -23,8 +23,8 @@ vi.mock('@/hooks', async importOriginal => {
     useEarnMarketplace: () => ({
       rows: marketplace.rows,
       endedRewardPositions: ended.current.positions,
-      isLoading: false,
-      totalDepositedUsd: 0
+      maturedRows: marketplace.maturedRows,
+      isLoading: false
     }),
     useUsdsDaiData: () => ({ data: undefined, isLoading: false })
   };
@@ -40,15 +40,6 @@ vi.mock('@/modules/geo-config', () => ({
     isLoading: geo.current.isLoading,
     isRegionVerified: true
   })
-}));
-
-// Matured PT drives the "Requires action" section; swappable per test.
-const matured = vi.hoisted(() => ({
-  current: { maturedPositions: [] as { market: Record<string, unknown>; ptBalance: bigint }[] }
-}));
-vi.mock('@/modules/pendle/hooks/usePendleMaturedPositions', () => ({
-  usePendleMaturedPositions: () => matured.current,
-  usePendleMaturedNetworkSwitch: () => undefined
 }));
 
 // Ended reward farms the user still holds — the section's other source,
@@ -284,22 +275,27 @@ describe('EarnPage deep-link anchor scroll', () => {
 });
 
 describe('EarnPage requires-action section', () => {
-  const MATURED = {
-    maturedPositions: [
-      {
-        market: {
-          name: 'Fixed Yield',
-          slug: 'pt-susds',
-          marketAddress: '0x9C56' as `0x${string}`,
-          underlyingSymbol: 'sUSDS',
-          underlyingDecimals: 18,
-          expiry: 1700000000,
-          usdsEquivalence: 'pegged'
-        },
-        ptBalance: 1200n * 10n ** 18n
-      }
-    ]
-  };
+  // The marketplace's matured row: the registry's fixed descriptor, no live
+  // market data, the held PT valued at par.
+  const maturedRow = (positionUsd: number) =>
+    row('fixed-0x9c56', {
+      kind: 'fixed',
+      intent: Intent.FIXED_INTENT,
+      name: 'Fixed Yield',
+      tokenSymbol: 'sUSDS',
+      supplyTokens: ['USDS', 'USDC', 'sUSDS'],
+      risk: 'moderate',
+      riskProfile: 'fixed',
+      detailPath: '/earn/fixed/pt-susds',
+      maturity: 1700000000,
+      address: '0x9C56' as `0x${string}`,
+      status: 'matured',
+      rate: { formatted: '—' },
+      rate30d: { formatted: '—' },
+      position: { totalUsd: positionUsd, byChain: { 1: positionUsd } },
+      claimable: positionUsd > 0
+    });
+  const MATURED = [maturedRow(1200)];
 
   const SKY_FARM = {
     contractAddress: '0x0650CAF159C5A49f711e8169D4336ECB9b950275' as `0x${string}`,
@@ -322,23 +318,25 @@ describe('EarnPage requires-action section', () => {
   };
 
   beforeEach(() => {
-    matured.current = { maturedPositions: [] };
+    marketplace.maturedRows = [];
     ended.current = { positions: [] };
   });
 
   it('stays hidden while the user holds nothing matured', async () => {
+    // A matured market the wallet holds no PT in is still a marketplace row.
+    marketplace.maturedRows = [maturedRow(0)];
     renderPage();
     await screen.findByText('Earn Opportunities');
     expect(screen.queryByTestId('earn-requires-action')).toBeNull();
   });
 
   it('lists a matured position with dashed market cells and the held value', async () => {
-    matured.current = MATURED as typeof matured.current;
+    marketplace.maturedRows = MATURED;
     renderPage();
     await screen.findByText('Requires action');
 
     const row = screen.getByTestId('earn-requires-action-row-matured-0x9c56');
-    expect(row.textContent).toContain('Pendle sUSDS');
+    expect(row.textContent).toContain('Fixed Yield');
     expect(row.textContent).toContain('Matured');
     // 1,200 PT at par → $1.2K compact, like the opportunities table's positions.
     expect(row.textContent).toContain('$1.2K');
@@ -347,7 +345,7 @@ describe('EarnPage requires-action section', () => {
   });
 
   it('respects the table filters like its sibling sections — one list, split in three', async () => {
-    matured.current = MATURED as typeof matured.current;
+    marketplace.maturedRows = MATURED;
     // The matured market is fixed-kind; a savings-only product filter hides it
     // and the section self-hides with it (the Portfolio card still claims).
     renderPage('/earn?product=savings');
@@ -356,7 +354,7 @@ describe('EarnPage requires-action section', () => {
   });
 
   it('stays visible under a filter its registry attributes match', async () => {
-    matured.current = MATURED as typeof matured.current;
+    marketplace.maturedRows = MATURED;
     // The matured market accepted USDC while live, so a USDC filter keeps it.
     renderPage('/earn?token=usdc');
     await screen.findByText('Requires action');
@@ -364,7 +362,7 @@ describe('EarnPage requires-action section', () => {
   });
 
   it('lists an ended reward farm the user still holds, withdraw-only, after the matured rows', async () => {
-    matured.current = MATURED as typeof matured.current;
+    marketplace.maturedRows = MATURED;
     ended.current = ENDED as typeof ended.current;
     renderPage();
     await screen.findByText('Requires action');
@@ -413,7 +411,7 @@ describe('EarnPage requires-action section', () => {
   });
 
   it('routes a row click to the matured market detail page, where the claim card lives', async () => {
-    matured.current = MATURED as typeof matured.current;
+    marketplace.maturedRows = MATURED;
     const router = renderPage();
     await screen.findByText('Requires action');
 

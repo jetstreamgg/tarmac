@@ -9,12 +9,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SuppliedEmpty } from '@/modules/icons';
 import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
-import { type PendleMaturedPosition } from '@/modules/pendle/hooks/usePendleMaturedPositions';
+import { getPendleMarketByAddress, usePendleUserPtBalances } from '@/hooks';
 import { PendleMaturedPositionCard } from '@/modules/pendle/components/PendleMaturedPositionCard';
-import type { SuppliedView } from '../helpers/suppliedView';
+import type { SuppliedPosition, SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
 import type { WalletEarnings } from '../earnings/types';
-import { earningsForPosition, earningsForSuppliedPosition } from '../earnings/earningsForPosition';
+import { earningsForSuppliedPosition, type PositionEarnings } from '../earnings/earningsForPosition';
 import { PositionCard } from './PositionCard';
 import { IdleStablecoinsTable } from './IdleStablecoinsTable';
 import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
@@ -33,8 +33,6 @@ const ITEM_BASIS = 'basis-full pl-2 sm:basis-1/2 desktop:basis-1/3';
 export function PortfolioPositionsSection({
   suppliedView,
   suppliedLoading,
-  maturedPositions,
-  maturedLoading,
   idleView,
   idleSupplyInfo,
   idleLoading,
@@ -44,9 +42,6 @@ export function PortfolioPositionsSection({
 }: {
   suppliedView: SuppliedView;
   suppliedLoading: boolean;
-  /** Matured PT held (network-scoped by the caller) — leads the Supplied carousel. */
-  maturedPositions: PendleMaturedPosition[];
-  maturedLoading: boolean;
   idleView: IdleView;
   idleSupplyInfo: Map<string, IdleSupplyInfo>;
   idleLoading: boolean;
@@ -95,11 +90,11 @@ export function PortfolioPositionsSection({
     );
   }
 
-  if (suppliedView.positions.length === 0 && maturedPositions.length === 0) {
+  if (suppliedView.positions.length === 0) {
     return (
       <section data-testid="portfolio-positions">
         <PortfolioTabs tab={tab} onTabChange={onTabChange} />
-        {suppliedLoading || maturedLoading ? (
+        {suppliedLoading ? (
           <CarouselSkeleton />
         ) : (
           <EmptyState className="mt-8" illustration={<SuppliedEmpty aria-hidden />}>
@@ -109,6 +104,9 @@ export function PortfolioPositionsSection({
       </section>
     );
   }
+
+  const maturedPositions = suppliedView.positions.filter(p => p.status === 'matured');
+  const livePositions = suppliedView.positions.filter(p => p.status !== 'matured');
 
   return (
     <section data-testid="portfolio-positions">
@@ -122,20 +120,16 @@ export function PortfolioPositionsSection({
         </div>
         <CarouselContent className="-ml-2">
           {/* Matured PT leads the row (Figma 2306:72334): it needs action (Claim)
-              while the live positions merely accrue. The marketplace filters
-              matured markets out of suppliedView, so these cards are their only
-              surface (G6). */}
-          {maturedPositions.map(({ market, ptBalance }) => (
-            <CarouselItem key={market.marketAddress} className={ITEM_BASIS}>
-              <PendleMaturedPositionCard
-                market={market}
-                ptBalance={ptBalance}
-                accrued={earningsForPosition(earnings, `fixed-${market.marketAddress.toLowerCase()}`)}
-                onViewDetails={() => goToProduct(`${ROUTES.EARN_FIXED}/${market.slug}`)}
-              />
-            </CarouselItem>
+              while the live positions merely accrue. */}
+          {maturedPositions.map(position => (
+            <MaturedFixedPositionCard
+              key={position.id}
+              position={position}
+              accrued={earningsForSuppliedPosition(earnings, position)}
+              onViewDetails={() => goToProduct(position.detailPath)}
+            />
           ))}
-          {suppliedView.positions.map(position => (
+          {livePositions.map(position => (
             <CarouselItem key={position.id} className={ITEM_BASIS}>
               <PositionCard
                 position={position}
@@ -148,6 +142,36 @@ export function PortfolioPositionsSection({
         </CarouselContent>
       </Carousel>
     </section>
+  );
+}
+
+/**
+ * A matured market's Claim card. The claim needs the market config and the
+ * raw PT balance, read from the same cached balance query the marketplace
+ * values the position with. Renders no carousel slot until the balance is in.
+ */
+function MaturedFixedPositionCard({
+  position,
+  accrued,
+  onViewDetails
+}: {
+  position: SuppliedPosition;
+  accrued: PositionEarnings | null;
+  onViewDetails: () => void;
+}) {
+  const { data: ptBalances } = usePendleUserPtBalances();
+  const market = position.address ? getPendleMarketByAddress(position.address) : undefined;
+  const ptBalance = market ? ptBalances?.[market.marketAddress] : undefined;
+  if (!market || !ptBalance) return null;
+  return (
+    <CarouselItem className={ITEM_BASIS}>
+      <PendleMaturedPositionCard
+        market={market}
+        ptBalance={ptBalance}
+        accrued={accrued}
+        onViewDetails={onViewDetails}
+      />
+    </CarouselItem>
   );
 }
 

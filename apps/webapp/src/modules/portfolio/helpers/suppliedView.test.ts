@@ -167,6 +167,58 @@ describe('buildSuppliedView', () => {
     });
   });
 
+  describe('matured positions', () => {
+    const matured = makeRow({
+      id: 'fixed-0xmkt',
+      kind: 'fixed',
+      tokenSymbol: 'sUSDS',
+      status: 'matured',
+      // Still settling elsewhere: a matured row never holds the rate skeleton.
+      isLoading: true,
+      rate: { formatted: '—' },
+      position: amount(1000)
+    });
+    const live = makeRow({
+      id: 'savings',
+      rate: { value: 0.05, formatted: '5.00%' },
+      position: amount(1000)
+    });
+
+    it('keeps a held matured position the price feed could not value', () => {
+      const unpriced = { ...matured, claimable: true, position: amount(0) };
+      const view = buildSuppliedView([unpriced]);
+      expect(view.positions).toHaveLength(1);
+      expect(view.positions[0]).toMatchObject({ status: 'matured', amountUsd: 0 });
+      expect(view.totalSupplied).toBe(0);
+    });
+
+    it('counts a matured balance in the supplied total and the position count', () => {
+      const view = buildSuppliedView([live, matured]);
+      expect(view.totalSupplied).toBe(2000);
+      expect(view.activePositions).toBe(2);
+      expect(view.positions.find(p => p.rowId === 'fixed-0xmkt')).toMatchObject({
+        status: 'matured',
+        share: 0.5,
+        rateLoading: false
+      });
+    });
+
+    it('leaves a matured balance out of the average rate and projected earnings', () => {
+      const view = buildSuppliedView([live, matured]);
+      // 5% on the live $1,000 only: the matured $1,000 earns nothing more.
+      expect(view.projected1Y).toBeCloseTo(50);
+      expect(view.avgRate).toBeCloseTo(0.05);
+    });
+
+    it('reports a matured-only wallet as supplied, earning nothing', () => {
+      const view = buildSuppliedView([matured]);
+      expect(view.totalSupplied).toBe(1000);
+      expect(view.projected1Y).toBe(0);
+      expect(view.avgRate).toBe(0);
+      expect(view.ratesLoading).toBe(false);
+    });
+  });
+
   it('flags rates as loading while a position row is still fetching its rate', () => {
     const view = buildSuppliedView([
       rows[0],
