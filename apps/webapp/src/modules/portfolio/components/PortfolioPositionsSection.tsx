@@ -122,13 +122,12 @@ export function PortfolioPositionsSection({
           {/* Matured PT leads the row (Figma 2306:72334): it needs action (Claim)
               while the live positions merely accrue. */}
           {maturedPositions.map(position => (
-            <CarouselItem key={position.id} className={ITEM_BASIS}>
-              <MaturedFixedPositionCard
-                position={position}
-                accrued={earningsForSuppliedPosition(earnings, position)}
-                onViewDetails={() => goToProduct(position.detailPath)}
-              />
-            </CarouselItem>
+            <MaturedFixedPositionCard
+              key={position.id}
+              position={position}
+              accrued={earningsForSuppliedPosition(earnings, position)}
+              onViewDetails={() => goToProduct(position.detailPath)}
+            />
           ))}
           {livePositions.map(position => (
             <CarouselItem key={position.id} className={ITEM_BASIS}>
@@ -147,9 +146,9 @@ export function PortfolioPositionsSection({
 }
 
 /**
- * A matured market's Claim card. The view carries the position's USD value;
- * the claim itself needs the market config and the raw PT balance, read from
- * the same cached balance query the marketplace values the position with.
+ * A matured market's Claim card. The claim needs the market config and the
+ * raw PT balance, read from the same cached balance query the marketplace
+ * values the position with. Renders no carousel slot until the balance is in.
  */
 function MaturedFixedPositionCard({
   position,
@@ -165,12 +164,14 @@ function MaturedFixedPositionCard({
   const ptBalance = market ? ptBalances?.[market.marketAddress] : undefined;
   if (!market || !ptBalance) return null;
   return (
-    <PendleMaturedPositionCard
-      market={market}
-      ptBalance={ptBalance}
-      accrued={accrued}
-      onViewDetails={onViewDetails}
-    />
+    <CarouselItem className={ITEM_BASIS}>
+      <PendleMaturedPositionCard
+        market={market}
+        ptBalance={ptBalance}
+        accrued={accrued}
+        onViewDetails={onViewDetails}
+      />
+    </CarouselItem>
   );
 }
 

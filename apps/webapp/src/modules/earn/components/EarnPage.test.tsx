@@ -24,8 +24,7 @@ vi.mock('@/hooks', async importOriginal => {
       rows: marketplace.rows,
       endedRewardPositions: ended.current.positions,
       maturedRows: marketplace.maturedRows,
-      isLoading: false,
-      totalDepositedUsd: 0
+      isLoading: false
     }),
     useUsdsDaiData: () => ({ data: undefined, isLoading: false })
   };

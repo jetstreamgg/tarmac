@@ -494,7 +494,6 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
       !!rewardsBalancesError ||
       !!vaultUserAssetsError ||
       !!pendleUserAssetsError ||
-      !!stUsdsError,
-    totalDepositedUsd: rows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0)
+      !!stUsdsError
   };
 }

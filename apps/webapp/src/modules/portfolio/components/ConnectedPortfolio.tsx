@@ -17,7 +17,6 @@ import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '../hooks/useGeoVisibleRows';
 import { useWalletEarnings } from '../hooks/useWalletEarnings';
 import { filterWalletEarnings } from '../earnings/filterWalletEarnings';
-import type { BreakdownProduct } from '../earnings/earningsBreakdown';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import { PortfolioRewardsSections } from './PortfolioRewardsSections';
@@ -56,10 +55,6 @@ export function ConnectedPortfolio() {
     const hidden = new Set(allRows.filter(row => !visible.has(row.id)).map(row => row.id));
     return filterWalletEarnings(walletEarnings, hidden);
   }, [walletEarnings, allRows, visibleRows]);
-  // Products that name the earnings popup rows (APP-589). Matured markets are
-  // rows too, so a claimed position's figure keeps a row that adds up to the
-  // total above it.
-  const breakdownProducts: BreakdownProduct[] = visibleRows;
   const { isModuleEnabled, isLoading: isGeoLoading } = useGeoConfig();
   const savingsAvailable = isGeoLoading || isModuleEnabled('savings');
   // The optimistic default above is safe for the settle path (the callout is
@@ -203,7 +198,7 @@ export function ConnectedPortfolio() {
           idleLoading={balancesLoading}
           savingsRate={savingsAvailable ? savingsRate : undefined}
           earnings={earnings}
-          products={breakdownProducts}
+          products={visibleRows}
           tab={tab}
           onTabChange={setUserTab}
         />

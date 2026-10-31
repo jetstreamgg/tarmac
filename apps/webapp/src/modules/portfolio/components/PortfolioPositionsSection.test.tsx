@@ -100,7 +100,9 @@ vi.mock('@/modules/rewards/hooks/useRewardsModal', () => ({
 vi.mock('@/components/ui/carousel', () => ({
   Carousel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CarouselContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CarouselItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  CarouselItem: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="carousel-item">{children}</div>
+  ),
   CarouselArrows: () => null
 }));
 
@@ -445,5 +447,13 @@ describe('PortfolioPositionsSection — matured positions', () => {
 
     expect(screen.getByTestId('matured-card')).toBeTruthy();
     expect(screen.queryByText('No supplied positions yet.')).toBeNull();
+  });
+
+  it('leaves no empty carousel slot while the PT balance is unread', () => {
+    h.ptBalances = {};
+    renderSection([SAVINGS, MATURED]);
+
+    expect(screen.queryByTestId('matured-card')).toBeNull();
+    expect(screen.getAllByTestId('carousel-item')).toHaveLength(1);
   });
 });

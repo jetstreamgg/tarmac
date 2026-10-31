@@ -168,6 +168,4 @@ export type EarnMarketplaceResult = {
    * when this is set.
    */
   isPositionsError: boolean;
-  /** Σ of every row's user position USD — the wallet's total deposited across all earn products. */
-  totalDepositedUsd: number;
 };
