@@ -201,6 +201,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   );
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
+  // The quote only fetches once the modal is open, so review_viewed waits for
+  // it to land or fail rather than report a zero payout.
+  const reviewViewedPending = isRedeemable && !quote && !quoteError;
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be
   // live-updated, but the ref always points at the latest writeHook.execute.
@@ -235,8 +238,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
 
   // `amount` = USD value of the redeemed output leg, negative so dashboard
   // tiles filtering `properties.amount < 0` count redeem as a withdrawal
-  // alongside SELL; omitted when no price is available rather than emit a
-  // wrong-unit number. amountFrom/amountTo in `data` keep the raw counts.
+  // alongside SELL; omitted when no quote or price is available rather than
+  // emit a zero or wrong-unit number. amountFrom/amountTo in `data` keep the raw counts.
   // Memoized so the launch seeds it and the live-update effect keeps it
   // fresh — the output token stays changeable after launch (APP-444 B14).
   const analytics = useMemo(() => {
@@ -262,7 +265,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       fromDecimals: market.underlyingDecimals,
       toDecimals
     });
-    const usd = valueUsd(leg.symbol, leg.amount);
+    const usd = leg.amount === 0 ? undefined : valueUsd(leg.symbol, leg.amount);
     return {
       widgetName: 'fixed',
       flow: 'redeem',
@@ -356,7 +359,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       getNextCalls: () => nextCallsRef.current,
       getConfirmDisabled: () => confirmDisabledRef.current,
       sessionId,
-      analytics
+      analytics,
+      reviewViewedPending
     });
   }, [
     onPendleChain,
@@ -375,6 +379,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     confirmDisabled,
     sessionId,
     analytics,
+    reviewViewedPending,
     usdValue,
     toast
   ]);
@@ -391,6 +396,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       steps,
       confirmDisabled,
       analytics,
+      reviewViewedPending,
       usdValue,
       toast
     });
@@ -404,6 +410,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     steps,
     confirmDisabled,
     analytics,
+    reviewViewedPending,
     usdValue,
     toast
   ]);

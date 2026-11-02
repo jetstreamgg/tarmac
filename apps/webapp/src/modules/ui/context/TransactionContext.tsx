@@ -610,8 +610,9 @@ export function TransactionProvider({
       // flows open on the editable entry — their review event (if the flow has
       // a review stage at all) fires at the entry→review transition instead
       // (onReviewStage below), and entry-only flows (claims, upgrade) emit
-      // none, matching the legacy widgets.
-      if (config.analytics && !config.entry) {
+      // none, matching the legacy widgets. A `reviewViewedPending` launch
+      // defers it to updateModalContent.
+      if (config.analytics && !config.entry && !config.reviewViewedPending) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
           chainId,
@@ -662,8 +663,18 @@ export function TransactionProvider({
       // synchronously — reads analytics off this ref.
       configRef.current = next;
       setActiveConfig(next);
+      if (prev.reviewViewedPending && !next.reviewViewedPending && next.analytics && !next.entry) {
+        trackWidgetReviewViewed({
+          widgetName: next.analytics.widgetName,
+          chainId,
+          flow: next.analytics.flow,
+          action: next.analytics.action,
+          data: next.analytics.data,
+          flowId: flowIdRef.current
+        });
+      }
     },
-    []
+    [chainId, trackWidgetReviewViewed]
   );
 
   const resetTransactionProgress = useCallback(() => {

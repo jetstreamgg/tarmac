@@ -553,6 +553,26 @@ describe('usePendleRedeemModal claim quote failure', () => {
     }
   );
 
+  it('holds review_viewed until the quote lands, without a zero amount in the meantime', async () => {
+    hoisted.valueUsd = (_symbol: string, amount: number) => amount;
+    const pending = await openWith({ data: undefined, isLoading: true, error: undefined });
+    const launched = pending as { reviewViewedPending?: boolean; analytics: { data: object } };
+    expect(launched.reviewViewedPending).toBe(true);
+    expect('amount' in launched.analytics.data).toBe(false);
+
+    hoisted.launchMock.mockClear();
+    const settled = (await openWith(undefined)) as { reviewViewedPending?: boolean };
+    expect(settled.reviewViewedPending).toBe(false);
+
+    hoisted.launchMock.mockClear();
+    const failed = (await openWith({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Pendle /convert 503: {}')
+    })) as { reviewViewedPending?: boolean };
+    expect(failed.reviewViewedPending).toBe(false);
+  });
+
   it("fetches the quote only while this card's modal session is live, like the buy/sell modal", async () => {
     hoisted.activeSessionId = null;
     const view = renderComponent(<Capture />);
