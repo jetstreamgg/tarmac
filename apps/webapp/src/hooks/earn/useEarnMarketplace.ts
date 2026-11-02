@@ -25,8 +25,9 @@ import { useMorphoVaultsTrailingRates } from '../morpho/useMorphoVaultsTrailingR
 import { fetchMorphoVaultMarketData } from '../morpho/useMorphoVaultMarketApiData';
 import { useAllMorphoVaultsUserAssets } from '../morpho/useAllMorphoVaultsUserAssets';
 import { isMarketMatured } from '../pendle/helpers';
-import { PENDLE_MARKETS } from '../pendle/constants';
+import { PENDLE_MARKETS, getPendleMarketByAddress } from '../pendle/constants';
 import { usePendleMarketsApiData } from '../pendle/usePendleMarketsApiData';
+import { maturedPositionUsd } from '../pendle/computePendleAssetValuations';
 import { fetchPendleMarketHistoricalData } from '../pendle/usePendleMarketChartData';
 import { useAllPendleUserAssets } from '../pendle/useAllPendleUserAssets';
 import { useStUsdsData } from '../stusds/useStUsdsData';
@@ -450,20 +451,22 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
 
   // Matured markets, from the same registry descriptors as the live rows. No
   // rate, TVL or history: the market takes no deposits and its PT redeems at
-  // face value, so only the position is live. The valuation falls back to face
-  // value past expiry (ptDiscount).
+  // face value, so only the position is live, valued off the raw balance where
+  // the market is pegged (maturedPositionUsd).
   const maturedRows = useMemo<EarnProductRow[]>(() => {
     const connected = !!address;
     return products
       .filter(product => product.maturity !== undefined && isMarketMatured(product.maturity))
       .map(product => {
         const userMarket = pendleUserAssets.markets.find(m => m.marketAddress === product.address);
+        const market = product.address ? getPendleMarketByAddress(product.address) : undefined;
+        const valueUsd = market && userMarket ? maturedPositionUsd(market, userMarket) : 0;
         return {
           ...product,
           status: 'matured' as const,
           rate: toRate(undefined),
           rate30d: toRate(undefined),
-          position: connected ? singleChainAmount(familyMainnetId, userMarket?.valuationUsd ?? 0) : undefined,
+          position: connected ? singleChainAmount(familyMainnetId, valueUsd) : undefined,
           claimable: connected && (userMarket?.ptBalance ?? 0n) > 0n,
           isLoading: pendleUserAssetsLoading,
           error: pendleUserAssetsError || null
