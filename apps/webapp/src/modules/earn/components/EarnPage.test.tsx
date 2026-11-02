@@ -33,10 +33,10 @@ vi.mock('@/hooks', async importOriginal => {
 // Nothing geo-restricted: the hidden count is about the main table only, and
 // the restricted section has its own coverage. `isLoading` is swappable: the
 // count waits for the partition to settle (APP-563 #12).
-const geo = vi.hoisted(() => ({ current: { isLoading: false } }));
+const geo = vi.hoisted(() => ({ current: { isLoading: false }, restricted: [] as string[] }));
 vi.mock('@/modules/geo-config', () => ({
   useGeoConfig: () => ({
-    isModuleEnabled: () => true,
+    isModuleEnabled: (module: string) => !geo.restricted.includes(module),
     isLoading: geo.current.isLoading,
     isRegionVerified: true
   })
@@ -320,6 +320,25 @@ describe('EarnPage requires-action section', () => {
   beforeEach(() => {
     marketplace.maturedRows = [];
     ended.current = { positions: [] };
+    geo.current = { isLoading: false };
+    geo.restricted = [];
+  });
+
+  it('hides matured positions where the fixed module is geo-restricted (APP-484)', async () => {
+    marketplace.maturedRows = MATURED;
+    geo.restricted = ['fixed'];
+    renderPage();
+    await screen.findByText('Earn Opportunities');
+    expect(screen.queryByTestId('earn-requires-action')).toBeNull();
+  });
+
+  it('shows matured positions while the geo config is still loading', async () => {
+    marketplace.maturedRows = MATURED;
+    geo.restricted = ['fixed'];
+    geo.current = { isLoading: true };
+    renderPage();
+    await screen.findByText('Requires action');
+    expect(screen.getByTestId('earn-requires-action-row-matured-0x9c56')).toBeTruthy();
   });
 
   it('stays hidden while the user holds nothing matured', async () => {
