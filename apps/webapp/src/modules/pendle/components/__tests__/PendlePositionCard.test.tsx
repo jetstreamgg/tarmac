@@ -79,12 +79,6 @@ vi.mock('../../hooks/usePendleRedeemModal', () => ({
   usePendleRedeemModal: () => ({ openRedeemModal, isRedeemable: true, ptBalance: 0n })
 }));
 
-// The mainnet auto-switch pulls navigation/network-switch contexts — covered
-// by usePendleMaturedPositions.test.
-vi.mock('../../hooks/usePendleMaturedPositions', () => ({
-  usePendleMaturedNetworkSwitch: () => undefined
-}));
-
 vi.mock('../../hooks/usePendleModal', () => ({
   usePendleModal: () => ({ openSupply, openWithdraw })
 }));
