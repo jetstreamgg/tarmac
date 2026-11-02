@@ -73,3 +73,14 @@ export function computePendleAssetValuations(
 
   return { total, totalUsd, markets };
 }
+
+/**
+ * USD value of a matured position. On pegged markets 1 PT redeems 1 USDS, so
+ * the raw balance is the value and no price is needed; other markets keep the
+ * feed-based valuation (face value × spot past expiry).
+ */
+export function maturedPositionUsd(market: PendleMarketConfig, asset: PendleMarketUserAsset): number {
+  return market.usdsEquivalence === 'pegged'
+    ? parseFloat(formatUnits(asset.ptBalance, market.underlyingDecimals))
+    : asset.valuationUsd;
+}
