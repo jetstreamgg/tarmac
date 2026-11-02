@@ -36,6 +36,7 @@
     "vnet:fund:single": "cd apps/webapp && npx tsx --tsconfig tsconfig.json src/test/e2e/fund-single-account.ts",
     "prepare": "husky",
     "typecheck": "pnpm --filter './apps/**' typecheck",
+    "check:changed": "node ./scripts/checkChanged.mjs",
     "messages:extract": "lingui extract --clean",
     "messages:compile": "lingui compile",
     "messages": "pnpm messages:extract && pnpm messages:compile",
@@ -84,6 +85,7 @@
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
     "typescript": "catalog:",
+    "typescript-7": "catalog:",
     "vitest": "catalog:"
   },
   "packageManager": "pnpm@11.5.0"

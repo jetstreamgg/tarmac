@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { format } from 'date-fns';
+import { format } from 'date-fns/format';
 import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { mainnet } from 'wagmi/chains';

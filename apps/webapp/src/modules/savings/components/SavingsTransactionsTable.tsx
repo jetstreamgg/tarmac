@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { Trans } from '@lingui/react/macro';
 import { useSavingsHistory, getTokenDecimals, TransactionTypeEnum } from '@/hooks';
 import { formatBigInt, isL2ChainId, getEtherscanLink, formatAddress } from '@/utils';

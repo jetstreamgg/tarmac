@@ -89,3 +89,6 @@ apps/webapp/src/locales/*.ts
 
 # TanStack Router temp/generated cache
 apps/webapp/.tanstack
+
+# Claude Code worktrees
+.claude/worktrees/

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { wadToFloat, wadToUsd } from '../lib/stakeUsdNotional';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import {

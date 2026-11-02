@@ -1,5 +1,5 @@
 import { formatUnits } from 'viem';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict';
 import { getEtherscanLink, getCowExplorerLink, getChainIcon, formatUsd } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
