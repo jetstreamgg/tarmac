@@ -642,6 +642,12 @@ export function TransactionProvider({
       });
     }
   }, [chainId, trackWidgetReviewViewed]);
+  // Read through a ref so updateModalContent stays stable: consumers push
+  // from effects that depend on it.
+  const handleReviewStageRef = useRef(handleReviewStage);
+  useLayoutEffect(() => {
+    handleReviewStageRef.current = handleReviewStage;
+  }, [handleReviewStage]);
 
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
     (sessionId, partial) => {
@@ -663,18 +669,11 @@ export function TransactionProvider({
       // synchronously — reads analytics off this ref.
       configRef.current = next;
       setActiveConfig(next);
-      if (prev.reviewViewedPending && !next.reviewViewedPending && next.analytics && !next.entry) {
-        trackWidgetReviewViewed({
-          widgetName: next.analytics.widgetName,
-          chainId,
-          flow: next.analytics.flow,
-          action: next.analytics.action,
-          data: next.analytics.data,
-          flowId: flowIdRef.current
-        });
+      if (prev.reviewViewedPending && !next.reviewViewedPending && !next.entry) {
+        handleReviewStageRef.current();
       }
     },
-    [chainId, trackWidgetReviewViewed]
+    []
   );
 
   const resetTransactionProgress = useCallback(() => {
