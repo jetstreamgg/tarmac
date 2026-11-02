@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
-import { ALLOWANCE_META } from '@/hooks/constants';
 import { ALLOWANCE_FOLLOW_UP_MS, refreshAllowancesAfterTx } from './allowanceRefresh';
 
-const mount = (client: QueryClient, key: string, meta?: Record<string, unknown>) => {
+const read = (functionName: string) => ['readContract', { chainId: 1, functionName, args: [] }];
+
+const mount = (client: QueryClient, queryKey: unknown[]) => {
   const queryFn = vi.fn(async () => 1n);
-  new QueryObserver(client, { queryKey: [key], queryFn, meta, staleTime: 30_000 }).subscribe(() => {});
+  new QueryObserver(client, { queryKey, queryFn, staleTime: 30_000 }).subscribe(() => {});
   return queryFn;
 };
 
@@ -15,8 +16,8 @@ describe('refreshAllowancesAfterTx', () => {
 
   it('refetches mounted allowance reads now and again one block later, leaving other reads alone', async () => {
     const client = new QueryClient();
-    const allowance = mount(client, 'allowance', ALLOWANCE_META);
-    const balance = mount(client, 'balance');
+    const allowance = mount(client, read('allowance'));
+    const balance = mount(client, read('balanceOf'));
     await vi.advanceTimersByTimeAsync(0);
 
     refreshAllowancesAfterTx(client);
@@ -30,11 +31,10 @@ describe('refreshAllowancesAfterTx', () => {
 
   it('clears an unmounted allowance read so the next launch cannot decide from the spent value', () => {
     const client = new QueryClient();
-    client.getQueryCache().build(client, { queryKey: ['allowance'], meta: ALLOWANCE_META });
-    client.setQueryData(['allowance'], 5n);
+    client.setQueryData(read('allowance'), 5n);
 
     refreshAllowancesAfterTx(client);
 
-    expect(client.getQueryData(['allowance'])).toBeUndefined();
+    expect(client.getQueryData(read('allowance'))).toBeUndefined();
   });
 });
