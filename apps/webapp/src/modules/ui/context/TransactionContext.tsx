@@ -1240,7 +1240,7 @@ export function TransactionProvider({
       // config's: a batch receipt can land after a network switch.
       const txChainId = sessionChainRef.current;
       void refreshHistoryAfterTx(queryClient, { chainId: txChainId, blockNumber });
-      refreshAllowancesAfterTx(queryClient);
+      void refreshAllowancesAfterTx(queryClient);
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;
