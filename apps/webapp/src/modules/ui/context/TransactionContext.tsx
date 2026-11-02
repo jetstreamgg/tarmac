@@ -22,6 +22,7 @@ import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
 import { refreshHistoryAfterTx } from '@/lib/historyRefresh';
+import { refreshAllowancesAfterTx } from '@/lib/allowanceRefresh';
 import { queryClient } from '@/lib/queryClient';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
@@ -1239,6 +1240,7 @@ export function TransactionProvider({
       // config's: a batch receipt can land after a network switch.
       const txChainId = sessionChainRef.current;
       void refreshHistoryAfterTx(queryClient, { chainId: txChainId, blockNumber });
+      refreshAllowancesAfterTx(queryClient);
       if (isStaleWrite(sessionGen) || isForeignHash(hash)) return;
       setTxStatus(TxStatus.SUCCESS);
       txStatusRef.current = TxStatus.SUCCESS;

@@ -2,7 +2,7 @@ import { useReadContract } from 'wagmi';
 import { erc20Abi } from 'viem';
 import { ReadHook } from '../hooks';
 import { getEtherscanLink } from '@/utils';
-import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
+import { ALLOWANCE_META, TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 
 export type UseTokenAllowanceResponse = ReadHook & {
   data?: bigint;
@@ -32,7 +32,8 @@ export function useTokenAllowance({
     args: [owner || ZERO_ADDRESS, spender || ZERO_ADDRESS],
     query: {
       enabled: !!contractAddress && !!owner && !!spender,
-      staleTime: 30_000
+      staleTime: 30_000,
+      meta: ALLOWANCE_META
     }
   });
 

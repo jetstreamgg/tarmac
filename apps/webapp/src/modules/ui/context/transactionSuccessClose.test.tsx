@@ -47,6 +47,8 @@ vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
 
 const refreshHistoryMock = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock('@/lib/historyRefresh', () => ({ refreshHistoryAfterTx: refreshHistoryMock }));
+const refreshAllowancesMock = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock('@/lib/allowanceRefresh', () => ({ refreshAllowancesAfterTx: refreshAllowancesMock }));
 
 const toastMock = vi.hoisted(() => ({ dismiss: vi.fn() }));
 const toastWithCloseMock = vi.hoisted(() => vi.fn());
@@ -218,5 +220,17 @@ describe('TransactionModal success handoff', () => {
     act(() => cb!.onSuccess(HASH, 123n));
 
     expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), { chainId: 1, blockNumber: 123n });
+  });
+
+  it('refreshes allowance reads once a run succeeds, so the next launch sees the spent approval', () => {
+    const cb = renderFlow(CONFIG);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart(HASH));
+    expect(refreshAllowancesMock).not.toHaveBeenCalled();
+
+    act(() => cb.onSuccess(HASH, 123n));
+
+    expect(refreshAllowancesMock).toHaveBeenCalledTimes(1);
   });
 });

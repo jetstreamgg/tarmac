@@ -78,6 +78,8 @@ export const HISTORY_STALE_TIME = 60_000;
 // observer of a tagged key must pass the same `meta`: the last one to fetch sets the query's options.
 export const INDEXER_HISTORY_META = { history: 'indexer' } as const;
 export const EXTERNAL_HISTORY_META = { history: 'external' } as const;
+// Tags `useTokenAllowance` reads so a finished transaction can refresh them (lib/allowanceRefresh).
+export const ALLOWANCE_META = { allowance: true } as const;
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;
