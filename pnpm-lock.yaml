@@ -252,8 +252,6 @@ overrides:
   axios@>=1.0.0 <1.20.0: ^1.20.0
   '@json-rpc-tools/provider>axios@^0.21.0': ^1.20.0
   '@binance/w3w-qrcode-modal>tailwindcss': '-'
-  seroval@<1.6.3: ^1.6.3
-  source-map-js@<1.2.2: ^1.2.2
   zod@<4.6.6: ^4.6.6
 
 importers:
@@ -5537,7 +5535,7 @@ packages:
     resolution: {integrity: sha512-ud8kMCGLHmGkW9YtVDluJtqTukSx/4YBqtmPAvAz/HxbIwhwMeZU52imxeyZ1zoAXtqBDiaLwSasbnK9DptrDg==}
     engines: {node: '>=20'}
     peerDependencies:
-      seroval: ^1.6.3
+      seroval: ^1.0
 
   seroval@1.6.8:
     resolution: {integrity: sha512-HlSgSAkTk4EqHcje1ptJjfZi1YDv5KbhVJ/d3P7T/nAXua2VmDu+AKDX5VTdFfZf48nDkWB2TKYt0DrCSa+3wg==}
