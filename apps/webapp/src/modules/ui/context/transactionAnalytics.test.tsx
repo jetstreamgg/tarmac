@@ -306,6 +306,37 @@ describe('TransactionContext review_viewed timing', () => {
     });
   });
 
+  it('defers review_viewed for a pending launch until an update clears it, then emits once', () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness
+              config={baseConfig({ sessionId: 's1', reviewViewedPending: true })}
+              onReady={c => (ctx = c)}
+            />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+
+    act(() => ctx.updateModalContent('s1', { reviewViewedPending: true }));
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+
+    const quoted = { widgetName: 'fixed', flow: 'redeem', action: 'redeem', data: { amount: -5 } };
+    act(() => ctx.updateModalContent('s1', { analytics: quoted, reviewViewedPending: false }));
+    act(() => ctx.updateModalContent('s1', { analytics: quoted, reviewViewedPending: false }));
+
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledTimes(1);
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith({
+      ...quoted,
+      chainId: 1,
+      flowId: 'flow-live'
+    });
+  });
+
   it('does NOT emit review_viewed at launch for an entry-first config', () => {
     let ctx!: TransactionContextValue;
     render(

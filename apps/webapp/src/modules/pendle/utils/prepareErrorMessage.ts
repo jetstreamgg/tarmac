@@ -13,7 +13,8 @@ import { revertMessage } from '@/lib/revertMessages';
  */
 export function pendlePrepareErrorMessage(
   error: Error | null | undefined,
-  slippageHint?: string
+  slippageHint?: string,
+  fallback?: string
 ): string | undefined {
   const raw = error?.message;
   if (!raw) return undefined;
@@ -26,7 +27,11 @@ export function pendlePrepareErrorMessage(
   if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
     return t`Quote expired. Refreshing — please wait a moment.`;
   }
-  return revertMessage(error) ?? t`Unable to prepare transaction. Please try again or adjust your inputs.`;
+  return (
+    revertMessage(error) ??
+    fallback ??
+    t`Unable to prepare transaction. Please try again or adjust your inputs.`
+  );
 }
 
 /**
@@ -52,4 +57,33 @@ export function pendleQuoteErrorMessage(raw: string | undefined): string | undef
     return t`Pendle's quote service is temporarily unavailable. Please try again.`;
   }
   return t`Couldn't fetch a quote from Pendle. Check your connection and try again.`;
+}
+
+/**
+ * Why a matured position's claim can't be prepared. Uses the buy/sell copy
+ * except where its advice is to change the amount: a claim always takes the
+ * whole balance.
+ */
+export function pendleClaimErrorMessage(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  if (/input valuation is too low/i.test(raw)) {
+    return t`This position is too small to claim.`;
+  }
+  if (/no routes/i.test(raw)) {
+    return t`Pendle can't route this claim to the selected token. Try a different token.`;
+  }
+  return pendleQuoteErrorMessage(raw);
+}
+
+/**
+ * Why a matured claim with a quote still can't be signed. Slippage, stale
+ * quotes and known contract reverts keep their shared copy; the generic
+ * "adjust your inputs" doesn't fit a claim, which has no inputs.
+ */
+export function pendleClaimPrepareErrorMessage(error: Error | null | undefined): string | undefined {
+  return pendlePrepareErrorMessage(
+    error,
+    undefined,
+    t`Something went wrong preparing the transaction. Please try again.`
+  );
 }

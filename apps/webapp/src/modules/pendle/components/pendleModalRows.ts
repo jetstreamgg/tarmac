@@ -182,7 +182,7 @@ export type PendleRedeemRowInput = {
   ptSymbol: string;
   /**
    * True when the quote routes through an aggregator (non-SY-accepted output).
-   * Gates only the price-impact/route row — slippage binds on every route.
+   * Gates the slippage and price-impact/route rows: only an aggregator hop can slip.
    */
   aggregator: boolean;
   /** Quote still in flight — the quote-derived cells hold skeletons instead of dashes. */
@@ -201,8 +201,8 @@ export type PendleRedeemRowInput = {
   priceImpact: string;
   /** Aggregator route description (e.g. "Pendle redeem → KyberSwap"). */
   routedVia: string;
-  /** Pendle's fee, formatted (e.g. "$0.04"). */
-  pendleFee: string;
+  /** Pendle's fee, formatted (e.g. "$0.04"); only set when the quote reports one above zero. */
+  pendleFee?: string;
   /** Network the transaction runs on. */
   network: string;
   /** Chain the engine runs on, for the Network cell's icon. */
@@ -212,33 +212,31 @@ export type PendleRedeemRowInput = {
 };
 
 /**
- * Grid for the matured-claim modal: [Product | Claim amount], [Slippage |
- * Min. received], then — aggregator routes only — [Price impact | Routed
- * via], closing with [Pendle fee | Network] and the fee row. The payout token
- * is picked on the hero pill, not in this read-only grid. Slippage renders on
- * every route: even the pure burn signs a slippage-adjusted minTokenOut (see
- * buildVerifiedArgs' matured-exit fixtures); only the per-hop rows are
- * aggregator-only.
+ * Grid for the matured-claim modal: [Product | Claim amount], then — aggregator
+ * routes only — [Slippage | Min. received] and [Price impact | Routed via],
+ * closing with [Pendle fee | Network] and the fee row, or [Network | Network
+ * fee] when the quote reports no fee. The payout token is picked on the hero
+ * pill, not in this read-only grid.
+ *
+ * A direct redemption can't slip: PT converts to SY at the rate fixed at
+ * expiry, and the SY's redemption value only grows. It still signs a
+ * slippage-adjusted minTokenOut (see buildVerifiedArgs' matured-exit
+ * fixtures), but showing that floor would suggest a cost that never happens.
  */
 export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalGridRow[] {
   const feeCell = networkFeeCell(input.networkFee);
-  const pendleFeeCell: ModalGridCell = {
-    kind: 'single',
-    label: 'Pendle fee',
-    value: input.pendleFee,
-    loading: input.quoteLoading
-  };
+  const network = networkCell(input.network, input.networkChainId);
   return [
     [
       productCell(input.product, input.productSymbol, 'pendle'),
       { kind: 'single', label: 'Claim amount', value: input.claimAmount, token: input.ptSymbol }
     ],
-    [
-      slippageCell(input),
-      { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
-    ],
     ...(input.aggregator
       ? [
+          [
+            slippageCell(input),
+            { ...minReceivedCell(input.minReceived, input.receiveSymbol), loading: input.quoteLoading }
+          ],
           [
             {
               kind: 'single' as const,
@@ -255,8 +253,9 @@ export function buildPendleRedeemRows(input: PendleRedeemRowInput): PendleModalG
           ]
         ]
       : []),
-    [pendleFeeCell, networkCell(input.network, input.networkChainId)],
-    [feeCell]
+    ...(input.pendleFee
+      ? [[{ kind: 'single' as const, label: 'Pendle fee', value: input.pendleFee }, network], [feeCell]]
+      : [[network, feeCell]])
   ];
 }
 
