@@ -117,8 +117,8 @@ export function BridgePanel({ draft }: BridgePanelProps) {
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
   return (
-    <div className="flex w-full flex-col gap-8" data-testid="bridge-panel">
-      <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-8 md:gap-18" data-testid="bridge-panel">
+      <div className="flex w-full flex-col gap-4 md:gap-8">
         <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="bridge-form">
           <BridgeCard form={form} />
         </div>

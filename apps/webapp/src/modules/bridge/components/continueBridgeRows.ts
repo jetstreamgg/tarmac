@@ -2,6 +2,7 @@ import { t } from '@lingui/core/macro';
 import { formatAddress } from '@/utils';
 import { sendsToOther } from '../model/recipient';
 import type { UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { CCTP_ETA_MINUTES } from '../model/resolveRoute';
 import { bridgeTypeLabel } from './bridgeModalRows';
 import { bridgeTxHref, type PendingBridgeCell } from './pendingBridgeRows';
 
@@ -13,7 +14,7 @@ export function buildContinueBridgeRows(
 ): PendingBridgeCell[][] {
   const swapTx: PendingBridgeCell = {
     kind: 'link',
-    label: t`Swap transaction`,
+    label: t`Transaction`,
     value: formatAddress(swap.swapTxHash, 6, 4),
     href: bridgeTxHref(swap.network, swap.swapTxHash, familyChainId)
   };
@@ -24,10 +25,11 @@ export function buildContinueBridgeRows(
     ],
     [
       { kind: 'status', label: t`Status`, status: 'pending', value: t`Not sent` },
-      { kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel('cctp'), logo: 'cctp' }
+      { kind: 'text', label: t`Estimated arrival`, value: t`${CCTP_ETA_MINUTES} min after sending` }
     ],
-    sendsToOther(swap.recipient, account)
-      ? [swapTx, { kind: 'text', label: t`Recipient`, value: formatAddress(swap.recipient, 6, 4) }]
-      : [swapTx]
+    [{ kind: 'text', label: t`Bridge type`, value: bridgeTypeLabel('cctp'), logo: 'cctp' }, swapTx],
+    ...(sendsToOther(swap.recipient, account)
+      ? [[{ kind: 'text', label: t`Recipient`, value: formatAddress(swap.recipient, 6, 4) } as const]]
+      : [])
   ];
 }

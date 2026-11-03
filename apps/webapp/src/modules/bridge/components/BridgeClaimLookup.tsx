@@ -125,7 +125,7 @@ function NetworkPills({ value, options, onChange }: NetworkPillsProps) {
             onClick={() => onChange(network)}
             data-state={checked ? 'active' : 'inactive'}
             data-testid={`bridge-claim-lookup-network-${network}`}
-            className={cn(tabsTriggerVariants({ variant: 'nav' }), 'w-[100px]')}
+            className={cn(tabsTriggerVariants({ variant: 'nav' }), 'h-10 w-[100px]')}
           >
             <BridgeNetworkIcon network={network} className="size-5" />
           </button>
@@ -188,7 +188,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
           <ResponsiveModalTitle className="text-fgPrimary font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
             <Trans>Find your bridge</Trans>
           </ResponsiveModalTitle>
-          <Text tag="p" className="text-fgSecondary text-sm leading-[22px]">
+          <Text tag="p" className="text-fgSecondary max-w-[420px] text-sm leading-[22px]">
             <Trans>
               Enter the network you bridged from and the transaction hash. We&apos;ll look it up so you can
               claim it.
@@ -223,7 +223,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
 
         <div className="flex flex-col gap-2.5">
           <label className="group flex flex-col gap-4">
-            <span className="relative flex flex-col gap-1">
+            <span className="relative flex min-h-11 flex-col justify-end gap-1">
               <span
                 className={cn(
                   'text-fgSecondary font-graphik',
@@ -246,7 +246,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
                 aria-invalid={failed}
                 data-testid="bridge-claim-lookup-hash"
                 className={cn(
-                  'font-circle h-6 w-full min-w-0 bg-transparent text-lg leading-5.5 font-medium tracking-[-0.36px] text-ellipsis outline-none',
+                  'font-circle h-5.5 w-full min-w-0 bg-transparent text-lg leading-5.5 font-medium tracking-[-0.36px] text-ellipsis outline-none',
                   loading ? 'text-fgTertiary' : 'text-fgPrimary'
                 )}
               />
@@ -329,7 +329,7 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
         </Button>
       </div>
       <ResponsiveModal open={open} onOpenChange={next => (next ? setOpen(true) : close())}>
-        <ResponsiveModalContent className="flex w-full flex-col p-8 sm:max-w-[610px]">
+        <ResponsiveModalContent className="bg-bgSecondary flex w-full flex-col p-8 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:py-8 md:rounded-[28px]">
           {/* Remount per open so each lookup starts empty. */}
           {open && <LookupForm link={link} networks={networks} onClose={close} />}
         </ResponsiveModalContent>

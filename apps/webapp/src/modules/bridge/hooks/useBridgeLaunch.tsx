@@ -55,6 +55,10 @@ export type BridgeLaunchForm = Pick<
     Pick<BridgeFormModel, 'senderIsContract' | 'routeOptions' | 'pickedRoute' | 'pickRoute' | 'forgetRoute'>
   >;
 
+// Figma 05 and 62, under the active Approve step.
+const approveDescription = (symbol: string) =>
+  t`Approve your ${symbol} tokens in the wallet to allow it to manage your funds. This action enables the wallet to spend your tokens securely.`;
+
 const DETACHED: TxCallbacks = {
   onMutate: () => {},
   onStart: () => {},
@@ -280,7 +284,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         if (functionName === CCTP_BURN_FUNCTION)
           return { label: t`Bridge`, tokenSymbol: 'USDC', failureDetail: t`The USDC hasn't been bridged.` };
         const symbol = target?.toLowerCase() === cctpUsds(burnFrom)?.toLowerCase() ? 'USDS' : 'USDC';
-        return { label: t`Approve`, tokenSymbol: symbol, failureDetail: stepFailureDetail.approve(symbol) };
+        return {
+          label: t`Approve`,
+          tokenSymbol: symbol,
+          description: approveDescription(symbol),
+          failureDetail: stepFailureDetail.approve(symbol)
+        };
       }),
     [burn.calls, burnFrom]
   );
@@ -290,7 +299,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         ? burnSteps
         : sourceActions.map(action =>
             action === 'approve'
-              ? { label: t`Approve`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.approve('USDS') }
+              ? {
+                  label: t`Approve`,
+                  tokenSymbol: 'USDS',
+                  description: approveDescription('USDS'),
+                  failureDetail: stepFailureDetail.approve('USDS')
+                }
               : { label: t`Bridge`, tokenSymbol: 'USDS', failureDetail: t`The USDS hasn't been bridged.` }
           ),
     [isCctpBurn, burnSteps, sourceActions]
@@ -725,7 +739,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     setReviewing(true);
     launchModal({
       title,
-      transactionTitle: title,
+      transactionTitle: t`Confirm`,
       toast: {
         loading: t`Bridging ${amountLabel}`,
         success: t`Bridge initiated!`,

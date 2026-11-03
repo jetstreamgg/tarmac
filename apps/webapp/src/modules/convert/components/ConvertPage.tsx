@@ -89,10 +89,9 @@ export function ConvertPage() {
     form.isConnected &&
     (form.isZero || form.insufficient || form.debouncePending || !!conversion.disabledReason);
 
-  // Form column: the middle 6 columns of the design grid (624px @1280)
-  // minus 48px breathing room each side, per the Convert mock.
+  // Form column: 500px per the Convert mock (Figma 3574:64017).
   const swapPanel = (
-    <div className="flex w-full max-w-[528px] flex-col gap-4">
+    <div className="flex w-full max-w-[500px] flex-col gap-4 md:gap-8">
       {/* Inert while this flow's transaction is minimized (APP-448). */}
       <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="convert-form">
         <ConvertCard form={form} />
@@ -178,7 +177,7 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
   };
 
   return (
-    <Tabs value={tab} onValueChange={onTabChange} className="flex w-full max-w-[528px] flex-col">
+    <Tabs value={tab} onValueChange={onTabChange} className="flex w-full max-w-[500px] flex-col">
       <TabsList variant="nav" className="w-full gap-3" data-testid="convert-tabs">
         <TabsTrigger value="swap" variant="nav" className="flex-1" data-testid="convert-tab-swap">
           <Trans>Swap</Trans>

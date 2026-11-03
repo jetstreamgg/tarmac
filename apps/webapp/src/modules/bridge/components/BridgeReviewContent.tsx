@@ -133,7 +133,7 @@ export function BridgeReviewContent({
   routePicker
 }: BridgeReviewContentProps) {
   const [choosing, setChoosing] = useState(false);
-  const built = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
+  const built = buildBridgeModalRows({ route, networkFee, bridgeFee });
   const [[bridgeType, ...firstRow], [arrival, ...secondRow], ...rest] = built;
   const fastArrival = arrivalAgainst(route, routePicker?.cards);
   const arrivalRow = [
@@ -200,7 +200,7 @@ export function BridgeReviewContent({
         )}
         {recipientWarning && (
           <BridgeWarningBox title={t`Sending to another wallet`} dataTestId="bridge-modal-recipient-warning">
-            {t`The recipient won't see this transfer automatically. Share the claim link or the transaction hash with them once it's sent. They need to claim on Ethereum from a wallet that controls the recipient address, so an exchange deposit address won't work.`}
+            {t`The recipient must claim this on Ethereum from a wallet they control. Exchange deposit addresses and wallets that don't exist on Ethereum won't work.`}
           </BridgeWarningBox>
         )}
         {safeQueue && (

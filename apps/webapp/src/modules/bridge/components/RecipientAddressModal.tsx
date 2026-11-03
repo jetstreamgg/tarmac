@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { XCircle } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import {
   ResponsiveModal,
@@ -35,7 +36,7 @@ export function RecipientAddressModal({
 }: RecipientAddressModalProps) {
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange}>
-      <ResponsiveModalContent className="flex w-full flex-col gap-12 p-8 sm:max-w-[610px]">
+      <ResponsiveModalContent className="bg-bgSecondary flex w-full flex-col gap-12 p-8 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:py-8 md:rounded-[28px]">
         {/* Remount per open so the draft starts from the saved value. */}
         {open && (
           <RecipientForm
@@ -95,18 +96,18 @@ function RecipientForm({ recipient, family, onClose, onSave }: RecipientFormProp
         <label className="border-glassBorder flex flex-col gap-4 border-b pb-4">
           <span className="flex items-end justify-between gap-3">
             <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <Text className="text-fgSecondary text-xs leading-[18px]">
+              <Text className={cn('text-fgSecondary text-xs leading-[18px]', draft === '' && 'invisible')}>
                 <Trans>Wallet address</Trans>
               </Text>
               <input
                 value={draft}
                 onChange={event => setDraft(event.target.value)}
-                placeholder={family === 'solana' ? t`Solana address` : '0x…'}
+                placeholder={family === 'solana' ? t`Solana address` : t`Wallet address`}
                 spellCheck={false}
                 autoComplete="off"
                 aria-invalid={invalid || blocked}
                 data-testid="bridge-recipient-input"
-                className="text-fgPrimary font-circle placeholder:text-fgTertiary w-full min-w-0 bg-transparent text-lg leading-5.5 font-medium tracking-[-0.36px] outline-none"
+                className="text-fgPrimary font-circle placeholder:text-fgSecondary w-full min-w-0 bg-transparent text-lg leading-5.5 font-medium tracking-[-0.36px] outline-none"
               />
             </span>
             {draft !== '' && (
@@ -142,7 +143,7 @@ function RecipientForm({ recipient, family, onClose, onSave }: RecipientFormProp
         variant="primary"
         size="xl"
         className="w-full"
-        disabled={invalid || blocked}
+        disabled={invalid || blocked || (trimmed === '' && !recipient)}
         onClick={() => onSave(trimmed === '' ? undefined : trimmed)}
         data-testid="bridge-recipient-save"
       >

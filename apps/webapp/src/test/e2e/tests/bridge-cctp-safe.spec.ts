@@ -202,7 +202,7 @@ test.describe('Bridge: CCTP from a Safe', () => {
     await bridge.reviewCta().click();
     await expect(bridge.modalReview()).toBeVisible();
     await expect(isolatedPage.getByTestId('bridge-modal-recipient-warning')).toContainText(
-      "won't see this transfer automatically"
+      'must claim this on Ethereum from a wallet they control'
     );
     await expect(isolatedPage.getByTestId('bridge-modal-safe-queue')).toBeVisible();
     // The recipient claims, not the Safe: no contract wallet box.

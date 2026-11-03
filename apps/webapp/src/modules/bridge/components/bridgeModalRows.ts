@@ -45,7 +45,7 @@ export const formatEtaWords = (minutes: number): string => {
   return t`${hours} ${restMinutes}`;
 };
 
-export const formatSlippage = (slippage: number): string => `${(slippage * 100).toFixed(2)}%`;
+export const formatSlippage = (slippage: number): string => `${(slippage * 100).toFixed(1)}%`;
 
 /** Rounds up to `digits` significant digits, so a shown maximum is never below the real one. */
 const ceilSignificant = (wei: bigint, digits: number): bigint => {
@@ -68,15 +68,12 @@ export const formatMaxEthFee = (wei: bigint): string => {
 export function buildBridgeModalRows({
   route,
   networkFee,
-  bridgeFee,
-  fromToken = 'USDS'
+  bridgeFee
 }: {
   route: BridgeRoute;
   networkFee: string;
   /** Overrides the route's USD fee, for a route that charges it in ETH. */
   bridgeFee?: string;
-  /** The token sent, rated against the USDS delivered. */
-  fromToken?: 'USDS' | 'USDC';
 }): ModalGridCell[][] {
   const logo = bridgeTypeLogo(route.kind);
   return [
@@ -87,14 +84,7 @@ export function buildBridgeModalRows({
         value: bridgeTypeLabel(route.kind),
         ...(logo && { logo })
       },
-      {
-        kind: 'pair',
-        label: t`Bridge rate`,
-        token: fromToken,
-        left: '1.00',
-        right: '1.00',
-        rightToken: 'USDS'
-      }
+      { kind: 'single', label: t`Bridge rate`, value: route.rate }
     ],
     [
       { kind: 'single', label: t`Estimated arrival`, value: formatEta(route.etaMinutes) },

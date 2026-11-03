@@ -895,7 +895,7 @@ export function TransactionModal({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: MODAL_LAYER_SHIFT_PX, transition: modalExitTransition }}
               transition={modalEnterTransition}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-4 empty:hidden"
             >
               {/* Status row: the icon, the per-status sentence and the explorer
                     link are all gone (Figma review). Flows that render a Steps

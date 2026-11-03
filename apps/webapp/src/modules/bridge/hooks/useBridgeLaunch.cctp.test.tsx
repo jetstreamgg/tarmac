@@ -480,7 +480,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
       act(() => view.result.current.launch());
       expect(mocks.launched.at(-1)).toMatchObject({
         title: 'Continue USDS bridge',
-        transactionTitle: 'Continue USDS bridge'
+        transactionTitle: 'Confirm'
       });
     });
 

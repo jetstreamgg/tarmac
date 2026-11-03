@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useEnsName } from 'wagmi';
@@ -411,15 +411,18 @@ function CardRows({ rows }: CardRowsProps) {
       data-testid="pending-bridge-rows"
     >
       {rows.map((row, rowIndex) => (
-        <div key={rowIndex} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
+        <div key={rowIndex} className="grid grid-cols-2 items-center gap-4 md:gap-8">
           {row.map((cell, cellIndex) => (
-            <Fragment key={cell.label}>
-              {cellIndex > 0 && <span aria-hidden className="bg-glassBorder h-8 w-px" />}
-              <div className="flex min-w-0 flex-col gap-1">
-                <Text className="text-fgSecondary text-xs leading-[18px]">{cell.label}</Text>
-                <CellValue cell={cell} />
-              </div>
-            </Fragment>
+            <div key={cell.label} className="relative flex min-w-0 flex-col gap-1">
+              {cellIndex > 0 && (
+                <span
+                  aria-hidden
+                  className="bg-glassBorder absolute top-1/2 -left-4 h-8 w-px -translate-y-1/2 md:-left-8"
+                />
+              )}
+              <Text className="text-fgSecondary text-xs leading-[18px]">{cell.label}</Text>
+              <CellValue cell={cell} />
+            </div>
           ))}
         </div>
       ))}
@@ -727,7 +730,7 @@ function ContinueBridgeCard({
     <div className={cardClassName} data-testid="continue-bridge-card">
       <CardHeader symbol="USDC" amount={amount} date={formatBridgeDate(swap.at)} />
 
-      <div className="text-fgSecondary flex flex-col gap-1 text-xs leading-[18px]">
+      <div className="text-fgSecondary -mt-2 flex flex-col gap-1 text-xs leading-[18px]">
         <Text className="text-xs leading-[18px] text-inherit" dataTestId="continue-bridge-note">
           <Trans>
             Your bridge stopped before it was sent. The {amount} USDC from the conversion is still on{' '}

@@ -25,7 +25,7 @@ const amountClassName =
   'text-text font-circle w-full min-w-0 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]';
 
 const panelClassName =
-  'bg-glassSurface flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-[9px] md:px-8 md:py-7';
+  'bg-glassSurface flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-10 md:px-8 md:py-7';
 
 const metaClassName = 'text-fgSecondary text-xs md:text-sm md:leading-[22px]';
 
@@ -134,7 +134,10 @@ export function BridgeCard({ form }: BridgeCardProps) {
             data-testid="bridge-to-amount"
             className={cn(amountClassName, 'block overflow-hidden whitespace-nowrap')}
           >
-            <RollingValue value={form.value === '' ? '0.00' : form.value} speed="stat" />
+            <RollingValue
+              value={formatBigInt(form.amount, { minDecimals: 2, maxDecimals: 2 })}
+              speed="stat"
+            />
           </output>
           <span className="flex shrink-0 items-center gap-3">
             <button
@@ -147,7 +150,7 @@ export function BridgeCard({ form }: BridgeCardProps) {
                 form.recipient ? 'h-7 text-xs leading-[14px]' : 'size-7 justify-center p-0'
               )}
             >
-              <Wallet className="size-3" />
+              <Wallet className={cn('size-3', form.recipient ? 'text-[#504dff]' : 'text-fgSecondary')} />
               {form.recipient && formatAddress(form.recipient, 5, 3)}
             </button>
             <TokenBadge symbol="USDS" />
