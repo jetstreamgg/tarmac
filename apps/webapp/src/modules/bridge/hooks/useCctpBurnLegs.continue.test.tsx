@@ -230,7 +230,7 @@ describe('useCctpBurnLegs: the Continue card follows its burn', () => {
       const refusal = await act(() =>
         preflight({ getTransactionReceipt: async () => ({ status: 'reverted', blockNumber: 1n }) })
       );
-      expect(refusal?.message).toMatch(/swap of this bridge failed/);
+      expect(refusal?.message).toMatch(/conversion to USDC of this bridge failed/);
       expect(result.current.offered).toEqual([]);
     });
 

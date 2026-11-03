@@ -86,7 +86,7 @@ function BlockedMessage({ reason, from, to }: BlockedMessageProps) {
   }
 }
 
-// Same CTA geometry as the Swap tab.
+// Same CTA geometry as the Convert tab.
 const CTA_CLASSES =
   'h-12 w-full text-sm leading-4 tracking-[-0.28px] md:h-14 md:text-base md:leading-[18px] md:tracking-[-0.32px]';
 

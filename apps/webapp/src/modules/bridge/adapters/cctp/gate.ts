@@ -162,7 +162,8 @@ export async function cctpBurnRefusal({
 }
 
 /** Why a continue is refused when its swap reverted: nothing is left to bridge. */
-export const CCTP_SWAP_FAILED_MESSAGE = 'The swap of this bridge failed, so there is nothing to bridge.';
+export const CCTP_SWAP_FAILED_MESSAGE =
+  'The conversion to USDC of this bridge failed, so there is nothing to bridge.';
 
 /** A refusal that sending again can't lift. */
 const finalRefusal = (message: string) => new TransactionRefusedError(message, { final: true });
@@ -210,19 +211,19 @@ export async function cctpResumeRefusal({
 }): Promise<Error | undefined> {
   const { psm3, usdc } = cctpL2Contracts(network);
   const receipt = await client.getTransactionReceipt({ hash: swapTxHash }).catch(() => undefined);
-  if (!receipt) return new Error('The swap of this bridge is not confirmed yet.');
+  if (!receipt) return new Error('The conversion to USDC of this bridge is not confirmed yet.');
   if (receipt.status !== 'success') return finalRefusal(CCTP_SWAP_FAILED_MESSAGE);
   if (!isAddressEqual(receipt.from, account) || !receipt.to || !isAddressEqual(receipt.to, psm3))
-    return finalRefusal('This swap is not a bridge of this account.');
+    return finalRefusal('This conversion is not a bridge of this account.');
   // viem caches the head for seconds: a burn in that window would go unscanned.
   const reader = oneBackend(client);
   const head = () => reader.getBlockNumber({ cacheTime: 0 });
   let latest = await head();
   // A node behind the swap would scan nothing and let it through.
   if (latest < receipt.blockNumber)
-    return new Error("The network isn't synced up to the swap yet. Try again in a moment.");
+    return new Error("The network isn't synced up to the conversion yet. Try again in a moment.");
   if (latest - receipt.blockNumber >= RESUME_SCAN_MAX_BLOCKS)
-    return finalRefusal('This swap is too old for this app to check, so it cannot be continued.');
+    return finalRefusal('This conversion is too old for this app to check, so it cannot be continued.');
   const mintRecipient = addressToBytes32(recipient);
   const scan = async (from: bigint, to: bigint) => {
     for (const range of blockRanges(from, to, RESUME_SCAN_CHUNK_BLOCKS)) {
@@ -252,7 +253,7 @@ export async function cctpResumeRefusal({
       // Every burn moves USDC out too, so this also covers burns of other bridges.
       if (outflows.length > 0)
         return finalRefusal(
-          "USDC left this wallet after the swap, so this app can't tell the swapped USDC from USDC held before."
+          "USDC left this wallet after the conversion, so this app can't tell the converted USDC from USDC held before."
         );
     }
     return undefined;

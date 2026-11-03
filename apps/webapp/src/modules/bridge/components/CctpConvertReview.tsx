@@ -41,7 +41,7 @@ export function CctpConvertReview({ amount, bridged, chainId, calls, isBatch }: 
       />
       {amount < bridged && (
         <BridgeWarningBox title={t`Converting ${held} USDC`} dataTestId="cctp-convert-partial-warning">
-          {t`This wallet holds ${held} of the ${total} USDC from your bridge, so we'll convert what's here to USDS at 1:1. If you move the rest back, you can convert it later from the Swap tab.`}
+          {t`This wallet holds ${held} of the ${total} USDC from your bridge, so we'll convert what's here to USDS at 1:1. If you move the rest back, you can convert it later from the Convert tab.`}
         </BridgeWarningBox>
       )}
     </div>

@@ -578,7 +578,7 @@ describe('PendingBridges', () => {
       fireEvent.click(screen.getByTestId('pending-bridge-keep-usdc'));
       expect(close).toHaveBeenCalledExactlyOnceWith('scope', CLAIMED.id);
       expect(mocks.toast.success).toHaveBeenCalledExactlyOnceWith(
-        'You can convert your USDC to USDS anytime from the Swap tab.'
+        'You can convert your USDC to USDS anytime from the Convert tab.'
       );
       expect(props.onAction).not.toHaveBeenCalled();
       close.mockRestore();

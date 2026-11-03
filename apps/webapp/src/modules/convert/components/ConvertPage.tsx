@@ -160,7 +160,7 @@ export function ConvertPage() {
 
 type ConvertTab = 'swap' | 'bridge';
 
-/** Swap | Bridge pills (Figma Tabs3 3831:127371), synced to `?tab=`. */
+/** Convert | Bridge pills (Figma Tabs3 3831:127371), synced to `?tab=`. */
 function ConvertTabs({ swap }: { swap: ReactNode }) {
   const [searchParams, setSearchParams] = useAppSearchParams();
   // Held here, as the Swap form is by the page, so a tab switch keeps what was typed.
@@ -180,7 +180,7 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
     <Tabs value={tab} onValueChange={onTabChange} className="flex w-full max-w-[500px] flex-col">
       <TabsList variant="nav" className="w-full gap-3" data-testid="convert-tabs">
         <TabsTrigger value="swap" variant="nav" className="flex-1" data-testid="convert-tab-swap">
-          <Trans>Swap</Trans>
+          <Trans>Convert</Trans>
         </TabsTrigger>
         <TabsTrigger value="bridge" variant="nav" className="flex-1" data-testid="convert-tab-bridge">
           <Trans>Bridge</Trans>

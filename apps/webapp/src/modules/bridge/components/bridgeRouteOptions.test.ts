@@ -19,7 +19,7 @@ describe('buildRouteOptionCard', () => {
     expect(card).toMatchObject({ kind: 'cctp', name: 'CCTP', logo: 'cctp', unavailable: false });
     expect(card.badge).toEqual({ text: 'Fastest', tone: 'accent' });
     expect(card.description).toBe(
-      'Swapped 1:1 to USDC and sent to Ethereum with Circle CCTP. Claim it there in about 20 minutes, then convert it back to USDS.'
+      'Converted 1:1 to USDC and sent to Ethereum with Circle CCTP. Claim it there in about 20 minutes, then convert it back to USDS.'
     );
     expect(values(card)).toEqual({
       'Arrives in': '~20 min',

@@ -293,7 +293,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     act(() => view.result.current.launch());
     expect(stepsShown().map(step => [step.label, step.tokenSymbol])).toEqual([
       ['Approve', 'USDS'],
-      ['Swap to USDC', 'USDS'],
+      ['Convert to USDC', 'USDS'],
       ['Approve', 'USDC'],
       ['Bridge', 'USDC']
     ]);
@@ -303,7 +303,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     mocks.burn.calls = BURN_CALLS.filter(call => call.functionName !== 'approve');
     const view = render();
     act(() => view.result.current.launch());
-    expect(stepsShown().map(step => step.label)).toEqual(['Swap to USDC', 'Bridge']);
+    expect(stepsShown().map(step => step.label)).toEqual(['Convert to USDC', 'Bridge']);
   });
 
   it('blocks Confirm and says why while the burn cannot be sent', () => {

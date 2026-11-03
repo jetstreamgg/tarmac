@@ -38,7 +38,7 @@ vi.mock('@/hooks', () => ({
   }
 }));
 vi.mock('../adapters/cctp/gate', () => ({
-  CCTP_SWAP_FAILED_MESSAGE: 'The swap of this bridge failed, so there is nothing to bridge.',
+  CCTP_SWAP_FAILED_MESSAGE: 'The conversion to USDC of this bridge failed, so there is nothing to bridge.',
   cctpConvertRefusal: mocks.refusal,
   cctpL2ConvertRefusal: mocks.l2Refusal,
   cctpResumeRefusal: mocks.resumeRefusal
@@ -234,7 +234,7 @@ describe('useCctpConvertLegs', () => {
       expect(mocks.l2Refusal).not.toHaveBeenCalled();
       expect(stored()).toBeDefined();
       mocks.resumeRefusal.mockResolvedValueOnce(
-        new Error('The swap of this bridge failed, so there is nothing to bridge.')
+        new Error('The conversion to USDC of this bridge failed, so there is nothing to bridge.')
       );
       await expect(preflight({})).resolves.toBeInstanceOf(Error);
       expect(stored()).toBeUndefined();

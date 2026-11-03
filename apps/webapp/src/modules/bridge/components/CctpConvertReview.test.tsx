@@ -55,7 +55,7 @@ describe('CctpConvertReview', () => {
       'Converting 5,000.00 USDC'
     );
     expect(screen.getByTestId('cctp-convert-partial-warning').textContent).toContain(
-      "This wallet holds 5,000.00 of the 10,000.00 USDC from your bridge, so we'll convert what's here to USDS at 1:1. If you move the rest back, you can convert it later from the Swap tab."
+      "This wallet holds 5,000.00 of the 10,000.00 USDC from your bridge, so we'll convert what's here to USDS at 1:1. If you move the rest back, you can convert it later from the Convert tab."
     );
   });
 });

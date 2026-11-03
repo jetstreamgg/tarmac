@@ -872,7 +872,7 @@ export function PendingBridges({
             if (!listScope) return;
             pendingBridgeStore.close(listScope, kept.id);
             // Figma 98.
-            toast.success(t`You can convert your USDC to USDS anytime from the Swap tab.`);
+            toast.success(t`You can convert your USDC to USDS anytime from the Convert tab.`);
           }}
           incoming={owner !== undefined}
           actionLocked={actionLocked}

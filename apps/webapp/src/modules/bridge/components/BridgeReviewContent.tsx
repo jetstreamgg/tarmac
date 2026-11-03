@@ -205,7 +205,7 @@ export function BridgeReviewContent({
         )}
         {safeQueue && (
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-safe-queue">
-            {t`Your Safe sends this bridge as separate transactions. Sign and execute every one of them in your Safe's queue. If the swap executes but the burn doesn't, this app can't continue the bridge, and the USDC stays in your Safe.`}
+            {t`Your Safe sends this bridge as separate transactions. Sign and execute every one of them in your Safe's queue. If the conversion to USDC executes but the burn doesn't, this app can't continue the bridge, and the USDC stays in your Safe.`}
           </p>
         )}
         {storageNote && (

@@ -277,9 +277,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         const { functionName, to: target } = call as { functionName?: string; to?: string };
         if (functionName === 'swapExactIn')
           return {
-            label: t`Swap to USDC`,
+            label: t`Convert to USDC`,
             tokenSymbol: 'USDS',
-            failureDetail: t`The USDS hasn't been swapped.`
+            failureDetail: t`The USDS hasn't been converted.`
           };
         if (functionName === CCTP_BURN_FUNCTION)
           return { label: t`Bridge`, tokenSymbol: 'USDC', failureDetail: t`The USDC hasn't been bridged.` };
