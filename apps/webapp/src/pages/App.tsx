@@ -27,6 +27,11 @@ import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { useNavigationAnalytics } from '@/modules/analytics/hooks/useNavigationAnalytics';
 import { CORPUS_VERSION, CORPUS_BRANCH, CORPUS_COMMIT } from '@/data/version';
+import { setPrepareRevertListener } from '@/hooks/shared/prepareRevertReporter';
+import { trackPrepareReverted } from '@/modules/analytics/lib/trackPrepareReverted';
+
+// The engines report prepare-time simulation failures here (see prepareRevertReporter).
+setPrepareRevertListener(trackPrepareReverted);
 
 // Expose corpus version to browser console for debugging
 if (typeof window !== 'undefined') {

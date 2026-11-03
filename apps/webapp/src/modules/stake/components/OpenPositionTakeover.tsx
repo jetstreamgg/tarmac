@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import { stakeRevertCard } from '../lib/revertCard';
 import { StakeFlowAction, useStakeFlowState } from '../hooks/useStakeFlowState';
 import { useStakeLaunch } from '../hooks/useStakeLaunch';
 import { useStakeManageLaunch } from '../hooks/useStakeManageLaunch';
@@ -360,10 +361,16 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
   // failure once the engine is disabled. Same while the engine is re-simulating
   // (`prepared` dips false with the previous run's write/mining error still
   // set): a genuine prepare failure survives the load and shows on settle.
-  const launchErrorMessage = enginePrepareErrorMessage(
-    prepared,
-    formValid && !launchLoading ? launchError : null
-  );
+  //
+  // One message at a time: while a card shows its own error or notice (the
+  // debt ceiling, the borrow minimum), the prepare failure isn't shown.
+  const cardMessageShown =
+    !!stakeError ||
+    (state.borrowEnabled &&
+      (!!borrowError || minCollateralNotMet || collateralData?.debtCeilingUtilization === 1));
+  const launchErrorMessage = cardMessageShown
+    ? undefined
+    : enginePrepareErrorMessage(prepared, formValid && !launchLoading ? launchError : null);
 
   // The launch seam prepares calldata from the DEBOUNCED amounts; until they
   // catch up with what's typed, `prepared` refers to stale calldata (e.g. an
@@ -376,6 +383,26 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
     actionable: formValid && prepared && !launchLoading && amountsSettled,
     launchErrorMessage
   });
+
+  // Why Confirm is dead, at the bottom of the card it's about (a revert about
+  // the reward, say, under the stake card) rather than loose on the overlay;
+  // anything about the whole form (the wrong chain, screening, an unmapped
+  // revert) under the last card. Its own element per failure, so the alert
+  // mounts fresh for screen readers.
+  const noteCard = confirmHold.alert?.kind === 'prepare' ? stakeRevertCard(launchError) : undefined;
+  const blockedNote = confirmHold.alert && (
+    <p
+      className="text-statusError text-sm"
+      data-testid={
+        confirmHold.alert.kind === 'prepare'
+          ? 'stake-takeover-error'
+          : `stake-takeover-${confirmHold.alert.kind}-blocked`
+      }
+      role="alert"
+    >
+      {confirmHold.alert.message}
+    </p>
+  );
 
   return (
     <TakeoverShell
@@ -395,22 +422,9 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
       footer={
         <>
           {/* 237px is the comp's two-line measure for this copy (1036:209863).
-              A screening or prepare failure takes over the slot — the helper
-              copy would be a lie next to a dead Confirm. Two elements (not one
-              recolored <p>) so the alert mounts fresh for screen readers. */}
-          {confirmHold.alert ? (
-            <p
-              className={`text-error ${FOOTER_NOTE_CLASSES}`}
-              data-testid={
-                confirmHold.alert.kind === 'prepare'
-                  ? 'stake-takeover-error'
-                  : `stake-takeover-${confirmHold.alert.kind}-blocked`
-              }
-              role="alert"
-            >
-              {confirmHold.alert.message}
-            </p>
-          ) : (
+              Why Confirm is dead shows at the bottom of a card instead
+              (blockedNote) — the helper copy would be a lie next to it. */}
+          {!confirmHold.alert && (
             <p className={`text-fgSecondary ${FOOTER_NOTE_CLASSES}`}>
               <Trans>Review the position details, and continue to confirm it in your wallet.</Trans>
             </p>
@@ -425,7 +439,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
             // min-w, not w: the comp's 160px button leaves ~80px of text box
             // inside the 40px insets, and `whitespace-nowrap` from the base
             // recipe would clip a longer translated label rather than wrap it.
-            className="h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:min-w-40 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
+            className="ml-auto h-12 shrink-0 px-5 text-sm leading-4 tracking-[-0.28px] md:h-14 md:min-w-40 md:px-10 md:text-base md:leading-[18px] md:tracking-[-0.32px]"
           >
             <Trans>Confirm</Trans>
           </Button>
@@ -444,6 +458,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         minStakeLoading={liveSimLoading}
         minStakeReached={isMinCollateralReached(state.skyToLock, simulatedVault?.minCollateralForDust)}
         error={stakeError}
+        notice={noteCard === 'stake' ? blockedNote : undefined}
         rewardPicker={
           <StakeTakeoverRewardField
             selectedRewardContract={selectedRewardContract}
@@ -481,6 +496,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         collateralData={collateralData}
         collateralLoading={collateralLoading}
         error={borrowError}
+        notice={noteCard === 'borrow' ? blockedNote : undefined}
       />
 
       <StakeTakeoverDelegateCard
@@ -490,6 +506,7 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         // (UX 1194:21595); staging a different one is the only way to change it.
         selectedDelegate={stagedDelegate ?? currentUrnDelegate}
         onSelect={delegate => dispatchDelegate({ type: 'selectDelegate', delegate })}
+        notice={noteCard !== 'stake' && noteCard !== 'borrow' ? blockedNote : undefined}
       />
     </TakeoverShell>
   );

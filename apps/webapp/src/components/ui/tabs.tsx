@@ -84,10 +84,19 @@ const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> &
     VariantProps<typeof tabsTriggerVariants> & { className?: string }
->(({ className, variant, position, ...props }, ref) => (
+>(({ className, variant, position, onMouseDown, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(tabsTriggerVariants({ variant, position }), className)}
+    onMouseDown={event => {
+      onMouseDown?.(event);
+      // Radix focuses the trigger from script on mouse down, and script focus
+      // matches :focus-visible, so a click would draw the keyboard ring. Taking
+      // focus here first, without it, makes Radix's focus() a no-op.
+      if (!event.defaultPrevented && event.button === 0 && !event.ctrlKey) {
+        event.currentTarget.focus({ focusVisible: false });
+      }
+    }}
     {...props}
   />
 ));

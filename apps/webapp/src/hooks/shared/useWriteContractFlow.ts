@@ -1,6 +1,12 @@
-import { UseSimulateContractParameters, useSimulateContract, useWriteContract } from 'wagmi';
+import {
+  type Config,
+  type ResolvedRegister,
+  UseSimulateContractParameters,
+  useSimulateContract,
+  useWriteContract
+} from 'wagmi';
 import { useEffect, useEffectEvent, useMemo } from 'react';
-import { Config, ResolvedRegister } from '@wagmi/core';
+import { reportPrepareRevert } from './prepareRevertReporter';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { useTransactionOutcome } from './useTransactionOutcome';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
@@ -33,6 +39,10 @@ export function useWriteContractFlow<
     ...useSimulateContractParamters,
     query: { ...useSimulateContractParamters.query, enabled, gcTime: gcTime || 30000 }
   } as unknown as UseSimulateContractParameters<abi, functionName, args, config, chainId>);
+  useEffect(
+    () => reportPrepareRevert(simulationError, parameters.chainId),
+    [simulationError, parameters.chainId]
+  );
 
   const {
     writeContract,
