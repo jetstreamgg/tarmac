@@ -200,7 +200,7 @@ export function BridgeReviewContent({
         )}
         {recipientWarning && (
           <BridgeWarningBox title={t`Sending to another wallet`} dataTestId="bridge-modal-recipient-warning">
-            {t`The recipient must claim this on Ethereum from a wallet they control. Exchange deposit addresses and wallets that don't exist on Ethereum won't work.`}
+            {t`The recipient must claim this on Ethereum from a wallet they control. Exchange deposit addresses and wallets that don't exist on Ethereum won't work. Share the claim link with them after sending.`}
           </BridgeWarningBox>
         )}
         {safeQueue && (
