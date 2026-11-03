@@ -85,7 +85,7 @@ export function useUpgradeLaunch({
       ? daiUsdsAddress[chainId as keyof typeof daiUsdsAddress]
       : mkrSkyAddress[chainId as keyof typeof mkrSkyAddress]
   });
-  const needsAllowance = allowance === undefined || allowance < amount;
+  const needsAllowance = allowance !== undefined && allowance < amount;
 
   const upgrade = useBatchUpgrade({
     token,

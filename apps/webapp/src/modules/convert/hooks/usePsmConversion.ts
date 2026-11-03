@@ -179,7 +179,8 @@ export function usePsmConversion({
     hasSufficientLiquidity
   });
 
-  const needsAllowance = !!originToken?.address && amount > 0n && (!allowance || allowance < amount);
+  const needsAllowance =
+    !!originToken?.address && amount > 0n && allowance !== undefined && allowance < amount;
   const effectiveShouldUseBatch = !!shouldUseBatch && !!batchSupported && needsAllowance;
   const hookEnabled =
     paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;
