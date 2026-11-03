@@ -20,6 +20,7 @@ import { routeFallbackNotice } from '../components/bridgeRouteOptions';
 import { BridgeRoutePicker } from '../components/BridgeRoutePicker';
 import { notifyRouteFallback } from '../components/RouteFallbackToast';
 import { runMockLegs } from '../adapters/mockAdapter';
+import { bridgedAmount } from '../model/bridgeAmount';
 import { guardChainId } from '../model/networks';
 import { sendsToOther } from '../model/recipient';
 import { applyProgress, createPendingBridge, failBundle } from '../model/pendingTransitions';
@@ -641,11 +642,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   );
   // A continued swap sends its USDC (Figma 91).
   const fromToken = resume ? 'USDC' : undefined;
+  const shownAmount = bridgedAmount(amount, route?.kind);
   const transactionContent = useMemo(
     () =>
       route && (
         <BridgeReviewContent
-          amount={amount}
+          amount={shownAmount}
           from={from}
           to={to}
           route={route}
@@ -662,7 +664,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         />
       ),
     [
-      amount,
+      shownAmount,
       from,
       to,
       route,
@@ -681,14 +683,14 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const transactionScreenContent = useMemo(
     () => (
       <BridgeTransferHero
-        amount={amount}
+        amount={shownAmount}
         from={from}
         to={to}
         fromToken={fromToken}
         testId="bridge-modal-screen-summary"
       />
     ),
-    [amount, from, to, fromToken]
+    [shownAmount, from, to, fromToken]
   );
 
   const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;

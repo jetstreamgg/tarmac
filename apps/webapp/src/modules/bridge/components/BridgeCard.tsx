@@ -8,9 +8,10 @@ import { NO_VALUE } from '@/lib/constants';
 import { formatAddress, formatBigInt } from '@/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountInput } from '@/components/product/AmountInput';
-import { RollingValue } from '@/components/ui/rolling-value';
+import { FittedAmount } from '@/components/product/FittedAmount';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
+import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { getBridgeNetwork } from '../model/networks';
 import { liveDestinations, liveSources } from '../model/pairs';
 import type { BridgeFormModel } from '../hooks/useBridgeForm';
@@ -134,9 +135,10 @@ export function BridgeCard({ form }: BridgeCardProps) {
             data-testid="bridge-to-amount"
             className={cn(amountClassName, 'block overflow-hidden whitespace-nowrap')}
           >
-            <RollingValue
-              value={formatBigInt(form.amount, { minDecimals: 2, maxDecimals: 2 })}
-              speed="stat"
+            <FittedAmount
+              amount={formatExactUsds(bridgedAmount(form.amount, form.route?.kind))}
+              maxPx={isMobile ? 24 : 32}
+              className={amountClassName}
             />
           </output>
           <span className="flex shrink-0 items-center gap-3">

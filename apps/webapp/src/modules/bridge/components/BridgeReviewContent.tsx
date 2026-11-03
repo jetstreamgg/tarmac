@@ -11,9 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
+import { formatExactUsds } from '../model/bridgeAmount';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
-import { formatAddress, formatBigInt } from '@/utils';
+import { formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
 import { bridgeFootnote, bridgeTypeLabel, buildBridgeModalRows, formatEta } from './bridgeModalRows';
 import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
@@ -44,7 +45,7 @@ export function BridgeTransferHero({
   fromToken = 'USDS',
   testId
 }: BridgeTransferHeroProps) {
-  const formatted = formatBigInt(amount, { minDecimals: 2, maxDecimals: 2 });
+  const formatted = formatExactUsds(amount);
   return (
     <TokenTransferHero
       from={{
