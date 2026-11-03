@@ -199,6 +199,26 @@ describe('stakeAdapter', () => {
       expect(calls.map(c => c.functionName)).toEqual(['getReward', 'getReward', 'lock']);
     });
 
+    it('waits for the SKY allowance before building a restake, instead of adding an approve', () => {
+      seed();
+      h.skyAllowance = undefined;
+      const { result } = renderHook(() =>
+        stakeAdapter.useClaimCalls(stakeSelection(0n, [SKY_REWARD, SPK_REWARD]), { restake: true })
+      );
+
+      expect(result.current).toEqual({ calls: [], prepared: false });
+    });
+
+    it('does not wait for the SKY allowance on a plain claim', () => {
+      seed();
+      h.skyAllowance = undefined;
+      const { result } = renderHook(() =>
+        stakeAdapter.useClaimCalls(stakeSelection(0n, [SKY_REWARD, SPK_REWARD]), { restake: false })
+      );
+
+      expect(result.current.prepared).toBe(true);
+    });
+
     it('does not lock when the SKY reward is not in the selection', () => {
       seed();
       const { result } = renderHook(() =>

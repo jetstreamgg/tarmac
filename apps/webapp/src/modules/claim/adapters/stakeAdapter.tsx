@@ -160,14 +160,12 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
     const restakeAmount = skyReward?.claimBalance ?? 0n;
     const sky = skyAddress[chainId as keyof typeof skyAddress];
 
+    const needsAllowance = restake && restakeAmount > 0n && !!sky;
+    if (needsAllowance && skyAllowance === undefined) return { calls: [], prepared: false };
+
     const calls: Call[] = [];
 
-    if (
-      restake &&
-      restakeAmount > 0n &&
-      sky &&
-      (skyAllowance === undefined || skyAllowance < restakeAmount)
-    ) {
+    if (needsAllowance && skyAllowance !== undefined && skyAllowance < restakeAmount) {
       calls.push(
         getWriteContractCall({
           to: sky,
