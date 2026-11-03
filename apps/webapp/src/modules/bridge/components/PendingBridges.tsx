@@ -263,6 +263,8 @@ function WithdrawalNoteText({ note }: WithdrawalNoteTextProps) {
           The withdrawal was finalized but not delivered. Retry it on Ethereum to receive your USDS.
         </Trans>
       );
+    case 'confirming':
+      return <Trans>Confirming on Ethereum.</Trans>;
   }
 }
 

@@ -254,7 +254,7 @@ export type PendingBridgeNote =
   | { kind: 'withdrawal'; phase: WithdrawalNotePhase; minutesLeft?: number };
 
 export type WithdrawalNotePhase =
-  'waiting-prove' | 'waiting-finalize' | 'prove' | 'reprove' | 'finalize' | 'replay';
+  'waiting-prove' | 'waiting-finalize' | 'prove' | 'reprove' | 'finalize' | 'replay' | 'confirming';
 
 const withdrawalNote = (bridge: PendingBridge, now: number): PendingBridgeNote | undefined => {
   const { status, nextAction } = bridge;
@@ -264,6 +264,14 @@ const withdrawalNote = (bridge: PendingBridge, now: number): PendingBridgeNote |
     const minutesLeft = Math.ceil((bridge.etaAt - now) / 60_000);
     return { kind: 'withdrawal', phase: 'waiting-finalize', ...(minutesLeft > 0 && { minutesLeft }) };
   }
+  // A mined finalize or replay can have failed its L1 relay: the next read settles it.
+  if (
+    status === 'pending' &&
+    bridge.actions.some(
+      action => (action.action === 'finalize' || action.action === 'replay') && action.status === undefined
+    )
+  )
+    return { kind: 'withdrawal', phase: 'confirming' };
   if (status !== 'ready') return undefined;
   if (nextAction === 'prove') {
     const lastProve = bridge.actions.filter(action => action.action === 'prove').at(-1);

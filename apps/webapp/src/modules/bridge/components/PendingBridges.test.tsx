@@ -966,6 +966,15 @@ describe('PendingBridges', () => {
       expect(note()).toContain(text);
     });
 
+    it('says it is confirming on Ethereum after a mined finalize, with no button', () => {
+      mocks.bridges = [
+        { ...WITHDRAWAL, nextAction: undefined, actions: [{ action: 'finalize', txHash: '0xf', at: 0 }] }
+      ];
+      renderList();
+      expect(note()).toBe('Confirming on Ethereum.');
+      expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
+    });
+
     it('asks to prove again when the last proof was invalidated', () => {
       mocks.bridges = [
         {

@@ -15,7 +15,7 @@ import {
   pendingBridgeNote,
   SKY_DISCORD_URL
 } from './pendingBridgeRows';
-import { REDEEM_URGENT_MINUTES } from '../model/pendingTransitions';
+import { recordAction, recordActionSent, REDEEM_URGENT_MINUTES } from '../model/pendingTransitions';
 
 // Times read in the user's zone; pinned to UTC so these cases hold on any machine.
 beforeAll(() => {
@@ -542,6 +542,24 @@ describe('pendingBridgeNote (a native withdrawal to Ethereum)', () => {
       actions: [{ action: 'prove', txHash: '0x1', at: 0, status: 'invalidated' }]
     };
     expect(pendingBridgeNote(invalidated, 0)).toEqual({ kind: 'withdrawal', phase: 'reprove' });
+  });
+
+  it('says it is confirming after a mined finalize or replay, until a read settles it', () => {
+    const ready: PendingBridge = { ...withdrawal, status: 'ready', nextAction: 'finalize' };
+    const finalized = recordAction(ready, { action: 'finalize', txHash: '0xf', at: 0 });
+    expect(pendingBridgeNote(finalized, 0)).toEqual({ kind: 'withdrawal', phase: 'confirming' });
+    const replayed = recordAction(
+      { ...ready, nextAction: 'replay' },
+      { action: 'replay', txHash: '0xr', at: 0 }
+    );
+    expect(pendingBridgeNote(replayed, 0)).toEqual({ kind: 'withdrawal', phase: 'confirming' });
+  });
+
+  it("doesn't say it is confirming before the finalize mined, or with none", () => {
+    const ready: PendingBridge = { ...withdrawal, status: 'ready', nextAction: 'finalize' };
+    const sent = recordActionSent(ready, { action: 'finalize', txHash: '0xf', at: 0 });
+    expect(pendingBridgeNote(sent, 0)).toEqual({ kind: 'withdrawal', phase: 'finalize' });
+    expect(pendingBridgeNote({ ...withdrawal, nextAction: undefined }, 0)).toBeUndefined();
   });
 
   it('says nothing once it settled, or for a CCTP withdrawal', () => {
