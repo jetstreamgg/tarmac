@@ -57,7 +57,7 @@ export type BridgeLaunchForm = Pick<
 
 // Figma 05 and 62, under the active Approve step.
 const approveDescription = (symbol: string) =>
-  t`Approve your ${symbol} tokens in the wallet to allow it to manage your funds. This action enables the wallet to spend your tokens securely.`;
+  t`Allow the bridge to use this amount of ${symbol}. Your wallet will ask you to confirm.`;
 
 const DETACHED: TxCallbacks = {
   onMutate: () => {},
