@@ -23,6 +23,7 @@ export function useTokenAllowance({
     data: allowance,
     refetch,
     isLoading,
+    isFetchedAfterMount,
     error
   } = useReadContract({
     address: contractAddress,
@@ -32,12 +33,15 @@ export function useTokenAllowance({
     args: [owner || ZERO_ADDRESS, spender || ZERO_ADDRESS],
     query: {
       enabled: !!contractAddress && !!owner && !!spender,
-      staleTime: 30_000
+      staleTime: 30_000,
+      refetchOnMount: 'always'
     }
   });
 
   return {
-    data: allowance,
+    // A cached value can predate a spend (APP-675): engines decide their approve
+    // from this, so they wait for a read made since they mounted.
+    data: isFetchedAfterMount && !error ? allowance : undefined,
     mutate: refetch,
     isLoading,
     error,

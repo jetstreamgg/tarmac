@@ -76,8 +76,8 @@ export function useBatchUpgradeAndSavingsSupply({
     isConnected &&
     !!amount &&
     amount !== 0n &&
-    hasDaiUpgradeAllowance !== undefined &&
-    hasUsdsSupplyAllowance !== undefined &&
+    daiUgradeAllowance !== undefined &&
+    usdsSupplyAllowance !== undefined &&
     paramEnabled &&
     !!connectedAddress;
 

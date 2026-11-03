@@ -248,7 +248,6 @@ export function usePsmConversion({
     hasSufficientLiquidity,
     mutateAllowance,
     mutatePocketBalance: () => {
-      mutateAllowance();
       refetchLive();
       refetchTin();
       refetchTout();
