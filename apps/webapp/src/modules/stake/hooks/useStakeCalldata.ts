@@ -204,17 +204,25 @@ export function generateStakeCalldata({
           selectDelegateCalldata
         ]
       : [
-          /* For the manage flow, we need to sort the calldatas that unseal SKY before the ones that seal it
-           * to avoid conflicts with the selectDelegate calldata, as the DSChief has a protection that
-           * prevents `lock`ing and then `free`ing SKY in the same block
-           * Also, sort repay before free to prevent free from failing due to the position becoming unsafe */
+          /* Manage-flow ordering (APP-663):
+           * - repay before free, so free doesn't fail on a position made unsafe by the debt it still carries;
+           * - selectFarm before lock: lock stakes into the urn's CURRENT farm and reverts with
+           *   `LockstakeEngine/farm-deleted` when that farm was retired, which is exactly when a user
+           *   moves to a new one;
+           * - lock (and repay) before selectVoteDelegate: selectVoteDelegate checks the urn is safe
+           *   (`LockstakeEngine/urn-unsafe`), so the collateral being added has to be in first;
+           * - draw last, once the collateral backing it is in.
+           * selectVoteDelegate used to sit before lock because the old MKR DSChief refused to `free` in
+           * the block a sender `lock`ed (and moving a delegate frees from the old one). The SKY Chief
+           * behind today's LockstakeEngine has no per-sender guard: its `last` is only set by
+           * `launch`/`lift`, so lock-then-move is fine (verified on a mainnet fork). */
           repayCalldata,
           repayAllCalldata,
           freeSkyCalldata,
           ...(claimRewardsCalldatas || []),
           selectRewardContractCalldata,
-          selectDelegateCalldata,
           lockSkyCalldata,
+          selectDelegateCalldata,
           borrowUsdsCalldata
         ];
 

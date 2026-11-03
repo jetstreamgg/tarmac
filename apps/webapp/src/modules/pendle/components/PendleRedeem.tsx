@@ -44,9 +44,8 @@ type PendleRedeemProps = {
 /**
  * Body of the matured-claim modal: the receive hero over the shared summary
  * grid. No comp exists for this flow — the layout follows the withdraw comps
- * (Figma 2193:73598 / 2193:73807). Slippage and its floor render on every
- * route — even the pure burn signs a slippage-adjusted minTokenOut; only the
- * price-impact/route row is aggregator-only.
+ * (Figma 2193:73598 / 2193:73807). Slippage, its floor and the route rows
+ * show only on aggregator routes; a direct redemption can't slip.
  */
 export const PendleRedeem = ({
   market,
@@ -66,13 +65,14 @@ export const PendleRedeem = ({
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const outDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
-  // Aggregator-ness derives from the token, not the quote: the route row must
-  // stay stable while a quote is in flight, and only non-SY-accepted outputs
-  // route through one.
+  // Aggregator-ness derives from the token, so the rows stay stable while a
+  // quote is in flight, and from the quote too: if Pendle routes even an
+  // SY-accepted output through an aggregator, that hop can slip.
   const outputAddress = selectedOutputToken.address[mainnet.id]?.toLowerCase();
-  const aggregator = market.syAcceptedTokens
-    ? !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress)
-    : !!aggregatorName;
+  const aggregator =
+    !!aggregatorName ||
+    (!!market.syAcceptedTokens &&
+      !market.syAcceptedTokens.some(accepted => accepted.toLowerCase() === outputAddress));
   const quoteLoading = isFetchingQuote && !quote;
 
   const rows = buildPendleRedeemRows({
@@ -92,7 +92,7 @@ export const PendleRedeem = ({
     receiveSymbol: selectedOutputToken.symbol,
     priceImpact: formatPriceImpact(quote?.priceImpact) ?? NO_VALUE,
     routedVia: aggregatorName ? `Pendle redeem → ${aggregatorName}` : NO_VALUE,
-    pendleFee: quote?.feeUsd !== undefined ? formatUsd(quote.feeUsd) : t`Included in quote`,
+    pendleFee: quote?.feeUsd && quote.feeUsd > 0 ? formatUsd(quote.feeUsd) : undefined,
     network,
     networkChainId,
     networkFee: NO_VALUE

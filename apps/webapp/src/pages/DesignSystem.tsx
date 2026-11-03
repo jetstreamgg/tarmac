@@ -25,7 +25,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -106,7 +105,6 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Toggle } from '@/components/ui/toggle';
 import {
   Carousel,
   CarouselContent,
@@ -631,7 +629,7 @@ function SlidersDemo() {
 
 function FormControlsSection() {
   return (
-    <Section id="form-controls" title="Form controls" note="H7 — Slider, Switch, Checkbox, Radio.">
+    <Section id="form-controls" title="Form controls" note="H7 — Slider, Switch, Checkbox.">
       <SlidersDemo />
 
       <SubSection title="Switch — M and S">
@@ -685,58 +683,6 @@ function FormControlsSection() {
             <label className="flex items-center gap-2 text-sm">
               <Checkbox defaultChecked />I agree to the terms
             </label>
-          </Spec>
-        </Row>
-      </SubSection>
-
-      <SubSection title="Radio">
-        <Row>
-          <Spec label="interactive group">
-            <RadioGroup defaultValue="b" className="flex gap-6">
-              {['a', 'b', 'c'].map(v => (
-                <label key={v} className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem value={v} />
-                  Option {v.toUpperCase()}
-                </label>
-              ))}
-            </RadioGroup>
-          </Spec>
-          <Spec label="disabled — unchecked / checked">
-            <RadioGroup value="b" disabled className="flex gap-6">
-              <RadioGroupItem value="a" />
-              <RadioGroupItem value="b" />
-            </RadioGroup>
-          </Spec>
-        </Row>
-      </SubSection>
-
-      <SubSection title="Toggle (legacy)">
-        <Row>
-          <Spec label="off / pressed (interactive)">
-            <span className="flex items-center gap-3">
-              <Toggle size="sm" aria-label="toggle">
-                <Star className="size-4" />
-              </Toggle>
-              <Toggle size="sm" defaultPressed aria-label="toggle">
-                <Star className="size-4" />
-              </Toggle>
-            </span>
-          </Spec>
-          <Spec label="singleSwitcher">
-            <span className="flex items-center gap-1">
-              <Toggle variant="singleSwitcher" pressed>
-                1D
-              </Toggle>
-              <Toggle variant="singleSwitcher">1W</Toggle>
-            </span>
-          </Spec>
-          <Spec label="singleSwitcherBright">
-            <span className="flex items-center gap-1">
-              <Toggle variant="singleSwitcherBright" pressed>
-                1D
-              </Toggle>
-              <Toggle variant="singleSwitcherBright">1W</Toggle>
-            </span>
           </Spec>
         </Row>
       </SubSection>

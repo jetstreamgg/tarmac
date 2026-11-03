@@ -29,7 +29,8 @@ export function StakeTakeoverStakeCard({
   minStakeLoading,
   minStakeReached,
   error,
-  rewardPicker
+  rewardPicker,
+  notice
 }: {
   amount: bigint;
   onAmountChange: (amount: bigint) => void;
@@ -52,6 +53,8 @@ export function StakeTakeoverStakeCard({
   error?: string;
   /** The reward token block rendered between the amount and the stat rows. */
   rewardPicker?: ReactNode;
+  /** A prepare failure about this card's input, shown at its bottom. */
+  notice?: ReactNode;
 }) {
   const onPercentClick = (percent: number) => {
     if (balance === undefined) return;
@@ -59,7 +62,12 @@ export function StakeTakeoverStakeCard({
   };
 
   return (
-    <StakeTakeoverCard step={1} title={<Trans>Stake SKY</Trans>} dataTestId="stake-takeover-stake-card">
+    <StakeTakeoverCard
+      step={1}
+      title={<Trans>Stake SKY</Trans>}
+      dataTestId="stake-takeover-stake-card"
+      notice={notice}
+    >
       <div className="flex flex-col gap-6 md:gap-8">
         <div className="flex flex-col gap-6 md:gap-5">
           <div className="flex flex-col gap-2 md:gap-3">

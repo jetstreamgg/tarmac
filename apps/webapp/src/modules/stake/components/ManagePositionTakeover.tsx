@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { useStakeConfirmHold } from '../hooks/useStakeConfirmHold';
 import { enginePrepareErrorMessage } from '@/modules/ui/lib/enginePrepareErrorMessage';
+import { stakeRevertCard } from '../lib/revertCard';
 import { maxWithdrawWithinRisk, repayToWithdraw } from '../lib/liquidation';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { calculateMaxRepayable, repayGapOptions } from '../lib/manageRepay';
@@ -514,10 +515,18 @@ export function ManagePositionTakeover({
   // failure once the engine is disabled. Same while the engine is re-simulating
   // (`prepared` dips false with the previous run's write/mining error still
   // set): a genuine prepare failure survives the load and shows on settle.
-  const launchErrorMessage = enginePrepareErrorMessage(
-    prepared,
-    formValid && !launchLoading ? launchError : null
-  );
+  //
+  // One message at a time: while a card shows its own error or notice (the
+  // debt ceiling, the borrow minimum), the prepare failure isn't shown.
+  const cardMessageShown =
+    !!stakeError ||
+    (borrowOn &&
+      (!!borrowError ||
+        minCollateralNotMet ||
+        (state.borrowMode === 'borrow' && collateralData?.debtCeilingUtilization === 1)));
+  const launchErrorMessage = cardMessageShown
+    ? undefined
+    : enginePrepareErrorMessage(prepared, formValid && !launchLoading ? launchError : null);
   const confirmHold = useStakeConfirmHold({
     usdValue,
     actionable: formValid && prepared && !launchLoading,
@@ -552,6 +561,26 @@ export function ManagePositionTakeover({
     }
   };
 
+  // Why Confirm is dead, at the bottom of the card it's about (a revert about
+  // the reward, say, under the stake card) rather than loose on the overlay;
+  // anything about the whole form (the wrong chain, screening, an unmapped
+  // revert) under the last card. Its own element per failure, so the alert
+  // mounts fresh for screen readers.
+  const noteCard = confirmHold.alert?.kind === 'prepare' ? stakeRevertCard(launchError) : undefined;
+  const blockedNote = confirmHold.alert && (
+    <p
+      className="text-statusError text-sm"
+      data-testid={
+        confirmHold.alert.kind === 'prepare'
+          ? 'stake-manage-error'
+          : `stake-manage-${confirmHold.alert.kind}-blocked`
+      }
+      role="alert"
+    >
+      {confirmHold.alert.message}
+    </p>
+  );
+
   return (
     <TakeoverShell
       scrimHandoff={scrimHandoff}
@@ -570,22 +599,9 @@ export function ManagePositionTakeover({
       dataTestId="stake-manage-takeover"
       footer={
         <>
-          {/* An engine prepare failure takes over the slot — the helper copy
-              would be a lie next to a dead Confirm. Two elements (not one
-              recolored <p>) so the alert mounts fresh for screen readers. */}
-          {confirmHold.alert ? (
-            <p
-              className="text-error max-w-xs text-sm"
-              data-testid={
-                confirmHold.alert.kind === 'prepare'
-                  ? 'stake-manage-error'
-                  : `stake-manage-${confirmHold.alert.kind}-blocked`
-              }
-              role="alert"
-            >
-              {confirmHold.alert.message}
-            </p>
-          ) : (
+          {/* Why Confirm is dead shows at the bottom of a card instead
+              (blockedNote) — the helper copy would be a lie next to it. */}
+          {!confirmHold.alert && (
             <p className="text-textSecondary max-w-xs text-sm">
               <Trans>Review the changes to your position, and continue to confirm it in your wallet.</Trans>
             </p>
@@ -597,7 +613,7 @@ export function ManagePositionTakeover({
             disabled={confirmHold.disabled}
             loading={confirmHold.loading}
             data-testid="stake-manage-confirm"
-            className="px-10"
+            className="ml-auto px-10"
           >
             <Trans>Confirm</Trans>
           </Button>
@@ -729,6 +745,7 @@ export function ManagePositionTakeover({
         minStakeReached={isMinCollateralReached(liveCollateralAmount, simulatedVault?.minCollateralForDust)}
         error={stakeError}
         errorAction={stakeError ? stakeErrorAction : undefined}
+        notice={noteCard === 'stake' ? blockedNote : undefined}
       />
 
       <StakeManageBorrowCard
@@ -754,6 +771,7 @@ export function ManagePositionTakeover({
         currentCollateral={liveCollateralAmount > 0n ? liveCollateralAmount : 0n}
         hasStagedChange={state.skyAmount > 0n || (borrowOn && (state.usdsAmount > 0n || state.wipeAll))}
         error={borrowError}
+        notice={noteCard !== 'stake' ? blockedNote : undefined}
       />
     </TakeoverShell>
   );

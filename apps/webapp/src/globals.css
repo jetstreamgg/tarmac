@@ -760,11 +760,18 @@
      the page shifted right under a modal on Convert; layered `!important`
      outranks their unlayered one. The dialog backs off by half the same
      variable to centre on the page (dialog.tsx). Both rules flip in the same
-     style update as the lock attribute, so there is no frame in between. */
-  html:has(body[data-scroll-locked]) {
+     style update as the lock attribute, so there is no frame in between.
+
+     WalletConnect's QR modal (Reown AppKit's `w3m-modal`) holds its own lock
+     instead: a `<style data-w3m="scroll-lock">` in head setting
+     `body { overflow: hidden }`, with no `data-scroll-locked`. Its overlay is
+     a fixed layer too, so the same release applies while that tag exists. */
+  html:has(body[data-scroll-locked]),
+  html:has(> head > style[data-w3m='scroll-lock']) {
     scrollbar-gutter: auto;
   }
-  html body[data-scroll-locked] {
+  html body[data-scroll-locked],
+  html:has(> head > style[data-w3m='scroll-lock']) body {
     margin-right: var(--page-scrollbar-gutter, 0px) !important;
   }
   /* `--page-released-gutter`: the column the lock released — the measured
@@ -793,7 +800,8 @@
   body {
     --page-released-gutter: 0px;
   }
-  body[data-scroll-locked] {
+  body[data-scroll-locked],
+  html:has(> head > style[data-w3m='scroll-lock']) body {
     --page-released-gutter: var(--page-scrollbar-gutter, 0px);
   }
 

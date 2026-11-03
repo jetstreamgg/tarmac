@@ -131,20 +131,24 @@ describe('PendleRedeem', () => {
     expect(screen.queryByTestId('pendle-redeem-row-Claim token')).toBeNull();
   });
 
-  it('keeps slippage and its floor on a pure redemption — the signed minTokenOut binds there too', () => {
+  it('hides slippage and its floor on a direct redemption, which cannot slip', () => {
     renderRedeem({ quote: baseQuote });
 
-    expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
-    expect(screen.getByTestId('pendle-redeem-row-Min. received')).toBeTruthy();
-    // Only the per-hop route cells are aggregator-only.
+    expect(screen.queryByTestId('pendle-redeem-row-Slippage')).toBeNull();
+    expect(screen.queryByTestId('pendle-redeem-row-Min. received')).toBeNull();
     expect(screen.queryByTestId('pendle-redeem-row-Price impact')).toBeNull();
     expect(screen.queryByTestId('pendle-redeem-row-Routed via')).toBeNull();
-    expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('Included in quote');
+    expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();
+    expect(screen.getByTestId('pendle-redeem-row-Network')).toBeTruthy();
     expect(screen.getByTestId('pendle-redeem-row-Network fee')).toBeTruthy();
   });
 
   it('draws slippage, min received and sign-flipped price impact on aggregator routes', () => {
-    renderRedeem({ quote: { ...baseQuote, aggregatorType: 'kyberswap' } });
+    // The output is SY-accepted, but the quote still routes through an aggregator.
+    renderRedeem({
+      market: { ...MARKET, syAcceptedTokens: [MARKET.underlyingToken] },
+      quote: { ...baseQuote, aggregatorType: 'kyberswap' }
+    });
 
     expect(screen.getByTestId('pendle-redeem-row-Slippage').textContent).toContain('1%');
     // apiMinOut 1.4652 USDG floors to 1.46 — the figure is a contractual
@@ -154,7 +158,11 @@ describe('PendleRedeem', () => {
     expect(screen.getByTestId('pendle-redeem-row-Price impact').textContent).toContain('0.050%');
   });
 
-  it('formats the Pendle fee in dollars when the quote carries one', () => {
+  it('shows the Pendle fee in dollars only when the quote reports one', () => {
+    renderRedeem({ quote: { ...baseQuote, feeUsd: 0 } });
+    expect(screen.queryByTestId('pendle-redeem-row-Pendle fee')).toBeNull();
+
+    cleanup();
     renderRedeem({ quote: { ...baseQuote, feeUsd: 0.0363 } });
     expect(screen.getByTestId('pendle-redeem-row-Pendle fee').textContent).toContain('$0.04');
 

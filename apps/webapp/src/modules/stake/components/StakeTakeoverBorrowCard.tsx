@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { RiskLevel, Vault, CollateralRiskParameters } from '@/hooks';
@@ -49,7 +50,8 @@ export function StakeTakeoverBorrowCard({
   simulationLoading,
   collateralData,
   collateralLoading,
-  error
+  error,
+  notice
 }: {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
@@ -68,6 +70,8 @@ export function StakeTakeoverBorrowCard({
   /** The collateral-parameters read is in flight — the borrow rate holds a skeleton. */
   collateralLoading?: boolean;
   error?: string;
+  /** A prepare failure about this card's input, shown at its bottom. */
+  notice?: ReactNode;
 }) {
   const debtCeilingReached = collateralData?.debtCeilingUtilization === 1;
   const slider = useStakeAmountSlider({
@@ -127,6 +131,7 @@ export function StakeTakeoverBorrowCard({
         />
       }
       dataTestId="stake-takeover-borrow-card"
+      notice={notice}
     >
       <div className="flex flex-col gap-6 md:gap-8">
         {/* Amount block over its hairline (Frame 1597879781, 1036:209752). */}
@@ -176,7 +181,7 @@ export function StakeTakeoverBorrowCard({
         )}
 
         {debtCeilingReached && (
-          <p className="text-sm text-orange-400">
+          <p className="text-statusWarning text-sm">
             <Trans>Debt ceiling reached. Borrowing USDS is temporarily unavailable.</Trans>
           </p>
         )}

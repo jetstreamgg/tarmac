@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { readContract, readContracts, type Config } from '@wagmi/core';
+import { readContract, readContracts } from 'wagmi/actions';
 import { stringToHex } from 'viem';
-import { useChainId, useConfig, useConnection } from 'wagmi';
+import { type Config, useChainId, useConfig, useConnection } from 'wagmi';
 import { getIlkName, mcdVatAbi, mcdVatAddress, stakeModuleAbi, stakeModuleAddress } from '@/hooks';
 import { mcdSpotAbi, mcdSpotAddress } from '@/hooks/generated';
 import { useSimulatedDripRate } from '@/hooks/vaults/useSimulatedDripRate';

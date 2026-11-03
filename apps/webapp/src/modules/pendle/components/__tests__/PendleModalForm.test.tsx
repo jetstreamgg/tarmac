@@ -64,6 +64,7 @@ const hoisted = vi.hoisted(() => ({
       sessionId: string,
       partial: {
         entry?: { confirmDisabled?: boolean };
+        errorMessage?: string;
         steps?: string[];
         rightHeaderComponent?: unknown;
         transactionContent?: ReactNode;
@@ -224,8 +225,13 @@ const renderLastReviewContent = () => {
   );
 };
 
+// Before MARKET's 26 Nov 2026 expiry, so the live-market specs keep passing after that date.
+const BEFORE_EXPIRY_MS = Date.UTC(2026, 9, 1);
+
 describe('PendleModalForm', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
     hoisted.quoteArgs = undefined;
     hoisted.batchArgs = undefined;
     hoisted.onPush = undefined;
@@ -259,6 +265,46 @@ describe('PendleModalForm', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.useRealTimers();
+  });
+
+  describe('matured market', () => {
+    beforeEach(() => {
+      vi.setSystemTime((MARKET.expiry + 60) * 1000);
+    });
+
+    it('blocks a supply left open past expiry and says why', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      expect(hoisted.quoteArgs?.enabled).toBe(false);
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+      expect(lastEntryUpdate()?.errorMessage).toContain('no longer accepts deposits');
+    });
+
+    it('blocks an early withdrawal past expiry and points to claiming', () => {
+      renderForm('withdraw');
+      typeAmount('200');
+
+      expect(hoisted.quoteArgs?.enabled).toBe(false);
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+      expect(lastEntryUpdate()?.errorMessage).toContain('early withdrawal is closed');
+    });
+
+    it('blocks a modal opened before expiry once the minute tick crosses it', () => {
+      vi.useFakeTimers({
+        toFake: ['Date', 'setInterval', 'clearInterval'],
+        now: (MARKET.expiry - 30) * 1000
+      });
+      renderForm('supply');
+      typeAmount('100');
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(false);
+
+      act(() => vi.advanceTimersByTime(60_000));
+
+      expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+      expect(lastEntryUpdate()?.errorMessage).toContain('no longer accepts deposits');
+    });
   });
 
   describe('supply flow', () => {
