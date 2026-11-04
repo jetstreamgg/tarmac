@@ -7,6 +7,8 @@ import { PENDLE_QUOTE_REFETCH_MS, PendleConvertSide } from './constants';
 import type { PendleAggregatorRoute, PendleConvertQuote, PendleQuoteHook } from './pendle';
 import { fetchPendleConvert } from './pendleApiClient';
 
+export const PENDLE_CONVERT_QUERY_KEY = 'pendle-convert';
+
 /**
  * Pull the on-chain `minOut` value from the API's contractCallParams.
  * Numeric fields come back as decimal wei strings (JSON has no native bigint).
@@ -247,7 +249,7 @@ export function useQuotePendleConvert({
   const { data, isLoading, error, refetch } = useQuery({
     enabled,
     queryKey: [
-      'pendle-convert',
+      PENDLE_CONVERT_QUERY_KEY,
       marketAddress,
       side,
       inputToken,

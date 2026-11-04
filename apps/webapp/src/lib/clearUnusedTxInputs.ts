@@ -1,4 +1,6 @@
 import type { Query, QueryClient } from '@tanstack/react-query';
+import { PENDLE_CONVERT_QUERY_KEY } from '@/hooks/pendle/useQuotePendleConvert';
+import { SIMULATE_BATCH_QUERY_KEY } from '@/hooks/shared/useSimulateBatch';
 
 const TX_INPUT_READS = new Set(['allowance', 'get_dy', 'get_dx']);
 
@@ -7,7 +9,9 @@ const TX_INPUT_READS = new Set(['allowance', 'get_dy', 'get_dx']);
 const isTxInput = (query: Query) => {
   const [scope, params] = query.queryKey as [unknown, { functionName?: unknown } | undefined];
   if (scope === 'readContract') return TX_INPUT_READS.has(params?.functionName as string);
-  return scope === 'simulateContract' || scope === 'simulate-batch' || scope === 'pendle-convert';
+  return (
+    scope === 'simulateContract' || scope === SIMULATE_BATCH_QUERY_KEY || scope === PENDLE_CONVERT_QUERY_KEY
+  );
 };
 
 /**

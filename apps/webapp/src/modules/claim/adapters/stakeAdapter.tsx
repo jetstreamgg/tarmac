@@ -160,20 +160,20 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
     const restakeAmount = skyReward?.claimBalance ?? 0n;
     const sky = skyAddress[chainId as keyof typeof skyAddress];
 
-    const needsAllowance = restake && restakeAmount > 0n && !!sky;
-    if (needsAllowance && skyAllowance === undefined) return { calls: [], prepared: false };
-
     const calls: Call[] = [];
 
-    if (needsAllowance && skyAllowance !== undefined && skyAllowance < restakeAmount) {
-      calls.push(
-        getWriteContractCall({
-          to: sky,
-          abi: erc20Abi,
-          functionName: 'approve',
-          args: [stakeModule, restakeAmount]
-        })
-      );
+    if (restake && restakeAmount > 0n && sky) {
+      if (skyAllowance === undefined) return { calls: [], prepared: false };
+      if (skyAllowance < restakeAmount) {
+        calls.push(
+          getWriteContractCall({
+            to: sky,
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [stakeModule, restakeAmount]
+          })
+        );
+      }
     }
 
     // One getReward(owner, urnIndex, rewardContract, owner) per selected (urn, contract) —
