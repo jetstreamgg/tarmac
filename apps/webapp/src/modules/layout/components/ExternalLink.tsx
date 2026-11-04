@@ -32,7 +32,10 @@ export function ExternalLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={cn('text-text inline-flex items-center', className)}
+      className={cn(
+        'text-text focus-visible:outline-focusRing inline-flex items-center rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2',
+        className
+      )}
     >
       {['string', 'number'].includes(typeof children) || children === undefined ? (
         content
