@@ -5,7 +5,6 @@ import { useStakeSkyAllowance, useStakeUsdsAllowance } from './useStakeAllowance
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { Call, ContractFunctionArgs, ContractFunctionName, decodeFunctionData, erc20Abi } from 'viem';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
-import { needsApproval } from '../shared/needsApproval';
 
 export function useBatchStakeMulticall({
   skyAmount,
@@ -28,8 +27,8 @@ export function useBatchStakeMulticall({
   const { data: skyAllowance, error: skyAllowanceError } = useStakeSkyAllowance();
   const { data: usdsAllowance, error: usdsAllowanceError } = useStakeUsdsAllowance();
 
-  const needsSkyApproval = needsApproval(skyAllowance, skyAmount);
-  const needsUsdsApproval = needsApproval(usdsAllowance, usdsAmount);
+  const hasSkyAllowance = skyAllowance !== undefined && skyAllowance >= skyAmount;
+  const hasUsdsAllowance = usdsAllowance !== undefined && usdsAllowance >= usdsAmount;
 
   // The stake module is mainnet-only. A wallet on another chain can still reach
   // this hook (deep link, declined auto-switch, chain changed from the wallet
@@ -68,8 +67,8 @@ export function useBatchStakeMulticall({
       data
     }));
 
-    if (needsSkyApproval) calls.push(approveSkyCall);
-    if (needsUsdsApproval) calls.push(approveUsdsCall);
+    if (!hasSkyAllowance) calls.push(approveSkyCall);
+    if (!hasUsdsAllowance) calls.push(approveUsdsCall);
 
     // If the calldata array only has 1 element, decode that call and send it individually
     if (calldata.length === 1) {

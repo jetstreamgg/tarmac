@@ -5,7 +5,6 @@ import { Abi, Call, erc20Abi } from 'viem';
 import { useStUsdsAllowance } from './useStUsdsAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
-import { needsApproval } from '../shared/needsApproval';
 
 export function useBatchStUsdsDeposit({
   amount,
@@ -24,7 +23,7 @@ export function useBatchStUsdsDeposit({
   const chainId = useChainId();
   const { data: allowance, error: allowanceError } = useStUsdsAllowance();
 
-  const needsApprove = needsApproval(allowance, amount);
+  const hasAllowance = allowance !== undefined && allowance >= amount;
 
   // Calls for the batch transaction
   const approveCall = getWriteContractCall({
@@ -42,7 +41,7 @@ export function useBatchStUsdsDeposit({
   });
 
   const calls: Call[] = [];
-  if (needsApprove) calls.push(approveCall);
+  if (!hasAllowance) calls.push(approveCall);
   calls.push(depositCall);
 
   const enabled =

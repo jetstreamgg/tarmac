@@ -21,7 +21,6 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 import { getTooltipById } from '@/modules/ui/data/tooltips';
 import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { PendleFlow } from '@/modules/pendle/lib/constants';
@@ -162,7 +161,7 @@ export function PendleModalForm({
     owner: address,
     spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
   });
-  const needsAllowance = debouncedAmount > 0n && needsApproval(allowance, debouncedAmount);
+  const needsAllowance = allowance !== undefined && debouncedAmount > 0n && allowance < debouncedAmount;
 
   // Steps mirror the engine's call count ([approve?, convert]) so the
   // indicator advances in lockstep with the sequential flow's onMutate bumps.

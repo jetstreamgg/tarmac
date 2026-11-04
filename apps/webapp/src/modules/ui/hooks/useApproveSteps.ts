@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { type Token, TOKENS, useTokenAllowance } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 
 interface UseApproveStepsParams {
   /** The token the action pulls from the wallet. */
@@ -48,7 +47,7 @@ export function useApproveSteps({
     owner: address,
     spender
   });
-  const needsAllowance = enabled && needsApproval(allowance, amount);
+  const needsAllowance = enabled && allowance !== undefined && allowance < amount;
   const needsReset =
     withUsdtReset && needsAllowance && token.symbol === TOKENS.usdt.symbol && (allowance ?? 0n) > 0n;
 

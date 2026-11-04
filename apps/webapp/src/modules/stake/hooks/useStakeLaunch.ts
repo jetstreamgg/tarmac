@@ -11,7 +11,6 @@ import {
   useStakeUsdsAllowance,
   ZERO_ADDRESS
 } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 import { formatBigInt } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
@@ -218,9 +217,12 @@ export function useStakeLaunch({
 
   // READ ONLY — labels the Approve step; the engine derives its own approve call.
   const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
-  const needsSkyAllowance = needsApproval(skyAllowance, lockAmount);
+  const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
+  // Nothing to approve on the open flow (`usdsAmount` is 0), but the engine
+  // still emits an approve leg while the read is unresolved — mirrored so the
+  // leg count below can't disagree with the calls it actually builds.
   const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
-  const needsUsdsAllowance = needsApproval(usdsAllowance, usdsAmount);
+  const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
   const refetchAllowances = useCallback(() => {
     mutateSkyAllowance();
     mutateUsdsAllowance();

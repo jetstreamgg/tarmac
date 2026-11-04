@@ -16,7 +16,6 @@ import {
 import type { PendleConvertQuote } from './pendle';
 import { buildVerifiedArgs } from './buildVerifiedArgs';
 import { useNow } from '../ui/useNow';
-import { needsApproval } from '../shared/needsApproval';
 
 /** How often the stale-quote verdict is re-checked; well inside the 90s TTL. */
 const QUOTE_STALENESS_TICK_MS = 5_000;
@@ -101,7 +100,7 @@ export function useBatchPendleConvert({
     spender: routerAddress
   });
 
-  const needsAllowanceApproval = amountIn !== undefined && needsApproval(allowance, amountIn);
+  const hasAllowance = allowance !== undefined && amountIn !== undefined && allowance >= amountIn;
 
   // A quote goes stale `PENDLE_QUOTE_TTL_MS` after it was fetched. The clock
   // ticks well inside that window so the verdict flips close to on time, and
@@ -164,7 +163,7 @@ export function useBatchPendleConvert({
 
   // Build the call list: optional approve, then convert.
   const calls: Call[] = [];
-  if (needsAllowanceApproval && inputToken && amountIn) {
+  if (!hasAllowance && inputToken && amountIn) {
     calls.push(
       getWriteContractCall({
         to: inputToken,

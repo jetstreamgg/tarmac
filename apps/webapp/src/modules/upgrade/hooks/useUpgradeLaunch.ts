@@ -10,7 +10,6 @@ import {
   useTokenAllowance,
   type UpgradeSourceToken
 } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -86,7 +85,7 @@ export function useUpgradeLaunch({
       ? daiUsdsAddress[chainId as keyof typeof daiUsdsAddress]
       : mkrSkyAddress[chainId as keyof typeof mkrSkyAddress]
   });
-  const needsAllowance = needsApproval(allowance, amount);
+  const needsAllowance = allowance !== undefined && allowance < amount;
 
   const upgrade = useBatchUpgrade({
     token,

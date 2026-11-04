@@ -11,7 +11,6 @@ import {
   useTransactionFlow,
   ZERO_ADDRESS
 } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
@@ -225,7 +224,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
 
   // READ ONLY — labels the Approve step; the engine derives its own approve.
   const { data: skyAllowance } = useStakeSkyAllowance();
-  const needsSkyAllowance = needsApproval(skyAllowance, lockAmount);
+  const needsSkyAllowance = skyAllowance !== undefined && skyAllowance < lockAmount;
 
   // Legacy StakeModuleWidget/index.tsx:205 (the USDS leg is always zero here).
   const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);

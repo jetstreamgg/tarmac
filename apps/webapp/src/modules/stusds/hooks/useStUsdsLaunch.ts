@@ -9,7 +9,6 @@ import {
   useStUsdsAllowance,
   useStUsdsWithdraw
 } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { toLaunchResult, useShouldUseBatch, type EngineLaunchResult } from '@/modules/ui/hooks/engineLaunch';
@@ -71,17 +70,17 @@ export function useStUsdsLaunch({
 
   // READ ONLY — label the approve steps only. Same reads as the engines' own.
   const { data: nativeSupplyAllowance } = useStUsdsAllowance();
-  const { needsAllowance: needsCurveUsdsAllowance } = useCurveAllowance({ token: 'USDS', amount });
-  const { needsAllowance: needsCurveStUsdsAllowance } = useCurveAllowance({
+  const { hasAllowance: hasCurveUsdsAllowance } = useCurveAllowance({ token: 'USDS', amount });
+  const { hasAllowance: hasCurveStUsdsAllowance } = useCurveAllowance({
     token: 'stUSDS',
     amount: stUsdsAmount ?? 0n
   });
   const needsAllowance = isSupply
     ? isCurve
-      ? needsCurveUsdsAllowance
-      : needsApproval(nativeSupplyAllowance, amount)
+      ? !hasCurveUsdsAllowance
+      : nativeSupplyAllowance !== undefined && nativeSupplyAllowance < amount
     : isCurve
-      ? needsCurveStUsdsAllowance
+      ? !hasCurveStUsdsAllowance
       : false;
 
   // All four engines are called unconditionally (hooks rules) and gated by

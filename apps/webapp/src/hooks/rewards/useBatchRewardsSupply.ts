@@ -6,7 +6,6 @@ import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { Call, erc20Abi } from 'viem';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
-import { needsApproval } from '../shared/needsApproval';
 
 // Allows user to supply in a rewards contract
 // We need to provide the contract address of the rewards contract since there are many of them
@@ -37,7 +36,7 @@ export function useBatchRewardsSupply({
     owner: address
   });
 
-  const needsApprove = needsApproval(allowance, amount);
+  const hasAllowance = allowance !== undefined && allowance >= amount;
 
   // Calls for the batch transaction
   const calls: Call[] = [];
@@ -56,7 +55,7 @@ export function useBatchRewardsSupply({
       args: [amount, ref]
     });
 
-    if (needsApprove) calls.push(approveCall);
+    if (!hasAllowance) calls.push(approveCall);
     calls.push(supplyCall);
   }
 

@@ -17,7 +17,6 @@ import {
   useTokenAllowance,
   usdsPsmWrapperAddress
 } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 import { isL2ChainId, math } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
@@ -165,13 +164,15 @@ export function useSavingsLaunch({
   });
 
   // The USDS approve on the USDC path covers the widened wad, not the 6-dec input.
-  const needsUsdsApproval = isSupply && needsApproval(usdsAllowance, usdcSupplyUsdsAmount);
-  const needsDaiApproval = isDai && needsApproval(daiAllowance, amount);
-  const needsUsdcWrapperApproval = isMainnetUsdc && needsApproval(usdcWrapperAllowance, amount);
-  const needsPsmApproval = isSupply && isL2 && needsApproval(psmAllowance, amount);
+  const needsUsdsApproval = isSupply && usdsAllowance !== undefined && usdsAllowance < usdcSupplyUsdsAmount;
+  const needsDaiApproval = isDai && daiAllowance !== undefined && daiAllowance < amount;
+  const needsUsdcWrapperApproval =
+    isMainnetUsdc && usdcWrapperAllowance !== undefined && usdcWrapperAllowance < amount;
+  const needsPsmApproval = isSupply && isL2 && psmAllowance !== undefined && psmAllowance < amount;
   // The sUSDS spent on a withdraw: the whole balance (max) or the exact-out ceiling.
   const withdrawApproveAmount = max ? (sUsdsBalance ?? 0n) : (maxAmountInForWithdraw ?? 0n);
-  const needsPsmWithdrawApproval = isL2Withdraw && needsApproval(psmWithdrawAllowance, withdrawApproveAmount);
+  const needsPsmWithdrawApproval =
+    isL2Withdraw && psmWithdrawAllowance !== undefined && psmWithdrawAllowance < withdrawApproveAmount;
 
   // L2 PSM referral is a bigint (mainnet deposit's is a number — do not unify).
   const psmReferralCode = referralCode ? BigInt(referralCode) : undefined;

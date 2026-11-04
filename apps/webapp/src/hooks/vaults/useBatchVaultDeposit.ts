@@ -6,7 +6,6 @@ import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { buildVaultDepositCall } from '@/lib/vaults/buildVaultDepositCall';
 import { Call, erc20Abi } from 'viem';
-import { needsApproval } from '../shared/needsApproval';
 
 /**
  * Hook for depositing assets into an ERC-4626 vault with batch transaction support.
@@ -59,7 +58,7 @@ export function useBatchVaultDeposit({
     spender: vaultAddress
   });
 
-  const needsApprove = needsApproval(allowance, amount);
+  const hasAllowance = allowance !== undefined && allowance >= amount;
 
   // Build the ERC-4626 deposit(assets, receiver) call. receiver is the connected
   // address - they receive the vault shares.
@@ -71,7 +70,7 @@ export function useBatchVaultDeposit({
 
   // Conditionally include approve calls if allowance is insufficient
   const calls: Call[] = [];
-  if (needsApprove) {
+  if (!hasAllowance) {
     // USDT requires resetting allowance to 0 before setting a new value
     if (isUsdt && allowance !== undefined && allowance > 0n) {
       calls.push(

@@ -16,7 +16,6 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import { needsApproval } from '@/hooks/shared/needsApproval';
 import { familyMainnetId, formatBigInt, isTestnetId } from '@/utils';
 import { Intent } from '@/lib/enums';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
@@ -141,7 +140,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
   });
   const ptSymbol = `PT-${market.underlyingSymbol}`;
-  const needsAllowance = ptBalance > 0n && needsApproval(allowance, ptBalance);
+  const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
   useResetUnfinishedRunOnClose(writeHook.reset, mutateAllowance);
   const steps = useMemo<TransactionStep[]>(() => {
     const claimStep = {

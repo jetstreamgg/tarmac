@@ -12,7 +12,6 @@ import {
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { needsApproval } from '../shared/needsApproval';
 
 /** The two upgradeable source tokens; each has a fixed upgrader + target. */
 export type UpgradeSourceToken = 'DAI' | 'MKR';
@@ -56,7 +55,7 @@ export function useBatchUpgrade({
     owner: connectedAddress,
     spender: upgraderAddress
   });
-  const needsApprove = needsApproval(allowance, amount);
+  const hasAllowance = allowance !== undefined && allowance >= amount;
 
   // Calls for the batch transaction. Built only once an address exists: the
   // upgrade modal opens while disconnected, and an `undefined` recipient in the
@@ -64,7 +63,7 @@ export function useBatchUpgrade({
   // useNetworkFee's calls key) throw viem's InvalidAddressError.
   const calls: Call[] = [];
   if (connectedAddress) {
-    if (needsApprove) {
+    if (!hasAllowance) {
       calls.push(
         getWriteContractCall({
           to: sourceAddress,
