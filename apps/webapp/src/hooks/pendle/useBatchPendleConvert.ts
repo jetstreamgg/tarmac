@@ -101,6 +101,8 @@ export function useBatchPendleConvert({
     spender: routerAddress
   });
 
+  const needsAllowanceApproval = amountIn !== undefined && needsApproval(allowance, amountIn);
+
   // A quote goes stale `PENDLE_QUOTE_TTL_MS` after it was fetched. The clock
   // ticks well inside that window so the verdict flips close to on time, and
   // only the boolean feeds the memo below so it doesn't rebuild on every tick.
@@ -162,7 +164,7 @@ export function useBatchPendleConvert({
 
   // Build the call list: optional approve, then convert.
   const calls: Call[] = [];
-  if (inputToken && amountIn && needsApproval(allowance, amountIn)) {
+  if (needsAllowanceApproval && inputToken && amountIn) {
     calls.push(
       getWriteContractCall({
         to: inputToken,
