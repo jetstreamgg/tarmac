@@ -223,9 +223,8 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   });
 
   // READ ONLY — labels the Approve step; the engine derives its own approve.
-  const { data: skyAllowance, error: skyAllowanceError } = useStakeSkyAllowance();
-  // Matches the engine: a failed read still adds the approve.
-  const needsSkyAllowance = skyAllowance === undefined ? !!skyAllowanceError : skyAllowance < lockAmount;
+  const { data: skyAllowance } = useStakeSkyAllowance();
+  const needsSkyAllowance = skyAllowance !== undefined && skyAllowance < lockAmount;
 
   // Legacy StakeModuleWidget/index.tsx:205 (the USDS leg is always zero here).
   const shouldUseBatch = useShouldUseBatch(needsSkyAllowance || calldata.length > 1);

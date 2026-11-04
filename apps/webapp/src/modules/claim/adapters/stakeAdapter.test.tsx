@@ -14,7 +14,6 @@ const h = vi.hoisted(() => ({
   SPK_REWARD: '0x6666666666666666666666666666666666666666',
   urnRewards: [] as UrnReward[],
   skyAllowance: 0n as bigint | undefined,
-  skyAllowanceError: null as Error | null,
   prices: {} as Record<string, { price: string }>,
   address: undefined as string | undefined
 }));
@@ -32,7 +31,7 @@ vi.mock('@/hooks', () => ({
     data: [{ contractAddress: h.SKY_REWARD }, { contractAddress: h.SPK_REWARD }]
   }),
   useRewardContractsToClaim: () => ({ data: h.urnRewards, isLoading: false }),
-  useStakeSkyAllowance: () => ({ data: h.skyAllowance, error: h.skyAllowanceError }),
+  useStakeSkyAllowance: () => ({ data: h.skyAllowance }),
   usePrices: () => ({ data: h.prices }),
   getWriteContractCall: (params: unknown) => params,
   stakeModuleAddress: { 1: h.STAKE_MODULE },
@@ -67,7 +66,6 @@ const seed = () => {
     { contractAddress: SPK_REWARD, claimBalance: 7n * 10n ** 18n, rewardSymbol: 'SPK' }
   ];
   h.skyAllowance = 0n;
-  h.skyAllowanceError = null;
   h.prices = { SKY: { price: '0.05' }, SPK: { price: '0.10' } };
   h.address = USER;
 };
@@ -209,23 +207,6 @@ describe('stakeAdapter', () => {
       );
 
       expect(result.current).toEqual({ calls: [], prepared: false });
-    });
-
-    it('adds the approve when the SKY allowance read failed, instead of stalling', () => {
-      seed();
-      h.skyAllowance = undefined;
-      h.skyAllowanceError = new Error('rpc down');
-      const { result } = renderHook(() =>
-        stakeAdapter.useClaimCalls(stakeSelection(0n, [SKY_REWARD, SPK_REWARD]), { restake: true })
-      );
-
-      expect(result.current.prepared).toBe(true);
-      expect(asCalls(result.current.calls).map(c => c.functionName)).toEqual([
-        'approve',
-        'getReward',
-        'getReward',
-        'lock'
-      ]);
     });
 
     it('does not wait for the SKY allowance on a plain claim', () => {

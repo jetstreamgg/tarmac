@@ -137,7 +137,7 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
   // Only needed to resolve the SKY reward's claim amount for restake, but must be
   // called unconditionally; disabled (empty) when there's no stake selection.
   const { rewards: urnRewards } = useStakeUrnRewards(index);
-  const { data: skyAllowance, error: skyAllowanceError } = useStakeSkyAllowance();
+  const { data: skyAllowance } = useStakeSkyAllowance();
 
   return useMemo(() => {
     const stakeModule = stakeModuleAddress[chainId as keyof typeof stakeModuleAddress];
@@ -163,10 +163,9 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
     const calls: Call[] = [];
 
     if (restake && restakeAmount > 0n && sky) {
-      // Wait for the allowance rather than guess an approve. A failed read approves
-      // anyway: an extra approve beats a claim that can't be sent.
-      if (skyAllowance === undefined && !skyAllowanceError) return { calls: [], prepared: false };
-      if (skyAllowance === undefined || skyAllowance < restakeAmount) {
+      // Wait for the allowance rather than guess an approve, like the engines do.
+      if (skyAllowance === undefined) return { calls: [], prepared: false };
+      if (skyAllowance < restakeAmount) {
         calls.push(
           getWriteContractCall({
             to: sky,
@@ -203,7 +202,7 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
     }
 
     return { calls, prepared: calls.length > 0 };
-  }, [address, index, stakeSelected, urnRewards, restake, skyAllowance, skyAllowanceError, chainId]);
+  }, [address, index, stakeSelected, urnRewards, restake, skyAllowance, chainId]);
 }
 
 /**
