@@ -14,8 +14,6 @@ import {
   simulateBatch
 } from './simulateBatch';
 
-export const SIMULATE_BATCH_QUERY_KEY = 'simulate-batch';
-
 export type UseSimulateBatchParameters = {
   calls: readonly Call[];
   chainId?: number;
@@ -75,12 +73,12 @@ export function useSimulateBatch({
   }, [calls]);
 
   const { isSuccess, isLoading, error } = useQuery({
-    queryKey: [SIMULATE_BATCH_QUERY_KEY, resolvedChainId, address, callsKey],
+    queryKey: ['simulate-batch', resolvedChainId, address, callsKey],
     queryFn: () => simulateBatch({ client: client!, account: address!, calls, fallbackClients }),
     enabled: enabled && !!client && !!address && calls.length > 0 && callsKey !== null,
     // A revert or an unsupported RPC won't change on a retry; only a failed request might.
     retry: (failureCount, err) => isTransientBatchSimulationError(err) && failureCount < 3,
-    gcTime: 30_000
+    gcTime: 0
   });
 
   const structuralFailure = isStructuralBatchSimulationError(error);

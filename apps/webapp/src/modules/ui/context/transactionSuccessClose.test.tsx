@@ -75,7 +75,6 @@ vi.mock('motion/react', async io => {
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
-import { queryClient } from '@/lib/queryClient';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -225,15 +224,6 @@ describe('TransactionModal success handoff', () => {
     act(() => cb!.onSuccess(HASH, 123n));
 
     expect(refreshHistoryMock).toHaveBeenCalledWith(expect.anything(), { chainId: 1, blockNumber: 123n });
-  });
-
-  it('a launch drops cached allowances nothing is showing, so the new flow reads them fresh', () => {
-    const key = ['readContract', { chainId: 1, functionName: 'allowance', args: [] }];
-    queryClient.setQueryData(key, 100n);
-
-    renderFlow(CONFIG);
-
-    expect(queryClient.getQueryData(key)).toBeUndefined();
   });
 
   it('a page-hosted flow reloads its allowances after a success, so its next run sees the spent approval', () => {

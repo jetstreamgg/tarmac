@@ -7,8 +7,6 @@ import { PENDLE_QUOTE_REFETCH_MS, PendleConvertSide } from './constants';
 import type { PendleAggregatorRoute, PendleConvertQuote, PendleQuoteHook } from './pendle';
 import { fetchPendleConvert } from './pendleApiClient';
 
-export const PENDLE_CONVERT_QUERY_KEY = 'pendle-convert';
-
 /**
  * Pull the on-chain `minOut` value from the API's contractCallParams.
  * Numeric fields come back as decimal wei strings (JSON has no native bigint).
@@ -249,7 +247,7 @@ export function useQuotePendleConvert({
   const { data, isLoading, error, refetch } = useQuery({
     enabled,
     queryKey: [
-      PENDLE_CONVERT_QUERY_KEY,
+      'pendle-convert',
       marketAddress,
       side,
       inputToken,
@@ -326,7 +324,7 @@ export function useQuotePendleConvert({
       };
     },
     staleTime: 30_000,
-    gcTime: 60_000,
+    gcTime: 0,
     // Disconnected previews fetch once on input change but don't poll — keeps
     // anonymous-visitor traffic to Pendle bounded; `poll` lets callers opt
     // out while their quote isn't on screen.

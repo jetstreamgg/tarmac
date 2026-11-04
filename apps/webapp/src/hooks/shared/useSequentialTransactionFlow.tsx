@@ -24,7 +24,7 @@ export function useSequentialTransactionFlow(
     onStart = () => null,
     onSuccess = () => null,
     onError = () => null,
-    gcTime = 30000,
+    gcTime = 0,
     chainId
   } = parameters;
 

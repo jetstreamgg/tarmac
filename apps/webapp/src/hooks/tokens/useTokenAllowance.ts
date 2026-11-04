@@ -31,7 +31,9 @@ export function useTokenAllowance({
     functionName: 'allowance',
     args: [owner || ZERO_ADDRESS, spender || ZERO_ADDRESS],
     query: {
-      enabled: !!contractAddress && !!owner && !!spender
+      enabled: !!contractAddress && !!owner && !!spender,
+      // Dropped once unused, so a flow that mounts later reads it fresh (APP-675).
+      gcTime: 0
     }
   });
 

@@ -22,7 +22,6 @@ import { useIsSafeWallet, useIsBatchSupported } from '@/hooks';
 import { useChainId, useConnection, useChains } from 'wagmi';
 import { chainSwitchTarget } from '@/lib/chainAvailability';
 import { refreshHistoryAfterTx } from '@/lib/historyRefresh';
-import { clearUnusedTxInputs } from '@/lib/clearUnusedTxInputs';
 import { queryClient } from '@/lib/queryClient';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { TransactionModal } from '@/modules/ui/components/TransactionModal';
@@ -576,7 +575,6 @@ export function TransactionProvider({
         handleInitializedAbandon();
       }
 
-      clearUnusedTxInputs(queryClient);
       sessionGenRef.current += 1;
       setSessionGen(sessionGenRef.current);
       // Latch this session's flow id (after any abandon rotation above).
