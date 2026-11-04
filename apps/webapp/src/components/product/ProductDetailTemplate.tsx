@@ -224,7 +224,12 @@ function AboutSection({
       <div className="text-fgSecondary font-graphik text-sm leading-[22px]">
         {about.body}
         {about.learnMoreHref && (
-          <a href={about.learnMoreHref} target="_blank" rel="noreferrer" className="text-fgBrand ml-1">
+          <a
+            href={about.learnMoreHref}
+            target="_blank"
+            rel="noreferrer"
+            className="text-fgBrand focus-visible:outline-focusRing ml-1 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
             <Trans>Learn more in the User Risk Documentation.</Trans>
           </a>
         )}
@@ -305,7 +310,7 @@ export function ProductDetailTemplate({
       <div className="flex flex-col gap-4 md:gap-8">
         <AppLink
           to={backTo}
-          className="text-fgSecondary hover:text-fgPrimary font-circle flex w-fit items-center gap-1.5 text-xs leading-[14px] font-medium tracking-[-0.24px] transition-colors md:text-sm md:leading-4 md:tracking-[-0.28px]"
+          className="text-fgSecondary hover:text-fgPrimary font-circle focus-visible:outline-focusRing flex w-fit items-center gap-1.5 rounded-xs text-xs leading-[14px] font-medium tracking-[-0.24px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 md:text-sm md:leading-4 md:tracking-[-0.28px]"
           data-testid="product-detail-back"
         >
           <ChevronLeft className="size-4" />

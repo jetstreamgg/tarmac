@@ -16,7 +16,7 @@ import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionConfig, TransactionContextValue } from '@/modules/ui/context/transactionContract';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -241,7 +241,7 @@ export function useStakeLaunch({
     enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
     ...txCallbacks
   });
-  useResetPausedRunOnClose(engine.reset, refetchAllowances);
+  useResetUnfinishedRunOnClose(engine.reset, refetchAllowances);
 
   // Live execute ref: launch() must never snapshot onConfirm state (landmine #2)
   // — the engine hook re-renders between launch and the user's Confirm click.

@@ -1,12 +1,6 @@
-import { useBalance, useConfig, useReadContracts } from 'wagmi';
+import { type Config, useBalance, useConfig, useReadContracts } from 'wagmi';
 import { erc20Abi, formatUnits } from 'viem';
-import {
-  type ReadContractsErrorType,
-  type GetBalanceErrorType,
-  getBalance,
-  Config,
-  multicall
-} from '@wagmi/core';
+import { type ReadContractsErrorType, type GetBalanceErrorType, getBalance, multicall } from 'wagmi/actions';
 import { useQuery } from '@tanstack/react-query';
 
 type UseTokenBalanceParameters = {

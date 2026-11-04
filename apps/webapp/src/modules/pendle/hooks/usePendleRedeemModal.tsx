@@ -1,3 +1,4 @@
+import type { Call } from 'viem';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
@@ -32,9 +33,9 @@ import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
 import { usePendleTokens } from '@/modules/pendle/hooks/usePendleTokens';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { PendleRedeem } from '../components/PendleRedeem';
-import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
+import { pendleClaimErrorMessage, pendleClaimPrepareErrorMessage } from '../utils/prepareErrorMessage';
 import { usePendleSlippageCell } from './usePendleSlippageCell';
 
 /**
@@ -43,9 +44,11 @@ import { usePendleSlippageCell } from './usePendleSlippageCell';
  * USDS, or USDC.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig) {
-  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks } = useTransaction();
+  const { launch, updateModalContent, isModalOpen, txStatus, txCallbacks, activeSessionId } =
+    useTransaction();
   // Per-instance id so the provider can ignore live updates from sibling cards.
   const sessionId = useId();
+  const ownSessionLive = activeSessionId === sessionId;
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const matured = isMarketMatured(market.expiry);
@@ -61,7 +64,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
 
   // Quote: PT → user-selected output via /convert. The `maturedExit` flag
   // adds the YT-with-zero-amount entry the API requires for matured exits.
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side: PendleConvertSide.WITHDRAW,
     marketAddress: market.marketAddress,
     inputToken: market.ptToken,
@@ -70,9 +77,10 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     syAcceptedTokens: market.syAcceptedTokens,
     amountIn: isRedeemable ? ptBalance : undefined,
     slippage,
-    enabled: isRedeemable,
-    // Fetch once for the card's isPrepared gating; only repoll while the
-    // quote is on screen — this hook mounts once per matured card.
+    // Fetched while this card's modal is live, like the buy/sell modal's quote:
+    // a fresh quote on every open, and no Pendle traffic from cards nobody
+    // claims. The hook mounts on the card, so the session gates it.
+    enabled: isRedeemable && ownSessionLive,
     poll: isModalOpen,
     maturedExit: true,
     ytToken: market.ytToken
@@ -105,8 +113,15 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // modal so users see consistent guidance across all three flows. Only while
   // unprepared, so a recovered simulation drops the stale message.
   const prepareErrorMessage = useMemo<string | undefined>(
-    () => (!writeHook.prepared ? pendlePrepareErrorMessage(writeHook.error?.message) : undefined),
+    () => (!writeHook.prepared ? pendleClaimPrepareErrorMessage(writeHook.error) : undefined),
     [writeHook.prepared, writeHook.error]
+  );
+  // As in the buy/sell modal: a quote failure wins once no usable quote
+  // remains, and a prepare failure shows otherwise. Claim-specific copy, since
+  // the claim always takes the whole balance.
+  const errorMessage = useMemo<string | undefined>(
+    () => (quote ? undefined : pendleClaimErrorMessage(quoteError?.message)) ?? prepareErrorMessage,
+    [quote, quoteError, prepareErrorMessage]
   );
 
   // The Network cell describes where the trade executes — the engine chain,
@@ -126,7 +141,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   });
   const ptSymbol = `PT-${market.underlyingSymbol}`;
   const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
-  useResetPausedRunOnClose(writeHook.reset, mutateAllowance);
+  useResetUnfinishedRunOnClose(writeHook.reset, mutateAllowance);
   const steps = useMemo<TransactionStep[]>(() => {
     const claimStep = {
       label: t`Claim`,
@@ -186,13 +201,22 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   );
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
+  // The quote only fetches once the modal is open, so review_viewed waits for
+  // it to land or fail rather than report a zero payout.
+  const reviewViewedPending = isRedeemable && !quote && !quoteError;
 
   // Indirect onConfirm through a ref — the stored onConfirm can't be
   // live-updated, but the ref always points at the latest writeHook.execute.
   const executeRef = useRef<() => void>(() => undefined);
+  // Read by the provider at dispatch time (see `TransactionConfig.getNextCalls`
+  // and `getConfirmDisabled`).
+  const nextCallsRef = useRef<Call[]>([]);
+  const confirmDisabledRef = useRef(true);
   // A layout effect, so a confirm click can never run the previous render's execute.
   useLayoutEffect(() => {
     executeRef.current = () => writeHook.execute();
+    nextCallsRef.current = writeHook.nextCalls ?? writeHook.calls ?? [];
+    confirmDisabledRef.current = confirmDisabled;
   });
 
   // USD notional for the enhanced-screening threshold (APP-517): the valued
@@ -214,8 +238,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
 
   // `amount` = USD value of the redeemed output leg, negative so dashboard
   // tiles filtering `properties.amount < 0` count redeem as a withdrawal
-  // alongside SELL; omitted when no price is available rather than emit a
-  // wrong-unit number. amountFrom/amountTo in `data` keep the raw counts.
+  // alongside SELL; omitted when no quote or price is available rather than
+  // emit a zero or wrong-unit number. amountFrom/amountTo in `data` keep the raw counts.
   // Memoized so the launch seeds it and the live-update effect keeps it
   // fresh — the output token stays changeable after launch (APP-444 B14).
   const analytics = useMemo(() => {
@@ -241,7 +265,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       fromDecimals: market.underlyingDecimals,
       toDecimals
     });
-    const usd = valueUsd(leg.symbol, leg.amount);
+    const usd = leg.amount === 0 ? undefined : valueUsd(leg.symbol, leg.amount);
     return {
       widgetName: 'fixed',
       flow: 'redeem',
@@ -327,13 +351,16 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
       transactionTitle: t`Confirm in the wallet`,
       toast,
       transactionContent,
-      errorMessage: prepareErrorMessage,
+      errorMessage,
       steps,
       confirmLabel: t`Claim`,
       confirmDisabled,
       onConfirm: () => executeRef.current(),
+      getNextCalls: () => nextCallsRef.current,
+      getConfirmDisabled: () => confirmDisabledRef.current,
       sessionId,
-      analytics
+      analytics,
+      reviewViewedPending
     });
   }, [
     onPendleChain,
@@ -347,11 +374,12 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     switchChainAsync,
     launch,
     transactionContent,
-    prepareErrorMessage,
+    errorMessage,
     steps,
     confirmDisabled,
     sessionId,
     analytics,
+    reviewViewedPending,
     usdValue,
     toast
   ]);
@@ -364,10 +392,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     if (!isModalOpen || txStatus !== TxStatus.IDLE) return;
     updateModalContent(sessionId, {
       transactionContent,
-      errorMessage: prepareErrorMessage,
+      errorMessage,
       steps,
       confirmDisabled,
       analytics,
+      reviewViewedPending,
       usdValue,
       toast
     });
@@ -377,10 +406,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
     sessionId,
     updateModalContent,
     transactionContent,
-    prepareErrorMessage,
+    errorMessage,
     steps,
     confirmDisabled,
     analytics,
+    reviewViewedPending,
     usdValue,
     toast
   ]);
@@ -388,8 +418,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   return {
     openRedeemModal,
     isRedeemable,
-    isPrepared: writeHook.prepared,
-    onPendleChain,
     switchBlocked,
     ptBalance,
     error: writeHook.error

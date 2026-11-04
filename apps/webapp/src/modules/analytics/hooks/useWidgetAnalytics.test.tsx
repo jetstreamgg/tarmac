@@ -75,9 +75,13 @@ describe('useWidgetAnalytics', () => {
 
   it('records an on-chain revert as error with bounded classification, never the raw message', () => {
     const { result } = renderWidgetAnalytics();
-    const revert = Object.assign(new Error('execution reverted: secret calldata 0xbeef'), {
-      name: 'ContractFunctionExecutionError'
-    });
+    const from = `0x${'ab'.repeat(20)}`;
+    const revert = Object.assign(
+      new Error(
+        `execution reverted: Foo/bar-baz\n\nRequest Arguments:\n  from: ${from}\n  data: 0xsecretcalldata`
+      ),
+      { name: 'ContractFunctionExecutionError' }
+    );
     act(() =>
       result.current({
         event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
@@ -93,9 +97,12 @@ describe('useWidgetAnalytics', () => {
       tx_status: 'error',
       error_kind: 'reverted',
       is_user_rejection: false,
-      error_name: 'ContractFunctionExecutionError'
+      error_name: 'ContractFunctionExecutionError',
+      // The contract's reason, not the message around it
+      revert_reason: 'Foo/bar-baz'
     });
-    expect(JSON.stringify(captured?.properties)).not.toContain('secret calldata');
+    expect(JSON.stringify(captured?.properties)).not.toContain('secretcalldata');
+    expect(JSON.stringify(captured?.properties)).not.toContain(from);
   });
 
   it('rotates the flow_id after a terminal event but not after review_viewed', () => {

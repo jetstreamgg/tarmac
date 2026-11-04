@@ -89,7 +89,7 @@ export function VaultModalForm({
     setPercentAmount
   } = form;
 
-  const { execute, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useVaultLaunch(engineParams);
   // Read-only: the row shows a dash until this resolves, and the confirm button never
   // waits on it.
   // Kept on while a new amount settles, showing the settled one's fee: turning it off
@@ -243,6 +243,7 @@ export function VaultModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     errorMessage,
     transactionContent,

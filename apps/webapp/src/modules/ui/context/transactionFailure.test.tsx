@@ -67,6 +67,8 @@ vi.mock('motion/react', async io => {
 });
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
+import { reportError } from '@/modules/sentry/reportError';
+import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -251,5 +253,38 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByText('Approve')).toBeNull();
     expect(screen.queryByText('Supply')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('groups on-chain reverts in Sentry by flow and action, and leaves other errors to the default grouping', () => {
+    renderFailedFlow(supplySteps, () => {}, new TransactionRevertedError());
+    expect(vi.mocked(reportError).mock.calls[0][1].fingerprint).toEqual([
+      'transaction-reverted',
+      'unknown',
+      'unknown'
+    ]);
+
+    vi.mocked(reportError).mockClear();
+    renderFailedFlow(supplySteps);
+    expect(vi.mocked(reportError).mock.calls[0][1].fingerprint).toBeUndefined();
+  });
+
+  it('names a decoded revert on the failed step and tags it for Sentry (APP-663)', () => {
+    renderFailedFlow(supplySteps, () => {}, new Error('execution reverted: LockstakeEngine/urn-unsafe'));
+    // The step's own consequence still follows the reason.
+    expect(
+      screen.getByText(
+        "Your position is below the required collateralization ratio. Add collateral or repay debt before changing your delegate. The USDS hasn't been approved."
+      )
+    ).toBeDefined();
+    expect(screen.queryByText(/The network rolled back your transaction/)).toBeNull();
+    const ctx = vi.mocked(reportError).mock.calls[0][1];
+    expect(ctx.tags).toEqual({ revert_reason: 'LockstakeEngine/urn-unsafe' });
+  });
+
+  it('shows an unmapped revert reason verbatim', () => {
+    renderFailedFlow(supplySteps, () => {}, new Error('execution reverted: Foo/bar'));
+    expect(
+      screen.getByText('The transaction would fail with "Foo/bar". The USDS hasn\'t been approved.')
+    ).toBeDefined();
   });
 });

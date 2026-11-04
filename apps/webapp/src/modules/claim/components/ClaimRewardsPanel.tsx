@@ -242,6 +242,10 @@ export function ClaimRewardsPanel({ sessionId, scope }: { sessionId: string; sco
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: flow.execute,
+    // Not call-checked: every claim pays out to the user or, on restake, into
+    // their own position, and the restake amount follows the live accrued
+    // rewards, so a refetch would refuse it for nothing.
+    nextCalls: null,
     confirmDisabled: disabled,
     transactionScreenContent,
     steps,

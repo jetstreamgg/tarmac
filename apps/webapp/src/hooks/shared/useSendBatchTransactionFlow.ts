@@ -1,11 +1,37 @@
-import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
+import { type Config, useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchTransactionFlowHook, UseSendBatchTransactionFlowParameters } from '../hooks';
-import { useEffect, useEffectEvent } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import type { Call } from 'viem';
-import { isRevertedError, toError } from '../helpers';
-import { Config } from '@wagmi/core';
+import {
+  BaseError,
+  InvalidParamsRpcError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  ResourceNotFoundRpcError,
+  UnknownBundleIdError,
+  UnsupportedProviderMethodError,
+  WaitForCallsStatusTimeoutError
+} from 'viem';
 import { useIsBatchSupported } from './useIsBatchSupported';
 import { useSimulateBatch } from './useSimulateBatch';
+import { decodeRevert } from '@/lib/revertMessages/decodeRevert';
+
+/** Ceiling on the gap between status polls while the wallet keeps erroring. */
+const MAX_STATUS_RETRY_DELAY_MS = 30_000;
+// Errors after which polling can never succeed: the method unsupported (4200,
+// -32601, -32004) or the bundle id unknown (5730, and the -32602 / -32001 some
+// wallets answer with instead). Not 4100 (unauthorized): a locked wallet can
+// answer that and work again once unlocked.
+const PERMANENT_STATUS_ERRORS = [
+  UnsupportedProviderMethodError,
+  MethodNotFoundRpcError,
+  MethodNotSupportedRpcError,
+  UnknownBundleIdError,
+  InvalidParamsRpcError,
+  ResourceNotFoundRpcError
+];
+const isPermanentStatusError = (error: unknown) =>
+  error instanceof BaseError && error.walk(e => PERMANENT_STATUS_ERRORS.some(c => e instanceof c)) !== null;
 
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
@@ -36,11 +62,18 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     enabled: simulateEnabled
   });
 
+  // Set by a reset() that found the bundle out (the modal closed mid-send):
+  // it settles and reports, then the send clears. The send stays loading
+  // meanwhile, so no second bundle can overlap it: a replaced send still fires
+  // the mutation's callbacks when it settles.
+  const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+
   // Initiate hook to send the batch transaction
   const {
     sendCalls,
     error: sendError,
     data: mutationData,
+    isPending: isSendPending,
     reset: resetSendCalls
   } = useSendCalls({
     mutation: {
@@ -55,22 +88,58 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         if (onError) {
           onError(err, mutationData?.id);
         }
+        if (detachedRef.current) finishDetached();
       }
     }
   });
 
-  // Monitor tx, this is also compatible with Safe wallets
+  // Monitor tx, this is also compatible with Safe wallets. A timed-out or failed
+  // poll is retried rather than reported, for as long as the bundle is watched:
+  // it's with the wallet whatever the poll says (a Safe waits on co-signers for
+  // as long as it takes), and reporting it put Retry on screen, which sends the
+  // bundle a second time. Each attempt keeps viem's 60s timeout so a bundle
+  // nobody watches any more stops being polled. A revert comes back in the
+  // status (`failure`, or a reverted receipt), never as a poll error.
   const {
     isLoading: isMining,
     isSuccess,
     error: miningError,
-    failureReason,
     data
   } = useWaitForCallsStatus({
-    id: mutationData?.id
+    id: mutationData?.id,
+    query: {
+      retry: (_count, error) => !isPermanentStatusError(error),
+      retryDelay: (attempt, error) =>
+        error instanceof WaitForCallsStatusTimeoutError
+          ? 0
+          : Math.min(1000 * 2 ** attempt, MAX_STATUS_RETRY_DELAY_MS)
+    }
   });
 
-  const txReverted = isRevertedError(failureReason);
+  const finishDetached = useCallback(() => {
+    const onCleared = detachedRef.current?.onCleared;
+    detachedRef.current = null;
+    resetSendCalls();
+    onCleared?.();
+  }, [resetSendCalls]);
+
+  const sendInFlightRef = useRef(false);
+  const sendInFlight = isSendPending || (!!mutationData?.id && !isSuccess && !miningError);
+  useEffect(() => {
+    sendInFlightRef.current = sendInFlight;
+  }, [sendInFlight]);
+  const reset = useCallback(
+    (onCleared?: () => void) => {
+      if (sendInFlightRef.current) {
+        detachedRef.current = { onCleared };
+        return;
+      }
+      detachedRef.current = null;
+      resetSendCalls();
+      onCleared?.();
+    },
+    [resetSendCalls]
+  );
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
@@ -78,22 +147,26 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
   useEffect(() => {
     if (mutationData?.id) {
-      if (isSuccess && data.status === 'success') {
+      // A wallet that runs the bundle as separate transactions can report the whole bundle as
+      // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
+      const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
+      if (isSuccess && (revertedReceipt || data.status === 'failure')) {
+        emitError(new Error('ERROR: Batch transaction failed'), revertedReceipt?.transactionHash);
+      } else if (isSuccess && data.status === 'success') {
         // A non-atomic bundle can land across blocks; the history refresh waits for the last.
         const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);
         emitSuccess(
           data.receipts?.[0]?.transactionHash,
           blockNumbers.length > 0 ? blockNumbers.reduce((a, b) => (b > a ? b : a)) : undefined
         );
-      } else if (isSuccess && data.status === 'failure') {
-        emitError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (miningError) {
         emitError(miningError, data?.receipts?.[0]?.transactionHash);
-      } else if (failureReason && txReverted) {
-        emitError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
+      } else {
+        return;
       }
+      if (detachedRef.current) finishDetached();
     }
-  }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data]);
+  }, [isSuccess, miningError, mutationData?.id, data, finishDetached]);
 
   return {
     execute: () => {
@@ -132,10 +205,16 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
         // `prepared` only disables a button. This is the guarantee behind it: a bundle
         // that has not simulated clean never reaches `wallet_sendCalls`, whatever
         // called execute(). Reported like the backstop above, for the same reason.
-        const error = new Error(
-          simulation.error
-            ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
-            : 'Refusing to send a batch before its simulation has completed.'
+        // Only the simulation's decoded revert rides along, for the failure screen —
+        // not the error itself, whose cause chain carries the call's arguments (the
+        // user's address among them) into Sentry.
+        const error = Object.assign(
+          new Error(
+            simulation.error
+              ? `Refusing to send a batch that failed simulation: ${simulation.error.message}`
+              : 'Refusing to send a batch before its simulation has completed.'
+          ),
+          { revert: simulation.error ? decodeRevert(simulation.error) : undefined }
         );
         console.error(error);
         onError(error, undefined);
@@ -145,12 +224,12 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       }
     },
     data: data?.receipts?.[0]?.transactionHash,
-    isLoading: isLoadingCapabilities || simulation.isLoading || (isMining && !txReverted),
+    isLoading: isLoadingCapabilities || simulation.isLoading || isSendPending || isMining,
     prepared:
       !!batchSupported && !!enabled && !isLoadingCapabilities && !capabilitiesError && simulation.prepared,
     error: sendError || miningError || simulation.error,
     currentCallIndex: 0,
-    reset: resetSendCalls,
+    reset,
     batchUnavailable: simulation.structuralFailure
   };
 }

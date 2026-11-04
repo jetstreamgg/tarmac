@@ -23,6 +23,8 @@ const h = vi.hoisted(() => ({
   psmTin: 0n as bigint | undefined,
   psmHalted: 0n as bigint | undefined,
   prepared: true,
+  // What the engine would send from here (the provider's dispatch-time read).
+  nextCalls: [] as { functionName?: string }[],
   execute: vi.fn(),
   update: vi.fn(),
   // When set, useDebounce returns this instead of the live value — simulates
@@ -136,7 +138,8 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
       // Mirrors the real result shape; the form reads these for the fee row's
       // bundling badge and the "Save X%" promo.
       calls: [],
-      isBatch: false
+      isBatch: false,
+      nextCalls: h.nextCalls
     };
   }
 }));
@@ -240,6 +243,7 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     h.psmTin = 0n;
     h.psmHalted = 0n;
     h.prepared = true;
+    h.nextCalls = [];
     h.debounceLagged = undefined;
     h.execute.mockClear();
     h.update.mockClear();
@@ -377,6 +381,23 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
     expect(screen.queryByTestId('savings-modal-usdc-blocked')).not.toBeNull();
     expect(lastDisabled()).toBe(true);
+  });
+
+  // Once `sellGem` mined, the USDS approve and deposit left don't touch the PSM,
+  // and refusing them would strand the swapped USDS.
+  it('blocks a deferred USDC send on the PSM only while the swap is still to send', () => {
+    h.psmTin = 1n;
+    h.nextCalls = [{ functionName: 'approve' }, { functionName: 'sellGem' }, { functionName: 'deposit' }];
+    const view = renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10' } });
+    const lastGetter = () =>
+      h.update.mock.calls.filter(([, patch]) => patch?.getDispatchBlocked).at(-1)?.[1].getDispatchBlocked;
+    expect(lastGetter()()).toBe(true);
+
+    h.nextCalls = [{ functionName: 'deposit' }];
+    view.refresh();
+    expect(lastGetter()()).toBe(false);
   });
 
   it('blocks a USDC supply when the PSM sell direction is halted', () => {
