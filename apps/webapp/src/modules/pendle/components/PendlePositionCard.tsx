@@ -124,7 +124,7 @@ function PendleSupplyCard({
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
-              <PopoverRateInfo type="fixedYield" width={14} height={14} iconClassName="text-fgSecondary" />
+              <PopoverRateInfo type="fixedYield" width={14} iconClassName="text-fgSecondary" />
             </>
           }
           idle={idleBalance}

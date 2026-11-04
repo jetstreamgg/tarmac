@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { AudioLines } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/components/ui/tooltip';
+import { ResponsiveTooltip } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { StarsFilled } from '@/modules/icons';
 import type { MorphoVaultRateData } from '@/hooks';
@@ -58,55 +58,46 @@ export function VaultRateTooltip({
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
+    <ResponsiveTooltip
+      align="end"
+      // A fixed 260px (not shrink-to-fit) so the two-column rows line up; it
+      // keeps the shared chrome and takes the comp's own 12px gap column.
+      contentClassName="flex w-[260px] max-w-none flex-col gap-3"
+      trigger={
         <span
+          tabIndex={0}
           className={cn('inline-flex cursor-default items-center gap-1.5', className)}
           data-testid="vault-rate-breakdown"
         >
           {children}
         </span>
-      </TooltipTrigger>
-      <TooltipPortal>
-        <TooltipContent
-          // The DS tooltip's 260px cap and 16px text would squeeze this
-          // two-column breakdown; it keeps the shared chrome and takes the
-          // comp's own 12px gap column.
-          className="flex w-[260px] max-w-none flex-col gap-3"
-          align="end"
-        >
+      }
+    >
+      <Row icon={<VaultRateMark />} label={<Trans>Net Rate</Trans>} value={rate.formattedNetRate} emphasis />
+      <span className="bg-borderPrimary h-px w-full shrink-0" aria-hidden />
+      <div className="flex flex-col gap-2">
+        <Row
+          icon={<AudioLines className="text-fgSecondary size-3 shrink-0" aria-hidden />}
+          label={<Trans>Native Rate</Trans>}
+          value={rate.formattedRate}
+        />
+        {rate.rewards.map(reward => (
           <Row
-            icon={<VaultRateMark />}
-            label={<Trans>Net Rate</Trans>}
-            value={rate.formattedNetRate}
-            emphasis
-          />
-          <span className="bg-borderPrimary h-px w-full shrink-0" aria-hidden />
-          <div className="flex flex-col gap-2">
-            <Row
-              icon={<AudioLines className="text-fgSecondary size-3 shrink-0" aria-hidden />}
-              label={<Trans>Native Rate</Trans>}
-              value={rate.formattedRate}
-            />
-            {rate.rewards.map(reward => (
-              <Row
-                key={reward.symbol}
-                icon={
-                  <TokenIcon
-                    token={{ symbol: reward.symbol }}
-                    width={12}
-                    showChainIcon={false}
-                    className="size-3 shrink-0"
-                  />
-                }
-                label={<Trans>{reward.symbol} Rewards</Trans>}
-                value={reward.formattedApy}
+            key={reward.symbol}
+            icon={
+              <TokenIcon
+                token={{ symbol: reward.symbol }}
+                width={12}
+                showChainIcon={false}
+                className="size-3 shrink-0"
               />
-            ))}
-          </div>
-        </TooltipContent>
-      </TooltipPortal>
-    </Tooltip>
+            }
+            label={<Trans>{reward.symbol} Rewards</Trans>}
+            value={reward.formattedApy}
+          />
+        ))}
+      </div>
+    </ResponsiveTooltip>
   );
 }
 

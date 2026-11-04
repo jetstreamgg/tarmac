@@ -22,7 +22,7 @@ import {
   type Token
 } from '@/hooks';
 import { getTooltipById } from '@/modules/ui/data/tooltips';
-import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { PendleFlow } from '@/modules/pendle/lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/lib/pendleAnalyticsData';
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
@@ -428,16 +428,16 @@ export function PendleModalForm({
   // Both estimate cells caveat the quote (the comps draw an info mark on the
   // withdraw cell, 2413:66997).
   const receiveInfo = (
-    <PopoverInfo
+    <InfoTooltip
       title={t`You'll receive`}
-      description={t`Estimated at the current Pendle market price.`}
+      content={t`Estimated at the current Pendle market price.`}
       iconSize={12}
     />
   );
   const claimInfo = (
-    <PopoverInfo
+    <InfoTooltip
       title={t`Claim at maturity`}
-      description={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
+      content={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
       iconSize={12}
     />
   );
@@ -470,7 +470,7 @@ export function PendleModalForm({
         lostTrend,
         displaySymbol,
         lostInfo: lostTooltip ? (
-          <PopoverInfo title={lostTooltip.title} description={lostTooltip.tooltip} iconSize={12} />
+          <InfoTooltip title={lostTooltip.title} content={lostTooltip.tooltip} iconSize={12} />
         ) : undefined,
         network: networkName,
         networkChainId: engineChainId,

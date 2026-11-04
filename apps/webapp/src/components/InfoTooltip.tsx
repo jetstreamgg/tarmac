@@ -1,92 +1,59 @@
-import { Info, X } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
-import { useIsTouchDevice } from '@/hooks';
-import { cn } from '@/lib/cn';
+import type { ReactElement, ReactNode } from 'react';
+import { Info } from 'lucide-react';
+import { ResponsiveTooltip } from './ui/tooltip';
 
 // The glyph's focus ring is the DS ring, not the browser outline (Design QA 3314:135504).
 const TRIGGER_CLASS =
-  'focus-visible:ring-focusRing rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
+  'focus-visible:ring-focusRing z-10 cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
 
 /**
- * Info glyph opening the design-system Tooltip (Figma 5043:58210). Desktop
- * hovers the Radix tooltip; touch devices, which can't hover, tap a Popover
- * wearing the same chrome. Body-only is the Simple type; pass `title` for the
- * Default type (5043:58197): Label 5 heading over fg-secondary body copy.
+ * Body of the design-system Tooltip: body-only is the Simple type (5043:58208);
+ * with a `title` it is the Default type (5043:58197) — a Label 5 heading over
+ * fg-secondary body copy, 8px apart.
+ */
+export function TooltipBody({ title, children }: { title?: ReactNode; children: ReactNode }) {
+  const body = typeof children === 'string' ? <p>{children}</p> : children;
+  if (!title) return body;
+  return (
+    <div className="text-fgSecondary flex flex-col gap-2">
+      <p className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">{title}</p>
+      {body}
+    </div>
+  );
+}
+
+/**
+ * Info glyph (or a custom `trigger`) opening the design-system Tooltip (Figma
+ * 5043:58210): hover on pointer devices, tap on touch — see `ResponsiveTooltip`.
  */
 export function InfoTooltip({
   title,
   content,
-  contentClassname,
   iconClassName,
   iconSize = 13,
-  shouldShowCloseButton = false
+  trigger
 }: {
-  title?: React.ReactNode;
-  content: string | React.ReactNode;
-  contentClassname?: string;
+  title?: ReactNode;
+  content: ReactNode;
   iconClassName?: string;
   iconSize?: number;
-  shouldShowCloseButton?: boolean;
+  /**
+   * Custom trigger rendered in place of the info glyph (e.g. a whole rate
+   * badge). Must be a single focusable element that accepts a ref.
+   */
+  trigger?: ReactElement;
 }) {
-  const isTouchDevice = useIsTouchDevice();
-
-  const body = (
-    <div className={title ? 'text-fgSecondary flex flex-col gap-2' : undefined}>
-      {title && (
-        <p className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">{title}</p>
-      )}
-      {typeof content === 'string' ? <p>{content}</p> : content}
-    </div>
-  );
-
-  return isTouchDevice ? (
-    <Popover>
-      <PopoverTrigger
-        onClick={e => e.stopPropagation()}
-        className={cn(TRIGGER_CLASS, 'z-10')}
-        aria-label="Show additional information"
-      >
-        <Info size={iconSize} className={iconClassName} />
-      </PopoverTrigger>
-      {/* Touch fallback mirrors the DS tooltip chrome (Figma 5043:57748). */}
-      <PopoverContent
-        align="center"
-        side="top"
-        className={`bg-bgTertiary text-fgPrimary font-graphik w-auto max-w-[260px] rounded-2xl text-[11px] leading-4 font-normal backdrop-blur-[20px] ${contentClassname}`}
-      >
-        {shouldShowCloseButton && (
-          <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
-            <X className="text-text h-5 w-5 cursor-pointer" />
-          </PopoverClose>
-        )}
-        <div
-          className="max-h-[calc(var(--radix-popover-content-available-height)-64px)] overflow-y-auto"
-          onWheel={e => e.stopPropagation()}
-          onTouchMove={e => e.stopPropagation()}
-        >
-          {body}
-        </div>
-      </PopoverContent>
-    </Popover>
-  ) : (
-    // Own provider (same 300ms delay as the app root's, which nests harmlessly
-    // under it) so the trigger is self-contained on any surface — pages, cards,
-    // full-page takeovers, tests — with no host setup. Same precedent as
-    // RiskTierDetailsTrigger.
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger className={TRIGGER_CLASS} aria-label="Show additional information">
-          <Info size={iconSize} className={iconClassName} />
-        </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent className={contentClassname}>
-            <div className="max-h-[calc(var(--radix-tooltip-content-available-height)-64px)] overflow-y-auto">
-              {body}
-            </div>
-          </TooltipContent>
-        </TooltipPortal>
-      </Tooltip>
-    </TooltipProvider>
+  return (
+    <ResponsiveTooltip
+      trigger={
+        trigger ?? (
+          <button type="button" className={TRIGGER_CLASS} aria-label="Show additional information">
+            <Info size={iconSize} className={iconClassName} />
+          </button>
+        )
+      }
+    >
+      <TooltipBody title={title}>{content}</TooltipBody>
+    </ResponsiveTooltip>
   );
 }

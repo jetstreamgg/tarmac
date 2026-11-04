@@ -95,7 +95,7 @@ function StUsdsSupplyCard({ rate, onSupply }: { rate?: number; onSupply: () => v
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
-              <PopoverRateInfo type="stusds" width={14} height={14} iconClassName="text-fgSecondary" />
+              <PopoverRateInfo type="stusds" width={14} iconClassName="text-fgSecondary" />
             </ProductFigure>
           </ProductStat>
           <ProductStat size="lg" label={<Trans>Idle balance</Trans>}>
