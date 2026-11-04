@@ -1,4 +1,4 @@
-import { getAbiItem, zeroHash, type Hex } from 'viem';
+import { decodeFunctionResult, encodeFunctionData, getAbiItem, zeroHash, type Hex } from 'viem';
 import { isSettled, type BridgeProgress } from '../../model/pendingTransitions';
 import type { PendingBridge } from '../../model/types';
 import { safeExecutionFailed } from '../safe';
@@ -120,11 +120,21 @@ export async function arbitrumExecuteFromChain({
   const confirmed = await readConfirmedSend(l1, l2);
   if (!confirmed || confirmed.size <= message.position)
     throw new Error("The rollup hasn't confirmed the withdrawal yet.");
-  const [send, root, proof] = await l2.readContract({
-    address: NODE_INTERFACE,
+  // NodeInterface is virtual: it answers a direct eth_call only, never one from Multicall3.
+  const { data } = await l2.call({
+    to: NODE_INTERFACE,
+    data: encodeFunctionData({
+      abi: nodeInterfaceOutboxAbi,
+      functionName: 'constructOutboxProof',
+      args: [confirmed.size, message.position]
+    }),
+    batch: false
+  });
+  if (!data) throw new Error('NodeInterface returned no proof.');
+  const [send, root, proof] = decodeFunctionResult({
     abi: nodeInterfaceOutboxAbi,
     functionName: 'constructOutboxProof',
-    args: [confirmed.size, message.position]
+    data
   });
   const l2BlockHash = await l1.readContract({
     address: ARBITRUM_WITHDRAWAL.outbox,

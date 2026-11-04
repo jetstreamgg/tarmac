@@ -86,7 +86,7 @@ function BlockedMessage({ reason, from, to }: BlockedMessageProps) {
   }
 }
 
-// Same CTA geometry as the Swap tab.
+// Same CTA geometry as the Convert tab.
 const CTA_CLASSES =
   'h-12 w-full text-sm leading-4 tracking-[-0.28px] md:h-14 md:text-base md:leading-[18px] md:tracking-[-0.32px]';
 
@@ -117,8 +117,8 @@ export function BridgePanel({ draft }: BridgePanelProps) {
   const reviewDisabled = form.isConnected && form.reviewBlocked;
 
   return (
-    <div className="flex w-full flex-col gap-8" data-testid="bridge-panel">
-      <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-8 md:gap-18" data-testid="bridge-panel">
+      <div className="flex w-full flex-col gap-4 md:gap-8">
         <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="bridge-form">
           <BridgeCard form={form} />
         </div>

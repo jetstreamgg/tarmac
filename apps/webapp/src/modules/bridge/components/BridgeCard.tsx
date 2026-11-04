@@ -8,9 +8,10 @@ import { NO_VALUE } from '@/lib/constants';
 import { formatAddress, formatBigInt } from '@/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { AmountInput } from '@/components/product/AmountInput';
-import { RollingValue } from '@/components/ui/rolling-value';
+import { FittedAmount } from '@/components/product/FittedAmount';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenBadge } from '@/modules/ui/components/TransactionAmountHero';
+import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { getBridgeNetwork } from '../model/networks';
 import { liveDestinations, liveSources } from '../model/pairs';
 import type { BridgeFormModel } from '../hooks/useBridgeForm';
@@ -25,7 +26,10 @@ const amountClassName =
   'text-text font-circle w-full min-w-0 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]';
 
 const panelClassName =
-  'bg-glassSurface flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-[9px] md:px-8 md:py-7';
+  'bg-glassSurface flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-10 md:px-8 md:py-7';
+
+/** An 18-decimal amount fits the To slot at this size on a 375px phone; the review always shows it whole. */
+const TO_AMOUNT_MIN_PX = 14;
 
 const metaClassName = 'text-fgSecondary text-xs md:text-sm md:leading-[22px]';
 
@@ -134,7 +138,12 @@ export function BridgeCard({ form }: BridgeCardProps) {
             data-testid="bridge-to-amount"
             className={cn(amountClassName, 'block overflow-hidden whitespace-nowrap')}
           >
-            <RollingValue value={form.value === '' ? '0.00' : form.value} speed="stat" />
+            <FittedAmount
+              amount={formatExactUsds(bridgedAmount(form.amount, form.route?.kind))}
+              maxPx={isMobile ? 24 : 32}
+              minPx={TO_AMOUNT_MIN_PX}
+              className={amountClassName}
+            />
           </output>
           <span className="flex shrink-0 items-center gap-3">
             <button
@@ -147,7 +156,7 @@ export function BridgeCard({ form }: BridgeCardProps) {
                 form.recipient ? 'h-7 text-xs leading-[14px]' : 'size-7 justify-center p-0'
               )}
             >
-              <Wallet className="size-3" />
+              <Wallet className={cn('size-3', form.recipient ? 'text-brandHover' : 'text-fgSecondary')} />
               {form.recipient && formatAddress(form.recipient, 5, 3)}
             </button>
             <TokenBadge symbol="USDS" />

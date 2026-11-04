@@ -11,9 +11,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ModalSummaryGrid } from '@/components/product/ModalSummaryGrid';
 import { toGridCells } from '@/components/product/ModalGridCells';
 import { TokenTransferHero } from '@/components/product/TokenTransferHero';
+import { formatExactUsds } from '../model/bridgeAmount';
 import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
-import { formatAddress, formatBigInt } from '@/utils';
+import { formatAddress } from '@/utils';
 import { cn } from '@/lib/cn';
 import { bridgeFootnote, bridgeTypeLabel, buildBridgeModalRows, formatEta } from './bridgeModalRows';
 import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
@@ -44,7 +45,7 @@ export function BridgeTransferHero({
   fromToken = 'USDS',
   testId
 }: BridgeTransferHeroProps) {
-  const formatted = formatBigInt(amount, { minDecimals: 2, maxDecimals: 2 });
+  const formatted = formatExactUsds(amount);
   return (
     <TokenTransferHero
       from={{
@@ -133,7 +134,7 @@ export function BridgeReviewContent({
   routePicker
 }: BridgeReviewContentProps) {
   const [choosing, setChoosing] = useState(false);
-  const built = buildBridgeModalRows({ route, networkFee, bridgeFee, fromToken });
+  const built = buildBridgeModalRows({ route, networkFee, bridgeFee });
   const [[bridgeType, ...firstRow], [arrival, ...secondRow], ...rest] = built;
   const fastArrival = arrivalAgainst(route, routePicker?.cards);
   const arrivalRow = [
@@ -200,12 +201,12 @@ export function BridgeReviewContent({
         )}
         {recipientWarning && (
           <BridgeWarningBox title={t`Sending to another wallet`} dataTestId="bridge-modal-recipient-warning">
-            {t`The recipient won't see this transfer automatically. Share the claim link or the transaction hash with them once it's sent. They need to claim on Ethereum from a wallet that controls the recipient address, so an exchange deposit address won't work.`}
+            {t`The recipient must claim this on Ethereum from a wallet they control. Exchange deposit addresses and wallets that don't exist on Ethereum won't work. Share the claim link with them after sending.`}
           </BridgeWarningBox>
         )}
         {safeQueue && (
           <p className="text-fgSecondary text-xs leading-[18px]" data-testid="bridge-modal-safe-queue">
-            {t`Your Safe sends this bridge as separate transactions. Sign and execute every one of them in your Safe's queue. If the swap executes but the burn doesn't, this app can't continue the bridge, and the USDC stays in your Safe.`}
+            {t`Your Safe sends this bridge as separate transactions. Sign and execute every one of them in your Safe's queue. If the conversion to USDC executes but the burn doesn't, this app can't continue the bridge, and the USDC stays in your Safe.`}
           </p>
         )}
         {storageNote && (

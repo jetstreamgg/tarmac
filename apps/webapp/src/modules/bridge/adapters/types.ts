@@ -6,7 +6,13 @@ import type { PendingBridge } from '../model/types';
 /** The chain reads a route adapter makes; `getProof` only where an adapter checks L2 state roots. */
 export type ChainReader = Pick<
   PublicClient,
-  'getTransactionReceipt' | 'getTransaction' | 'readContract' | 'getBlock' | 'getBlockNumber' | 'getLogs'
+  | 'getTransactionReceipt'
+  | 'getTransaction'
+  | 'readContract'
+  | 'call'
+  | 'getBlock'
+  | 'getBlockNumber'
+  | 'getLogs'
 > &
   Partial<Pick<PublicClient, 'getProof'>>;
 

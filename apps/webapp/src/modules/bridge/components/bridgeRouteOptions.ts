@@ -42,7 +42,7 @@ const unavailableBadge = (reason: BridgeBlockReason): string => {
 const description = (route: BridgeRoute): string => {
   const eta = formatEtaWords(route.etaMinutes);
   if (route.kind === 'cctp')
-    return t`Swapped 1:1 to USDC and sent to Ethereum with Circle CCTP. Claim it there in about ${eta}, then convert it back to USDS.`;
+    return t`Converted 1:1 to USDC and sent to Ethereum with Circle CCTP. Claim it there in about ${eta}, then convert it back to USDS.`;
   const ethereumSteps = route.steps.filter(step => step.network !== route.steps[0].network).length;
   return ethereumSteps > 1
     ? t`Sky's native bridge, so your USDS stays USDS the whole way. Withdrawals to Ethereum take about ${eta} and need two more transactions on Ethereum.`

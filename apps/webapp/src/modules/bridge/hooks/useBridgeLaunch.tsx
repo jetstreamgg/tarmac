@@ -20,10 +20,10 @@ import { routeFallbackNotice } from '../components/bridgeRouteOptions';
 import { BridgeRoutePicker } from '../components/BridgeRoutePicker';
 import { notifyRouteFallback } from '../components/RouteFallbackToast';
 import { runMockLegs } from '../adapters/mockAdapter';
+import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { guardChainId } from '../model/networks';
 import { sendsToOther } from '../model/recipient';
 import { applyProgress, createPendingBridge, failBundle } from '../model/pendingTransitions';
-import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -54,6 +54,10 @@ export type BridgeLaunchForm = Pick<
   Partial<
     Pick<BridgeFormModel, 'senderIsContract' | 'routeOptions' | 'pickedRoute' | 'pickRoute' | 'forgetRoute'>
   >;
+
+// Figma 05 and 62, under the active Approve step.
+const approveDescription = (symbol: string) =>
+  t`Allow the bridge to use this amount of ${symbol}. Your wallet will ask you to confirm.`;
 
 const DETACHED: TxCallbacks = {
   onMutate: () => {},
@@ -273,14 +277,19 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         const { functionName, to: target } = call as { functionName?: string; to?: string };
         if (functionName === 'swapExactIn')
           return {
-            label: t`Swap to USDC`,
+            label: t`Convert to USDC`,
             tokenSymbol: 'USDS',
-            failureDetail: t`The USDS hasn't been swapped.`
+            failureDetail: t`The USDS hasn't been converted.`
           };
         if (functionName === CCTP_BURN_FUNCTION)
           return { label: t`Bridge`, tokenSymbol: 'USDC', failureDetail: t`The USDC hasn't been bridged.` };
         const symbol = target?.toLowerCase() === cctpUsds(burnFrom)?.toLowerCase() ? 'USDS' : 'USDC';
-        return { label: t`Approve`, tokenSymbol: symbol, failureDetail: stepFailureDetail.approve(symbol) };
+        return {
+          label: t`Approve`,
+          tokenSymbol: symbol,
+          description: approveDescription(symbol),
+          failureDetail: stepFailureDetail.approve(symbol)
+        };
       }),
     [burn.calls, burnFrom]
   );
@@ -290,7 +299,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         ? burnSteps
         : sourceActions.map(action =>
             action === 'approve'
-              ? { label: t`Approve`, tokenSymbol: 'USDS', failureDetail: stepFailureDetail.approve('USDS') }
+              ? {
+                  label: t`Approve`,
+                  tokenSymbol: 'USDS',
+                  description: approveDescription('USDS'),
+                  failureDetail: stepFailureDetail.approve('USDS')
+                }
               : { label: t`Bridge`, tokenSymbol: 'USDS', failureDetail: t`The USDS hasn't been bridged.` }
           ),
     [isCctpBurn, burnSteps, sourceActions]
@@ -415,7 +429,14 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       }
       if (!resumingRun || !runRouteRef.current) runRouteRef.current = route;
       // Snapshot at Confirm: the form may change or reset before the legs finish.
-      const record = { account, amount, from, to, recipient, route: runRouteRef.current };
+      const record = {
+        account,
+        amount: bridgedAmount(amount, runRouteRef.current?.kind),
+        from,
+        to,
+        recipient,
+        route: runRouteRef.current
+      };
       // A prompt this Confirm opened can be signed after a later Confirm: the modal hears from it only while it is current.
       const isCurrent = () => !isReal || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
@@ -627,11 +648,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   );
   // A continued swap sends its USDC (Figma 91).
   const fromToken = resume ? 'USDC' : undefined;
+  const shownAmount = bridgedAmount(amount, route?.kind);
   const transactionContent = useMemo(
     () =>
       route && (
         <BridgeReviewContent
-          amount={amount}
+          amount={shownAmount}
           from={from}
           to={to}
           route={route}
@@ -648,7 +670,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         />
       ),
     [
-      amount,
+      shownAmount,
       from,
       to,
       route,
@@ -667,17 +689,17 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const transactionScreenContent = useMemo(
     () => (
       <BridgeTransferHero
-        amount={amount}
+        amount={shownAmount}
         from={from}
         to={to}
         fromToken={fromToken}
         testId="bridge-modal-screen-summary"
       />
     ),
-    [amount, from, to, fromToken]
+    [shownAmount, from, to, fromToken]
   );
 
-  const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
+  const amountLabel = `${formatExactUsds(shownAmount)} USDS`;
   const confirmDisabled =
     !form.isConnected ||
     form.reviewBlocked ||
@@ -725,7 +747,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     setReviewing(true);
     launchModal({
       title,
-      transactionTitle: title,
+      transactionTitle: t`Confirm`,
       toast: {
         loading: t`Bridging ${amountLabel}`,
         success: t`Bridge initiated!`,

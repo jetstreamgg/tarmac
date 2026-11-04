@@ -25,12 +25,13 @@ describe('buildContinueBridgeRows', () => {
       ],
       [
         { kind: 'status', label: 'Status', status: 'pending', value: 'Not sent' },
-        { kind: 'text', label: 'Bridge type', value: 'CCTP', logo: 'cctp' }
+        { kind: 'text', label: 'Estimated arrival', value: '20 min after sending' }
       ],
       [
+        { kind: 'text', label: 'Bridge type', value: 'CCTP', logo: 'cctp' },
         {
           kind: 'link',
-          label: 'Swap transaction',
+          label: 'Transaction',
           value: '0x5a00...0b7c',
           href: bridgeTxHref('optimism', SWAP.swapTxHash, 1)
         }
@@ -41,10 +42,10 @@ describe('buildContinueBridgeRows', () => {
   // Continuing sends to the swap's recipient, so the card says who that is when it isn't the user.
   it('names a recipient other than the connected account', () => {
     const rows = buildContinueBridgeRows({ ...SWAP, recipient: OTHER }, ACCOUNT, 1);
-    expect(rows[2]?.[1]).toEqual({ kind: 'text', label: 'Recipient', value: '0x2222...2222' });
+    expect(rows[3]).toEqual([{ kind: 'text', label: 'Recipient', value: '0x2222...2222' }]);
   });
 
   it('names no recipient for the account itself, in any case', () => {
-    expect(buildContinueBridgeRows(SWAP, ACCOUNT.toUpperCase().replace('0X', '0x'), 1)[2]).toHaveLength(1);
+    expect(buildContinueBridgeRows(SWAP, ACCOUNT.toUpperCase().replace('0X', '0x'), 1)).toHaveLength(3);
   });
 });

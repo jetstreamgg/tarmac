@@ -71,12 +71,11 @@ describe('BridgeReviewContent notes for a CCTP claim', () => {
     expect(screen.queryByTestId('bridge-modal-contract-wallet')).toBeNull();
   });
 
-  it('warns that another recipient has to be told and claims from a wallet they control', () => {
+  it('warns that another recipient claims on Ethereum from a wallet they control', () => {
     review({ recipientWarning: true });
     const note = screen.getByTestId('bridge-modal-recipient-warning').textContent;
-    expect(note).toMatch(/won't see this transfer automatically/);
-    expect(note).toMatch(/claim link or the transaction hash/);
-    expect(note).toMatch(/exchange deposit address won't work/);
+    expect(note).toMatch(/must claim this on Ethereum from a wallet they control/);
+    expect(note).toMatch(/Exchange deposit addresses and wallets that don't exist on Ethereum won't work/);
   });
 
   // Figma 70: an amber box titled "Sending to another wallet".

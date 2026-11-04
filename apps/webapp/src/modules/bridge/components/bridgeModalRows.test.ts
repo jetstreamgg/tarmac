@@ -26,16 +26,13 @@ describe('buildBridgeModalRows', () => {
     ]);
   });
 
-  // A continued swap bridges its USDC (Figma 91): the rate reads USDC to USDS.
-  it('rates the token the bridge sends against the USDS it delivers', () => {
-    const [[, rate]] = buildBridgeModalRows({
-      route: routeFor('base', 'ethereum'),
-      networkFee: '',
-      fromToken: 'USDC'
-    });
-    expect(rate).toMatchObject({ token: 'USDC', left: '1.00', right: '1.00', rightToken: 'USDS' });
-    const [[, usds]] = buildBridgeModalRows({ route: routeFor('base', 'ethereum'), networkFee: '' });
-    expect(usds).toMatchObject({ token: 'USDS', rightToken: 'USDS' });
+  // Figma 04: the rate is a plain 1:1 and the slippage has one decimal, on every route.
+  it('reads the rate and the slippage as drawn', () => {
+    for (const route of [routeFor('base', 'ethereum'), routeFor('ethereum', 'base')]) {
+      const [[, rate], [, slippage]] = buildBridgeModalRows({ route, networkFee: '' });
+      expect(rate).toEqual({ kind: 'single', label: 'Bridge rate', value: '1:1' });
+      expect(slippage).toMatchObject({ value: '0.0%' });
+    }
   });
 
   it('names the route and its arrival time', () => {

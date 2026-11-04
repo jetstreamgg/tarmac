@@ -72,14 +72,14 @@ export function BridgeNetworkSelect({
         aria-label={t`Select network`}
         className={cn(
           buttonVariants({ variant: 'dropdown', size: 'dropdownXs' }),
-          'h-7 w-auto shrink-0 bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
+          '[&>svg]:text-fgTertiary h-7 w-auto shrink-0 bg-transparent [&>svg]:size-3 [&>svg]:opacity-100 [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180'
         )}
       >
         <SelectValue>
           <NetworkOption network={value} onFork={valueOnFork} />
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="min-w-40">
         {options.map(network => (
           <SelectItem key={network} value={network} data-testid={`${dataTestId}-${network}`}>
             <NetworkOption network={network} />

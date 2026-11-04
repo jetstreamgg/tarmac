@@ -30,7 +30,7 @@ vi.mock('@/hooks', () => ({
 vi.mock('../adapters/cctp/gate', () => ({
   cctpBurnRefusal: vi.fn(),
   cctpResumeRefusal: vi.fn(),
-  CCTP_SWAP_FAILED_MESSAGE: 'The swap of this bridge failed, so there is nothing to bridge.'
+  CCTP_SWAP_FAILED_MESSAGE: 'The conversion to USDC of this bridge failed, so there is nothing to bridge.'
 }));
 vi.mock('../store/cctpSwapStore', () => ({
   cctpSwapStore: { record: mocks.record, clear: mocks.clear, markBurn: mocks.markBurn }

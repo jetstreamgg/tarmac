@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useEnsName } from 'wagmi';
@@ -14,6 +14,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { pendingClaimLink } from '../adapters/cctp/claimLink';
+import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { useCctpConvertOffer } from '../hooks/useCctpConvertOffer';
 import { useCctpResumeForm, type CctpResumeBlockReason } from '../hooks/useCctpResumeForm';
 import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch';
@@ -385,18 +386,22 @@ type CardHeaderProps = { symbol: string; amount: string; date: string; children?
 function CardHeader({ symbol, amount, date, children }: CardHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="flex items-center gap-3">
+      <span className="flex min-w-0 items-center gap-3">
         <span className="border-borderTertiary flex size-9 shrink-0 items-center justify-center rounded-full border-[1.5px]">
           <TokenIcon token={{ symbol }} width={28} showChainIcon={false} className="size-7" />
         </span>
-        <span className="flex flex-col gap-0.5">
-          <span className="font-circle text-fgPrimary text-base leading-[18px] font-medium tracking-[-0.32px]">
+        <span className="flex min-w-0 flex-col gap-0.5">
+          {/* An 18-decimal amount wraps rather than push the card's action out. */}
+          <span
+            className="font-circle text-fgPrimary text-base leading-[18px] font-medium tracking-[-0.32px] break-all"
+            data-testid="pending-bridge-amount"
+          >
             {amount}
           </span>
           <Text className="text-fgSecondary text-xs leading-[18px]">{date}</Text>
         </span>
       </span>
-      {children}
+      {children && <div className="shrink-0">{children}</div>}
     </div>
   );
 }
@@ -411,15 +416,18 @@ function CardRows({ rows }: CardRowsProps) {
       data-testid="pending-bridge-rows"
     >
       {rows.map((row, rowIndex) => (
-        <div key={rowIndex} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
+        <div key={rowIndex} className="grid grid-cols-2 items-center gap-4 md:gap-8">
           {row.map((cell, cellIndex) => (
-            <Fragment key={cell.label}>
-              {cellIndex > 0 && <span aria-hidden className="bg-glassBorder h-8 w-px" />}
-              <div className="flex min-w-0 flex-col gap-1">
-                <Text className="text-fgSecondary text-xs leading-[18px]">{cell.label}</Text>
-                <CellValue cell={cell} />
-              </div>
-            </Fragment>
+            <div key={cell.label} className="relative flex min-w-0 flex-col gap-1">
+              {cellIndex > 0 && (
+                <span
+                  aria-hidden
+                  className="bg-glassBorder absolute top-1/2 -left-4 h-8 w-px -translate-y-1/2 md:-left-8"
+                />
+              )}
+              <Text className="text-fgSecondary text-xs leading-[18px]">{cell.label}</Text>
+              <CellValue cell={cell} />
+            </div>
           ))}
         </div>
       ))}
@@ -483,7 +491,7 @@ function PendingBridgeCard({
   // Figma 75: a wallet that neither sent nor receives it can only switch to the one that claims it.
   const thirdWallet = counterparty?.role === 'both';
   const claimLink = thirdWallet ? undefined : pendingClaimLink(window.location.origin, bridge);
-  const amount = formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
+  const amount = formatExactUsds(bridgedAmount(bridge.amount, bridge.routeKind));
   // Figma 71: the note on the way already asks to share the claim link.
   const sharesInNote = claimedElsewhere && !thirdWallet && bridge.status === 'pending';
   // Figma 73: once ready, the sender may switch to the destination wallet or share the link.
@@ -727,7 +735,7 @@ function ContinueBridgeCard({
     <div className={cardClassName} data-testid="continue-bridge-card">
       <CardHeader symbol="USDC" amount={amount} date={formatBridgeDate(swap.at)} />
 
-      <div className="text-fgSecondary flex flex-col gap-1 text-xs leading-[18px]">
+      <div className="text-fgSecondary -mt-2 flex flex-col gap-1 text-xs leading-[18px]">
         <Text className="text-xs leading-[18px] text-inherit" dataTestId="continue-bridge-note">
           <Trans>
             Your bridge stopped before it was sent. The {amount} USDC from the conversion is still on{' '}
@@ -869,7 +877,7 @@ export function PendingBridges({
             if (!listScope) return;
             pendingBridgeStore.close(listScope, kept.id);
             // Figma 98.
-            toast.success(t`You can convert your USDC to USDS anytime from the Swap tab.`);
+            toast.success(t`You can convert your USDC to USDS anytime from the Convert tab.`);
           }}
           incoming={owner !== undefined}
           actionLocked={actionLocked}

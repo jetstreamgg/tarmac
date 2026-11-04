@@ -50,7 +50,7 @@ export type ResolvedBridgeRoute =
   { status: 'ok'; route: BridgeRoute } | { status: 'blocked'; reason: BridgeBlockReason };
 
 export const DAY_MINUTES = 24 * 60;
-const CCTP_ETA_MINUTES = 20;
+export const CCTP_ETA_MINUTES = 20;
 const LAYERZERO_ETA_MINUTES = 3;
 
 /** Networks the native bridges reach; one added without its ETAs fails to compile. */
