@@ -7,6 +7,8 @@ import { readContractQueryKey, simulateContractQueryKey } from 'wagmi/query';
 import { mainnet } from 'wagmi/chains';
 import { custom, numberToHex } from 'viem';
 import { useTokenAllowance } from '@/hooks/tokens/useTokenAllowance';
+import { PENDLE_CONVERT_QUERY_KEY } from '@/hooks/pendle/useQuotePendleConvert';
+import { SIMULATE_BATCH_QUERY_KEY } from '@/hooks/shared/useSimulateBatch';
 import { clearUnusedTxInputs } from './clearUnusedTxInputs';
 
 const TOKEN = '0xdC035D45d973E3EC169d2276DDab16f1e407384F';
@@ -111,8 +113,8 @@ describe('allowance and transaction-input freshness (APP-675)', () => {
       read('get_dy'),
       read('get_dx'),
       dryRun,
-      ['simulate-batch', 1, OWNER, 'calls'],
-      ['pendle-convert', TOKEN]
+      [SIMULATE_BATCH_QUERY_KEY, 1, OWNER, 'calls'],
+      [PENDLE_CONVERT_QUERY_KEY, TOKEN]
     ];
     for (const key of cleared) client.setQueryData(key, 1n);
     client.setQueryData(read('balanceOf'), 7n);

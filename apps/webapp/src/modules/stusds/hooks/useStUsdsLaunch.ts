@@ -78,7 +78,7 @@ export function useStUsdsLaunch({
   const needsAllowance = isSupply
     ? isCurve
       ? !hasCurveUsdsAllowance
-      : nativeSupplyAllowance === undefined || nativeSupplyAllowance < amount
+      : nativeSupplyAllowance !== undefined && nativeSupplyAllowance < amount
     : isCurve
       ? !hasCurveStUsdsAllowance
       : false;
