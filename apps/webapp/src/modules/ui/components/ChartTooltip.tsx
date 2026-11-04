@@ -298,6 +298,8 @@ export function ChartTooltip({
               <TokenIconStack
                 symbols={tokenSymbols}
                 size={12}
+                // The value beside it drops its symbol when an icon is shown.
+                labelled
                 className="shrink-0"
                 data-testid="chart-tooltip-token-icon"
               />

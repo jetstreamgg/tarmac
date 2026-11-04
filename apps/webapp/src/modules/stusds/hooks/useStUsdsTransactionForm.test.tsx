@@ -262,6 +262,38 @@ describe('useStUsdsTransactionForm flag-driven max withdraw (APP-507)', () => {
     expect(result.current.needsImpactAcknowledgement).toBe(true);
   });
 
+  describe('a typed amount above the native max', () => {
+    const CURVE_MAX = parseUnits('1005', 18);
+
+    it('is confirmable when the selection routes it through Curve', () => {
+      setState({ curveMaxWithdraw: CURVE_MAX });
+      h.selectedProvider = 'curve';
+      const { result } = renderForm();
+
+      act(() => result.current.onInput('800'));
+      expect(result.current.insufficient).toBe(false);
+      expect(result.current.amountReady).toBe(true);
+    });
+
+    it('is still too high above the Curve max', () => {
+      setState({ curveMaxWithdraw: CURVE_MAX });
+      h.selectedProvider = 'curve';
+      const { result } = renderForm();
+
+      act(() => result.current.onInput('1006'));
+      expect(result.current.insufficient).toBe(true);
+      expect(result.current.amountReady).toBe(false);
+    });
+
+    it('is too high when the selection stays native', () => {
+      setState({ curveMaxWithdraw: CURVE_MAX });
+      const { result } = renderForm();
+
+      act(() => result.current.onInput('800'));
+      expect(result.current.insufficient).toBe(true);
+    });
+  });
+
   it('supply Max fills the wallet balance once and never follows (max is withdraw-only)', () => {
     const { result, rerender } = renderForm('supply');
 

@@ -20,6 +20,9 @@ import { sanitizeAmountInput } from '@/lib/amountInput';
 const AUTO = 'auto';
 const CUSTOM = 'custom';
 
+/** Custom tolerances above this (as a decimal, 1%) get a cost warning. */
+const HIGH_SLIPPAGE_WARNING = 0.01;
+
 /** Decimal slippage (e.g. 0.002 for 0.2%) → percentage string for the input. */
 function decimalToPercentString(decimal: number): string {
   return (decimal * 100).toFixed(2).replace(/\.?0+$/, '');
@@ -91,14 +94,15 @@ export function SlippageMenu({
   const [synced, setSynced] = useState({ value, defaultValue });
   if (synced.value !== value || synced.defaultValue !== defaultValue) {
     setSynced({ value, defaultValue });
-    if (value === defaultValue) {
-      setRawInput('');
-    } else if (Math.abs(percentStringToDecimal(rawInput) - value) > 1e-9) {
-      setRawInput(decimalToPercentString(value));
+    // Not when the text already means this value: that's the user typing, and
+    // the default may just be on the way ("0.2" of "0.25").
+    if (Math.abs(percentStringToDecimal(rawInput) - value) > 1e-9) {
+      setRawInput(value === defaultValue ? '' : decimalToPercentString(value));
     }
   }
 
   const isCustom = value !== defaultValue;
+  const isHighSlippage = value > HIGH_SLIPPAGE_WARNING;
 
   const handleCustomChange = (raw: string) => {
     // Masked to what this field can mean — digits and one decimal point, at
@@ -108,11 +112,26 @@ export function SlippageMenu({
     // is text rather than number.
     const clamped = clampPercentString(sanitizeAmountInput(raw, 2), min, max);
     setRawInput(clamped);
-    onChange(clamped === '' ? 0 : percentStringToDecimal(clamped));
+    // An empty or zero field is still being typed ("" before the first digit,
+    // "0." on the way to "0.5"), not a request for zero tolerance — a 0%
+    // tolerance pins the min-out to the exact quote and reverts on any price
+    // move (APP-533). Only a positive value is committed; until then the
+    // previous tolerance stays in effect.
+    const decimal = percentStringToDecimal(clamped);
+    if (decimal > 0) onChange(decimal);
+  };
+
+  // Leaving the field with nothing committed from it ("", "0", "0.") puts back
+  // the tolerance that is actually in effect, so the field never shows a value
+  // the trade won't use. Closing the menu counts: Escape unmounts the field while
+  // focused, and no blur reaches it then.
+  const restoreUncommittedInput = () => {
+    if (percentStringToDecimal(rawInput) > 0) return;
+    setRawInput(isCustom ? decimalToPercentString(value) : '');
   };
 
   return (
-    <Popover>
+    <Popover onOpenChange={open => !open && restoreUncommittedInput()}>
       <PopoverTrigger
         className={cn(
           'text-textSecondary hover:text-text data-[state=open]:text-text rounded-full p-1.5 transition-colors',
@@ -192,11 +211,23 @@ export function SlippageMenu({
                     inputMode="decimal"
                     value={rawInput}
                     onChange={e => handleCustomChange(e.target.value)}
+                    onBlur={restoreUncommittedInput}
                     data-testid={`${dataTestId}-input`}
                   />
                   <span className="text-fgSecondary font-circle text-sm leading-4 font-medium">%</span>
                 </span>
               </div>
+              {isHighSlippage && (
+                <p
+                  className="text-statusWarning font-graphik mt-3 text-xs leading-[18px]"
+                  data-testid={`${dataTestId}-high-warning`}
+                >
+                  <Trans>
+                    A tolerance this high can fill well below the quoted amount. Only raise it if a trade
+                    keeps failing.
+                  </Trans>
+                </p>
+              )}
             </TabsContent>
           </Tabs>
         </div>

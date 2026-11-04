@@ -122,12 +122,16 @@ export function IconStack({
 export function TokenIconStack({
   symbols,
   size = 24,
+  labelled = false,
   className,
   ...props
 }: {
   symbols: string[];
   /** Badge diameter in px (Figma size M = 24). */
   size?: number;
+  /** Name each icon by its symbol — for a stack that stands alone, with no
+   * symbol printed beside it. Decorative otherwise. */
+  labelled?: boolean;
 } & ComponentPropsWithoutRef<'span'>) {
   return (
     <IconStack size={size} className={className} {...props}>
@@ -138,6 +142,7 @@ export function TokenIconStack({
           width={size}
           showChainIcon={false}
           className="h-full w-full"
+          alt={labelled ? symbol : undefined}
         />
       ))}
     </IconStack>

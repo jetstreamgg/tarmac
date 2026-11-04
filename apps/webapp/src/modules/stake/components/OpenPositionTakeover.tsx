@@ -224,8 +224,16 @@ export function OpenPositionTakeover({ reopen }: { reopen?: ReopenContext }) {
         ? undefined
         : formatSimulationErrorMessage(simulationError?.message, debouncedVault?.dust, debouncedUsdsToBorrow);
 
+  // A position needs a farm: with none selected the calldata drops selectFarm
+  // and the urn opens un-farmed, accruing nothing. That happens when the
+  // indexer answers with an empty farm list — the picker then reads "No
+  // rewards found", and Confirm waits for a farm (APP-474).
   const formValid =
-    stakeValid && borrowValid && !(state.borrowEnabled && minCollateralNotMet) && rewardBaselineResolved;
+    stakeValid &&
+    borrowValid &&
+    !(state.borrowEnabled && minCollateralNotMet) &&
+    rewardBaselineResolved &&
+    !!selectedRewardContract;
 
   const closeOpenFlow = useCallback(() => {
     setSearchParams(params => {

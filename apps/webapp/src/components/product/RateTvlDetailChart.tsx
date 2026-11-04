@@ -25,6 +25,8 @@ type DetailChartSeries = {
   error?: Error | null;
   /** Headline figure; falls back to the series' last point when undefined. */
   displayValue?: number;
+  /** The range `data` covers while a timeframe switch loads (useSettledTimeFrame). */
+  timeFrame?: TimeFrame;
 };
 
 /**
@@ -78,6 +80,7 @@ export function RateTvlDetailChart({
         variant="detail"
         dataTestId={dataTestId}
         data={series.data}
+        plottedTimeFrame={series.timeFrame}
         isLoading={series.isLoading}
         error={series.error}
         isPercentage={isRate}
@@ -87,7 +90,9 @@ export function RateTvlDetailChart({
         // The TVL metric leads its figure with the token mark instead of a
         // trailing ticker and tags it with the period's change, the same
         // recipe the portfolio totals chart wears (APP-552, Figma 2800:92438).
-        icons={isRate ? undefined : <TokenIconStack symbols={[symbol]} size={32} className="shrink-0" />}
+        icons={
+          isRate ? undefined : <TokenIconStack symbols={[symbol]} size={32} labelled className="shrink-0" />
+        }
         showTrend={!isRate}
         displayValue={series.displayValue}
         valueSuffix={isRate ? rateValueSuffix : undefined}

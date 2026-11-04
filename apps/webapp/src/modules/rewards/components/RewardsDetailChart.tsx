@@ -4,6 +4,7 @@ import { TimeFrame } from '@/modules/ui/components/Chart';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 import { RateTvlDetailChart } from '@/components/product/RateTvlDetailChart';
 import { useParseRewardsChartData } from '../hooks/useParseRewardsChartData';
+import { useSettledTimeFrame } from '@/modules/ui/hooks/useSettledTimeFrame';
 
 /**
  * The product-detail Rate/TVL chart for a reward farm — injected into
@@ -29,12 +30,17 @@ export function RewardsDetailChart({
   const {
     data: chartInfo,
     isLoading,
-    error
+    error,
+    isPlaceholderData
   } = useRewardsChartInfo({
     rewardContractAddress: contract.contractAddress,
     limit: getDayCountFromTimeFrame(timeFrame)
   });
-  const { totalSupplied: tvlData, rate: rateData } = useParseRewardsChartData(timeFrame, chartInfo || []);
+  const seriesTimeFrame = useSettledTimeFrame(timeFrame, isPlaceholderData);
+  const { totalSupplied: tvlData, rate: rateData } = useParseRewardsChartData(
+    seriesTimeFrame,
+    chartInfo || []
+  );
 
   return (
     <RateTvlDetailChart
@@ -42,13 +48,14 @@ export function RewardsDetailChart({
       symbol={contract.supplyToken.symbol}
       rate={{
         data: rateData,
+        timeFrame: seriesTimeFrame,
         isLoading,
         error,
         // Headline reads the canonical current rate (matches the Details grid),
         // not the last historic point.
         displayValue: currentRate !== undefined ? currentRate * 100 : undefined
       }}
-      tvl={{ data: tvlData, isLoading, error }}
+      tvl={{ data: tvlData, timeFrame: seriesTimeFrame, isLoading, error }}
       hideRate={!hasRate}
       onTimeFrameChange={setTimeFrame}
     />
