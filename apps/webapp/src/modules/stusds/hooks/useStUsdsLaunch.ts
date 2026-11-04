@@ -70,17 +70,20 @@ export function useStUsdsLaunch({
 
   // READ ONLY — label the approve steps only. Same reads as the engines' own.
   const { data: nativeSupplyAllowance } = useStUsdsAllowance();
-  const { hasAllowance: hasCurveUsdsAllowance } = useCurveAllowance({ token: 'USDS', amount });
-  const { hasAllowance: hasCurveStUsdsAllowance } = useCurveAllowance({
+  const { data: curveUsdsAllowance, hasAllowance: hasCurveUsdsAllowance } = useCurveAllowance({
+    token: 'USDS',
+    amount
+  });
+  const { data: curveStUsdsAllowance, hasAllowance: hasCurveStUsdsAllowance } = useCurveAllowance({
     token: 'stUSDS',
     amount: stUsdsAmount ?? 0n
   });
   const needsAllowance = isSupply
     ? isCurve
-      ? !hasCurveUsdsAllowance
+      ? curveUsdsAllowance !== undefined && !hasCurveUsdsAllowance
       : nativeSupplyAllowance !== undefined && nativeSupplyAllowance < amount
     : isCurve
-      ? !hasCurveStUsdsAllowance
+      ? curveStUsdsAllowance !== undefined && !hasCurveStUsdsAllowance
       : false;
 
   // All four engines are called unconditionally (hooks rules) and gated by

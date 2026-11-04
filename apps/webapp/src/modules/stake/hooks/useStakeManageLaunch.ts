@@ -229,8 +229,8 @@ export function useStakeManageLaunch({
     mutateSkyAllowance();
     mutateUsdsAllowance();
   }, [mutateSkyAllowance, mutateUsdsAllowance]);
-  const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
-  const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
+  const needsSkyAllowance = skyAllowance !== undefined && skyAllowance < lockAmount;
+  const needsUsdsAllowance = usdsAllowance !== undefined && usdsAllowance < usdsAmount;
 
   // Legacy StakeModuleWidget/index.tsx:194-205 verbatim (M19). `calldata` already
   // includes any getReward legs (useStakeCalldata's manage ordering), so a
