@@ -2,18 +2,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   TransactionNotFoundError,
   TransactionReceiptNotFoundError,
+  createPublicClient,
+  custom,
   decodeEventLog,
   decodeFunctionData,
   encodeFunctionData,
+  encodeFunctionResult,
   isAddressEqual,
   keccak256,
   zeroHash,
+  type Address,
   type Hex
 } from 'viem';
+import { arbitrum } from 'viem/chains';
 import type { PendingBridge } from '../../model/types';
 import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
-import { ARB_SYS, ARBITRUM_CONFIRM_MS, arbSysAbi, arbitrumOutboxAbi } from './contracts';
+import { NODE_INTERFACE } from '../nativeDeposit/contracts';
+import {
+  ARB_SYS,
+  ARBITRUM_CONFIRM_MS,
+  arbSysAbi,
+  arbitrumOutboxAbi,
+  nodeInterfaceOutboxAbi
+} from './contracts';
 import { arbitrumItemHash, arbitrumWithdrawalMessage } from './arbitrum';
 import { arbitrumExecuteFromChain, arbitrumWithdrawalProgress } from './arbitrumProgress';
 import { ARBITRUM_EXECUTE_TX, ARBITRUM_WITHDRAWAL_LOGS, ARBITRUM_WITHDRAWAL_TX } from './withdrawalFixtures';
@@ -79,6 +91,9 @@ const l1: ChainReader = {
   getBlock: (async () => {
     throw new Error('no L1 blocks');
   }) as never,
+  call: (async () => {
+    throw new Error('unexpected call');
+  }) as never,
   getTransaction: (async () => ({})) as never
 };
 
@@ -92,10 +107,19 @@ const l2: ChainReader = {
     if (blockHash !== L2_HASH) throw new Error('unknown block');
     return { hash: L2_HASH, sendRoot: SEND_ROOT, sendCount: `0x${state.confirmedSize!.toString(16)}` };
   }) as never,
-  readContract: (async ({ functionName, args }: { functionName: string; args: readonly unknown[] }) => {
-    if (functionName !== 'constructOutboxProof') throw new Error(`unexpected read ${functionName}`);
+  readContract: (async ({ functionName }: { functionName: string }) => {
+    throw new Error(`unexpected read ${functionName}`);
+  }) as never,
+  call: (async ({ data }: { data: Hex }) => {
+    const { args } = decodeFunctionData({ abi: nodeInterfaceOutboxAbi, data });
     state.proofArgs.push(args);
-    return [state.proofSend ?? arbitrumItemHash(MESSAGE), state.proofRoot, realProof()];
+    return {
+      data: encodeFunctionResult({
+        abi: nodeInterfaceOutboxAbi,
+        functionName: 'constructOutboxProof',
+        result: [state.proofSend ?? arbitrumItemHash(MESSAGE), state.proofRoot, realProof()]
+      })
+    };
   }) as never,
   getTransaction: (async () => ({})) as never,
   getBlockNumber: (async () => 0n) as never,
@@ -214,6 +238,30 @@ describe('arbitrumExecuteFromChain', () => {
     const call = await execute();
     expect(encodeFunctionData(call)).toBe(ARBITRUM_EXECUTE_TX.input);
     expect(state.proofArgs).toEqual([[MESSAGE.position + 10n, MESSAGE.position]]);
+  });
+
+  it("gets the proof on a client that batches its reads, as NodeInterface doesn't answer a contract's call", async () => {
+    state.confirmedSize = MESSAGE.position + 10n;
+    const batching = createPublicClient({
+      chain: arbitrum,
+      batch: { multicall: true },
+      transport: custom({
+        request: async ({ params }: { params: [{ to: Address }] }) => {
+          if (!isAddressEqual(params[0].to, NODE_INTERFACE)) throw new Error('execution reverted');
+          return encodeFunctionResult({
+            abi: nodeInterfaceOutboxAbi,
+            functionName: 'constructOutboxProof',
+            result: [arbitrumItemHash(MESSAGE), SEND_ROOT, realProof()]
+          });
+        }
+      })
+    });
+    const call = await arbitrumExecuteFromChain({
+      l1,
+      l2: { ...l2, call: batching.call, readContract: batching.readContract } as ChainReader,
+      bridge: bridge()
+    });
+    expect(encodeFunctionData(call)).toBe(ARBITRUM_EXECUTE_TX.input);
   });
 
   it("builds nothing before the rollup confirmed it, or when the proof isn't for the confirmed root and this message", async () => {

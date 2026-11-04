@@ -112,6 +112,9 @@ const l1: ChainReader = {
     if (!status) throw new TransactionReceiptNotFoundError({ hash });
     return { status } as never;
   },
+  call: (async () => {
+    throw new Error('unexpected call');
+  }) as never,
   readContract: (async ({
     address,
     functionName,

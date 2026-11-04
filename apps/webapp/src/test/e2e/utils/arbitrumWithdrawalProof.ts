@@ -26,7 +26,7 @@ import {
   nodeInterfaceOutboxAbi
 } from '@/modules/bridge/adapters/nativeWithdrawal/contracts';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
-import { aggregate3Answer, rpcAt, same } from './rpcShim';
+import { rpcAt, same } from './rpcShim';
 import { ANYONE, NetworkName } from './constants';
 
 const outboxAbi = parseAbi([
@@ -135,10 +135,8 @@ export async function confirmArbitrumWithdrawalOnFork(
       } else if (method === 'eth_call') {
         const { to, data, input } = params[0] as { to?: string; data?: Hex; input?: Hex };
         const callData = data ?? input;
-        if (callData)
-          result =
-            answerCall(to, callData) ??
-            (await aggregate3Answer(l2Rpc, { to, data: callData, block: params[1] }, answerCall));
+        // Direct calls only, as on the real chain: a batched proof read must fail here too.
+        if (callData) result = answerCall(to, callData);
       }
       if (result === undefined) return route.fallback();
       return route.fulfill({ json: { jsonrpc: '2.0', id: request.id, result } });
