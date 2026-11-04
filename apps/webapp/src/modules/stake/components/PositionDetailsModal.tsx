@@ -519,7 +519,7 @@ export function PositionDetailsModal({
                       target="_blank"
                       rel="noopener noreferrer"
                       data-testid="stake-position-delegate-link"
-                      className="hover:text-text flex items-center gap-1"
+                      className="hover:text-text focus-visible:outline-focusRing flex items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                       <span className="flex" aria-hidden>
                         <CustomAvatar address={detail.voteDelegate!.toLowerCase()} size={12} />
