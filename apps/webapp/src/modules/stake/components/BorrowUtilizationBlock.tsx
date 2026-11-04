@@ -68,7 +68,7 @@ export function BorrowUtilizationBlock() {
           a Heading 3 figure; figure, bar and legend sit 20px apart. */}
       <h3 className="text-fgPrimary font-circle mb-4 flex items-center gap-2 text-base leading-[18px] font-medium tracking-[-0.32px] md:text-lg md:leading-[22px] md:tracking-[-0.36px]">
         <Trans>Borrow Utilization</Trans>
-        <RateInfo type="dtc" size={12} />
+        <RateInfo type="dtc" />
       </h3>
 
       <div className="text-fgPrimary font-circle mb-5 text-2xl leading-[26px] font-medium tracking-[-0.48px] md:text-[32px] md:leading-[35px] md:tracking-[-0.64px]">

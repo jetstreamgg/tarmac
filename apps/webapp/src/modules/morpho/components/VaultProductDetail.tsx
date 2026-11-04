@@ -103,7 +103,7 @@ export function VaultProductDetail({
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="morpho" size={12} />,
+      info: <RateInfo type="morpho" />,
       // Incentive-boosted vaults tag the figure with the DS stars mark and
       // explain it through the breakdown tooltip (APP-443 item 14).
       value: <VaultRateBreakdown rate={rate} value={rate?.formattedNetRate ?? NO_VALUE} />

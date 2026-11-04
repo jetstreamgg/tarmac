@@ -43,12 +43,12 @@ const renderRow = (rate?: MorphoVaultRateData) =>
   );
 
 // Radix opens a tooltip on a mouse pointer moving over the trigger, after
-// its (zeroed) open delay — a timer, hence the flush.
+// the trigger's own provider delay (300ms) — a timer, hence the flush.
 const hoverTrigger = async () => {
   const trigger = screen.getByTestId('vault-rate-breakdown');
   fireEvent.pointerMove(trigger, { pointerType: 'mouse' });
   await act(async () => {
-    await new Promise(resolve => setTimeout(resolve, 20));
+    await new Promise(resolve => setTimeout(resolve, 350));
   });
   return trigger;
 };

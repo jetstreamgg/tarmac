@@ -98,7 +98,7 @@ export function StUsdsProductDetail() {
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="stusds" size={12} />,
+      info: <RateInfo type="stusds" />,
       value: currentRate
     },
     {

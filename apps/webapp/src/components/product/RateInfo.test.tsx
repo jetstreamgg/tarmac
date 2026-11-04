@@ -21,7 +21,7 @@ describe('RateInfo — the rate explainer on the design-system Tooltip (Design Q
     const title = screen.getByText('Borrow Rate');
     expect(title.className).toContain('font-circle');
     const body = screen.getByText(/determined by Sky Governance/);
-    expect(body.parentElement?.className).toContain('text-fgSecondary');
+    expect(body.closest('.bg-bgTertiary')?.className).toContain('text-fgSecondary');
     expect(screen.queryByRole('button', { name: /close/i })).toBeNull();
     expect(
       title.closest('[data-radix-popper-content-wrapper]')?.querySelector('.bg-bgTertiary')

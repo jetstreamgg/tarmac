@@ -479,7 +479,7 @@ export function PositionDetailsModal({
                   label={
                     <>
                       <Trans>Rewards rate</Trans>
-                      <RateInfo type="srr" size={12} />
+                      <RateInfo type="srr" />
                     </>
                   }
                 >
@@ -685,7 +685,7 @@ export function PositionDetailsModal({
                       label={
                         <>
                           <Trans>Borrow rate</Trans>
-                          <RateInfo type="sbr" size={12} />
+                          <RateInfo type="sbr" />
                         </>
                       }
                     >
@@ -700,7 +700,7 @@ export function PositionDetailsModal({
                       label={
                         <>
                           <Trans>Capped OSM SKY price</Trans>
-                          <RateInfo type="cappedOsmSkyPrice" size={12} />
+                          <RateInfo type="cappedOsmSkyPrice" />
                         </>
                       }
                     >
@@ -753,7 +753,7 @@ export function PositionDetailsModal({
                       label={
                         <>
                           <Trans>Borrow rate</Trans>
-                          <RateInfo type="sbr" size={12} />
+                          <RateInfo type="sbr" />
                         </>
                       }
                     >
@@ -782,8 +782,6 @@ export function PositionDetailsModal({
                           {/* Same explainer as the manage sheet row. */}
                           <InfoTooltip
                             title={t`Liquidation risk`}
-                            iconSize={12}
-                            iconClassName="shrink-0"
                             content={
                               vault?.liquidationPrice
                                 ? t`Sky closes your position if SKY's price drops to your liquidation price (${formattedLiqPrice}). Your collateral is sold to repay the debt plus a penalty.`
@@ -808,7 +806,7 @@ export function PositionDetailsModal({
                       label={
                         <>
                           <Trans>Capped OSM SKY price</Trans>
-                          <RateInfo type="cappedOsmSkyPrice" size={12} />
+                          <RateInfo type="cappedOsmSkyPrice" />
                         </>
                       }
                     >

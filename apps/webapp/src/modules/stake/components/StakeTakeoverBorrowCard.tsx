@@ -194,8 +194,6 @@ export function StakeTakeoverBorrowCard({
                 <Trans>Liquidation risk</Trans>
                 <InfoTooltip
                   title={t`Liquidation risk`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={
                     hasAmount && simulatedVault?.liquidationPrice
                       ? t`Sky closes your position if SKY's price drops to your liquidation price ($${formatBigInt(simulatedVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}). Your collateral is sold to repay the debt plus a penalty.`
@@ -258,7 +256,7 @@ export function StakeTakeoverBorrowCard({
             label={
               <>
                 <Trans>Capped OSM SKY price</Trans>
-                <RateInfo type="cappedOsmSkyPrice" size={12} />
+                <RateInfo type="cappedOsmSkyPrice" />
                 <UpdatedHourlyBadge />
               </>
             }
