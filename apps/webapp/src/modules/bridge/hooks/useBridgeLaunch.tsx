@@ -20,11 +20,10 @@ import { routeFallbackNotice } from '../components/bridgeRouteOptions';
 import { BridgeRoutePicker } from '../components/BridgeRoutePicker';
 import { notifyRouteFallback } from '../components/RouteFallbackToast';
 import { runMockLegs } from '../adapters/mockAdapter';
-import { bridgedAmount } from '../model/bridgeAmount';
+import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { guardChainId } from '../model/networks';
 import { sendsToOther } from '../model/recipient';
 import { applyProgress, createPendingBridge, failBundle } from '../model/pendingTransitions';
-import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
@@ -430,7 +429,14 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       }
       if (!resumingRun || !runRouteRef.current) runRouteRef.current = route;
       // Snapshot at Confirm: the form may change or reset before the legs finish.
-      const record = { account, amount, from, to, recipient, route: runRouteRef.current };
+      const record = {
+        account,
+        amount: bridgedAmount(amount, runRouteRef.current?.kind),
+        from,
+        to,
+        recipient,
+        route: runRouteRef.current
+      };
       // A prompt this Confirm opened can be signed after a later Confirm: the modal hears from it only while it is current.
       const isCurrent = () => !isReal || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
@@ -693,7 +699,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     [shownAmount, from, to, fromToken]
   );
 
-  const amountLabel = `${formatBigInt(amount, { maxDecimals: 2 })} USDS`;
+  const amountLabel = `${formatExactUsds(shownAmount)} USDS`;
   const confirmDisabled =
     !form.isConnected ||
     form.reviewBlocked ||

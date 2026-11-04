@@ -28,6 +28,9 @@ const amountClassName =
 const panelClassName =
   'bg-glassSurface flex flex-col gap-2 p-4 backdrop-blur-[20px] md:gap-10 md:px-8 md:py-7';
 
+/** An 18-decimal amount fits the To slot at this size on a 375px phone; the review always shows it whole. */
+const TO_AMOUNT_MIN_PX = 14;
+
 const metaClassName = 'text-fgSecondary text-xs md:text-sm md:leading-[22px]';
 
 const formatBalance = (balance: bigint | undefined) =>
@@ -138,6 +141,7 @@ export function BridgeCard({ form }: BridgeCardProps) {
             <FittedAmount
               amount={formatExactUsds(bridgedAmount(form.amount, form.route?.kind))}
               maxPx={isMobile ? 24 : 32}
+              minPx={TO_AMOUNT_MIN_PX}
               className={amountClassName}
             />
           </output>
@@ -152,7 +156,7 @@ export function BridgeCard({ form }: BridgeCardProps) {
                 form.recipient ? 'h-7 text-xs leading-[14px]' : 'size-7 justify-center p-0'
               )}
             >
-              <Wallet className={cn('size-3', form.recipient ? 'text-[#504dff]' : 'text-fgSecondary')} />
+              <Wallet className={cn('size-3', form.recipient ? 'text-brandHover' : 'text-fgSecondary')} />
               {form.recipient && formatAddress(form.recipient, 5, 3)}
             </button>
             <TokenBadge symbol="USDS" />

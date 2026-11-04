@@ -6,7 +6,7 @@ import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAddress } from 'viem';
+import { getAddress, parseUnits } from 'viem';
 import { TransactionReplacedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -342,6 +342,23 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     expect(pendingBridgeStore.getSnapshot(SCOPE)).toMatchObject([
       { txHash: BASE_BURN_TX.hash, from: 'base', to: 'ethereum', amount: AMOUNT }
     ]);
+  });
+
+  it('stores and announces what the burn moves, not the digits below one USDC unit', () => {
+    const view = render('base', 'ethereum', undefined, { amount: parseUnits('1.1234567', 18) });
+    const callbacks = confirm(view);
+    expect(mocks.launched.at(-1)!.toast!.loading).toBe('Bridging 1.123456 USDS');
+    act(() => {
+      callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+      callbacks.onStart(BASE_BURN_TX.hash);
+    });
+    expect(pendingBridgeStore.getSnapshot(SCOPE)).toMatchObject([{ amount: parseUnits('1.123456', 18) }]);
+  });
+
+  it('announces every decimal of a native deposit', () => {
+    const view = render('ethereum', 'base', undefined, { amount: parseUnits('0.0123', 18) });
+    act(() => view.result.current.launch());
+    expect(mocks.launched.at(-1)!.toast!.loading).toBe('Bridging 0.0123 USDS');
   });
 
   it("gives a mined bundle's card the burn hash read from the L2 receipt", async () => {

@@ -27,6 +27,7 @@ import {
 import { BRIDGE_NETWORKS, getBridgeNetwork } from '../model/networks';
 import { isLivePair } from '../model/pairs';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
+import { bridgeModalCardClassName } from './bridgeModalCard';
 import { cardClassName } from './PendingBridges';
 
 // The networks whose bridge to Ethereum is live: only their bridges can come from this app.
@@ -329,7 +330,7 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
         </Button>
       </div>
       <ResponsiveModal open={open} onOpenChange={next => (next ? setOpen(true) : close())}>
-        <ResponsiveModalContent className="bg-bgSecondary flex w-full flex-col p-8 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:py-8 md:rounded-[28px]">
+        <ResponsiveModalContent className={bridgeModalCardClassName}>
           {/* Remount per open so each lookup starts empty. */}
           {open && <LookupForm link={link} networks={networks} onClose={close} />}
         </ResponsiveModalContent>

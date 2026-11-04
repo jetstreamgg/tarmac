@@ -1,9 +1,10 @@
 /**
  * @vitest-environment happy-dom
  */
+import { parseUnits } from 'viem';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CctpResumeBlockReason } from '../hooks/useCctpResumeForm';
 import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch';
@@ -937,6 +938,23 @@ describe('PendingBridges', () => {
       fireEvent.click(screen.getAllByTestId('continue-bridge-dismiss')[0]!);
       expect(cctpSwapStore.getSnapshot('scope')).toEqual([OLDER_SWAP]);
       expect(screen.getAllByTestId('continue-bridge-card')).toHaveLength(1);
+    });
+  });
+
+  describe('the amount on the card', () => {
+    const shown = () =>
+      within(screen.getByTestId('pending-bridge-card')).getByTestId('pending-bridge-amount').textContent;
+
+    it('shows every decimal of a native bridge', () => {
+      mocks.bridges = [{ ...BRIDGE, routeKind: 'native', amount: parseUnits('0.0123', 18) }];
+      renderList();
+      expect(shown()).toBe('0.0123');
+    });
+
+    it('shows what a CCTP bridge stored before the amount was truncated actually moved', () => {
+      mocks.bridges = [{ ...BRIDGE, routeKind: 'cctp', amount: parseUnits('1.1234567', 18) }];
+      renderList();
+      expect(shown()).toBe('1.123456');
     });
   });
 

@@ -13,6 +13,7 @@ import { Close } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import type { BridgeNetwork } from '../model/networks';
 import { isBlockedRecipient, isValidRecipient } from '../model/recipient';
+import { bridgeModalCardClassName } from './bridgeModalCard';
 
 type RecipientAddressModalProps = {
   open: boolean;
@@ -36,7 +37,7 @@ export function RecipientAddressModal({
 }: RecipientAddressModalProps) {
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange}>
-      <ResponsiveModalContent className="bg-bgSecondary flex w-full flex-col gap-12 p-8 sm:max-w-152.5 sm:min-w-152.5 sm:px-8 sm:py-8 md:rounded-[28px]">
+      <ResponsiveModalContent className={cn(bridgeModalCardClassName, 'gap-12')}>
         {/* Remount per open so the draft starts from the saved value. */}
         {open && (
           <RecipientForm

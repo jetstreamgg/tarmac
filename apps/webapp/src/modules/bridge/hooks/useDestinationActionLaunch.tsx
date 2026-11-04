@@ -22,6 +22,7 @@ import {
   type NativeDepositNetwork,
   type OpStackNetworkId
 } from '../adapters/nativeDeposit/contracts';
+import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
 import { CCTP_CONVERT_FUNCTION, cctpBurnAmount, isCctpClaimOnly } from '../adapters/cctp/calls';
 import { readCctpConvertOffer } from '../adapters/cctp/convert';
@@ -516,7 +517,7 @@ export function useDestinationActionLaunch() {
       const symbol = isConvert || (action === 'claim' && isCctpClaimOnly(bridge.routeData)) ? 'USDC' : 'USDS';
       const amount = isConvert
         ? formatBigInt(convertAmount!, { unit: 6, minDecimals: 2, maxDecimals: 2 })
-        : formatBigInt(bridge.amount, { minDecimals: 2, maxDecimals: 2 });
+        : formatExactUsds(bridgedAmount(bridge.amount, bridge.routeKind));
       const copy = actionCopy(
         action,
         amount,
