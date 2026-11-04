@@ -62,7 +62,6 @@ export type UseWriteContractFlowParameters<
   chainId extends config['chains'][number]['id'] | undefined = undefined
 > = UseSimulateContractParameters<abi, functionName, args, config, chainId> & {
   enabled: boolean;
-  gcTime?: number;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string, blockNumber?: bigint) => void;
@@ -158,7 +157,6 @@ export type UseTransactionFlowParameters = {
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string | undefined) => void;
-  gcTime?: number;
   chainId?: number;
 };
 
@@ -169,7 +167,6 @@ export type UseSequentialTransactionFlowParameters = {
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string) => void;
-  gcTime?: number;
   chainId?: number;
 };
 

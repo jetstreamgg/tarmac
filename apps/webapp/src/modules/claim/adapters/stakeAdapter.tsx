@@ -162,19 +162,20 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
 
     const calls: Call[] = [];
 
-    if (restake && restakeAmount > 0n && sky) {
-      // Wait for the allowance rather than guess an approve, like the engines do.
-      if (skyAllowance === undefined) return { calls: [], prepared: false };
-      if (skyAllowance < restakeAmount) {
-        calls.push(
-          getWriteContractCall({
-            to: sky,
-            abi: erc20Abi,
-            functionName: 'approve',
-            args: [stakeModule, restakeAmount]
-          })
-        );
-      }
+    if (
+      restake &&
+      restakeAmount > 0n &&
+      sky &&
+      (skyAllowance === undefined || skyAllowance < restakeAmount)
+    ) {
+      calls.push(
+        getWriteContractCall({
+          to: sky,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [stakeModule, restakeAmount]
+        })
+      );
     }
 
     // One getReward(owner, urnIndex, rewardContract, owner) per selected (urn, contract) —
