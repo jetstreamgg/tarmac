@@ -85,6 +85,27 @@ describe('a send refused before the wallet saw it', () => {
     expect(items.some(item => item.retry)).toBe(true);
   });
 
+  it.each([
+    { refusal: { reason: 'CCTP is paused.', final: false }, retry: 'trailing' },
+    { refusal: { reason: 'CCTP is paused.', final: true }, retry: undefined }
+  ])(
+    'gets a row of its own in a flow with only a signature (final: $refusal.final)',
+    ({ refusal, retry }) => {
+      const [signature, refused, ...rest] = deriveTransactionStepItems({
+        steps: [{ label: 'Sign terms', kind: 'signature' }],
+        currentStep: 1,
+        txStatus: TxStatus.ERROR,
+        bundled: false,
+        refusal
+      });
+      expect(signature.state).toBe('completed');
+      expect(refused.state).toBe('failed');
+      expect(text(refused.description)).toBe('CCTP is paused. Nothing was sent.');
+      expect(refused.retry).toBe(retry);
+      expect(rest).toEqual([]);
+    }
+  );
+
   it('says so without a reason when the refusal has none', () => {
     expect(text(refusedAt(0, { final: false })[0].description)).toBe(
       'The transaction could not be sent. Nothing was sent.'
