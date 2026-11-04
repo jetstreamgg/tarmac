@@ -6,9 +6,9 @@ import { cn } from '@/lib/cn';
 
 // Design-system Tooltip (Figma Components/Tooltip 5043:57748, unified per
 // 4147:65246). The content chrome is the shared recipe of every type —
-// bg-tertiary glass at 16px radius, 16px padding, and the DS `background
-// blur-full` effect, whose Figma radius of 200 is CSS `blur(100px)` (Figma
-// states background blur at twice the CSS value). Body copy is Body 7 on
+// bg-tertiary glass at 16px radius, 16px padding, and a CSS `blur(20px)`
+// backdrop (the DS `background blur-2xl`; Figma states background blur at
+// twice the CSS value). Body copy is Body 7 on
 // fg-secondary for every tooltip, titled or not, 260px max (228px text +
 // padding); titled ones (Default 5043:58197) add a Label 5 fg-primary heading
 // above it. The DS draws no arrow and no close button.
@@ -17,7 +17,7 @@ import { cn } from '@/lib/cn';
 // PopoverContent (z-100, e.g. the nav More menu hosting the theme and batch
 // toggles), not just the z-50 dialog/sheet/select tier.
 export const TOOLTIP_SURFACE_CLASSES =
-  'bg-bgTertiary text-fgSecondary font-graphik z-101 max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[100px] outline-hidden';
+  'bg-bgTertiary text-fgSecondary font-graphik z-101 max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px] outline-hidden';
 
 const TOOLTIP_MOTION_CLASSES =
   'animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2';

@@ -18,13 +18,9 @@ const LINEAGE_COPY = (
   </Trans>
 );
 
-/**
- * Hover affordance on a badge the DS draws borderless: a ring in the glass
- * border token rather than a fill change, since the pill's `glassBadge` fill
- * has no hover value in either theme.
- */
+/** No hover effect, like every tooltip trigger; just the DS focus ring. */
 const TRIGGER_CLASSES =
-  'hover:ring-glassBorder focus-visible:ring-focusRing inline-flex rounded-full transition-shadow hover:ring-1 hover:ring-inset focus-visible:ring-2 focus-visible:outline-hidden';
+  'focus-visible:ring-focusRing inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
 
 /**
  * Opens *above* the badge, against the hero's empty top padding — every other

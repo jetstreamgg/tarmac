@@ -61,7 +61,7 @@ export const PopoverRateInfo = ({
 }: {
   type: PopoverTooltipType;
   tooltipOverride?: TooltipOverride;
-  /** Semantic color override for the glyph (size and hover are fixed). */
+  /** Semantic color override for the glyph (its size is fixed). */
   iconClassName?: string;
   /**
    * Custom trigger rendered in place of the info glyph (e.g. a whole rate

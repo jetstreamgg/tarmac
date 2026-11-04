@@ -4,11 +4,11 @@ import { cn } from '@/lib/cn';
 import { ResponsiveTooltip } from './ui/tooltip';
 
 // The one info glyph every tooltip trigger wears (Figma Icons/General/info,
-// 12px): fg-secondary at rest, fg-primary on hover, and the DS focus ring
-// rather than the browser outline (Design QA 3314:135504). Callers don't pick
-// its size or hover — only a semantic color override (e.g. an error notice).
+// 12px): fg-secondary with no hover effect, and the DS focus ring rather
+// than the browser outline (Design QA 3314:135504). Callers don't pick its
+// size — only a semantic color override (e.g. an error notice).
 const GLYPH_TRIGGER_CLASS =
-  'focus-visible:ring-focusRing text-fgSecondary hover:text-fgPrimary z-10 inline-flex shrink-0 rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-hidden';
+  'focus-visible:ring-focusRing text-fgSecondary z-10 inline-flex shrink-0 rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
 
 /** The info glyph button, for triggers that wrap `ResponsiveTooltip` directly. */
 export function InfoGlyph({ className, ...props }: ComponentPropsWithRef<'button'>) {
@@ -52,7 +52,7 @@ export function InfoTooltip({
 }: {
   title?: ReactNode;
   content: ReactNode;
-  /** Semantic color override for the glyph (size and hover are fixed). */
+  /** Semantic color override for the glyph (its size is fixed). */
   iconClassName?: string;
   /**
    * Custom trigger rendered in place of the info glyph (e.g. a whole rate
