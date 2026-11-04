@@ -39,8 +39,8 @@ describe('useCurveAllowance', () => {
     vi.clearAllMocks();
   });
 
-  describe('hasAllowance calculation', () => {
-    it('should return hasAllowance true when allowance >= amount', () => {
+  describe('needsAllowance calculation', () => {
+    it('should not need an approve when allowance >= amount', () => {
       const allowanceAmount = 1000n * WAD;
       const checkAmount = 500n * WAD;
 
@@ -58,11 +58,11 @@ describe('useCurveAllowance', () => {
         })
       );
 
-      expect(result.current.hasAllowance).toBe(true);
+      expect(result.current.needsAllowance).toBe(false);
       expect(result.current.data).toBe(allowanceAmount);
     });
 
-    it('should return hasAllowance false when allowance < amount', () => {
+    it('should need an approve when allowance < amount', () => {
       const allowanceAmount = 500n * WAD;
       const checkAmount = 1000n * WAD;
 
@@ -80,10 +80,10 @@ describe('useCurveAllowance', () => {
         })
       );
 
-      expect(result.current.hasAllowance).toBe(false);
+      expect(result.current.needsAllowance).toBe(true);
     });
 
-    it('should return hasAllowance true when allowance equals amount', () => {
+    it('should not need an approve when allowance equals amount', () => {
       const amount = 1000n * WAD;
 
       (useTokenAllowance as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -100,10 +100,10 @@ describe('useCurveAllowance', () => {
         })
       );
 
-      expect(result.current.hasAllowance).toBe(true);
+      expect(result.current.needsAllowance).toBe(false);
     });
 
-    it('should return hasAllowance false when amount is 0', () => {
+    it('should not need an approve when amount is 0', () => {
       (useTokenAllowance as ReturnType<typeof vi.fn>).mockReturnValue({
         data: 1000n * WAD,
         isLoading: false,
@@ -118,11 +118,10 @@ describe('useCurveAllowance', () => {
         })
       );
 
-      // hasAllowance should be false when amount is 0 (no allowance needed)
-      expect(result.current.hasAllowance).toBe(false);
+      expect(result.current.needsAllowance).toBe(false);
     });
 
-    it('should return hasAllowance false when data is undefined', () => {
+    it('should not need an approve while the allowance is unknown', () => {
       (useTokenAllowance as ReturnType<typeof vi.fn>).mockReturnValue({
         data: undefined,
         isLoading: false,
@@ -137,7 +136,7 @@ describe('useCurveAllowance', () => {
         })
       );
 
-      expect(result.current.hasAllowance).toBe(false);
+      expect(result.current.needsAllowance).toBe(false);
     });
   });
 

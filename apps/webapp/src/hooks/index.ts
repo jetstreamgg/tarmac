@@ -103,6 +103,7 @@ export { useVpnCheck } from './authentication/useVpnCheck';
 
 // Tokens
 export { useTokenAllowance } from './tokens/useTokenAllowance';
+export { needsApproval } from './shared/needsApproval';
 export { useTokenBalance, useTokenBalances, type TokenItem } from './tokens/useTokenBalance';
 // Rewards
 export { useAvailableTokenRewardContracts } from './rewards/useAvailableTokenRewardContracts';

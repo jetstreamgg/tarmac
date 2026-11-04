@@ -97,7 +97,7 @@ vi.mock('@/hooks/shared/useSimulateBatch', () => ({
   useSimulateBatch: () => batchSimulation
 }));
 vi.mock('@/hooks/stusds/providers/useCurveAllowance', () => ({
-  useCurveAllowance: () => ({ data: maxUint256, hasAllowance: true, error: null, mutate: () => {} })
+  useCurveAllowance: () => ({ data: maxUint256, needsAllowance: false, error: null, mutate: () => {} })
 }));
 vi.mock('@/hooks/stusds/providers/useCurvePoolData', () => ({
   useCurvePoolData: () => ({ data: { tokenIndices: { usds: 0, stUsds: 1 } } })

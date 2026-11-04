@@ -4,18 +4,19 @@ import { ReadHook } from '../../hooks';
 import { useTokenAllowance } from '../../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../../constants';
 import { familyMainnetId } from '@/utils';
+import { needsApproval } from '../../shared/needsApproval';
 
 export type CurveAllowanceHookResponse = ReadHook & {
   data?: bigint;
   /** Whether the current allowance is sufficient for the given amount */
-  hasAllowance: boolean;
+  needsAllowance: boolean;
   mutate: () => void;
 };
 
 export type CurveAllowanceParams = {
   /** Which token to check allowance for */
   token: 'USDS' | 'stUSDS';
-  /** Amount to check against (optional, for hasAllowance calculation) */
+  /** Amount to check against (optional, for needsAllowance calculation) */
   amount?: bigint;
   /** Address to check allowance for (defaults to connected wallet) */
   address?: `0x${string}`;
@@ -51,12 +52,11 @@ export function useCurveAllowance(params: CurveAllowanceParams): CurveAllowanceH
     spender
   });
 
-  const hasAllowance =
-    useAllowanceResponse.data !== undefined && amount > 0n ? useAllowanceResponse.data >= amount : false;
+  const needsAllowance = amount > 0n && needsApproval(useAllowanceResponse.data, amount);
 
   return {
     ...useAllowanceResponse,
-    hasAllowance,
+    needsAllowance,
     isLoading: useAllowanceResponse.isLoading,
     error: useAllowanceResponse.error,
     dataSources: [...useAllowanceResponse.dataSources],

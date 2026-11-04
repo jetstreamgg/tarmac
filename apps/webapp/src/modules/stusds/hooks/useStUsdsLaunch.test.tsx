@@ -103,7 +103,7 @@ vi.mock('@/hooks/stusds/useStUsdsAllowance', () => ({
 vi.mock('@/hooks/stusds/providers/useCurveAllowance', () => ({
   useCurveAllowance: ({ token }: { token: 'USDS' | 'stUSDS' }) => ({
     data: h.curveHasAllowance[token] ? parseUnits('1000000', 18) : 0n,
-    hasAllowance: h.curveHasAllowance[token],
+    needsAllowance: !h.curveHasAllowance[token],
     error: null,
     isLoading: false,
     mutate: () => undefined

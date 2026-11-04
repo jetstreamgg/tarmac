@@ -9,6 +9,7 @@ import { usdcAddress, usdsAddress } from '../generated';
 import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
+import { needsApproval } from '../shared/needsApproval';
 
 /**
  * Mainnet USDC → Sky Savings, in one flow. The savings vault only takes USDS, so a
@@ -67,8 +68,8 @@ export function useBatchPsmSwapAndSavingsSupply({
   });
   const { data: usdsSupplyAllowance, error: allowanceError } = useSavingsAllowance();
 
-  const hasUsdcSwapAllowance = usdcSwapAllowance !== undefined && usdcSwapAllowance >= amount;
-  const hasUsdsSupplyAllowance = usdsSupplyAllowance !== undefined && usdsSupplyAllowance >= usdsAmount;
+  const needsUsdcSwapApproval = needsApproval(usdcSwapAllowance, amount);
+  const needsUsdsSupplyApproval = needsApproval(usdsSupplyAllowance, usdsAmount);
 
   const calls: Call[] = [];
 
@@ -86,7 +87,7 @@ export function useBatchPsmSwapAndSavingsSupply({
     args: [connectedAddress!, amount]
   });
 
-  if (!hasUsdcSwapAllowance) calls.push(approveUsdcCall);
+  if (needsUsdcSwapApproval) calls.push(approveUsdcCall);
   calls.push(sellGemCall);
 
   const approveUsdsCall = getWriteContractCall({
@@ -103,7 +104,7 @@ export function useBatchPsmSwapAndSavingsSupply({
     args: [usdsAmount, connectedAddress!, ref]
   });
 
-  if (!hasUsdsSupplyAllowance) calls.push(approveUsdsCall);
+  if (needsUsdsSupplyApproval) calls.push(approveUsdsCall);
   calls.push(supplyCall);
 
   const enabled =

@@ -6,6 +6,7 @@ import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdcAddress } from '../generated';
 import { Call, erc20Abi } from 'viem';
 import { usdsPsmWrapperAbi, usdsPsmWrapperAddress } from '../generated';
+import { needsApproval } from '../shared/needsApproval';
 
 export function useBatchUsdsPsmWrapperSellGem({
   gemAmt,
@@ -36,7 +37,7 @@ export function useBatchUsdsPsmWrapperSellGem({
     spender: wrapperAddress
   });
 
-  const hasAllowance = allowance !== undefined && allowance >= gemAmt;
+  const needsApprove = needsApproval(allowance, gemAmt);
 
   const approveCall = getWriteContractCall({
     to: usdcToken,
@@ -53,7 +54,7 @@ export function useBatchUsdsPsmWrapperSellGem({
   });
 
   const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
+  if (needsApprove) calls.push(approveCall);
   calls.push(sellGemCall);
 
   const enabled = paramEnabled && isConnected && allowance !== undefined && gemAmt !== 0n && !!recipient;

@@ -14,6 +14,7 @@ import {
   useUsdsPsmWrapperTin,
   useUsdsPsmWrapperTout
 } from '@/hooks';
+import { needsApproval } from '@/hooks/shared/needsApproval';
 import type { BatchWriteHookParams } from '@/hooks';
 import { isL2ChainId, math } from '@/utils';
 import { getTokenDecimals } from '@/hooks';
@@ -179,8 +180,7 @@ export function usePsmConversion({
     hasSufficientLiquidity
   });
 
-  const needsAllowance =
-    !!originToken?.address && amount > 0n && allowance !== undefined && allowance < amount;
+  const needsAllowance = !!originToken?.address && amount > 0n && needsApproval(allowance, amount);
   const effectiveShouldUseBatch = !!shouldUseBatch && !!batchSupported && needsAllowance;
   const hookEnabled =
     paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;

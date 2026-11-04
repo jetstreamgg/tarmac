@@ -7,6 +7,7 @@ import { daiUsdsAbi, daiUsdsAddress, mcdDaiAddress, usdsAddress } from '../gener
 import { Call, erc20Abi } from 'viem';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
+import { needsApproval } from '../shared/needsApproval';
 
 export function useBatchUpgradeAndSavingsSupply({
   amount,
@@ -32,8 +33,8 @@ export function useBatchUpgradeAndSavingsSupply({
   });
   const { data: usdsSupplyAllowance, error: allowanceError } = useSavingsAllowance();
 
-  const hasDaiUpgradeAllowance = daiUgradeAllowance !== undefined && daiUgradeAllowance >= amount;
-  const hasUsdsSupplyAllowance = usdsSupplyAllowance !== undefined && usdsSupplyAllowance >= amount;
+  const needsDaiUpgradeApproval = needsApproval(daiUgradeAllowance, amount);
+  const needsUsdsSupplyApproval = needsApproval(usdsSupplyAllowance, amount);
 
   // Calls for the batch transaction
   const calls: Call[] = [];
@@ -52,7 +53,7 @@ export function useBatchUpgradeAndSavingsSupply({
     args: [connectedAddress!, amount]
   });
 
-  if (!hasDaiUpgradeAllowance) calls.push(approveDaiCall);
+  if (needsDaiUpgradeApproval) calls.push(approveDaiCall);
   calls.push(upgradeCall);
 
   const approveUsdsCall = getWriteContractCall({
@@ -69,7 +70,7 @@ export function useBatchUpgradeAndSavingsSupply({
     args: [amount, connectedAddress!, ref]
   });
 
-  if (!hasUsdsSupplyAllowance) calls.push(approveUsdsCall);
+  if (needsUsdsSupplyApproval) calls.push(approveUsdsCall);
   calls.push(supplyCall);
 
   const enabled =

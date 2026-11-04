@@ -11,6 +11,7 @@ import {
   useStakeUrnSelectedVoteDelegate,
   ZERO_ADDRESS
 } from '@/hooks';
+import { needsApproval } from '@/hooks/shared/needsApproval';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
@@ -229,8 +230,8 @@ export function useStakeManageLaunch({
     mutateSkyAllowance();
     mutateUsdsAllowance();
   }, [mutateSkyAllowance, mutateUsdsAllowance]);
-  const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
-  const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
+  const needsSkyAllowance = needsApproval(skyAllowance, lockAmount);
+  const needsUsdsAllowance = needsApproval(usdsAllowance, usdsAmount);
 
   // Legacy StakeModuleWidget/index.tsx:194-205 verbatim (M19). `calldata` already
   // includes any getReward legs (useStakeCalldata's manage ordering), so a

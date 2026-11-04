@@ -5,6 +5,7 @@ import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { Call, erc20Abi } from 'viem';
+import { needsApproval } from '../shared/needsApproval';
 
 export function useBatchPsmSwapExactOut({
   assetIn,
@@ -37,7 +38,7 @@ export function useBatchPsmSwapExactOut({
     spender: psmAddress
   });
 
-  const hasAllowance = allowance !== undefined && allowance >= maxAmountIn;
+  const needsApprove = needsApproval(allowance, maxAmountIn);
 
   // Calls for the batch transaction
   const approveCall = getWriteContractCall({
@@ -55,7 +56,7 @@ export function useBatchPsmSwapExactOut({
   });
 
   const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
+  if (needsApprove) calls.push(approveCall);
   calls.push(swapExactOutCall);
 
   const enabled = paramEnabled && isConnected && allowance !== undefined && maxAmountIn !== 0n && !!address;

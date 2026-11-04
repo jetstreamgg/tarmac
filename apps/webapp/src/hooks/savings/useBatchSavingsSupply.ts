@@ -6,6 +6,7 @@ import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { usdsAddress } from '../generated';
 import { Call, erc20Abi } from 'viem';
 import { useBatchWriteFlow } from '../shared/useBatchWriteFlow';
+import { needsApproval } from '../shared/needsApproval';
 
 export function useBatchSavingsSupply({
   amount,
@@ -24,7 +25,7 @@ export function useBatchSavingsSupply({
   const chainId = useChainId();
   const { data: allowance, error: allowanceError } = useSavingsAllowance();
 
-  const hasAllowance = allowance !== undefined && allowance >= amount;
+  const needsApprove = needsApproval(allowance, amount);
 
   // Calls for the batch transaction
   const approveCall = getWriteContractCall({
@@ -42,7 +43,7 @@ export function useBatchSavingsSupply({
   });
 
   const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
+  if (needsApprove) calls.push(approveCall);
   calls.push(supplyCall);
 
   const enabled =

@@ -57,7 +57,7 @@ export function useBatchCurveSwap({
   const {
     data: allowance,
     error: allowanceError,
-    hasAllowance
+    needsAllowance
   } = useCurveAllowance({
     token: inputToken,
     amount: inputAmount
@@ -108,7 +108,7 @@ export function useBatchCurveSwap({
 
   // Build calls array
   const calls: Call[] = [];
-  if (!hasAllowance) calls.push(approveCall);
+  if (needsAllowance) calls.push(approveCall);
   if (swapCall) calls.push(swapCall);
 
   // Enable only when all conditions are met
