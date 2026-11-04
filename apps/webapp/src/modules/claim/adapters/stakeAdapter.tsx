@@ -163,8 +163,9 @@ function useStakeClaimCalls(selected: ClaimableReward[], options?: ClaimCallOpti
     const calls: Call[] = [];
 
     if (restake && restakeAmount > 0n && sky) {
+      // Wait for the allowance rather than guess an approve. A failed read approves
+      // anyway: an extra approve beats a claim that can't be sent.
       if (skyAllowance === undefined && !skyAllowanceError) return { calls: [], prepared: false };
-      // A failed read approves anyway: an extra approve beats a claim that can't be sent.
       if (skyAllowance === undefined || skyAllowance < restakeAmount) {
         calls.push(
           getWriteContractCall({
