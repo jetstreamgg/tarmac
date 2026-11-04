@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Info } from 'lucide-react';
+import { InfoGlyph } from '@/components/InfoTooltip';
 import { cn } from '@/lib/cn';
 import { formatUsd } from '@/utils';
 import { formatGainMagnitude, GainValue, isGainNegative } from '@/components/ui/GainValue';
@@ -138,13 +138,10 @@ function GapGlyph({
   return (
     <ResponsiveTooltip
       trigger={
-        <span
-          tabIndex={0}
+        <InfoGlyph
           data-testid={hasErrorGap ? 'earnings-partial' : 'earnings-info'}
-          className={cn('flex shrink-0', hasErrorGap ? 'text-error' : 'text-textSecondary')}
-        >
-          <Info className="h-3 w-3" />
-        </span>
+          className={hasErrorGap ? 'text-error' : undefined}
+        />
       }
     >
       <div className="flex flex-col gap-1">
@@ -164,17 +161,7 @@ function GapGlyph({
  * the gap glyph, minus the missing-source machinery and the error colouring.
  */
 export function StatInfoGlyph({ children, testId }: { children: ReactNode; testId?: string }) {
-  return (
-    <ResponsiveTooltip
-      trigger={
-        <span tabIndex={0} data-testid={testId} className="text-textSecondary flex shrink-0">
-          <Info className="h-3 w-3" />
-        </span>
-      }
-    >
-      {children}
-    </ResponsiveTooltip>
-  );
+  return <ResponsiveTooltip trigger={<InfoGlyph data-testid={testId} />}>{children}</ResponsiveTooltip>;
 }
 
 /** The breakdown popup is 316px in the comp (16px padding around 284px rows), capped to the viewport on phones. */

@@ -57,14 +57,12 @@ export const PopoverRateInfo = ({
   type,
   tooltipOverride,
   iconClassName,
-  width = 16,
   trigger
 }: {
   type: PopoverTooltipType;
   tooltipOverride?: TooltipOverride;
+  /** Semantic color override for the glyph (size and hover are fixed). */
   iconClassName?: string;
-  /** Glyph size in px. */
-  width?: number;
   /**
    * Custom trigger rendered in place of the info glyph (e.g. a whole rate
    * badge). Must be a single focusable element that accepts a ref.
@@ -83,7 +81,6 @@ export const PopoverRateInfo = ({
     <InfoTooltip
       title={title}
       content={parseMarkdownLinks(description)}
-      iconSize={width}
       iconClassName={iconClassName}
       trigger={trigger}
     />

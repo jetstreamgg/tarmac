@@ -128,7 +128,7 @@ export function SavingsSupplyCard({ onSupply }: { onSupply: () => void }) {
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
-              <PopoverRateInfo type="ssr" width={14} iconClassName="text-fgSecondary" />
+              <PopoverRateInfo type="ssr" />
             </>
           }
           idle={idleBalance}

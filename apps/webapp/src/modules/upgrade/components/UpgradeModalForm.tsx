@@ -231,7 +231,7 @@ export function UpgradeModalForm({
         : `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
       : undefined,
     // 12px info glyph after the label (Figma 1343:79562).
-    penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} /> : undefined,
+    penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" /> : undefined,
     network: networkName,
     networkFee: feeCell.fee?.formatted ?? NO_VALUE,
     feeLoading: feeUnknown && !feeFailed

@@ -1,10 +1,28 @@
-import type { ReactElement, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactElement, ReactNode } from 'react';
 import { Info } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { ResponsiveTooltip } from './ui/tooltip';
 
-// The glyph's focus ring is the DS ring, not the browser outline (Design QA 3314:135504).
-const TRIGGER_CLASS =
-  'focus-visible:ring-focusRing z-10 rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
+// The one info glyph every tooltip trigger wears (Figma Icons/General/info,
+// 12px): fg-secondary at rest, fg-primary on hover, and the DS focus ring
+// rather than the browser outline (Design QA 3314:135504). Callers don't pick
+// its size or hover — only a semantic color override (e.g. an error notice).
+const GLYPH_TRIGGER_CLASS =
+  'focus-visible:ring-focusRing text-fgSecondary hover:text-fgPrimary z-10 inline-flex shrink-0 rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-hidden';
+
+/** The info glyph button, for triggers that wrap `ResponsiveTooltip` directly. */
+export function InfoGlyph({ className, ...props }: ComponentPropsWithRef<'button'>) {
+  return (
+    <button
+      type="button"
+      aria-label="Show additional information"
+      className={cn(GLYPH_TRIGGER_CLASS, className)}
+      {...props}
+    >
+      <Info className="size-3" aria-hidden />
+    </button>
+  );
+}
 
 /**
  * Body of the design-system Tooltip: body-only is the Simple type (5043:58208);
@@ -15,7 +33,7 @@ export function TooltipBody({ title, children }: { title?: ReactNode; children: 
   const body = typeof children === 'string' ? <p>{children}</p> : children;
   if (!title) return body;
   return (
-    <div className="text-fgSecondary flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <p className="font-circle text-fgPrimary text-sm leading-4 font-medium tracking-[-0.28px]">{title}</p>
       {body}
     </div>
@@ -30,13 +48,12 @@ export function InfoTooltip({
   title,
   content,
   iconClassName,
-  iconSize = 13,
   trigger
 }: {
   title?: ReactNode;
   content: ReactNode;
+  /** Semantic color override for the glyph (size and hover are fixed). */
   iconClassName?: string;
-  iconSize?: number;
   /**
    * Custom trigger rendered in place of the info glyph (e.g. a whole rate
    * badge). Must be a single focusable element that accepts a ref.
@@ -44,15 +61,7 @@ export function InfoTooltip({
   trigger?: ReactElement;
 }) {
   return (
-    <ResponsiveTooltip
-      trigger={
-        trigger ?? (
-          <button type="button" className={TRIGGER_CLASS} aria-label="Show additional information">
-            <Info size={iconSize} className={iconClassName} />
-          </button>
-        )
-      }
-    >
+    <ResponsiveTooltip trigger={trigger ?? <InfoGlyph className={iconClassName} />}>
       <TooltipBody title={title}>{content}</TooltipBody>
     </ResponsiveTooltip>
   );

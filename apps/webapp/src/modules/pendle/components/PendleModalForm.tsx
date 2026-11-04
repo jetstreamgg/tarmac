@@ -428,17 +428,12 @@ export function PendleModalForm({
   // Both estimate cells caveat the quote (the comps draw an info mark on the
   // withdraw cell, 2413:66997).
   const receiveInfo = (
-    <InfoTooltip
-      title={t`You'll receive`}
-      content={t`Estimated at the current Pendle market price.`}
-      iconSize={12}
-    />
+    <InfoTooltip title={t`You'll receive`} content={t`Estimated at the current Pendle market price.`} />
   );
   const claimInfo = (
     <InfoTooltip
       title={t`Claim at maturity`}
       content={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
-      iconSize={12}
     />
   );
   const entryRows = isSupply
@@ -470,7 +465,7 @@ export function PendleModalForm({
         lostTrend,
         displaySymbol,
         lostInfo: lostTooltip ? (
-          <InfoTooltip title={lostTooltip.title} content={lostTooltip.tooltip} iconSize={12} />
+          <InfoTooltip title={lostTooltip.title} content={lostTooltip.tooltip} />
         ) : undefined,
         network: networkName,
         networkChainId: engineChainId,
