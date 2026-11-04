@@ -66,7 +66,7 @@ export function VaultRateTooltip({
       trigger={
         <span
           tabIndex={0}
-          className={cn('inline-flex cursor-default items-center gap-1.5', className)}
+          className={cn('inline-flex items-center gap-1.5', className)}
           data-testid="vault-rate-breakdown"
         >
           {children}

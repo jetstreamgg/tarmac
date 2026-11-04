@@ -334,7 +334,7 @@ export function RiskTierDetailsTrigger({
     />
   );
   const triggerClassName = cn(
-    'focus-visible:ring-focusRing inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-hidden',
+    'focus-visible:ring-focusRing inline-flex cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden',
     className
   );
 

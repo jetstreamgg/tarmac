@@ -4,7 +4,7 @@ import { ResponsiveTooltip } from './ui/tooltip';
 
 // The glyph's focus ring is the DS ring, not the browser outline (Design QA 3314:135504).
 const TRIGGER_CLASS =
-  'focus-visible:ring-focusRing z-10 cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
+  'focus-visible:ring-focusRing z-10 rounded-full focus-visible:ring-2 focus-visible:outline-hidden';
 
 /**
  * Body of the design-system Tooltip: body-only is the Simple type (5043:58208);

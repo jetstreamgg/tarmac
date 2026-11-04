@@ -34,6 +34,11 @@ describe('ResponsiveTooltip (pointer device)', () => {
     expect(onRowClick).not.toHaveBeenCalled();
   });
 
+  it('gives every trigger the pointer cursor', () => {
+    renderInRow(vi.fn());
+    expect(screen.getByTestId('trigger').className).toContain('cursor-pointer');
+  });
+
   it('keeps clicks inside the content from reaching the parent row', async () => {
     const onRowClick = vi.fn();
     renderInRow(onRowClick);

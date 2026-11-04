@@ -249,7 +249,7 @@ export function CombinedEarningsStat({
           trigger={
             // flex, not inline: an inline wrapper's line box takes the
             // inherited line height and pushes the figure down.
-            <span tabIndex={0} className="flex cursor-default" data-testid={`${testId}-breakdown-trigger`}>
+            <span tabIndex={0} className="flex" data-testid={`${testId}-breakdown-trigger`}>
               {value}
             </span>
           }
