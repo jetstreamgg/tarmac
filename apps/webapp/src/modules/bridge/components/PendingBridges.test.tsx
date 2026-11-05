@@ -449,6 +449,7 @@ describe('PendingBridges', () => {
       nextAction: 'claim',
       recipient: RECIPIENT
     };
+    const BURN_HASH = `0x${'ab'.repeat(32)}`;
     const note = () => screen.queryByTestId('pending-bridge-recipient-note');
 
     it('shows the status and says the destination wallet claims it, with no Claim button', () => {
@@ -457,22 +458,23 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Ready to claim');
       expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
       expect(note()?.textContent).toBe(
-        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Otherwise, share the claim link."
+        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Claiming on another device? Get claim link"
       );
     });
 
-    // Figma 73: Switch wallet and Copy claim link side by side, under the note.
-    it('offers to switch wallet beside the claim link once it is ready (Figma 73)', () => {
-      mocks.bridges = [TO_OTHER];
+    // Figma "Ready to claim by the recipient (sender)": the link inside the note, Switch wallet alone below it.
+    it('keeps the claim link in the note and Switch wallet below it once it is ready', () => {
+      mocks.bridges = [{ ...TO_OTHER, txHash: BURN_HASH }];
       renderList();
       const switchWallet = screen.getByTestId('pending-bridge-switch-wallet');
       const link = screen.getByTestId('pending-bridge-claim-link');
+      expect(note()?.textContent).toBe(
+        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Claiming on another device? Get claim link"
+      );
+      expect(note()!.contains(link)).toBe(true);
+      expect(note()!.className).toMatch(/-mt-2\b/);
       expect(switchWallet.textContent).toBe('Switch wallet');
-      expect(switchWallet.className).toMatch(/\bflex-1\b/);
-      expect(link.className).toMatch(/\bflex-1\b/);
-      expect(link.className).not.toMatch(/\bw-full\b/);
-      expect(switchWallet.parentElement).toBe(link.parentElement);
-      expect(switchWallet.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(switchWallet.className).toMatch(/\bw-full\b/);
       expect(note()!.compareDocumentPosition(switchWallet) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
       expect(mocks.openConnectModal).not.toHaveBeenCalled();
@@ -508,13 +510,24 @@ describe('PendingBridges', () => {
       expect(note()).not.toBeNull();
     });
 
-    it('tells the sender who claims it and to share the link while it is on its way (Figma 71)', () => {
-      mocks.bridges = [{ ...TO_OTHER, status: 'pending' }];
+    it('tells the sender who claims it and offers the link in the note while it is on its way', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending', txHash: BURN_HASH }];
       renderList();
       expect(note()?.textContent).toBe(
-        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS. Share the claim link so they can find it."
+        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS. Claiming on another device? Get claim link"
       );
+      expect(note()!.contains(screen.getByTestId('pending-bridge-claim-link'))).toBe(true);
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+    });
+
+    it('promises no link in the note when there is none to give', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending', txHash: undefined }];
+      renderList();
+      expect(note()?.textContent).toBe(
+        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS."
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
     });
 
     it('drops the note once the bridge settles', () => {
@@ -848,13 +861,13 @@ describe('PendingBridges', () => {
     it('copies the link that opens its claim', () => {
       mocks.bridges = [BURN];
       renderList();
-      const button = screen.getByTestId('pending-bridge-claim-link');
-      expect(button.textContent).toBe('Copy claim link');
-      fireEvent.click(button);
+      const link = screen.getByTestId('pending-bridge-claim-link');
+      expect(link.textContent).toBe('Get claim link');
+      fireEvent.click(link);
       expect(mocks.copy).toHaveBeenCalledWith(LINK);
     });
 
-    // Figma 72: a toast says it, and the button keeps its label.
+    // Figma "Claim link copied!": a toast says it, and the link keeps its label.
     it('toasts that it was copied', () => {
       mocks.bridges = [BURN];
       renderList();
@@ -862,7 +875,7 @@ describe('PendingBridges', () => {
       fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
       expect(mocks.toast.success).toHaveBeenCalledTimes(1);
       expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
-      expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Copy claim link');
+      expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Get claim link');
     });
 
     it('toasts nothing when the copy fails', () => {
@@ -874,54 +887,85 @@ describe('PendingBridges', () => {
       expect(mocks.toast.success).not.toHaveBeenCalled();
     });
 
-    // Figma 71: a full-width secondary button under the card's text.
-    it('shows it as a full-width button after its note', () => {
-      mocks.bridges = [{ ...BURN, recipient: OTHER }];
+    // Figma "Bridge initiated": the lowest priority, a last line under the rows.
+    it.each([
+      ['on its way', 'pending' as const],
+      ['ready', 'ready' as const]
+    ])('closes your own bridge with a line under the rows, %s', (_, status) => {
+      mocks.bridges = [{ ...BURN, status }];
       renderList();
-      const button = screen.getByTestId('pending-bridge-claim-link');
-      expect(button.tagName).toBe('BUTTON');
-      expect(button.className).toMatch(/\bw-full\b/);
-      const note = screen.getByTestId('pending-bridge-recipient-note');
-      expect(note.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      const line = screen.getByTestId('pending-bridge-claim-line');
+      expect(line.textContent).toBe('Claiming on another device? Get claim link');
+      expect(line.className).toMatch(/\bborder-t\b/);
+      expect(line.contains(screen.getByTestId('pending-bridge-claim-link'))).toBe(true);
+      expect(
+        screen.getByTestId('pending-bridge-rows').compareDocumentPosition(line) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(screen.getByTestId('pending-bridge-card').lastElementChild).toBe(line);
     });
 
-    it('offers it on a bridge sent to this wallet too', () => {
+    it('offers it on a bridge sent to this wallet too, as the same last line', () => {
       mocks.incoming = [{ scope: 'sender', bridge: { ...BURN, account: OTHER, recipient: ACCOUNT } }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-claim-line').textContent).toBe(
+        'Claiming on another device? Get claim link'
+      );
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+    });
+
+    it.each([
+      ['on its way', 'pending' as const],
+      ['ready', 'ready' as const]
+    ])('copies it from the note of a bridge to another wallet, %s', (_, status) => {
+      mocks.bridges = [{ ...BURN, status, recipient: OTHER }];
       renderList();
       fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
       expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
+    });
+
+    it('offers no link once a bridge to another wallet has failed', () => {
+      mocks.bridges = [{ ...BURN, status: 'failed', recipient: OTHER }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toBe(
+        'Only the destination wallet (0x0000...0b01) can claim it on Ethereum.'
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
     });
 
     it('offers none on a native deposit or a claimed bridge', () => {
       mocks.bridges = [BRIDGE, { ...CLAIMED, nextAction: 'convert' }];
       renderList();
       expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
     });
 
-    it('asks the sender to share it with the recipient', () => {
-      mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
-      renderList();
-      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toMatch(
-        /Otherwise, share the claim link\.$/
-      );
-      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
-    });
-
-    it('asks to keep it when this browser keeps no bridges', () => {
+    // With no list to come back to, the link is the way back, so it stays a button with its reason.
+    it('keeps a button and asks to keep the link when this browser keeps no bridges', () => {
       mocks.storageWritable = false;
       mocks.bridges = [BURN];
       renderList();
       expect(screen.getByTestId('pending-bridge-claim-link-note').textContent).toBe(
         "This browser can't save your bridges. Copy the claim link and keep it to claim later."
       );
+      const button = screen.getByTestId('pending-bridge-claim-link');
+      expect(button.textContent).toBe('Copy claim link');
+      expect(button.className).toMatch(/\bw-full\b/);
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
+      fireEvent.click(button);
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
     });
 
-    it('asks the sender to share it, not to keep it, when this browser keeps no bridges', () => {
+    it('offers it in the note of a bridge to another wallet, not to keep, when this browser keeps no bridges', () => {
       mocks.storageWritable = false;
       mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
       renderList();
       expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toMatch(
-        /Otherwise, share the claim link\.$/
+        /Claiming on another device\? Get claim link$/
       );
       expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
     });

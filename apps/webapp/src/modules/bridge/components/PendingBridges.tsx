@@ -359,33 +359,41 @@ function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
   );
 }
 
-type ClaimLinkProps = {
-  link: string;
-  /** `keep`: this browser keeps no bridges; `share`: another wallet claims it. */
-  note?: 'keep' | 'share';
-  className?: string;
-};
+type ClaimLinkProps = { link: string };
 
-/** The link that opens a CCTP bridge's claim here, to share with its recipient or keep (Figma 71). */
-function ClaimLink({ link, note, className = 'w-full' }: ClaimLinkProps) {
+const copyClaimLink = (link: string) => copyToClipboard(link, () => toast.success(t`Claim link copied!`));
+
+/** The offer of the link that opens a CCTP bridge's claim here, as a text link (Figma "Bridge initiated"). */
+function ClaimLinkOffer({ link }: ClaimLinkProps) {
   return (
     <>
-      {note && (
-        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-claim-link-note">
-          {note === 'keep' ? (
-            <Trans>
-              This browser can&apos;t save your bridges. Copy the claim link and keep it to claim later.
-            </Trans>
-          ) : (
-            <Trans>Share the claim link with the recipient so they can claim it.</Trans>
-          )}
-        </Text>
-      )}
+      <Trans>Claiming on another device?</Trans>{' '}
+      <button
+        type="button"
+        className="font-circle text-fgBrand font-medium whitespace-nowrap hover:underline"
+        onClick={() => copyClaimLink(link)}
+        data-testid="pending-bridge-claim-link"
+      >
+        <Trans>Get claim link</Trans>
+      </button>
+    </>
+  );
+}
+
+/** With no list to come back to, the link is the way back: a button, with its reason. */
+function KeepClaimLink({ link }: ClaimLinkProps) {
+  return (
+    <>
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-claim-link-note">
+        <Trans>
+          This browser can&apos;t save your bridges. Copy the claim link and keep it to claim later.
+        </Trans>
+      </Text>
       <Button
         variant="secondary"
         size="m"
-        className={className}
-        onClick={() => copyToClipboard(link, () => toast.success(t`Claim link copied!`))}
+        className="w-full"
+        onClick={() => copyClaimLink(link)}
         data-testid="pending-bridge-claim-link"
       >
         <Trans>Copy claim link</Trans>
@@ -513,9 +521,7 @@ function PendingBridgeCard({
   const thirdWallet = counterparty?.role === 'both';
   const claimLink = thirdWallet ? undefined : pendingClaimLink(window.location.origin, bridge);
   const amount = formatExactUsds(bridgedAmount(bridge.amount, bridge.routeKind));
-  // Figma 71: the note on the way already asks to share the claim link.
-  const sharesInNote = claimedElsewhere && !thirdWallet && bridge.status === 'pending';
-  // Figma 73: once ready, the sender may switch to the destination wallet or share the link.
+  // Figma "Ready to claim by the recipient (sender)": once ready, the sender may switch to the destination wallet.
   const switchesWallet = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
   const sentHint = !!hint && hint.kind !== 'switch-network';
   const { openConnectModal } = useConnectModal();
@@ -612,49 +618,48 @@ function PendingBridgeCard({
       )}
 
       {claimedElsewhere && !thirdWallet && bridge.recipient && (
-        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-recipient-note">
+        // Figma: 16px under the header, not the card's 24px.
+        <Text
+          className="text-fgSecondary -mt-2 text-xs leading-[18px]"
+          dataTestId="pending-bridge-recipient-note"
+        >
           {switchesWallet ? (
             <Trans>
               Ready on Ethereum. {formatAddress(bridge.recipient, 6, 4)} needs to claim it from that wallet to
-              receive USDS. If it&apos;s your wallet, switch to it. Otherwise, share the claim link.
+              receive USDS. If it&apos;s your wallet, switch to it.
             </Trans>
-          ) : sharesInNote ? (
+          ) : bridge.status === 'pending' ? (
             <Trans>
               On its way to {formatAddress(bridge.recipient, 6, 4)}. Once it&apos;s ready on Ethereum,
-              they&apos;ll need to claim it from that wallet to receive USDS. Share the claim link so they can
-              find it.
+              they&apos;ll need to claim it from that wallet to receive USDS.
             </Trans>
           ) : (
             <Trans>
               Only the destination wallet ({formatAddress(bridge.recipient, 6, 4)}) can claim it on Ethereum.
             </Trans>
           )}
+          {claimLink && (
+            <>
+              {' '}
+              <ClaimLinkOffer link={claimLink} />
+            </>
+          )}
         </Text>
       )}
 
-      {switchesWallet ? (
-        <div className="flex gap-3.5">
-          <Button
-            variant="primary"
-            size="m"
-            className="flex-1"
-            onClick={() => openConnectModal()}
-            data-testid="pending-bridge-switch-wallet"
-          >
-            <Trans>Switch wallet</Trans>
-          </Button>
-          {claimLink && <ClaimLink link={claimLink} className="flex-1" />}
-        </div>
-      ) : (
-        claimLink && (
-          <ClaimLink
-            link={claimLink}
-            note={
-              sharesInNote ? undefined : claimedElsewhere ? 'share' : !storageWritable ? 'keep' : undefined
-            }
-          />
-        )
+      {switchesWallet && (
+        <Button
+          variant="primary"
+          size="m"
+          className="w-full"
+          onClick={() => openConnectModal()}
+          data-testid="pending-bridge-switch-wallet"
+        >
+          <Trans>Switch wallet</Trans>
+        </Button>
       )}
+
+      {claimLink && !claimedElsewhere && !storageWritable && <KeepClaimLink link={claimLink} />}
 
       {dismissible && bridge.safeTxHash && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
@@ -683,6 +688,15 @@ function PendingBridgeCard({
       <CardRows
         rows={buildPendingBridgeRows(bridge, now, familyChainId, convertAmount !== undefined, counterparty)}
       />
+
+      {claimLink && !claimedElsewhere && storageWritable && (
+        <div
+          className="border-borderPrimary text-fgSecondary border-t pt-6 text-xs leading-[18px]"
+          data-testid="pending-bridge-claim-line"
+        >
+          <ClaimLinkOffer link={claimLink} />
+        </div>
+      )}
     </div>
   );
 }
