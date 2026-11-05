@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNow } from '@/hooks/ui/useNow';
-import { isPendingBridgeVisible, isSettled } from '../model/pendingTransitions';
+import { isPendingBridgeVisible, isSettled, PAGE_LOADED_AT } from '../model/pendingTransitions';
 import { useBridgeHistory } from './useBridgeHistory';
 
 const TICK_MS = 15_000;
@@ -16,6 +16,9 @@ export function usePendingBridges() {
   const all = useBridgeHistory();
   const now = useNow(all.some(bridge => !isSettled(bridge)) ? TICK_MS : IDLE_TICK_MS);
   // A bridge stored after the last tick is newer than `now`; it is visible either way.
-  const bridges = useMemo(() => all.filter(bridge => isPendingBridgeVisible(bridge, now)), [all, now]);
+  const bridges = useMemo(
+    () => all.filter(bridge => isPendingBridgeVisible(bridge, now, PAGE_LOADED_AT)),
+    [all, now]
+  );
   return { bridges, now };
 }

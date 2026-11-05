@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -23,10 +23,17 @@ import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch'
 import { useIncomingCctpBridges } from '../hooks/useIncomingCctpBridges';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
+import { useSeenOnScreen } from '../hooks/useSeenOnScreen';
 import { useUnfinishedCctpSwaps } from '../hooks/useUnfinishedCctpSwaps';
 import { useWithdrawalEthShortfall } from '../hooks/useWithdrawalEthShortfall';
 import { getBridgeNetwork } from '../model/networks';
-import { canDismiss, isPendingBridgeVisible, showsActionButton } from '../model/pendingTransitions';
+import {
+  canDismiss,
+  canMarkSeen,
+  isPendingBridgeVisible,
+  PAGE_LOADED_AT,
+  showsActionButton
+} from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { copyToClipboard, formatAddress, formatBigInt } from '@/utils';
@@ -454,6 +461,8 @@ type PendingBridgeCardProps = {
   onDismiss: (bridge: PendingBridge) => void;
   /** Keeps the USDC a claim left instead of converting it: the card leaves. */
   onKeepUsdc: (bridge: PendingBridge) => void;
+  /** The list this card is stored in, where seeing it is recorded. */
+  listScope: string | undefined;
   /** Sent to this wallet from another account's list: the entry is the sender's, so it can't be dismissed here. */
   incoming?: boolean;
   canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
@@ -471,6 +480,7 @@ function PendingBridgeCard({
   onAction,
   onDismiss,
   onKeepUsdc,
+  listScope,
   incoming = false,
   canAction,
   actionHint,
@@ -480,7 +490,12 @@ function PendingBridgeCard({
   const dismissible = !incoming && canDismiss(bridge, now);
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
-  const convertAmount = useCctpConvertOffer(bridge);
+  const { offer: convertAmount, nothingLeft } = useCctpConvertOffer(bridge, now);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const onSeen = useCallback(() => {
+    if (listScope) pendingBridgeStore.markSeen(listScope, bridge.id);
+  }, [listScope, bridge.id]);
+  useSeenOnScreen(cardRef, canMarkSeen(bridge) && nothingLeft, onSeen);
   const actionButton = showsActionButton(bridge) && !!bridge.nextAction && !claimedElsewhere;
   // Figma 93: offered below the note, beside Keep as USDC, unless the card has its own button.
   const offersConvert = convertAmount !== undefined && !dismissible && !actionButton;
@@ -505,7 +520,7 @@ function PendingBridgeCard({
   const sentHint = !!hint && hint.kind !== 'switch-network';
   const { openConnectModal } = useConnectModal();
   return (
-    <div className={cardClassName} data-testid="pending-bridge-card">
+    <div ref={cardRef} className={cardClassName} data-testid="pending-bridge-card">
       {/* A claim that ended in USDC shows the USDC (Figma 93). */}
       <CardHeader
         symbol={convertAmount === undefined ? 'USDS' : 'USDC'}
@@ -844,7 +859,7 @@ export function PendingBridges({
   const cards = [
     ...bridges.map(bridge => ({ bridge, owner: undefined as string | undefined })),
     ...incoming
-      .filter(entry => isPendingBridgeVisible(entry.bridge, now))
+      .filter(entry => isPendingBridgeVisible(entry.bridge, now, PAGE_LOADED_AT))
       .map(entry => ({ bridge: entry.bridge, owner: entry.scope }))
   ].sort((a, b) => b.bridge.startedAt - a.bridge.startedAt);
   if (cards.length === 0 && swaps.length === 0 && !lookup) return null;
@@ -878,6 +893,7 @@ export function PendingBridges({
           canAction={canAction}
           actionHint={actionHint}
           onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
+          listScope={owner ?? scope}
           onKeepUsdc={kept => {
             const listScope = owner ?? scope;
             if (!listScope) return;

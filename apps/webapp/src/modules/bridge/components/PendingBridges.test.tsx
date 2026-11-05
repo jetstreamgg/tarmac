@@ -4,8 +4,8 @@
 import { parseUnits } from 'viem';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import type { CctpResumeBlockReason } from '../hooks/useCctpResumeForm';
 import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch';
 import type { IncomingBridge } from '../hooks/useIncomingCctpBridges';
@@ -62,6 +62,7 @@ const mocks = vi.hoisted(() => ({
   bridges: [] as PendingBridge[],
   incoming: [] as IncomingBridge[],
   offers: {} as Record<string, bigint | undefined>,
+  nothingLeft: {} as Record<string, boolean | undefined>,
   ethShort: {} as Record<string, bigint | undefined>,
   blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
   activeSessionId: null as string | null,
@@ -103,7 +104,10 @@ vi.mock('../hooks/usePendingScope', () => ({
 }));
 
 vi.mock('../hooks/useCctpConvertOffer', () => ({
-  useCctpConvertOffer: (bridge: PendingBridge) => mocks.offers[bridge.id]
+  useCctpConvertOffer: (bridge: PendingBridge) => ({
+    offer: mocks.offers[bridge.id],
+    nothingLeft: mocks.nothingLeft[bridge.id] ?? false
+  })
 }));
 vi.mock('../hooks/useWithdrawalEthShortfall', () => ({
   useWithdrawalEthShortfall: (bridge: PendingBridge) => mocks.ethShort[bridge.id]
@@ -151,6 +155,7 @@ describe('PendingBridges', () => {
       bridges: [],
       incoming: [],
       offers: {},
+      nothingLeft: {},
       ethShort: {},
       blocked: {},
       activeSessionId: null,
@@ -230,6 +235,143 @@ describe('PendingBridges', () => {
     const chip = within(screen.getByTestId('pending-bridge-status'));
     expect(chip.queryByTestId('loader')).toBeNull();
     expect(chip.queryByTestId('status-check')).toBeNull();
+  });
+
+  describe('seeing a card', () => {
+    const OWNER = '0x0000000000000000000000000000000000005e4d';
+    const LANDED: PendingBridge = {
+      ...BRIDGE,
+      id: '0xlanded',
+      status: 'arrived',
+      nextAction: undefined,
+      settledAt: 0
+    };
+    let intersect: (...isIntersecting: boolean[]) => void;
+    let markSeen: MockInstance<typeof pendingBridgeStore.markSeen>;
+    let onTop: Element | null | undefined;
+    const elementFromPoint = document.elementFromPoint;
+    const elapse = (ms = 1000) => act(() => vi.advanceTimersByTime(ms));
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+      markSeen = vi.spyOn(pendingBridgeStore, 'markSeen').mockImplementation(() => {});
+      intersect = () => {};
+      onTop = undefined;
+      document.elementFromPoint = () =>
+        onTop === undefined ? screen.getByTestId('pending-bridge-card') : onTop;
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          constructor(callback: (entries: { isIntersecting: boolean }[]) => void) {
+            intersect = (...batch) => callback(batch.map(isIntersecting => ({ isIntersecting })));
+          }
+          observe() {}
+          disconnect() {
+            intersect = () => {};
+          }
+        }
+      );
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+      document.elementFromPoint = elementFromPoint;
+      markSeen.mockRestore();
+    });
+
+    it('marks it after a moment on screen with nothing left to do', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(false);
+      elapse();
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(true);
+      expect(markSeen).not.toHaveBeenCalled();
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('goes by the latest change when the browser delivers several at once', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(false, true);
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('does not count a card scrolled past', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(true);
+      elapse(500);
+      intersect(false);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it('waits while something covers it, like the connect checks loader', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      const cover = document.createElement('div');
+      onTop = cover;
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      onTop = undefined;
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('waits for the tab to be visible', () => {
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      visibility.mockReturnValue('visible');
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+      visibility.mockRestore();
+    });
+
+    it('leaves it unseen while a conversion may still be left, or unread', () => {
+      mocks.bridges = [LANDED];
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['pending', { ...LANDED, status: 'pending', settledAt: undefined }],
+      ['failed', { ...LANDED, status: 'failed' }],
+      ['expired', { ...LANDED, status: 'expired' }],
+      ['already seen', { ...LANDED, seenAt: 1 }]
+    ] as [string, PendingBridge][])('leaves a %s card alone', (_, bridge) => {
+      mocks.bridges = [bridge];
+      mocks.nothingLeft[bridge.id] = true;
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it("marks an incoming card in the sender's list, where it is stored", () => {
+      const bridge = { ...LANDED, routeKind: 'cctp' as const, account: OWNER, recipient: ACCOUNT };
+      mocks.incoming = [{ scope: 'sender-scope', bridge }];
+      mocks.nothingLeft[bridge.id] = true;
+      renderList();
+      intersect(true);
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('sender-scope', bridge.id);
+    });
   });
 
   it("sends a card's next action", () => {

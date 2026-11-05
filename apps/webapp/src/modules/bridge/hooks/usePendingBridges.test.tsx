@@ -3,7 +3,7 @@
  */
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPendingBridge, applyProgress } from '../model/pendingTransitions';
+import { createPendingBridge, applyProgress, PAGE_LOADED_AT } from '../model/pendingTransitions';
 import { resolveBridgeRoute } from '../model/resolveRoute';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { useBridgeHistory } from './useBridgeHistory';
@@ -90,6 +90,21 @@ describe('usePendingBridges', () => {
     act(() => void vi.advanceTimersByTime(15_000));
     expect(result.current.now).toBeGreaterThan(NOW + DAY);
     expect(result.current.bridges.map(bridge => bridge.id)).toEqual(['0xactive']);
+  });
+
+  it('hides a card seen before this page load and keeps one seen on it', () => {
+    const scope = pendingScopeKey({ account: mocks.address!, familyChainId: 1 });
+    const settle = (id: string, seenAt: number) => {
+      const bridge = seed(mocks.address!, id, NOW - 1);
+      pendingBridgeStore.update(scope, bridge.id, entry => ({
+        ...applyProgress(entry, { kind: 'arrived' }, NOW),
+        seenAt
+      }));
+    };
+    settle('0xbefore', PAGE_LOADED_AT - 1);
+    settle('0xnow', PAGE_LOADED_AT);
+    const { result } = renderHook(() => usePendingBridges());
+    expect(result.current.bridges.map(bridge => bridge.id)).toEqual(['0xnow']);
   });
 
   it('does not re-render every 15 s while nothing is in flight', () => {

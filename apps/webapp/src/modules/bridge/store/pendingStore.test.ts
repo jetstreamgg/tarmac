@@ -499,6 +499,41 @@ describe('createPendingBridgeStore', () => {
     });
   });
 
+  describe('markSeen', () => {
+    const landed = () =>
+      bridge({
+        routeKind: 'native',
+        requiresClaim: false,
+        status: 'arrived',
+        nextAction: undefined,
+        settledAt: NOW
+      });
+
+    it('keeps when the card was seen across a reload', () => {
+      const store = make();
+      store.upsert(SCOPE, landed());
+      store.markSeen(SCOPE, '0xsource');
+      expect(make().getSnapshot(SCOPE)[0]?.seenAt).toBe(NOW);
+    });
+
+    it('leaves a bridge still on its way', () => {
+      const store = make();
+      store.upsert(SCOPE, bridge());
+      const before = store.getSnapshot(SCOPE);
+      store.markSeen(SCOPE, '0xsource');
+      store.markSeen(SCOPE, '0xnope');
+      expect(store.getSnapshot(SCOPE)).toBe(before);
+    });
+
+    it('drops an entry whose stored seenAt is not a time', () => {
+      localStorage.setItem(
+        `bridgePending:v1:${SCOPE}`,
+        JSON.stringify([{ ...landed(), amount: '1', seenAt: 'yesterday' }])
+      );
+      expect(make().getSnapshot(SCOPE)).toEqual([]);
+    });
+  });
+
   describe('dismiss', () => {
     const KEY = `bridgePending:v1:${SCOPE}`;
     const queued = (id: string, overrides: Partial<PendingBridge> = {}) =>
