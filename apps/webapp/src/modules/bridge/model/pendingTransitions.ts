@@ -375,6 +375,17 @@ export const isPendingBridgeVisible = (bridge: PendingBridge, now: number): bool
 export const closeCard = (bridge: PendingBridge, now: number): PendingBridge =>
   isTracked(bridge) || bridge.closedAt !== undefined ? bridge : { ...bridge, closedAt: now };
 
+// Proving or keeping a ticket alive settles nothing; any other action can, and its own flow told the user.
+const couldSettle = (action: PendingBridgeAction) =>
+  action.status !== 'invalidated' && action.action !== 'prove' && action.action !== 'keepalive';
+
+/** The bridge just landed with nothing the user sent behind it, so nothing has told them yet. */
+export const justArrived = (before: PendingBridge | undefined, after: PendingBridge): boolean =>
+  !!before &&
+  !isSettled(before) &&
+  (after.status === 'arrived' || after.status === 'claimed') &&
+  !before.actions.some(couldSettle);
+
 /** How often the tracker checks a bridge; undefined once settled with nothing sent. */
 export function pollIntervalMs(bridge: PendingBridge, now: number): number | undefined {
   if (isSettled(bridge)) {

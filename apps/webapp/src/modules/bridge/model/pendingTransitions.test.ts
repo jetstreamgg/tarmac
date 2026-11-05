@@ -10,6 +10,7 @@ import {
   closeCard,
   dropSentAction,
   isTracked,
+  justArrived,
   pollIntervalMs,
   recordAction,
   recordActionSent,
@@ -283,6 +284,49 @@ describe('isPendingBridgeVisible', () => {
 
   it('hides a settled bridge the user closed', () => {
     expect(isPendingBridgeVisible(closeCard(settled(deposit()), NOW), NOW + MINUTE)).toBe(false);
+  });
+});
+
+describe('justArrived', () => {
+  const claim = routeFor('base', 'ethereum');
+  const landed = (bridge: PendingBridge) => applyProgress(bridge, { kind: 'arrived' }, NOW);
+
+  it('is true when a bridge lands on its own', () => {
+    const bridge = deposit();
+    expect(landed(bridge).status).toBe('arrived');
+    expect(justArrived(bridge, landed(bridge))).toBe(true);
+  });
+
+  it('is true when someone else claims it, which also settles it as claimed', () => {
+    const bridge = create(claim);
+    expect(landed(bridge).status).toBe('claimed');
+    expect(justArrived(bridge, landed(bridge))).toBe(true);
+  });
+
+  it('is false when the user sent the action that settled it, sent or mined', () => {
+    const ready: PendingBridge = { ...create(claim), status: 'ready', nextAction: 'claim' };
+    const sent = recordActionSent(ready, { action: 'claim', txHash: '0xc', at: NOW });
+    const mined = recordAction(ready, { action: 'claim', txHash: '0xc', at: NOW });
+    expect(justArrived(sent, landed(sent))).toBe(false);
+    expect(justArrived(mined, landed(mined))).toBe(false);
+  });
+
+  it('is true when only a step that settles nothing came from the user', () => {
+    const proved = recordAction(create(routeFor('base', 'ethereum', false)), {
+      action: 'prove',
+      txHash: '0xp',
+      at: NOW
+    });
+    expect(justArrived(proved, landed(proved))).toBe(true);
+  });
+
+  it('is false once settled, or when it settles any other way', () => {
+    const bridge = deposit();
+    expect(justArrived(landed(bridge), landed(bridge))).toBe(false);
+    expect(justArrived(undefined, landed(bridge))).toBe(false);
+    expect(justArrived(bridge, applyProgress(bridge, { kind: 'failed', reason: 'x' }, NOW))).toBe(false);
+    expect(justArrived(bridge, applyProgress(bridge, { kind: 'expired' }, NOW))).toBe(false);
+    expect(justArrived(bridge, bridge)).toBe(false);
   });
 });
 

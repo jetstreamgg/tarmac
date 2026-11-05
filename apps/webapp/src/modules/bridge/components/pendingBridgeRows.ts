@@ -16,6 +16,7 @@ import { getExplorerLink } from '@/utils/getEtherscanLink';
 import { getSafeTransactionLink } from '@/utils/getSafeTransactionLink';
 import { SAFE_TRANSACTION_SERVICE_URL } from '@/hooks/shared/constants';
 import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDeposit/contracts';
+import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { bridgeChainId, getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
 import { DAY_MINUTES } from '../model/resolveRoute';
 import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
@@ -51,6 +52,31 @@ export function bridgeCounterparty(
   return bridge.recipient && sendsToOther(bridge.recipient, bridge.account)
     ? { role: 'destination', address: bridge.recipient }
     : undefined;
+}
+
+/**
+ * The "Bridge arrived" toast's text (Figma 4232:64133). Whoever claimed a CCTP bridge may have left USDC or
+ * USDS, so that one names no token. Activity only lists the viewer's own entries.
+ */
+export function bridgeArrivedMessage(
+  bridge: PendingBridge,
+  account: string | undefined,
+  inActivity: boolean
+): string {
+  const network = getBridgeNetwork(bridge.to).name;
+  const holder = bridge.recipient ?? bridge.account;
+  const yours = account?.toLowerCase() === holder.toLowerCase();
+  const wallet = formatAddress(holder, 6, 4);
+  const amount = formatExactUsds(bridgedAmount(bridge.amount, bridge.routeKind));
+  const landed =
+    bridge.routeKind === 'cctp'
+      ? yours
+        ? t`The funds are now in your wallet on ${network}.`
+        : t`The funds are now in ${wallet} on ${network}.`
+      : yours
+        ? t`${amount} USDS is now in your wallet on ${network}.`
+        : t`${amount} USDS is now in ${wallet} on ${network}.`;
+  return inActivity ? `${landed} ${t`You can find the details in Activity in your wallet preview.`}` : landed;
 }
 
 const walletCell = (

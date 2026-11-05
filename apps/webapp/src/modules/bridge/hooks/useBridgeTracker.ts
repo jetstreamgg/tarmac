@@ -1,7 +1,8 @@
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { getCallsStatus } from 'wagmi/actions';
 import { useConfig } from 'wagmi';
-import { isTracked, pollIntervalMs } from '../model/pendingTransitions';
+import { notifyBridgeArrived } from '../components/BridgeArrivedToast';
+import { isTracked, justArrived, pollIntervalMs } from '../model/pendingTransitions';
 import { bridgeChainId } from '../model/networks';
 import { getBridgeAdapter } from '../adapters/registry';
 import { readSafeActionProgress, readSafeTxProgress } from '../adapters/safe';
@@ -17,6 +18,9 @@ import { usePendingScope } from './usePendingScope';
 
 const BURN_MINED = new Set(['waiting', 'ready', 'arrived', 'expired']);
 
+const storedBridge = (scope: string, id: string) =>
+  pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === id);
+
 /**
  * Polls every active bridge of the connected account, on any page, so a
  * bridge keeps moving to ready or arrived while the user is elsewhere, and a
@@ -24,20 +28,22 @@ const BURN_MINED = new Set(['waiting', 'ready', 'arrived', 'expired']);
  * account of this browser sent to it is polled too, in the sender's list.
  */
 export function useBridgeTracker() {
-  const { scope, familyChainId } = usePendingScope();
+  const { account, scope, familyChainId } = usePendingScope();
   const config = useConfig();
   const queryClient = useQueryClient();
   const context = wagmiAdapterContext(config, familyChainId);
   const own = useBridgeHistory();
   const incoming = useIncomingCctpBridges();
-  const active = [...(scope ? own.map(bridge => ({ scope, bridge })) : []), ...incoming].filter(entry =>
-    isTracked(entry.bridge)
-  );
+  const active = [
+    ...(scope ? own.map(bridge => ({ scope, bridge, inActivity: true })) : []),
+    ...incoming.map(entry => ({ ...entry, inActivity: false }))
+  ].filter(entry => isTracked(entry.bridge));
 
   useQueries({
-    queries: active.map(({ scope, bridge }) => ({
+    queries: active.map(({ scope, bridge, inActivity }) => ({
       queryKey: ['bridge-progress', scope, bridge.id],
       queryFn: async () => {
+        const before = storedBridge(scope, bridge.id);
         const progress = await trackBridge({
           store: pendingBridgeStore,
           scope,
@@ -66,18 +72,19 @@ export function useBridgeTracker() {
           }
         });
         // The burn mined: the swap it continued has nothing left to bridge.
-        if (bridge.routeKind === 'cctp' && progress && BURN_MINED.has(progress.kind)) {
-          const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
-          cctpSwapStore.clearBurned(scope, [bridge.id, current?.txHash, current?.callsId]);
-        }
+        const after = storedBridge(scope, bridge.id);
+        if (bridge.routeKind === 'cctp' && progress && BURN_MINED.has(progress.kind))
+          cctpSwapStore.clearBurned(scope, [bridge.id, after?.txHash, after?.callsId]);
         const destinationChainId = bridgeChainId(bridge.to, familyChainId);
         if (progress?.kind === 'arrived' && destinationChainId !== undefined)
           void queryClient.invalidateQueries({ predicate: readsBalanceOn(destinationChainId) });
+        if (after && justArrived(before, after))
+          notifyBridgeArrived({ bridge: after, account, inActivity, familyChainId });
         return progress?.kind ?? null;
       },
       // Read from the store, not the closure: the entry changes between polls.
       refetchInterval: () => {
-        const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
+        const current = storedBridge(scope, bridge.id);
         return (current && pollIntervalMs(current, Date.now())) || false;
       },
       staleTime: 0,
