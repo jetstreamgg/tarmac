@@ -211,6 +211,27 @@ describe('PendingBridges', () => {
     expect(screen.getAllByTestId('pending-bridge-status')[0]?.textContent).toBe('Pending');
   });
 
+  // Figma 4232:765: the dots say it's still refreshing, the check that it landed.
+  it.each([
+    ['pending', 'loader', 'status-check'],
+    ['arrived', 'status-check', 'loader'],
+    ['claimed', 'status-check', 'loader']
+  ] as const)('marks a %s status with its icon', (status, shown, hidden) => {
+    mocks.bridges = [{ ...BRIDGE, status, settledAt: status === 'pending' ? undefined : 0 }];
+    renderList();
+    const chip = within(screen.getByTestId('pending-bridge-status'));
+    expect(chip.getByTestId(shown)).toBeTruthy();
+    expect(chip.queryByTestId(hidden)).toBeNull();
+  });
+
+  it.each(['ready', 'failed', 'expired'] as const)('draws no icon on a %s status', status => {
+    mocks.bridges = [{ ...BRIDGE, status, settledAt: status === 'ready' ? undefined : 0 }];
+    renderList();
+    const chip = within(screen.getByTestId('pending-bridge-status'));
+    expect(chip.queryByTestId('loader')).toBeNull();
+    expect(chip.queryByTestId('status-check')).toBeNull();
+  });
+
   it("sends a card's next action", () => {
     mocks.bridges = [{ ...BRIDGE, status: 'ready', nextAction: 'claim', requiresClaim: true }];
     renderList();
@@ -542,6 +563,13 @@ describe('PendingBridges', () => {
       delete mocks.offers[CLAIMED.id];
       renderList();
       expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claimed');
+    });
+
+    it('draws no check on Arrived as USDC, which still has a step left', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      expect(within(screen.getByTestId('pending-bridge-status')).queryByTestId('status-check')).toBeNull();
     });
 
     // Figma 93: a card whose claim ended in USDC shows the USDC icon.

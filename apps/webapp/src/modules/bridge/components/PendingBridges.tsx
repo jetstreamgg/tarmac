@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react';
+import { Check } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useEnsName } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
+import { Loader } from '@/components/ui/loader';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { toast } from '@/components/ui/use-toast';
 import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
@@ -139,11 +141,15 @@ function CellValue({ cell }: CellValueProps) {
       return (
         <span
           className={cn(
-            'font-circle flex h-[18px] w-fit items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+            'font-circle flex h-[18px] w-fit items-center gap-0.5 rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
             cell.tone === 'info' ? 'bg-statusInfoBg text-statusInfoSolid' : STATUS_CLASS[cell.status]
           )}
           data-testid="pending-bridge-status"
         >
+          {cell.status === 'pending' && <Loader size="2xs" />}
+          {(cell.status === 'arrived' || cell.status === 'claimed') && cell.tone !== 'info' && (
+            <Check size={12} className="shrink-0" aria-hidden data-testid="status-check" />
+          )}
           {cell.value}
         </span>
       );
