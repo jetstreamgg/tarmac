@@ -215,7 +215,8 @@ const SWAP: UnfinishedCctpSwap = {
   at: 1
 };
 
-const stepsShown = () => mocks.launched.at(-1)!.steps as { label: string; tokenSymbol?: string }[];
+const stepsShown = () =>
+  mocks.launched.at(-1)!.steps as { label: string; tokenSymbol?: string; targetTokenSymbol?: string }[];
 
 const confirm = (view: ReturnType<typeof render>) => {
   act(() => view.result.current.launch());
@@ -291,11 +292,11 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
   it('shows one step per call: both approves, the swap and the burn', () => {
     const view = render();
     act(() => view.result.current.launch());
-    expect(stepsShown().map(step => [step.label, step.tokenSymbol])).toEqual([
-      ['Approve', 'USDS'],
-      ['Convert to USDC', 'USDS'],
-      ['Approve', 'USDC'],
-      ['Bridge', 'USDC']
+    expect(stepsShown().map(step => [step.label, step.tokenSymbol, step.targetTokenSymbol])).toEqual([
+      ['Approve', 'USDS', undefined],
+      ['Convert', 'USDS', 'USDC'],
+      ['Approve', 'USDC', undefined],
+      ['Bridge', 'USDC', undefined]
     ]);
   });
 
@@ -303,7 +304,7 @@ describe('useBridgeLaunch with a CCTP burn to Ethereum', () => {
     mocks.burn.calls = BURN_CALLS.filter(call => call.functionName !== 'approve');
     const view = render();
     act(() => view.result.current.launch());
-    expect(stepsShown().map(step => step.label)).toEqual(['Convert to USDC', 'Bridge']);
+    expect(stepsShown().map(step => step.label)).toEqual(['Convert', 'Bridge']);
   });
 
   it('blocks Confirm and says why while the burn cannot be sent', () => {
