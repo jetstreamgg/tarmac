@@ -172,7 +172,7 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
         params.set(QueryParams.Tab, value);
         return params;
       },
-      { replace: true }
+      { replace: true, resetScroll: false }
     );
   };
 
