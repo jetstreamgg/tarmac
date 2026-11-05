@@ -34,7 +34,7 @@ const navItemClasses = cn(buttonVariants({ variant: 'navbar', size: 'navbar' }))
 // (536:26429) steps the label up to 16/18 (Label 4); the desktop popover
 // keeps 14/16 (Label 5) from md up — the same cutoff that swaps the surface.
 const moreItemClasses =
-  'text-fgPrimary hover:text-fgSecondary font-circle flex items-center gap-2 text-left text-base leading-[18px] font-medium tracking-[-0.32px] transition-colors md:text-sm md:leading-4 md:tracking-[-0.28px]';
+  'text-fgPrimary hover:text-fgSecondary font-circle flex items-center gap-2 text-left text-base leading-[18px] font-medium tracking-[-0.32px] transition-colors md:text-sm md:leading-4 md:tracking-[-0.28px] rounded-xs focus-visible:outline-focusRing focus-visible:outline-2 focus-visible:outline-offset-2';
 
 // Env-driven legal links pick their DS glyph by name (User Risk Documentation /
 // Terms of Use / Privacy Policy in the comp); anything else gets the document glyph.

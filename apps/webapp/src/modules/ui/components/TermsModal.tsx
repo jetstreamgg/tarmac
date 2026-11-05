@@ -25,7 +25,12 @@ import { cn } from '@/lib/cn';
 // a plain anchor. Also used by the transaction signature step's helper copy
 // (APP-501), which carries the same two links.
 export const TermsLink = ({ href, children }: { href: string; children: ReactNode }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer" className="text-fgBrand hover:underline">
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-fgBrand focus-visible:outline-focusRing rounded-xs hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+  >
     {children}
   </a>
 );
@@ -379,7 +384,6 @@ export function TermsModal() {
               ? 'bg-bgSecondary flex flex-col p-6 sm:max-w-[300px] sm:min-w-[300px] md:rounded-[28px]'
               : 'bg-bgSecondary flex flex-col gap-6 p-5 sm:max-w-152.5 sm:min-w-152.5 sm:gap-8 sm:p-8 md:rounded-[28px]'
           )}
-          onOpenAutoFocus={e => e.preventDefault()}
           data-testid="terms-modal"
         >
           {termsCheckDenied
