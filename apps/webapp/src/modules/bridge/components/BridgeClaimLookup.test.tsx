@@ -115,11 +115,11 @@ describe('BridgeClaimLookup', () => {
   it('starts with the banner, the lookup closed, and looks nothing up', () => {
     renderLookup();
     const banner = screen.getByTestId('bridge-claim-lookup-banner');
-    expect(banner.textContent).toContain("Can't find your bridge?");
+    expect(banner.textContent).toContain("Can't find your bridge transaction?");
     expect(banner.textContent).toContain(
       'If you sent it from another device or browser, or someone sent it to you, find it with the transaction hash and claim it here.'
     );
-    expect(screen.getByTestId('bridge-claim-lookup-open').textContent).toBe('Find bridge');
+    expect(screen.getByTestId('bridge-claim-lookup-open').textContent).toBe('Find transaction');
     expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
     expect(lastTarget()).toBeUndefined();
   });

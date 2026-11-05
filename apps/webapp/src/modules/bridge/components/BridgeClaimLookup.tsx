@@ -309,7 +309,7 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
           <NoResults className="size-22 shrink-0" />
           <div className="flex min-w-0 flex-1 flex-col gap-3">
             <span className="font-circle text-fgPrimary text-base leading-[18px] font-medium tracking-[-0.32px]">
-              <Trans>Can&apos;t find your bridge?</Trans>
+              <Trans>Can&apos;t find your bridge transaction?</Trans>
             </span>
             <Text className={noteClassName}>
               <Trans>
@@ -326,7 +326,7 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
           onClick={() => setOpen(true)}
           data-testid="bridge-claim-lookup-open"
         >
-          <Trans>Find bridge</Trans>
+          <Trans>Find transaction</Trans>
         </Button>
       </div>
       <ResponsiveModal open={open} onOpenChange={next => (next ? setOpen(true) : close())}>
@@ -343,7 +343,7 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
 export const hasBridgeClaimLookup = () => liveNetworks().length > 0;
 
 /**
- * "Can't find your bridge?" in the pending bridges: looks up a bridge to
+ * "Can't find your bridge transaction?" in the pending bridges: looks up a bridge to
  * Ethereum, a CCTP burn or a native withdrawal, by its network and hash,
  * typed in or from a claim link, and adds it to the list to claim.
  */
