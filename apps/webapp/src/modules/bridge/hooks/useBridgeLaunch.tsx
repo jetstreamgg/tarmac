@@ -693,11 +693,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         amount={shownAmount}
         from={from}
         to={to}
+        addresses={addresses}
         fromToken={fromToken}
         testId="bridge-modal-screen-summary"
       />
     ),
-    [shownAmount, from, to, fromToken]
+    [shownAmount, from, to, addresses, fromToken]
   );
 
   const amountLabel = `${formatExactUsds(shownAmount)} USDS`;

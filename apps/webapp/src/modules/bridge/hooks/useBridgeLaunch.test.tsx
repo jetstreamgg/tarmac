@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
-import { createElement, type ReactNode } from 'react';
+import { createElement, type ReactElement, type ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
@@ -496,6 +496,19 @@ describe('useBridgeLaunch Confirm gate', () => {
     act(() => mocks.launched.at(-1)!.onConfirm!());
     expect(runCount()).toBe(0);
     expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it.each([
+    ['names both wallets', OWNER, { from: SENDER, to: OWNER }],
+    ['names no wallet on a bridge to the same wallet', undefined, undefined]
+  ])('the Confirm screen %s', async (_name, recipient, addresses) => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    if (recipient) act(() => view.result.current.form.setRecipient(recipient));
+    await settle();
+    act(() => view.result.current.launch());
+    const hero = mocks.launched.at(-1)!.transactionScreenContent as ReactElement<{ addresses?: unknown }>;
+    expect(hero.props.addresses).toEqual(addresses);
   });
 
   it('Retry after the send was broadcast runs nothing again and stores one bridge', async () => {
