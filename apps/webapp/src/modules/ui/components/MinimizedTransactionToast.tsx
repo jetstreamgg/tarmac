@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { TriangleAlert } from 'lucide-react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { InProgress, SuccessCheck, FailedX } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
@@ -23,11 +24,14 @@ export function MinimizedTransactionToast({
   status,
   title,
   hash,
+  unconfirmed = false,
   onView
 }: {
   status: TxStatus;
   title: string;
   hash?: string;
+  /** An ERROR whose outcome is unknown (the wallet stopped reporting): a warning, not a failure. */
+  unconfirmed?: boolean;
   onView: () => void;
 }) {
   return (
@@ -37,7 +41,15 @@ export function MinimizedTransactionToast({
       className="focus-visible:outline-focusRing flex w-full cursor-pointer items-center gap-4 rounded-xs pr-6 text-left after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2"
       data-testid="minimized-transaction-toast"
     >
-      <span className="shrink-0">{statusIcon[status]}</span>
+      <span className="shrink-0">
+        {unconfirmed ? (
+          <span className="bg-statusWarningBg text-statusWarning flex size-10 items-center justify-center rounded-full">
+            <TriangleAlert className="size-5" aria-hidden="true" />
+          </span>
+        ) : (
+          statusIcon[status]
+        )}
+      </span>
       <span className="flex flex-col">
         <Text className="text-text font-circle font-medium">{title}</Text>
         {hash && <Text className="text-textSecondary text-sm">{formatAddress(hash, 6, 4)}</Text>}

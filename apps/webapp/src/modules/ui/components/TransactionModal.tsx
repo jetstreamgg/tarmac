@@ -138,6 +138,8 @@ export type TransactionModalProps = {
   currentStep?: number;
   /** The current ERROR is a wallet Reject (nothing broadcast) — see the step model. */
   userRejected?: boolean;
+  /** The current ERROR is a bundle the wallet stopped reporting on — Close only, see the step model. */
+  outcomeUnknown?: boolean;
   /** The current ERROR is a contract revert: why, in user-facing copy — see the step model. */
   failureReason?: string;
   /**
@@ -241,6 +243,7 @@ export function TransactionModal({
   steps,
   currentStep = 0,
   userRejected = false,
+  outcomeUnknown = false,
   failureReason,
   gateCopy,
   preflight,
@@ -319,10 +322,14 @@ export function TransactionModal({
       <Trans>Signature failed</Trans>
     ) : badgeFailed && userRejected ? (
       <Trans>Request declined</Trans>
+    ) : badgeFailed && outcomeUnknown ? (
+      <Trans>Couldn&apos;t confirm</Trans>
     ) : (
       statusBadgeLabel[txStatus]
     ));
-  const badgeVariant = badgeFailed ? 'error' : 'brand';
+  // May have executed: a warning, not a failure, and nothing on screen may send it again.
+  const unconfirmed = badgeFailed && outcomeUnknown;
+  const badgeVariant = unconfirmed ? 'warning' : badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
@@ -451,7 +458,9 @@ export function TransactionModal({
     ? t`Signature failed`
     : userRejected
       ? t`Transaction declined`
-      : t`Transaction failed`;
+      : outcomeUnknown
+        ? t`Couldn't confirm transaction`
+        : t`Transaction failed`;
   const displayTitle = isTransaction
     ? badgeFailed
       ? failedTitle
@@ -635,6 +644,7 @@ export function TransactionModal({
                     txStatus,
                     bundled: isBundled,
                     userRejected,
+                    outcomeUnknown,
                     failureReason
                   });
                   // Stays live off the product's chain: the provider refuses a
@@ -683,7 +693,20 @@ export function TransactionModal({
               {/* The failure view's cross-chain guard (APP-528) lives here once
                   the failure renders inline — the bottom CTA row that used to
                   carry it is gone with the step list showing. */}
-              {showInlineFailure && chainGuarded && (
+              {showInlineFailure && unconfirmed && (
+                <div className="pt-6">
+                  <Button
+                    variant="primary"
+                    size="xl"
+                    className="w-full"
+                    onClick={handleClose}
+                    data-testid="transaction-unconfirmed-close"
+                  >
+                    <Trans>Close</Trans>
+                  </Button>
+                </div>
+              )}
+              {showInlineFailure && !unconfirmed && chainGuarded && (
                 <div className="flex flex-col gap-4 pt-2">
                   {chainGuardBlock}
                   {guardCta}
@@ -749,7 +772,7 @@ export function TransactionModal({
                   size="iconM"
                   aria-label={t`Back`}
                   onClick={handleHeaderBack}
-                  disabled={isTransacting || backLocked}
+                  disabled={isTransacting || backLocked || unconfirmed}
                   data-testid="transaction-modal-back"
                 >
                   <ArrowLeft className="size-4" />

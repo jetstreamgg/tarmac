@@ -69,6 +69,8 @@ vi.mock('motion/react', async io => {
 import { TransactionProvider, useTransaction } from './TransactionContext';
 import { reportError } from '@/modules/sentry/reportError';
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
+import { queryClient } from '@/lib/queryClient';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -253,6 +255,36 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByText('Approve')).toBeNull();
     expect(screen.queryByText('Supply')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  });
+
+  it('bundled flow the wallet lost track of: "Couldn\'t confirm", Close only, data refreshed (APP-651)', () => {
+    batch.enabled = true;
+    batch.supported = true;
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    renderFailedFlow(
+      supplySteps,
+      () => {},
+      new TransactionOutcomeUnknownError(new Error('Unknown bundle id'))
+    );
+
+    expect(screen.getByText("Couldn't confirm")).toBeDefined();
+    expect(screen.getByText("Couldn't confirm transaction")).toBeDefined();
+    expect(screen.getByText('Transaction status unknown')).toBeDefined();
+    expect(screen.getByText(/may still have gone through/)).toBeDefined();
+    expect(screen.queryByText('Transaction failed')).toBeNull();
+    // Nothing on screen sends the bundle again.
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect((screen.getByTestId('transaction-modal-back') as HTMLButtonElement).disabled).toBe(true);
+
+    expect(invalidate).toHaveBeenCalled();
+    const ctx = vi.mocked(reportError).mock.calls[0][1];
+    expect(ctx.level).toBe('warning');
+    expect(ctx.fingerprint).toEqual(['transaction-outcome-unknown']);
+
+    fireEvent.click(screen.getByTestId('transaction-unconfirmed-close'));
+    expect(screen.queryByText("Couldn't confirm transaction")).toBeNull();
+    invalidate.mockRestore();
   });
 
   it('groups on-chain reverts in Sentry by flow and action, and leaves other errors to the default grouping', () => {

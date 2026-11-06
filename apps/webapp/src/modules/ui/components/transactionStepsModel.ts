@@ -81,6 +81,11 @@ type DeriveInput = {
    */
   userRejected?: boolean;
   /**
+   * The wallet stopped reporting on the bundle it accepted, so it may have
+   * executed. No retry: sending it again could send it twice.
+   */
+  outcomeUnknown?: boolean;
+  /**
    * The failure is a contract revert, already worded for the user (the revert
    * registry's copy, or the raw reason). It replaces the generic rollback
    * sentence on the failed on-chain row: the user learns why, and a revert
@@ -158,6 +163,7 @@ export function deriveTransactionStepItems({
   txStatus,
   bundled,
   userRejected = false,
+  outcomeUnknown = false,
   failureReason
 }: DeriveInput): TransactionStepItem[] {
   const allDone = txStatus === TxStatus.SUCCESS;
@@ -192,6 +198,18 @@ export function deriveTransactionStepItems({
         targetTokenSymbol: step.targetTokenSymbol,
         state: 'completed' as const
       }));
+    if (outcomeUnknown) {
+      return [
+        ...prelude,
+        {
+          stepNumber: prelude.length + 1,
+          label: t`Transaction status unknown`,
+          tokenSymbol: undefined,
+          state: 'failed',
+          description: t`Your wallet stopped reporting on this transaction, so it may still have gone through. Check your wallet's activity before trying again.`
+        }
+      ];
+    }
     return [
       ...prelude,
       {
