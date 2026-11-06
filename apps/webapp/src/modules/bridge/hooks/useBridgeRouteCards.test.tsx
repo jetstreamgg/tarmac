@@ -66,8 +66,8 @@ describe('useBridgeRouteCards', () => {
     mocks.ethFeePerGas = parseGwei('1');
     mocks.ethPrice = '2000';
     const [cctp, native] = cards()!;
-    // CCTP: 0.00001 + 210k gas at 1 gwei = 0.00022 ETH = $0.44.
-    expect(cell(cctp, 'Network fee')).toBe('~$0.44');
+    // CCTP: 0.00001 + 470k gas (claim and conversion) at 1 gwei = 0.00048 ETH = $0.96.
+    expect(cell(cctp, 'Network fee')).toBe('~$0.96');
     // OP Stack: 0.00002 + 850k gas at 1 gwei = 0.00087 ETH = $1.74.
     expect(cell(native, 'Network fee')).toBe('~$1.74');
     expect(mocks.feeArgs.filter(args => args.enabled).every(args => args.chainId === 8453)).toBe(true);
