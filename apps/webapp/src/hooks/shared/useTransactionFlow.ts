@@ -20,7 +20,6 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
     onStart,
     onSuccess,
     onError,
-    gcTime,
     chainId
   } = parameters;
 
@@ -125,8 +124,7 @@ export function useTransactionFlow(parameters: UseTransactionFlowParameters): Ba
     // USDC supply's PSM fee gate) that must stop a run. A form whose amount check a run
     // invalidates (a DAI→USDS leg spends the DAI it was validated against) relaxes that
     // check itself while the run is active (useTransactionRunActive).
-    enabled: enabled && !useBatch && !routeUndecided,
-    gcTime
+    enabled: enabled && !useBatch && !routeUndecided
   });
 
   useEffect(() => {

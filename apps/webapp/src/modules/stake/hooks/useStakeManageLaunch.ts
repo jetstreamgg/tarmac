@@ -223,14 +223,20 @@ export function useStakeManageLaunch({
   });
 
   // READ ONLY — labels the Approve steps; the engine derives its own approves.
-  const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
-  const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
+  const { data: skyAllowance, error: skyAllowanceError, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
+  const {
+    data: usdsAllowance,
+    error: usdsAllowanceError,
+    mutate: mutateUsdsAllowance
+  } = useStakeUsdsAllowance();
   const refetchAllowances = useCallback(() => {
     mutateSkyAllowance();
     mutateUsdsAllowance();
   }, [mutateSkyAllowance, mutateUsdsAllowance]);
-  const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
-  const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
+  const needsSkyAllowance =
+    skyAllowance !== undefined ? skyAllowance < lockAmount : !!skyAllowanceError && lockAmount > 0n;
+  const needsUsdsAllowance =
+    usdsAllowance !== undefined ? usdsAllowance < usdsAmount : !!usdsAllowanceError && usdsAmount > 0n;
 
   // Legacy StakeModuleWidget/index.tsx:194-205 verbatim (M19). `calldata` already
   // includes any getReward legs (useStakeCalldata's manage ordering), so a
