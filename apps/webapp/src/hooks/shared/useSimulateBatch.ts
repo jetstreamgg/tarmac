@@ -78,7 +78,7 @@ export function useSimulateBatch({
     enabled: enabled && !!client && !!address && calls.length > 0 && callsKey !== null,
     // A revert or an unsupported RPC won't change on a retry; only a failed request might.
     retry: (failureCount, err) => isTransientBatchSimulationError(err) && failureCount < 3,
-    gcTime: 0
+    gcTime: 30_000
   });
 
   const structuralFailure = isStructuralBatchSimulationError(error);

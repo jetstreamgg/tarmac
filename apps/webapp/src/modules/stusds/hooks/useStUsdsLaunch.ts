@@ -69,21 +69,23 @@ export function useStUsdsLaunch({
   const isCurve = selectedProvider === StUsdsProviderType.CURVE;
 
   // READ ONLY — label the approve steps only. Same reads as the engines' own.
-  const { data: nativeSupplyAllowance } = useStUsdsAllowance();
-  const { data: curveUsdsAllowance, hasAllowance: hasCurveUsdsAllowance } = useCurveAllowance({
-    token: 'USDS',
-    amount
+  const { data: nativeSupplyAllowance, error: nativeSupplyAllowanceError } = useStUsdsAllowance();
+  const { data: curveUsdsAllowance, error: curveUsdsAllowanceError } = useCurveAllowance({ token: 'USDS' });
+  const { data: curveStUsdsAllowance, error: curveStUsdsAllowanceError } = useCurveAllowance({
+    token: 'stUSDS'
   });
-  const { data: curveStUsdsAllowance, hasAllowance: hasCurveStUsdsAllowance } = useCurveAllowance({
-    token: 'stUSDS',
-    amount: stUsdsAmount ?? 0n
-  });
+  const withdrawAmount = stUsdsAmount ?? 0n;
   const needsAllowance = isSupply
     ? isCurve
-      ? curveUsdsAllowance !== undefined && !hasCurveUsdsAllowance
-      : nativeSupplyAllowance !== undefined && nativeSupplyAllowance < amount
+      ? amount > 0n &&
+        (curveUsdsAllowance !== undefined ? curveUsdsAllowance < amount : !!curveUsdsAllowanceError)
+      : amount > 0n &&
+        (nativeSupplyAllowance !== undefined ? nativeSupplyAllowance < amount : !!nativeSupplyAllowanceError)
     : isCurve
-      ? curveStUsdsAllowance !== undefined && !hasCurveStUsdsAllowance
+      ? withdrawAmount > 0n &&
+        (curveStUsdsAllowance !== undefined
+          ? curveStUsdsAllowance < withdrawAmount
+          : !!curveStUsdsAllowanceError)
       : false;
 
   // All four engines are called unconditionally (hooks rules) and gated by

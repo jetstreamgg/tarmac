@@ -106,7 +106,11 @@ export function usePsmConversion({
     ? psm3L2Address[chainId as keyof typeof psm3L2Address]
     : usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress];
 
-  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
+  const {
+    data: allowance,
+    error: allowanceError,
+    mutate: mutateAllowance
+  } = useTokenAllowance({
     chainId,
     contractAddress: originToken?.address,
     owner: address,
@@ -180,7 +184,9 @@ export function usePsmConversion({
   });
 
   const needsAllowance =
-    !!originToken?.address && amount > 0n && allowance !== undefined && allowance < amount;
+    !!originToken?.address &&
+    amount > 0n &&
+    (allowance !== undefined ? allowance < amount : !!allowanceError);
   const effectiveShouldUseBatch = !!shouldUseBatch && !!batchSupported && needsAllowance;
   const hookEnabled =
     paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;

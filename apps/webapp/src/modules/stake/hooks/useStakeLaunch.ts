@@ -216,10 +216,16 @@ export function useStakeLaunch({
   });
 
   // READ ONLY — labels the Approve step; the engine derives its own approve call.
-  const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
-  const needsSkyAllowance = skyAllowance !== undefined && skyAllowance < lockAmount;
-  const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
-  const needsUsdsAllowance = usdsAllowance !== undefined && usdsAllowance < usdsAmount;
+  const { data: skyAllowance, error: skyAllowanceError, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
+  const needsSkyAllowance =
+    skyAllowance !== undefined ? skyAllowance < lockAmount : !!skyAllowanceError && lockAmount > 0n;
+  const {
+    data: usdsAllowance,
+    error: usdsAllowanceError,
+    mutate: mutateUsdsAllowance
+  } = useStakeUsdsAllowance();
+  const needsUsdsAllowance =
+    usdsAllowance !== undefined ? usdsAllowance < usdsAmount : !!usdsAllowanceError && usdsAmount > 0n;
   const refetchAllowances = useCallback(() => {
     mutateSkyAllowance();
     mutateUsdsAllowance();

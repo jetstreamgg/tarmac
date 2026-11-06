@@ -103,7 +103,7 @@ export function useSequentialTransactionFlow(
           enabled &&
           currentIndex < stableTransactions.length &&
           (currentIndex === 0 || (currentIndex > 0 && transactionHashes.length >= currentIndex)),
-        gcTime: 0
+        gcTime: 30_000
       }
     }),
     [currentTransaction, enabled, currentIndex, stableTransactions.length, transactionHashes.length]

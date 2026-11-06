@@ -36,7 +36,7 @@ export function useWriteContractFlow<
     error: simulationError
   } = useSimulateContract({
     ...useSimulateContractParamters,
-    query: { ...useSimulateContractParamters.query, enabled, gcTime: 0 }
+    query: { ...useSimulateContractParamters.query, enabled, gcTime: 30_000 }
   } as unknown as UseSimulateContractParameters<abi, functionName, args, config, chainId>);
   useEffect(
     () => reportPrepareRevert(simulationError, parameters.chainId),

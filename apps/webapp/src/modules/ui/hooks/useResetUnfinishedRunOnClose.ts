@@ -18,8 +18,8 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
  *
  * Only for engines whose calls before the last are allowance-gated approves,
  * which a reset never re-runs — provided the allowance read is fresh. It is
- * not, by itself: the read only refreshes on a remount, a window focus or an
- * explicit refetch, and a page-hosted engine never remounts. So
+ * not, by itself: the read is a 30s-stale wagmi query that only a remount or
+ * an explicit refetch refreshes, and a page-hosted engine never remounts. So
  * an approve that mined before the failed leg stayed invisible, and the next
  * launch rebuilt the Approve step (and the engine its approve call) from the
  * pre-approval value (APP-563 #3). `refetchReads` runs once the reset has
