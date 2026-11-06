@@ -1,11 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { Check } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useEnsName } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
-import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
+import { Loader } from '@/components/ui/loader';
 import { toast } from '@/components/ui/use-toast';
 import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
 import { ArrowTopRight, LinkExternal } from '@/modules/icons';
@@ -21,10 +22,17 @@ import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch'
 import { useIncomingCctpBridges } from '../hooks/useIncomingCctpBridges';
 import { usePendingBridges } from '../hooks/usePendingBridges';
 import { usePendingScope } from '../hooks/usePendingScope';
+import { useSeenOnScreen } from '../hooks/useSeenOnScreen';
 import { useUnfinishedCctpSwaps } from '../hooks/useUnfinishedCctpSwaps';
 import { useWithdrawalEthShortfall } from '../hooks/useWithdrawalEthShortfall';
 import { getBridgeNetwork } from '../model/networks';
-import { canDismiss, isPendingBridgeVisible, showsActionButton } from '../model/pendingTransitions';
+import {
+  canDismiss,
+  canMarkSeen,
+  isPendingBridgeVisible,
+  PAGE_LOADED_AT,
+  showsActionButton
+} from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { copyToClipboard, formatAddress, formatBigInt } from '@/utils';
@@ -139,11 +147,15 @@ function CellValue({ cell }: CellValueProps) {
       return (
         <span
           className={cn(
-            'font-circle flex h-[18px] w-fit items-center rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
+            'font-circle flex h-[18px] w-fit items-center gap-0.5 rounded-full px-1.5 text-[11px] leading-3 font-medium tracking-[-0.22px]',
             cell.tone === 'info' ? 'bg-statusInfoBg text-statusInfoSolid' : STATUS_CLASS[cell.status]
           )}
           data-testid="pending-bridge-status"
         >
+          {cell.status === 'pending' && <Loader size="2xs" />}
+          {(cell.status === 'arrived' || cell.status === 'claimed') && cell.tone !== 'info' && (
+            <Check size={12} className="shrink-0" aria-hidden data-testid="status-check" />
+          )}
           {cell.value}
         </span>
       );
@@ -346,33 +358,41 @@ function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
   );
 }
 
-type ClaimLinkProps = {
-  link: string;
-  /** `keep`: this browser keeps no bridges; `share`: another wallet claims it. */
-  note?: 'keep' | 'share';
-  className?: string;
-};
+type ClaimLinkProps = { link: string };
 
-/** The link that opens a CCTP bridge's claim here, to share with its recipient or keep (Figma 71). */
-function ClaimLink({ link, note, className = 'w-full' }: ClaimLinkProps) {
+const copyClaimLink = (link: string) => copyToClipboard(link, () => toast.success(t`Claim link copied!`));
+
+/** The offer of the link that opens a CCTP bridge's claim here, as a text link (Figma "Bridge initiated"). */
+function ClaimLinkOffer({ link }: ClaimLinkProps) {
   return (
     <>
-      {note && (
-        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-claim-link-note">
-          {note === 'keep' ? (
-            <Trans>
-              This browser can&apos;t save your bridges. Copy the claim link and keep it to claim later.
-            </Trans>
-          ) : (
-            <Trans>Share the claim link with the recipient so they can claim it.</Trans>
-          )}
-        </Text>
-      )}
+      <Trans>Claiming on another device?</Trans>{' '}
+      <button
+        type="button"
+        className="font-circle text-fgBrand font-medium whitespace-nowrap hover:underline"
+        onClick={() => copyClaimLink(link)}
+        data-testid="pending-bridge-claim-link"
+      >
+        <Trans>Get claim link</Trans>
+      </button>
+    </>
+  );
+}
+
+/** With no list to come back to, the link is the way back: a button, with its reason. */
+function KeepClaimLink({ link }: ClaimLinkProps) {
+  return (
+    <>
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-claim-link-note">
+        <Trans>
+          This browser can&apos;t save your bridges. Copy the claim link and keep it to claim later.
+        </Trans>
+      </Text>
       <Button
         variant="secondary"
         size="m"
-        className={className}
-        onClick={() => copyToClipboard(link, () => toast.success(t`Claim link copied!`))}
+        className="w-full"
+        onClick={() => copyClaimLink(link)}
         data-testid="pending-bridge-claim-link"
       >
         <Trans>Copy claim link</Trans>
@@ -448,6 +468,8 @@ type PendingBridgeCardProps = {
   onDismiss: (bridge: PendingBridge) => void;
   /** Keeps the USDC a claim left instead of converting it: the card leaves. */
   onKeepUsdc: (bridge: PendingBridge) => void;
+  /** The list this card is stored in, where seeing it is recorded. */
+  listScope: string | undefined;
   /** Sent to this wallet from another account's list: the entry is the sender's, so it can't be dismissed here. */
   incoming?: boolean;
   canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
@@ -465,6 +487,7 @@ function PendingBridgeCard({
   onAction,
   onDismiss,
   onKeepUsdc,
+  listScope,
   incoming = false,
   canAction,
   actionHint,
@@ -474,7 +497,12 @@ function PendingBridgeCard({
   const dismissible = !incoming && canDismiss(bridge, now);
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
-  const convertAmount = useCctpConvertOffer(bridge);
+  const { offer: convertAmount, nothingLeft } = useCctpConvertOffer(bridge, now);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const onSeen = useCallback(() => {
+    if (listScope) pendingBridgeStore.markSeen(listScope, bridge.id);
+  }, [listScope, bridge.id]);
+  useSeenOnScreen(cardRef, canMarkSeen(bridge) && nothingLeft, onSeen);
   const actionButton = showsActionButton(bridge) && !!bridge.nextAction && !claimedElsewhere;
   // Figma 93: offered below the note, beside Keep as USDC, unless the card has its own button.
   const offersConvert = convertAmount !== undefined && !dismissible && !actionButton;
@@ -488,18 +516,15 @@ function PendingBridgeCard({
   const note = pendingBridgeNote(bridge, now);
   const ethShortfall = useWithdrawalEthShortfall(bridge, account, familyChainId);
   const counterparty = bridgeCounterparty(bridge, account);
-  // Figma 75: a wallet that neither sent nor receives it can only switch to the one that claims it.
+  // Figma 75: a wallet that neither sent nor receives it can't claim it here.
   const thirdWallet = counterparty?.role === 'both';
   const claimLink = thirdWallet ? undefined : pendingClaimLink(window.location.origin, bridge);
   const amount = formatExactUsds(bridgedAmount(bridge.amount, bridge.routeKind));
-  // Figma 71: the note on the way already asks to share the claim link.
-  const sharesInNote = claimedElsewhere && !thirdWallet && bridge.status === 'pending';
-  // Figma 73: once ready, the sender may switch to the destination wallet or share the link.
-  const switchesWallet = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
+  // Figma "Ready to claim by the recipient (sender)": once ready, the sender is pointed to the destination wallet.
+  const pointsToRecipient = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
   const sentHint = !!hint && hint.kind !== 'switch-network';
-  const { openConnectModal } = useConnectModal();
   return (
-    <div className={cardClassName} data-testid="pending-bridge-card">
+    <div ref={cardRef} className={cardClassName} data-testid="pending-bridge-card">
       {/* A claim that ended in USDC shows the USDC (Figma 93). */}
       <CardHeader
         symbol={convertAmount === undefined ? 'USDS' : 'USDC'}
@@ -517,14 +542,18 @@ function PendingBridgeCard({
             <Trans>Dismiss</Trans>
           </Button>
         ) : thirdWallet ? (
-          <Button
-            variant="primary"
-            size="m"
-            onClick={() => openConnectModal()}
-            data-testid="pending-bridge-switch-wallet"
-          >
-            <Trans>Switch wallet</Trans>
-          </Button>
+          // Only the destination wallet acts, and the app can't switch accounts: its next step waits in place.
+          bridge.nextAction ? (
+            <Button
+              variant="primary"
+              size="m"
+              className="w-24"
+              disabled
+              data-testid="pending-bridge-claim-elsewhere"
+            >
+              {nextActionLabel(bridge.nextAction)}
+            </Button>
+          ) : null
         ) : actionButton && bridge.nextAction ? (
           <Button
             variant="primary"
@@ -591,49 +620,49 @@ function PendingBridgeCard({
       )}
 
       {claimedElsewhere && !thirdWallet && bridge.recipient && (
-        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-recipient-note">
-          {switchesWallet ? (
+        // Figma: 16px under the header, not the card's 24px.
+        <Text
+          className="text-fgSecondary -mt-2 text-xs leading-[18px]"
+          dataTestId="pending-bridge-recipient-note"
+        >
+          {pointsToRecipient ? (
             <Trans>
               Ready on Ethereum. {formatAddress(bridge.recipient, 6, 4)} needs to claim it from that wallet to
-              receive USDS. If it&apos;s your wallet, switch to it. Otherwise, share the claim link.
+              receive USDS. If it&apos;s your wallet, switch to it.
             </Trans>
-          ) : sharesInNote ? (
+          ) : bridge.status === 'pending' ? (
             <Trans>
               On its way to {formatAddress(bridge.recipient, 6, 4)}. Once it&apos;s ready on Ethereum,
-              they&apos;ll need to claim it from that wallet to receive USDS. Share the claim link so they can
-              find it.
+              they&apos;ll need to claim it from that wallet to receive USDS.
             </Trans>
           ) : (
             <Trans>
               Only the destination wallet ({formatAddress(bridge.recipient, 6, 4)}) can claim it on Ethereum.
             </Trans>
           )}
+          {claimLink && (
+            <>
+              {' '}
+              <ClaimLinkOffer link={claimLink} />
+            </>
+          )}
         </Text>
       )}
 
-      {switchesWallet ? (
-        <div className="flex gap-3.5">
-          <Button
-            variant="primary"
-            size="m"
-            className="flex-1"
-            onClick={() => openConnectModal()}
-            data-testid="pending-bridge-switch-wallet"
-          >
-            <Trans>Switch wallet</Trans>
-          </Button>
-          {claimLink && <ClaimLink link={claimLink} className="flex-1" />}
-        </div>
-      ) : (
-        claimLink && (
-          <ClaimLink
-            link={claimLink}
-            note={
-              sharesInNote ? undefined : claimedElsewhere ? 'share' : !storageWritable ? 'keep' : undefined
-            }
-          />
-        )
+      {pointsToRecipient && (
+        // Accounts switch in the wallet app, not here, so this only says where the claim happens.
+        <Button
+          variant="primary"
+          size="m"
+          className="w-full"
+          disabled
+          data-testid="pending-bridge-claim-with-recipient"
+        >
+          <Trans>Claim with your recipient wallet</Trans>
+        </Button>
       )}
+
+      {claimLink && !claimedElsewhere && !storageWritable && <KeepClaimLink link={claimLink} />}
 
       {dismissible && bridge.safeTxHash && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
@@ -662,6 +691,15 @@ function PendingBridgeCard({
       <CardRows
         rows={buildPendingBridgeRows(bridge, now, familyChainId, convertAmount !== undefined, counterparty)}
       />
+
+      {claimLink && !claimedElsewhere && storageWritable && (
+        <div
+          className="border-borderPrimary text-fgSecondary border-t pt-6 text-xs leading-[18px]"
+          data-testid="pending-bridge-claim-line"
+        >
+          <ClaimLinkOffer link={claimLink} />
+        </div>
+      )}
     </div>
   );
 }
@@ -838,7 +876,7 @@ export function PendingBridges({
   const cards = [
     ...bridges.map(bridge => ({ bridge, owner: undefined as string | undefined })),
     ...incoming
-      .filter(entry => isPendingBridgeVisible(entry.bridge, now))
+      .filter(entry => isPendingBridgeVisible(entry.bridge, now, PAGE_LOADED_AT))
       .map(entry => ({ bridge: entry.bridge, owner: entry.scope }))
   ].sort((a, b) => b.bridge.startedAt - a.bridge.startedAt);
   if (cards.length === 0 && swaps.length === 0 && !lookup) return null;
@@ -872,6 +910,7 @@ export function PendingBridges({
           canAction={canAction}
           actionHint={actionHint}
           onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
+          listScope={owner ?? scope}
           onKeepUsdc={kept => {
             const listScope = owner ?? scope;
             if (!listScope) return;

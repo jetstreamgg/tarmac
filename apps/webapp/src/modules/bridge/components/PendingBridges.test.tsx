@@ -4,8 +4,8 @@
 import { parseUnits } from 'viem';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import type { CctpResumeBlockReason } from '../hooks/useCctpResumeForm';
 import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch';
 import type { IncomingBridge } from '../hooks/useIncomingCctpBridges';
@@ -62,6 +62,7 @@ const mocks = vi.hoisted(() => ({
   bridges: [] as PendingBridge[],
   incoming: [] as IncomingBridge[],
   offers: {} as Record<string, bigint | undefined>,
+  nothingLeft: {} as Record<string, boolean | undefined>,
   ethShort: {} as Record<string, bigint | undefined>,
   blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
   activeSessionId: null as string | null,
@@ -103,7 +104,10 @@ vi.mock('../hooks/usePendingScope', () => ({
 }));
 
 vi.mock('../hooks/useCctpConvertOffer', () => ({
-  useCctpConvertOffer: (bridge: PendingBridge) => mocks.offers[bridge.id]
+  useCctpConvertOffer: (bridge: PendingBridge) => ({
+    offer: mocks.offers[bridge.id],
+    nothingLeft: mocks.nothingLeft[bridge.id] ?? false
+  })
 }));
 vi.mock('../hooks/useWithdrawalEthShortfall', () => ({
   useWithdrawalEthShortfall: (bridge: PendingBridge) => mocks.ethShort[bridge.id]
@@ -151,6 +155,7 @@ describe('PendingBridges', () => {
       bridges: [],
       incoming: [],
       offers: {},
+      nothingLeft: {},
       ethShort: {},
       blocked: {},
       activeSessionId: null,
@@ -211,6 +216,164 @@ describe('PendingBridges', () => {
     expect(screen.getAllByTestId('pending-bridge-status')[0]?.textContent).toBe('Pending');
   });
 
+  // Figma 4232:765: the dots say it's still refreshing, the check that it landed.
+  it.each([
+    ['pending', 'loader', 'status-check'],
+    ['arrived', 'status-check', 'loader'],
+    ['claimed', 'status-check', 'loader']
+  ] as const)('marks a %s status with its icon', (status, shown, hidden) => {
+    mocks.bridges = [{ ...BRIDGE, status, settledAt: status === 'pending' ? undefined : 0 }];
+    renderList();
+    const chip = within(screen.getByTestId('pending-bridge-status'));
+    expect(chip.getByTestId(shown)).toBeTruthy();
+    expect(chip.queryByTestId(hidden)).toBeNull();
+  });
+
+  it.each(['ready', 'failed', 'expired'] as const)('draws no icon on a %s status', status => {
+    mocks.bridges = [{ ...BRIDGE, status, settledAt: status === 'ready' ? undefined : 0 }];
+    renderList();
+    const chip = within(screen.getByTestId('pending-bridge-status'));
+    expect(chip.queryByTestId('loader')).toBeNull();
+    expect(chip.queryByTestId('status-check')).toBeNull();
+  });
+
+  describe('seeing a card', () => {
+    const OWNER = '0x0000000000000000000000000000000000005e4d';
+    const LANDED: PendingBridge = {
+      ...BRIDGE,
+      id: '0xlanded',
+      status: 'arrived',
+      nextAction: undefined,
+      settledAt: 0
+    };
+    let intersect: (...isIntersecting: boolean[]) => void;
+    let markSeen: MockInstance<typeof pendingBridgeStore.markSeen>;
+    let onTop: Element | null | undefined;
+    const elementFromPoint = document.elementFromPoint;
+    const elapse = (ms = 1000) => act(() => vi.advanceTimersByTime(ms));
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+      markSeen = vi.spyOn(pendingBridgeStore, 'markSeen').mockImplementation(() => {});
+      intersect = () => {};
+      onTop = undefined;
+      document.elementFromPoint = () =>
+        onTop === undefined ? screen.getByTestId('pending-bridge-card') : onTop;
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          constructor(callback: (entries: { isIntersecting: boolean }[]) => void) {
+            intersect = (...batch) => callback(batch.map(isIntersecting => ({ isIntersecting })));
+          }
+          observe() {}
+          disconnect() {
+            intersect = () => {};
+          }
+        }
+      );
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+      document.elementFromPoint = elementFromPoint;
+      markSeen.mockRestore();
+    });
+
+    it('marks it after a moment on screen with nothing left to do', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(false);
+      elapse();
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(true);
+      expect(markSeen).not.toHaveBeenCalled();
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('goes by the latest change when the browser delivers several at once', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(false, true);
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('does not count a card scrolled past', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(true);
+      elapse(500);
+      intersect(false);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it('waits while something covers it, like the connect checks loader', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      const cover = document.createElement('div');
+      onTop = cover;
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      onTop = undefined;
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('waits for the tab to be visible', () => {
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      visibility.mockReturnValue('visible');
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+      visibility.mockRestore();
+    });
+
+    it('leaves it unseen while a conversion may still be left, or unread', () => {
+      mocks.bridges = [LANDED];
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['pending', { ...LANDED, status: 'pending', settledAt: undefined }],
+      ['failed', { ...LANDED, status: 'failed' }],
+      ['expired', { ...LANDED, status: 'expired' }],
+      ['already seen', { ...LANDED, seenAt: 1 }]
+    ] as [string, PendingBridge][])('leaves a %s card alone', (_, bridge) => {
+      mocks.bridges = [bridge];
+      mocks.nothingLeft[bridge.id] = true;
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it("marks an incoming card in the sender's list, where it is stored", () => {
+      const bridge = { ...LANDED, routeKind: 'cctp' as const, account: OWNER, recipient: ACCOUNT };
+      mocks.incoming = [{ scope: 'sender-scope', bridge }];
+      mocks.nothingLeft[bridge.id] = true;
+      renderList();
+      intersect(true);
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('sender-scope', bridge.id);
+    });
+  });
+
   it("sends a card's next action", () => {
     mocks.bridges = [{ ...BRIDGE, status: 'ready', nextAction: 'claim', requiresClaim: true }];
     renderList();
@@ -240,24 +403,46 @@ describe('PendingBridges', () => {
       ['ready', THIRD],
       ['on its way', { ...THIRD, status: 'pending' as const }],
       ['minted to its sender', { ...THIRD, recipient: SENDER }]
-    ])('offers only to switch wallet, %s', (_, bridge) => {
+    ])('offers nothing to do but shows Claim waiting for the destination wallet, %s', (_, bridge) => {
       mocks.bridges = [bridge];
       renderList();
       const card = screen.getByTestId('pending-bridge-card');
-      const switchWallet = screen.getByTestId('pending-bridge-switch-wallet');
-      expect(switchWallet.textContent).toBe('Switch wallet');
-      // The header's single action, before the note.
+      const claim = screen.getByTestId('pending-bridge-claim-elsewhere');
+      expect(claim.textContent).toBe('Claim');
+      // The header's single button, before the note, and it does nothing here.
       expect(card.querySelectorAll('button')).toHaveLength(1);
+      expect(claim).toHaveProperty('disabled', true);
       expect(
-        switchWallet.compareDocumentPosition(screen.getByTestId('pending-bridge-third-wallet-note')) &
+        claim.compareDocumentPosition(screen.getByTestId('pending-bridge-third-wallet-note')) &
           Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
       expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-recipient-note')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-incoming-note')).toBeNull();
-      fireEvent.click(switchWallet);
-      expect(mocks.openConnectModal).toHaveBeenCalledOnce();
+      fireEvent.click(claim);
+      expect(props.onAction).not.toHaveBeenCalled();
+      expect(props.onActionIn).not.toHaveBeenCalled();
+    });
+
+    // The same lookup finds native withdrawals, whose steps aren't a claim.
+    it.each([
+      ['prove', 'Prove'],
+      ['finalize', 'Finalize']
+    ] as const)('names a native withdrawal step it waits for, %s', (nextAction, label) => {
+      mocks.bridges = [{ ...THIRD, routeKind: 'native', nextAction }];
+      renderList();
+      const step = screen.getByTestId('pending-bridge-claim-elsewhere');
+      expect(step.textContent).toBe(label);
+      expect(step).toHaveProperty('disabled', true);
+    });
+
+    it('shows no button while no step is due yet', () => {
+      mocks.bridges = [{ ...THIRD, routeKind: 'native', status: 'pending', nextAction: undefined }];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-claim-elsewhere')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-card').querySelectorAll('button')).toHaveLength(0);
+      expect(screen.getByTestId('pending-bridge-third-wallet-note')).toBeTruthy();
     });
 
     it('says which wallet can claim it and names both wallets', () => {
@@ -286,6 +471,7 @@ describe('PendingBridges', () => {
       nextAction: 'claim',
       recipient: RECIPIENT
     };
+    const BURN_HASH = `0x${'ab'.repeat(32)}`;
     const note = () => screen.queryByTestId('pending-bridge-recipient-note');
 
     it('shows the status and says the destination wallet claims it, with no Claim button', () => {
@@ -294,36 +480,40 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Ready to claim');
       expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
       expect(note()?.textContent).toBe(
-        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Otherwise, share the claim link."
+        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Claiming on another device? Get claim link"
       );
     });
 
-    // Figma 73: Switch wallet and Copy claim link side by side, under the note.
-    it('offers to switch wallet beside the claim link once it is ready (Figma 73)', () => {
-      mocks.bridges = [TO_OTHER];
+    // Figma "Ready to claim by the recipient (sender)": the link inside the note, the wallet pointer alone below it.
+    it('keeps the claim link in the note and points to the recipient wallet below it once it is ready', () => {
+      mocks.bridges = [{ ...TO_OTHER, txHash: BURN_HASH }];
       renderList();
-      const switchWallet = screen.getByTestId('pending-bridge-switch-wallet');
+      const pointer = screen.getByTestId('pending-bridge-claim-with-recipient');
       const link = screen.getByTestId('pending-bridge-claim-link');
-      expect(switchWallet.textContent).toBe('Switch wallet');
-      expect(switchWallet.className).toMatch(/\bflex-1\b/);
-      expect(link.className).toMatch(/\bflex-1\b/);
-      expect(link.className).not.toMatch(/\bw-full\b/);
-      expect(switchWallet.parentElement).toBe(link.parentElement);
-      expect(switchWallet.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(note()!.compareDocumentPosition(switchWallet) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(note()?.textContent).toBe(
+        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Claiming on another device? Get claim link"
+      );
+      expect(note()!.contains(link)).toBe(true);
+      expect(note()!.className).toMatch(/-mt-2\b/);
+      expect(pointer.textContent).toBe('Claim with your recipient wallet');
+      expect(pointer.className).toMatch(/\bw-full\b/);
+      // Accounts switch in the wallet app, so it does nothing here.
+      expect(pointer).toHaveProperty('disabled', true);
+      expect(note()!.compareDocumentPosition(pointer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+      fireEvent.click(pointer);
       expect(mocks.openConnectModal).not.toHaveBeenCalled();
-      fireEvent.click(switchWallet);
-      expect(mocks.openConnectModal).toHaveBeenCalledOnce();
+      expect(props.onAction).not.toHaveBeenCalled();
     });
 
-    it('offers no Switch wallet while it is on its way, nor to the recipient', () => {
+    it('points to no wallet while it is on its way, nor to the recipient', () => {
       mocks.bridges = [
         { ...TO_OTHER, status: 'pending' },
         { ...TO_OTHER, id: '0xmine', recipient: ACCOUNT }
       ];
       renderList();
-      expect(screen.queryByTestId('pending-bridge-switch-wallet')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-with-recipient')).toBeNull();
+      expect(screen.queryByText('Claim with your recipient wallet')).toBeNull();
     });
 
     it('names the destination wallet beside the status, by its ENS name once known (Figma 71, 73)', () => {
@@ -345,13 +535,24 @@ describe('PendingBridges', () => {
       expect(note()).not.toBeNull();
     });
 
-    it('tells the sender who claims it and to share the link while it is on its way (Figma 71)', () => {
-      mocks.bridges = [{ ...TO_OTHER, status: 'pending' }];
+    it('tells the sender who claims it and offers the link in the note while it is on its way', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending', txHash: BURN_HASH }];
       renderList();
       expect(note()?.textContent).toBe(
-        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS. Share the claim link so they can find it."
+        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS. Claiming on another device? Get claim link"
       );
+      expect(note()!.contains(screen.getByTestId('pending-bridge-claim-link'))).toBe(true);
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+    });
+
+    it('promises no link in the note when there is none to give', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending', txHash: undefined }];
+      renderList();
+      expect(note()?.textContent).toBe(
+        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS."
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
     });
 
     it('drops the note once the bridge settles', () => {
@@ -544,6 +745,13 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claimed');
     });
 
+    it('draws no check on Arrived as USDC, which still has a step left', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      expect(within(screen.getByTestId('pending-bridge-status')).queryByTestId('status-check')).toBeNull();
+    });
+
     // Figma 93: a card whose claim ended in USDC shows the USDC icon.
     it('shows the USDC icon on a claim that kept its USDC, and USDS otherwise', () => {
       mocks.bridges = [CLAIMED];
@@ -678,13 +886,13 @@ describe('PendingBridges', () => {
     it('copies the link that opens its claim', () => {
       mocks.bridges = [BURN];
       renderList();
-      const button = screen.getByTestId('pending-bridge-claim-link');
-      expect(button.textContent).toBe('Copy claim link');
-      fireEvent.click(button);
+      const link = screen.getByTestId('pending-bridge-claim-link');
+      expect(link.textContent).toBe('Get claim link');
+      fireEvent.click(link);
       expect(mocks.copy).toHaveBeenCalledWith(LINK);
     });
 
-    // Figma 72: a toast says it, and the button keeps its label.
+    // Figma "Claim link copied!": a toast says it, and the link keeps its label.
     it('toasts that it was copied', () => {
       mocks.bridges = [BURN];
       renderList();
@@ -692,7 +900,7 @@ describe('PendingBridges', () => {
       fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
       expect(mocks.toast.success).toHaveBeenCalledTimes(1);
       expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
-      expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Copy claim link');
+      expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Get claim link');
     });
 
     it('toasts nothing when the copy fails', () => {
@@ -704,54 +912,85 @@ describe('PendingBridges', () => {
       expect(mocks.toast.success).not.toHaveBeenCalled();
     });
 
-    // Figma 71: a full-width secondary button under the card's text.
-    it('shows it as a full-width button after its note', () => {
-      mocks.bridges = [{ ...BURN, recipient: OTHER }];
+    // Figma "Bridge initiated": the lowest priority, a last line under the rows.
+    it.each([
+      ['on its way', 'pending' as const],
+      ['ready', 'ready' as const]
+    ])('closes your own bridge with a line under the rows, %s', (_, status) => {
+      mocks.bridges = [{ ...BURN, status }];
       renderList();
-      const button = screen.getByTestId('pending-bridge-claim-link');
-      expect(button.tagName).toBe('BUTTON');
-      expect(button.className).toMatch(/\bw-full\b/);
-      const note = screen.getByTestId('pending-bridge-recipient-note');
-      expect(note.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      const line = screen.getByTestId('pending-bridge-claim-line');
+      expect(line.textContent).toBe('Claiming on another device? Get claim link');
+      expect(line.className).toMatch(/\bborder-t\b/);
+      expect(line.contains(screen.getByTestId('pending-bridge-claim-link'))).toBe(true);
+      expect(
+        screen.getByTestId('pending-bridge-rows').compareDocumentPosition(line) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(screen.getByTestId('pending-bridge-card').lastElementChild).toBe(line);
     });
 
-    it('offers it on a bridge sent to this wallet too', () => {
+    it('offers it on a bridge sent to this wallet too, as the same last line', () => {
       mocks.incoming = [{ scope: 'sender', bridge: { ...BURN, account: OTHER, recipient: ACCOUNT } }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-claim-line').textContent).toBe(
+        'Claiming on another device? Get claim link'
+      );
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+    });
+
+    it.each([
+      ['on its way', 'pending' as const],
+      ['ready', 'ready' as const]
+    ])('copies it from the note of a bridge to another wallet, %s', (_, status) => {
+      mocks.bridges = [{ ...BURN, status, recipient: OTHER }];
       renderList();
       fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
       expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
+    });
+
+    it('offers no link once a bridge to another wallet has failed', () => {
+      mocks.bridges = [{ ...BURN, status: 'failed', recipient: OTHER }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toBe(
+        'Only the destination wallet (0x0000...0b01) can claim it on Ethereum.'
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
     });
 
     it('offers none on a native deposit or a claimed bridge', () => {
       mocks.bridges = [BRIDGE, { ...CLAIMED, nextAction: 'convert' }];
       renderList();
       expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
     });
 
-    it('asks the sender to share it with the recipient', () => {
-      mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
-      renderList();
-      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toMatch(
-        /Otherwise, share the claim link\.$/
-      );
-      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
-    });
-
-    it('asks to keep it when this browser keeps no bridges', () => {
+    // With no list to come back to, the link is the way back, so it stays a button with its reason.
+    it('keeps a button and asks to keep the link when this browser keeps no bridges', () => {
       mocks.storageWritable = false;
       mocks.bridges = [BURN];
       renderList();
       expect(screen.getByTestId('pending-bridge-claim-link-note').textContent).toBe(
         "This browser can't save your bridges. Copy the claim link and keep it to claim later."
       );
+      const button = screen.getByTestId('pending-bridge-claim-link');
+      expect(button.textContent).toBe('Copy claim link');
+      expect(button.className).toMatch(/\bw-full\b/);
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
+      fireEvent.click(button);
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
     });
 
-    it('asks the sender to share it, not to keep it, when this browser keeps no bridges', () => {
+    it('offers it in the note of a bridge to another wallet, not to keep, when this browser keeps no bridges', () => {
       mocks.storageWritable = false;
       mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
       renderList();
       expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toMatch(
-        /Otherwise, share the claim link\.$/
+        /Claiming on another device\? Get claim link$/
       );
       expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
     });

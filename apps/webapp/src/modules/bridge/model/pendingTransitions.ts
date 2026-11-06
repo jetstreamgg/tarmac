@@ -367,13 +367,44 @@ const unresolvedAfterSettling = (bridge: PendingBridge) => bridge.actions.filter
 export const isTracked = (bridge: PendingBridge): boolean =>
   !isSettled(bridge) || unresolvedAfterSettling(bridge).length > 0;
 
-/** Tracked bridges always show; settled ones stay for a day, unless the user closed them. */
-export const isPendingBridgeVisible = (bridge: PendingBridge, now: number): boolean =>
-  isTracked(bridge) || (bridge.closedAt === undefined && now - (bridge.settledAt ?? 0) <= SETTLED_VISIBLE_MS);
+/** Cards seen before this moment are gone: a card leaves on the reload after the user saw it. */
+export const PAGE_LOADED_AT = Date.now();
+
+/** Tracked bridges always show; settled ones stay for a day, unless the user closed them or saw them on an earlier page load. */
+export const isPendingBridgeVisible = (
+  bridge: PendingBridge,
+  now: number,
+  pageLoadedAt = -Infinity
+): boolean =>
+  isTracked(bridge) ||
+  (bridge.closedAt === undefined &&
+    !(bridge.seenAt !== undefined && bridge.seenAt < pageLoadedAt) &&
+    now - (bridge.settledAt ?? 0) <= SETTLED_VISIBLE_MS);
+
+/** A card that landed and has nothing more for the tracker to read can count as seen, once. */
+export const canMarkSeen = (bridge: PendingBridge): boolean =>
+  (bridge.status === 'arrived' || bridge.status === 'claimed') &&
+  !isTracked(bridge) &&
+  bridge.seenAt === undefined &&
+  bridge.closedAt === undefined;
+
+export const markSeen = (bridge: PendingBridge, now: number): PendingBridge =>
+  canMarkSeen(bridge) ? { ...bridge, seenAt: now } : bridge;
 
 /** Hides a settled card the tracker no longer reads; the bridge stays for Activity. */
 export const closeCard = (bridge: PendingBridge, now: number): PendingBridge =>
   isTracked(bridge) || bridge.closedAt !== undefined ? bridge : { ...bridge, closedAt: now };
+
+// Proving or keeping a ticket alive settles nothing; any other action can, and its own flow told the user.
+const couldSettle = (action: PendingBridgeAction) =>
+  action.status !== 'invalidated' && action.action !== 'prove' && action.action !== 'keepalive';
+
+/** The bridge just landed with nothing the user sent behind it, so nothing has told them yet. */
+export const justArrived = (before: PendingBridge | undefined, after: PendingBridge): boolean =>
+  !!before &&
+  !isSettled(before) &&
+  (after.status === 'arrived' || after.status === 'claimed') &&
+  !before.actions.some(couldSettle);
 
 /** How often the tracker checks a bridge; undefined once settled with nothing sent. */
 export function pollIntervalMs(bridge: PendingBridge, now: number): number | undefined {

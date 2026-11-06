@@ -146,8 +146,8 @@ export function ConvertPage() {
         title={<Trans>Convert stablecoins</Trans>}
         subtitle={
           <Trans>
-            Move between stablecoins with confidence. Conversions settle at a fixed 1:1 rate, with no fees and
-            no slippage.
+            Move between stablecoins with confidence. Conversions and bridges settle at a fixed 1:1 rate, with
+            no fees and no slippage.
           </Trans>
         }
         subtitleClassName="max-w-[459px]"
@@ -172,7 +172,7 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
         params.set(QueryParams.Tab, value);
         return params;
       },
-      { replace: true }
+      { replace: true, resetScroll: false }
     );
   };
 

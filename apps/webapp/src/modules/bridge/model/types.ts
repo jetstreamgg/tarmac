@@ -100,5 +100,7 @@ export type PendingBridge = {
   settledAt?: number;
   /** When the user was done with its settled card (kept the USDC); Activity still lists it. */
   closedAt?: number;
+  /** When the user first saw its settled card with nothing left to do: the next page load hides it. */
+  seenAt?: number;
   failureReason?: string;
 };

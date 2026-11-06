@@ -5,7 +5,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { t } from '@lingui/core/macro';
 import { NO_VALUE } from '@/lib/constants';
 import { TransactionRefusedError } from '@/hooks/shared/useTransactionOutcome';
-import { BP, useBreakpointIndex, useIsSafeWallet, useNetworkFee, useTokenBalance } from '@/hooks';
+import {
+  BP,
+  useBreakpointIndex,
+  useFeePerGas,
+  useIsSafeWallet,
+  useNetworkFee,
+  usePrices,
+  useTokenBalance
+} from '@/hooks';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
@@ -42,6 +50,7 @@ import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
 import { useBridgeBatch } from './useBridgeBatch';
 import { useBridgeRouteCards } from './useBridgeRouteCards';
+import { destinationGas, routeFeeText } from '../model/routeCosts';
 
 const cctpUsds = (network: CctpL2NetworkId | undefined) =>
   network ? cctpL2Contracts(network).usds : undefined;
@@ -277,9 +286,10 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         const { functionName, to: target } = call as { functionName?: string; to?: string };
         if (functionName === 'swapExactIn')
           return {
-            label: t`Convert to USDC`,
+            label: t`Convert`,
             tokenSymbol: 'USDS',
-            failureDetail: t`The USDS hasn't been converted.`
+            targetTokenSymbol: 'USDC',
+            failureDetail: stepFailureDetail.convert('USDS')
           };
         if (functionName === CCTP_BURN_FUNCTION)
           return { label: t`Bridge`, tokenSymbol: 'USDC', failureDetail: t`The USDC hasn't been bridged.` };
@@ -581,7 +591,18 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     shouldUseBatch: legs.isBatch,
     enabled: isReal && legs.calls.length > 0
   });
-  const networkFeeText = networkFee?.formatted ?? NO_VALUE;
+  // A withdrawal's fee adds its steps on Ethereum, estimated as on the picker's cards.
+  const ethereumSteps = isReal && !!route && destinationGas(route) > 0n;
+  const { data: ethFeePerGas } = useFeePerGas(
+    ethereumChainId ?? 1,
+    ethereumSteps && ethereumChainId !== undefined
+  );
+  const { data: prices } = usePrices();
+  const ethPrice = prices?.ETH?.price === undefined ? undefined : Number(prices.ETH.price);
+  const networkFeeText =
+    ethereumSteps && route
+      ? routeFeeText({ route, sourceFeeWei: networkFee?.feeWei, ethFeePerGas, ethPrice })
+      : (networkFee?.formatted ?? NO_VALUE);
   const routeSources = useMemo(
     () => ({
       cctp: { calls: isCctpBurn || previewBurnFrom ? burn.calls : [], isBatch: burn.isBatch },
@@ -692,11 +713,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         amount={shownAmount}
         from={from}
         to={to}
+        addresses={addresses}
         fromToken={fromToken}
         testId="bridge-modal-screen-summary"
       />
     ),
-    [shownAmount, from, to, fromToken]
+    [shownAmount, from, to, addresses, fromToken]
   );
 
   const amountLabel = `${formatExactUsds(shownAmount)} USDS`;

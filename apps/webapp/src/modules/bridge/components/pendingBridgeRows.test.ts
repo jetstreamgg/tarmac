@@ -6,6 +6,7 @@ import type { PendingBridge } from '../model/types';
 import { chainId } from '@/utils/chainId';
 import { getEtherscanLink } from '@/utils/getEtherscanLink';
 import {
+  bridgeArrivedMessage,
   bridgeCounterparty,
   bridgeTxHref,
   buildPendingBridgeRows,
@@ -41,6 +42,53 @@ const base: PendingBridge = {
   txHash: '0xff9s000000000000000000000000000000000000000000000000000000dsa6',
   actions: []
 };
+
+describe('bridgeArrivedMessage', () => {
+  const OTHER = '0x00000000000000000000000000000000000b0b01';
+  const THIRD = '0x0000000000000000000000000000000000000c33';
+  const ACTIVITY = 'You can find the details in Activity in your wallet preview.';
+
+  it('pins the Figma copy for your own bridge', () => {
+    expect(bridgeArrivedMessage(base, base.account, true)).toBe(
+      `10,000.00 USDS is now in your wallet on Base. ${ACTIVITY}`
+    );
+  });
+
+  it('names the other wallet to the sender', () => {
+    expect(bridgeArrivedMessage({ ...base, recipient: OTHER }, base.account, true)).toBe(
+      `10,000.00 USDS is now in 0x0000...0b01 on Base. ${ACTIVITY}`
+    );
+  });
+
+  it('names the destination to a third wallet that looked it up', () => {
+    expect(bridgeArrivedMessage({ ...base, recipient: OTHER }, THIRD, true)).toBe(
+      `10,000.00 USDS is now in 0x0000...0b01 on Base. ${ACTIVITY}`
+    );
+  });
+
+  it('says your wallet to the recipient, ignoring case', () => {
+    expect(bridgeArrivedMessage({ ...base, recipient: OTHER }, OTHER.toUpperCase(), true)).toBe(
+      `10,000.00 USDS is now in your wallet on Base. ${ACTIVITY}`
+    );
+  });
+
+  it("leaves Activity out when the bridge isn't in the viewer's list", () => {
+    expect(bridgeArrivedMessage({ ...base, recipient: OTHER }, OTHER, false)).toBe(
+      '10,000.00 USDS is now in your wallet on Base.'
+    );
+  });
+
+  // Whoever claimed may have left USDC or USDS, so it can't name a token or an amount of it.
+  it('names no token on a CCTP bridge', () => {
+    const cctp: PendingBridge = { ...base, from: 'base', to: 'ethereum', routeKind: 'cctp' };
+    expect(bridgeArrivedMessage(cctp, base.account, true)).toBe(
+      `The funds are now in your wallet on Ethereum. ${ACTIVITY}`
+    );
+    expect(bridgeArrivedMessage({ ...cctp, recipient: OTHER }, base.account, true)).toBe(
+      `The funds are now in 0x0000...0b01 on Ethereum. ${ACTIVITY}`
+    );
+  });
+});
 
 describe('buildPendingBridgeRows', () => {
   it('pins the Figma labels and pairing', () => {

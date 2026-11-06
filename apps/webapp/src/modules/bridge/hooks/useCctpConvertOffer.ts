@@ -6,9 +6,11 @@ import { useTokenBalance } from '@/hooks';
 import { L1_USDC } from '../adapters/cctp/contracts';
 import {
   cctpConvertOffer,
+  cctpNothingToConvert,
   claimNextLegTxHashes,
   confirmedClaimTxHashes,
   findOthersClaimReceipt,
+  OTHERS_CLAIM_RESCAN_MS,
   othersClaimSold,
   readClaimSold
 } from '../adapters/cctp/convert';
@@ -18,8 +20,6 @@ import type { PendingBridge } from '../model/types';
 import { usePendingScope } from './usePendingScope';
 
 const OTHERS_CLAIM_POLL_MS = 60_000;
-// A node's logs can lag the nonce the tracker saw used: a scan that found nothing runs again for this long.
-const OTHERS_CLAIM_RESCAN_MS = 10 * 60_000;
 
 /**
  * The USDC (6 decimals) the connected account can convert to USDS on a
@@ -27,9 +27,12 @@ const OTHERS_CLAIM_RESCAN_MS = 10 * 60_000;
  * sold it, from the receipts of every hash the claim confirmed with, and the account's USDC on Ethereum.
  * With no claim this app confirmed, someone else's receive is looked for once the account holds USDC,
  * and whether the recipient sold it then or later (`othersClaimSold`).
- * Undefined while either is unknown or failed to read.
+ * `offer` is undefined while either is unknown or failed to read; `nothingLeft` says so only once it is sure.
  */
-export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
+export function useCctpConvertOffer(
+  bridge: PendingBridge,
+  now: number
+): { offer: bigint | undefined; nothingLeft: boolean } {
   const { account, familyChainId } = usePendingScope();
   const config = useConfig();
   const chainId = bridgeChainId('ethereum', familyChainId);
@@ -97,14 +100,27 @@ export function useCctpConvertOffer(bridge: PendingBridge): bigint | undefined {
     refetchInterval: query => (query.state.data === true ? false : OTHERS_CLAIM_POLL_MS)
   });
 
-  if (!eligible) return undefined;
-  return othersClaimed
-    ? cctpConvertOffer({
-        bridge,
-        account,
-        claimSold: othersSoldFailed ? undefined : othersSold,
-        usdcBalance: usdc?.value,
-        othersClaimTxHash: othersClaim?.transactionHash
-      })
-    : cctpConvertOffer({ bridge, account, claimSold, usdcBalance: usdc?.value });
+  const othersSoldRead = othersSoldFailed ? undefined : othersSold;
+  const offer = !eligible
+    ? undefined
+    : othersClaimed
+      ? cctpConvertOffer({
+          bridge,
+          account,
+          claimSold: othersSoldRead,
+          usdcBalance: usdc?.value,
+          othersClaimTxHash: othersClaim?.transactionHash
+        })
+      : cctpConvertOffer({ bridge, account, claimSold, usdcBalance: usdc?.value });
+  const nothingLeft = cctpNothingToConvert({
+    bridge,
+    account,
+    offer,
+    claimSold,
+    usdcBalance: usdc?.value,
+    othersClaim,
+    othersSold: othersSoldRead,
+    now
+  });
+  return { offer, nothingLeft };
 }

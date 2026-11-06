@@ -10,6 +10,8 @@ import {
   closeCard,
   dropSentAction,
   isTracked,
+  justArrived,
+  markSeen,
   pollIntervalMs,
   recordAction,
   recordActionSent,
@@ -283,6 +285,114 @@ describe('isPendingBridgeVisible', () => {
 
   it('hides a settled bridge the user closed', () => {
     expect(isPendingBridgeVisible(closeCard(settled(deposit()), NOW), NOW + MINUTE)).toBe(false);
+  });
+
+  // Figma 4232:64349: a refresh takes it away, once the user has seen it.
+  it('keeps a card seen on this page load and hides one seen before it', () => {
+    const seen = markSeen(settled(deposit()), NOW);
+    expect(isPendingBridgeVisible(seen, NOW + MINUTE)).toBe(true);
+    expect(isPendingBridgeVisible(seen, NOW + MINUTE, NOW)).toBe(true);
+    expect(isPendingBridgeVisible(seen, NOW + MINUTE, NOW + 1)).toBe(false);
+  });
+
+  it('keeps a card nobody has seen after a reload, until its day is over', () => {
+    expect(isPendingBridgeVisible(settled(deposit()), NOW + MINUTE, NOW + 1)).toBe(true);
+    expect(isPendingBridgeVisible(settled(deposit()), NOW + 25 * HOUR, NOW + 1)).toBe(false);
+  });
+
+  it('still shows a seen bridge an action of it keeps tracked', () => {
+    const tracked: PendingBridge = {
+      ...markSeen(settled(deposit()), NOW),
+      actions: [{ action: 'replay', txHash: '0xr', at: NOW, status: 'sent' }]
+    };
+    expect(tracked.seenAt).toBe(NOW);
+    expect(isTracked(tracked)).toBe(true);
+    expect(isPendingBridgeVisible(tracked, NOW + MINUTE, NOW + 1)).toBe(true);
+  });
+});
+
+describe('markSeen', () => {
+  const settled = (bridge: PendingBridge) => applyProgress(bridge, { kind: 'arrived' }, NOW);
+
+  it('stamps a landed card once', () => {
+    const seen = markSeen(settled(deposit()), NOW);
+    expect(seen.seenAt).toBe(NOW);
+    expect(markSeen(seen, NOW + MINUTE)).toBe(seen);
+  });
+
+  it('stamps a claimed card', () => {
+    expect(markSeen(settled(create(routeFor('base', 'ethereum'))), NOW).seenAt).toBe(NOW);
+  });
+
+  it('leaves a card still on its way or ready', () => {
+    const bridge = deposit();
+    const ready = applyProgress(
+      create(routeFor('base', 'ethereum')),
+      { kind: 'ready', nextAction: 'claim' },
+      NOW
+    );
+    expect(markSeen(bridge, NOW)).toBe(bridge);
+    expect(markSeen(ready, NOW)).toBe(ready);
+  });
+
+  it('leaves a failed or expired card, which the user must still read', () => {
+    const failed = applyProgress(deposit(), { kind: 'failed', reason: 'x' }, NOW);
+    const expired = applyProgress(deposit(), { kind: 'expired' }, NOW);
+    expect(markSeen(failed, NOW)).toBe(failed);
+    expect(markSeen(expired, NOW)).toBe(expired);
+  });
+
+  it('leaves a settled card with an action still confirming, and a closed one', () => {
+    const claimed = settled(
+      applyProgress(create(routeFor('base', 'ethereum')), { kind: 'ready', nextAction: 'claim' }, NOW)
+    );
+    const confirming = recordActionSent(claimed, { action: 'convert', txHash: '0xc', at: NOW });
+    expect(markSeen(confirming, NOW)).toBe(confirming);
+    const closed = closeCard(settled(deposit()), NOW);
+    expect(markSeen(closed, NOW)).toBe(closed);
+  });
+});
+
+describe('justArrived', () => {
+  const claim = routeFor('base', 'ethereum');
+  const landed = (bridge: PendingBridge) => applyProgress(bridge, { kind: 'arrived' }, NOW);
+
+  it('is true when a bridge lands on its own', () => {
+    const bridge = deposit();
+    expect(landed(bridge).status).toBe('arrived');
+    expect(justArrived(bridge, landed(bridge))).toBe(true);
+  });
+
+  it('is true when someone else claims it, which also settles it as claimed', () => {
+    const bridge = create(claim);
+    expect(landed(bridge).status).toBe('claimed');
+    expect(justArrived(bridge, landed(bridge))).toBe(true);
+  });
+
+  it('is false when the user sent the action that settled it, sent or mined', () => {
+    const ready: PendingBridge = { ...create(claim), status: 'ready', nextAction: 'claim' };
+    const sent = recordActionSent(ready, { action: 'claim', txHash: '0xc', at: NOW });
+    const mined = recordAction(ready, { action: 'claim', txHash: '0xc', at: NOW });
+    expect(justArrived(sent, landed(sent))).toBe(false);
+    expect(justArrived(mined, landed(mined))).toBe(false);
+  });
+
+  it('is true when only a step that settles nothing came from the user', () => {
+    const proved = recordAction(create(routeFor('base', 'ethereum', false)), {
+      action: 'prove',
+      txHash: '0xp',
+      at: NOW
+    });
+    expect(justArrived(proved, landed(proved))).toBe(true);
+  });
+
+  it('is false once settled, or when it settles any other way', () => {
+    const bridge = deposit();
+    expect(justArrived(landed(bridge), landed(bridge))).toBe(false);
+    expect(justArrived(undefined, landed(bridge))).toBe(false);
+    expect(justArrived(bridge, applyProgress(bridge, { kind: 'failed', reason: 'x' }, NOW))).toBe(false);
+    expect(justArrived(bridge, applyProgress(bridge, { kind: 'expired' }, NOW))).toBe(false);
+    expect(justArrived(bridge, bridge)).toBe(false);
   });
 });
 

@@ -23,6 +23,7 @@ import type { PendingBridge } from '../../model/types';
 import { L1_USDC, L1_USDS } from './contracts';
 import {
   cctpConvertOffer,
+  cctpNothingToConvert,
   claimSoldForUsds,
   confirmedClaimTxHash,
   readCctpConvertOffer,
@@ -158,6 +159,97 @@ describe('cctpConvertOffer', () => {
 });
 
 // The offer read afresh when a claim's Try again hands over to the convert: the same rule as the card.
+describe('cctpNothingToConvert', () => {
+  const settled = (base: PendingBridge) => applyProgress(base, { kind: 'arrived' }, NOW);
+  const LATER = NOW + 10 * 60_000;
+  const args = (over: Partial<Parameters<typeof cctpNothingToConvert>[0]> = {}) => ({
+    bridge: settled(claimed()),
+    account: ACCOUNT,
+    offer: undefined,
+    claimSold: undefined,
+    usdcBalance: undefined,
+    othersClaim: undefined,
+    othersSold: undefined,
+    now: NOW,
+    ...over
+  });
+  const native = () => ({ ...settled(bridge()), routeKind: 'native' as const });
+
+  it('is true on a route with no conversion', () => {
+    expect(cctpNothingToConvert(args({ bridge: native() }))).toBe(true);
+  });
+
+  it('is true once a conversion was sent', () => {
+    const converted = recordAction(settled(claimed()), { action: 'convert', txHash: '0xc', at: NOW });
+    expect(cctpNothingToConvert(args({ bridge: converted }))).toBe(true);
+  });
+
+  it('is false for a wallet that is not the recipient: the entry is shared with it', () => {
+    const toOther = settled(claimed(bridge({ recipient: OTHER })));
+    expect(cctpNothingToConvert(args({ bridge: toOther, claimSold: true }))).toBe(false);
+    expect(cctpNothingToConvert(args({ bridge: toOther, account: undefined, claimSold: true }))).toBe(false);
+  });
+
+  describe('a claim this app recorded', () => {
+    it('is true when it sold the USDC', () => {
+      expect(cctpNothingToConvert(args({ claimSold: true }))).toBe(true);
+    });
+
+    it('is true when it sold nothing and the wallet holds none', () => {
+      expect(cctpNothingToConvert(args({ claimSold: false, usdcBalance: 0n }))).toBe(true);
+    });
+
+    it('is false while there is USDC to offer', () => {
+      expect(cctpNothingToConvert(args({ claimSold: false, usdcBalance: USDC('5'), offer: USDC('5') }))).toBe(
+        false
+      );
+    });
+
+    it('is false while anything is unread', () => {
+      expect(cctpNothingToConvert(args())).toBe(false);
+      expect(cctpNothingToConvert(args({ claimSold: false }))).toBe(false);
+      expect(cctpNothingToConvert(args({ usdcBalance: 0n }))).toBe(false);
+    });
+  });
+
+  describe("someone else's claim", () => {
+    const others = () => settled(bridge());
+
+    it('is true only after the rescan window, with no USDC, no receive found or a sale', () => {
+      expect(cctpNothingToConvert(args({ bridge: others(), usdcBalance: 0n, now: LATER }))).toBe(true);
+      expect(cctpNothingToConvert(args({ bridge: others(), othersClaim: null, now: LATER }))).toBe(true);
+      expect(
+        cctpNothingToConvert(
+          args({ bridge: others(), othersClaim: { transactionHash: '0x1' }, othersSold: true, now: LATER })
+        )
+      ).toBe(true);
+    });
+
+    it('is false inside the window, when a stale balance or a lagging node can still be wrong', () => {
+      expect(cctpNothingToConvert(args({ bridge: others(), usdcBalance: 0n, now: LATER - 1 }))).toBe(false);
+      expect(cctpNothingToConvert(args({ bridge: others(), othersClaim: null, now: LATER - 1 }))).toBe(false);
+    });
+
+    it('is false while unread or with USDC unsold', () => {
+      expect(cctpNothingToConvert(args({ bridge: others(), now: LATER }))).toBe(false);
+      expect(cctpNothingToConvert(args({ bridge: others(), usdcBalance: USDC('5'), now: LATER }))).toBe(
+        false
+      );
+      expect(
+        cctpNothingToConvert(
+          args({
+            bridge: others(),
+            usdcBalance: USDC('5'),
+            othersClaim: { transactionHash: '0x1' },
+            othersSold: false,
+            now: LATER
+          })
+        )
+      ).toBe(false);
+    });
+  });
+});
+
 describe('readCctpConvertOffer', () => {
   const reader = ({
     receipts,

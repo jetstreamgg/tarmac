@@ -13,7 +13,8 @@ import { useBridgeTracker } from './useBridgeTracker';
 const mocks = vi.hoisted(() => ({
   address: undefined as string | undefined,
   checkProgress: vi.fn(),
-  readSafeTxProgress: vi.fn()
+  readSafeTxProgress: vi.fn(),
+  notifyBridgeArrived: vi.fn()
 }));
 
 vi.mock('wagmi', () => ({
@@ -26,6 +27,7 @@ vi.mock('../adapters/registry', () => ({
   getBridgeAdapter: () => ({ checkProgress: mocks.checkProgress })
 }));
 vi.mock('../adapters/safe', () => ({ readSafeTxProgress: mocks.readSafeTxProgress }));
+vi.mock('../components/BridgeArrivedToast', () => ({ notifyBridgeArrived: mocks.notifyBridgeArrived }));
 
 const NOW = 1_800_000_000_000;
 
@@ -63,6 +65,7 @@ describe('useBridgeTracker', () => {
     mocks.address = nextAccount();
     mocks.checkProgress.mockReset();
     mocks.readSafeTxProgress.mockReset();
+    mocks.notifyBridgeArrived.mockReset();
   });
 
   it('writes what the route adapter reports into the store', async () => {
@@ -115,5 +118,84 @@ describe('useBridgeTracker', () => {
     renderTracker();
     await new Promise(resolve => setTimeout(resolve, 20));
     expect(mocks.checkProgress).not.toHaveBeenCalled();
+  });
+
+  describe('the arrived toast', () => {
+    it('tells the viewer once when a bridge in their list lands, as listed in Activity', async () => {
+      mocks.checkProgress.mockResolvedValue({ kind: 'arrived' });
+      seed({ txHash: '0xland' });
+      renderTracker();
+      await waitFor(() => expect(mocks.notifyBridgeArrived).toHaveBeenCalledTimes(1));
+      expect(mocks.notifyBridgeArrived.mock.calls[0]?.[0]).toMatchObject({
+        bridge: { id: '0xland', settledAt: expect.any(Number) },
+        account: mocks.address,
+        inActivity: true,
+        familyChainId: 1
+      });
+      await new Promise(resolve => setTimeout(resolve, 20));
+      expect(mocks.notifyBridgeArrived).toHaveBeenCalledTimes(1);
+    });
+
+    it("tells the recipient of a bridge in the sender's list, as not in their Activity", async () => {
+      mocks.checkProgress.mockResolvedValue({ kind: 'arrived' });
+      const recipient = mocks.address!;
+      mocks.address = nextAccount();
+      const resolved = resolveBridgeRoute({
+        from: 'base',
+        to: 'ethereum',
+        amount: 1n,
+        facts: { cctp: { isOpen: true } }
+      });
+      if (resolved.status !== 'ok') throw new Error(resolved.reason);
+      pendingBridgeStore.upsert(
+        scope(),
+        createPendingBridge({
+          account: mocks.address,
+          amount: 1n,
+          from: 'base',
+          to: 'ethereum',
+          recipient,
+          route: resolved.route,
+          txHash: '0xincoming',
+          now: NOW
+        })
+      );
+      mocks.address = recipient;
+      renderTracker();
+      await waitFor(() => expect(mocks.notifyBridgeArrived).toHaveBeenCalledTimes(1));
+      expect(mocks.notifyBridgeArrived.mock.calls[0]?.[0]).toMatchObject({
+        bridge: { id: '0xincoming' },
+        account: recipient,
+        inActivity: false
+      });
+    });
+
+    it('stays quiet on a claim the user sent, whose own flow told them', async () => {
+      mocks.checkProgress.mockResolvedValue({ kind: 'arrived' });
+      const bridge = seed({ txHash: '0xclaimed' });
+      pendingBridgeStore.update(scope(), bridge.id, entry => ({
+        ...entry,
+        status: 'ready',
+        nextAction: 'finalize',
+        actions: [{ action: 'finalize', txHash: '0xf', at: NOW, status: 'sent' }]
+      }));
+      renderTracker();
+      await waitFor(() => expect(stored(bridge.id)?.settledAt).toEqual(expect.any(Number)));
+      expect(mocks.notifyBridgeArrived).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [{ kind: 'waiting' }],
+      [{ kind: 'ready', nextAction: 'claim' }],
+      [{ kind: 'failed', reason: 'x' }],
+      [{ kind: 'expired' }]
+    ])('stays quiet on $kind', async progress => {
+      mocks.checkProgress.mockResolvedValue(progress);
+      seed({ txHash: '0xother' });
+      renderTracker();
+      await waitFor(() => expect(mocks.checkProgress).toHaveBeenCalled());
+      await new Promise(resolve => setTimeout(resolve, 20));
+      expect(mocks.notifyBridgeArrived).not.toHaveBeenCalled();
+    });
   });
 });
