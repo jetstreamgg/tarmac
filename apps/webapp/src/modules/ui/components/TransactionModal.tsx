@@ -308,6 +308,8 @@ export function TransactionModal({
   // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
   // in the wallet" during an HTTP address check (APP-501).
   const badgeFailed = txStatus === TxStatus.ERROR;
+  // May have executed: a warning, not a failure, and nothing on screen may send it again.
+  const unconfirmed = badgeFailed && outcomeUnknown;
   // A declined/failed terms signature is not a transaction — nothing reached
   // the chain — so the chip names the signature rather than claiming a
   // rolled-back transaction (the failed row below already says as much).
@@ -322,13 +324,11 @@ export function TransactionModal({
       <Trans>Signature failed</Trans>
     ) : badgeFailed && userRejected ? (
       <Trans>Request declined</Trans>
-    ) : badgeFailed && outcomeUnknown ? (
+    ) : unconfirmed ? (
       <Trans>Couldn&apos;t confirm</Trans>
     ) : (
       statusBadgeLabel[txStatus]
     ));
-  // May have executed: a warning, not a failure, and nothing on screen may send it again.
-  const unconfirmed = badgeFailed && outcomeUnknown;
   const badgeVariant = unconfirmed ? 'warning' : badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
@@ -458,7 +458,7 @@ export function TransactionModal({
     ? t`Signature failed`
     : userRejected
       ? t`Transaction declined`
-      : outcomeUnknown
+      : unconfirmed
         ? t`Couldn't confirm transaction`
         : t`Transaction failed`;
   const displayTitle = isTransaction
@@ -960,7 +960,13 @@ export function TransactionModal({
                   </div>
                 )}
 
-                {txStatus === TxStatus.ERROR && (
+                {unconfirmed && (
+                  <Button variant="primary" size="xl" className="w-full" onClick={handleClose}>
+                    <Trans>Close</Trans>
+                  </Button>
+                )}
+
+                {txStatus === TxStatus.ERROR && !unconfirmed && (
                   <>
                     {chainGuardBlock}
                     <div className="flex w-full gap-3">

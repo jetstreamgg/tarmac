@@ -198,11 +198,21 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
     const lost = new UnknownRpcError(new UnknownBundleIdError(new Error('wallet')));
     bundle.id = '0xb';
     bundle.status = { ...idleStatus, error: lost };
-    renderHook(() => useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never));
+    const { rerender } = renderHook(() =>
+      useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never)
+    );
     expect(onError).toHaveBeenCalledTimes(1);
     const [error] = onError.mock.calls[0];
     expect(error).toBeInstanceOf(TransactionOutcomeUnknownError);
     expect(error.cause).toBe(lost);
+
+    // A refetch of the settled query (focus, invalidation) fails again with a new error object.
+    bundle.status = {
+      ...idleStatus,
+      error: new UnknownRpcError(new UnknownBundleIdError(new Error('wallet')))
+    };
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 });
 

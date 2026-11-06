@@ -1321,6 +1321,15 @@ export function TransactionProvider({
       // already sent a transaction, leaving the modal on "Preparing". For a
       // refusal the session generation alone says whether it is ours.
       const preWriteRefusal = !hash && txStatusRef.current === TxStatus.IDLE;
+      const unknown = error instanceof TransactionOutcomeUnknownError;
+      if (unknown) {
+        // It may have executed: bring history and on-chain reads up to date, so
+        // the page shows it and a relaunch reviews current figures. Ahead of the
+        // session guard, like onSuccess: the modal may have closed mid-send.
+        // Not the batch status query itself, whose failure brought us here.
+        void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current });
+        void queryClient.invalidateQueries({ predicate: query => query.queryKey[0] !== 'callsStatus' });
+      }
       if (
         preWriteRefusal
           ? sessionGen !== sessionGenRef.current
@@ -1332,16 +1341,9 @@ export function TransactionProvider({
       txStatusRef.current = TxStatus.ERROR;
       const rejected = isUserRejectedRequestError(error);
       setUserRejected(rejected);
-      const unknown = error instanceof TransactionOutcomeUnknownError;
       setOutcomeUnknown(unknown);
       // A Reject has its own copy; anything else that reverted says why.
       setFailureReason(rejected || unknown ? undefined : revertMessage(error));
-      if (unknown) {
-        // It may have executed: bring history and every on-chain read up to
-        // date, so the page shows it and a relaunch reviews current figures.
-        void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current });
-        void queryClient.invalidateQueries();
-      }
       if (hash) {
         txHashRef.current = hash;
       }

@@ -158,8 +158,11 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   // must not re-run because a caller passed a new inline function.
   const emitSuccess = useEffectEvent((hash?: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
+  // A refetch of a settled status query (window focus, an invalidation) hands
+  // the effect a new error or data object; the bundle was already reported.
+  const settledIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (mutationData?.id) {
+    if (mutationData?.id && settledIdRef.current !== mutationData.id) {
       // A wallet that runs the bundle as separate transactions can report the whole bundle as
       // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
       const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
@@ -178,6 +181,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       } else {
         return;
       }
+      settledIdRef.current = mutationData.id;
       if (detachedRef.current) finishDetached();
     }
   }, [isSuccess, miningError, mutationData?.id, data, finishDetached]);

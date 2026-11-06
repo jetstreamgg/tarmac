@@ -277,7 +277,16 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     expect((screen.getByTestId('transaction-modal-back') as HTMLButtonElement).disabled).toBe(true);
 
-    expect(invalidate).toHaveBeenCalled();
+    // Everything but the batch status query, whose refetch would report the bundle again.
+    const matches = (filters: unknown, key: string) =>
+      (filters as { predicate?: (q: { queryKey: unknown[] }) => boolean }).predicate?.({
+        queryKey: [key, {}]
+      });
+    expect(
+      invalidate.mock.calls.some(
+        ([filters]) => matches(filters, 'readContract') && !matches(filters, 'callsStatus')
+      )
+    ).toBe(true);
     const ctx = vi.mocked(reportError).mock.calls[0][1];
     expect(ctx.level).toBe('warning');
     expect(ctx.fingerprint).toEqual(['transaction-outcome-unknown']);

@@ -116,6 +116,9 @@ export const stepFailureDetail = {
   upgrade: (symbol: string) => t`The ${symbol} hasn't been upgraded.`
 };
 
+const unknownOutcomeCopy = () =>
+  t`Your wallet stopped reporting on this transaction, so it may still have gone through. Check your wallet's activity before trying again.`;
+
 const normalize = (step: TransactionStep) => (typeof step === 'string' ? { label: step } : step);
 type NormalizedStep = ReturnType<typeof normalize>;
 
@@ -206,7 +209,7 @@ export function deriveTransactionStepItems({
           label: t`Transaction status unknown`,
           tokenSymbol: undefined,
           state: 'failed',
-          description: t`Your wallet stopped reporting on this transaction, so it may still have gone through. Check your wallet's activity before trying again.`
+          description: unknownOutcomeCopy()
         }
       ];
     }
@@ -243,6 +246,16 @@ export function deriveTransactionStepItems({
     // later ones stay upcoming. A signature has no on-chain rollback, so it
     // gets its own sentence.
     if (failed && rowsOfCurrentWrite[i]) {
+      if (outcomeUnknown && !isSignature) {
+        return {
+          stepNumber: i + 1,
+          label: t`${label} status unknown`,
+          tokenSymbol: undefined,
+          targetTokenSymbol: undefined,
+          state: 'failed' as const,
+          description: unknownOutcomeCopy()
+        };
+      }
       const retry = i === lastRowOfCurrentWrite ? ('trailing' as const) : undefined;
       // A wallet Reject is the user backing out, not a network refusal: no
       // rollback sentence, no "hasn't been X" consequence (nothing was sent),
