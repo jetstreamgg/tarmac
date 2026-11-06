@@ -403,24 +403,46 @@ describe('PendingBridges', () => {
       ['ready', THIRD],
       ['on its way', { ...THIRD, status: 'pending' as const }],
       ['minted to its sender', { ...THIRD, recipient: SENDER }]
-    ])('offers only to switch wallet, %s', (_, bridge) => {
+    ])('offers nothing to do but shows Claim waiting for the destination wallet, %s', (_, bridge) => {
       mocks.bridges = [bridge];
       renderList();
       const card = screen.getByTestId('pending-bridge-card');
-      const switchWallet = screen.getByTestId('pending-bridge-switch-wallet');
-      expect(switchWallet.textContent).toBe('Switch wallet');
-      // The header's single action, before the note.
+      const claim = screen.getByTestId('pending-bridge-claim-elsewhere');
+      expect(claim.textContent).toBe('Claim');
+      // The header's single button, before the note, and it does nothing here.
       expect(card.querySelectorAll('button')).toHaveLength(1);
+      expect(claim).toHaveProperty('disabled', true);
       expect(
-        switchWallet.compareDocumentPosition(screen.getByTestId('pending-bridge-third-wallet-note')) &
+        claim.compareDocumentPosition(screen.getByTestId('pending-bridge-third-wallet-note')) &
           Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
       expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-recipient-note')).toBeNull();
       expect(screen.queryByTestId('pending-bridge-incoming-note')).toBeNull();
-      fireEvent.click(switchWallet);
-      expect(mocks.openConnectModal).toHaveBeenCalledOnce();
+      fireEvent.click(claim);
+      expect(props.onAction).not.toHaveBeenCalled();
+      expect(props.onActionIn).not.toHaveBeenCalled();
+    });
+
+    // The same lookup finds native withdrawals, whose steps aren't a claim.
+    it.each([
+      ['prove', 'Prove'],
+      ['finalize', 'Finalize']
+    ] as const)('names a native withdrawal step it waits for, %s', (nextAction, label) => {
+      mocks.bridges = [{ ...THIRD, routeKind: 'native', nextAction }];
+      renderList();
+      const step = screen.getByTestId('pending-bridge-claim-elsewhere');
+      expect(step.textContent).toBe(label);
+      expect(step).toHaveProperty('disabled', true);
+    });
+
+    it('shows no button while no step is due yet', () => {
+      mocks.bridges = [{ ...THIRD, routeKind: 'native', status: 'pending', nextAction: undefined }];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-claim-elsewhere')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-card').querySelectorAll('button')).toHaveLength(0);
+      expect(screen.getByTestId('pending-bridge-third-wallet-note')).toBeTruthy();
     });
 
     it('says which wallet can claim it and names both wallets', () => {
@@ -462,33 +484,36 @@ describe('PendingBridges', () => {
       );
     });
 
-    // Figma "Ready to claim by the recipient (sender)": the link inside the note, Switch wallet alone below it.
-    it('keeps the claim link in the note and Switch wallet below it once it is ready', () => {
+    // Figma "Ready to claim by the recipient (sender)": the link inside the note, the wallet pointer alone below it.
+    it('keeps the claim link in the note and points to the recipient wallet below it once it is ready', () => {
       mocks.bridges = [{ ...TO_OTHER, txHash: BURN_HASH }];
       renderList();
-      const switchWallet = screen.getByTestId('pending-bridge-switch-wallet');
+      const pointer = screen.getByTestId('pending-bridge-claim-with-recipient');
       const link = screen.getByTestId('pending-bridge-claim-link');
       expect(note()?.textContent).toBe(
         "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Claiming on another device? Get claim link"
       );
       expect(note()!.contains(link)).toBe(true);
       expect(note()!.className).toMatch(/-mt-2\b/);
-      expect(switchWallet.textContent).toBe('Switch wallet');
-      expect(switchWallet.className).toMatch(/\bw-full\b/);
-      expect(note()!.compareDocumentPosition(switchWallet) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(pointer.textContent).toBe('Claim with your recipient wallet');
+      expect(pointer.className).toMatch(/\bw-full\b/);
+      // Accounts switch in the wallet app, so it does nothing here.
+      expect(pointer).toHaveProperty('disabled', true);
+      expect(note()!.compareDocumentPosition(pointer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+      fireEvent.click(pointer);
       expect(mocks.openConnectModal).not.toHaveBeenCalled();
-      fireEvent.click(switchWallet);
-      expect(mocks.openConnectModal).toHaveBeenCalledOnce();
+      expect(props.onAction).not.toHaveBeenCalled();
     });
 
-    it('offers no Switch wallet while it is on its way, nor to the recipient', () => {
+    it('points to no wallet while it is on its way, nor to the recipient', () => {
       mocks.bridges = [
         { ...TO_OTHER, status: 'pending' },
         { ...TO_OTHER, id: '0xmine', recipient: ACCOUNT }
       ];
       renderList();
-      expect(screen.queryByTestId('pending-bridge-switch-wallet')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-with-recipient')).toBeNull();
+      expect(screen.queryByText('Claim with your recipient wallet')).toBeNull();
     });
 
     it('names the destination wallet beside the status, by its ENS name once known (Figma 71, 73)', () => {

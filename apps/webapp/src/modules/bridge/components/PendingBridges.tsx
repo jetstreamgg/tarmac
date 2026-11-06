@@ -7,7 +7,6 @@ import { mainnet } from 'viem/chains';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Loader } from '@/components/ui/loader';
-import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { toast } from '@/components/ui/use-toast';
 import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
 import { ArrowTopRight, LinkExternal } from '@/modules/icons';
@@ -517,14 +516,13 @@ function PendingBridgeCard({
   const note = pendingBridgeNote(bridge, now);
   const ethShortfall = useWithdrawalEthShortfall(bridge, account, familyChainId);
   const counterparty = bridgeCounterparty(bridge, account);
-  // Figma 75: a wallet that neither sent nor receives it can only switch to the one that claims it.
+  // Figma 75: a wallet that neither sent nor receives it can't claim it here.
   const thirdWallet = counterparty?.role === 'both';
   const claimLink = thirdWallet ? undefined : pendingClaimLink(window.location.origin, bridge);
   const amount = formatExactUsds(bridgedAmount(bridge.amount, bridge.routeKind));
-  // Figma "Ready to claim by the recipient (sender)": once ready, the sender may switch to the destination wallet.
-  const switchesWallet = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
+  // Figma "Ready to claim by the recipient (sender)": once ready, the sender is pointed to the destination wallet.
+  const pointsToRecipient = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
   const sentHint = !!hint && hint.kind !== 'switch-network';
-  const { openConnectModal } = useConnectModal();
   return (
     <div ref={cardRef} className={cardClassName} data-testid="pending-bridge-card">
       {/* A claim that ended in USDC shows the USDC (Figma 93). */}
@@ -544,14 +542,18 @@ function PendingBridgeCard({
             <Trans>Dismiss</Trans>
           </Button>
         ) : thirdWallet ? (
-          <Button
-            variant="primary"
-            size="m"
-            onClick={() => openConnectModal()}
-            data-testid="pending-bridge-switch-wallet"
-          >
-            <Trans>Switch wallet</Trans>
-          </Button>
+          // Only the destination wallet acts, and the app can't switch accounts: its next step waits in place.
+          bridge.nextAction ? (
+            <Button
+              variant="primary"
+              size="m"
+              className="w-24"
+              disabled
+              data-testid="pending-bridge-claim-elsewhere"
+            >
+              {nextActionLabel(bridge.nextAction)}
+            </Button>
+          ) : null
         ) : actionButton && bridge.nextAction ? (
           <Button
             variant="primary"
@@ -623,7 +625,7 @@ function PendingBridgeCard({
           className="text-fgSecondary -mt-2 text-xs leading-[18px]"
           dataTestId="pending-bridge-recipient-note"
         >
-          {switchesWallet ? (
+          {pointsToRecipient ? (
             <Trans>
               Ready on Ethereum. {formatAddress(bridge.recipient, 6, 4)} needs to claim it from that wallet to
               receive USDS. If it&apos;s your wallet, switch to it.
@@ -647,15 +649,16 @@ function PendingBridgeCard({
         </Text>
       )}
 
-      {switchesWallet && (
+      {pointsToRecipient && (
+        // Accounts switch in the wallet app, not here, so this only says where the claim happens.
         <Button
           variant="primary"
           size="m"
           className="w-full"
-          onClick={() => openConnectModal()}
-          data-testid="pending-bridge-switch-wallet"
+          disabled
+          data-testid="pending-bridge-claim-with-recipient"
         >
-          <Trans>Switch wallet</Trans>
+          <Trans>Claim with your recipient wallet</Trans>
         </Button>
       )}
 
