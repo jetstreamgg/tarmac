@@ -187,7 +187,7 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
       <div className="flex items-start gap-6">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <ResponsiveModalTitle className="text-fgPrimary font-circle text-lg leading-5.5 font-medium tracking-[-0.36px]">
-            <Trans>Find your bridge</Trans>
+            <Trans>Find your bridge transaction</Trans>
           </ResponsiveModalTitle>
           <Text tag="p" className="text-fgSecondary max-w-[420px] text-sm leading-[22px]">
             <Trans>
