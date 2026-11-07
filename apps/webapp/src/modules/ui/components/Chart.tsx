@@ -33,9 +33,6 @@ import { Trans } from '@lingui/react/macro';
 import { VStack } from '@/modules/layout/components/VStack';
 import { Warning } from '@/modules/icons/Warning';
 
-const dateFormat = 'MMM d';
-const monthFormat = 'MMM y';
-
 export type TimeFrame = 'w' | 'm' | 'y' | 'all';
 
 const TimeframeControls = ({
@@ -220,7 +217,19 @@ function useChartTooltipPortal(): HTMLElement | null {
   return portal;
 }
 
-const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
+const dateFormatters = (timeZone?: string) => ({
+  day: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }),
+  month: new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone })
+});
+const localDateFormatters = dateFormatters();
+const utcDateFormatters = dateFormatters('UTC');
+
+const formatDate = (date: Date, tf: TimeFrame, utcDates = false) => {
+  const formatters = utcDates ? utcDateFormatters : localDateFormatters;
+  return (['y', 'all'].includes(tf) ? formatters.month : formatters.day).format(date);
+};
+
+const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP, utcDates = false) => {
   if (!data.length) {
     return [];
   }
@@ -237,13 +246,7 @@ const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
 
   filteredData.push(data[data.length - 1]); // Always include the last element
 
-  const finalFormat = ['y', 'all'].includes(tf) ? monthFormat : dateFormat;
-  return filteredData.map(item => format(new Date(item.date?.toISOString()), finalFormat));
-};
-
-const formatDate = (date: Date, tf: TimeFrame) => {
-  const finalFormat = ['y', 'all'].includes(tf) ? monthFormat : dateFormat;
-  return format(date, finalFormat);
+  return filteredData.map(item => formatDate(new Date(item.date?.toISOString()), tf, utcDates));
 };
 
 export type Data = {
@@ -391,6 +394,9 @@ interface ChartProps {
   /** Line/area color. Omit for the default teal; pass a hex to theme the series
    * (e.g. the Stake destination chart's brand indigo #757dff). */
   color?: string;
+  /** Label dates by their UTC day, for series of daily buckets stamped at
+   * midnight UTC — in the viewer's zone they read a day early west of UTC. */
+  utcDates?: boolean;
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
@@ -687,7 +693,8 @@ function ChartContent({
   chartHeight,
   color,
   seriesKey,
-  isDetail = false
+  isDetail = false,
+  utcDates = false
 }: {
   data: Data[];
   isLarge: boolean;
@@ -711,6 +718,7 @@ function ChartContent({
   seriesKey?: string;
   /** detail variant: no date axis under the plot, so it runs to the card floor. */
   isDetail?: boolean;
+  utcDates?: boolean;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
@@ -785,7 +793,7 @@ function ChartContent({
                 <ChartTooltip
                   symbol={symbol}
                   isPercentage={isPercentage}
-                  labelFormatter={date => formatDate(date, activeTimeframe)}
+                  labelFormatter={date => formatDate(date, activeTimeframe, utcDates)}
                   prefix={prefix}
                   tooltipLabel={tooltipLabel}
                   tokenSymbols={tokenSymbols}
@@ -846,7 +854,8 @@ export function Chart({
   activeMetric,
   onMetricChange,
   showTrend = false,
-  color
+  color,
+  utcDates = false
 }: ChartProps) {
   const isDetail = variant === 'detail';
   const containerRef = useRef<HTMLDivElement>(null);
@@ -887,7 +896,7 @@ export function Chart({
     ) : undefined;
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>(initialTimeFrame);
   const [width, setWidth] = useState<number>(0);
-  const dateAxis = formatedXAxis(data, activeTimeframe, bpi);
+  const dateAxis = formatedXAxis(data, activeTimeframe, bpi, utcDates);
 
   useEffect(() => {
     const containerElement = containerRef.current;
@@ -1037,6 +1046,7 @@ export function Chart({
             isLoading={isLoading}
             error={error}
             isDetail={isDetail}
+            utcDates={utcDates}
             chartHeight={isDetail ? (isMobileDetail ? 203 : 263) : undefined}
             tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
             tokenSymbols={tokenSymbols}

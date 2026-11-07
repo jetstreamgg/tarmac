@@ -69,6 +69,7 @@ export function PendleDetailChart({ market }: { market: PendleMarketConfig }) {
         isLoading={isLoading}
         error={error ?? undefined}
         isPercentage
+        utcDates
         label={matured ? <Trans>Fixed APY history</Trans> : <Trans>Fixed APY</Trans>}
         tooltipLabel={<Trans>Rate</Trans>}
         displayValue={currentRate}

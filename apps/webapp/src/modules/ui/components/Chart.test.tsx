@@ -201,3 +201,38 @@ describe('Chart — trend badge', () => {
     expect(screen.getByTestId('chart-trend-badge').textContent).toBe('+10,000+%');
   });
 });
+
+describe('Chart — date labels', () => {
+  const originalTz = process.env.TZ;
+
+  afterEach(() => {
+    cleanup();
+    process.env.TZ = originalTz;
+  });
+
+  // Daily buckets stamped at midnight UTC, viewed from west of UTC.
+  const renderAxis = (utcDates?: boolean) => {
+    process.env.TZ = 'America/Los_Angeles';
+    render(
+      <Chart
+        data={[
+          { value: 1, date: new Date('2026-01-01T00:00:00Z') },
+          { value: 2, date: new Date('2026-01-02T00:00:00Z') }
+        ]}
+        utcDates={utcDates}
+      />
+    );
+  };
+
+  it('labels a midnight-UTC bucket by its UTC day when asked', () => {
+    renderAxis(true);
+    expect(screen.getAllByText('Jan 2').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Dec 31')).toBeNull();
+  });
+
+  it("labels by the viewer's day by default", () => {
+    renderAxis();
+    expect(screen.getAllByText('Dec 31').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Jan 2')).toBeNull();
+  });
+});
