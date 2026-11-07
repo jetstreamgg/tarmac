@@ -185,11 +185,12 @@ export function StepsItem({
   );
 }
 
-export type StepsBadgeVariant = 'brand' | 'error' | 'default';
+export type StepsBadgeVariant = 'brand' | 'error' | 'warning' | 'default';
 
 const badgeVariantClasses: Record<StepsBadgeVariant, string> = {
   brand: 'bg-statusBrandBg text-statusBrand',
   error: 'bg-statusErrorBg text-statusError',
+  warning: 'bg-statusWarningBg text-statusWarning',
   default: 'bg-glassBadge text-fgSecondary'
 };
 
@@ -243,7 +244,7 @@ export type StepsProps = {
   /** Right-aligned header badge content (e.g. "Confirm in the wallet"). */
   badge?: ReactNode;
   /** Treatment of the header badge: `brand` while in flight, `error` once the transaction failed. */
-  badgeVariant?: Extract<StepsBadgeVariant, 'brand' | 'error'>;
+  badgeVariant?: Extract<StepsBadgeVariant, 'brand' | 'error' | 'warning'>;
   children: ReactNode;
   className?: string;
 };
