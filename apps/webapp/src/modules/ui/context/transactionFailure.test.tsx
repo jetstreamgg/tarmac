@@ -289,7 +289,6 @@ describe('TransactionModal failure & recovery', () => {
     ).toBe(true);
     const ctx = vi.mocked(reportError).mock.calls[0][1];
     expect(ctx.level).toBe('warning');
-    expect(ctx.fingerprint).toEqual(['transaction-outcome-unknown']);
 
     fireEvent.click(screen.getByTestId('transaction-unconfirmed-close'));
     expect(screen.queryByText("Couldn't confirm transaction")).toBeNull();

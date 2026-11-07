@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { TriangleAlert } from 'lucide-react';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { InProgress, SuccessCheck, FailedX } from '@/modules/icons';
+import { Warning } from '@/modules/icons/Warning';
 import { Text } from '@/modules/layout/components/Typography';
 import { formatAddress } from '@/utils';
 
@@ -44,7 +44,7 @@ export function MinimizedTransactionToast({
       <span className="shrink-0">
         {unconfirmed ? (
           <span className="bg-statusWarningBg text-statusWarning flex size-10 items-center justify-center rounded-full">
-            <TriangleAlert className="size-5" aria-hidden="true" />
+            <Warning viewBox="0 0 16 16" fill="currentColor" className="size-5" aria-hidden="true" />
           </span>
         ) : (
           statusIcon[status]

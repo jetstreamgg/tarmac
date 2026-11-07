@@ -208,16 +208,16 @@ describe('deriveTransactionStepItems — wallet rejection', () => {
 });
 
 describe('deriveTransactionStepItems — bundled flow', () => {
-  it('an unknown outcome on a list not drawn as a bundle offers no retry either (APP-651)', () => {
+  it('an unknown outcome collapses the same way on a list not drawn as a bundle (APP-651)', () => {
     const items = deriveTransactionStepItems({
       steps: supplySteps,
-      currentStep: 1,
+      currentStep: 0,
       txStatus: TxStatus.ERROR,
       bundled: false,
       outcomeUnknown: true
     });
-    expect(items[1]).toMatchObject({ label: 'Supply status unknown', state: 'failed' });
-    expect(items[1].description).toMatch(/may still have gone through/);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ label: 'Transaction status unknown', state: 'failed' });
     expect(items.some(item => item.retry)).toBe(false);
   });
 

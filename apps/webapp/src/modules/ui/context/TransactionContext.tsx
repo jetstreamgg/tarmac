@@ -1399,9 +1399,7 @@ export function TransactionProvider({
           fingerprint:
             normalizedError instanceof TransactionRevertedError
               ? ['transaction-reverted', flow, action]
-              : unknown
-                ? ['transaction-outcome-unknown']
-                : undefined,
+              : undefined,
           extra: {
             chainId: sessionChainRef.current,
             txHash: hash,
