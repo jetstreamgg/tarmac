@@ -43,8 +43,9 @@ vi.mock('@/components/ui/use-toast', () => ({
   toast: { dismiss: vi.fn() },
   toastWithClose: toastWithCloseMock
 }));
+const startNewFlow = vi.hoisted(() => vi.fn());
 vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
-  useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
+  useAnalyticsFlow: () => ({ startNewFlow, getFlowId: () => 'flow-test' })
 }));
 vi.mock('motion/react', async io => {
   const actual = await io<typeof import('motion/react')>();
@@ -297,6 +298,49 @@ describe('a send refused right after the signature prelude', () => {
     expect(hasText('Nothing was sent.')).toBe(false);
   });
 
+  it('a Retry after a mined step that owes the signature again is refused on the failed step, not past it', async () => {
+    mount();
+    signature.owed = true;
+    let refuse = false;
+    launch({
+      steps: ['Approve', 'Send USDS'],
+      onConfirm: () => {
+        if (refuse) cb().onError(new TransactionRefusedError(REASON), '');
+        else cb().onMutate();
+      }
+    });
+    await confirm();
+    await sign();
+    act(() => cb().onStart('0xapprove'));
+    act(() => cb().onMutate());
+    act(() => cb().onError(walletRejection(), ''));
+    expect(hasText('Send USDS declined')).toBe(true);
+
+    refuse = true;
+    fireEvent.click(retryButton()!);
+    await act(async () => {});
+    await sign();
+    expect(hasText('Send USDS not sent')).toBe(true);
+    expect(hasText('Approve not sent')).toBe(false);
+    expect(hasText(REASON)).toBe(true);
+    expect(hasText('Nothing was sent.')).toBe(false);
+  });
+
+  it('a typed refusal whose text reads like a wallet rejection still shows on the send step', async () => {
+    mount();
+    await writeOneTransaction();
+    signature.owed = true;
+    launch({
+      onConfirm: () => cb().onError(new TransactionRefusedError('Preflight failed: user denied access.'), '')
+    });
+    await confirm();
+    await sign();
+    expect(hasText('Send USDS not sent')).toBe(true);
+    expect(hasText('user denied access')).toBe(true);
+    expect(hasText('Sign terms failed')).toBe(false);
+    expect(hasText('Sign in your wallet')).toBe(false);
+  });
+
   it('after the signature, the engine’s first write still takes over the status', async () => {
     mount();
     signature.owed = true;
@@ -366,5 +410,7 @@ describe('what stays out of the refusal path', () => {
     expect(analytics.trackTermsSignatureDeclined).not.toHaveBeenCalled();
     expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
     expect(toastWithCloseMock).not.toHaveBeenCalled();
+    // The next launch is a new attempt, with a flow id of its own.
+    expect(startNewFlow).toHaveBeenCalled();
   });
 });

@@ -318,6 +318,10 @@ export function TransactionProvider({
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
   const hasMinedStepRef = useRef(false);
+  // Prelude rows a Retry after a mined step newly put ahead of the failed write
+  // (see handleRetry). That write's onMutate moves the stepper past them; a
+  // refusal in its place does the same in onError.
+  const preludeAddedOnRetryRef = useRef(0);
   const markMinedStep = useCallback(() => {
     setHasMinedStep(true);
     hasMinedStepRef.current = true;
@@ -536,7 +540,13 @@ export function TransactionProvider({
   // app_widget_flow_started has fired and a cancelled completion here would
   // pair with nothing.
   const handleInitializedAbandon = useCallback(() => {
-    if (gatePhaseRef.current === 'screening' || gatePhaseRef.current === 'signed') return;
+    if (gatePhaseRef.current === 'screening') return;
+    // Signed, with nothing in the wallet yet: no decline and no cancelled
+    // transaction to report, but the next launch is a new attempt.
+    if (gatePhaseRef.current === 'signed') {
+      startNewFlow();
+      return;
+    }
     if (gatePhaseRef.current === 'signature') {
       emitTermsSignatureDeclined('abandoned');
       startNewFlow();
@@ -1153,8 +1163,9 @@ export function TransactionProvider({
     runGated('retry', () => {
       if (hasMinedStepRef.current) {
         // The engine resumes at the failed write; shift past any prelude the gate dropped.
-        const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
-        if (dropped > 0) setCurrentStep(s => s - dropped);
+        const added = (preludeStepsRef.current?.length ?? 0) - preludeBefore;
+        if (added < 0) setCurrentStep(s => s + added);
+        preludeAddedOnRetryRef.current = Math.max(added, 0);
       } else {
         resetTransactionProgress();
       }
@@ -1327,13 +1338,14 @@ export function TransactionProvider({
       // refusal the session generation alone says whether it is ours. So for
       // one on a Retry, at ERROR, in a session that has written nothing, and for
       // one right after the signature prelude, at the INITIALIZED the gate left
-      // standing. A wallet rejection there is no refusal: it can only be a
-      // prompt an earlier session abandoned.
+      // standing. A typed refusal is always this session's: no wallet write
+      // produces one, whatever its text says. An untyped wallet rejection there
+      // is no refusal: it can only be a prompt an earlier session abandoned.
       const refusedAfterSignature =
         !hash &&
         txStatusRef.current === TxStatus.INITIALIZED &&
         gatePhaseRef.current === 'signed' &&
-        !isUserRejectedRequestError(error);
+        (error instanceof TransactionRefusedError || !isUserRejectedRequestError(error));
       const preWriteRefusal =
         refusedAfterSignature ||
         (!hash &&
@@ -1363,9 +1375,14 @@ export function TransactionProvider({
         txHashRef.current = hash;
       }
       // The send was refused, not the signature: the stepper moves onto the send
-      // step, as this write's onMutate would have, and the gate's turn is over.
+      // step and the gate's turn is over. Without a mined step the Retry put the
+      // stepper back on the signature row, so the send is the next one. After a
+      // mined step it stayed on the failed write, which only a newly owed
+      // prelude pushed down; moving it any further would mark the refused send
+      // completed.
       if (refusedAfterSignature) {
-        setCurrentStep(s => s + 1);
+        const advance = hasMinedStepRef.current ? preludeAddedOnRetryRef.current : 1;
+        if (advance) setCurrentStep(s => s + advance);
         gatePhaseRef.current = null;
         gateCopyRef.current = null;
         setGateCopy(null);
