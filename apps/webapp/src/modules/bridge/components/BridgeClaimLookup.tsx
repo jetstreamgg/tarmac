@@ -331,8 +331,8 @@ function ClaimLookup({ link, networks, onClose }: ClaimLookupProps) {
       </div>
       <ResponsiveModal open={open} onOpenChange={next => (next ? setOpen(true) : close())}>
         <ResponsiveModalContent className={bridgeModalCardClassName}>
-          {/* Remount per open so each lookup starts empty. */}
-          {open && <LookupForm link={link} networks={networks} onClose={close} />}
+          {/* Radix unmounts this after the exit animation, so each lookup starts empty. */}
+          <LookupForm link={link} networks={networks} onClose={close} />
         </ResponsiveModalContent>
       </ResponsiveModal>
     </>

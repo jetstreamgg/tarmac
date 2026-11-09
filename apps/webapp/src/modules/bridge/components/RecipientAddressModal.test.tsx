@@ -5,6 +5,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { stubDialogExitAnimation } from '@/test/stubDialogExitAnimation';
 import { RecipientAddressModal } from './RecipientAddressModal';
 
 const SAVED = `0x${'22'.repeat(20)}`;
@@ -59,5 +60,41 @@ describe('RecipientAddressModal Save', () => {
     renderModal();
     fireEvent.change(input(), { target: { value: 'not-an-address' } });
     expect(save().disabled).toBe(true);
+  });
+});
+
+describe('RecipientAddressModal open and close', () => {
+  beforeAll(() => {
+    i18n.loadAndActivate({ locale: 'en', messages: {} });
+  });
+  afterEach(cleanup);
+
+  const modal = (open: boolean) => (
+    <I18nProvider i18n={i18n}>
+      <RecipientAddressModal
+        open={open}
+        onOpenChange={() => {}}
+        recipient={SAVED}
+        family="evm"
+        onSave={() => {}}
+      />
+    </I18nProvider>
+  );
+
+  it('keeps the form in the closing modal until its exit animation ends', () => {
+    stubDialogExitAnimation();
+    const { rerender } = render(modal(true));
+    rerender(modal(false));
+    expect(screen.getByRole('dialog', { hidden: true }).getAttribute('data-state')).toBe('closed');
+    expect(input()).toBeTruthy();
+  });
+
+  it('drops an abandoned draft, reopening on the saved value', () => {
+    const { rerender } = render(modal(true));
+    fireEvent.change(input(), { target: { value: 'abandoned' } });
+    rerender(modal(false));
+    expect(screen.queryByTestId('bridge-recipient-input')).toBeNull();
+    rerender(modal(true));
+    expect(input().value).toBe(SAVED);
   });
 });
