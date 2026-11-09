@@ -34,12 +34,16 @@ vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (action: () => void) => action
 }));
 vi.mock('@/modules/ui/hooks/useTransactionRunActive', () => ({ useTransactionRunActive: () => false }));
+const { navigationOptions } = vi.hoisted(() => ({ navigationOptions: vi.fn() }));
 vi.mock('@/lib/navigation', () => ({
   useAppSearchParams: () => {
     const [params, setParams] = useState(() => new URLSearchParams());
     return [
       params,
-      (next: (current: URLSearchParams) => URLSearchParams) => setParams(next(new URLSearchParams(params)))
+      (next: (current: URLSearchParams) => URLSearchParams, options?: unknown) => {
+        navigationOptions(options);
+        setParams(next(new URLSearchParams(params)));
+      }
     ];
   }
 }));
@@ -118,4 +122,22 @@ it('keeps what was typed in the Bridge tab after a visit to Swap, as the Swap ta
 
   expect((screen.getByTestId('bridge-amount') as HTMLInputElement).value).toBe('12.5');
   expect(screen.getByTestId('bridge-to').textContent).toBe('arbitrum');
+});
+
+it('keeps the scroll position when switching tab in either direction', () => {
+  render(
+    <I18nProvider i18n={i18n}>
+      <AnalyticsFlowProvider>
+        <ConvertPage />
+      </AnalyticsFlowProvider>
+    </I18nProvider>
+  );
+  navigationOptions.mockClear();
+
+  openTab('bridge');
+  openTab('swap');
+
+  expect(navigationOptions).toHaveBeenCalledTimes(2);
+  expect(navigationOptions).toHaveBeenNthCalledWith(1, expect.objectContaining({ resetScroll: false }));
+  expect(navigationOptions).toHaveBeenNthCalledWith(2, expect.objectContaining({ resetScroll: false }));
 });

@@ -2,11 +2,9 @@ import { useMemo } from 'react';
 import type { Call } from 'viem';
 import { NO_VALUE } from '@/lib/constants';
 import { useFeePerGas, useNetworkFee, usePrices } from '@/hooks';
-import { computeFeeWei, feeWeiToUsd } from '@/hooks/shared/networkFee';
-import { formatUsd } from '@/utils';
 import { buildRouteOptionCard, type RouteOptionCard } from '../components/bridgeRouteOptions';
 import type { BridgeRouteOption } from '../model/resolveRoute';
-import { destinationGas, routeApprovals } from '../model/routeCosts';
+import { routeApprovals, routeFeeText } from '../model/routeCosts';
 
 type RouteSource = { calls: Call[]; isBatch: boolean };
 
@@ -57,17 +55,12 @@ export function useBridgeRouteCards({
     return ordered.map(option => {
       const kind = option.route.kind === 'cctp' ? 'cctp' : 'native';
       const sourceFeeWei = kind === 'cctp' ? cctpFeeWei : nativeFeeWei;
-      const usd =
-        option.unavailable || sourceFeeWei === undefined || ethFeePerGas === undefined
-          ? undefined
-          : feeWeiToUsd(
-              sourceFeeWei + computeFeeWei({ gas: destinationGas(option.route), feePerGas: ethFeePerGas }),
-              ethPrice
-            );
       const source = sources[kind];
       return buildRouteOptionCard({
         option,
-        networkFee: usd === undefined ? NO_VALUE : `~${formatUsd(usd)}`,
+        networkFee: option.unavailable
+          ? NO_VALUE
+          : routeFeeText({ route: option.route, sourceFeeWei, ethFeePerGas, ethPrice }),
         approvals: routeApprovals(option.route, { calls: source.calls.length, isBatch: source.isBatch })
       });
     });

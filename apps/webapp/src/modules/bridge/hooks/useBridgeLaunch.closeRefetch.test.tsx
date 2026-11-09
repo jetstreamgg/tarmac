@@ -67,6 +67,8 @@ vi.mock('@/hooks', async io => ({
   useIsSafeWallet: () => false,
   useSafeWalletStatus: () => 'not-safe',
   useNetworkFee: () => ({ data: undefined }),
+  useFeePerGas: () => ({ data: undefined }),
+  usePrices: () => ({ data: undefined }),
   useTokenBalance: () => ({ data: undefined, isLoading: false })
 }));
 vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));

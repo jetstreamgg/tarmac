@@ -38,18 +38,16 @@ export function RecipientAddressModal({
   return (
     <ResponsiveModal open={open} onOpenChange={onOpenChange}>
       <ResponsiveModalContent className={cn(bridgeModalCardClassName, 'gap-12')}>
-        {/* Remount per open so the draft starts from the saved value. */}
-        {open && (
-          <RecipientForm
-            recipient={recipient}
-            family={family}
-            onClose={() => onOpenChange(false)}
-            onSave={next => {
-              onSave(next);
-              onOpenChange(false);
-            }}
-          />
-        )}
+        {/* Radix unmounts this after the exit animation, so the draft starts from the saved value. */}
+        <RecipientForm
+          recipient={recipient}
+          family={family}
+          onClose={() => onOpenChange(false)}
+          onSave={next => {
+            onSave(next);
+            onOpenChange(false);
+          }}
+        />
       </ResponsiveModalContent>
     </ResponsiveModal>
   );

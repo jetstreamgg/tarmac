@@ -68,7 +68,7 @@ export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRou
                 data-testid={`bridge-route-option-${card.kind}`}
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="text-text font-circle flex items-center gap-2 text-base leading-5 font-medium">
+                  <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
                     {card.logo && <BridgeTypeLogo logo={card.logo} size={16} />}
                     {card.name}
                   </span>
@@ -88,10 +88,12 @@ export function BridgeRoutePicker({ cards, selected, onPick, onBack }: BridgeRou
                   {card.rows.map(row => (
                     <span
                       key={row.label}
-                      className="border-borderPrimary flex items-center justify-between border-b py-1.5 text-xs leading-4 last:border-b-0 last:pb-0"
+                      className="border-borderPrimary flex items-center justify-between border-b pt-2 pb-[7px] text-xs leading-[18px] first:pt-0 last:border-b-0 last:pb-0"
                     >
                       <span className="text-fgSecondary">{row.label}</span>
-                      <span className="text-text font-medium">{row.value}</span>
+                      <span className="text-text font-circle leading-[14px] font-medium tracking-[-0.24px]">
+                        {row.value}
+                      </span>
                     </span>
                   ))}
                 </span>

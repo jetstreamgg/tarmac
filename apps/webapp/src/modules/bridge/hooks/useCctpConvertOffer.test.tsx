@@ -89,7 +89,7 @@ const render = (bridge = claimed()) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client }, children);
-  return renderHook(() => useCctpConvertOffer(bridge), { wrapper }).result;
+  return renderHook(() => useCctpConvertOffer(bridge, NOW).offer, { wrapper }).result;
 };
 
 describe('useCctpConvertOffer', () => {
@@ -191,5 +191,44 @@ describe('useCctpConvertOffer', () => {
     await waitFor(() => expect(mocks.receipt).toHaveBeenCalled());
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(result.current).toBeUndefined();
+  });
+});
+
+describe('useCctpConvertOffer, whether anything is left', () => {
+  const state = (bridge: ReturnType<typeof claimed>, now = NOW) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children);
+    return renderHook(() => useCctpConvertOffer(bridge, now), { wrapper }).result;
+  };
+  const settled = () => applyProgress(claimed(), { kind: 'arrived' }, NOW);
+
+  beforeEach(() => {
+    mocks.account = ACCOUNT;
+    mocks.receipt.mockReset();
+    mocks.balance = { params: undefined, value: USDC('500') };
+  });
+
+  it('knows nothing is left once the claim sold the USDC, and is unsure before that', async () => {
+    mocks.receipt.mockResolvedValue({ status: 'success', logs: [transfer(L1_USDS, ACCOUNT)] });
+    const result = state(settled());
+    expect(result.current.nothingLeft).toBe(false);
+    await waitFor(() => expect(result.current.nothingLeft).toBe(true));
+    expect(result.current.offer).toBeUndefined();
+  });
+
+  it('has something left while it offers USDC', async () => {
+    mocks.receipt.mockResolvedValue({ status: 'success', logs: [transfer(L1_USDC, ACCOUNT)] });
+    const result = state(settled());
+    await waitFor(() => expect(result.current.offer).toBe(USDC('100')));
+    expect(result.current.nothingLeft).toBe(false);
+  });
+
+  it('stays unsure when the receipt fails to read', async () => {
+    mocks.receipt.mockRejectedValue(new Error('rpc down'));
+    const result = state(settled());
+    await waitFor(() => expect(mocks.receipt).toHaveBeenCalled());
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(result.current.nothingLeft).toBe(false);
   });
 });

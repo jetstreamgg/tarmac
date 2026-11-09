@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
-import { createElement, type ReactNode } from 'react';
+import { createElement, type ReactElement, type ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
@@ -52,6 +52,11 @@ const mocks = vi.hoisted(() => ({
   onSuccess: vi.fn(),
   appChainId: 1,
   networkFee: [] as { calls: unknown[]; chainId?: number; shouldUseBatch?: boolean; enabled?: boolean }[],
+  // The source calls' fee in wei, and Ethereum's fee per gas and ETH price for the steps there.
+  sourceFeeWei: undefined as bigint | undefined,
+  ethFeePerGas: undefined as bigint | undefined,
+  ethPrice: undefined as string | undefined,
+  feePerGas: [] as { chainId: number; enabled?: boolean }[],
   legs: [] as { names: string[]; getCallbacks: () => TxCallbacks }[],
   deposit: {
     ready: true,
@@ -105,8 +110,13 @@ vi.mock('@/hooks', async io => ({
   useBreakpointIndex: () => ({ bpi: mocks.bpi }),
   useNetworkFee: (args: (typeof mocks.networkFee)[number]) => {
     mocks.networkFee.push(args);
-    return { data: args.enabled ? { formatted: '$0.42' } : undefined };
+    return { data: args.enabled ? { formatted: '$0.42', feeWei: mocks.sourceFeeWei } : undefined };
   },
+  useFeePerGas: (chainId: number, enabled?: boolean) => {
+    mocks.feePerGas.push({ chainId, enabled });
+    return { data: mocks.ethFeePerGas };
+  },
+  usePrices: () => ({ data: mocks.ethPrice === undefined ? undefined : { ETH: { price: mocks.ethPrice } } }),
   useTokenBalance: ({ isNative }: { isNative?: boolean }) => {
     const value = isNative
       ? mocks.ethLoading
@@ -314,6 +324,10 @@ describe('useBridgeLaunch Confirm gate', () => {
       updates: [],
       appChainId: 1,
       networkFee: [],
+      sourceFeeWei: undefined,
+      ethFeePerGas: undefined,
+      ethPrice: undefined,
+      feePerGas: [],
       legs: [],
       cctp: undefined
     });
@@ -496,6 +510,19 @@ describe('useBridgeLaunch Confirm gate', () => {
     act(() => mocks.launched.at(-1)!.onConfirm!());
     expect(runCount()).toBe(0);
     expect(mocks.onError).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it.each([
+    ['names both wallets', OWNER, { from: SENDER, to: OWNER }],
+    ['names no wallet on a bridge to the same wallet', undefined, undefined]
+  ])('the Confirm screen %s', async (_name, recipient, addresses) => {
+    const view = renderBridge();
+    act(() => view.result.current.form.onInput('1'));
+    if (recipient) act(() => view.result.current.form.setRecipient(recipient));
+    await settle();
+    act(() => view.result.current.launch());
+    const hero = mocks.launched.at(-1)!.transactionScreenContent as ReactElement<{ addresses?: unknown }>;
+    expect(hero.props.addresses).toEqual(addresses);
   });
 
   it('Retry after the send was broadcast runs nothing again and stores one bridge', async () => {
@@ -797,6 +824,14 @@ describe('useBridgeLaunch Confirm gate', () => {
         shouldUseBatch: false,
         enabled: true
       });
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
+      expect(content.props.networkFee).toBe('$0.42');
+    });
+
+    it('reads no fee on Ethereum for a deposit, which has no steps there', async () => {
+      Object.assign(mocks, { sourceFeeWei: 10n ** 12n, ethFeePerGas: 10n ** 9n, ethPrice: '2000' });
+      await reviewDeposit();
+      expect(mocks.feePerGas.every(read => !read.enabled)).toBe(true);
       const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
       expect(content.props.networkFee).toBe('$0.42');
     });
@@ -1246,6 +1281,22 @@ describe('useBridgeLaunch Confirm gate', () => {
       mocks.withdrawal.needsApprove = false;
       await reviewWithdrawal('base');
       expect(stepLabels()).toEqual(['Bridge']);
+    });
+
+    it('adds the prove and finalize on Ethereum to the network fee, as the picker cards do', async () => {
+      Object.assign(mocks, { sourceFeeWei: 10n ** 12n, ethFeePerGas: 10n ** 9n, ethPrice: '2000' });
+      await reviewWithdrawal('base');
+      expect(mocks.feePerGas.at(-1)).toEqual({ chainId: 1, enabled: true });
+      // (0.000001 ETH on Base + 850k gas at 1 gwei on Ethereum) at $2,000.
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
+      expect(content.props.networkFee).toBe('~$1.70');
+    });
+
+    it("shows no network fee while Ethereum's fee per gas is unknown", async () => {
+      Object.assign(mocks, { sourceFeeWei: 10n ** 12n, ethPrice: '2000' });
+      await reviewWithdrawal('base');
+      const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
+      expect(content.props.networkFee).toBe('–');
     });
 
     it('blocks Confirm until the withdrawal is built, says why, and sends nothing', async () => {

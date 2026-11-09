@@ -87,7 +87,7 @@ const render = (pending = othersClaimed()) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client }, children);
-  return renderHook(() => useCctpConvertOffer(pending), { wrapper }).result;
+  return renderHook(() => useCctpConvertOffer(pending, NOW).offer, { wrapper }).result;
 };
 
 const settle = () => new Promise(resolve => setTimeout(resolve, 10));

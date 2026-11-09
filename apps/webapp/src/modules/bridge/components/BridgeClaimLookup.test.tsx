@@ -8,6 +8,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import type { Hex } from 'viem';
 import type { BridgeClaimLookupState, BridgeClaimTarget } from '../hooks/useBridgeClaimLookup';
 import type { PendingBridge } from '../model/types';
+import { stubDialogExitAnimation } from '@/test/stubDialogExitAnimation';
 import { BridgeClaimLookup } from './BridgeClaimLookup';
 
 const HASH = `0x${'ab'.repeat(32)}` as Hex;
@@ -115,11 +116,11 @@ describe('BridgeClaimLookup', () => {
   it('starts with the banner, the lookup closed, and looks nothing up', () => {
     renderLookup();
     const banner = screen.getByTestId('bridge-claim-lookup-banner');
-    expect(banner.textContent).toContain("Can't find your bridge?");
+    expect(banner.textContent).toContain("Can't find your bridge transaction?");
     expect(banner.textContent).toContain(
       'If you sent it from another device or browser, or someone sent it to you, find it with the transaction hash and claim it here.'
     );
-    expect(screen.getByTestId('bridge-claim-lookup-open').textContent).toBe('Find bridge');
+    expect(screen.getByTestId('bridge-claim-lookup-open').textContent).toBe('Find transaction');
     expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
     expect(lastTarget()).toBeUndefined();
   });
@@ -268,6 +269,25 @@ describe('BridgeClaimLookup', () => {
     expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
     expect(strippedParams()).toEqual({ tab: 'bridge' });
     expect(mocks.setParams.mock.calls[0][1]).toEqual({ replace: true });
+  });
+
+  it('keeps the form in the closing modal until its exit animation ends', () => {
+    stubDialogExitAnimation();
+    renderLookup();
+    open();
+    fireEvent.click(screen.getByTestId('bridge-claim-lookup-close'));
+    expect(screen.getByRole('dialog', { hidden: true }).getAttribute('data-state')).toBe('closed');
+    expect(screen.getByTestId('bridge-claim-lookup-form')).toBeTruthy();
+  });
+
+  it('starts empty each time the modal opens', () => {
+    renderLookup();
+    open();
+    typeHash(HASH);
+    fireEvent.click(screen.getByTestId('bridge-claim-lookup-close'));
+    expect(screen.queryByTestId('bridge-claim-lookup-form')).toBeNull();
+    open();
+    expect((screen.getByTestId('bridge-claim-lookup-hash') as HTMLInputElement).value).toBe('');
   });
 
   // Figma 86.

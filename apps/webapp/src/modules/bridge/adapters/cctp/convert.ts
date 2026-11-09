@@ -14,7 +14,7 @@ import {
   type TransactionReceipt
 } from 'viem';
 import { math } from '@/utils';
-import { canConvert } from '../../model/pendingTransitions';
+import { canConvert, canLaunchConvert } from '../../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeAction } from '../../model/types';
 import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { ChainReader } from '../types';
@@ -83,6 +83,44 @@ export function cctpConvertOffer({
   const minted = cctpBurnAmount(bridge.amount);
   const amount = usdcBalance < minted ? usdcBalance : minted;
   return amount > 0n ? amount : undefined;
+}
+
+// A node's logs can lag the nonce the tracker saw used: a scan that found nothing runs again for this long.
+export const OTHERS_CLAIM_RESCAN_MS = 10 * 60_000;
+
+/**
+ * True only when a settled card surely has no USDC left to offer, so it can leave. False while anything is
+ * unread, and for anyone but the recipient: the entry is shared, and leaving would take it from them too.
+ */
+export function cctpNothingToConvert({
+  bridge,
+  account,
+  offer,
+  claimSold,
+  usdcBalance,
+  othersClaim,
+  othersSold,
+  now
+}: {
+  bridge: PendingBridge;
+  account: string | undefined;
+  offer: bigint | undefined;
+  claimSold: boolean | undefined;
+  usdcBalance: bigint | undefined;
+  /** Someone else's receive: null when a scan found none. */
+  othersClaim: { transactionHash: string } | null | undefined;
+  othersSold: boolean | undefined;
+  now: number;
+}): boolean {
+  if (!canLaunchConvert(bridge)) return true;
+  if (!canConvert(bridge, account)) return false;
+  if (confirmedClaimTxHash(bridge))
+    return claimSold === true || (claimSold === false && usdcBalance !== undefined && offer === undefined);
+  // A balance read before the mint or a lagging node can still say none, so someone else's waits out the rescan.
+  return (
+    now - (bridge.settledAt ?? 0) >= OTHERS_CLAIM_RESCAN_MS &&
+    (usdcBalance === 0n || othersClaim === null || othersSold === true)
+  );
 }
 
 /** Without `getTransaction`, a leg not mined never counts as dropped. */

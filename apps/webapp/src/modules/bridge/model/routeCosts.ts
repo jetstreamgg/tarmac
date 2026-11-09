@@ -1,3 +1,6 @@
+import { NO_VALUE } from '@/lib/constants';
+import { computeFeeWei, feeWeiToUsd } from '@/hooks/shared/networkFee';
+import { formatUsd } from '@/utils';
 import { destinationActions } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
 import type { BridgeRoute, PendingBridgeStepAction } from './types';
@@ -7,6 +10,8 @@ const CCTP_CLAIM_GAS = 210_000n;
 const OP_STACK_PROVE_GAS = 500_000n;
 const OP_STACK_FINALIZE_GAS = 350_000n;
 const ARBITRUM_EXECUTE_GAS = 200_000n;
+// The claim's conversion back to USDS: the PSM wrapper's sellGem (10% over November 2026's maximum) and its USDC approval.
+const CCTP_CONVERT_GAS = 260_000n;
 
 /** Upper estimate of the gas a step after the source send costs on Ethereum, for a bridge from `from`. */
 export const ethereumStepGas = (action: PendingBridgeStepAction, from: BridgeNetworkId): bigint => {
@@ -15,12 +20,34 @@ export const ethereumStepGas = (action: PendingBridgeStepAction, from: BridgeNet
   return from === 'arbitrum' ? ARBITRUM_EXECUTE_GAS : OP_STACK_FINALIZE_GAS;
 };
 
-/** Gas the user spends on the destination after the source send: CCTP's claim, a withdrawal's prove and finalize. */
+/** Gas the user spends on the destination after the source send: CCTP's claim and conversion, a withdrawal's prove and finalize. */
 export const destinationGas = (route: BridgeRoute): bigint =>
   destinationActions(route.kind, route.steps[0].network).reduce(
     (total, action) => total + ethereumStepGas(action, route.steps[0].network),
-    0n
+    route.kind === 'cctp' ? CCTP_CONVERT_GAS : 0n
   );
+
+/** A route's fee as `~$X`: its source fee plus an estimate of its steps on Ethereum. */
+export const routeFeeText = ({
+  route,
+  sourceFeeWei,
+  ethFeePerGas,
+  ethPrice
+}: {
+  route: BridgeRoute;
+  sourceFeeWei: bigint | undefined;
+  ethFeePerGas: bigint | undefined;
+  ethPrice: number | undefined;
+}): string => {
+  const usd =
+    sourceFeeWei === undefined || ethFeePerGas === undefined
+      ? undefined
+      : feeWeiToUsd(
+          sourceFeeWei + computeFeeWei({ gas: destinationGas(route), feePerGas: ethFeePerGas }),
+          ethPrice
+        );
+  return usd === undefined ? NO_VALUE : `~${formatUsd(usd)}`;
+};
 
 /** Transactions the user signs on both networks; undefined until the source calls are built. */
 export const routeApprovals = (

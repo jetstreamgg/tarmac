@@ -1,5 +1,5 @@
 import { BRIDGE_NETWORKS } from '../model/networks';
-import { applyProgress, canDismiss, closeCard, isSettled } from '../model/pendingTransitions';
+import { applyProgress, canDismiss, closeCard, isSettled, markSeen } from '../model/pendingTransitions';
 import type {
   BridgeRouteKind,
   PendingBridge,
@@ -88,6 +88,7 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.readyAt, at => typeof at === 'number') ||
     !optional(entry.settledAt, at => typeof at === 'number') ||
     !optional(entry.closedAt, at => typeof at === 'number') ||
+    !optional(entry.seenAt, at => typeof at === 'number') ||
     !optional(entry.failureReason, isString)
   ) {
     return null;
@@ -175,6 +176,10 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
     /** Closes the card of a settled bridge with nothing left to confirm (see `closeCard`); Activity keeps it. */
     close(scope: string, id: string) {
       update(scope, id, bridge => closeCard(bridge, now()));
+    },
+    /** Stamps when the user saw a landed card (see `markSeen`), so a later page load hides it. */
+    markSeen(scope: string, id: string) {
+      update(scope, id, bridge => markSeen(bridge, now()));
     },
     /**
      * Gives a wallet bundle's card the hash its deposit mined under, at `executedAt`
