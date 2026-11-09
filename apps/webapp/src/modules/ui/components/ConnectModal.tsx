@@ -12,6 +12,7 @@ import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui
 import { Button } from '@/components/ui/button';
 import { ListWallet } from '@/components/ui/list';
 import { cn } from '@/lib/cn';
+import { reloadStaleTab } from '@/lib/staleChunkReload';
 import { Text } from '@/modules/layout/components/Typography';
 import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
@@ -249,6 +250,8 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
           action: 'connect',
           type: 'wallet_connection_error'
         });
+        // A wallet SDK chunk from the previous deploy fails on every retry.
+        reloadStaleTab();
       }
     }
   });

@@ -8,8 +8,10 @@ import type { AnyRouter } from '@tanstack/react-router';
  *
  * Hovering a link preloads its chunks, so the failure alone must not move the
  * page: it marks the tab stale, and the full load happens on a navigation to
- * another page. Search-param updates (network, tabs, flows) stay in place. The
- * full load is allowed once per window so a real outage cannot loop.
+ * another page. Search-param updates (network, tabs, flows) stay in place. An
+ * action that needs a chunk outside navigation (wallet SDKs load on click)
+ * recovers through reloadStaleTab. The full load is allowed once per window so
+ * a real outage cannot loop.
  *
  * The event is deliberately not prevented: a prevented event makes Vite
  * resolve the failed import to `undefined` instead of rejecting, which would
@@ -19,6 +21,8 @@ import type { AnyRouter } from '@tanstack/react-router';
 
 const STORAGE_KEY = 'staleChunkReloadedAt';
 const RELOAD_WINDOW_MS = 60_000;
+
+let isStale = false;
 
 const claimFullLoad = (): boolean => {
   try {
@@ -32,8 +36,12 @@ const claimFullLoad = (): boolean => {
   }
 };
 
+export function reloadStaleTab(): void {
+  if (isStale && claimFullLoad()) window.location.reload();
+}
+
 export function installStaleChunkReload(router: AnyRouter): () => void {
-  let isStale = false;
+  isStale = false;
 
   const loadDocument = (href: string) => {
     // replace, not assign: the router has already pushed this entry (or is about to, in a microtask).

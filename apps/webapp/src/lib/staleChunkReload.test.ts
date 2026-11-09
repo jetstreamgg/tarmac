@@ -6,7 +6,7 @@ import {
   type AnyRouter
 } from '@tanstack/react-router';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installStaleChunkReload } from './staleChunkReload';
+import { installStaleChunkReload, reloadStaleTab } from './staleChunkReload';
 
 const T0 = new Date('2026-09-16T12:00:00Z');
 const GUARD_KEY = 'staleChunkReloadedAt';
@@ -171,6 +171,37 @@ describe('installStaleChunkReload', () => {
     await go('/');
 
     expect(replace).toHaveBeenCalledTimes(1);
+  });
+
+  it('reloads in place when a failed action asks a stale tab to recover', () => {
+    install();
+    firePreloadError();
+
+    reloadStaleTab();
+
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(GUARD_KEY)).toBe(String(T0.getTime()));
+  });
+
+  it('does not reload a tab that never failed to load a chunk when an action fails', () => {
+    install();
+
+    reloadStaleTab();
+
+    expect(reload).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(GUARD_KEY)).toBeNull();
+  });
+
+  it('does not reload twice inside the window when the action keeps failing', () => {
+    install();
+    firePreloadError();
+
+    reloadStaleTab();
+    vi.advanceTimersByTime(30_000);
+    reloadStaleTab();
+
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 
   it('never full-loads when the guard cannot be stored', async () => {
