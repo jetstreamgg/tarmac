@@ -71,9 +71,6 @@ export function WalletChip() {
     // desktop grid, where chip width intentionally squeezes the flanks (APP-415).
     <div data-testid="wallet-chip" className="desktop:min-w-[auto] min-w-0">
       <ConnectChecksCover open={showChecksCover} />
-      {/* The app's only access gate. It used to be mounted around the page
-          too; each copy's Radix `hideOthers` marked the other aria-hidden,
-          which hid both from screen readers. */}
       {!isAuthorized ? (
         <>
           <UnauthorizedPage
