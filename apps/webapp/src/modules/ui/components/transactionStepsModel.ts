@@ -251,7 +251,7 @@ export function deriveTransactionStepItems({
     ];
   }
 
-  return normalized.map((step, i) => {
+  const items: TransactionStepItem[] = normalized.map((step, i) => {
     const { label, tokenSymbol, targetTokenSymbol, failureDetail, kind, description } = step;
     const isSignature = kind === 'signature';
 
@@ -342,4 +342,19 @@ export function deriveTransactionStepItems({
       description: state === 'active' ? description : undefined
     };
   });
+
+  // A refused send with no row at the current write (a flow with no steps of its
+  // own, past its signature) gets one, or the failure would have no copy and no Retry.
+  if (failed && refusal && lastRowOfCurrentWrite === -1) {
+    items.push({
+      stepNumber: normalized.length + 1,
+      label: t`Transaction not sent`,
+      tokenSymbol: undefined,
+      state: 'failed',
+      description: refusalCopy,
+      retry: refusal.final ? undefined : 'trailing'
+    });
+  }
+
+  return items;
 }

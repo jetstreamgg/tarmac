@@ -318,6 +318,10 @@ export function TransactionProvider({
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
   const hasMinedStepRef = useRef(false);
+  // Prelude rows a Retry after a mined step newly put ahead of the failed write
+  // (see handleRetry). That write's onMutate moves the stepper past them; a
+  // refusal in its place does the same in onError.
+  const preludeAddedOnRetryRef = useRef(0);
   const markMinedStep = useCallback(() => {
     setHasMinedStep(true);
     hasMinedStepRef.current = true;
@@ -409,10 +413,12 @@ export function TransactionProvider({
   // WALLET TRANSACTION (cancelled analytics + the discarded-request toast)
   // from an abandoned gate phase, where no transaction ever started: the
   // screening phase tears down silently, the signature phase emits the
-  // terms-signature-declined event and its own toast. Cleared by onMutate
-  // (the engine taking over), by the gate driving 'error'/'idle', and on
-  // launch/close.
-  const gatePhaseRef = useRef<GatePhase | null>(null);
+  // terms-signature-declined event and its own toast. 'signed' is the gap after
+  // the gate let a signature's flow through and before the engine's onMutate:
+  // the status is still the gate's, but no sign request is left to abandon and
+  // nothing is in the wallet. Cleared by onMutate (the engine taking over), by
+  // the gate driving 'error'/'idle', by a refused send, and on launch/close.
+  const gatePhaseRef = useRef<GatePhase | 'signed' | null>(null);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
   const txHashRef = useRef<string | undefined>(undefined);
   // flow_id latched at launch so this session's review/started/completed events
@@ -535,6 +541,12 @@ export function TransactionProvider({
   // pair with nothing.
   const handleInitializedAbandon = useCallback(() => {
     if (gatePhaseRef.current === 'screening') return;
+    // Signed, with nothing in the wallet yet: no decline and no cancelled
+    // transaction to report, but the next launch is a new attempt.
+    if (gatePhaseRef.current === 'signed') {
+      startNewFlow();
+      return;
+    }
     if (gatePhaseRef.current === 'signature') {
       emitTermsSignatureDeclined('abandoned');
       startNewFlow();
@@ -944,6 +956,9 @@ export function TransactionProvider({
           if (!live()) return;
           preludeStepsRef.current = steps;
           setPreludeSteps(steps);
+          // A signature owed again on a Retry is the step in progress, whatever
+          // the last attempt failed on. A mined step keeps the run's place.
+          if (steps && !hasMinedStepRef.current) setCurrentStep(0);
         },
         closeModal: () => {
           if (!live()) return;
@@ -1077,6 +1092,7 @@ export function TransactionProvider({
           notifyDispatchRefused('calls', refuseDispatch());
           return;
         }
+        if (gatePhaseRef.current === 'signature') gatePhaseRef.current = 'signed';
         action();
       };
       // The chain the click was made on: a verdict must not fire the action
@@ -1147,8 +1163,9 @@ export function TransactionProvider({
     runGated('retry', () => {
       if (hasMinedStepRef.current) {
         // The engine resumes at the failed write; shift past any prelude the gate dropped.
-        const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
-        if (dropped > 0) setCurrentStep(s => s - dropped);
+        const added = (preludeStepsRef.current?.length ?? 0) - preludeBefore;
+        if (added < 0) setCurrentStep(s => s + added);
+        preludeAddedOnRetryRef.current = Math.max(added, 0);
       } else {
         resetTransactionProgress();
       }
@@ -1319,11 +1336,21 @@ export function TransactionProvider({
       // PREVIOUS session's late settle — would drop it on any page that has
       // already sent a transaction, leaving the modal on "Preparing". For a
       // refusal the session generation alone says whether it is ours. So for
-      // one on a Retry, at ERROR, in a session that has written nothing.
-      const preWriteRefusal =
+      // one on a Retry, at ERROR, in a session that has written nothing, and for
+      // one right after the signature prelude, at the INITIALIZED the gate left
+      // standing. A typed refusal is always this session's: no wallet write
+      // produces one, whatever its text says. An untyped wallet rejection there
+      // is no refusal: it can only be a prompt an earlier session abandoned.
+      const refusedAfterSignature =
         !hash &&
-        (txStatusRef.current === TxStatus.IDLE ||
-          (txStatusRef.current === TxStatus.ERROR && writeGenRef.current !== sessionGenRef.current));
+        txStatusRef.current === TxStatus.INITIALIZED &&
+        gatePhaseRef.current === 'signed' &&
+        (error instanceof TransactionRefusedError || !isUserRejectedRequestError(error));
+      const preWriteRefusal =
+        refusedAfterSignature ||
+        (!hash &&
+          (txStatusRef.current === TxStatus.IDLE ||
+            (txStatusRef.current === TxStatus.ERROR && writeGenRef.current !== sessionGenRef.current)));
       if (
         preWriteRefusal
           ? sessionGen !== sessionGenRef.current
@@ -1346,6 +1373,19 @@ export function TransactionProvider({
       setUnconfirmed(unconfirmedCopy ? { reason: unconfirmedCopy } : null);
       if (hash) {
         txHashRef.current = hash;
+      }
+      // The send was refused, not the signature: the stepper moves onto the send
+      // step and the gate's turn is over. Without a mined step the Retry put the
+      // stepper back on the signature row, so the send is the next one. After a
+      // mined step it stayed on the failed write, which only a newly owed
+      // prelude pushed down; moving it any further would mark the refused send
+      // completed.
+      if (refusedAfterSignature) {
+        const advance = hasMinedStepRef.current ? preludeAddedOnRetryRef.current : 1;
+        if (advance) setCurrentStep(s => s + advance);
+        gatePhaseRef.current = null;
+        gateCopyRef.current = null;
+        setGateCopy(null);
       }
       // A run that stalls after a mined step never hands its next call to the
       // wallet, so no write reports the mined step or moves the stepper onto
