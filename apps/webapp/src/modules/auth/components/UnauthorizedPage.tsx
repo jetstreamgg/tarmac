@@ -180,7 +180,7 @@ export const UnauthorizedPage = ({ authData, vpnData, blockReason, onRetry }: Un
       <DialogContent
         aria-describedby={undefined}
         // A block can now land mid-flow (screening runs on a transaction's
-        // first screen), so the gate has to clear any open modal, the toast
+        // first screen), so the gate has to sit above any open modal, the toast
         // stack and the cookie banner — the terms modal's tier (APP-534).
         overlayClassName="z-[1000]"
         className="bg-containerDark z-[1000] w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
