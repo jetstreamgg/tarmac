@@ -502,7 +502,8 @@ function PendingBridgeCard({
   const onSeen = useCallback(() => {
     if (listScope) pendingBridgeStore.markSeen(listScope, bridge.id);
   }, [listScope, bridge.id]);
-  useSeenOnScreen(cardRef, canMarkSeen(bridge) && nothingLeft, onSeen);
+  // An incoming card shares the sender's entry: the recipient seeing it mustn't hide the sender's.
+  useSeenOnScreen(cardRef, !incoming && canMarkSeen(bridge) && nothingLeft, onSeen);
   const actionButton = showsActionButton(bridge) && !!bridge.nextAction && !claimedElsewhere;
   // Figma 93: offered below the note, beside Keep as USDC, unless the card has its own button.
   const offersConvert = convertAmount !== undefined && !dismissible && !actionButton;

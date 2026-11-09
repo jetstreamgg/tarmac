@@ -246,7 +246,8 @@ describe('PendingBridges', () => {
       nextAction: undefined,
       settledAt: 0
     };
-    let intersect: (...isIntersecting: boolean[]) => void;
+    // A number is the visible ratio of a card that still overlaps the screen.
+    let intersect: (...changes: (boolean | number)[]) => void;
     let markSeen: MockInstance<typeof pendingBridgeStore.markSeen>;
     let onTop: Element | null | undefined;
     const elementFromPoint = document.elementFromPoint;
@@ -262,8 +263,15 @@ describe('PendingBridges', () => {
       vi.stubGlobal(
         'IntersectionObserver',
         class {
-          constructor(callback: (entries: { isIntersecting: boolean }[]) => void) {
-            intersect = (...batch) => callback(batch.map(isIntersecting => ({ isIntersecting })));
+          constructor(callback: (entries: { isIntersecting: boolean; intersectionRatio: number }[]) => void) {
+            intersect = (...batch) =>
+              callback(
+                batch.map(change =>
+                  typeof change === 'number'
+                    ? { isIntersecting: true, intersectionRatio: change }
+                    : { isIntersecting: change, intersectionRatio: change ? 1 : 0 }
+                )
+              );
           }
           observe() {}
           disconnect() {
@@ -309,6 +317,29 @@ describe('PendingBridges', () => {
       intersect(true);
       elapse(500);
       intersect(false);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it('does not count a card with less than half on screen', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(0.05);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(0.5);
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('stops counting a card scrolled below half', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(0.6);
+      elapse(500);
+      intersect(0.05);
       elapse(5000);
       expect(markSeen).not.toHaveBeenCalled();
     });
@@ -363,14 +394,14 @@ describe('PendingBridges', () => {
       expect(markSeen).not.toHaveBeenCalled();
     });
 
-    it("marks an incoming card in the sender's list, where it is stored", () => {
+    it("leaves an incoming card unseen, so the recipient can't hide the sender's", () => {
       const bridge = { ...LANDED, routeKind: 'cctp' as const, account: OWNER, recipient: ACCOUNT };
       mocks.incoming = [{ scope: 'sender-scope', bridge }];
       mocks.nothingLeft[bridge.id] = true;
       renderList();
       intersect(true);
-      elapse();
-      expect(markSeen).toHaveBeenCalledWith('sender-scope', bridge.id);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
     });
   });
 

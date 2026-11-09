@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from 'react';
 
 const CHECK_MS = 1000;
+const MIN_VISIBLE_RATIO = 0.5;
 
 const isOnTop = (element: Element) => {
   const { left, right, top, bottom } = element.getBoundingClientRect();
@@ -18,13 +19,14 @@ export function useSeenOnScreen(ref: RefObject<Element | null>, enabled: boolean
     const observer = new IntersectionObserver(
       entries => {
         clearInterval(timer);
-        if (!entries.at(-1)?.isIntersecting) return;
+        // The ratio, as isIntersecting can hold for any overlap.
+        if ((entries.at(-1)?.intersectionRatio ?? 0) < MIN_VISIBLE_RATIO) return;
         // An observer can't tell a loader or modal is on top, so this also asks the page.
         timer = setInterval(() => {
           if (document.visibilityState === 'visible' && isOnTop(element)) onSeen();
         }, CHECK_MS);
       },
-      { threshold: 0.5 }
+      { threshold: MIN_VISIBLE_RATIO }
     );
     observer.observe(element);
     return () => {
