@@ -41,7 +41,7 @@ export type RedirectReason =
   | 'unknown_market'
   | 'market_matured'
   | 'not_found';
-export type TxStatus = 'success' | 'error' | 'cancelled' | 'unknown';
+export type TxStatus = 'success' | 'error' | 'cancelled';
 /**
  * How a per-transaction terms signature was declined (APP-501):
  * 'wallet_rejected' = the sign request was rejected in the wallet;

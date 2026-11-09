@@ -277,18 +277,22 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     expect((screen.getByTestId('transaction-modal-back') as HTMLButtonElement).disabled).toBe(true);
 
-    // Everything but the batch status query, whose refetch would report the bundle again.
-    const matches = (filters: unknown, key: string) =>
-      (filters as { predicate?: (q: { queryKey: unknown[] }) => boolean }).predicate?.({
-        queryKey: [key, {}]
-      });
+    // On-chain reads, not the batch status query (its refetch would report the
+    // bundle again) nor history (refreshHistoryAfterTx owns that).
+    type Filters = { predicate?: (q: { queryKey: unknown[]; meta?: Record<string, unknown> }) => boolean };
+    const matches = (filters: unknown, key: string, meta?: Record<string, unknown>) =>
+      (filters as Filters).predicate?.({ queryKey: [key, {}], meta });
     expect(
       invalidate.mock.calls.some(
-        ([filters]) => matches(filters, 'readContract') && !matches(filters, 'callsStatus')
+        ([filters]) =>
+          matches(filters, 'readContract') &&
+          !matches(filters, 'callsStatus') &&
+          !matches(filters, 'savingsHistory', { history: 'indexer' })
       )
     ).toBe(true);
     const ctx = vi.mocked(reportError).mock.calls[0][1];
     expect(ctx.level).toBe('warning');
+    expect(ctx.type).toBe('transaction_outcome_unknown');
 
     fireEvent.click(screen.getByTestId('transaction-unconfirmed-close'));
     expect(screen.queryByText("Couldn't confirm transaction")).toBeNull();

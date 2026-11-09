@@ -521,6 +521,18 @@ export function TransactionModal({
     onClose();
   }, [txStatus, onClose, firstStep]);
 
+  const unconfirmedClose = (
+    <Button
+      variant="primary"
+      size="xl"
+      className="w-full"
+      onClick={handleClose}
+      data-testid="transaction-unconfirmed-close"
+    >
+      <Trans>Close</Trans>
+    </Button>
+  );
+
   // Dismissing the modal: after broadcast it minimizes (the tx keeps running and a
   // toast takes over); otherwise it closes. Used by the close button, esc, and
   // click-outside.
@@ -693,19 +705,7 @@ export function TransactionModal({
               {/* The failure view's cross-chain guard (APP-528) lives here once
                   the failure renders inline — the bottom CTA row that used to
                   carry it is gone with the step list showing. */}
-              {showInlineFailure && unconfirmed && (
-                <div className="pt-6">
-                  <Button
-                    variant="primary"
-                    size="xl"
-                    className="w-full"
-                    onClick={handleClose}
-                    data-testid="transaction-unconfirmed-close"
-                  >
-                    <Trans>Close</Trans>
-                  </Button>
-                </div>
-              )}
+              {showInlineFailure && unconfirmed && <div className="pt-6">{unconfirmedClose}</div>}
               {showInlineFailure && !unconfirmed && chainGuarded && (
                 <div className="flex flex-col gap-4 pt-2">
                   {chainGuardBlock}
@@ -960,11 +960,7 @@ export function TransactionModal({
                   </div>
                 )}
 
-                {unconfirmed && (
-                  <Button variant="primary" size="xl" className="w-full" onClick={handleClose}>
-                    <Trans>Close</Trans>
-                  </Button>
-                )}
+                {unconfirmed && unconfirmedClose}
 
                 {txStatus === TxStatus.ERROR && !unconfirmed && (
                   <>

@@ -196,12 +196,15 @@ describe('TransactionContext analytics (modal path)', () => {
     expect(JSON.stringify(args)).not.toContain(from);
   });
 
-  it('records a bundle the wallet lost track of as unknown, not error (APP-651)', () => {
+  it('records a bundle the wallet lost track of as an error named for its unknown outcome (APP-651)', () => {
     const cb = cbOf(renderFlow(baseConfig()));
     act(() => cb.onMutate());
     act(() => cb.onStart());
     act(() => cb.onError(new TransactionOutcomeUnknownError(new Error('Unknown bundle id'))));
-    expect(lastCompletedArgs()).toMatchObject({ txStatus: 'unknown' });
+    expect(lastCompletedArgs()).toMatchObject({
+      txStatus: 'error',
+      data: { error_name: 'TransactionOutcomeUnknownError' }
+    });
   });
 
   it('rotates the flow AFTER the consumer onSuccess, so its follow-up joins this flow', () => {

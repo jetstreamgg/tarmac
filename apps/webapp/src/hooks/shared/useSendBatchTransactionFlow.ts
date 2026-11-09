@@ -80,6 +80,13 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   // meanwhile, so no second bundle can overlap it: a replaced send still fires
   // the mutation's callbacks when it settles.
   const detachedRef = useRef<{ onCleared?: () => void } | null>(null);
+  // The bundle last reported. A refetch of a settled status query (window
+  // focus, an invalidation) hands the effect a new error or data object for a
+  // bundle already reported. An unknown outcome stays open: a later answer
+  // from the wallet is the real one. Cleared per send, since a wallet may
+  // derive the id from the calls (wagmi's mock does), so a repeat send can
+  // reuse it.
+  const settledRef = useRef<{ id: string; unknown: boolean } | undefined>(undefined);
 
   // Initiate hook to send the batch transaction
   const {
@@ -91,7 +98,10 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   } = useSendCalls({
     mutation: {
       // Bundled sendCalls have no single functionName — no leg to discriminate.
-      onMutate: () => onMutate?.(),
+      onMutate: () => {
+        settledRef.current = undefined;
+        onMutate?.();
+      },
       onSuccess: () => {
         if (onStart) {
           onStart(undefined);
@@ -158,11 +168,10 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   // must not re-run because a caller passed a new inline function.
   const emitSuccess = useEffectEvent((hash?: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash?: string) => onError(err, hash));
-  // A refetch of a settled status query (window focus, an invalidation) hands
-  // the effect a new error or data object; the bundle was already reported.
-  const settledIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (mutationData?.id && settledIdRef.current !== mutationData.id) {
+    const id = mutationData?.id;
+    const settled = id !== undefined && settledRef.current?.id === id ? settledRef.current : undefined;
+    if (id && (!settled || settled.unknown)) {
       // A wallet that runs the bundle as separate transactions can report the whole bundle as
       // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
       const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
@@ -175,13 +184,13 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
           data.receipts?.[0]?.transactionHash,
           blockNumbers.length > 0 ? blockNumbers.reduce((a, b) => (b > a ? b : a)) : undefined
         );
-      } else if (miningError) {
+      } else if (miningError && !settled) {
         // Only a permanent status error ends the polling (see `retry` above).
         emitError(new TransactionOutcomeUnknownError(miningError), data?.receipts?.[0]?.transactionHash);
       } else {
         return;
       }
-      settledIdRef.current = mutationData.id;
+      settledRef.current = { id, unknown: !isSuccess };
       if (detachedRef.current) finishDetached();
     }
   }, [isSuccess, miningError, mutationData?.id, data, finishDetached]);

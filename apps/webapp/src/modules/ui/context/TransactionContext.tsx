@@ -1320,15 +1320,19 @@ export function TransactionProvider({
       // PREVIOUS session's late settle — would drop it on any page that has
       // already sent a transaction, leaving the modal on "Preparing". For a
       // refusal the session generation alone says whether it is ours.
-      const preWriteRefusal = !hash && txStatusRef.current === TxStatus.IDLE;
       const unknown = error instanceof TransactionOutcomeUnknownError;
+      // A lost bundle was sent, even when its modal closed back to IDLE first.
+      const preWriteRefusal = !unknown && !hash && txStatusRef.current === TxStatus.IDLE;
       if (unknown) {
         // It may have executed: bring history and on-chain reads up to date, so
         // the page shows it and a relaunch reviews current figures. Ahead of the
         // session guard, like onSuccess: the modal may have closed mid-send.
-        // Not the batch status query itself, whose failure brought us here.
+        // Not the batch status query itself, whose failure brought us here, nor
+        // history, whose refresh lets a first load or a load more finish.
         void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current });
-        void queryClient.invalidateQueries({ predicate: query => query.queryKey[0] !== 'callsStatus' });
+        void queryClient.invalidateQueries({
+          predicate: query => query.queryKey[0] !== 'callsStatus' && query.meta?.history === undefined
+        });
       }
       if (
         preWriteRefusal
@@ -1365,7 +1369,7 @@ export function TransactionProvider({
         trackTransactionCompleted({
           widgetName: analytics.widgetName,
           chainId: sessionChainRef.current,
-          txStatus: unknown ? 'unknown' : classification.is_user_rejection ? 'cancelled' : 'error',
+          txStatus: classification.is_user_rejection ? 'cancelled' : 'error',
           txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
