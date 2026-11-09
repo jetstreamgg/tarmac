@@ -38,10 +38,9 @@ export function WalletChip() {
     isCheckingTerms
   } = useConnectedContext();
 
-  // The connect-time compliance checks run back to back — the terms check,
-  // then (only when the terms must be shown) address screening — and each
-  // used to raise its own "Please wait" card, so a connect showed two in a
-  // row. One cover spans both, mounted here.
+  // Connecting a wallet runs two checks in a row: the terms check, then
+  // (only if the terms still need accepting) address screening. Show one
+  // "Please wait" cover for the whole time, instead of one card per check.
   //
   // The terms half is gated on the terms not being accepted yet, which keeps
   // it to exactly the moments that used to show a card: a background re-check
