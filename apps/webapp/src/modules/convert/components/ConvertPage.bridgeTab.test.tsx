@@ -141,3 +141,32 @@ it('keeps the scroll position when switching tab in either direction', () => {
   expect(navigationOptions).toHaveBeenNthCalledWith(1, expect.objectContaining({ resetScroll: false }));
   expect(navigationOptions).toHaveBeenNthCalledWith(2, expect.objectContaining({ resetScroll: false }));
 });
+
+it('reports the Bridge tab as selected, and not the way back to Swap', async () => {
+  const posthog = (await import('posthog-js')).default;
+  const capture = vi.spyOn(posthog, 'capture').mockReturnValue(undefined);
+  capture.mockClear();
+  render(
+    <I18nProvider i18n={i18n}>
+      <AnalyticsFlowProvider>
+        <ConvertPage />
+      </AnalyticsFlowProvider>
+    </I18nProvider>
+  );
+
+  openTab('bridge');
+  openTab('swap');
+
+  const selected = capture.mock.calls.filter(([event]) => event === 'app_widget_selected');
+  expect(selected).toEqual([
+    [
+      'app_widget_selected',
+      expect.objectContaining({
+        widget_name: 'bridge',
+        previous_widget: 'convert',
+        selection_method: 'tab'
+      })
+    ]
+  ]);
+  capture.mockRestore();
+});

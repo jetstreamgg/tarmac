@@ -31,7 +31,8 @@ import type { Destination } from './lib/destination';
  */
 
 /** The closed set of widget_name values PostHog insights filter on. */
-export type WidgetName = 'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed';
+export type WidgetName =
+  'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed' | 'bridge';
 
 /**
  * Intent → widget_name for route-derived emitters, compiler-enforced against
@@ -205,6 +206,53 @@ export interface PromoEventProps {
   destination?: Destination;
 }
 
+export type BridgeHashKind = 'tx' | 'safe' | 'bundle';
+export type BridgeLookupResult = 'found' | 'known' | 'refused' | 'error' | 'invalid_hash';
+
+interface BridgeEventProps {
+  widget_name: 'bridge';
+  viewport: Viewport;
+  destination?: Destination;
+}
+
+/** Each transaction sent, again with the same bridge_id when its real hash is known later. */
+export interface BridgeTxSentProps extends BridgeEventProps {
+  bridge_type: string;
+  source_chain: string;
+  destination_chain: string;
+  token: string;
+  amount: number;
+  flow: string;
+  action: string;
+  chain_id: number;
+  chain_name: string;
+  wallet_address?: string;
+  timestamp: string;
+  flow_id?: string;
+  hash_kind: BridgeHashKind;
+  /** The transaction hash, or the Safe or bundle id before one exists. */
+  tx_hash?: string;
+  bridge_id?: string;
+  source_tx_hash?: string;
+}
+
+export interface BridgeClaimLinkCopiedProps extends BridgeEventProps {
+  bridge_type: string;
+  source_chain: string;
+  destination_chain: string;
+  bridge_id: string;
+  source_tx_hash?: string;
+}
+
+export interface BridgeLookupCompletedProps extends BridgeEventProps {
+  entry_source: 'link' | 'manual';
+  result: BridgeLookupResult;
+  refused_reason?: string;
+  source_chain: string;
+  bridge_type?: string;
+  source_tx_hash?: string;
+}
+
 export type AppEventContract = {
   app_widget_selected: WidgetSelectedProps;
   app_widget_flow_started: TransactionStartedProps;
@@ -229,6 +277,9 @@ export type AppEventContract = {
   app_convert_blocked: ConvertBlockedProps;
   app_promo_impression: PromoEventProps;
   app_promo_clicked: PromoEventProps;
+  app_bridge_tx_sent: BridgeTxSentProps;
+  app_bridge_claim_link_copied: BridgeClaimLinkCopiedProps;
+  app_bridge_lookup_completed: BridgeLookupCompletedProps;
 };
 
 export type AppEventName = (typeof AppEvents)[keyof typeof AppEvents];

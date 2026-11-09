@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { isHash, type Hex } from 'viem';
@@ -26,6 +26,7 @@ import {
 } from '../hooks/useBridgeClaimLookup';
 import { BRIDGE_NETWORKS, getBridgeNetwork } from '../model/networks';
 import { isLivePair } from '../model/pairs';
+import { useBridgeAnalytics } from '../analytics/useBridgeAnalytics';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { bridgeModalCardClassName } from './bridgeModalCard';
 import { cardClassName } from './PendingBridges';
@@ -156,6 +157,8 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
   const loading = state.status === 'loading';
   const failed = invalid || state.status === 'error' || state.status === 'refused';
   const add = state.status === 'found' ? state.add : undefined;
+  const { trackLookupCompleted } = useBridgeAnalytics();
+  const loggedRef = useRef<{ key: string; status: string } | undefined>(undefined);
 
   // Figma 85; the fixed id keeps a repeated run to one toast.
   useEffect(() => {
@@ -165,6 +168,31 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
       description: t`There's no bridge with this hash on ${networkName}. Check that the network and the hash are correct.`
     });
   }, [notFound, networkName, target, attempt]);
+
+  // Before the add below, which turns this lookup's found into known; only a Try again logs a lookup twice.
+  useEffect(() => {
+    if (
+      !target ||
+      (state.status !== 'found' &&
+        state.status !== 'known' &&
+        state.status !== 'refused' &&
+        state.status !== 'error')
+    )
+      return;
+    const key = `${target.from}:${target.txHash}:${attempt}`;
+    const logged = loggedRef.current;
+    if (logged?.key === key && (logged.status !== 'error' || state.status === 'error')) return;
+    loggedRef.current = { key, status: state.status };
+    trackLookupCompleted({
+      // A typed lookup always starts by bumping the attempt.
+      entry_source: attempt === 0 ? 'link' : 'manual',
+      result: state.status,
+      source_chain: target.from,
+      source_tx_hash: target.txHash,
+      ...(state.status === 'found' && { bridge_type: state.bridge.routeKind }),
+      ...(state.status === 'refused' && { refused_reason: state.reason })
+    });
+  }, [state, target, attempt, trackLookupCompleted]);
 
   // Figma 86: a found burn goes straight to the list; the upsert and the toast id make a rerun a no-op.
   useEffect(() => {
@@ -178,6 +206,8 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
     const hash = draft.trim();
     const valid = isHash(hash);
     setInvalid(!valid);
+    if (!valid)
+      trackLookupCompleted({ entry_source: 'manual', result: 'invalid_hash', source_chain: network });
     setAttempt(previous => previous + 1);
     setTarget(valid ? { from: network, txHash: hash.toLowerCase() as Hex } : undefined);
   };

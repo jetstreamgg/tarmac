@@ -37,6 +37,7 @@ import {
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import type {
+  TransactionAnalytics,
   TransactionConfig,
   TransactionEntry,
   TxCallbacks,
@@ -424,6 +425,8 @@ export function TransactionProvider({
   // flow_id latched at launch so this session's review/started/completed events
   // stay joined even if navigation rotates the live flow id mid-transaction.
   const flowIdRef = useRef<string | undefined>(undefined);
+  // The step `stepOf` last reported, the one an attempt that ends failed on.
+  const lastStepActionRef = useRef<string | undefined>(undefined);
   // The calls the user confirmed, encoded, captured at the click (see
   // `getNextCalls` in the contract). Undefined when the flow doesn't report
   // its calls; null when they couldn't be encoded, which fails closed.
@@ -539,6 +542,14 @@ export function TransactionProvider({
   // cancelled TRANSACTION: the gate phases run before onMutate, so no
   // app_widget_flow_started has fired and a cancelled completion here would
   // pair with nothing.
+  const failedStepData = useCallback(
+    (analytics: TransactionAnalytics) => ({
+      ...analytics.completedData?.(),
+      ...(lastStepActionRef.current && { failed_action: lastStepActionRef.current })
+    }),
+    []
+  );
+
   const handleInitializedAbandon = useCallback(() => {
     if (gatePhaseRef.current === 'screening') return;
     // Signed, with nothing in the wallet yet: no decline and no cancelled
@@ -561,13 +572,13 @@ export function TransactionProvider({
         txStatus: 'cancelled',
         action: analytics.action,
         flow: analytics.flow,
-        data: analytics.data,
+        data: { ...analytics.data, ...failedStepData(analytics) },
         flowId: flowIdRef.current
       });
       startNewFlow();
     }
     notifyRequestAbandoned();
-  }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined]);
+  }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined, failedStepData]);
 
   const launch = useCallback(
     (config: TransactionConfig) => {
@@ -608,6 +619,7 @@ export function TransactionProvider({
       setSessionGen(sessionGenRef.current);
       // Latch this session's flow id (after any abandon rotation above).
       flowIdRef.current = getFlowId();
+      lastStepActionRef.current = undefined;
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveSessionId(config.sessionId ?? null);
@@ -1233,12 +1245,14 @@ export function TransactionProvider({
       // Track transaction started; approve legs report action 'approve' (dev parity)
       const analytics = configRef.current?.analytics;
       if (analytics) {
+        const step = analytics.stepOf?.(variables, flowIdRef.current);
+        lastStepActionRef.current = step?.action;
         trackTransactionStarted({
           widgetName: analytics.widgetName,
           chainId,
-          action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
+          action: step?.action ?? (variables?.functionName === 'approve' ? 'approve' : analytics.action),
           flow: analytics.flow,
-          data: analytics.data,
+          data: step?.data ? { ...analytics.data, ...step.data } : analytics.data,
           flowId: flowIdRef.current
         });
       }
@@ -1284,7 +1298,7 @@ export function TransactionProvider({
           txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
-          data: analytics.data,
+          data: { ...analytics.data, ...analytics.completedData?.() },
           flowId: flowIdRef.current
         });
       }
@@ -1409,7 +1423,7 @@ export function TransactionProvider({
           txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
-          data: { ...analytics.data, ...classification },
+          data: { ...analytics.data, ...classification, ...failedStepData(analytics) },
           flowId: flowIdRef.current
         });
       }
@@ -1453,7 +1467,8 @@ export function TransactionProvider({
       startNewFlow,
       isStaleWrite,
       isForeignHash,
-      markMinedStep
+      markMinedStep,
+      failedStepData
     ]
   );
 

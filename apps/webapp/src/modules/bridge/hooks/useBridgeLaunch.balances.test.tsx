@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('wagmi', async io => ({
   ...(await io<typeof import('wagmi')>()),
   useChains: () => [1, 8453, 10, 42161, 130].map(id => ({ id })),
+  useConnection: () => ({}),
   usePublicClient: () => ({ getTransactionReceipt: async () => undefined })
 }));
 vi.mock('@/hooks', async io => ({
