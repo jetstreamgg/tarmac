@@ -243,7 +243,7 @@ export type StepsProps = {
   bundled?: boolean;
   /** Right-aligned header badge content (e.g. "Confirm in the wallet"). */
   badge?: ReactNode;
-  /** Treatment of the header badge: `brand` while in flight, `error` once the transaction failed. */
+  /** Treatment of the header badge: `brand` while in flight, `error` once the transaction failed, `warning` when its outcome is unknown. */
   badgeVariant?: Extract<StepsBadgeVariant, 'brand' | 'error' | 'warning'>;
   children: ReactNode;
   className?: string;
