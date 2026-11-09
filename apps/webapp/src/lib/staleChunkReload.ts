@@ -10,8 +10,8 @@ import type { AnyRouter } from '@tanstack/react-router';
  * page: it marks the tab stale, and the full load happens on a navigation to
  * another page. Search-param updates (network, tabs, flows) stay in place. An
  * action that needs a chunk outside navigation (wallet SDKs load on click)
- * recovers through reloadStaleTab. The full load is allowed once per window so
- * a real outage cannot loop.
+ * recovers through reloadIfChunkError. The full load is allowed once per window
+ * so a real outage cannot loop.
  *
  * The event is deliberately not prevented: a prevented event makes Vite
  * resolve the failed import to `undefined` instead of rejecting, which would
@@ -23,6 +23,8 @@ const STORAGE_KEY = 'staleChunkReloadedAt';
 const RELOAD_WINDOW_MS = 60_000;
 
 let isStale = false;
+// Vite rethrows the event's payload, so the caller's error is this same object.
+const chunkErrors = new WeakSet<object>();
 
 const claimFullLoad = (): boolean => {
   try {
@@ -36,8 +38,8 @@ const claimFullLoad = (): boolean => {
   }
 };
 
-export function reloadStaleTab(): void {
-  if (isStale && claimFullLoad()) window.location.reload();
+export function reloadIfChunkError(error: unknown): void {
+  if (chunkErrors.has(error as object) && claimFullLoad()) window.location.reload();
 }
 
 export function installStaleChunkReload(router: AnyRouter): () => void {
@@ -48,11 +50,12 @@ export function installStaleChunkReload(router: AnyRouter): () => void {
     if (claimFullLoad()) window.location.replace(href);
   };
 
-  const onPreloadError = () => {
+  const onPreloadError = (event: VitePreloadErrorEvent) => {
     isStale = true;
+    chunkErrors.add(event.payload);
     const destination = router.latestLocation;
     // Read off the locations, not `status`: the router only turns pending after its preflight.
-    if (destination.pathname !== router.state.resolvedLocation?.pathname) {
+    if (destination.href !== router.state.resolvedLocation?.href) {
       loadDocument(destination.publicHref);
     }
   };

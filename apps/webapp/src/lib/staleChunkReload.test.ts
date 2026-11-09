@@ -6,13 +6,13 @@ import {
   type AnyRouter
 } from '@tanstack/react-router';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installStaleChunkReload, reloadStaleTab } from './staleChunkReload';
+import { installStaleChunkReload, reloadIfChunkError } from './staleChunkReload';
 
 const T0 = new Date('2026-09-16T12:00:00Z');
 const GUARD_KEY = 'staleChunkReloadedAt';
 
-const firePreloadError = () => {
-  const event = new Event('vite:preloadError', { cancelable: true });
+const firePreloadError = (payload = new Error('Failed to fetch dynamically imported module')) => {
+  const event = Object.assign(new Event('vite:preloadError', { cancelable: true }), { payload });
   window.dispatchEvent(event);
   return event;
 };
@@ -32,7 +32,17 @@ describe('installStaleChunkReload', () => {
     const route = (path: string, loader?: () => Promise<void>) =>
       createRoute({ getParentRoute: () => rootRoute, path, loader });
     const appRouter = createRouter({
-      routeTree: rootRoute.addChildren([route('/'), route('/earn'), route('/slow', () => slowRouteGate)]),
+      routeTree: rootRoute.addChildren([
+        route('/'),
+        route('/earn'),
+        route('/slow', () => slowRouteGate),
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: '/filters',
+          loaderDeps: ({ search }: { search: Record<string, unknown> }) => search,
+          loader: ({ deps }) => (deps.slow ? slowRouteGate : undefined)
+        })
+      ]),
       history: createMemoryHistory({ initialEntries: ['/'] })
     }) as unknown as AnyRouter;
     // RouterProvider's Transitioner does this in the app.
@@ -121,6 +131,28 @@ describe('installStaleChunkReload', () => {
     expect(replace).toHaveBeenCalledWith('/slow');
   });
 
+  it('full-loads the destination when a chunk fails during a search-param update', async () => {
+    await go('/filters');
+    install();
+
+    void go('/filters', { slow: 'yes' });
+    await vi.waitFor(() => expect(router.latestLocation.search).toEqual({ slow: 'yes' }));
+    firePreloadError();
+
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith('/filters?slow=yes');
+  });
+
+  it('leaves the page alone on a hover preload at a URL with search params', async () => {
+    await go('/', { network: 'base' });
+    install();
+
+    firePreloadError();
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   it('full-loads the current URL when a chunk fails during the first load', () => {
     const coldRouter = makeRouter();
     install(coldRouter);
@@ -173,33 +205,45 @@ describe('installStaleChunkReload', () => {
     expect(replace).toHaveBeenCalledTimes(1);
   });
 
-  it('reloads in place when a failed action asks a stale tab to recover', () => {
+  it('reloads in place when an action fails with the chunk error itself', () => {
+    const chunkError = new Error('Failed to fetch dynamically imported module');
     install();
-    firePreloadError();
+    firePreloadError(chunkError);
 
-    reloadStaleTab();
+    reloadIfChunkError(chunkError);
 
     expect(reload).toHaveBeenCalledTimes(1);
     expect(replace).not.toHaveBeenCalled();
     expect(sessionStorage.getItem(GUARD_KEY)).toBe(String(T0.getTime()));
   });
 
-  it('does not reload a tab that never failed to load a chunk when an action fails', () => {
+  it('does not reload a stale tab when an action fails for another reason', () => {
     install();
+    firePreloadError();
 
-    reloadStaleTab();
+    reloadIfChunkError(new Error('Request already pending'));
 
     expect(reload).not.toHaveBeenCalled();
     expect(sessionStorage.getItem(GUARD_KEY)).toBeNull();
   });
 
-  it('does not reload twice inside the window when the action keeps failing', () => {
+  it('does not reload when the failure is not an object', () => {
     install();
     firePreloadError();
 
-    reloadStaleTab();
+    reloadIfChunkError(undefined);
+
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('does not reload twice inside the window when the action keeps failing', () => {
+    const chunkError = new Error('Failed to fetch dynamically imported module');
+    install();
+    firePreloadError(chunkError);
+
+    reloadIfChunkError(chunkError);
     vi.advanceTimersByTime(30_000);
-    reloadStaleTab();
+    reloadIfChunkError(chunkError);
 
     expect(reload).toHaveBeenCalledTimes(1);
   });

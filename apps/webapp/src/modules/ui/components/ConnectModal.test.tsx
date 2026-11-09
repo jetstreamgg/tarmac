@@ -2,14 +2,14 @@ import { i18n } from '@lingui/core';
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserRejectedRequestError } from 'viem';
-import { reloadStaleTab } from '@/lib/staleChunkReload';
+import { reloadIfChunkError } from '@/lib/staleChunkReload';
 import { ConnectModal } from './ConnectModal';
 
 type ConnectOptions = { mutation: { onError: (error: Error, variables: { connector: unknown }) => void } };
 
 const captured = vi.hoisted(() => ({ connect: undefined as ConnectOptions | undefined }));
 
-vi.mock('@/lib/staleChunkReload', () => ({ reloadStaleTab: vi.fn() }));
+vi.mock('@/lib/staleChunkReload', () => ({ reloadIfChunkError: vi.fn() }));
 vi.mock('@/modules/sentry/reportError', () => ({ reportError: vi.fn() }));
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => ({ trackWalletConnectAttempted: vi.fn(), trackWalletConnectRejected: vi.fn() })
@@ -29,16 +29,16 @@ vi.mock('wagmi', () => ({
 describe('ConnectModal stale tab recovery', () => {
   beforeEach(() => {
     i18n.loadAndActivate({ locale: 'en', messages: {} });
-    vi.mocked(reloadStaleTab).mockClear();
+    vi.mocked(reloadIfChunkError).mockClear();
     render(<ConnectModal open={false} onOpenChange={() => {}} />);
   });
 
-  it('asks a stale tab to recover when connecting fails', () => {
-    captured.connect?.mutation.onError(new Error('Failed to fetch dynamically imported module'), {
-      connector: { name: 'Base' }
-    });
+  it('passes a failed connection to the chunk recovery', () => {
+    const error = new Error('Failed to fetch dynamically imported module');
 
-    expect(reloadStaleTab).toHaveBeenCalledTimes(1);
+    captured.connect?.mutation.onError(error, { connector: { name: 'Base' } });
+
+    expect(reloadIfChunkError).toHaveBeenCalledWith(error);
   });
 
   it('leaves the page alone when the user rejects the connection', () => {
@@ -46,6 +46,6 @@ describe('ConnectModal stale tab recovery', () => {
       connector: { name: 'Base' }
     });
 
-    expect(reloadStaleTab).not.toHaveBeenCalled();
+    expect(reloadIfChunkError).not.toHaveBeenCalled();
   });
 });
