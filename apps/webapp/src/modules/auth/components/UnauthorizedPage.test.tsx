@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { UnauthorizedPage } from './UnauthorizedPage';
 import type { AccessBlockReason } from '@/modules/ui/context/ConnectedContext';
 
@@ -60,9 +61,8 @@ afterEach(() => {
 });
 
 describe('UnauthorizedPage', () => {
-  // The wait is WalletChip's ConnectChecksCover now, not a card here: this
-  // component mounts twice at once (navbar + AuthWrapper), so a scrim of its
-  // own would stack. It must render nothing at all until the verdict is in —
+  // The wait is WalletChip's ConnectChecksCover now, not a card here. It must
+  // render nothing at all until the verdict is in —
   // in particular not the blocked dialog, which would otherwise flash for
   // every user while screening was still in flight.
   it('renders no dialog at all while the checks are loading', () => {
@@ -128,5 +128,39 @@ describe('UnauthorizedPage', () => {
     renderPage({ authIsLoading: true });
 
     expect(h.trackVpnBlockedPageView).not.toHaveBeenCalled();
+  });
+
+  // Screening runs on a transaction's first screen, so a block can land while
+  // a page flow's modal is already open (APP-601).
+  it('opens over an already-open page modal and stays in the accessibility tree', () => {
+    const PageFlow = () => (
+      <Dialog open>
+        <DialogContent aria-describedby={undefined}>
+          <DialogTitle>Manage a position</DialogTitle>
+        </DialogContent>
+      </Dialog>
+    );
+    const { rerender } = render(
+      <I18nProvider i18n={i18n}>
+        <PageFlow />
+      </I18nProvider>
+    );
+
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <PageFlow />
+        <UnauthorizedPage
+          authData={{ authIsLoading: false }}
+          vpnData={{ vpnIsLoading: false, countryCode: 'US' }}
+          blockReason="wallet-blocked"
+        />
+      </I18nProvider>
+    );
+
+    const gate = screen.getByRole('dialog', { name: 'Wallet blocked' });
+    expect(gate.className).toContain('z-[1000]');
+    expect(gate.closest('[aria-hidden="true"]')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Disconnect wallet' })).toBeTruthy();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
   });
 });

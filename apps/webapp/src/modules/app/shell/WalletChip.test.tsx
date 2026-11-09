@@ -59,9 +59,7 @@ vi.mock('@/modules/ui/components/TermsModal', () => ({
 }));
 
 vi.mock('@/modules/auth/components/UnauthorizedPage', () => ({
-  UnauthorizedPage: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="unauthorized-page-stub">{children}</div>
-  )
+  UnauthorizedPage: () => <div data-testid="unauthorized-page-stub" />
 }));
 
 vi.mock('@/modules/ui/components/Avatar', () => ({
@@ -164,19 +162,17 @@ describe('WalletChip render ladder', () => {
     expect(screen.getByTestId('wallet-drawer-stub').getAttribute('data-open')).toBe('true');
   });
 
-  it('defers to the UnauthorizedPage gate when not authorized', async () => {
+  it('renders the access gate and the connect button when not authorized', async () => {
     mocks.connectedContext.isAuthorized = false;
     renderWalletChip();
 
-    const gate = await screen.findByTestId('unauthorized-page-stub');
-    expect(gate.querySelector('button')?.textContent).toMatch(/Connect Wallet/);
+    expect(await screen.findByTestId('unauthorized-page-stub')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Connect Wallet/ })).toBeTruthy();
   });
 });
 
 // The two connect-time checks run back to back and used to raise a "Please
-// wait" card each. One cover spans both, and it lives here because this is the
-// only component that owns both gates — UnauthorizedPage also mounts inside
-// AuthWrapper, so a cover in it would put two scrims on screen at once.
+// wait" card each. One cover spans both, and it lives here.
 describe('WalletChip connect-checks cover', () => {
   it('covers the screen while address screening is in flight', async () => {
     mocks.connectedContext.isAuthorized = false;
@@ -239,7 +235,7 @@ describe('WalletChip connect-checks cover', () => {
     mocks.connectedContext.vpnData = { vpnIsLoading: false };
     renderWalletChip();
 
-    await screen.findByTestId('unauthorized-page-stub');
+    await screen.findByRole('button', { name: /Connect Wallet/ });
     expect(screen.queryByTestId('connect-checks-cover')).toBeNull();
   });
 

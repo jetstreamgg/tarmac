@@ -41,9 +41,7 @@ export function WalletChip() {
   // The connect-time compliance checks run back to back — the terms check,
   // then (only when the terms must be shown) address screening — and each
   // used to raise its own "Please wait" card, so a connect showed two in a
-  // row. One cover spans both, mounted here
-  // because this is the single place that owns both gates (UnauthorizedPage
-  // also mounts inside AuthWrapper, so a cover living in it would stack).
+  // row. One cover spans both, mounted here.
   //
   // The terms half is gated on the terms not being accepted yet, which keeps
   // it to exactly the moments that used to show a card: a background re-check
@@ -73,15 +71,19 @@ export function WalletChip() {
     // desktop grid, where chip width intentionally squeezes the flanks (APP-415).
     <div data-testid="wallet-chip" className="desktop:min-w-[auto] min-w-0">
       <ConnectChecksCover open={showChecksCover} />
+      {/* The app's only access gate. It used to be mounted around the page
+          too; each copy's Radix `hideOthers` marked the other aria-hidden,
+          which hid both from screen readers. */}
       {!isAuthorized ? (
-        <UnauthorizedPage
-          authData={authData}
-          vpnData={vpnData}
-          blockReason={accessBlockReason}
-          onRetry={retryAccessChecks}
-        >
+        <>
+          <UnauthorizedPage
+            authData={authData}
+            vpnData={vpnData}
+            blockReason={accessBlockReason}
+            onRetry={retryAccessChecks}
+          />
           {connectButton}
-        </UnauthorizedPage>
+        </>
       ) : !isConnectedAndAcceptedTerms ? (
         <TermsModal />
       ) : !isConnected ? (
