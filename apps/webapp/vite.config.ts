@@ -69,11 +69,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://virtual.optimism.eu.rpc.tenderly.co
       https://virtual.unichain.eu.rpc.tenderly.co
       https://mainnet.base.org
-      https://safe-transaction-mainnet.safe.global
-      https://safe-transaction-base.safe.global
-      https://safe-transaction-arbitrum.safe.global
-      https://safe-transaction-optimism.safe.global
-      https://safe-transaction-unichain.safe.global
       https://api.safe.global
       https://chain-proxy.wallet.coinbase.com
       https://vote.makerdao.com
