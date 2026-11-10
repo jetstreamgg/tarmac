@@ -184,15 +184,15 @@ function LookupForm({ link, networks, onClose }: LookupFormProps) {
     if (logged?.key === key && (logged.status !== 'error' || state.status === 'error')) return;
     loggedRef.current = { key, status: state.status };
     trackLookupCompleted({
-      // A typed lookup always starts by bumping the attempt.
-      entry_source: attempt === 0 ? 'link' : 'manual',
+      // Both hashes are lowercase; a Find on the link's own burn still counts as the link.
+      entry_source: link?.from === target.from && link.txHash === target.txHash ? 'link' : 'manual',
       result: state.status,
       source_chain: target.from,
       source_tx_hash: target.txHash,
       ...(state.status === 'found' && { bridge_type: state.bridge.routeKind }),
       ...(state.status === 'refused' && { refused_reason: state.reason })
     });
-  }, [state, target, attempt, trackLookupCompleted]);
+  }, [state, target, attempt, link, trackLookupCompleted]);
 
   // Figma 86: a found burn goes straight to the list; the upsert and the toast id make a rerun a no-op.
   useEffect(() => {

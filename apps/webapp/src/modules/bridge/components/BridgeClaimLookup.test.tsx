@@ -12,6 +12,7 @@ import { stubDialogExitAnimation } from '@/test/stubDialogExitAnimation';
 import { BridgeClaimLookup } from './BridgeClaimLookup';
 
 const HASH = `0x${'ab'.repeat(32)}` as Hex;
+const OTHER_HASH = `0x${'cd'.repeat(32)}` as Hex;
 const SENDER = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
 
 const mocks = vi.hoisted(() => ({
@@ -493,6 +494,29 @@ describe('BridgeClaimLookup', () => {
       mocks.state = { status: 'known' };
       rerender(tree());
       expect(events().map(event => event.result)).toEqual(['error', 'known']);
+    });
+
+    it("keeps a link's lookup as link through a Try again and a Find on its own hash", () => {
+      mocks.state = { status: 'error', retry: vi.fn() };
+      mocks.params = new URLSearchParams(LINK);
+      const { rerender } = renderLookup();
+      mocks.state = { status: 'refused', reason: 'not-found' };
+      rerender(tree());
+      find();
+      expect(events().map(event => [event.entry_source, event.result])).toEqual([
+        ['link', 'error'],
+        ['link', 'refused'],
+        ['link', 'refused']
+      ]);
+    });
+
+    it("logs a link's lookup as manual once its hash is edited", () => {
+      mocks.state = { status: 'refused', reason: 'not-found' };
+      mocks.params = new URLSearchParams(LINK);
+      renderLookup();
+      typeHash(OTHER_HASH);
+      find();
+      expect(events().map(event => event.entry_source)).toEqual(['link', 'manual']);
     });
 
     it('logs an invalid hash without what was typed', () => {
