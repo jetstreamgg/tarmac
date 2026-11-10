@@ -185,6 +185,13 @@ describe('resolveSafeTx — a queued transaction', () => {
     expect(await resolve(second)).toEqual({ status: 'rejected' });
   });
 
+  it('forgets a miss when the transaction shows up again', async () => {
+    const missed = await resolve(QUEUED);
+    expect(missed).toEqual({ ...QUEUED, misses: 1 });
+    service.txs = [tx()];
+    expect(await resolve(missed)).toEqual(QUEUED);
+  });
+
   it('does not count a miss while the service still has the transaction itself', async () => {
     service.txs = [tx({ nonce: NONCE + 1 })];
     expect(await resolve(QUEUED)).toEqual(QUEUED);
@@ -213,6 +220,14 @@ describe('useWaitForSafeTxHash', () => {
   const advance = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)));
 
   beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: false }));
+
+  it('does nothing for a wallet that is not a Safe', async () => {
+    h.isSafeWallet = false;
+    const { result } = renderResolver();
+    await advance(10_000);
+    expect(result.current).toMatchObject({ transactionHash: undefined, failure: null, isSafeWallet: false });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 
   // The old lookup stopped after 150 polls (5 minutes); co-signers can take longer.
   it('keeps polling a queued transaction past 150 polls and resolves when it executes', async () => {
