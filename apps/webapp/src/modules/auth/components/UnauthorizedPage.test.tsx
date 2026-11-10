@@ -128,12 +128,4 @@ describe('UnauthorizedPage', () => {
 
     expect(h.trackVpnBlockedPageView).not.toHaveBeenCalled();
   });
-
-  // A block can land while a page flow's modal is already open, so the gate
-  // sits on the terms modal's tier rather than the default z-50 (APP-601).
-  it('renders on the z-[1000] tier, above page modals', () => {
-    renderPage({ blockReason: 'wallet-blocked' });
-
-    expect(screen.getByRole('dialog', { name: 'Wallet blocked' }).className).toContain('z-[1000]');
-  });
 });

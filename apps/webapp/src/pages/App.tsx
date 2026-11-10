@@ -30,6 +30,7 @@ import { useNavigationAnalytics } from '@/modules/analytics/hooks/useNavigationA
 import { CORPUS_VERSION, CORPUS_BRANCH, CORPUS_COMMIT } from '@/data/version';
 import { setPrepareRevertListener } from '@/hooks/shared/prepareRevertReporter';
 import { trackPrepareReverted } from '@/modules/analytics/lib/trackPrepareReverted';
+import { AccessGate } from '@/modules/auth/components/AccessGate';
 
 // The engines report prepare-time simulation failures here (see prepareRevertReporter).
 setPrepareRevertListener(trackPrepareReverted);
@@ -101,7 +102,9 @@ const AppContent = () => {
                   </DismissableLayerBranch>,
                   document.body
                 )}
-                <RouterProvider router={router} />
+                <AccessGate>
+                  <RouterProvider router={router} />
+                </AccessGate>
               </GatedTransactionProvider>
             </NetworkSwitchProvider>
           </TooltipProvider>

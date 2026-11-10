@@ -58,10 +58,6 @@ vi.mock('@/modules/ui/components/TermsModal', () => ({
   TermsModal: () => <div data-testid="terms-modal-stub" />
 }));
 
-vi.mock('@/modules/auth/components/UnauthorizedPage', () => ({
-  UnauthorizedPage: () => <div data-testid="unauthorized-page-stub" />
-}));
-
 vi.mock('@/modules/ui/components/Avatar', () => ({
   CustomAvatar: () => <div data-testid="avatar-stub" />
 }));
@@ -162,12 +158,12 @@ describe('WalletChip render ladder', () => {
     expect(screen.getByTestId('wallet-drawer-stub').getAttribute('data-open')).toBe('true');
   });
 
-  it('renders the access gate and the connect button when not authorized', async () => {
+  it('shows only the connect button when not authorized', async () => {
     mocks.connectedContext.isAuthorized = false;
     renderWalletChip();
 
-    expect(await screen.findByTestId('unauthorized-page-stub')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Connect Wallet/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Connect Wallet/ })).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 

@@ -10,7 +10,6 @@ import { ConnectChecksCover } from '@/modules/ui/components/ConnectChecksCover';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { UnauthorizedPage } from '@/modules/auth/components/UnauthorizedPage';
 import { useIsSafeWallet } from '@/hooks';
 import { WalletPreviewDrawer } from './WalletPreviewDrawer';
 import { formatAddress } from '@/utils';
@@ -19,7 +18,7 @@ import { formatAddress } from '@/utils';
 // to fit the chip at 360px without ellipsis-truncating mid-glyph (APP-416).
 const formatAddressShort = (addr: string) => `${addr.slice(0, 4)}…${addr.slice(-4)}`;
 
-/** V2 wallet chip: unauthorized page / terms modal / connect / chip with preview drawer. */
+/** V2 wallet chip: terms modal / connect / chip with preview drawer. The access gate is AccessGate, in App. */
 export function WalletChip() {
   const { openConnectModal } = useConnectModal();
   const { isConnected, address } = useConnection();
@@ -28,15 +27,8 @@ export function WalletChip() {
   const { data: ensAvatar } = useEnsAvatar({ name: ensName!, chainId: mainnet.id });
   const isSafeWallet = useIsSafeWallet();
   const [showDrawer, setShowDrawer] = useState(false);
-  const {
-    isConnectedAndAcceptedTerms,
-    isAuthorized,
-    authData,
-    vpnData,
-    accessBlockReason,
-    retryAccessChecks,
-    isCheckingTerms
-  } = useConnectedContext();
+  const { isConnectedAndAcceptedTerms, isAuthorized, authData, vpnData, isCheckingTerms } =
+    useConnectedContext();
 
   // Connecting a wallet runs two checks in a row: the terms check, then
   // (only if the terms still need accepting) address screening. Show one
@@ -71,15 +63,7 @@ export function WalletChip() {
     <div data-testid="wallet-chip" className="desktop:min-w-[auto] min-w-0">
       <ConnectChecksCover open={showChecksCover} />
       {!isAuthorized ? (
-        <>
-          <UnauthorizedPage
-            authData={authData}
-            vpnData={vpnData}
-            blockReason={accessBlockReason}
-            onRetry={retryAccessChecks}
-          />
-          {connectButton}
-        </>
+        connectButton
       ) : !isConnectedAndAcceptedTerms ? (
         <TermsModal />
       ) : !isConnected ? (
