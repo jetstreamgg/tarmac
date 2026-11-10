@@ -11,7 +11,7 @@ import {
 import { waitForTransactionReceipt } from 'viem/actions';
 
 /** Ceiling on the gap between attempts while the RPC keeps failing. */
-const MAX_RETRY_DELAY_MS = 30_000;
+export const MAX_RETRY_DELAY_MS = 30_000;
 
 type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementReturnType };
 
@@ -23,6 +23,13 @@ type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementRet
  */
 export class TransactionReplacedError extends UserRejectedRequestError {
   override name = 'TransactionReplacedError' as const;
+}
+
+/** A Safe transaction that can never execute: rejected, replaced, or deleted in the Safe queue. */
+export class SafeTransactionRejectedError extends TransactionReplacedError {
+  constructor() {
+    super(new Error('Safe transaction rejected or replaced in the Safe queue.'));
+  }
 }
 
 /** A mined transaction whose receipt reads `reverted`. */

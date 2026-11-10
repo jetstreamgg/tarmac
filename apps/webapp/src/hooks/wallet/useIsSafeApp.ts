@@ -4,8 +4,7 @@ import { SAFE_CONNECTOR_ID } from '../shared/constants';
 /**
  * Whether the app is running inside the Safe{Wallet} iframe (the `safe`
  * connector). Only then does the Safe UI own the session — nothing to
- * disconnect, no other wallet to switch to — and only then does a write
- * return a safeTxHash for `useWaitForSafeTxHash` to resolve.
+ * disconnect, no other wallet to switch to.
  *
  * A Safe account reached over WalletConnect is NOT this — see
  * `useIsSafeWallet` for "the connected account is a Safe".
