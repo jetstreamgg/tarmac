@@ -130,6 +130,8 @@ export type MockSafeTx = {
   multiSendTransactions: Hex | null;
   submissionDate: string;
   execution: MockSafeExecution | null;
+  /** The rejection executed at this transaction's nonce; it can never execute now. */
+  rejectedBy?: Hex;
 };
 
 export type MockSafeController = {
@@ -140,6 +142,11 @@ export type MockSafeController = {
   waitForQueued: (options?: { timeout?: number }) => Promise<MockSafeTx>;
   /** Signs with the first `threshold` owners and executes on-chain, as the owners would in Safe{Wallet}. */
   execute: (safeTxHash?: Hex) => Promise<MockSafeTx>;
+  /**
+   * The owners reject a queued transaction, as Safe{Wallet}'s on-chain rejection does: an empty
+   * call to the Safe itself executed at the same nonce. The original stays unexecuted forever.
+   */
+  reject: (safeTxHash?: Hex) => Promise<MockSafeTx>;
   /** The user picks another network in Safe{Wallet}: the Safe App reloads on it. */
   switchNetwork: (network: NetworkName) => Promise<void>;
   /** Tx-service paths and host calls this mock does not answer; a spec asserts it stays empty. */
@@ -288,7 +295,13 @@ function decodedData(tx: MockSafeTx) {
 }
 
 const txStatus = (tx: MockSafeTx): MockSafeTxDetails['txStatus'] =>
-  !tx.execution ? 'AWAITING_CONFIRMATIONS' : tx.execution.isSuccessful ? 'SUCCESS' : 'FAILED';
+  tx.rejectedBy
+    ? 'CANCELLED'
+    : !tx.execution
+      ? 'AWAITING_CONFIRMATIONS'
+      : tx.execution.isSuccessful
+        ? 'SUCCESS'
+        : 'FAILED';
 
 const maskHex = (text: string) =>
   text.replace(/0x[0-9a-fA-F]{64}/g, '{hash}').replace(/0x[0-9a-fA-F]{40}/g, '{address}');
@@ -323,7 +336,9 @@ export async function enableSafeMode(
   let current = network;
 
   const queuedOn = (on: NetworkName) =>
-    txs.filter(tx => tx.network === on && !tx.execution).sort((a, b) => Number(a.nonce - b.nonce));
+    txs
+      .filter(tx => tx.network === on && !tx.execution && !tx.rejectedBy)
+      .sort((a, b) => Number(a.nonce - b.nonce));
 
   const readNonce = async (on: NetworkName) =>
     (await getFork(on)).publicClient.readContract({ address, abi: safeAbi, functionName: 'nonce' });
@@ -336,7 +351,12 @@ export async function enableSafeMode(
     return run;
   }
 
-  async function propose(on: NetworkName, calls: Call[], safeTxGas: bigint): Promise<MockSafeTx> {
+  async function propose(
+    on: NetworkName,
+    calls: Call[],
+    safeTxGas: bigint,
+    atNonce?: bigint
+  ): Promise<MockSafeTx> {
     const multiSendTransactions = calls.length > 1 ? encodeMultiSend(calls) : null;
     const to = multiSendTransactions ? SAFE_1_4_1.multiSendCallOnly : calls[0].to;
     const value = multiSendTransactions ? 0n : calls[0].value;
@@ -344,7 +364,7 @@ export async function enableSafeMode(
       ? encodeFunctionData({ abi: multiSendAbi, functionName: 'multiSend', args: [multiSendTransactions] })
       : calls[0].data;
     const operation = multiSendTransactions ? 1 : 0;
-    const nonce = (await readNonce(on)) + BigInt(queuedOn(on).length);
+    const nonce = atNonce ?? (await readNonce(on)) + BigInt(queuedOn(on).length);
     const { publicClient } = await getFork(on);
     const safeTxHash = await publicClient.readContract({
       address,
@@ -495,7 +515,25 @@ export async function enableSafeMode(
     const url = new URL(request.url());
     const on = txServiceNetwork(url);
     const path = on ? txServicePath(url, on) : url.pathname;
-    // The app only reads a transaction by its safeTxHash (useWaitForSafeTxHash).
+    // useWaitForSafeTxHash reads a transaction by its safeTxHash, then every
+    // transaction at its nonce to tell a rejected or replaced one from one still queued.
+    const atNonce = path.match(/^\/api\/v1\/safes\/(0x[0-9a-fA-F]{40})\/multisig-transactions\/?$/);
+    const nonce = url.searchParams.get('nonce');
+    if (
+      on &&
+      atNonce &&
+      nonce !== null &&
+      request.method() === 'GET' &&
+      isAddressEqual(atNonce[1] as Address, address)
+    ) {
+      const results = txs.filter(tx => tx.network === on && tx.nonce === BigInt(nonce)).map(txServiceTx);
+      return route.fulfill({
+        status: 200,
+        headers,
+        contentType: 'application/json',
+        body: JSON.stringify({ count: results.length, next: null, previous: null, results })
+      });
+    }
     const single = path.match(/^\/api\/v1\/multisig-transactions\/(0x[0-9a-fA-F]{64})\/?$/);
     if (!on || !single || request.method() !== 'GET') {
       unmockedRequests.push(maskHex(`${request.method()} ${url.hostname}${url.pathname}`));
@@ -515,6 +553,19 @@ export async function enableSafeMode(
   function execute(safeTxHash?: Hex): Promise<MockSafeTx> {
     const on = current;
     return serialize(() => executeOn(on, safeTxHash));
+  }
+
+  function reject(safeTxHash?: Hex): Promise<MockSafeTx> {
+    const on = current;
+    return serialize(async () => {
+      const target = safeTxHash ? findTx(safeTxHash, on) : queuedOn(on)[0];
+      if (!target) throw new Error('Mock Safe: nothing to reject');
+      if (target.execution) throw new Error('Mock Safe: transaction already executed');
+      const rejection = await propose(on, [{ to: address, value: 0n, data: '0x' }], 0n, target.nonce);
+      const executed = await executeOn(on, rejection.safeTxHash);
+      target.rejectedBy = executed.safeTxHash;
+      return executed;
+    });
   }
 
   async function executeOn(on: NetworkName, safeTxHash?: Hex): Promise<MockSafeTx> {
@@ -604,6 +655,7 @@ export async function enableSafeMode(
       return queuedOn(on)[0];
     },
     execute,
+    reject,
     async switchNetwork(next: NetworkName) {
       if (!networks.includes(next)) throw new Error(`Mock Safe: the Safe is not deployed on ${next}`);
       current = next;

@@ -16,11 +16,10 @@ const isSafeWalletFound = async (url: URL) => {
 /**
  * Whether the connected account is a Safe, by any connector: the Safe App
  * iframe, or a Safe paired over WalletConnect. Drives what holds for any Safe:
- * transaction links to the Safe UI, the `safe:` prefix, and `canSwitchChain`
- * on NetworkSwitchContext. Resolving a safeTxHash to the on-chain hash is
- * still keyed on the iframe alone (`useWaitForSafeTxHash`; APP-567 covers
- * WalletConnect). For what only the iframe changes — who owns the session —
- * use `useIsSafeApp`.
+ * transaction links to the Safe UI, the `safe:` prefix, `canSwitchChain` on
+ * NetworkSwitchContext, and resolving a returned safeTxHash to the on-chain
+ * hash (`useWaitForSafeTxHash`). For what only the iframe changes — who owns
+ * the session — use `useIsSafeApp`.
  */
 export const useIsSafeWallet = () => {
   const { address } = useConnection();

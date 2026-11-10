@@ -5,10 +5,9 @@ import {
   useSimulateContract,
   useWriteContract
 } from 'wagmi';
-import { useEffect, useEffectEvent, useMemo } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { reportPrepareRevert } from './prepareRevertReporter';
-import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
-import { useTransactionOutcome } from './useTransactionOutcome';
+import { useSentTransactionOutcome } from './useSentTransactionOutcome';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
 import type { Abi, Call, ContractFunctionArgs, ContractFunctionName } from 'viem';
 
@@ -64,41 +63,25 @@ export function useWriteContractFlow<
     }
   });
 
-  // Workaround to get `txHash` from Safe connector
-  const { transactionHash: eventHash, isSafeApp: isSafeConnector } = useWaitForSafeTxHash({
-    chainId: parameters.chainId,
-    safeTxHash: mutationHash
-  });
-
-  // If the user is currently connected through the Safe connector, the txHash will only
-  // be populated after we get it from the Safe wallet contract event, if they're connected
-  // to any other connector, the txHash will be the one we get from the mutation
-  const txHash = useMemo(
-    () => (isSafeConnector ? eventHash : mutationHash),
-    [eventHash, mutationHash, isSafeConnector]
-  );
-
   // Monitor tx
-  const {
-    isPending: isMining,
-    isSuccess,
-    failure: txFailure,
-    receipt
-  } = useTransactionOutcome({ hash: txHash, chainId: parameters.chainId });
+  const { txHash, settleHash, isMining, isSuccess, failure, receipt } = useSentTransactionOutcome({
+    hash: mutationHash,
+    chainId: parameters.chainId
+  });
 
   // The consumer's callbacks are read through effect events: the settle effect
   // must not re-run because a caller passed a new inline function.
   const emitSuccess = useEffectEvent((hash: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
   useEffect(() => {
-    if (txHash) {
+    if (settleHash) {
       if (isSuccess) {
-        emitSuccess(txHash, receipt?.blockNumber);
-      } else if (txFailure) {
-        emitError(txFailure, txHash);
+        emitSuccess(settleHash, receipt?.blockNumber);
+      } else if (failure) {
+        emitError(failure, settleHash);
       }
     }
-  }, [isSuccess, txFailure, txHash, receipt?.blockNumber]);
+  }, [isSuccess, failure, settleHash, receipt?.blockNumber]);
 
   // The single call this hook sends, in the same contract form the batch engines use.
   // Exposed read-only so a flow that routes through here can still be fee-estimated;
@@ -125,7 +108,7 @@ export function useWriteContractFlow<
     },
     data: txHash,
     isLoading: isSimulationLoading || isMining,
-    error: writeError || txFailure,
+    error: writeError || failure,
     prepareError: simulationError,
     prepared: !!simulationData?.request,
     retryPrepare: refetch

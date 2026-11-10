@@ -32,6 +32,12 @@ const wagmi = vi.hoisted(() => ({
   mutationHash: undefined as `0x${string}` | undefined,
   // a write waiting in the wallet
   isPending: false,
+  // what the Safe hash resolver reports (a non-Safe wallet by default)
+  safe: { transactionHash: undefined, failure: null, isSafeWallet: false } as {
+    transactionHash: `0x${string}` | undefined;
+    failure: Error | null;
+    isSafeWallet: boolean;
+  },
   // current receipt state, keyed off the active hash by the test driver
   receipt: {
     isLoading: false,
@@ -106,7 +112,7 @@ vi.mock('@/hooks/shared/useTransactionOutcome', () => ({
 }));
 
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
-  useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })
+  useWaitForSafeTxHash: () => wagmi.safe
 }));
 
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
@@ -136,6 +142,7 @@ function resetWagmi() {
   wagmi.refetchGate = undefined;
   wagmi.mutationHash = undefined;
   wagmi.isPending = false;
+  wagmi.safe = { transactionHash: undefined, failure: null, isSafeWallet: false };
   wagmi.receipt = { isLoading: false, isSuccess: false, error: null, failureReason: null };
 }
 
@@ -1154,5 +1161,63 @@ describe('useSequentialTransactionFlow — reset while a write is out (the modal
 
     act(() => result.current.execute());
     expect(lastDispatchedCall()).toBe('supply-edited');
+  });
+});
+
+// APP-567: a Safe returns a safeTxHash while the owners still have to sign.
+describe('useSequentialTransactionFlow — a Safe transaction queued for co-signers', () => {
+  const SAFE_TX_HASH = '0xsafetx' as const;
+  const EXECUTED_HASH = '0xexecuted' as const;
+
+  beforeEach(() => {
+    resetWagmi();
+    wagmi.safe = { transactionHash: undefined, failure: null, isSafeWallet: true };
+  });
+  afterEach(() => vi.clearAllMocks());
+
+  const sendQueued = (onSuccess = vi.fn(), onError = vi.fn()) => {
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [SUPPLY], onSuccess, onError })
+    );
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = SAFE_TX_HASH;
+      wagmi.onWriteSuccess?.(SAFE_TX_HASH);
+    });
+    rerender();
+    return { result, rerender, onSuccess, onError };
+  };
+
+  it('stays in flight while queued and succeeds on the executed hash once the owners run it', () => {
+    const { result, rerender, onSuccess, onError } = sendQueued();
+    expect(result.current.isLoading).toBe(true);
+    expect(onSuccess).not.toHaveBeenCalled();
+
+    act(() => {
+      wagmi.safe = { transactionHash: EXECUTED_HASH, failure: null, isSafeWallet: true };
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSuccess).toHaveBeenCalledWith(EXECUTED_HASH, undefined);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('reports a transaction rejected in the Safe queue once, on the safeTxHash, and ends the run', () => {
+    const { result, rerender, onSuccess, onError } = sendQueued();
+    const rejected = new Error('Safe transaction rejected or replaced in the Safe queue.');
+
+    act(() => {
+      wagmi.safe = { transactionHash: undefined, failure: rejected, isSafeWallet: true };
+    });
+    rerender();
+    rerender();
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(rejected, SAFE_TX_HASH);
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBe(rejected);
   });
 });
