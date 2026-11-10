@@ -25,6 +25,13 @@ export class TransactionReplacedError extends UserRejectedRequestError {
   override name = 'TransactionReplacedError' as const;
 }
 
+/** A Safe transaction that can never execute: rejected, replaced, or deleted in the Safe queue. */
+export class SafeTransactionRejectedError extends TransactionReplacedError {
+  constructor() {
+    super(new Error('Safe transaction rejected or replaced in the Safe queue.'));
+  }
+}
+
 /** A mined transaction whose receipt reads `reverted`. */
 export class TransactionRevertedError extends Error {
   override name = 'TransactionRevertedError' as const;

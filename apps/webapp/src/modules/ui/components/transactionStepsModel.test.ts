@@ -409,16 +409,18 @@ describe('deriveTransactionStepItems — contract revert reason (APP-663)', () =
     expect(items[0]).toEqual(expect.objectContaining({ label: 'Transaction failed', description: reason }));
   });
 
-  it('is ignored for a wallet Reject and for a failed signature', () => {
-    const rejected = deriveTransactionStepItems({
-      steps: supplySteps,
-      currentStep: 0,
-      txStatus: TxStatus.ERROR,
-      bundled: false,
-      userRejected: true,
-      failureReason: reason
-    });
-    expect(rejected[0].description).toBe('You declined the request in your wallet. Nothing was sent.');
+  it('replaces the declined sentence on a Reject (a Safe rejection), and is ignored for a failed signature', () => {
+    const declined = (failureReason?: string) =>
+      deriveTransactionStepItems({
+        steps: supplySteps,
+        currentStep: 0,
+        txStatus: TxStatus.ERROR,
+        bundled: false,
+        userRejected: true,
+        failureReason
+      })[0];
+    expect(declined().description).toBe('You declined the request in your wallet. Nothing was sent.');
+    expect(declined(reason)).toMatchObject({ label: 'Approve declined', description: reason });
 
     const signature = deriveTransactionStepItems({
       steps: [{ label: 'Sign terms', kind: 'signature' }, ...supplySteps],

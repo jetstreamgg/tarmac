@@ -84,8 +84,9 @@ type DeriveInput = {
    * The failure is a contract revert, already worded for the user (the revert
    * registry's copy, or the raw reason). It replaces the generic rollback
    * sentence on the failed on-chain row: the user learns why, and a revert
-   * caught before broadcast wasn't rolled back anyway. Ignored for a Reject
-   * and for signature rows.
+   * caught before broadcast wasn't rolled back anyway. On a Reject it replaces
+   * the "you declined" sentence (a Safe rejection the user may not have made).
+   * Ignored for signature rows.
    */
   failureReason?: string;
 };
@@ -237,7 +238,7 @@ export function deriveTransactionStepItems({
           tokenSymbol: undefined,
           targetTokenSymbol: undefined,
           state: 'failed' as const,
-          description: t`You declined the request in your wallet. Nothing was sent.`,
+          description: failureReason ?? t`You declined the request in your wallet. Nothing was sent.`,
           retry
         };
       }

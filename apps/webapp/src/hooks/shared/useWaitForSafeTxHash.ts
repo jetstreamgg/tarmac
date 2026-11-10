@@ -6,7 +6,7 @@ import type { Hash } from 'viem';
 import { SAFE_TRANSACTION_SERVICE_URL } from './constants';
 import {
   MAX_RETRY_DELAY_MS,
-  TransactionReplacedError,
+  SafeTransactionRejectedError,
   TransactionRevertedError
 } from './useTransactionOutcome';
 import { useIsSafeWallet } from '../wallet/useIsSafeWallet';
@@ -190,9 +190,7 @@ export const useWaitForSafeTxHash = ({
   // One error object per outcome: the engines key their settle effects on it.
   const failure = useMemo(() => {
     if (status === 'rejected') {
-      return new TransactionReplacedError(
-        new Error('Safe transaction rejected or replaced in the Safe queue.')
-      );
+      return new SafeTransactionRejectedError();
     }
     return status === 'reverted' ? new TransactionRevertedError() : null;
   }, [status]);

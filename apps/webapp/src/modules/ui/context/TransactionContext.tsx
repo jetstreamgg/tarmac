@@ -29,7 +29,8 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { SafeTransactionRejectedError, TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { t } from '@lingui/core/macro';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import { revertMessage, revertReport } from '@/lib/revertMessages';
@@ -1320,8 +1321,15 @@ export function TransactionProvider({
       txStatusRef.current = TxStatus.ERROR;
       const rejected = isUserRejectedRequestError(error);
       setUserRejected(rejected);
-      // A Reject has its own copy; anything else that reverted says why.
-      setFailureReason(rejected ? undefined : revertMessage(error));
+      // A Reject has its own copy, except a Safe's, which a co-owner or a
+      // replacement may have ended; anything else that reverted says why.
+      setFailureReason(
+        error instanceof SafeTransactionRejectedError
+          ? t`This transaction was rejected in your Safe. No funds were moved.`
+          : rejected
+            ? undefined
+            : revertMessage(error)
+      );
       if (hash) {
         txHashRef.current = hash;
       }
