@@ -437,7 +437,7 @@ export function PendleModalForm({
   const claimInfo = (
     <PopoverInfo
       title={t`Claim at maturity`}
-      description={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
+      description={t`Based on the ${ptSymbol} you're expected to receive at the current market price; at maturity you can claim 1 ${displaySymbol} for each ${ptSymbol}.`}
       iconSize={12}
     />
   );
