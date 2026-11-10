@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 import { FOCUSABLE_SELECTOR, captureFocusOrigin, restoreFocus } from '@/hooks/ui/useRestoreFocusOnClose';
+import { usePageModalHold } from '@/components/ui/pageModalHold';
 
 /**
  * The takeover opens and closes on the modal comp's motion (Figma: Sky App: UI
@@ -68,6 +69,9 @@ export function TakeoverShell({
   const containerRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const reduceMotion = useReducedMotion();
+  // Under the access gate the takeover stays mounted (keeping its form state)
+  // but inert, so neither focus nor a screen reader can reach it.
+  const held = usePageModalHold();
 
   // Escape-to-close: syncing with the DOM outside React. (The document scroll
   // lock is `RemoveScroll` around the portal below.) Radix layers (popovers,
@@ -158,6 +162,7 @@ export function TakeoverShell({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        inert={held}
         data-testid={dataTestId}
         initial={{ opacity: scrimHandoff ? 1 : 0 }}
         animate={{ opacity: 1 }}

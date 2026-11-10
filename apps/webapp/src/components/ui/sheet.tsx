@@ -8,7 +8,9 @@ import { usePageModalHold } from './pageModalHold';
 
 function Sheet({ open, ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   const held = usePageModalHold();
-  return <SheetPrimitive.Root data-slot="sheet" open={held ? false : open} {...props} />;
+  return (
+    <SheetPrimitive.Root data-slot="sheet" open={held && open !== undefined ? false : open} {...props} />
+  );
 }
 
 function SheetTrigger({ ...props }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {

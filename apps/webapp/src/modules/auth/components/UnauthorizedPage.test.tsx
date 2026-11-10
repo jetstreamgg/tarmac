@@ -35,18 +35,14 @@ vi.mock('@/modules/config/termsLink', () => ({
 i18n.load('en', {});
 i18n.activate('en');
 
-const renderPage = (props: {
-  blockReason?: AccessBlockReason;
-  onRetry?: () => void;
-  authIsLoading?: boolean;
-}) =>
+const renderPage = (props: { blockReason?: AccessBlockReason; onRetry?: () => void; isRetrying?: boolean }) =>
   render(
     <I18nProvider i18n={i18n}>
       <UnauthorizedPage
-        authData={{ authIsLoading: props.authIsLoading ?? false }}
-        vpnData={{ vpnIsLoading: false, countryCode: 'US' }}
         blockReason={props.blockReason}
+        countryCode="US"
         onRetry={props.onRetry}
+        isRetrying={props.isRetrying}
       />
     </I18nProvider>
   );
@@ -60,18 +56,6 @@ afterEach(() => {
 });
 
 describe('UnauthorizedPage', () => {
-  // The wait is WalletChip's ConnectChecksCover now, not a card here. It must
-  // render nothing at all until the verdict is in —
-  // in particular not the blocked dialog, which would otherwise flash for
-  // every user while screening was still in flight.
-  it('renders no dialog at all while the checks are loading', () => {
-    renderPage({ authIsLoading: true, blockReason: 'wallet-blocked' });
-
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.queryByText('Wallet blocked')).toBeNull();
-    expect(screen.queryByRole('button')).toBeNull();
-  });
-
   it('renders the region block with no action or recourse route', () => {
     renderPage({ blockReason: 'region-restricted' });
 
@@ -113,7 +97,14 @@ describe('UnauthorizedPage', () => {
     expect(onRetry).toHaveBeenCalled();
   });
 
-  it('reports the mapped block reason to analytics once resolved', () => {
+  // Retries keep the gate up, so the button is the only sign a retry is running.
+  it('shows the retry as loading while a failed check runs again', () => {
+    renderPage({ blockReason: 'ip-check-unavailable', onRetry: vi.fn(), isRetrying: true });
+
+    expect((screen.getByRole('button', { name: /Try again/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('reports the mapped block reason to analytics once', () => {
     renderPage({ blockReason: 'wallet-blocked' });
 
     expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(1);
@@ -121,11 +112,5 @@ describe('UnauthorizedPage', () => {
       blockReason: 'address_restricted',
       countryCode: 'US'
     });
-  });
-
-  it('does not report to analytics while still loading', () => {
-    renderPage({ authIsLoading: true });
-
-    expect(h.trackVpnBlockedPageView).not.toHaveBeenCalled();
   });
 });

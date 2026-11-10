@@ -53,6 +53,8 @@ interface ConnectedContextType {
    * the terms (the "check again" path on the unavailable states).
    */
   retryAccessChecks: () => void;
+  /** A failed access check is running again (manual retry or background poll). */
+  isRetryingAccessChecks: boolean;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
   /**
@@ -129,6 +131,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
   isConnectedAndAcceptedTerms: false,
   isAuthorized: false,
   retryAccessChecks: () => {},
+  isRetryingAccessChecks: false,
   isCheckingTerms: false,
   termsCheckError: false,
   termsCheckDenied: false,
@@ -160,6 +163,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     data: vpnData,
     isLoading: vpnIsLoading,
     error: vpnError,
+    hasFailed: vpnHasFailed,
+    isFetching: vpnIsFetching,
     refetch: refetchVpnCheck
   } = useVpnCheck({ authUrl, skip: skipAuthCheck });
 
@@ -298,13 +303,15 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const {
     data: authData,
     error: authError,
+    hasFailed: authHasFailed,
+    isFetching: authIsFetching,
     refetch: refetchAddressCheck
   } = useRestrictedAddressCheck({ address, authUrl, enabled: screeningRequired });
 
   // Derived rather than read off the query's own loading flag: it has to be
   // true in the very render the terms verdict lands, or that render reads as
   // authorized and the terms modal would open before the address is screened.
-  const authIsLoading = screeningRequired && !authData && !authError;
+  const authIsLoading = screeningRequired && !authData && !authHasFailed;
 
   useEffect(() => {
     if (authError) {
@@ -454,8 +461,9 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (vpnData?.isRestrictedRegion) return 'region-restricted';
     // Fail closed only when there is no verdict at all. A failed background
     // refetch keeps the cached data and sets `error`, so gating on the error
-    // alone would discard a verdict we already hold.
-    if (vpnError && !vpnData) return 'ip-check-unavailable';
+    // alone would discard a verdict we already hold. `vpnHasFailed` stays set
+    // while the check retries, so the gate doesn't drop for each retry.
+    if (vpnHasFailed) return 'ip-check-unavailable';
     if (address) {
       // Whoever screened (the pre-terms check or the pre-transaction gate), a
       // risky verdict blocks the app.
@@ -464,10 +472,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // user and the terms. At Confirm, the gate owns that failure with its
       // own dialog: a flaky check shouldn't take the whole app away from a
       // wallet that was never screened out.
-      if (screeningRequired && authError && !authData) return 'screening-unavailable';
+      if (screeningRequired && authHasFailed) return 'screening-unavailable';
     }
     return undefined;
-  }, [vpnData, vpnError, address, authData, authError, screeningRequired]);
+  }, [vpnData, vpnHasFailed, address, authData, authHasFailed, screeningRequired]);
 
   // `undefined !== true` while a required screening is in flight, so the
   // address stays gated (behind the loading dialog) until a verdict lands.
@@ -489,6 +497,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetchVpnCheck();
     if (screeningRequired) refetchAddressCheck();
   }, [refetchVpnCheck, refetchAddressCheck, screeningRequired]);
+  const isRetryingAccessChecks =
+    (vpnHasFailed && vpnIsFetching) || (screeningRequired && authHasFailed && authIsFetching);
 
   // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
   // PostHog event carries them. Unlike the fire-once tracking below, this re-runs
@@ -543,6 +553,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       accessBlockReason,
       isUsUser,
       retryAccessChecks,
+      isRetryingAccessChecks,
       isCheckingTerms,
       termsCheckError,
       termsCheckDenied,
@@ -574,6 +585,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       accessBlockReason,
       isUsUser,
       retryAccessChecks,
+      isRetryingAccessChecks,
       isCheckingTerms,
       termsCheckError,
       termsCheckDenied,

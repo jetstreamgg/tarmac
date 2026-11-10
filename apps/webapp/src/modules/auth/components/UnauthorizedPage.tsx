@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { Ban, TriangleAlert } from 'lucide-react';
 import { useDisconnect } from 'wagmi';
 import { Text } from '@/modules/layout/components/Typography';
@@ -17,27 +17,13 @@ import {
   reportTermsLinkConfigErrorOnce
 } from '@/modules/config/termsLink';
 
-type AuthData = {
-  addressAllowed?: boolean;
-  authIsLoading?: boolean;
-  address?: string;
-  authError?: Error;
-};
-
-type VpnData = {
-  isConnectedToVpn?: boolean;
-  isRestrictedRegion?: boolean;
-  vpnIsLoading?: boolean;
-  vpnError?: Error;
-  countryCode?: string | null;
-};
-
 type UnauthorizedPageProps = {
-  authData: AuthData;
-  vpnData: VpnData;
   blockReason?: AccessBlockReason;
+  countryCode?: string | null;
   /** Re-runs the failed checks — wired to the "unavailable" states only. */
   onRetry?: () => void;
+  /** A failed check is running again: the retry button shows its loading state. */
+  isRetrying?: boolean;
 };
 
 const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
@@ -56,25 +42,30 @@ const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
     <>Terms of Use</>
   );
 
-export const UnauthorizedPage = ({ authData, vpnData, blockReason, onRetry }: UnauthorizedPageProps) => {
+/**
+ * The blocked dialog. AccessGate renders it only once a block verdict is in;
+ * while the checks are in flight, WalletChip's ConnectChecksCover holds the
+ * screen instead.
+ */
+export const UnauthorizedPage = ({
+  blockReason,
+  countryCode,
+  onRetry,
+  isRetrying
+}: UnauthorizedPageProps) => {
   const { trackVpnBlockedPageView } = useVpnAnalytics();
   const { disconnect } = useDisconnect();
   const blockedTrackedRef = useRef(false);
 
-  const isLoading = useMemo(
-    () => authData.authIsLoading || vpnData.vpnIsLoading,
-    [authData.authIsLoading, vpnData.vpnIsLoading]
-  );
-
   useEffect(() => {
-    if (blockedTrackedRef.current || isLoading) return;
+    if (blockedTrackedRef.current) return;
     blockedTrackedRef.current = true;
 
     trackVpnBlockedPageView({
       blockReason: blockReason ? ANALYTICS_REASON[blockReason] : 'unknown',
-      countryCode: vpnData.countryCode ?? null
+      countryCode: countryCode ?? null
     });
-  }, [isLoading, blockReason, vpnData.countryCode, trackVpnBlockedPageView]);
+  }, [blockReason, countryCode, trackVpnBlockedPageView]);
 
   const { termsLinks } = getTermsLinkConfig();
 
@@ -136,7 +127,7 @@ export const UnauthorizedPage = ({ authData, vpnData, blockReason, onRetry }: Un
               <Button variant="secondary" size="l" className="flex-1" onClick={() => disconnect()}>
                 <Trans>Disconnect wallet</Trans>
               </Button>
-              <Button variant="primary" size="l" className="flex-1" onClick={onRetry}>
+              <Button variant="primary" size="l" className="flex-1" loading={isRetrying} onClick={onRetry}>
                 <Trans>Check again</Trans>
               </Button>
             </div>
@@ -154,7 +145,7 @@ export const UnauthorizedPage = ({ authData, vpnData, blockReason, onRetry }: Un
             </Trans>
           ),
           actions: (
-            <Button variant="primary" size="l" className="w-full" onClick={onRetry}>
+            <Button variant="primary" size="l" className="w-full" loading={isRetrying} onClick={onRetry}>
               <Trans>Try again</Trans>
             </Button>
           )
@@ -163,17 +154,6 @@ export const UnauthorizedPage = ({ authData, vpnData, blockReason, onRetry }: Un
   };
 
   const { icon, title, message, actions } = stateContent();
-
-  // While the checks are in flight this renders nothing: WalletChip's
-  // ConnectChecksCover holds the screen for the whole connect-time sequence
-  // (screening, then the terms check), so the spinner doesn't restart between
-  // them.
-  //
-  // The dialog therefore mounts only once the verdict is in, which is also what
-  // stops it resizing: it used to stay open across the swap from the 300px
-  // waiting card to this 500px one, and DialogContent's `transition: all 300ms`
-  // animated that as a widening.
-  if (isLoading) return null;
 
   return (
     <Dialog open={true}>

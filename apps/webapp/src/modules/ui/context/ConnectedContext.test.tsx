@@ -62,14 +62,23 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+// The hooks' `hasFailed` (no data, at least one failed fetch), unless a test
+// sets it directly to model a retry, where react-query clears `error`.
+type CheckMock = { data?: unknown; error?: Error; hasFailed?: boolean; isFetching?: boolean };
+const withFailure = <T extends CheckMock>(check: T) => ({
+  ...check,
+  hasFailed: check.hasFailed ?? (!check.data && !!check.error),
+  isFetching: check.isFetching ?? false
+});
+
 vi.mock('@/hooks', () => ({
   // The mock hands back `authCheck` whether or not the query is enabled, the
   // way a disabled useQuery still observes its cache entry.
   useRestrictedAddressCheck: ({ enabled }: { enabled: boolean }) => {
     mocks.screeningEnabled(enabled);
-    return { ...mocks.authCheck, refetch: mocks.refetchAddressCheck };
+    return { ...withFailure(mocks.authCheck), refetch: mocks.refetchAddressCheck };
   },
-  useVpnCheck: () => ({ ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
+  useVpnCheck: () => ({ ...withFailure(mocks.vpnCheck), refetch: mocks.refetchVpnCheck }),
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 }));
 
@@ -113,7 +122,8 @@ function Consumer() {
     isCheckingTerms,
     acceptTerms,
     signTerms,
-    retryAccessChecks
+    retryAccessChecks,
+    isRetryingAccessChecks
   } = useConnectedContext();
   return (
     <div>
@@ -127,6 +137,7 @@ function Consumer() {
       <span data-testid="message">{termsMessageToSign ?? 'none'}</span>
       <span data-testid="denied">{String(termsCheckDenied)}</span>
       <span data-testid="checking">{String(isCheckingTerms)}</span>
+      <span data-testid="retrying">{String(isRetryingAccessChecks)}</span>
       <button data-testid="accept" onClick={() => void acceptTerms()}>
         accept
       </button>
@@ -598,6 +609,24 @@ describe('ConnectedContext — the terms AND gate', () => {
 
       expect(authorized()).toBe('false');
       expect(blockReason()).toBe('ip-check-unavailable');
+    });
+
+    // A refetch with no data resets the query to pending and clears `error`,
+    // so without the sticky failure the gate would drop for every retry.
+    it('keeps the IP block up while a failed check retries, and flags the retry', () => {
+      mocks.vpnCheck = {
+        data: undefined,
+        isLoading: false,
+        error: undefined,
+        hasFailed: true,
+        isFetching: true
+      } as typeof mocks.vpnCheck;
+
+      renderProvider();
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('ip-check-unavailable');
+      expect(screen.getByTestId('retrying').textContent).toBe('true');
     });
 
     it('keeps a cached /ip/status verdict through a failed refetch', () => {

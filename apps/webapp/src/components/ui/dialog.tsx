@@ -7,7 +7,7 @@ import { usePageModalHold } from './pageModalHold';
 
 const Dialog = ({ open, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) => {
   const held = usePageModalHold();
-  return <DialogPrimitive.Root open={held ? false : open} {...props} />;
+  return <DialogPrimitive.Root open={held && open !== undefined ? false : open} {...props} />;
 };
 
 const DialogTrigger = DialogPrimitive.Trigger;

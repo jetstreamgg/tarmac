@@ -5,6 +5,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { TakeoverShell } from '@/components/product/TakeoverShell';
 import { AccessGate } from './AccessGate';
 
 const h = vi.hoisted(() => ({
@@ -106,6 +107,7 @@ describe('AccessGate', () => {
     render(tree(true));
 
     expect(screen.getByRole('dialog', { name: 'Position details' })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: 'Wallet blocked' })).toBeNull();
   });
 
   it('takes over from a page modal that was already open when the block landed', () => {
@@ -139,4 +141,56 @@ describe('AccessGate', () => {
       expect(h.pageMounts).toBe(1);
     }
   );
+
+  // Uncontrolled roots open from a trigger the gate covers, so they are left
+  // alone rather than flipped between uncontrolled and controlled.
+  it('leaves uncontrolled dialogs uncontrolled', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const uncontrolled = () => (
+      <I18nProvider i18n={i18n}>
+        <AccessGate>
+          <Dialog>
+            <DialogContent aria-describedby={undefined}>
+              <DialogTitle>Risk tiers</DialogTitle>
+            </DialogContent>
+          </Dialog>
+        </AccessGate>
+      </I18nProvider>
+    );
+    h.connectedContext = AUTHORIZED;
+    const { rerender } = render(uncontrolled());
+    h.connectedContext = BLOCKED;
+    rerender(uncontrolled());
+    expect(gate()).toBeTruthy();
+    h.connectedContext = AUTHORIZED;
+    rerender(uncontrolled());
+
+    const calls = [...warn.mock.calls, ...error.mock.calls].flat().join(' ');
+    expect(calls).not.toMatch(/uncontrolled|controlled/);
+    warn.mockRestore();
+    error.mockRestore();
+  });
+
+  // Takeovers aren't Radix layers: they stay mounted under the gate but inert.
+  it('makes a takeover inert while the gate is up', () => {
+    const takeover = () => (
+      <I18nProvider i18n={i18n}>
+        <AccessGate>
+          <TakeoverShell title="Open position" onClose={() => {}}>
+            <button>Continue</button>
+          </TakeoverShell>
+        </AccessGate>
+      </I18nProvider>
+    );
+    h.connectedContext = BLOCKED;
+    const { rerender } = render(takeover());
+
+    expect(screen.getByTestId('takeover-shell').hasAttribute('inert')).toBe(true);
+    expectGateInCharge();
+
+    h.connectedContext = AUTHORIZED;
+    rerender(takeover());
+    expect(screen.getByTestId('takeover-shell').hasAttribute('inert')).toBe(false);
+  });
 });
