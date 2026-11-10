@@ -77,18 +77,23 @@ export default defineConfig({
         '**/unichain-savings.spec.ts',
         '**/sequential-tx.spec.ts',
         '**/batch-simulation.spec.ts',
-        '**/safe-savings.spec.ts'
+        '**/safe-savings.spec.ts',
+        '**/bridge-native.spec.ts',
+        '**/bridge-native-activity.spec.ts',
+        '**/bridge-native-arbitrum.spec.ts',
+        '**/bridge-native-form.spec.ts',
+        '**/bridge-native-pending.spec.ts',
+        '**/bridge-native-safe.spec.ts',
+        '**/bridge-native-wallets.spec.ts',
+        '**/bridge-native-withdrawal.spec.ts',
+        '**/bridge-cctp.spec.ts',
+        '**/bridge-cctp-gate.spec.ts',
+        '**/bridge-cctp-recovery.spec.ts',
+        '**/bridge-cctp-safe.spec.ts'
+
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]
-    },
-    {
-      name: 'bridge',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 }
-      },
-      testMatch: ['**/bridge-native*.spec.ts', '**/bridge-cctp*.spec.ts']
     }
   ],
 
