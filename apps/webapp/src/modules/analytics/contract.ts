@@ -220,7 +220,8 @@ export interface BridgeTxSentProps extends BridgeEventProps {
   bridge_type: string;
   source_chain: string;
   destination_chain: string;
-  token: string;
+  // Not `token`: posthog-js overwrites that property with the project key.
+  assetSymbol: string;
   amount: number;
   flow: string;
   action: string;

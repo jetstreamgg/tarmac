@@ -35,6 +35,18 @@ describe('bridgeEventContext', () => {
     expect(bridgeEventContext({ ...base, from: 'ethereum', to: 'base' }).flow).toBe('ethereum-to-l2');
     expect(bridgeEventContext({ ...base, from: 'base', to: 'ethereum' }).flow).toBe('l2-to-ethereum');
   });
+
+  it('names the token assetSymbol, like the other widgets, as posthog-js overwrites `token` with the project key', () => {
+    const context = bridgeEventContext({
+      kind: 'cctp',
+      from: 'base',
+      to: 'ethereum',
+      token: 'USDS',
+      amount: 1
+    });
+    expect(context).toMatchObject({ assetSymbol: 'USDS' });
+    expect(context).not.toHaveProperty('token');
+  });
 });
 
 describe('stepOf', () => {

@@ -9,7 +9,8 @@ export type BridgeEventContext = {
   bridge_type: BridgeRouteKind;
   source_chain: BridgeNetworkId;
   destination_chain: BridgeNetworkId;
-  token: string;
+  // Not `token`: posthog-js overwrites that property with the project key.
+  assetSymbol: string;
   amount: number;
   flow: 'ethereum-to-l2' | 'l2-to-ethereum';
 };
@@ -30,7 +31,7 @@ export const bridgeEventContext = ({
   bridge_type: kind,
   source_chain: from,
   destination_chain: to,
-  token,
+  assetSymbol: token,
   amount,
   flow: from === 'ethereum' ? 'ethereum-to-l2' : 'l2-to-ethereum'
 });
