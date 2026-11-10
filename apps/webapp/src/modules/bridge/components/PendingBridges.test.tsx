@@ -86,6 +86,8 @@ vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
 }));
 
 vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
+const posthog = vi.hoisted(() => ({ capture: vi.fn() }));
+vi.mock('posthog-js/react', () => ({ usePostHog: () => posthog }));
 
 // Renders no text; names its token so a card's icon can be read.
 vi.mock('@/modules/ui/components/TokenIcon', () => ({
@@ -921,6 +923,24 @@ describe('PendingBridges', () => {
       expect(link.textContent).toBe('Get claim link');
       fireEvent.click(link);
       expect(mocks.copy).toHaveBeenCalledWith(LINK);
+    });
+
+    it('reports the copy with the bridge it opens', () => {
+      posthog.capture.mockClear();
+      mocks.bridges = [BURN];
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+        'app_bridge_claim_link_copied',
+        expect.objectContaining({
+          widget_name: 'bridge',
+          bridge_type: 'cctp',
+          source_chain: 'base',
+          destination_chain: 'ethereum',
+          bridge_id: '0xburn',
+          source_tx_hash: BURN.txHash
+        })
+      );
     });
 
     // Figma "Claim link copied!": a toast says it, and the link keeps its label.

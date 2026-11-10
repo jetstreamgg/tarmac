@@ -82,6 +82,13 @@ export type TransactionAnalytics = {
   action?: string;
   /** Extra data merged into every analytics event (e.g. module, claimedRewards). */
   data?: Record<string, unknown>;
+  /** Reports each signature as its real step; without it only an approve differs from `action`. */
+  stepOf?: (
+    variables: TxMutateVariables | undefined,
+    flowId: string | undefined
+  ) => { action: string; data?: Record<string, unknown> } | undefined;
+  /** Read when an attempt ends, for what is only known by then. */
+  completedData?: () => Record<string, unknown> | undefined;
 };
 
 /** The config a consumer passes to `launch()` for a standard on-chain transaction. */

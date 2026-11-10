@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useSta
 import { useQueryClient } from '@tanstack/react-query';
 import { formatUnits } from 'viem';
 import { useChains, useConnection } from 'wagmi';
+import { useIsSafeWallet } from '@/hooks';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { TransactionReplacedError } from '@/hooks/shared/useTransactionOutcome';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
@@ -18,6 +19,12 @@ import { useCctpConvertLegs } from './useCctpConvertLegs';
 import { usePendingScope } from './usePendingScope';
 import { useSendWhenPrepared } from './useSendWhenPrepared';
 import { useBridgeBatch } from './useBridgeBatch';
+import {
+  bridgeEventContext,
+  bridgeTransactionAnalytics,
+  type BridgeTracker
+} from '../analytics/bridgeTracker';
+import { useBridgeTrackerFactory } from '../analytics/useBridgeAnalytics';
 
 // Where a Confirm's callbacks go once its modal closed.
 const DETACHED: TxCallbacks = {
@@ -44,6 +51,10 @@ export function useCctpSwapConvertLaunch() {
   const { batch, batchPending } = useBridgeBatch();
   const { scope, familyChainId } = usePendingScope();
   const { chainId: walletChainId, address } = useConnection();
+  const isSafe = useIsSafeWallet();
+  const newTracker = useBridgeTrackerFactory();
+  // What the modal's analytics report: the latest Confirm's run.
+  const trackerRef = useRef<BridgeTracker | undefined>(undefined);
 
   // The card's scope is read where it was clicked: a switch to an L2 fork moves the dev scope.
   const [request, setRequest] = useState<{ swap: UnfinishedCctpSwap; scope: string; chainId: number }>();
@@ -119,13 +130,32 @@ export function useCctpSwapConvertLaunch() {
       resetLegs();
       cancelSend();
       setRequest({ swap, scope, chainId });
+      trackerRef.current = undefined;
+      const context = bridgeEventContext({
+        kind: 'cctp',
+        from: swap.network,
+        to: 'ethereum',
+        token: 'USDC',
+        amount: Number(formatUnits(swap.usdcAmount, 6))
+      });
       launchModal({
         ...cctpConvertModal({ amount: swap.usdcAmount, bridged: swap.usdcAmount, chainId }),
+        analytics: bridgeTransactionAnalytics(context, 'convert', () => trackerRef.current),
         onConfirm: () => {
+          const tracker = newTracker({
+            context,
+            chainId,
+            mainAction: 'convert',
+            swapTokens: { token_in: 'USDC', token_out: 'USDS' },
+            isSafe,
+            sourceTxHash: swap.swapTxHash,
+            readBundleId: () => cctpSwapStore.get(scope, swap.swapTxHash)?.convert
+          });
+          trackerRef.current = tracker;
           const modal = () => (modalOwnerRef.current === callbacks ? callbacksRef.current : DETACHED);
           // The legs link a single convert by its hash; a bundle's calls id is linked before the wallet accepts it.
           let bundle: string | undefined;
-          const callbacks: TxCallbacks = {
+          const callbacks: TxCallbacks = tracker.wrap({
             onMutate: variables => modal().onMutate(variables),
             onStart: hash => {
               if (!hash) bundle = cctpSwapStore.get(scope, swap.swapTxHash)?.convert;
@@ -142,7 +172,7 @@ export function useCctpSwapConvertLaunch() {
                 cctpSwapStore.markConvert(scope, swap.swapTxHash, undefined);
               modal().onError(error, hash);
             }
-          };
+          });
           legCallbacksRef.current = callbacks;
           modalOwnerRef.current = callbacks;
           sendWhenPrepared();
@@ -163,7 +193,9 @@ export function useCctpSwapConvertLaunch() {
       scope,
       resetLegs,
       cancelSend,
-      sendWhenPrepared
+      sendWhenPrepared,
+      isSafe,
+      newTracker
     ]
   );
 

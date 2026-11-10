@@ -166,7 +166,16 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
   // Held here, as the Swap form is by the page, so a tab switch keeps what was typed.
   const bridgeDraft = useBridgeDraft();
   const tab: ConvertTab = searchParams.get(QueryParams.Tab) === 'bridge' ? 'bridge' : 'swap';
+  const chainId = useChainId();
+  const { trackWidgetSelected } = useAppAnalytics();
   const onTabChange = (value: string) => {
+    if (value === 'bridge')
+      trackWidgetSelected({
+        widgetName: 'bridge',
+        previousWidget: 'convert',
+        selectionMethod: 'tab',
+        chainId
+      });
     setSearchParams(
       params => {
         params.set(QueryParams.Tab, value);

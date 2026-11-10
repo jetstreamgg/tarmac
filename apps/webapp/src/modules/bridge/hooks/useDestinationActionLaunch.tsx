@@ -59,6 +59,12 @@ import { useOpStackReplayLegs } from './useOpStackReplayLegs';
 import { usePendingScope } from './usePendingScope';
 import { useSendWhenPrepared } from './useSendWhenPrepared';
 import { useBridgeBatch } from './useBridgeBatch';
+import {
+  bridgeEventContext,
+  bridgeTransactionAnalytics,
+  type BridgeTracker
+} from '../analytics/bridgeTracker';
+import { useBridgeTrackerFactory } from '../analytics/useBridgeAnalytics';
 
 /**
  * The action the legs build: a deposit's replay on an OP Stack L2 or redeem or
@@ -435,6 +441,9 @@ export function useDestinationActionLaunch() {
   );
 
   const callbacksRef = useRef(txCallbacks);
+  const newTracker = useBridgeTrackerFactory();
+  // What the modal's analytics report: the latest Confirm's run.
+  const trackerRef = useRef<BridgeTracker | undefined>(undefined);
   // The account Confirm sends from: a convert is the recipient's only.
   const addressRef = useRef(address);
   // The Confirm whose callbacks may still reach the modal; none once the modal closes.
@@ -553,6 +562,16 @@ export function useDestinationActionLaunch() {
         setRecovery(nextRecovery);
       }
       launchedToastRef.current = { loading: copy.loading, success: copy.success, error: copy.error };
+      trackerRef.current = undefined;
+      const eventContext = bridgeEventContext({
+        kind: bridge.routeKind,
+        from: bridge.from,
+        to: bridge.to,
+        token: symbol,
+        amount: isConvert
+          ? Number(formatUnits(convertAmount!, 6))
+          : usdsToNumber(bridgedAmount(bridge.amount, bridge.routeKind))
+      });
       launchModal({
         ...(nextRecovery?.kind === 'cctp-convert'
           ? cctpConvertModal({
@@ -574,6 +593,7 @@ export function useDestinationActionLaunch() {
               steps: [{ label: copy.step, tokenSymbol: symbol, failureDetail: copy.failure }]
             }),
         toast: launchedToastRef.current,
+        analytics: bridgeTransactionAnalytics(eventContext, action, () => trackerRef.current),
         onConfirm: () => {
           // Retry calls onConfirm again; an action already sent must not go out twice.
           const current = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bridge.id);
@@ -610,6 +630,25 @@ export function useDestinationActionLaunch() {
             refuse();
             return;
           }
+          const readBundle = () =>
+            pendingBridgeStore
+              .getSnapshot(scope)
+              .find(entry => entry.id === bridge.id)
+              ?.actions.findLast(sent => sent.action === action && sent.status === 'sent' && sent.bundle)
+              ?.txHash;
+          const tracker = newTracker({
+            context: eventContext,
+            chainId: pinnedChainId,
+            mainAction: action,
+            swapFunction: action === 'claim' ? CCTP_CONVERT_FUNCTION : undefined,
+            swapTokens: action === 'claim' || isConvert ? { token_in: 'USDC', token_out: 'USDS' } : undefined,
+            includesSwap: action === 'claim' && !isCctpClaimOnly(bridge.routeData),
+            isSafe,
+            bridgeId: bridge.id,
+            sourceTxHash: bridge.txHash,
+            readBundleId: readBundle
+          });
+          trackerRef.current = tracker;
           const record =
             (change: (current: PendingBridge, txHash: string) => PendingBridge) => (txHash: string) =>
               pendingBridgeStore.update(scope, bridge.id, current => change(current, txHash));
@@ -643,31 +682,28 @@ export function useDestinationActionLaunch() {
                     ? CCTP_CONVERT_FUNCTION
                     : undefined,
               confirmOnNextLeg: !isSafe,
-              readBundle: () =>
-                pendingBridgeStore
-                  .getSnapshot(scope)
-                  .find(entry => entry.id === bridge.id)
-                  ?.actions.findLast(sent => sent.action === action && sent.status === 'sent' && sent.bundle)
-                  ?.txHash
+              readBundle
             }
           );
           // A CCTP card leaves once its USDS is delivered (Figma 78, 97): a claim only after its sale or a bundle, else it stays to offer the convert.
           let soldUsdc = nextRecovery?.kind === 'cctp-convert';
           const deliversUsds = nextRecovery?.kind === 'cctp-claim' || nextRecovery?.kind === 'cctp-convert';
-          const callbacks: TxCallbacks = deliversUsds
-            ? {
-                ...recorded,
-                onMutate: variables => {
-                  if (nextRecovery.kind === 'cctp-claim')
-                    soldUsdc = variables?.functionName !== CCTP_CLAIM_FUNCTION;
-                  recorded.onMutate(variables);
-                },
-                onSuccess: (...settled) => {
-                  recorded.onSuccess(...settled);
-                  if (soldUsdc) pendingBridgeStore.close(scope, bridge.id);
+          const callbacks: TxCallbacks = tracker.wrap(
+            deliversUsds
+              ? {
+                  ...recorded,
+                  onMutate: variables => {
+                    if (nextRecovery.kind === 'cctp-claim')
+                      soldUsdc = variables?.functionName !== CCTP_CLAIM_FUNCTION;
+                    recorded.onMutate(variables);
+                  },
+                  onSuccess: (...settled) => {
+                    recorded.onSuccess(...settled);
+                    if (soldUsdc) pendingBridgeStore.close(scope, bridge.id);
+                  }
                 }
-              }
-            : recorded;
+              : recorded
+          );
           if (!nextRecovery) {
             void runMockLegs([action], () => callbacks);
             return;
@@ -703,7 +739,8 @@ export function useDestinationActionLaunch() {
       resetClaim,
       resetConvert,
       cancelSend,
-      sendWhenPrepared
+      sendWhenPrepared,
+      newTracker
     ]
   );
   useLayoutEffect(() => {
