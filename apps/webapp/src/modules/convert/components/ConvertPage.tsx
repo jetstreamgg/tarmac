@@ -168,7 +168,12 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
   const tab: ConvertTab = searchParams.get(QueryParams.Tab) === 'bridge' ? 'bridge' : 'swap';
   const chainId = useChainId();
   const { trackWidgetSelected } = useAppAnalytics();
+  // A click activates a tab twice in one event: on the trigger's focus, then on its mouse down.
+  const activatingRef = useRef<string | undefined>(undefined);
   const onTabChange = (value: string) => {
+    if (activatingRef.current === value) return;
+    activatingRef.current = value;
+    queueMicrotask(() => (activatingRef.current = undefined));
     if (value === 'bridge')
       trackWidgetSelected({
         widgetName: 'bridge',

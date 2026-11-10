@@ -34,7 +34,7 @@ export function MinimizedTransactionToast({
     <button
       type="button"
       onClick={onView}
-      className="flex w-full cursor-pointer items-center gap-4 pr-6 text-left after:absolute after:inset-0"
+      className="focus-visible:outline-focusRing flex w-full cursor-pointer items-center gap-4 rounded-xs pr-6 text-left after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2"
       data-testid="minimized-transaction-toast"
     >
       <span className="shrink-0">{statusIcon[status]}</span>

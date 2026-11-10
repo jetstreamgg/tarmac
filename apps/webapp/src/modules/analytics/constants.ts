@@ -29,7 +29,8 @@ export const AppEvents = {
   PROMO_CLICKED: 'app_promo_clicked',
   BRIDGE_TX_SENT: 'app_bridge_tx_sent',
   BRIDGE_CLAIM_LINK_COPIED: 'app_bridge_claim_link_copied',
-  BRIDGE_LOOKUP_COMPLETED: 'app_bridge_lookup_completed'
+  BRIDGE_LOOKUP_COMPLETED: 'app_bridge_lookup_completed',
+  TRANSACTION_PREPARE_REVERTED: 'app_transaction_prepare_reverted'
 } as const;
 
 // ── Types ────────────────────────────────────────────────────────────────────

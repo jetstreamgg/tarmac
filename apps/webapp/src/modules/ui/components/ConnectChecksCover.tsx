@@ -3,6 +3,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Trans } from '@lingui/react/macro';
 import { SkyLogomarkSpinner } from '@/modules/app/components/SkyLogomarkSpinner';
 import { cn } from '@/lib/cn';
+import { useRestoreFocusOnClose } from '@/hooks/ui/useRestoreFocusOnClose';
 
 // APP-595: a close shorter than this is a blip between checks, not the end of them.
 const CLOSE_HOLD_MS = 300;
@@ -82,6 +83,7 @@ export function ConnectChecksCover({ open }: { open: boolean }) {
   }, [visible]);
 
   const fadeIn = !skipFade && 'data-[state=open]:animate-in data-[state=open]:fade-in-0';
+  const restoreFocus = useRestoreFocusOnClose({});
 
   return (
     <DialogPrimitive.Root open={visible} modal>
@@ -121,6 +123,7 @@ export function ConnectChecksCover({ open }: { open: boolean }) {
           // `aria-hidden`, which does not remove tabbability, and the body's
           // `pointer-events: none` only stops the mouse. Letting it run focuses
           // the scope container itself (`tabIndex={-1}`), which arms the trap.
+          {...restoreFocus}
           onEscapeKeyDown={e => e.preventDefault()}
           onInteractOutside={e => e.preventDefault()}
           data-testid="connect-checks-cover"

@@ -2,6 +2,7 @@ import type { TransactionReceipt } from 'viem';
 import { useConnection, useSimulateContract, useWriteContract } from 'wagmi';
 import { markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
+import { reportPrepareRevert } from './prepareRevertReporter';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import { useTransactionOutcome } from './useTransactionOutcome';
 import {
@@ -127,6 +128,7 @@ export function useSequentialTransactionFlow(
     error: simulationError,
     refetch: refetchSimulation
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
+  useEffect(() => reportPrepareRevert(simulationError, chainId), [simulationError, chainId]);
 
   // The request of the latest wallet prompt. Each dispatch gets its own object, so the
   // variables wagmi passes back tell a prompt signed late from the one in flight.

@@ -104,12 +104,22 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
         )}{' '}
         <Trans>
           Check out the{' '}
-          <a href="https://pendle.finance/" target="_blank" rel="noreferrer" className="text-fgBrand">
+          <a
+            href="https://pendle.finance/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-fgBrand focus-visible:outline-focusRing rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
             Pendle site
           </a>{' '}
           for more details.
         </Trans>{' '}
-        <a href={USER_RISKS_URL} target="_blank" rel="noreferrer" className="text-fgBrand">
+        <a
+          href={USER_RISKS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="text-fgBrand focus-visible:outline-focusRing rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
           <Trans>Learn more in the User Risk Documentation.</Trans>
         </a>
       </p>
