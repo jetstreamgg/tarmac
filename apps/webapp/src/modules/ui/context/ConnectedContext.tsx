@@ -53,7 +53,7 @@ interface ConnectedContextType {
    * the terms (the "check again" path on the unavailable states).
    */
   retryAccessChecks: () => void;
-  /** A failed access check is running again (manual retry or background poll). */
+  /** The failed IP check is running again (manual retry or background poll). */
   isRetryingAccessChecks: boolean;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
@@ -303,15 +303,13 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const {
     data: authData,
     error: authError,
-    hasFailed: authHasFailed,
-    isFetching: authIsFetching,
     refetch: refetchAddressCheck
   } = useRestrictedAddressCheck({ address, authUrl, enabled: screeningRequired });
 
   // Derived rather than read off the query's own loading flag: it has to be
   // true in the very render the terms verdict lands, or that render reads as
   // authorized and the terms modal would open before the address is screened.
-  const authIsLoading = screeningRequired && !authData && !authHasFailed;
+  const authIsLoading = screeningRequired && !authData && !authError;
 
   useEffect(() => {
     if (authError) {
@@ -472,10 +470,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // user and the terms. At Confirm, the gate owns that failure with its
       // own dialog: a flaky check shouldn't take the whole app away from a
       // wallet that was never screened out.
-      if (screeningRequired && authHasFailed) return 'screening-unavailable';
+      if (screeningRequired && authError && !authData) return 'screening-unavailable';
     }
     return undefined;
-  }, [vpnData, vpnHasFailed, address, authData, authHasFailed, screeningRequired]);
+  }, [vpnData, vpnHasFailed, address, authData, authError, screeningRequired]);
 
   // `undefined !== true` while a required screening is in flight, so the
   // address stays gated (behind the loading dialog) until a verdict lands.
@@ -497,8 +495,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetchVpnCheck();
     if (screeningRequired) refetchAddressCheck();
   }, [refetchVpnCheck, refetchAddressCheck, screeningRequired]);
-  const isRetryingAccessChecks =
-    (vpnHasFailed && vpnIsFetching) || (screeningRequired && authHasFailed && authIsFetching);
+  // Only the IP check retries in place. The screening query is shared with the
+  // pre-transaction check, so a stale failure there must not hold the gate up;
+  // its retry falls back to the checks cover instead.
+  const isRetryingAccessChecks = vpnHasFailed && vpnIsFetching;
 
   // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
   // PostHog event carries them. Unlike the fire-once tracking below, this re-runs

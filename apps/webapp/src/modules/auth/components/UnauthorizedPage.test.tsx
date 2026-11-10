@@ -104,6 +104,23 @@ describe('UnauthorizedPage', () => {
     expect((screen.getByRole('button', { name: /Try again/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  // The gate stays mounted through retries, so a retry that changes the
+  // reason must report the new one.
+  it('reports again when a retry changes the block reason', () => {
+    const { rerender } = renderPage({ blockReason: 'ip-check-unavailable' });
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <UnauthorizedPage blockReason="region-restricted" countryCode="US" />
+      </I18nProvider>
+    );
+
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(2);
+    expect(h.trackVpnBlockedPageView).toHaveBeenLastCalledWith({
+      blockReason: 'restricted_region',
+      countryCode: 'US'
+    });
+  });
+
   it('reports the mapped block reason to analytics once', () => {
     renderPage({ blockReason: 'wallet-blocked' });
 

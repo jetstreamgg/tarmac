@@ -191,6 +191,8 @@ describe('AccessGate', () => {
 
     h.connectedContext = AUTHORIZED;
     rerender(takeover());
-    expect(screen.getByTestId('takeover-shell').hasAttribute('inert')).toBe(false);
+    const shell = screen.getByTestId('takeover-shell');
+    expect(shell.hasAttribute('inert')).toBe(false);
+    expect(shell.contains(document.activeElement)).toBe(true);
   });
 });

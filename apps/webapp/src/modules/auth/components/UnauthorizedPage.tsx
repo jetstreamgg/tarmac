@@ -55,11 +55,13 @@ export const UnauthorizedPage = ({
 }: UnauthorizedPageProps) => {
   const { trackVpnBlockedPageView } = useVpnAnalytics();
   const { disconnect } = useDisconnect();
-  const blockedTrackedRef = useRef(false);
+  // Once per reason: the gate stays mounted through retries, so a retry that
+  // turns one reason into another (network error → region) is a new view.
+  const trackedReasonRef = useRef<AccessBlockReason | undefined | null>(null);
 
   useEffect(() => {
-    if (blockedTrackedRef.current) return;
-    blockedTrackedRef.current = true;
+    if (trackedReasonRef.current === blockReason) return;
+    trackedReasonRef.current = blockReason;
 
     trackVpnBlockedPageView({
       blockReason: blockReason ? ANALYTICS_REASON[blockReason] : 'unknown',
@@ -162,8 +164,10 @@ export const UnauthorizedPage = ({
         // A block can now land mid-flow (screening runs on a transaction's
         // first screen), so the gate has to sit above any open modal, the toast
         // stack and the cookie banner — the terms modal's tier (APP-534).
-        overlayClassName="z-[1000]"
-        className="bg-containerDark z-[1000] w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
+        // Rendered outside Layout, so it hides behind the app loader's cover
+        // like the toasts do.
+        overlayClassName="app-loader-cover-hidden z-[1000]"
+        className="app-loader-cover-hidden bg-containerDark z-[1000] w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
       >
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">

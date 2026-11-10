@@ -73,12 +73,9 @@ export const useRestrictedAddressCheck = ({
   data: AddressScreeningResult | undefined;
   error: Error | undefined;
   isLoading: boolean;
-  /** Failed with no verdict, including while it retries (see useVpnCheck). */
-  hasFailed: boolean;
-  isFetching: boolean;
   refetch: () => void;
 } => {
-  const { data, error, isLoading, isFetching, errorUpdateCount, refetch } = useQuery({
+  const { data, error, isLoading, refetch } = useQuery({
     queryKey: addressScreeningQueryKey(address),
     // A cached risky verdict keeps the query live even when the caller didn't
     // ask for a fetch, so the re-poll below runs wherever the block came from
@@ -91,14 +88,5 @@ export const useRestrictedAddressCheck = ({
     ...options
   });
 
-  const hasFailed = !data && errorUpdateCount > 0;
-
-  return {
-    data,
-    error: error ?? undefined,
-    isLoading: !data && !hasFailed && isLoading,
-    hasFailed,
-    isFetching,
-    refetch
-  };
+  return { data, error: error ?? undefined, isLoading: !data && isLoading, refetch };
 };
