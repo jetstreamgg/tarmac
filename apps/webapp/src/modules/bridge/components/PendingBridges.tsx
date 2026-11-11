@@ -31,6 +31,7 @@ import {
   canDismiss,
   canMarkSeen,
   isPendingBridgeVisible,
+  isSourceUnseen,
   PAGE_LOADED_AT,
   showsActionButton
 } from '../model/pendingTransitions';
@@ -290,6 +291,17 @@ type BridgeNoteProps = {
 
 /** What a stuck deposit needs, and for Arbitrum how to finish it without this app. */
 function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
+  if (note.kind === 'source-not-found') {
+    const network = getBridgeNetwork(note.network).name;
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        <Trans>
+          {network} has no record of this transaction. Your wallet probably dropped or replaced it. Check your
+          wallet&apos;s activity: if it was replaced and went through, look it up with its new hash.
+        </Trans>
+      </Text>
+    );
+  }
   if (note.kind === 'withdrawal')
     return (
       <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
@@ -676,10 +688,17 @@ function PendingBridgeCard({
         <KeepClaimLink link={claimLink} bridge={bridge} />
       )}
 
-      {dismissible && bridge.safeTxHash && (
+      {dismissible && isSourceUnseen(bridge) ? (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
-          <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
+          <Trans>Dismiss it only if your wallet shows it never went through.</Trans>
         </Text>
+      ) : (
+        dismissible &&
+        bridge.safeTxHash && (
+          <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
+            <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
+          </Text>
+        )
       )}
       {hint && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-action-hint">

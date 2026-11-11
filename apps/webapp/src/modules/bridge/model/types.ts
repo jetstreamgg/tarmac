@@ -94,6 +94,8 @@ export type PendingBridge = {
   routeData?: Record<string, string>;
   /** When a tracker first read the source transaction mined. */
   sourceMinedAt?: number;
+  /** When a tracker first found the source chain has no record of the source transaction; unset once it has. */
+  sourceUnseenAt?: number;
   /** When the bridge last became ready for its next action. */
   readyAt?: number;
   /** When the bridge reached arrived, claimed or failed. */

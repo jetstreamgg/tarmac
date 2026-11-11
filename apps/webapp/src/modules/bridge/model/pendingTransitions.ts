@@ -15,6 +15,8 @@ const READY_POLL_MS = MINUTE;
 const OVERDUE_POLL_MS = MINUTE;
 const SLOW_POLL_MS = 5 * MINUTE;
 const FAST_POLL_WINDOW_MS = 60 * MINUTE;
+// A hash its chain doesn't know rarely comes back: it is asked about for a day, then on page loads.
+const SOURCE_UNSEEN_POLL_WINDOW_MS = 24 * 60 * MINUTE;
 // A trip this long has an ETA good to hours, not seconds: its last hour polls each minute.
 const LONG_TRIP_MS = 24 * 60 * MINUTE;
 const LONG_TRIP_NEAR_ETA_POLL_MS = MINUTE;
@@ -36,6 +38,10 @@ export type BridgeProgress =
   | { kind: 'expired' }
   /** The source send moved no funds (reverted, or a Safe tx replaced); Activity leaves it out. */
   | { kind: 'failed'; reason: string }
+  /** The source chain has no record of the source transaction long after it was sent (dropped or replaced). */
+  | { kind: 'source-not-found' }
+  /** The source chain knows the source transaction again. */
+  | { kind: 'source-found' }
   /** A sent destination action mined, read from chain (a Safe reports its on-chain hash). */
   | {
       kind: 'action-confirmed';
@@ -55,6 +61,20 @@ export const isSettled = (bridge: PendingBridge): boolean =>
   bridge.status === 'claimed' ||
   bridge.status === 'failed' ||
   bridge.status === 'expired';
+
+/**
+ * The source chain has no record of the bridge's transaction: the wallet
+ * dropped or replaced it. Not a failure, as the hash can still show up.
+ */
+export const isSourceUnseen = (bridge: PendingBridge): boolean =>
+  bridge.status === 'pending' && bridge.sourceUnseenAt !== undefined;
+
+const withSourceSeen = (bridge: PendingBridge): PendingBridge => {
+  if (bridge.sourceUnseenAt === undefined) return bridge;
+  const next = { ...bridge };
+  delete next.sourceUnseenAt;
+  return next;
+};
 
 /** Every action a bridge can record: its ordered destination steps, its recovery actions, then its follow-ups. */
 const bridgeActions = (bridge: PendingBridge): PendingBridgeNextAction[] => [
@@ -142,6 +162,13 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
     return bridge;
   }
   switch (progress.kind) {
+    case 'source-not-found':
+      // Only a send no tracker ever read mined can be unknown to its chain.
+      return bridge.status !== 'pending' || bridge.sourceMinedAt !== undefined
+        ? bridge
+        : { ...bridge, sourceUnseenAt: bridge.sourceUnseenAt ?? now };
+    case 'source-found':
+      return withSourceSeen(bridge);
     case 'source-executed': {
       // The launch and the tracker can both report it; the first one set the clock.
       if (bridge.txHash) return bridge;
@@ -156,7 +183,7 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
     }
     case 'waiting':
       return {
-        ...bridge,
+        ...withSourceSeen(bridge),
         status: 'pending',
         sourceMinedAt: bridge.sourceMinedAt ?? now,
         etaAt: progress.etaAt ?? bridge.etaAt,
@@ -165,7 +192,7 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
       };
     case 'ready':
       return {
-        ...bridge,
+        ...withSourceSeen(bridge),
         status: 'ready',
         nextAction: progress.nextAction,
         readyAt: bridge.status === 'ready' ? bridge.readyAt : now,
@@ -173,15 +200,20 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
       };
     case 'arrived':
       return {
-        ...bridge,
+        ...withSourceSeen(bridge),
         status: bridge.requiresClaim ? 'claimed' : 'arrived',
         nextAction: undefined,
         settledAt: now
       };
     case 'expired':
-      return { ...bridge, status: 'expired', nextAction: undefined, settledAt: now };
+      return { ...withSourceSeen(bridge), status: 'expired', nextAction: undefined, settledAt: now };
     case 'failed':
-      return { ...bridge, status: 'failed', failureReason: progress.reason, settledAt: now };
+      return {
+        ...withSourceSeen(bridge),
+        status: 'failed',
+        failureReason: progress.reason,
+        settledAt: now
+      };
   }
 }
 
@@ -275,10 +307,12 @@ export const isBundleUnseen = (bridge: PendingBridge, now: number): boolean =>
 
 /**
  * Nothing on chain yet, so the user may drop it: a Safe bridge still waiting
- * to execute, or (given `now`) a wallet bundle unseen for 30 minutes.
+ * to execute, a send its chain has no record of, or (given `now`) a wallet
+ * bundle unseen for 30 minutes.
  */
 export const canDismiss = (bridge: PendingBridge, now?: number): boolean =>
   (bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash) ||
+  isSourceUnseen(bridge) ||
   (now !== undefined && isBundleUnseen(bridge, now));
 
 /** A wallet bundle that moved no funds; once its deposit was found on chain, only the tracker settles it. */
@@ -417,6 +451,8 @@ export function pollIntervalMs(bridge: PendingBridge, now: number): number | und
   }
   // A queued Safe transaction: signers usually act soon, but can take days. A bundle's hash comes from recovery.
   if (!bridge.txHash) return now - bridge.startedAt <= FAST_POLL_WINDOW_MS ? FAST_POLL_MS : SLOW_POLL_MS;
+  if (isSourceUnseen(bridge))
+    return now - bridge.startedAt <= SOURCE_UNSEEN_POLL_WINDOW_MS ? SLOW_POLL_MS : undefined;
   // Anyone can send the next action, so a ready bridge can still settle without us; one left for hours backs off.
   if (bridge.status === 'ready') {
     return now - (bridge.readyAt ?? bridge.startedAt) <= FAST_POLL_WINDOW_MS ? READY_POLL_MS : SLOW_POLL_MS;

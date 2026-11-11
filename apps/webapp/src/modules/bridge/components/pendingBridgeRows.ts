@@ -19,7 +19,12 @@ import { isOpStackNetwork, type OpStackNetworkId } from '../adapters/nativeDepos
 import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { bridgeChainId, getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
 import { DAY_MINUTES } from '../model/resolveRoute';
-import { isBundleUnseen, REDEEM_URGENT_MINUTES, ticketMinutesLeft } from '../model/pendingTransitions';
+import {
+  isBundleUnseen,
+  isSourceUnseen,
+  REDEEM_URGENT_MINUTES,
+  ticketMinutesLeft
+} from '../model/pendingTransitions';
 import { sendsToOther } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { bridgeTypeLabel, bridgeTypeLogo } from './bridgeModalRows';
@@ -173,6 +178,8 @@ const arrivalText = (bridge: PendingBridge, now: number): string => {
   if (bridge.status !== 'pending') return t`Arrived`;
   // A queued Safe transaction or an unmined bundle: the clock starts once it executes.
   if (!bridge.txHash) return NO_VALUE;
+  // A send its chain has no record of isn't on its way.
+  if (isSourceUnseen(bridge)) return NO_VALUE;
   // A clock older than the bridge (list mounted before it started) must not inflate the ETA.
   const elapsedFrom = Math.max(now, bridge.startedAt);
   if (elapsedFrom > bridge.etaAt) return t`Taking longer than expected`;
@@ -218,7 +225,7 @@ export function buildPendingBridgeRows(
     ? {
         kind: 'link',
         label: t`Transaction`,
-        value: formatAddress(bridge.txHash, 6, 4),
+        value: isSourceUnseen(bridge) ? t`Not found on ${sourceName}` : formatAddress(bridge.txHash, 6, 4),
         href: bridgeTxHref(bridge.from, bridge.txHash, familyChainId)
       }
     : bridge.status === 'failed'
@@ -265,8 +272,13 @@ export function buildPendingBridgeRows(
 const ARBITRUM_RETRYABLES_URL = 'https://portal.arbitrum.io/build/retryables';
 export const SKY_DISCORD_URL = 'https://discord.gg/skyecosystem';
 
-/** A note under an Ethereum deposit card that needs a redeem or a replay, or whose Arbitrum ticket expired. */
+/**
+ * A note under a card: an Ethereum deposit that needs a redeem or a replay, or
+ * whose Arbitrum ticket expired; a withdrawal's wait or step; a send its chain
+ * has no record of.
+ */
 export type PendingBridgeNote =
+  | { kind: 'source-not-found'; network: BridgeNetworkId }
   | {
       kind: 'redeem';
       /** Whole minutes until the ticket's timeout, 0 once it passed; undefined when unknown. */
@@ -312,6 +324,7 @@ const retryablesHref = (txHash: string | undefined) =>
   txHash && `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(arbitrum.id), tx: txHash })}`;
 
 export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
+  if (isSourceUnseen(bridge)) return { kind: 'source-not-found', network: bridge.from };
   if (bridge.routeKind !== 'native') return undefined;
   if (bridge.to === 'ethereum') return withdrawalNote(bridge, now);
   if (bridge.from !== 'ethereum') return undefined;

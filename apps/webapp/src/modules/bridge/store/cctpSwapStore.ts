@@ -1,4 +1,5 @@
 import { CCTP_L2_NETWORKS, type CctpL2NetworkId } from '../adapters/cctp/contracts';
+import { isSourceUnseen } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 import { createScopedListStore } from './scopedListStore';
 
@@ -30,15 +31,15 @@ export const isBurnOf = (bridge: PendingBridge, burn: string) =>
 
 /**
  * Whether a swap's USDC can still be spent, by a burn or a convert: none was
- * sent for it as a convert, and no burn was, or the last one's card failed or
- * is gone. A burn that may still land holds the USDC.
+ * sent for it as a convert, and no burn was, or the last one's card failed, is
+ * gone, or its chain has no record of it. A burn that may still land holds the USDC.
  */
 export const isSwapSpendable = ({ burn, convert }: UnfinishedCctpSwap, bridges: readonly PendingBridge[]) => {
   if (convert) return false;
   if (!burn) return true;
   const bridge = bridges.find(entry => isBurnOf(entry, burn));
   // A burn with no card left to follow it: the chain checks still refuse one that mined.
-  return !bridge || bridge.status === 'failed';
+  return !bridge || bridge.status === 'failed' || isSourceUnseen(bridge);
 };
 
 const NETWORKS = new Set<unknown>(CCTP_L2_NETWORKS);
