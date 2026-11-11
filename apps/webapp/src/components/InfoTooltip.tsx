@@ -30,7 +30,10 @@ export function InfoGlyph({ className, ...props }: ComponentPropsWithRef<'button
  * fg-secondary body copy, 8px apart.
  */
 export function TooltipBody({ title, children }: { title?: ReactNode; children: ReactNode }) {
-  const body = typeof children === 'string' ? <p>{children}</p> : children;
+  // Non-string children (e.g. copy with a parsed markdown link, a fragment of
+  // text runs and anchors) get one block, so under a title they stay a single
+  // paragraph instead of becoming separate items of the flex column.
+  const body = typeof children === 'string' ? <p>{children}</p> : <div>{children}</div>;
   if (!title) return body;
   return (
     <div className="flex flex-col gap-2">

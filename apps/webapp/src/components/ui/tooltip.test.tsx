@@ -48,3 +48,34 @@ describe('ResponsiveTooltip (pointer device)', () => {
     expect(onRowClick).not.toHaveBeenCalled();
   });
 });
+
+describe('ResponsiveTooltip (input detection)', () => {
+  const stubHover = (canHover: boolean) =>
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      query =>
+        ({
+          matches: query === '(hover: none)' ? !canHover : false,
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn()
+        }) as unknown as MediaQueryList
+    );
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps the hover tooltip on a touchscreen device whose primary input hovers', () => {
+    vi.stubGlobal('navigator', { ...navigator, maxTouchPoints: 10 });
+    stubHover(true);
+    renderInRow(vi.fn());
+    expect(screen.getByTestId('trigger').getAttribute('aria-haspopup')).toBeNull();
+  });
+
+  it('opens on tap when the primary input cannot hover', () => {
+    stubHover(false);
+    renderInRow(vi.fn());
+    expect(screen.getByTestId('trigger').getAttribute('aria-haspopup')).toBe('dialog');
+  });
+});
