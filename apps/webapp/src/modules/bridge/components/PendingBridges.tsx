@@ -298,8 +298,8 @@ function BridgeNote({ note, onExtend, canExtend, claimsHere }: BridgeNoteProps) 
       <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
         {claimsHere ? (
           <Trans>
-            Circle&apos;s attestation is taking longer than usual. Nothing to do: Claim will appear here when
-            it&apos;s ready.
+            Circle&apos;s attestation is taking longer than usual. Nothing to do: Claim will be enabled here
+            when it&apos;s ready.
           </Trans>
         ) : (
           <Trans>Circle&apos;s attestation is taking longer than usual.</Trans>

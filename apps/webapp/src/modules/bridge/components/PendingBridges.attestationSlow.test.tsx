@@ -18,7 +18,7 @@ const THIRD = '0x00000000000000000000000000000000000c0c02';
 const MINUTE = 60_000;
 const HASH = `0x${'c4'.repeat(32)}`;
 const LATE = 'Circle’s attestation is taking longer than usual.'.replace('’', "'");
-const CLAIM_HERE = `${LATE} Nothing to do: Claim will appear here when it's ready.`;
+const CLAIM_HERE = `${LATE} Nothing to do: Claim will be enabled here when it's ready.`;
 const CCTP: PendingBridge = {
   id: HASH,
   account: ACCOUNT,
