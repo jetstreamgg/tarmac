@@ -29,6 +29,7 @@
     "e2e:fund": "npx tsx src/test/e2e/fund-accounts.ts",
     "e2e:fund:check": "SKIP_FUNDING=true npx tsx src/test/e2e/fund-accounts.ts",
     "e2e:validate-vnets": "npx tsx src/test/e2e/validate-vnets.ts",
+    "e2e:terms-check-failure": "playwright test --config playwright.terms.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit --project tsconfig.json",
