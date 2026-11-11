@@ -279,6 +279,8 @@ export const SKY_DISCORD_URL = 'https://discord.gg/skyecosystem';
  */
 export type PendingBridgeNote =
   | { kind: 'source-not-found'; network: BridgeNetworkId }
+  /** A mined CCTP burn Circle has not attested by its ETA. */
+  | { kind: 'attestation-slow' }
   | {
       kind: 'redeem';
       /** Whole minutes until the ticket's timeout, 0 once it passed; undefined when unknown. */
@@ -323,8 +325,17 @@ const withdrawalNote = (bridge: PendingBridge, now: number): PendingBridgeNote |
 const retryablesHref = (txHash: string | undefined) =>
   txHash && `${ARBITRUM_RETRYABLES_URL}?${new URLSearchParams({ chainId: String(arbitrum.id), tx: txHash })}`;
 
+/** A burn read as mined that still waits for Circle past its ETA; a sent claim has no next claim. */
+const isAttestationLate = (bridge: PendingBridge, now: number) =>
+  bridge.routeKind === 'cctp' &&
+  bridge.status === 'pending' &&
+  bridge.nextAction === 'claim' &&
+  bridge.sourceMinedAt !== undefined &&
+  Math.max(now, bridge.startedAt) > bridge.etaAt;
+
 export function pendingBridgeNote(bridge: PendingBridge, now: number): PendingBridgeNote | undefined {
   if (isSourceUnseen(bridge)) return { kind: 'source-not-found', network: bridge.from };
+  if (isAttestationLate(bridge, now)) return { kind: 'attestation-slow' };
   if (bridge.routeKind !== 'native') return undefined;
   if (bridge.to === 'ethereum') return withdrawalNote(bridge, now);
   if (bridge.from !== 'ethereum') return undefined;

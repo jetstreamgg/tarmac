@@ -287,10 +287,25 @@ type BridgeNoteProps = {
   note: PendingBridgeNote;
   onExtend: () => void;
   canExtend: boolean;
+  /** Whether the connected wallet is the one that claims this bridge. */
+  claimsHere: boolean;
 };
 
 /** What a stuck deposit needs, and for Arbitrum how to finish it without this app. */
-function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
+function BridgeNote({ note, onExtend, canExtend, claimsHere }: BridgeNoteProps) {
+  if (note.kind === 'attestation-slow')
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        {claimsHere ? (
+          <Trans>
+            Circle&apos;s attestation is taking longer than usual. Nothing to do: Claim will appear here when
+            it&apos;s ready.
+          </Trans>
+        ) : (
+          <Trans>Circle&apos;s attestation is taking longer than usual.</Trans>
+        )}
+      </Text>
+    );
   if (note.kind === 'source-not-found') {
     const network = getBridgeNetwork(note.network).name;
     return (
@@ -719,6 +734,7 @@ function PendingBridgeCard({
           note={note}
           onExtend={() => onAction(bridge, 'keepalive')}
           canExtend={!actionLocked && canAction(bridge, 'keepalive')}
+          claimsHere={!claimedElsewhere && !thirdWallet}
         />
       )}
       {ethShortfall !== undefined && !sentHint && (
