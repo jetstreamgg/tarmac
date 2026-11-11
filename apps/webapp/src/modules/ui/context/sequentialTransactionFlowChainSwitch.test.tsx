@@ -13,6 +13,8 @@ const wagmi = vi.hoisted(() => ({
   address: undefined as string | undefined,
   // The wallet's chain: what wagmi simulates on when no chainId is passed.
   walletChainId: 1,
+  // The chain each sent request went on.
+  sentOn: [] as number[],
   simulateArgs: [] as Record<string, unknown>[],
   // When set, a refetch resolves only after this promise does (a slow RPC).
   refetchGate: undefined as Promise<void> | undefined,
@@ -24,13 +26,13 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: undefined, address: wagmi.address, chainId: wagmi.walletChainId }),
   useSimulateContract: (params: Record<string, unknown>) => {
     wagmi.simulateArgs.push(params);
-    // Like wagmi: the request carries the pinned chain, or the wallet's.
+    // Like wagmi: the request carries the chain it was asked for, if any.
     const simulate = () => ({
       data: {
         request: {
           address: params.address,
           functionName: params.functionName,
-          chainId: (params.chainId as number | undefined) ?? wagmi.walletChainId
+          chainId: params.chainId as number | undefined
         }
       },
       isLoading: false,
@@ -86,9 +88,16 @@ const BRIDGE_CALL = {
   args: [TOKEN, TOKEN, ACCOUNT, 100n, 200000, '0x']
 } as unknown as Call;
 
+// Like wagmi: a request that names no chain goes on the wallet's.
+const send = () =>
+  vi.fn((request: { chainId?: number }) => {
+    wagmi.sentOn.push(request.chainId ?? wagmi.walletChainId);
+  });
+
 function resetWagmi() {
   wagmi.onWriteSuccess = undefined;
-  wagmi.writeContract = vi.fn();
+  wagmi.writeContract = send();
+  wagmi.sentOn = [];
   wagmi.resetWrite = vi.fn();
   wagmi.address = ACCOUNT;
   wagmi.walletChainId = ETHEREUM;
@@ -101,7 +110,7 @@ function resetWagmi() {
 type Hook = ReturnType<typeof start>['hook'];
 
 // Confirm on Ethereum: the approve is in the wallet, then mining.
-function start(chainIdProp: () => number = () => ETHEREUM) {
+function start(chainIdProp: () => number | undefined = () => ETHEREUM) {
   const onError = vi.fn();
   const hook = renderHook(() =>
     useSequentialTransactionFlow({ calls: [APPROVE, BRIDGE_CALL], chainId: chainIdProp(), onError })
@@ -128,8 +137,7 @@ function mineApprove(hook: Hook) {
   hook.rerender();
 }
 
-const sentOn = () =>
-  wagmi.writeContract.mock.calls.map(([request]) => (request as { chainId: number }).chainId);
+const sentOn = () => wagmi.sentOn;
 const sentBridges = () =>
   wagmi.writeContract.mock.calls.filter(
     ([request]) => (request as { functionName: string }).functionName === 'bridgeERC20To'
@@ -202,6 +210,32 @@ describe('useSequentialTransactionFlow — the wallet switches chains mid-run', 
       });
     });
   }
+
+  describe('the caller names no chain', () => {
+    const unnamed = () => undefined;
+
+    it('pauses instead of sending the next step on the new chain', () => {
+      const { hook, onError } = start(unnamed);
+      switchWallet(hook, BASE);
+      mineApprove(hook);
+
+      expect(sentBridges()).toHaveLength(0);
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(isStalledStep(onError.mock.calls[0][0])).toBe(true);
+    });
+
+    it('back on the starting chain, only a Retry sends the step, on that chain', async () => {
+      const { hook } = start(unnamed);
+      switchWallet(hook, BASE);
+      mineApprove(hook);
+      switchWallet(hook, ETHEREUM);
+      expect(sentBridges()).toHaveLength(0);
+
+      await act(async () => hook.result.current.execute());
+      expect(sentOn()).toEqual([ETHEREUM, ETHEREUM]);
+      expect(sentBridges()).toHaveLength(1);
+    });
+  });
 
   it('a wallet that left and came back before the step mined sends the next step', () => {
     const { hook, onError } = start();

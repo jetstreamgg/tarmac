@@ -28,6 +28,8 @@ const wagmi = vi.hoisted(() => ({
   writeContract: (() => {}) as (...args: unknown[]) => void,
   resetWrite: (() => {}) as () => void,
   walletChainId: 1,
+  // The chain each sent request went on.
+  sentOn: [] as number[],
   mutationHash: undefined as `0x${string}` | undefined,
   receipt: { isLoading: false, isSuccess: false, failure: null as Error | null }
 }));
@@ -45,12 +47,9 @@ vi.mock('wagmi', async io => ({
     chainId: wagmi.walletChainId,
     isConnected: true
   }),
-  // Like wagmi: the request carries the pinned chain, or the wallet's.
+  // Like wagmi: the request carries the chain it was asked for, if any.
   useSimulateContract: (params: { functionName?: string; chainId?: number }) => {
-    const request = {
-      functionName: params.functionName,
-      chainId: params.chainId ?? wagmi.walletChainId
-    };
+    const request = { functionName: params.functionName, chainId: params.chainId };
     return { data: { request }, isLoading: false, error: null, refetch: async () => ({ data: { request } }) };
   },
   useWriteContract: (opts: {
@@ -211,10 +210,7 @@ const flush = async () => {
 };
 const writes = () => (wagmi.writeContract as ReturnType<typeof vi.fn>).mock.calls;
 const sent = () =>
-  writes().map(([request]) => {
-    const { functionName, chainId } = request as { functionName: string; chainId: number };
-    return `${functionName}@${chainId}`;
-  });
+  writes().map(([request], i) => `${(request as { functionName: string }).functionName}@${wagmi.sentOn[i]}`);
 const lastToastText = () => {
   const renderFn = toastWithCloseMock.mock.calls.at(-1)![0] as (id: string) => ReactNode;
   const { container, unmount } = render(<I18nProvider i18n={i18n}>{renderFn('toast')}</I18nProvider>);
@@ -255,7 +251,11 @@ async function mineApprove(s: Scenario) {
 
 describe('the wallet switches to another supported chain while a step mines', () => {
   beforeEach(() => {
-    wagmi.writeContract = vi.fn();
+    // Like wagmi: a request that names no chain goes on the wallet's.
+    wagmi.writeContract = vi.fn((request: { chainId?: number }) => {
+      wagmi.sentOn.push(request.chainId ?? wagmi.walletChainId);
+    }) as never;
+    wagmi.sentOn = [];
     wagmi.resetWrite = vi.fn();
     wagmi.walletChainId = ETHEREUM;
     wagmi.mutationHash = undefined;
