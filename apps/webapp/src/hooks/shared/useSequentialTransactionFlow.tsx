@@ -495,7 +495,7 @@ export function useSequentialTransactionFlow(
         setFrozenCalls(calls); // freeze args for the whole sequence
         totalCallsRef.current = calls.length; // and the count, for the completion check
         runAccountRef.current = addressRef.current;
-        // The first request names no chain: it goes on the wallet's.
+        // A request that names no chain goes on the wallet's.
         setRunChainId((simulationData.request as { chainId?: number }).chainId ?? walletChainRef.current);
       }
       // This call is dispatched here, so claim its index before the auto-execute
