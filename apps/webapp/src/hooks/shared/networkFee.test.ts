@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { decodeFunctionData, encodeFunctionData, erc20Abi, parseAbi, type Call } from 'viem';
 import { arbitrum, base, mainnet, optimism, unichain } from 'wagmi/chains';
+import { forkChainId } from '@/utils/chainId';
 import { getWriteContractCall } from './getWriteContractCall';
 import {
   BATCH_EXECUTOR_ADDRESS,
@@ -283,5 +284,14 @@ describe('module constants', () => {
 
   it('pins the EIP-7702 per-auth base cost', () => {
     expect(EIP7702_AUTH_COST).toBe(12_500n);
+  });
+});
+
+describe('isOpStackChain on the Tenderly fork L2s', () => {
+  it('bills the L1 data fee on the OP-stack forks only', () => {
+    expect(isOpStackChain(forkChainId.base)).toBe(true);
+    expect(isOpStackChain(forkChainId.optimism)).toBe(true);
+    expect(isOpStackChain(forkChainId.unichain)).toBe(true);
+    expect(isOpStackChain(forkChainId.arbitrum)).toBe(false);
   });
 });

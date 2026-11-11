@@ -29,11 +29,16 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import {
+  TransactionRefusedError,
+  TransactionRevertedError,
+  unconfirmedReason
+} from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
+  TransactionAnalytics,
   TransactionConfig,
   TransactionEntry,
   TxCallbacks,
@@ -50,7 +55,11 @@ import {
   type PreTransactionGate,
   type TransactionPreflight
 } from './preTransactionGate';
-import type { TransactionStep } from '@/modules/ui/components/transactionStepsModel';
+import type {
+  SendRefusal,
+  SendUnconfirmed,
+  TransactionStep
+} from '@/modules/ui/components/transactionStepsModel';
 import { encodeCalls, isTailOf, type EncodedCall } from '@/modules/ui/lib/callIntent';
 
 // Stable id for the single "transaction running in the background" toast, so repeated
@@ -243,6 +252,10 @@ type TransactionModalView = {
   hasMinedStep: boolean;
   /** The ERROR on screen is a wallet Reject — the modal words it as declined, not rolled back. */
   userRejected: boolean;
+  /** The ERROR on screen is a send refused before the wallet saw it: nothing of this attempt went out. */
+  refusal: SendRefusal | null;
+  /** The ERROR on screen is a send that went out with an outcome the app can't read: it may still mine. */
+  unconfirmed: SendUnconfirmed | null;
   /** The ERROR on screen is a contract revert: why, in user-facing copy (see lib/revertMessages). */
   failureReason: string | undefined;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
@@ -309,15 +322,30 @@ export function TransactionProvider({
   // off-chain prelude.
   const [hasMinedStep, setHasMinedStep] = useState(false);
   const hasMinedStepRef = useRef(false);
+  // Prelude rows a Retry after a mined step newly put ahead of the failed write
+  // (see handleRetry). That write's onMutate moves the stepper past them; a
+  // refusal in its place does the same in onError.
+  const preludeAddedOnRetryRef = useRef(0);
   const markMinedStep = useCallback(() => {
     setHasMinedStep(true);
     hasMinedStepRef.current = true;
   }, []);
-  // Written on every ERROR (true/false), so it is always fresh for the failure
-  // the modal is showing; never read outside ERROR.
+  // Written on every engine ERROR (true/false) and cleared on launch, close,
+  // Back and every gate status, so it is always fresh for the failure the
+  // modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
   // Same lifecycle: written on every ERROR, so a stale reason never outlives its failure.
   const [failureReason, setFailureReason] = useState<string | undefined>(undefined);
+  // Written with it: the ERROR is a send refused before the wallet saw it.
+  const [refusal, setRefusal] = useState<SendRefusal | null>(null);
+  // Written with it: the ERROR ends a send whose outcome can't be read.
+  const [unconfirmed, setUnconfirmed] = useState<SendUnconfirmed | null>(null);
+  const clearFailure = useCallback(() => {
+    setUserRejected(false);
+    setRefusal(null);
+    setUnconfirmed(null);
+    setFailureReason(undefined);
+  }, []);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
   // in the close snapshot. Reset on every launch and close — a prelude belongs
@@ -392,15 +420,19 @@ export function TransactionProvider({
   // WALLET TRANSACTION (cancelled analytics + the discarded-request toast)
   // from an abandoned gate phase, where no transaction ever started: the
   // screening phase tears down silently, the signature phase emits the
-  // terms-signature-declined event and its own toast. Cleared by onMutate
-  // (the engine taking over), by the gate driving 'error'/'idle', and on
-  // launch/close.
-  const gatePhaseRef = useRef<GatePhase | null>(null);
+  // terms-signature-declined event and its own toast. 'signed' is the gap after
+  // the gate let a signature's flow through and before the engine's onMutate:
+  // the status is still the gate's, but no sign request is left to abandon and
+  // nothing is in the wallet. Cleared by onMutate (the engine taking over), by
+  // the gate driving 'error'/'idle', by a refused send, and on launch/close.
+  const gatePhaseRef = useRef<GatePhase | 'signed' | null>(null);
   // Latest on-chain hash, for the minimized toast's shortened-hash subtitle.
   const txHashRef = useRef<string | undefined>(undefined);
   // flow_id latched at launch so this session's review/started/completed events
   // stay joined even if navigation rotates the live flow id mid-transaction.
   const flowIdRef = useRef<string | undefined>(undefined);
+  // The step `stepOf` last reported, the one an attempt that ends failed on.
+  const lastStepActionRef = useRef<string | undefined>(undefined);
   // The calls the user confirmed, encoded, captured at the click (see
   // `getNextCalls` in the contract). Undefined when the flow doesn't report
   // its calls; null when they couldn't be encoded, which fails closed.
@@ -516,8 +548,22 @@ export function TransactionProvider({
   // cancelled TRANSACTION: the gate phases run before onMutate, so no
   // app_widget_flow_started has fired and a cancelled completion here would
   // pair with nothing.
+  const failedStepData = useCallback(
+    (analytics: TransactionAnalytics) => ({
+      ...analytics.completedData?.(),
+      ...(lastStepActionRef.current && { failed_action: lastStepActionRef.current })
+    }),
+    []
+  );
+
   const handleInitializedAbandon = useCallback(() => {
     if (gatePhaseRef.current === 'screening') return;
+    // Signed, with nothing in the wallet yet: no decline and no cancelled
+    // transaction to report, but the next launch is a new attempt.
+    if (gatePhaseRef.current === 'signed') {
+      startNewFlow();
+      return;
+    }
     if (gatePhaseRef.current === 'signature') {
       emitTermsSignatureDeclined('abandoned');
       startNewFlow();
@@ -532,13 +578,13 @@ export function TransactionProvider({
         txStatus: 'cancelled',
         action: analytics.action,
         flow: analytics.flow,
-        data: analytics.data,
+        data: { ...analytics.data, ...failedStepData(analytics) },
         flowId: flowIdRef.current
       });
       startNewFlow();
     }
     notifyRequestAbandoned();
-  }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined]);
+  }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined, failedStepData]);
 
   const launch = useCallback(
     (config: TransactionConfig) => {
@@ -579,6 +625,7 @@ export function TransactionProvider({
       setSessionGen(sessionGenRef.current);
       // Latch this session's flow id (after any abandon rotation above).
       flowIdRef.current = getFlowId();
+      lastStepActionRef.current = undefined;
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveSessionId(config.sessionId ?? null);
@@ -600,6 +647,7 @@ export function TransactionProvider({
       gatePhaseRef.current = null;
       confirmedCallsRef.current = undefined;
       confirmedAddressRef.current = undefined;
+      clearFailure();
       setMinimized(false);
       setLaunchCount(c => c + 1);
       setOpen(true);
@@ -623,7 +671,7 @@ export function TransactionProvider({
         });
       }
     },
-    [chainId, trackWidgetReviewViewed, handleInitializedAbandon, getFlowId]
+    [chainId, trackWidgetReviewViewed, handleInitializedAbandon, getFlowId, clearFailure]
   );
 
   // Entry→review transition of a three-screen flow. Read off the config ref:
@@ -687,7 +735,8 @@ export function TransactionProvider({
     setCurrentStep(0);
     setTxStatus(TxStatus.IDLE);
     txStatusRef.current = TxStatus.IDLE;
-  }, []);
+    clearFailure();
+  }, [clearFailure]);
 
   const handleClose = useCallback(() => {
     // Closing at INITIALIZED abandons the pending request — whose semantics
@@ -710,6 +759,8 @@ export function TransactionProvider({
         currentStep,
         hasMinedStep,
         userRejected,
+        refusal,
+        unconfirmed,
         failureReason,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
@@ -739,11 +790,21 @@ export function TransactionProvider({
     gatePhaseRef.current = null;
     confirmedCallsRef.current = undefined;
     confirmedAddressRef.current = undefined;
+    clearFailure();
     setActiveConfig(null);
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected, failureReason]);
+  }, [
+    handleInitializedAbandon,
+    currentStep,
+    hasMinedStep,
+    userRejected,
+    refusal,
+    unconfirmed,
+    failureReason,
+    clearFailure
+  ]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -921,8 +982,8 @@ export function TransactionProvider({
               : TxStatus.IDLE;
           setTxStatus(mapped);
           txStatusRef.current = mapped;
-          // A gate failure is a signature or screening refusal, never a revert.
-          if (mapped === TxStatus.ERROR) setFailureReason(undefined);
+          // A gate failure is not a send refused or declined, nor a revert.
+          clearFailure();
           // Both phases render as INITIALIZED; the phase itself decides what a
           // close during it means (see gatePhaseRef / handleInitializedAbandon).
           gatePhaseRef.current = isGatePhase ? status : null;
@@ -933,6 +994,9 @@ export function TransactionProvider({
           if (!live()) return;
           preludeStepsRef.current = steps;
           setPreludeSteps(steps);
+          // A signature owed again on a Retry is the step in progress, whatever
+          // the last attempt failed on. A mined step keeps the run's place.
+          if (steps && !hasMinedStepRef.current) setCurrentStep(0);
         },
         closeModal: () => {
           if (!live()) return;
@@ -964,7 +1028,7 @@ export function TransactionProvider({
         isStale: () => !live()
       };
     },
-    [emitTermsSignatureDeclined]
+    [emitTermsSignatureDeclined, clearFailure]
   );
 
   // The chain guard's enforcement half (APP-528). The modal disables the CTAs
@@ -1066,6 +1130,7 @@ export function TransactionProvider({
           notifyDispatchRefused('calls', refuseDispatch());
           return;
         }
+        if (gatePhaseRef.current === 'signature') gatePhaseRef.current = 'signed';
         action();
       };
       // The chain the click was made on: a verdict must not fire the action
@@ -1136,8 +1201,9 @@ export function TransactionProvider({
     runGated('retry', () => {
       if (hasMinedStepRef.current) {
         // The engine resumes at the failed write; shift past any prelude the gate dropped.
-        const dropped = preludeBefore - (preludeStepsRef.current?.length ?? 0);
-        if (dropped > 0) setCurrentStep(s => s - dropped);
+        const added = (preludeStepsRef.current?.length ?? 0) - preludeBefore;
+        if (added < 0) setCurrentStep(s => s + added);
+        preludeAddedOnRetryRef.current = Math.max(added, 0);
       } else {
         resetTransactionProgress();
       }
@@ -1205,12 +1271,14 @@ export function TransactionProvider({
       // Track transaction started; approve legs report action 'approve' (dev parity)
       const analytics = configRef.current?.analytics;
       if (analytics) {
+        const step = analytics.stepOf?.(variables, flowIdRef.current);
+        lastStepActionRef.current = step?.action;
         trackTransactionStarted({
           widgetName: analytics.widgetName,
           chainId,
-          action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
+          action: step?.action ?? (variables?.functionName === 'approve' ? 'approve' : analytics.action),
           flow: analytics.flow,
-          data: analytics.data,
+          data: step?.data ? { ...analytics.data, ...step.data } : analytics.data,
           flowId: flowIdRef.current
         });
       }
@@ -1256,7 +1324,7 @@ export function TransactionProvider({
           txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
-          data: analytics.data,
+          data: { ...analytics.data, ...analytics.completedData?.() },
           flowId: flowIdRef.current
         });
       }
@@ -1307,8 +1375,22 @@ export function TransactionProvider({
       // this session, so the stale-write test — which exists to drop a
       // PREVIOUS session's late settle — would drop it on any page that has
       // already sent a transaction, leaving the modal on "Preparing". For a
-      // refusal the session generation alone says whether it is ours.
-      const preWriteRefusal = !hash && txStatusRef.current === TxStatus.IDLE;
+      // refusal the session generation alone says whether it is ours. So for
+      // one on a Retry, at ERROR, in a session that has written nothing, and for
+      // one right after the signature prelude, at the INITIALIZED the gate left
+      // standing. A typed refusal is always this session's: no wallet write
+      // produces one, whatever its text says. An untyped wallet rejection there
+      // is no refusal: it can only be a prompt an earlier session abandoned.
+      const refusedAfterSignature =
+        !hash &&
+        txStatusRef.current === TxStatus.INITIALIZED &&
+        gatePhaseRef.current === 'signed' &&
+        (error instanceof TransactionRefusedError || !isUserRejectedRequestError(error));
+      const preWriteRefusal =
+        refusedAfterSignature ||
+        (!hash &&
+          (txStatusRef.current === TxStatus.IDLE ||
+            (txStatusRef.current === TxStatus.ERROR && writeGenRef.current !== sessionGenRef.current)));
       if (
         preWriteRefusal
           ? sessionGen !== sessionGenRef.current
@@ -1322,8 +1404,31 @@ export function TransactionProvider({
       setUserRejected(rejected);
       // A Reject has its own copy; anything else that reverted says why.
       setFailureReason(rejected ? undefined : revertMessage(error));
+      // A bridge refusal can come on a Retry too, after the first attempt failed.
+      setRefusal(
+        error instanceof TransactionRefusedError
+          ? { reason: error.message, final: error.final }
+          : preWriteRefusal
+            ? { final: false }
+            : null
+      );
+      const unconfirmedCopy = unconfirmedReason(error);
+      setUnconfirmed(unconfirmedCopy ? { reason: unconfirmedCopy } : null);
       if (hash) {
         txHashRef.current = hash;
+      }
+      // The send was refused, not the signature: the stepper moves onto the send
+      // step and the gate's turn is over. Without a mined step the Retry put the
+      // stepper back on the signature row, so the send is the next one. After a
+      // mined step it stayed on the failed write, which only a newly owed
+      // prelude pushed down; moving it any further would mark the refused send
+      // completed.
+      if (refusedAfterSignature) {
+        const advance = hasMinedStepRef.current ? preludeAddedOnRetryRef.current : 1;
+        if (advance) setCurrentStep(s => s + advance);
+        gatePhaseRef.current = null;
+        gateCopyRef.current = null;
+        setGateCopy(null);
       }
       // A run that stalls after a mined step never hands its next call to the
       // wallet, so no write reports the mined step or moves the stepper onto
@@ -1347,7 +1452,7 @@ export function TransactionProvider({
           txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
-          data: { ...analytics.data, ...classification },
+          data: { ...analytics.data, ...classification, ...failedStepData(analytics) },
           flowId: flowIdRef.current
         });
       }
@@ -1396,7 +1501,8 @@ export function TransactionProvider({
       startNewFlow,
       isStaleWrite,
       isForeignHash,
-      markMinedStep
+      markMinedStep,
+      failedStepData
     ]
   );
 
@@ -1414,6 +1520,8 @@ export function TransactionProvider({
         currentStep,
         hasMinedStep,
         userRejected,
+        refusal,
+        unconfirmed,
         failureReason,
         preludeSteps,
         gateCopy
@@ -1600,6 +1708,7 @@ export function TransactionProvider({
             subtitles={modalView.config.subtitles}
             transactionContent={modalView.config.transactionContent}
             transactionScreenContent={modalView.config.transactionScreenContent}
+            aside={modalView.config.aside}
             entry={modalView.config.entry}
             rightHeaderComponent={modalView.config.rightHeaderComponent}
             titleBadge={modalView.config.titleBadge}
@@ -1614,12 +1723,15 @@ export function TransactionProvider({
             txStatus={modalView.txStatus}
             confirmLabel={modalView.config.confirmLabel}
             confirmDisabled={modalView.config.confirmDisabled}
+            bundled={modalView.config.bundled}
             errorMessage={modalView.config.errorMessage}
             successLabel={modalView.config.successLabel}
             errorLabel={modalView.config.errorLabel}
             steps={modalSteps}
             currentStep={modalView.currentStep}
             userRejected={modalView.userRejected}
+            refusal={modalView.refusal}
+            unconfirmed={modalView.unconfirmed}
             failureReason={modalView.failureReason}
             gateCopy={modalView.gateCopy}
             preflight={preflight}

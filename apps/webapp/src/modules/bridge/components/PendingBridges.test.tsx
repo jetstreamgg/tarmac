@@ -1,0 +1,1330 @@
+/**
+ * @vitest-environment happy-dom
+ */
+import { parseUnits } from 'viem';
+import { i18n } from '@lingui/core';
+import { I18nProvider } from '@lingui/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import type { CctpResumeBlockReason } from '../hooks/useCctpResumeForm';
+import type { DestinationActionHint } from '../hooks/useDestinationActionLaunch';
+import type { IncomingBridge } from '../hooks/useIncomingCctpBridges';
+import type { PendingBridge } from '../model/types';
+import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { pendingBridgeStore } from '../store/pendingStore';
+import { PendingBridges } from './PendingBridges';
+
+const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+const BRIDGE: PendingBridge = {
+  id: '0xabc',
+  account: ACCOUNT,
+  amount: 10_000n * 10n ** 18n,
+  token: 'USDS',
+  from: 'ethereum',
+  to: 'base',
+  status: 'pending',
+  routeKind: 'native',
+  requiresClaim: false,
+  startedAt: 0,
+  etaAt: 3 * 60_000,
+  txHash: '0xff90000000000000000000000000000000000000000000000000000000000a6',
+  actions: []
+};
+
+const SWAP: UnfinishedCctpSwap = {
+  swapTxHash: '0x5a00000000000000000000000000000000000000000000000000000000000b7c',
+  network: 'optimism',
+  usdcAmount: 250n * 10n ** 6n,
+  recipient: ACCOUNT,
+  at: 0
+};
+const OLDER_SWAP: UnfinishedCctpSwap = {
+  ...SWAP,
+  swapTxHash: '0x6b',
+  network: 'base',
+  usdcAmount: 7n * 10n ** 6n
+};
+
+const CLAIMED: PendingBridge = {
+  ...BRIDGE,
+  id: '0xcctp',
+  from: 'base',
+  to: 'ethereum',
+  status: 'claimed',
+  routeKind: 'cctp',
+  requiresClaim: true,
+  settledAt: 0,
+  actions: [{ action: 'claim', txHash: '0xc1a1', at: 0 }]
+};
+const OFFER = 40n * 10n ** 6n;
+
+const mocks = vi.hoisted(() => ({
+  bridges: [] as PendingBridge[],
+  incoming: [] as IncomingBridge[],
+  offers: {} as Record<string, bigint | undefined>,
+  nothingLeft: {} as Record<string, boolean | undefined>,
+  ethShort: {} as Record<string, bigint | undefined>,
+  blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
+  activeSessionId: null as string | null,
+  copy: vi.fn(),
+  copyFails: false,
+  storageWritable: true,
+  ens: {} as Record<string, string | undefined>,
+  openConnectModal: vi.fn(),
+  toast: { success: vi.fn(), error: vi.fn() }
+}));
+
+vi.mock('wagmi', () => ({
+  useEnsName: ({ address }: { address: string }) => ({ data: mocks.ens[address.toLowerCase()] })
+}));
+vi.mock('@/modules/ui/components/Avatar', () => ({
+  CustomAvatar: () => <span data-testid="wallet-avatar" />
+}));
+
+vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
+  useConnectModal: () => ({ openConnectModal: mocks.openConnectModal })
+}));
+
+vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
+const posthog = vi.hoisted(() => ({ capture: vi.fn() }));
+vi.mock('posthog-js/react', () => ({ usePostHog: () => posthog }));
+
+// Renders no text; names its token so a card's icon can be read.
+vi.mock('@/modules/ui/components/TokenIcon', () => ({
+  TokenIcon: ({ token }: { token: { symbol: string } }) => (
+    <span data-testid="token-icon" data-symbol={token.symbol} />
+  )
+}));
+vi.mock('../hooks/usePendingBridges', () => ({
+  usePendingBridges: () => ({ bridges: mocks.bridges, now: 0 })
+}));
+vi.mock('../hooks/useIncomingCctpBridges', () => ({
+  useIncomingCctpBridges: () => mocks.incoming
+}));
+vi.mock('../hooks/usePendingScope', () => ({
+  usePendingScope: () => ({ account: ACCOUNT, familyChainId: 1, scope: 'scope' })
+}));
+
+vi.mock('../hooks/useCctpConvertOffer', () => ({
+  useCctpConvertOffer: (bridge: PendingBridge) => ({
+    offer: mocks.offers[bridge.id],
+    nothingLeft: mocks.nothingLeft[bridge.id] ?? false
+  })
+}));
+vi.mock('../hooks/useWithdrawalEthShortfall', () => ({
+  useWithdrawalEthShortfall: (bridge: PendingBridge) => mocks.ethShort[bridge.id]
+}));
+vi.mock('../hooks/useCctpResumeForm', () => ({
+  useCctpResumeForm: (swap: UnfinishedCctpSwap) => ({ blockedReason: mocks.blocked[swap.swapTxHash] })
+}));
+vi.mock('@/utils', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/utils')>()),
+  copyToClipboard: (text: string, onSuccess?: () => void, onError?: (error: Error) => void) => {
+    mocks.copy(text);
+    if (mocks.copyFails) onError?.(new Error('denied'));
+    else onSuccess?.();
+  }
+}));
+vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => mocks.storageWritable }));
+vi.mock('@/modules/ui/context/TransactionContext', () => ({
+  useTransaction: () => ({ activeSessionId: mocks.activeSessionId })
+}));
+
+beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
+
+const props = {
+  onAction: vi.fn(),
+  onActionIn: vi.fn(),
+  onContinue: vi.fn(),
+  onConvert: vi.fn(),
+  canAction: vi.fn<(bridge: PendingBridge, action?: string) => boolean>(() => true),
+  actionHint: vi.fn<(bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined>(
+    () => undefined
+  ),
+  actionLocked: false
+};
+
+const renderList = (change: Partial<typeof props> = {}) =>
+  render(
+    <I18nProvider i18n={i18n}>
+      <PendingBridges {...props} {...change} />
+    </I18nProvider>
+  );
+
+describe('PendingBridges', () => {
+  beforeEach(() => {
+    Object.assign(mocks, {
+      bridges: [],
+      incoming: [],
+      offers: {},
+      nothingLeft: {},
+      ethShort: {},
+      blocked: {},
+      activeSessionId: null,
+      copyFails: false,
+      storageWritable: true,
+      ens: {}
+    });
+    mocks.copy.mockClear();
+    mocks.openConnectModal.mockClear();
+    mocks.toast.success.mockClear();
+    props.onAction.mockClear();
+    props.onActionIn.mockClear();
+    props.canAction.mockReset().mockReturnValue(true);
+    props.actionHint.mockReset().mockReturnValue(undefined);
+    props.onContinue.mockClear();
+    props.onConvert.mockClear();
+    localStorage.clear();
+    [SWAP, OLDER_SWAP].forEach(swap => cctpSwapStore.clear('scope', swap.swapTxHash));
+  });
+  afterEach(cleanup);
+
+  it('renders nothing with no pending bridges', () => {
+    expect(renderList().container.innerHTML).toBe('');
+  });
+
+  // Figma 80/81.
+  it('shows the heading and the lookup with no pending bridges', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <PendingBridges {...props} lookup={<div data-testid="lookup" />} />
+      </I18nProvider>
+    );
+    expect(screen.getByRole('heading').textContent).toBe('Pending bridges');
+    expect(screen.getByTestId('lookup')).toBeTruthy();
+  });
+
+  it('shows the lookup under the cards', () => {
+    mocks.bridges = [BRIDGE];
+    render(
+      <I18nProvider i18n={i18n}>
+        <PendingBridges {...props} lookup={<div data-testid="lookup" />} />
+      </I18nProvider>
+    );
+    const section = screen.getByTestId('pending-bridges');
+    expect(section.lastElementChild?.getAttribute('data-testid')).toBe('lookup');
+    expect(screen.getAllByTestId('pending-bridge-card')).toHaveLength(1);
+  });
+
+  it('lists each pending bridge with its amount, rows and status', () => {
+    mocks.bridges = [BRIDGE, { ...BRIDGE, id: '0xdef', to: 'arbitrum' }];
+    renderList();
+    expect(screen.getByRole('heading').textContent).toBe('Pending bridges');
+    const cards = screen.getAllByTestId('pending-bridge-card');
+    expect(cards).toHaveLength(2);
+    expect(cards[0]?.textContent).toContain('10,000.00');
+    expect(cards[0]?.textContent).toContain('Base');
+    expect(cards[1]?.textContent).toContain('Arbitrum One');
+    expect(screen.getAllByTestId('pending-bridge-status')[0]?.textContent).toBe('Pending');
+  });
+
+  // Figma 4232:765: the dots say it's still refreshing, the check that it landed.
+  it.each([
+    ['pending', 'loader', 'status-check'],
+    ['arrived', 'status-check', 'loader'],
+    ['claimed', 'status-check', 'loader']
+  ] as const)('marks a %s status with its icon', (status, shown, hidden) => {
+    mocks.bridges = [{ ...BRIDGE, status, settledAt: status === 'pending' ? undefined : 0 }];
+    renderList();
+    const chip = within(screen.getByTestId('pending-bridge-status'));
+    expect(chip.getByTestId(shown)).toBeTruthy();
+    expect(chip.queryByTestId(hidden)).toBeNull();
+  });
+
+  it.each(['ready', 'failed', 'expired'] as const)('draws no icon on a %s status', status => {
+    mocks.bridges = [{ ...BRIDGE, status, settledAt: status === 'ready' ? undefined : 0 }];
+    renderList();
+    const chip = within(screen.getByTestId('pending-bridge-status'));
+    expect(chip.queryByTestId('loader')).toBeNull();
+    expect(chip.queryByTestId('status-check')).toBeNull();
+  });
+
+  describe('seeing a card', () => {
+    const OWNER = '0x0000000000000000000000000000000000005e4d';
+    const LANDED: PendingBridge = {
+      ...BRIDGE,
+      id: '0xlanded',
+      status: 'arrived',
+      nextAction: undefined,
+      settledAt: 0
+    };
+    // A number is the visible ratio of a card that still overlaps the screen.
+    let intersect: (...changes: (boolean | number)[]) => void;
+    let markSeen: MockInstance<typeof pendingBridgeStore.markSeen>;
+    let onTop: Element | null | undefined;
+    const elementFromPoint = document.elementFromPoint;
+    const elapse = (ms = 1000) => act(() => vi.advanceTimersByTime(ms));
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+      markSeen = vi.spyOn(pendingBridgeStore, 'markSeen').mockImplementation(() => {});
+      intersect = () => {};
+      onTop = undefined;
+      document.elementFromPoint = () =>
+        onTop === undefined ? screen.getByTestId('pending-bridge-card') : onTop;
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          constructor(callback: (entries: { isIntersecting: boolean; intersectionRatio: number }[]) => void) {
+            intersect = (...batch) =>
+              callback(
+                batch.map(change =>
+                  typeof change === 'number'
+                    ? { isIntersecting: true, intersectionRatio: change }
+                    : { isIntersecting: change, intersectionRatio: change ? 1 : 0 }
+                )
+              );
+          }
+          observe() {}
+          disconnect() {
+            intersect = () => {};
+          }
+        }
+      );
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+      document.elementFromPoint = elementFromPoint;
+      markSeen.mockRestore();
+    });
+
+    it('marks it after a moment on screen with nothing left to do', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(false);
+      elapse();
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(true);
+      expect(markSeen).not.toHaveBeenCalled();
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('goes by the latest change when the browser delivers several at once', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(false, true);
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('does not count a card scrolled past', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(true);
+      elapse(500);
+      intersect(false);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it('does not count a card with less than half on screen', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(0.05);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      intersect(0.5);
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('stops counting a card scrolled below half', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(0.6);
+      elapse(500);
+      intersect(0.05);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it('waits while something covers it, like the connect checks loader', () => {
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      const cover = document.createElement('div');
+      onTop = cover;
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      onTop = undefined;
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+    });
+
+    it('waits for the tab to be visible', () => {
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      mocks.bridges = [LANDED];
+      mocks.nothingLeft[LANDED.id] = true;
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+      visibility.mockReturnValue('visible');
+      elapse();
+      expect(markSeen).toHaveBeenCalledWith('scope', LANDED.id);
+      visibility.mockRestore();
+    });
+
+    it('leaves it unseen while a conversion may still be left, or unread', () => {
+      mocks.bridges = [LANDED];
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['pending', { ...LANDED, status: 'pending', settledAt: undefined }],
+      ['failed', { ...LANDED, status: 'failed' }],
+      ['expired', { ...LANDED, status: 'expired' }],
+      ['already seen', { ...LANDED, seenAt: 1 }]
+    ] as [string, PendingBridge][])('leaves a %s card alone', (_, bridge) => {
+      mocks.bridges = [bridge];
+      mocks.nothingLeft[bridge.id] = true;
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+
+    it("leaves an incoming card unseen, so the recipient can't hide the sender's", () => {
+      const bridge = { ...LANDED, routeKind: 'cctp' as const, account: OWNER, recipient: ACCOUNT };
+      mocks.incoming = [{ scope: 'sender-scope', bridge }];
+      mocks.nothingLeft[bridge.id] = true;
+      renderList();
+      intersect(true);
+      elapse(5000);
+      expect(markSeen).not.toHaveBeenCalled();
+    });
+  });
+
+  it("sends a card's next action", () => {
+    mocks.bridges = [{ ...BRIDGE, status: 'ready', nextAction: 'claim', requiresClaim: true }];
+    renderList();
+    fireEvent.click(screen.getByTestId('pending-bridge-action'));
+    expect(props.onAction).toHaveBeenCalledWith(mocks.bridges[0]);
+  });
+
+  // Figma 75: looked up by a wallet that neither sent nor receives it.
+  describe('a CCTP bridge on a third wallet', () => {
+    const SENDER = '0x0000000000000000000000000000000000005e4d';
+    const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
+    const THIRD: PendingBridge = {
+      ...BRIDGE,
+      id: '0xthird',
+      account: SENDER,
+      from: 'base',
+      to: 'ethereum',
+      status: 'ready',
+      routeKind: 'cctp',
+      requiresClaim: true,
+      nextAction: 'claim',
+      txHash: '0x' + 'ab'.repeat(32),
+      recipient: RECIPIENT
+    };
+
+    it.each([
+      ['ready', THIRD],
+      ['on its way', { ...THIRD, status: 'pending' as const }],
+      ['minted to its sender', { ...THIRD, recipient: SENDER }]
+    ])('offers nothing to do but shows Claim waiting for the destination wallet, %s', (_, bridge) => {
+      mocks.bridges = [bridge];
+      renderList();
+      const card = screen.getByTestId('pending-bridge-card');
+      const claim = screen.getByTestId('pending-bridge-claim-elsewhere');
+      expect(claim.textContent).toBe('Claim');
+      // The header's single button, before the note, and it does nothing here.
+      expect(card.querySelectorAll('button')).toHaveLength(1);
+      expect(claim).toHaveProperty('disabled', true);
+      expect(
+        claim.compareDocumentPosition(screen.getByTestId('pending-bridge-third-wallet-note')) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-recipient-note')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-incoming-note')).toBeNull();
+      fireEvent.click(claim);
+      expect(props.onAction).not.toHaveBeenCalled();
+      expect(props.onActionIn).not.toHaveBeenCalled();
+    });
+
+    // The same lookup finds native withdrawals, whose steps aren't a claim.
+    it.each([
+      ['prove', 'Prove'],
+      ['finalize', 'Finalize']
+    ] as const)('names a native withdrawal step it waits for, %s', (nextAction, label) => {
+      mocks.bridges = [{ ...THIRD, routeKind: 'native', nextAction }];
+      renderList();
+      const step = screen.getByTestId('pending-bridge-claim-elsewhere');
+      expect(step.textContent).toBe(label);
+      expect(step).toHaveProperty('disabled', true);
+    });
+
+    it('shows no button while no step is due yet', () => {
+      mocks.bridges = [{ ...THIRD, routeKind: 'native', status: 'pending', nextAction: undefined }];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-claim-elsewhere')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-card').querySelectorAll('button')).toHaveLength(0);
+      expect(screen.getByTestId('pending-bridge-third-wallet-note')).toBeTruthy();
+    });
+
+    it('says which wallet can claim it and names both wallets', () => {
+      mocks.bridges = [THIRD];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-third-wallet-note').textContent).toBe(
+        'This bridge was sent to 0x0000...0b01. Connect that wallet to be able to claim the funds on Ethereum.'
+      );
+      expect(screen.getAllByTestId('pending-bridge-wallet').map(wallet => wallet.textContent)).toEqual([
+        '0x0000...5e4d',
+        '0x0000...0b01'
+      ]);
+    });
+  });
+
+  describe('a CCTP claim minting to another address', () => {
+    const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
+    const TO_OTHER: PendingBridge = {
+      ...BRIDGE,
+      id: '0xother',
+      from: 'base',
+      to: 'ethereum',
+      status: 'ready',
+      routeKind: 'cctp',
+      requiresClaim: true,
+      nextAction: 'claim',
+      recipient: RECIPIENT
+    };
+    const BURN_HASH = `0x${'ab'.repeat(32)}`;
+    const note = () => screen.queryByTestId('pending-bridge-recipient-note');
+
+    it('shows the status and says the destination wallet claims it, with no Claim button', () => {
+      mocks.bridges = [TO_OTHER];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Ready to claim');
+      expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
+      expect(note()?.textContent).toBe(
+        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Claiming on another device? Get claim link"
+      );
+    });
+
+    // Figma "Ready to claim by the recipient (sender)": the link inside the note, the wallet pointer alone below it.
+    it('keeps the claim link in the note and points to the recipient wallet below it once it is ready', () => {
+      mocks.bridges = [{ ...TO_OTHER, txHash: BURN_HASH }];
+      renderList();
+      const pointer = screen.getByTestId('pending-bridge-claim-with-recipient');
+      const link = screen.getByTestId('pending-bridge-claim-link');
+      expect(note()?.textContent).toBe(
+        "Ready on Ethereum. 0x0000...0b01 needs to claim it from that wallet to receive USDS. If it's your wallet, switch to it. Claiming on another device? Get claim link"
+      );
+      expect(note()!.contains(link)).toBe(true);
+      expect(note()!.className).toMatch(/-mt-2\b/);
+      expect(pointer.textContent).toBe('Claim with your recipient wallet');
+      expect(pointer.className).toMatch(/\bw-full\b/);
+      // Accounts switch in the wallet app, so it does nothing here.
+      expect(pointer).toHaveProperty('disabled', true);
+      expect(note()!.compareDocumentPosition(pointer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+      fireEvent.click(pointer);
+      expect(mocks.openConnectModal).not.toHaveBeenCalled();
+      expect(props.onAction).not.toHaveBeenCalled();
+    });
+
+    it('points to no wallet while it is on its way, nor to the recipient', () => {
+      mocks.bridges = [
+        { ...TO_OTHER, status: 'pending' },
+        { ...TO_OTHER, id: '0xmine', recipient: ACCOUNT }
+      ];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-claim-with-recipient')).toBeNull();
+      expect(screen.queryByText('Claim with your recipient wallet')).toBeNull();
+    });
+
+    it('names the destination wallet beside the status, by its ENS name once known (Figma 71, 73)', () => {
+      mocks.bridges = [TO_OTHER];
+      const { unmount } = renderList();
+      const wallet = () => screen.getByTestId('pending-bridge-wallet');
+      expect(wallet().textContent).toBe('0x0000...0b01');
+      expect(wallet().closest('a')?.getAttribute('href')).toContain(`/address/${RECIPIENT}`);
+      unmount();
+      mocks.ens[RECIPIENT] = 'friend.eth';
+      renderList();
+      expect(wallet().textContent).toBe('friend.eth');
+    });
+
+    it('says so while the transfer is still on its way', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending' }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Pending');
+      expect(note()).not.toBeNull();
+    });
+
+    it('tells the sender who claims it and offers the link in the note while it is on its way', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending', txHash: BURN_HASH }];
+      renderList();
+      expect(note()?.textContent).toBe(
+        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS. Claiming on another device? Get claim link"
+      );
+      expect(note()!.contains(screen.getByTestId('pending-bridge-claim-link'))).toBe(true);
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+    });
+
+    it('promises no link in the note when there is none to give', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'pending', txHash: undefined }];
+      renderList();
+      expect(note()?.textContent).toBe(
+        "On its way to 0x0000...0b01. Once it's ready on Ethereum, they'll need to claim it from that wallet to receive USDS."
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+    });
+
+    it('drops the note once the bridge settles', () => {
+      mocks.bridges = [{ ...TO_OTHER, status: 'arrived', nextAction: undefined, settledAt: 0 }];
+      renderList();
+      expect(note()).toBeNull();
+    });
+
+    it('hides a hint for a claim this wallet cannot send', () => {
+      props.actionHint.mockReturnValue({ kind: 'switch-network', network: 'ethereum', safe: false });
+      mocks.bridges = [TO_OTHER];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-action-hint')).toBeNull();
+    });
+
+    it('keeps the Claim button for the recipient and for a bridge to the sender', () => {
+      mocks.bridges = [
+        { ...TO_OTHER, id: '0xmine', recipient: ACCOUNT.toUpperCase().replace('0X', '0x') },
+        { ...TO_OTHER, id: '0xnone', recipient: undefined }
+      ];
+      renderList();
+      expect(screen.getAllByTestId('pending-bridge-action')).toHaveLength(2);
+      expect(note()).toBeNull();
+    });
+  });
+
+  describe("a CCTP bridge sent to this wallet from another account's list", () => {
+    const SENDER = '0x00000000000000000000000000000000005e7d01';
+    const SENDER_SCOPE = `1:${SENDER}`;
+    const INCOMING: PendingBridge = {
+      ...BRIDGE,
+      id: '0xincoming',
+      account: SENDER,
+      recipient: ACCOUNT,
+      from: 'base',
+      to: 'ethereum',
+      status: 'ready',
+      routeKind: 'cctp',
+      requiresClaim: true,
+      nextAction: 'claim',
+      startedAt: 5
+    };
+    const incoming = (...bridges: PendingBridge[]) =>
+      (mocks.incoming = bridges.map(bridge => ({ scope: SENDER_SCOPE, bridge })));
+
+    it('lists it with no bridge of its own, saying who sent it', () => {
+      incoming(INCOMING);
+      renderList();
+      expect(screen.getAllByTestId('pending-bridge-card')).toHaveLength(1);
+      expect(screen.getByTestId('pending-bridge-incoming-note').textContent).toBe(
+        'The bridge was sent to you from 0x0000...7d01. Claim to receive 10,000.00 USDS on Ethereum.'
+      );
+      expect(screen.queryByTestId('pending-bridge-recipient-note')).toBeNull();
+    });
+
+    it('names the sender beside the status (Figma 74)', () => {
+      incoming(INCOMING);
+      mocks.ens[SENDER] = 'bartoo.eth';
+      renderList();
+      const wallet = screen.getByTestId('pending-bridge-wallet');
+      expect(wallet.textContent).toBe('bartoo.eth');
+      expect(screen.getByText('Sender')).toBeTruthy();
+    });
+
+    it('names the sender by its ENS name in the note once known (Figma 74)', () => {
+      incoming(INCOMING);
+      mocks.ens[SENDER] = 'bartoo.eth';
+      renderList();
+      expect(screen.getByTestId('pending-bridge-incoming-note').textContent).toBe(
+        'The bridge was sent to you from 0x0000...7d01 (bartoo.eth). Claim to receive 10,000.00 USDS on Ethereum.'
+      );
+    });
+
+    it('says when it will be ready while it is on its way (Figma 76)', () => {
+      incoming({ ...INCOMING, status: 'pending', etaAt: 20 * 60_000 });
+      renderList();
+      expect(screen.getByTestId('pending-bridge-incoming-note').textContent).toBe(
+        "Sent to you from 0x0000...7d01. It'll be ready to claim on Ethereum in about 20 minutes."
+      );
+    });
+
+    it('only says who sent it once it is late or claimed', () => {
+      incoming(
+        { ...INCOMING, status: 'pending', etaAt: 0 },
+        { ...CLAIMED, id: '0xincoming2', account: SENDER, recipient: ACCOUNT }
+      );
+      renderList();
+      expect(screen.getAllByTestId('pending-bridge-incoming-note').map(note => note.textContent)).toEqual([
+        'Sent to you from 0x0000...7d01.',
+        'Sent to you from 0x0000...7d01.'
+      ]);
+    });
+
+    it("claims it in the sender's list", () => {
+      incoming(INCOMING);
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-action'));
+      expect(props.onActionIn).toHaveBeenCalledWith(SENDER_SCOPE, INCOMING, undefined, undefined);
+      expect(props.onAction).not.toHaveBeenCalled();
+    });
+
+    it("converts the USDC its claim left in the sender's list", () => {
+      const claimed = { ...CLAIMED, id: '0xincoming', account: SENDER, recipient: ACCOUNT };
+      incoming(claimed);
+      mocks.offers[claimed.id] = OFFER;
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-convert'));
+      expect(props.onActionIn).toHaveBeenCalledWith(SENDER_SCOPE, claimed, 'convert', OFFER);
+    });
+
+    it("closes it in the sender's list when its USDC is kept", () => {
+      const close = vi.spyOn(pendingBridgeStore, 'close');
+      const claimed = { ...CLAIMED, id: '0xincoming', account: SENDER, recipient: ACCOUNT };
+      incoming(claimed);
+      mocks.offers[claimed.id] = OFFER;
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-keep-usdc'));
+      expect(close).toHaveBeenCalledExactlyOnceWith(SENDER_SCOPE, claimed.id);
+      close.mockRestore();
+    });
+
+    it("lists it among the wallet's own bridges, newest first", () => {
+      mocks.bridges = [
+        { ...BRIDGE, startedAt: 9 },
+        { ...BRIDGE, id: '0xold', startedAt: 1 }
+      ];
+      incoming(INCOMING);
+      renderList();
+      expect(screen.getAllByTestId('pending-bridge-incoming-note')).toHaveLength(1);
+      const cards = screen.getAllByTestId('pending-bridge-card');
+      expect(cards.map(card => !!card.querySelector('[data-testid="pending-bridge-incoming-note"]'))).toEqual(
+        [false, true, false]
+      );
+    });
+
+    it("offers no Dismiss: the entry is the sender's", () => {
+      incoming({
+        ...INCOMING,
+        status: 'pending',
+        nextAction: undefined,
+        txHash: undefined,
+        safeTxHash: '0x5afe'
+      });
+      renderList();
+      expect(screen.getByTestId('pending-bridge-card')).toBeTruthy();
+      expect(screen.queryByTestId('pending-bridge-dismiss')).toBeNull();
+    });
+
+    it('leaves once settled for more than a day', () => {
+      incoming({
+        ...INCOMING,
+        status: 'claimed',
+        nextAction: undefined,
+        settledAt: -2 * 24 * 60 * 60 * 1000
+      });
+      expect(renderList().container.innerHTML).toBe('');
+    });
+  });
+
+  describe('converting a CCTP claim to USDS', () => {
+    const convertButton = () => screen.getByTestId('pending-bridge-convert') as HTMLButtonElement;
+    const convertHint = (hint: DestinationActionHint) =>
+      props.actionHint.mockImplementation((_, action) => (action === 'convert' ? hint : undefined));
+
+    it('offers it on a claim that kept its USDC, and says why it arrived as USDC', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      expect(convertButton().textContent).toBe('Convert to USDS');
+      expect(convertButton().disabled).toBe(false);
+      expect(props.canAction).toHaveBeenCalledWith(CLAIMED, 'convert');
+      // Figma 93. Never says the USDC is still in the wallet: some of it may have left since the claim.
+      expect(screen.getByTestId('pending-bridge-convert-note').textContent).toBe(
+        "Your bridge arrived as USDC because the conversion to USDS didn't complete. Convert it now at a 1:1 rate."
+      );
+    });
+
+    // Figma 93: the status reads Arrived as USDC in the info tone while the offer stands.
+    it('reads Arrived as USDC while the offer stands, and Claimed otherwise', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      const { unmount } = renderList();
+      const status = screen.getByTestId('pending-bridge-status');
+      expect(status.textContent).toBe('Arrived as USDC');
+      expect(status.className).toContain('text-statusInfoSolid');
+      expect(status.className).toContain('bg-statusInfoBg');
+      unmount();
+      delete mocks.offers[CLAIMED.id];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claimed');
+    });
+
+    it('draws no check on Arrived as USDC, which still has a step left', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      expect(within(screen.getByTestId('pending-bridge-status')).queryByTestId('status-check')).toBeNull();
+    });
+
+    // Figma 93: a card whose claim ended in USDC shows the USDC icon.
+    it('shows the USDC icon on a claim that kept its USDC, and USDS otherwise', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      const { unmount } = renderList();
+      expect(screen.getByTestId('token-icon').dataset.symbol).toBe('USDC');
+      unmount();
+      delete mocks.offers[CLAIMED.id];
+      renderList();
+      expect(screen.getByTestId('token-icon').dataset.symbol).toBe('USDS');
+    });
+
+    // Figma 93: Convert to USDS and Keep as USDC side by side, half width each, after the note.
+    it('offers Keep as USDC beside it, after the note', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      const keep = screen.getByTestId('pending-bridge-keep-usdc');
+      expect(keep.textContent).toBe('Keep as USDC');
+      expect(keep.parentElement).toBe(convertButton().parentElement);
+      expect(keep.parentElement?.previousElementSibling).toBe(
+        screen.getByTestId('pending-bridge-convert-note')
+      );
+      [keep, convertButton()].forEach(button => expect(button.className).toMatch(/\bflex-1\b/));
+    });
+
+    // Figma 98: the card leaves and a toast says where to convert later.
+    it('closes the card when the USDC is kept, and says it can be converted later', () => {
+      const close = vi.spyOn(pendingBridgeStore, 'close');
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-keep-usdc'));
+      expect(close).toHaveBeenCalledExactlyOnceWith('scope', CLAIMED.id);
+      expect(mocks.toast.success).toHaveBeenCalledExactlyOnceWith(
+        'You can convert your USDC to USDS anytime from the Convert tab.'
+      );
+      expect(props.onAction).not.toHaveBeenCalled();
+      close.mockRestore();
+    });
+
+    it("can't keep the USDC while an action's session is minimized", () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList({ actionLocked: true });
+      expect((screen.getByTestId('pending-bridge-keep-usdc') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('converts the amount offered', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      fireEvent.click(convertButton());
+      expect(props.onAction).toHaveBeenCalledExactlyOnceWith(CLAIMED, 'convert', OFFER);
+    });
+
+    it('offers nothing when there is nothing to convert', () => {
+      mocks.bridges = [CLAIMED];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-convert')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-convert-note')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
+    });
+
+    it("can't convert while an action's session is minimized, or when it can't be sent", () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList({ actionLocked: true });
+      expect(convertButton().disabled).toBe(true);
+      cleanup();
+
+      props.canAction.mockImplementation((_, action) => action !== 'convert');
+      renderList();
+      expect(convertButton().disabled).toBe(true);
+      fireEvent.click(convertButton());
+      expect(props.onAction).not.toHaveBeenCalled();
+    });
+
+    it('says a sent conversion is confirming, once it is no longer offered', () => {
+      mocks.bridges = [CLAIMED];
+      convertHint({ kind: 'action-sent', network: 'ethereum' });
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-convert')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-action-hint').textContent).toBe(
+        'Waiting for the transaction to confirm on Ethereum.'
+      );
+    });
+
+    it('asks for a network switch only while the conversion is offered', () => {
+      mocks.bridges = [CLAIMED];
+      convertHint({ kind: 'switch-network', network: 'ethereum', safe: false });
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-action-hint')).toBeNull();
+      cleanup();
+
+      mocks.offers[CLAIMED.id] = OFFER;
+      renderList();
+      expect(screen.getByTestId('pending-bridge-action-hint').textContent).toBe(
+        'Switch your wallet to Ethereum to continue.'
+      );
+    });
+
+    it("a card's own action still comes first", () => {
+      mocks.bridges = [{ ...BRIDGE, status: 'ready', nextAction: 'claim', requiresClaim: true }];
+      mocks.offers[BRIDGE.id] = OFFER;
+      props.actionHint.mockImplementation((_, action) =>
+        action === 'convert' ? { kind: 'safe-executing' } : { kind: 'action-sent', network: 'base' }
+      );
+      renderList();
+      expect(screen.getByTestId('pending-bridge-action').textContent).toBe('Claim');
+      expect(screen.queryByTestId('pending-bridge-convert')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-action-hint').textContent).toBe(
+        'Waiting for the transaction to confirm on Base.'
+      );
+    });
+  });
+
+  describe('the claim link of a CCTP bridge to Ethereum', () => {
+    const BURN: PendingBridge = {
+      ...BRIDGE,
+      id: '0xburn',
+      from: 'base',
+      to: 'ethereum',
+      routeKind: 'cctp',
+      requiresClaim: true,
+      nextAction: 'claim',
+      txHash: `0x${'ab'.repeat(32)}`
+    };
+    const OTHER = '0x00000000000000000000000000000000000b0b01';
+    const LINK = `${window.location.origin}/convert?tab=bridge&claim_network=base&claim_tx=${BURN.txHash}`;
+
+    it('copies the link that opens its claim', () => {
+      mocks.bridges = [BURN];
+      renderList();
+      const link = screen.getByTestId('pending-bridge-claim-link');
+      expect(link.textContent).toBe('Get claim link');
+      fireEvent.click(link);
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+    });
+
+    it('reports the copy with the bridge it opens', () => {
+      posthog.capture.mockClear();
+      mocks.bridges = [BURN];
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+        'app_bridge_claim_link_copied',
+        expect.objectContaining({
+          widget_name: 'bridge',
+          bridge_type: 'cctp',
+          source_chain: 'base',
+          destination_chain: 'ethereum',
+          bridge_id: '0xburn',
+          source_tx_hash: BURN.txHash
+        })
+      );
+    });
+
+    // Figma "Claim link copied!": a toast says it, and the link keeps its label.
+    it('toasts that it was copied', () => {
+      mocks.bridges = [BURN];
+      renderList();
+      expect(mocks.toast.success).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.toast.success).toHaveBeenCalledTimes(1);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
+      expect(screen.getByTestId('pending-bridge-claim-link').textContent).toBe('Get claim link');
+    });
+
+    it('toasts nothing when the copy fails', () => {
+      mocks.bridges = [BURN];
+      mocks.copyFails = true;
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).not.toHaveBeenCalled();
+    });
+
+    // Figma "Bridge initiated": the lowest priority, a last line under the rows.
+    it.each([
+      ['on its way', 'pending' as const],
+      ['ready', 'ready' as const]
+    ])('closes your own bridge with a line under the rows, %s', (_, status) => {
+      mocks.bridges = [{ ...BURN, status }];
+      renderList();
+      const line = screen.getByTestId('pending-bridge-claim-line');
+      expect(line.textContent).toBe('Claiming on another device? Get claim link');
+      expect(line.className).toMatch(/\bborder-t\b/);
+      expect(line.contains(screen.getByTestId('pending-bridge-claim-link'))).toBe(true);
+      expect(
+        screen.getByTestId('pending-bridge-rows').compareDocumentPosition(line) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(screen.getByTestId('pending-bridge-card').lastElementChild).toBe(line);
+    });
+
+    it('offers it on a bridge sent to this wallet too, as the same last line', () => {
+      mocks.incoming = [{ scope: 'sender', bridge: { ...BURN, account: OTHER, recipient: ACCOUNT } }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-claim-line').textContent).toBe(
+        'Claiming on another device? Get claim link'
+      );
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+    });
+
+    it.each([
+      ['on its way', 'pending' as const],
+      ['ready', 'ready' as const]
+    ])('copies it from the note of a bridge to another wallet, %s', (_, status) => {
+      mocks.bridges = [{ ...BURN, status, recipient: OTHER }];
+      renderList();
+      fireEvent.click(screen.getByTestId('pending-bridge-claim-link'));
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
+    });
+
+    it('offers no link once a bridge to another wallet has failed', () => {
+      mocks.bridges = [{ ...BURN, status: 'failed', recipient: OTHER }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toBe(
+        'Only the destination wallet (0x0000...0b01) can claim it on Ethereum.'
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+    });
+
+    it('offers none on a native deposit or a claimed bridge', () => {
+      mocks.bridges = [BRIDGE, { ...CLAIMED, nextAction: 'convert' }];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-claim-link')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
+    });
+
+    // With no list to come back to, the link is the way back, so it stays a button with its reason.
+    it('keeps a button and asks to keep the link when this browser keeps no bridges', () => {
+      mocks.storageWritable = false;
+      mocks.bridges = [BURN];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-claim-link-note').textContent).toBe(
+        "This browser can't save your bridges. Copy the claim link and keep it to claim later."
+      );
+      const button = screen.getByTestId('pending-bridge-claim-link');
+      expect(button.textContent).toBe('Copy claim link');
+      expect(button.className).toMatch(/\bw-full\b/);
+      expect(screen.queryByTestId('pending-bridge-claim-line')).toBeNull();
+      fireEvent.click(button);
+      expect(mocks.copy).toHaveBeenCalledWith(LINK);
+      expect(mocks.toast.success).toHaveBeenCalledWith('Claim link copied!');
+    });
+
+    it('offers it in the note of a bridge to another wallet, not to keep, when this browser keeps no bridges', () => {
+      mocks.storageWritable = false;
+      mocks.bridges = [{ ...BURN, status: 'ready', recipient: OTHER }];
+      renderList();
+      expect(screen.getByTestId('pending-bridge-recipient-note').textContent).toMatch(
+        /Claiming on another device\? Get claim link$/
+      );
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+    });
+
+    it('adds no note for your own bridge in a browser that keeps it', () => {
+      mocks.bridges = [BURN];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-claim-link-note')).toBeNull();
+    });
+  });
+
+  describe('unfinished CCTP swaps', () => {
+    const record = (...swaps: UnfinishedCctpSwap[]) =>
+      [...swaps].reverse().forEach(swap => cctpSwapStore.record('scope', swap));
+    const continueButton = () => screen.getByTestId('continue-bridge-action') as HTMLButtonElement;
+    const convertButton = () => screen.getByTestId('continue-bridge-convert') as HTMLButtonElement;
+
+    // Figma "Pending component bridge": one border-primary line, above the rows.
+    it('draws its only divider above the rows, on every card', () => {
+      mocks.bridges = [BRIDGE];
+      record(SWAP);
+      renderList();
+      for (const card of [
+        screen.getByTestId('pending-bridge-card'),
+        screen.getByTestId('continue-bridge-card')
+      ]) {
+        const dividers = [...card.querySelectorAll('*')].filter(el => /\bborder-[bt]\b/.test(el.className));
+        expect(dividers).toHaveLength(1);
+        expect(dividers[0]?.getAttribute('data-testid')).toBe('pending-bridge-rows');
+        expect(dividers[0]?.className).toMatch(/\bborder-t\b/);
+        expect(dividers[0]?.className).toMatch(/\bborder-borderPrimary\b/);
+      }
+    });
+
+    it('lists them with no pending bridge, newest first', () => {
+      record(SWAP, OLDER_SWAP);
+      renderList();
+      expect(screen.getByRole('heading').textContent).toBe('Pending bridges');
+      const cards = screen.getAllByTestId('continue-bridge-card');
+      expect(cards).toHaveLength(2);
+      expect(cards[0]?.textContent).toContain('250.00');
+      expect(cards[0]?.textContent).toContain('OP Mainnet');
+      expect(cards[0]?.textContent).toContain('Not sent');
+      expect(cards[1]?.textContent).toContain('7.00');
+      expect(screen.queryAllByTestId('pending-bridge-card')).toHaveLength(0);
+    });
+
+    // Figma 90: the note says where the USDC is and both ways out.
+    it('says where the USDC is', () => {
+      record(SWAP);
+      renderList();
+      expect(screen.getByTestId('continue-bridge-note').textContent).toBe(
+        'Your bridge stopped before it was sent. The 250.00 USDC from the conversion is still on OP Mainnet. Continue to send it to Ethereum, or convert it back to USDS.'
+      );
+    });
+
+    it('offers Continue bridge and Convert to USDS side by side', () => {
+      record(SWAP);
+      renderList();
+      expect(continueButton().textContent).toBe('Continue bridge');
+      expect(convertButton().textContent).toBe('Convert to USDS');
+      expect(continueButton().parentElement).toBe(convertButton().parentElement);
+    });
+
+    it('converts the swap of the card clicked', () => {
+      record(SWAP, OLDER_SWAP);
+      renderList();
+      fireEvent.click(screen.getAllByTestId('continue-bridge-convert')[1]!);
+      expect(props.onConvert).toHaveBeenCalledExactlyOnceWith(OLDER_SWAP);
+      expect(props.onContinue).not.toHaveBeenCalled();
+    });
+
+    it("can't convert while a transaction session is active", () => {
+      record(SWAP);
+      mocks.activeSessionId = 'session';
+      renderList();
+      expect(convertButton().disabled).toBe(true);
+      fireEvent.click(convertButton());
+      expect(props.onConvert).not.toHaveBeenCalled();
+    });
+
+    // The route's gate only stops the bridge; the USDC can still go back to USDS.
+    it.each([
+      'pair-not-allowed',
+      'over-limit',
+      'no-liquidity',
+      'facts-error',
+      'facts-loading',
+      'closed'
+    ] as const)('can still convert when the route is %s', reason => {
+      record(SWAP);
+      mocks.blocked[SWAP.swapTxHash] = reason;
+      renderList();
+      expect(continueButton().disabled).toBe(true);
+      expect(convertButton().disabled).toBe(false);
+    });
+
+    it.each([
+      'source-unavailable',
+      'wallet-checking',
+      'wallet-unknown',
+      'balance-loading',
+      'balance-unknown',
+      'insufficient'
+    ] as const)("can't convert when %s", reason => {
+      record(SWAP);
+      mocks.blocked[SWAP.swapTxHash] = reason;
+      renderList();
+      expect(convertButton().disabled).toBe(true);
+    });
+
+    it('lists them above the pending bridges, which still render as before', () => {
+      record(SWAP);
+      mocks.bridges = [BRIDGE];
+      renderList();
+      const cards = screen.getByTestId('pending-bridges').querySelectorAll('[data-testid$="-card"]');
+      expect([...cards].map(card => card.getAttribute('data-testid'))).toEqual([
+        'continue-bridge-card',
+        'pending-bridge-card'
+      ]);
+      expect(screen.getByTestId('pending-bridge-card').textContent).toContain('10,000.00');
+    });
+
+    it('continues the swap of the card clicked', () => {
+      record(SWAP, OLDER_SWAP);
+      renderList();
+      fireEvent.click(screen.getAllByTestId('continue-bridge-action')[1]!);
+      expect(props.onContinue).toHaveBeenCalledExactlyOnceWith(OLDER_SWAP);
+    });
+
+    // A second bridge of the same USDC must not start while another transaction is open or minimized.
+    it("can't continue while a transaction session is active", () => {
+      record(SWAP);
+      mocks.activeSessionId = 'session';
+      renderList();
+      expect(continueButton().disabled).toBe(true);
+      fireEvent.click(continueButton());
+      expect(props.onContinue).not.toHaveBeenCalled();
+      expect(screen.getByTestId('continue-bridge-hint').textContent).toBe(
+        'A transaction is in progress. Open it to continue.'
+      );
+    });
+
+    it.each([
+      ['source-unavailable', "Bridging from OP Mainnet isn't available yet."],
+      ['wallet-unknown', "We couldn't check your wallet type. Try again in a moment."],
+      ['balance-unknown', "We couldn't load your USDC balance. Try again in a moment."],
+      ['insufficient', 'Your wallet has less USDC on OP Mainnet than this bridge needs.'],
+      ['pair-not-allowed', "Bridging this USDC to Ethereum isn't available yet."],
+      ['over-limit', 'This amount is over the bridge limit right now. Try again later.'],
+      ['no-liquidity', 'Not enough liquidity on Ethereum for this amount right now. Try again later.'],
+      ['facts-error', "We couldn't check this route. Try again in a moment."],
+      ['closed', 'This route is temporarily unavailable.']
+    ] as const)("can't continue when %s, and says why", (reason, message) => {
+      record(SWAP);
+      mocks.blocked[SWAP.swapTxHash] = reason;
+      renderList();
+      expect(continueButton().disabled).toBe(true);
+      expect(screen.getByTestId('continue-bridge-blocked').textContent).toBe(message);
+    });
+
+    it.each(['facts-loading', 'balance-loading', 'wallet-checking'] as const)(
+      "can't continue while %s, with no message",
+      reason => {
+        record(SWAP);
+        mocks.blocked[SWAP.swapTxHash] = reason;
+        renderList();
+        expect(continueButton().disabled).toBe(true);
+        expect(screen.queryByTestId('continue-bridge-blocked')).toBeNull();
+      }
+    );
+
+    it('blocks only the card that is blocked', () => {
+      record(SWAP, OLDER_SWAP);
+      mocks.blocked[OLDER_SWAP.swapTxHash] = 'insufficient';
+      renderList();
+      const buttons = screen.getAllByTestId('continue-bridge-action') as HTMLButtonElement[];
+      expect(buttons.map(button => button.disabled)).toEqual([false, true]);
+    });
+
+    it('forgets a dismissed swap', () => {
+      record(SWAP, OLDER_SWAP);
+      renderList();
+      fireEvent.click(screen.getAllByTestId('continue-bridge-dismiss')[0]!);
+      expect(cctpSwapStore.getSnapshot('scope')).toEqual([OLDER_SWAP]);
+      expect(screen.getAllByTestId('continue-bridge-card')).toHaveLength(1);
+    });
+  });
+
+  describe('the amount on the card', () => {
+    const shown = () =>
+      within(screen.getByTestId('pending-bridge-card')).getByTestId('pending-bridge-amount').textContent;
+
+    it('shows every decimal of a native bridge', () => {
+      mocks.bridges = [{ ...BRIDGE, routeKind: 'native', amount: parseUnits('0.0123', 18) }];
+      renderList();
+      expect(shown()).toBe('0.0123');
+    });
+
+    it('shows what a CCTP bridge stored before the amount was truncated actually moved', () => {
+      mocks.bridges = [{ ...BRIDGE, routeKind: 'cctp', amount: parseUnits('1.1234567', 18) }];
+      renderList();
+      expect(shown()).toBe('1.123456');
+    });
+  });
+
+  describe('a native withdrawal to Ethereum', () => {
+    const WITHDRAWAL: PendingBridge = {
+      ...BRIDGE,
+      id: '0xw',
+      from: 'optimism',
+      to: 'ethereum',
+      requiresClaim: true,
+      nextAction: 'prove'
+    };
+    const note = () => screen.queryByTestId('pending-bridge-note')?.textContent;
+
+    it.each([
+      [{}, "It'll be ready to prove on Ethereum soon."],
+      [{ etaAt: 0 }, "It'll be ready to prove on Ethereum soon."],
+      [{ nextAction: 'finalize' }, 'ready to finalize on Ethereum in about'],
+      [{ status: 'ready' }, 'Prove the withdrawal on Ethereum to start its waiting period.'],
+      [
+        { status: 'ready', nextAction: 'finalize' },
+        'Finalize the withdrawal on Ethereum to receive your USDS.'
+      ]
+    ] as const)('explains the step it is at (%o)', (change, text) => {
+      mocks.bridges = [{ ...WITHDRAWAL, ...change }];
+      renderList();
+      expect(note()).toContain(text);
+    });
+
+    it('says it is confirming on Ethereum after a mined finalize, with no button', () => {
+      mocks.bridges = [
+        { ...WITHDRAWAL, nextAction: undefined, actions: [{ action: 'finalize', txHash: '0xf', at: 0 }] }
+      ];
+      renderList();
+      expect(note()).toBe('Confirming on Ethereum.');
+      expect(screen.queryByTestId('pending-bridge-action')).toBeNull();
+    });
+
+    it('asks to prove again when the last proof was invalidated', () => {
+      mocks.bridges = [
+        {
+          ...WITHDRAWAL,
+          status: 'ready',
+          actions: [{ action: 'prove', txHash: '0xp1', at: 0, status: 'invalidated' }]
+        }
+      ];
+      renderList();
+      expect(note()).toContain('Prove the withdrawal again to continue.');
+    });
+
+    it("says how much ETH the step needs on Ethereum when the wallet can't pay it, and keeps the button", () => {
+      mocks.bridges = [{ ...WITHDRAWAL, status: 'ready' }];
+      mocks.ethShort = { '0xw': 12n * 10n ** 14n };
+      renderList();
+      expect(screen.getByTestId('pending-bridge-eth-note').textContent).toBe(
+        'You need about 0.0012 ETH on Ethereum to pay for this step.'
+      );
+      expect(screen.getByTestId('pending-bridge-action')).toHaveProperty('disabled', false);
+    });
+
+    it('says nothing about ETH when the wallet can pay, or once the step is sent', () => {
+      mocks.bridges = [{ ...WITHDRAWAL, status: 'ready' }];
+      const { unmount } = renderList();
+      expect(screen.queryByTestId('pending-bridge-eth-note')).toBeNull();
+      unmount();
+      mocks.ethShort = { '0xw': 1n };
+      props.actionHint.mockReturnValue({ kind: 'action-sent', network: 'ethereum' });
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-eth-note')).toBeNull();
+    });
+
+    it('gives way to the hint of a step just sent, and stays beside a network switch', () => {
+      mocks.bridges = [{ ...WITHDRAWAL, status: 'ready' }];
+      props.actionHint.mockReturnValue({ kind: 'action-sent', network: 'ethereum' });
+      const { unmount } = renderList();
+      expect(note()).toBeUndefined();
+      unmount();
+      props.actionHint.mockReturnValue({ kind: 'switch-network', network: 'ethereum', safe: false });
+      renderList();
+      expect(note()).toContain('Prove the withdrawal on Ethereum');
+    });
+  });
+});

@@ -82,6 +82,13 @@ export type TransactionAnalytics = {
   action?: string;
   /** Extra data merged into every analytics event (e.g. module, claimedRewards). */
   data?: Record<string, unknown>;
+  /** Reports each signature as its real step; without it only an approve differs from `action`. */
+  stepOf?: (
+    variables: TxMutateVariables | undefined,
+    flowId: string | undefined
+  ) => { action: string; data?: Record<string, unknown> } | undefined;
+  /** Read when an attempt ends, for what is only known by then. */
+  completedData?: () => Record<string, unknown> | undefined;
 };
 
 /** The config a consumer passes to `launch()` for a standard on-chain transaction. */
@@ -112,6 +119,8 @@ export type TransactionConfig = {
    * unchanged.
    */
   transactionScreenContent?: ReactNode;
+  /** A card beside the review on desktop (Figma 3964:74437); below desktop it isn't drawn. */
+  aside?: ReactNode;
   /**
    * Editable first screen. When present the modal opens on the entry screen
    * (instead of the read-only review built from `transactionContent`). Both lead
@@ -224,6 +233,8 @@ export type TransactionConfig = {
   confirmLabel?: string;
   /** Disables the Confirm button — e.g. while a quote is refetching. */
   confirmDisabled?: boolean;
+  /** Whether the steps go out as one wallet bundle; unset, the modal reads the batch toggle and the wallet. */
+  bundled?: boolean;
   /**
    * User-readable engine/prepare failure rendered above the review screen's
    * confirm button (the entry screen reads `entry.errorMessage` instead — the
@@ -316,8 +327,10 @@ export type LiveModalUpdate = Partial<
     TransactionConfig,
     | 'transactionContent'
     | 'transactionScreenContent'
+    | 'aside'
     | 'rightHeaderComponent'
     | 'confirmDisabled'
+    | 'bundled'
     | 'errorMessage'
     | 'onConfirm'
     | 'onSecondaryConfirm'
@@ -342,13 +355,15 @@ export type LiveModalUpdate = Partial<
  * WriteHookParams and BatchWriteHookParams. `hash` is the on-chain tx hash where
  * one exists; for EIP-5792 batches it is undefined until a receipt resolves (see
  * the EIP-5792 rule above). `blockNumber` on success is the block of the last
- * receipt, which the history refresh waits for the indexer to reach.
+ * receipt, which the history refresh waits for the indexer to reach, and
+ * `bundleTxHashes` every receipt's hash of a batch the wallet ran as several
+ * transactions, in order.
  */
 export type TxCallbacks = {
   /** `variables.functionName` (sequential legs only) discriminates approve legs in analytics. */
   onMutate: (variables?: TxMutateVariables) => void;
   onStart: (hash?: string) => void;
-  onSuccess: (hash?: string, blockNumber?: bigint) => void;
+  onSuccess: (hash?: string, blockNumber?: bigint, bundleTxHashes?: string[]) => void;
   onError: (error: Error, hash?: string) => void;
 };
 

@@ -185,7 +185,8 @@ describe('useSendBatchTransactionFlow — settling', () => {
   it('reports success when every leg landed', () => {
     const { onSuccess, onError } = settle('success', ['success', 'success']);
 
-    expect(onSuccess).toHaveBeenCalledWith('0x1', 2n);
+    // Every receipt: a wallet that runs the bundle as separate transactions lands each call apart.
+    expect(onSuccess).toHaveBeenCalledWith('0x1', 2n, ['0x1', '0x2']);
     expect(onError).not.toHaveBeenCalled();
   });
 

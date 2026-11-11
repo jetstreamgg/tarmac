@@ -51,13 +51,20 @@ vi.mock('wagmi', () => ({
   useConnection: () => ({ connector: undefined, address: wagmi.address }),
   // Echo the simulated call back on the request so a test can see WHICH call a
   // dispatch was prepared from.
-  useSimulateContract: (params: { functionName?: string }) => {
+  useSimulateContract: (params: { functionName?: string; value?: bigint; gas?: bigint }) => {
     const simulate = () => {
       const error = params.functionName ? wagmi.simulationErrors[params.functionName] : undefined;
       return error
         ? { data: undefined, isLoading: false, error }
         : {
-            data: { request: { __mock: 'request', functionName: params.functionName } },
+            data: {
+              request: {
+                __mock: 'request',
+                functionName: params.functionName,
+                value: params.value,
+                gas: params.gas
+              }
+            },
             isLoading: false,
             error: null
           };
@@ -210,6 +217,41 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it('simulates and sends a payable call with its ETH, after an approve that carries none', () => {
+    const deposit = { ...makeCall('deposit'), value: 7n } as Call;
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [APPROVE, deposit] })
+    );
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ functionName: 'approve', value: undefined })
+    );
+    act(() => {
+      wagmi.mutationHash = '0xapprove';
+      wagmi.onWriteSuccess?.('0xapprove');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null };
+    });
+    rerender();
+    expect(wagmi.writeContract).toHaveBeenCalledTimes(2);
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ functionName: 'deposit', value: 7n })
+    );
+  });
+
+  it("simulates and sends a call with its explicit gas instead of the wallet's estimate", () => {
+    const relay = { ...makeCall('relayMessage'), gas: 712_090n };
+    const { result } = renderHook(() => useSequentialTransactionFlow({ calls: [relay] }));
+
+    act(() => result.current.execute());
+    expect(wagmi.writeContract).toHaveBeenLastCalledWith(
+      expect.objectContaining({ functionName: 'relayMessage', gas: 712_090n })
+    );
+  });
+
   it('single-call sequence fires onSuccess once after its receipt', () => {
     const onSuccess = vi.fn();
     const calls: Call[] = [SUPPLY];
@@ -235,6 +277,31 @@ describe('useSequentialTransactionFlow — premature SUCCESS guard (bug #1)', ()
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(onSuccess).toHaveBeenCalledWith('0xsupply', undefined);
     expect(result.current.currentCallIndex).toBe(0); // reset on completion
+  });
+
+  it('hands the receipt to onReceipt right before onSuccess', () => {
+    const order: string[] = [];
+    const onReceipt = vi.fn(() => order.push('receipt'));
+    const onSuccess = vi.fn(() => order.push('success'));
+    const receipt = { blockNumber: 42n, logs: [] };
+
+    const { result, rerender } = renderHook(() =>
+      useSequentialTransactionFlow({ calls: [SUPPLY], onReceipt, onSuccess })
+    );
+
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.mutationHash = '0xsupply';
+      wagmi.onWriteSuccess?.('0xsupply');
+    });
+    rerender();
+    act(() => {
+      wagmi.receipt = { isLoading: false, isSuccess: true, error: null, failureReason: null, data: receipt };
+    });
+    rerender();
+
+    expect(onReceipt).toHaveBeenCalledWith(receipt);
+    expect(order).toEqual(['receipt', 'success']);
   });
 
   // APP-417. `useSimulateContract` hands back a NEW object whenever it refetches —

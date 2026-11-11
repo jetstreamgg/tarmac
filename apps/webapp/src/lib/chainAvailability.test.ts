@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { mainnet, base, arbitrum } from 'viem/chains';
-import { chainId } from '@/utils/chainId';
+import { chainId, forkChainId } from '@/utils/chainId';
 import { Intent } from './enums';
-import { MAINNET_FAMILY_CHAIN_IDS, chainSwitchTarget, chainIdsForIntent } from './chainAvailability';
+import {
+  CHAIN_WIDGET_MAP,
+  MAINNET_FAMILY_CHAIN_IDS,
+  chainSwitchTarget,
+  chainIdsForIntent
+} from './chainAvailability';
 
 describe('MAINNET_FAMILY_CHAIN_IDS', () => {
   it('is exactly real mainnet plus the dev fork (the single-chain-product supported set)', () => {
@@ -53,5 +58,36 @@ describe('chainIdsForIntent (APP-528)', () => {
     expect(ids.sort()).toEqual([mainnet.id, chainId.tenderly].sort());
     // An L2 the product does not run on is excluded — the guard fires there.
     expect(ids).not.toContain(base.id);
+  });
+});
+
+describe('Tenderly fork L2s', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', '');
+  });
+
+  it('are not listed without their RPCs, as in production', () => {
+    for (const fork of Object.values(forkChainId)) expect(CHAIN_WIDGET_MAP[fork]).toBeUndefined();
+    expect(chainIdsForIntent(Intent.SAVINGS_INTENT)).not.toEqual(
+      expect.arrayContaining([expect.toBeOneOf(Object.values(forkChainId))])
+    );
+  });
+
+  it('host only the Convert route, home of the Bridge, in the dev build', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_USE_MOCK_WALLET', 'false');
+    vi.stubEnv('VITE_TESTNET_CONFIG', 'true');
+    vi.stubEnv('VITE_TENDERLY_RPC_NAME', 'team/project/dev-env');
+    const dev = await import('./chainAvailability');
+    for (const fork of Object.values(forkChainId))
+      expect(dev.CHAIN_WIDGET_MAP[fork]).toEqual([Intent.CONVERT_INTENT]);
+    for (const intent of [Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.STAKE_INTENT])
+      expect(dev.chainIdsForIntent(intent)).not.toEqual(
+        expect.arrayContaining([expect.toBeOneOf(Object.values(forkChainId))])
+      );
+    expect(dev.chainIdsForIntent(Intent.CONVERT_INTENT)).toEqual(
+      expect.arrayContaining(Object.values(forkChainId))
+    );
   });
 });

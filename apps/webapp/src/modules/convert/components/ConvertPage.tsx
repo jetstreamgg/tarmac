@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -8,6 +8,11 @@ import { IllustrationStaked, IllustrationStakingLogomark } from '@/modules/icons
 import { Text } from '@/modules/layout/components/Typography';
 import { useConnectThenAct } from '@/modules/ui/context/ConnectThenActContext';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { QueryParams } from '@/lib/constants';
+import { useAppSearchParams } from '@/lib/navigation';
+import { BridgePanel } from '@/modules/bridge/components/BridgePanel';
+import { useBridgeDraft } from '@/modules/bridge/hooks/useBridgeDraft';
 import { useConvertForm } from '../hooks/useConvertForm';
 import { useConvertLaunch } from '../hooks/useConvertLaunch';
 import type { PsmConversionDisabledReason } from '../hooks/usePsmConversion.helpers';
@@ -84,6 +89,43 @@ export function ConvertPage() {
     form.isConnected &&
     (form.isZero || form.insufficient || form.debouncePending || !!conversion.disabledReason);
 
+  // Form column: 500px per the Convert mock (Figma 3574:64017).
+  const swapPanel = (
+    <div className="flex w-full max-w-[500px] flex-col gap-4 md:gap-8">
+      {/* Inert while this flow's transaction is minimized (APP-448). */}
+      <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="convert-form">
+        <ConvertCard form={form} />
+      </div>
+
+      {locked ? (
+        <Text className="text-textSecondary text-sm" dataTestId="convert-locked">
+          <Trans>A transaction is in progress. Open it to continue.</Trans>
+        </Text>
+      ) : form.insufficient ? (
+        <Text className="text-error text-sm" dataTestId="convert-error">
+          <Trans>Insufficient funds</Trans>
+        </Text>
+      ) : (
+        disabledReasonText && (
+          <Text className="text-error text-sm" dataTestId="convert-error">
+            {disabledReasonText}
+          </Text>
+        )
+      )}
+
+      <Button
+        variant="primary"
+        size="xl"
+        className={CTA_CLASSES}
+        disabled={!locked && reviewDisabled}
+        onClick={locked ? restore : launchOrConnect}
+        data-testid={locked ? 'convert-open-transaction' : 'convert-review-cta'}
+      >
+        {locked ? <Trans>Open transaction</Trans> : <Trans>Review</Trans>}
+      </Button>
+    </div>
+  );
+
   return (
     <div className="flex w-full flex-col items-center gap-8 py-4 md:py-10" data-testid="convert-page">
       {/* Patterns/Headers, Convert type 5044:35419. Desktop comp 1222:15248
@@ -104,48 +146,66 @@ export function ConvertPage() {
         title={<Trans>Convert stablecoins</Trans>}
         subtitle={
           <Trans>
-            Move between stablecoins with confidence. Conversions settle at a fixed 1:1 rate, with no fees and
-            no slippage.
+            Move between stablecoins with confidence. Conversions and bridges settle at a fixed 1:1 rate, with
+            no fees and no slippage.
           </Trans>
         }
         subtitleClassName="max-w-[459px]"
       />
 
-      {/* Form column: the middle 6 columns of the design grid (624px @1280)
-          minus 48px breathing room each side, per the Convert mock. */}
-      <div className="flex w-full max-w-[528px] flex-col gap-4">
-        {/* Inert while this flow's transaction is minimized (APP-448). */}
-        <div inert={locked} className={locked ? 'opacity-50' : undefined} data-testid="convert-form">
-          <ConvertCard form={form} />
-        </div>
-
-        {locked ? (
-          <Text className="text-textSecondary text-sm" dataTestId="convert-locked">
-            <Trans>A transaction is in progress. Open it to continue.</Trans>
-          </Text>
-        ) : form.insufficient ? (
-          <Text className="text-error text-sm" dataTestId="convert-error">
-            <Trans>Insufficient funds</Trans>
-          </Text>
-        ) : (
-          disabledReasonText && (
-            <Text className="text-error text-sm" dataTestId="convert-error">
-              {disabledReasonText}
-            </Text>
-          )
-        )}
-
-        <Button
-          variant="primary"
-          size="xl"
-          className={CTA_CLASSES}
-          disabled={!locked && reviewDisabled}
-          onClick={locked ? restore : launchOrConnect}
-          data-testid={locked ? 'convert-open-transaction' : 'convert-review-cta'}
-        >
-          {locked ? <Trans>Open transaction</Trans> : <Trans>Review</Trans>}
-        </Button>
-      </div>
+      <ConvertTabs swap={swapPanel} />
     </div>
+  );
+}
+
+type ConvertTab = 'swap' | 'bridge';
+
+/** Convert | Bridge pills (Figma Tabs3 3831:127371), synced to `?tab=`. */
+function ConvertTabs({ swap }: { swap: ReactNode }) {
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  // Held here, as the Swap form is by the page, so a tab switch keeps what was typed.
+  const bridgeDraft = useBridgeDraft();
+  const tab: ConvertTab = searchParams.get(QueryParams.Tab) === 'bridge' ? 'bridge' : 'swap';
+  const chainId = useChainId();
+  const { trackWidgetSelected } = useAppAnalytics();
+  // A click activates a tab twice in one event: on the trigger's focus, then on its mouse down.
+  const activatingRef = useRef<string | undefined>(undefined);
+  const onTabChange = (value: string) => {
+    if (activatingRef.current === value) return;
+    activatingRef.current = value;
+    queueMicrotask(() => (activatingRef.current = undefined));
+    if (value === 'bridge')
+      trackWidgetSelected({
+        widgetName: 'bridge',
+        previousWidget: 'convert',
+        selectionMethod: 'tab',
+        chainId
+      });
+    setSearchParams(
+      params => {
+        params.set(QueryParams.Tab, value);
+        return params;
+      },
+      { replace: true, resetScroll: false }
+    );
+  };
+
+  return (
+    <Tabs value={tab} onValueChange={onTabChange} className="flex w-full max-w-[500px] flex-col">
+      <TabsList variant="nav" className="w-full gap-3" data-testid="convert-tabs">
+        <TabsTrigger value="swap" variant="nav" className="flex-1" data-testid="convert-tab-swap">
+          <Trans>Convert</Trans>
+        </TabsTrigger>
+        <TabsTrigger value="bridge" variant="nav" className="flex-1" data-testid="convert-tab-bridge">
+          <Trans>Bridge</Trans>
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="swap" className="mt-6">
+        {swap}
+      </TabsContent>
+      <TabsContent value="bridge" className="mt-6">
+        <BridgePanel draft={bridgeDraft} />
+      </TabsContent>
+    </Tabs>
   );
 }

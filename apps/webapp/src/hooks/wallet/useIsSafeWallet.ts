@@ -1,11 +1,38 @@
 import { useConnection, useChainId } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import { SAFE_TRANSACTION_SERVICE_URL } from '../shared/constants';
+import { safeAccountQuery } from './safeAccount';
 import { useIsSafeApp } from './useIsSafeApp';
 
-const isSafeWalletFound = async (url: URL) => {
-  const res = await fetch(url);
-  return res.status === 200;
+export type SafeWalletStatus = 'safe' | 'not-safe' | 'checking' | 'unknown';
+
+/**
+ * Whether the connected account is a Safe (see `useIsSafeWallet`), with the
+ * unresolved states kept apart: `checking` while the Safe service read is in
+ * flight, `unknown` when it failed or the chain has no Safe service. Use it
+ * where treating a Safe as an EOA is unsafe.
+ */
+export const useSafeWalletStatus = (): SafeWalletStatus => {
+  const { address } = useConnection();
+  const chainId = useChainId();
+
+  const isSafeApp = useIsSafeApp() && !!address;
+  const hasService = !!SAFE_TRANSACTION_SERVICE_URL[chainId];
+
+  // Safe-ness of an address doesn't change: never refetch it, and skip the call
+  // when the connector already says it is a Safe.
+  const { data: safeAccount, isError } = useQuery({
+    ...safeAccountQuery({ address, chainId }),
+    enabled: hasService && !!address && !isSafeApp,
+    staleTime: Infinity,
+    gcTime: Infinity
+  });
+
+  if (isSafeApp) return 'safe';
+  if (!address) return 'not-safe';
+  if (!hasService) return 'unknown';
+  if (safeAccount !== undefined) return safeAccount ? 'safe' : 'not-safe';
+  return isError ? 'unknown' : 'checking';
 };
 
 /**
@@ -15,29 +42,6 @@ const isSafeWalletFound = async (url: URL) => {
  * on NetworkSwitchContext. Resolving a safeTxHash to the on-chain hash is
  * still keyed on the iframe alone (`useWaitForSafeTxHash`; APP-567 covers
  * WalletConnect). For what only the iframe changes — who owns the session —
- * use `useIsSafeApp`.
+ * use `useIsSafeApp`. Checking or unknown read as false.
  */
-export const useIsSafeWallet = () => {
-  const { address } = useConnection();
-  const chainId = useChainId();
-
-  const isSafeApp = useIsSafeApp() && !!address;
-  const baseUrl = SAFE_TRANSACTION_SERVICE_URL[chainId];
-  let url: URL | undefined;
-  if (baseUrl) {
-    const endpoint = `${baseUrl}/api/v1/safes/${address}`;
-    url = new URL(endpoint);
-  }
-
-  // Safe-ness of an address doesn't change — cache the answer for the session
-  // and skip the call when we already know the wallet is a Safe via the connector.
-  const { data: isAddressSafeWallet } = useQuery({
-    enabled: Boolean(url && address) && !isSafeApp,
-    queryKey: ['is-safe-wallet-found', address, chainId],
-    queryFn: () => isSafeWalletFound(url!),
-    staleTime: Infinity,
-    gcTime: Infinity
-  });
-
-  return isSafeApp || !!isAddressSafeWallet;
-};
+export const useIsSafeWallet = () => useSafeWalletStatus() === 'safe';

@@ -1,13 +1,16 @@
 import { Intent } from './enums';
 import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
+import { forkL2ChainIds } from '@/data/wagmi/config/forkChains';
 import { chainId } from '@/utils/chainId';
 
 // Per-chain module availability. Lives in its own Lingui-free module (extracted
 // verbatim from lib/constants) so the engine layer (src/hooks) can consume it —
 // lib/constants pulls @lingui/core/macro, which the vnet hooks test runner
 // cannot transform. lib/constants re-exports both maps, so existing import
-// sites are unaffected.
+// sites are unaffected. The fork L2s the dev build connects to host only the
+// Convert route, home of the Bridge; production lists none.
 export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
+  ...Object.fromEntries(forkL2ChainIds.map(id => [id, [Intent.CONVERT_INTENT]])),
   [mainnet.id]: [
     Intent.BALANCES_INTENT,
     Intent.REWARDS_INTENT,

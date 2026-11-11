@@ -80,6 +80,10 @@ type DeriveInput = {
    * the user something happened on-chain that never did.
    */
   userRejected?: boolean;
+  /** The failure is a send refused before the wallet saw it: see `SendRefusal`. */
+  refusal?: SendRefusal | null;
+  /** The failure is a send that went out with an outcome the app can't read: see `SendUnconfirmed`. */
+  unconfirmed?: SendUnconfirmed | null;
   /**
    * The failure is a contract revert, already worded for the user (the revert
    * registry's copy, or the raw reason). It replaces the generic rollback
@@ -89,6 +93,21 @@ type DeriveInput = {
    */
   failureReason?: string;
 };
+
+/**
+ * A send refused before the wallet saw it (a preflight read, a send already
+ * out): nothing of the attempt went out, so the failed row tells why instead
+ * of claiming a rollback. `reason` is user copy, when the refusal has some;
+ * `final` when sending again can't succeed, so no retry is offered.
+ */
+export type SendRefusal = { reason?: string; final: boolean };
+
+/**
+ * A send that went out but whose outcome can't be read (`markUnconfirmed`): it
+ * may still mine, so the failed row says it isn't confirmed yet, with the
+ * flow's `reason`, and offers no retry, which would send it again.
+ */
+export type SendUnconfirmed = { reason: string };
 
 /**
  * The step-specific consequence sentence appended after the generic rollback
@@ -158,6 +177,8 @@ export function deriveTransactionStepItems({
   txStatus,
   bundled,
   userRejected = false,
+  refusal = null,
+  unconfirmed = null,
   failureReason
 }: DeriveInput): TransactionStepItem[] {
   const allDone = txStatus === TxStatus.SUCCESS;
@@ -173,6 +194,14 @@ export function deriveTransactionStepItems({
   // signature step — nothing has reached the wallet as a write yet.
   const inSignaturePhase =
     !allDone && normalized.find((_, i) => writes[i] === currentStep)?.kind === 'signature';
+  // An on-chain step of this run already went through; a signed terms row is off-chain.
+  const sentEarlier =
+    !bundled && normalized.some((step, i) => step.kind !== 'signature' && writes[i] < currentStep);
+  const refusalCopy = refusal
+    ? [refusal.reason ?? t`The transaction could not be sent.`, sentEarlier ? '' : t`Nothing was sent.`]
+        .filter(Boolean)
+        .join(' ')
+    : undefined;
 
   // Bundled failure (Figma 1030:139111): the bundle fails as one unit, so the
   // list collapses to a failed summary slot plus a slot holding the retry pill —
@@ -192,18 +221,36 @@ export function deriveTransactionStepItems({
         targetTokenSymbol: step.targetTokenSymbol,
         state: 'completed' as const
       }));
+    const failedSlot: TransactionStepItem = unconfirmed
+      ? {
+          stepNumber: prelude.length + 1,
+          label: t`Transaction not confirmed yet`,
+          tokenSymbol: undefined,
+          state: 'failed',
+          description: unconfirmed.reason
+        }
+      : refusal
+        ? {
+            stepNumber: prelude.length + 1,
+            label: t`Transaction not sent`,
+            tokenSymbol: undefined,
+            state: 'failed',
+            description: refusalCopy
+          }
+        : {
+            stepNumber: prelude.length + 1,
+            label: userRejected ? t`Request declined` : t`Transaction failed`,
+            tokenSymbol: undefined,
+            state: 'failed',
+            description: userRejected
+              ? t`You declined the bundled transaction in your wallet. Try again and confirm it to continue.`
+              : (failureReason ??
+                t`The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.`)
+          };
+    if (refusal?.final || unconfirmed) return [...prelude, failedSlot];
     return [
       ...prelude,
-      {
-        stepNumber: prelude.length + 1,
-        label: userRejected ? t`Request declined` : t`Transaction failed`,
-        tokenSymbol: undefined,
-        state: 'failed',
-        description: userRejected
-          ? t`You declined the bundled transaction in your wallet. Try again and confirm it to continue.`
-          : (failureReason ??
-            t`The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.`)
-      },
+      failedSlot,
       {
         stepNumber: prelude.length + 2,
         label: '',
@@ -214,7 +261,7 @@ export function deriveTransactionStepItems({
     ];
   }
 
-  return normalized.map((step, i) => {
+  const items: TransactionStepItem[] = normalized.map((step, i) => {
     const { label, tokenSymbol, targetTokenSymbol, failureDetail, kind, description } = step;
     const isSignature = kind === 'signature';
 
@@ -225,7 +272,30 @@ export function deriveTransactionStepItems({
     // later ones stay upcoming. A signature has no on-chain rollback, so it
     // gets its own sentence.
     if (failed && rowsOfCurrentWrite[i]) {
-      const retry = i === lastRowOfCurrentWrite ? ('trailing' as const) : undefined;
+      const retry =
+        i === lastRowOfCurrentWrite && !refusal?.final && !unconfirmed ? ('trailing' as const) : undefined;
+      if (unconfirmed && !isSignature) {
+        return {
+          stepNumber: i + 1,
+          label: t`${label} not confirmed yet`,
+          tokenSymbol: undefined,
+          targetTokenSymbol: undefined,
+          state: 'failed' as const,
+          description: unconfirmed.reason,
+          retry
+        };
+      }
+      if (refusal && !isSignature) {
+        return {
+          stepNumber: i + 1,
+          label: t`${label} not sent`,
+          tokenSymbol: undefined,
+          targetTokenSymbol: undefined,
+          state: 'failed' as const,
+          description: refusalCopy,
+          retry
+        };
+      }
       // A wallet Reject is the user backing out, not a network refusal: no
       // rollback sentence, no "hasn't been X" consequence (nothing was sent),
       // and the row says "declined" rather than "failed" — the same split the
@@ -237,7 +307,9 @@ export function deriveTransactionStepItems({
           tokenSymbol: undefined,
           targetTokenSymbol: undefined,
           state: 'failed' as const,
-          description: t`You declined the request in your wallet. Nothing was sent.`,
+          description: sentEarlier
+            ? t`You declined the request in your wallet. The steps above went through.`
+            : t`You declined the request in your wallet. Nothing was sent.`,
           retry
         };
       }
@@ -280,4 +352,19 @@ export function deriveTransactionStepItems({
       description: state === 'active' ? description : undefined
     };
   });
+
+  // A refused send with no row at the current write (a flow with no steps of its
+  // own, past its signature) gets one, or the failure would have no copy and no Retry.
+  if (failed && refusal && lastRowOfCurrentWrite === -1) {
+    items.push({
+      stepNumber: normalized.length + 1,
+      label: t`Transaction not sent`,
+      tokenSymbol: undefined,
+      state: 'failed',
+      description: refusalCopy,
+      retry: refusal.final ? undefined : 'trailing'
+    });
+  }
+
+  return items;
 }

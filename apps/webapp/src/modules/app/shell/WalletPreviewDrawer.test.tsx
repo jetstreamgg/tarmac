@@ -79,7 +79,8 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useConnection: () => mocks.connection,
-    useChainId: () => mocks.chainId
+    useChainId: () => mocks.chainId,
+    useChains: () => [{ id: mocks.chainId }]
   };
 });
 
