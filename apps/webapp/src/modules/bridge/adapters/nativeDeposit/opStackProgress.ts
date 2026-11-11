@@ -5,7 +5,8 @@ import { safeExecutionFailed } from '../safe';
 import { settleSentAction } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { L2_CROSS_DOMAIN_MESSENGER, l2CrossDomainMessengerAbi, type OpStackNetworkId } from './contracts';
-import { opStackDepositMessage } from './opStack';
+import { opStackMessagesOfDeposit } from './opStack';
+import { depositMint, progressOfAll } from './sameDeposit';
 
 const readMessage = (l2: ChainReader, functionName: 'successfulMessages' | 'failedMessages', msgHash: Hex) =>
   l2.readContract({
@@ -18,9 +19,11 @@ const readMessage = (l2: ChainReader, functionName: 'successfulMessages' | 'fail
 /**
  * Where an Ethereum to OP Stack deposit stands: its message is read from the
  * Ethereum receipt and looked up on the L2 messenger. Arrived only once the
- * messenger relayed it; a failed relay is offered as a replay. A receipt with
- * no Sky message fails only when the sender's Safe reported its execution
- * failed; any other such receipt, or a failed read, is null: nothing changes.
+ * messenger relayed it; a failed relay is offered as a replay. Of several Sky
+ * messages in the receipt, only those of its amount and recipient are its. A
+ * receipt with no message of its own fails only when the sender's Safe reported
+ * its execution failed; any other such receipt, or a failed read, is null:
+ * nothing changes.
  */
 export async function opStackDepositProgress(
   bridge: PendingBridge & { to: OpStackNetworkId },
@@ -42,19 +45,25 @@ export async function opStackDepositProgress(
 
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });
     if (receipt.status === 'reverted') return { kind: 'failed', reason: 'source-tx-reverted' };
-    const message = opStackDepositMessage(receipt.logs, bridge.to);
-    if (!message)
+    const messages = opStackMessagesOfDeposit(receipt.logs, bridge.to, depositMint(bridge));
+    if (messages.length === 0)
       return safeExecutionFailed(receipt.logs, bridge.account)
         ? { kind: 'failed', reason: 'safe-tx-reverted' }
         : null;
-    // A replayed message stays in failedMessages, so success is read first.
-    const [successful, failed] = await Promise.all([
-      readMessage(l2, 'successfulMessages', message.msgHash),
-      readMessage(l2, 'failedMessages', message.msgHash)
-    ]);
-    if (successful) return { kind: 'arrived' };
-    if (failed) return { kind: 'ready', nextAction: 'replay', routeData: message };
-    return { kind: 'waiting' };
+    return progressOfAll(
+      await Promise.all(
+        messages.map(async (message): Promise<BridgeProgress> => {
+          // A replayed message stays in failedMessages, so success is read first.
+          const [successful, failed] = await Promise.all([
+            readMessage(l2, 'successfulMessages', message.msgHash),
+            readMessage(l2, 'failedMessages', message.msgHash)
+          ]);
+          if (successful) return { kind: 'arrived' };
+          if (failed) return { kind: 'ready', nextAction: 'replay', routeData: message };
+          return { kind: 'waiting' };
+        })
+      )
+    );
   } catch {
     return null;
   }
