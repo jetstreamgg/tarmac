@@ -90,24 +90,27 @@ describe('dismissing a bridge from the list of a wallet', () => {
   const HOURS = 60 * 60_000;
 
   it.each([
+    ['a claim', { ...CLAIM, at: NOW - 4 * HOURS, status: 'sent' as const }],
     [
-      'a claim sent over 3 hours ago',
-      { ...CARD, actions: [{ ...CLAIM, at: NOW - 3 * HOURS, status: 'sent' as const }] }
-    ],
-    [
-      "a claim's sale sent over 3 hours ago",
-      {
+      'a claim from a Safe still waiting for its signatures',
+      { ...CLAIM, at: NOW - 4 * HOURS, status: 'sent' as const, safe: true as const }
+    ]
+  ])('keeps one with %s nothing has settled hours later: it may still execute', (_label, action) => {
+    expect(listAfterDismiss({ ...CARD, actions: [action] })).toHaveLength(1);
+  });
+
+  it("removes one with a claim's sale sent over 3 hours ago: mined or dropped by now", () => {
+    expect(
+      listAfterDismiss({
         ...CARD,
-        status: 'claimed' as const,
+        status: 'claimed',
         nextAction: undefined,
         settledAt: NOW - 4 * HOURS,
         actions: [
           { ...CLAIM, at: NOW - 4 * HOURS, nextLegTxHash: `0x${'c2'.repeat(32)}`, nextLegAt: NOW - 3 * HOURS }
         ]
-      }
-    ]
-  ])('removes one with %s: mined or dropped by now, the chain tells', (_label, card) => {
-    expect(listAfterDismiss(card as PendingBridge)).toEqual([]);
+      })
+    ).toEqual([]);
   });
 
   it('removes one whose claim mined', () => {

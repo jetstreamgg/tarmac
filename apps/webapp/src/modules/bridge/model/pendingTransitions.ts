@@ -351,18 +351,17 @@ export const isThirdWallet = (
   );
 };
 
-/** Past this, a transaction sent from the card has mined or been dropped (see `L1_SENT_ACTION_DROPPED_MS`). */
-const ACTION_IN_FLIGHT_MS = 3 * 60 * 60_000;
+/** Past this, the last leg of an action has mined or been dropped (see `L1_SENT_ACTION_DROPPED_MS`); no tracker reads it. */
+const LAST_LEG_IN_FLIGHT_MS = 3 * 60 * 60_000;
 
-/** An action sent from the card, or the last leg of one, that may still be mining. */
-const hasActionInFlight = (bridge: PendingBridge, now?: number) => {
-  const recent = (at: number) => now === undefined || now - at < ACTION_IN_FLIGHT_MS;
-  return bridge.actions.some(
+/** An action sent from the card that its tracker has not settled, or the last leg of one that may still be mining. */
+const hasActionInFlight = (bridge: PendingBridge, now?: number) =>
+  bridge.actions.some(
     action =>
-      (action.status === 'sent' && recent(action.at)) ||
-      (!!action.nextLegTxHash && recent(action.nextLegAt ?? action.at))
+      action.status === 'sent' ||
+      (!!action.nextLegTxHash &&
+        (now === undefined || now - (action.nextLegAt ?? action.at) < LAST_LEG_IN_FLIGHT_MS))
   );
-};
 
 /**
  * Nothing on chain yet, so the user may drop it: a Safe bridge still waiting
