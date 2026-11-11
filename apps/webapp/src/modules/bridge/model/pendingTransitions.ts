@@ -176,6 +176,7 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
       const startedAt = progress.executedAt ?? now;
       const found = { ...bridge };
       delete found.bundleUnseenAt;
+      delete found.bundleReadTo;
       return {
         ...found,
         txHash: progress.txHash,
@@ -318,10 +319,10 @@ export const awaitsBurnScan = (bridge: PendingBridge): boolean =>
 /** A read of the L2 that found no burn lets its bundle go for this long; then the next read must agree. */
 export const BUNDLE_SCAN_FRESH_MS = 45 * MINUTE;
 
-/** Stamps a CCTP wallet bundle whose L2, read whole at `at`, has no burn of it `BUNDLE_UNSEEN_MS` after it was sent. */
-export const markBundleUnseen = (bridge: PendingBridge, at: number): PendingBridge =>
+/** Stamps a CCTP wallet bundle whose L2, read at `at` up to block `readTo`, has no burn of it `BUNDLE_UNSEEN_MS` after it was sent. */
+export const markBundleUnseen = (bridge: PendingBridge, at: number, readTo?: bigint): PendingBridge =>
   awaitsBurnScan(bridge) && bridge.status === 'pending' && at - bridge.startedAt >= BUNDLE_UNSEEN_MS
-    ? { ...bridge, bundleUnseenAt: at }
+    ? { ...bridge, bundleUnseenAt: at, ...(readTo !== undefined && { bundleReadTo: readTo.toString() }) }
     : bridge;
 
 /** Takes the stamp back: a burn that may be the bundle's showed up. */

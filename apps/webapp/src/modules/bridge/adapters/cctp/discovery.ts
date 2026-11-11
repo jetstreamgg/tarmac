@@ -51,24 +51,26 @@ export const cctpScanFromBlock = (network: CctpL2NetworkId, toBlock: bigint): bi
 };
 
 /**
- * The USDC burns the account sent from `network`, in the network's scan
- * window up to `toBlock`, in one query filtered by token and sender. Logs that
- * can't be read leave `complete` false.
+ * The USDC burns the account sent from `network`, from `fromBlock` (the start
+ * of the network's scan window when unset) up to `toBlock`, in one query
+ * filtered by token and sender. Logs that can't be read leave `complete` false.
  */
 export async function discoverCctpBurns({
   l2,
   network,
   account,
-  toBlock
+  toBlock,
+  fromBlock = cctpScanFromBlock(network, toBlock)
 }: {
   l2: Pick<ChainReader, 'getLogs'>;
   network: CctpL2NetworkId;
   account: string;
   toBlock: bigint;
+  fromBlock?: bigint;
 }): Promise<{ burns: DiscoveredBurn[]; complete: boolean }> {
   try {
     const logs = await l2.getLogs({
-      fromBlock: cctpScanFromBlock(network, toBlock),
+      fromBlock,
       toBlock,
       strict: true,
       address: TOKEN_MESSENGER_V2,

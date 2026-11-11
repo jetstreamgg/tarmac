@@ -211,10 +211,10 @@ describe('a CCTP wallet bundle the wallet cannot report on', () => {
     expect(store.getSnapshot(SCOPE)).toEqual([]);
   });
 
-  it('cannot be dismissed on a read that starts after it was sent: its burn may be older', async () => {
+  it('cannot be dismissed on a read that starts after it was sent, while the older blocks cannot be read', async () => {
     const now = START + 21 * DAY;
     base.chain.windowAt = START + DAY;
-    await scanAt(now);
+    expect(await scanAt(now)).toBe(false);
     expectKept(now);
   });
 
