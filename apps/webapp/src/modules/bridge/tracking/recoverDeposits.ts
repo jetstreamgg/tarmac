@@ -13,7 +13,7 @@ const isStored = (stored: PendingBridge[], deposit: DiscoveredDeposit) => {
 };
 
 // The device clock that stamped a queued bridge may run ahead of the chain's, by an unknown amount.
-const CLOCK_SKEW_MS = 60 * 60_000;
+export const CLOCK_SKEW_MS = 60 * 60_000;
 // The same, once the chain's time is known: block times lag and the device clock drifts.
 export const KNOWN_SKEW_MS = 10 * 60_000;
 
