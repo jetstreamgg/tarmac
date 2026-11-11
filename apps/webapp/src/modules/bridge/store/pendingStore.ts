@@ -43,6 +43,9 @@ const NEXT_ACTIONS = keysOf({
 export const pendingScopeKey = ({ account, familyChainId }: { account: string; familyChainId: number }) =>
   `${familyChainId}:${account.toLowerCase()}`;
 
+/** The account of a scope key. */
+export const pendingScopeAccount = (scope: string) => scope.slice(scope.indexOf(':') + 1);
+
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -168,7 +171,7 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
     dismiss(scope: string, id: string) {
       const current = latest(scope);
       const existing = current.find(entry => entry.id === id);
-      if (!existing || !canDismiss(existing, now())) return;
+      if (!existing || !canDismiss(existing, now(), pendingScopeAccount(scope))) return;
       write(
         scope,
         current.filter(entry => entry.id !== id),

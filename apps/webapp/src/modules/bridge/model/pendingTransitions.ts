@@ -337,18 +337,34 @@ const scanFoundNoBurn = (bridge: PendingBridge, now: number) =>
   bridge.bundleUnseenAt - bridge.startedAt >= BUNDLE_UNSEEN_MS &&
   now - bridge.bundleUnseenAt < BUNDLE_SCAN_FRESH_MS;
 
+/** Whether `account` neither sent the bridge nor receives it: it was brought into its list by hash or claim link. */
+export const isThirdWallet = (
+  bridge: Pick<PendingBridge, 'account' | 'recipient'>,
+  account: string | undefined
+): boolean => {
+  const lower = account?.toLowerCase();
+  return (
+    !!lower &&
+    !!bridge.recipient &&
+    bridge.account.toLowerCase() !== lower &&
+    bridge.recipient.toLowerCase() !== lower
+  );
+};
+
 /**
  * Nothing on chain yet, so the user may drop it: a Safe bridge still waiting
  * to execute, a send its chain has no record of, or (given `now`) a wallet
  * bundle unseen for 30 minutes. A CCTP bundle also needs a recent read of its
- * L2 that found no burn of it.
+ * L2 that found no burn of it. Given the `viewer` whose list holds it, also a
+ * bridge that wallet neither sent nor receives.
  */
-export const canDismiss = (bridge: PendingBridge, now?: number): boolean =>
+export const canDismiss = (bridge: PendingBridge, now?: number, viewer?: string): boolean =>
   (bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash) ||
   isSourceUnseen(bridge) ||
   (now !== undefined &&
     isBundleUnseen(bridge, now) &&
-    (!isCctpBundle(bridge) || scanFoundNoBurn(bridge, now)));
+    (!isCctpBundle(bridge) || scanFoundNoBurn(bridge, now))) ||
+  isThirdWallet(bridge, viewer);
 
 /** A wallet bundle that moved no funds; once its deposit was found on chain, only the tracker settles it. */
 export const failBundle = (bridge: PendingBridge, reason: string, now: number): PendingBridge =>

@@ -531,6 +531,8 @@ function PendingBridgeCard({
   storageWritable
 }: PendingBridgeCardProps) {
   const dismissible = !incoming && canDismiss(bridge, now);
+  // Not this wallet's bridge: it can leave the list, and come back by its hash or claim link.
+  const removable = !incoming && !dismissible && canDismiss(bridge, now, account);
   const sourceName = getBridgeNetwork(bridge.from).name;
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
@@ -655,6 +657,16 @@ function PendingBridgeCard({
             able to claim the funds on Ethereum.
           </Trans>
         </Text>
+      )}
+      {removable && (
+        <button
+          type="button"
+          className="font-circle text-fgBrand self-start text-xs leading-[18px] font-medium hover:underline"
+          onClick={() => onDismiss(bridge)}
+          data-testid="pending-bridge-remove"
+        >
+          <Trans>Remove from this list</Trans>
+        </button>
       )}
 
       {claimedElsewhere && !thirdWallet && bridge.recipient && (

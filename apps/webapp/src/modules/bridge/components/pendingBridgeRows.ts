@@ -22,6 +22,7 @@ import { DAY_MINUTES } from '../model/resolveRoute';
 import {
   isBundleUnseen,
   isSourceUnseen,
+  isThirdWallet,
   REDEEM_URGENT_MINUTES,
   ticketMinutesLeft
 } from '../model/pendingTransitions';
@@ -51,7 +52,7 @@ export function bridgeCounterparty(
 ): BridgeCounterparty | undefined {
   if (!account) return undefined;
   const lower = account.toLowerCase();
-  if (bridge.recipient && bridge.account.toLowerCase() !== lower && bridge.recipient.toLowerCase() !== lower)
+  if (bridge.recipient && isThirdWallet(bridge, account))
     return { role: 'both', sender: bridge.account, destination: bridge.recipient };
   if (bridge.account.toLowerCase() !== lower) return { role: 'sender', address: bridge.account };
   return bridge.recipient && sendsToOther(bridge.recipient, bridge.account)

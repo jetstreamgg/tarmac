@@ -442,8 +442,11 @@ describe('PendingBridges', () => {
       const card = screen.getByTestId('pending-bridge-card');
       const claim = screen.getByTestId('pending-bridge-claim-elsewhere');
       expect(claim.textContent).toBe('Claim');
-      // The header's single button, before the note, and it does nothing here.
-      expect(card.querySelectorAll('button')).toHaveLength(1);
+      // The header's single button, before the note, and it does nothing here; the other only takes the card off the list.
+      expect([...card.querySelectorAll('button')].map(button => button.dataset.testid)).toEqual([
+        'pending-bridge-claim-elsewhere',
+        'pending-bridge-remove'
+      ]);
       expect(claim).toHaveProperty('disabled', true);
       expect(
         claim.compareDocumentPosition(screen.getByTestId('pending-bridge-third-wallet-note')) &
@@ -474,7 +477,11 @@ describe('PendingBridges', () => {
       mocks.bridges = [{ ...THIRD, routeKind: 'native', status: 'pending', nextAction: undefined }];
       renderList();
       expect(screen.queryByTestId('pending-bridge-claim-elsewhere')).toBeNull();
-      expect(screen.getByTestId('pending-bridge-card').querySelectorAll('button')).toHaveLength(0);
+      expect(
+        [...screen.getByTestId('pending-bridge-card').querySelectorAll('button')].map(
+          button => button.dataset.testid
+        )
+      ).toEqual(['pending-bridge-remove']);
       expect(screen.getByTestId('pending-bridge-third-wallet-note')).toBeTruthy();
     });
 
