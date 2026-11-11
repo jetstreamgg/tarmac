@@ -4,6 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Hex, Log } from 'viem';
 import { BASE_BURN_AMOUNT, BASE_BURN_LOGS, BASE_BURN_TX } from '../adapters/cctp/cctp.fixtures';
+import { WITHDRAWAL_SCAN_BLOCKS } from '../adapters/nativeWithdrawal/discovery';
 import type { BridgeAdapter } from '../adapters/types';
 import { canDismiss, createPendingBridge } from '../model/pendingTransitions';
 import { nativeDepositRoute, resolveBridgeRoute } from '../model/resolveRoute';
@@ -27,7 +28,7 @@ const SCOPE = pendingScopeKey({ account: ACCOUNT, familyChainId: 1 });
 const AMOUNT = BASE_BURN_AMOUNT * 10n ** 12n + 5n;
 const HEAD = 53_000_000n;
 /** The first block the scan of Base reads. */
-const WINDOW_START = HEAD - 1_000_000n + 1n;
+const WINDOW_START = HEAD - WITHDRAWAL_SCAN_BLOCKS.base + 1n;
 const OTHER_HASH = `0x${'d7'.repeat(32)}` as Hex;
 
 const cctpRoute = () => {

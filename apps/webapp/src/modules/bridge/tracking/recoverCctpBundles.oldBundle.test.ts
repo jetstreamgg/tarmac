@@ -20,11 +20,11 @@ const DEVICE_AHEAD = 5 * MINUTE;
 const ACCOUNT = BASE_BURN_TX.from;
 const SCOPE = pendingScopeKey({ account: ACCOUNT, familyChainId: 1 });
 const AMOUNT = BASE_BURN_AMOUNT * 10n ** 12n + 5n;
-/** The head at `START` of an L2 modelled with a block every 2 s: not a multiple of the window. */
-const HEAD = 53_400_123n;
-const BLOCK_MS = 2000;
+/** The head at `START` of Base, a block every 200 ms: not a multiple of the window. */
+const HEAD = 153_400_123n;
+const BLOCK_MS = 200;
 /** Blocks one scan covers: about 23 days of these blocks. */
-const WINDOW = 1_000_000n;
+const WINDOW = 10_000_000n;
 /** Sent 40 days ago: 17 days before the window starts. */
 const SENT = START - 40 * DAY;
 /** The first block the scan at `START` covers, and the multiple of the window under it. */
@@ -35,6 +35,8 @@ const OTHER_HASH = `0x${'d7'.repeat(32)}` as Hex;
 const blockAt = (deviceMs: number) => HEAD + BigInt(Math.floor((deviceMs - START) / BLOCK_MS));
 const minedAt = (block: bigint) => START + Number(block - HEAD) * BLOCK_MS;
 const chainSeconds = (deviceMs: number) => BigInt(Math.floor((deviceMs - DEVICE_AHEAD) / 1000));
+/** A block's time is in whole seconds: five blocks share each. */
+const wholeSecond = (deviceMs: number) => Math.floor(deviceMs / 1000) * 1000;
 
 const cctpRoute = () => {
   const result = resolveBridgeRoute({
@@ -276,8 +278,10 @@ describe('a CCTP wallet bundle sent before the blocks one scan covers', () => {
     await scanAt(START);
     expect(canDismiss(stored()!, START)).toBe(true);
     minesAt(START + BLOCK_MS);
-    expect(await scanAt(START + Number(later) * BLOCK_MS)).toBe(true);
-    expectFollowed(BASE_BURN_TX.hash, START + BLOCK_MS);
+    const now = START + Number(later) * BLOCK_MS;
+    expect(await scanAt(now)).toBe(true);
+    // The device's offset is read against the head's whole second.
+    expectFollowed(BASE_BURN_TX.hash, START + (now % 1000));
   });
 
   it('reads one range when the last read ended where the next one starts', async () => {
@@ -297,18 +301,18 @@ describe('a CCTP wallet bundle sent before the blocks one scan covers', () => {
 
     base.chain.fails = () => false;
     expect(await scanAt(START + 60 * MINUTE)).toBe(true);
-    expectFollowed(BASE_BURN_TX.hash, burnAt);
+    expectFollowed(BASE_BURN_TX.hash, wholeSecond(burnAt));
   });
 
   it('reads the block before the first one read when both have the same time', async () => {
     localStorage.clear();
     store = createPendingBridgeStore({ now: () => base.chain.now });
-    store.upsert(SCOPE, bundle({ at: minedAt(FIRST) + KNOWN_SKEW_MS }));
+    store.upsert(SCOPE, bundle({ at: wholeSecond(minedAt(FIRST)) + KNOWN_SKEW_MS }));
     const seconds = base.chain.secondsOf;
     base.chain.secondsOf = block => seconds(block === FIRST - 1n ? FIRST : block);
     base.chain.burns.push({ hash: BASE_BURN_TX.hash, block: FIRST - 1n });
     expect(await scanAt(START)).toBe(true);
-    expectFollowed(BASE_BURN_TX.hash, minedAt(FIRST));
+    expectFollowed(BASE_BURN_TX.hash, wholeSecond(minedAt(FIRST)));
   });
 
   it.each(['', 'abc', '-5', '1e9', '0x10'])(

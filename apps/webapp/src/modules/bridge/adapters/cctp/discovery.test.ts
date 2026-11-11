@@ -67,6 +67,25 @@ describe('discoverCctpBurns', () => {
     ]);
   });
 
+  // Base mines a block every 200 ms.
+  it('finds a Base burn sent 20 days ago, in one query', async () => {
+    const BLOCKS_PER_DAY = 432_000n;
+    const toBlock = 100_000_000n;
+    const sentAt = toBlock - 20n * BLOCKS_PER_DAY;
+    const getLogs = vi.fn(async ({ fromBlock, toBlock: to }: { fromBlock: bigint; toBlock: bigint }) =>
+      fromBlock <= sentAt && sentAt <= to ? mined().map(log => ({ ...log, blockNumber: sentAt })) : []
+    );
+    const result = await discoverCctpBurns({
+      l2: { getLogs: getLogs as never },
+      network: 'base',
+      account: BASE_BURN_TX.from,
+      toBlock
+    });
+    expect(result.complete).toBe(true);
+    expect(result.burns.map(burn => burn.blockNumber)).toEqual([sentAt]);
+    expect(getLogs).toHaveBeenCalledTimes(1);
+  });
+
   it('starts at the first block of a chain shorter than the window', async () => {
     const getLogs = vi.fn(async () => []);
     await discoverCctpBurns({
