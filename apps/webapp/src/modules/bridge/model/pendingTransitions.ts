@@ -174,8 +174,10 @@ export function applyProgress(bridge: PendingBridge, progress: BridgeProgress, n
       if (bridge.txHash) return bridge;
       // The bridge starts when the Safe executes, which can be days after it was queued.
       const startedAt = progress.executedAt ?? now;
+      const found = { ...bridge };
+      delete found.bundleUnseenAt;
       return {
-        ...bridge,
+        ...found,
         txHash: progress.txHash,
         startedAt,
         etaAt: startedAt + bridge.etaAt - bridge.startedAt
@@ -305,15 +307,48 @@ export const isBundleUnseen = (bridge: PendingBridge, now: number): boolean =>
   !bridge.txHash &&
   now - bridge.startedAt >= BUNDLE_UNSEEN_MS;
 
+/** A CCTP wallet bundle: its burn can be looked for on its L2 by account. */
+export const isCctpBundle = (bridge: PendingBridge): boolean =>
+  !!bridge.bundleId && bridge.routeKind === 'cctp' && bridge.to === 'ethereum';
+
+/** A CCTP wallet bundle whose burn no one has found yet. */
+export const awaitsBurnScan = (bridge: PendingBridge): boolean =>
+  isCctpBundle(bridge) && !bridge.txHash && !isSettled(bridge);
+
+/** A read of the L2 that found no burn lets its bundle go for this long; then the next read must agree. */
+export const BUNDLE_SCAN_FRESH_MS = 45 * MINUTE;
+
+/** Stamps a CCTP wallet bundle whose L2, read whole at `at`, has no burn of it `BUNDLE_UNSEEN_MS` after it was sent. */
+export const markBundleUnseen = (bridge: PendingBridge, at: number): PendingBridge =>
+  awaitsBurnScan(bridge) && bridge.status === 'pending' && at - bridge.startedAt >= BUNDLE_UNSEEN_MS
+    ? { ...bridge, bundleUnseenAt: at }
+    : bridge;
+
+/** Takes the stamp back: a burn that may be the bundle's showed up. */
+export const clearBundleUnseen = (bridge: PendingBridge): PendingBridge => {
+  if (bridge.bundleUnseenAt === undefined) return bridge;
+  const next = { ...bridge };
+  delete next.bundleUnseenAt;
+  return next;
+};
+
+const scanFoundNoBurn = (bridge: PendingBridge, now: number) =>
+  bridge.bundleUnseenAt !== undefined &&
+  bridge.bundleUnseenAt - bridge.startedAt >= BUNDLE_UNSEEN_MS &&
+  now - bridge.bundleUnseenAt < BUNDLE_SCAN_FRESH_MS;
+
 /**
  * Nothing on chain yet, so the user may drop it: a Safe bridge still waiting
  * to execute, a send its chain has no record of, or (given `now`) a wallet
- * bundle unseen for 30 minutes.
+ * bundle unseen for 30 minutes. A CCTP bundle also needs a recent read of its
+ * L2 that found no burn of it.
  */
 export const canDismiss = (bridge: PendingBridge, now?: number): boolean =>
   (bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash) ||
   isSourceUnseen(bridge) ||
-  (now !== undefined && isBundleUnseen(bridge, now));
+  (now !== undefined &&
+    isBundleUnseen(bridge, now) &&
+    (!isCctpBundle(bridge) || scanFoundNoBurn(bridge, now)));
 
 /** A wallet bundle that moved no funds; once its deposit was found on chain, only the tracker settles it. */
 export const failBundle = (bridge: PendingBridge, reason: string, now: number): PendingBridge =>

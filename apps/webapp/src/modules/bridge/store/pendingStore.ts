@@ -86,6 +86,7 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
     !optional(entry.sourceMinedAt, at => typeof at === 'number') ||
     !optional(entry.sourceUnseenAt, at => typeof at === 'number') ||
+    !optional(entry.bundleUnseenAt, at => typeof at === 'number') ||
     !optional(entry.readyAt, at => typeof at === 'number') ||
     !optional(entry.settledAt, at => typeof at === 'number') ||
     !optional(entry.closedAt, at => typeof at === 'number') ||

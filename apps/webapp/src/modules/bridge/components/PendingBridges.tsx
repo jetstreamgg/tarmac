@@ -516,6 +516,7 @@ function PendingBridgeCard({
   storageWritable
 }: PendingBridgeCardProps) {
   const dismissible = !incoming && canDismiss(bridge, now);
+  const sourceName = getBridgeNetwork(bridge.from).name;
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
   const { offer: convertAmount, nothingLeft } = useCctpConvertOffer(bridge, now);
@@ -691,6 +692,13 @@ function PendingBridgeCard({
       {dismissible && isSourceUnseen(bridge) ? (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
           <Trans>Dismiss it only if your wallet shows it never went through.</Trans>
+        </Text>
+      ) : dismissible && bridge.bundleId && !bridge.txHash ? (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
+          <Trans>
+            We couldn&apos;t find this bridge on {sourceName}. Dismiss it only if your wallet shows it never
+            went through.
+          </Trans>
         </Text>
       ) : (
         dismissible &&
