@@ -31,6 +31,8 @@ const state = {
   games: [] as Game[],
   /** Whether the provider serves the storage proof of an L2 block. */
   serves: (_block: bigint): boolean => true,
+  /** Whether the L1 provider answers which L2 block a game is for. */
+  readsGame: (_index: number): boolean => true,
   requests: 0,
   proofs: [] as bigint[]
 };
@@ -99,6 +101,7 @@ const l1 = {
       case 'isGameProper':
         return gameAt(args![0] as string).proper;
       case 'l2SequenceNumber':
+        if (!state.readsGame(Number(BigInt(address) - 0x9a0000n))) throw new Error('rate limited');
         return gameAt(address).l2Block;
       case 'status':
         return gameAt(address).status;
@@ -169,6 +172,7 @@ const BOUNDED = 100;
 beforeEach(() => {
   state.games = Array.from({ length: GAMES }, (_, i) => ({ l2Block: hourly(i), status: 0, proper: true }));
   state.serves = () => true;
+  state.readsGame = () => true;
 });
 
 describe('an OP Stack withdrawal while the provider serves no storage proof', () => {
@@ -248,6 +252,26 @@ describe('an OP Stack withdrawal while the provider serves only recent proofs (2
       expect(result).toEqual(proveAt(7));
     }
   );
+});
+
+describe('an OP Stack withdrawal while the block of a game cannot be read', () => {
+  it('changes nothing on the card when no game tells its block', async () => {
+    state.readsGame = () => false;
+    expect(await poll()).toBeNull();
+  });
+
+  it('changes nothing when the games that tell their block are all from before it', async () => {
+    state.games = state.games.map((game, i) =>
+      i < 5 ? { ...game, l2Block: WITHDRAWN - 100n + BigInt(i) } : game
+    );
+    state.readsGame = i => i < 5;
+    expect(await poll()).toBeNull();
+  });
+
+  it('is still offered its prove against a game that tells its block', async () => {
+    state.readsGame = i => i !== 0;
+    expect(await poll()).toEqual(proveAt(1));
+  });
 });
 
 describe('games a prove cannot use, with a healthy provider', () => {

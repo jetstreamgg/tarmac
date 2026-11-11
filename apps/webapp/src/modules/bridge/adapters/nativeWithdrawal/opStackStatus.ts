@@ -320,7 +320,7 @@ export async function pickProveGame({
     }
   }
   // A game left unread may be usable: unknown, not waiting.
-  if (failed > 0) throw new Error('A prove game could not be read.');
+  if (failed > 0 || sequences.includes(undefined)) throw new Error('A prove game could not be read.');
   return undefined;
 }
 
