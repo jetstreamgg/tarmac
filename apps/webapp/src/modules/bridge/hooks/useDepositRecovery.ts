@@ -51,8 +51,9 @@ const fullDelay = (scan: RecoveryScan) => (scan.complete ? RECOVERY_INTERVAL_MS 
  * scan); a deposit found arrived is not checked again. While a wallet bundle
  * has no hash, asks the wallet every 2 minutes, and reads the newest range 2,
  * 6, 14 and 30 minutes after a deposit bundle's send, and when the launch asks.
+ * Reads nothing while not `enabled`.
  */
-export function useDepositRecovery() {
+export function useDepositRecovery(enabled = true) {
   const { account, scope, familyChainId } = usePendingScope();
   const config = useConfig();
   const ethereumChainId = bridgeChainId('ethereum', familyChainId);
@@ -154,7 +155,7 @@ export function useDepositRecovery() {
         ...(offset !== undefined && { offset })
       };
     },
-    enabled: !!scope && ethereumChainId !== undefined,
+    enabled: enabled && !!scope && ethereumChainId !== undefined,
     staleTime: RECOVERY_INTERVAL_MS,
     refetchInterval: query => {
       if (bundleWaiting) return PARTIAL_RETRY_MS;
