@@ -9,7 +9,6 @@ const NOW = 1_800_000_000_000;
 const VIEWER = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
 const SENDER = '0x00000000000000000000000000000000000b0b01';
 const RECIPIENT = '0x00000000000000000000000000000000000c0c02';
-const SCOPE = pendingScopeKey({ account: VIEWER, familyChainId: 1 });
 const HASH = `0x${'c4'.repeat(32)}`;
 
 const CARD: PendingBridge = {
@@ -31,11 +30,14 @@ const CARD: PendingBridge = {
   actions: []
 };
 
+// One list per case: a store keeps its lists for the session.
+let lists = 0;
 const listAfterDismiss = (card: PendingBridge) => {
   const store = createPendingBridgeStore({ now: () => NOW });
-  store.upsert(SCOPE, card);
-  store.dismiss(SCOPE, card.id);
-  return store.getSnapshot(SCOPE);
+  const scope = pendingScopeKey({ account: VIEWER, familyChainId: ++lists });
+  store.upsert(scope, card);
+  store.dismiss(scope, card.id);
+  return store.getSnapshot(scope);
 };
 
 describe('dismissing a bridge from the list of a wallet', () => {
@@ -57,5 +59,66 @@ describe('dismissing a bridge from the list of a wallet', () => {
     ['it receives, in checksum case', { ...CARD, recipient: VIEWER.toUpperCase().replace('0X', '0x') }]
   ])('keeps one %s', (_label, card) => {
     expect(listAfterDismiss(card as PendingBridge)).toHaveLength(1);
+  });
+
+  // Its recipient, another wallet of this browser, acts on it from this list.
+  const CLAIM = { action: 'claim' as const, txHash: `0x${'c1'.repeat(32)}`, at: NOW - 60_000 };
+
+  it.each([
+    [
+      'a claim its recipient sent that has not mined',
+      { ...CARD, actions: [{ ...CLAIM, status: 'sent' as const }] }
+    ],
+    [
+      'a claim sent as a wallet bundle that has not mined',
+      { ...CARD, actions: [{ ...CLAIM, txHash: 'calls-id', status: 'sent' as const, bundle: true as const }] }
+    ],
+    [
+      "a claim's sale that has not mined",
+      {
+        ...CARD,
+        status: 'claimed' as const,
+        nextAction: undefined,
+        settledAt: NOW - 30_000,
+        actions: [{ ...CLAIM, nextLegTxHash: `0x${'c2'.repeat(32)}`, nextLegAt: NOW - 30_000 }]
+      }
+    ]
+  ])('keeps one with %s: its only record', (_label, card) => {
+    expect(listAfterDismiss(card as PendingBridge)).toHaveLength(1);
+  });
+
+  const HOURS = 60 * 60_000;
+
+  it.each([
+    [
+      'a claim sent over 3 hours ago',
+      { ...CARD, actions: [{ ...CLAIM, at: NOW - 3 * HOURS, status: 'sent' as const }] }
+    ],
+    [
+      "a claim's sale sent over 3 hours ago",
+      {
+        ...CARD,
+        status: 'claimed' as const,
+        nextAction: undefined,
+        settledAt: NOW - 4 * HOURS,
+        actions: [
+          { ...CLAIM, at: NOW - 4 * HOURS, nextLegTxHash: `0x${'c2'.repeat(32)}`, nextLegAt: NOW - 3 * HOURS }
+        ]
+      }
+    ]
+  ])('removes one with %s: mined or dropped by now, the chain tells', (_label, card) => {
+    expect(listAfterDismiss(card as PendingBridge)).toEqual([]);
+  });
+
+  it('removes one whose claim mined', () => {
+    expect(
+      listAfterDismiss({
+        ...CARD,
+        status: 'claimed',
+        nextAction: undefined,
+        settledAt: NOW - 30_000,
+        actions: [CLAIM]
+      })
+    ).toEqual([]);
   });
 });

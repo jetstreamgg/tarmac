@@ -351,12 +351,25 @@ export const isThirdWallet = (
   );
 };
 
+/** Past this, a transaction sent from the card has mined or been dropped (see `L1_SENT_ACTION_DROPPED_MS`). */
+const ACTION_IN_FLIGHT_MS = 3 * 60 * 60_000;
+
+/** An action sent from the card, or the last leg of one, that may still be mining. */
+const hasActionInFlight = (bridge: PendingBridge, now?: number) => {
+  const recent = (at: number) => now === undefined || now - at < ACTION_IN_FLIGHT_MS;
+  return bridge.actions.some(
+    action =>
+      (action.status === 'sent' && recent(action.at)) ||
+      (!!action.nextLegTxHash && recent(action.nextLegAt ?? action.at))
+  );
+};
+
 /**
  * Nothing on chain yet, so the user may drop it: a Safe bridge still waiting
  * to execute, a send its chain has no record of, or (given `now`) a wallet
  * bundle unseen for 30 minutes. A CCTP bundle also needs a recent read of its
  * L2 that found no burn of it. Given the `viewer` whose list holds it, also a
- * bridge that wallet neither sent nor receives.
+ * bridge that wallet neither sent nor receives, with no action in flight.
  */
 export const canDismiss = (bridge: PendingBridge, now?: number, viewer?: string): boolean =>
   (bridge.status === 'pending' && !!bridge.safeTxHash && !bridge.txHash) ||
@@ -364,7 +377,7 @@ export const canDismiss = (bridge: PendingBridge, now?: number, viewer?: string)
   (now !== undefined &&
     isBundleUnseen(bridge, now) &&
     (!isCctpBundle(bridge) || scanFoundNoBurn(bridge, now))) ||
-  isThirdWallet(bridge, viewer);
+  (isThirdWallet(bridge, viewer) && !hasActionInFlight(bridge, now));
 
 /** A wallet bundle that moved no funds; once its deposit was found on chain, only the tracker settles it. */
 export const failBundle = (bridge: PendingBridge, reason: string, now: number): PendingBridge =>

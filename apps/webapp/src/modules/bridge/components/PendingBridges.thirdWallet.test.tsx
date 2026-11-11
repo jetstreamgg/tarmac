@@ -118,6 +118,16 @@ describe('a bridge on the list of a wallet that neither sent nor receives it', (
     expect(pendingBridgeStore.getSnapshot(SCOPE)).toEqual([]);
   });
 
+  it('cannot be taken off the list while a claim its recipient sent has not mined', () => {
+    showOwn({
+      ...THIRD,
+      actions: [{ action: 'claim', txHash: `0x${'c1'.repeat(32)}`, at: 20 * MINUTE, status: 'sent' }]
+    });
+
+    expect(screen.getByTestId('pending-bridge-card')).toBeTruthy();
+    expect(removal()).toBeNull();
+  });
+
   it('still says which wallet claims it', () => {
     showOwn(THIRD);
 
