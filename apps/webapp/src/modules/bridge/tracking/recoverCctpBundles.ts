@@ -1,7 +1,7 @@
 import { isAddress, type Hex } from 'viem';
 import { cctpBurnAmount } from '../adapters/cctp/calls';
 import { CCTP_DOMAIN, addressToBytes32, type CctpL2NetworkId } from '../adapters/cctp/contracts';
-import { discoverCctpBurns, type DiscoveredBurn } from '../adapters/cctp/discovery';
+import { cctpScanFromBlock, discoverCctpBurns, type DiscoveredBurn } from '../adapters/cctp/discovery';
 import type { ChainReader } from '../adapters/types';
 import {
   BUNDLE_UNSEEN_MS,
@@ -29,8 +29,9 @@ const mayBeBurnOf = (bridge: PendingBridge, burn: DiscoveredBurn) => {
  * sent, read from the L2's logs by account: the wallet can't always report
  * it. Oldest card first, each takes the earliest burn of its amount and
  * recipient mined after it was sent that no card follows. A card with no such
- * burn 30 minutes after it was sent is stamped, so it may be dismissed. Any
- * read that fails changes nothing. Returns whether everything was read.
+ * burn 30 minutes after it was sent is stamped, so it may be dismissed, when
+ * the logs read reach back to its send. Any read that fails changes nothing.
+ * Returns whether everything was read.
  */
 export async function recoverCctpBundles({
   store,
@@ -66,6 +67,17 @@ export async function recoverCctpBundles({
   const offset = now() - l2Now;
   const { burns, complete } = await discoverCctpBurns({ l2: client, network, account, toBlock: head.number });
   if (!complete) return false;
+  /** Device time of the first block read, once asked; `null` when it can't be told. */
+  let readFrom: Promise<number | null> | undefined;
+  const fromBlock = cctpScanFromBlock(network, head.number);
+  const readSince = () =>
+    (readFrom ??=
+      fromBlock === 0n
+        ? Promise.resolve(0)
+        : client.getBlock({ blockNumber: fromBlock }).then(
+            block => Number(block.timestamp) * 1000 + offset,
+            () => null
+          ));
 
   const cards = waiting();
   const tracked = new Set(
@@ -99,6 +111,7 @@ export async function recoverCctpBundles({
     !taken.has(tx.txHash) &&
     tx.minedAt >= card.startedAt - KNOWN_SKEW_MS &&
     untracked.some(burn => burn.txHash === tx.txHash && mayBeBurnOf(card, burn));
+  let read = true;
   for (const card of cards) {
     const its = mined.find(
       tx =>
@@ -113,8 +126,13 @@ export async function recoverCctpBundles({
     // A burn that may be its own but isn't clearly one: the card stays.
     if (mined.some(tx => mayBeIts(card, tx))) store.update(scope, card.id, clearBundleUnseen);
     // A head far behind hasn't shown the 30 minutes after the send.
-    else if (l2Now >= card.startedAt + BUNDLE_UNSEEN_MS - KNOWN_SKEW_MS)
-      store.update(scope, card.id, current => markBundleUnseen(current, now()));
+    else if (l2Now >= card.startedAt + BUNDLE_UNSEEN_MS - KNOWN_SKEW_MS) {
+      const since = await readSince();
+      if (since === null) read = false;
+      // A burn from before the first block read was not looked for.
+      else if (since <= card.startedAt - KNOWN_SKEW_MS)
+        store.update(scope, card.id, current => markBundleUnseen(current, now()));
+    }
   }
-  return true;
+  return read;
 }

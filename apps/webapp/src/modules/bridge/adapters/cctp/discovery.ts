@@ -44,6 +44,12 @@ export function burnsInLogs(logs: Log[], network: CctpL2NetworkId, account: stri
   return [...found.values()];
 }
 
+/** The first block of the network's scan window up to `toBlock`. */
+export const cctpScanFromBlock = (network: CctpL2NetworkId, toBlock: bigint): bigint => {
+  const window = WITHDRAWAL_SCAN_BLOCKS[network];
+  return toBlock >= window ? toBlock - window + 1n : 0n;
+};
+
 /**
  * The USDC burns the account sent from `network`, in the network's scan
  * window up to `toBlock`, in one query filtered by token and sender. Logs that
@@ -60,10 +66,9 @@ export async function discoverCctpBurns({
   account: string;
   toBlock: bigint;
 }): Promise<{ burns: DiscoveredBurn[]; complete: boolean }> {
-  const window = WITHDRAWAL_SCAN_BLOCKS[network];
   try {
     const logs = await l2.getLogs({
-      fromBlock: toBlock >= window ? toBlock - window + 1n : 0n,
+      fromBlock: cctpScanFromBlock(network, toBlock),
       toBlock,
       strict: true,
       address: TOKEN_MESSENGER_V2,

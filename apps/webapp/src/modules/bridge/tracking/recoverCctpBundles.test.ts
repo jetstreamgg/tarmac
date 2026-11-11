@@ -26,6 +26,8 @@ const SCOPE = pendingScopeKey({ account: ACCOUNT, familyChainId: 1 });
 // The burn carries USDC: the dust under its 6 decimals is not in it.
 const AMOUNT = BASE_BURN_AMOUNT * 10n ** 12n + 5n;
 const HEAD = 53_000_000n;
+/** The first block the scan of Base reads. */
+const WINDOW_START = HEAD - 1_000_000n + 1n;
 const OTHER_HASH = `0x${'d7'.repeat(32)}` as Hex;
 
 const cctpRoute = () => {
@@ -53,7 +55,7 @@ const bundle = (patch: { id?: string; at?: number; amount?: bigint; recipient?: 
   });
 
 type Burn = { hash: Hex; block: bigint; minedAt: number; logs?: Log[] };
-type Failing = 'head' | 'logs' | 'receipt' | 'block';
+type Failing = 'head' | 'logs' | 'receipt' | 'block' | 'window';
 
 /** Base as the scan reads it: `minedAt` and `now` are device times, the chain's run `DEVICE_AHEAD` behind. */
 const baseChain = () => {
@@ -62,6 +64,8 @@ const baseChain = () => {
     failing: undefined as Failing | undefined,
     /** Device time of the head block; the device's own time when unset. */
     headAt: undefined as number | undefined,
+    /** Device time of the first block the scan reads. */
+    windowAt: START - 20 * DAY,
     now: START
   };
   const chainSeconds = (deviceMs: number) => BigInt(Math.floor((deviceMs - DEVICE_AHEAD) / 1000));
@@ -77,6 +81,10 @@ const baseChain = () => {
       if (args?.blockNumber === undefined) {
         fail('head');
         return { number: HEAD, timestamp: chainSeconds(chain.headAt ?? chain.now) };
+      }
+      if (args.blockNumber === WINDOW_START) {
+        fail('window');
+        return { number: WINDOW_START, timestamp: chainSeconds(chain.windowAt) };
       }
       fail('block');
       const burn = chain.burns.find(entry => entry.block === args.blockNumber);
@@ -201,6 +209,24 @@ describe('a CCTP wallet bundle the wallet cannot report on', () => {
     expect(canDismiss(stored()!, now)).toBe(true);
     store.dismiss(SCOPE, 'bundle-1');
     expect(store.getSnapshot(SCOPE)).toEqual([]);
+  });
+
+  it('cannot be dismissed on a read that starts after it was sent: its burn may be older', async () => {
+    const now = START + 21 * DAY;
+    base.chain.windowAt = START + DAY;
+    await scanAt(now);
+    expectKept(now);
+  });
+
+  it('cannot be dismissed when where the read starts could not be told', async () => {
+    const now = START + 31 * MINUTE;
+    base.chain.failing = 'window';
+    expect(await scanAt(now)).toBe(false);
+    expectKept(now);
+
+    base.chain.failing = undefined;
+    expect(await scanAt(now + MINUTE)).toBe(true);
+    expect(canDismiss(stored()!, now + MINUTE)).toBe(true);
   });
 
   it('can still be dismissed after a reload', async () => {
