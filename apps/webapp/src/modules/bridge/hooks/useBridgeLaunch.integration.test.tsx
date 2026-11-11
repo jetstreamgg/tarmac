@@ -278,13 +278,14 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({ useBatchToggle: () => [false, () => {}] }));
-vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
-  useAppAnalytics: () => ({
-    trackWidgetReviewViewed: vi.fn(),
-    trackTransactionStarted: vi.fn(),
-    trackTransactionCompleted: vi.fn()
-  })
+const analytics = vi.hoisted(() => ({
+  trackWidgetReviewViewed: vi.fn(),
+  trackTransactionStarted: vi.fn(),
+  trackTransactionCompleted: vi.fn(),
+  capture: vi.fn()
 }));
+vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({ useAppAnalytics: () => analytics }));
+vi.mock('posthog-js/react', () => ({ usePostHog: () => analytics }));
 vi.mock('@/modules/analytics/context/AnalyticsFlowContext', () => ({
   useAnalyticsFlow: () => ({ startNewFlow: vi.fn(), getFlowId: () => 'flow-test' })
 }));
@@ -1189,5 +1190,48 @@ describe('a native deposit through the real modal and engine', () => {
     expect(env.writes.map(write => ({ fn: write.functionName, account: write.account }))).toEqual([
       { fn: 'approve', account: SENDER }
     ]);
+  });
+
+  it('reports the run: the Review, each leg as its step and the send under its bridge id', async () => {
+    Object.values(analytics).forEach(mock => mock.mockClear());
+    renderApp();
+    await settle();
+    await review('arbitrum');
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        widgetName: 'bridge',
+        action: 'send',
+        flow: 'ethereum-to-l2',
+        data: expect.objectContaining({
+          bridge_type: 'native',
+          source_chain: 'ethereum',
+          destination_chain: 'arbitrum',
+          route_selection: 'default'
+        })
+      })
+    );
+
+    await confirm();
+    const hash = await completeRun('ab');
+    const sent = analytics.capture.mock.calls
+      .filter(([event]) => event === 'app_bridge_tx_sent')
+      .map(([, properties]) => properties);
+
+    expect(hash).toBeDefined();
+    expect(analytics.trackTransactionStarted.mock.calls.at(-1)?.[0]).toMatchObject({
+      action: 'send',
+      flowId: 'flow-test'
+    });
+    expect(sent.at(-1)).toMatchObject({
+      widget_name: 'bridge',
+      action: 'send',
+      hash_kind: 'tx',
+      tx_hash: hash,
+      bridge_id: hash,
+      source_tx_hash: hash,
+      flow_id: 'flow-test',
+      bridge_type: 'native',
+      destination_chain: 'arbitrum'
+    });
   });
 });

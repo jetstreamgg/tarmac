@@ -142,7 +142,7 @@ export function SeriesMotionLayer({
       if (!curve || !d) return retry();
       const lut = buildArcLut(curve);
       if (!lut) return retry();
-      setGeom(prev => (prev?.d === d ? prev : { d, lut }));
+      setGeom({ d, lut });
     };
     measure();
     return () => {

@@ -249,8 +249,13 @@ describe('StakeProductPage — shell header + URL-synced tabs', () => {
 
     fireEvent.mouseDown(screen.getByTestId('stake-tab-overview'));
 
-    expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
-    expect(setSearchParamsMock.mock.calls[0][1]).toEqual({ replace: true });
+    // Radix calls onValueChange twice per mouse down (from focus, then the press
+    // itself). This mock writes both; the real setter bails on the second, since
+    // the URL already carries the tab.
+    expect(setSearchParamsMock).toHaveBeenCalled();
+    for (const [, options] of setSearchParamsMock.mock.calls) {
+      expect(options).toEqual({ replace: true });
+    }
     expect(mockSearchParams.get('tab')).toBe('overview');
   });
 

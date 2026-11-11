@@ -82,6 +82,13 @@ export type TransactionAnalytics = {
   action?: string;
   /** Extra data merged into every analytics event (e.g. module, claimedRewards). */
   data?: Record<string, unknown>;
+  /** Reports each signature as its real step; without it only an approve differs from `action`. */
+  stepOf?: (
+    variables: TxMutateVariables | undefined,
+    flowId: string | undefined
+  ) => { action: string; data?: Record<string, unknown> } | undefined;
+  /** Read when an attempt ends, for what is only known by then. */
+  completedData?: () => Record<string, unknown> | undefined;
 };
 
 /** The config a consumer passes to `launch()` for a standard on-chain transaction. */
@@ -246,6 +253,12 @@ export type TransactionConfig = {
   /** Analytics metadata for tracking transaction lifecycle events. */
   analytics?: TransactionAnalytics;
   /**
+   * A review-first flow whose amounts resolve after launch (a quote fetched
+   * on open) sets this so review_viewed waits for them: the event fires on the
+   * first `updateModalContent` that clears it, with that update's analytics.
+   */
+  reviewViewedPending?: boolean;
+  /**
    * Estimated USD notional of the transaction (APP-517): what the compliance
    * surface compares against the enhanced-screening threshold. Editable flows
    * launch with `0` (nothing entered yet) and keep it live via
@@ -329,6 +342,7 @@ export type LiveModalUpdate = Partial<
     | 'steps'
     | 'toast'
     | 'analytics'
+    | 'reviewViewedPending'
     | 'usdValue'
   >
 > & {

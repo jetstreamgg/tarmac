@@ -333,7 +333,7 @@ export function CellHash({ label, href }: { label: ReactNode; href: string }) {
       target="_blank"
       rel="noreferrer"
       onClick={event => event.stopPropagation()}
-      className="text-fgSecondary hover:text-fgPrimary font-graphik flex w-fit items-center gap-1 text-sm leading-[22px] font-normal tracking-normal transition-colors"
+      className="text-fgSecondary hover:text-fgPrimary font-graphik focus-visible:outline-focusRing flex w-fit items-center gap-1 rounded-xs text-sm leading-[22px] font-normal tracking-normal transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       {label}
       <MoveUpRightIcon />

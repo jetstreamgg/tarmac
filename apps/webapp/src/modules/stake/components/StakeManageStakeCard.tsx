@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
@@ -37,7 +38,8 @@ export function StakeManageStakeCard({
   minStakeToBorrowLoading,
   minStakeReached,
   error,
-  errorAction
+  errorAction,
+  notice
 }: {
   mode: StakeCardMode;
   onModeChange: (mode: StakeCardMode) => void;
@@ -67,6 +69,8 @@ export function StakeManageStakeCard({
   minStakeReached?: boolean;
   error?: string;
   errorAction?: AmountChip;
+  /** A prepare failure about this card's input, shown at its bottom. */
+  notice?: ReactNode;
 }) {
   const isStake = mode === 'stake';
   const base = (isStake ? walletBalance : stakedAmount) ?? 0n;
@@ -102,6 +106,7 @@ export function StakeManageStakeCard({
       activeMode={mode}
       onModeChange={onModeChange}
       dataTestId="stake-manage-stake-card"
+      notice={notice}
     >
       {/* Design QA 2800:91832 ("More gap"): 32px between the amount block and
           the stats from md up — the card's own header→body gap. */}

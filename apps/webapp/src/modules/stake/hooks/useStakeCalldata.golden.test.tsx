@@ -28,6 +28,12 @@ import goldenFixturesRaw from './useStakeCalldata.golden.fixtures.json?raw';
 // params. The suite now replays the identical scenario set against those frozen
 // bytes. The fixtures are NOT regenerable — that is the point: they are the
 // legacy widget's exact output, outliving its deletion.
+//
+// One deliberate departure since (APP-663): the manage ordering now puts
+// `selectVoteDelegate` AFTER `lock`, so a position made safe by the SKY being
+// added can change delegate in the same multicall. The fixtures were edited
+// mechanically to match — in every manage entry holding both legs (209 of
+// them) the selectVoteDelegate/lock pair swapped places, nothing else moved.
 // ---------------------------------------------------------------------------
 
 const goldenFixtures: Record<string, `0x${string}`[]> = JSON.parse(goldenFixturesRaw);
@@ -307,7 +313,7 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
     ]);
   });
 
-  it('kitchen-sink manage — full ordering [wipe, free, claim, selectFarm, selectDelegate, lock, draw]', () => {
+  it('kitchen-sink manage — full ordering [wipe, free, claim, selectFarm, lock, selectDelegate, draw]', () => {
     const params = manage({
       usdsToWipe: 100_000n,
       skyToFree: 200_000n,
@@ -336,8 +342,8 @@ describe('generateStakeCalldata — MANAGE flow ordering golden parity vs legacy
         rewardContractAddress: FARM2,
         refCode: 0
       }),
-      getStakeSelectDelegateCalldata({ ownerAddress: OWNER, urnIndex: 0n, delegateAddress: DELEGATE2 }),
       getStakeLockCalldata({ ownerAddress: OWNER, urnIndex: 0n, amount: 300_000n, refCode: 0 }),
+      getStakeSelectDelegateCalldata({ ownerAddress: OWNER, urnIndex: 0n, delegateAddress: DELEGATE2 }),
       getStakeDrawCalldata({ ownerAddress: OWNER, urnIndex: 0n, toAddress: OWNER, amount: 400_000n })
     ]);
   });
@@ -421,7 +427,7 @@ describe('generateStakeCalldata — MANAGE gating edge cases golden parity', () 
 //   Matrix B — every selection/claim/restake/referralCode combination × flow,
 //              with ALL amounts non-zero so selection/claim calldata is ordered
 //              against present amount calldata: proves gating + the full manage
-//              ordering (repay→free→claims→selectFarm→selectDelegate→lock→draw).
+//              ordering (repay→free→claims→selectFarm→lock→selectDelegate→draw).
 //   Matrix C — wipeAll × usdsToWipe × selections spot-check: confirms the wipeAll
 //              front-slot is independent of the selection dimensions (the one
 //              amount×selection interaction Matrix B fixes amounts for).

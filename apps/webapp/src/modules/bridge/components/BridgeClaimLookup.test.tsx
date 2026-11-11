@@ -12,6 +12,7 @@ import { stubDialogExitAnimation } from '@/test/stubDialogExitAnimation';
 import { BridgeClaimLookup } from './BridgeClaimLookup';
 
 const HASH = `0x${'ab'.repeat(32)}` as Hex;
+const OTHER_HASH = `0x${'cd'.repeat(32)}` as Hex;
 const SENDER = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
 
 const mocks = vi.hoisted(() => ({
@@ -23,8 +24,11 @@ const mocks = vi.hoisted(() => ({
   account: '0x71c7656ec7ab88b098defb751b7401b5f6d8976f' as string | undefined,
   live: new Set<string>(),
   toast: { success: vi.fn(), error: vi.fn() },
-  openConnectModal: vi.fn()
+  openConnectModal: vi.fn(),
+  posthog: { capture: vi.fn() }
 }));
+
+vi.mock('posthog-js/react', () => ({ usePostHog: () => mocks.posthog }));
 
 vi.mock('@/components/ui/use-toast', () => ({ toast: mocks.toast }));
 vi.mock('@/modules/ui/context/ConnectModalContext', () => ({
@@ -108,6 +112,7 @@ describe('BridgeClaimLookup', () => {
     mocks.account = SENDER;
     mocks.live = new Set(['base', 'arbitrum', 'optimism', 'unichain']);
     mocks.toast.success.mockClear();
+    mocks.posthog.capture.mockClear();
     mocks.toast.error.mockClear();
   });
   afterEach(cleanup);
@@ -420,5 +425,117 @@ describe('BridgeClaimLookup', () => {
     typeHash(HASH);
     expect(screen.getByTestId('bridge-claim-lookup-hash').getAttribute('aria-invalid')).toBe('false');
     expect(screen.getByTestId('bridge-claim-lookup-helper')).toBeTruthy();
+  });
+
+  describe('the app_bridge_lookup_completed event', () => {
+    const LINK = `tab=bridge&claim_network=arbitrum&claim_tx=${HASH}`;
+    const events = () =>
+      mocks.posthog.capture.mock.calls
+        .filter(([event]) => event === 'app_bridge_lookup_completed')
+        .map(([, properties]) => properties);
+    const tree = () => (
+      <I18nProvider i18n={i18n}>
+        <BridgeClaimLookup />
+      </I18nProvider>
+    );
+
+    it('logs a burn found from a link once, with its route', () => {
+      mocks.state = { status: 'found', bridge: BURN, add: vi.fn() };
+      mocks.params = new URLSearchParams(LINK);
+      renderLookup();
+      expect(events()).toEqual([
+        expect.objectContaining({
+          widget_name: 'bridge',
+          entry_source: 'link',
+          result: 'found',
+          source_chain: 'arbitrum',
+          bridge_type: 'cctp',
+          source_tx_hash: HASH
+        })
+      ]);
+    });
+
+    it('does not log the known that adding the found burn turns it into', () => {
+      mocks.state = { status: 'found', bridge: BURN, add: vi.fn() };
+      mocks.params = new URLSearchParams(LINK);
+      const { rerender } = renderLookup();
+      mocks.state = { status: 'known' };
+      rerender(tree());
+      expect(events()).toHaveLength(1);
+    });
+
+    it('logs a typed hash as manual, with why it was refused', () => {
+      mocks.state = { status: 'refused', reason: 'not-found' };
+      renderLookup();
+      open();
+      typeHash(HASH);
+      find();
+      expect(events()).toEqual([
+        expect.objectContaining({ entry_source: 'manual', result: 'refused', refused_reason: 'not-found' })
+      ]);
+    });
+
+    it('logs each Find as its own attempt', () => {
+      mocks.state = { status: 'known' };
+      renderLookup();
+      open();
+      typeHash(HASH);
+      find();
+      find();
+      expect(events()).toHaveLength(2);
+    });
+
+    it('logs the result of a Try again after an error', () => {
+      mocks.state = { status: 'error', retry: vi.fn() };
+      const { rerender } = renderLookup();
+      open();
+      typeHash(HASH);
+      find();
+      mocks.state = { status: 'known' };
+      rerender(tree());
+      expect(events().map(event => event.result)).toEqual(['error', 'known']);
+    });
+
+    it("keeps a link's lookup as link through a Try again and a Find on its own hash", () => {
+      mocks.state = { status: 'error', retry: vi.fn() };
+      mocks.params = new URLSearchParams(LINK);
+      const { rerender } = renderLookup();
+      mocks.state = { status: 'refused', reason: 'not-found' };
+      rerender(tree());
+      find();
+      expect(events().map(event => [event.entry_source, event.result])).toEqual([
+        ['link', 'error'],
+        ['link', 'refused'],
+        ['link', 'refused']
+      ]);
+    });
+
+    it("logs a link's lookup as manual once its hash is edited", () => {
+      mocks.state = { status: 'refused', reason: 'not-found' };
+      mocks.params = new URLSearchParams(LINK);
+      renderLookup();
+      typeHash(OTHER_HASH);
+      find();
+      expect(events().map(event => event.entry_source)).toEqual(['link', 'manual']);
+    });
+
+    it('logs an invalid hash without what was typed', () => {
+      renderLookup();
+      open();
+      typeHash('0x12');
+      find();
+      expect(events()).toHaveLength(1);
+      expect(events()[0]).toMatchObject({ entry_source: 'manual', result: 'invalid_hash' });
+      expect(JSON.stringify(events()[0])).not.toContain('0x12');
+    });
+
+    it('logs nothing while the lookup has no result', () => {
+      mocks.state = { status: 'loading' };
+      renderLookup();
+      open();
+      typeHash(HASH);
+      find();
+      expect(events()).toEqual([]);
+    });
   });
 });

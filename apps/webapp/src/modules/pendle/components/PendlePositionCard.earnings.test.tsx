@@ -36,6 +36,9 @@ vi.mock('@/hooks', async importOriginal => {
 vi.mock('../hooks/usePendleModal', () => ({
   usePendleModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
 }));
+vi.mock('../hooks/usePendleRedeemModal', () => ({
+  usePendleRedeemModal: () => ({ openRedeemModal: vi.fn(), isRedeemable: true, switchBlocked: false })
+}));
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (fn: () => void) => fn
 }));
@@ -121,5 +124,13 @@ describe('PendlePositionCard — accrued to date (APP-450)', () => {
     renderCard();
 
     expect(screen.getByTestId('pendle-accrued-to-date').textContent).toBe('—');
+  });
+
+  it('keeps the same figure on the matured card — Pendle still reports the expired position', () => {
+    vi.setSystemTime((MARKET.expiry + 86_400) * 1000);
+    renderCard();
+
+    expect(screen.getByTestId('pendle-matured-position-card')).toBeTruthy();
+    expect(screen.getByTestId('pendle-accrued-to-date').textContent).toContain('$916.82');
   });
 });

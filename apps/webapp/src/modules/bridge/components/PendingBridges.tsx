@@ -25,6 +25,7 @@ import { usePendingScope } from '../hooks/usePendingScope';
 import { useSeenOnScreen } from '../hooks/useSeenOnScreen';
 import { useUnfinishedCctpSwaps } from '../hooks/useUnfinishedCctpSwaps';
 import { useWithdrawalEthShortfall } from '../hooks/useWithdrawalEthShortfall';
+import { useBridgeAnalytics } from '../analytics/useBridgeAnalytics';
 import { getBridgeNetwork } from '../model/networks';
 import {
   canDismiss,
@@ -358,19 +359,23 @@ function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
   );
 }
 
-type ClaimLinkProps = { link: string };
+type ClaimLinkProps = { link: string; bridge: PendingBridge };
 
 const copyClaimLink = (link: string) => copyToClipboard(link, () => toast.success(t`Claim link copied!`));
 
 /** The offer of the link that opens a CCTP bridge's claim here, as a text link (Figma "Bridge initiated"). */
-function ClaimLinkOffer({ link }: ClaimLinkProps) {
+function ClaimLinkOffer({ link, bridge }: ClaimLinkProps) {
+  const { trackClaimLinkCopied } = useBridgeAnalytics();
   return (
     <>
       <Trans>Claiming on another device?</Trans>{' '}
       <button
         type="button"
         className="font-circle text-fgBrand font-medium whitespace-nowrap hover:underline"
-        onClick={() => copyClaimLink(link)}
+        onClick={() => {
+          trackClaimLinkCopied(bridge);
+          copyClaimLink(link);
+        }}
         data-testid="pending-bridge-claim-link"
       >
         <Trans>Get claim link</Trans>
@@ -380,7 +385,8 @@ function ClaimLinkOffer({ link }: ClaimLinkProps) {
 }
 
 /** With no list to come back to, the link is the way back: a button, with its reason. */
-function KeepClaimLink({ link }: ClaimLinkProps) {
+function KeepClaimLink({ link, bridge }: ClaimLinkProps) {
+  const { trackClaimLinkCopied } = useBridgeAnalytics();
   return (
     <>
       <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-claim-link-note">
@@ -392,7 +398,10 @@ function KeepClaimLink({ link }: ClaimLinkProps) {
         variant="secondary"
         size="m"
         className="w-full"
-        onClick={() => copyClaimLink(link)}
+        onClick={() => {
+          trackClaimLinkCopied(bridge);
+          copyClaimLink(link);
+        }}
         data-testid="pending-bridge-claim-link"
       >
         <Trans>Copy claim link</Trans>
@@ -644,7 +653,7 @@ function PendingBridgeCard({
           {claimLink && (
             <>
               {' '}
-              <ClaimLinkOffer link={claimLink} />
+              <ClaimLinkOffer link={claimLink} bridge={bridge} />
             </>
           )}
         </Text>
@@ -663,7 +672,9 @@ function PendingBridgeCard({
         </Button>
       )}
 
-      {claimLink && !claimedElsewhere && !storageWritable && <KeepClaimLink link={claimLink} />}
+      {claimLink && !claimedElsewhere && !storageWritable && (
+        <KeepClaimLink link={claimLink} bridge={bridge} />
+      )}
 
       {dismissible && bridge.safeTxHash && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
@@ -698,7 +709,7 @@ function PendingBridgeCard({
           className="border-borderPrimary text-fgSecondary border-t pt-6 text-xs leading-[18px]"
           data-testid="pending-bridge-claim-line"
         >
-          <ClaimLinkOffer link={claimLink} />
+          <ClaimLinkOffer link={claimLink} bridge={bridge} />
         </div>
       )}
     </div>

@@ -36,7 +36,9 @@ import {
 } from '@/hooks/shared/useTransactionOutcome';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
+  TransactionAnalytics,
   TransactionConfig,
   TransactionEntry,
   TxCallbacks,
@@ -254,6 +256,8 @@ type TransactionModalView = {
   refusal: SendRefusal | null;
   /** The ERROR on screen is a send that went out with an outcome the app can't read: it may still mine. */
   unconfirmed: SendUnconfirmed | null;
+  /** The ERROR on screen is a contract revert: why, in user-facing copy (see lib/revertMessages). */
+  failureReason: string | undefined;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
   preludeSteps: TransactionStep[] | null;
   /** Gate-owned status copy override active when the session ended (APP-501). */
@@ -330,6 +334,8 @@ export function TransactionProvider({
   // Back and every gate status, so it is always fresh for the failure the
   // modal is showing; never read outside ERROR.
   const [userRejected, setUserRejected] = useState(false);
+  // Same lifecycle: written on every ERROR, so a stale reason never outlives its failure.
+  const [failureReason, setFailureReason] = useState<string | undefined>(undefined);
   // Written with it: the ERROR is a send refused before the wallet saw it.
   const [refusal, setRefusal] = useState<SendRefusal | null>(null);
   // Written with it: the ERROR ends a send whose outcome can't be read.
@@ -338,6 +344,7 @@ export function TransactionProvider({
     setUserRejected(false);
     setRefusal(null);
     setUnconfirmed(null);
+    setFailureReason(undefined);
   }, []);
   // Off-chain prelude steps the gate mounted for this session (the terms
   // signature step, APP-501). State for rendering, ref for synchronous reads
@@ -424,6 +431,8 @@ export function TransactionProvider({
   // flow_id latched at launch so this session's review/started/completed events
   // stay joined even if navigation rotates the live flow id mid-transaction.
   const flowIdRef = useRef<string | undefined>(undefined);
+  // The step `stepOf` last reported, the one an attempt that ends failed on.
+  const lastStepActionRef = useRef<string | undefined>(undefined);
   // The calls the user confirmed, encoded, captured at the click (see
   // `getNextCalls` in the contract). Undefined when the flow doesn't report
   // its calls; null when they couldn't be encoded, which fails closed.
@@ -539,6 +548,14 @@ export function TransactionProvider({
   // cancelled TRANSACTION: the gate phases run before onMutate, so no
   // app_widget_flow_started has fired and a cancelled completion here would
   // pair with nothing.
+  const failedStepData = useCallback(
+    (analytics: TransactionAnalytics) => ({
+      ...analytics.completedData?.(),
+      ...(lastStepActionRef.current && { failed_action: lastStepActionRef.current })
+    }),
+    []
+  );
+
   const handleInitializedAbandon = useCallback(() => {
     if (gatePhaseRef.current === 'screening') return;
     // Signed, with nothing in the wallet yet: no decline and no cancelled
@@ -561,13 +578,13 @@ export function TransactionProvider({
         txStatus: 'cancelled',
         action: analytics.action,
         flow: analytics.flow,
-        data: analytics.data,
+        data: { ...analytics.data, ...failedStepData(analytics) },
         flowId: flowIdRef.current
       });
       startNewFlow();
     }
     notifyRequestAbandoned();
-  }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined]);
+  }, [chainId, trackTransactionCompleted, startNewFlow, emitTermsSignatureDeclined, failedStepData]);
 
   const launch = useCallback(
     (config: TransactionConfig) => {
@@ -608,6 +625,7 @@ export function TransactionProvider({
       setSessionGen(sessionGenRef.current);
       // Latch this session's flow id (after any abandon rotation above).
       flowIdRef.current = getFlowId();
+      lastStepActionRef.current = undefined;
       configRef.current = config;
       activeSessionRef.current = config.sessionId ?? null;
       setActiveSessionId(config.sessionId ?? null);
@@ -640,8 +658,9 @@ export function TransactionProvider({
       // flows open on the editable entry — their review event (if the flow has
       // a review stage at all) fires at the entry→review transition instead
       // (onReviewStage below), and entry-only flows (claims, upgrade) emit
-      // none, matching the legacy widgets.
-      if (config.analytics && !config.entry) {
+      // none, matching the legacy widgets. A `reviewViewedPending` launch
+      // defers it to updateModalContent.
+      if (config.analytics && !config.entry && !config.reviewViewedPending) {
         trackWidgetReviewViewed({
           widgetName: config.analytics.widgetName,
           chainId,
@@ -671,6 +690,12 @@ export function TransactionProvider({
       });
     }
   }, [chainId, trackWidgetReviewViewed]);
+  // Read through a ref so updateModalContent stays stable: consumers push
+  // from effects that depend on it.
+  const handleReviewStageRef = useRef(handleReviewStage);
+  useLayoutEffect(() => {
+    handleReviewStageRef.current = handleReviewStage;
+  }, [handleReviewStage]);
 
   const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
     (sessionId, partial) => {
@@ -692,6 +717,9 @@ export function TransactionProvider({
       // synchronously — reads analytics off this ref.
       configRef.current = next;
       setActiveConfig(next);
+      if (prev.reviewViewedPending && !next.reviewViewedPending && !next.entry) {
+        handleReviewStageRef.current();
+      }
     },
     []
   );
@@ -733,6 +761,7 @@ export function TransactionProvider({
         userRejected,
         refusal,
         unconfirmed,
+        failureReason,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
       });
@@ -766,7 +795,16 @@ export function TransactionProvider({
     configRef.current = null;
     activeSessionRef.current = null;
     setActiveSessionId(null);
-  }, [handleInitializedAbandon, currentStep, hasMinedStep, userRejected, refusal, unconfirmed, clearFailure]);
+  }, [
+    handleInitializedAbandon,
+    currentStep,
+    hasMinedStep,
+    userRejected,
+    refusal,
+    unconfirmed,
+    failureReason,
+    clearFailure
+  ]);
 
   // The gate calls these from user events, so the ref is always current by then.
   const handleCloseRef = useRef(handleClose);
@@ -944,7 +982,7 @@ export function TransactionProvider({
               : TxStatus.IDLE;
           setTxStatus(mapped);
           txStatusRef.current = mapped;
-          // A gate failure is not a send refused or declined.
+          // A gate failure is not a send refused or declined, nor a revert.
           clearFailure();
           // Both phases render as INITIALIZED; the phase itself decides what a
           // close during it means (see gatePhaseRef / handleInitializedAbandon).
@@ -1233,12 +1271,14 @@ export function TransactionProvider({
       // Track transaction started; approve legs report action 'approve' (dev parity)
       const analytics = configRef.current?.analytics;
       if (analytics) {
+        const step = analytics.stepOf?.(variables, flowIdRef.current);
+        lastStepActionRef.current = step?.action;
         trackTransactionStarted({
           widgetName: analytics.widgetName,
           chainId,
-          action: variables?.functionName === 'approve' ? 'approve' : analytics.action,
+          action: step?.action ?? (variables?.functionName === 'approve' ? 'approve' : analytics.action),
           flow: analytics.flow,
-          data: analytics.data,
+          data: step?.data ? { ...analytics.data, ...step.data } : analytics.data,
           flowId: flowIdRef.current
         });
       }
@@ -1284,7 +1324,7 @@ export function TransactionProvider({
           txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
-          data: analytics.data,
+          data: { ...analytics.data, ...analytics.completedData?.() },
           flowId: flowIdRef.current
         });
       }
@@ -1360,7 +1400,10 @@ export function TransactionProvider({
       }
       setTxStatus(TxStatus.ERROR);
       txStatusRef.current = TxStatus.ERROR;
-      setUserRejected(isUserRejectedRequestError(error));
+      const rejected = isUserRejectedRequestError(error);
+      setUserRejected(rejected);
+      // A Reject has its own copy; anything else that reverted says why.
+      setFailureReason(rejected ? undefined : revertMessage(error));
       // A bridge refusal can come on a Retry too, after the first attempt failed.
       setRefusal(
         error instanceof TransactionRefusedError
@@ -1409,7 +1452,7 @@ export function TransactionProvider({
           txHash: hash,
           action: analytics.action,
           flow: analytics.flow,
-          data: { ...analytics.data, ...classification },
+          data: { ...analytics.data, ...classification, ...failedStepData(analytics) },
           flowId: flowIdRef.current
         });
       }
@@ -1420,11 +1463,16 @@ export function TransactionProvider({
         const flowAnalytics = configRef.current?.analytics;
         const flow = flowAnalytics?.flow ?? 'unknown';
         const action = flowAnalytics?.action ?? 'unknown';
+        // The contract's own reason (a custom error's name or a selector, never its
+        // arguments; a reason string with addresses and amounts blanked out), so
+        // Sentry shows which reverts users hit.
+        const revert = revertReport(normalizedError)?.reason;
         reportError(normalizedError, {
           module: 'transactions',
           flow,
           action,
           type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
+          tags: revert ? { revert_reason: revert } : undefined,
           // Every revert has the same message; one issue per flow and action instead of one for all.
           fingerprint:
             normalizedError instanceof TransactionRevertedError
@@ -1453,7 +1501,8 @@ export function TransactionProvider({
       startNewFlow,
       isStaleWrite,
       isForeignHash,
-      markMinedStep
+      markMinedStep,
+      failedStepData
     ]
   );
 
@@ -1473,6 +1522,7 @@ export function TransactionProvider({
         userRejected,
         refusal,
         unconfirmed,
+        failureReason,
         preludeSteps,
         gateCopy
       }
@@ -1682,6 +1732,7 @@ export function TransactionProvider({
             userRejected={modalView.userRejected}
             refusal={modalView.refusal}
             unconfirmed={modalView.unconfirmed}
+            failureReason={modalView.failureReason}
             gateCopy={modalView.gateCopy}
             preflight={preflight}
             chainGuard={chainGuard}

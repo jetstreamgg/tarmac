@@ -1,3 +1,4 @@
+import type { DecodedRevert } from '@/lib/revertMessages/decodeRevert';
 import type {
   AppEvents,
   SelectionMethod,
@@ -31,7 +32,8 @@ import type { Destination } from './lib/destination';
  */
 
 /** The closed set of widget_name values PostHog insights filter on. */
-export type WidgetName = 'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed';
+export type WidgetName =
+  'savings' | 'rewards' | 'convert' | 'stake' | 'vaults' | 'expert' | 'fixed' | 'bridge';
 
 /**
  * Intent → widget_name for route-derived emitters, compiler-enforced against
@@ -87,6 +89,9 @@ export interface TransactionCompletedProps extends TransactionEventProps {
   is_user_rejection?: boolean;
   error_code?: number;
   error_name?: string;
+  /** The contract's revert reason, scrubbed; on a revert whose reason could be decoded. */
+  revert_reason?: string;
+  revert_has_copy?: boolean;
 }
 
 export type ReviewViewedProps = TransactionEventProps;
@@ -198,11 +203,75 @@ export interface PathViewedProps {
   destination?: Destination;
 }
 
+/**
+ * A transaction failed simulation before the user could confirm it, with a
+ * contract revert reason (APP-663). Ambient, like the confirm button it
+ * disables: no flow_id, and `destination` (stamped at capture) says where.
+ * Once per chain and reason per page load, and never for a reason the user's
+ * own input caused (an amount over their balance — see inputRevertReasons).
+ */
+export interface TransactionPrepareRevertedProps {
+  revert_reason: string;
+  revert_kind: DecodedRevert['kind'];
+  revert_has_copy: boolean;
+  chain_id?: number;
+  viewport: Viewport;
+  destination?: Destination;
+}
+
 /** No flow_id: impressions are ambient; the click's navigation starts the funnel. */
 export interface PromoEventProps {
   promo_id: PromoId;
   viewport: Viewport;
   destination?: Destination;
+}
+
+export type BridgeHashKind = 'tx' | 'safe' | 'bundle';
+export type BridgeLookupResult = 'found' | 'known' | 'refused' | 'error' | 'invalid_hash';
+
+interface BridgeEventProps {
+  widget_name: 'bridge';
+  viewport: Viewport;
+  destination?: Destination;
+}
+
+/** Each transaction sent, again with the same bridge_id when its real hash is known later. */
+export interface BridgeTxSentProps extends BridgeEventProps {
+  bridge_type: string;
+  source_chain: string;
+  destination_chain: string;
+  // Not `token`: posthog-js overwrites that property with the project key.
+  assetSymbol: string;
+  amount: number;
+  flow: string;
+  action: string;
+  chain_id: number;
+  chain_name: string;
+  wallet_address?: string;
+  timestamp: string;
+  flow_id?: string;
+  hash_kind: BridgeHashKind;
+  /** The transaction hash, or the Safe or bundle id before one exists. */
+  tx_hash?: string;
+  bridge_id?: string;
+  source_tx_hash?: string;
+}
+
+export interface BridgeClaimLinkCopiedProps extends BridgeEventProps {
+  bridge_type: string;
+  source_chain: string;
+  destination_chain: string;
+  bridge_id: string;
+  source_tx_hash?: string;
+}
+
+export interface BridgeLookupCompletedProps extends BridgeEventProps {
+  entry_source: 'link' | 'manual';
+  result: BridgeLookupResult;
+  refused_reason?: string;
+  source_chain: string;
+  bridge_type?: string;
+  source_tx_hash?: string;
 }
 
 export type AppEventContract = {
@@ -229,6 +298,10 @@ export type AppEventContract = {
   app_convert_blocked: ConvertBlockedProps;
   app_promo_impression: PromoEventProps;
   app_promo_clicked: PromoEventProps;
+  app_bridge_tx_sent: BridgeTxSentProps;
+  app_bridge_claim_link_copied: BridgeClaimLinkCopiedProps;
+  app_bridge_lookup_completed: BridgeLookupCompletedProps;
+  app_transaction_prepare_reverted: TransactionPrepareRevertedProps;
 };
 
 export type AppEventName = (typeof AppEvents)[keyof typeof AppEvents];

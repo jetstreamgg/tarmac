@@ -163,14 +163,18 @@ describe('TransactionContext analytics (modal path)', () => {
   it('records an on-chain revert as error with classification props and no error_context (G2)', () => {
     const ctx = renderFlow(baseConfig());
     const cb = cbOf(ctx);
+    const from = `0x${'ab'.repeat(20)}`;
 
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash'));
     act(() =>
       cb.onError(
-        Object.assign(new Error('execution reverted: secret calldata 0xbeef'), {
-          name: 'ContractFunctionExecutionError'
-        }),
+        Object.assign(
+          new Error(
+            `execution reverted: Foo/bar-baz\n\nRequest Arguments:\n  from: ${from}\n  data: 0xsecretcalldata`
+          ),
+          { name: 'ContractFunctionExecutionError' }
+        ),
         '0xhash'
       )
     );
@@ -179,10 +183,16 @@ describe('TransactionContext analytics (modal path)', () => {
     expect(args).toMatchObject({
       txStatus: 'error',
       txHash: '0xhash',
-      data: expect.objectContaining({ error_kind: 'reverted', is_user_rejection: false })
+      // The contract's reason rides along; the message around it doesn't
+      data: expect.objectContaining({
+        error_kind: 'reverted',
+        is_user_rejection: false,
+        revert_reason: 'Foo/bar-baz'
+      })
     });
     expect(args).not.toHaveProperty('errorContext');
-    expect(JSON.stringify(args)).not.toContain('secret calldata');
+    expect(JSON.stringify(args)).not.toContain('secretcalldata');
+    expect(JSON.stringify(args)).not.toContain(from);
   });
 
   it('rotates the flow AFTER the consumer onSuccess, so its follow-up joins this flow', () => {
@@ -296,6 +306,37 @@ describe('TransactionContext review_viewed timing', () => {
     });
   });
 
+  it('defers review_viewed for a pending launch until an update clears it, then emits once', () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness
+              config={baseConfig({ sessionId: 's1', reviewViewedPending: true })}
+              onReady={c => (ctx = c)}
+            />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+
+    act(() => ctx.updateModalContent('s1', { reviewViewedPending: true }));
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+
+    const quoted = { widgetName: 'fixed', flow: 'redeem', action: 'redeem', data: { amount: -5 } };
+    act(() => ctx.updateModalContent('s1', { analytics: quoted, reviewViewedPending: false }));
+    act(() => ctx.updateModalContent('s1', { analytics: quoted, reviewViewedPending: false }));
+
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledTimes(1);
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith({
+      ...quoted,
+      chainId: 1,
+      flowId: 'flow-live'
+    });
+  });
+
   it('does NOT emit review_viewed at launch for an entry-first config', () => {
     let ctx!: TransactionContextValue;
     render(
@@ -400,5 +441,98 @@ describe('TransactionContext review_viewed timing', () => {
     expect(analytics.trackTransactionStarted).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'supply' })
     );
+  });
+
+  describe('a flow reporting its own steps', () => {
+    const stepped = (extra: Partial<NonNullable<TransactionConfig['analytics']>> = {}) =>
+      baseConfig({
+        analytics: {
+          widgetName: 'bridge',
+          flow: 'l2-to-ethereum',
+          action: 'send',
+          data: { bridge_type: 'cctp' },
+          stepOf: (variables, flowId) => ({
+            action: variables?.functionName === 'swapExactIn' ? 'swap' : 'send',
+            data: { seen_flow: flowId }
+          }),
+          completedData: () => ({ bridge_id: 'card' }),
+          ...extra
+        }
+      });
+
+    it('starts each leg as its step, on the latched flow, with the shared data', () => {
+      const cb = cbOf(renderFlow(stepped()));
+      act(() => cb.onMutate({ functionName: 'swapExactIn' }));
+      expect(analytics.trackTransactionStarted).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          action: 'swap',
+          data: { bridge_type: 'cctp', seen_flow: 'flow-live' }
+        })
+      );
+    });
+
+    it('falls back to the approve rule when stepOf has nothing to say', () => {
+      const cb = cbOf(renderFlow(stepped({ stepOf: () => undefined })));
+      act(() => cb.onMutate({ functionName: 'approve' }));
+      expect(analytics.trackTransactionStarted).toHaveBeenLastCalledWith(
+        expect.objectContaining({ action: 'approve', data: { bridge_type: 'cctp' } })
+      );
+    });
+
+    it('completes on the main action with the outcome data', () => {
+      const cb = cbOf(renderFlow(stepped()));
+      act(() => cb.onMutate({ functionName: 'swapExactIn' }));
+      act(() => cb.onStart('0xa'));
+      act(() => cb.onSuccess('0xa', 1n));
+      expect(lastCompletedArgs()).toMatchObject({
+        action: 'send',
+        txStatus: 'success',
+        data: { bridge_type: 'cctp', bridge_id: 'card' }
+      });
+      expect(lastCompletedArgs().data).not.toHaveProperty('failed_action');
+    });
+
+    it('names the step an error stopped on', () => {
+      const cb = cbOf(renderFlow(stepped()));
+      act(() => cb.onMutate({ functionName: 'swapExactIn' }));
+      act(() => cb.onError(userRejectionError(), ''));
+      expect(lastCompletedArgs()).toMatchObject({
+        action: 'send',
+        data: { failed_action: 'swap', bridge_id: 'card' }
+      });
+    });
+
+    it('does not carry a failed step into the next launch', () => {
+      // Live holder: launch() advances sessionGen, so the callbacks must be re-read.
+      const holder: { ctx?: TransactionContextValue } = {};
+      render(
+        <StrictMode>
+          <I18nProvider i18n={i18n}>
+            <TransactionProvider>
+              <Harness config={stepped()} onReady={c => (holder.ctx = c)} />
+            </TransactionProvider>
+          </I18nProvider>
+        </StrictMode>
+      );
+      fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
+      act(() => holder.ctx!.txCallbacks.onMutate({ functionName: 'swapExactIn' }));
+      act(() => holder.ctx!.txCallbacks.onError(userRejectionError(), ''));
+      expect(lastCompletedArgs().data).toHaveProperty('failed_action', 'swap');
+
+      act(() => holder.ctx!.launch(stepped({ stepOf: undefined })));
+      act(() => holder.ctx!.txCallbacks.onMutate({ functionName: 'deposit' }));
+      act(() => holder.ctx!.txCallbacks.onError(userRejectionError(), ''));
+      expect(lastCompletedArgs().data).not.toHaveProperty('failed_action');
+    });
+  });
+
+  it('adds nothing to a flow that does not report its own steps', () => {
+    const cb = cbOf(renderFlow(baseConfig()));
+    act(() => cb.onMutate({ functionName: 'deposit' }));
+    act(() => cb.onError(userRejectionError(), ''));
+    expect(analytics.trackTransactionStarted).toHaveBeenLastCalledWith(
+      expect.objectContaining({ data: { module: 'savings' } })
+    );
+    expect(lastCompletedArgs().data).not.toHaveProperty('failed_action');
   });
 });

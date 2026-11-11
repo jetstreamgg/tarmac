@@ -50,7 +50,14 @@ import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
 import { useBridgeBatch } from './useBridgeBatch';
 import { useBridgeRouteCards } from './useBridgeRouteCards';
+import { CCTP_L2_CONVERT_FUNCTION } from '../adapters/cctp/calls';
 import { destinationGas, routeFeeText } from '../model/routeCosts';
+import {
+  bridgeEventContext,
+  bridgeTransactionAnalytics,
+  type BridgeTracker
+} from '../analytics/bridgeTracker';
+import { useBridgeTrackerFactory } from '../analytics/useBridgeAnalytics';
 
 const cctpUsds = (network: CctpL2NetworkId | undefined) =>
   network ? cctpL2Contracts(network).usds : undefined;
@@ -322,6 +329,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
 
   const callbacksRef = useRef(txCallbacks);
   const executeRef = useRef<() => void>(() => undefined);
+  const newTracker = useBridgeTrackerFactory();
+  // What the modal's analytics report: the latest Confirm's run.
+  const trackerRef = useRef<BridgeTracker | undefined>(undefined);
   // The chain the open modal guards; the source legs must run on it.
   const launchedChainIdRef = useRef<number | undefined>(undefined);
   // The route the Review shows: the one it opened on, then each one the user picks.
@@ -447,6 +457,24 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         recipient,
         route: runRouteRef.current
       };
+      let sentBundleId: string | undefined;
+      const tracker = newTracker({
+        context: bridgeEventContext({
+          kind: record.route.kind,
+          from,
+          to,
+          token: resume ? 'USDC' : 'USDS',
+          amount: usdsToNumber(record.amount)
+        }),
+        chainId: pinnedChainId,
+        mainAction: 'send',
+        swapFunction: CCTP_L2_CONVERT_FUNCTION,
+        swapTokens: { token_in: 'USDS', token_out: 'USDC' },
+        includesSwap: record.route.kind === 'cctp' && !resume,
+        isSafe,
+        readBundleId: () => sentBundleId
+      });
+      trackerRef.current = tracker;
       // A prompt this Confirm opened can be signed after a later Confirm: the modal hears from it only while it is current.
       const isCurrent = () => !isReal || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
@@ -463,6 +491,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         if (first && !isCurrent()) {
           legs.stop();
           legCallbacksRef.current = callbacks;
+          trackerRef.current = tracker;
         }
       };
       const recording = withSourceRecording(() => (isCurrent() ? callbacksRef.current : DETACHED), {
@@ -478,14 +507,17 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         onSent: txHash => {
           if (burnFrom) ownBurnsRef.current.push(txHash.toLowerCase());
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, txHash, now: Date.now() }));
+          tracker.recordBridge(txHash, txHash);
           markSent(txHash);
         },
         onQueued: safeTxHash => {
           // Not unresolved: it waits for co-signers, and a Safe may queue several bridges.
           pendingBridgeStore.upsert(scope, createPendingBridge({ ...record, safeTxHash, now: Date.now() }));
+          tracker.recordBridge(safeTxHash);
           markSent();
         },
         onExecuted: (txHash, safeTxHash) => {
+          tracker.recordExecuted(txHash);
           markSent();
           if (safeTxHash) {
             // A no-op unless the queued bridge was dismissed: it executed anyway, so it comes back.
@@ -506,6 +538,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             scope,
             createPendingBridge({ ...record, bundleId, callsId, now: Date.now() })
           );
+          sentBundleId = bundleId;
+          tracker.recordBridge(bundleId);
           markSent(bundleId);
           return bundleId;
         },
@@ -520,6 +554,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
               const deposit = bridge && receipt ? bundleDepositIn(bridge, [receipt]) : undefined;
               if (deposit) {
                 pendingBridgeStore.resolveBundle(scope, bundleId, deposit.txHash);
+                tracker.recordExecuted(deposit.txHash);
                 const hash = deposit.txHash.toLowerCase();
                 // Untracked when a scan gave its card another deposit like it: recovery gives this one its own card.
                 const tracked = pendingBridgeStore
@@ -536,6 +571,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         onRepriced: (txHash, newTxHash) => {
           if (burnFrom) ownBurnsRef.current.push(newTxHash.toLowerCase());
           pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash }));
+          tracker.recordRepriced(newTxHash);
         },
         // The funds never left, so Retry may send again.
         onFailed: (id, reason) => {
@@ -553,7 +589,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
         }
       });
-      const callbacks: TxCallbacks = {
+      const callbacks: TxCallbacks = tracker.wrap({
         ...recording,
         onSuccess: (hash, blockNumber) => {
           unresolvedRef.current = undefined;
@@ -566,7 +602,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
           recording.onSuccess(hash, blockNumber);
         }
-      };
+      });
       if (depositTo) {
         legCallbacksRef.current = callbacks;
         setRunningTo(depositTo);
@@ -670,6 +706,28 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   // A continued swap sends its USDC (Figma 91).
   const fromToken = resume ? 'USDC' : undefined;
   const shownAmount = bridgedAmount(amount, route?.kind);
+  const analytics = useMemo(
+    () =>
+      route &&
+      bridgeTransactionAnalytics(
+        bridgeEventContext({
+          kind: route.kind,
+          from,
+          to,
+          token: fromToken ?? 'USDS',
+          amount: usdsToNumber(shownAmount)
+        }),
+        'send',
+        // eslint-disable-next-line react-hooks/refs -- read when a leg is signed, never during render
+        () => trackerRef.current,
+        {
+          route_selection: form.pickedRoute ? 'manual' : route.fallbackReason ? 'fallback' : 'default',
+          fallback_reason: route.fallbackReason,
+          eta_minutes: route.etaMinutes
+        }
+      ),
+    [route, from, to, fromToken, shownAmount, form.pickedRoute]
+  );
   const transactionContent = useMemo(
     () =>
       route && (
@@ -747,6 +805,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     // No chain to guard: an empty guard would let the legs run on any chain.
     if (pinnedChainId === undefined) return;
     launchRef.current += 1;
+    trackerRef.current = undefined;
     ownBurnsRef.current = [];
     launchedChainIdRef.current = pinnedChainId;
     reviewedRouteRef.current = { kind: route?.kind, picked: form.pickedRoute };
@@ -785,6 +844,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       onConfirm: () => executeRef.current(),
       onSuccess,
       sessionId,
+      analytics,
       // USDS is $1-pegged; same valuation as Convert (enhanced screening, APP-517).
       usdValue: usdsToNumber(amount),
       // The legs are built for the source network, so leaving it guards the flow.
@@ -809,7 +869,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     pinnedChainId,
     resume,
     route,
-    form.pickedRoute
+    form.pickedRoute,
+    analytics
   ]);
 
   useEffect(() => {
@@ -821,7 +882,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       confirmDisabled,
       bundled,
       errorMessage,
-      steps
+      steps,
+      ...(analytics && { analytics })
     });
   }, [
     isModalOpen,
@@ -834,7 +896,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
     confirmDisabled,
     bundled,
     errorMessage,
-    steps
+    steps,
+    analytics
   ]);
 
   return { launch, locked, restore };

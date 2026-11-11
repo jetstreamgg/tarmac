@@ -266,7 +266,7 @@ export function StUsdsModalForm({
     analytics
   });
 
-  const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error?.message), [error]);
+  const prepareErrorMessage = useMemo(() => stUsdsPrepareErrorMessage(error), [error]);
 
   const impactColor =
     priceImpactBps !== undefined && priceImpactBps > PRICE_IMPACT_HIGH_THRESHOLD_BPS
