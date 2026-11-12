@@ -2,6 +2,7 @@ import { useBridgeTracker } from '../hooks/useBridgeTracker';
 import { useCctpBundleRecovery } from '../hooks/useCctpBundleRecovery';
 import { useSentConvertResolution } from '../hooks/useSentConvertResolution';
 import { useDepositRecovery } from '../hooks/useDepositRecovery';
+import { useDismissedSourceWatch } from '../hooks/useDismissedSourceWatch';
 import { useRecoveryWanted } from '../hooks/useRecoveryWanted';
 import { useWithdrawalRecovery } from '../hooks/useWithdrawalRecovery';
 
@@ -14,5 +15,6 @@ export function BridgeTracker() {
   useWithdrawalRecovery(wanted);
   useCctpBundleRecovery();
   useSentConvertResolution();
+  useDismissedSourceWatch();
   return null;
 }

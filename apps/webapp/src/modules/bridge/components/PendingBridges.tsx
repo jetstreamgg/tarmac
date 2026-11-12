@@ -39,7 +39,9 @@ import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { copyToClipboard, formatAddress, formatBigInt } from '@/utils';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { dismissedSourceStore } from '../store/dismissedSourceStore';
 import { pendingBridgeStore } from '../store/pendingStore';
+import { dismissBridge } from '../tracking/dismissedSources';
 import { isStorageWritable } from '../store/storageWritable';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { formatEthCeil } from './bridgeModalRows';
@@ -976,7 +978,10 @@ export function PendingBridges({
           }
           canAction={canAction}
           actionHint={actionHint}
-          onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
+          onDismiss={card =>
+            scope &&
+            dismissBridge({ store: pendingBridgeStore, dismissed: dismissedSourceStore, scope, id: card.id })
+          }
           listScope={owner ?? scope}
           onKeepUsdc={kept => {
             const listScope = owner ?? scope;

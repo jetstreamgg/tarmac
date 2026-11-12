@@ -6,6 +6,7 @@ import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PendingBridge } from '../model/types';
+import { dismissedSourceStore } from '../store/dismissedSourceStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { afterUnknownSourcePoll } from '../tracking/sourceNotFound.fixtures';
 import { PendingBridges } from './PendingBridges';
@@ -119,6 +120,8 @@ describe('a pending bridge whose source transaction the chain has no record of',
 
       fireEvent.click(screen.getByTestId('pending-bridge-dismiss'));
       expect(pendingBridgeStore.getSnapshot('scope')).toEqual([]);
+      // Kept to come back if the chain later shows the send.
+      expect(dismissedSourceStore.getSnapshot('scope').map(entry => entry.bridge.txHash)).toEqual([HASH]);
     }
   );
 
