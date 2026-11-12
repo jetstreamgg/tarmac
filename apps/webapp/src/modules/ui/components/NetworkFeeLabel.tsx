@@ -22,8 +22,6 @@ export function NetworkFeeLabel() {
     <span className="flex items-center gap-1.5">
       <Trans>Network fee</Trans>
       <InfoTooltip
-        iconSize={14}
-        iconClassName="text-textSecondary hover:text-text"
         content={
           <Trans>
             Estimated at the current network rate: the base fee plus a typical priority fee. Your wallet

@@ -16,6 +16,7 @@ import {
   TooltipContent,
   TooltipPortal,
   TooltipProvider,
+  TOOLTIP_SURFACE_CLASSES,
   TooltipTrigger
 } from '@/components/ui/tooltip';
 import {
@@ -207,7 +208,8 @@ function ExposureFactValue({ symbols }: { symbols: string[] }) {
       </PopoverTrigger>
       <PopoverContent
         side="top"
-        className="font-graphik text-fgPrimary bg-bgTertiary w-auto rounded-2xl px-3 py-2 text-[11px] leading-4 backdrop-blur-[20px]"
+        // Same chrome as every tooltip (DS Tooltip, Simple type).
+        className={cn(TOOLTIP_SURFACE_CLASSES, 'w-auto shadow-none')}
       >
         {names}
       </PopoverContent>
@@ -332,7 +334,7 @@ export function RiskTierDetailsTrigger({
     />
   );
   const triggerClassName = cn(
-    'focus-visible:ring-focusRing inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-hidden',
+    'focus-visible:ring-focusRing inline-flex cursor-pointer rounded-full focus-visible:ring-2 focus-visible:outline-hidden',
     className
   );
 

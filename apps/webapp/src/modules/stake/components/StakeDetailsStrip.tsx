@@ -89,7 +89,7 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Staking Reward Rate</Trans>
-              <RateInfo type="srr" size={12} />
+              <RateInfo type="srr" />
             </>
           }
         >
@@ -103,7 +103,7 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Borrow Rate</Trans>
-              <RateInfo type="sbr" size={12} />
+              <RateInfo type="sbr" />
             </>
           }
         >
@@ -140,7 +140,7 @@ export function StakeDetailsStrip() {
           label={
             <>
               <Trans>Capped OSM SKY price</Trans>
-              <RateInfo type="cappedOsmSkyPrice" size={12} />
+              <RateInfo type="cappedOsmSkyPrice" />
             </>
           }
         >

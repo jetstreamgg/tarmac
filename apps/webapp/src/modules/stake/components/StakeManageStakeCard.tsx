@@ -140,8 +140,6 @@ export function StakeManageStakeCard({
                 <Trans>Min. stake amount to borrow</Trans>
                 <InfoTooltip
                   title={t`Minimum stake to borrow`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={
                     minStakeToBorrow !== undefined
                       ? t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`
@@ -193,8 +191,6 @@ export function StakeManageStakeCard({
                 <Trans>Est. annual rewards</Trans>
                 <InfoTooltip
                   title={t`Estimated annual rewards`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={t`Projected yearly rewards at the current Staking Rewards Rate and SKY price. Rates change over time, so the actual amount will differ.`}
                 />
               </>
@@ -219,7 +215,7 @@ export function StakeManageStakeCard({
             label={
               <>
                 <Trans>Staking Rewards Rate</Trans>
-                <RateInfo type="srr" size={12} />
+                <RateInfo type="srr" />
               </>
             }
             current={
