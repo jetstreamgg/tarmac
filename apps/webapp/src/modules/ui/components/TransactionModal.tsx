@@ -30,6 +30,7 @@ import { deriveTransactionStepItems, type TransactionStep } from './transactionS
 import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
 import type { GateStatusCopy, TransactionPreflight } from '@/modules/ui/context/preTransactionGate';
 import { cn } from '@/lib/cn';
+import { useReleaseForwardTab } from '@/hooks/ui/useReleaseForwardTab';
 
 // The step-list shape lives with its derivation; re-exported so the contract and
 // launch hooks keep importing it from here.
@@ -137,6 +138,8 @@ export type TransactionModalProps = {
   currentStep?: number;
   /** The current ERROR is a wallet Reject (nothing broadcast) — see the step model. */
   userRejected?: boolean;
+  /** The current ERROR is a bundle the wallet stopped reporting on — Close only, see the step model. */
+  outcomeUnknown?: boolean;
   /** The current ERROR is a contract revert: why, in user-facing copy — see the step model. */
   failureReason?: string;
   /**
@@ -240,6 +243,7 @@ export function TransactionModal({
   steps,
   currentStep = 0,
   userRejected = false,
+  outcomeUnknown = false,
   failureReason,
   gateCopy,
   preflight,
@@ -285,6 +289,8 @@ export function TransactionModal({
   // steps active together, "Bundled" header badge).
   const isBundled = !!(hasMultipleSteps && batchEnabled && batchSupported);
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
+  const contentRef = useRef<HTMLDivElement>(null);
+  useReleaseForwardTab(contentRef, open && isTransaction && txStatus === TxStatus.INITIALIZED);
   // Failures render inside the step list (retitled step + inline "Try again",
   // Figma 1030:139111) and drop the bottom status row/buttons — the header
   // back arrow still returns to the first screen. Only a flow launched with NO
@@ -302,6 +308,8 @@ export function TransactionModal({
   // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
   // in the wallet" during an HTTP address check (APP-501).
   const badgeFailed = txStatus === TxStatus.ERROR;
+  // May have executed: a warning, not a failure, and nothing on screen may send it again.
+  const unconfirmed = badgeFailed && outcomeUnknown;
   // A declined/failed terms signature is not a transaction — nothing reached
   // the chain — so the chip names the signature rather than claiming a
   // rolled-back transaction (the failed row below already says as much).
@@ -316,10 +324,12 @@ export function TransactionModal({
       <Trans>Signature failed</Trans>
     ) : badgeFailed && userRejected ? (
       <Trans>Request declined</Trans>
+    ) : unconfirmed ? (
+      <Trans>Couldn&apos;t confirm</Trans>
     ) : (
       statusBadgeLabel[txStatus]
     ));
-  const badgeVariant = badgeFailed ? 'error' : 'brand';
+  const badgeVariant = unconfirmed ? 'warning' : badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
@@ -448,7 +458,9 @@ export function TransactionModal({
     ? t`Signature failed`
     : userRejected
       ? t`Transaction declined`
-      : t`Transaction failed`;
+      : unconfirmed
+        ? t`Couldn't confirm transaction`
+        : t`Transaction failed`;
   const displayTitle = isTransaction
     ? badgeFailed
       ? failedTitle
@@ -508,6 +520,18 @@ export function TransactionModal({
     setStep(firstStep);
     onClose();
   }, [txStatus, onClose, firstStep]);
+
+  const unconfirmedClose = (
+    <Button
+      variant="primary"
+      size="xl"
+      className="w-full"
+      onClick={handleClose}
+      data-testid="transaction-unconfirmed-close"
+    >
+      <Trans>Close</Trans>
+    </Button>
+  );
 
   // Dismissing the modal: after broadcast it minimizes (the tx keeps running and a
   // toast takes over); otherwise it closes. Used by the close button, esc, and
@@ -632,6 +656,7 @@ export function TransactionModal({
                     txStatus,
                     bundled: isBundled,
                     userRejected,
+                    outcomeUnknown,
                     failureReason
                   });
                   // Stays live off the product's chain: the provider refuses a
@@ -680,7 +705,8 @@ export function TransactionModal({
               {/* The failure view's cross-chain guard (APP-528) lives here once
                   the failure renders inline — the bottom CTA row that used to
                   carry it is gone with the step list showing. */}
-              {showInlineFailure && chainGuarded && (
+              {showInlineFailure && unconfirmed && <div className="pt-6">{unconfirmedClose}</div>}
+              {showInlineFailure && !unconfirmed && chainGuarded && (
                 <div className="flex flex-col gap-4 pt-2">
                   {chainGuardBlock}
                   {guardCta}
@@ -696,6 +722,7 @@ export function TransactionModal({
   return (
     <ResponsiveModal open={open} onOpenChange={val => !val && handleDismiss()}>
       <ResponsiveModalContent
+        ref={contentRef}
         // Popovers, tooltips and selects opened from inside the modal are portalled to
         // the document root, so Radix sees a pointer-down on them as outside the dialog
         // and closes it — which killed the transaction when the bundling switch was used.
@@ -728,8 +755,6 @@ export function TransactionModal({
           !isTransaction && 'sm:gap-12'
         )}
         overlayClassName={scrimHandoff ? SCRIM_HANDOFF_OVERLAY_CLASS : undefined}
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className={cn('flex justify-between', firstScreenSubtitle ? 'items-start' : 'items-center')}>
           <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -747,7 +772,7 @@ export function TransactionModal({
                   size="iconM"
                   aria-label={t`Back`}
                   onClick={handleHeaderBack}
-                  disabled={isTransacting || backLocked}
+                  disabled={isTransacting || backLocked || unconfirmed}
                   data-testid="transaction-modal-back"
                 >
                   <ArrowLeft className="size-4" />
@@ -935,7 +960,9 @@ export function TransactionModal({
                   </div>
                 )}
 
-                {txStatus === TxStatus.ERROR && (
+                {unconfirmed && unconfirmedClose}
+
+                {txStatus === TxStatus.ERROR && !unconfirmed && (
                   <>
                     {chainGuardBlock}
                     <div className="flex w-full gap-3">

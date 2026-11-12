@@ -12,6 +12,7 @@ import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui
 import { Button } from '@/components/ui/button';
 import { ListWallet } from '@/components/ui/list';
 import { cn } from '@/lib/cn';
+import { reloadIfChunkError } from '@/lib/staleChunkReload';
 import { Text } from '@/modules/layout/components/Typography';
 import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
@@ -249,6 +250,8 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
           action: 'connect',
           type: 'wallet_connection_error'
         });
+        // A wallet SDK chunk from the previous deploy fails on every retry.
+        reloadIfChunkError(error);
       }
     }
   });
@@ -484,8 +487,6 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
         // color"); the frosting comes from DialogOverlay's blur-full scrim, so
         // the opaque containerDark it used to paint hid it.
         className="app-loader-cover-hidden bg-bgSecondary max-h-[calc(100dvh-32px)] gap-8 overflow-auto p-8 sm:max-w-[490px] sm:min-w-[490px]"
-        onOpenAutoFocus={e => e.preventDefault()}
-        onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -509,7 +510,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
           </div>
           {/* DS Button / Icon, secondary at 40px. */}
           <DialogClose asChild>
-            <Button variant="secondary" size="iconM" data-testid="connect-modal-close">
+            <Button variant="secondary" size="iconM" aria-label={t`Close`} data-testid="connect-modal-close">
               <Close aria-hidden />
             </Button>
           </DialogClose>

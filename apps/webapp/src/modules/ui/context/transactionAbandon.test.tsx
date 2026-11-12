@@ -70,6 +70,7 @@ vi.mock('motion/react', async io => {
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
+import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -356,6 +357,21 @@ describe('stale engine callbacks from a still-mounted host (APP-416)', () => {
     expect(onNewSuccess).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /^confirm$/i })).not.toBeNull();
     expect(analytics.trackTransactionCompleted).not.toHaveBeenCalled();
+  });
+
+  it('a late lost-bundle error from an abandoned write leaves the replacing session on its review screen (APP-651)', () => {
+    const ctx = renderFlow();
+
+    act(() => liveCtx.txCallbacks.onMutate()); // INITIALIZED
+    act(() => ctx.launch(STAKE_CONFIG));
+
+    // Hashless at IDLE, like a pre-write refusal, but this bundle was sent.
+    act(() =>
+      liveCtx.txCallbacks.onError(new TransactionOutcomeUnknownError(new Error('Unknown bundle id')))
+    );
+
+    expect(liveCtx.txStatus).toBe(TxStatus.IDLE);
+    expect(screen.queryByRole('button', { name: /^confirm$/i })).not.toBeNull();
   });
 
   it('a settle for a foreign hash is ignored while this session has its own write in flight', () => {

@@ -433,7 +433,7 @@ export function PendleModalForm({
   const claimInfo = (
     <InfoTooltip
       title={t`Claim at maturity`}
-      content={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
+      content={t`Based on the ${ptSymbol} you're expected to receive at the current market price; at maturity you can claim 1 ${displaySymbol} for each ${ptSymbol}.`}
     />
   );
   const entryRows = isSupply
