@@ -62,23 +62,14 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-// The hooks' `hasFailed` (no data, at least one failed fetch), unless a test
-// sets it directly to model a retry, where react-query clears `error`.
-type CheckMock = { data?: unknown; error?: Error; hasFailed?: boolean; isFetching?: boolean };
-const withFailure = <T extends CheckMock>(check: T) => ({
-  ...check,
-  hasFailed: check.hasFailed ?? (!check.data && !!check.error),
-  isFetching: check.isFetching ?? false
-});
-
 vi.mock('@/hooks', () => ({
   // The mock hands back `authCheck` whether or not the query is enabled, the
   // way a disabled useQuery still observes its cache entry.
   useRestrictedAddressCheck: ({ enabled }: { enabled: boolean }) => {
     mocks.screeningEnabled(enabled);
-    return { ...withFailure(mocks.authCheck), refetch: mocks.refetchAddressCheck };
+    return { isFetching: false, ...mocks.authCheck, refetch: mocks.refetchAddressCheck };
   },
-  useVpnCheck: () => ({ ...withFailure(mocks.vpnCheck), refetch: mocks.refetchVpnCheck }),
+  useVpnCheck: () => ({ isFetching: false, ...mocks.vpnCheck, refetch: mocks.refetchVpnCheck }),
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 }));
 
@@ -612,25 +603,35 @@ describe('ConnectedContext — the terms AND gate', () => {
     });
 
     // A refetch with no data resets the query to pending and clears `error`,
-    // so without the sticky failure the gate would drop for every retry.
+    // so without the provider remembering the gate it would drop for every
+    // retry (the IP check re-polls every 60s).
     it('keeps the IP block up while a failed check retries, and flags the retry', () => {
+      mocks.vpnCheck = { data: undefined, isLoading: false, error: new Error('ip status down') };
+      const { rerender } = renderProvider();
+      expect(blockReason()).toBe('ip-check-unavailable');
+
       mocks.vpnCheck = {
         data: undefined,
-        isLoading: false,
+        isLoading: true,
         error: undefined,
-        hasFailed: true,
         isFetching: true
       } as typeof mocks.vpnCheck;
-
-      renderProvider();
+      rerender(providerTree());
 
       expect(authorized()).toBe('false');
       expect(blockReason()).toBe('ip-check-unavailable');
       expect(screen.getByTestId('retrying').textContent).toBe('true');
+
+      mocks.vpnCheck = {
+        data: { isConnectedToVpn: false, isRestrictedRegion: false, countryCode: 'DE' },
+        isLoading: false,
+        error: undefined
+      };
+      rerender(providerTree());
+      expect(blockReason()).toBe('none');
     });
 
-    // Same reset on the screening query, but its cache is shared with the
-    // pre-transaction check, so the provider remembers the gate itself.
+    // Same for the screening query.
     it('keeps the screening block up while it retries, and flags the retry', async () => {
       mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
       const { rerender } = renderProvider();

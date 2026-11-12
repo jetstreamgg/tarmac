@@ -137,14 +137,6 @@ export function TakeoverShell({
     };
   }, []);
 
-  // A takeover that mounted under the gate couldn't take focus (it was inert),
-  // so it takes it once the gate lifts.
-  const wasHeld = useRef(held);
-  useEffect(() => {
-    if (wasHeld.current && !held) containerRef.current?.focus();
-    wasHeld.current = held;
-  }, [held]);
-
   // Portalled to the body because the page wrapper carries a
   // `view-transition-name` (see the page-transition rules in globals.css), and
   // a named element breaks `backdrop-filter` for its descendants: rendered in

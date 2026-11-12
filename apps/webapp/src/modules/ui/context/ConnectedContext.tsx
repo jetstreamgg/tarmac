@@ -161,12 +161,25 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const {
     data: vpnData,
-    isLoading: vpnIsLoading,
+    isLoading: vpnQueryIsLoading,
     error: vpnError,
-    hasFailed: vpnHasFailed,
     isFetching: vpnIsFetching,
     refetch: refetchVpnCheck
   } = useVpnCheck({ authUrl, skip: skipAuthCheck });
+
+  // Whether the "network error" gate is up. A retry clears the query's `error`
+  // (a refetch with no data resets it to pending), which would read as a first
+  // load and drop the gate for every retry, so the gate is remembered here
+  // until a verdict lands.
+  const ipCheckFailed = !!vpnError && !vpnData;
+  const [ipGateUp, setIpGateUp] = useState(false);
+  if (ipCheckFailed && !ipGateUp) {
+    setIpGateUp(true);
+  } else if (ipGateUp && vpnData) {
+    setIpGateUp(false);
+  }
+  const ipCheckUnavailable = ipCheckFailed || (ipGateUp && !vpnData);
+  const vpnIsLoading = vpnQueryIsLoading && !ipCheckUnavailable;
 
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
@@ -307,12 +320,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetch: refetchAddressCheck
   } = useRestrictedAddressCheck({ address, authUrl, enabled: screeningRequired });
 
-  // The address whose "screening unavailable" gate is up. A retry clears the
-  // query's `error` (a refetch with no data resets it to pending), which would
-  // read as a first load and drop the gate, so the gate is remembered here
-  // until a verdict lands or the wallet changes. It is not derived from the
-  // query's failure count: the cache entry is shared with the pre-transaction
-  // check, and a stale failure from there must not raise the gate.
+  // The address whose "screening unavailable" gate is up, remembered through
+  // retries like `ipGateUp`, until a verdict lands or the wallet changes. Only
+  // a failure seen while screening is required raises it: the cache entry is
+  // shared with the pre-transaction check, whose failures must not.
   const screeningFailed = !!address && screeningRequired && !!authError && !authData;
   const [screeningGateFor, setScreeningGateFor] = useState<string>();
   if (screeningFailed && screeningGateFor !== address) {
@@ -476,9 +487,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (vpnData?.isRestrictedRegion) return 'region-restricted';
     // Fail closed only when there is no verdict at all. A failed background
     // refetch keeps the cached data and sets `error`, so gating on the error
-    // alone would discard a verdict we already hold. `vpnHasFailed` stays set
-    // while the check retries, so the gate doesn't drop for each retry.
-    if (vpnHasFailed) return 'ip-check-unavailable';
+    // alone would discard a verdict we already hold.
+    if (ipCheckUnavailable) return 'ip-check-unavailable';
     if (address) {
       // Whoever screened (the pre-terms check or the pre-transaction gate), a
       // risky verdict blocks the app.
@@ -490,7 +500,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (screeningUnavailable) return 'screening-unavailable';
     }
     return undefined;
-  }, [vpnData, vpnHasFailed, address, authData, screeningUnavailable]);
+  }, [vpnData, ipCheckUnavailable, address, authData, screeningUnavailable]);
 
   // `undefined !== true` while a required screening is in flight, so the
   // address stays gated (behind the loading dialog) until a verdict lands.
@@ -512,7 +522,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetchVpnCheck();
     if (screeningRequired) refetchAddressCheck();
   }, [refetchVpnCheck, refetchAddressCheck, screeningRequired]);
-  const isRetryingAccessChecks = (vpnHasFailed && vpnIsFetching) || (screeningUnavailable && authIsFetching);
+  const isRetryingAccessChecks =
+    (ipCheckUnavailable && vpnIsFetching) || (screeningUnavailable && authIsFetching);
 
   // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
   // PostHog event carries them. Unlike the fire-once tracking below, this re-runs

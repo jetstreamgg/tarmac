@@ -38,16 +38,10 @@ export const useVpnCheck = ({
   data: VpnResponse | undefined;
   error: any | undefined;
   isLoading: boolean;
-  /**
-   * The check has failed and never returned data. Stays true while it
-   * retries: a refetch with no data resets the query to pending, which would
-   * otherwise read as a first load.
-   */
-  hasFailed: boolean;
   isFetching: boolean;
   refetch: () => void;
 } => {
-  const { data, error, isLoading, isFetching, errorUpdateCount, refetch } = useQuery({
+  const { data, error, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['vpn'],
     queryFn: () => checkVpn(authUrl),
     refetchInterval,
@@ -55,7 +49,5 @@ export const useVpnCheck = ({
     enabled: !skip && enabled
   });
 
-  const hasFailed = !data && errorUpdateCount > 0;
-
-  return { data, error, isLoading: !data && !hasFailed && isLoading, hasFailed, isFetching, refetch };
+  return { data, error, isLoading: !data && isLoading, isFetching, refetch };
 };
