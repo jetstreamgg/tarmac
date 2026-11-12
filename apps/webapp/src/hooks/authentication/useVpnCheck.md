@@ -66,6 +66,10 @@ Returns an object containing:
 - `error`: `any | undefined`
   - Any error that occurred during the check.
 - `isLoading`: `boolean`
-  - Whether the check is currently loading.
+  - Whether the first check is still loading. False while a failed check retries (see `hasFailed`).
+- `hasFailed`: `boolean`
+  - The check has failed and never returned data. Stays true while it retries, when `error` is cleared.
+- `isFetching`: `boolean`
+  - Whether a request is in flight, including retries and background polls.
 - `refetch`: `() => void`
   - Manually re-runs the check (used by the "try again" path on the network-error state).

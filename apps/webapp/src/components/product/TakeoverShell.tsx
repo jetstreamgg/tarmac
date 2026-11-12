@@ -139,8 +139,10 @@ export function TakeoverShell({
 
   // A takeover that mounted under the gate couldn't take focus (it was inert),
   // so it takes it once the gate lifts.
+  const wasHeld = useRef(held);
   useEffect(() => {
-    if (!held) containerRef.current?.focus();
+    if (wasHeld.current && !held) containerRef.current?.focus();
+    wasHeld.current = held;
   }, [held]);
 
   // Portalled to the body because the page wrapper carries a

@@ -17,3 +17,9 @@ import { createContext, useContext } from 'react';
 export const PageModalHoldContext = createContext(false);
 
 export const usePageModalHold = () => useContext(PageModalHoldContext);
+
+/** A dialog or sheet root's `open` prop with the hold applied. */
+export const useHeldOpen = (open: boolean | undefined) => {
+  const held = usePageModalHold();
+  return held && open !== undefined ? false : open;
+};

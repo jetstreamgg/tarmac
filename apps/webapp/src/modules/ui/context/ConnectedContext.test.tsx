@@ -162,12 +162,12 @@ const checkResult = (overrides: Record<string, unknown> = {}) => ({
   ...overrides
 });
 
-const renderProvider = () =>
-  render(
-    <ConnectedProvider>
-      <Consumer />
-    </ConnectedProvider>
-  );
+const providerTree = () => (
+  <ConnectedProvider>
+    <Consumer />
+  </ConnectedProvider>
+);
+const renderProvider = () => render(providerTree());
 
 const accepted = () => screen.getByTestId('accepted').textContent;
 
@@ -627,6 +627,47 @@ describe('ConnectedContext — the terms AND gate', () => {
       expect(authorized()).toBe('false');
       expect(blockReason()).toBe('ip-check-unavailable');
       expect(screen.getByTestId('retrying').textContent).toBe('true');
+    });
+
+    // Same reset on the screening query, but its cache is shared with the
+    // pre-transaction check, so the provider remembers the gate itself.
+    it('keeps the screening block up while it retries, and flags the retry', async () => {
+      mocks.authCheck = { data: undefined, isLoading: false, error: new Error('screening down') };
+      const { rerender } = renderProvider();
+      await waitFor(() => expect(blockReason()).toBe('screening-unavailable'));
+
+      mocks.authCheck = {
+        data: undefined,
+        isLoading: true,
+        error: undefined,
+        isFetching: true
+      } as typeof mocks.authCheck;
+      rerender(providerTree());
+
+      expect(blockReason()).toBe('screening-unavailable');
+      expect(screen.getByTestId('retrying').textContent).toBe('true');
+
+      mocks.authCheck = { data: { addressAllowed: true }, isLoading: false, error: undefined };
+      rerender(providerTree());
+      expect(blockReason()).toBe('none');
+    });
+
+    // A failure left in the shared cache by the pre-transaction check has
+    // cleared its error by the time a required screening refetches.
+    it('reads a first required screening as loading, not as unavailable', async () => {
+      mocks.authCheck = {
+        data: undefined,
+        isLoading: true,
+        error: undefined,
+        isFetching: true
+      } as typeof mocks.authCheck;
+
+      renderProvider();
+      await waitFor(() => expect(screen.getByTestId('version').textContent).toBe(VERSION));
+
+      expect(authorized()).toBe('false');
+      expect(blockReason()).toBe('none');
+      expect(screen.getByTestId('retrying').textContent).toBe('false');
     });
 
     it('keeps a cached /ip/status verdict through a failed refetch', () => {
