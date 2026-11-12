@@ -476,7 +476,7 @@ export const toGridCells = (
             {cell.label}
             {cell.labelBadge && <LabelBadge text={cell.labelBadge} />}
             {cell.labelAction}
-            {cell.rateInfo && <RateInfo type={cell.rateInfo} size={12} />}
+            {cell.rateInfo && <RateInfo type={cell.rateInfo} />}
           </span>
         ) : (
           cell.label

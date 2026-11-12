@@ -64,7 +64,7 @@ export function parseBannerContent(
           href={target}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-fgBrand hover:underline"
+          className="text-fgBrand focus-visible:outline-focusRing rounded-xs hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {label}
         </a>

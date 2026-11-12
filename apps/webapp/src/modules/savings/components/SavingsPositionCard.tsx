@@ -150,7 +150,7 @@ export function SavingsPositionCard() {
               ) : (
                 <>
                   <ProductPercent value={currentRate} />
-                  <RateInfo type="ssr" size={12} />
+                  <RateInfo type="ssr" />
                 </>
               )}
             </ProductStat>

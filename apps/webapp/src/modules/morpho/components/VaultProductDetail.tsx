@@ -33,38 +33,40 @@ const VAULT_ABOUT: Record<string, ReactNode> = {
   'USDT Savings': (
     <Trans>
       USDT Savings vault accepts USDT deposits and deploys them exclusively into an sUSDS-USDT Morpho market.
-      Vault performance is driven by the underlying markets&apos; borrowing demand and is not controlled by
-      Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
+      Vault performance is driven by the underlying market borrowing demand and is not controlled by
+      Sky.money. The rate is adjusted dynamically by the Morpho smart contracts.
     </Trans>
   ),
   'USDS Flagship': (
     <Trans>
       USDS Flagship vault accepts USDS deposits. It keeps 80% in the vault and allocates 20% to 3 markets
       exposed to cbBTC, wstETH and PT-sUSDS. Vault performance is driven by the underlying markets&apos;
-      borrowing demand and is not controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the
-      Morpho smart contracts. Note stUSDS risks, including SKY price volatility and potential bad debt.
+      borrowing demand and is not controlled by Sky.money. The rate is adjusted dynamically by the Morpho
+      smart contracts.
     </Trans>
   ),
   'USDT Risk Capital': (
     <Trans>
       USDT Risk Capital vault accepts USDT deposits and deploys them exclusively into an stUSDS-USDT Morpho
-      market. stUSDS is a SKY-backed Vault performance is driven by the underlying markets&apos; borrowing
-      demand and is not controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart
-      contracts. Note stUSDS risks, including SKY price volatility and potential bad debt.
+      market. Vault performance is driven by the underlying market borrowing demand and is not controlled by
+      Sky.money. The rate is adjusted dynamically by the Morpho smart contracts. Note stUSDS risks, including
+      SKY price volatility and potential bad debt.
     </Trans>
   ),
   'USDS Risk Capital': (
     <Trans>
       USDS Risk Capital vault accepts USDS deposits and deploys them exclusively into an stUSDS-USDS Morpho
-      market. Vault performance is driven by the underlying markets&apos; borrowing demand and is not
-      controlled by Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
+      market. Vault performance is driven by the underlying market borrowing demand and is not controlled by
+      Sky.money. The rate is adjusted dynamically by the Morpho smart contracts. Note stUSDS risks, including
+      SKY price volatility and potential bad debt.
     </Trans>
   ),
   'USDC Risk Capital': (
     <Trans>
-      USDC Risk Capital vault allocates supplied USDC exclusively to an stUSDS-USDC Morpho market. Vault
-      performance is driven by the underlying markets&apos; borrowing demand and is not controlled by
-      Sky.money. Instead, it&apos;s adjusted dynamically by the Morpho smart contracts.
+      USDC Risk Capital vault accepts USDC deposits and deploys them exclusively into an stUSDS-USDC Morpho
+      market. Vault performance is driven by the underlying market borrowing demand and is not controlled by
+      Sky.money. The rate is adjusted dynamically by the Morpho smart contracts. Note stUSDS risks, including
+      SKY price volatility and potential bad debt.
     </Trans>
   )
 };
@@ -101,7 +103,7 @@ export function VaultProductDetail({
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="morpho" size={12} />,
+      info: <RateInfo type="morpho" />,
       // Incentive-boosted vaults tag the figure with the DS stars mark and
       // explain it through the breakdown tooltip (APP-443 item 14).
       value: <VaultRateBreakdown rate={rate} value={rate?.formattedNetRate ?? NO_VALUE} />

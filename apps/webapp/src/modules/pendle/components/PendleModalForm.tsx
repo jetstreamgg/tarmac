@@ -7,6 +7,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import {
   getTokenDecimals,
+  isMarketMatured,
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
@@ -21,7 +22,7 @@ import {
   type Token
 } from '@/hooks';
 import { getTooltipById } from '@/modules/ui/data/tooltips';
-import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { PendleFlow } from '@/modules/pendle/lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/lib/pendleAnalyticsData';
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
@@ -95,6 +96,10 @@ export function PendleModalForm({
   const { isConnected, address } = useConnection();
   const isSupply = flow === 'supply';
   const side = isSupply ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
+  // The minute tick re-renders a modal left open across expiry; keyed on the
+  // registry expiry like PendlePositionCard, which swaps to Claim on the same tick.
+  const nowMs = useNow();
+  const matured = isMarketMatured(market.expiry);
 
   const { ptToken, supplyTokenList, withdrawTokenList } = usePendleTokens(market);
   const tokenOptions = isSupply ? supplyTokenList : withdrawTokenList;
@@ -181,7 +186,7 @@ export function PendleModalForm({
   }, [isSupply, needsAllowance, inputSymbol]);
 
   const {
-    data: quote,
+    data: liveQuote,
     isLoading: isFetchingQuote,
     error: quoteError
   } = useQuotePendleConvert({
@@ -193,8 +198,11 @@ export function PendleModalForm({
     syAcceptedTokens: market.syAcceptedTokens,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    enabled: debouncedAmount > 0n
+    enabled: debouncedAmount > 0n && !matured
   });
+  // A disabled query keeps its last data, so a modal left open across expiry
+  // would otherwise keep showing that quote as a live order.
+  const quote = matured ? undefined : liveQuote;
 
   // --- Analytics: the legacy PendleWidget event set, with live amounts. ---
   const onAnalyticsEvent = useWidgetAnalytics('fixed', chainId);
@@ -328,13 +336,17 @@ export function PendleModalForm({
     () =>
       !writeHook.prepared
         ? pendlePrepareErrorMessage(
-            writeHook.error?.message,
+            writeHook.error,
             t`Current market price exceeds your slippage tolerance. Adjust slippage on the review screen, or wait for the quote to refresh.`
           )
         : undefined,
     [writeHook.prepared, writeHook.error]
   );
-  const errorMessage = quoteErrorMessage ?? prepareErrorMessage;
+  const errorMessage = matured
+    ? isSupply
+      ? t`This market has matured and no longer accepts deposits. If you hold a position, close this window to claim it.`
+      : t`This market has matured, so early withdrawal is closed. Close this window and claim your position instead.`
+    : (quoteErrorMessage ?? prepareErrorMessage);
 
   // Simulate on the engine chain — the calls are built for it (mainnet, or the
   // fork in dev), not necessarily the connected chain.
@@ -345,7 +357,7 @@ export function PendleModalForm({
     enabled: amountReady
   });
 
-  const confirmDisabled = !amountReady || !writeHook.prepared || isFetchingQuote;
+  const confirmDisabled = matured || !amountReady || !writeHook.prepared || isFetchingQuote;
 
   // --- Grid economics (see the component doc for the per-order model). ---
   const { data: marketsApi } = usePendleMarketsApiData();
@@ -353,7 +365,6 @@ export function PendleModalForm({
   const impliedApy = stats?.impliedApy;
 
   const expirySec = stats?.expirySec ?? market.expiry;
-  const nowMs = useNow();
   const daysToMaturity = remainingDaysToMaturity(expirySec, nowMs);
   const claimDate = formatMaturity(expirySec);
 
@@ -417,17 +428,12 @@ export function PendleModalForm({
   // Both estimate cells caveat the quote (the comps draw an info mark on the
   // withdraw cell, 2413:66997).
   const receiveInfo = (
-    <PopoverInfo
-      title={t`You'll receive`}
-      description={t`Estimated at the current Pendle market price.`}
-      iconSize={12}
-    />
+    <InfoTooltip title={t`You'll receive`} content={t`Estimated at the current Pendle market price.`} />
   );
   const claimInfo = (
-    <PopoverInfo
+    <InfoTooltip
       title={t`Claim at maturity`}
-      description={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
-      iconSize={12}
+      content={t`Based on the ${ptSymbol} you're expected to receive at the current market price; at maturity you can claim 1 ${displaySymbol} for each ${ptSymbol}.`}
     />
   );
   const entryRows = isSupply
@@ -459,7 +465,7 @@ export function PendleModalForm({
         lostTrend,
         displaySymbol,
         lostInfo: lostTooltip ? (
-          <PopoverInfo title={lostTooltip.title} description={lostTooltip.tooltip} iconSize={12} />
+          <InfoTooltip title={lostTooltip.title} content={lostTooltip.tooltip} />
         ) : undefined,
         network: networkName,
         networkChainId: engineChainId,
@@ -591,6 +597,7 @@ export function PendleModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute: writeHook.execute,
+    nextCalls: writeHook.nextCalls ?? writeHook.calls ?? [],
     confirmDisabled,
     errorMessage,
     transactionContent,

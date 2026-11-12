@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { WagmiProvider } from 'wagmi';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
@@ -27,6 +28,11 @@ import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { useNavigationAnalytics } from '@/modules/analytics/hooks/useNavigationAnalytics';
 import { CORPUS_VERSION, CORPUS_BRANCH, CORPUS_COMMIT } from '@/data/version';
+import { setPrepareRevertListener } from '@/hooks/shared/prepareRevertReporter';
+import { trackPrepareReverted } from '@/modules/analytics/lib/trackPrepareReverted';
+
+// The engines report prepare-time simulation failures here (see prepareRevertReporter).
+setPrepareRevertListener(trackPrepareReverted);
 
 // Expose corpus version to browser console for debugging
 if (typeof window !== 'undefined') {
@@ -83,11 +89,18 @@ const AppContent = () => {
 
                         app-loader-cover-hidden: this tree mounts outside
                         Layout, so it hides via the loader's document flag
-                        while the cover plays (globals.css). */}
-                <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
-                  <Toaster className="!z-[60]" />
-                  <ToastCloseAll />
-                </DismissableLayerBranch>
+                        while the cover plays (globals.css).
+
+                        Portalled to the body: a stake takeover marks #root
+                        inert, which would take the toasts' buttons and
+                        sonner's live region down with the page. */}
+                {createPortal(
+                  <DismissableLayerBranch className="app-loader-cover-hidden pointer-events-auto">
+                    <Toaster className="!z-[60]" />
+                    <ToastCloseAll />
+                  </DismissableLayerBranch>,
+                  document.body
+                )}
                 <RouterProvider router={router} />
               </GatedTransactionProvider>
             </NetworkSwitchProvider>

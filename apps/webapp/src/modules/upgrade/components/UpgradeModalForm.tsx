@@ -89,7 +89,7 @@ export function UpgradeModalForm({
   const amountReady = isConnected && amount > 0n && !insufficient && !debouncePending && !feeUnknown;
 
   const runActive = useTransactionRunActive();
-  const { execute, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
+  const { execute, nextCalls, steps, prepared, error, calls, isBatch } = useUpgradeLaunch({
     token,
     amount: debouncedAmount,
     // Held on through a run the amount check no longer passes (see useTransactionRunActive).
@@ -199,6 +199,7 @@ export function UpgradeModalForm({
   const renderInSlot = useModalEntryBody({
     sessionId,
     execute,
+    nextCalls,
     confirmDisabled: disabled,
     confirmLabel: isConnected ? t`Continue` : t`Connect wallet`,
     confirmAction: isConnected ? undefined : connectAction,
@@ -230,7 +231,7 @@ export function UpgradeModalForm({
         : `${formatNumber(Number(math.calculateUpgradePenalty(mkrSkyFee)), { minDecimals: 2, maxDecimals: 2 })}%`
       : undefined,
     // 12px info glyph after the label (Figma 1343:79562).
-    penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" width={12} height={12} /> : undefined,
+    penaltyInfo: isMkr ? <PopoverRateInfo type="delayedUpgradePenalty" /> : undefined,
     network: networkName,
     networkFee: feeCell.fee?.formatted ?? NO_VALUE,
     feeLoading: feeUnknown && !feeFailed

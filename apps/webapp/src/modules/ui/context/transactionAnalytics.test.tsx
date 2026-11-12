@@ -73,6 +73,7 @@ vi.mock('motion/react', async io => {
 });
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
+import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 
 i18n.load('en', {});
 i18n.activate('en');
@@ -163,14 +164,18 @@ describe('TransactionContext analytics (modal path)', () => {
   it('records an on-chain revert as error with classification props and no error_context (G2)', () => {
     const ctx = renderFlow(baseConfig());
     const cb = cbOf(ctx);
+    const from = `0x${'ab'.repeat(20)}`;
 
     act(() => cb.onMutate());
     act(() => cb.onStart('0xhash'));
     act(() =>
       cb.onError(
-        Object.assign(new Error('execution reverted: secret calldata 0xbeef'), {
-          name: 'ContractFunctionExecutionError'
-        }),
+        Object.assign(
+          new Error(
+            `execution reverted: Foo/bar-baz\n\nRequest Arguments:\n  from: ${from}\n  data: 0xsecretcalldata`
+          ),
+          { name: 'ContractFunctionExecutionError' }
+        ),
         '0xhash'
       )
     );
@@ -179,10 +184,27 @@ describe('TransactionContext analytics (modal path)', () => {
     expect(args).toMatchObject({
       txStatus: 'error',
       txHash: '0xhash',
-      data: expect.objectContaining({ error_kind: 'reverted', is_user_rejection: false })
+      // The contract's reason rides along; the message around it doesn't
+      data: expect.objectContaining({
+        error_kind: 'reverted',
+        is_user_rejection: false,
+        revert_reason: 'Foo/bar-baz'
+      })
     });
     expect(args).not.toHaveProperty('errorContext');
-    expect(JSON.stringify(args)).not.toContain('secret calldata');
+    expect(JSON.stringify(args)).not.toContain('secretcalldata');
+    expect(JSON.stringify(args)).not.toContain(from);
+  });
+
+  it('records a bundle the wallet lost track of as an error named for its unknown outcome (APP-651)', () => {
+    const cb = cbOf(renderFlow(baseConfig()));
+    act(() => cb.onMutate());
+    act(() => cb.onStart());
+    act(() => cb.onError(new TransactionOutcomeUnknownError(new Error('Unknown bundle id'))));
+    expect(lastCompletedArgs()).toMatchObject({
+      txStatus: 'error',
+      data: { error_name: 'TransactionOutcomeUnknownError' }
+    });
   });
 
   it('rotates the flow AFTER the consumer onSuccess, so its follow-up joins this flow', () => {
@@ -292,6 +314,37 @@ describe('TransactionContext review_viewed timing', () => {
       flow: 'supply',
       action: 'supply',
       data: { module: 'savings' },
+      flowId: 'flow-live'
+    });
+  });
+
+  it('defers review_viewed for a pending launch until an update clears it, then emits once', () => {
+    let ctx!: TransactionContextValue;
+    render(
+      <StrictMode>
+        <I18nProvider i18n={i18n}>
+          <TransactionProvider>
+            <Harness
+              config={baseConfig({ sessionId: 's1', reviewViewedPending: true })}
+              onReady={c => (ctx = c)}
+            />
+          </TransactionProvider>
+        </I18nProvider>
+      </StrictMode>
+    );
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+
+    act(() => ctx.updateModalContent('s1', { reviewViewedPending: true }));
+    expect(analytics.trackWidgetReviewViewed).not.toHaveBeenCalled();
+
+    const quoted = { widgetName: 'fixed', flow: 'redeem', action: 'redeem', data: { amount: -5 } };
+    act(() => ctx.updateModalContent('s1', { analytics: quoted, reviewViewedPending: false }));
+    act(() => ctx.updateModalContent('s1', { analytics: quoted, reviewViewedPending: false }));
+
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledTimes(1);
+    expect(analytics.trackWidgetReviewViewed).toHaveBeenCalledWith({
+      ...quoted,
+      chainId: 1,
       flowId: 'flow-live'
     });
   });
