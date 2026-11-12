@@ -100,7 +100,7 @@ export function useWidgetItems(intent: Intent): {
       Pendle,
       false,
       undefined,
-      'Fix your rate to a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity; early exits settle at the current market price.',
+      'Fix your rate to a pre-set maturity date. Supply USDS at a discount. Claim full USDS value at maturity; early exits settle at the current market price.',
       pendleSubItems
     ],
     [

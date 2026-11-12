@@ -181,7 +181,7 @@ describe('PendleProductDetail', () => {
     expect(about.textContent).toContain('Fix a rate on your USDG until maturity');
     // Worked example: 100 USDG compounded at 4.86% over the remaining term.
     expect(about.textContent).toMatch(
-      /e\.g\. supply 100 USDG today and redeem [\d.]+ USDG in \d+ days \(4\.86%/
+      /e\.g\. supply 100 USDG today and claim [\d.]+ USDG in \d+ days \(4\.86%/
     );
     expect(screen.getByRole('link', { name: 'Pendle site' }).getAttribute('href')).toBe(
       'https://pendle.finance/'
@@ -198,7 +198,7 @@ describe('PendleProductDetail', () => {
 
     const about = screen.getByTestId('product-detail-about');
     expect(about.textContent).toMatch(
-      /e\.g\. supply 100 USDG today and redeem [\d.]+ USDG in one day \(4\.86%/
+      /e\.g\. supply 100 USDG today and claim [\d.]+ USDG in one day \(4\.86%/
     );
     expect(about.textContent).not.toContain('1 days');
   });
