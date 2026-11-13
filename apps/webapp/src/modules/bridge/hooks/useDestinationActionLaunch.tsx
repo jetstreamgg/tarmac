@@ -355,6 +355,7 @@ export function useDestinationActionLaunch() {
     enabled: !!withdrawal && walletChainId === withdrawal.chainId,
     network: withdrawal?.network,
     bridge: withdrawal?.bridge,
+    account: address,
     chainId: withdrawal?.chainId,
     getCallbacks: () => legCallbacksRef.current,
     onRelayFailed: () =>

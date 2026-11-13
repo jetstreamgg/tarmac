@@ -27,6 +27,7 @@ import {
 } from './contracts';
 import {
   opStackFinalizeCall,
+  opStackFinalizeGas,
   opStackProveCall,
   opStackWithdrawalCall,
   opStackWithdrawalCalls,
@@ -223,6 +224,34 @@ describe('OP Stack prove and finalize calls (golden: the same Base withdrawal)',
       proofSubmitter
     });
     expect(encodeFunctionData(call)).toBe(BASE_EXTERNAL_FINALIZE_TX.input);
+  });
+});
+
+describe('OP Stack finalize gas', () => {
+  // gasLimit of a withdrawal, then the lowest tx gas its finalize mined at on a fork.
+  it.each([
+    [796_584n, 1_023_038n],
+    [100_000n, 299_607n],
+    [516_982n, 738_457n],
+    [644_715n, 866_479n],
+    [669_875n, 896_652n]
+  ])(
+    'covers what the portal needs for a gasLimit of %s, even from a gas-used estimate',
+    (gasLimit, minimum) => {
+      const gas = opStackFinalizeGas({ estimate: 258_482n, gasLimit });
+      expect(gas).toBeGreaterThanOrEqual(minimum + 150_000n);
+      expect(gas % 10_000n).toBe(0n);
+    }
+  );
+
+  it('is above the gas the failed Base finalize was sent with', () => {
+    const gas = opStackFinalizeGas({ estimate: 258_482n, gasLimit: 796_584n });
+    expect(gas).toBe(1_270_000n);
+    expect(gas).toBeGreaterThan(504_039n);
+  });
+
+  it('takes the estimate plus 20% when that is higher', () => {
+    expect(opStackFinalizeGas({ estimate: 2_000_000n, gasLimit: 796_584n })).toBe(2_400_000n);
   });
 });
 
