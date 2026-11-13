@@ -79,11 +79,14 @@ export function depositsInLogs(logs: Log[], account: Address): DiscoveredDeposit
 export async function discoverNativeDeposits({
   l1,
   account,
-  toBlock
+  toBlock,
+  recentOnly
 }: {
   l1: Pick<ChainReader, 'getLogs'>;
   account: Address;
   toBlock: bigint;
+  /** Reads the newest range alone: enough for a deposit sent minutes ago. */
+  recentOnly?: boolean;
 }): Promise<{ deposits: DiscoveredDeposit[]; complete: boolean }> {
   const first = toBlock > DISCOVERY_WINDOW_BLOCKS ? toBlock - DISCOVERY_WINDOW_BLOCKS : 0n;
   const logs: Log[] = [];
@@ -109,6 +112,7 @@ export async function discoverNativeDeposits({
     } catch {
       complete = false;
     }
+    if (recentOnly) break;
   }
   return { deposits: depositsInLogs(logs, account), complete };
 }

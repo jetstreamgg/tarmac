@@ -9,7 +9,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { OP_STACK_DEPOSIT, l2CrossDomainMessengerAbi } from '../adapters/nativeDeposit/contracts';
 import { ARBITRUM_WITHDRAWAL, OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
-import { opStackWithdrawalMessage } from '../adapters/nativeWithdrawal/opStack';
+import {
+  opStackFinalizeCall,
+  opStackFinalizeGas,
+  opStackWithdrawalMessage
+} from '../adapters/nativeWithdrawal/opStack';
 import { BASE_WITHDRAWAL_LOGS, BASE_WITHDRAWAL_TX } from '../adapters/nativeWithdrawal/withdrawalFixtures';
 import type { PendingBridge } from '../model/types';
 import { useNativeWithdrawalActionLegs } from './useNativeWithdrawalActionLegs';
@@ -19,7 +23,10 @@ const mocks = vi.hoisted(() => ({
   baseGas: 600_000n as bigint | undefined,
   flow: undefined as undefined | Record<string, unknown>,
   built: [] as Record<string, unknown>[],
-  buildError: null as Error | null
+  buildError: null as Error | null,
+  estimateParams: undefined as undefined | Record<string, unknown>,
+  estimate: 1_024_585n as bigint | undefined,
+  estimateError: null as Error | null
 }));
 
 vi.mock('wagmi', () => ({
@@ -27,6 +34,10 @@ vi.mock('wagmi', () => ({
   useReadContract: (params: Record<string, unknown>) => {
     mocks.read = params;
     return { data: mocks.baseGas, error: null };
+  },
+  useEstimateGas: (params: Record<string, unknown>) => {
+    mocks.estimateParams = params;
+    return { data: mocks.estimate, error: mocks.estimateError };
   }
 }));
 vi.mock('./usePendingScope', () => ({ usePendingScope: () => ({ familyChainId: 1 }) }));
@@ -43,11 +54,12 @@ vi.mock('../adapters/nativeWithdrawal/opStackActions', () => ({
   opStackWithdrawalActionCall: async (args: Record<string, unknown>) => {
     mocks.built.push(args);
     if (mocks.buildError) throw mocks.buildError;
+    if (args.action === 'finalize')
+      return opStackFinalizeCall({ network: 'base', withdrawal: MESSAGE.withdrawal, proofSubmitter: PROVER });
     return {
       address: OP_STACK_DEPOSIT.base.portal,
       abi: [],
-      functionName:
-        args.action === 'prove' ? 'proveWithdrawalTransaction' : 'finalizeWithdrawalTransactionExternalProof',
+      functionName: 'proveWithdrawalTransaction',
       args: []
     };
   }
@@ -69,6 +81,8 @@ const BRIDGE = {
   routeData: { msgHash: MESSAGE.msgHash, relayCalldata: MESSAGE.withdrawal.data }
 } as unknown as PendingBridge;
 const getCallbacks = () => ({}) as TxCallbacks;
+const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+const PROVER = '0x2222222222222222222222222222222222222222';
 
 const render = (overrides: Partial<Parameters<typeof useNativeWithdrawalActionLegs>[0]> = {}) => {
   const client = new QueryClient();
@@ -82,6 +96,7 @@ const render = (overrides: Partial<Parameters<typeof useNativeWithdrawalActionLe
         enabled: true,
         network: 'base',
         bridge: BRIDGE,
+        account: ACCOUNT,
         chainId: 1,
         getCallbacks,
         ...overrides
@@ -97,7 +112,10 @@ describe('useNativeWithdrawalActionLegs', () => {
       baseGas: 600_000n,
       flow: undefined,
       built: [],
-      buildError: null
+      buildError: null,
+      estimateParams: undefined,
+      estimate: 1_024_585n,
+      estimateError: null
     });
   });
 
@@ -128,6 +146,55 @@ describe('useNativeWithdrawalActionLegs', () => {
       expect((mocks.flow!.calls as { to: string }[])[0].to).toBe(OP_STACK_DEPOSIT.base.portal);
     }
   );
+
+  it('finalizes on the portal at an explicit gas from the estimate, at least what the portal needs to call the target', async () => {
+    const { result } = render({ action: 'finalize' });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const [call] = mocks.flow!.calls as (Parameters<typeof encodeFunctionData>[0] & {
+      to: string;
+      gas: bigint;
+    })[];
+    expect(mocks.estimateParams).toMatchObject({
+      to: OP_STACK_DEPOSIT.base.portal,
+      data: encodeFunctionData(call),
+      account: ACCOUNT,
+      chainId: 1,
+      query: { enabled: true }
+    });
+    expect(call.gas).toBe(
+      opStackFinalizeGas({ estimate: 1_024_585n, gasLimit: MESSAGE.withdrawal.gasLimit })
+    );
+  });
+
+  it.each([
+    ['still loading', undefined, null],
+    ['zero', 0n, null],
+    ['failed', undefined, new Error('execution reverted')]
+  ] as const)('sends no finalize while its gas estimate is %s', async (_, estimate, estimateError) => {
+    Object.assign(mocks, { estimate, estimateError });
+    const { result } = render({ action: 'finalize' });
+    await waitFor(() => expect(mocks.estimateParams).toMatchObject({ query: { enabled: true } }));
+    expect(result.current.ready).toBe(false);
+    expect(mocks.flow).toMatchObject({ calls: [], enabled: false });
+    expect(result.current.error).toBe(estimateError);
+  });
+
+  it('estimates nothing without a wallet, and sends no finalize', async () => {
+    const { result } = render({ action: 'finalize', account: undefined });
+    await waitFor(() => expect(mocks.built).toHaveLength(1));
+    expect(mocks.estimateParams).toMatchObject({ query: { enabled: false } });
+    expect(result.current.ready).toBe(false);
+  });
+
+  it.each([
+    ['an OP Stack prove', { action: 'prove' }],
+    ['an Arbitrum execute', { action: 'finalize', network: 'arbitrum' }]
+  ] as const)('leaves the gas of %s to the wallet', async (_, overrides) => {
+    const { result } = render(overrides);
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(mocks.estimateParams).toMatchObject({ query: { enabled: false } });
+    expect((mocks.flow!.calls as { gas?: bigint }[])[0].gas).toBeUndefined();
+  });
 
   it('executes an Arbitrum withdrawal on the outbox as its finalize, and never proves or replays it', async () => {
     const { result } = render({ action: 'finalize', network: 'arbitrum' });

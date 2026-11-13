@@ -3,6 +3,7 @@ import {
   ContractFunctionRevertedError,
   encodeAbiParameters,
   keccak256,
+  toHex,
   zeroHash,
   type Address,
   type Hex
@@ -26,6 +27,8 @@ export const isSuperGameType = (gameType: number) => SUPER_GAME_TYPES.includes(g
 const CHALLENGER_WINS = 1;
 /** How many of the newest respected games the picker looks through. */
 const GAME_SEARCH_SIZE = 50n;
+/** How many games with a failed read one pick tries: a provider serving no proof fails every game. */
+const FAILED_GAME_BUDGET = 3;
 /** How many of the newest proofs are read: anyone can prove a withdrawal, any number of times. */
 const PROVER_READ_LIMIT = 10n;
 /** The proxy's fallback upstream serves storage proofs this far back (Base and OP Mainnet ~7 days). */
@@ -221,9 +224,11 @@ export type ProveGame = { index: bigint; l2BlockNumber: bigint };
  * prove can use: not lost, still proper, created before now, recent enough
  * for the proxy to serve its L2 state, and claiming the L2's own output root
  * (a wrong root would revert the prove). Anyone can create a game for any L2
- * block in any order, so every one is read, and a game that fails a read is
- * skipped. A super root game's L2 block is found from its timestamp with the
- * chain's fixed block time, and checked. Undefined while no game covers it.
+ * block in any order, so every one is read. A game that fails a read is
+ * skipped, and after a few of those the pick gives up until the next poll. A
+ * super root game's L2 block is found from its timestamp with the chain's
+ * fixed block time, and checked. Undefined while no game covers it; throws
+ * when none was found and a game could not be read.
  */
 export async function pickProveGame({
   l1,
@@ -266,6 +271,8 @@ export async function pickProveGame({
   const usable = async (i: number, l2Sequence: bigint): Promise<ProveGame | undefined> => {
     const game = proxy(games[i].metadata);
     if (usesSuperRoots && head.timestamp - l2Sequence > PROOF_WINDOW_SECONDS) return undefined;
+    // A game for a block the L2 has not reached is no failed read.
+    if (!usesSuperRoots && l2Sequence > head.number) return undefined;
     const [status, createdAt, proper] = await Promise.all([
       readGame(l1, game, 'status'),
       readGame(l1, game, 'createdAt'),
@@ -296,14 +303,29 @@ export async function pickProveGame({
   };
 
   // Oldest first: the oldest one finalizes first.
-  for (let i = games.length - 1; i >= 0; i--) {
-    const l2Sequence = sequences[i];
-    if (l2Sequence === undefined || l2Sequence < target) continue;
-    const picked = await usable(i, l2Sequence).catch(() => undefined);
-    if (picked) return picked;
+  const left = games
+    .map((_, i) => i)
+    .reverse()
+    .filter(i => sequences[i] !== undefined && sequences[i]! >= target);
+  let failed = 0;
+  while (left.length > 0 && failed < FAILED_GAME_BUDGET) {
+    // After a failed read: the newest game, then any one, another on each poll.
+    const at = failed === 0 ? 0 : failed === 1 ? left.length - 1 : pollPick(now, left.length);
+    const [i] = left.splice(at, 1);
+    try {
+      const picked = await usable(i, sequences[i]!);
+      if (picked) return picked;
+    } catch {
+      failed += 1;
+    }
   }
+  // A game left unread may be usable: unknown, not waiting.
+  if (failed > 0 || sequences.includes(undefined)) throw new Error('A prove game could not be read.');
   return undefined;
 }
+
+/** An index below `length` that differs from poll to poll, whatever the time between polls. */
+const pollPick = (now: number, length: number) => Number(BigInt(keccak256(toHex(now))) % BigInt(length));
 
 /** The L2 block at exactly `timestamp`, from the head and the chain's block time; undefined if it isn't one. */
 async function blockAtTimestamp(

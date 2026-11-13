@@ -1,7 +1,8 @@
 import { TransactionNotFoundError, TransactionReceiptNotFoundError, type Hex } from 'viem';
+import type { BridgeNetworkId } from '../model/networks';
 import type { BridgeProgress } from '../model/pendingTransitions';
-import type { PendingBridgeAction } from '../model/types';
-import type { ChainReader } from './types';
+import type { PendingBridge, PendingBridgeAction } from '../model/types';
+import type { AdapterContext, ChainReader } from './types';
 
 /** An L2 sequencer includes or rejects a transaction in seconds; one still unknown after this was dropped or replaced. */
 export const SENT_ACTION_DROPPED_MS = 15 * 60_000;
@@ -29,12 +30,51 @@ export async function settleSentAction(
     if (!(error instanceof TransactionReceiptNotFoundError)) throw error;
   }
   if (now - sent.at < droppedMs) return undefined;
+  // Still pending: it may mine.
+  return (await isTransactionKnown(l2, hash)) ? undefined : { kind: 'action-dropped', txHash: sent.txHash };
+}
+
+/** Whether `chain` has `hash`, mined or in its mempool; throws when it can't tell. */
+export async function isTransactionKnown(chain: Pick<ChainReader, 'getTransaction'>, hash: Hex) {
   try {
-    // Still pending: it may mine.
-    await l2.getTransaction({ hash });
-    return undefined;
+    await chain.getTransaction({ hash });
+    return true;
   } catch (error) {
-    if (error instanceof TransactionNotFoundError) return { kind: 'action-dropped', txHash: sent.txHash };
+    if (error instanceof TransactionNotFoundError) return false;
     throw error;
+  }
+}
+
+/** How long a source transaction on `from` may be unknown to its chain before it counts as dropped or replaced. */
+export const sourceDroppedMs = (from: BridgeNetworkId) =>
+  from === 'ethereum' ? L1_SENT_ACTION_DROPPED_MS : SENT_ACTION_DROPPED_MS;
+
+/**
+ * Asks the source chain about a send no tracker has read mined, once it is
+ * overdue: `source-not-found` only when the chain answers it has neither a
+ * receipt nor the transaction, `source-found` when it has either. Null before
+ * that, and whenever a read fails: a failed read is no evidence.
+ */
+export async function probeSource(
+  bridge: PendingBridge,
+  now: number,
+  context: AdapterContext
+): Promise<BridgeProgress | null> {
+  if (bridge.status !== 'pending' || !bridge.txHash || bridge.sourceMinedAt !== undefined) return null;
+  if (now - bridge.startedAt < sourceDroppedMs(bridge.from)) return null;
+  const source = context.getClient(bridge.from);
+  if (!source) return null;
+  const hash = bridge.txHash as Hex;
+  const found: BridgeProgress | null = bridge.sourceUnseenAt === undefined ? null : { kind: 'source-found' };
+  try {
+    await source.getTransactionReceipt({ hash });
+    return found;
+  } catch (error) {
+    if (!(error instanceof TransactionReceiptNotFoundError)) return null;
+  }
+  try {
+    return (await isTransactionKnown(source, hash)) ? found : { kind: 'source-not-found' };
+  } catch {
+    return null;
   }
 }

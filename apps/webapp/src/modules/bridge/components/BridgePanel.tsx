@@ -8,6 +8,7 @@ import { useBridgeLaunch } from '../hooks/useBridgeLaunch';
 import { useCctpResumeLaunch } from '../hooks/useCctpResumeLaunch';
 import { useCctpSwapConvertLaunch } from '../hooks/useCctpSwapConvertLaunch';
 import { useDestinationActionLaunch } from '../hooks/useDestinationActionLaunch';
+import { useBridgeSurface } from '../hooks/useRecoveryWanted';
 import { getBridgeNetwork, type BridgeNetworkId } from '../model/networks';
 import { isNativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { BridgeCard } from './BridgeCard';
@@ -97,6 +98,7 @@ type BridgePanelProps = {
 
 /** The Bridge tab body: form card, Review CTA, then the pending bridges list. */
 export function BridgePanel({ draft }: BridgePanelProps) {
+  useBridgeSurface();
   const form = useBridgeForm(draft);
   const onBridged = () => {
     form.refetchBalances();

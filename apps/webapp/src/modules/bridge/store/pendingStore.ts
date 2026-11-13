@@ -43,6 +43,9 @@ const NEXT_ACTIONS = keysOf({
 export const pendingScopeKey = ({ account, familyChainId }: { account: string; familyChainId: number }) =>
   `${familyChainId}:${account.toLowerCase()}`;
 
+/** The account of a scope key. */
+export const pendingScopeAccount = (scope: string) => scope.slice(scope.indexOf(':') + 1);
+
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -60,7 +63,7 @@ const isAction = (value: unknown) =>
   optional(value.nextLegTxHash, isString) &&
   optional(value.nextLegAt, at => typeof at === 'number');
 
-const parseEntry = (value: unknown): PendingBridge | null => {
+export const parsePendingEntry = (value: unknown): PendingBridge | null => {
   if (!isRecord(value)) return null;
   const entry = value;
   if (
@@ -85,6 +88,9 @@ const parseEntry = (value: unknown): PendingBridge | null => {
     !optional(entry.recipient, isString) ||
     !optional(entry.routeData, data => isRecord(data) && Object.values(data).every(isString)) ||
     !optional(entry.sourceMinedAt, at => typeof at === 'number') ||
+    !optional(entry.sourceUnseenAt, at => typeof at === 'number') ||
+    !optional(entry.bundleUnseenAt, at => typeof at === 'number') ||
+    !optional(entry.bundleReadTo, isString) ||
     !optional(entry.readyAt, at => typeof at === 'number') ||
     !optional(entry.settledAt, at => typeof at === 'number') ||
     !optional(entry.closedAt, at => typeof at === 'number') ||
@@ -120,7 +126,7 @@ const fillMissing = (existing: PendingBridge, incoming: PendingBridge): PendingB
 export function createPendingBridgeStore({ now = Date.now }: { now?: () => number } = {}) {
   const list = createScopedListStore<PendingBridge>({
     keyPrefix: KEY_PREFIX,
-    parse: parseEntry,
+    parse: parsePendingEntry,
     toJson: bridge => ({ ...bridge, amount: bridge.amount.toString() }),
     idOf: bridge => bridge.id,
     retain: bridge => !isSettled(bridge) || (bridge.settledAt ?? 0) > now() - SETTLED_RETENTION_MS,
@@ -160,18 +166,19 @@ export function createPendingBridgeStore({ now = Date.now }: { now?: () => numbe
       );
     },
     /**
-     * Drops a bridge the user dismissed (see `canDismiss`); entries this bundle can't parse stay.
+     * Drops a bridge the user dismissed (see `canDismiss`) and returns it; entries this bundle can't parse stay.
      * Checks the latest entry, so a bridge another tab saw execute is kept.
      */
-    dismiss(scope: string, id: string) {
+    dismiss(scope: string, id: string): PendingBridge | undefined {
       const current = latest(scope);
       const existing = current.find(entry => entry.id === id);
-      if (!existing || !canDismiss(existing, now())) return;
+      if (!existing || !canDismiss(existing, now(), pendingScopeAccount(scope))) return undefined;
       write(
         scope,
         current.filter(entry => entry.id !== id),
         id
       );
+      return existing;
     },
     /** Closes the card of a settled bridge with nothing left to confirm (see `closeCard`); Activity keeps it. */
     close(scope: string, id: string) {

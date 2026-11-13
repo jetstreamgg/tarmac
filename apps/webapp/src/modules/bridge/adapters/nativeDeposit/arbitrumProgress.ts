@@ -16,7 +16,8 @@ import { settleSentAction } from '../sentAction';
 import type { AdapterContext, ChainReader } from '../types';
 import { blockRanges } from '../blockRanges';
 import { ARB_RETRYABLE_TX, arbRetryableTxAbi } from './contracts';
-import { arbitrumRetryableTicket } from './arbitrum';
+import { arbitrumTicketsOfDeposit } from './arbitrum';
+import { depositMint, progressOfAll } from './sameDeposit';
 
 /** About a day and a half of Arbitrum blocks per log query. */
 export const TICKET_SCAN_CHUNK_BLOCKS = 500_000n;
@@ -115,13 +116,49 @@ async function scanForRedeem(l2: ChainReader, ticketId: Hex, fromBlock: bigint, 
   return unknown ? null : false;
 }
 
+/** Where one ticket of a deposit stands on Arbitrum; throws when a read fails. */
+async function ticketProgress(
+  bridge: PendingBridge,
+  l2: ChainReader,
+  ticketId: Hex
+): Promise<BridgeProgress | null> {
+  // ArbOS creates the ticket once it reads the deposit from Ethereum, minutes later.
+  const creation = await receiptOf(l2, ticketId);
+  if (!creation) return { kind: 'waiting' };
+  // The Inbox rejects an underpaid ticket on Ethereum, so a failed creation is unexpected: never terminal.
+  if (creation.status !== 'success') return null;
+
+  // The auto-redeem's retry, and those of the redeems this bridge confirmed.
+  const redeems = await Promise.all(
+    bridge.actions
+      .filter(action => action.action === 'redeem' && action.status === undefined)
+      .map(action => receiptOf(l2, action.txHash))
+  );
+  const retries = [creation, ...redeems].flatMap(entry =>
+    entry ? scheduledRetries(entry.logs, ticketId) : []
+  );
+  const succeeded = await anyRetrySucceeded(l2, retries);
+  if (succeeded) return { kind: 'arrived' };
+
+  // The ticket read and the scan share one block, so a redeem can't fall between them.
+  const blockNumber = await l2.getBlockNumber();
+  const timeout = await readTimeout(l2, ticketId, blockNumber);
+  if (timeout !== undefined)
+    return { kind: 'ready', nextAction: 'redeem', routeData: { ticketId, timeout: timeout.toString() } };
+  const redeemed = await scanForRedeem(l2, ticketId, creation.blockNumber, blockNumber);
+  if (redeemed) return { kind: 'arrived' };
+  // A retry with no receipt yet may have delivered: never expired on it.
+  return redeemed === false && succeeded === false ? { kind: 'expired' } : null;
+}
+
 /**
  * Where an Ethereum to Arbitrum deposit stands, from the retryable ticket its
  * Ethereum receipt created. Arrived only once a retry of the ticket succeeded
  * on Arbitrum; a live ticket is offered as a redeem; expired only when ArbOS
- * has no ticket and a complete scan found every retry failed. A receipt
- * with no Sky ticket fails only when the sender's Safe reported its execution
- * failed. Any failed read is null: nothing changes.
+ * has no ticket and a complete scan found every retry failed. Of several Sky
+ * tickets in the receipt, only those of its amount and recipient are its. A
+ * receipt with no ticket of its own fails only when the sender's Safe reported
+ * its execution failed. Any failed read is null: nothing changes.
  */
 export async function arbitrumDepositProgress(
   bridge: PendingBridge,
@@ -146,39 +183,14 @@ export async function arbitrumDepositProgress(
 
     const receipt = await l1.getTransactionReceipt({ hash: bridge.txHash as Hex });
     if (receipt.status === 'reverted') return { kind: 'failed', reason: 'source-tx-reverted' };
-    const ticket = arbitrumRetryableTicket(receipt.logs);
-    if (!ticket)
+    const tickets = arbitrumTicketsOfDeposit(receipt.logs, depositMint(bridge));
+    if (tickets.length === 0)
       return safeExecutionFailed(receipt.logs, bridge.account)
         ? { kind: 'failed', reason: 'safe-tx-reverted' }
         : null;
-    const { ticketId } = ticket;
-    // ArbOS creates the ticket once it reads the deposit from Ethereum, minutes later.
-    const creation = await receiptOf(l2, ticketId);
-    if (!creation) return { kind: 'waiting' };
-    // The Inbox rejects an underpaid ticket on Ethereum, so a failed creation is unexpected: never terminal.
-    if (creation.status !== 'success') return null;
-
-    // The auto-redeem's retry, and those of the redeems this bridge confirmed.
-    const redeems = await Promise.all(
-      bridge.actions
-        .filter(action => action.action === 'redeem' && action.status === undefined)
-        .map(action => receiptOf(l2, action.txHash))
+    return progressOfAll(
+      await Promise.all(tickets.map(({ ticketId }) => ticketProgress(bridge, l2, ticketId)))
     );
-    const retries = [creation, ...redeems].flatMap(entry =>
-      entry ? scheduledRetries(entry.logs, ticketId) : []
-    );
-    const succeeded = await anyRetrySucceeded(l2, retries);
-    if (succeeded) return { kind: 'arrived' };
-
-    // The ticket read and the scan share one block, so a redeem can't fall between them.
-    const blockNumber = await l2.getBlockNumber();
-    const timeout = await readTimeout(l2, ticketId, blockNumber);
-    if (timeout !== undefined)
-      return { kind: 'ready', nextAction: 'redeem', routeData: { ticketId, timeout: timeout.toString() } };
-    const redeemed = await scanForRedeem(l2, ticketId, creation.blockNumber, blockNumber);
-    if (redeemed) return { kind: 'arrived' };
-    // A retry with no receipt yet may have delivered: never expired on it.
-    return redeemed === false && succeeded === false ? { kind: 'expired' } : null;
   } catch {
     return null;
   }

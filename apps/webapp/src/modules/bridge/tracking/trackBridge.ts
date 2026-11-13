@@ -1,5 +1,6 @@
 import { applyProgress, isTracked, type BridgeProgress } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeAction } from '../model/types';
+import { probeSource } from '../adapters/sentAction';
 import type { AdapterContext, BridgeAdapter } from '../adapters/types';
 import type { PendingBridgeStore } from '../store/pendingStore';
 
@@ -9,7 +10,8 @@ const fingerprint = (bridge: PendingBridge) =>
 /**
  * One poll of one bridge: resolve a queued Safe transaction first, then a
  * destination action a Safe or a wallet bundle sent, then ask the route
- * adapter. Writes the result to the store and returns it.
+ * adapter, and with nothing from it whether the source chain knows an overdue
+ * send at all. Writes the result to the store and returns it.
  */
 export async function trackBridge({
   store,
@@ -37,13 +39,15 @@ export async function trackBridge({
   // No route adapter can match a Safe tx hash or a bundle's calls id on chain.
   const safeAction = bridge.actions.find(sent => sent.status === 'sent' && sent.safe);
   const bundleAction = bridge.actions.find(sent => sent.status === 'sent' && sent.bundle);
-  const progress = bridge.txHash
+  const reported = bridge.txHash
     ? ((safeAction && (await readSafeAction(bridge, safeAction))) ??
       (bundleAction && readBundleAction && (await readBundleAction(bridge, bundleAction))) ??
       (await getAdapter(bridge).checkProgress(bridge, now(), context)))
     : bridge.safeTxHash
       ? await readSafeTx({ ...bridge, safeTxHash: bridge.safeTxHash })
       : null;
+  // Nothing to report: the source chain may not know the send at all.
+  const progress = reported ?? (await probeSource(bridge, now(), context));
   if (!progress) return null;
   const polled = fingerprint(bridge);
   let applied = false;

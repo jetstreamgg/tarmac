@@ -23,9 +23,10 @@ type RecoveryScan = { unread: NativeDepositNetwork[]; retries: number };
  * Ethereum, sent or received, and adds the ones the store lacks, so their
  * cards offer the prove and finalize. Runs on connect, unless a load in the
  * last 30 minutes read everything, and every 30 minutes; an L2 left unread is
- * retried alone after 2 minutes, then 4, 8 and so on.
+ * retried alone after 2 minutes, then 4, 8 and so on. Reads nothing while not
+ * `enabled`.
  */
-export function useWithdrawalRecovery() {
+export function useWithdrawalRecovery(enabled = true) {
   const { account, scope, familyChainId } = usePendingScope();
   const config = useConfig();
   const queryClient = useQueryClient();
@@ -73,10 +74,15 @@ export function useWithdrawalRecovery() {
       if (unread.length === 0) markCompleteScan(SCAN_KIND, scope, Date.now());
       return { unread, retries: unread.length ? (previous?.unread.length ? previous.retries : 0) + 1 : 0 };
     },
-    enabled: !!scope,
+    enabled: enabled && !!scope,
     staleTime: RECOVERY_INTERVAL_MS,
-    refetchInterval: query =>
-      query.state.data?.unread.length ? retryDelay(query.state.data.retries) : RECOVERY_INTERVAL_MS,
+    refetchInterval: query => {
+      const scan = query.state.data;
+      const delay = scan?.unread.length ? retryDelay(scan.retries) : RECOVERY_INTERVAL_MS;
+      // The time left since the last scan: a pause doesn't push the next one back.
+      const left = delay - (Date.now() - query.state.dataUpdatedAt);
+      return left > 0 ? Math.max(left, 1_000) : delay;
+    },
     refetchOnWindowFocus: false,
     retry: false
   });

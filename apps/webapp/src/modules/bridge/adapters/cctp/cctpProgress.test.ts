@@ -205,7 +205,7 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     expect(setup.readAttestations).not.toHaveBeenCalled();
   });
 
-  it('changes nothing while Iris is down and the expired stored copy was not received', async () => {
+  it('offers nothing new while Iris is down and the expired stored copy was not received', async () => {
     const expired = {
       ...ATTESTED,
       message: patch(ATTESTED.message, 148 + 196, 100n.toString(16).padStart(64, '0'))
@@ -213,7 +213,13 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
     const stored = seed({
       routeData: { cctpMessage: expired.message, cctpAttestation: expired.attestation }
     });
-    await expect(progress(stored, chains({ attested: 'error', block: 100n }))).resolves.toBeNull();
+    const down = chains({ attested: 'error', block: 100n });
+    // Still pending: only its burn is now known to have mined.
+    const waiting = await progress(stored, down);
+    expect(waiting).toEqual({ kind: 'waiting' });
+    expect(applyProgress(stored, waiting!, NOW)).toEqual({ ...stored, sourceMinedAt: NOW });
+    // An offered claim is never taken back.
+    await expect(progress({ ...stored, status: 'ready' }, down)).resolves.toBeNull();
   });
 
   it('offers a copy Circle attested again once the stored one expired unreceived', async () => {
@@ -278,10 +284,15 @@ describe('cctpProgress (golden: Base burn 0x5bb3d46a…6b6a)', () => {
 
   it.each([
     ['the L2 receipt', { l2Status: 'error' as const }],
-    ['Iris', { attested: 'error' as const }],
     ['usedNonces', { used: 'error' as const }]
   ])('changes nothing when %s fails', async (_, failure) => {
     await expect(progress(seed(), chains(failure))).resolves.toBeNull();
+  });
+
+  it('keeps waiting when Iris fails, with only the burn read as mined', async () => {
+    const waiting = await progress(seed(), chains({ attested: 'error' }));
+    expect(waiting).toEqual({ kind: 'waiting' });
+    expect(applyProgress(seed(), waiting!, NOW)).toEqual({ ...seed(), sourceMinedAt: NOW });
   });
 
   it('changes nothing without both clients or a source hash', async () => {

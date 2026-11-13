@@ -3,7 +3,7 @@
  */
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ethereumStepGas } from '../model/routeCosts';
+import { ethereumStepGasLimit } from '../model/routeCosts';
 import type { PendingBridge } from '../model/types';
 import { useWithdrawalEthShortfall } from './useWithdrawalEthShortfall';
 
@@ -54,17 +54,27 @@ describe('useWithdrawalEthShortfall', () => {
     mocks.feeArgs.length = 0;
   });
 
-  it("is the ready step's ETH cost on Ethereum when the wallet can't pay it", () => {
+  it("is the ready step's ETH at its gas limit on Ethereum when the wallet can't cover it", () => {
     mocks.feePerGas = 10n;
-    const prove = ethereumStepGas('prove', 'optimism') * 10n;
+    const prove = ethereumStepGasLimit('prove', 'optimism') * 10n;
     mocks.balance = prove - 1n;
     expect(shortfall(READY)).toBe(prove);
-    expect(shortfall({ ...READY, nextAction: 'finalize' })).toBeUndefined();
+    mocks.balance = prove;
+    expect(shortfall(READY)).toBeUndefined();
     expect(shortfall({ ...READY, from: 'arbitrum', nextAction: 'finalize' })).toBeUndefined();
     mocks.balance = 0n;
     expect(shortfall({ ...READY, from: 'arbitrum', nextAction: 'finalize' })).toBe(
-      ethereumStepGas('finalize', 'arbitrum') * 10n
+      ethereumStepGasLimit('finalize', 'arbitrum') * 10n
     );
+  });
+
+  it('covers the whole gas limit of an OP Stack finalize, not just the gas it spends', () => {
+    mocks.feePerGas = 10n;
+    const limit = ethereumStepGasLimit('finalize', 'optimism') * 10n;
+    mocks.balance = 350_000n * 10n;
+    expect(shortfall({ ...READY, nextAction: 'finalize' })).toBe(limit);
+    mocks.balance = limit;
+    expect(shortfall({ ...READY, nextAction: 'finalize' })).toBeUndefined();
   });
 
   it("reads the wallet's ETH and the fee on the family's Ethereum", () => {

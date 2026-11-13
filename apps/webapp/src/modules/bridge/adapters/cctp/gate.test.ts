@@ -19,6 +19,7 @@ import {
   cctpGate,
   cctpL2ConvertRefusal,
   cctpResumeRefusal,
+  RESUME_SCAN_CHUNK_BLOCKS,
   RESUME_SCAN_MAX_BLOCKS,
   type CctpGateReads
 } from './gate';
@@ -573,89 +574,98 @@ describe('cctpL2ConvertRefusal', () => {
   });
 });
 
-describe('cctpResumeRefusal on a provider that caps log queries at 10k blocks', () => {
-  const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
-  const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
-  const USDC_AMOUNT = 250n * 10n ** 6n;
-  const { psm3 } = cctpL2Contracts('base');
-  const LATEST = 200_000n;
-  // About two days of Base blocks before the latest one.
-  const SWAP_BLOCK = 100_000n;
-  const burn = {
-    args: {
-      amount: USDC_AMOUNT,
-      mintRecipient: `0x${RECIPIENT.slice(2).padStart(64, '0')}`,
-      destinationDomain: 0
-    }
-  };
-  const capped = ({
-    burnAt,
-    outflowAt,
-    failAt
-  }: { burnAt?: bigint; outflowAt?: bigint; failAt?: bigint } = {}) =>
-    ({
-      getTransactionReceipt: vi.fn(async () => ({
-        status: 'success',
-        from: ACCOUNT,
-        to: psm3,
-        blockNumber: SWAP_BLOCK
-      })),
-      getBlockNumber: vi.fn(async () => LATEST),
-      getContractEvents: vi.fn(
-        async ({
-          eventName,
-          fromBlock,
-          toBlock
-        }: {
-          eventName: string;
-          fromBlock: bigint;
-          toBlock?: bigint;
-        }) => {
-          if (toBlock === undefined || toBlock - fromBlock >= 10_000n)
-            throw new Error('query exceeds max block range 10000');
-          if (toBlock > LATEST) throw new Error('block range extends beyond current head block');
-          const within = (at?: bigint) => at !== undefined && fromBlock <= at && at <= toBlock;
-          if (within(failAt)) throw new Error('upstream timeout');
-          if (eventName === 'DepositForBurn') return within(burnAt) ? [burn] : [];
-          return within(burnAt) || within(outflowAt) ? [{}] : [];
-        }
-      )
-    }) as unknown as PublicClient;
-  const refusal = (client: PublicClient) =>
-    cctpResumeRefusal({
-      network: 'base',
-      swapTxHash: ('0x' + 'ab'.repeat(32)) as Hex,
-      account: ACCOUNT,
-      usdcAmount: USDC_AMOUNT,
-      recipient: RECIPIENT,
-      client
+// Base mines a block every 200 ms: its query spans ten times the blocks, and the same time.
+describe.each([
+  { network: 'optimism', cap: 10_000n },
+  { network: 'unichain', cap: 10_000n },
+  { network: 'arbitrum', cap: 10_000n },
+  { network: 'base', cap: 100_000n }
+] as const)(
+  'cctpResumeRefusal on $network, on a provider that caps log queries at $cap blocks',
+  ({ network, cap }) => {
+    const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
+    const RECIPIENT = '0x00000000000000000000000000000000000b0b01';
+    const USDC_AMOUNT = 250n * 10n ** 6n;
+    const { psm3 } = cctpL2Contracts(network);
+    const LATEST = 20n * cap;
+    // Ten queries before the latest block.
+    const SWAP_BLOCK = 10n * cap;
+    const burn = {
+      args: {
+        amount: USDC_AMOUNT,
+        mintRecipient: `0x${RECIPIENT.slice(2).padStart(64, '0')}`,
+        destinationDomain: 0
+      }
+    };
+    const capped = ({
+      burnAt,
+      outflowAt,
+      failAt
+    }: { burnAt?: bigint; outflowAt?: bigint; failAt?: bigint } = {}) =>
+      ({
+        getTransactionReceipt: vi.fn(async () => ({
+          status: 'success',
+          from: ACCOUNT,
+          to: psm3,
+          blockNumber: SWAP_BLOCK
+        })),
+        getBlockNumber: vi.fn(async () => LATEST),
+        getContractEvents: vi.fn(
+          async ({
+            eventName,
+            fromBlock,
+            toBlock
+          }: {
+            eventName: string;
+            fromBlock: bigint;
+            toBlock?: bigint;
+          }) => {
+            if (toBlock === undefined || toBlock - fromBlock >= cap)
+              throw new Error(`query exceeds max block range ${cap}`);
+            if (toBlock > LATEST) throw new Error('block range extends beyond current head block');
+            const within = (at?: bigint) => at !== undefined && fromBlock <= at && at <= toBlock;
+            if (within(failAt)) throw new Error('upstream timeout');
+            if (eventName === 'DepositForBurn') return within(burnAt) ? [burn] : [];
+            return within(burnAt) || within(outflowAt) ? [{}] : [];
+          }
+        )
+      }) as unknown as PublicClient;
+    const refusal = (client: PublicClient) =>
+      cctpResumeRefusal({
+        network,
+        swapTxHash: ('0x' + 'ab'.repeat(32)) as Hex,
+        account: ACCOUNT,
+        usdcAmount: USDC_AMOUNT,
+        recipient: RECIPIENT,
+        client
+      });
+
+    it('continues a swap with no burn and no outflow, however old', async () => {
+      await expect(refusal(capped())).resolves.toBeUndefined();
     });
 
-  it('continues a swap with no burn and no outflow, however old', async () => {
-    await expect(refusal(capped())).resolves.toBeUndefined();
-  });
+    it('still finds the burn or the outflow far after the swap', async () => {
+      await expect(refusal(capped({ burnAt: LATEST - cap / 2n }))).resolves.toHaveProperty(
+        'message',
+        expect.stringMatching(/already sent/)
+      );
+      await expect(refusal(capped({ outflowAt: LATEST }))).resolves.toHaveProperty(
+        'message',
+        expect.stringMatching(/USDC left this wallet/)
+      );
+    });
 
-  it('still finds the burn or the outflow far after the swap', async () => {
-    await expect(refusal(capped({ burnAt: 195_000n }))).resolves.toHaveProperty(
-      'message',
-      expect.stringMatching(/already sent/)
-    );
-    await expect(refusal(capped({ outflowAt: LATEST }))).resolves.toHaveProperty(
-      'message',
-      expect.stringMatching(/USDC left this wallet/)
-    );
-  });
+    it('fails closed when any part of the range cannot be read', async () => {
+      await expect(refusal(capped({ failAt: 15n * cap }))).rejects.toThrow('upstream timeout');
+    });
 
-  it('fails closed when any part of the range cannot be read', async () => {
-    await expect(refusal(capped({ failAt: 150_000n }))).rejects.toThrow('upstream timeout');
-  });
-
-  it('never continues on a node that is behind the swap, as nothing after it was read', async () => {
-    const client = capped({ burnAt: SWAP_BLOCK });
-    vi.mocked(client.getBlockNumber).mockResolvedValue(SWAP_BLOCK - 1n);
-    await expect(refusal(client)).resolves.toBeInstanceOf(Error);
-  });
-});
+    it('never continues on a node that is behind the swap, as nothing after it was read', async () => {
+      const client = capped({ burnAt: SWAP_BLOCK });
+      vi.mocked(client.getBlockNumber).mockResolvedValue(SWAP_BLOCK - 1n);
+      await expect(refusal(client)).resolves.toBeInstanceOf(Error);
+    });
+  }
+);
 
 describe('cctpResumeRefusal against a head that moves or a record that is old', () => {
   const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
@@ -710,15 +720,54 @@ describe('cctpResumeRefusal against a head that moves or a record that is old', 
   });
 
   it('refuses a swap too old to scan, with a bounded number of reads', async () => {
-    const client = chain({ heads: [SWAP_BLOCK + RESUME_SCAN_MAX_BLOCKS + 1n] });
+    const client = chain({ heads: [SWAP_BLOCK + RESUME_SCAN_MAX_BLOCKS.base + 1n] });
     await expect(refusal(client)).resolves.toHaveProperty('message', expect.stringMatching(/too old/));
     expect(vi.mocked(client.getContractEvents).mock.calls.length).toBeLessThanOrEqual(
-      Number((2n * RESUME_SCAN_MAX_BLOCKS) / 10_000n) + 2
+      Number((2n * RESUME_SCAN_MAX_BLOCKS.base) / RESUME_SCAN_CHUNK_BLOCKS.base) + 2
     );
   });
 
   it('still continues a swap just within the scan limit', async () => {
-    const client = chain({ heads: [SWAP_BLOCK + RESUME_SCAN_MAX_BLOCKS - 1n] });
+    const client = chain({ heads: [SWAP_BLOCK + RESUME_SCAN_MAX_BLOCKS.base - 1n] });
     await expect(refusal(client)).resolves.toBeUndefined();
+  });
+
+  describe('on Base, a block every 200 ms', () => {
+    const BLOCKS_PER_DAY = 432_000n;
+    const reads = (client: PublicClient) => vi.mocked(client.getContractEvents).mock.calls.length;
+
+    it('continues a swap of two weeks ago, in no more reads than three weeks of blocks took before', async () => {
+      const client = chain({ heads: [SWAP_BLOCK + 14n * BLOCKS_PER_DAY] });
+      await expect(refusal(client)).resolves.toBeUndefined();
+      expect(reads(client)).toBeLessThanOrEqual(202);
+    });
+
+    it('still finds the burn sent days after a swap of two weeks ago', async () => {
+      const client = chain({
+        heads: [SWAP_BLOCK + 14n * BLOCKS_PER_DAY],
+        burnAt: SWAP_BLOCK + 9n * BLOCKS_PER_DAY
+      });
+      await expect(refusal(client)).resolves.toHaveProperty('message', expect.stringMatching(/already sent/));
+    });
+
+    it('refuses a swap of a month ago', async () => {
+      const client = chain({ heads: [SWAP_BLOCK + 30n * BLOCKS_PER_DAY] });
+      await expect(refusal(client)).resolves.toHaveProperty('message', expect.stringMatching(/too old/));
+    });
+
+    it('never continues on a provider that caps log queries at 10k blocks', async () => {
+      const client = chain({ heads: [SWAP_BLOCK + BLOCKS_PER_DAY] });
+      vi.mocked(client.getContractEvents).mockImplementation((async ({
+        fromBlock,
+        toBlock
+      }: {
+        fromBlock: bigint;
+        toBlock: bigint;
+      }) => {
+        if (toBlock - fromBlock >= 10_000n) throw new Error('query exceeds max block range 10000');
+        return [];
+      }) as never);
+      await expect(refusal(client)).rejects.toThrow('max block range');
+    });
   });
 });
