@@ -368,6 +368,12 @@ interface ChartProps {
   hideValue?: boolean;
   /** Timeframe selected on mount. */
   initialTimeFrame?: TimeFrame;
+  /**
+   * The range `data` actually covers, when it can lag the picker while a switch
+   * loads (useSettledTimeFrame). The entrance draw keys on it, so it plays once
+   * the new series lands instead of on the old one. Defaults to the selection.
+   */
+  plottedTimeFrame?: TimeFrame;
   tooltipLabel?: React.ReactNode;
   icons?: React.ReactNode;
   /** Token(s) the series represents; drives the tooltip's trailing token
@@ -836,6 +842,7 @@ export function Chart({
   displayValue,
   hideValue = false,
   initialTimeFrame = 'w',
+  plottedTimeFrame,
   tooltipLabel,
   icons,
   tokenSymbols,
@@ -886,8 +893,9 @@ export function Chart({
       <TrendBadge percentage={percentage} formatted={formattedPercentage.replace('-', '')} />
     ) : undefined;
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>(initialTimeFrame);
+  const seriesTimeframe = plottedTimeFrame ?? activeTimeframe;
   const [width, setWidth] = useState<number>(0);
-  const dateAxis = formatedXAxis(data, activeTimeframe, bpi);
+  const dateAxis = formatedXAxis(data, seriesTimeframe, bpi);
 
   useEffect(() => {
     const containerElement = containerRef.current;
@@ -1033,7 +1041,7 @@ export function Chart({
             symbol={symbol}
             prefix={prefix}
             isPercentage={isPercentage}
-            activeTimeframe={activeTimeframe}
+            activeTimeframe={seriesTimeframe}
             isLoading={isLoading}
             error={error}
             isDetail={isDetail}
@@ -1041,7 +1049,7 @@ export function Chart({
             tooltipLabel={resolveTooltipLabel(tooltipLabel, metrics, activeMetric)}
             tokenSymbols={tokenSymbols}
             color={color}
-            seriesKey={`${activeMetric ?? ''}-${activeTimeframe}`}
+            seriesKey={`${activeMetric ?? ''}-${seriesTimeframe}`}
           />
         </div>
         {isMobileDetail && (

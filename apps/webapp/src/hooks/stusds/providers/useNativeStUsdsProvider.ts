@@ -158,10 +158,13 @@ export function useNativeStUsdsProvider(params: StUsdsQuoteParams): StUsdsProvid
           state.blockedReason === StUsdsBlockedReason.AMOUNT_EXCEEDS_LIQUIDITY
             ? 'Amount exceeds available liquidity'
             : 'Withdrawals are currently unavailable';
-      } else if (state.maxWithdraw !== undefined && amount > state.maxWithdraw) {
-        isValid = false;
-        invalidReason = 'Amount exceeds available liquidity';
       }
+      // No check against the user's own withdrawable balance (`maxWithdraw`):
+      // insufficient balance is the form's error, not a property of the route.
+      // Judging it here invalidated the native quote for any wallet with less
+      // than the 1-USDS reference amount the selection compares at, so Curve
+      // won on validity alone and was announced as a "better rate" (APP-509).
+      // The route's real limit, module liquidity, is `canWithdraw` above.
     }
 
     // Calculate effective rate
