@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { Ban, TriangleAlert } from 'lucide-react';
 import { useDisconnect } from 'wagmi';
 import { Text } from '@/modules/layout/components/Typography';
@@ -17,28 +17,13 @@ import {
   reportTermsLinkConfigErrorOnce
 } from '@/modules/config/termsLink';
 
-type AuthData = {
-  addressAllowed?: boolean;
-  authIsLoading?: boolean;
-  address?: string;
-  authError?: Error;
-};
-
-type VpnData = {
-  isConnectedToVpn?: boolean;
-  isRestrictedRegion?: boolean;
-  vpnIsLoading?: boolean;
-  vpnError?: Error;
-  countryCode?: string | null;
-};
-
 type UnauthorizedPageProps = {
-  authData: AuthData;
-  vpnData: VpnData;
   blockReason?: AccessBlockReason;
+  countryCode?: string | null;
   /** Re-runs the failed checks — wired to the "unavailable" states only. */
   onRetry?: () => void;
-  children?: React.ReactNode;
+  /** A failed check is running again: the retry button shows its loading state. */
+  isRetrying?: boolean;
 };
 
 const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
@@ -57,31 +42,32 @@ const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
     <>Terms of Use</>
   );
 
+/**
+ * The blocked dialog. AccessGate renders it only once a block verdict is in;
+ * while the checks are in flight, WalletChip's ConnectChecksCover holds the
+ * screen instead.
+ */
 export const UnauthorizedPage = ({
-  authData,
-  vpnData,
   blockReason,
+  countryCode,
   onRetry,
-  children
+  isRetrying
 }: UnauthorizedPageProps) => {
   const { trackVpnBlockedPageView } = useVpnAnalytics();
   const { disconnect } = useDisconnect();
-  const blockedTrackedRef = useRef(false);
-
-  const isLoading = useMemo(
-    () => authData.authIsLoading || vpnData.vpnIsLoading,
-    [authData.authIsLoading, vpnData.vpnIsLoading]
-  );
+  // Once per reason: the gate stays mounted through retries, so a retry that
+  // turns one reason into another (network error → region) is a new view.
+  const trackedReasonRef = useRef<AccessBlockReason | undefined | null>(null);
 
   useEffect(() => {
-    if (blockedTrackedRef.current || isLoading) return;
-    blockedTrackedRef.current = true;
+    if (trackedReasonRef.current === blockReason) return;
+    trackedReasonRef.current = blockReason;
 
     trackVpnBlockedPageView({
       blockReason: blockReason ? ANALYTICS_REASON[blockReason] : 'unknown',
-      countryCode: vpnData.countryCode ?? null
+      countryCode: countryCode ?? null
     });
-  }, [isLoading, blockReason, vpnData.countryCode, trackVpnBlockedPageView]);
+  }, [blockReason, countryCode, trackVpnBlockedPageView]);
 
   const { termsLinks } = getTermsLinkConfig();
 
@@ -143,7 +129,7 @@ export const UnauthorizedPage = ({
               <Button variant="secondary" size="l" className="flex-1" onClick={() => disconnect()}>
                 <Trans>Disconnect wallet</Trans>
               </Button>
-              <Button variant="primary" size="l" className="flex-1" onClick={onRetry}>
+              <Button variant="primary" size="l" className="flex-1" loading={isRetrying} onClick={onRetry}>
                 <Trans>Check again</Trans>
               </Button>
             </div>
@@ -161,7 +147,7 @@ export const UnauthorizedPage = ({
             </Trans>
           ),
           actions: (
-            <Button variant="primary" size="l" className="w-full" onClick={onRetry}>
+            <Button variant="primary" size="l" className="w-full" loading={isRetrying} onClick={onRetry}>
               <Trans>Try again</Trans>
             </Button>
           )
@@ -172,38 +158,28 @@ export const UnauthorizedPage = ({
   const { icon, title, message, actions } = stateContent();
 
   return (
-    <>
-      {/* While the checks are in flight this renders nothing: WalletChip's
-          ConnectChecksCover holds the screen for the whole connect-time
-          sequence (screening, then the terms check), so the spinner doesn't
-          restart between them. This component mounts in two places at once
-          (here and AuthWrapper), which is the other reason the wait can't live
-          in it — two scrims would stack.
-
-          The dialog therefore mounts only once the verdict is in, which is
-          also what stops it resizing: it used to stay open across the swap
-          from the 300px waiting card to this 500px one, and DialogContent's
-          `transition: all 300ms` animated that as a widening. */}
-      {!isLoading && (
-        <Dialog open={true}>
-          <DialogContent
-            aria-describedby={undefined}
-            className="bg-containerDark w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
-          >
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                {icon}
-                <DialogTitle asChild>
-                  <Text className="text-text font-circle text-xl">{title}</Text>
-                </DialogTitle>
-              </div>
-              <Text className="font-graphik text-textSecondary text-sm">{message}</Text>
-            </div>
-            {actions}
-          </DialogContent>
-        </Dialog>
-      )}
-      {children}
-    </>
+    <Dialog open={true}>
+      <DialogContent
+        aria-describedby={undefined}
+        // A block can now land mid-flow (screening runs on a transaction's
+        // first screen), so the gate has to sit above any open modal, the toast
+        // stack and the cookie banner — the terms modal's tier (APP-534).
+        // Rendered outside Layout, so it hides behind the app loader's cover
+        // like the toasts do.
+        overlayClassName="app-loader-cover-hidden z-[1000]"
+        className="app-loader-cover-hidden bg-containerDark z-[1000] w-full max-w-[500px] gap-8 p-8 sm:min-w-[500px] sm:p-8"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            {icon}
+            <DialogTitle asChild>
+              <Text className="text-text font-circle text-xl">{title}</Text>
+            </DialogTitle>
+          </div>
+          <Text className="font-graphik text-textSecondary text-sm">{message}</Text>
+        </div>
+        {actions}
+      </DialogContent>
+    </Dialog>
   );
 };

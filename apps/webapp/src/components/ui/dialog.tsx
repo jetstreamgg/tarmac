@@ -3,8 +3,11 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 import { cn } from '@/lib/cn';
 import { useRestoreFocusOnClose } from '@/hooks/ui/useRestoreFocusOnClose';
+import { useHeldOpen } from './pageModalHold';
 
-const Dialog = DialogPrimitive.Root;
+const Dialog = ({ open, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) => {
+  return <DialogPrimitive.Root open={useHeldOpen(open)} {...props} />;
+};
 
 const DialogTrigger = DialogPrimitive.Trigger;
 

@@ -53,6 +53,8 @@ interface ConnectedContextType {
    * the terms (the "check again" path on the unavailable states).
    */
   retryAccessChecks: () => void;
+  /** A failed access check is running again while its gate stays up. */
+  isRetryingAccessChecks: boolean;
   isCheckingTerms: boolean;
   termsCheckError: boolean;
   /**
@@ -129,6 +131,7 @@ export const ConnectedContext = createContext<ConnectedContextType>({
   isConnectedAndAcceptedTerms: false,
   isAuthorized: false,
   retryAccessChecks: () => {},
+  isRetryingAccessChecks: false,
   isCheckingTerms: false,
   termsCheckError: false,
   termsCheckDenied: false,
@@ -158,10 +161,25 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const {
     data: vpnData,
-    isLoading: vpnIsLoading,
+    isLoading: vpnQueryIsLoading,
     error: vpnError,
+    isFetching: vpnIsFetching,
     refetch: refetchVpnCheck
   } = useVpnCheck({ authUrl, skip: skipAuthCheck });
+
+  // Whether the "network error" gate is up. A retry clears the query's `error`
+  // (a refetch with no data resets it to pending), which would read as a first
+  // load and drop the gate for every retry, so the gate is remembered here
+  // until a verdict lands.
+  const ipCheckFailed = !!vpnError && !vpnData;
+  const [ipGateUp, setIpGateUp] = useState(false);
+  if (ipCheckFailed && !ipGateUp) {
+    setIpGateUp(true);
+  } else if (ipGateUp && vpnData) {
+    setIpGateUp(false);
+  }
+  const ipCheckUnavailable = ipCheckFailed || (ipGateUp && !vpnData);
+  const vpnIsLoading = vpnQueryIsLoading && !ipCheckUnavailable;
 
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
@@ -298,13 +316,28 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const {
     data: authData,
     error: authError,
+    isFetching: authIsFetching,
     refetch: refetchAddressCheck
   } = useRestrictedAddressCheck({ address, authUrl, enabled: screeningRequired });
+
+  // The address whose "screening unavailable" gate is up, remembered through
+  // retries like `ipGateUp`, until a verdict lands or the wallet changes. Only
+  // a failure seen while screening is required raises it: the cache entry is
+  // shared with the pre-transaction check, whose failures must not.
+  const screeningFailed = !!address && screeningRequired && !!authError && !authData;
+  const [screeningGateFor, setScreeningGateFor] = useState<string>();
+  if (screeningFailed && screeningGateFor !== address) {
+    setScreeningGateFor(address);
+  } else if (screeningGateFor && (screeningGateFor !== address || !screeningRequired || authData)) {
+    setScreeningGateFor(undefined);
+  }
+  const screeningUnavailable =
+    screeningFailed || (!!address && screeningGateFor === address && screeningRequired && !authData);
 
   // Derived rather than read off the query's own loading flag: it has to be
   // true in the very render the terms verdict lands, or that render reads as
   // authorized and the terms modal would open before the address is screened.
-  const authIsLoading = screeningRequired && !authData && !authError;
+  const authIsLoading = screeningRequired && !authData && !screeningUnavailable;
 
   useEffect(() => {
     if (authError) {
@@ -455,7 +488,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Fail closed only when there is no verdict at all. A failed background
     // refetch keeps the cached data and sets `error`, so gating on the error
     // alone would discard a verdict we already hold.
-    if (vpnError && !vpnData) return 'ip-check-unavailable';
+    if (ipCheckUnavailable) return 'ip-check-unavailable';
     if (address) {
       // Whoever screened (the pre-terms check or the pre-transaction gate), a
       // risky verdict blocks the app.
@@ -464,10 +497,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // user and the terms. At Confirm, the gate owns that failure with its
       // own dialog: a flaky check shouldn't take the whole app away from a
       // wallet that was never screened out.
-      if (screeningRequired && authError && !authData) return 'screening-unavailable';
+      if (screeningUnavailable) return 'screening-unavailable';
     }
     return undefined;
-  }, [vpnData, vpnError, address, authData, authError, screeningRequired]);
+  }, [vpnData, ipCheckUnavailable, address, authData, screeningUnavailable]);
 
   // `undefined !== true` while a required screening is in flight, so the
   // address stays gated (behind the loading dialog) until a verdict lands.
@@ -489,6 +522,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetchVpnCheck();
     if (screeningRequired) refetchAddressCheck();
   }, [refetchVpnCheck, refetchAddressCheck, screeningRequired]);
+  const isRetryingAccessChecks =
+    (ipCheckUnavailable && vpnIsFetching) || (screeningUnavailable && authIsFetching);
 
   // Keep the VPN super properties (is_vpn, is_restricted_region) in sync so every
   // PostHog event carries them. Unlike the fire-once tracking below, this re-runs
@@ -543,6 +578,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       accessBlockReason,
       isUsUser,
       retryAccessChecks,
+      isRetryingAccessChecks,
       isCheckingTerms,
       termsCheckError,
       termsCheckDenied,
@@ -574,6 +610,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       accessBlockReason,
       isUsUser,
       retryAccessChecks,
+      isRetryingAccessChecks,
       isCheckingTerms,
       termsCheckError,
       termsCheckDenied,

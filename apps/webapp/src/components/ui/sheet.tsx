@@ -4,9 +4,10 @@ import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
 import { useRestoreFocusOnClose } from '@/hooks/ui/useRestoreFocusOnClose';
+import { useHeldOpen } from './pageModalHold';
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />;
+function Sheet({ open, ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  return <SheetPrimitive.Root data-slot="sheet" open={useHeldOpen(open)} {...props} />;
 }
 
 function SheetTrigger({ ...props }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
