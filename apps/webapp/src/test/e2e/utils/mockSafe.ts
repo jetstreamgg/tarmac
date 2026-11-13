@@ -52,9 +52,16 @@ const CHAIN_ID: Record<NetworkName, number> = {
   [NetworkName.unichain]: unichain.id
 };
 
-// Matched against the app's own tx-service hosts, so a host change there can't bypass the mock.
+// Matched against the app's own tx-service URLs, so a URL change there can't bypass the mock.
+// Every chain shares one host, so the chain is the path prefix (`/tx-service/<chain>`).
 const txServiceNetwork = (url: URL) =>
-  Object.values(NetworkName).find(network => SAFE_TRANSACTION_SERVICE_URL[CHAIN_ID[network]] === url.origin);
+  Object.values(NetworkName).find(network =>
+    url.href.startsWith(`${SAFE_TRANSACTION_SERVICE_URL[CHAIN_ID[network]]}/`)
+  );
+
+/** The request path below the chain's tx-service prefix, e.g. `/api/v1/safes/0x…/`. */
+const txServicePath = (url: URL, network: NetworkName) =>
+  url.pathname.slice(new URL(SAFE_TRANSACTION_SERVICE_URL[CHAIN_ID[network]]).pathname.length);
 
 // Tenderly accepts unsigned sends; the gas mirrors what mockRpcCalls gives the page.
 const FORK_GAS = 0x7a1200n;
@@ -487,8 +494,9 @@ export async function enableSafeMode(
 
     const url = new URL(request.url());
     const on = txServiceNetwork(url);
+    const path = on ? txServicePath(url, on) : url.pathname;
     // The app only reads a transaction by its safeTxHash (useWaitForSafeTxHash).
-    const single = url.pathname.match(/^\/api\/v1\/multisig-transactions\/(0x[0-9a-fA-F]{64})\/?$/);
+    const single = path.match(/^\/api\/v1\/multisig-transactions\/(0x[0-9a-fA-F]{64})\/?$/);
     if (!on || !single || request.method() !== 'GET') {
       unmockedRequests.push(maskHex(`${request.method()} ${url.hostname}${url.pathname}`));
       return route.fulfill({ status: 404, headers, contentType: 'application/json', body: '' });
