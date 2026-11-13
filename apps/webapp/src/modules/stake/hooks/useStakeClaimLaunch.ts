@@ -176,7 +176,7 @@ export function useStakeClaimLaunch({ urnIndex, selected, enabled, sessionId }: 
   // ── Plain claim: D5 adapter calls → the shared transaction flow (C2).
   // Ordered before the restake engine so tests can capture the two flows
   // deterministically.
-  const { calls: claimCalls } = stakeAdapter.useClaimCalls(selected, { restake: false });
+  const { calls: claimCalls } = stakeAdapter.useClaimCalls(selected);
   const plainFlow = useTransactionFlow({
     calls: claimCalls,
     chainId,
