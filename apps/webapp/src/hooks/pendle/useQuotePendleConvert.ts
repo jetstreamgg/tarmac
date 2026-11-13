@@ -324,7 +324,7 @@ export function useQuotePendleConvert({
       };
     },
     staleTime: 30_000,
-    gcTime: 60_000,
+    gcTime: 30_000,
     // Disconnected previews fetch once on input change but don't poll — keeps
     // anonymous-visitor traffic to Pendle bounded; `poll` lets callers opt
     // out while their quote isn't on screen.

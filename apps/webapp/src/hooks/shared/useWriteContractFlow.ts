@@ -21,7 +21,6 @@ export function useWriteContractFlow<
 >(parameters: UseWriteContractFlowParameters<abi, functionName, args, config, chainId>): WriteHook {
   const {
     enabled,
-    gcTime,
     onMutate = () => null,
     onSuccess = () => null,
     onError = () => null,
@@ -37,7 +36,7 @@ export function useWriteContractFlow<
     error: simulationError
   } = useSimulateContract({
     ...useSimulateContractParamters,
-    query: { ...useSimulateContractParamters.query, enabled, gcTime: gcTime || 30000 }
+    query: { ...useSimulateContractParamters.query, enabled, gcTime: 30_000 }
   } as unknown as UseSimulateContractParameters<abi, functionName, args, config, chainId>);
   useEffect(
     () => reportPrepareRevert(simulationError, parameters.chainId),
