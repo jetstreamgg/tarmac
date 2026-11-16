@@ -153,6 +153,8 @@ export type TransactionModalProps = {
   refusal?: SendRefusal | null;
   /** The current ERROR ends a send whose outcome can't be read — see the step model. */
   unconfirmed?: SendUnconfirmed | null;
+  /** The current ERROR is a bundle the wallet stopped reporting on — Close only, see the step model. */
+  outcomeUnknown?: boolean;
   /** The current ERROR is a contract revert: why, in user-facing copy — see the step model. */
   failureReason?: string;
   /**
@@ -260,6 +262,7 @@ export function TransactionModal({
   userRejected = false,
   refusal = null,
   unconfirmed = null,
+  outcomeUnknown = false,
   failureReason,
   gateCopy,
   preflight,
@@ -336,6 +339,8 @@ export function TransactionModal({
   // render as INITIALIZED, so a purely txStatus-keyed chip announces "Confirm
   // in the wallet" during an HTTP address check (APP-501).
   const badgeFailed = txStatus === TxStatus.ERROR;
+  // May have executed: a warning, not a failure, and nothing on screen may send it again.
+  const outcomeInDoubt = badgeFailed && outcomeUnknown;
   // A declined/failed terms signature is not a transaction — nothing reached
   // the chain — so the chip names the signature rather than claiming a
   // rolled-back transaction (the failed row below already says as much).
@@ -348,6 +353,8 @@ export function TransactionModal({
     gateCopy?.badgeLabel ??
     (failedOnSignature ? (
       <Trans>Signature failed</Trans>
+    ) : outcomeInDoubt ? (
+      <Trans>Couldn&apos;t confirm</Trans>
     ) : badgeFailed && unconfirmed ? (
       <Trans>Not confirmed</Trans>
     ) : badgeFailed && refusal ? (
@@ -357,7 +364,7 @@ export function TransactionModal({
     ) : (
       statusBadgeLabel[txStatus]
     ));
-  const badgeVariant = badgeFailed ? 'error' : 'brand';
+  const badgeVariant = outcomeInDoubt ? 'warning' : badgeFailed ? 'error' : 'brand';
   const badgeContent = badgeLabel ? (
     <>
       {(isTransacting || txStatus === TxStatus.IDLE) && <Loader size="2xs" />}
@@ -484,13 +491,15 @@ export function TransactionModal({
   // conversion" no longer differs here either.
   const failedTitle = failedOnSignature
     ? t`Signature failed`
-    : unconfirmed
-      ? t`Transaction not confirmed`
-      : refusal
-        ? t`Transaction not sent`
-        : userRejected
-          ? t`Transaction declined`
-          : t`Transaction failed`;
+    : outcomeInDoubt
+      ? t`Couldn't confirm transaction`
+      : unconfirmed
+        ? t`Transaction not confirmed`
+        : refusal
+          ? t`Transaction not sent`
+          : userRejected
+            ? t`Transaction declined`
+            : t`Transaction failed`;
   const displayTitle = isTransaction
     ? badgeFailed
       ? failedTitle
@@ -550,6 +559,18 @@ export function TransactionModal({
     setStep(firstStep);
     onClose();
   }, [txStatus, onClose, firstStep]);
+
+  const unconfirmedClose = (
+    <Button
+      variant="primary"
+      size="xl"
+      className="w-full"
+      onClick={handleClose}
+      data-testid="transaction-unconfirmed-close"
+    >
+      <Trans>Close</Trans>
+    </Button>
+  );
 
   // Dismissing the modal: after broadcast it minimizes (the tx keeps running and a
   // toast takes over); otherwise it closes. Used by the close button, esc, and
@@ -676,6 +697,7 @@ export function TransactionModal({
                     userRejected,
                     refusal,
                     unconfirmed,
+                    outcomeUnknown,
                     failureReason
                   });
                   // Stays live off the product's chain: the provider refuses a
@@ -724,7 +746,8 @@ export function TransactionModal({
               {/* The failure view's cross-chain guard (APP-528) lives here once
                   the failure renders inline — the bottom CTA row that used to
                   carry it is gone with the step list showing. */}
-              {showInlineFailure && chainGuarded && (
+              {showInlineFailure && outcomeInDoubt && <div className="pt-6">{unconfirmedClose}</div>}
+              {showInlineFailure && !outcomeInDoubt && chainGuarded && (
                 <div className="flex flex-col gap-4 pt-2">
                   {chainGuardBlock}
                   {guardCta}
@@ -759,7 +782,7 @@ export function TransactionModal({
                 size="iconM"
                 aria-label={t`Back`}
                 onClick={handleHeaderBack}
-                disabled={isTransacting || backLocked}
+                disabled={isTransacting || backLocked || outcomeInDoubt}
                 data-testid="transaction-modal-back"
               >
                 <ArrowLeft className="size-4" />
@@ -947,7 +970,9 @@ export function TransactionModal({
                 </div>
               )}
 
-              {txStatus === TxStatus.ERROR && (
+              {outcomeInDoubt && unconfirmedClose}
+
+              {txStatus === TxStatus.ERROR && !outcomeInDoubt && (
                 <>
                   {chainGuardBlock}
                   <div className="flex w-full gap-3">

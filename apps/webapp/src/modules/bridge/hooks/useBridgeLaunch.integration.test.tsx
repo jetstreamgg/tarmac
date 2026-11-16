@@ -231,7 +231,8 @@ vi.mock('@/hooks/shared/useTransactionOutcome', async io => {
   };
 });
 // The batch engine stays off: these runs are sequential.
-vi.mock('@/hooks/shared/useSendBatchTransactionFlow', () => ({
+vi.mock('@/hooks/shared/useSendBatchTransactionFlow', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/hooks/shared/useSendBatchTransactionFlow')>()),
   useSendBatchTransactionFlow: () => ({
     execute: vi.fn(),
     reset: vi.fn(),

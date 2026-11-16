@@ -123,7 +123,7 @@ function PendleSupplyCard({
                 showChainIcon={false}
                 className="h-4 w-4 shrink-0"
               />
-              <PopoverRateInfo type="fixedYield" width={14} height={14} iconClassName="text-fgSecondary" />
+              <PopoverRateInfo type="fixedYield" />
             </>
           }
           idle={idleBalance}
@@ -278,7 +278,7 @@ function PendleMaturedCard({
             <ProductStat label={<Trans>Claim date</Trans>}>{maturityLabel}</ProductStat>
             <ProductStat label={<Trans>Fixed rate</Trans>}>
               <Trans>Ended</Trans>
-              <RateInfo type="fixedYield" size={12} />
+              <RateInfo type="fixedYield" />
             </ProductStat>
           </ProductStatPair>
           <Text variant="small" className="text-fgSecondary">
@@ -406,7 +406,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
             <ProductStat label={<Trans>Claim date</Trans>}>{claimDateLabel}</ProductStat>
             <ProductStat label={<Trans>Fixed rate</Trans>}>
               <ProductPercent value={fixedRate} />
-              <RateInfo type="fixedYield" size={12} />
+              <RateInfo type="fixedYield" />
             </ProductStat>
           </ProductStatPair>
         </>

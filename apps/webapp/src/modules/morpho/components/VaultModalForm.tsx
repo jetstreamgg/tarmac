@@ -307,7 +307,7 @@ export function VaultModalForm({
             className={`ml-3 flex items-start ${liquidityNotice.tone}`}
             data-testid={liquidityNotice.testId}
           >
-            <PopoverRateInfo type="morphoLiquidity" iconClassName={`mt-1 shrink-0 ${liquidityNotice.tone}`} />
+            <PopoverRateInfo type="morphoLiquidity" iconClassName={`mt-1 ${liquidityNotice.tone}`} />
             <Text variant="small" className="ml-2">
               {liquidityNotice.text}
             </Text>

@@ -101,7 +101,7 @@ export function SavingsProductDetail() {
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="ssr" size={12} />,
+      info: <RateInfo type="ssr" />,
       value: currentRate
     },
     {

@@ -293,7 +293,7 @@ Bundled transaction: Active`
     id: 'pt-susds',
     title: 'PT-sUSDS',
     tooltip:
-      'PT-sUSDS is a Principal Token issued by Pendle that represents the right to redeem an underlying amount of USDS via sUSDS at a specific future maturity date. It is purchased at a discount to its redemption value, and that discount is what produces the fixed APY when held to maturity. PT-sUSDS is a tradable derivative, not a stablecoin - its market price can fluctuate before maturity.'
+      'PT-sUSDS is a Principal Token issued by Pendle that represents the right to claim an underlying amount of USDS via sUSDS at a specific future maturity date. It is purchased at a discount to its value at maturity, and that discount is what produces the fixed APY when held to maturity. PT-sUSDS is a tradable derivative, not a stablecoin - its market price can fluctuate before maturity.'
   },
   {
     id: 'fixed-yield-rate',
@@ -305,7 +305,7 @@ Bundled transaction: Active`
     id: 'maturity-date',
     title: 'Maturity Date',
     tooltip:
-      'The Maturity Date is when your PT-sUSDS becomes redeemable for its full USDS value, securing your fixed return. You can redeem on or after this date. If you hold past this date, your position stops earning yield. If you sell before maturity, your exit value is the prevailing market price. This date is fixed when the Pendle market is created.'
+      'The Maturity Date is when your PT-sUSDS becomes claimable for its full USDS value, securing your fixed return. You can claim on or after this date. If you hold past this date, your position stops earning yield. If you sell before maturity, your exit value is the prevailing market price. This date is fixed when the Pendle market is created.'
   },
   {
     id: 'effective-apy',
@@ -317,7 +317,7 @@ Bundled transaction: Active`
     id: 'early-withdrawal-impact',
     title: 'Early Withdrawal Impact',
     tooltip:
-      'Withdrawing before the Maturity Date requires selling PT-sUSDS on the Pendle market rather than redeeming it for the fixed amount. The realized APY on an early withdrawal depends on the prevailing PT-sUSDS market price and may be higher or lower than the Fixed Yield Rate locked in at supply. The displayed APY is fixed only if PT-sUSDS is held to or past maturity.'
+      'Withdrawing before the Maturity Date requires selling PT-sUSDS on the Pendle market rather than claiming the fixed amount at maturity. The realized APY on an early withdrawal depends on the prevailing PT-sUSDS market price and may be higher or lower than the Fixed Yield Rate locked in at supply. The displayed APY is fixed only if PT-sUSDS is held to or past maturity.'
   },
   {
     id: 'early-withdrawal-loss',

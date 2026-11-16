@@ -14,6 +14,7 @@ import { InProgress, Cancel, Refresh } from '@/modules/icons';
 import { isStalledStep, toError, type TxMutateVariables } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { MinimizedTransactionToast } from '@/modules/ui/components/MinimizedTransactionToast';
 import { TransactionNoticeToast } from '@/modules/ui/components/TransactionNoticeToast';
@@ -34,6 +35,7 @@ import {
   TransactionRevertedError,
   unconfirmedReason
 } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import { revertMessage, revertReport } from '@/lib/revertMessages';
@@ -256,6 +258,8 @@ type TransactionModalView = {
   refusal: SendRefusal | null;
   /** The ERROR on screen is a send that went out with an outcome the app can't read: it may still mine. */
   unconfirmed: SendUnconfirmed | null;
+  /** The ERROR on screen is a bundle the wallet stopped reporting on: it may have executed. */
+  outcomeUnknown: boolean;
   /** The ERROR on screen is a contract revert: why, in user-facing copy (see lib/revertMessages). */
   failureReason: string | undefined;
   /** Gate-mounted off-chain steps rendered ahead of the config's own list (APP-501). */
@@ -340,10 +344,13 @@ export function TransactionProvider({
   const [refusal, setRefusal] = useState<SendRefusal | null>(null);
   // Written with it: the ERROR ends a send whose outcome can't be read.
   const [unconfirmed, setUnconfirmed] = useState<SendUnconfirmed | null>(null);
+  // Written with it: the ERROR is a bundle the wallet lost track of.
+  const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const clearFailure = useCallback(() => {
     setUserRejected(false);
     setRefusal(null);
     setUnconfirmed(null);
+    setOutcomeUnknown(false);
     setFailureReason(undefined);
   }, []);
   // Off-chain prelude steps the gate mounted for this session (the terms
@@ -761,6 +768,7 @@ export function TransactionProvider({
         userRejected,
         refusal,
         unconfirmed,
+        outcomeUnknown,
         failureReason,
         preludeSteps: preludeStepsRef.current,
         gateCopy: gateCopyRef.current
@@ -802,6 +810,7 @@ export function TransactionProvider({
     userRejected,
     refusal,
     unconfirmed,
+    outcomeUnknown,
     failureReason,
     clearFailure
   ]);
@@ -929,12 +938,15 @@ export function TransactionProvider({
     const state = txStatus === TxStatus.ERROR ? 'error' : 'loading';
     if (txStatus !== TxStatus.ERROR && !inFlight) return;
 
+    const lostBundle = txStatus === TxStatus.ERROR && outcomeUnknown;
+
     toastWithClose(
       () => (
         <MinimizedTransactionToast
           status={txStatus}
-          title={titleFor(state)}
+          title={lostBundle ? t`Couldn't confirm transaction` : titleFor(state)}
           hash={txHashRef.current}
+          unconfirmed={lostBundle}
           onView={() => setMinimized(false)}
         />
       ),
@@ -944,7 +956,7 @@ export function TransactionProvider({
     return () => {
       toast.dismiss(MINIMIZED_TOAST_ID);
     };
-  }, [minimized, txStatus]);
+  }, [minimized, txStatus, outcomeUnknown]);
 
   // The single gate point between the user's confirm and the config callback
   // (APP-496): every way a write can start — confirm, the entry's secondary
@@ -1386,11 +1398,25 @@ export function TransactionProvider({
         txStatusRef.current === TxStatus.INITIALIZED &&
         gatePhaseRef.current === 'signed' &&
         (error instanceof TransactionRefusedError || !isUserRejectedRequestError(error));
+      const unknown = error instanceof TransactionOutcomeUnknownError;
+      // A lost bundle was sent, even when its modal closed back to IDLE first.
       const preWriteRefusal =
-        refusedAfterSignature ||
-        (!hash &&
-          (txStatusRef.current === TxStatus.IDLE ||
-            (txStatusRef.current === TxStatus.ERROR && writeGenRef.current !== sessionGenRef.current)));
+        !unknown &&
+        (refusedAfterSignature ||
+          (!hash &&
+            (txStatusRef.current === TxStatus.IDLE ||
+              (txStatusRef.current === TxStatus.ERROR && writeGenRef.current !== sessionGenRef.current))));
+      if (unknown) {
+        // It may have executed: bring history and on-chain reads up to date, so
+        // the page shows it and a relaunch reviews current figures. Ahead of the
+        // session guard, like onSuccess: the modal may have closed mid-send.
+        // Not the batch status query itself, whose failure brought us here, nor
+        // history, whose refresh lets a first load or a load more finish.
+        void refreshHistoryAfterTx(queryClient, { chainId: sessionChainRef.current });
+        void queryClient.invalidateQueries({
+          predicate: query => query.queryKey[0] !== 'callsStatus' && query.meta?.history === undefined
+        });
+      }
       if (
         preWriteRefusal
           ? sessionGen !== sessionGenRef.current
@@ -1402,8 +1428,9 @@ export function TransactionProvider({
       txStatusRef.current = TxStatus.ERROR;
       const rejected = isUserRejectedRequestError(error);
       setUserRejected(rejected);
+      setOutcomeUnknown(unknown);
       // A Reject has its own copy; anything else that reverted says why.
-      setFailureReason(rejected ? undefined : revertMessage(error));
+      setFailureReason(rejected || unknown ? undefined : revertMessage(error));
       // A bridge refusal can come on a Retry too, after the first attempt failed.
       setRefusal(
         error instanceof TransactionRefusedError
@@ -1471,7 +1498,12 @@ export function TransactionProvider({
           module: 'transactions',
           flow,
           action,
-          type: preWriteRefusal ? 'transaction_refused' : 'transaction_error',
+          type: preWriteRefusal
+            ? 'transaction_refused'
+            : unknown
+              ? 'transaction_outcome_unknown'
+              : 'transaction_error',
+          level: unknown ? 'warning' : undefined,
           tags: revert ? { revert_reason: revert } : undefined,
           // Every revert has the same message; one issue per flow and action instead of one for all.
           fingerprint:
@@ -1522,6 +1554,7 @@ export function TransactionProvider({
         userRejected,
         refusal,
         unconfirmed,
+        outcomeUnknown,
         failureReason,
         preludeSteps,
         gateCopy
@@ -1732,6 +1765,7 @@ export function TransactionProvider({
             userRejected={modalView.userRejected}
             refusal={modalView.refusal}
             unconfirmed={modalView.unconfirmed}
+            outcomeUnknown={modalView.outcomeUnknown}
             failureReason={modalView.failureReason}
             gateCopy={modalView.gateCopy}
             preflight={preflight}

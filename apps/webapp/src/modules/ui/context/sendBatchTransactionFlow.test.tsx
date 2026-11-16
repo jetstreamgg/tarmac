@@ -68,7 +68,10 @@ vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   })
 }));
 
-import { useSendBatchTransactionFlow } from '@/hooks/shared/useSendBatchTransactionFlow';
+import {
+  TransactionOutcomeUnknownError,
+  useSendBatchTransactionFlow
+} from '@/hooks/shared/useSendBatchTransactionFlow';
 
 const goodCall = (to: `0x${string}`): Call =>
   ({
@@ -188,6 +191,28 @@ describe('useSendBatchTransactionFlow — status polling (APP-619)', () => {
       bundle.id = undefined;
       bundle.status = undefined;
     }
+  });
+
+  it('reports a wallet that lost the bundle as an unknown outcome, not a failure (APP-651)', () => {
+    const onError = vi.fn();
+    const lost = new UnknownRpcError(new UnknownBundleIdError(new Error('wallet')));
+    bundle.id = '0xb';
+    bundle.status = { ...idleStatus, error: lost };
+    const { rerender } = renderHook(() =>
+      useSendBatchTransactionFlow({ calls: [], enabled: true, chainId: 1, onError } as never)
+    );
+    expect(onError).toHaveBeenCalledTimes(1);
+    const [error] = onError.mock.calls[0];
+    expect(error).toBeInstanceOf(TransactionOutcomeUnknownError);
+    expect(error.cause).toBe(lost);
+
+    // A refetch of the settled query (focus, invalidation) fails again with a new error object.
+    bundle.status = {
+      ...idleStatus,
+      error: new UnknownRpcError(new UnknownBundleIdError(new Error('wallet')))
+    };
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 });
 

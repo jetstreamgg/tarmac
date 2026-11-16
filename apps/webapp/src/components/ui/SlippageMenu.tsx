@@ -124,8 +124,6 @@ export function SlippageMenu({
         <Settings className="h-5 w-5" />
       </PopoverTrigger>
       <PopoverContent
-        // Same surface as PopoverInfo, which opens from a cell two along in
-        // the same grid — they read as siblings rather than two dialects.
         className="bg-containerDark w-80 rounded-xl backdrop-blur-[50px]"
         data-testid={`${dataTestId}-content`}
       >
