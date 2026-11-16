@@ -258,8 +258,32 @@ describe('withActionRecording, an action sent as a wallet bundle', () => {
     done.callbacks.onStart(undefined);
     done.callbacks.onSuccess('0xreceive', 7n, ['0xreceive', '0xsell']);
     done.callbacks.onError(batchFailed);
-    expect(done.onConfirmed).toHaveBeenCalledWith('0xreceive', ['0xreceive', '0xsell']);
+    expect(done.onConfirmed).toHaveBeenCalledWith('0xreceive', ['0xreceive', '0xsell'], '0xcalls');
     expect(done.onReverted).not.toHaveBeenCalled();
+  });
+
+  it('confirms with the calls id read when the wallet accepted it, though the card no longer lists it', () => {
+    let calls: string | undefined = '0xcalls';
+    const inner: TxCallbacks = { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() };
+    const onConfirmed = vi.fn();
+    const callbacks = withActionRecording(() => inner, {
+      onSent: vi.fn(),
+      onConfirmed,
+      onReverted: vi.fn(),
+      readBundle: () => calls
+    });
+    callbacks.onStart(undefined);
+    // The tracker read the bundle's hash first and confirmed the action on the card.
+    calls = undefined;
+    callbacks.onSuccess('0xclaim', 7n);
+    expect(onConfirmed).toHaveBeenCalledWith('0xclaim', undefined, '0xcalls');
+  });
+
+  it('confirms a single transaction with no calls id', () => {
+    const { callbacks, onConfirmed } = bundleSetup(null);
+    callbacks.onStart('0xclaim');
+    callbacks.onSuccess('0xclaim', 7n);
+    expect(onConfirmed).toHaveBeenCalledWith('0xclaim');
   });
 
   it('drops nothing when no bundle was recorded, or for a failure before the wallet accepted it', () => {

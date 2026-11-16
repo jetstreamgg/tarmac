@@ -126,6 +126,10 @@ export function createBridgeTracker({
       source = txHash;
       send({ action: mainAction, hash_kind: 'tx', tx_hash: txHash });
     },
+    /** The on-chain hash of a follow-up action's bundle (claim, convert): the bridge keeps its source. */
+    recordBundleMined: (txHash: string) => {
+      send({ action: mainAction, hash_kind: 'tx', tx_hash: txHash });
+    },
     wrap: (callbacks: TxCallbacks): TxCallbacks => ({
       ...callbacks,
       onMutate: variables => {

@@ -661,7 +661,7 @@ export function useDestinationActionLaunch() {
               onSent: record((current, txHash) =>
                 recordActionSent(current, { action, txHash, at: Date.now(), ...(isSafe && { safe: true }) })
               ),
-              onConfirmed: (txHash, bundleTxHashes) => {
+              onConfirmed: (txHash, bundleTxHashes, bundle) => {
                 const others = bundleTxHashes?.filter(hash => hash !== txHash);
                 pendingBridgeStore.update(scope, bridge.id, current =>
                   recordAction(current, {
@@ -671,6 +671,7 @@ export function useDestinationActionLaunch() {
                     ...(others?.length && { bundleTxHashes: others })
                   })
                 );
+                if (bundle) tracker.recordBundleMined(txHash);
                 // A settled bridge leaves the tracker once this confirms, so nothing else refreshes these.
                 void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
               },

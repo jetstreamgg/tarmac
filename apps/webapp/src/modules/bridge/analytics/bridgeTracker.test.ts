@@ -202,6 +202,21 @@ describe('the real hash of a Safe transaction or bundle', () => {
       source_tx_hash: '0xreal'
     });
   });
+
+  it("reports a follow-up bundle's mined hash and keeps the bridge's source", () => {
+    const { tracker, emitTxSent } = setup({ mainAction: 'claim', bridgeId: 'card', sourceTxHash: '0xburn' });
+    tracker.stepOf(undefined, 'flow-1');
+    tracker.recordBundleMined('0xclaim');
+    expect(emitTxSent).toHaveBeenCalledExactlyOnceWith({
+      action: 'claim',
+      hash_kind: 'tx',
+      tx_hash: '0xclaim',
+      flow_id: 'flow-1',
+      bridge_id: 'card',
+      source_tx_hash: '0xburn'
+    });
+    expect(tracker.completedData()).toMatchObject({ source_tx_hash: '0xburn' });
+  });
 });
 
 describe('completedData', () => {
