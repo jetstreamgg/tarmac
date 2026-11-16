@@ -233,6 +233,21 @@ describe('useDestinationActionLaunch: destination balances after the action conf
     expectDestinationBalancesInvalidated(view);
   });
 
+  it("re-reads the card's progress once its action confirms", async () => {
+    const card = seed({ claimed: false });
+    const view = render();
+    act(() => view.result.current.launch(card));
+    act(() => mocks.launched.at(-1)!.onConfirm!());
+
+    const callbacks = mocks.claim.params!.getCallbacks();
+    act(() => callbacks.onStart('0xclaim'));
+    expect(view.invalidate).not.toHaveBeenCalledWith({ queryKey: ['bridge-progress', scope(), card.id] });
+    act(() => callbacks.onSuccess('0xclaim'));
+    await settle();
+
+    expect(view.invalidate).toHaveBeenCalledWith({ queryKey: ['bridge-progress', scope(), card.id] });
+  });
+
   it("reports a bundled claim's mined hash, though the tracker confirmed it on the card first", async () => {
     const card = seed({ claimed: false });
     const view = render();

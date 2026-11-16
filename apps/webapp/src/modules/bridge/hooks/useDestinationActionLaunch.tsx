@@ -672,6 +672,8 @@ export function useDestinationActionLaunch() {
                   })
                 );
                 if (bundle) tracker.recordBundleMined(txHash);
+                // Read the card now: a prove's new ETA would otherwise wait for the next poll.
+                void queryClient.invalidateQueries({ queryKey: ['bridge-progress', scope, bridge.id] });
                 // A settled bridge leaves the tracker once this confirms, so nothing else refreshes these.
                 void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
               },
