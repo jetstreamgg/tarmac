@@ -173,6 +173,27 @@ export const opStackFinalizeCall = ({
     args: [withdrawalTransaction(withdrawal), proofSubmitter]
   }) as const;
 
+const ceilDiv = (a: bigint, b: bigint) => (a + b - 1n) / b;
+/** SafeCall.hasMinGas: gas left must cover the withdrawal's gasLimit at 64/63 plus this. */
+const SAFE_CALL_BUFFER = 40_000n;
+/** Room for the tx's intrinsic cost and the portal's checks before the call (~160k today). */
+const FINALIZE_PRE_CALL_MARGIN = 400_000n;
+const GAS_STEP = 10_000n;
+
+/**
+ * The gas limit of a finalize. The portal reverts the whole tx unless the
+ * call to the target can get the withdrawal's gasLimit, which a wallet
+ * pricing gas used (~260k) misses. The higher of the node's estimate plus
+ * 20% and a floor from the gasLimit (its 64/63 in the portal and again
+ * through the proxy), rounded up so a refetch keeps the same value.
+ */
+export const opStackFinalizeGas = ({ estimate, gasLimit }: { estimate: bigint; gasLimit: bigint }) => {
+  const atCall = ceilDiv(gasLimit * 64n, 63n) + SAFE_CALL_BUFFER;
+  const floor = ceilDiv(atCall * 64n, 63n) + FINALIZE_PRE_CALL_MARGIN;
+  const buffered = (estimate * 12n) / 10n;
+  return ceilDiv(buffered > floor ? buffered : floor, GAS_STEP) * GAS_STEP;
+};
+
 /**
  * The retry of a withdrawal whose L1 relay failed, from its stored routeData:
  * the relayMessage args and the baseGas args that price it. Throws unless the

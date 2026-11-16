@@ -53,8 +53,9 @@ async function anyReceived(l1: ChainReader, copies: IrisAttestedMessage[]): Prom
  * else's; until then the attested message is offered as the claim. Once it
  * settled, only a claim or convert it sent is read, from its Ethereum
  * receipt. A receipt with no such burn fails only when the sender's Safe
- * reported its execution failed; any other such receipt, or a failed read,
- * is null: nothing changes.
+ * reported its execution failed; any other such receipt, or a failed chain
+ * read, is null: nothing changes. With Iris down a pending bridge whose burn
+ * was read keeps waiting.
  */
 export async function cctpProgress(
   bridge: PendingBridge & { from: CctpL2NetworkId },
@@ -105,7 +106,12 @@ export async function cctpProgress(
         return { kind: 'ready', nextAction: 'claim', routeData: toRouteData(storedCopy) };
     }
     const storedNonce = storedCopy && decodeCctpMessage(storedCopy.message).nonce;
-    const copies = (await readAttestations(CCTP_DOMAIN[bridge.from], bridge.txHash as Hex)).filter(
+    const attested = await readAttestations(CCTP_DOMAIN[bridge.from], bridge.txHash as Hex).catch(
+      () => undefined
+    );
+    // Iris down takes back no offered claim; a pending bridge keeps waiting, its burn read as mined.
+    if (!attested) return bridge.status === 'pending' ? { kind: 'waiting' } : null;
+    const copies = attested.filter(
       ({ message }) => isAttestedCopy(message, sources[0]) && decodeCctpMessage(message).nonce !== storedNonce
     );
     // A copy received before it expired still counts as arrived.

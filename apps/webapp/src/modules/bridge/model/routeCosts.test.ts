@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { cctpWithdrawalRoute, nativeDepositRoute, nativeWithdrawalRoute } from './resolveRoute';
-import { destinationGas, ethereumStepGas, ethShortfall, routeApprovals, routeFeeText } from './routeCosts';
+import { opStackFinalizeGas } from '../adapters/nativeWithdrawal/opStack';
+import {
+  destinationGas,
+  ethereumStepGas,
+  ethereumStepGasLimit,
+  ethShortfall,
+  routeApprovals,
+  routeFeeText
+} from './routeCosts';
 
 describe('destinationGas', () => {
   it('adds a prove and a finalize on Ethereum for an OP Stack withdrawal', () => {
@@ -61,6 +69,22 @@ describe('ethereumStepGas', () => {
     expect(ethereumStepGas('finalize', 'optimism')).toBe(350_000n);
     expect(ethereumStepGas('finalize', 'arbitrum')).toBe(200_000n);
     expect(ethereumStepGas('claim', 'base')).toBe(210_000n);
+  });
+});
+
+describe('ethereumStepGasLimit', () => {
+  it('sends an OP Stack finalize with the gas the portal needs for our withdrawals, not the gas it spends', () => {
+    for (const from of ['base', 'optimism', 'unichain'] as const) {
+      expect(ethereumStepGasLimit('finalize', from)).toBe(1_300_000n);
+      expect(ethereumStepGasLimit('finalize', from)).toBeGreaterThanOrEqual(
+        opStackFinalizeGas({ estimate: 0n, gasLimit: 821_744n })
+      );
+    }
+  });
+
+  it('is the step estimate for every other step', () => {
+    expect(ethereumStepGasLimit('prove', 'base')).toBe(ethereumStepGas('prove', 'base'));
+    expect(ethereumStepGasLimit('finalize', 'arbitrum')).toBe(ethereumStepGas('finalize', 'arbitrum'));
   });
 });
 

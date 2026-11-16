@@ -1,6 +1,7 @@
 import {
   concat,
   decodeEventLog,
+  decodeFunctionData,
   encodeAbiParameters,
   encodeFunctionData,
   getAddress,
@@ -27,6 +28,7 @@ import {
   arbitrumBridgeAbi,
   assertRecipient
 } from './contracts';
+import type { DepositMint } from './sameDeposit';
 
 /** The L2 call the retryable ticket makes: the L2 gateway's mint to the recipient. */
 export const arbitrumOutboundCalldata = ({
@@ -138,6 +140,38 @@ const rlpNumber = (value: bigint): Hex => (value === 0n ? '0x' : numberToHex(val
  * transaction (type 0x69).
  */
 export function arbitrumRetryableTicket(logs: Log[]): RetryableTicket | undefined {
+  const tickets = skyRetryableTickets(logs);
+  return tickets.length === 1 ? tickets[0] : undefined;
+}
+
+/** Whether the ticket's L2 call mints that amount of USDS to that recipient. */
+function mintsDeposit(ticket: RetryableTicket, mint: DepositMint) {
+  try {
+    const { functionName, args } = decodeFunctionData({
+      abi: skyL1TokenGatewayImplementationAbi,
+      data: ticket.data
+    });
+    if (functionName !== 'finalizeInboundTransfer') return false;
+    const [l1Token, , to, amount] = args;
+    return isAddressEqual(l1Token, L1_USDS) && isAddressEqual(to, mint.recipient) && amount === mint.amount;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The retryable tickets that may be a deposit's, from its Ethereum receipt:
+ * the receipt's only Sky ticket, or, of several, those that mint the deposit's
+ * amount of USDS to its recipient.
+ */
+export function arbitrumTicketsOfDeposit(logs: Log[], mint: DepositMint | undefined): RetryableTicket[] {
+  const tickets = skyRetryableTickets(logs);
+  if (tickets.length <= 1) return tickets;
+  return mint ? tickets.filter(ticket => mintsDeposit(ticket, mint)) : [];
+}
+
+/** The retryable tickets from Sky's gateway to its L2 gateway in a receipt. */
+function skyRetryableTickets(logs: Log[]): RetryableTicket[] {
   const delivered = logs.flatMap(log => {
     if (!isAddressEqual(log.address, ARBITRUM_DEPOSIT.bridge)) return [];
     try {
@@ -163,7 +197,7 @@ export function arbitrumRetryableTicket(logs: Log[]): RetryableTicket | undefine
       return [];
     }
   });
-  const tickets = inboxMessages.flatMap(({ messageNum, data: message }) => {
+  return inboxMessages.flatMap(({ messageNum, data: message }) => {
     const bridged = delivered.find(event => event.messageIndex === messageNum);
     if (!bridged || size(message) < 9 * 32) return [];
     const word = (index: number) => slice(message, index * 32, (index + 1) * 32);
@@ -190,7 +224,6 @@ export function arbitrumRetryableTicket(logs: Log[]): RetryableTicket | undefine
     ];
     return [{ ticketId: keccak256(concat(['0x69', toRlp(fields)])), messageNum, to, data }];
   });
-  return tickets.length === 1 ? tickets[0] : undefined;
 }
 
 /** The ticket a stored deposit redeems; throws unless routeData holds a 32-byte ticket id. */

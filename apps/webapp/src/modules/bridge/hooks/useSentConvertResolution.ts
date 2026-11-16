@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCallsStatus, getPublicClient } from 'wagmi/actions';
 import type { Hex } from 'viem';
 import { useChains, useConfig } from 'wagmi';
+import type { CctpL2NetworkId } from '../adapters/cctp/contracts';
 import { guardChainId } from '../model/networks';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { resolveSentConverts, sentConvertPollMs } from '../tracking/sentConverts';
@@ -15,7 +16,8 @@ const NONE: UnfinishedCctpSwap[] = [];
  * ended, only while one is unresolved, every 30 seconds and every 5 minutes
  * once they are over an hour old (`sentConvertPollMs`), so one sent from a tab
  * since closed is settled too: a bundle by asking the wallet, a convert sent
- * by hash by its receipt on the swap's L2, on a chain the app can switch to.
+ * by hash by its receipt on the swap's L2, on a chain the app can switch to;
+ * one that L2 has no record of, or the wallet nothing to say about, is unlinked.
  * A convert linked since is checked at once.
  */
 export function useSentConvertResolution() {
@@ -32,17 +34,19 @@ export function useSentConvertResolution() {
   useQuery({
     queryKey: ['bridge-sent-converts', scope, sent],
     queryFn: async () => {
+      const clientOf = (network: CctpL2NetworkId) => {
+        const chainId = guardChainId({ network, familyChainId, chainIds });
+        const client = chainId === undefined ? undefined : getPublicClient(config, { chainId });
+        if (!client) throw new Error(`No client for ${network}.`);
+        return client;
+      };
       if (scope)
         await resolveSentConverts({
           store: cctpSwapStore,
           scope,
           callsStatus: id => getCallsStatus(config, { id }),
-          receipt: async (network, hash) => {
-            const chainId = guardChainId({ network, familyChainId, chainIds });
-            const client = chainId === undefined ? undefined : getPublicClient(config, { chainId });
-            if (!client) throw new Error(`No client for ${network}.`);
-            return client.getTransactionReceipt({ hash: hash as Hex });
-          }
+          receipt: async (network, hash) => clientOf(network).getTransactionReceipt({ hash: hash as Hex }),
+          transaction: async (network, hash) => clientOf(network).getTransaction({ hash: hash as Hex })
         });
       return null;
     },

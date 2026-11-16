@@ -1,5 +1,6 @@
 import { t } from '@lingui/core/macro';
 import type { BridgeNetworkId } from '../model/networks';
+import { isSourceUnseen } from '../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 
 export type BridgeActivityKind = 'bridge' | PendingBridgeNextAction;
@@ -41,12 +42,13 @@ const isConfirmed = (action: PendingBridge['actions'][number]) => action.status 
 
 /**
  * One "Bridge" row per bridge whose source tx went through, plus a row per
- * destination action the user sent, newest first. A reverted send gets no row.
+ * destination action the user sent, newest first. A reverted send gets no
+ * row, nor one its chain has no record of.
  */
 export function buildBridgeActivity(bridges: PendingBridge[]): BridgeActivityEntry[] {
   return bridges
     .flatMap(bridge => [
-      ...(bridge.txHash && bridge.status !== 'failed'
+      ...(bridge.txHash && bridge.status !== 'failed' && !isSourceUnseen(bridge)
         ? [
             {
               id: `${bridge.id}-bridge`,

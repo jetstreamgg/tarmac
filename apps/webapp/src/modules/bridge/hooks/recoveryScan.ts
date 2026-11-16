@@ -22,3 +22,25 @@ export const scannedRecently = (kind: string, scope: string, firstOfLoad: boolea
   const stamp = lastCompleteScan(kind, scope);
   return firstOfLoad && stamp !== undefined && Date.now() - stamp < RECOVERY_INTERVAL_MS;
 };
+
+// When the chain of each wallet bundle without a hash was last read, this session.
+const bundleScans = new Map<string, number>();
+export const bundleScannedAt = (scope: string, id: string) => bundleScans.get(`${scope}:${id}`);
+export const markBundleScanned = (scope: string, ids: string[], at: number) =>
+  ids.forEach(id => bundleScans.set(`${scope}:${id}`, at));
+
+// After its send: 2, 6, 14 and 30 minutes.
+const BUNDLE_SCAN_MARKS_MS = [1, 2, 3, 4].map(count =>
+  Array.from({ length: count }, (_, i) => retryDelay(i + 1)).reduce((sum, delay) => sum + delay, 0)
+);
+
+/**
+ * Whether the chain of a wallet bundle without a hash is due a read: at each
+ * mark after its send, then once per interval. One never read is due from the
+ * first mark.
+ */
+export const bundleScanDue = (startedAt: number, lastScanAt: number | undefined, now: number) =>
+  lastScanAt === undefined
+    ? now - startedAt >= BUNDLE_SCAN_MARKS_MS[0]
+    : now - lastScanAt >= RECOVERY_INTERVAL_MS ||
+      BUNDLE_SCAN_MARKS_MS.some(mark => lastScanAt < startedAt + mark && startedAt + mark <= now);

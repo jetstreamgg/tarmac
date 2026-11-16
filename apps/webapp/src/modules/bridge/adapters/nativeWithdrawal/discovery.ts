@@ -14,11 +14,11 @@ const WITHDRAWAL_INITIATED = getAbiItem({ abi: arbitrumL2TokenGatewayAbi, name: 
 
 /**
  * L2 blocks a scan covers, read in one query: the primary upstream returns large filtered ranges
- * whole, and the fallback's 10-block cap fails any useful range. About 23 days of Base or OP,
- * 11 of Unichain, 30 of Arbitrum.
+ * whole, and the fallback's 10-block cap fails any useful range. About 23 days of Base (a block
+ * every 200 ms) or OP, 11 of Unichain, 30 of Arbitrum.
  */
 export const WITHDRAWAL_SCAN_BLOCKS: Record<NativeDepositNetwork, bigint> = {
-  base: 1_000_000n,
+  base: 10_000_000n,
   optimism: 1_000_000n,
   unichain: 1_000_000n,
   arbitrum: 10_500_000n

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { Call, Client } from 'viem';
-import { useConfig, useReadContract } from 'wagmi';
+import { encodeFunctionData, type Address, type Call, type Client } from 'viem';
+import { useConfig, useEstimateGas, useReadContract } from 'wagmi';
 import { useSequentialTransactionFlow } from '@/hooks/shared/useSequentialTransactionFlow';
 import type { TxCallbacks } from '@/modules/ui/context/transactionContract';
 import {
@@ -10,8 +10,9 @@ import {
   type NativeDepositNetwork
 } from '../adapters/nativeDeposit/contracts';
 import { opStackReplayGas } from '../adapters/nativeDeposit/opStack';
-import { OP_STACK_WITHDRAWAL } from '../adapters/nativeWithdrawal/contracts';
+import { OP_STACK_WITHDRAWAL, optimismPortalAbi } from '../adapters/nativeWithdrawal/contracts';
 import {
+  opStackFinalizeGas,
   opStackRelayFailed,
   opStackWithdrawalReplay,
   opStackWithdrawalReplayCall
@@ -33,14 +34,17 @@ export type NativeWithdrawalLegAction = 'prove' | 'finalize' | 'replay';
  * finalize's passing check, the execute's outbox proof); an OP Stack retry of a failed relay
  * replays the stored message on the L1 messenger at an explicit gas priced
  * from its baseGas, as the deposit's replay does. No call while it is
- * building or doesn't check out. Only enabled with the wallet on `chainId`,
- * as the simulation runs on the connected chain.
+ * building or doesn't check out. An OP Stack finalize carries an explicit gas
+ * (opStackFinalizeGas) from the node's estimate for `account`, no call without
+ * it. Only enabled with the wallet on `chainId`, as the simulation runs on the
+ * connected chain.
  */
 export function useNativeWithdrawalActionLegs({
   action,
   enabled,
   network,
   bridge,
+  account,
   chainId,
   getCallbacks,
   onRelayFailed
@@ -50,6 +54,8 @@ export function useNativeWithdrawalActionLegs({
   /** The L2 the withdrawal was sent from. */
   network: NativeDepositNetwork | undefined;
   bridge: PendingBridge | undefined;
+  /** The connected wallet, which sends the finalize the gas is estimated for. */
+  account: Address | undefined;
   /** Ethereum (its Tenderly fork in dev). */
   chainId: number | undefined;
   getCallbacks: () => TxCallbacks;
@@ -92,6 +98,28 @@ export function useNativeWithdrawalActionLegs({
     gcTime: 0
   });
 
+  const finalize =
+    opStack && built.data?.functionName === 'finalizeWithdrawalTransactionExternalProof'
+      ? built.data
+      : undefined;
+  const finalizeData = useMemo(
+    () =>
+      finalize &&
+      encodeFunctionData({
+        abi: optimismPortalAbi,
+        functionName: finalize.functionName,
+        args: finalize.args
+      }),
+    [finalize]
+  );
+  const finalizeEstimate = useEstimateGas({
+    to: finalize?.address,
+    data: finalizeData,
+    account,
+    chainId,
+    query: { enabled: !!finalizeData && !!account && chainId !== undefined, refetchInterval: 60_000 }
+  });
+
   const replay = useMemo(() => {
     if (!enabled || action !== 'replay' || !opStack) return undefined;
     try {
@@ -119,12 +147,21 @@ export function useNativeWithdrawalActionLegs({
           gas: opStackReplayGas(baseGas.data)
         })
       ];
+    if (finalize) {
+      if (!finalizeEstimate.data) return [];
+      const { address, ...call } = finalize;
+      const gas = opStackFinalizeGas({
+        estimate: finalizeEstimate.data,
+        gasLimit: finalize.args[0].gasLimit
+      });
+      return [{ to: address, ...call, gas } as unknown as Call];
+    }
     if (portalAction && built.data) {
       const { address, ...call } = built.data;
       return [{ to: address, ...call } as unknown as Call];
     }
     return [];
-  }, [replayValue, opStack, baseGas.data, portalAction, built.data]);
+  }, [replayValue, opStack, baseGas.data, finalize, finalizeEstimate.data, portalAction, built.data]);
 
   const { onMutate, issuerOf } = usePromptIssuers(getCallbacks);
   const flow = useSequentialTransactionFlow({
@@ -144,9 +181,10 @@ export function useNativeWithdrawalActionLegs({
   return {
     /** Confirm can send the action. */
     ready: calls.length > 0 && flow.prepared,
-    /** The build, the stored message, the baseGas read or the simulation failed. */
+    /** The build, the finalize's gas estimate, the stored message, the baseGas read or the simulation failed. */
     error:
       (portalAction ? built.error : null) ??
+      (finalize ? finalizeEstimate.error : null) ??
       replay?.error ??
       (replayValue ? baseGas.error : null) ??
       (calls.length > 0 ? flow.error : null),

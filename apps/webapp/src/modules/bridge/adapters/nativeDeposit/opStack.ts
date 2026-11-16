@@ -22,6 +22,7 @@ import {
   withApprove,
   type OpStackNetworkId
 } from './contracts';
+import type { DepositMint } from './sameDeposit';
 
 /** Gas the L2 relay must forward to the L2 bridge's mint, as in past mainnet deposits; too little leaves a failed message to replay. */
 export const OP_STACK_MIN_GAS_LIMIT = 300_000;
@@ -74,16 +75,10 @@ export type OpStackDepositMessage = {
   relayCalldata: Hex;
 };
 
-/**
- * The L2 message of a deposit, from its Ethereum receipt. Only a portal deposit
- * of this network's Sky bridge counts; anything else, or more than one, is undefined.
- */
-export function opStackDepositMessage(
-  logs: Log[],
-  network: OpStackNetworkId
-): OpStackDepositMessage | undefined {
+/** The portal deposits of this network's Sky bridge in a receipt, each with the L2 bridge call it relays. */
+function skyDepositMessages(logs: Log[], network: OpStackNetworkId) {
   const { portal, l1TokenBridge, l2TokenBridge } = OP_STACK_DEPOSIT[network];
-  const messages = extractTransactionDepositedLogs({
+  return extractTransactionDepositedLogs({
     logs: logs.filter(log => isAddressEqual(log.address, portal))
   }).flatMap(log => {
     if (!log.args.to || !isAddressEqual(log.args.to, L2_CROSS_DOMAIN_MESSENGER)) return [];
@@ -94,14 +89,68 @@ export function opStackDepositMessage(
         data: relayCalldata
       });
       if (functionName !== 'relayMessage') return [];
-      const [, sender, target] = args;
+      const [, sender, target, , , bridgeCall] = args;
       if (!isAddressEqual(sender, l1TokenBridge) || !isAddressEqual(target, l2TokenBridge)) return [];
+      const message: OpStackDepositMessage = {
+        msgHash: keccak256(relayCalldata),
+        l2TxHash: getL2TransactionHash({ log }),
+        relayCalldata
+      };
+      return [{ message, bridgeCall }];
     } catch {
       return [];
     }
-    return [{ msgHash: keccak256(relayCalldata), l2TxHash: getL2TransactionHash({ log }), relayCalldata }];
   });
-  return messages.length === 1 ? messages[0] : undefined;
+}
+
+/**
+ * The L2 message of a deposit, from its Ethereum receipt. Only a portal deposit
+ * of this network's Sky bridge counts; anything else, or more than one, is undefined.
+ */
+export function opStackDepositMessage(
+  logs: Log[],
+  network: OpStackNetworkId
+): OpStackDepositMessage | undefined {
+  const messages = skyDepositMessages(logs, network);
+  return messages.length === 1 ? messages[0].message : undefined;
+}
+
+/** Whether the L2 bridge call mints that amount of this network's USDS to that recipient. */
+function mintsDeposit(bridgeCall: Hex, network: OpStackNetworkId, mint: DepositMint) {
+  try {
+    const { functionName, args } = decodeFunctionData({
+      abi: skyL1TokenBridgeImplementationAbi,
+      data: bridgeCall
+    });
+    if (functionName !== 'finalizeBridgeERC20') return false;
+    const [localToken, remoteToken, , to, amount] = args;
+    return (
+      isAddressEqual(localToken, OP_STACK_DEPOSIT[network].l2Usds) &&
+      isAddressEqual(remoteToken, L1_USDS) &&
+      isAddressEqual(to, mint.recipient) &&
+      amount === mint.amount
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The L2 messages that may be a deposit's, from its Ethereum receipt: the
+ * receipt's only Sky message, or, of several, those that mint the deposit's
+ * amount of USDS to its recipient.
+ */
+export function opStackMessagesOfDeposit(
+  logs: Log[],
+  network: OpStackNetworkId,
+  mint: DepositMint | undefined
+): OpStackDepositMessage[] {
+  const messages = skyDepositMessages(logs, network);
+  if (messages.length <= 1) return messages.map(({ message }) => message);
+  if (!mint) return [];
+  return messages
+    .filter(({ bridgeCall }) => mintsDeposit(bridgeCall, network, mint))
+    .map(({ message }) => message);
 }
 
 /** A replay's gas: the messenger's baseGas for the message, with a margin. Below it the relay stores the message as failed again. */

@@ -1,6 +1,7 @@
 import { NO_VALUE } from '@/lib/constants';
 import { computeFeeWei, feeWeiToUsd } from '@/hooks/shared/networkFee';
 import { formatUsd } from '@/utils';
+import { opStackFinalizeGas } from '../adapters/nativeWithdrawal/opStack';
 import { destinationActions } from './resolveRoute';
 import type { BridgeNetworkId } from './networks';
 import type { BridgeRoute, PendingBridgeStepAction } from './types';
@@ -19,6 +20,13 @@ export const ethereumStepGas = (action: PendingBridgeStepAction, from: BridgeNet
   if (action === 'prove') return OP_STACK_PROVE_GAS;
   return from === 'arbitrum' ? ARBITRUM_EXECUTE_GAS : OP_STACK_FINALIZE_GAS;
 };
+
+// The finalize's gas limit: our USDS withdrawals carry a gasLimit up to ~822k, so it is sent with ~1.3M though it spends ~300k.
+const OP_STACK_FINALIZE_GAS_LIMIT = opStackFinalizeGas({ estimate: 0n, gasLimit: 830_000n });
+
+/** The gas limit a withdrawal step is sent with, which the wallet's ETH must cover before it is sent. */
+export const ethereumStepGasLimit = (action: PendingBridgeStepAction, from: BridgeNetworkId): bigint =>
+  action === 'finalize' && from !== 'arbitrum' ? OP_STACK_FINALIZE_GAS_LIMIT : ethereumStepGas(action, from);
 
 /** Gas the user spends on the destination after the source send: CCTP's claim and conversion, a withdrawal's prove and finalize. */
 export const destinationGas = (route: BridgeRoute): bigint =>

@@ -31,6 +31,7 @@ import {
   canDismiss,
   canMarkSeen,
   isPendingBridgeVisible,
+  isSourceUnseen,
   PAGE_LOADED_AT,
   showsActionButton
 } from '../model/pendingTransitions';
@@ -38,7 +39,9 @@ import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction, PendingBridgeStatus } from '../model/types';
 import { copyToClipboard, formatAddress, formatBigInt } from '@/utils';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { dismissedSourceStore } from '../store/dismissedSourceStore';
 import { pendingBridgeStore } from '../store/pendingStore';
+import { dismissBridge } from '../tracking/dismissedSources';
 import { isStorageWritable } from '../store/storageWritable';
 import { BridgeNetworkIcon } from './BridgeNetworkIcon';
 import { formatEthCeil } from './bridgeModalRows';
@@ -286,10 +289,36 @@ type BridgeNoteProps = {
   note: PendingBridgeNote;
   onExtend: () => void;
   canExtend: boolean;
+  /** Whether the connected wallet is the one that claims this bridge. */
+  claimsHere: boolean;
 };
 
 /** What a stuck deposit needs, and for Arbitrum how to finish it without this app. */
-function BridgeNote({ note, onExtend, canExtend }: BridgeNoteProps) {
+function BridgeNote({ note, onExtend, canExtend, claimsHere }: BridgeNoteProps) {
+  if (note.kind === 'attestation-slow')
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        {claimsHere ? (
+          <Trans>
+            Circle&apos;s attestation is taking longer than usual. Nothing to do: Claim will be enabled here
+            when it&apos;s ready.
+          </Trans>
+        ) : (
+          <Trans>Circle&apos;s attestation is taking longer than usual.</Trans>
+        )}
+      </Text>
+    );
+  if (note.kind === 'source-not-found') {
+    const network = getBridgeNetwork(note.network).name;
+    return (
+      <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
+        <Trans>
+          {network} has no record of this transaction. Your wallet probably dropped or replaced it. Check your
+          wallet&apos;s activity: if it was replaced and went through, look it up with its new hash.
+        </Trans>
+      </Text>
+    );
+  }
   if (note.kind === 'withdrawal')
     return (
       <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-note">
@@ -504,6 +533,9 @@ function PendingBridgeCard({
   storageWritable
 }: PendingBridgeCardProps) {
   const dismissible = !incoming && canDismiss(bridge, now);
+  // Not this wallet's bridge: it can leave the list, and come back by its hash or claim link.
+  const removable = !incoming && !dismissible && canDismiss(bridge, now, account);
+  const sourceName = getBridgeNetwork(bridge.from).name;
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
   const { offer: convertAmount, nothingLeft } = useCctpConvertOffer(bridge, now);
@@ -628,6 +660,16 @@ function PendingBridgeCard({
           </Trans>
         </Text>
       )}
+      {removable && (
+        <button
+          type="button"
+          className="font-circle text-fgBrand self-start text-xs leading-[18px] font-medium hover:underline"
+          onClick={() => onDismiss(bridge)}
+          data-testid="pending-bridge-remove"
+        >
+          <Trans>Remove from this list</Trans>
+        </button>
+      )}
 
       {claimedElsewhere && !thirdWallet && bridge.recipient && (
         // Figma: 16px under the header, not the card's 24px.
@@ -676,10 +718,24 @@ function PendingBridgeCard({
         <KeepClaimLink link={claimLink} bridge={bridge} />
       )}
 
-      {dismissible && bridge.safeTxHash && (
+      {dismissible && isSourceUnseen(bridge) ? (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
-          <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
+          <Trans>Dismiss it only if your wallet shows it never went through.</Trans>
         </Text>
+      ) : dismissible && bridge.bundleId && !bridge.txHash ? (
+        <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
+          <Trans>
+            We couldn&apos;t find this bridge on {sourceName}. Dismiss it only if your wallet shows it never
+            went through.
+          </Trans>
+        </Text>
+      ) : (
+        dismissible &&
+        bridge.safeTxHash && (
+          <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-dismiss-hint">
+            <Trans>Waiting for your Safe to execute it. Dismiss it only if you deleted it in Safe.</Trans>
+          </Text>
+        )
       )}
       {hint && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-action-hint">
@@ -692,6 +748,7 @@ function PendingBridgeCard({
           note={note}
           onExtend={() => onAction(bridge, 'keepalive')}
           canExtend={!actionLocked && canAction(bridge, 'keepalive')}
+          claimsHere={!claimedElsewhere && !thirdWallet}
         />
       )}
       {ethShortfall !== undefined && !sentHint && (
@@ -921,7 +978,10 @@ export function PendingBridges({
           }
           canAction={canAction}
           actionHint={actionHint}
-          onDismiss={dismissed => scope && pendingBridgeStore.dismiss(scope, dismissed.id)}
+          onDismiss={card =>
+            scope &&
+            dismissBridge({ store: pendingBridgeStore, dismissed: dismissedSourceStore, scope, id: card.id })
+          }
           listScope={owner ?? scope}
           onKeepUsdc={kept => {
             const listScope = owner ?? scope;

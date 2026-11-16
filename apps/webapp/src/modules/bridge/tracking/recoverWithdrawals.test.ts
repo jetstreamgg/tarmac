@@ -96,6 +96,21 @@ describe('recoverWithdrawals', () => {
     expect(first.settled.has(HASH)).toBe(true);
   });
 
+  it.each(['reverted', 'not-a-bridge'] as const)('settles a %s lookup too', async reason => {
+    const { added, settled } = run({ found: () => ({ status: 'refused', reason }) });
+    expect(await added).toBe(0);
+    expect(settled.has(HASH)).toBe(true);
+  });
+
+  it('reads again next run a scanned withdrawal whose receipt the node lacks yet', async () => {
+    const first = run({ found: () => ({ status: 'refused', reason: 'not-found' }) });
+    expect(await first.added).toBe(0);
+    expect(first.settled.has(HASH)).toBe(false);
+    const again = run({ store: first.store, settled: first.settled });
+    expect(await again.added).toBe(1);
+    expect(again.lookup).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps going past a read error, and tries it again next run', async () => {
     const OTHER = '0x00000000000000000000000000000000000000000000000000000000000000bb' as Hex;
     const { store, added, settled } = run({

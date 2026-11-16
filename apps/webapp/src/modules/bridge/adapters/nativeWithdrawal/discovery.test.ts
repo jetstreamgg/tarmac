@@ -78,6 +78,19 @@ describe('discoverNativeWithdrawals', () => {
     expect(args.args).toBeUndefined();
   });
 
+  // Base mines a block every 200 ms, and a withdrawal takes over a week to prove and finalize.
+  it('finds a Base withdrawal sent 20 days ago, in one query', async () => {
+    const BLOCKS_PER_DAY = 432_000n;
+    const toBlock = 100_000_000n;
+    const sentAt = toBlock - 20n * BLOCKS_PER_DAY;
+    const l2 = reader(async ({ fromBlock, toBlock: to }) =>
+      fromBlock <= sentAt && sentAt <= to ? mined(BASE_WITHDRAWAL_LOGS, HASH(1), sentAt) : []
+    );
+    const found = await discoverNativeWithdrawals({ l2, network: 'base', account: base.to, toBlock });
+    expect(found).toEqual({ withdrawals: [{ txHash: HASH(1), blockNumber: sentAt }], complete: true });
+    expect(l2.read).toHaveBeenCalledTimes(1);
+  });
+
   it("says the scan is incomplete when the window's logs can't be read", async () => {
     const l2 = reader(async () => {
       throw new Error('range too large');

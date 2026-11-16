@@ -241,7 +241,7 @@ describe('useCctpBurnLegs: the Continue card follows its burn', () => {
       const tooOld = await act(() =>
         preflight({
           getTransactionReceipt: async () => receipt,
-          getBlockNumber: async () => 1n + RESUME_SCAN_MAX_BLOCKS
+          getBlockNumber: async () => 1n + RESUME_SCAN_MAX_BLOCKS[RESUME.network]
         })
       );
       expect(tooOld?.message).toMatch(/too old/);

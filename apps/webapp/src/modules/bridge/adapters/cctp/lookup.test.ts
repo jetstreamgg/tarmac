@@ -181,10 +181,27 @@ describe('lookupCctpBurn', () => {
           assetOut: cctpL2Contracts('base').usdc,
           receiver: SENDER
         },
-        fromBlock: BURN_BLOCK - SWAP_LOOKBACK_BLOCKS + 1n,
+        fromBlock: BURN_BLOCK - SWAP_LOOKBACK_BLOCKS.base + 1n,
         toBlock: BURN_BLOCK
       })
     );
+  });
+
+  // Base mines a block every 200 ms: 18,000 an hour.
+  it('claims and converts a Base burn whose sender swapped it from USDS three hours earlier, in one query', async () => {
+    const swapBlock = BURN_BLOCK - 3n * 18_000n;
+    const reader = client();
+    vi.mocked(reader.getLogs).mockImplementation((async ({
+      fromBlock,
+      toBlock
+    }: {
+      fromBlock: bigint;
+      toBlock: bigint;
+    }) =>
+      fromBlock <= swapBlock && swapBlock <= toBlock ? [swapLog({ blockNumber: swapBlock })] : []) as never);
+    const result = await lookup(OTHER, reader);
+    expect(result.status === 'found' && result.bridge.routeData).toBeUndefined();
+    expect(reader.getLogs).toHaveBeenCalledTimes(1);
   });
 
   it('claims and converts a burn whose swap went earlier in the same block', async () => {

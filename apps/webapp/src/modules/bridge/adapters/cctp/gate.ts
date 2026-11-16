@@ -168,10 +168,20 @@ export const CCTP_SWAP_FAILED_MESSAGE =
 /** A refusal that sending again can't lift. */
 const finalRefusal = (message: string) => new TransactionRefusedError(message, { final: true });
 
-/** L2 blocks per log query, within the 10k range many RPC providers cap eth_getLogs at. */
-export const RESUME_SCAN_CHUNK_BLOCKS = 10_000n;
-/** The most L2 blocks a continue scans: about three weeks of Base or OP, three days of Arbitrum. */
-export const RESUME_SCAN_MAX_BLOCKS = 1_000_000n;
+/** L2 blocks per log query: the 10k range many RPC providers cap eth_getLogs at, ten times that on Base, a block every 200 ms. */
+export const RESUME_SCAN_CHUNK_BLOCKS: Record<CctpL2NetworkId, bigint> = {
+  base: 100_000n,
+  optimism: 10_000n,
+  unichain: 10_000n,
+  arbitrum: 10_000n
+};
+/** The most L2 blocks a continue scans: about three weeks of Base or OP, 11 days of Unichain, three of Arbitrum. */
+export const RESUME_SCAN_MAX_BLOCKS: Record<CctpL2NetworkId, bigint> = {
+  base: 10_000_000n,
+  optimism: 1_000_000n,
+  unichain: 1_000_000n,
+  arbitrum: 1_000_000n
+};
 
 /**
  * `client` on its first backend only: a fallback transport may answer the head
@@ -222,11 +232,11 @@ export async function cctpResumeRefusal({
   // A node behind the swap would scan nothing and let it through.
   if (latest < receipt.blockNumber)
     return new Error("The network isn't synced up to the conversion yet. Try again in a moment.");
-  if (latest - receipt.blockNumber >= RESUME_SCAN_MAX_BLOCKS)
+  if (latest - receipt.blockNumber >= RESUME_SCAN_MAX_BLOCKS[network])
     return finalRefusal('This conversion is too old for this app to check, so it cannot be continued.');
   const mintRecipient = addressToBytes32(recipient);
   const scan = async (from: bigint, to: bigint) => {
-    for (const range of blockRanges(from, to, RESUME_SCAN_CHUNK_BLOCKS)) {
+    for (const range of blockRanges(from, to, RESUME_SCAN_CHUNK_BLOCKS[network])) {
       const [burns, outflows] = await Promise.all([
         reader.getContractEvents({
           address: TOKEN_MESSENGER_V2,

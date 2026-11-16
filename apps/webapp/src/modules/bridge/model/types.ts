@@ -94,6 +94,12 @@ export type PendingBridge = {
   routeData?: Record<string, string>;
   /** When a tracker first read the source transaction mined. */
   sourceMinedAt?: number;
+  /** When a tracker first found the source chain has no record of the source transaction; unset once it has. */
+  sourceUnseenAt?: number;
+  /** When a whole read of a CCTP wallet bundle's L2 last found no burn of it, 30 minutes or more after it was sent. */
+  bundleUnseenAt?: number;
+  /** The L2 block up to which a read from a CCTP wallet bundle's send last found no burn of it. */
+  bundleReadTo?: string;
   /** When the bridge last became ready for its next action. */
   readyAt?: number;
   /** When the bridge reached arrived, claimed or failed. */

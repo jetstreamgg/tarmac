@@ -35,8 +35,13 @@ export function standardBurns(logs: readonly Log[], from: CctpL2NetworkId): Cctp
   });
 }
 
-/** The blocks up to a burn's its sender's swap is looked for in: one log read within the 10k range RPC providers cap it at, hours on Base or OP, about 40 minutes on Arbitrum. */
-export const SWAP_LOOKBACK_BLOCKS = 10_000n;
+/** The blocks up to a burn's its sender's swap is looked for in, in one log read: hours on Base (a block every 200 ms), OP or Unichain, about 40 minutes on Arbitrum. */
+export const SWAP_LOOKBACK_BLOCKS: Record<CctpL2NetworkId, bigint> = {
+  base: 100_000n,
+  optimism: 10_000n,
+  unichain: 10_000n,
+  arbitrum: 10_000n
+};
 
 /** A PSM3 swap of USDS to `sender` covering the whole burn, as the app sends before it. */
 const swapsFor = (logs: readonly Log[], { from, amount, sender }: CctpBurnExpectation) => {
@@ -63,12 +68,12 @@ async function swappedFromUsds(
 ) {
   if (swapsFor(receipt.logs, burn).length > 0) return true;
   const { psm3, usds, usdc } = cctpL2Contracts(burn.from);
+  const lookback = SWAP_LOOKBACK_BLOCKS[burn.from];
   const earlier = await client.getLogs({
     address: psm3,
     event: getAbiItem({ abi: psm3L2Abi, name: 'Swap' }),
     args: { assetIn: usds, assetOut: usdc, receiver: burn.sender },
-    fromBlock:
-      receipt.blockNumber >= SWAP_LOOKBACK_BLOCKS ? receipt.blockNumber - SWAP_LOOKBACK_BLOCKS + 1n : 0n,
+    fromBlock: receipt.blockNumber >= lookback ? receipt.blockNumber - lookback + 1n : 0n,
     toBlock: receipt.blockNumber
   });
   return swapsFor(earlier, burn).some(

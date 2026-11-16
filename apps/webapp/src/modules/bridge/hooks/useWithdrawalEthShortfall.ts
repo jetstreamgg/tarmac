@@ -1,10 +1,11 @@
 import { useFeePerGas, useTokenBalance } from '@/hooks';
-import { ethereumStepGas, ethShortfall } from '../model/routeCosts';
+import { ethereumStepGasLimit, ethShortfall } from '../model/routeCosts';
 import type { PendingBridge } from '../model/types';
 
 /**
- * The ETH a withdrawal's ready prove or finalize costs on Ethereum when the
- * wallet's balance can't pay it; undefined otherwise and while either is read.
+ * The ETH a withdrawal's ready prove or finalize needs on Ethereum, at the gas
+ * limit it is sent with, when the wallet's balance can't cover it; undefined
+ * otherwise and while either is read.
  */
 export function useWithdrawalEthShortfall(
   bridge: PendingBridge,
@@ -27,6 +28,6 @@ export function useWithdrawalEthShortfall(
   });
   const { data: feePerGas } = useFeePerGas(ethereumChainId, enabled);
   return enabled && step
-    ? ethShortfall({ balance: balance?.value, gas: ethereumStepGas(step, bridge.from), feePerGas })
+    ? ethShortfall({ balance: balance?.value, gas: ethereumStepGasLimit(step, bridge.from), feePerGas })
     : undefined;
 }
