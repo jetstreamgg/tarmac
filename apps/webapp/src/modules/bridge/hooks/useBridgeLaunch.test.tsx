@@ -825,7 +825,7 @@ describe('useBridgeLaunch Confirm gate', () => {
         enabled: true
       });
       const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
-      expect(content.props.networkFee).toBe('$0.42');
+      expect(content.props.networkFee).toBe('~$0.42');
     });
 
     it('reads no fee on Ethereum for a deposit, which has no steps there', async () => {
@@ -833,7 +833,7 @@ describe('useBridgeLaunch Confirm gate', () => {
       await reviewDeposit();
       expect(mocks.feePerGas.every(read => !read.enabled)).toBe(true);
       const content = mocks.launched.at(-1)?.transactionContent as { props: { networkFee?: string } };
-      expect(content.props.networkFee).toBe('$0.42');
+      expect(content.props.networkFee).toBe('~$0.42');
     });
 
     it('shows no network fee before the legs are built', async () => {

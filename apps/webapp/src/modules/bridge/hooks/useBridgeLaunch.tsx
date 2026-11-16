@@ -638,7 +638,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
   const networkFeeText =
     ethereumSteps && route
       ? routeFeeText({ route, sourceFeeWei: networkFee?.feeWei, ethFeePerGas, ethPrice })
-      : (networkFee?.formatted ?? NO_VALUE);
+      : networkFee?.formatted
+        ? `~${networkFee.formatted}`
+        : NO_VALUE;
   const routeSources = useMemo(
     () => ({
       cctp: { calls: isCctpBurn || previewBurnFrom ? burn.calls : [], isBatch: burn.isBatch },
