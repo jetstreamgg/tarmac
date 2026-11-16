@@ -70,6 +70,7 @@ export default defineConfig({
         '**/pendle.spec.ts',
         '**/stusds.spec.ts',
         '**/terms-signature-gate.spec.ts',
+        '**/terms-check-failure.spec.ts',
         '**/address-screening.spec.ts',
         '**/base-savings.spec.ts',
         '**/arbitrum-savings.spec.ts',
@@ -99,7 +100,10 @@ export default defineConfig({
 
   webServer: {
     // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
-    command: 'VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true pnpm dev:mock',
+    // The terms endpoint matches CI too. An empty value makes checkTermsWithRetry
+    // return before fetch, so a forced /check (terms-check-failure) never fires.
+    command:
+      'VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true VITE_TERMS_ENDPOINT=https://staging-api.sky.money/terms-acceptance pnpm dev:mock',
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,

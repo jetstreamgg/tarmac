@@ -41,35 +41,20 @@ const WRAPPER_TIN_ABI = parseAbi(['function tin() view returns (uint256)']);
 
 /** SkyLink copy once CCTP falls back because PSM3's pocket cannot pay the swap. */
 const FALLBACKS = [
-  { network: 'base', name: 'Base', eta: '5 days', action: 'Prove', footnote: 'come back to Ethereum twice' },
-  {
-    network: 'optimism',
-    name: 'OP Mainnet',
-    eta: '7 days',
-    action: 'Prove',
-    footnote: 'come back to Ethereum twice'
-  },
-  {
-    network: 'unichain',
-    name: 'Unichain',
-    eta: '7 days',
-    action: 'Prove',
-    footnote: 'come back to Ethereum twice'
-  },
-  {
-    network: 'arbitrum',
-    name: 'Arbitrum One',
-    eta: '6.5 days',
-    action: 'Finalize',
-    footnote: 'finalize it on Ethereum to receive your USDS'
-  }
+  { network: 'base', name: 'Base', eta: '5 days', action: 'Prove' },
+  { network: 'optimism', name: 'OP Mainnet', eta: '7 days', action: 'Prove' },
+  { network: 'unichain', name: 'Unichain', eta: '7 days', action: 'Prove' },
+  { network: 'arbitrum', name: 'Arbitrum One', eta: '6.5 days', action: 'Finalize' }
 ] as const satisfies readonly {
   network: CctpL2NetworkId;
   name: string;
   eta: string;
   action: 'Prove' | 'Finalize';
-  footnote: string;
 }[];
+
+/** Prove chains need two Ethereum visits; Finalize is the one trip that pays out. */
+const fallbackFootnote = (action: (typeof FALLBACKS)[number]['action']) =>
+  action === 'Prove' ? 'come back to Ethereum twice' : 'finalize it on Ethereum to receive your USDS';
 
 /** Where PSM3 on that L2 fork keeps the USDC it swaps out. */
 async function psm3Pocket(network: CctpL2NetworkId): Promise<Address> {
@@ -93,59 +78,50 @@ const OPEN_BURN_LIMIT = 10n ** 12n;
  * and OP Mainnet's cap is 1 USDC, so those reads are answered here. SkyLink reads closed
  * while `skyLinkClosed()`.
  */
-const l2Gate =
-  (
-    network: CctpL2NetworkId,
-    pocket: Address,
-    {
-      pocketUsdc = () => undefined,
-      skyLinkClosed = () => false
-    }: {
-      pocketUsdc?: () => bigint | undefined;
-      skyLinkClosed?: () => boolean;
-    }
-  ): CallAnswer =>
-  (target, callData) => {
-    const { usdc } = cctpL2Contracts(network);
-    const skyLink = l2WithdrawalBridge(network).bridge;
-    const minterPaused = encodeFunctionData({ abi: tokenMinterV2Abi, functionName: 'paused' });
-    const transmitterPaused = encodeFunctionData({ abi: messageTransmitterV2Abi, functionName: 'paused' });
+const l2Gate = (
+  network: CctpL2NetworkId,
+  pocket: Address,
+  {
+    pocketUsdc = () => undefined,
+    skyLinkClosed = () => false
+  }: {
+    pocketUsdc?: () => bigint | undefined;
+    skyLinkClosed?: () => boolean;
+  }
+): CallAnswer => {
+  const { usdc } = cctpL2Contracts(network);
+  const skyLink = l2WithdrawalBridge(network).bridge;
+  const minterPaused = encodeFunctionData({ abi: tokenMinterV2Abi, functionName: 'paused' });
+  const transmitterPaused = encodeFunctionData({ abi: messageTransmitterV2Abi, functionName: 'paused' });
+  const burnLimit = encodeFunctionData({
+    abi: tokenMinterV2Abi,
+    functionName: 'burnLimitsPerMessage',
+    args: [usdc]
+  });
+  const pocketBalance = encodeFunctionData({ abi: erc20Abi, functionName: 'balanceOf', args: [pocket] });
+  const skyLinkOpen = encodeFunctionData({ abi: l2BridgeGateAbi, functionName: 'isOpen' });
+  const pausedOpen = encodeFunctionResult({ abi: tokenMinterV2Abi, functionName: 'paused', result: false });
+  const burnLimitOpen = encodeFunctionResult({
+    abi: tokenMinterV2Abi,
+    functionName: 'burnLimitsPerMessage',
+    result: OPEN_BURN_LIMIT
+  });
+
+  return (target, callData) => {
     if (
       (same(target, TOKEN_MINTER_V2) && same(callData, minterPaused)) ||
       (same(target, MESSAGE_TRANSMITTER_V2) && same(callData, transmitterPaused))
     )
-      return encodeFunctionResult({ abi: tokenMinterV2Abi, functionName: 'paused', result: false });
-    if (
-      same(target, TOKEN_MINTER_V2) &&
-      same(
-        callData,
-        encodeFunctionData({
-          abi: tokenMinterV2Abi,
-          functionName: 'burnLimitsPerMessage',
-          args: [usdc]
-        })
-      )
-    )
-      return encodeFunctionResult({
-        abi: tokenMinterV2Abi,
-        functionName: 'burnLimitsPerMessage',
-        result: OPEN_BURN_LIMIT
-      });
+      return pausedOpen;
+    if (same(target, TOKEN_MINTER_V2) && same(callData, burnLimit)) return burnLimitOpen;
     const usdcBalance = pocketUsdc();
-    if (
-      usdcBalance !== undefined &&
-      same(target, usdc) &&
-      same(callData, encodeFunctionData({ abi: erc20Abi, functionName: 'balanceOf', args: [pocket] }))
-    )
+    if (usdcBalance !== undefined && same(target, usdc) && same(callData, pocketBalance))
       return encodeFunctionResult({ abi: erc20Abi, functionName: 'balanceOf', result: usdcBalance });
-    if (
-      skyLinkClosed() &&
-      same(target, skyLink) &&
-      same(callData, encodeFunctionData({ abi: l2BridgeGateAbi, functionName: 'isOpen' }))
-    )
+    if (skyLinkClosed() && same(target, skyLink) && same(callData, skyLinkOpen))
       return encodeFunctionResult({ abi: l2BridgeGateAbi, functionName: 'isOpen', result: 0n });
     return undefined;
   };
+};
 
 /** Every address the wallet sends to from this page, in order. */
 async function recordSends(page: Page) {
@@ -169,7 +145,8 @@ async function openOn(page: Page, network: CctpL2NetworkId) {
 }
 
 test.describe('Bridge: CCTP gate from an L2 to Ethereum', () => {
-  for (const { network, name, eta, action, footnote } of FALLBACKS) {
+  for (const { network, name, eta, action } of FALLBACKS) {
+    const footnote = fallbackFootnote(action);
     test(`${name}: without the USDC on PSM3, Review opens on SkyLink and Confirm sends the native withdrawal`, async ({
       isolatedPage,
       testAccount
