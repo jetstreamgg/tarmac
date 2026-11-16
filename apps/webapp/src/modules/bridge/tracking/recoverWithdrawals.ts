@@ -64,7 +64,8 @@ export async function recoverWithdrawals({
     try {
       const found = await lookup(txHash);
       if (found.status === 'refused') {
-        settled.add(hash);
+        // Its log was read, so a missing receipt is a lagging node: read it again next run.
+        if (found.reason !== 'not-found') settled.add(hash);
         return undefined;
       }
       const progress = await adapter.checkProgress(found.bridge, now(), context);
