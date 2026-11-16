@@ -104,3 +104,16 @@ describe('discoverNativeWithdrawals', () => {
     expect(found).toEqual({ withdrawals: [], complete: false });
   });
 });
+
+describe('WITHDRAWAL_SCAN_BLOCKS', () => {
+  // Seconds per block on each L2.
+  const BLOCK_SECONDS = { base: 0.2, optimism: 2, unichain: 1, arbitrum: 0.25 } as const;
+
+  it.each(Object.entries(BLOCK_SECONDS))(
+    'covers three weeks of %s, past the 7-day finalize',
+    (network, seconds) => {
+      const days = (Number(WITHDRAWAL_SCAN_BLOCKS[network as keyof typeof BLOCK_SECONDS]) * seconds) / 86_400;
+      expect(days).toBeGreaterThanOrEqual(21);
+    }
+  );
+});
