@@ -36,6 +36,8 @@ import { usdsToNumber } from '../model/usds';
 import type { BridgeRoute, BridgeRouteKind } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import { clearSendIntent, markSendIntent } from '../store/sendIntentStore';
 import { isStorageWritable } from '../store/storageWritable';
 import { useIsSafeApp } from '@/hooks/wallet/useIsSafeApp';
 import { withSourceRecording } from '../tracking/sourceRecording';
@@ -480,7 +482,13 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       const launchId = launchRef.current;
       confirmedLaunchRef.current = launchId;
       // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
+      // When this Confirm asked for a withdrawal's signature; recovery reads its L2 early until the page hears back.
+      let intentAt: number | undefined;
+      const dropIntent = () => {
+        if (withdrawalFrom && intentAt !== undefined) clearSendIntent(scope, withdrawalFrom, intentAt);
+      };
       const markSent = (id?: string) => {
+        dropIntent();
         if (confirmedLaunchRef.current > launchId) {
           if (id && !sentRef.current) unresolvedRef.current = id;
           return;
@@ -601,6 +609,11 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           if (pinnedChainId !== undefined)
             void queryClient.invalidateQueries({ predicate: readsBalanceOn(pinnedChainId) });
           recording.onSuccess(hash, blockNumber);
+        },
+        onError: (error, hash) => {
+          // Declined: nothing was sent. Any other failure may still have sent it.
+          if (isUserRejectedRequestError(error)) dropIntent();
+          recording.onError(error, hash);
         }
       });
       if (depositTo) {
@@ -614,6 +627,9 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       } else if (withdrawalFrom) {
         legCallbacksRef.current = callbacks;
         setRunningWithdrawal(withdrawalFrom);
+        // A reload before the wallet answers loses the send: recovery reads this L2 early.
+        intentAt = Date.now();
+        markSendIntent(scope, withdrawalFrom, intentAt);
         withdrawal.execute();
       } else void runMockLegs(sourceActions, () => callbacks);
     };

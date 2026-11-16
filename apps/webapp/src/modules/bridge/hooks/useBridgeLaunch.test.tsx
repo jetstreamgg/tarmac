@@ -11,6 +11,7 @@ import { zeroAddress } from 'viem';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
+import { recentSendIntents } from '../store/sendIntentStore';
 import { useBridgeForm } from './useBridgeForm';
 import { cctpWithdrawalRoute, nativeWithdrawalRoute } from '../model/resolveRoute';
 import { useBridgeLaunch } from './useBridgeLaunch';
@@ -1274,6 +1275,40 @@ describe('useBridgeLaunch Confirm gate', () => {
         });
       }
     );
+
+    it('keeps the withdrawal signature for recovery until the page records the send', async () => {
+      await reviewWithdrawal('arbitrum');
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(intents()).toEqual(['arbitrum']);
+
+      const callbacks = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'approve' });
+      callbacks.onStart('0xapprove');
+      expect(intents()).toEqual(['arbitrum']);
+      callbacks.onMutate({ functionName: 'outboundTransfer' });
+      callbacks.onStart('0xwithdraw');
+      expect(intents()).toEqual([]);
+    });
+
+    it('forgets the withdrawal signature once it is declined, and keeps it on any other failure', async () => {
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+      await reviewWithdrawal('base');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const declined = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      declined.onMutate({ functionName: 'bridgeERC20To' });
+      declined.onError(new Error('User rejected the request.'), '');
+      expect(intents()).toEqual([]);
+
+      await reviewWithdrawal('base');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      const failed = mocks.withdrawal.args.at(-1)!.getCallbacks();
+      failed.onMutate({ functionName: 'bridgeERC20To' });
+      failed.onError(new Error('Request timed out'), '');
+      expect(intents()).toEqual(['base']);
+    });
 
     it('drops the Approve step when the allowance covers the amount', async () => {
       await reviewWithdrawal('base');

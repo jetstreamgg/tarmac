@@ -5,6 +5,10 @@ import { createElement, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createPendingBridge } from '../model/pendingTransitions';
+import { nativeWithdrawalRoute } from '../model/resolveRoute';
+import { pendingBridgeStore } from '../store/pendingStore';
+import { clearSendIntent, markSendIntent, recentSendIntents } from '../store/sendIntentStore';
 import { useWithdrawalRecovery } from './useWithdrawalRecovery';
 
 const ACCOUNT = '0x0000000000000000000000000000000000000001';
@@ -30,6 +34,17 @@ vi.mock('../adapters/nativeWithdrawal/lookup', () => ({ lookupNativeWithdrawal: 
 vi.mock('../tracking/recoverWithdrawals', () => ({ recoverWithdrawals: mocks.recover }));
 
 const MINUTE = 60_000;
+let cardSeq = 0;
+const card = (from: 'arbitrum' | 'base') =>
+  createPendingBridge({
+    account: ACCOUNT,
+    amount: 1n,
+    from,
+    to: 'ethereum',
+    route: nativeWithdrawalRoute(from),
+    txHash: `0x${(++cardSeq).toString(16).padStart(64, '0')}`,
+    now: Date.now()
+  });
 const wrapper = ({ children }: { children: ReactNode }) =>
   createElement(QueryClientProvider, { client: new QueryClient() }, children);
 /** A page load: a fresh app with a fresh query cache. */
@@ -168,5 +183,113 @@ describe('useWithdrawalRecovery', () => {
     expect(mocks.discover).toHaveBeenCalledTimes(5);
     await load();
     expect(mocks.discover).toHaveBeenCalledTimes(5);
+  });
+
+  it("reads the L2 of a signature a reload lost 2, 6, 14 and 30 minutes after it, within a complete scan's interval", async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    await vi.advanceTimersByTimeAsync(10 * MINUTE);
+    mocks.discover.mockClear();
+    markSendIntent('scope-1', 'arbitrum', Date.now());
+    await load();
+    expect(scanned()).toEqual([]);
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(scanned()).toEqual(['arbitrum']);
+    await vi.advanceTimersByTimeAsync(4 * MINUTE);
+    expect(scanned()).toEqual(['arbitrum', 'arbitrum']);
+    await vi.advanceTimersByTimeAsync(8 * MINUTE);
+    expect(scanned()).toEqual(['arbitrum', 'arbitrum', 'arbitrum']);
+    // The full scan, 30 minutes after the first load's, reads Arbitrum once with the others.
+    await vi.advanceTimersByTimeAsync(6 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(7);
+    // 30 minutes after the signature.
+    await vi.advanceTimersByTimeAsync(10 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(8);
+    expect(mocks.discover.mock.calls.at(-1)![0].network).toBe('arbitrum');
+    await vi.advanceTimersByTimeAsync(10 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(8);
+  });
+
+  it('reads the L2 at once on a reload past the first mark', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    mocks.discover.mockClear();
+    markSendIntent('scope-1', 'base', Date.now());
+    cleanup();
+    await vi.advanceTimersByTimeAsync(3 * MINUTE);
+    await load();
+    expect(scanned()).toEqual(['base']);
+  });
+
+  it('reads no L2 early once the page cleared the signature', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    mocks.discover.mockClear();
+    const at = Date.now();
+    markSendIntent('scope-1', 'arbitrum', at);
+    clearSendIntent('scope-1', 'arbitrum', at);
+    await load();
+    await vi.advanceTimersByTimeAsync(20 * MINUTE);
+    expect(scanned()).toEqual([]);
+  });
+
+  it('reads no L2 early for a signature asked for more than 35 minutes ago', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    mocks.discover.mockClear();
+    markSendIntent('scope-1', 'arbitrum', Date.now() - 36 * MINUTE);
+    await load();
+    await vi.advanceTimersByTimeAsync(20 * MINUTE);
+    expect(scanned()).toEqual([]);
+  });
+
+  it("retries a lost signature's L2 that could not be read", async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    mocks.discover.mockReset();
+    mocks.discover.mockRejectedValueOnce(new Error('head unreadable'));
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    markSendIntent('scope-1', 'arbitrum', Date.now());
+    await load();
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(scanned()).toEqual(['arbitrum']);
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(scanned()).toEqual(['arbitrum', 'arbitrum']);
+  });
+
+  it('forgets the signature once a scan finds a withdrawal on its L2 sent after it', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    mocks.discover.mockClear();
+    const at = Date.now();
+    markSendIntent('scope-1', 'arbitrum', at);
+    markSendIntent('scope-1', 'base', at);
+    mocks.recover.mockImplementation((async ({ store }: { store: typeof pendingBridgeStore }) => {
+      store.upsert('scope-1', { ...card('arbitrum'), startedAt: at - MINUTE });
+      return 1;
+    }) as never);
+    await load();
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(recentSendIntents('scope-1', Date.now()).map(intent => intent.network)).toEqual(['base']);
+    mocks.recover.mockImplementation(async () => 0);
+  });
+
+  it('counts the next full scan from the earlier load that read everything', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    await vi.advanceTimersByTimeAsync(20 * MINUTE);
+    await load();
+    expect(mocks.discover).toHaveBeenCalledTimes(4);
+    await vi.advanceTimersByTimeAsync(11 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(8);
+  });
+
+  it('counts a scan stamp ahead of the clock as now', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    localStorage.setItem('bridgeRecoveryScan:v1:withdrawal:scope-1', String(Date.now() + 60 * MINUTE));
+    await load();
+    expect(mocks.discover).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(31 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(4);
   });
 });
