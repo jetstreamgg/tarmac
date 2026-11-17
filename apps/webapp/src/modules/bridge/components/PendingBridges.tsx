@@ -56,6 +56,7 @@ import {
   type PendingBridgeCell,
   type PendingBridgeNote
 } from './pendingBridgeRows';
+import { OpenTransactionMessage } from '@/modules/ui/components/OpenTransactionMessage';
 
 const STATUS_CLASS: Record<PendingBridgeStatus, string> = {
   pending: 'bg-statusWarningBg text-statusWarning',
@@ -896,7 +897,7 @@ function ContinueBridgeCard({
       </div>
       {busy ? (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="continue-bridge-hint">
-          <Trans>A transaction is in progress. Open it to continue.</Trans>
+          <OpenTransactionMessage />
         </Text>
       ) : (
         blockedReason &&
@@ -977,7 +978,7 @@ export function PendingBridges({
       {actionLocked && (
         <div className="flex items-center justify-between gap-4" data-testid="pending-bridges-locked">
           <Text className="text-textSecondary text-sm">
-            <Trans>A transaction is in progress. Open it to continue.</Trans>
+            <OpenTransactionMessage />
           </Text>
           <Button
             variant="secondary"

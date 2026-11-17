@@ -13,6 +13,7 @@ import type { PendingBridge } from '../model/types';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { PendingBridges } from './PendingBridges';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
 const BRIDGE: PendingBridge = {
@@ -66,6 +67,7 @@ const mocks = vi.hoisted(() => ({
   ethShort: {} as Record<string, bigint | undefined>,
   blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
   activeSessionId: null as string | null,
+  txStatus: undefined as TxStatus | undefined,
   copy: vi.fn(),
   copyFails: false,
   storageWritable: true,
@@ -127,7 +129,7 @@ vi.mock('@/utils', async importOriginal => ({
 }));
 vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => mocks.storageWritable }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ activeSessionId: mocks.activeSessionId })
+  useTransaction: () => ({ activeSessionId: mocks.activeSessionId, txStatus: mocks.txStatus })
 }));
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
@@ -163,6 +165,7 @@ describe('PendingBridges', () => {
       ethShort: {},
       blocked: {},
       activeSessionId: null,
+      txStatus: undefined,
       copyFails: false,
       storageWritable: true,
       ens: {}
@@ -872,6 +875,14 @@ describe('PendingBridges', () => {
       );
       fireEvent.click(screen.getByTestId('pending-bridges-open-transaction'));
       expect(props.onOpenTransaction).toHaveBeenCalledOnce();
+
+      // Failed while minimized, it waits on Try again, not on the chain.
+      cleanup();
+      mocks.txStatus = TxStatus.ERROR;
+      renderList({ actionLocked: true });
+      expect(screen.getByTestId('pending-bridges-locked').textContent).toContain(
+        'A transaction failed. Open it to try again or close it.'
+      );
     });
 
     it("can't keep the USDC while an action's session is minimized", () => {

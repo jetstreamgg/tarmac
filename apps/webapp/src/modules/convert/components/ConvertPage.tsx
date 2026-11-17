@@ -19,6 +19,7 @@ import type { PsmConversionDisabledReason } from '../hooks/usePsmConversion.help
 import { ConvertCard } from './ConvertCard';
 import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { OpenTransactionMessage } from '@/modules/ui/components/OpenTransactionMessage';
 
 // Same copy as the legacy PsmConversionWidget — the engine's guard reasons are
 // unchanged, so the user-facing explanations carry over verbatim.
@@ -100,7 +101,7 @@ export function ConvertPage() {
 
       {locked ? (
         <Text className="text-textSecondary text-sm" dataTestId="convert-locked">
-          <Trans>A transaction is in progress. Open it to continue.</Trans>
+          <OpenTransactionMessage />
         </Text>
       ) : form.insufficient ? (
         <Text className="text-error text-sm" dataTestId="convert-error">
