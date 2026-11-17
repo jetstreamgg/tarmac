@@ -32,7 +32,9 @@ export function useTokenAllowance({
     args: [owner || ZERO_ADDRESS, spender || ZERO_ADDRESS],
     query: {
       enabled: !!contractAddress && !!owner && !!spender,
-      staleTime: 30_000
+      staleTime: 30_000,
+      // Dropped once unused, so a flow that mounts later reads it fresh (APP-675).
+      gcTime: 0
     }
   });
 
