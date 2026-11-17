@@ -9,7 +9,7 @@ import { bridgeChainId, type BridgeNetworkId } from '../model/networks';
 import { isSettled } from '../model/pendingTransitions';
 import type { PendingBridge } from '../model/types';
 import { pendingBridgeStore } from '../store/pendingStore';
-import { markCompleteScan } from '../store/recoveryScanStamp';
+import { lastCompleteScan, markCompleteScan } from '../store/recoveryScanStamp';
 import { recoverDeposits } from '../tracking/recoverDeposits';
 import { wagmiAdapterContext } from './adapterContext';
 import { useBridgeHistory } from './useBridgeHistory';
@@ -78,7 +78,10 @@ export function useDepositRecovery(enabled = true) {
         // The launch asks when a bundle may have sent a deposit the wallet didn't report.
         (queryClient.getQueryState(queryKey)?.isInvalidated === true ||
           sent.some(bridge => bundleScanDue(bridge.startedAt, bundleScannedAt(scope, bridge.id), at)));
-      if (!fullDue && !recentDue && bundles.length === 0) return previous ?? idle;
+      // Skipped on a load: the next full read counts from the earlier load's.
+      // A stamp ahead of this clock counts as now.
+      const notDue = previous ?? { ...idle, fullAt: Math.min(lastCompleteScan(SCAN_KIND, scope) ?? at, at) };
+      if (!fullDue && !recentDue && bundles.length === 0) return notDue;
       const l1 = getPublicClient(config, { chainId: ethereumChainId });
       if (!l1) return idle;
       const context = wagmiAdapterContext(config, familyChainId);
@@ -146,7 +149,7 @@ export function useDepositRecovery(enabled = true) {
           }
         }
       });
-      if (!fullDue) return { ...(previous ?? idle), ...(offset !== undefined && { offset }) };
+      if (!fullDue) return { ...notDue, ...(offset !== undefined && { offset }) };
       if (complete) markCompleteScan(SCAN_KIND, scope, Date.now());
       return {
         complete,

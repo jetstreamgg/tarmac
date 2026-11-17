@@ -73,6 +73,25 @@ describe('useDepositRecovery', () => {
     expect(mocks.discover).toHaveBeenCalledTimes(1);
   });
 
+  it('counts the next full scan from the earlier load that read everything', async () => {
+    mocks.discover.mockResolvedValue({ deposits: [], complete: true });
+    await load();
+    await vi.advanceTimersByTimeAsync(20 * MINUTE);
+    await load();
+    expect(mocks.discover).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(11 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(2);
+  });
+
+  it('counts a scan stamp ahead of the clock as now', async () => {
+    mocks.discover.mockResolvedValue({ deposits: [], complete: true });
+    localStorage.setItem('bridgeRecoveryScan:v1:deposit:scope-1', String(Date.now() + 60 * MINUTE));
+    await load();
+    expect(mocks.discover).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(31 * MINUTE);
+    expect(mocks.discover).toHaveBeenCalledTimes(1);
+  });
+
   it('scans on a reload within the interval while a bundle has no hash yet', async () => {
     mocks.discover.mockResolvedValue({ deposits: [], complete: true });
     await load();
