@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeAll, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import type { useBridgeForm } from '@/modules/bridge/hooks/useBridgeForm';
 
 // The real Bridge form under the real Swap | Bridge tabs; only its chain reads and launchers are faked.
@@ -34,6 +34,11 @@ vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (action: () => void) => action
 }));
 vi.mock('@/modules/ui/hooks/useTransactionRunActive', () => ({ useTransactionRunActive: () => false }));
+const tx = vi.hoisted(() => ({ activeSessionId: null as string | null }));
+vi.mock('@/modules/ui/context/TransactionContext', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/modules/ui/context/TransactionContext')>()),
+  useTransaction: () => tx
+}));
 const { navigationOptions } = vi.hoisted(() => ({ navigationOptions: vi.fn() }));
 vi.mock('@/lib/navigation', () => ({
   useAppSearchParams: () => {
@@ -99,6 +104,7 @@ import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlow
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
 afterEach(cleanup);
+beforeEach(() => (tx.activeSessionId = null));
 
 const openTab = (name: 'swap' | 'bridge') =>
   fireEvent.mouseDown(screen.getByTestId(`convert-tab-${name}`), { button: 0 });
@@ -122,6 +128,51 @@ it('keeps what was typed in the Bridge tab after a visit to Swap, as the Swap ta
 
   expect((screen.getByTestId('bridge-amount') as HTMLInputElement).value).toBe('12.5');
   expect(screen.getByTestId('bridge-to').textContent).toBe('arbitrum');
+});
+
+const page = () => (
+  <I18nProvider i18n={i18n}>
+    <AnalyticsFlowProvider>
+      <ConvertPage />
+    </AnalyticsFlowProvider>
+  </I18nProvider>
+);
+
+it('keeps the Bridge tab mounted, hidden, on Swap while a session it opened is in flight', () => {
+  const { rerender } = render(page());
+  openTab('bridge');
+  tx.activeSessionId = 'bridge-run';
+  rerender(page());
+  const field = screen.getByTestId('bridge-amount');
+
+  openTab('swap');
+  // Not torn down: a page-hosted run (a claim's sale) would stop with it.
+  expect(screen.getByTestId('bridge-amount')).toBe(field);
+  const panel = field.closest('[role="tabpanel"]')!;
+  expect(panel.getAttribute('data-state')).toBe('inactive');
+  expect(panel.className).toContain('data-[state=inactive]:hidden');
+  openTab('bridge');
+  expect(screen.getByTestId('bridge-amount')).toBe(field);
+
+  // Once the session ends, Swap unmounts it as before.
+  openTab('swap');
+  tx.activeSessionId = null;
+  rerender(page());
+  expect(screen.queryByTestId('bridge-amount')).toBeNull();
+});
+
+it("doesn't mount the Bridge tab for a session opened on Swap", () => {
+  const { rerender } = render(page());
+  tx.activeSessionId = 'swap-run';
+  rerender(page());
+  expect(screen.queryByTestId('bridge-amount')).toBeNull();
+
+  // Nor one from an earlier Bridge visit once a new session runs.
+  openTab('bridge');
+  openTab('swap');
+  tx.activeSessionId = 'another-run';
+  rerender(page());
+  expect(screen.queryByTestId('bridge-amount')).toBeNull();
 });
 
 it('keeps the scroll position when switching tab in either direction', () => {

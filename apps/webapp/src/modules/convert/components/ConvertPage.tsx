@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -18,6 +18,7 @@ import { useConvertLaunch } from '../hooks/useConvertLaunch';
 import type { PsmConversionDisabledReason } from '../hooks/usePsmConversion.helpers';
 import { ConvertCard } from './ConvertCard';
 import { useTransactionRunActive } from '@/modules/ui/hooks/useTransactionRunActive';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
 
 // Same copy as the legacy PsmConversionWidget — the engine's guard reasons are
 // unchanged, so the user-facing explanations carry over verbatim.
@@ -168,6 +169,12 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
   const tab: ConvertTab = searchParams.get(QueryParams.Tab) === 'bridge' ? 'bridge' : 'swap';
   const chainId = useChainId();
   const { trackWidgetSelected } = useAppAnalytics();
+  // The session open when the Bridge tab was last shown. Its legs run in the tab, so
+  // the tab stays mounted (hidden) on Swap until that session ends.
+  const { activeSessionId } = useTransaction();
+  const [bridgeSession, setBridgeSession] = useState<string | null>(null);
+  if (tab === 'bridge' && activeSessionId !== bridgeSession) setBridgeSession(activeSessionId);
+  const keepBridge = activeSessionId !== null && activeSessionId === bridgeSession;
   // A click activates a tab twice in one event: on the trigger's focus, then on its mouse down.
   const activatingRef = useRef<string | undefined>(undefined);
   const onTabChange = (value: string) => {
@@ -203,7 +210,11 @@ function ConvertTabs({ swap }: { swap: ReactNode }) {
       <TabsContent value="swap" className="mt-6">
         {swap}
       </TabsContent>
-      <TabsContent value="bridge" className="mt-6">
+      <TabsContent
+        value="bridge"
+        forceMount={keepBridge || undefined}
+        className="mt-6 data-[state=inactive]:hidden"
+      >
         <BridgePanel draft={bridgeDraft} />
       </TabsContent>
     </Tabs>
