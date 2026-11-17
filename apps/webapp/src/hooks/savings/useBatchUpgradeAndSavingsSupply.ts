@@ -24,7 +24,7 @@ export function useBatchUpgradeAndSavingsSupply({
   const { address: connectedAddress, isConnected } = useAccount();
   const chainId = useChainId();
 
-  const { data: daiUgradeAllowance } = useTokenAllowance({
+  const { data: daiUgradeAllowance, error: daiAllowanceError } = useTokenAllowance({
     chainId,
     contractAddress: mcdDaiAddress[chainId as keyof typeof mcdDaiAddress],
     owner: connectedAddress,
@@ -76,8 +76,8 @@ export function useBatchUpgradeAndSavingsSupply({
     isConnected &&
     !!amount &&
     amount !== 0n &&
-    hasDaiUpgradeAllowance !== undefined &&
-    hasUsdsSupplyAllowance !== undefined &&
+    daiUgradeAllowance !== undefined &&
+    usdsSupplyAllowance !== undefined &&
     paramEnabled &&
     !!connectedAddress;
 
@@ -90,6 +90,6 @@ export function useBatchUpgradeAndSavingsSupply({
     onSuccess,
     onError,
     onStart,
-    allowanceError: allowanceError
+    allowanceError: allowanceError || daiAllowanceError
   });
 }

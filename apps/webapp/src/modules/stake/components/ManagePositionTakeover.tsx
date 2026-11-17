@@ -711,7 +711,7 @@ export function ManagePositionTakeover({
           <div className="flex flex-col gap-1">
             <span className="text-textSecondary flex items-center gap-1 text-xs leading-[18px]">
               <Trans>Capped OSM SKY price</Trans>
-              <RateInfo type="cappedOsmSkyPrice" size={12} />
+              <RateInfo type="cappedOsmSkyPrice" />
             </span>
             <span className="text-text font-circle flex items-center gap-2 text-sm leading-4 font-medium tracking-[-0.28px]">
               {detail.vaultLoading ? (

@@ -98,8 +98,6 @@ export function StakeTakeoverStakeCard({
                 <Trans>Min. stake to borrow</Trans>
                 <InfoTooltip
                   title={t`Minimum stake to borrow`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={
                     minStakeToBorrow !== undefined
                       ? t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`
@@ -147,7 +145,7 @@ export function StakeTakeoverStakeCard({
             label={
               <>
                 <Trans>Staking Rewards Rate</Trans>
-                <RateInfo type="srr" size={12} />
+                <RateInfo type="srr" />
               </>
             }
             current={rewardsRate ?? (rateLoading ? <Skeleton className="h-4 w-14" /> : NO_VALUE)}

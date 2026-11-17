@@ -199,7 +199,7 @@ export function StakeEngineCard() {
               label={
                 <>
                   <Trans>Rewards rate</Trans>
-                  <RateInfo type="srr" size={10} />
+                  <RateInfo type="srr" />
                 </>
               }
               value={rewardsRate}
@@ -211,7 +211,7 @@ export function StakeEngineCard() {
               label={
                 <>
                   <Trans>Borrow rate</Trans>
-                  <RateInfo type="sbr" size={10} />
+                  <RateInfo type="sbr" />
                 </>
               }
               value={borrowRate}

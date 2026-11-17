@@ -1,4 +1,3 @@
-import { cn } from '@/lib/cn';
 import { InfoTooltip } from '@/components/InfoTooltip';
 import { getTooltipById } from '@/modules/ui/data/tooltips';
 import { parseMarkdownLinks } from '@/modules/ui/lib/parseMarkdownLinks';
@@ -29,26 +28,16 @@ export const rateInfoFor = (product: ProductIdentity): RateInfoType => RATE_INFO
  * `PopoverRateInfo` shows, on the design-system Tooltip (Default type, title
  * over body; Design QA 3314:135504) via `InfoTooltip`, so it hovers on
  * desktop and taps on touch like every other info glyph in the app. Glyph
- * defaults to 14px fg-secondary, the size the supply cards already use.
+ * is the shared 12px info glyph.
  */
-export function RateInfo({
-  type,
-  size = 14,
-  className
-}: {
-  type: RateInfoType;
-  /** Glyph size in px; the 12px stat labels pass 12. */
-  size?: number;
-  className?: string;
-}) {
+export function RateInfo({ type, className }: { type: RateInfoType; className?: string }) {
   const tooltip = getTooltipById(resolveTooltipId(type));
   if (!tooltip) return null;
   return (
     <InfoTooltip
       title={tooltip.title}
       content={parseMarkdownLinks(tooltip.tooltip)}
-      iconSize={size}
-      iconClassName={cn('text-fgSecondary shrink-0', className)}
+      iconClassName={className}
     />
   );
 }

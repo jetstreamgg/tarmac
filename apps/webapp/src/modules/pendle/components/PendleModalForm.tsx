@@ -22,7 +22,7 @@ import {
   type Token
 } from '@/hooks';
 import { getTooltipById } from '@/modules/ui/data/tooltips';
-import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { InfoTooltip } from '@/components/InfoTooltip';
 import { PendleFlow } from '@/modules/pendle/lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '@/modules/pendle/lib/pendleAnalyticsData';
 import { pendleNonPtLeg } from '@/modules/pendle/lib/pendleUsdValue';
@@ -155,13 +155,14 @@ export function PendleModalForm({
   // token → Pendle router on the engine's chain) so TanStack dedupes the two.
   const engineChainId = familyMainnetId(chainId);
   const inputTokenAddress = isSupply ? selectedAddress : market.ptToken;
-  const { data: allowance } = useTokenAllowance({
+  const { data: allowance, error: allowanceError } = useTokenAllowance({
     chainId: engineChainId,
     contractAddress: inputTokenAddress,
     owner: address,
     spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
   });
-  const needsAllowance = allowance !== undefined && debouncedAmount > 0n && allowance < debouncedAmount;
+  const needsAllowance =
+    debouncedAmount > 0n && (allowance !== undefined ? allowance < debouncedAmount : !!allowanceError);
 
   // Steps mirror the engine's call count ([approve?, convert]) so the
   // indicator advances in lockstep with the sequential flow's onMutate bumps.
@@ -428,17 +429,12 @@ export function PendleModalForm({
   // Both estimate cells caveat the quote (the comps draw an info mark on the
   // withdraw cell, 2413:66997).
   const receiveInfo = (
-    <PopoverInfo
-      title={t`You'll receive`}
-      description={t`Estimated at the current Pendle market price.`}
-      iconSize={12}
-    />
+    <InfoTooltip title={t`You'll receive`} content={t`Estimated at the current Pendle market price.`} />
   );
   const claimInfo = (
-    <PopoverInfo
+    <InfoTooltip
       title={t`Claim at maturity`}
-      description={t`Based on the ${ptSymbol} you're expected to receive at the current market price; each ${ptSymbol} redeems for 1 ${displaySymbol} at maturity.`}
-      iconSize={12}
+      content={t`Based on the ${ptSymbol} you're expected to receive at the current market price; at maturity you can claim 1 ${displaySymbol} for each ${ptSymbol}.`}
     />
   );
   const entryRows = isSupply
@@ -470,7 +466,7 @@ export function PendleModalForm({
         lostTrend,
         displaySymbol,
         lostInfo: lostTooltip ? (
-          <PopoverInfo title={lostTooltip.title} description={lostTooltip.tooltip} iconSize={12} />
+          <InfoTooltip title={lostTooltip.title} content={lostTooltip.tooltip} />
         ) : undefined,
         network: networkName,
         networkChainId: engineChainId,
