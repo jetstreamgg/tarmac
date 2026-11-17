@@ -25,9 +25,9 @@ const mayBeUnresolved = (card: PendingBridge, network: CctpL2NetworkId, burn: Di
   addressToBytes32((card.recipient ?? card.account) as Hex) === burn.mintRecipient.toLowerCase();
 
 /**
- * Adds the account's CCTP burns to Ethereum that the store lacks (a reload
- * before the page recorded the send, storage cleared, another browser, a
- * dismissed bundle that mined late), so each is claimed from its card. Each is
+ * Adds the CCTP burns to Ethereum that the store lacks, read for a burn
+ * signature a reload lost before the page recorded the send, so each is
+ * claimed from its card. Each is
  * read with `lookup`, as the manual form does. A burn a card with no hash yet
  * may own is left to that card. A stopped swap of the same USDC and recipient
  * is linked to the burn, so it isn't offered again. One that was claimed,

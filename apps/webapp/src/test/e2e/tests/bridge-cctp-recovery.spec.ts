@@ -163,9 +163,17 @@ test.describe('Bridge: CCTP recovery', () => {
     await bridge.confirmButton().click();
     await expect.poll(() => burnHash, { timeout: 90_000 }).toBeDefined();
 
-    // A mock build clears localStorage on load, so nothing of the send survives.
+    // A real reload keeps the send intent; a mock build clears localStorage on load, so it's put back.
+    const intents = await isolatedPage.evaluate(() =>
+      Object.entries(localStorage).filter(([key]) => key.startsWith('bridgeSendIntent:'))
+    );
+    expect(intents).toHaveLength(1);
     bridge = new BridgePage(isolatedPage);
-    await bridge.gotoConnected();
+    await isolatedPage.goto('/convert?tab=bridge');
+    await isolatedPage.evaluate(entries => {
+      for (const [key, value] of entries) localStorage.setItem(key, value);
+    }, intents);
+    await connectAndVerify(isolatedPage, { batch: false });
     await expect(bridge.cards()).toHaveCount(1, { timeout: 60_000 });
     await expect(bridge.card('Ethereum')).toContainText(`${AMOUNT}.00`);
 

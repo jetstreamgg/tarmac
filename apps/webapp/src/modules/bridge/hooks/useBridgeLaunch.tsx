@@ -52,7 +52,7 @@ import { usePendingScope } from './usePendingScope';
 import { readsBalanceOn } from './balanceQueries';
 import { useBridgeBatch } from './useBridgeBatch';
 import { useBridgeRouteCards } from './useBridgeRouteCards';
-import { CCTP_L2_CONVERT_FUNCTION } from '../adapters/cctp/calls';
+import { CCTP_L2_CONVERT_FUNCTION, cctpBurnAmount } from '../adapters/cctp/calls';
 import { destinationGas, routeFeeText } from '../model/routeCosts';
 import {
   bridgeEventContext,
@@ -491,7 +491,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       const markIntent = () => {
         if (!intentFrom) return;
         intentAt = Date.now();
-        markSendIntent(scope, intentFrom, intentAt);
+        // A burn is read for by its amount only: the account's other CCTP burns aren't this app's.
+        markSendIntent(scope, intentFrom, intentAt, burnFrom ? cctpBurnAmount(record.amount) : undefined);
       };
       // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
       const markSent = (id?: string) => {

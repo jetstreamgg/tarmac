@@ -41,6 +41,16 @@ describe('sendIntentStore', () => {
     expect(recentSendIntents('a', NOW + SEND_INTENT_MS)).toEqual([]);
   });
 
+  it("keeps a burn's amount, and drops one that isn't a whole number", () => {
+    markSendIntent('a', 'base', NOW, 1_000_000n);
+    expect(recentSendIntents('a', NOW)).toEqual([{ network: 'base', at: NOW, burnAmount: '1000000' }]);
+    localStorage.setItem(
+      'bridgeSendIntent:v1:a',
+      JSON.stringify([{ network: 'base', at: NOW, burnAmount: '1e6' }])
+    );
+    expect(recentSendIntents('a', NOW)).toEqual([]);
+  });
+
   it('reads nothing from a corrupt entry', () => {
     localStorage.setItem('bridgeSendIntent:v1:a', 'not json');
     expect(recentSendIntents('a', NOW)).toEqual([]);

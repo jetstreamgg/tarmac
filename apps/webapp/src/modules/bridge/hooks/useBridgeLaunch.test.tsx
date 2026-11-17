@@ -10,6 +10,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { zeroAddress } from 'viem';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
+import { cctpBurnAmount } from '../adapters/cctp/calls';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { markSendIntent, recentSendIntents } from '../store/sendIntentStore';
 import { useBridgeForm } from './useBridgeForm';
@@ -1006,6 +1007,13 @@ describe('useBridgeLaunch Confirm gate', () => {
     });
     afterEach(() => {
       mocks.burn.ready = false;
+    });
+
+    it('keeps the amount the burn signs, so recovery reads no other burn', async () => {
+      await reviewBurn();
+      expect(recentSendIntents(scope, Date.now())).toEqual([
+        expect.objectContaining({ network: 'base', burnAmount: `${cctpBurnAmount(ONE)}` })
+      ]);
     });
 
     it('keeps the burn signature for recovery until the page records the burn, past the swap', async () => {
