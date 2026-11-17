@@ -46,6 +46,20 @@ export class TransactionOutcomeUnknownError extends Error {
   }
 }
 
+/** A bundle that settled as failed, with the receipts the wallet reported: a leg may have mined anyway. */
+export class BatchFailedError extends Error {
+  constructor(
+    readonly receipts: readonly {
+      status: 'success' | 'reverted';
+      transactionHash: `0x${string}`;
+      blockNumber: bigint;
+      logs: readonly { address: `0x${string}`; data: `0x${string}`; topics: readonly `0x${string}`[] }[];
+    }[] = []
+  ) {
+    super('ERROR: Batch transaction failed');
+  }
+}
+
 export function useSendBatchTransactionFlow<const calls extends readonly unknown[], config extends Config>(
   parameters: UseSendBatchTransactionFlowParameters<calls, config>
 ): BatchTransactionFlowHook {
@@ -178,7 +192,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       // a success with a reverted leg among its receipts (Ambire on an EOA, APP-637).
       const revertedReceipt = data?.receipts?.find(receipt => receipt.status === 'reverted');
       if (isSuccess && (revertedReceipt || data.status === 'failure')) {
-        emitError(new Error('ERROR: Batch transaction failed'), revertedReceipt?.transactionHash);
+        emitError(new BatchFailedError(data.receipts ?? []), revertedReceipt?.transactionHash);
       } else if (isSuccess && data.status === 'success') {
         // A non-atomic bundle can land across blocks; the history refresh waits for the last.
         const blockNumbers = (data.receipts ?? []).map(receipt => receipt.blockNumber);

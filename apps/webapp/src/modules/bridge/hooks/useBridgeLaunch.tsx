@@ -583,6 +583,17 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
             }
             void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
           })(),
+        // A wallet that broke the bundle up can fail it after the send mined: its card follows that send.
+        onBundleSent: (bundleId, receipts) => {
+          const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bundleId);
+          const sent = bridge ? bundleDepositIn(bridge, receipts) : undefined;
+          if (!sent) return false;
+          pendingBridgeStore.resolveBundle(scope, bundleId, sent.txHash);
+          tracker.recordExecuted(sent.txHash);
+          // Mined, so no longer unresolved: Retry says it was sent.
+          if (unresolvedRef.current === bundleId) unresolvedRef.current = undefined;
+          return true;
+        },
         // Sped up in the wallet: the tracker reads the hash that will mine.
         onRepriced: (txHash, newTxHash) => {
           if (burnFrom) ownBurnsRef.current.push(newTxHash.toLowerCase());
