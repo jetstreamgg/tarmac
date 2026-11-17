@@ -12,9 +12,8 @@ const storesHash = (stored: PendingBridge[], hash: string) =>
 
 const sameAddress = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
-// A wallet bundle has no hash until one is read: it may be one withdrawal of its network, sender, amount and recipient, mined after it was sent.
-const mayBeBundle = (card: PendingBridge, found: PendingBridge) =>
-  !!card.bundleId &&
+// A wallet bundle or a queued Safe tx has no hash until one is read: it may be one withdrawal of its network, sender, amount and recipient, mined after it was sent.
+const mayBeSent = (card: PendingBridge, found: PendingBridge) =>
   !card.txHash &&
   !isSettled(card) &&
   card.routeKind === 'native' &&
@@ -25,12 +24,19 @@ const mayBeBundle = (card: PendingBridge, found: PendingBridge) =>
   sameAddress(card.recipient ?? card.account, found.recipient ?? found.account) &&
   found.startedAt >= card.startedAt - CLOCK_SKEW_MS;
 
+const mayBeBundle = (card: PendingBridge, found: PendingBridge) => !!card.bundleId && mayBeSent(card, found);
+
+// A queued Safe withdrawal's card gets its hash from the Safe's own read.
+const mayBeQueued = (card: PendingBridge, found: PendingBridge) =>
+  !!card.safeTxHash && mayBeSent(card, found);
+
 /**
  * Adds the discovered native withdrawals the store lacks (storage cleared,
  * another browser, a withdrawal sent to this wallet), so each is proved and
  * finalized from its card. Each is read with `lookup`, which checks its
  * receipt. A wallet bundle's card with no hash gets the hash of the withdrawal
- * it matches, oldest card first, instead of a second card. One that arrived,
+ * it matches, oldest card first, instead of a second card; one a queued Safe
+ * card may have sent is left to that card. One that arrived,
  * failed or isn't a bridge joins `settled`, which later runs skip; a read
  * error leaves it for the next run. Returns how many it added.
  */
@@ -81,7 +87,7 @@ export async function recoverWithdrawals({
   for (const { hash, bridge, progress } of found) {
     // Read again: the launch or another tab may have stored it during the reads.
     const current = store.getSnapshot(scope);
-    if (storesHash(current, hash)) continue;
+    if (storesHash(current, hash) || current.some(entry => mayBeQueued(entry, bridge))) continue;
     // The oldest card takes the earliest withdrawal, and keeps the time the device sent it at.
     const card = current
       .filter(entry => mayBeBundle(entry, bridge))
