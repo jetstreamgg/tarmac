@@ -325,6 +325,16 @@ describe('TransactionModal failure & recovery', () => {
     expect(ctx.tags).toEqual({ revert_reason: 'LockstakeEngine/urn-unsafe' });
   });
 
+  it("says the wallet didn't allow a send it refused with 4100, not that the network rolled it back", () => {
+    renderFailedFlow(supplySteps, () => {}, Object.assign(new Error('Unauthorized'), { code: 4100 }));
+    expect(
+      screen.getByText(
+        "Your wallet didn't allow this request. Reconnect it and try again. The USDS hasn't been approved."
+      )
+    ).toBeDefined();
+    expect(screen.queryByText(/The network rolled back your transaction/)).toBeNull();
+  });
+
   it('shows an unmapped revert reason verbatim', () => {
     renderFailedFlow(supplySteps, () => {}, new Error('execution reverted: Foo/bar'));
     expect(

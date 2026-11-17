@@ -37,6 +37,7 @@ import {
 } from '@/hooks/shared/useTransactionOutcome';
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
+import { isUnauthorizedRequestError } from '@/modules/utils/isUnauthorizedRequestError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 import { revertMessage, revertReport } from '@/lib/revertMessages';
 import type {
@@ -1429,8 +1430,14 @@ export function TransactionProvider({
       const rejected = isUserRejectedRequestError(error);
       setUserRejected(rejected);
       setOutcomeUnknown(unknown);
-      // A Reject has its own copy; anything else that reverted says why.
-      setFailureReason(rejected || unknown ? undefined : revertMessage(error));
+      // A Reject has its own copy; a send the wallet didn't allow, or one that reverted, says why.
+      setFailureReason(
+        rejected || unknown
+          ? undefined
+          : isUnauthorizedRequestError(error)
+            ? t`Your wallet didn't allow this request. Reconnect it and try again.`
+            : revertMessage(error)
+      );
       // A bridge refusal can come on a Retry too, after the first attempt failed.
       setRefusal(
         error instanceof TransactionRefusedError
