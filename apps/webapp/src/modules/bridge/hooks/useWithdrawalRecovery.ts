@@ -6,7 +6,7 @@ import type { NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { getBridgeAdapter } from '../adapters/registry';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { lastCompleteScan, markCompleteScan } from '../store/recoveryScanStamp';
-import { clearSendIntent, recentSendIntents, sendIntentScanId } from '../store/sendIntentStore';
+import { recentSendIntents, sendIntentScanId } from '../store/sendIntentStore';
 import { recoverWithdrawals } from '../tracking/recoverWithdrawals';
 import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
@@ -38,9 +38,6 @@ const fullDelay = (scan: RecoveryScan) =>
 
 // A tick may run a little early.
 const TICK_SLACK_MS = 5_000;
-
-// A found withdrawal's time is its block's: the device that asked for its signature may run this far ahead.
-const INTENT_SKEW_MS = 5 * 60_000;
 
 const lostSignatures = (scope: string, now: number) =>
   recentSendIntents(scope, now).filter((intent): intent is { network: NativeDepositNetwork; at: number } =>
@@ -83,7 +80,6 @@ export function useWithdrawalRecovery(enabled = true) {
       // A stamp ahead of this clock counts as now.
       const notDue = previous ?? { ...idle, fullAt: Math.min(lastCompleteScan(SCAN_KIND, scope) ?? at, at) };
       if (networks.length === 0) return notDue;
-      const known = new Set(pendingBridgeStore.getSnapshot(scope).map(bridge => bridge.id));
       const context = wagmiAdapterContext(config, familyChainId);
       const scans = await Promise.all(
         networks.map(async network => {
@@ -114,17 +110,9 @@ export function useWithdrawalRecovery(enabled = true) {
         })
       );
       const read = (network: NativeDepositNetwork) => scans[networks.indexOf(network)];
+      // Read to its last mark: a withdrawal found on that L2 may be another one.
       const readIntents = intents.filter(intent => networks.includes(intent.network) && read(intent.network));
       markBundleScanned(scope, readIntents.map(sendIntentScanId), Date.now());
-      // A withdrawal found since the signature was asked for: it was sent.
-      const added = pendingBridgeStore.getSnapshot(scope).filter(bridge => !known.has(bridge.id));
-      for (const intent of readIntents)
-        if (
-          added.some(
-            bridge => bridge.from === intent.network && bridge.startedAt >= intent.at - INTENT_SKEW_MS
-          )
-        )
-          clearSendIntent(scope, intent.network, intent.at);
       if (!fullDue) return notDue;
       const unread = full.filter(network => !read(network));
       if (unread.length === 0) markCompleteScan(SCAN_KIND, scope, Date.now());

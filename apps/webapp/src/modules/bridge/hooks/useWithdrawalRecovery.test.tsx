@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPendingBridge } from '../model/pendingTransitions';
 import { nativeWithdrawalRoute } from '../model/resolveRoute';
 import { pendingBridgeStore } from '../store/pendingStore';
-import { clearSendIntent, markSendIntent, recentSendIntents } from '../store/sendIntentStore';
+import { clearSendIntent, markSendIntent } from '../store/sendIntentStore';
 import { useWithdrawalRecovery } from './useWithdrawalRecovery';
 
 const ACCOUNT = '0x0000000000000000000000000000000000000001';
@@ -257,20 +257,21 @@ describe('useWithdrawalRecovery', () => {
     expect(scanned()).toEqual(['arbitrum', 'arbitrum']);
   });
 
-  it('forgets the signature once a scan finds a withdrawal on its L2 sent after it', async () => {
+  it("keeps reading a lost signature's L2 after a scan finds another withdrawal there", async () => {
     mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
     await load();
     mocks.discover.mockClear();
-    const at = Date.now();
-    markSendIntent('scope-1', 'arbitrum', at);
-    markSendIntent('scope-1', 'base', at);
+    markSendIntent('scope-1', 'arbitrum', Date.now());
+    // One the account receives, sent from elsewhere after the signature.
     mocks.recover.mockImplementation((async ({ store }: { store: typeof pendingBridgeStore }) => {
-      store.upsert('scope-1', { ...card('arbitrum'), startedAt: at - MINUTE });
+      store.upsert('scope-1', card('arbitrum'));
       return 1;
     }) as never);
     await load();
     await vi.advanceTimersByTimeAsync(2 * MINUTE);
-    expect(recentSendIntents('scope-1', Date.now()).map(intent => intent.network)).toEqual(['base']);
+    expect(scanned()).toEqual(['arbitrum']);
+    await vi.advanceTimersByTimeAsync(4 * MINUTE);
+    expect(scanned()).toEqual(['arbitrum', 'arbitrum']);
     mocks.recover.mockImplementation(async () => 0);
   });
 

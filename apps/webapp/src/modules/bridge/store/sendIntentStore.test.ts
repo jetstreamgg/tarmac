@@ -28,6 +28,13 @@ describe('sendIntentStore', () => {
     expect(recentSendIntents('a', NOW + 2)).toEqual([{ network: 'arbitrum', at: NOW + 1 }]);
   });
 
+  it('keeps each signature asked for on one network until it clears', () => {
+    markSendIntent('a', 'arbitrum', NOW);
+    markSendIntent('a', 'arbitrum', NOW + 1);
+    clearSendIntent('a', 'arbitrum', NOW + 1);
+    expect(recentSendIntents('a', NOW + 2)).toEqual([{ network: 'arbitrum', at: NOW }]);
+  });
+
   it('forgets a signature older than the window', () => {
     markSendIntent('a', 'arbitrum', NOW);
     expect(recentSendIntents('a', NOW + SEND_INTENT_MS - 1)).toHaveLength(1);
@@ -37,7 +44,9 @@ describe('sendIntentStore', () => {
   it('reads nothing from a corrupt entry', () => {
     localStorage.setItem('bridgeSendIntent:v1:a', 'not json');
     expect(recentSendIntents('a', NOW)).toEqual([]);
-    localStorage.setItem('bridgeSendIntent:v1:a', JSON.stringify({ base: 'x' }));
+    localStorage.setItem('bridgeSendIntent:v1:a', JSON.stringify({ base: NOW }));
+    expect(recentSendIntents('a', NOW)).toEqual([]);
+    localStorage.setItem('bridgeSendIntent:v1:a', JSON.stringify([{ network: 'base', at: 'x' }, null]));
     expect(recentSendIntents('a', NOW)).toEqual([]);
   });
 });
