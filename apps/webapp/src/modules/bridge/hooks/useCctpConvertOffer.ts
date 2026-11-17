@@ -20,6 +20,7 @@ import { canConvert, recordActionSent } from '../model/pendingTransitions';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { isCctpSpendOpen } from '../store/openCctpSpends';
 import { lostSaleIntent, lostSaleRead } from '../store/saleIntentStore';
+import { SEND_INTENT_MS } from '../store/sendIntentStore';
 import type { PendingBridge } from '../model/types';
 import { usePendingScope } from './usePendingScope';
 
@@ -32,11 +33,12 @@ const OTHERS_CLAIM_POLL_MS = 60_000;
  * With no claim this app confirmed, someone else's receive is looked for once the account holds USDC,
  * and whether the recipient sold it then or later (`othersClaimSold`).
  * `offer` is undefined while either is unknown or failed to read; `nothingLeft` says so only once it is sure.
+ * `saleOpenUntil` is when a sale prompt a reload lost expires, while it holds the offer back.
  */
 export function useCctpConvertOffer(
   bridge: PendingBridge,
   now: number
-): { offer: bigint | undefined; nothingLeft: boolean } {
+): { offer: bigint | undefined; nothingLeft: boolean; saleOpenUntil?: number } {
   const { account, familyChainId } = usePendingScope();
   const config = useConfig();
   const chainId = bridgeChainId('ethereum', familyChainId);
@@ -158,5 +160,5 @@ export function useCctpConvertOffer(
       othersSold: othersSoldRead,
       now
     });
-  return { offer, nothingLeft };
+  return { offer, nothingLeft, saleOpenUntil: lost ? lost.at + SEND_INTENT_MS : undefined };
 }

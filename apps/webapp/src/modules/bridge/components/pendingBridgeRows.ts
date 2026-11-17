@@ -160,7 +160,7 @@ const statusText = (bridge: PendingBridge): string =>
 export const formatBridgeDate = (ms: number): string => format(ms, 'dd/MM/yy HH:mm');
 
 /** "15:46" on the same local day as `now`, else the full date; rounded up to the minute. */
-const formatArrivalTime = (ms: number, now: number): string => {
+export const formatArrivalTime = (ms: number, now: number): string => {
   const arrival = Math.ceil(ms / 60_000) * 60_000;
   return isSameDay(arrival, now) ? format(arrival, 'HH:mm') : formatBridgeDate(arrival);
 };

@@ -13,6 +13,7 @@ import type { PendingBridge } from '../model/types';
 import { cctpSwapStore, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { PendingBridges } from './PendingBridges';
+import { formatArrivalTime } from './pendingBridgeRows';
 import { TxStatus } from '@/modules/ui/lib/txStatus';
 
 const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
@@ -64,6 +65,7 @@ const mocks = vi.hoisted(() => ({
   incoming: [] as IncomingBridge[],
   offers: {} as Record<string, bigint | undefined>,
   nothingLeft: {} as Record<string, boolean | undefined>,
+  saleOpenUntil: {} as Record<string, number | undefined>,
   ethShort: {} as Record<string, bigint | undefined>,
   blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
   activeSessionId: null as string | null,
@@ -110,7 +112,8 @@ vi.mock('../hooks/usePendingScope', () => ({
 vi.mock('../hooks/useCctpConvertOffer', () => ({
   useCctpConvertOffer: (bridge: PendingBridge) => ({
     offer: mocks.offers[bridge.id],
-    nothingLeft: mocks.nothingLeft[bridge.id] ?? false
+    nothingLeft: mocks.nothingLeft[bridge.id] ?? false,
+    saleOpenUntil: mocks.saleOpenUntil[bridge.id]
   })
 }));
 vi.mock('../hooks/useWithdrawalEthShortfall', () => ({
@@ -162,6 +165,7 @@ describe('PendingBridges', () => {
       incoming: [],
       offers: {},
       nothingLeft: {},
+      saleOpenUntil: {},
       ethShort: {},
       blocked: {},
       activeSessionId: null,
@@ -853,6 +857,34 @@ describe('PendingBridges', () => {
       expect(within(mid).getByTestId('token-icon').dataset.symbol).toBe('USDS');
       expect(within(rest).getByTestId('pending-bridge-status').textContent).toBe('Arrived as USDC');
       expect(within(rest).getByTestId('pending-bridge-convert')).toBeDefined();
+    });
+
+    // A sale prompt a reload lost may still be signed: the card reads Claiming and says when Convert comes back.
+    it('waits on a sale prompt a reload lost, and says until when', () => {
+      const until = 35 * 60_000;
+      mocks.bridges = [CLAIMED];
+      mocks.saleOpenUntil[CLAIMED.id] = until;
+      renderList();
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claiming');
+      expect(screen.queryByTestId('status-check')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-sale-waiting-note').textContent).toBe(
+        `Your wallet may still be asking you to confirm the conversion to USDS. Confirm it there, or convert here from ${formatArrivalTime(until, 0)}.`
+      );
+      expect(screen.queryByTestId('pending-bridge-convert')).toBeNull();
+      expect(screen.queryByTestId('pending-bridge-convert-note')).toBeNull();
+      expect(screen.getByTestId('token-icon').dataset.symbol).toBe('USDS');
+
+      // This page's own claim run says Claiming already, and its prompt isn't lost.
+      cleanup();
+      renderList({ claiming: { scope: 'scope', bridgeId: CLAIMED.id } });
+      expect(screen.queryByTestId('pending-bridge-sale-waiting-note')).toBeNull();
+
+      // Once the prompt expires, the card is as before.
+      cleanup();
+      delete mocks.saleOpenUntil[CLAIMED.id];
+      renderList();
+      expect(screen.queryByTestId('pending-bridge-sale-waiting-note')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claimed');
     });
 
     it("matches the claiming card by the list it's stored in", () => {

@@ -49,6 +49,7 @@ import { buildContinueBridgeRows } from './continueBridgeRows';
 import {
   bridgeCounterparty,
   buildPendingBridgeRows,
+  formatArrivalTime,
   formatBridgeDate,
   formatTimeLeft,
   nextActionLabel,
@@ -542,9 +543,11 @@ function PendingBridgeCard({
   const sourceName = getBridgeNetwork(bridge.from).name;
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
-  const { offer, nothingLeft } = useCctpConvertOffer(bridge, now);
+  const { offer, nothingLeft, saleOpenUntil } = useCctpConvertOffer(bridge, now);
   // Mid-claim, the USDC its sale is selling isn't left over.
   const convertAmount = claiming ? undefined : offer;
+  // A sale prompt a reload lost may still be signed in the wallet: the card reads Claiming until it expires.
+  const saleWaiting = !claiming && saleOpenUntil !== undefined;
   const cardRef = useRef<HTMLDivElement>(null);
   const onSeen = useCallback(() => {
     if (listScope) pendingBridgeStore.markSeen(listScope, bridge.id);
@@ -622,6 +625,14 @@ function PendingBridgeCard({
             Your bridge arrived as USDC because the conversion to USDS didn&apos;t complete. Convert it now at
             a 1:1 rate.
           </Trans>
+        </Text>
+      )}
+      {saleWaiting && (
+        <Text
+          className="text-fgSecondary text-xs leading-[18px]"
+          dataTestId="pending-bridge-sale-waiting-note"
+        >
+          <SaleWaitingText until={saleOpenUntil} now={now} />
         </Text>
       )}
       {offersConvert && (
@@ -770,7 +781,7 @@ function PendingBridgeCard({
           familyChainId,
           convertAmount !== undefined,
           counterparty,
-          claiming
+          claiming || saleWaiting
         )}
       />
 
@@ -783,6 +794,16 @@ function PendingBridgeCard({
         </div>
       )}
     </div>
+  );
+}
+
+function SaleWaitingText({ until, now }: { until: number; now: number }) {
+  const time = formatArrivalTime(until, now);
+  return (
+    <Trans>
+      Your wallet may still be asking you to confirm the conversion to USDS. Confirm it there, or convert here
+      from {time}.
+    </Trans>
   );
 }
 

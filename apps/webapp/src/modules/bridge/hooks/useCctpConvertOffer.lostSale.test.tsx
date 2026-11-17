@@ -113,22 +113,27 @@ describe('useCctpConvertOffer, after a sale prompt a reload lost', () => {
     const result = render(bridge);
     await waitFor(() => expect(result.current.offer).toBe(USDC('100')));
     expect(mocks.getLogs).not.toHaveBeenCalled();
+    expect(result.current.saleOpenUntil).toBeUndefined();
     release();
   });
 
   // The prompt may still be signed in the wallet, or be pending, where no log shows it.
   it('offers nothing while the lost prompt lasts though the read finds no sale, then offers again', async () => {
-    markSaleIntent(SCOPE, bridge.id, Date.now());
+    const at = Date.now();
+    markSaleIntent(SCOPE, bridge.id, at);
     const result = render(bridge);
     await waitFor(() => expect(mocks.getLogs).toHaveBeenCalledTimes(1));
     await settle();
     expect(result.current.offer).toBeUndefined();
     expect(result.current.nothingLeft).toBe(false);
+    // The card says Convert comes back once the prompt expires.
+    expect(result.current.saleOpenUntil).toBe(at + 35 * 60_000);
 
     localStorage.clear();
     markSaleIntent(SCOPE, bridge.id, Date.now() - 36 * 60_000);
     const later = render(bridge);
     await waitFor(() => expect(later.current.offer).toBe(USDC('100')));
+    expect(later.current.saleOpenUntil).toBeUndefined();
   });
 
   it("never takes another card's sale for this one's", async () => {
