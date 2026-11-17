@@ -82,6 +82,7 @@ export function useBridgeCallLegs({
   onAccountSwitch,
   onLegSent,
   onLegPrompt,
+  onBundlePrompt,
   onLegFailed,
   getCallbacks
 }: {
@@ -110,6 +111,8 @@ export function useBridgeCallLegs({
   onLegSent?: (hash: string, variables: TxMutateVariables, context?: unknown) => void;
   /** The wallet is about to prompt for one leg, for the run executed with `context`; the release returned runs once it is answered. */
   onLegPrompt?: (variables: TxMutateVariables, context?: unknown) => (() => void) | undefined;
+  /** The wallet is about to prompt for a bundle, for the run executed with `context`; the release returned runs once it is answered. */
+  onBundlePrompt?: (context?: unknown) => (() => void) | undefined;
   /** A leg sent one at a time reverted or was replaced, under `hash`; called after its run ended too. */
   onLegFailed?: (hash: string) => void;
   getCallbacks: () => TxCallbacks;
@@ -203,7 +206,16 @@ export function useBridgeCallLegs({
     // Not while a send is out: the bundle already signed has nothing left to gate.
     simulateEnabled: walletBatches && sendRoute === null,
     onMutate: () => {
-      bundlePromptsRef.current.push(openBundle(runFromRef.current ?? from));
+      const window = openBundle(runFromRef.current ?? from);
+      const prompt = onBundlePrompt?.(runContextRef.current);
+      bundlePromptsRef.current.push(
+        prompt
+          ? () => {
+              window();
+              prompt();
+            }
+          : window
+      );
       // An earlier bundle's verdict no longer reaches the modal: recovery reads it from the chain.
       acceptedIssuerRef.current = undefined;
       pausedRef.current = false;

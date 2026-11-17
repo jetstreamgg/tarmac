@@ -43,7 +43,7 @@ import { claimsFromDestinationWallet } from '../model/recipient';
 import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
-import { openCctpSpend } from '../store/openCctpSpends';
+import { openClaimedSale } from '../store/saleIntentStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { withActionRecording } from '../tracking/actionRecording';
 import { readsBalanceOn } from './balanceQueries';
@@ -332,7 +332,7 @@ export function useDestinationActionLaunch() {
     // A convert of the card sells the same USDC: it refuses while this sale may still be signed.
     onLegPrompt: (variables, context) =>
       variables.functionName === CCTP_CONVERT_FUNCTION && isClaimRun(context)
-        ? openCctpSpend(context.scope, context.bridgeId)
+        ? openClaimedSale(context.scope, context.bridgeId)
         : undefined,
     onCallsSent: recordBundleSent('claim'),
     getCallbacks: () => legCallbacksRef.current

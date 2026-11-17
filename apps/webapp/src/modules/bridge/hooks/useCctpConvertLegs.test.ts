@@ -11,6 +11,9 @@ import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
 import { pendingBridgeStore } from '../store/pendingStore';
 import type { PendingBridge } from '../model/types';
 import { useCctpConvertLegs } from './useCctpConvertLegs';
+import { applyProgress, createPendingBridge, recordAction } from '../model/pendingTransitions';
+import { resolveBridgeRoute } from '../model/resolveRoute';
+import { lostSaleIntent, markSaleIntent } from '../store/saleIntentStore';
 
 const ACCOUNT = '0x71c7656ec7ab88b098defb751b7401b5f6d8976f';
 const AMOUNT = 250n * 10n ** 6n;
@@ -161,6 +164,125 @@ describe('useCctpConvertLegs', () => {
       expect(isCctpSpendOpen(SCOPE, BRIDGE_ID)).toBe(true);
       release();
       expect(isCctpSpendOpen(SCOPE, BRIDGE_ID)).toBe(false);
+    });
+  });
+
+  // A reload mid-signature loses the sale's prompt: the next convert reads Ethereum for it first.
+  describe('on Ethereum, after a sale prompt a reload lost', () => {
+    const SCOPE = 'bridgePending:lost';
+    const preflight = (client: unknown) =>
+      (mocks.legs!.preflight as (client: unknown) => Promise<Error | undefined>)(client);
+    const leg = (functionName: string) => ({ functionName }) as never;
+    const card = () => {
+      // Recent: the store drops a card settled over 90 days ago.
+      const at = Date.now();
+      const resolved = resolveBridgeRoute({
+        from: 'base',
+        to: 'ethereum',
+        amount: 1n,
+        facts: { cctp: { isOpen: true } }
+      });
+      if (resolved.status !== 'ok') throw new Error(resolved.reason);
+      const ready = applyProgress(
+        createPendingBridge({
+          account: getAddress(ACCOUNT),
+          amount: 250n * 10n ** 18n,
+          from: 'base',
+          to: 'ethereum',
+          route: resolved.route,
+          txHash: '0xburnlost',
+          now: at
+        }),
+        { kind: 'ready', nextAction: 'claim' },
+        at
+      );
+      return applyProgress(
+        recordAction(ready, { action: 'claim', txHash: '0xclaim', at }),
+        { kind: 'arrived' },
+        at
+      );
+    };
+    const chain = (logs: unknown[] | Error) => ({
+      getBlockNumber: vi.fn(async () => 1_000n),
+      getLogs: vi.fn(async () => {
+        if (logs instanceof Error) throw logs;
+        return logs;
+      })
+    });
+    let bridgeId = '';
+
+    beforeEach(() => {
+      localStorage.clear();
+      const bridge = card();
+      bridgeId = bridge.id;
+      pendingBridgeStore.upsert(SCOPE, bridge);
+      mocks.refusal.mockResolvedValue(undefined);
+    });
+
+    it('keeps its sale prompt across a reload until answered, one leg or a bundle', () => {
+      render({ scope: SCOPE, bridgeId }).execute();
+      const run = mocks.execute.mock.calls.at(-1)?.[0];
+      const onLegPrompt = mocks.legs!.onLegPrompt as (variables: unknown, run: unknown) => () => void;
+      const onBundlePrompt = mocks.legs!.onBundlePrompt as (run: unknown) => (() => void) | undefined;
+      const release = onLegPrompt(leg('sellGem'), run);
+      expect(lostSaleIntent(bridgeId, Date.now())).toMatchObject({ scope: SCOPE, bridgeId });
+      release();
+      expect(lostSaleIntent(bridgeId, Date.now())).toBeUndefined();
+      const bundle = onBundlePrompt(run)!;
+      expect(isCctpSpendOpen(SCOPE, bridgeId)).toBe(true);
+      expect(lostSaleIntent(bridgeId, Date.now())).toBeDefined();
+      bundle();
+      expect(isCctpSpendOpen(SCOPE, bridgeId)).toBe(false);
+      expect(lostSaleIntent(bridgeId, Date.now())).toBeUndefined();
+      // A swap's convert on an L2 sells no claimed USDC.
+      expect(onBundlePrompt({ scope: SCOPE, swapTxHash: '0xswap' })).toBeUndefined();
+    });
+
+    it('refuses as converted when the lost sale mined, and the card follows it', async () => {
+      markSaleIntent(SCOPE, bridgeId, Date.now());
+      render({ scope: SCOPE, bridgeId });
+      const client = chain([{ transactionHash: '0xsale', args: { value: AMOUNT } }]);
+
+      const refusal = await preflight(client);
+
+      expect(refusal?.message).toBe('This bridge was already sent or converted.');
+      expect(refusal).toMatchObject({ final: true });
+      expect(mocks.refusal).not.toHaveBeenCalled();
+      const [kept] = pendingBridgeStore.getSnapshot(SCOPE).filter(entry => entry.id === bridgeId);
+      expect(kept!.actions).toContainEqual(
+        expect.objectContaining({ action: 'convert', txHash: '0xsale', status: 'sent' })
+      );
+      expect(client.getLogs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          address: L1_USDC,
+          args: { from: getAddress(ACCOUNT), to: [USDS_PSM_WRAPPER, expect.any(String)] },
+          fromBlock: 700n,
+          toBlock: 1_000n
+        })
+      );
+    });
+
+    it('converts when the read finds no lost sale', async () => {
+      markSaleIntent(SCOPE, bridgeId, Date.now());
+      render({ scope: SCOPE, bridgeId });
+      await expect(preflight(chain([]))).resolves.toBeUndefined();
+      expect(mocks.refusal).toHaveBeenCalled();
+    });
+
+    it('sends nothing when the read fails', async () => {
+      markSaleIntent(SCOPE, bridgeId, Date.now());
+      render({ scope: SCOPE, bridgeId });
+      await expect(preflight(chain(new Error('rpc down')))).rejects.toThrow('rpc down');
+      expect(mocks.refusal).not.toHaveBeenCalled();
+    });
+
+    it('reads nothing with no lost prompt, or one past its 35 minutes', async () => {
+      render({ scope: SCOPE, bridgeId });
+      const client = chain([]);
+      await preflight(client);
+      markSaleIntent(SCOPE, bridgeId, Date.now() - 36 * 60_000);
+      await preflight(client);
+      expect(client.getLogs).not.toHaveBeenCalled();
     });
   });
 

@@ -11,9 +11,12 @@ import {
   cctpL2ConvertCalls
 } from '../adapters/cctp/calls';
 import { L1_USDC, USDS_PSM_WRAPPER, cctpL2Contracts } from '../adapters/cctp/contracts';
+import { findLostSale } from '../adapters/cctp/convert';
 import { cctpConvertRefusal, cctpL2ConvertRefusal } from '../adapters/cctp/gate';
+import { recordActionSent } from '../model/pendingTransitions';
 import { cctpSwapStore, isSwapSpendable, type UnfinishedCctpSwap } from '../store/cctpSwapStore';
 import { isCctpSpendOpen, openCctpSpend } from '../store/openCctpSpends';
+import { lostSaleIntent, openClaimedSale } from '../store/saleIntentStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { PROMPT_OPEN_MESSAGE } from '../store/promptRegistry';
 import { unfinishedSwapRefusal } from '../store/unfinishedSwapRefusal';
@@ -106,6 +109,18 @@ export function useCctpConvertLegs({
       if (!swap) {
         if (scope && bridgeId && isCctpSpendOpen(scope, bridgeId))
           return new TransactionRefusedError(PROMPT_OPEN_MESSAGE);
+        // A sale prompt a reload lost may have been signed since the card offered this one.
+        const lost = bridgeId ? lostSaleIntent(bridgeId, Date.now()) : undefined;
+        const card = lost && pendingBridgeStore.getSnapshot(lost.scope).find(entry => entry.id === bridgeId);
+        if (lost && card) {
+          const sale = await findLostSale({ l1: reader, bridge: card, recipient: from! });
+          if (sale) {
+            pendingBridgeStore.update(lost.scope, card.id, current =>
+              recordActionSent(current, { action: 'convert', txHash: sale, at: Date.now() })
+            );
+            return new TransactionRefusedError(SETTLED_MESSAGE, { final: true });
+          }
+        }
         return cctpConvertRefusal(params);
       }
       const kept = cctpSwapStore.get(scope!, swap.swapTxHash);
@@ -145,9 +160,11 @@ export function useCctpConvertLegs({
       if (isConvertRun(run))
         return isConvertLeg(variables) ? openCctpSpend(run.scope, run.swapTxHash) : undefined;
       return isClaimedConvertRun(run) && isSale(variables)
-        ? openCctpSpend(run.scope, run.bridgeId)
+        ? openClaimedSale(run.scope, run.bridgeId)
         : undefined;
     },
+    // A bundle with the sale: kept across a reload until answered, as the sale's own prompt.
+    onBundlePrompt: run => (isClaimedConvertRun(run) ? openClaimedSale(run.scope, run.bridgeId) : undefined),
     onLegSent: (hash, variables, run) => {
       if (isConvertLeg(variables)) link(run, hash);
     },

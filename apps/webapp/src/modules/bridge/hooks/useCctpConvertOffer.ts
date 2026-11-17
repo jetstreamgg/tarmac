@@ -9,13 +9,17 @@ import {
   cctpNothingToConvert,
   claimNextLegTxHashes,
   confirmedClaimTxHashes,
+  findLostSale,
   findOthersClaimReceipt,
   OTHERS_CLAIM_RESCAN_MS,
   othersClaimSold,
   readClaimSold
 } from '../adapters/cctp/convert';
 import { bridgeChainId } from '../model/networks';
-import { canConvert } from '../model/pendingTransitions';
+import { canConvert, recordActionSent } from '../model/pendingTransitions';
+import { pendingBridgeStore } from '../store/pendingStore';
+import { isCctpSpendOpen } from '../store/openCctpSpends';
+import { lostSaleIntent } from '../store/saleIntentStore';
 import type { PendingBridge } from '../model/types';
 import { usePendingScope } from './usePendingScope';
 
@@ -100,27 +104,54 @@ export function useCctpConvertOffer(
     refetchInterval: query => (query.state.data === true ? false : OTHERS_CLAIM_POLL_MS)
   });
 
-  const othersSoldRead = othersSoldFailed ? undefined : othersSold;
-  const offer = !eligible
-    ? undefined
-    : othersClaimed
-      ? cctpConvertOffer({
-          bridge,
-          account,
-          claimSold: othersSoldRead,
-          usdcBalance: usdc?.value,
-          othersClaimTxHash: othersClaim?.transactionHash
-        })
-      : cctpConvertOffer({ bridge, account, claimSold, usdcBalance: usdc?.value });
-  const nothingLeft = cctpNothingToConvert({
-    bridge,
-    account,
-    offer,
-    claimSold,
-    usdcBalance: usdc?.value,
-    othersClaim,
-    othersSold: othersSoldRead,
-    now
+  // A sale prompt of this card no page answered (a reload mid-signature) may have been signed: until a read of
+  // Ethereum's last hour finds none, nothing is offered. One found is the card's convert, which its tracker settles.
+  const intent = convertible ? lostSaleIntent(bridge.id, now) : undefined;
+  // This page's own prompt still open isn't lost.
+  const lost = intent && !isCctpSpendOpen(intent.scope, bridge.id) ? intent : undefined;
+  const { data: lostSale } = useQuery({
+    queryKey: ['cctp-lost-sale', chainId, bridge.id, lost?.at],
+    queryFn: async () => {
+      const l1 = chainId === undefined ? undefined : getPublicClient(config, { chainId });
+      if (!l1 || !lost) throw new Error('No Ethereum client.');
+      const hash = await findLostSale({ l1, bridge, recipient: recipient as Hex });
+      if (hash)
+        pendingBridgeStore.update(lost.scope, bridge.id, current =>
+          recordActionSent(current, { action: 'convert', txHash: hash, at: Date.now() })
+        );
+      return hash;
+    },
+    enabled: !!lost,
+    staleTime: Infinity,
+    // Read again each minute while its intent lasts: the sale may mine later.
+    refetchInterval: query => (query.state.data ? false : OTHERS_CLAIM_POLL_MS)
   });
+  const saleUnread = !!lost && lostSale !== null;
+
+  const othersSoldRead = othersSoldFailed ? undefined : othersSold;
+  const offer =
+    !eligible || saleUnread
+      ? undefined
+      : othersClaimed
+        ? cctpConvertOffer({
+            bridge,
+            account,
+            claimSold: othersSoldRead,
+            usdcBalance: usdc?.value,
+            othersClaimTxHash: othersClaim?.transactionHash
+          })
+        : cctpConvertOffer({ bridge, account, claimSold, usdcBalance: usdc?.value });
+  const nothingLeft =
+    !saleUnread &&
+    cctpNothingToConvert({
+      bridge,
+      account,
+      offer,
+      claimSold,
+      usdcBalance: usdc?.value,
+      othersClaim,
+      othersSold: othersSoldRead,
+      now
+    });
   return { offer, nothingLeft };
 }
