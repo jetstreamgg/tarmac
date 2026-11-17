@@ -482,10 +482,17 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       const launchId = launchRef.current;
       confirmedLaunchRef.current = launchId;
       // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
-      // When this Confirm asked for a withdrawal's signature; recovery reads its L2 early until the page hears back.
+      // When this Confirm asked to sign a send from an L2 (a withdrawal or a burn); recovery reads that L2 early until the page hears back.
+      const intentFrom = withdrawalFrom ?? burnFrom;
       let intentAt: number | undefined;
       const dropIntent = () => {
-        if (withdrawalFrom && intentAt !== undefined) clearSendIntent(scope, withdrawalFrom, intentAt);
+        if (intentFrom && intentAt !== undefined) clearSendIntent(scope, intentFrom, intentAt);
+      };
+      // A reload before the wallet answers loses the send: recovery reads this L2 early.
+      const markIntent = () => {
+        if (!intentFrom) return;
+        intentAt = Date.now();
+        markSendIntent(scope, intentFrom, intentAt);
       };
       const markSent = (id?: string) => {
         dropIntent();
@@ -623,13 +630,12 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       } else if (burnFrom) {
         legCallbacksRef.current = callbacks;
         setRunningBurn(burnFrom);
+        markIntent();
         burn.execute();
       } else if (withdrawalFrom) {
         legCallbacksRef.current = callbacks;
         setRunningWithdrawal(withdrawalFrom);
-        // A reload before the wallet answers loses the send: recovery reads this L2 early.
-        intentAt = Date.now();
-        markSendIntent(scope, withdrawalFrom, intentAt);
+        markIntent();
         withdrawal.execute();
       } else void runMockLegs(sourceActions, () => callbacks);
     };

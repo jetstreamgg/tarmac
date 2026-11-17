@@ -46,6 +46,10 @@ vi.mock('../adapters/nativeWithdrawal/discovery', () => ({ discoverNativeWithdra
 vi.mock('../adapters/nativeWithdrawal/lookup', () => ({ lookupNativeWithdrawal: vi.fn() }));
 vi.mock('../tracking/recoverDeposits', () => ({ recoverDeposits: vi.fn(async () => 0) }));
 vi.mock('../tracking/recoverWithdrawals', () => ({ recoverWithdrawals: vi.fn(async () => 0) }));
+vi.mock('../adapters/cctp/discovery', () => ({
+  discoverCctpBurns: vi.fn(async () => ({ burns: [], complete: true }))
+}));
+vi.mock('../tracking/recoverCctpBurns', () => ({ recoverCctpBurns: vi.fn(async () => 0) }));
 
 // The Bridge tab and the wallet drawer, down to what shows the bridges.
 vi.mock('../hooks/useBridgeForm', () => ({

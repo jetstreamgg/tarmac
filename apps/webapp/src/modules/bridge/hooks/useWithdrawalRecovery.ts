@@ -1,12 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useConfig } from 'wagmi';
+import { isCctpL2Network } from '../adapters/cctp/contracts';
+import { discoverCctpBurns } from '../adapters/cctp/discovery';
+import { lookupCctpBurn } from '../adapters/cctp/lookup';
 import { discoverNativeWithdrawals } from '../adapters/nativeWithdrawal/discovery';
 import { lookupNativeWithdrawal } from '../adapters/nativeWithdrawal/lookup';
 import type { NativeDepositNetwork } from '../adapters/nativeDeposit/contracts';
 import { getBridgeAdapter } from '../adapters/registry';
+import { cctpSwapStore } from '../store/cctpSwapStore';
 import { pendingBridgeStore } from '../store/pendingStore';
 import { lastCompleteScan, markCompleteScan } from '../store/recoveryScanStamp';
 import { recentSendIntents, sendIntentScanId } from '../store/sendIntentStore';
+import { recoverCctpBurns } from '../tracking/recoverCctpBurns';
 import { recoverWithdrawals } from '../tracking/recoverWithdrawals';
 import { wagmiAdapterContext } from './adapterContext';
 import { usePendingScope } from './usePendingScope';
@@ -23,6 +28,8 @@ import {
 
 // An L2 left unread (a skipped block range, or no head) is retried alone, with the shared backoff.
 const SCAN_KIND = 'withdrawal';
+// Burns found claimed or not bridges, apart from the withdrawals.
+const CCTP_SETTLED_KIND = 'cctp-burn';
 
 const NETWORKS: NativeDepositNetwork[] = ['base', 'optimism', 'unichain', 'arbitrum'];
 
@@ -46,8 +53,9 @@ const lostSignatures = (scope: string, now: number) =>
 
 /**
  * Scans each L2 for the connected account's recent native withdrawals to
- * Ethereum, sent or received, and adds the ones the store lacks, so their
- * cards offer the prove and finalize. Runs on connect, unless a load in the
+ * Ethereum, sent or received, and the CCTP burns to Ethereum it sent, and adds
+ * the ones the store lacks, so their cards offer the prove and finalize, or
+ * the claim. Runs on connect, unless a load in the
  * last 30 minutes read everything, and 30 minutes after the last complete
  * scan; an L2 left unread is retried alone after 2 minutes, then 4, 8 and so
  * on. An L2 whose withdrawal signature a page lost (a reload mid-signature)
@@ -86,12 +94,13 @@ export function useWithdrawalRecovery(enabled = true) {
           const client = context.getClient(network);
           if (!client) return true;
           try {
-            const { withdrawals, complete } = await discoverNativeWithdrawals({
-              l2: client,
-              network,
-              account,
-              toBlock: await client.getBlockNumber()
-            });
+            const toBlock = await client.getBlockNumber();
+            const [{ withdrawals, complete }, cctp] = await Promise.all([
+              discoverNativeWithdrawals({ l2: client, network, account, toBlock }),
+              isCctpL2Network(network)
+                ? discoverCctpBurns({ l2: client, network, account, toBlock })
+                : { burns: [], complete: true }
+            ]);
             await recoverWithdrawals({
               store: pendingBridgeStore,
               scope,
@@ -103,7 +112,20 @@ export function useWithdrawalRecovery(enabled = true) {
               // Withdrawals found not to be bridges are kept here too.
               settled: settledFor(SCAN_KIND, scope)
             });
-            return complete;
+            if (isCctpL2Network(network))
+              await recoverCctpBurns({
+                store: pendingBridgeStore,
+                swaps: cctpSwapStore,
+                scope,
+                network,
+                burns: cctp.burns,
+                lookup: txHash => lookupCctpBurn({ from: network, txHash, account, client }),
+                now: Date.now,
+                adapter: getBridgeAdapter('cctp'),
+                context,
+                settled: settledFor(CCTP_SETTLED_KIND, scope)
+              });
+            return complete && cctp.complete;
           } catch {
             return false;
           }

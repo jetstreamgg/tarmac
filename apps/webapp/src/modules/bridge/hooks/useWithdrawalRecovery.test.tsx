@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   discover: vi.fn(),
   recover: vi.fn(async () => 0),
   lookup: vi.fn(),
+  burns: vi.fn<(args: { network: string }) => Promise<{ burns: unknown[]; complete: boolean }>>(),
+  recoverBurns: vi.fn(async () => 0),
+  burnLookup: vi.fn(),
   clients: new Set<string>(['base', 'optimism', 'unichain', 'arbitrum'])
 }));
 
@@ -32,6 +35,9 @@ vi.mock('./adapterContext', () => ({
 vi.mock('../adapters/nativeWithdrawal/discovery', () => ({ discoverNativeWithdrawals: mocks.discover }));
 vi.mock('../adapters/nativeWithdrawal/lookup', () => ({ lookupNativeWithdrawal: mocks.lookup }));
 vi.mock('../tracking/recoverWithdrawals', () => ({ recoverWithdrawals: mocks.recover }));
+vi.mock('../adapters/cctp/discovery', () => ({ discoverCctpBurns: mocks.burns }));
+vi.mock('../tracking/recoverCctpBurns', () => ({ recoverCctpBurns: mocks.recoverBurns }));
+vi.mock('../adapters/cctp/lookup', () => ({ lookupCctpBurn: mocks.burnLookup }));
 
 const MINUTE = 60_000;
 let cardSeq = 0;
@@ -62,6 +68,9 @@ describe('useWithdrawalRecovery', () => {
     mocks.discover.mockReset();
     mocks.recover.mockClear();
     mocks.lookup.mockReset();
+    mocks.burns.mockReset();
+    mocks.burns.mockResolvedValue({ burns: [], complete: true });
+    mocks.recoverBurns.mockClear();
     mocks.clients = new Set(['base', 'optimism', 'unichain', 'arbitrum']);
   });
   afterEach(() => vi.useRealTimers());
@@ -88,6 +97,57 @@ describe('useWithdrawalRecovery', () => {
     expect(mocks.lookup).toHaveBeenCalledWith(
       expect.objectContaining({ from: 'base', txHash: '0xbase', account: ACCOUNT })
     );
+  });
+
+  it("reads each L2's CCTP burns at the same head, and recovers them by that L2's burn lookup", async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    const burn = { txHash: '0xburn', blockNumber: 1n, amount: 1n, mintRecipient: '0x', destinationDomain: 0 };
+    mocks.burns.mockResolvedValue({ burns: [burn], complete: true });
+    await load();
+    expect(mocks.burns.mock.calls.map(([args]) => (args as { network: string }).network).sort()).toEqual([
+      'arbitrum',
+      'base',
+      'optimism',
+      'unichain'
+    ]);
+    expect(mocks.burns.mock.calls[0][0]).toMatchObject({ account: ACCOUNT, toBlock: 100n });
+    const base = (
+      mocks.recoverBurns.mock.calls as unknown as [
+        { network: string; burns: unknown[]; scope: string; lookup: (h: string) => void }
+      ][]
+    )
+      .map(([args]) => args)
+      .find(args => args.network === 'base')!;
+    expect(base).toMatchObject({ scope: 'scope-1', burns: [burn] });
+    base.lookup('0xburn');
+    expect(mocks.burnLookup).toHaveBeenCalledWith(
+      expect.objectContaining({ from: 'base', txHash: '0xburn', account: ACCOUNT })
+    );
+  });
+
+  it('retries an L2 whose burns could not be read', async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    mocks.burns.mockImplementation(async ({ network }: { network: string }) => ({
+      burns: [],
+      complete: network !== 'base'
+    }));
+    await load();
+    mocks.discover.mockClear();
+    mocks.burns.mockResolvedValue({ burns: [], complete: true });
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(scanned()).toEqual(['base']);
+  });
+
+  it("reads the burns of a lost signature's L2 early too", async () => {
+    mocks.discover.mockResolvedValue({ withdrawals: [], complete: true });
+    await load();
+    mocks.burns.mockClear();
+    markSendIntent('scope-1', 'unichain', Date.now());
+    await load();
+    await vi.advanceTimersByTimeAsync(2 * MINUTE);
+    expect(mocks.burns.mock.calls.map(([args]) => (args as { network: string }).network)).toEqual([
+      'unichain'
+    ]);
   });
 
   it('skips an L2 the app has no client for', async () => {

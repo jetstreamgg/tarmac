@@ -73,6 +73,11 @@ const mocks = vi.hoisted(() => ({
       getCallbacks: () => TxCallbacks;
     }[]
   },
+  burn: {
+    ready: false,
+    execute: vi.fn(),
+    getCallbacks: (() => ({})) as () => TxCallbacks
+  },
   withdrawal: {
     ready: true,
     needsApprove: true,
@@ -158,21 +163,24 @@ vi.mock('../adapters/mockAdapter', () => ({
     return new Promise<string>(() => undefined);
   }
 }));
-// The CCTP burn engine stays idle on these routes.
-vi.mock('./useCctpBurnLegs', () => {
-  const idle = {
-    calls: [],
-    needsApprove: false,
-    isBatch: false,
-    ready: false,
-    error: null,
-    execute: () => {},
-    reset: () => {},
-    stop: () => {},
-    refetchAllowance: () => {}
-  };
-  return { CCTP_BURN_FUNCTION: 'depositForBurn', useCctpBurnLegs: () => idle };
-});
+// The CCTP burn engine stays idle unless a test readies it.
+vi.mock('./useCctpBurnLegs', () => ({
+  CCTP_BURN_FUNCTION: 'depositForBurn',
+  useCctpBurnLegs: (args: { getCallbacks: () => TxCallbacks }) => {
+    mocks.burn.getCallbacks = args.getCallbacks;
+    return {
+      calls: mocks.burn.ready ? [{ to: '0xburn' }] : [],
+      needsApprove: false,
+      isBatch: false,
+      ready: mocks.burn.ready,
+      error: null,
+      execute: mocks.burn.execute,
+      reset: () => {},
+      stop: () => {},
+      refetchAllowance: () => {}
+    };
+  }
+}));
 vi.mock('./useCctpGate', () => ({ useCctpGate: () => mocks.cctp }));
 vi.mock('@/modules/ui/hooks/useSettledAmount', async io => {
   const { useSettledAmount } = await io<typeof import('@/modules/ui/hooks/useSettledAmount')>();
@@ -947,6 +955,67 @@ describe('useBridgeLaunch Confirm gate', () => {
       await review(nativeWithdrawalRoute('base'));
       await review(cctpWithdrawalRoute('base'));
       expect(mocks.fallbackNotices).toEqual([]);
+    });
+  });
+
+  describe('a CCTP bridge from an L2', () => {
+    async function reviewBurn() {
+      mocks.appChainId = 8453;
+      const form = {
+        amount: ONE,
+        from: 'base' as const,
+        to: 'ethereum' as const,
+        route: cctpWithdrawalRoute('base'),
+        recipient: undefined,
+        isConnected: true,
+        reviewBlocked: false
+      };
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children);
+      const view = renderHook(() => useBridgeLaunch(form), { wrapper });
+      await settle();
+      act(() => view.result.current.launch());
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+    }
+    const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+    const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+
+    beforeEach(() => {
+      mocks.burn.ready = true;
+      mocks.burn.execute.mockClear();
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith('bridgeSendIntent:')) localStorage.removeItem(key);
+    });
+    afterEach(() => {
+      mocks.burn.ready = false;
+    });
+
+    it('keeps the burn signature for recovery until the page records the burn, past the swap', async () => {
+      await reviewBurn();
+      expect(mocks.burn.execute).toHaveBeenCalledTimes(1);
+      expect(intents()).toEqual(['base']);
+      const callbacks = mocks.burn.getCallbacks();
+      callbacks.onMutate({ functionName: 'swapExactIn' } as never);
+      callbacks.onStart('0xswap');
+      expect(intents()).toEqual(['base']);
+      callbacks.onMutate({ functionName: 'depositForBurn' } as never);
+      callbacks.onStart('0xburn');
+      expect(intents()).toEqual([]);
+    });
+
+    it('forgets the burn signature once it is declined, and keeps it on any other failure', async () => {
+      await reviewBurn();
+      const declined = mocks.burn.getCallbacks();
+      declined.onMutate({ functionName: 'depositForBurn' } as never);
+      declined.onError(new Error('User rejected the request.'), '');
+      expect(intents()).toEqual([]);
+
+      await reviewBurn();
+      const failed = mocks.burn.getCallbacks();
+      failed.onMutate({ functionName: 'depositForBurn' } as never);
+      failed.onError(new Error('Request timed out'), '');
+      expect(intents()).toEqual(['base']);
     });
   });
 
