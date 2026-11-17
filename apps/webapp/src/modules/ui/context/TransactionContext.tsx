@@ -607,6 +607,7 @@ export function TransactionProvider({
         txStatusRef.current === TxStatus.LOADING ||
         (txStatusRef.current === TxStatus.INITIALIZED && hasMinedStepRef.current);
       if (inProgress && configRef.current) {
+        minimizedRef.current = false;
         setMinimized(false);
         toastWithClose(
           () => (
@@ -948,7 +949,7 @@ export function TransactionProvider({
           title={lostBundle ? t`Couldn't confirm transaction` : titleFor(state)}
           hash={txHashRef.current}
           unconfirmed={lostBundle}
-          onView={() => setMinimized(false)}
+          onView={restore}
         />
       ),
       { id: MINIMIZED_TOAST_ID, duration: inFlight ? Infinity : 10000 }
@@ -957,7 +958,7 @@ export function TransactionProvider({
     return () => {
       toast.dismiss(MINIMIZED_TOAST_ID);
     };
-  }, [minimized, txStatus, outcomeUnknown]);
+  }, [minimized, txStatus, outcomeUnknown, restore]);
 
   // The single gate point between the user's confirm and the config callback
   // (APP-496): every way a write can start — confirm, the entry's secondary

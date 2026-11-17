@@ -255,7 +255,14 @@ const convertible = (bridge: PendingBridge, amount: bigint | undefined): amount 
  * to this wallet) and records the action there.
  */
 export function useDestinationActionLaunch() {
-  const { launch: launchModal, updateModalContent, txCallbacks, isModalOpen, txStatus } = useTransaction();
+  const {
+    launch: launchModal,
+    updateModalContent,
+    txCallbacks,
+    isModalOpen,
+    txStatus,
+    activeSessionId
+  } = useTransaction();
   const sessionId = useId();
   const queryClient = useQueryClient();
   const chains = useChains();
@@ -263,7 +270,7 @@ export function useDestinationActionLaunch() {
   const isSafeApp = useIsSafeApp();
   const { batch, batchPending } = useBridgeBatch();
   const { scope, familyChainId } = usePendingScope();
-  const { locked } = useMinimizedSessionLock(sessionId);
+  const { locked, restore } = useMinimizedSessionLock(sessionId);
   const { chainId: walletChainId, address } = useConnection();
   const { canSwitchChain, handleSwitchChain } = useNetworkSwitch();
 
@@ -286,6 +293,8 @@ export function useDestinationActionLaunch() {
   const legCallbacksRef = useRef<TxCallbacks>(txCallbacks);
   const launchedToastRef = useRef<{ loading: string; success: string; error: string }>(undefined);
   const claimRunRef = useRef<ClaimRun | undefined>(undefined);
+  // The card and action the latest Confirm sends.
+  const [run, setRun] = useState<{ scope: string; bridgeId: string; action: PendingBridgeNextAction }>();
   const claimLegRunsRef = useRef(new Map<string, ClaimRun>());
   const replay = recovery?.kind === 'replay' ? recovery : undefined;
   const redeem = recovery?.kind === 'redeem' ? recovery : undefined;
@@ -573,6 +582,8 @@ export function useDestinationActionLaunch() {
           ? Number(formatUnits(convertAmount!, 6))
           : usdsToNumber(bridgedAmount(bridge.amount, bridge.routeKind))
       });
+      // A new modal isn't the last Confirm's run until its own Confirm.
+      setRun(undefined);
       launchModal({
         ...(nextRecovery?.kind === 'cctp-convert'
           ? cctpConvertModal({
@@ -708,6 +719,7 @@ export function useDestinationActionLaunch() {
                 }
               : recorded
           );
+          setRun({ scope, bridgeId: bridge.id, action });
           if (!nextRecovery) {
             void runMockLegs([action], () => callbacks);
             return;
@@ -780,5 +792,13 @@ export function useDestinationActionLaunch() {
     launchIn(awaitingSwitch.scope, awaitingSwitch.card, awaitingSwitch.action, awaitingSwitch.amount);
   }, [awaitingSwitch, walletChainId, launchIn]);
 
-  return { launch, launchIn, canLaunch, actionHint, locked };
+  // A claim is in flight from Confirm until its run ends, its sale included: the card isn't claimed before.
+  const claiming =
+    run?.action === 'claim' &&
+    activeSessionId === sessionId &&
+    (txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING)
+      ? { scope: run.scope, bridgeId: run.bridgeId }
+      : undefined;
+
+  return { launch, launchIn, canLaunch, actionHint, locked, restore, claiming };
 }

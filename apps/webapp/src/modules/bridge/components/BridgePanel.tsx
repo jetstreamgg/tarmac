@@ -111,7 +111,9 @@ export function BridgePanel({ draft }: BridgePanelProps) {
     launchIn: launchActionIn,
     canLaunch: canLaunchAction,
     actionHint,
-    locked: actionLocked
+    locked: actionLocked,
+    restore: restoreAction,
+    claiming
   } = useDestinationActionLaunch();
   const { launch: continueBridge } = useCctpResumeLaunch(onBridged);
   const { launch: convertBridge } = useCctpSwapConvertLaunch();
@@ -187,6 +189,8 @@ export function BridgePanel({ draft }: BridgePanelProps) {
         canAction={canLaunchAction}
         actionHint={actionHint}
         actionLocked={actionLocked}
+        onOpenTransaction={restoreAction}
+        claiming={claiming}
         onContinue={continueBridge}
         onConvert={convertBridge}
         lookup={hasBridgeClaimLookup() ? <BridgeClaimLookup /> : undefined}

@@ -141,7 +141,9 @@ const props = {
   actionHint: vi.fn<(bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined>(
     () => undefined
   ),
-  actionLocked: false
+  actionLocked: false,
+  onOpenTransaction: vi.fn(),
+  claiming: undefined as { scope: string; bridgeId: string } | undefined
 };
 
 const renderList = (change: Partial<typeof props> = {}) =>
@@ -173,6 +175,7 @@ describe('PendingBridges', () => {
     props.canAction.mockReset().mockReturnValue(true);
     props.actionHint.mockReset().mockReturnValue(undefined);
     props.onContinue.mockClear();
+    props.onOpenTransaction.mockClear();
     props.onConvert.mockClear();
     localStorage.clear();
     [SWAP, OLDER_SWAP].forEach(swap => cctpSwapStore.clear('scope', swap.swapTxHash));
@@ -831,6 +834,44 @@ describe('PendingBridges', () => {
       );
       expect(props.onAction).not.toHaveBeenCalled();
       close.mockRestore();
+    });
+
+    it('shows a card mid-claim as claiming, with nothing to convert while its sale may still go out', () => {
+      const other = { ...CLAIMED, id: '0xother' };
+      mocks.bridges = [CLAIMED, other];
+      mocks.offers[CLAIMED.id] = OFFER;
+      mocks.offers[other.id] = OFFER;
+      renderList({ claiming: { scope: 'scope', bridgeId: CLAIMED.id } });
+      const [mid, rest] = screen.getAllByTestId('pending-bridge-card');
+      expect(within(mid).getByTestId('pending-bridge-status').textContent).toBe('Claiming');
+      expect(within(mid).queryByTestId('status-check')).toBeNull();
+      expect(within(mid).queryByTestId('pending-bridge-convert')).toBeNull();
+      expect(within(mid).queryByTestId('pending-bridge-convert-note')).toBeNull();
+      expect(within(mid).getByTestId('token-icon').dataset.symbol).toBe('USDS');
+      expect(within(rest).getByTestId('pending-bridge-status').textContent).toBe('Arrived as USDC');
+      expect(within(rest).getByTestId('pending-bridge-convert')).toBeDefined();
+    });
+
+    it("matches the claiming card by the list it's stored in", () => {
+      mocks.incoming = [{ scope: 'sender-scope', bridge: CLAIMED }];
+      renderList({ claiming: { scope: 'scope', bridgeId: CLAIMED.id } });
+      expect(screen.getByTestId('pending-bridge-status').textContent).not.toBe('Claiming');
+      cleanup();
+      renderList({ claiming: { scope: 'sender-scope', bridgeId: CLAIMED.id } });
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claiming');
+    });
+
+    it('says why the actions wait while a session is minimized, and opens it', () => {
+      mocks.bridges = [CLAIMED];
+      renderList();
+      expect(screen.queryByTestId('pending-bridges-locked')).toBeNull();
+      cleanup();
+      renderList({ actionLocked: true });
+      expect(screen.getByTestId('pending-bridges-locked').textContent).toContain(
+        'A transaction is in progress. Open it to continue.'
+      );
+      fireEvent.click(screen.getByTestId('pending-bridges-open-transaction'));
+      expect(props.onOpenTransaction).toHaveBeenCalledOnce();
     });
 
     it("can't keep the USDC while an action's session is minimized", () => {

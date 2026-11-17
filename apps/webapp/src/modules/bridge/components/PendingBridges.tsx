@@ -513,6 +513,8 @@ type PendingBridgeCardProps = {
   canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
   actionHint: (bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined;
   actionLocked: boolean;
+  /** Its claim is being sent here, sale included. */
+  claiming: boolean;
   /** This browser keeps the list across visits: without it, a claim link is the only way back. */
   storageWritable: boolean;
 };
@@ -530,6 +532,7 @@ function PendingBridgeCard({
   canAction,
   actionHint,
   actionLocked,
+  claiming,
   storageWritable
 }: PendingBridgeCardProps) {
   const dismissible = !incoming && canDismiss(bridge, now);
@@ -538,7 +541,9 @@ function PendingBridgeCard({
   const sourceName = getBridgeNetwork(bridge.from).name;
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
-  const { offer: convertAmount, nothingLeft } = useCctpConvertOffer(bridge, now);
+  const { offer, nothingLeft } = useCctpConvertOffer(bridge, now);
+  // Mid-claim, the USDC its sale is selling isn't left over.
+  const convertAmount = claiming ? undefined : offer;
   const cardRef = useRef<HTMLDivElement>(null);
   const onSeen = useCallback(() => {
     if (listScope) pendingBridgeStore.markSeen(listScope, bridge.id);
@@ -758,7 +763,14 @@ function PendingBridgeCard({
       )}
 
       <CardRows
-        rows={buildPendingBridgeRows(bridge, now, familyChainId, convertAmount !== undefined, counterparty)}
+        rows={buildPendingBridgeRows(
+          bridge,
+          now,
+          familyChainId,
+          convertAmount !== undefined,
+          counterparty,
+          claiming
+        )}
       />
 
       {claimLink && !claimedElsewhere && storageWritable && (
@@ -909,6 +921,10 @@ type PendingBridgesProps = {
   actionHint: (bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined;
   /** An action's session is minimized: it must be restored, not launched again. */
   actionLocked: boolean;
+  /** Brings that minimized session back. */
+  onOpenTransaction: () => void;
+  /** The card whose claim is being sent, by the scope it is stored under. */
+  claiming?: { scope: string; bridgeId: string };
   /** Sends a card stored in another account's list, a CCTP bridge sent to this wallet, and records it there. */
   onActionIn: (
     scope: string,
@@ -931,6 +947,8 @@ export function PendingBridges({
   canAction,
   actionHint,
   actionLocked,
+  onOpenTransaction,
+  claiming,
   onContinue,
   onConvert,
   lookup
@@ -955,6 +973,23 @@ export function PendingBridges({
       <h2 className="font-circle text-fgPrimary text-lg leading-5.5 font-medium tracking-[-0.36px]">
         <Trans>Pending bridges</Trans>
       </h2>
+      {/* The cards' actions wait on it; its toast can be closed, so this is the way back. */}
+      {actionLocked && (
+        <div className="flex items-center justify-between gap-4" data-testid="pending-bridges-locked">
+          <Text className="text-textSecondary text-sm">
+            <Trans>A transaction is in progress. Open it to continue.</Trans>
+          </Text>
+          <Button
+            variant="secondary"
+            size="m"
+            className="shrink-0"
+            onClick={onOpenTransaction}
+            data-testid="pending-bridges-open-transaction"
+          >
+            <Trans>Open transaction</Trans>
+          </Button>
+        </div>
+      )}
       {swaps.map(swap => (
         <ContinueBridgeCard
           key={swap.swapTxHash}
@@ -992,6 +1027,7 @@ export function PendingBridges({
           }}
           incoming={owner !== undefined}
           actionLocked={actionLocked}
+          claiming={claiming?.scope === (owner ?? scope) && claiming?.bridgeId === bridge.id}
           storageWritable={storageWritable}
         />
       ))}
