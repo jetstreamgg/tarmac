@@ -100,7 +100,7 @@ export function PositionCard({
               ) : (
                 <span className={cn(statValue, 'text-fgPrimary flex items-center gap-1')}>
                   {formatDecimalPercentage(position.rate ?? 0)}
-                  <RateInfo type={rateInfoFor(position)} size={12} />
+                  <RateInfo type={rateInfoFor(position)} />
                 </span>
               )
             }

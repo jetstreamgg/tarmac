@@ -63,7 +63,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       id: 'fixed-apy',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Fixed APY</Trans>,
-      info: <RateInfo type="fixedYield" size={12} />,
+      info: <RateInfo type="fixedYield" />,
       value: (
         <DetailValue
           loading={!matured && statsLoading}

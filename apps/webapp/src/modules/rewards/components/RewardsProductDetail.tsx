@@ -152,7 +152,7 @@ export function RewardsProductDetail({ contract }: { contract: RewardContract })
       id: 'current-rate',
       icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
-      info: <RateInfo type="str" size={12} />,
+      info: <RateInfo type="str" />,
       value: currentRate
     },
     {

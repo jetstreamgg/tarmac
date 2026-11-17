@@ -19,11 +19,14 @@ const simulation = vi.hoisted(() => ({
 const simulateSpy = vi.hoisted(() => vi.fn());
 const sendCalls = vi.hoisted(() => vi.fn());
 
-const sent = vi.hoisted(() => ({ id: undefined as string | undefined }));
+const sent = vi.hoisted(() => ({
+  id: undefined as string | undefined,
+  mutation: undefined as { onMutate?: () => void } | undefined
+}));
 const callsStatus = vi.hoisted(() => ({
   isLoading: false,
   isSuccess: false,
-  error: null,
+  error: null as Error | null,
   failureReason: null,
   data: undefined as
     | {
@@ -45,16 +48,19 @@ vi.mock('./useSimulateBatch', () => ({
 }));
 
 vi.mock('wagmi', () => ({
-  useSendCalls: () => ({
-    sendCalls,
-    error: null,
-    data: sent.id ? { id: sent.id } : undefined,
-    reset: () => {}
-  }),
+  useSendCalls: ({ mutation }: { mutation?: { onMutate?: () => void } }) => {
+    sent.mutation = mutation;
+    return {
+      sendCalls,
+      error: null,
+      data: sent.id ? { id: sent.id } : undefined,
+      reset: () => {}
+    };
+  },
   useWaitForCallsStatus: () => callsStatus
 }));
 
-import { useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
+import { TransactionOutcomeUnknownError, useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
 
 const call: Call = {
   to: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
@@ -76,6 +82,7 @@ beforeEach(() => {
   simulation.structuralFailure = false;
   sent.id = undefined;
   callsStatus.isSuccess = false;
+  callsStatus.error = null;
   callsStatus.data = undefined;
 });
 
@@ -210,5 +217,55 @@ describe('useSendBatchTransactionFlow — settling', () => {
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0][1]).toBe('0x2');
+  });
+
+  it('reports a lost bundle once, and still reports the answer the wallet gives later (APP-651)', () => {
+    sent.id = '0xbundle';
+    callsStatus.error = new Error('Unknown bundle id');
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    const { rerender } = renderHook(() =>
+      useSendBatchTransactionFlow({ calls, enabled: true, onSuccess, onError })
+    );
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0]).toBeInstanceOf(TransactionOutcomeUnknownError);
+
+    // A refetch (window focus) that fails the same way is not a second report.
+    callsStatus.error = new Error('Unknown bundle id');
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    callsStatus.error = null;
+    callsStatus.isSuccess = true;
+    callsStatus.data = {
+      status: 'success',
+      receipts: [{ status: 'success', transactionHash: '0x1', blockNumber: 1n }]
+    };
+    rerender();
+    expect(onSuccess).toHaveBeenCalledWith('0x1', 1n);
+
+    rerender();
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles a repeat send whose wallet reuses the bundle id (wagmi mock)', () => {
+    sent.id = '0xbundle';
+    callsStatus.isSuccess = true;
+    callsStatus.data = {
+      status: 'success',
+      receipts: [{ status: 'success', transactionHash: '0x1', blockNumber: 1n }]
+    };
+    const onSuccess = vi.fn();
+    const { rerender } = renderHook(() =>
+      useSendBatchTransactionFlow({ calls, enabled: true, onSuccess, onError: vi.fn() })
+    );
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+
+    sent.id = undefined;
+    rerender();
+    sent.mutation?.onMutate?.();
+    sent.id = '0xbundle';
+    rerender();
+    expect(onSuccess).toHaveBeenCalledTimes(2);
   });
 });

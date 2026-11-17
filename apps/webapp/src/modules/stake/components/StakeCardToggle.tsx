@@ -1,14 +1,6 @@
 import { ReactNode } from 'react';
 import { Switch } from '@/components/ui/switch';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipPortal,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useIsTouchDevice } from '@/hooks';
+import { ResponsiveTooltip } from '@/components/ui/tooltip';
 
 /**
  * Card enable switch. While `disabled` with a `disabledHint`, the switch is
@@ -28,7 +20,6 @@ export function StakeCardToggle({
   disabledHint?: ReactNode;
   dataTestId: string;
 }) {
-  const isTouchDevice = useIsTouchDevice();
   const control = (
     <Switch
       checked={checked}
@@ -39,40 +30,18 @@ export function StakeCardToggle({
   );
   if (!disabled || !disabledHint) return control;
 
-  const hint = <div className={HINT_CLASS}>{disabledHint}</div>;
-  if (isTouchDevice) {
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <span className="inline-flex" data-testid={`${dataTestId}-hint`}>
-            {control}
-          </span>
-        </PopoverTrigger>
-        <PopoverContent
-          align="end"
-          side="top"
-          className="bg-bgTertiary w-auto max-w-none rounded-2xl p-0 backdrop-blur-[20px]"
-        >
-          {hint}
-        </PopoverContent>
-      </Popover>
-    );
-  }
   return (
-    <TooltipProvider delayDuration={300}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex" tabIndex={0} data-testid={`${dataTestId}-hint`}>
-            {control}
-          </span>
-        </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent align="end" className="max-w-none p-0">
-            {hint}
-          </TooltipContent>
-        </TooltipPortal>
-      </Tooltip>
-    </TooltipProvider>
+    <ResponsiveTooltip
+      align="end"
+      contentClassName="max-w-none p-0"
+      trigger={
+        <span className="inline-flex" tabIndex={0} data-testid={`${dataTestId}-hint`}>
+          {control}
+        </span>
+      }
+    >
+      <div className={HINT_CLASS}>{disabledHint}</div>
+    </ResponsiveTooltip>
   );
 }
 
