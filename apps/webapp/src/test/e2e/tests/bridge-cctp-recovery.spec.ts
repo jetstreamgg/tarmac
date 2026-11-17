@@ -144,7 +144,37 @@ test.describe('Bridge: CCTP recovery', () => {
     await expectUsdsDelivered(testAccount, before);
   });
 
-  test('With the pending list gone, the lookup finds the burn by its hash and the claim delivers', async ({
+  test('A burn the page lost to a reload mid-send is found by the scan, and the claim delivers', async ({
+    isolatedPage,
+    testAccount
+  }) => {
+    const iris = await stubIris(isolatedPage);
+    let bridge = await openOnBase(isolatedPage, { batch: false });
+    const { usds: before } = await l1AccountState(testAccount);
+
+    // The wallet sends the burn, but the page reloads before it hears back.
+    let burnHash: `0x${string}` | undefined;
+    await onSends(isolatedPage, async (send, route) => {
+      if (!send.data.startsWith(DEPOSIT_FOR_BURN)) return route.fallback();
+      const response = await route.fetch();
+      burnHash = (await response.json()).result;
+    });
+    await bridge.openReview(AMOUNT);
+    await bridge.confirmButton().click();
+    await expect.poll(() => burnHash, { timeout: 90_000 }).toBeDefined();
+
+    // A mock build clears localStorage on load, so nothing of the send survives.
+    bridge = new BridgePage(isolatedPage);
+    await bridge.gotoConnected();
+    await expect(bridge.cards()).toHaveCount(1, { timeout: 60_000 });
+    await expect(bridge.card('Ethereum')).toContainText(`${AMOUNT}.00`);
+
+    await iris.attest(NetworkName.base, burnHash!);
+    await claim(bridge, isolatedPage);
+    await expectUsdsDelivered(testAccount, before);
+  });
+
+  test("With a burn the scan can't see, the lookup finds it by its hash and the claim delivers", async ({
     isolatedPage,
     testAccount
   }) => {
@@ -153,6 +183,17 @@ test.describe('Bridge: CCTP recovery', () => {
     const { usds: before } = await l1AccountState(testAccount);
     const txHash = await confirmBurn(bridge, isolatedPage);
 
+    // Base's burn logs come back empty, as for a burn past the scan's window.
+    const base = await getRpcUrlFromFile(NetworkName.base);
+    await isolatedPage.route(
+      target => target.href === base,
+      route => {
+        const body = route.request().postData() ?? '';
+        return body.includes('"eth_getLogs"') && body.toLowerCase().includes(TOKEN_MESSENGER_V2.toLowerCase())
+          ? route.fulfill({ json: { jsonrpc: '2.0', id: JSON.parse(body).id, result: [] } })
+          : route.fallback();
+      }
+    );
     // A mock build clears localStorage on load, as a new device or cleared site data would.
     bridge = new BridgePage(isolatedPage);
     await bridge.gotoConnected();
