@@ -915,6 +915,23 @@ describe('useBridgeLaunch Confirm gate', () => {
       });
     });
 
+    it('keeps the deposit signature for recovery until the page records the deposit, past the approve', async () => {
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith('bridgeSendIntent:')) localStorage.removeItem(key);
+      const scope = pendingScopeKey({ account: SENDER, familyChainId: 1 });
+      const intents = () => recentSendIntents(scope, Date.now()).map(intent => intent.network);
+      await reviewDeposit('optimism');
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(intents()).toEqual(['ethereum']);
+      const callbacks = mocks.deposit.args.at(-1)!.getCallbacks();
+      callbacks.onMutate({ functionName: 'approve' });
+      callbacks.onStart('0xopapprove');
+      expect(intents()).toEqual(['ethereum']);
+      callbacks.onMutate({ functionName: 'bridgeERC20To' });
+      callbacks.onStart('0xopdeposit');
+      expect(intents()).toEqual([]);
+    });
+
     it('shows no bridge fee', async () => {
       await reviewDeposit('base');
       const content = mocks.launched.at(-1)?.transactionContent as { props: { bridgeFee?: string } };

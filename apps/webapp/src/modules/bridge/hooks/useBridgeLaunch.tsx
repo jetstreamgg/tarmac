@@ -481,19 +481,19 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       const isCurrent = () => !isReal || legCallbacksRef.current === callbacks;
       const launchId = launchRef.current;
       confirmedLaunchRef.current = launchId;
-      // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
-      // When this Confirm asked to sign a send from an L2 (a withdrawal or a burn); recovery reads that L2 early until the page hears back.
-      const intentFrom = withdrawalFrom ?? burnFrom;
+      // When this Confirm asked to sign the bridge's send, and on which chain; recovery reads that chain early until the page hears back.
+      const intentFrom = depositTo ? 'ethereum' : (withdrawalFrom ?? burnFrom);
       let intentAt: number | undefined;
       const dropIntent = () => {
         if (intentFrom && intentAt !== undefined) clearSendIntent(scope, intentFrom, intentAt);
       };
-      // A reload before the wallet answers loses the send: recovery reads this L2 early.
+      // A reload before the wallet answers loses the send: recovery reads this chain early.
       const markIntent = () => {
         if (!intentFrom) return;
         intentAt = Date.now();
         markSendIntent(scope, intentFrom, intentAt);
       };
+      // Marks the bridge sent, by its card id; a Retry of its own Review then ends and the modal follows this send. After a later Review confirmed, it only blocks that Review's Retry until it settles, unless that Review already sent.
       const markSent = (id?: string) => {
         dropIntent();
         if (confirmedLaunchRef.current > launchId) {
@@ -626,6 +626,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       if (depositTo) {
         legCallbacksRef.current = callbacks;
         setRunningTo(depositTo);
+        markIntent();
         deposit.execute();
       } else if (burnFrom) {
         legCallbacksRef.current = callbacks;
