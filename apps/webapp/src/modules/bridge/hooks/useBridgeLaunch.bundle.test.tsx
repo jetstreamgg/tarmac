@@ -535,6 +535,23 @@ describe('useBridgeLaunch with wallet bundles', () => {
       expect(mocks.execute).toHaveBeenCalledTimes(1);
     });
 
+    // A wallet can report a failed bundle with receipts that leave out a send that mined.
+    it('keeps Retry refused when no receipt reverted, so a send it may have made is not sent twice', async () => {
+      const view = renderBridge();
+      const callbacks = acceptBundle(await confirm(view, { to: 'base', amount: ONE }), '0xcalls');
+
+      const approve = { ...minedReceipt([]), transactionHash: OTHER_TX };
+      act(() => callbacks.onError(new BatchFailedError([approve])));
+
+      expect(bundleCards(SENDER)[0]).toMatchObject({ status: 'failed' });
+      mocks.execute.mockClear();
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      expect(mocks.execute).not.toHaveBeenCalled();
+      const refusal = mocks.onError.mock.calls.at(-1)?.[0] as Error & { final?: boolean };
+      expect(refusal.message).toMatch(/still pending/);
+      expect(refusal.final).toBeFalsy();
+    });
+
     it('keeps its card pending when the wallet rejected', async () => {
       const view = renderBridge();
       const callbacks = acceptBundle(await confirm(view, { to: 'base', amount: ONE }), '0xcalls');

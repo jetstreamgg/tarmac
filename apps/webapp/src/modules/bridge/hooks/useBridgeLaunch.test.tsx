@@ -13,6 +13,7 @@ import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transa
 import { cctpBurnAmount } from '../adapters/cctp/calls';
 import { pendingBridgeStore, pendingScopeKey } from '../store/pendingStore';
 import { markSendIntent, recentSendIntents } from '../store/sendIntentStore';
+import { BatchFailedError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { useBridgeForm } from './useBridgeForm';
 import { cctpWithdrawalRoute, nativeWithdrawalRoute } from '../model/resolveRoute';
 import { useBridgeLaunch } from './useBridgeLaunch';
@@ -1011,6 +1012,19 @@ describe('useBridgeLaunch Confirm gate', () => {
 
     it('keeps the amount the burn signs, so recovery reads no other burn', async () => {
       await reviewBurn();
+      expect(recentSendIntents(scope, Date.now())).toEqual([
+        expect.objectContaining({ network: 'base', burnAmount: `${cctpBurnAmount(ONE)}` })
+      ]);
+    });
+
+    // A wallet that ran the bundle apart can fail it with receipts that miss a burn that mined.
+    it('reads for the burn again once its bundle failed with no burn among the receipts', async () => {
+      await reviewBurn();
+      const callbacks = mocks.burn.getCallbacks();
+      callbacks.onMutate(undefined as never);
+      callbacks.onStart(undefined);
+      expect(intents()).toEqual([]);
+      callbacks.onError(new BatchFailedError([]), undefined as never);
       expect(recentSendIntents(scope, Date.now())).toEqual([
         expect.objectContaining({ network: 'base', burnAmount: `${cctpBurnAmount(ONE)}` })
       ]);

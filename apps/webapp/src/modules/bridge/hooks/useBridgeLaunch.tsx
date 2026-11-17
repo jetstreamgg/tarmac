@@ -484,6 +484,8 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
       // When this Confirm asked to sign the bridge's send, and on which chain; recovery reads that chain early until the page hears back.
       const intentFrom = depositTo ? 'ethereum' : (withdrawalFrom ?? burnFrom);
       let intentAt: number | undefined;
+      // A failed bundle whose receipts show no revert: the send may have mined outside them.
+      let unexplainedFailure = false;
       const dropIntent = () => {
         if (intentFrom && intentAt !== undefined) clearSendIntent(scope, intentFrom, intentAt);
       };
@@ -587,6 +589,7 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
         onBundleSent: (bundleId, receipts) => {
           const bridge = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === bundleId);
           const sent = bridge ? bundleDepositIn(bridge, receipts) : undefined;
+          unexplainedFailure = !sent && receipts.length > 0 && receipts.every(r => r.status === 'success');
           if (!sent) return false;
           pendingBridgeStore.resolveBundle(scope, bundleId, sent.txHash);
           tracker.recordExecuted(sent.txHash);
@@ -600,20 +603,27 @@ export function useBridgeLaunch(form: BridgeLaunchForm, onSuccess?: () => void, 
           pendingBridgeStore.update(scope, txHash, bridge => ({ ...bridge, txHash: newTxHash }));
           tracker.recordRepriced(newTxHash);
         },
-        // The funds never left, so Retry may send again.
+        // The funds never left, so Retry may send again; unless the card didn't fail, or the bundle may have sent.
         onFailed: (id, reason) => {
-          if (unresolvedRef.current === id) {
-            sentRef.current = false;
-            unresolvedRef.current = undefined;
-          }
           pendingBridgeStore.update(scope, id, bridge =>
             bridge.bundleId
               ? failBundle(bridge, reason, Date.now())
               : applyProgress(bridge, { kind: 'failed', reason }, Date.now())
           );
+          const card = pendingBridgeStore.getSnapshot(scope).find(entry => entry.id === id);
+          const failed = !card || card.status === 'failed';
+          if (unresolvedRef.current === id && failed && !unexplainedFailure) {
+            sentRef.current = false;
+            unresolvedRef.current = undefined;
+          }
           // A wallet that broke the bundle up may have sent the deposit anyway.
           if (id.startsWith('bundle-'))
             void queryClient.invalidateQueries({ queryKey: ['bridge-deposit-recovery', scope] });
+          // Or the burn or withdrawal, with receipts that don't show it: recovery reads its L2 for it, as for a lost signature.
+          if (id.startsWith('bundle-') && !depositTo) {
+            markIntent();
+            void queryClient.invalidateQueries({ queryKey: ['bridge-withdrawal-recovery', scope] });
+          }
         }
       });
       const callbacks: TxCallbacks = tracker.wrap({
