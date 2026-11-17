@@ -116,12 +116,40 @@ describe('useCctpConvertOffer, after a sale prompt a reload lost', () => {
     release();
   });
 
-  it('offers again once the read finds no sale', async () => {
+  // The prompt may still be signed in the wallet, or be pending, where no log shows it.
+  it('offers nothing while the lost prompt lasts though the read finds no sale, then offers again', async () => {
     markSaleIntent(SCOPE, bridge.id, Date.now());
     const result = render(bridge);
+    await waitFor(() => expect(mocks.getLogs).toHaveBeenCalledTimes(1));
+    await settle();
     expect(result.current.offer).toBeUndefined();
-    await waitFor(() => expect(result.current.offer).toBe(USDC('100')));
-    expect(mocks.getLogs).toHaveBeenCalledTimes(1);
+    expect(result.current.nothingLeft).toBe(false);
+
+    localStorage.clear();
+    markSaleIntent(SCOPE, bridge.id, Date.now() - 36 * 60_000);
+    const later = render(bridge);
+    await waitFor(() => expect(later.current.offer).toBe(USDC('100')));
+  });
+
+  it("never takes another card's sale for this one's", async () => {
+    const other = { ...claimed(), id: '0xothercard', txHash: '0xothercard' };
+    pendingBridgeStore.upsert(SCOPE, {
+      ...other,
+      actions: [
+        ...other.actions,
+        { action: 'convert', txHash: '0xotherssale', at: Date.now(), status: 'sent' }
+      ]
+    });
+    markSaleIntent(SCOPE, bridge.id, Date.now(), USDC('100'));
+    mocks.getLogs.mockResolvedValue([
+      { transactionHash: '0xotherssale', args: { value: USDC('100') } },
+      { transactionHash: '0xsmaller', args: { value: USDC('40') } }
+    ]);
+    render(bridge);
+    await waitFor(() => expect(mocks.getLogs).toHaveBeenCalled());
+    await settle();
+    const card = pendingBridgeStore.getSnapshot(SCOPE).find(entry => entry.id === bridge.id)!;
+    expect(card.actions.some(action => action.action === 'convert')).toBe(false);
   });
 
   it('offers nothing once the read finds the sale, and the card follows it as its convert', async () => {

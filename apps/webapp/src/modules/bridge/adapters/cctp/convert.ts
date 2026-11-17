@@ -325,37 +325,56 @@ export async function othersClaimSold({
 
 /** About an hour of Ethereum blocks: a lost sale is read for only while its 35-minute intent lasts. */
 export const LOST_SALE_BLOCKS = 300n;
+// Blocks read before the prompt opened, for clock skew.
+const LOST_SALE_SLACK_BLOCKS = 25n;
+const ETHEREUM_BLOCK_MS = 12_000;
 
 /**
  * The hash of a sale of the card's USDC a reload lost: USDC from `recipient`
- * to the USDS wrapper or the LitePSM, of no more than the claim minted, in
- * Ethereum's last hour, other than one the card already knows. The latest
- * one, or null. A failed read rejects.
+ * to the USDS wrapper or the LitePSM in Ethereum's last hour, of exactly
+ * `amount` when the prompt said it (a convert), else of no more than the claim
+ * minted, sent since the prompt opened at `since`, other than one any of
+ * `cards` already knows. The latest one, or null. A failed read rejects.
  */
 export async function findLostSale({
   l1,
   bridge,
-  recipient
+  recipient,
+  amount,
+  since,
+  cards = []
 }: {
   l1: Pick<ChainReader, 'getBlockNumber' | 'getLogs'>;
   bridge: PendingBridge;
   recipient: Address;
+  amount?: bigint;
+  /** When the prompt opened: an earlier sale isn't its. */
+  since?: number;
+  /** The scope's other cards: a sale one of them knows is theirs. */
+  cards?: readonly PendingBridge[];
 }): Promise<Hex | null> {
   const head = await l1.getBlockNumber();
+  const back =
+    since === undefined
+      ? LOST_SALE_BLOCKS
+      : BigInt(Math.ceil(Math.max(Date.now() - since, 0) / ETHEREUM_BLOCK_MS)) + LOST_SALE_SLACK_BLOCKS;
+  const blocks = back < LOST_SALE_BLOCKS ? back : LOST_SALE_BLOCKS;
   const transfers = await l1.getLogs({
     address: L1_USDC,
     event: TRANSFER,
     args: { from: recipient, to: [USDS_PSM_WRAPPER, LITE_PSM] },
-    fromBlock: head > LOST_SALE_BLOCKS ? head - LOST_SALE_BLOCKS : 0n,
+    fromBlock: head > blocks ? head - blocks : 0n,
     toBlock: head
   });
   const minted = cctpBurnAmount(bridge.amount);
   const known = new Set(
-    [
-      ...confirmedClaimTxHashes(bridge),
-      ...claimNextLegTxHashes(bridge),
-      ...bridge.actions.map(a => a.txHash)
-    ].map(hash => hash.toLowerCase())
+    [bridge, ...cards]
+      .flatMap(card => [
+        ...confirmedClaimTxHashes(card),
+        ...claimNextLegTxHashes(card),
+        ...card.actions.flatMap(action => [action.txHash, ...(action.bundleTxHashes ?? [])])
+      ])
+      .map(hash => hash.toLowerCase())
   );
   const sale = transfers
     .filter(
@@ -363,7 +382,7 @@ export async function findLostSale({
         !!log.transactionHash &&
         !known.has(log.transactionHash.toLowerCase()) &&
         (log.args.value ?? 0n) > 0n &&
-        (log.args.value ?? 0n) <= minted
+        (amount === undefined ? (log.args.value ?? 0n) <= minted : log.args.value === amount)
     )
     .at(-1);
   return sale?.transactionHash ?? null;

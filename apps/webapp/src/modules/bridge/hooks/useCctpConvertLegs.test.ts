@@ -239,7 +239,8 @@ describe('useCctpConvertLegs', () => {
     });
 
     it('refuses as converted when the lost sale mined, and the card follows it', async () => {
-      markSaleIntent(SCOPE, bridgeId, Date.now());
+      // Opened just under 10 minutes ago: 50 blocks, plus slack.
+      markSaleIntent(SCOPE, bridgeId, Date.now() - 10 * 60_000 + 6_000);
       render({ scope: SCOPE, bridgeId });
       const client = chain([{ transactionHash: '0xsale', args: { value: AMOUNT } }]);
 
@@ -256,17 +257,40 @@ describe('useCctpConvertLegs', () => {
         expect.objectContaining({
           address: L1_USDC,
           args: { from: getAddress(ACCOUNT), to: [USDS_PSM_WRAPPER, expect.any(String)] },
-          fromBlock: 700n,
+          fromBlock: 925n,
           toBlock: 1_000n
         })
       );
     });
 
-    it('converts when the read finds no lost sale', async () => {
+    it('refuses while the lost prompt may still be signed, though the read finds no sale', async () => {
       markSaleIntent(SCOPE, bridgeId, Date.now());
       render({ scope: SCOPE, bridgeId });
-      await expect(preflight(chain([]))).resolves.toBeUndefined();
-      expect(mocks.refusal).toHaveBeenCalled();
+      const refusal = await preflight(chain([]));
+      expect(refusal?.message).toBe('Approve or reject the request in your wallet before sending again.');
+      expect(refusal).not.toMatchObject({ final: true });
+      expect(mocks.refusal).not.toHaveBeenCalled();
+    });
+
+    it('keeps the amount a convert prompt sells, and reads only a sale of it', async () => {
+      render({ scope: SCOPE, bridgeId }).execute();
+      const run = mocks.execute.mock.calls.at(-1)?.[0];
+      const onLegPrompt = mocks.legs!.onLegPrompt as (variables: unknown, run: unknown) => () => void;
+      const release = onLegPrompt(leg('sellGem'), run);
+      expect(lostSaleIntent(bridgeId, Date.now())).toMatchObject({ amount: `${AMOUNT}` });
+      // Reloaded: this page's count of open prompts is gone, the stored prompt stays.
+      const kept = lostSaleIntent(bridgeId, Date.now())!;
+      release();
+      markSaleIntent(kept.scope, kept.bridgeId, kept.at, BigInt(kept.amount!));
+      expect(isCctpSpendOpen(SCOPE, bridgeId)).toBe(false);
+      render({ scope: SCOPE, bridgeId });
+      const client = chain([{ transactionHash: '0xless', args: { value: AMOUNT - 1n } }]);
+      const refusal = await preflight(client);
+      expect(client.getLogs).toHaveBeenCalled();
+      expect(refusal?.message).toMatch(/Approve or reject/);
+      expect(pendingBridgeStore.getSnapshot(SCOPE).find(e => e.id === bridgeId)!.actions).not.toContainEqual(
+        expect.objectContaining({ action: 'convert' })
+      );
     });
 
     it('sends nothing when the read fails', async () => {

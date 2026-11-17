@@ -27,6 +27,17 @@ describe('saleIntentStore', () => {
     expect(lostSaleIntent('0xabc', NOW - 1)).toBeUndefined();
   });
 
+  it("keeps a convert's amount, and reads by the minted amount when it isn't a whole number", () => {
+    markSaleIntent('scope', '0xabc', NOW, 25n);
+    expect(lostSaleIntent('0xabc', NOW)).toMatchObject({ amount: '25' });
+    localStorage.setItem(
+      'bridgeSaleIntent:v1',
+      JSON.stringify([{ scope: 's', bridgeId: '0xabc', at: NOW, amount: '1.5' }])
+    );
+    // The prompt is kept: dropping it would offer Convert while it may still be signed.
+    expect(lostSaleIntent('0xabc', NOW)).toEqual({ scope: 's', bridgeId: '0xabc', at: NOW });
+  });
+
   it('clears only the prompt opened at that time', () => {
     markSaleIntent('scope', '0xabc', NOW);
     markSaleIntent('scope', '0xabc', NOW + 1);

@@ -90,6 +90,59 @@ describe('findLostSale', () => {
     ).resolves.toBeNull();
   });
 
+  it("matches a convert's exact amount, and skips a sale another card knows", async () => {
+    const other = {
+      ...claimed(),
+      id: '0xother',
+      actions: [{ action: 'convert' as const, txHash: '0xOTHERS', at: 1 }]
+    };
+    const l1 = chain([
+      transfer('0xothers', USDC('25')),
+      transfer('0xexact', USDC('25')),
+      transfer('0xless', USDC('24'))
+    ]);
+    await expect(
+      findLostSale({
+        l1: l1 as never,
+        bridge: claimed(),
+        recipient: RECIPIENT,
+        amount: USDC('25'),
+        cards: [other]
+      })
+    ).resolves.toBe('0xexact');
+  });
+
+  it("skips a sale in another card's broken-up bundle", async () => {
+    const other = {
+      ...claimed(),
+      id: '0xother',
+      actions: [{ action: 'convert' as const, txHash: '0xcalls', bundleTxHashes: ['0xOTHERSALE'], at: 1 }]
+    };
+    const l1 = chain([transfer('0xothersale', USDC('25'))]);
+    await expect(
+      findLostSale({
+        l1: l1 as never,
+        bridge: claimed(),
+        recipient: RECIPIENT,
+        amount: USDC('25'),
+        cards: [other]
+      })
+    ).resolves.toBeNull();
+  });
+
+  it('reads only the blocks since the prompt opened, plus slack', async () => {
+    const l1 = chain([]);
+    await findLostSale({
+      l1: l1 as never,
+      bridge: claimed(),
+      recipient: RECIPIENT,
+      since: Date.now() - 60_000 + 6_000
+    });
+    expect(l1.getLogs).toHaveBeenCalledWith(
+      expect.objectContaining({ fromBlock: 10_000n - 30n, toBlock: 10_000n })
+    );
+  });
+
   it('rejects when a read fails', async () => {
     const l1 = {
       getBlockNumber: vi.fn(async () => 1n),
