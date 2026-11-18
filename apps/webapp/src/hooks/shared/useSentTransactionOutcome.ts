@@ -5,8 +5,10 @@ import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 /**
  * The outcome of a write, from the hash the wallet returned for it.
  *
- * For most wallets that hash is the transaction's. Inside the Safe App it is a
- * safeTxHash, and the on-chain hash only exists once the Safe executes it.
+ * For most wallets that hash is the transaction's. A Safe returns a safeTxHash
+ * while its owners still have to sign, and the on-chain hash only exists once
+ * they execute it. Only the Safe App's is resolved here; over WalletConnect the
+ * returned hash is used as-is.
  */
 export function useSentTransactionOutcome({ sentHash, chainId }: { sentHash?: Hash; chainId?: number }) {
   const { transactionHash: safeExecutedHash, isSafeApp } = useWaitForSafeTxHash({
