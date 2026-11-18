@@ -1685,6 +1685,7 @@ export function TransactionProvider({
   // Memoized: TransactionProvider is composed under ConnectedProvider (the
   // gate reads terms/auth state), so without this every terms or auth state
   // change would hand a fresh context value to every useTransaction consumer.
+  const failureMayStillMine = txStatus === TxStatus.ERROR && (outcomeUnknown || unconfirmed !== null);
   const contextValue = useMemo<TransactionContextValue>(
     () => ({
       launch,
@@ -1696,7 +1697,8 @@ export function TransactionProvider({
       activeSessionId,
       closeOnNavigation,
       txCallbacks,
-      txStatus
+      txStatus,
+      failureMayStillMine
     }),
     [
       launch,
@@ -1708,7 +1710,8 @@ export function TransactionProvider({
       activeSessionId,
       closeOnNavigation,
       txCallbacks,
-      txStatus
+      txStatus,
+      failureMayStillMine
     ]
   );
 

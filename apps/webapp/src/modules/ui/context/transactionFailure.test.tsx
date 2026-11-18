@@ -1,5 +1,5 @@
 import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -105,6 +105,11 @@ function Harness({
   return null;
 }
 
+function FailureProbe() {
+  return <output data-testid="failure-may-still-mine">{String(useTransaction().failureMayStillMine)}</output>;
+}
+const failureMayStillMine = () => screen.getByTestId('failure-may-still-mine').textContent;
+
 // Opens the modal, advances to the transaction screen, and fails the first step.
 function renderFailedFlow(
   steps: TransactionStep[],
@@ -117,6 +122,7 @@ function renderFailedFlow(
       <I18nProvider i18n={i18n}>
         <TransactionProvider>
           <Harness steps={steps} onConfirm={onConfirm} onReady={c => (cb = c)} />
+          <FailureProbe />
         </TransactionProvider>
       </I18nProvider>
     </StrictMode>
@@ -297,6 +303,21 @@ describe('TransactionModal failure & recovery', () => {
     fireEvent.click(screen.getByTestId('transaction-unconfirmed-close'));
     expect(screen.queryByText("Couldn't confirm transaction")).toBeNull();
     invalidate.mockRestore();
+  });
+
+  it('says a failure may still mine only when what it sent has an outcome it could not read', () => {
+    renderFailedFlow(supplySteps);
+    expect(failureMayStillMine()).toBe('false');
+    cleanup();
+
+    batch.enabled = true;
+    batch.supported = true;
+    renderFailedFlow(
+      supplySteps,
+      () => {},
+      new TransactionOutcomeUnknownError(new Error('Unknown bundle id'))
+    );
+    expect(failureMayStillMine()).toBe('true');
   });
 
   it('groups on-chain reverts in Sentry by flow and action, and leaves other errors to the default grouping', () => {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Hex } from 'viem';
+import { TransactionReceiptNotFoundError, type Hex } from 'viem';
 import { useConfig } from 'wagmi';
 import { getPublicClient } from 'wagmi/actions';
 import { useTokenBalance } from '@/hooks';
@@ -7,6 +7,7 @@ import { L1_USDC } from '../adapters/cctp/contracts';
 import {
   cctpConvertOffer,
   cctpNothingToConvert,
+  claimLegOpenUntil,
   claimNextLegTxHashes,
   confirmedClaimTxHashes,
   findLostSale,
@@ -25,6 +26,8 @@ import type { PendingBridge } from '../model/types';
 import { usePendingScope } from './usePendingScope';
 
 const OTHERS_CLAIM_POLL_MS = 60_000;
+// One Ethereum block.
+const LEG_READ_MAX_DELAY_MS = 12_000;
 
 /**
  * The USDC (6 decimals) the connected account can convert to USDS on a
@@ -34,11 +37,12 @@ const OTHERS_CLAIM_POLL_MS = 60_000;
  * and whether the recipient sold it then or later (`othersClaimSold`).
  * `offer` is undefined while either is unknown or failed to read; `nothingLeft` says so only once it is sure.
  * `saleOpenUntil` is when a sale prompt a reload lost expires, while it holds the offer back.
+ * `saleSentUntil` is when a leg the claim run sent and the chain hasn't mined counts as dropped.
  */
 export function useCctpConvertOffer(
   bridge: PendingBridge,
   now: number
-): { offer: bigint | undefined; nothingLeft: boolean; saleOpenUntil?: number } {
+): { offer: bigint | undefined; nothingLeft: boolean; saleOpenUntil?: number; saleSentUntil?: number } {
   const { account, familyChainId } = usePendingScope();
   const config = useConfig();
   const chainId = bridgeChainId('ethereum', familyChainId);
@@ -64,7 +68,10 @@ export function useCctpConvertOffer(
     },
     enabled: eligible && !othersClaimed,
     staleTime: Infinity,
-    gcTime: Infinity
+    gcTime: Infinity,
+    // A run's approve or sale takes a block or more to mine: keep reading until it does, not just three tries.
+    retry: (failures, error) => error instanceof TransactionReceiptNotFoundError || failures < 3,
+    retryDelay: attempt => Math.min(1000 * 2 ** attempt, LEG_READ_MAX_DELAY_MS)
   });
   const { data: usdc } = useTokenBalance({
     address: account as Hex | undefined,
@@ -160,5 +167,13 @@ export function useCctpConvertOffer(
       othersSold: othersSoldRead,
       now
     });
-  return { offer, nothingLeft, saleOpenUntil: lost ? lost.at + SEND_INTENT_MS : undefined };
+  // Until the run's last leg mines or counts as dropped, the card waits on it.
+  const legOpenUntil =
+    eligible && !othersClaimed && claimSold === undefined ? claimLegOpenUntil(bridge) : undefined;
+  return {
+    offer,
+    nothingLeft,
+    saleOpenUntil: lost ? lost.at + SEND_INTENT_MS : undefined,
+    saleSentUntil: legOpenUntil !== undefined && now < legOpenUntil ? legOpenUntil : undefined
+  };
 }

@@ -16,7 +16,6 @@ import {
 import { math } from '@/utils';
 import { canConvert, canLaunchConvert } from '../../model/pendingTransitions';
 import type { PendingBridge, PendingBridgeAction } from '../../model/types';
-import { L1_SENT_ACTION_DROPPED_MS } from '../sentAction';
 import type { ChainReader } from '../types';
 import { cctpBurnAmount } from './calls';
 import {
@@ -60,6 +59,18 @@ const claimNextLegs = (bridge: PendingBridge) =>
 /** The leg a claim's run sent after the claim mined and hasn't confirmed: its sale, maybe mined after a reload. */
 export const claimNextLegTxHashes = (bridge: PendingBridge): string[] =>
   claimNextLegs(bridge).map(action => action.nextLegTxHash);
+
+/**
+ * A leg the chain still doesn't know this long after it was sent counts as dropped, sooner than geth's
+ * 3 hours: if it mines later anyway, it sells other USDC 1:1 or reverts.
+ */
+export const CLAIM_LEG_DROPPED_MS = 35 * 60_000;
+
+/** Until when the claim run's last leg may still mine unseen, if it sent one. */
+export function claimLegOpenUntil(bridge: PendingBridge): number | undefined {
+  const sent = claimNextLegs(bridge).map(leg => (leg.nextLegAt ?? leg.at) + CLAIM_LEG_DROPPED_MS);
+  return sent.length ? Math.max(...sent) : undefined;
+}
 
 /** The first hash this app's claim confirmed with; see `confirmedClaimTxHashes` for all of them. */
 export const confirmedClaimTxHash = (bridge: PendingBridge): string | undefined =>
@@ -134,7 +145,7 @@ export function cctpNothingToConvert({
 export type ConvertOfferReader = Pick<PublicClient, 'getTransactionReceipt' | 'readContract'> &
   Partial<Pick<PublicClient, 'getTransaction'>>;
 
-// A leg the chain still doesn't know `L1_SENT_ACTION_DROPPED_MS` after it was sent was dropped: it sold nothing.
+// A leg the chain still doesn't know `CLAIM_LEG_DROPPED_MS` after it was sent was dropped: it sold nothing.
 async function readNextLeg(
   client: ConvertOfferReader,
   leg: PendingBridgeAction & { nextLegTxHash: string },
@@ -147,7 +158,7 @@ async function readNextLeg(
     if (
       !client.getTransaction ||
       !(error instanceof TransactionReceiptNotFoundError) ||
-      now - (leg.nextLegAt ?? leg.at) < L1_SENT_ACTION_DROPPED_MS
+      now - (leg.nextLegAt ?? leg.at) < CLAIM_LEG_DROPPED_MS
     )
       throw error;
     try {

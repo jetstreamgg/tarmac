@@ -66,10 +66,12 @@ const mocks = vi.hoisted(() => ({
   offers: {} as Record<string, bigint | undefined>,
   nothingLeft: {} as Record<string, boolean | undefined>,
   saleOpenUntil: {} as Record<string, number | undefined>,
+  saleSentUntil: {} as Record<string, number | undefined>,
   ethShort: {} as Record<string, bigint | undefined>,
   blocked: {} as Record<string, CctpResumeBlockReason | undefined>,
   activeSessionId: null as string | null,
   txStatus: undefined as TxStatus | undefined,
+  failureMayStillMine: false,
   copy: vi.fn(),
   copyFails: false,
   storageWritable: true,
@@ -113,7 +115,8 @@ vi.mock('../hooks/useCctpConvertOffer', () => ({
   useCctpConvertOffer: (bridge: PendingBridge) => ({
     offer: mocks.offers[bridge.id],
     nothingLeft: mocks.nothingLeft[bridge.id] ?? false,
-    saleOpenUntil: mocks.saleOpenUntil[bridge.id]
+    saleOpenUntil: mocks.saleOpenUntil[bridge.id],
+    saleSentUntil: mocks.saleSentUntil[bridge.id]
   })
 }));
 vi.mock('../hooks/useWithdrawalEthShortfall', () => ({
@@ -132,7 +135,11 @@ vi.mock('@/utils', async importOriginal => ({
 }));
 vi.mock('../store/storageWritable', () => ({ isStorageWritable: () => mocks.storageWritable }));
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ activeSessionId: mocks.activeSessionId, txStatus: mocks.txStatus })
+  useTransaction: () => ({
+    activeSessionId: mocks.activeSessionId,
+    txStatus: mocks.txStatus,
+    failureMayStillMine: mocks.failureMayStillMine
+  })
 }));
 
 beforeAll(() => i18n.loadAndActivate({ locale: 'en', messages: {} }));
@@ -166,10 +173,12 @@ describe('PendingBridges', () => {
       offers: {},
       nothingLeft: {},
       saleOpenUntil: {},
+      saleSentUntil: {},
       ethShort: {},
       blocked: {},
       activeSessionId: null,
       txStatus: undefined,
+      failureMayStillMine: false,
       copyFails: false,
       storageWritable: true,
       ens: {}
@@ -887,6 +896,24 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claimed');
     });
 
+    // A leg the claim run sent may still mine: the card reads Claiming, not a Claimed with nothing to do.
+    it('waits on a transaction the claim run sent, and says when Convert comes back', () => {
+      const until = 35 * 60_000;
+      mocks.bridges = [CLAIMED];
+      mocks.saleSentUntil[CLAIMED.id] = until;
+      renderList();
+      expect(screen.getByTestId('pending-bridge-status').textContent).toBe('Claiming');
+      expect(screen.queryByTestId('status-check')).toBeNull();
+      expect(screen.getByTestId('pending-bridge-sale-waiting-note').textContent).toBe(
+        `Your last transaction is still confirming on Ethereum. If it doesn't go through, you can convert your USDC here from ${formatArrivalTime(until, 0)}.`
+      );
+      expect(screen.queryByTestId('pending-bridge-convert')).toBeNull();
+
+      cleanup();
+      renderList({ claiming: { scope: 'scope', bridgeId: CLAIMED.id } });
+      expect(screen.queryByTestId('pending-bridge-sale-waiting-note')).toBeNull();
+    });
+
     it("matches the claiming card by the list it's stored in", () => {
       mocks.incoming = [{ scope: 'sender-scope', bridge: CLAIMED }];
       renderList({ claiming: { scope: 'scope', bridgeId: CLAIMED.id } });
@@ -915,6 +942,38 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('pending-bridges-locked').textContent).toContain(
         'A transaction failed. Open it to try again or close it.'
       );
+    });
+
+    it('frees the cards once the minimized run failed, and still offers it back', () => {
+      const ready = {
+        ...BRIDGE,
+        id: 'ready',
+        status: 'ready' as const,
+        nextAction: 'claim' as const,
+        requiresClaim: true
+      };
+      mocks.bridges = [CLAIMED, ready];
+      mocks.offers[CLAIMED.id] = OFFER;
+      mocks.txStatus = TxStatus.ERROR;
+      renderList({ actionLocked: true });
+      expect(screen.getByTestId('pending-bridges-locked').textContent).toContain(
+        'A transaction failed. Open it to try again or close it.'
+      );
+      expect(convertButton().disabled).toBe(false);
+      expect((screen.getByTestId('pending-bridge-keep-usdc') as HTMLButtonElement).disabled).toBe(false);
+      const claim = screen.getByTestId('pending-bridge-action') as HTMLButtonElement;
+      expect(claim.disabled).toBe(false);
+      fireEvent.click(claim);
+      expect(props.onAction).toHaveBeenCalledWith(ready);
+    });
+
+    it('keeps the cards locked when the failed run sent something that may still mine', () => {
+      mocks.bridges = [CLAIMED];
+      mocks.offers[CLAIMED.id] = OFFER;
+      mocks.txStatus = TxStatus.ERROR;
+      mocks.failureMayStillMine = true;
+      renderList({ actionLocked: true });
+      expect(convertButton().disabled).toBe(true);
     });
 
     it("can't keep the USDC while an action's session is minimized", () => {
@@ -1274,6 +1333,22 @@ describe('PendingBridges', () => {
       expect(screen.getByTestId('continue-bridge-hint').textContent).toBe(
         'A transaction is in progress. Open it to continue.'
       );
+    });
+
+    it('can continue once the active session failed with nothing left to mine, not before', () => {
+      record(SWAP);
+      mocks.activeSessionId = 'session';
+      mocks.txStatus = TxStatus.ERROR;
+      mocks.failureMayStillMine = true;
+      renderList();
+      expect(continueButton().disabled).toBe(true);
+      cleanup();
+
+      mocks.failureMayStillMine = false;
+      renderList();
+      expect(continueButton().disabled).toBe(false);
+      expect(convertButton().disabled).toBe(false);
+      expect(screen.queryByTestId('continue-bridge-hint')).toBeNull();
     });
 
     it.each([

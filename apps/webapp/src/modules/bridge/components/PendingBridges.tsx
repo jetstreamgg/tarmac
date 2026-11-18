@@ -12,6 +12,7 @@ import { BridgeTypeLogo } from '@/components/product/BridgeTypeLogo';
 import { ArrowTopRight, LinkExternal } from '@/modules/icons';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { TxStatus } from '@/modules/ui/lib/txStatus';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { pendingClaimLink } from '../adapters/cctp/claimLink';
@@ -543,11 +544,12 @@ function PendingBridgeCard({
   const sourceName = getBridgeNetwork(bridge.from).name;
   const claimedElsewhere = claimsFromDestinationWallet(bridge, account);
   // USDC a claim minted and didn't sell, still in the recipient's wallet.
-  const { offer, nothingLeft, saleOpenUntil } = useCctpConvertOffer(bridge, now);
+  const { offer, nothingLeft, saleOpenUntil, saleSentUntil } = useCctpConvertOffer(bridge, now);
   // Mid-claim, the USDC its sale is selling isn't left over.
   const convertAmount = claiming ? undefined : offer;
-  // A sale prompt a reload lost may still be signed in the wallet: the card reads Claiming until it expires.
-  const saleWaiting = !claiming && saleOpenUntil !== undefined;
+  // A sale prompt a reload lost may still be signed in the wallet, or a leg the run sent may still mine:
+  // the card reads Claiming until it expires.
+  const saleWaiting = !claiming && (saleOpenUntil !== undefined || saleSentUntil !== undefined);
   const cardRef = useRef<HTMLDivElement>(null);
   const onSeen = useCallback(() => {
     if (listScope) pendingBridgeStore.markSeen(listScope, bridge.id);
@@ -632,7 +634,11 @@ function PendingBridgeCard({
           className="text-fgSecondary text-xs leading-[18px]"
           dataTestId="pending-bridge-sale-waiting-note"
         >
-          <SaleWaitingText until={saleOpenUntil} now={now} />
+          {saleOpenUntil !== undefined ? (
+            <SaleWaitingText until={saleOpenUntil} now={now} />
+          ) : (
+            saleSentUntil !== undefined && <SaleSentText until={saleSentUntil} now={now} />
+          )}
         </Text>
       )}
       {offersConvert && (
@@ -807,6 +813,22 @@ function SaleWaitingText({ until, now }: { until: number; now: number }) {
   );
 }
 
+function SaleSentText({ until, now }: { until: number; now: number }) {
+  const time = formatArrivalTime(until, now);
+  return (
+    <Trans>
+      Your last transaction is still confirming on Ethereum. If it doesn&apos;t go through, you can convert
+      your USDC here from {time}.
+    </Trans>
+  );
+}
+
+/** The live session failed and nothing it sent can still mine. */
+function useFailureSettled() {
+  const { txStatus, failureMayStillMine } = useTransaction();
+  return txStatus === TxStatus.ERROR && !failureMayStillMine;
+}
+
 type ContinueBlockedMessageProps = { reason: CctpResumeBlockReason; network: string };
 
 function ContinueBlockedMessage({ reason, network }: ContinueBlockedMessageProps) {
@@ -868,8 +890,10 @@ function ContinueBridgeCard({
   onDismiss
 }: ContinueBridgeCardProps) {
   const { blockedReason } = useCctpResumeForm(swap);
-  // Another session may be signing a bridge of this same USDC.
-  const busy = useTransaction().activeSessionId !== null;
+  // Another session may be signing a bridge of this same USDC; one that failed with nothing left to mine isn't.
+  const { activeSessionId } = useTransaction();
+  const failureSettled = useFailureSettled();
+  const busy = activeSessionId !== null && !failureSettled;
   const network = getBridgeNetwork(swap.network).name;
   const amount = formatBigInt(swap.usdcAmount, { unit: 6, minDecimals: 2, maxDecimals: 2 });
   return (
@@ -981,6 +1005,9 @@ export function PendingBridges({
   const swaps = useUnfinishedCctpSwaps();
   const incoming = useIncomingCctpBridges();
   const [storageWritable] = useState(isStorageWritable);
+  // A failed run has nothing in flight unless its outcome is unread: the cards are free, and the note still offers it back.
+  const failureSettled = useFailureSettled();
+  const cardsLocked = actionLocked && !failureSettled;
   // The sender's list is stored under the sender's scope: that's where its actions go.
   const cards = [
     ...bridges.map(bridge => ({ bridge, owner: undefined as string | undefined })),
@@ -1048,7 +1075,7 @@ export function PendingBridges({
             toast.success(t`You can convert your USDC to USDS anytime from the Convert tab.`);
           }}
           incoming={owner !== undefined}
-          actionLocked={actionLocked}
+          actionLocked={cardsLocked}
           claiming={claiming?.scope === (owner ?? scope) && claiming?.bridgeId === bridge.id}
           storageWritable={storageWritable}
         />
