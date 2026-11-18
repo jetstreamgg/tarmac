@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { i18n } from '@lingui/core';
 import { ContractFunctionRevertedError, encodeErrorResult, toFunctionSelector } from 'viem';
 import { contracts, l2Contracts } from '@/hooks/contracts';
-import { TransactionRevertedError } from '@/hooks/shared/useTransactionOutcome';
+import { TransactionRevertedError } from '@/hooks/shared/useOnChainTransactionOutcome';
 import { panicRevertMessages } from './contracts/panic';
 import type { DecodedRevert } from './decodeRevert';
 import { contractRevertMessages, revertMessage, revertReport } from '.';

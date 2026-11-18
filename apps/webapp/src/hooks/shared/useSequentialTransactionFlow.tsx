@@ -2,8 +2,7 @@ import { useConnection, useSimulateContract, useWriteContract } from 'wagmi';
 import { markStalledStep, toError } from '../helpers';
 import { useEffect, useEffectEvent, useMemo, useState, useRef, useCallback } from 'react';
 import { reportPrepareRevert } from './prepareRevertReporter';
-import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
-import { useTransactionOutcome } from './useTransactionOutcome';
+import { useSentTransactionOutcome } from './useSentTransactionOutcome';
 import { SequentialTransactionHook, UseSequentialTransactionFlowParameters } from '../hooks';
 
 // A refetch runs even while the query is disabled, so a Retry that re-simulates
@@ -143,27 +142,14 @@ export function useSequentialTransactionFlow(
     }
   });
 
-  // Workaround to get `txHash` from Safe connector
-  const { transactionHash: eventHash, isSafeApp: isSafeConnector } = useWaitForSafeTxHash({
-    chainId: chainId,
-    safeTxHash: mutationHash
+  // Monitor current transaction
+  const { txHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } = useSentTransactionOutcome({
+    sentHash: mutationHash,
+    chainId
   });
 
-  const txHash = useMemo(
-    () => (isSafeConnector ? eventHash : mutationHash),
-    [eventHash, mutationHash, isSafeConnector]
-  );
-
-  // Monitor current transaction
-  const {
-    isPending: isMining,
-    isSuccess,
-    failure: txFailure,
-    receipt
-  } = useTransactionOutcome({ hash: txHash, chainId });
-
   // A write in the wallet, awaiting a Safe's co-signers, or mining.
-  const writeOut = !!isWritePending || (!!mutationHash && !txHash) || (!!txHash && !isSuccess && !txFailure);
+  const writeOut = !!isWritePending || isAwaitingOutcome;
   const writeOutRef = useRef(writeOut);
   useEffect(() => {
     writeOutRef.current = writeOut;
@@ -283,12 +269,12 @@ export function useSequentialTransactionFlow(
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
       }
-    } else if (txHash && txFailure && lastProcessedTxHash.current !== txHash) {
+    } else if (txHash && failure && lastProcessedTxHash.current !== txHash) {
       lastProcessedTxHash.current = txHash;
       // Transaction failed: reverted, or cancelled/replaced in the wallet. Never
       // an RPC error while watching — the outcome hook keeps watching through
       // those, since the tx may still land.
-      emitError(txFailure, txHash);
+      emitError(failure, txHash);
       // Like a wallet rejection (see the write's onError), a failure after a
       // mined step keeps the run paused so Retry resumes the frozen remainder:
       // the live `calls` has dropped the mined approve, so slicing it at
@@ -302,7 +288,7 @@ export function useSequentialTransactionFlow(
       setIsExecuting(paused);
       setHasFailed(paused);
     }
-  }, [isExecuting, isSuccess, txFailure, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
+  }, [isExecuting, isSuccess, failure, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
 
   const clearRun = useCallback(() => {
     detachedRef.current = null;
@@ -454,7 +440,7 @@ export function useSequentialTransactionFlow(
     execute,
     isLoading: isSimulationLoading || isMining || (isExecuting && !hasFailed),
     prepared,
-    error: writeError || txFailure || simulationError,
+    error: writeError || failure || simulationError,
     currentCallIndex: currentIndex,
     reset,
     nextCalls
