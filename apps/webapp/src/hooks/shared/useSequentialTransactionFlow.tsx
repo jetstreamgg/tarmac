@@ -143,10 +143,8 @@ export function useSequentialTransactionFlow(
   });
 
   // Monitor current transaction
-  const { txHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } = useSentTransactionOutcome({
-    sentHash: mutationHash,
-    chainId
-  });
+  const { txHash, settleHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } =
+    useSentTransactionOutcome({ sentHash: mutationHash, chainId });
 
   // A write in the wallet, awaiting a Safe's co-signers, or mining.
   const writeOut = !!isWritePending || isAwaitingOutcome;
@@ -269,12 +267,12 @@ export function useSequentialTransactionFlow(
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
       }
-    } else if (txHash && failure && lastProcessedTxHash.current !== txHash) {
-      lastProcessedTxHash.current = txHash;
-      // Transaction failed: reverted, or cancelled/replaced in the wallet. Never
-      // an RPC error while watching — the outcome hook keeps watching through
-      // those, since the tx may still land.
-      emitError(failure, txHash);
+    } else if (settleHash && failure && lastProcessedTxHash.current !== settleHash) {
+      lastProcessedTxHash.current = settleHash;
+      // Transaction failed: reverted, cancelled/replaced in the wallet, or
+      // rejected in a Safe's queue. Never an RPC error while watching — the
+      // outcome hook keeps watching through those, since the tx may still land.
+      emitError(failure, settleHash);
       // Like a wallet rejection (see the write's onError), a failure after a
       // mined step keeps the run paused so Retry resumes the frozen remainder:
       // the live `calls` has dropped the mined approve, so slicing it at
@@ -288,7 +286,16 @@ export function useSequentialTransactionFlow(
       setIsExecuting(paused);
       setHasFailed(paused);
     }
-  }, [isExecuting, isSuccess, failure, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
+  }, [
+    isExecuting,
+    isSuccess,
+    failure,
+    settleHash,
+    txHash,
+    receipt?.blockNumber,
+    currentIndex,
+    transactionHashes
+  ]);
 
   const clearRun = useCallback(() => {
     detachedRef.current = null;

@@ -88,7 +88,7 @@ vi.mock('@/hooks/shared/useOnChainTransactionOutcome', async io => ({
   useOnChainTransactionOutcome: () => ({ isPending: false, isSuccess: false, failure: null })
 }));
 vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
-  useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })
+  useWaitForSafeTxHash: () => ({ transactionHash: undefined, failure: null, isSafeApp: false })
 }));
 vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false, isLoading: false })

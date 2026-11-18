@@ -51,6 +51,41 @@ test('Supply and withdraw from Savings as a Safe App', async ({ isolatedPage, te
   expect(safeMode.unmockedRequests).toEqual([]);
 });
 
+// APP-567: a queued transaction the owners reject never executes; the Safe's nonce moves past it.
+test('A Safe App withdraw rejected in the Safe queue shows as declined', async ({
+  isolatedPage,
+  testAccount
+}) => {
+  const owners = [testAccount];
+  const networks = [NetworkName.mainnet];
+  const safe = await deploySafe({ owners, saltNonce: BigInt(Date.now()), networks });
+  await setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '1', 18, NetworkName.mainnet, safe);
+  const safeMode = await enableSafeMode(isolatedPage, { safe, owners, networks });
+
+  const savings = new SavingsProductPage(isolatedPage);
+  await savings.goto();
+  await expect(isolatedPage.getByTestId('wallet-chip')).toContainText('safe:0x', { timeout: 15_000 });
+
+  await savings.openSupplyModal();
+  await savings.fillAmount('.02');
+  await savings.reviewAndConfirm({ waitForSuccess: false });
+  await safeMode.execute((await safeMode.waitForQueued()).safeTxHash);
+  await expectTransactionSuccess(isolatedPage);
+
+  // A single call: the step-by-step engine, which resolves the safeTxHash itself.
+  await savings.openWithdrawModal();
+  await savings.fillAmount('.01');
+  await savings.reviewAndConfirm({ waitForSuccess: false });
+  const withdraw = await safeMode.waitForQueued();
+  await safeMode.reject(withdraw.safeTxHash);
+
+  await expect(isolatedPage.getByTestId('transaction-status-badge')).toContainText('Request declined', {
+    timeout: 60_000
+  });
+  expect(safeMode.queued()).toEqual([]);
+  expect(safeMode.unmockedRequests).toEqual([]);
+});
+
 test('A Safe App follows the network Safe{Wallet} opens it on', async ({ isolatedPage, testAccount }) => {
   const owners = [testAccount];
   const networks = [NetworkName.mainnet, NetworkName.base];

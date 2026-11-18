@@ -68,7 +68,10 @@ vi.mock('motion/react', async io => {
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
 import { reportError } from '@/modules/sentry/reportError';
-import { TransactionRevertedError } from '@/hooks/shared/useOnChainTransactionOutcome';
+import {
+  SafeTransactionRejectedError,
+  TransactionRevertedError
+} from '@/hooks/shared/useOnChainTransactionOutcome';
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { queryClient } from '@/lib/queryClient';
 
@@ -184,6 +187,18 @@ describe('TransactionModal failure & recovery', () => {
     expect(screen.queryByText(/hasn't been approved/)).toBeNull();
     expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Request declined');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+  });
+
+  // APP-567: a co-owner or a replacement may have ended it, so "you declined" would be wrong.
+  it('a Safe transaction rejected in the Safe queue reads as declined, with Safe copy', () => {
+    renderFailedFlow(supplySteps, () => {}, new SafeTransactionRejectedError());
+
+    expect(screen.getByText('Approve declined')).toBeDefined();
+    expect(
+      screen.getByText('This transaction was rejected or replaced in your Safe and will not execute.')
+    ).toBeDefined();
+    expect(screen.queryByText(/You declined/)).toBeNull();
+    expect(screen.getByTestId('transaction-status-badge').textContent).toContain('Request declined');
   });
 
   it('grouped writes: failing the multicall fails every row of it, with a single Try again', () => {

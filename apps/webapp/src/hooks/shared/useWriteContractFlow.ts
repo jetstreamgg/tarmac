@@ -63,7 +63,7 @@ export function useWriteContractFlow<
   });
 
   // Monitor tx
-  const { txHash, isMining, isSuccess, failure, receipt } = useSentTransactionOutcome({
+  const { txHash, settleHash, isMining, isSuccess, failure, receipt } = useSentTransactionOutcome({
     sentHash: mutationHash,
     chainId: parameters.chainId
   });
@@ -73,14 +73,14 @@ export function useWriteContractFlow<
   const emitSuccess = useEffectEvent((hash: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
   useEffect(() => {
-    if (txHash) {
+    if (settleHash) {
       if (isSuccess) {
-        emitSuccess(txHash, receipt?.blockNumber);
+        emitSuccess(settleHash, receipt?.blockNumber);
       } else if (failure) {
-        emitError(failure, txHash);
+        emitError(failure, settleHash);
       }
     }
-  }, [isSuccess, failure, txHash, receipt?.blockNumber]);
+  }, [isSuccess, failure, settleHash, receipt?.blockNumber]);
 
   // The single call this hook sends, in the same contract form the batch engines use.
   // Exposed read-only so a flow that routes through here can still be fee-estimated;
