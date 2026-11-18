@@ -133,14 +133,19 @@ export function usePendleRedeemModal(market: PendleMarketConfig) {
   // Steps mirror the engine's call count ([approve?, claim]), like the
   // buy/sell form — a first-time redeemer signs a PT approval first.
   const { address } = useConnection();
-  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
+  const {
+    data: allowance,
+    error: allowanceError,
+    mutate: mutateAllowance
+  } = useTokenAllowance({
     chainId: engineChainId,
     contractAddress: market.ptToken,
     owner: address,
     spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
   });
   const ptSymbol = `PT-${market.underlyingSymbol}`;
-  const needsAllowance = allowance !== undefined && ptBalance > 0n && allowance < ptBalance;
+  const needsAllowance =
+    ptBalance > 0n && (allowance !== undefined ? allowance < ptBalance : !!allowanceError);
   useResetUnfinishedRunOnClose(writeHook.reset, mutateAllowance);
   const steps = useMemo<TransactionStep[]>(() => {
     const claimStep = {

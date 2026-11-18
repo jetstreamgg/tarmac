@@ -31,7 +31,6 @@ export function useSequentialTransactionFlow(
     onSuccess = () => null,
     onReceipt,
     onError = () => null,
-    gcTime = 30000,
     chainId,
     failOnReplaced = false
   } = parameters;
@@ -126,7 +125,7 @@ export function useSequentialTransactionFlow(
           enabled &&
           currentIndex < stableTransactions.length &&
           (currentIndex === 0 || (currentIndex > 0 && transactionHashes.length >= currentIndex)),
-        gcTime
+        gcTime: 30_000
       }
     }),
     [
@@ -135,7 +134,6 @@ export function useSequentialTransactionFlow(
       currentIndex,
       stableTransactions.length,
       transactionHashes.length,
-      gcTime,
       isExecuting,
       runChainId
     ]

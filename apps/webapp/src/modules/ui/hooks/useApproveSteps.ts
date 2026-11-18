@@ -41,13 +41,14 @@ export function useApproveSteps({
   const chainId = useChainId();
   const symbol = token.symbol;
 
-  const { data: allowance } = useTokenAllowance({
+  const { data: allowance, error: allowanceError } = useTokenAllowance({
     chainId,
     contractAddress: token.address[chainId],
     owner: address,
     spender
   });
-  const needsAllowance = enabled && allowance !== undefined && allowance < amount;
+  const needsAllowance =
+    enabled && (allowance !== undefined ? allowance < amount : !!allowanceError && amount > 0n);
   const needsReset =
     withUsdtReset && needsAllowance && token.symbol === TOKENS.usdt.symbol && (allowance ?? 0n) > 0n;
 

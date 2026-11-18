@@ -68,7 +68,6 @@ export type UseWriteContractFlowParameters<
   chainId extends config['chains'][number]['id'] | undefined = undefined
 > = UseSimulateContractParameters<abi, functionName, args, config, chainId> & {
   enabled: boolean;
-  gcTime?: number;
   onMutate?: (variables?: TxMutateVariables) => void;
   onStart?: (hash: string) => void;
   onSuccess?: (hash: string, blockNumber?: bigint) => void;
@@ -167,7 +166,6 @@ export type UseTransactionFlowParameters = {
   onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined, blockNumber?: bigint) => void;
   onError?: (error: Error, hash: string | undefined) => void;
-  gcTime?: number;
   chainId?: number;
 };
 
@@ -183,7 +181,6 @@ export type UseSequentialTransactionFlowParameters = {
   onReceipt?: (receipt: TransactionReceipt) => void;
   /** `variables` is set for a wallet error, as in `onStart`. */
   onError?: (error: Error, hash: string, variables?: TxMutateVariables) => void;
-  gcTime?: number;
   chainId?: number;
   /** A repriced transaction (same call, new fee) is announced again at `onStart` and settles under its new hash. */
   failOnReplaced?: boolean;

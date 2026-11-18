@@ -77,7 +77,7 @@ catalog:
   tailwindcss-animate: ^1.0.7
   typescript: ^6.0.3
   viem: ^2.57.11
-  vite: ^8.3.5
+  vite: ^8.3.8
   vite-plugin-node-polyfills: ^0.28.0
   vite-plugin-simple-html: ^1.1.0
   vitest: ^4.1.12
