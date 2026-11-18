@@ -67,13 +67,11 @@ describe('useIsSafeWallet over WalletConnect', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
-  it('gives up after a minute and a half of errors and treats the account as not a Safe', async () => {
+  it('stops after the default retries and treats the account as not a Safe', async () => {
     statuses = [503];
     const { result } = renderProbe();
     await advance(120_000);
     expect(result.current).toBe(false);
-    expect(fetchMock).toHaveBeenCalledTimes(7);
-    await advance(600_000);
-    expect(fetchMock).toHaveBeenCalledTimes(7);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 });

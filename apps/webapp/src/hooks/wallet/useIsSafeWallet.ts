@@ -40,10 +40,6 @@ export const useIsSafeWallet = () => {
     enabled: Boolean(url && address) && !isSafeApp,
     queryKey: ['is-safe-wallet-found', address, chainId],
     queryFn: () => isSafeWalletFound(url!),
-    // A minute and a half of retries, then "not a Safe": an endless retry would have
-    // every connected wallet polling the service through an outage.
-    retry: 6,
-    retryDelay: attempt => Math.min(1000 * 2 ** attempt, 30_000),
     staleTime: Infinity,
     gcTime: Infinity
   });
