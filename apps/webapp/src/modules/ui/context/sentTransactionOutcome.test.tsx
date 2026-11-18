@@ -70,13 +70,13 @@ describe('useSentTransactionOutcome', () => {
   });
 
   it('stops awaiting once the transaction fails', () => {
-    h.safe = { transactionHash: EXECUTED_HASH, isSafeApp: true };
+    h.safe = { transactionHash: EXECUTED_HASH, failure: null, isSafeApp: true };
     h.outcome = { isPending: false, isSuccess: false, failure: new Error('reverted') };
     expect(render().result.current).toMatchObject({ isAwaitingOutcome: false, isSuccess: false });
   });
 
   it('awaits nothing before a hash is sent', () => {
-    h.safe = { transactionHash: undefined, isSafeApp: false };
+    h.safe = { failure: null, isSafeApp: false };
     const { result } = renderHook(() => useSentTransactionOutcome({}));
     expect(h.watched.txHash).toBeUndefined();
     expect(result.current.isAwaitingOutcome).toBe(false);
