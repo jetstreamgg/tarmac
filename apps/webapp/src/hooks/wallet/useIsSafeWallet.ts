@@ -3,9 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { SAFE_TRANSACTION_SERVICE_URL } from '../shared/constants';
 import { useIsSafeApp } from './useIsSafeApp';
 
+// Only a 404 means "not a Safe". Anything else (a rate limit, an outage) is no
+// answer: caching it as "no" would send a Safe's transactions down the plain
+// wallet path for the whole session.
 const isSafeWalletFound = async (url: URL) => {
   const res = await fetch(url);
-  return res.status === 200;
+  if (res.status === 200) return true;
+  if (res.status === 404) return false;
+  throw new Error(`Safe transaction service responded ${res.status}`);
 };
 
 /**
