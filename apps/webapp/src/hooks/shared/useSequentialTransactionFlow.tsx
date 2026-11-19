@@ -133,6 +133,8 @@ export function useSequentialTransactionFlow(
         setHasFailed(false);
         // A Safe can return the hash of a send that already failed (a retry
         // after a deletion from its queue); this send's outcome is its own.
+        // Safe to clear here: the previous write's hash and outcome were
+        // dropped when this write started, and its own hash is not set yet.
         lastProcessedTxHash.current = undefined;
         onStart(hash);
       },
@@ -149,7 +151,7 @@ export function useSequentialTransactionFlow(
   });
 
   // Monitor current transaction
-  const { txHash, settleHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } =
+  const { txHash, failureHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } =
     useSentTransactionOutcome({ sentHash: mutationHash, sentAt: submittedAt, chainId });
 
   // A write in the wallet, awaiting a Safe's co-signers, or mining.
@@ -271,12 +273,12 @@ export function useSequentialTransactionFlow(
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
       }
-    } else if (settleHash && failure && lastProcessedTxHash.current !== settleHash) {
-      lastProcessedTxHash.current = settleHash;
+    } else if (failureHash && failure && lastProcessedTxHash.current !== failureHash) {
+      lastProcessedTxHash.current = failureHash;
       // Transaction failed: reverted, cancelled/replaced in the wallet, or
       // rejected in a Safe's queue. Never an RPC error while watching — the
       // outcome hook keeps watching through those, since the tx may still land.
-      emitError(failure, settleHash);
+      emitError(failure, failureHash);
       // Like a wallet rejection (see the write's onError), a failure after a
       // mined step keeps the run paused so Retry resumes the frozen remainder:
       // the live `calls` has dropped the mined approve, so slicing it at
@@ -294,7 +296,7 @@ export function useSequentialTransactionFlow(
     isExecuting,
     isSuccess,
     failure,
-    settleHash,
+    failureHash,
     txHash,
     receipt?.blockNumber,
     currentIndex,
@@ -312,8 +314,9 @@ export function useSequentialTransactionFlow(
     revertedIndexRef.current = -1;
     resimulationRef.current = null;
     resetWrite();
-    // Do NOT clear lastProcessedTxHash — it guards against
-    // stale hash being replayed during multi-step execution
+    // Do NOT clear lastProcessedTxHash here — it guards against a stale hash
+    // being replayed during multi-step execution. The next write's onSuccess
+    // clears it, once that hash is gone.
   }, [resetWrite]);
 
   useEffect(() => {

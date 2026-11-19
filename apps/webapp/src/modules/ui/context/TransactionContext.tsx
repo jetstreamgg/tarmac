@@ -1347,15 +1347,13 @@ export function TransactionProvider({
       const rejected = isUserRejectedRequestError(error);
       setUserRejected(rejected);
       setOutcomeUnknown(unknown);
-      // A Reject has its own copy, except a Safe's, which a co-owner or a
-      // replacement may have ended; anything else that reverted says why.
-      setFailureReason(
-        error instanceof SafeTransactionRejectedError
-          ? t`This transaction was rejected or replaced in your Safe and will not execute.`
-          : rejected || unknown
-            ? undefined
-            : revertMessage(error)
-      );
+      if (error instanceof SafeTransactionRejectedError) {
+        // A co-owner or a replacement may have ended it, so "you declined" would be wrong.
+        setFailureReason(t`This transaction was rejected or replaced in your Safe and will not execute.`);
+      } else {
+        // A Reject has its own copy; anything else that reverted says why.
+        setFailureReason(rejected || unknown ? undefined : revertMessage(error));
+      }
       if (hash) {
         txHashRef.current = hash;
       }

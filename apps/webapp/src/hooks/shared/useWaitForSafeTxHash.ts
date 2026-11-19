@@ -16,7 +16,12 @@ const FAST_POLLS = 150;
 /** Looks in a row that must miss a once-seen transaction before it counts as deleted: 30 seconds' worth at the fast interval. */
 const DELETED_AFTER_MISSES = 15;
 
-/** A Safe transaction that can never execute: rejected, replaced, or deleted in the Safe queue. */
+/**
+ * A Safe transaction that can never execute: rejected, replaced, or deleted in
+ * the Safe queue. A replaced-transaction error, so the modal, analytics and
+ * Sentry treat it as declined, not failed. The modal gives it its own
+ * sentence, since a co-owner may be the one who ended it.
+ */
 export class SafeTransactionRejectedError extends TransactionReplacedError {
   constructor() {
     super(new Error('Safe transaction rejected or replaced in the Safe queue.'));
@@ -149,6 +154,8 @@ export const useWaitForSafeTxHash = ({
       resolveSafeTx({
         hash: safeTxHash!,
         serviceUrl: serviceUrl!,
+        // The last look is the only memory between looks: whether the hash was
+        // seen queued, and how many looks in a row have missed it since.
         previous: queryClient.getQueryData<SafeTxResolution>(queryKey)
       }),
     refetchInterval: ({ state: { data, dataUpdateCount } }) => {

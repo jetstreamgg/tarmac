@@ -44,7 +44,11 @@ describe('useSentTransactionOutcome', () => {
   it('waits on a queued safeTxHash without watching it on-chain', () => {
     const { result } = render();
     expect(h.watched.txHash).toBeUndefined();
-    expect(result.current).toMatchObject({ isAwaitingOutcome: true, settleHash: undefined });
+    expect(result.current).toMatchObject({
+      isAwaitingOutcome: true,
+      txHash: undefined,
+      failureHash: undefined
+    });
   });
 
   it('settles on the executed hash once the owners run it', () => {
@@ -52,15 +56,15 @@ describe('useSentTransactionOutcome', () => {
     h.outcome = { isPending: false, isSuccess: true, failure: null };
     const { result } = render();
     expect(h.watched.txHash).toBe(EXECUTED_HASH);
-    expect(result.current).toMatchObject({ isSuccess: true, settleHash: EXECUTED_HASH });
+    expect(result.current).toMatchObject({ isSuccess: true, txHash: EXECUTED_HASH });
   });
 
-  it('settles a rejection on the safeTxHash and a failed execution on its on-chain hash', () => {
+  it('reports a rejection on the safeTxHash and a failed execution on its on-chain hash', () => {
     h.safe = { failure: new Error('rejected'), isSafeApp: true };
-    expect(render().result.current).toMatchObject({ isSuccess: false, settleHash: SAFE_TX_HASH });
+    expect(render().result.current).toMatchObject({ isSuccess: false, failureHash: SAFE_TX_HASH });
 
     h.safe = { failure: new Error('reverted'), failureHash: EXECUTED_HASH, isSafeApp: true };
-    expect(render().result.current).toMatchObject({ isSuccess: false, settleHash: EXECUTED_HASH });
+    expect(render().result.current).toMatchObject({ isSuccess: false, failureHash: EXECUTED_HASH });
   });
 
   it('watches the returned hash directly outside the Safe App', () => {
