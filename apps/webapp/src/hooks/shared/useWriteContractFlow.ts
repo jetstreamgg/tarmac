@@ -45,7 +45,8 @@ export function useWriteContractFlow<
   const {
     writeContract,
     error: writeError,
-    data: mutationHash
+    data: mutationHash,
+    submittedAt
   } = useWriteContract({
     mutation: {
       onMutate,
@@ -63,8 +64,9 @@ export function useWriteContractFlow<
   });
 
   // Monitor tx
-  const { txHash, isMining, isSuccess, failure, receipt } = useSentTransactionOutcome({
+  const { txHash, failureHash, isMining, isSuccess, failure, receipt } = useSentTransactionOutcome({
     sentHash: mutationHash,
+    sentAt: submittedAt,
     chainId: parameters.chainId
   });
 
@@ -73,14 +75,12 @@ export function useWriteContractFlow<
   const emitSuccess = useEffectEvent((hash: string, blockNumber?: bigint) => onSuccess(hash, blockNumber));
   const emitError = useEffectEvent((err: Error, hash: string) => onError(err, hash));
   useEffect(() => {
-    if (txHash) {
-      if (isSuccess) {
-        emitSuccess(txHash, receipt?.blockNumber);
-      } else if (failure) {
-        emitError(failure, txHash);
-      }
+    if (txHash && isSuccess) {
+      emitSuccess(txHash, receipt?.blockNumber);
+    } else if (failureHash && failure) {
+      emitError(failure, failureHash);
     }
-  }, [isSuccess, failure, txHash, receipt?.blockNumber]);
+  }, [isSuccess, failure, txHash, failureHash, receipt?.blockNumber]);
 
   // The single call this hook sends, in the same contract form the batch engines use.
   // Exposed read-only so a flow that routes through here can still be fee-estimated;

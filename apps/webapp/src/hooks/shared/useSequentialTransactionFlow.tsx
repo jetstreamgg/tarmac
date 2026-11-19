@@ -117,10 +117,13 @@ export function useSequentialTransactionFlow(
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
   useEffect(() => reportPrepareRevert(simulationError, chainId), [simulationError, chainId]);
 
+  const lastProcessedTxHash = useRef<string | undefined>(undefined);
+
   const {
     writeContract,
     error: writeError,
     data: mutationHash,
+    submittedAt,
     isPending: isWritePending,
     reset: resetWrite
   } = useWriteContract({
@@ -128,6 +131,11 @@ export function useSequentialTransactionFlow(
       onMutate,
       onSuccess: (hash: `0x${string}`) => {
         setHasFailed(false);
+        // A Safe can return the hash of a send that already failed (a retry
+        // after a deletion from its queue); this send's outcome is its own.
+        // Safe to clear here: the previous write's hash and outcome were
+        // dropped when this write started, and its own hash is not set yet.
+        lastProcessedTxHash.current = undefined;
         onStart(hash);
       },
       onError: (err: Error) => {
@@ -143,10 +151,8 @@ export function useSequentialTransactionFlow(
   });
 
   // Monitor current transaction
-  const { txHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } = useSentTransactionOutcome({
-    sentHash: mutationHash,
-    chainId
-  });
+  const { txHash, failureHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } =
+    useSentTransactionOutcome({ sentHash: mutationHash, sentAt: submittedAt, chainId });
 
   // A write in the wallet, awaiting a Safe's co-signers, or mining.
   const writeOut = !!isWritePending || isAwaitingOutcome;
@@ -185,8 +191,6 @@ export function useSequentialTransactionFlow(
     writeContract,
     address
   ]);
-
-  const lastProcessedTxHash = useRef<string | undefined>(undefined);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -269,12 +273,12 @@ export function useSequentialTransactionFlow(
         // Move to next transaction - it will auto-execute once prepared
         setCurrentIndex(currentIndex + 1);
       }
-    } else if (txHash && failure && lastProcessedTxHash.current !== txHash) {
-      lastProcessedTxHash.current = txHash;
-      // Transaction failed: reverted, or cancelled/replaced in the wallet. Never
-      // an RPC error while watching — the outcome hook keeps watching through
-      // those, since the tx may still land.
-      emitError(failure, txHash);
+    } else if (failureHash && failure && lastProcessedTxHash.current !== failureHash) {
+      lastProcessedTxHash.current = failureHash;
+      // Transaction failed: reverted, cancelled/replaced in the wallet, or
+      // rejected in a Safe's queue. Never an RPC error while watching — the
+      // outcome hook keeps watching through those, since the tx may still land.
+      emitError(failure, failureHash);
       // Like a wallet rejection (see the write's onError), a failure after a
       // mined step keeps the run paused so Retry resumes the frozen remainder:
       // the live `calls` has dropped the mined approve, so slicing it at
@@ -288,7 +292,16 @@ export function useSequentialTransactionFlow(
       setIsExecuting(paused);
       setHasFailed(paused);
     }
-  }, [isExecuting, isSuccess, failure, txHash, receipt?.blockNumber, currentIndex, transactionHashes]);
+  }, [
+    isExecuting,
+    isSuccess,
+    failure,
+    failureHash,
+    txHash,
+    receipt?.blockNumber,
+    currentIndex,
+    transactionHashes
+  ]);
 
   const clearRun = useCallback(() => {
     detachedRef.current = null;
@@ -301,8 +314,9 @@ export function useSequentialTransactionFlow(
     revertedIndexRef.current = -1;
     resimulationRef.current = null;
     resetWrite();
-    // Do NOT clear lastProcessedTxHash — it guards against
-    // stale hash being replayed during multi-step execution
+    // Do NOT clear lastProcessedTxHash here — it guards against a stale hash
+    // being replayed during multi-step execution. The next write's onSuccess
+    // clears it, once that hash is gone.
   }, [resetWrite]);
 
   useEffect(() => {

@@ -172,8 +172,9 @@ vi.mock('@/hooks/shared/useOnChainTransactionOutcome', async io => ({
   ...(await io<typeof import('@/hooks/shared/useOnChainTransactionOutcome')>()),
   useOnChainTransactionOutcome: () => ({ isPending: false, isSuccess: false, failure: null })
 }));
-vi.mock('@/hooks/shared/useWaitForSafeTxHash', () => ({
-  useWaitForSafeTxHash: () => ({ transactionHash: undefined, isSafeApp: false })
+vi.mock('@/hooks/shared/useWaitForSafeTxHash', async io => ({
+  ...(await io<typeof import('@/hooks/shared/useWaitForSafeTxHash')>()),
+  useWaitForSafeTxHash: () => ({ transactionHash: undefined, failure: null, isSafeApp: false })
 }));
 vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
   useIsBatchSupported: () => ({ data: false, isLoading: false })

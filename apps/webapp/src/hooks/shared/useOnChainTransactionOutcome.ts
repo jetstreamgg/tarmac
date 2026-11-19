@@ -11,7 +11,7 @@ import {
 import { waitForTransactionReceipt } from 'viem/actions';
 
 /** Ceiling on the gap between attempts while the RPC keeps failing. */
-const MAX_RETRY_DELAY_MS = 30_000;
+export const MAX_RETRY_DELAY_MS = 30_000;
 
 type ReceiptResult = { receipt: TransactionReceipt; replacement?: ReplacementReturnType };
 
