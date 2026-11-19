@@ -8,7 +8,6 @@ import { useLingui } from '@lingui/react';
 import {
   getTokenDecimals,
   isMarketMatured,
-  pendlePtTicker,
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
@@ -551,8 +550,7 @@ export function PendleModalForm({
               minReceived,
               // Figma 859:41308: "Pendle sUSDS (PT-sUSDS)" — the PT naming
               // convention, not the market's marketing name ("Fixed Yield").
-              // Dated, so the row names which of two sUSDS markets this is.
-              product: `Pendle ${market.underlyingSymbol} (${pendlePtTicker(market)})`,
+              product: `Pendle ${market.underlyingSymbol} (PT-${market.underlyingSymbol})`,
               productSymbol: market.underlyingSymbol,
               withdrawal: withdrawalLabel,
               slippage: slippageDisplay,
@@ -585,7 +583,7 @@ export function PendleModalForm({
       receiveAmount,
       selectedSymbol,
       minReceived,
-      market,
+      market.underlyingSymbol,
       slippageDisplay,
       slippageMode,
       slippageAction,
