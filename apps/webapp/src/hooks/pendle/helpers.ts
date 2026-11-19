@@ -7,20 +7,7 @@ export function isMarketMatured(expiry: number): boolean {
   return Math.floor(Date.now() / 1000) >= expiry;
 }
 
-const PT_MATURITY_MONTHS = [
-  'JAN',
-  'FEB',
-  'MAR',
-  'APR',
-  'MAY',
-  'JUN',
-  'JUL',
-  'AUG',
-  'SEP',
-  'OCT',
-  'NOV',
-  'DEC'
-];
+const ptMaturityMonthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' });
 
 /**
  * The PT's on-chain ticker, maturity included ("PT-sUSDS-26NOV2026"), which
@@ -29,7 +16,8 @@ const PT_MATURITY_MONTHS = [
 export function pendlePtTicker(market: Pick<PendleMarketConfig, 'underlyingSymbol' | 'expiry'>): string {
   const expiry = new Date(market.expiry * 1000);
   const day = String(expiry.getUTCDate()).padStart(2, '0');
-  return `PT-${market.underlyingSymbol}-${day}${PT_MATURITY_MONTHS[expiry.getUTCMonth()]}${expiry.getUTCFullYear()}`;
+  const month = ptMaturityMonthFormatter.format(expiry).toUpperCase();
+  return `PT-${market.underlyingSymbol}-${day}${month}${expiry.getUTCFullYear()}`;
 }
 
 const maturityMonthFormatter = new Intl.DateTimeFormat('en-GB', {
