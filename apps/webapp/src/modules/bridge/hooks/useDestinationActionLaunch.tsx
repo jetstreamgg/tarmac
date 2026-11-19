@@ -703,13 +703,32 @@ export function useDestinationActionLaunch() {
           // A CCTP card leaves once its USDS is delivered (Figma 78, 97): a claim only after its sale or a bundle, else it stays to offer the convert.
           let soldUsdc = nextRecovery?.kind === 'cctp-convert';
           const deliversUsds = nextRecovery?.kind === 'cctp-claim' || nextRecovery?.kind === 'cctp-convert';
+          let claimedToast = false;
           const callbacks: TxCallbacks = tracker.wrap(
             deliversUsds
               ? {
                   ...recorded,
                   onMutate: variables => {
-                    if (nextRecovery.kind === 'cctp-claim')
-                      soldUsdc = variables?.functionName !== CCTP_CLAIM_FUNCTION;
+                    if (nextRecovery.kind === 'cctp-claim') {
+                      const functionName = variables?.functionName;
+                      soldUsdc = functionName !== CCTP_CLAIM_FUNCTION;
+                      // A leg after the claim goes out once the claim mined (not a Safe's): a failure from here leaves the USDC claimed.
+                      if (
+                        !isSafe &&
+                        !claimedToast &&
+                        functionName !== undefined &&
+                        functionName !== CCTP_CLAIM_FUNCTION &&
+                        modalOwnerRef.current === callbacks
+                      ) {
+                        claimedToast = true;
+                        updateModalContent(sessionId, {
+                          toast: {
+                            ...launchedToastRef.current!,
+                            error: t`USDC claimed, not converted to USDS`
+                          }
+                        });
+                      }
+                    }
                     recorded.onMutate(variables);
                   },
                   onSuccess: (...settled) => {
@@ -742,6 +761,7 @@ export function useDestinationActionLaunch() {
     },
     [
       launchModal,
+      updateModalContent,
       sessionId,
       queryClient,
       pinChainId,

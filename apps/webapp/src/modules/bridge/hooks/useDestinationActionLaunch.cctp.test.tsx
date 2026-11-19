@@ -50,7 +50,8 @@ const mocks = vi.hoisted(() => ({
   replayEnabled: false,
   redeemEnabled: false,
   txStatus: 'idle' as string,
-  activeSessionId: undefined as string | undefined
+  activeSessionId: undefined as string | undefined,
+  safe: false
 }));
 
 vi.mock('wagmi', () => ({
@@ -60,7 +61,7 @@ vi.mock('wagmi', () => ({
 }));
 vi.mock('@/hooks', async io => ({
   ...(await io<typeof import('@/hooks')>()),
-  useIsSafeWallet: () => false,
+  useIsSafeWallet: () => mocks.safe,
   useSafeWalletStatus: () => 'not-safe'
 }));
 vi.mock('@/hooks/wallet/useIsSafeApp', () => ({ useIsSafeApp: () => false }));
@@ -219,6 +220,7 @@ describe('useDestinationActionLaunch: CCTP claim', () => {
     mocks.redeemEnabled = false;
     mocks.txStatus = TxStatus.IDLE;
     mocks.activeSessionId = undefined;
+    mocks.safe = false;
   });
 
   it('counts the card as claiming from Confirm until its run ends, its sale included', () => {
@@ -280,6 +282,72 @@ describe('useDestinationActionLaunch: CCTP claim', () => {
     mocks.txStatus = TxStatus.LOADING;
     rerender();
     expect(result.current.claiming).toBeUndefined();
+  });
+
+  describe('the toast of a run that fails after its claim', () => {
+    const CLAIMED = 'USDC claimed, not converted to USDS';
+    const confirmClaim = () => {
+      mocks.claim.ready = true;
+      const card = seedCctpClaim();
+      const hook = renderHook(() => useDestinationActionLaunch());
+      act(() => hook.result.current.launch(card));
+      const launched = mocks.launched.at(-1)!;
+      act(() => launched.onConfirm!());
+      return { ...hook, card, launched, callbacks: mocks.claim.params!.getCallbacks() };
+    };
+    const toastUpdates = () => mocks.updates.filter(update => 'toast' in update.partial);
+    const mutate = (callbacks: TxCallbacks, functionName?: string) =>
+      act(() =>
+        callbacks.onMutate(
+          functionName ? ({ functionName } as unknown as Parameters<TxCallbacks['onMutate']>[0]) : undefined
+        )
+      );
+
+    it('says the USDC was claimed once a leg after the claim starts: the claim mined before it', () => {
+      const { launched, callbacks } = confirmClaim();
+      expect(launched.toast?.error).toBe('Claim failed');
+      mutate(callbacks, 'receiveMessage');
+      expect(toastUpdates()).toEqual([]);
+
+      mutate(callbacks, 'sellGem');
+      expect(toastUpdates()).toEqual([
+        {
+          sessionId: launched.sessionId,
+          partial: { toast: { ...launched.toast, error: CLAIMED } }
+        }
+      ]);
+    });
+
+    it('says it from the approve too, once', () => {
+      const { callbacks } = confirmClaim();
+      mutate(callbacks, 'receiveMessage');
+      mutate(callbacks, 'approve');
+      mutate(callbacks, 'sellGem');
+      expect(toastUpdates()).toHaveLength(1);
+      expect(toastUpdates()[0].partial.toast).toMatchObject({ error: CLAIMED });
+    });
+
+    it('keeps Claim failed for a bundle: its calls succeed or fail together', () => {
+      const { callbacks } = confirmClaim();
+      mutate(callbacks);
+      expect(toastUpdates()).toEqual([]);
+    });
+
+    it("keeps Claim failed for a Safe: its next leg doesn't mean the claim executed", () => {
+      mocks.safe = true;
+      const { callbacks } = confirmClaim();
+      mutate(callbacks, 'receiveMessage');
+      mutate(callbacks, 'sellGem');
+      expect(toastUpdates()).toEqual([]);
+    });
+
+    it("leaves a newer Confirm's toast alone", () => {
+      const { result, card, callbacks } = confirmClaim();
+      act(() => result.current.launch(card));
+      act(() => mocks.launched.at(-1)!.onConfirm!());
+      mutate(callbacks, 'sellGem');
+      expect(toastUpdates()).toEqual([]);
+    });
   });
 
   it("builds the claim on Ethereum from the card's attested message", () => {
