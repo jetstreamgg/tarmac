@@ -190,6 +190,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // The "network error" gate: the IP check failed and hasn't answered since.
   const ipCheckUnavailable = useRememberedFailure(!!vpnError && !vpnData, !!vpnData);
+  // A retry after a failure is not a first load: the gate stays, not the cover.
   const vpnIsLoading = vpnQueryIsLoading && !ipCheckUnavailable;
 
   // Track VPN check result once when data or error resolves
