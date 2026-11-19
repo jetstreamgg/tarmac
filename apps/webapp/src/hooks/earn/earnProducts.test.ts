@@ -63,17 +63,6 @@ describe('buildEarnProducts', () => {
     expect(products).toHaveLength(1 + REWARD_FIXTURES.length + VAULTS.length + PENDLE_MARKETS.length + 1);
   });
 
-  it('gives a market that is not listed yet no row', () => {
-    const [market] = PENDLE_MARKETS;
-    const successor = { ...market, marketAddress: '0x00000000000000000000000000000000000000aa' as const };
-    const fixedIds = (markets: (typeof market)[]) =>
-      buildEarnProducts(PRODUCTION_FAMILY, mainnet.id, REWARD_FIXTURES, markets)
-        .filter(p => p.kind === 'fixed')
-        .map(p => p.address);
-    expect(fixedIds([market])).toEqual([market.marketAddress]);
-    expect(fixedIds([market, successor])).toEqual([market.marketAddress, successor.marketAddress]);
-  });
-
   it('assigns stable unique ids', () => {
     const ids = products.map(p => p.id);
     expect(new Set(ids).size).toBe(ids.length);

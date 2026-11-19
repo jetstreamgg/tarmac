@@ -9,7 +9,7 @@ import React from 'react';
 import { useChainId } from 'wagmi';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
 import { familyMainnetId, isL2ChainId } from '@/utils';
-import { useAvailableTokenRewardContracts, VAULTS, getListedPendleMarkets, isMarketMatured } from '@/hooks';
+import { useAvailableTokenRewardContracts, VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 /**
@@ -54,19 +54,17 @@ export function useWidgetItems(intent: Intent): {
     to: `/vaults/${vaultModuleForProvider(vault.provider)}/${vault.vaultAddress[vaultChainId]}`
   }));
 
-  const pendleSubItems = getListedPendleMarkets()
-    .filter(market => !isMarketMatured(market.expiry))
-    .map(market => ({
-      label: `PT-${market.underlyingSymbol}`,
-      icon: (
-        <TokenIcon
-          token={{ symbol: `PT-${market.underlyingSymbol}` }}
-          className="h-3 w-3"
-          showChainIcon={false}
-        />
-      ),
-      to: `/fixed/market/${market.marketAddress}`
-    }));
+  const pendleSubItems = PENDLE_MARKETS.filter(market => !isMarketMatured(market.expiry)).map(market => ({
+    label: `PT-${market.underlyingSymbol}`,
+    icon: (
+      <TokenIcon
+        token={{ symbol: `PT-${market.underlyingSymbol}` }}
+        className="h-3 w-3"
+        showChainIcon={false}
+      />
+    ),
+    to: `/fixed/market/${market.marketAddress}`
+  }));
 
   const widgetItems: WidgetItem[] = [
     [

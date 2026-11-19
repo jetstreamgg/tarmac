@@ -7,14 +7,6 @@ export function isMarketMatured(expiry: number): boolean {
   return Math.floor(Date.now() / 1000) >= expiry;
 }
 
-/** Whether the app lists a market yet (see `listFrom`). */
-export function isMarketListed(
-  market: Pick<PendleMarketConfig, 'listFrom'>,
-  nowSec = Math.floor(Date.now() / 1000)
-): boolean {
-  return market.listFrom === undefined || nowSec >= market.listFrom;
-}
-
 const PT_MATURITY_MONTHS = [
   'JAN',
   'FEB',

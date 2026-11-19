@@ -1,7 +1,6 @@
 import { mainnet } from 'wagmi/chains';
 import { TENDERLY_CHAIN_ID, ZERO_ADDRESS } from '../constants';
 import type { PendleMarketConfig } from './pendle';
-import { isMarketListed } from './helpers';
 
 // ---------------------------------------------------------------------------
 // Enums
@@ -420,21 +419,6 @@ export function getPendleMarketByAddress(address: `0x${string}`): PendleMarketCo
   return PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
 }
 
-/** The markets the app lists right now (see `listFrom`), in config order. */
-export function getListedPendleMarkets(nowSec?: number): PendleMarketConfig[] {
-  return PENDLE_MARKETS.filter(m => isMarketListed(m, nowSec));
-}
-
-/**
- * Resolves a detail-route slug. A market that isn't listed yet hands its slug
- * to the listed market on the same underlying (the latest expiry), so a link
- * to the short slug keeps landing on the predecessor until the handover.
- */
-export function getPendleMarketBySlug(slug: string, nowSec?: number): PendleMarketConfig | undefined {
-  const market = PENDLE_MARKETS.find(m => m.slug === slug);
-  if (!market || isMarketListed(market, nowSec)) return market;
-  const underlying = market.underlyingToken.toLowerCase();
-  return getListedPendleMarkets(nowSec)
-    .filter(m => m.underlyingToken.toLowerCase() === underlying)
-    .sort((a, b) => b.expiry - a.expiry)[0];
+export function getPendleMarketBySlug(slug: string): PendleMarketConfig | undefined {
+  return PENDLE_MARKETS.find(m => m.slug === slug);
 }

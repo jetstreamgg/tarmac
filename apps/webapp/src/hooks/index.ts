@@ -73,19 +73,16 @@ export {
   PENDLE_MARKETS,
   getPendleMarketByAddress,
   getPendleMarketBySlug,
-  getListedPendleMarkets,
   PendleConvertSide,
   PendleHistoryAction
 } from './pendle/constants';
 export {
   isMarketMatured,
-  isMarketListed,
   pendlePtTicker,
   maturedPendleMarketName,
   isPendleChain,
   formatPendleAggregatorName
 } from './pendle/helpers';
-export { useListedPendleMarkets } from './pendle/useListedPendleMarkets';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleMarketChartData } from './pendle/usePendleMarketChartData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';

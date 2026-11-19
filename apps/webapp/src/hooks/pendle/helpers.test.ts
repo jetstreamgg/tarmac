@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMarketListed, isMarketMatured, maturedPendleMarketName, pendlePtTicker } from './helpers';
+import { isMarketMatured, maturedPendleMarketName, pendlePtTicker } from './helpers';
 
 describe('pendle helpers', () => {
   describe('isMarketMatured', () => {
@@ -11,17 +11,6 @@ describe('pendle helpers', () => {
     it('returns true when expiry is in the past', () => {
       const now = Math.floor(Date.now() / 1000);
       expect(isMarketMatured(now - 60_000)).toBe(true);
-    });
-  });
-
-  describe('isMarketListed', () => {
-    it('lists a market without listFrom', () => {
-      expect(isMarketListed({}, 0)).toBe(true);
-    });
-
-    it('lists a market from its listFrom instant on', () => {
-      expect(isMarketListed({ listFrom: 1000 }, 999)).toBe(false);
-      expect(isMarketListed({ listFrom: 1000 }, 1000)).toBe(true);
     });
   });
 
