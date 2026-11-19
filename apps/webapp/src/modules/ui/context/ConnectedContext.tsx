@@ -148,6 +148,27 @@ export const ConnectedContext = createContext<ConnectedContextType>({
   }
 });
 
+/**
+ * Whether a check has failed and not been `resolved` since, for the current
+ * `key` (the wallet, where the check is per wallet).
+ *
+ * `failed` alone isn't enough: when a failed check retries, the query drops
+ * its error and looks like a first load until the retry answers. The gate
+ * would come down for the length of every retry, and the dialogs it holds
+ * closed would flash back. So the failure is remembered here until the check
+ * succeeds or the key changes.
+ */
+const useRememberedFailure = (failed: boolean, resolved: boolean, key = '') => {
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const remembered = failedKey === key && !resolved;
+  if (failed && !remembered) {
+    setFailedKey(key);
+  } else if (failedKey !== null && !remembered) {
+    setFailedKey(null);
+  }
+  return failed || remembered;
+};
+
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, address, chainId, connector } = useConnection();
   const { signMessageAsync } = useSignMessage();
@@ -167,18 +188,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetch: refetchVpnCheck
   } = useVpnCheck({ authUrl, skip: skipAuthCheck });
 
-  // Whether the "network error" gate is up. A retry clears the query's `error`
-  // (a refetch with no data resets it to pending), which would read as a first
-  // load and drop the gate for every retry, so the gate is remembered here
-  // until a verdict lands.
-  const ipCheckFailed = !!vpnError && !vpnData;
-  const [ipGateUp, setIpGateUp] = useState(false);
-  if (ipCheckFailed && !ipGateUp) {
-    setIpGateUp(true);
-  } else if (ipGateUp && vpnData) {
-    setIpGateUp(false);
-  }
-  const ipCheckUnavailable = ipCheckFailed || (ipGateUp && !vpnData);
+  // The "network error" gate: the IP check failed and hasn't answered since.
+  const ipCheckUnavailable = useRememberedFailure(!!vpnError && !vpnData, !!vpnData);
   const vpnIsLoading = vpnQueryIsLoading && !ipCheckUnavailable;
 
   // Track VPN check result once when data or error resolves
@@ -320,19 +331,14 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refetch: refetchAddressCheck
   } = useRestrictedAddressCheck({ address, authUrl, enabled: screeningRequired });
 
-  // The address whose "screening unavailable" gate is up, remembered through
-  // retries like `ipGateUp`, until a verdict lands or the wallet changes. Only
-  // a failure seen while screening is required raises it: the cache entry is
-  // shared with the pre-transaction check, whose failures must not.
-  const screeningFailed = !!address && screeningRequired && !!authError && !authData;
-  const [screeningGateFor, setScreeningGateFor] = useState<string>();
-  if (screeningFailed && screeningGateFor !== address) {
-    setScreeningGateFor(address);
-  } else if (screeningGateFor && (screeningGateFor !== address || !screeningRequired || authData)) {
-    setScreeningGateFor(undefined);
-  }
-  const screeningUnavailable =
-    screeningFailed || (!!address && screeningGateFor === address && screeningRequired && !authData);
+  // The "unable to verify this wallet" gate. Only a failure seen while
+  // screening is required raises it: the cache entry is shared with the
+  // pre-transaction check, whose failures must not.
+  const screeningUnavailable = useRememberedFailure(
+    !!address && screeningRequired && !!authError && !authData,
+    !screeningRequired || !!authData,
+    address
+  );
 
   // Derived rather than read off the query's own loading flag: it has to be
   // true in the very render the terms verdict lands, or that render reads as
