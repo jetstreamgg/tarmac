@@ -78,7 +78,6 @@ export {
 } from './pendle/constants';
 export {
   isMarketMatured,
-  pendlePtTicker,
   maturedPendleMarketName,
   isPendleChain,
   formatPendleAggregatorName

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMarketMatured, maturedPendleMarketName, pendlePtTicker } from './helpers';
+import { isMarketMatured, maturedPendleMarketName } from './helpers';
 
 describe('pendle helpers', () => {
   describe('isMarketMatured', () => {
@@ -19,17 +19,6 @@ describe('pendle helpers', () => {
       expect(maturedPendleMarketName({ name: 'Fixed Yield', expiry: 1795651200 })).toBe(
         'Fixed Yield · Nov 2026'
       );
-    });
-  });
-
-  describe('pendlePtTicker', () => {
-    it('appends the UTC maturity in Pendle symbol form', () => {
-      expect(pendlePtTicker({ underlyingSymbol: 'sUSDS', expiry: 1795651200 })).toBe('PT-sUSDS-26NOV2026');
-    });
-
-    it('zero-pads the day, as the on-chain symbol does', () => {
-      // Thu Jun 04 2026 00:00:00 UTC
-      expect(pendlePtTicker({ underlyingSymbol: 'sUSDS', expiry: 1780531200 })).toBe('PT-sUSDS-04JUN2026');
     });
   });
 });

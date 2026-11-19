@@ -13,6 +13,7 @@ i18n.activate('en');
 const MARKET: PendleMarketConfig = {
   name: 'Fixed Yield',
   slug: 'pt-susds',
+  ptSymbol: 'PT-sUSDS-26NOV2026',
   marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
   ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
   ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',

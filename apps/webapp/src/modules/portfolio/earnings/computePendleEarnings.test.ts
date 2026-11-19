@@ -48,6 +48,7 @@ function market(overrides: Partial<PendleMarketConfig> = {}): PendleMarketConfig
   return {
     name: 'Fixed Yield',
     slug: 'pt-test',
+    ptSymbol: 'PT-TEST-28MAY2026',
     marketAddress: SYNTH_MARKET as `0x${string}`,
     ptToken: '0xaaaa000000000000000000000000000000000002',
     ytToken: '0xaaaa000000000000000000000000000000000003',

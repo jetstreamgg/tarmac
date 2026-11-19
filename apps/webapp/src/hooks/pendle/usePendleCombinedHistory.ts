@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { parseUnits } from 'viem';
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { PendleHistoryAction } from './constants';
-import { pendlePtTicker } from './helpers';
 import type { PendleCombinedHistoryRow, PendleHistoryHook, PendleHistoryItem } from './pendle';
 import { useAllPendleMarketsHistory } from './useAllPendleMarketsHistory';
 
@@ -37,7 +36,7 @@ function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
   // "X PT-sUSDS-26NOV2026", not "X USDS" — Pendle's router permits aggregator
   // hops, so the wallet-side token often differs from the market's underlying.
   // `market.name` is the product display name ("Fixed Yield"), not a ticker.
-  const ptTicker = pendlePtTicker(row.market);
+  const ptTicker = row.market.ptSymbol;
   return {
     blockTimestamp: new Date(row.timestamp),
     transactionHash: row.txHash,

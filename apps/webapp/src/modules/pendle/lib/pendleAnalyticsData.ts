@@ -1,6 +1,6 @@
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
-import { pendlePtTicker, type PendleConvertQuote, type PendleMarketConfig, type Token } from '@/hooks';
+import type { PendleConvertQuote, PendleMarketConfig, Token } from '@/hooks';
 
 export type PendleAnalyticsSide = 'buy' | 'sell' | 'redeem';
 
@@ -55,7 +55,7 @@ export function pendleAnalyticsData(input: PendleAnalyticsDataInput): Record<str
     amountTo: Number(formatUnits(amountToBigint, toDecimals)),
     slippage,
     ptAddress: market.ptToken,
-    ptSymbol: pendlePtTicker(market),
+    ptSymbol: market.ptSymbol,
     expiry: market.expiry,
     daysToMaturity,
     ...(quote?.aggregatorType !== undefined && { aggregatorType: quote.aggregatorType }),
