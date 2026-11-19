@@ -31,7 +31,7 @@ import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
 import { TransactionRevertedError } from '@/hooks/shared/useOnChainTransactionOutcome';
-import { SafeTransactionRejectedError } from '@/hooks/shared/useWaitForSafeTxHash';
+import { SafeTransactionCancelledError } from '@/hooks/shared/useWaitForSafeTxHash';
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
@@ -1347,7 +1347,7 @@ export function TransactionProvider({
       const rejected = isUserRejectedRequestError(error);
       setUserRejected(rejected);
       setOutcomeUnknown(unknown);
-      if (error instanceof SafeTransactionRejectedError) {
+      if (error instanceof SafeTransactionCancelledError) {
         // A co-owner or a replacement may have ended it, so "you declined" would be wrong.
         setFailureReason(t`This transaction was rejected or replaced in your Safe and will not execute.`);
       } else {

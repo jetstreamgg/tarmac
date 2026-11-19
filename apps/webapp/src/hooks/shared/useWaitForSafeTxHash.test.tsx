@@ -19,7 +19,7 @@ vi.mock('../wallet/useIsSafeApp', () => ({
 import {
   resolveSafeTx,
   safePollDelay,
-  SafeTransactionRejectedError,
+  SafeTransactionCancelledError,
   useWaitForSafeTxHash,
   type SafeTxResolution
 } from './useWaitForSafeTxHash';
@@ -128,9 +128,9 @@ describe('resolveSafeTx — a queued transaction', () => {
     expect(await resolve(QUEUED)).toEqual({ status: 'executed', hash: EXECUTED_HASH });
   });
 
-  it('is rejected once another transaction executed at its nonce', async () => {
+  it('is cancelled once another transaction executed at its nonce', async () => {
     service.txs = [tx(), competitor()];
-    expect(await resolve(QUEUED)).toEqual({ status: 'rejected' });
+    expect(await resolve(QUEUED)).toEqual({ status: 'cancelled' });
   });
 
   it('reports an execution whose inner call failed as reverted, on its on-chain hash', async () => {
@@ -140,11 +140,11 @@ describe('resolveSafeTx — a queued transaction', () => {
   });
 
   // "Delete from the queue" in Safe{Wallet}: the record goes, the nonce never moves.
-  it('is rejected once the service has dropped it for 15 looks running', async () => {
+  it('is cancelled once the service has dropped it for 15 looks running', async () => {
     let look: SafeTxResolution = QUEUED;
     for (let i = 0; i < 14; i++) look = await resolve(look);
     expect(look).toEqual({ ...QUEUED, misses: 14 });
-    expect(await resolve(look)).toEqual({ status: 'rejected' });
+    expect(await resolve(look)).toEqual({ status: 'cancelled' });
   });
 
   it('forgets a miss when the transaction shows up again', async () => {
@@ -240,7 +240,7 @@ describe('useWaitForSafeTxHash', () => {
     await advance(10);
     service.txs = [];
     await advance(40_000);
-    expect(result.current.failure).toBeInstanceOf(SafeTransactionRejectedError);
+    expect(result.current.failure).toBeInstanceOf(SafeTransactionCancelledError);
 
     service.txs = [tx()];
     rerender({ sentAt: 2 });
@@ -259,7 +259,7 @@ describe('useWaitForSafeTxHash', () => {
 
     service.txs = [];
     await advance(2 * MAX_RETRY_DELAY_MS);
-    expect(result.current.failure).toBeInstanceOf(SafeTransactionRejectedError);
+    expect(result.current.failure).toBeInstanceOf(SafeTransactionCancelledError);
   });
 
   it('reports a failed execution as a revert, with its on-chain hash', async () => {

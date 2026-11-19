@@ -22,9 +22,9 @@ const DELETED_AFTER_MISSES = 15;
  * Sentry treat it as declined, not failed. The modal gives it its own
  * sentence, since a co-owner may be the one who ended it.
  */
-export class SafeTransactionRejectedError extends TransactionReplacedError {
+export class SafeTransactionCancelledError extends TransactionReplacedError {
   constructor() {
-    super(new Error('Safe transaction rejected or replaced in the Safe queue.'));
+    super(new Error('Safe transaction rejected, replaced or deleted in the Safe queue.'));
   }
 }
 
@@ -37,7 +37,7 @@ export type SafeTxResolution =
   /** Executed on-chain, but the Safe's inner call failed (`ExecutionFailure`). */
   | { status: 'reverted'; hash: Hash }
   /** Can never execute: rejected, replaced at its nonce, or deleted from the queue. */
-  | { status: 'rejected' };
+  | { status: 'cancelled' };
 
 type ServiceTx = {
   safe: string;
@@ -100,14 +100,14 @@ export async function resolveSafeTx({
   const txs = atNonce?.results ?? [];
   const ours = txs.find(tx => tx.safeTxHash.toLowerCase() === hash.toLowerCase());
   if (isExecuted(ours)) return settled(ours);
-  if (txs.some(tx => tx !== ours && isExecuted(tx))) return { status: 'rejected' };
+  if (txs.some(tx => tx !== ours && isExecuted(tx))) return { status: 'cancelled' };
   if (!ours) {
     // The nonce listing can leave out a transaction the service still has; only
     // a 404 on the transaction itself counts as gone.
     const own = await fetchFromService<ServiceTx>(`${serviceUrl}/api/v1/multisig-transactions/${hash}/`);
     if (own) return isExecuted(own) ? settled(own) : { status: 'pending', queued };
     const misses = (previous?.status === 'pending' ? (previous.misses ?? 0) : 0) + 1;
-    return misses >= DELETED_AFTER_MISSES ? { status: 'rejected' } : { status: 'pending', queued, misses };
+    return misses >= DELETED_AFTER_MISSES ? { status: 'cancelled' } : { status: 'pending', queued, misses };
   }
   return { status: 'pending', queued };
 }
@@ -175,8 +175,8 @@ export const useWaitForSafeTxHash = ({
   const status = data?.status;
   // One error object per outcome: the engines key their settle effects on it.
   const failure = useMemo(() => {
-    if (status === 'rejected') {
-      return new SafeTransactionRejectedError();
+    if (status === 'cancelled') {
+      return new SafeTransactionCancelledError();
     }
     return status === 'reverted' ? new TransactionRevertedError() : null;
   }, [status]);

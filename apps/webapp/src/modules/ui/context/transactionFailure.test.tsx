@@ -69,7 +69,7 @@ vi.mock('motion/react', async io => {
 import { TransactionProvider, useTransaction } from './TransactionContext';
 import { reportError } from '@/modules/sentry/reportError';
 import { TransactionRevertedError } from '@/hooks/shared/useOnChainTransactionOutcome';
-import { SafeTransactionRejectedError } from '@/hooks/shared/useWaitForSafeTxHash';
+import { SafeTransactionCancelledError } from '@/hooks/shared/useWaitForSafeTxHash';
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { queryClient } from '@/lib/queryClient';
 
@@ -189,7 +189,7 @@ describe('TransactionModal failure & recovery', () => {
 
   // APP-567: a co-owner or a replacement may have ended it, so "you declined" would be wrong.
   it('a Safe transaction rejected in the Safe queue reads as declined, with Safe copy', () => {
-    renderFailedFlow(supplySteps, () => {}, new SafeTransactionRejectedError());
+    renderFailedFlow(supplySteps, () => {}, new SafeTransactionCancelledError());
 
     expect(screen.getByText('Approve declined')).toBeDefined();
     expect(
