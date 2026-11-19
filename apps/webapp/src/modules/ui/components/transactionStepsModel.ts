@@ -261,6 +261,8 @@ export function deriveTransactionStepItems({
           tokenSymbol: undefined,
           targetTokenSymbol: undefined,
           state: 'failed' as const,
+          // A wallet Reject carries no reason. Only a rejection in a Safe's
+          // queue does, since the user may not be the one who made it.
           description: failureReason ?? t`You declined the request in your wallet. Nothing was sent.`,
           retry
         };
