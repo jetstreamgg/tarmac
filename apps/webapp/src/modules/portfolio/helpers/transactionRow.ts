@@ -130,7 +130,7 @@ function actionLabel(item: CombinedHistoryItem): string {
     case TransactionTypeEnum.PENDLE_SELL:
       return t`Fixed Yield Sell`;
     case TransactionTypeEnum.PENDLE_REDEEM:
-      return t`Fixed Yield Redeem`;
+      return t`Fixed Yield Claim`;
     default:
       // Same fallback as getTitle: humanize the enum value.
       return capitalizeFirstLetter((type || module).toLowerCase().replace('_', ' '));

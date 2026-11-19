@@ -105,7 +105,7 @@ function NumericValue({ value, isLoading }: { value: string; isLoading?: boolean
  * label does, since the collapsed header is itself a button.
  */
 function RateColumnInfo({ column }: { column: 'rate' | 'rate30d' }) {
-  return <RateInfo type={column === 'rate' ? 'earnRates' : 'earnRates30d'} size={12} />;
+  return <RateInfo type={column === 'rate' ? 'earnRates' : 'earnRates30d'} />;
 }
 
 function isSameSort(a: EarnTableSort | undefined, b: EarnTableSort | undefined): boolean {

@@ -52,8 +52,15 @@ import {
   ResponsiveModalTitle,
   ResponsiveModalTrigger
 } from '@/components/ui/responsive-modal';
+import { TooltipBody } from '@/components/InfoTooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  TOOLTIP_SURFACE_CLASSES
+} from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -2227,16 +2234,7 @@ function StepsSection() {
 // Static replica of the TooltipContent recipe so both themes can be inspected
 // without hovering (the live primitive portals to its trigger).
 function TooltipReplica({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div
-      className={cn(
-        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+  return <div className={cn(TOOLTIP_SURFACE_CLASSES, className)}>{children}</div>;
 }
 
 const DROPDOWN_REPLICA_ROWS = [
@@ -2263,13 +2261,10 @@ function FeedbackSection() {
           </Spec>
           <Spec label="default — titled">
             <TooltipReplica>
-              <p className="font-circle text-fgPrimary mb-2 text-sm leading-4 font-medium tracking-[-0.28px]">
-                This is a tooltip
-              </p>
-              <p className="text-fgSecondary">
+              <TooltipBody title="This is a tooltip">
                 Tooltips are used to describe or identify an element. In most scenarios, tooltips help the
                 user understand meaning, function or alt-text.
-              </p>
+              </TooltipBody>
             </TooltipReplica>
           </Spec>
           <Spec label="short">

@@ -1,7 +1,7 @@
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { Popover, PopoverContent, PopoverTrigger, PopoverWidgetContent } from './popover';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 const CLAMP = 'max-w-[min(var(--radix-popover-content-available-width),calc(100vw_-_2rem))]';
 
@@ -30,17 +30,5 @@ describe('PopoverContent', () => {
     const cls = screen.getByTestId('pc').className;
     expect(cls).toContain('w-[330px]');
     expect(cls).toContain(CLAMP);
-  });
-});
-
-describe('PopoverWidgetContent', () => {
-  it('clamps its width to the viewport', () => {
-    render(
-      <Popover open>
-        <PopoverTrigger>open</PopoverTrigger>
-        <PopoverWidgetContent data-testid="pw">content</PopoverWidgetContent>
-      </Popover>
-    );
-    expect(screen.getByTestId('pw').className).toContain(CLAMP);
   });
 });
