@@ -10,7 +10,8 @@ import { AccessGate } from './AccessGate';
 
 const h = vi.hoisted(() => ({
   connectedContext: {} as Record<string, unknown>,
-  pageMounts: 0
+  pageMounts: 0,
+  trackVpnBlockedPageView: vi.fn()
 }));
 
 vi.mock('@/modules/ui/context/ConnectedContext', () => ({
@@ -23,7 +24,7 @@ vi.mock('wagmi', async importOriginal => ({
 }));
 
 vi.mock('@/modules/analytics/hooks/useVpnAnalytics', () => ({
-  useVpnAnalytics: () => ({ trackVpnBlockedPageView: vi.fn() })
+  useVpnAnalytics: () => ({ trackVpnBlockedPageView: h.trackVpnBlockedPageView })
 }));
 
 vi.mock('@/modules/config/termsLink', () => ({
@@ -38,8 +39,10 @@ i18n.activate('en');
 
 const AUTHORIZED = {
   isAuthorized: true,
+  isConnectedAndAcceptedTerms: true,
+  isCheckingTerms: false,
   authData: { authIsLoading: false },
-  vpnData: { vpnIsLoading: false }
+  vpnData: { vpnIsLoading: false, countryCode: 'US' }
 };
 const CHECKING = { ...AUTHORIZED, isAuthorized: false, authData: { authIsLoading: true } };
 const BLOCKED = { ...AUTHORIZED, isAuthorized: false, accessBlockReason: 'wallet-blocked' };
@@ -89,6 +92,7 @@ afterEach(() => {
   cleanup();
   h.connectedContext = {};
   h.pageMounts = 0;
+  h.trackVpnBlockedPageView.mockClear();
 });
 
 describe('AccessGate', () => {
@@ -106,7 +110,8 @@ describe('AccessGate', () => {
     h.connectedContext = CHECKING;
     render(tree(true));
 
-    expect(screen.getByRole('dialog', { name: 'Position details' })).toBeTruthy();
+    // Still mounted, under the checks cover (which hides it from the a11y tree).
+    expect(screen.getByText('Position details')).toBeTruthy();
     expect(screen.queryByRole('dialog', { name: 'Wallet blocked' })).toBeNull();
   });
 
@@ -192,5 +197,130 @@ describe('AccessGate', () => {
     h.connectedContext = AUTHORIZED;
     rerender(takeover());
     expect(screen.getByTestId('takeover-shell').hasAttribute('inert')).toBe(false);
+  });
+});
+
+// The two connect-time checks run back to back and used to raise a "Please
+// wait" card each. One cover spans both, and it lives outside the header.
+describe('AccessGate connect-checks cover', () => {
+  const cover = () => screen.queryByTestId('connect-checks-cover');
+  const TERMS_CHECK = { ...AUTHORIZED, isConnectedAndAcceptedTerms: false, isCheckingTerms: true };
+
+  it('covers the screen while address screening is in flight', () => {
+    h.connectedContext = CHECKING;
+    render(tree(false));
+
+    expect(cover()).toBeTruthy();
+  });
+
+  it('stays up for the terms check that follows, without a gap', () => {
+    h.connectedContext = TERMS_CHECK;
+    render(tree(false));
+
+    expect(cover()).toBeTruthy();
+  });
+
+  it('is a modal dialog, so the page behind the blur is inert', () => {
+    h.connectedContext = TERMS_CHECK;
+    render(tree(false));
+
+    expect(cover()!.getAttribute('role')).toBe('dialog');
+    // Radix's modal lock, which a bare fixed layer does not get. The check
+    // can run for seconds: checkTermsWithRetry retries twice.
+    expect(document.body.style.pointerEvents).toBe('none');
+    expect(cover()!.textContent).toContain('Checking whether you can use Sky.money');
+  });
+
+  // Pointer-events only stops the mouse. The keyboard is held by FocusScope,
+  // and it arms itself from whatever it focused on mount, so a cover with no
+  // focusable children that also suppressed auto-focus would leave the trap
+  // dormant and Tab would walk the nav under the frost.
+  it('holds keyboard focus, so the page behind the blur cannot be tabbed into', () => {
+    h.connectedContext = TERMS_CHECK;
+    render(tree(false));
+    expect(cover()!.contains(document.activeElement)).toBe(true);
+
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    outside.focus();
+
+    expect(cover()!.contains(document.activeElement)).toBe(true);
+    outside.remove();
+  });
+
+  // The terms check fires on connection alone, while a region block comes
+  // from the VPN query: a clean address in a restricted region hits both at
+  // once, and the cover must not land on top of the gate.
+  it('stays down for a blocked user whose terms check is still running', () => {
+    h.connectedContext = { ...BLOCKED, isConnectedAndAcceptedTerms: false, isCheckingTerms: true };
+    render(tree(false));
+
+    expect(gate()).toBeTruthy();
+    expect(cover()).toBeNull();
+  });
+
+  it('does not cover the app for a background re-check once terms are accepted', () => {
+    h.connectedContext = { ...AUTHORIZED, isCheckingTerms: true };
+    render(tree(false));
+
+    expect(cover()).toBeNull();
+  });
+
+  it('leaves the app alone when no check is running', () => {
+    h.connectedContext = AUTHORIZED;
+    render(tree(false));
+
+    expect(cover()).toBeNull();
+  });
+});
+
+describe('AccessGate blocked-view analytics', () => {
+  it('reports the mapped block reason once', () => {
+    h.connectedContext = BLOCKED;
+    const { rerender } = render(tree(false));
+    rerender(tree(false));
+
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(1);
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledWith({
+      blockReason: 'address_restricted',
+      countryCode: 'US'
+    });
+  });
+
+  it('reports again when a retry changes the block reason', () => {
+    h.connectedContext = { ...BLOCKED, accessBlockReason: 'ip-check-unavailable' };
+    const { rerender } = render(tree(false));
+    h.connectedContext = { ...BLOCKED, accessBlockReason: 'region-restricted' };
+    rerender(tree(false));
+
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(2);
+    expect(h.trackVpnBlockedPageView).toHaveBeenLastCalledWith({
+      blockReason: 'restricted_region',
+      countryCode: 'US'
+    });
+  });
+
+  // A check going back to loading takes the dialog down for a moment; the
+  // same block coming back is not a new view.
+  it('does not report the same block again after a check re-runs', () => {
+    h.connectedContext = BLOCKED;
+    const { rerender } = render(tree(false));
+    h.connectedContext = CHECKING;
+    rerender(tree(false));
+    h.connectedContext = BLOCKED;
+    rerender(tree(false));
+
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a new block after access was restored in between', () => {
+    h.connectedContext = BLOCKED;
+    const { rerender } = render(tree(false));
+    h.connectedContext = AUTHORIZED;
+    rerender(tree(false));
+    h.connectedContext = BLOCKED;
+    rerender(tree(false));
+
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Ban, TriangleAlert } from 'lucide-react';
 import { useDisconnect } from 'wagmi';
 import { Text } from '@/modules/layout/components/Typography';
@@ -8,8 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { sanitizeUrl } from '@/lib/utils';
-import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
-import { type BlockReason } from '@/modules/analytics/constants';
 import { type AccessBlockReason } from '@/modules/ui/context/ConnectedContext';
 import {
   type TermsLink,
@@ -19,18 +17,10 @@ import {
 
 type UnauthorizedPageProps = {
   blockReason?: AccessBlockReason;
-  countryCode?: string | null;
   /** Re-runs the failed checks — wired to the "unavailable" states only. */
   onRetry?: () => void;
   /** A failed check is running again: the retry button shows its loading state. */
   isRetrying?: boolean;
-};
-
-const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
-  'region-restricted': 'restricted_region',
-  'ip-check-unavailable': 'network_error',
-  'wallet-blocked': 'address_restricted',
-  'screening-unavailable': 'auth_error'
 };
 
 const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
@@ -44,30 +34,10 @@ const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
 
 /**
  * The blocked dialog. AccessGate renders it only once a block verdict is in;
- * while the checks are in flight, WalletChip's ConnectChecksCover holds the
- * screen instead.
+ * while the checks are in flight, ConnectChecksCover holds the screen instead.
  */
-export const UnauthorizedPage = ({
-  blockReason,
-  countryCode,
-  onRetry,
-  isRetrying
-}: UnauthorizedPageProps) => {
-  const { trackVpnBlockedPageView } = useVpnAnalytics();
+export const UnauthorizedPage = ({ blockReason, onRetry, isRetrying }: UnauthorizedPageProps) => {
   const { disconnect } = useDisconnect();
-  // Once per reason: the gate stays mounted through retries, so a retry that
-  // turns one reason into another (network error → region) is a new view.
-  const trackedReasonRef = useRef<AccessBlockReason | undefined | null>(null);
-
-  useEffect(() => {
-    if (trackedReasonRef.current === blockReason) return;
-    trackedReasonRef.current = blockReason;
-
-    trackVpnBlockedPageView({
-      blockReason: blockReason ? ANALYTICS_REASON[blockReason] : 'unknown',
-      countryCode: countryCode ?? null
-    });
-  }, [blockReason, countryCode, trackVpnBlockedPageView]);
 
   const { termsLinks } = getTermsLinkConfig();
 
