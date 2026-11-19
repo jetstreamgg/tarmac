@@ -4,7 +4,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PendleMarketConfig } from '@/hooks';
+import { maturedPendleMarketName, type PendleMarketConfig } from '@/hooks';
 import type { PositionEarnings } from '@/modules/portfolio/earnings/earningsForPosition';
 
 i18n.load('en', {});
@@ -91,7 +91,7 @@ describe('PendleMaturedPositionCard', () => {
 
     const card = screen.getByTestId('pendle-matured-position-card');
     expect(screen.getByTestId('pendle-matured-badge').textContent).toContain('Matured');
-    expect(card.textContent).toContain('Fixed Yield');
+    expect(card.textContent).toContain(maturedPendleMarketName(MARKET));
     expect(card.textContent).toContain("You'll claim");
     expect(card.textContent).toContain('100,184');
     expect(card.textContent).toContain('Your position matured on 18 Jun 2026 and is ready to claim.');

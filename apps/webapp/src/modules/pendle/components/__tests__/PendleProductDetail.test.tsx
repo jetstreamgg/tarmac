@@ -261,6 +261,12 @@ describe('PendleProductDetail', () => {
       expect(details.textContent).not.toContain('AMM liquidity');
     });
 
+    it('dates the page title, so it reads apart from the live market', () => {
+      renderDetail();
+
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(`${MARKET.name} · `);
+    });
+
     it('keeps the rate chart', () => {
       renderDetail();
 

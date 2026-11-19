@@ -6,6 +6,7 @@ import { Intent } from '@/lib/enums';
 import {
   type PendleMarketConfig,
   isMarketMatured,
+  maturedPendleMarketName,
   useNow,
   usePendleMarketsApiData,
   useProductNetworks
@@ -166,7 +167,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         ),
         status: 'success'
       }}
-      title={market.name}
+      title={matured ? maturedPendleMarketName(market) : market.name}
       titleBadges={
         // Brand-colored mark from the design system (a bitmap in Figma too) —
         // the monochrome <Pendle /> glyph reads wrong at badge size.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMarketListed, isMarketMatured, pendlePtTicker } from './helpers';
+import { isMarketListed, isMarketMatured, maturedPendleMarketName, pendlePtTicker } from './helpers';
 
 describe('pendle helpers', () => {
   describe('isMarketMatured', () => {
@@ -22,6 +22,14 @@ describe('pendle helpers', () => {
     it('lists a market from its listFrom instant on', () => {
       expect(isMarketListed({ listFrom: 1000 }, 999)).toBe(false);
       expect(isMarketListed({ listFrom: 1000 }, 1000)).toBe(true);
+    });
+  });
+
+  describe('maturedPendleMarketName', () => {
+    it('appends the UTC maturity month to the product name', () => {
+      expect(maturedPendleMarketName({ name: 'Fixed Yield', expiry: 1795651200 })).toBe(
+        'Fixed Yield · Nov 2026'
+      );
     });
   });
 

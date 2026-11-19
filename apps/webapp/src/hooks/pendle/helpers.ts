@@ -40,6 +40,21 @@ export function pendlePtTicker(market: Pick<PendleMarketConfig, 'underlyingSymbo
   return `PT-${market.underlyingSymbol}-${day}${PT_MATURITY_MONTHS[expiry.getUTCMonth()]}${expiry.getUTCFullYear()}`;
 }
 
+const maturityMonthFormatter = new Intl.DateTimeFormat('en-GB', {
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC'
+});
+
+/**
+ * Display name for a matured market ("Fixed Yield · Nov 2026"). Markets share
+ * one product name, so the maturity tells a matured position apart from the
+ * live market that succeeded it.
+ */
+export function maturedPendleMarketName(market: Pick<PendleMarketConfig, 'name' | 'expiry'>): string {
+  return `${market.name} · ${maturityMonthFormatter.format(new Date(market.expiry * 1000))}`;
+}
+
 /**
  * Pendle markets exist only on Ethereum mainnet (or its testnet forks in dev),
  * so pendle transactions must be signed there. Reads stay pinned to mainnet in

@@ -81,6 +81,7 @@ export {
   isMarketMatured,
   isMarketListed,
   pendlePtTicker,
+  maturedPendleMarketName,
   isPendleChain,
   formatPendleAggregatorName
 } from './pendle/helpers';
