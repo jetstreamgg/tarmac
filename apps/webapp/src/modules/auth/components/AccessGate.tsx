@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { PageModalHoldContext } from '@/components/ui/pageModalHold';
+import { AccessGateUpContext } from '@/components/ui/accessGateHold';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { type BlockReason } from '@/modules/analytics/constants';
 import { ConnectChecksCover } from '@/modules/ui/components/ConnectChecksCover';
@@ -27,8 +27,8 @@ const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
  * ConnectChecksCover holds the screen instead, and the dialog mounts only
  * afterwards so it doesn't resize from the waiting card.
  *
- * While the gate is up, every dialog and sheet below it is held closed (see
- * PageModalHoldContext). The gate itself renders outside that hold.
+ * While the gate is up, every dialog and sheet below it is forced closed (see
+ * accessGateHold.ts for why). The gate itself renders outside that provider.
  */
 export const AccessGate = ({ children }: AccessGateProps) => {
   const {
@@ -78,7 +78,7 @@ export const AccessGate = ({ children }: AccessGateProps) => {
 
   return (
     <>
-      <PageModalHoldContext.Provider value={isGateUp}>{children}</PageModalHoldContext.Provider>
+      <AccessGateUpContext.Provider value={isGateUp}>{children}</AccessGateUpContext.Provider>
       <ConnectChecksCover open={showChecksCover} />
       {isGateUp && (
         <UnauthorizedPage

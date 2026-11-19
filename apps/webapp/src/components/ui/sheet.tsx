@@ -4,10 +4,11 @@ import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
 import { useRestoreFocusOnClose } from '@/hooks/ui/useRestoreFocusOnClose';
-import { useHeldOpen } from './pageModalHold';
+import { useClosedWhileAccessGateUp } from './accessGateHold';
 
 function Sheet({ open, ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" open={useHeldOpen(open)} {...props} />;
+  // Nothing may open over the Wallet blocked gate: see accessGateHold.ts.
+  return <SheetPrimitive.Root data-slot="sheet" open={useClosedWhileAccessGateUp(open)} {...props} />;
 }
 
 function SheetTrigger({ ...props }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
