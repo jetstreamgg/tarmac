@@ -944,6 +944,79 @@ describe('PendingBridges', () => {
       );
     });
 
+    // The note above the list scrolls out of view on a phone: a locked card says why itself.
+    describe('a card locked by an open transaction', () => {
+      const ready = {
+        ...BRIDGE,
+        id: 'ready',
+        status: 'ready' as const,
+        nextAction: 'claim' as const,
+        requiresClaim: true
+      };
+      const hints = () => screen.queryAllByTestId('pending-bridge-locked-hint');
+
+      it('says why under its buttons, and opens the transaction', () => {
+        mocks.bridges = [CLAIMED, ready];
+        mocks.offers[CLAIMED.id] = OFFER;
+        renderList({ actionLocked: true });
+        const [converting, claimable] = screen.getAllByTestId('pending-bridge-card');
+        for (const card of [converting, claimable]) {
+          const hint = within(card).getByTestId('pending-bridge-locked-hint');
+          expect(hint.textContent).toContain('Finish your open transaction first.');
+          expect(hint.textContent).toContain('Open transaction');
+        }
+        fireEvent.click(within(claimable).getByTestId('pending-bridge-locked-open'));
+        expect(props.onOpenTransaction).toHaveBeenCalledOnce();
+      });
+
+      it('says it failed when the failed run may still mine', () => {
+        mocks.bridges = [ready];
+        mocks.txStatus = TxStatus.ERROR;
+        mocks.failureMayStillMine = true;
+        renderList({ actionLocked: true });
+        expect(screen.getByTestId('pending-bridge-locked-hint').textContent).toContain(
+          'A transaction failed. Open it to try again or close it.'
+        );
+      });
+
+      it('says nothing without a lock, or once the failed run freed the cards', () => {
+        mocks.bridges = [CLAIMED, ready];
+        mocks.offers[CLAIMED.id] = OFFER;
+        renderList();
+        expect(hints()).toHaveLength(0);
+        cleanup();
+        mocks.txStatus = TxStatus.ERROR;
+        renderList({ actionLocked: true });
+        expect(hints()).toHaveLength(0);
+      });
+
+      it('says nothing on the card being claimed', () => {
+        mocks.bridges = [ready];
+        renderList({ actionLocked: true, claiming: { scope: 'scope', bridgeId: ready.id } });
+        expect(hints()).toHaveLength(0);
+      });
+
+      it('says nothing when its button waits on something else', () => {
+        mocks.bridges = [ready];
+        props.canAction.mockReturnValue(false);
+        renderList({ actionLocked: true });
+        expect(hints()).toHaveLength(0);
+        cleanup();
+
+        props.canAction.mockReturnValue(true);
+        props.actionHint.mockReturnValue({ kind: 'switch-network', network: 'ethereum', safe: false });
+        renderList({ actionLocked: true });
+        expect(screen.getByTestId('pending-bridge-action-hint')).toBeDefined();
+        expect(hints()).toHaveLength(0);
+      });
+
+      it('says nothing on a card with no action', () => {
+        mocks.bridges = [BRIDGE];
+        renderList({ actionLocked: true });
+        expect(hints()).toHaveLength(0);
+      });
+    });
+
     it('frees the cards once the minimized run failed, and still offers it back', () => {
       const ready = {
         ...BRIDGE,

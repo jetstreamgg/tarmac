@@ -516,6 +516,8 @@ type PendingBridgeCardProps = {
   canAction: (bridge: PendingBridge, action?: PendingBridgeNextAction) => boolean;
   actionHint: (bridge: PendingBridge, action?: 'convert') => DestinationActionHint | undefined;
   actionLocked: boolean;
+  /** Brings back the session the lock waits on. */
+  onOpenTransaction: () => void;
   /** Its claim is being sent here, sale included. */
   claiming: boolean;
   /** This browser keeps the list across visits: without it, a claim link is the only way back. */
@@ -535,6 +537,7 @@ function PendingBridgeCard({
   canAction,
   actionHint,
   actionLocked,
+  onOpenTransaction,
   claiming,
   storageWritable
 }: PendingBridgeCardProps) {
@@ -576,6 +579,12 @@ function PendingBridgeCard({
   // Figma "Ready to claim by the recipient (sender)": once ready, the sender is pointed to the destination wallet.
   const pointsToRecipient = claimedElsewhere && !thirdWallet && bridge.status === 'ready';
   const sentHint = !!hint && hint.kind !== 'switch-network';
+  // Buttons greyed only by the open transaction: the note above the list may be out of view.
+  const lockedHint =
+    actionLocked &&
+    !claiming &&
+    !hint &&
+    (offersConvert || (actionButton && !dismissible && !thirdWallet && canAction(bridge)));
   return (
     <div ref={cardRef} className={cardClassName} data-testid="pending-bridge-card">
       {/* A claim that ended in USDC shows the USDC (Figma 93). */}
@@ -665,6 +674,7 @@ function PendingBridgeCard({
           </Button>
         </div>
       )}
+      {lockedHint && <LockedHint onOpen={onOpenTransaction} />}
 
       {counterparty?.role === 'sender' && (
         <Text className="text-fgSecondary text-xs leading-[18px]" dataTestId="pending-bridge-incoming-note">
@@ -820,6 +830,29 @@ function SaleSentText({ until, now }: { until: number; now: number }) {
       Your last transaction is still confirming on Ethereum. If it doesn&apos;t go through, you can convert
       your USDC here from {time}.
     </Trans>
+  );
+}
+
+function LockedHint({ onOpen }: { onOpen: () => void }) {
+  const { txStatus } = useTransaction();
+  return (
+    <div className="flex items-center justify-between gap-4" data-testid="pending-bridge-locked-hint">
+      <Text className="text-fgSecondary text-xs leading-[18px]">
+        {txStatus === TxStatus.ERROR ? (
+          <Trans>A transaction failed. Open it to try again or close it.</Trans>
+        ) : (
+          <Trans>Finish your open transaction first.</Trans>
+        )}
+      </Text>
+      <button
+        type="button"
+        className="font-circle text-fgBrand shrink-0 text-xs leading-[18px] font-medium whitespace-nowrap hover:underline"
+        onClick={onOpen}
+        data-testid="pending-bridge-locked-open"
+      >
+        <Trans>Open transaction</Trans>
+      </button>
+    </div>
   );
 }
 
@@ -1076,6 +1109,7 @@ export function PendingBridges({
           }}
           incoming={owner !== undefined}
           actionLocked={cardsLocked}
+          onOpenTransaction={onOpenTransaction}
           claiming={claiming?.scope === (owner ?? scope) && claiming?.bridgeId === bridge.id}
           storageWritable={storageWritable}
         />
