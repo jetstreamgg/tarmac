@@ -30,10 +30,8 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import type { NetworkSwitchSource } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
-import {
-  SafeTransactionRejectedError,
-  TransactionRevertedError
-} from '@/hooks/shared/useOnChainTransactionOutcome';
+import { TransactionRevertedError } from '@/hooks/shared/useOnChainTransactionOutcome';
+import { SafeTransactionRejectedError } from '@/hooks/shared/useWaitForSafeTxHash';
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { classifyTransactionError } from '@/modules/analytics/lib/classifyTransactionError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';

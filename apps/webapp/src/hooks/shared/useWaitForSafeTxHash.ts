@@ -5,7 +5,7 @@ import type { Hash } from 'viem';
 import { SAFE_TRANSACTION_SERVICE_URL } from './constants';
 import {
   MAX_RETRY_DELAY_MS,
-  SafeTransactionRejectedError,
+  TransactionReplacedError,
   TransactionRevertedError
 } from './useOnChainTransactionOutcome';
 import { useIsSafeApp } from '../wallet/useIsSafeApp';
@@ -15,6 +15,13 @@ const FAST_POLL_MS = 2_000;
 const FAST_POLLS = 150;
 /** Looks in a row that must miss a once-seen transaction before it counts as deleted: 30 seconds' worth. */
 const DELETED_AFTER_MISSES = 15;
+
+/** A Safe transaction that can never execute: rejected, replaced, or deleted in the Safe queue. */
+export class SafeTransactionRejectedError extends TransactionReplacedError {
+  constructor() {
+    super(new Error('Safe transaction rejected or replaced in the Safe queue.'));
+  }
+}
 
 type Queued = { safe: string; nonce: string };
 

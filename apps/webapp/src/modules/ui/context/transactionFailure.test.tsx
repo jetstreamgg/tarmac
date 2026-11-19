@@ -68,10 +68,8 @@ vi.mock('motion/react', async io => {
 
 import { TransactionProvider, useTransaction } from './TransactionContext';
 import { reportError } from '@/modules/sentry/reportError';
-import {
-  SafeTransactionRejectedError,
-  TransactionRevertedError
-} from '@/hooks/shared/useOnChainTransactionOutcome';
+import { TransactionRevertedError } from '@/hooks/shared/useOnChainTransactionOutcome';
+import { SafeTransactionRejectedError } from '@/hooks/shared/useWaitForSafeTxHash';
 import { TransactionOutcomeUnknownError } from '@/hooks/shared/useSendBatchTransactionFlow';
 import { queryClient } from '@/lib/queryClient';
 
