@@ -52,6 +52,13 @@ export type PendleMarketConfig = {
   /** Market expiry as a UNIX timestamp in seconds (immutable post-deploy) */
   expiry: number;
   /**
+   * UNIX timestamp in seconds from which the app lists the market. Lets a
+   * successor ship ahead of its predecessor's maturity without showing two
+   * live rows; until then its slug resolves to the market it replaces.
+   * Omitted → always listed.
+   */
+  listFrom?: number;
+  /**
    * How the underlying converts to USDS for earnings display:
    *   - 'pegged'  → 1 underlying ≈ 1 USDS (e.g. PT-sUSDS, where 1 PT pays 1 USDS at maturity)
    *   - 'sUSDS'   → multiply by chi from sUSDS.previewRedeem(1e18)

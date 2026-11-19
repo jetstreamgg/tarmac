@@ -5,6 +5,7 @@ import { formatBigInt, formatUsd } from '@/utils';
 import {
   formatPendleAggregatorName,
   getTokenDecimals,
+  pendlePtTicker,
   type PendleConvertQuote,
   type PendleMarketConfig,
   type Token
@@ -76,7 +77,7 @@ export const PendleRedeem = ({
   const quoteLoading = isFetchingQuote && !quote;
 
   const rows = buildPendleRedeemRows({
-    product: `Pendle ${market.underlyingSymbol} (${ptSymbol})`,
+    product: `Pendle ${market.underlyingSymbol} (${pendlePtTicker(market)})`,
     productSymbol: market.underlyingSymbol,
     claimAmount: formatBigInt(ptBalance, { unit: market.underlyingDecimals, maxDecimals: 2 }),
     ptSymbol,

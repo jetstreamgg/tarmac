@@ -106,6 +106,7 @@ describe('pendleAnalyticsData', () => {
       expect(data.assetAddress).toBe(MATURED_MARKET.underlyingToken);
       expect(data.assetSymbol).toBe('USDG');
       expect(data.ptAddress).toBe(MATURED_MARKET.ptToken);
+      expect(data.ptSymbol).toBe('PT-USDG-14NOV2023');
       expect(data.expiry).toBe(MATURED_MARKET.expiry);
       expect(data.slippage).toBe(0.01);
     });

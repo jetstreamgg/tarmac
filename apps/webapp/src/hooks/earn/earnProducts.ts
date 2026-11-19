@@ -4,7 +4,8 @@ import { intentToPath } from '@/lib/routes';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { TOKENS } from '../tokens/tokens.constants';
 import { VAULTS } from '../vaults/constants';
-import { PENDLE_MARKETS } from '../pendle/constants';
+import { getListedPendleMarkets } from '../pendle/constants';
+import type { PendleMarketConfig } from '../pendle/pendle';
 import type { RewardContract } from '../rewards/rewards';
 import { rewardContractDisplayName } from '../rewards/rewardContractDisplayName';
 import type { EarnProductDescriptor, EarnRiskProfileId, EarnRiskTier } from './types';
@@ -105,13 +106,14 @@ export function buildRewardsProduct(
  * (savings, each active rewards contract, each vault, each PT market, stUSDS).
  * Pure — callers pass the active chain family and the chain-resolved rewards
  * list (from useAvailableTokenRewardContracts, deprecated already filtered).
- * Matured Pendle markets keep their registry slot (static length) but are
- * expected to be skipped by consumers via `maturity`.
+ * Matured Pendle markets keep their registry slot but are expected to be
+ * skipped by consumers via `maturity`; markets not listed yet have no slot.
  */
 export function buildEarnProducts(
   familyChainIds: number[],
   familyMainnetId: number,
-  rewardContracts: RewardContract[]
+  rewardContracts: RewardContract[],
+  pendleMarkets: readonly PendleMarketConfig[] = getListedPendleMarkets()
 ): EarnProductDescriptor[] {
   const savings: EarnProductDescriptor = {
     id: 'savings',
@@ -150,7 +152,7 @@ export function buildEarnProducts(
     };
   });
 
-  const fixed: EarnProductDescriptor[] = PENDLE_MARKETS.map(market => ({
+  const fixed: EarnProductDescriptor[] = pendleMarkets.map(market => ({
     id: `fixed-${market.marketAddress.toLowerCase()}`,
     kind: 'fixed',
     intent: Intent.FIXED_INTENT,

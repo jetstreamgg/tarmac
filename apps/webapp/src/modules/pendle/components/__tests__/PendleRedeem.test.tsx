@@ -119,7 +119,9 @@ describe('PendleRedeem', () => {
   it('shows the product and the full PT balance as the claim amount', () => {
     renderRedeem({ quote: baseQuote });
 
-    expect(screen.getByTestId('pendle-redeem-row-Product').textContent).toContain('Pendle USDG (PT-USDG)');
+    expect(screen.getByTestId('pendle-redeem-row-Product').textContent).toContain(
+      'Pendle USDG (PT-USDG-14NOV2023)'
+    );
     expect(screen.getByTestId('pendle-redeem-row-Claim amount').textContent).toContain('1.5');
   });
 

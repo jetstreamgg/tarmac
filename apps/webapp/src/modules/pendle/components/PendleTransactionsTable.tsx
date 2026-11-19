@@ -3,7 +3,12 @@ import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { mainnet } from 'wagmi/chains';
-import { usePendleMarketHistory, PendleHistoryAction, type PendleMarketConfig } from '@/hooks';
+import {
+  pendlePtTicker,
+  usePendleMarketHistory,
+  PendleHistoryAction,
+  type PendleMarketConfig
+} from '@/hooks';
 import { formatNumber, formatUsd, getEtherscanLink, formatAddress } from '@/utils';
 import { ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
 import {
@@ -109,13 +114,13 @@ export function PendleTransactionsTable({ market }: { market: PendleMarketConfig
       amount: formatNumber(tx.ptAmount, { maxDecimals: 2 }),
       usd: formatUsd(Math.abs(tx.valueUsd)),
       // Amounts are PT-denominated; `market.name` is the product display name
-      // ("Fixed Yield"), so derive the ticker from the underlying.
-      marketName: `PT-${market.underlyingSymbol}`,
+      // ("Fixed Yield"), not a ticker.
+      marketName: pendlePtTicker(market),
       time: format(new Date(tx.timestamp), 'MMM d, yyyy, h:mm a'),
       txHashLabel: formatAddress(tx.txHash, 6, 4),
       txHref: getEtherscanLink(mainnet.id, tx.txHash, 'tx')
     }));
-  }, [history, market.underlyingSymbol]);
+  }, [history, market]);
 
   return (
     <ProductTransactionsTable

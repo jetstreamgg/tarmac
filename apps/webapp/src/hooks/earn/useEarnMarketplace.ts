@@ -25,7 +25,8 @@ import { useMorphoVaultsTrailingRates } from '../morpho/useMorphoVaultsTrailingR
 import { fetchMorphoVaultMarketData } from '../morpho/useMorphoVaultMarketApiData';
 import { useAllMorphoVaultsUserAssets } from '../morpho/useAllMorphoVaultsUserAssets';
 import { isMarketMatured } from '../pendle/helpers';
-import { PENDLE_MARKETS, getPendleMarketByAddress } from '../pendle/constants';
+import { getPendleMarketByAddress } from '../pendle/constants';
+import { useListedPendleMarkets } from '../pendle/useListedPendleMarkets';
 import { usePendleMarketsApiData } from '../pendle/usePendleMarketsApiData';
 import { maturedPositionUsd } from '../pendle/computePendleAssetValuations';
 import { fetchPendleMarketHistoricalData } from '../pendle/usePendleMarketChartData';
@@ -209,9 +210,10 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   // Daily implied-APY series per live market — the trailing average of the
   // market's fixed rate. Same query key as the detail chart, so opening a
   // market from the table costs no extra request.
+  const listedPendleMarkets = useListedPendleMarkets();
   const livePendleMarkets = useMemo(
-    () => PENDLE_MARKETS.filter(market => !isMarketMatured(market.expiry)),
-    []
+    () => listedPendleMarkets.filter(market => !isMarketMatured(market.expiry)),
+    [listedPendleMarkets]
   );
   const pendleChartResults = useQueries({
     queries: livePendleMarkets.map(market => ({
@@ -227,8 +229,8 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   const { data: stUsdsChart, isLoading: stUsdsChartLoading } = useStUsdsChartInfo();
 
   const products = useMemo(
-    () => buildEarnProducts(familyChainIds, familyMainnetId, rewardContracts),
-    [familyChainIds, familyMainnetId, rewardContracts]
+    () => buildEarnProducts(familyChainIds, familyMainnetId, rewardContracts, listedPendleMarkets),
+    [familyChainIds, familyMainnetId, rewardContracts, listedPendleMarkets]
   );
 
   const rows = useMemo<EarnProductRow[]>(() => {

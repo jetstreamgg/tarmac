@@ -142,13 +142,13 @@ describe('usePendleCombinedHistory', () => {
     const usdg = result.current.data![1];
     expect(usde.underlyingDecimals).toBe(18);
     expect(usde.assets).toBe(6_143_990_000_000_000_000_000n);
-    expect(usde.marketName).toBe('PT-USDe');
+    expect(usde.marketName).toBe('PT-USDe-07MAY2026');
     expect(usdg.underlyingDecimals).toBe(6);
     expect(usdg.assets).toBe(100_500_000n);
-    expect(usdg.marketName).toBe('PT-USDG');
+    expect(usdg.marketName).toBe('PT-USDG-28MAY2026');
     // Display unit is the PT-Market name — unambiguous about what asset is
     // being transacted (PT) regardless of what wallet token funded it.
-    expect(usde.underlyingSymbol).toBe('PT-USDe');
-    expect(usdg.underlyingSymbol).toBe('PT-USDG');
+    expect(usde.underlyingSymbol).toBe('PT-USDe-07MAY2026');
+    expect(usdg.underlyingSymbol).toBe('PT-USDG-28MAY2026');
   });
 });

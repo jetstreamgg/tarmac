@@ -1,9 +1,43 @@
 import { mainnet } from 'viem/chains';
 import { isTestnetId } from '@/utils';
+import type { PendleMarketConfig } from './pendle';
 
 /** Whether a market has matured (expiry timestamp <= now). */
 export function isMarketMatured(expiry: number): boolean {
   return Math.floor(Date.now() / 1000) >= expiry;
+}
+
+/** Whether the app lists a market yet (see `listFrom`). */
+export function isMarketListed(
+  market: Pick<PendleMarketConfig, 'listFrom'>,
+  nowSec = Math.floor(Date.now() / 1000)
+): boolean {
+  return market.listFrom === undefined || nowSec >= market.listFrom;
+}
+
+const PT_MATURITY_MONTHS = [
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC'
+];
+
+/**
+ * The PT's on-chain ticker, maturity included ("PT-sUSDS-26NOV2026"), which
+ * tells apart two markets on the same underlying. Expiries are UTC instants.
+ */
+export function pendlePtTicker(market: Pick<PendleMarketConfig, 'underlyingSymbol' | 'expiry'>): string {
+  const expiry = new Date(market.expiry * 1000);
+  const day = String(expiry.getUTCDate()).padStart(2, '0');
+  return `PT-${market.underlyingSymbol}-${day}${PT_MATURITY_MONTHS[expiry.getUTCMonth()]}${expiry.getUTCFullYear()}`;
 }
 
 /**
