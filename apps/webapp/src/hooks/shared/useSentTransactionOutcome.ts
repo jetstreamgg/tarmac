@@ -11,13 +11,22 @@ import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
  * reaching the chain. Only the Safe App's is resolved here; over WalletConnect
  * the returned hash is used as-is.
  */
-export function useSentTransactionOutcome({ sentHash, chainId }: { sentHash?: Hash; chainId?: number }) {
+export function useSentTransactionOutcome({
+  sentHash,
+  sentAt,
+  chainId
+}: {
+  sentHash?: Hash;
+  /** When the write that returned `sentHash` was sent. */
+  sentAt?: number;
+  chainId?: number;
+}) {
   const {
     transactionHash: safeExecutedHash,
     failure: safeFailure,
     failureHash: safeFailureHash,
     isSafeApp
-  } = useWaitForSafeTxHash({ chainId, safeTxHash: sentHash });
+  } = useWaitForSafeTxHash({ chainId, safeTxHash: sentHash, sentAt });
 
   const txHash = isSafeApp ? safeExecutedHash : sentHash;
   const {

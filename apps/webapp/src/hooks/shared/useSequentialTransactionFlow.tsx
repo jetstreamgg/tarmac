@@ -117,10 +117,13 @@ export function useSequentialTransactionFlow(
   } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
   useEffect(() => reportPrepareRevert(simulationError, chainId), [simulationError, chainId]);
 
+  const lastProcessedTxHash = useRef<string | undefined>(undefined);
+
   const {
     writeContract,
     error: writeError,
     data: mutationHash,
+    submittedAt,
     isPending: isWritePending,
     reset: resetWrite
   } = useWriteContract({
@@ -128,6 +131,9 @@ export function useSequentialTransactionFlow(
       onMutate,
       onSuccess: (hash: `0x${string}`) => {
         setHasFailed(false);
+        // A Safe can return the hash of a send that already failed (a retry
+        // after a deletion from its queue); this send's outcome is its own.
+        lastProcessedTxHash.current = undefined;
         onStart(hash);
       },
       onError: (err: Error) => {
@@ -144,7 +150,7 @@ export function useSequentialTransactionFlow(
 
   // Monitor current transaction
   const { txHash, settleHash, isMining, isAwaitingOutcome, isSuccess, failure, receipt } =
-    useSentTransactionOutcome({ sentHash: mutationHash, chainId });
+    useSentTransactionOutcome({ sentHash: mutationHash, sentAt: submittedAt, chainId });
 
   // A write in the wallet, awaiting a Safe's co-signers, or mining.
   const writeOut = !!isWritePending || isAwaitingOutcome;
@@ -183,8 +189,6 @@ export function useSequentialTransactionFlow(
     writeContract,
     address
   ]);
-
-  const lastProcessedTxHash = useRef<string | undefined>(undefined);
 
   // Cleanup on unmount
   useEffect(() => {

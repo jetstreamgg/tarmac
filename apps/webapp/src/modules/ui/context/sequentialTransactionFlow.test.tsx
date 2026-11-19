@@ -1220,4 +1220,35 @@ describe('useSequentialTransactionFlow — a Safe transaction queued for co-sign
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBe(rejected);
   });
+
+  // Deleting from the queue leaves the Safe's nonce alone, so the retry returns the same safeTxHash.
+  it('reports a retry rejected on the same safeTxHash', () => {
+    const { result, rerender, onError } = sendQueued();
+    act(() => {
+      wagmi.safe = { transactionHash: undefined, failure: new Error('rejected'), isSafeApp: true };
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      wagmi.mutationHash = undefined;
+      wagmi.safe = { transactionHash: undefined, failure: null, isSafeApp: true };
+    });
+    rerender();
+    act(() => result.current.execute());
+    act(() => {
+      wagmi.onWriteSuccess?.(SAFE_TX_HASH);
+      wagmi.mutationHash = SAFE_TX_HASH;
+    });
+    rerender();
+    expect(result.current.isLoading).toBe(true);
+
+    const rejectedAgain = new Error('rejected again');
+    act(() => {
+      wagmi.safe = { transactionHash: undefined, failure: rejectedAgain, isSafeApp: true };
+    });
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenLastCalledWith(rejectedAgain, SAFE_TX_HASH);
+  });
 });

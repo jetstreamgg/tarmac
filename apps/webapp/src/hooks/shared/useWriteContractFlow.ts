@@ -45,7 +45,8 @@ export function useWriteContractFlow<
   const {
     writeContract,
     error: writeError,
-    data: mutationHash
+    data: mutationHash,
+    submittedAt
   } = useWriteContract({
     mutation: {
       onMutate,
@@ -65,6 +66,7 @@ export function useWriteContractFlow<
   // Monitor tx
   const { txHash, settleHash, isMining, isSuccess, failure, receipt } = useSentTransactionOutcome({
     sentHash: mutationHash,
+    sentAt: submittedAt,
     chainId: parameters.chainId
   });
 

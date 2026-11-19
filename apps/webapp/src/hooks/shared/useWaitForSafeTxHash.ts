@@ -13,7 +13,7 @@ import { useIsSafeApp } from '../wallet/useIsSafeApp';
 const FAST_POLL_MS = 2_000;
 /** Polls at the fast interval before the back-off starts: 5 minutes' worth. */
 const FAST_POLLS = 150;
-/** Looks in a row that must miss a once-seen transaction before it counts as deleted: 30 seconds' worth. */
+/** Looks in a row that must miss a once-seen transaction before it counts as deleted: 30 seconds' worth at the fast interval. */
 const DELETED_AFTER_MISSES = 15;
 
 /** A Safe transaction that can never execute: rejected, replaced, or deleted in the Safe queue. */
@@ -125,10 +125,13 @@ export const safePollDelay = (polls: number) =>
  */
 export const useWaitForSafeTxHash = ({
   chainId: paramChainId,
-  safeTxHash
+  safeTxHash,
+  sentAt
 }: {
   chainId: number | undefined;
   safeTxHash: Hash | undefined;
+  /** When the write that returned `safeTxHash` was sent. */
+  sentAt: number | undefined;
 }) => {
   const isSafeApp = useIsSafeApp();
   const queryClient = useQueryClient();
@@ -136,7 +139,9 @@ export const useWaitForSafeTxHash = ({
   const chainId = paramChainId || hookChainId;
   const serviceUrl: string | undefined = SAFE_TRANSACTION_SERVICE_URL[chainId];
 
-  const queryKey = ['safe-transaction-hash', safeTxHash, chainId];
+  // A retry after a deletion from the queue returns the same safeTxHash, so
+  // the hash alone would hand it the deleted transaction's outcome.
+  const queryKey = ['safe-transaction-hash', safeTxHash, chainId, sentAt];
   const { data } = useQuery({
     enabled: !!safeTxHash && !!serviceUrl && isSafeApp,
     queryKey,
@@ -146,10 +151,11 @@ export const useWaitForSafeTxHash = ({
         serviceUrl: serviceUrl!,
         previous: queryClient.getQueryData<SafeTxResolution>(queryKey)
       }),
-    refetchInterval: query =>
-      query.state.data && query.state.data.status !== 'pending'
-        ? false
-        : safePollDelay(query.state.dataUpdateCount),
+    refetchInterval: ({ state: { data, dataUpdateCount } }) => {
+      if (data && data.status !== 'pending') return false;
+      // Missing from the service: confirm the deletion at the fast interval, not the backed-off one.
+      return data?.misses ? FAST_POLL_MS : safePollDelay(dataUpdateCount);
+    },
     refetchIntervalInBackground: true,
     // Only the interval asks again: an outcome, once reported, must not change under the engines.
     staleTime: Infinity,
