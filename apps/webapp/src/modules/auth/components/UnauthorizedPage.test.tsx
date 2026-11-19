@@ -12,12 +12,17 @@ import type { AccessBlockReason } from '@/modules/ui/context/ConnectedContext';
  */
 
 const h = vi.hoisted(() => ({
-  disconnect: vi.fn()
+  disconnect: vi.fn(),
+  trackVpnBlockedPageView: vi.fn()
 }));
 
 vi.mock('wagmi', async importOriginal => ({
   ...(await importOriginal<typeof import('wagmi')>()),
   useDisconnect: () => ({ disconnect: h.disconnect })
+}));
+
+vi.mock('@/modules/analytics/hooks/useVpnAnalytics', () => ({
+  useVpnAnalytics: () => ({ trackVpnBlockedPageView: h.trackVpnBlockedPageView })
 }));
 
 vi.mock('@/modules/config/termsLink', () => ({
@@ -35,6 +40,7 @@ const renderPage = (props: { blockReason?: AccessBlockReason; onRetry?: () => vo
     <I18nProvider i18n={i18n}>
       <UnauthorizedPage
         blockReason={props.blockReason}
+        countryCode="US"
         onRetry={props.onRetry}
         isRetrying={props.isRetrying}
       />
@@ -96,5 +102,15 @@ describe('UnauthorizedPage', () => {
     renderPage({ blockReason: 'ip-check-unavailable', onRetry: vi.fn(), isRetrying: true });
 
     expect((screen.getByRole('button', { name: /Try again/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('reports the mapped block reason to analytics once', () => {
+    renderPage({ blockReason: 'wallet-blocked' });
+
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(1);
+    expect(h.trackVpnBlockedPageView).toHaveBeenCalledWith({
+      blockReason: 'address_restricted',
+      countryCode: 'US'
+    });
   });
 });

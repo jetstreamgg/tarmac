@@ -1,20 +1,11 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { AccessGateUpContext } from '@/components/ui/accessGateHold';
-import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
-import { type BlockReason } from '@/modules/analytics/constants';
 import { ConnectChecksCover } from '@/modules/ui/components/ConnectChecksCover';
-import { type AccessBlockReason, useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { UnauthorizedPage } from './UnauthorizedPage';
 
 type AccessGateProps = {
   children: ReactNode;
-};
-
-const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
-  'region-restricted': 'restricted_region',
-  'ip-check-unavailable': 'network_error',
-  'wallet-blocked': 'address_restricted',
-  'screening-unavailable': 'auth_error'
 };
 
 /**
@@ -58,24 +49,6 @@ export const AccessGate = ({ children }: AccessGateProps) => {
   // at once, and the cover must not sit on top of the gate.
   const showChecksCover = isChecking || (isAuthorized && !isConnectedAndAcceptedTerms && isCheckingTerms);
 
-  // Once per block, per reason. The dialog unmounts whenever a check goes back
-  // to loading, so the memory lives here and clears only once access is
-  // restored. A retry that turns one reason into another is a new view.
-  const { trackVpnBlockedPageView } = useVpnAnalytics();
-  const reportedReasonRef = useRef<BlockReason | null>(null);
-  const reason = accessBlockReason ? ANALYTICS_REASON[accessBlockReason] : 'unknown';
-  const { countryCode } = vpnData;
-  useEffect(() => {
-    if (isAuthorized) {
-      reportedReasonRef.current = null;
-      return;
-    }
-    if (!isGateUp || reportedReasonRef.current === reason) return;
-    reportedReasonRef.current = reason;
-
-    trackVpnBlockedPageView({ blockReason: reason, countryCode: countryCode ?? null });
-  }, [isAuthorized, isGateUp, reason, countryCode, trackVpnBlockedPageView]);
-
   return (
     <>
       <AccessGateUpContext.Provider value={isGateUp}>{children}</AccessGateUpContext.Provider>
@@ -83,6 +56,7 @@ export const AccessGate = ({ children }: AccessGateProps) => {
       {isGateUp && (
         <UnauthorizedPage
           blockReason={accessBlockReason}
+          countryCode={vpnData.countryCode}
           onRetry={retryAccessChecks}
           isRetrying={isRetryingAccessChecks}
         />

@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { sanitizeUrl } from '@/lib/utils';
 import { type AccessBlockReason } from '@/modules/ui/context/ConnectedContext';
+import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
+import { type BlockReason } from '@/modules/analytics/constants';
 import {
   type TermsLink,
   getTermsLinkConfig,
@@ -17,10 +19,18 @@ import {
 
 type UnauthorizedPageProps = {
   blockReason?: AccessBlockReason;
+  countryCode?: string | null;
   /** Re-runs the failed checks — wired to the "unavailable" states only. */
   onRetry?: () => void;
   /** A failed check is running again: the retry button shows its loading state. */
   isRetrying?: boolean;
+};
+
+const ANALYTICS_REASON: Record<AccessBlockReason, BlockReason> = {
+  'region-restricted': 'restricted_region',
+  'ip-check-unavailable': 'network_error',
+  'wallet-blocked': 'address_restricted',
+  'screening-unavailable': 'auth_error'
 };
 
 const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
@@ -36,8 +46,21 @@ const TermsOfUseLink = ({ termsLinks }: { termsLinks: TermsLink[] }) =>
  * The blocked dialog. AccessGate renders it only once a block verdict is in;
  * while the checks are in flight, ConnectChecksCover holds the screen instead.
  */
-export const UnauthorizedPage = ({ blockReason, onRetry, isRetrying }: UnauthorizedPageProps) => {
+export const UnauthorizedPage = ({
+  blockReason,
+  countryCode,
+  onRetry,
+  isRetrying
+}: UnauthorizedPageProps) => {
+  const { trackVpnBlockedPageView } = useVpnAnalytics();
   const { disconnect } = useDisconnect();
+
+  useEffect(() => {
+    trackVpnBlockedPageView({
+      blockReason: blockReason ? ANALYTICS_REASON[blockReason] : 'unknown',
+      countryCode: countryCode ?? null
+    });
+  }, [blockReason, countryCode, trackVpnBlockedPageView]);
 
   const { termsLinks } = getTermsLinkConfig();
 

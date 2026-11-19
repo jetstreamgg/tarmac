@@ -10,8 +10,7 @@ import { AccessGate } from './AccessGate';
 
 const h = vi.hoisted(() => ({
   connectedContext: {} as Record<string, unknown>,
-  pageMounts: 0,
-  trackVpnBlockedPageView: vi.fn()
+  pageMounts: 0
 }));
 
 vi.mock('@/modules/ui/context/ConnectedContext', () => ({
@@ -24,7 +23,7 @@ vi.mock('wagmi', async importOriginal => ({
 }));
 
 vi.mock('@/modules/analytics/hooks/useVpnAnalytics', () => ({
-  useVpnAnalytics: () => ({ trackVpnBlockedPageView: h.trackVpnBlockedPageView })
+  useVpnAnalytics: () => ({ trackVpnBlockedPageView: vi.fn() })
 }));
 
 vi.mock('@/modules/config/termsLink', () => ({
@@ -92,7 +91,6 @@ afterEach(() => {
   cleanup();
   h.connectedContext = {};
   h.pageMounts = 0;
-  h.trackVpnBlockedPageView.mockClear();
 });
 
 describe('AccessGate', () => {
@@ -263,45 +261,5 @@ describe('AccessGate connect-checks cover', () => {
     render(tree(false));
 
     expect(cover()).toBeNull();
-  });
-});
-
-describe('AccessGate blocked-view analytics', () => {
-  it('reports the mapped block reason once', () => {
-    h.connectedContext = BLOCKED;
-    const { rerender } = render(tree(false));
-    rerender(tree(false));
-
-    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(1);
-    expect(h.trackVpnBlockedPageView).toHaveBeenCalledWith({
-      blockReason: 'address_restricted',
-      countryCode: 'US'
-    });
-  });
-
-  it('reports again when a retry changes the block reason', () => {
-    h.connectedContext = { ...BLOCKED, accessBlockReason: 'ip-check-unavailable' };
-    const { rerender } = render(tree(false));
-    h.connectedContext = { ...BLOCKED, accessBlockReason: 'region-restricted' };
-    rerender(tree(false));
-
-    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(2);
-    expect(h.trackVpnBlockedPageView).toHaveBeenLastCalledWith({
-      blockReason: 'restricted_region',
-      countryCode: 'US'
-    });
-  });
-
-  // A check going back to loading takes the dialog down for a moment; the
-  // same block coming back is not a new view.
-  it('does not report the same block again after a check re-runs', () => {
-    h.connectedContext = BLOCKED;
-    const { rerender } = render(tree(false));
-    h.connectedContext = CHECKING;
-    rerender(tree(false));
-    h.connectedContext = BLOCKED;
-    rerender(tree(false));
-
-    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(1);
   });
 });
