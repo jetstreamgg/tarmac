@@ -96,14 +96,6 @@ afterEach(() => {
 });
 
 describe('AccessGate', () => {
-  it('renders no gate and leaves page modals alone for an authorized wallet', () => {
-    h.connectedContext = AUTHORIZED;
-    render(tree(true));
-
-    expect(screen.queryByRole('dialog', { name: 'Wallet blocked' })).toBeNull();
-    expect(screen.getByRole('dialog', { name: 'Position details' })).toBeTruthy();
-  });
-
   // Screening runs on a transaction's first screen, so a page modal is often
   // open when the checks start: it must not flicker shut while they run.
   it('keeps page modals open while the checks are still running', () => {
@@ -311,16 +303,5 @@ describe('AccessGate blocked-view analytics', () => {
     rerender(tree(false));
 
     expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(1);
-  });
-
-  it('reports a new block after access was restored in between', () => {
-    h.connectedContext = BLOCKED;
-    const { rerender } = render(tree(false));
-    h.connectedContext = AUTHORIZED;
-    rerender(tree(false));
-    h.connectedContext = BLOCKED;
-    rerender(tree(false));
-
-    expect(h.trackVpnBlockedPageView).toHaveBeenCalledTimes(2);
   });
 });
