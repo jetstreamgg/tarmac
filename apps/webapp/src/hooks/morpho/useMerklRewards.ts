@@ -8,6 +8,7 @@ import { formatUnits } from 'viem';
 import { MERKL_API_URL, MORPHO_API_CHAIN_ID, MORPHO_VAULTS, getMorphoVaultByAddress } from './constants';
 import { reasonContainsVaultAddress } from './merklReason';
 import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '../generated';
+import { toTokenLabel } from '@/lib/tokenSymbol';
 import { fetchJson } from '../shared/fetchJson';
 import { useNow } from '../ui/useNow';
 import type { MerklRewardsApiResponse } from './merklTypes';
@@ -156,7 +157,7 @@ async function fetchMerklRewards(
 
     tokenRewards.push({
       tokenAddress: token.address as `0x${string}`,
-      tokenSymbol: token.symbol,
+      tokenSymbol: toTokenLabel(token.symbol, token.address),
       tokenDecimals: token.decimals,
       tokenPrice: token.price,
       totalAmount,

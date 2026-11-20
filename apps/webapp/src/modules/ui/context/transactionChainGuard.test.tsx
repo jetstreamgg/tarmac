@@ -781,6 +781,43 @@ describe('TransactionModal — cross-chain calldata guard (APP-528)', () => {
     expect(api.isModalOpen).toBe(false);
   });
 
+  // The toast re-renders for as long as it shows, so a launch on the new chain
+  // while it's up must not move its link either.
+  it('links the success toast to the chain the transaction was sent on, not the one the wallet moved to', () => {
+    mockChainId = 1;
+    let cb!: TxCallbacks;
+    let api!: ReturnType<typeof useTransaction>;
+    const config = (): TransactionConfig => ({
+      title: 'Supply to Savings',
+      usdValue: 0,
+      supportedChainIds: [1, 8453, 42161],
+      entry: { content: <div>fields</div>, confirmLabel: 'Confirm', confirmDisabled: false },
+      onConfirm: vi.fn()
+    });
+    renderTestTree(
+      liveCb => {
+        cb = liveCb;
+        return config();
+      },
+      { onReady: a => (api = a) }
+    );
+
+    const hash = `0x${'ab'.repeat(32)}`;
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    act(() => cb.onMutate());
+    act(() => cb.onStart(hash));
+    act(() => {
+      mockChainId = 8453;
+      forceRerender();
+    });
+    act(() => cb.onSuccess(hash));
+    act(() => api.launch(config()));
+
+    const renderFn = toastWithCloseMock.mock.calls.at(-1)![0] as (id: string) => ReactNode;
+    render(<I18nProvider i18n={i18n}>{renderFn('toast-id')}</I18nProvider>);
+    expect(screen.getByRole('link').getAttribute('href')).toMatch(/^https:\/\/etherscan\.io\//);
+  });
+
   it('a gate verdict resolving after the wallet moved to an unsupported chain does NOT start the write', async () => {
     mockChainId = 1;
     const onConfirm = vi.fn();

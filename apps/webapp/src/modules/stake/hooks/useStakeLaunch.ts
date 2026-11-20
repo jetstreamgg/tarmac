@@ -16,7 +16,7 @@ import { REFERRAL_CODE } from '@/lib/constants';
 import { MAINNET_FAMILY_CHAIN_IDS } from '@/lib/chainAvailability';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import type { TransactionConfig, TransactionContextValue } from '@/modules/ui/context/transactionContract';
-import { useResetPausedRunOnClose } from '@/modules/ui/hooks/useResetPausedRunOnClose';
+import { useResetUnfinishedRunOnClose } from '@/modules/ui/hooks/useResetUnfinishedRunOnClose';
 import { useMinimizedSessionLock } from '@/modules/ui/hooks/useMinimizedSessionLock';
 import type { TransactionStep } from '@/modules/ui/components/TransactionModal';
 import { assignSequentialWrites, stepFailureDetail } from '@/modules/ui/components/transactionStepsModel';
@@ -216,13 +216,16 @@ export function useStakeLaunch({
   });
 
   // READ ONLY — labels the Approve step; the engine derives its own approve call.
-  const { data: skyAllowance, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
-  const needsSkyAllowance = skyAllowance === undefined || skyAllowance < lockAmount;
-  // Nothing to approve on the open flow (`usdsAmount` is 0), but the engine
-  // still emits an approve leg while the read is unresolved — mirrored so the
-  // leg count below can't disagree with the calls it actually builds.
-  const { data: usdsAllowance, mutate: mutateUsdsAllowance } = useStakeUsdsAllowance();
-  const needsUsdsAllowance = usdsAllowance === undefined || usdsAllowance < usdsAmount;
+  const { data: skyAllowance, error: skyAllowanceError, mutate: mutateSkyAllowance } = useStakeSkyAllowance();
+  const needsSkyAllowance =
+    skyAllowance !== undefined ? skyAllowance < lockAmount : !!skyAllowanceError && lockAmount > 0n;
+  const {
+    data: usdsAllowance,
+    error: usdsAllowanceError,
+    mutate: mutateUsdsAllowance
+  } = useStakeUsdsAllowance();
+  const needsUsdsAllowance =
+    usdsAllowance !== undefined ? usdsAllowance < usdsAmount : !!usdsAllowanceError && usdsAmount > 0n;
   const refetchAllowances = useCallback(() => {
     mutateSkyAllowance();
     mutateUsdsAllowance();
@@ -241,7 +244,7 @@ export function useStakeLaunch({
     enabled: enabled && currentUrnIndex !== undefined && calldata.length > 0,
     ...txCallbacks
   });
-  useResetPausedRunOnClose(engine.reset, refetchAllowances);
+  useResetUnfinishedRunOnClose(engine.reset, refetchAllowances);
 
   // Live execute ref: launch() must never snapshot onConfirm state (landmine #2)
   // — the engine hook re-renders between launch and the user's Confirm click.

@@ -8,13 +8,7 @@
         "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!",
         ".claude/skills/*/scripts/*.mjs"
       ],
-      "ignoreDependencies": [
-        "@vitest/coverage-v8",
-        "eslint-plugin-react",
-        "happy-dom",
-        "lint-staged",
-        "vitest"
-      ]
+      "ignoreDependencies": ["@vitest/coverage-v8", "happy-dom", "lint-staged", "vitest"]
     },
     "apps/webapp": {
       "entry": [
@@ -34,12 +28,10 @@
       "ignoreDependencies": [
         "@base-org/account",
         "@coinbase/wallet-sdk",
-        "@lingui/swc-plugin",
         "@metamask/connect-evm",
         "@safe-global/safe-apps-provider",
         "@safe-global/safe-apps-sdk",
-        "@walletconnect/ethereum-provider",
-        "porto"
+        "@walletconnect/ethereum-provider"
       ]
     }
   }

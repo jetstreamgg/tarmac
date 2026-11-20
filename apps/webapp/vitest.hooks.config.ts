@@ -6,7 +6,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     },
-    dedupe: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query', 'react', 'react-dom']
+    dedupe: ['wagmi', 'viem', '@tanstack/react-query', 'react', 'react-dom']
   },
   test: {
     include: ['src/hooks/**/*.test.{ts,tsx}'],

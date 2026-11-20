@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
@@ -37,7 +38,8 @@ export function StakeManageStakeCard({
   minStakeToBorrowLoading,
   minStakeReached,
   error,
-  errorAction
+  errorAction,
+  notice
 }: {
   mode: StakeCardMode;
   onModeChange: (mode: StakeCardMode) => void;
@@ -67,6 +69,8 @@ export function StakeManageStakeCard({
   minStakeReached?: boolean;
   error?: string;
   errorAction?: AmountChip;
+  /** A prepare failure about this card's input, shown at its bottom. */
+  notice?: ReactNode;
 }) {
   const isStake = mode === 'stake';
   const base = (isStake ? walletBalance : stakedAmount) ?? 0n;
@@ -102,6 +106,7 @@ export function StakeManageStakeCard({
       activeMode={mode}
       onModeChange={onModeChange}
       dataTestId="stake-manage-stake-card"
+      notice={notice}
     >
       {/* Design QA 2800:91832 ("More gap"): 32px between the amount block and
           the stats from md up — the card's own header→body gap. */}
@@ -135,8 +140,6 @@ export function StakeManageStakeCard({
                 <Trans>Min. stake amount to borrow</Trans>
                 <InfoTooltip
                   title={t`Minimum stake to borrow`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={
                     minStakeToBorrow !== undefined
                       ? t`Borrowing USDS is optional, but to use your SKY as collateral, you must stake at least ${formatBigInt(minStakeToBorrow)} SKY.`
@@ -188,8 +191,6 @@ export function StakeManageStakeCard({
                 <Trans>Est. annual rewards</Trans>
                 <InfoTooltip
                   title={t`Estimated annual rewards`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={t`Projected yearly rewards at the current Staking Rewards Rate and SKY price. Rates change over time, so the actual amount will differ.`}
                 />
               </>
@@ -214,7 +215,7 @@ export function StakeManageStakeCard({
             label={
               <>
                 <Trans>Staking Rewards Rate</Trans>
-                <RateInfo type="srr" size={12} />
+                <RateInfo type="srr" />
               </>
             }
             current={

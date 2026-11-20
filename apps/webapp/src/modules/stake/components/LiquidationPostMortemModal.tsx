@@ -211,7 +211,6 @@ export function LiquidationPostMortemModal({
         aria-describedby={undefined}
         data-testid="stake-postmortem-modal"
         className="bg-containerDark flex max-h-[90vh] w-full flex-col gap-0 overflow-y-auto p-0 sm:min-w-0 lg:max-w-[1042px] lg:flex-row"
-        onOpenAutoFocus={event => event.preventDefault()}
       >
         {/* Left panel — refunded/claimable heroes + the historical stat grid. */}
         <div className="flex flex-1 flex-col gap-6 p-8">
@@ -350,7 +349,7 @@ export function LiquidationPostMortemModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="stake-postmortem-explorer-link"
-                className="text-textSecondary hover:text-text flex w-fit items-center gap-1 text-sm transition-colors"
+                className="text-textSecondary hover:text-text focus-visible:outline-focusRing flex w-fit items-center gap-1 rounded-xs text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <Trans>View on block explorer</Trans>
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />

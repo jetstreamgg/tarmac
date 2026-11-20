@@ -1,16 +1,7 @@
 import { Chain, defineChain } from 'viem';
-import tenderlyTestnetData from '../../../../../../tenderlyTestnetData.json' with { type: 'json' };
-import tenderlyTestnetDataAlternate from '../../../../../../tenderlyTestnetData-alternate.json' with { type: 'json' };
+import vnetData from '../../../../../../tenderlyTestnetData.json' with { type: 'json' };
 import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import { NetworkName } from '../../../test/e2e/utils/constants';
-
-// Use alternate VNet config when VITE_USE_ALTERNATE_VNET is set
-// Check both Vite env (browser) and process.env (Node.js/tests)
-// Note: typeof check is required because `process` doesn't exist in browser context
-const useAlternateVnet =
-  import.meta.env?.VITE_USE_ALTERNATE_VNET === 'true' ||
-  (typeof process !== 'undefined' && process.env?.USE_ALTERNATE_VNET === 'true');
-const vnetData = useAlternateVnet ? tenderlyTestnetDataAlternate : tenderlyTestnetData;
 
 export const TENDERLY_CHAIN_ID = 314310;
 

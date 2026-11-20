@@ -79,7 +79,7 @@ export function parseMarkdownLinks(text: string | undefined | null): React.React
         <a
           key={`link-${keyIndex++}`}
           href={url}
-          className="text-text light:hover:text-text hover:text-white hover:underline"
+          className="text-text light:hover:text-text focus-visible:outline-focusRing rounded-xs hover:text-white hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {linkText}
         </a>

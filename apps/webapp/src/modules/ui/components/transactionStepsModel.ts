@@ -80,6 +80,19 @@ type DeriveInput = {
    * the user something happened on-chain that never did.
    */
   userRejected?: boolean;
+  /**
+   * The wallet stopped reporting on the bundle it accepted, so it may have
+   * executed. No retry: sending it again could send it twice.
+   */
+  outcomeUnknown?: boolean;
+  /**
+   * The failure is a contract revert, already worded for the user (the revert
+   * registry's copy, or the raw reason). It replaces the generic rollback
+   * sentence on the failed on-chain row: the user learns why, and a revert
+   * caught before broadcast wasn't rolled back anyway. Ignored for a Reject
+   * and for signature rows.
+   */
+  failureReason?: string;
 };
 
 /**
@@ -102,6 +115,9 @@ export const stepFailureDetail = {
   convert: (symbol: string) => t`The ${symbol} hasn't been converted.`,
   upgrade: (symbol: string) => t`The ${symbol} hasn't been upgraded.`
 };
+
+const unknownOutcomeCopy = () =>
+  t`Your wallet stopped reporting on this transaction, so it may still have gone through. Check your wallet's activity before trying again.`;
 
 const normalize = (step: TransactionStep) => (typeof step === 'string' ? { label: step } : step);
 type NormalizedStep = ReturnType<typeof normalize>;
@@ -149,7 +165,9 @@ export function deriveTransactionStepItems({
   currentStep,
   txStatus,
   bundled,
-  userRejected = false
+  userRejected = false,
+  outcomeUnknown = false,
+  failureReason
 }: DeriveInput): TransactionStepItem[] {
   const allDone = txStatus === TxStatus.SUCCESS;
   const failed = txStatus === TxStatus.ERROR;
@@ -172,7 +190,9 @@ export function deriveTransactionStepItems({
   // inline on the signature step below. Signatures already completed survive
   // the failure (they happened off-chain and aren't rolled back), so their rows
   // stay, completed, above the collapsed pair.
-  if (failed && bundled && !inSignaturePhase) {
+  // A bundle the wallet lost track of is in doubt as a whole, so it collapses
+  // the same way even when the list wasn't drawn as one.
+  if (failed && (bundled || outcomeUnknown) && !inSignaturePhase) {
     const prelude: TransactionStepItem[] = normalized
       .slice(0, currentStep)
       .filter(step => step.kind === 'signature')
@@ -183,6 +203,18 @@ export function deriveTransactionStepItems({
         targetTokenSymbol: step.targetTokenSymbol,
         state: 'completed' as const
       }));
+    if (outcomeUnknown) {
+      return [
+        ...prelude,
+        {
+          stepNumber: prelude.length + 1,
+          label: t`Transaction status unknown`,
+          tokenSymbol: undefined,
+          state: 'failed',
+          description: unknownOutcomeCopy()
+        }
+      ];
+    }
     return [
       ...prelude,
       {
@@ -192,7 +224,8 @@ export function deriveTransactionStepItems({
         state: 'failed',
         description: userRejected
           ? t`You declined the bundled transaction in your wallet. Try again and confirm it to continue.`
-          : t`The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.`
+          : (failureReason ??
+            t`The network rolled back your transaction. Try again and confirm bundled transaction in your wallet.`)
       },
       {
         stepNumber: prelude.length + 2,
@@ -233,7 +266,7 @@ export function deriveTransactionStepItems({
       }
       const failure = isSignature
         ? t`The signature request was declined or could not be completed.`
-        : t`The network rolled back your transaction.`;
+        : (failureReason ?? t`The network rolled back your transaction.`);
       return {
         stepNumber: i + 1,
         label: t`${label} failed`,

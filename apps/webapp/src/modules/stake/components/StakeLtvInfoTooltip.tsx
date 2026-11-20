@@ -19,8 +19,6 @@ export function StakeLtvInfoTooltip() {
   return (
     <InfoTooltip
       title={t`Loan-to-value (LTV)`}
-      iconSize={12}
-      iconClassName="shrink-0"
       content={
         <>
           {stakeLtvTooltipCopy(cap).map(line => (

@@ -36,6 +36,9 @@ vi.mock('@/hooks', async importOriginal => {
 vi.mock('../hooks/usePendleModal', () => ({
   usePendleModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
 }));
+vi.mock('../hooks/usePendleRedeemModal', () => ({
+  usePendleRedeemModal: () => ({ openRedeemModal: vi.fn(), isRedeemable: true, switchBlocked: false })
+}));
 vi.mock('@/modules/ui/context/ConnectThenActContext', () => ({
   useConnectThenAct: (fn: () => void) => fn
 }));
@@ -88,8 +91,13 @@ const renderCard = () =>
     </I18nProvider>
   );
 
+// Before PT-sUSDS's 26 Nov 2026 expiry, so the live-position card keeps rendering after that date.
+const BEFORE_EXPIRY_MS = Date.UTC(2026, 9, 1);
+
 describe('PendlePositionCard — accrued to date (APP-450)', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(BEFORE_EXPIRY_MS);
     h.ptBalance = 100n * 10n ** 18n;
     // markToMarketUsd is the MTM total (equals totalEarned); realized is the
     // locked-in slice, so the tooltip's unrealized line shows the 21.77 rest.
@@ -98,7 +106,10 @@ describe('PendlePositionCard — accrued to date (APP-450)', () => {
       markToMarketUsd: 916.82
     });
   });
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
 
   it('renders the accrued-to-date figure with the realized/mark-to-market split', () => {
     renderCard();
@@ -113,5 +124,13 @@ describe('PendlePositionCard — accrued to date (APP-450)', () => {
     renderCard();
 
     expect(screen.getByTestId('pendle-accrued-to-date').textContent).toBe('—');
+  });
+
+  it('keeps the same figure on the matured card — Pendle still reports the expired position', () => {
+    vi.setSystemTime((MARKET.expiry + 86_400) * 1000);
+    renderCard();
+
+    expect(screen.getByTestId('pendle-matured-position-card')).toBeTruthy();
+    expect(screen.getByTestId('pendle-accrued-to-date').textContent).toContain('$916.82');
   });
 });

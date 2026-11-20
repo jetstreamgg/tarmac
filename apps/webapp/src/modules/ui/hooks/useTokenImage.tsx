@@ -8,7 +8,7 @@ import { useMemo } from 'react';
  */
 const PT_MATURITY_SUFFIX = /^(pt-.+)-\d{1,2}[a-z]{3}\d{4}$/;
 
-export const useTokenImage = (symbol: string) => {
+export const useTokenImage = (symbol: string | undefined) => {
   return useMemo(() => {
     if (!symbol) return undefined;
     const symbolLower = symbol.toLowerCase();

@@ -37,6 +37,7 @@ const h = vi.hoisted(() => ({
   minCollateralForDust: 0n,
   dust: 0n,
   debtCeilingHeadroom: 0n,
+  debtCeilingUtilization: 0.5,
   simulationError: null as Error | null,
   // Launch-engine knobs (see the useStakeLaunch/useStakeManageLaunch mocks).
   launchError: null as Error | null,
@@ -118,7 +119,7 @@ vi.mock('@/hooks', async importOriginal => {
         stabilityFee: 851n * 10n ** 14n,
         debtCeiling: h.debtCeilingHeadroom,
         totalDaiDebt: 0n,
-        debtCeilingUtilization: 0.5
+        debtCeilingUtilization: h.debtCeilingUtilization
       },
       isLoading: false,
       error: null,
@@ -309,6 +310,7 @@ describe('OpenPositionTakeover', () => {
     h.minCollateralForDust = 0n;
     h.dust = 30n * WAD;
     h.debtCeilingHeadroom = parseUnits('1000000000', 18);
+    h.debtCeilingUtilization = 0.5;
     h.simulationError = null;
     h.launchError = null;
     h.launchLoading = false;
@@ -772,6 +774,7 @@ describe('OpenPositionTakeover — reopen mode (F6, UX 1194:21595 / 1194:21914)'
     h.minCollateralForDust = 0n;
     h.dust = 30n * WAD;
     h.debtCeilingHeadroom = parseUnits('1000000000', 18);
+    h.debtCeilingUtilization = 0.5;
     h.simulationError = null;
     h.launchError = null;
     h.launchLoading = false;
@@ -998,6 +1001,7 @@ describe('OpenPositionTakeover — simulation and engine errors (APP-490)', () =
     h.minCollateralForDust = 0n;
     h.dust = 30n * WAD;
     h.debtCeilingHeadroom = parseUnits('1000000000', 18);
+    h.debtCeilingUtilization = 0.5;
     h.simulationError = null;
     h.launchError = null;
     h.launchLoading = false;
@@ -1059,5 +1063,35 @@ describe('OpenPositionTakeover — simulation and engine errors (APP-490)', () =
     expect(screen.getByTestId('stake-takeover-error').textContent).toBe(
       'Something went wrong preparing the transaction. Please try again.'
     );
+    // An unmapped failure is about the whole form: at the bottom of the last card
+    expect(
+      screen.getByTestId('stake-takeover-delegate-card').contains(screen.getByTestId('stake-takeover-error'))
+    ).toBe(true);
+  });
+
+  it('shows a revert under the card it is about (APP-663)', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted: LockstakeEngine/farm-unsupported-or-deleted');
+    h.launchLoading = false;
+    renderTakeover();
+    typeStakeAmount('100');
+
+    expect(
+      screen.getByTestId('stake-takeover-stake-card').contains(screen.getByTestId('stake-takeover-error'))
+    ).toBe(true);
+  });
+
+  it('shows one message at a time: a card notice hides the prepare failure (APP-663)', () => {
+    h.prepared = false;
+    h.launchError = new Error('execution reverted');
+    h.debtCeilingUtilization = 1;
+    renderTakeover();
+    typeStakeAmount('100');
+    expect(screen.getByTestId('stake-takeover-error')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('stake-takeover-borrow-card-toggle'));
+
+    expect(screen.getByText('Debt ceiling reached. Borrowing USDS is temporarily unavailable.')).toBeTruthy();
+    expect(screen.queryByTestId('stake-takeover-error')).toBeNull();
   });
 });

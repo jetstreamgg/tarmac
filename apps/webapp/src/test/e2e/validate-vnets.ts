@@ -379,14 +379,9 @@ export async function validateVnets(options: ValidateVnetsOptions = false): Prom
   const skipBalanceCheck = typeof options === 'boolean' ? options : !!options.skipBalanceCheck;
   const skipSnapshotCheck = typeof options === 'boolean' ? false : !!options.skipSnapshotCheck;
 
-  // Determine which VNet data file to use based on environment
-  const useAlternateVnet = process.env.USE_ALTERNATE_VNET === 'true';
-  const vnetFileName = useAlternateVnet ? 'tenderlyTestnetData-alternate.json' : 'tenderlyTestnetData.json';
+  const vnetFileName = 'tenderlyTestnetData.json';
   const vnetDataFile = path.join(__dirname, '..', '..', '..', '..', '..', vnetFileName);
 
-  if (useAlternateVnet) {
-    console.log('🔵 Using alternate VNet configuration');
-  }
   console.log(`📂 Looking for VNet data file at: ${vnetDataFile}`);
 
   try {
@@ -397,7 +392,7 @@ export async function validateVnets(options: ValidateVnetsOptions = false): Prom
     console.log('❌ VNet data file not found');
     console.log(`   Searched at: ${vnetDataFile}`);
     console.log('   Current working directory: ' + process.cwd());
-    const createCommand = useAlternateVnet ? 'pnpm vnet:alternate:fork:ci' : 'pnpm vnet:fork:ci';
+    const createCommand = 'pnpm vnet:fork:ci';
     console.log(`   Run: ${createCommand}`);
     return {
       healthy: false,
@@ -412,10 +407,7 @@ export async function validateVnets(options: ValidateVnetsOptions = false): Prom
   }
 
   // Load snapshot IDs if they exist
-  const snapshotFileName = useAlternateVnet
-    ? 'persistent-vnet-snapshots-alternate.json'
-    : 'persistent-vnet-snapshots.json';
-  const snapshotFile = path.join(__dirname, snapshotFileName);
+  const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
   console.log(`📂 Looking for snapshot file at: ${snapshotFile}`);
 
   let snapshots: Record<string, string> = {};

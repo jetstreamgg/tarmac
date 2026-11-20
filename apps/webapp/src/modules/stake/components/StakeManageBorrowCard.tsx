@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { RateInfo } from '@/components/product/RateInfo';
 import { t } from '@lingui/core/macro';
@@ -137,7 +138,8 @@ export function StakeManageBorrowCard({
   minCollateralForDust,
   currentCollateral,
   hasStagedChange,
-  error
+  error,
+  notice
 }: {
   mode: BorrowCardMode;
   onModeChange: (mode: BorrowCardMode) => void;
@@ -166,6 +168,8 @@ export function StakeManageBorrowCard({
   /** Any staged change on the position (stake, unstake, borrow, repay) — drives the delta rows. */
   hasStagedChange?: boolean;
   error?: string;
+  /** A Confirm-blocking message about this card, or the whole form, shown at its bottom. */
+  notice?: ReactNode;
 }) {
   const isRepay = mode === 'repay';
   const existingDebt = existingVault?.debtValue ?? 0n;
@@ -262,6 +266,7 @@ export function StakeManageBorrowCard({
       onModeChange={onModeChange}
       enabled={enabled}
       onEnabledChange={onEnabledChange}
+      notice={notice}
       toggleDisabled={!enabled && !isRepay && minCollateralNotMet}
       toggleDisabledHint={
         <StakeMoreToBorrowHint
@@ -376,7 +381,7 @@ export function StakeManageBorrowCard({
         )}
 
         {!isRepay && debtCeilingReached && (
-          <p className="text-sm text-orange-400">
+          <p className="text-statusWarning text-sm">
             <Trans>Debt ceiling reached. Borrowing USDS is temporarily unavailable.</Trans>
           </p>
         )}
@@ -411,8 +416,6 @@ export function StakeManageBorrowCard({
                 <Trans>Liquidation risk</Trans>
                 <InfoTooltip
                   title={t`Liquidation risk`}
-                  iconSize={12}
-                  iconClassName="shrink-0"
                   content={
                     existingVault?.liquidationPrice
                       ? t`Sky closes your position if SKY's price drops to your liquidation price ($${formatBigInt(existingVault.liquidationPrice, { unit: WAD_PRECISION, maxDecimals: 4 })}). Your collateral is sold to repay the debt plus a penalty.`
@@ -502,7 +505,7 @@ export function StakeManageBorrowCard({
             label={
               <>
                 <Trans>Capped OSM SKY price</Trans>
-                <RateInfo type="cappedOsmSkyPrice" size={12} />
+                <RateInfo type="cappedOsmSkyPrice" />
                 <UpdatedHourlyBadge />
               </>
             }

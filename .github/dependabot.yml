@@ -69,7 +69,6 @@ updates:
           - "embla-carousel*"
           - "tailwind-merge"
           - "class-variance-authority"
-          - "clsx"
         update-types:
           - "minor"
           - "patch"

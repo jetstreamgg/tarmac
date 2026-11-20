@@ -72,7 +72,7 @@ export function Banner({
       <div className="bg-container border-border relative rounded-xl border p-6 pr-8 shadow-lg backdrop-blur-[50px]">
         <button
           onClick={handleDismiss}
-          className="text-text/50 hover:text-text absolute top-3 right-3 rounded-md p-1.5 transition-colors"
+          className="text-text/50 hover:text-text focus-visible:outline-focusRing absolute top-3 right-3 rounded-md p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
           aria-label="Dismiss"
         >
           <X size={16} />

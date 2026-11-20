@@ -29,7 +29,7 @@ const ListWallet = React.forwardRef<
     ref={ref}
     type="button"
     className={cn(
-      'flex w-full items-center justify-between overflow-hidden rounded-2xl border p-4 text-left transition-colors disabled:pointer-events-none',
+      'focus-visible:outline-focusRing flex w-full items-center justify-between overflow-hidden rounded-2xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none',
       active
         ? 'border-brandBorder from-brand3-start to-brand3-end bg-linear-to-b'
         : 'border-borderPrimary hover:border-borderTertiary disabled:opacity-50',

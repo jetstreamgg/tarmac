@@ -19,6 +19,23 @@ const simulation = vi.hoisted(() => ({
 const simulateSpy = vi.hoisted(() => vi.fn());
 const sendCalls = vi.hoisted(() => vi.fn());
 
+const sent = vi.hoisted(() => ({
+  id: undefined as string | undefined,
+  mutation: undefined as { onMutate?: () => void } | undefined
+}));
+const callsStatus = vi.hoisted(() => ({
+  isLoading: false,
+  isSuccess: false,
+  error: null as Error | null,
+  failureReason: null,
+  data: undefined as
+    | {
+        status: 'success' | 'failure';
+        receipts: { status: 'success' | 'reverted'; transactionHash: string; blockNumber: bigint }[];
+      }
+    | undefined
+}));
+
 vi.mock('./useIsBatchSupported', () => ({
   useIsBatchSupported: () => capabilities
 }));
@@ -31,17 +48,19 @@ vi.mock('./useSimulateBatch', () => ({
 }));
 
 vi.mock('wagmi', () => ({
-  useSendCalls: () => ({ sendCalls, error: null, data: undefined, reset: () => {} }),
-  useWaitForCallsStatus: () => ({
-    isLoading: false,
-    isSuccess: false,
-    error: null,
-    failureReason: null,
-    data: undefined
-  })
+  useSendCalls: ({ mutation }: { mutation?: { onMutate?: () => void } }) => {
+    sent.mutation = mutation;
+    return {
+      sendCalls,
+      error: null,
+      data: sent.id ? { id: sent.id } : undefined,
+      reset: () => {}
+    };
+  },
+  useWaitForCallsStatus: () => callsStatus
 }));
 
-import { useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
+import { TransactionOutcomeUnknownError, useSendBatchTransactionFlow } from './useSendBatchTransactionFlow';
 
 const call: Call = {
   to: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
@@ -61,6 +80,10 @@ beforeEach(() => {
   simulation.isLoading = true;
   simulation.error = null;
   simulation.structuralFailure = false;
+  sent.id = undefined;
+  callsStatus.isSuccess = false;
+  callsStatus.error = null;
+  callsStatus.data = undefined;
 });
 
 afterEach(cleanup);
@@ -142,5 +165,107 @@ describe('useSendBatchTransactionFlow — when the simulation runs', () => {
 
     expect(simulateSpy.mock.lastCall?.[0].enabled).toBe(true);
     expect(simulateSpy.mock.lastCall?.[0].calls).toBe(calls);
+  });
+});
+
+describe('useSendBatchTransactionFlow — settling', () => {
+  const settle = (
+    status: 'success' | 'failure',
+    receiptStatuses: ('success' | 'reverted')[]
+  ): { onSuccess: ReturnType<typeof vi.fn>; onError: ReturnType<typeof vi.fn> } => {
+    sent.id = '0xbundle';
+    callsStatus.isSuccess = true;
+    callsStatus.data = {
+      status,
+      receipts: receiptStatuses.map((receiptStatus, i) => ({
+        status: receiptStatus,
+        transactionHash: `0x${i + 1}`,
+        blockNumber: BigInt(i + 1)
+      }))
+    };
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    renderHook(() => useSendBatchTransactionFlow({ calls, enabled: true, onSuccess, onError }));
+    return { onSuccess, onError };
+  };
+
+  it('reports success when every leg landed', () => {
+    const { onSuccess, onError } = settle('success', ['success', 'success']);
+
+    expect(onSuccess).toHaveBeenCalledWith('0x1', 2n);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('reports a failure when a leg reverted under an overall success (Ambire on an EOA, APP-637)', () => {
+    const { onSuccess, onError } = settle('success', ['success', 'reverted']);
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][1]).toBe('0x2');
+  });
+
+  it('reports a failure when the wallet says the bundle failed', () => {
+    const { onSuccess, onError } = settle('failure', []);
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports the reverted leg of a partially failed bundle', () => {
+    const { onSuccess, onError } = settle('failure', ['success', 'reverted']);
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][1]).toBe('0x2');
+  });
+
+  it('reports a lost bundle once, and still reports the answer the wallet gives later (APP-651)', () => {
+    sent.id = '0xbundle';
+    callsStatus.error = new Error('Unknown bundle id');
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    const { rerender } = renderHook(() =>
+      useSendBatchTransactionFlow({ calls, enabled: true, onSuccess, onError })
+    );
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0]).toBeInstanceOf(TransactionOutcomeUnknownError);
+
+    // A refetch (window focus) that fails the same way is not a second report.
+    callsStatus.error = new Error('Unknown bundle id');
+    rerender();
+    expect(onError).toHaveBeenCalledTimes(1);
+
+    callsStatus.error = null;
+    callsStatus.isSuccess = true;
+    callsStatus.data = {
+      status: 'success',
+      receipts: [{ status: 'success', transactionHash: '0x1', blockNumber: 1n }]
+    };
+    rerender();
+    expect(onSuccess).toHaveBeenCalledWith('0x1', 1n);
+
+    rerender();
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles a repeat send whose wallet reuses the bundle id (wagmi mock)', () => {
+    sent.id = '0xbundle';
+    callsStatus.isSuccess = true;
+    callsStatus.data = {
+      status: 'success',
+      receipts: [{ status: 'success', transactionHash: '0x1', blockNumber: 1n }]
+    };
+    const onSuccess = vi.fn();
+    const { rerender } = renderHook(() =>
+      useSendBatchTransactionFlow({ calls, enabled: true, onSuccess, onError: vi.fn() })
+    );
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+
+    sent.id = undefined;
+    rerender();
+    sent.mutation?.onMutate?.();
+    sent.id = '0xbundle';
+    rerender();
+    expect(onSuccess).toHaveBeenCalledTimes(2);
   });
 });

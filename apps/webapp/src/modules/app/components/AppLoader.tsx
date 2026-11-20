@@ -15,7 +15,7 @@ import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useStablecoinBalances } from '@/modules/portfolio/hooks/useStablecoinBalances';
 import { useGeoVisibleRows } from '@/modules/portfolio/hooks/useGeoVisibleRows';
 import { useGeoConfig } from '@/modules/geo-config';
-import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '@/modules/portfolio/helpers/portfolioCallout';
+import { portfolioDecision } from '@/modules/portfolio/helpers/portfolioCallout';
 import { IllustrationSkyLogomark } from '@/modules/icons/IllustrationSkyLogomark';
 // The held spin lives with the standalone spinner: the terms-check cover
 // wears the same glyph at the same angular speed (see SkyLogomarkSpinner).
@@ -154,8 +154,12 @@ export function useAppLoader(): {
   // The gate is the positions-only flag: the landing decision reads nothing
   // but `row.position`, and the full `isLoading` waits on rate/chart history
   // from external APIs that can outlive the hold cap.
-  const { rows, isPositionsLoading: marketLoading, isPositionsError: marketError } = useEarnMarketplace();
-  const visibleRows = useGeoVisibleRows(rows);
+  const {
+    positionRows,
+    isPositionsLoading: marketLoading,
+    isPositionsError: marketError
+  } = useEarnMarketplace();
+  const visibleRows = useGeoVisibleRows(positionRows);
   const {
     balances,
     isLoading: balancesLoading,
@@ -192,10 +196,7 @@ export function useAppLoader(): {
   useEffect(() => {
     if (!address || decisionLoading || decisionError) return;
     if (fetchSeenForRef.current !== address && !balancesFetched) return;
-    writePortfolioDecision(address, {
-      outcome: portfolioCallout(depositedUsd, idleUsd),
-      tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
-    });
+    writePortfolioDecision(address, portfolioDecision(depositedUsd, idleUsd));
   }, [address, decisionLoading, decisionError, balancesFetched, depositedUsd, idleUsd]);
 
   useConnectionEffect({
@@ -302,11 +303,9 @@ export function useAppLoader(): {
     // held it): every balance figure belongs to the new address, so writing
     // it under sort.address would cache one wallet's totals for another.
     if (!decisionError && address === sort.address) {
-      const outcome = portfolioCallout(depositedUsd, idleUsd);
-      writePortfolioDecision(sort.address, {
-        outcome,
-        tab: depositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied'
-      });
+      const decision = portfolioDecision(depositedUsd, idleUsd);
+      const { outcome } = decision;
+      writePortfolioDecision(sort.address, decision);
       if (sort.surface && !released) {
         const target = landingFor(outcome);
         // viewTransition: false — the swap happens under the cover (or the

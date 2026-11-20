@@ -28,7 +28,7 @@ export function SortHeaderButton({
       data-testid={dataTestId}
       onClick={onClick}
       className={cn(
-        'hover:text-fgPrimary inline-flex items-center gap-1 transition-colors',
+        'hover:text-fgPrimary focus-visible:outline-focusRing inline-flex items-center gap-1 rounded-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
         isSorted && 'text-fgPrimary'
       )}
     >

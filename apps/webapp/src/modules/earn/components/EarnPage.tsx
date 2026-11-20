@@ -1,28 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useChainId, useChains } from 'wagmi';
+import { useChains } from 'wagmi';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho } from '@/modules/icons';
 import { Pendle } from '@/modules/icons/PendleSymbol';
-import {
-  useEarnMarketplace,
-  EarnProductKind,
-  productNetworks,
-  RISK_TIER_BY_PROFILE,
-  useUsdsDaiData,
-  type EarnProductRow
-} from '@/hooks';
+import { useEarnMarketplace, EarnProductKind, useUsdsDaiData, type EarnProductRow } from '@/hooks';
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { usePendleUsdValue } from '@/modules/pendle/hooks/usePendleUsdValue';
-import { usePendleMaturedPositions } from '@/modules/pendle/hooks/usePendleMaturedPositions';
 import { getChainIcon } from '@/utils';
-import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
-import { Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { retainOnNavigate } from '@/lib/navigation';
-import { EARN_OPPORTUNITIES_HASH, ROUTES } from '@/lib/routes';
+import { EARN_OPPORTUNITIES_HASH } from '@/lib/routes';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { HeaderBadge, PageHeaderHero } from '@/components/ui/page-header';
@@ -53,6 +43,9 @@ import { NO_VALUE } from '@/lib/constants';
 
 /** Stable identity so the geo split doesn't rebuild the tables every render. */
 const EMPTY_ROWS: EarnProductRow[] = [];
+
+/** Row id of a matured market in the "Requires action" section. */
+const maturedRowId = (row: EarnProductRow) => `matured-${row.address?.toLowerCase() ?? row.id}`;
 
 /** Row id of an ended reward farm in the "Requires action" section. */
 const endedRewardRowId = (contractAddress: string) => `ended-${contractAddress.toLowerCase()}`;
@@ -124,10 +117,13 @@ function toTableRow(row: EarnProductRow, unavailable = false): EarnTableRowItem 
 
 /** The /earn destination: the Earn Opportunities marketplace section (C2). */
 export function EarnPage() {
-  const { rows, endedRewardPositions: allEndedRewardPositions } = useEarnMarketplace();
+  const {
+    rows,
+    endedRewardPositions: allEndedRewardPositions,
+    maturedRows: allMaturedRows
+  } = useEarnMarketplace();
   const { isModuleEnabled, isLoading: isGeoLoading, isRegionVerified } = useGeoConfig();
   const chains = useChains();
-  const connectedChainId = useChainId();
   const navigate = useNavigate();
   const hash = useRouterState({ select: state => state.location.hash });
 
@@ -288,33 +284,25 @@ export function EarnPage() {
   };
 
   // "Requires action" (2251:50832): matured markets the user still holds PT
-  // for — the marketplace filters them out of the opportunities rows, so this
-  // is their only Earn surface. Geo is enforced inside the hook (restricted
-  // positions hide app-wide, APP-484). The table filters apply here like they
-  // do to the geo section — one list, split in three — filtering by the
-  // market's registry attributes (its risk tier, networks, supply tokens),
-  // not the dashed live-market cells. A filtered-out row strands nobody: the
-  // Portfolio matured card stays the primary claim surface. The shared sort is
-  // NOT applied — every sortable column is a dash on these rows.
-  const { maturedPositions } = usePendleMaturedPositions();
+  // for. The marketplace keeps them out of the opportunities rows, so this is
+  // their only Earn surface. Region-restricted positions hide app-wide
+  // (APP-484), passing while the geo config loads like the ended farms below.
+  // The table filters apply here like they do to the geo section — one list,
+  // split in three — on the market's registry attributes (risk tier, networks,
+  // supply tokens), not the dashed live-market cells. A filtered-out row
+  // strands nobody: the Portfolio matured card stays the primary claim
+  // surface. The shared sort is NOT applied — every sortable column is a dash.
   const valueUsd = usePendleUsdValue();
-  const visibleMaturedPositions = useMemo(
+  const visibleMaturedRows = useMemo(
     () =>
-      filterEarnRows(
-        maturedPositions.map(position => ({
-          ...position,
-          // The registry's fixed entry, restated: its `fixed` descriptor is
-          // built (then discarded) inside useEarnMarketplace, so the matured
-          // row can't borrow it — APP-532 folds these back into the rows.
-          risk: RISK_TIER_BY_PROFILE.fixed,
-          networks: productNetworks(Intent.FIXED_INTENT, getSupportedChainIds(connectedChainId)),
-          supplyTokens: ['USDS', 'USDC', position.market.underlyingSymbol],
-          kind: 'fixed' as const
-        })),
-        filters,
-        chainSlugById
-      ),
-    [maturedPositions, filters, chainSlugById, connectedChainId]
+      isGeoLoading || isModuleEnabled('fixed')
+        ? filterEarnRows(
+            allMaturedRows.filter(row => row.claimable),
+            filters,
+            chainSlugById
+          )
+        : EMPTY_ROWS,
+    [allMaturedRows, isGeoLoading, isModuleEnabled, filters, chainSlugById]
   );
   // Ended reward farms the user still has USDS in (the deprecated USDS → SKY
   // farm): the marketplace drops them from the opportunities rows, so this
@@ -375,39 +363,36 @@ export function EarnPage() {
   );
   const maturedItems = useMemo<EarnTableRowItem[]>(
     () =>
-      visibleMaturedPositions.map(({ market, ptBalance }) => {
-        // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry.
-        const displaySymbol = market.usdsEquivalence === 'pegged' ? 'USDS' : market.underlyingSymbol;
-        const usd = valueUsd(displaySymbol, parseFloat(formatUnits(ptBalance, market.underlyingDecimals)));
-        return {
-          id: `matured-${market.marketAddress.toLowerCase()}`,
-          name: `Pendle ${market.underlyingSymbol}`,
-          icon: (
-            <TokenIcon
-              token={{ symbol: market.underlyingSymbol }}
-              width={28}
-              className="h-7 w-7"
-              showChainIcon={false}
-            />
-          ),
-          status: 'success' as const,
-          nameSuffix: <Pendle className="h-4 w-4" />,
-          // What the market accepted while live (the registry's fixed entry).
-          supply: <TokenIconStack symbols={['USDS', 'USDC', market.underlyingSymbol]} size={12} />,
-          statusLabel: (
-            <span className="text-statusWarning">
-              <Trans>Matured</Trans>
-            </span>
-          ),
-          network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
-          rate: NO_VALUE,
-          rate30d: NO_VALUE,
-          tvl: NO_VALUE,
-          position: formatUsd(usd),
-          ctaLabel: <Trans>Claim</Trans>
-        };
-      }),
-    [visibleMaturedPositions, valueUsd]
+      visibleMaturedRows.map(row => ({
+        id: maturedRowId(row),
+        name: row.name,
+        icon: (
+          <TokenIcon
+            token={{ symbol: row.tokenSymbol }}
+            width={28}
+            className="h-7 w-7"
+            showChainIcon={false}
+          />
+        ),
+        status: 'success' as const,
+        nameSuffix: <Pendle className="h-4 w-4" />,
+        // What the market accepted while live (the registry's fixed entry).
+        supply: <TokenIconStack symbols={row.supplyTokens} size={12} />,
+        statusLabel: (
+          <span className="text-statusWarning">
+            <Trans>Matured</Trans>
+          </span>
+        ),
+        network: <CellNetworks>{[getChainIcon(mainnet.id, 'h-full w-full')]}</CellNetworks>,
+        rate: NO_VALUE,
+        rate30d: NO_VALUE,
+        tvl: NO_VALUE,
+        // 1 PT redeems 1 underlying (1 USDS on pegged markets) at expiry, so
+        // the marketplace values the position at face.
+        position: formatUsd(row.position?.totalUsd),
+        ctaLabel: <Trans>Claim</Trans>
+      })),
+    [visibleMaturedRows]
   );
   const requiresActionItems = useMemo(
     () => [...maturedItems, ...endedRewardItems],
@@ -418,15 +403,11 @@ export function EarnPage() {
   // table — a matured market keeps its page (the claim card is its position
   // slot), and an ended farm keeps its withdraw/claim-only page.
   const handleRequiresActionSelect = (id: string) => {
-    const matured = maturedPositions.find(
-      ({ market }) => `matured-${market.marketAddress.toLowerCase()}` === id
-    );
+    const matured = visibleMaturedRows.find(row => maturedRowId(row) === id);
     const ended = endedRewardPositions.find(
       ({ contract }) => endedRewardRowId(contract.contractAddress) === id
     );
-    const detailPath = matured
-      ? `${ROUTES.EARN_FIXED}/${matured.market.slug}`
-      : (ended?.product.detailPath ?? null);
+    const detailPath = matured?.detailPath ?? ended?.product.detailPath ?? null;
     if (!detailPath) return;
     setPendingNavIntent('card', detailPath);
     void navigate({ to: detailPath as '/', search: retainOnNavigate });

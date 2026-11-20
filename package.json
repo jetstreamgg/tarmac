@@ -34,11 +34,6 @@
     "vnet:delete:all:ci:local": "node --env-file=.env ./scripts/deleteAllVnets.js 'ci-tests-testnet'",
     "vnet:delete:ci": "node ./scripts/deleteVnet.ts",
     "vnet:fund:single": "cd apps/webapp && npx tsx --tsconfig tsconfig.json src/test/e2e/fund-single-account.ts",
-    "vnet:alternate:fork": "node --env-file=.env ./scripts/forkAlternateVnet.js",
-    "vnet:alternate:fork:ci": "node ./scripts/forkAlternateVnet.js",
-    "vnet:alternate:delete": "node --env-file=.env ./scripts/cleanupAlternateVnet.js",
-    "vnet:alternate:delete:ci": "node ./scripts/cleanupAlternateVnet.js",
-    "vnet:alternate:fund": "cd apps/webapp && USE_ALTERNATE_VNET=true npx tsx --tsconfig tsconfig.json src/test/e2e/fund-accounts.ts",
     "prepare": "husky",
     "typecheck": "pnpm --filter './apps/**' typecheck",
     "messages:extract": "lingui extract --clean",
@@ -69,7 +64,6 @@
     ]
   },
   "devDependencies": {
-    "@eslint/eslintrc": "catalog:",
     "@eslint/js": "catalog:",
     "@lingui/cli": "catalog:",
     "@lingui/conf": "catalog:",
@@ -78,7 +72,6 @@
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "dotenv": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",

@@ -11,10 +11,8 @@ import type { WalletEarnings } from './types';
  * missing-source lists: a hidden product is out of scope, not a data gap.
  *
  * Exclude semantics on purpose: the filter names the HIDDEN rows, not the
- * visible ones, because a source's row can be legitimately absent from the
- * marketplace while its earnings remain real — a matured Pendle market is
- * delisted from the rows (useEarnMarketplace) yet its closed position still
- * counts toward "Total accrued".
+ * visible ones, so a source without a marketplace row of its own keeps its
+ * earnings in "Total accrued".
  */
 export function filterWalletEarnings(
   earnings: WalletEarnings,

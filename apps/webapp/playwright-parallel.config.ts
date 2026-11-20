@@ -76,26 +76,17 @@ export default defineConfig({
         '**/optimism-savings.spec.ts',
         '**/unichain-savings.spec.ts',
         '**/sequential-tx.spec.ts',
-        '**/batch-simulation.spec.ts'
+        '**/batch-simulation.spec.ts',
+        '**/safe-savings.spec.ts'
         // The trade and upgrade specs are gone, not parked: their widgets were
         // deleted, so there is nothing left to rewrite them against.
       ]
     }
-    // {
-    //   name: 'chromium-alternate',
-    //   use: {
-    //     ...devices['Desktop Chrome'],
-    //     viewport: { width: 1920, height: 1080 }
-    //   }
-    //   // Alternate VNet tests - for tests requiring a different fork state
-    //   // Add test patterns here when you need tests to run on alternate VNet
-    //   // testMatch: ['**/expert-morpho.spec.ts', '**/vaults-morpho.spec.ts']
-    // }
   ],
 
   webServer: {
     // Match CI: skip auth/ip checks so WalletChip doesn't block on unmocked /ip/status.
-    command: `VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
+    command: 'VITE_PARALLEL_TEST=true VITE_SKIP_AUTH_CHECK=true pnpm dev:mock',
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,

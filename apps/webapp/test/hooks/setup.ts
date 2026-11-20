@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, inject } from 'vitest';
-import { connect, disconnect } from '@wagmi/core';
+import { connect, disconnect } from 'wagmi/actions';
 import { config, queryClient, testClientMainnet, testClientBase, testClientArbitrum } from './WagmiWrapper';
 
 beforeAll(async () => {

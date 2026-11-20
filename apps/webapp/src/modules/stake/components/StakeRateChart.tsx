@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { parseEther } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import { useStakeHistoricData } from '@/hooks';
+import { getIlkName, newestStakeHistoricPoint, useCollateralData, useStakeHistoricData } from '@/hooks';
+import { formatWad } from '@/utils';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -20,13 +21,16 @@ const toEtherScaled = (value: number) => parseEther(value.toFixed(18));
  * demonstrates. The staking-rate metric is the highest-rate farm's history and
  * latest value — the same figure the Sky Staking Engine promo card headlines —
  * so hero and series agree by construction. The borrow-rate series reads the
- * per-point `borrowRate` of the historic endpoint (APP-399 #7). Read-only.
+ * per-point `borrowRate` of the historic endpoint (APP-399 #7); its hero is
+ * the onchain stability fee (APP-640). Read-only.
  */
 export function StakeRateChart() {
   const [metric, setMetric] = useState<Metric>('rate');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
   const { data: historicData, isLoading, error } = useStakeHistoricData();
+  // Onchain annualized stability fee (WAD ratio) — the live Borrow rate hero.
+  const { data: collateralData } = useCollateralData(getIlkName(2));
   const {
     series: rewardsSeries,
     currentRate,
@@ -64,15 +68,21 @@ export function StakeRateChart() {
   const borrowData = useParseTvlChartData(timeFrame, borrowInput);
   const tvlData = useParseTvlChartData(timeFrame, tvlInput);
 
-  // Non-rate heroes = the newest raw datapoint (sorted by datetime desc),
-  // independent of the timeframe-filtered chart series.
-  const mostRecent = useMemo(
-    () =>
-      historicData
-        ?.slice()
-        .sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime())[0],
-    [historicData]
-  );
+  // TVL hero = the newest raw datapoint, independent of the timeframe-filtered
+  // chart series.
+  const mostRecent = useMemo(() => newestStakeHistoricPoint(historicData), [historicData]);
+  // Borrow rate hero = the onchain stability fee, the figure the engine card
+  // and the open/manage flows show, so it moves the moment a spell changes the
+  // rate (APP-640). The plotted series stays on the daily historic endpoint —
+  // the only source with history — so right after a change the hero leads the
+  // line's last point until the next daily row. Until the onchain read lands
+  // the hero falls back to the newest historic point.
+  const borrowRateNow =
+    collateralData?.stabilityFee !== undefined
+      ? Number(formatWad(collateralData.stabilityFee)) * 100
+      : mostRecent !== undefined
+        ? mostRecent.borrowRate * 100
+        : undefined;
 
   const isRate = metric === 'rate';
   const isBorrow = metric === 'borrow';
@@ -82,9 +92,7 @@ export function StakeRateChart() {
       ? currentRate * 100
       : undefined
     : isBorrow
-      ? mostRecent !== undefined
-        ? mostRecent.borrowRate * 100
-        : undefined
+      ? borrowRateNow
       : mostRecent?.tvl;
 
   return (

@@ -25,7 +25,6 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider, SliderTicks } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -53,8 +52,15 @@ import {
   ResponsiveModalTitle,
   ResponsiveModalTrigger
 } from '@/components/ui/responsive-modal';
+import { TooltipBody } from '@/components/InfoTooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  TOOLTIP_SURFACE_CLASSES
+} from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -106,7 +112,6 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Toggle } from '@/components/ui/toggle';
 import {
   Carousel,
   CarouselContent,
@@ -631,7 +636,7 @@ function SlidersDemo() {
 
 function FormControlsSection() {
   return (
-    <Section id="form-controls" title="Form controls" note="H7 — Slider, Switch, Checkbox, Radio.">
+    <Section id="form-controls" title="Form controls" note="H7 — Slider, Switch, Checkbox.">
       <SlidersDemo />
 
       <SubSection title="Switch — M and S">
@@ -685,58 +690,6 @@ function FormControlsSection() {
             <label className="flex items-center gap-2 text-sm">
               <Checkbox defaultChecked />I agree to the terms
             </label>
-          </Spec>
-        </Row>
-      </SubSection>
-
-      <SubSection title="Radio">
-        <Row>
-          <Spec label="interactive group">
-            <RadioGroup defaultValue="b" className="flex gap-6">
-              {['a', 'b', 'c'].map(v => (
-                <label key={v} className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem value={v} />
-                  Option {v.toUpperCase()}
-                </label>
-              ))}
-            </RadioGroup>
-          </Spec>
-          <Spec label="disabled — unchecked / checked">
-            <RadioGroup value="b" disabled className="flex gap-6">
-              <RadioGroupItem value="a" />
-              <RadioGroupItem value="b" />
-            </RadioGroup>
-          </Spec>
-        </Row>
-      </SubSection>
-
-      <SubSection title="Toggle (legacy)">
-        <Row>
-          <Spec label="off / pressed (interactive)">
-            <span className="flex items-center gap-3">
-              <Toggle size="sm" aria-label="toggle">
-                <Star className="size-4" />
-              </Toggle>
-              <Toggle size="sm" defaultPressed aria-label="toggle">
-                <Star className="size-4" />
-              </Toggle>
-            </span>
-          </Spec>
-          <Spec label="singleSwitcher">
-            <span className="flex items-center gap-1">
-              <Toggle variant="singleSwitcher" pressed>
-                1D
-              </Toggle>
-              <Toggle variant="singleSwitcher">1W</Toggle>
-            </span>
-          </Spec>
-          <Spec label="singleSwitcherBright">
-            <span className="flex items-center gap-1">
-              <Toggle variant="singleSwitcherBright" pressed>
-                1D
-              </Toggle>
-              <Toggle variant="singleSwitcherBright">1W</Toggle>
-            </span>
           </Spec>
         </Row>
       </SubSection>
@@ -1578,8 +1531,8 @@ function DataSection() {
             <PaginationNext className="bg-glassBadge" />
           </Spec>
           <Spec label="arrow — focus">
-            <PaginationPrevious className="outline-fgBrand outline-2 outline-offset-1" />
-            <PaginationNext className="outline-fgBrand outline-2 outline-offset-1" />
+            <PaginationPrevious className="outline-focusRing outline-2 outline-offset-1" />
+            <PaginationNext className="outline-focusRing outline-2 outline-offset-1" />
           </Spec>
           <Spec label="arrow — disabled">
             <PaginationPrevious disabled />
@@ -2281,16 +2234,7 @@ function StepsSection() {
 // Static replica of the TooltipContent recipe so both themes can be inspected
 // without hovering (the live primitive portals to its trigger).
 function TooltipReplica({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div
-      className={cn(
-        'bg-bgTertiary text-fgPrimary font-graphik max-w-[260px] rounded-2xl p-4 text-[11px] leading-4 font-normal backdrop-blur-[20px]',
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+  return <div className={cn(TOOLTIP_SURFACE_CLASSES, className)}>{children}</div>;
 }
 
 const DROPDOWN_REPLICA_ROWS = [
@@ -2317,13 +2261,10 @@ function FeedbackSection() {
           </Spec>
           <Spec label="default — titled">
             <TooltipReplica>
-              <p className="font-circle text-fgPrimary mb-2 text-sm leading-4 font-medium tracking-[-0.28px]">
-                This is a tooltip
-              </p>
-              <p className="text-fgSecondary">
+              <TooltipBody title="This is a tooltip">
                 Tooltips are used to describe or identify an element. In most scenarios, tooltips help the
                 user understand meaning, function or alt-text.
-              </p>
+              </TooltipBody>
             </TooltipReplica>
           </Spec>
           <Spec label="short">

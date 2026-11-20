@@ -59,7 +59,7 @@ export function useBatchPsmSwapAndSavingsSupply({
   // and 4 spend.
   const usdsAmount = math.convertUSDCtoWad(amount);
 
-  const { data: usdcSwapAllowance } = useTokenAllowance({
+  const { data: usdcSwapAllowance, error: usdcAllowanceError } = useTokenAllowance({
     chainId,
     contractAddress: usdcToken,
     owner: connectedAddress,
@@ -125,6 +125,6 @@ export function useBatchPsmSwapAndSavingsSupply({
     onSuccess,
     onError,
     onStart,
-    allowanceError: allowanceError
+    allowanceError: allowanceError || usdcAllowanceError
   });
 }

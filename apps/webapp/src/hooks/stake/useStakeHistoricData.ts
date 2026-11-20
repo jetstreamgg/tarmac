@@ -32,6 +32,23 @@ type StakeHistoricData = {
   skyPrice: number;
 };
 
+/**
+ * The newest datapoint by `datetime` (first one on ties), independent of any
+ * timeframe filter — what the chart's TVL hero and the Details strip's
+ * historic rows read. Current borrow rate surfaces read the onchain stability
+ * fee instead (APP-640); the chart only falls back to this point's
+ * `borrowRate` until that read lands.
+ */
+export function newestStakeHistoricPoint(data?: StakeHistoricData[]): StakeHistoricData | undefined {
+  return data?.reduce<StakeHistoricData | undefined>(
+    (newest, item) =>
+      newest === undefined || new Date(item.datetime).getTime() > new Date(newest.datetime).getTime()
+        ? item
+        : newest,
+    undefined
+  );
+}
+
 const fetchStakeHistoricData = async (url: URL): Promise<StakeHistoricData[] | undefined> => {
   try {
     const data = await fetchJson<ApiStakeHistoricData[]>(url, { label: 'Stake historic data' });

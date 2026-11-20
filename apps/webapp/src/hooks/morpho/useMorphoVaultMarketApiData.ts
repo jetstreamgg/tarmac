@@ -8,6 +8,7 @@ import type {
   MorphoVaultAllocationsData
 } from './morpho';
 import type { MorphoRewardData, MorphoVaultRateData } from './useMorphoVaultRateApiData';
+import { toTokenSymbol } from '@/lib/tokenSymbol';
 import { toReadHook } from '../shared/toReadHook';
 import { morphoGraphql } from './morphoGraphql';
 
@@ -118,11 +119,12 @@ export async function fetchMorphoVaultMarketData(
   const rewardsMap = new Map<string, { apy: number; logoUri: string | null }>();
   for (const reward of rewards || []) {
     if (reward.supplyApr > 0) {
-      const existing = rewardsMap.get(reward.asset.symbol);
+      const symbol = toTokenSymbol(reward.asset.symbol);
+      const existing = rewardsMap.get(symbol);
       if (existing) {
         existing.apy += reward.supplyApr;
       } else {
-        rewardsMap.set(reward.asset.symbol, {
+        rewardsMap.set(symbol, {
           apy: reward.supplyApr,
           logoUri: reward.asset.logoURI
         });
@@ -153,7 +155,7 @@ export async function fetchMorphoVaultMarketData(
   // --- Process allocation data ---
   const { totalAssets, totalAssetsUsd, totalSupply, idleAssets, idleAssetsUsd, asset } = vault;
   const assetDecimals = asset.decimals;
-  const assetSymbol = asset.symbol;
+  const assetSymbol = toTokenSymbol(asset.symbol);
 
   // Idle liquidity directly from the API
   const idleLiquidity: MorphoIdleLiquidityAllocation[] = [
@@ -209,8 +211,8 @@ export async function fetchMorphoVaultMarketData(
     markets.push({
       marketId: market.marketId,
       marketUniqueKey: market.marketId,
-      loanAsset: market.loanAsset.symbol,
-      collateralAsset: market.collateralAsset.symbol,
+      loanAsset: toTokenSymbol(market.loanAsset.symbol),
+      collateralAsset: toTokenSymbol(market.collateralAsset.symbol),
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
       formattedAssetsUsd: `$${formatNumber(vaultAssetsUsd, { compact: true })}`,
       assetsUsd: vaultAssetsUsd,

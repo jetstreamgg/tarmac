@@ -26,7 +26,8 @@ export const AppEvents = {
   NOT_FOUND_VIEWED: 'app_not_found_viewed',
   CONVERT_BLOCKED: 'app_convert_blocked',
   PROMO_IMPRESSION: 'app_promo_impression',
-  PROMO_CLICKED: 'app_promo_clicked'
+  PROMO_CLICKED: 'app_promo_clicked',
+  TRANSACTION_PREPARE_REVERTED: 'app_transaction_prepare_reverted'
 } as const;
 
 // ── Types ────────────────────────────────────────────────────────────────────

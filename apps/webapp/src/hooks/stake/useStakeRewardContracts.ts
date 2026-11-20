@@ -1,5 +1,5 @@
 import request, { gql } from 'graphql-request';
-import { useChainId, useConfig } from 'wagmi';
+import { type Config, useChainId, useConfig } from 'wagmi';
 import { getIndexerUrl } from '../helpers/getIndexerUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum, indexerDataSource } from '../constants';
@@ -11,8 +11,7 @@ import {
   lsSkySpkRewardAddress,
   lsSkySkyRewardAddress
 } from '../generated';
-import { readContracts } from '@wagmi/core';
-import type { Config } from '@wagmi/core';
+import { readContracts } from 'wagmi/actions';
 import { mainnet } from 'viem/chains';
 
 // FarmStatus enum: 0 = INACTIVE, 1 = ACTIVE

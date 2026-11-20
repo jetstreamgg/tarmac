@@ -83,20 +83,20 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
       <p>
         {apy === undefined || exampleOut === undefined ? (
           <Trans>
-            Fix a rate on your {symbol} until maturity. Supply {symbol} today and redeem at maturity at the
+            Fix a rate on your {symbol} until maturity. Supply {symbol} today and claim at maturity at the
             rate fixed when you supplied. Early exits settle at the current market price, which may be more or
             less than the fixed rate. PT positions carry market and smart-contract risk.
           </Trans>
         ) : remainingDays === 1 ? (
           <Trans>
-            Fix a rate on your {symbol} until maturity, e.g. supply {EXAMPLE_SUPPLY} {symbol} today and redeem{' '}
+            Fix a rate on your {symbol} until maturity, e.g. supply {EXAMPLE_SUPPLY} {symbol} today and claim{' '}
             {formatNumber(exampleOut, { maxDecimals: 2 })} {symbol} in one day ({formatDecimalPercentage(apy)}{' '}
             fixed APY). Early exits settle at the current market price, which may be more or less than the
             fixed rate. PT positions carry market and smart-contract risk.
           </Trans>
         ) : (
           <Trans>
-            Fix a rate on your {symbol} until maturity, e.g. supply {EXAMPLE_SUPPLY} {symbol} today and redeem{' '}
+            Fix a rate on your {symbol} until maturity, e.g. supply {EXAMPLE_SUPPLY} {symbol} today and claim{' '}
             {formatNumber(exampleOut, { maxDecimals: 2 })} {symbol} in {remainingDays} days (
             {formatDecimalPercentage(apy)} fixed APY). Early exits settle at the current market price, which
             may be more or less than the fixed rate. PT positions carry market and smart-contract risk.
@@ -104,12 +104,22 @@ export function PendleAboutContent({ market }: { market: PendleMarketConfig }) {
         )}{' '}
         <Trans>
           Check out the{' '}
-          <a href="https://pendle.finance/" target="_blank" rel="noreferrer" className="text-fgBrand">
+          <a
+            href="https://pendle.finance/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-fgBrand focus-visible:outline-focusRing rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
             Pendle site
           </a>{' '}
           for more details.
         </Trans>{' '}
-        <a href={USER_RISKS_URL} target="_blank" rel="noreferrer" className="text-fgBrand">
+        <a
+          href={USER_RISKS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="text-fgBrand focus-visible:outline-focusRing rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
           <Trans>Learn more in the User Risk Documentation.</Trans>
         </a>
       </p>

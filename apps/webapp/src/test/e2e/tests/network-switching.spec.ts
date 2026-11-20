@@ -2,6 +2,7 @@ import { type Page } from '@playwright/test';
 import { expect, test } from '../fixtures-parallel';
 import { RewardsProductPage } from '../pages/RewardsProductPage';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms';
+import { installPendleUiBeforeMaturity } from '../utils/pendleOnChain';
 import {
   expectAppChain,
   switchNetworkOnProductPage,
@@ -51,6 +52,7 @@ test.describe('Network switching on navigation (V2 shell)', () => {
   // A2 + A13 control: the Earn marketplace itself never switches; a
   // mainnet-only row (Fixed) switches on landing at the detail page.
   test('Earn marketplace renders on Base; a Fixed row switches on landing', async ({ isolatedPage }) => {
+    await installPendleUiBeforeMaturity(isolatedPage);
     await connectOnBase(isolatedPage);
 
     await isolatedPage.getByTestId('nav-earn').click();

@@ -18,7 +18,7 @@ import { router } from './router';
 import '../modules/analytics/gtag';
 import '../globals.css';
 
-installStaleChunkReload();
+installStaleChunkReload(router);
 initSentry(router);
 // Before the first render, while measuring lays out an empty page.
 publishPageScrollbarGutter();

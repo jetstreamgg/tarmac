@@ -6,7 +6,7 @@
  * broken bundle is refused with the sub-call's real reason.
  */
 import { describe, expect, it } from 'vitest';
-import { getPublicClient } from '@wagmi/core';
+import { getPublicClient } from 'wagmi/actions';
 import { erc20Abi, parseEther, type Call } from 'viem';
 import { config, TEST_WALLET_ADDRESS } from '../../../test/hooks';
 import { setErc20Balance } from '../../../test/hooks/utils';

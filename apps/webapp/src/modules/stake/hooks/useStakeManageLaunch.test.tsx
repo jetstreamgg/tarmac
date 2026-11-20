@@ -201,8 +201,8 @@ describe('buildStakeManageSteps', () => {
       })
     ).toEqual([
       { label: 'Approve', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been approved." },
-      'Change delegate',
       { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      'Change delegate',
       { label: 'Borrow', tokenSymbol: 'USDS', failureDetail: "The USDS hasn't been borrowed." }
     ]);
 
@@ -251,7 +251,7 @@ describe('buildStakeManageSteps', () => {
     ).toBe(true);
   });
 
-  it('places Change reward before Change delegate, matching the manage calldata order', () => {
+  it('places Change reward before Stake and Change delegate after it, matching the manage calldata order', () => {
     expect(
       buildStakeManageSteps({
         needsSkyAllowance: false,
@@ -266,8 +266,8 @@ describe('buildStakeManageSteps', () => {
       })
     ).toEqual([
       { label: 'Change reward', tokenSymbol: 'SPK' },
-      'Change delegate',
-      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." }
+      { label: 'Stake', tokenSymbol: 'SKY', failureDetail: "The SKY hasn't been staked." },
+      'Change delegate'
     ]);
 
     expect(
