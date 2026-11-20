@@ -34,7 +34,7 @@ import {
 import { bridgedAmount, formatExactUsds } from '../model/bridgeAmount';
 import { guardChainId, type BridgeNetworkId } from '../model/networks';
 import { CCTP_CONVERT_FUNCTION, cctpBurnAmount, isCctpClaimOnly } from '../adapters/cctp/calls';
-import { readCctpConvertOffer } from '../adapters/cctp/convert';
+import { CLAIM_LEG_DROPPED_MS, readCctpConvertOffer, readNextLeg } from '../adapters/cctp/convert';
 import {
   canLaunchAction,
   canConvert,
@@ -50,7 +50,7 @@ import {
   showsActionButton
 } from '../model/pendingTransitions';
 import { claimsFromDestinationWallet } from '../model/recipient';
-import type { PendingBridge, PendingBridgeNextAction } from '../model/types';
+import type { PendingBridge, PendingBridgeAction, PendingBridgeNextAction } from '../model/types';
 import { formatBigInt } from '@/utils';
 import { usdsToNumber } from '../model/usds';
 import { openClaimedSale } from '../store/saleIntentStore';
@@ -773,6 +773,9 @@ export function useDestinationActionLaunch() {
           // The wallet's last hash, and whether the card holds it as sent.
           let sentHash: string | undefined;
           let heldAsSent = false;
+          let saleReadAt = -Infinity;
+          // Pinned to the claim's chain now: the claim's reader follows whatever the modal shows next.
+          const saleClient = nextRecovery?.kind === 'cctp-claim' ? claimClientRef.current : undefined;
           const callbacks: TxCallbacks = {
             ...tracked,
             onMutate: variables => {
@@ -847,16 +850,42 @@ export function useDestinationActionLaunch() {
                 heldAsSent = held.status === 'sent' && !held.bundle;
                 return;
               }
-              if (!heldAsSent) return;
-              releaseEngine();
-              // The chain's silence isn't proof the wallet never broadcast it.
-              callbacks.onError(
-                new TransactionRefusedError(
-                  t`We couldn't find this transaction on the network. Check your wallet before trying again.`
-                ),
-                sentHash
-              );
+              // A claim's sale is held on the claim it follows, which the tracker no longer reads.
+              const claimed =
+                nextRecovery.kind === 'cctp-claim'
+                  ? card.actions.find(
+                      (entry): entry is PendingBridgeAction & { nextLegTxHash: string } =>
+                        entry.nextLegTxHash === sentHash
+                    )
+                  : undefined;
+              if (claimed) return readSale(claimed);
+              if (heldAsSent) endDropped();
             }
+          };
+          const endDropped = () => {
+            releaseEngine();
+            // The chain's silence isn't proof the wallet never broadcast it.
+            callbacks.onError(
+              new TransactionRefusedError(
+                t`We couldn't find this transaction on the network. Check your wallet before trying again.`
+              ),
+              sentHash
+            );
+          };
+          // Asked once a minute at most, after the convert offer's own wait.
+          const readSale = (claimed: PendingBridgeAction & { nextLegTxHash: string }) => {
+            const now = Date.now();
+            if (!saleClient || now - (claimed.nextLegAt ?? claimed.at) < CLAIM_LEG_DROPPED_MS) return;
+            if (now - saleReadAt < 60_000) return;
+            saleReadAt = now;
+            const sale = sentHash;
+            void readNextLeg(saleClient, claimed, now).then(
+              receipt => {
+                // A leg's prompt opened meanwhile: the engine is sending again.
+                if (receipt === undefined && !ended && awaitingReceipt && sentHash === sale) endDropped();
+              },
+              () => undefined
+            );
           };
           setRun({ scope, bridgeId: bridge.id, action });
           if (!nextRecovery) {
@@ -947,16 +976,21 @@ export function useDestinationActionLaunch() {
   }, [runCards, watchScope]);
 
   // A dropped hash ends its run even after another Confirm took the modal, as its engine refuses every send until then.
-  useEffect(
-    () =>
-      pendingBridgeStore.subscribe(() => {
-        for (const watch of [...dropWatchesRef.current.values()]) {
-          const card = pendingBridgeStore.getSnapshot(watch.scope).find(entry => entry.id === watch.bridgeId);
-          if (card) watch.check(card);
-        }
-      }),
-    []
-  );
+  useEffect(() => {
+    const checkAll = () => {
+      for (const watch of [...dropWatchesRef.current.values()]) {
+        const card = pendingBridgeStore.getSnapshot(watch.scope).find(entry => entry.id === watch.bridgeId);
+        if (card) watch.check(card);
+      }
+    };
+    const unsubscribe = pendingBridgeStore.subscribe(checkAll);
+    // Nothing writes a claimed card, so a claim's sale is checked each minute too.
+    const timer = setInterval(checkAll, 60_000);
+    return () => {
+      unsubscribe();
+      clearInterval(timer);
+    };
+  }, []);
 
   // A claim is in flight from Confirm until its run ends, its sale included: the card isn't claimed before.
   const claiming =

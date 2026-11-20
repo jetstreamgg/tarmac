@@ -5,7 +5,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { i18n } from '@lingui/core';
 import { createElement, useState, type ReactNode } from 'react';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionConfig, TxCallbacks } from '@/modules/ui/context/transactionContract';
 import { BASE_BURN_ATTESTED, BASE_BURN_MINT_RECIPIENT } from '../adapters/cctp/cctp.fixtures';
 import { opStackDepositMessage, opStackReplay } from '../adapters/nativeDeposit/opStack';
@@ -44,17 +44,41 @@ const mocks = vi.hoisted(() => ({
   // the node: the receipt wait of each hash
   waits: new Map<string, Wait>(),
   // a claim's pre-send read of its message: nothing to refuse unless a test holds it
-  claimRefusal: () => Promise.resolve(undefined) as Promise<Error | undefined>
+  claimRefusal: () => Promise.resolve(undefined) as Promise<Error | undefined>,
+  // Ethereum's reader: every hash is in its mempool unless a test loses it, and every read answers unless it fails
+  lostOnL1: new Set<string>(),
+  l1ReadsFail: false
 }));
 
 vi.mock('wagmi', async () => {
   const { useRef, useState: useWriteState } = await import('react');
+  const { TransactionNotFoundError, TransactionReceiptNotFoundError } = await import('viem');
+  const l1 = {
+    getTransactionReceipt: async ({ hash }: { hash: string }) => {
+      if (mocks.l1ReadsFail) throw new Error('RPC down');
+      throw new TransactionReceiptNotFoundError({ hash: hash as `0x${string}` });
+    },
+    getTransaction: async ({ hash }: { hash: string }) => {
+      if (mocks.l1ReadsFail) throw new Error('RPC down');
+      if (mocks.lostOnL1.has(hash)) throw new TransactionNotFoundError({ hash: hash as `0x${string}` });
+      return { hash };
+    }
+  };
+  const elsewhere = {
+    getTransactionReceipt: async ({ hash }: { hash: string }) => {
+      throw new TransactionReceiptNotFoundError({ hash: hash as `0x${string}` });
+    },
+    getTransaction: async ({ hash }: { hash: string }) => {
+      throw new TransactionNotFoundError({ hash: hash as `0x${string}` });
+    }
+  };
   return {
     useConnection: () => ({ address: mocks.address, chainId: mocks.walletChainId }),
     useChainId: () => mocks.walletChainId,
     useChains: () => [1, 8453, 10, 42161].map(id => ({ id })),
     useConfig: () => ({}),
-    usePublicClient: () => ({}),
+    // Another chain's reader knows none of Ethereum's hashes.
+    usePublicClient: ({ chainId }: { chainId?: number } = {}) => (chainId === 1 ? l1 : elsewhere),
     useReadContract: ({ functionName, query }: { functionName: string; query?: { enabled?: boolean } }) => ({
       data: functionName === 'baseGas' && query?.enabled !== false ? 100_000n : undefined,
       error: null
@@ -695,6 +719,118 @@ describe('useDestinationActionLaunch with the real replay engine', () => {
       // The fixture message mints to this account only.
       mocks.address = BASE_BURN_MINT_RECIPIENT;
       mocks.claimRefusal = () => Promise.resolve(undefined);
+      mocks.lostOnL1 = new Set();
+      mocks.l1ReadsFail = false;
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    /** Claims `txHash`'s card up to its sale, which the wallet signs as `saleHash` and the engine then waits on. */
+    const claimToSale = async (
+      page: ReturnType<typeof mount>,
+      txHash: string,
+      session: TxCallbacks,
+      saleHash: string
+    ) => {
+      await launchClaim(page, txHash, session);
+      await sign(mocks.prompts.at(-1)!, `${saleHash}r`);
+      await mine(`${saleHash}r`);
+      await waitFor(() => expect(mocks.prompts.at(-1)!.functionName).toBe('approve'));
+      await sign(mocks.prompts.at(-1)!, `${saleHash}a`);
+      await mine(`${saleHash}a`);
+      await waitFor(() => expect(mocks.prompts.at(-1)!.functionName).toBe('sellGem'));
+      await sign(mocks.prompts.at(-1)!, saleHash);
+    };
+    /** The wall clock moves on by `minutes`, then a tracker read writes `cardId`, which runs the launcher's checks. */
+    const later = async (minutes: number, cardId: string) => {
+      vi.setSystemTime(Date.now() + minutes * 60_000);
+      act(() => pendingBridgeStore.update(scope(), cardId, bridge => ({ ...bridge })));
+      await flush();
+      await flush();
+    };
+
+    it("ends a claim whose sale its chain still doesn't know 35 minutes on, and the next card's claim goes out", async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const log: string[] = [];
+      seedClaim('0xburnS1');
+      seedClaim('0xburnS2');
+      const page = mount();
+      await claimToSale(page, '0xburnS1', sessionFor('A', log), '0xsale');
+      mocks.lostOnL1.add('0xsale');
+
+      await later(36, '0xburnS2');
+      await waitFor(() => expect(log.at(-1)).toBe('A.onError(TransactionRefusedError)'));
+      // The card keeps the sale's hash: its convert offer reads it as dropped, as before.
+      expect(stored('0xburnS1').actions[0].nextLegTxHash).toBe('0xsale');
+
+      const prompts = mocks.prompts.length;
+      await launchClaim(page, '0xburnS2', sessionFor('B', log));
+      expect(mocks.prompts).toHaveLength(prompts + 1);
+      expect(mocks.prompts.at(-1)!.functionName).toBe('receiveMessage');
+    });
+
+    it('ends a claim whose approve before the sale was dropped the same way', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const log: string[] = [];
+      seedClaim('0xburnP1');
+      seedClaim('0xburnP2');
+      const page = mount();
+      await launchClaim(page, '0xburnP1', sessionFor('A', log));
+      await sign(mocks.prompts.at(-1)!, '0xreceive');
+      await mine('0xreceive');
+      await waitFor(() => expect(mocks.prompts.at(-1)!.functionName).toBe('approve'));
+      await sign(mocks.prompts.at(-1)!, '0xapprove');
+      await waitFor(() => expect(stored('0xburnP1').actions[0].nextLegTxHash).toBe('0xapprove'));
+      mocks.lostOnL1.add('0xapprove');
+
+      await later(36, '0xburnP2');
+      await waitFor(() => expect(log.at(-1)).toBe('A.onError(TransactionRefusedError)'));
+      const prompts = mocks.prompts.length;
+      await launchClaim(page, '0xburnP2', sessionFor('B', log));
+      expect(mocks.prompts).toHaveLength(prompts + 1);
+    });
+
+    it("keeps reading a claim's sale on Ethereum after another card's action took the modal", async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const log: string[] = [];
+      seedClaim('0xburnE1');
+      seedClaim('0xburnE2');
+      seedReadyReplay('base');
+      const page = mount();
+      await claimToSale(page, '0xburnE1', sessionFor('A', log), '0xsale');
+      mocks.walletChainId = DEPOSITS.base.chainId;
+      page.rerenderPage();
+      const launched = mocks.launched.length;
+      act(() => page.result.current.launch(stored(DEPOSITS.base.txHash)));
+      await waitFor(() => expect(mocks.launched.length).toBeGreaterThan(launched));
+
+      await later(36, '0xburnE2');
+      expect(log.filter(entry => entry.startsWith('A.onError'))).toEqual([]);
+    });
+
+    it.each([
+      ['its chain still has it', { lost: false, fail: false, minutes: 36 }],
+      ["its chain can't be read", { lost: true, fail: true, minutes: 36 }],
+      ['35 minutes have not passed', { lost: true, fail: false, minutes: 34 }]
+    ])('keeps waiting on a sale while %s', async (_, { lost, fail, minutes }) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const log: string[] = [];
+      // The fixture's account is shared: each case claims its own cards.
+      const [first, second] = [`0xburnK${++accountSeq}`, `0xburnK${++accountSeq}`];
+      seedClaim(first);
+      seedClaim(second);
+      const page = mount();
+      await claimToSale(page, first, sessionFor('A', log), '0xsale');
+      if (lost) mocks.lostOnL1.add('0xsale');
+      mocks.l1ReadsFail = fail;
+
+      await later(minutes, second);
+      expect(log.filter(entry => entry.startsWith('A.onError'))).toEqual([]);
+      const prompts = mocks.prompts.length;
+      await launchClaim(page, second, sessionFor('B', log));
+      expect(mocks.prompts).toHaveLength(prompts);
+      expect(log.at(-1)).toBe('B.onError(TransactionRefusedError)');
     });
 
     it('receives the message, then approves and sells the USDC, and ends on the sale', async () => {

@@ -146,7 +146,7 @@ export type ConvertOfferReader = Pick<PublicClient, 'getTransactionReceipt' | 'r
   Partial<Pick<PublicClient, 'getTransaction'>>;
 
 // A leg the chain still doesn't know `CLAIM_LEG_DROPPED_MS` after it was sent was dropped: it sold nothing.
-async function readNextLeg(
+export async function readNextLeg(
   client: ConvertOfferReader,
   leg: PendingBridgeAction & { nextLegTxHash: string },
   now: number
